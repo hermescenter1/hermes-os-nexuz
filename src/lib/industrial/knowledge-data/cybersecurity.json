@@ -1,0 +1,13 @@
+{
+  "category": "cybersecurity",
+  "libraries": [
+    { "id": "segmentation", "domains": ["cybersecurity", "otNetwork"],
+      "keywords": ["segmentation", "dmz", "zone", "conduit", "vlan", "62443", "firewall", "تفکیک", "ناحیه", "فایروال", "دی‌ام‌زد"] },
+    { "id": "accessControl", "domains": ["cybersecurity"],
+      "keywords": ["access control", "mfa", "password", "remote access", "jump host", "vpn", "unauthorized", "احراز هویت", "دسترسی", "رمز", "غیرمجاز"] },
+    { "id": "monitoring", "domains": ["cybersecurity", "otNetwork"],
+      "keywords": ["monitoring", "ids", "intrusion", "detection", "anomaly", "unknown device", "پایش امنیتی", "تشخیص نفوذ", "ناهنجاری", "ناشناس"] },
+    { "id": "audit", "domains": ["cybersecurity"],
+      "keywords": ["audit", "logging", "compliance", "syslog", "review", "ممیزی", "لاگ", "انطباق"] }
+  ]
+}

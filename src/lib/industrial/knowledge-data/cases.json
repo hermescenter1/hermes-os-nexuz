@@ -1,0 +1,736 @@
+{
+  "cases": [
+    {
+      "id": "case-siemens-1200-bf",
+      "vendor": "siemens",
+      "category": "plc",
+      "keywords": [
+        "bf led",
+        "bus fault",
+        "profinet",
+        "device name",
+        "cpu swap",
+        "1200"
+      ],
+      "en": {
+        "symptoms": "S7-1200 BF LED flashing after CPU replacement; distributed I/O unreachable.",
+        "rootCause": "PROFINET device name and IP not assigned to the new CPU — names live on the device, not in the project alone.",
+        "resolution": "Assign device name/IP via TIA Portal accessible-devices; verify topology matches the configured names.",
+        "rootCauses": [
+          "PROFINET device name not assigned to the replacement CPU",
+          "IP address not restored after hardware swap",
+          "Topology mismatch against the configured plan"
+        ],
+        "verificationSteps": [
+          "Browse accessible devices in TIA Portal and compare device names",
+          "Check the CPU diagnostics buffer for name/IP resolution faults",
+          "Compare physical topology against the project topology view"
+        ],
+        "correctiveActions": [
+          "Assign the configured device name and IP to the new CPU",
+          "Re-verify all distributed I/O comes online",
+          "Archive the project with the corrected hardware fingerprint"
+        ]
+      },
+      "fa": {
+        "symptoms": "چشمک‌زدن LED BF در S7-1200 پس از تعویض CPU؛ عدم دسترسی به I/O توزیع‌شده.",
+        "rootCause": "نام دستگاه PROFINET و IP به CPU جدید تخصیص نیافته — نام روی دستگاه ذخیره می‌شود، نه فقط در پروژه.",
+        "resolution": "تخصیص نام/IP از مسیر دستگاه‌های قابل‌دسترس در TIA Portal و تطبیق توپولوژی با نام‌های پیکربندی‌شده.",
+        "rootCauses": [
+          "تخصیص‌نشدن نام دستگاه PROFINET به CPU جایگزین",
+          "بازنگشتن آدرس IP پس از تعویض سخت‌افزار",
+          "عدم تطابق توپولوژی با طرح پیکربندی‌شده"
+        ],
+        "verificationSteps": [
+          "مرور دستگاه‌های قابل‌دسترس در TIA Portal و مقایسهٔ نام‌ها",
+          "بررسی بافر تشخیصی CPU برای خطای نام/IP",
+          "مقایسهٔ توپولوژی فیزیکی با نمای توپولوژی پروژه"
+        ],
+        "correctiveActions": [
+          "تخصیص نام و IP پیکربندی‌شده به CPU جدید",
+          "راستی‌آزمایی آنلاین‌شدن همهٔ I/O توزیع‌شده",
+          "آرشیو پروژه با اثر سخت‌افزاری اصلاح‌شده"
+        ]
+      }
+    },
+    {
+      "id": "case-siemens-1500-scan",
+      "vendor": "siemens",
+      "category": "plc",
+      "keywords": [
+        "1500",
+        "scan overrun",
+        "cycle time",
+        "scl loop",
+        "sf led",
+        "watchdog"
+      ],
+      "en": {
+        "symptoms": "S7-1500 intermittent cycle-time watchdog trips; SF indication under specific recipes.",
+        "rootCause": "Unbounded SCL WHILE loop iterating a recipe array whose length grew with new products.",
+        "resolution": "Bound the loop, move bulk processing to a lower-priority cyclic OB, verify max cycle time margin.",
+        "rootCauses": [
+          "Unbounded SCL loop iterating a growing recipe array",
+          "Cycle-time budget consumed by bulk data processing",
+          "Watchdog limit set without margin for data growth"
+        ],
+        "verificationSteps": [
+          "Measure cycle time under worst-case recipe data",
+          "Step the SCL loop online and observe iteration counts",
+          "Review the diagnostics buffer for watchdog entries"
+        ],
+        "correctiveActions": [
+          "Bound the loop with an explicit iteration limit",
+          "Move bulk processing to a lower-priority cyclic OB",
+          "Set a cycle-time alarm at 80% of the watchdog limit"
+        ]
+      },
+      "fa": {
+        "symptoms": "تریپ متناوب واچ‌داگ زمان چرخه در S7-1500؛ نمایش SF در رسپی‌های خاص.",
+        "rootCause": "حلقهٔ WHILE بدون کران در SCL روی آرایهٔ رسپی که با محصولات جدید بزرگ شده بود.",
+        "resolution": "کران‌دار کردن حلقه، انتقال پردازش حجیم به OB چرخه‌ای با اولویت پایین‌تر و بررسی حاشیهٔ زمان چرخهٔ بیشینه.",
+        "rootCauses": [
+          "حلقهٔ SCL بی‌کران روی آرایهٔ رسپی در حال رشد",
+          "مصرف بودجهٔ زمان چرخه توسط پردازش دادهٔ حجیم",
+          "تنظیم حد واچ‌داگ بدون حاشیه برای رشد داده"
+        ],
+        "verificationSteps": [
+          "اندازه‌گیری زمان چرخه با بدترین دادهٔ رسپی",
+          "پیمایش آنلاین حلقهٔ SCL و مشاهدهٔ شمار تکرار",
+          "مرور بافر تشخیصی برای رخدادهای واچ‌داگ"
+        ],
+        "correctiveActions": [
+          "کران‌دار کردن حلقه با حد تکرار صریح",
+          "انتقال پردازش حجیم به OB چرخه‌ای کم‌اولویت",
+          "هشدار زمان چرخه در ۸۰٪ حد واچ‌داگ"
+        ]
+      }
+    },
+    {
+      "id": "case-abb-acs580-oc",
+      "vendor": "abb",
+      "category": "drives",
+      "keywords": [
+        "acs580",
+        "2310",
+        "overcurrent",
+        "acceleration",
+        "ramp"
+      ],
+      "en": {
+        "symptoms": "ABB ACS580 trips fault 2310 (overcurrent) during acceleration of a mixer load.",
+        "rootCause": "Acceleration ramp shorter than the load inertia allows; current limit reached before speed.",
+        "resolution": "Extend accel ramp, verify motor nameplate parameters, check mechanics for added drag before raising limits.",
+        "rootCauses": [
+          "Acceleration ramp too short",
+          "Incorrect motor data",
+          "Excessive load inertia",
+          "Mechanical overload"
+        ],
+        "verificationSteps": [
+          "Review acceleration parameters",
+          "Trend motor current",
+          "Run unloaded test"
+        ],
+        "correctiveActions": [
+          "Increase ramp time",
+          "Verify motor nameplate parameters",
+          "Inspect mechanical load"
+        ]
+      },
+      "fa": {
+        "symptoms": "تریپ خطای ۲۳۱۰ (اضافه‌جریان) در ACS580 هنگام شتاب‌گیری بار میکسر.",
+        "rootCause": "رمپ شتاب کوتاه‌تر از حد مجاز اینرسی بار؛ رسیدن به حد جریان پیش از رسیدن به سرعت.",
+        "resolution": "افزایش رمپ شتاب، بررسی پارامترهای پلاک موتور و بازبینی مکانیک از نظر درگ اضافه پیش از بالابردن حدود.",
+        "rootCauses": [
+          "رمپ شتاب بسیار کوتاه",
+          "دادهٔ موتور نادرست",
+          "اینرسی بیش‌ازحد بار",
+          "اضافه‌بار مکانیکی"
+        ],
+        "verificationSteps": [
+          "بازبینی پارامترهای شتاب",
+          "روندگیری جریان موتور",
+          "آزمون بدون بار"
+        ],
+        "correctiveActions": [
+          "افزایش زمان رمپ",
+          "راستی‌آزمایی پارامترهای پلاک موتور",
+          "بازرسی بار مکانیکی"
+        ]
+      }
+    },
+    {
+      "id": "case-abb-motor-imbalance",
+      "vendor": "abb",
+      "category": "motors",
+      "keywords": [
+        "current imbalance",
+        "phase",
+        "winding",
+        "asymmetry"
+      ],
+      "en": {
+        "symptoms": "ABB motor runs hot; phase currents differ by 8% under steady load.",
+        "rootCause": "Supply asymmetry from a degraded busbar joint upstream, not the winding.",
+        "resolution": "Thermo-scan and re-torque the MCC bus joint; re-measure imbalance; megger winding to confirm health.",
+        "rootCauses": [
+          "Degraded busbar joint creating supply asymmetry",
+          "Phase imbalance heating one winding",
+          "Loose upstream connection increasing resistance"
+        ],
+        "verificationSteps": [
+          "Measure all three phase currents under steady load",
+          "Thermo-scan the MCC bus joints at representative load",
+          "Megger the winding to rule out internal asymmetry"
+        ],
+        "correctiveActions": [
+          "Re-torque the degraded bus joint to schedule",
+          "Re-measure imbalance after repair",
+          "Record a new thermal baseline"
+        ]
+      },
+      "fa": {
+        "symptoms": "گرم‌شدن موتور ABB؛ اختلاف ۸٪ جریان فازها زیر بار پایدار.",
+        "rootCause": "عدم تقارن تغذیه از مفصل شینهٔ فرسوده در بالادست، نه سیم‌پیچ.",
+        "resolution": "ترموگرافی و باز-گشتاور مفصل شینهٔ MCC؛ اندازه‌گیری مجدد عدم تعادل؛ مگری سیم‌پیچ برای تأیید سلامت.",
+        "rootCauses": [
+          "مفصل شینهٔ فرسوده و عدم تقارن تغذیه",
+          "عدم تعادل فاز و گرم‌شدن یک سیم‌پیچ",
+          "اتصال شل بالادست و افزایش مقاومت"
+        ],
+        "verificationSteps": [
+          "اندازه‌گیری جریان هر سه فاز زیر بار پایدار",
+          "ترموگرافی مفاصل شینهٔ MCC در بار نمونه",
+          "مگری سیم‌پیچ برای رد عدم تقارن داخلی"
+        ],
+        "correctiveActions": [
+          "باز-گشتاور مفصل فرسوده طبق جدول",
+          "اندازه‌گیری مجدد عدم تعادل پس از تعمیر",
+          "ثبت خط مبنای حرارتی جدید"
+        ]
+      }
+    },
+    {
+      "id": "case-schneider-atv-ocf",
+      "vendor": "schneider",
+      "category": "drives",
+      "keywords": [
+        "altivar",
+        "atv320",
+        "ocf",
+        "output short",
+        "scf"
+      ],
+      "en": {
+        "symptoms": "Schneider ATV320 shows OCF immediately at run command; motor never turns.",
+        "rootCause": "Insulation breakdown in the motor cable gland — phase-to-earth short on the drive output.",
+        "resolution": "Megger cable and motor separately; replace damaged gland section; confirm drive output stage undamaged.",
+        "rootCauses": [
+          "Phase-to-earth short in the motor cable gland",
+          "Insulation breakdown on the drive output circuit",
+          "Moisture ingress at the cable termination"
+        ],
+        "verificationSteps": [
+          "Megger the cable and motor separately",
+          "Inspect the gland and termination for damage",
+          "Check the drive fault log for short-circuit codes"
+        ],
+        "correctiveActions": [
+          "Replace the damaged gland section",
+          "Re-terminate with correct sealing",
+          "Confirm the drive output stage is undamaged before restart"
+        ]
+      },
+      "fa": {
+        "symptoms": "نمایش OCF در ATV320 بلافاصله با فرمان حرکت؛ موتور هرگز نمی‌چرخد.",
+        "rootCause": "شکست عایق در گلند کابل موتور — اتصال فاز به زمین در خروجی درایو.",
+        "resolution": "مگری جداگانهٔ کابل و موتور؛ تعویض مقطع آسیب‌دیدهٔ گلند؛ تأیید سلامت طبقهٔ خروجی درایو.",
+        "rootCauses": [
+          "اتصال فاز به زمین در گلند کابل موتور",
+          "شکست عایق در مدار خروجی درایو",
+          "نفوذ رطوبت در سربندی کابل"
+        ],
+        "verificationSteps": [
+          "مگری جداگانهٔ کابل و موتور",
+          "بازرسی گلند و سربندی از نظر آسیب",
+          "بررسی لاگ خطای درایو برای کدهای اتصال کوتاه"
+        ],
+        "correctiveActions": [
+          "تعویض مقطع آسیب‌دیدهٔ گلند",
+          "سربندی مجدد با آب‌بندی صحیح",
+          "تأیید سلامت طبقهٔ خروجی درایو پیش از راه‌اندازی"
+        ]
+      }
+    },
+    {
+      "id": "case-schneider-m580-timeout",
+      "vendor": "schneider",
+      "category": "otNetwork",
+      "keywords": [
+        "m580",
+        "modbus",
+        "timeout",
+        "polling",
+        "scan rate"
+      ],
+      "en": {
+        "symptoms": "Modicon M580 Modbus TCP clients log timeouts when SCADA polling was expanded.",
+        "rootCause": "Aggregate poll rate × register count exceeded the CPU's Modbus server processing budget.",
+        "resolution": "Batch contiguous registers, lengthen poll intervals for slow analogs, distribute clients across windows.",
+        "rootCauses": [
+          "Aggregate poll rate exceeding the CPU Modbus server budget",
+          "Unbatched register reads multiplying request count",
+          "Polling expansion done without load assessment"
+        ],
+        "verificationSteps": [
+          "Measure request rate per client at the CPU",
+          "Capture traffic with a port mirror during timeouts",
+          "Compare register maps for batchable contiguous blocks"
+        ],
+        "correctiveActions": [
+          "Batch contiguous registers into block reads",
+          "Lengthen poll intervals for slow analog values",
+          "Distribute clients across polling windows"
+        ]
+      },
+      "fa": {
+        "symptoms": "ثبت وقفهٔ زمانی در کلاینت‌های Modbus TCP کنترلر M580 پس از گسترش پایش اسکادا.",
+        "rootCause": "حاصل‌ضرب نرخ پایش در تعداد رجیستر از بودجهٔ پردازشی سرور مدباس CPU عبور کرد.",
+        "resolution": "دسته‌بندی رجیسترهای پیوسته، افزایش بازهٔ پایش آنالوگ‌های کند و توزیع کلاینت‌ها در پنجره‌های زمانی.",
+        "rootCauses": [
+          "عبور نرخ تجمیعی پایش از بودجهٔ سرور مدباس CPU",
+          "خواندن رجیسترهای دسته‌نشده و تکثیر درخواست‌ها",
+          "گسترش پایش بدون ارزیابی بار"
+        ],
+        "verificationSteps": [
+          "اندازه‌گیری نرخ درخواست هر کلاینت در CPU",
+          "ضبط ترافیک با Port Mirror هنگام وقفه",
+          "مقایسهٔ نقشهٔ رجیسترها برای بلوک‌های پیوستهٔ دسته‌پذیر"
+        ],
+        "correctiveActions": [
+          "دسته‌بندی رجیسترهای پیوسته در خواندن بلوکی",
+          "افزایش بازهٔ پایش مقادیر آنالوگ کند",
+          "توزیع کلاینت‌ها در پنجره‌های پایش"
+        ]
+      }
+    },
+    {
+      "id": "case-phoenix-mqtt-drop",
+      "vendor": "phoenix",
+      "category": "otNetwork",
+      "keywords": [
+        "plcnext",
+        "axc f",
+        "mqtt",
+        "disconnect",
+        "keep-alive",
+        "broker"
+      ],
+      "en": {
+        "symptoms": "Phoenix AXC F 2152 MQTT client disconnects every few minutes through a plant firewall.",
+        "rootCause": "MQTT keep-alive longer than the firewall's idle NAT timeout; broker saw the client as dead.",
+        "resolution": "Set keep-alive below the NAT idle timeout, enable persistent session, verify TLS session resumption.",
+        "rootCauses": [
+          "MQTT keep-alive longer than the firewall NAT idle timeout",
+          "Broker treating the silent client as dead",
+          "TLS session not resuming after NAT table eviction"
+        ],
+        "verificationSteps": [
+          "Compare keep-alive setting against the firewall idle timeout",
+          "Monitor reconnect counts per client at the broker",
+          "Capture the disconnect sequence at the firewall"
+        ],
+        "correctiveActions": [
+          "Set keep-alive below the NAT idle timeout",
+          "Enable persistent sessions",
+          "Verify TLS session resumption configuration"
+        ]
+      },
+      "fa": {
+        "symptoms": "قطع اتصال MQTT کنترلر AXC F 2152 هر چند دقیقه از پشت فایروال کارخانه.",
+        "rootCause": "Keep-alive بزرگ‌تر از مهلت بیکاری NAT فایروال؛ بروکر کلاینت را مرده تلقی می‌کرد.",
+        "resolution": "تنظیم keep-alive کمتر از مهلت NAT، فعال‌سازی نشست ماندگار و بررسی ازسرگیری نشست TLS.",
+        "rootCauses": [
+          "Keep-alive بزرگ‌تر از مهلت بیکاری NAT فایروال",
+          "مرده‌انگاشتن کلاینت ساکت توسط بروکر",
+          "ازسرنگرفتن نشست TLS پس از حذف از جدول NAT"
+        ],
+        "verificationSteps": [
+          "مقایسهٔ تنظیم keep-alive با مهلت بیکاری فایروال",
+          "پایش شمار اتصال مجدد هر کلاینت در بروکر",
+          "ضبط توالی قطع در فایروال"
+        ],
+        "correctiveActions": [
+          "تنظیم keep-alive کمتر از مهلت NAT",
+          "فعال‌سازی نشست ماندگار",
+          "راستی‌آزمایی پیکربندی ازسرگیری نشست TLS"
+        ]
+      }
+    },
+    {
+      "id": "case-phoenix-di-chatter",
+      "vendor": "phoenix",
+      "category": "digitalIo",
+      "keywords": [
+        "axioline",
+        "digital input",
+        "chatter",
+        "vfd cable",
+        "noise"
+      ],
+      "en": {
+        "symptoms": "Phoenix Axioline DI channel chatters when a nearby drive runs above 30 Hz.",
+        "rootCause": "Unshielded sensor cable routed in the same tray as VFD output; induced dv/dt noise crossing the input threshold.",
+        "resolution": "Reroute or shield the sensor run, ground shield at one end, add 20 ms debounce in logic.",
+        "rootCauses": [
+          "Unshielded sensor cable sharing the tray with VFD output",
+          "Induced dv/dt noise crossing the input threshold",
+          "No debounce applied to the affected channel"
+        ],
+        "verificationSteps": [
+          "Correlate chatter onset with drive speed above 30 Hz",
+          "Compare the input LED against the logic state",
+          "Inspect the cable route for shared trays"
+        ],
+        "correctiveActions": [
+          "Reroute or shield the sensor run",
+          "Ground the shield at one end only",
+          "Add 20 ms debounce in logic"
+        ]
+      },
+      "fa": {
+        "symptoms": "نوسان کانال ورودی دیجیتال Axioline هنگام کار درایو مجاور بالای ۳۰ هرتز.",
+        "rootCause": "کابل سنسور بدون شیلد در سینی مشترک با خروجی درایو؛ نویز القایی dv/dt از آستانهٔ ورودی عبور می‌کرد.",
+        "resolution": "تغییر مسیر یا شیلدکردن کابل، زمین یک‌طرفهٔ شیلد و افزودن ۲۰ میلی‌ثانیه حذف لرزش در منطق.",
+        "rootCauses": [
+          "کابل سنسور بدون شیلد در سینی مشترک با خروجی درایو",
+          "نویز القایی dv/dt عبوری از آستانهٔ ورودی",
+          "نبود حذف لرزش روی کانال آسیب‌دیده"
+        ],
+        "verificationSteps": [
+          "همبسته‌سازی شروع نوسان با سرعت درایو بالای ۳۰ هرتز",
+          "مقایسهٔ LED ورودی با حالت منطق",
+          "بازرسی مسیر کابل از نظر سینی مشترک"
+        ],
+        "correctiveActions": [
+          "تغییر مسیر یا شیلدکردن کابل سنسور",
+          "زمین یک‌سرهٔ شیلد",
+          "افزودن ۲۰ میلی‌ثانیه حذف لرزش در منطق"
+        ]
+      }
+    },
+    {
+      "id": "case-delta-vfd-oh",
+      "vendor": "delta",
+      "category": "drives",
+      "keywords": [
+        "vfd-m",
+        "oh",
+        "overheat",
+        "heatsink",
+        "fan"
+      ],
+      "en": {
+        "symptoms": "Delta VFD-M shows OH (overheat) every afternoon in summer; resets fine in the morning.",
+        "rootCause": "Heatsink fins clogged with dust and cabinet fan filter blocked — thermal margin lost at peak ambient.",
+        "resolution": "Clean heatsink and filters, verify fan operation, confirm enclosure clearance per manual.",
+        "rootCauses": [
+          "Heatsink fins clogged with dust",
+          "Cabinet fan filter blocked",
+          "Thermal margin lost at peak ambient temperature"
+        ],
+        "verificationSteps": [
+          "Inspect heatsink and filters for fouling",
+          "Verify fan operation and airflow direction",
+          "Correlate trips with ambient temperature trend"
+        ],
+        "correctiveActions": [
+          "Clean heatsink and replace filters",
+          "Restore enclosure clearance per manual",
+          "Schedule periodic filter maintenance"
+        ]
+      },
+      "fa": {
+        "symptoms": "نمایش OH (داغ‌شدن) در VFD-M دلتا هر بعدازظهر تابستان؛ صبح‌ها به‌راحتی ریست می‌شود.",
+        "rootCause": "گرفتگی پره‌های هیت‌سینک با غبار و انسداد فیلتر فن تابلو — ازدست‌رفتن حاشیهٔ حرارتی در اوج دمای محیط.",
+        "resolution": "تمیزکاری هیت‌سینک و فیلترها، بررسی کارکرد فن و تأیید فاصلهٔ مجاز تابلو طبق دفترچه.",
+        "rootCauses": [
+          "گرفتگی پره‌های هیت‌سینک با غبار",
+          "انسداد فیلتر فن تابلو",
+          "ازدست‌رفتن حاشیهٔ حرارتی در اوج دمای محیط"
+        ],
+        "verificationSteps": [
+          "بازرسی هیت‌سینک و فیلترها از نظر گرفتگی",
+          "بررسی کارکرد فن و جهت جریان هوا",
+          "همبسته‌سازی تریپ‌ها با روند دمای محیط"
+        ],
+        "correctiveActions": [
+          "تمیزکاری هیت‌سینک و تعویض فیلترها",
+          "بازگرداندن فاصلهٔ مجاز تابلو طبق دفترچه",
+          "زمان‌بندی نگهداری دوره‌ای فیلتر"
+        ]
+      }
+    },
+    {
+      "id": "case-delta-hmi-rs485",
+      "vendor": "delta",
+      "category": "hmi",
+      "keywords": [
+        "dop",
+        "hmi",
+        "rs485",
+        "communication lost",
+        "termination"
+      ],
+      "en": {
+        "symptoms": "Delta DOP HMI intermittently loses communication with the PLC on a long RS-485 run.",
+        "rootCause": "Missing termination and bias resistors on the extended segment; reflections corrupt frames.",
+        "resolution": "Terminate both ends (120 Ω), add bias at the master, verify daisy-chain topology with no stubs.",
+        "rootCauses": [
+          "Missing termination on the extended RS-485 segment",
+          "Missing bias resistors at the master",
+          "Reflections corrupting frames on the long run"
+        ],
+        "verificationSteps": [
+          "Verify 120 Ω termination at both ends",
+          "Check bias at the master",
+          "Inspect topology for stubs off the daisy chain"
+        ],
+        "correctiveActions": [
+          "Terminate both ends correctly",
+          "Add bias at the master",
+          "Re-cable any stubbed drops into the chain"
+        ]
+      },
+      "fa": {
+        "symptoms": "قطع متناوب ارتباط HMI مدل DOP دلتا با PLC روی مسیر بلند RS-485.",
+        "rootCause": "نبود مقاومت پایان‌خط و بایاس در سگمنت توسعه‌یافته؛ بازتاب‌ها فریم‌ها را خراب می‌کردند.",
+        "resolution": "پایان‌دهی دو سر (۱۲۰ اهم)، افزودن بایاس در مستر و تأیید توپولوژی زنجیره‌ای بدون انشعاب.",
+        "rootCauses": [
+          "نبود پایان‌خط در سگمنت توسعه‌یافتهٔ RS-485",
+          "نبود مقاومت بایاس در مستر",
+          "بازتاب‌های مخرب فریم در مسیر بلند"
+        ],
+        "verificationSteps": [
+          "راستی‌آزمایی پایان‌خط ۱۲۰ اهمی در دو سر",
+          "بررسی بایاس در مستر",
+          "بازرسی توپولوژی از نظر انشعاب خارج از زنجیره"
+        ],
+        "correctiveActions": [
+          "پایان‌دهی صحیح دو سر",
+          "افزودن بایاس در مستر",
+          "بازکشی انشعاب‌ها به داخل زنجیره"
+        ]
+      }
+    },
+    {
+      "id": "case-mitsubishi-fx5-coil",
+      "vendor": "mitsubishi",
+      "category": "plc",
+      "keywords": [
+        "fx5",
+        "double coil",
+        "output flicker",
+        "gx works"
+      ],
+      "en": {
+        "symptoms": "Mitsubishi FX5 output flickers; forced ON it behaves, in run mode it pulses.",
+        "rootCause": "Double coil assignment — the same output written in two program sections with opposite conditions.",
+        "resolution": "Cross-reference the device in GX Works3, consolidate to one rung with combined logic.",
+        "rootCauses": [
+          "Double coil assignment writing the same output twice",
+          "Opposite conditions in two program sections fighting per scan",
+          "Program growth without cross-reference review"
+        ],
+        "verificationSteps": [
+          "Cross-reference the output device in GX Works3",
+          "Observe the output image at both write points online",
+          "Force the output and confirm steady behavior"
+        ],
+        "correctiveActions": [
+          "Consolidate to one rung with combined logic",
+          "Re-verify the sequence in run mode",
+          "Add cross-reference review to the change procedure"
+        ]
+      },
+      "fa": {
+        "symptoms": "سوسوزدن خروجی FX5 میتسوبیشی؛ با Force روشن می‌ماند اما در حالت اجرا پالس می‌زند.",
+        "rootCause": "تخصیص دوگانهٔ کویل — نوشتن همان خروجی در دو بخش برنامه با شرایط متضاد.",
+        "resolution": "ارجاع متقابل دستگاه در GX Works3 و یکپارچه‌سازی در یک رانگ با منطق ترکیبی.",
+        "rootCauses": [
+          "تخصیص دوگانهٔ کویل و دو بار نوشتن همان خروجی",
+          "شرایط متضاد در دو بخش برنامه در هر اسکن",
+          "رشد برنامه بدون بازبینی ارجاع متقابل"
+        ],
+        "verificationSteps": [
+          "ارجاع متقابل خروجی در GX Works3",
+          "مشاهدهٔ آنلاین تصویر خروجی در هر دو نقطهٔ نوشتن",
+          "Force خروجی و تأیید رفتار پایدار"
+        ],
+        "correctiveActions": [
+          "یکپارچه‌سازی در یک رانگ با منطق ترکیبی",
+          "راستی‌آزمایی مجدد توالی در حالت اجرا",
+          "افزودن بازبینی ارجاع متقابل به روال تغییر"
+        ]
+      }
+    },
+    {
+      "id": "case-mitsubishi-mrj4-al16",
+      "vendor": "mitsubishi",
+      "category": "drives",
+      "keywords": [
+        "mr-j4",
+        "al.16",
+        "al16",
+        "encoder",
+        "servo"
+      ],
+      "en": {
+        "symptoms": "Mitsubishi MR-J4 servo raises AL.16 (encoder initial communication error) after panel work.",
+        "rootCause": "Encoder connector partially seated and cable shield left unbonded during reassembly.",
+        "resolution": "Reseat the encoder connector, bond the shield per manual, inspect pins; replace cable if pins damaged.",
+        "rootCauses": [
+          "Encoder connector partially seated after panel work",
+          "Cable shield left unbonded during reassembly",
+          "Damaged connector pins from repeated handling"
+        ],
+        "verificationSteps": [
+          "Reseat and lock the encoder connector",
+          "Verify shield bonding per the servo manual",
+          "Inspect pins under magnification"
+        ],
+        "correctiveActions": [
+          "Restore correct seating and shield bond",
+          "Replace the encoder cable if pins are damaged",
+          "Add connector checks to post-work verification"
+        ]
+      },
+      "fa": {
+        "symptoms": "خطای AL.16 (خطای ارتباط اولیهٔ انکودر) در سروو MR-J4 پس از کار روی تابلو.",
+        "rootCause": "جانیفتادن کامل کانکتور انکودر و وصل‌نشدن شیلد کابل هنگام مونتاژ مجدد.",
+        "resolution": "جازدن مجدد کانکتور، اتصال شیلد طبق دفترچه و بازرسی پین‌ها؛ تعویض کابل در صورت آسیب پین.",
+        "rootCauses": [
+          "جانیفتادن کامل کانکتور انکودر پس از کار روی تابلو",
+          "وصل‌نشدن شیلد کابل هنگام مونتاژ مجدد",
+          "آسیب پین‌های کانکتور از جابه‌جایی مکرر"
+        ],
+        "verificationSteps": [
+          "جازدن مجدد و قفل کانکتور انکودر",
+          "راستی‌آزمایی اتصال شیلد طبق دفترچهٔ سروو",
+          "بازرسی پین‌ها زیر بزرگ‌نمایی"
+        ],
+        "correctiveActions": [
+          "برقراری نشست صحیح و اتصال شیلد",
+          "تعویض کابل انکودر در صورت آسیب پین",
+          "افزودن بررسی کانکتور به راستی‌آزمایی پس از کار"
+        ]
+      }
+    },
+    {
+      "id": "case-omron-nx-estop-reset",
+      "vendor": "omron",
+      "category": "plc",
+      "keywords": [
+        "nx",
+        "sysmac",
+        "safety",
+        "e-stop",
+        "reset",
+        "edm"
+      ],
+      "en": {
+        "symptoms": "Omron NX safety controller stays in safe state after e-stop release; reset button has no effect.",
+        "rootCause": "EDM feedback contact from a welded contactor never returns, so the safety function correctly refuses reset.",
+        "resolution": "Diagnose the feedback loop: test the contactor mirror contact, replace the welded contactor — do not bypass EDM.",
+        "rootCauses": [
+          "EDM feedback contact never returning — welded contactor",
+          "Safety function correctly refusing reset on feedback failure",
+          "Mirror contact no longer reflecting the main contact state"
+        ],
+        "verificationSteps": [
+          "Read the safety controller diagnostics for the blocking input",
+          "Test the contactor mirror contact continuity",
+          "Verify the reset sequence against the safety configuration"
+        ],
+        "correctiveActions": [
+          "Replace the welded contactor",
+          "Re-test the EDM loop end-to-end",
+          "Never bridge or defeat the feedback loop"
+        ]
+      },
+      "fa": {
+        "symptoms": "ماندن کنترلر ایمنی NX امرون در حالت امن پس از آزادکردن استاپ اضطراری؛ دکمهٔ ریست بی‌اثر است.",
+        "rootCause": "کنتاکت بازخورد EDM از کنتاکتور جوش‌خورده هرگز برنمی‌گردد، پس تابع ایمنی به‌درستی از ریست خودداری می‌کند.",
+        "resolution": "عیب‌یابی حلقهٔ بازخورد: آزمون کنتاکت آینه‌ای کنتاکتور و تعویض کنتاکتور جوش‌خورده — EDM را دور نزنید.",
+        "rootCauses": [
+          "برنگشتن کنتاکت بازخورد EDM — کنتاکتور جوش‌خورده",
+          "خودداری صحیح تابع ایمنی از ریست در خطای بازخورد",
+          "بازتاب‌ندادن وضعیت کنتاکت اصلی توسط کنتاکت آینه‌ای"
+        ],
+        "verificationSteps": [
+          "خواندن تشخیص کنترلر ایمنی برای ورودی مسدودکننده",
+          "آزمون پیوستگی کنتاکت آینه‌ای کنتاکتور",
+          "راستی‌آزمایی توالی ریست با پیکربندی ایمنی"
+        ],
+        "correctiveActions": [
+          "تعویض کنتاکتور جوش‌خورده",
+          "آزمون سرتاسری مجدد حلقهٔ EDM",
+          "هرگز حلقهٔ بازخورد را پل یا حذف نکنید"
+        ]
+      }
+    },
+    {
+      "id": "case-omron-e5cc-drift",
+      "vendor": "omron",
+      "category": "analogIo",
+      "keywords": [
+        "e5cc",
+        "temperature",
+        "drift",
+        "thermocouple",
+        "cold junction"
+      ],
+      "en": {
+        "symptoms": "Omron E5CC temperature reading drifts several degrees when the panel door is opened.",
+        "rootCause": "Thermocouple extended with copper wire — cold-junction compensation happens at the wrong point.",
+        "resolution": "Replace the copper run with matching TC extension cable; verify reading against a calibrated probe.",
+        "rootCauses": [
+          "Thermocouple extended with copper wire",
+          "Cold-junction compensation occurring at the wrong point",
+          "Reading shifting with panel-interior temperature changes"
+        ],
+        "verificationSteps": [
+          "Inspect the extension run for non-TC conductor",
+          "Correlate drift with panel door open/close events",
+          "Compare against a calibrated reference probe"
+        ],
+        "correctiveActions": [
+          "Replace the copper run with matching TC extension cable",
+          "Re-verify against the reference after repair",
+          "Document conductor type at every junction"
+        ]
+      },
+      "fa": {
+        "symptoms": "رانش چند درجه‌ای قرائت دمای E5CC امرون هنگام بازشدن درب تابلو.",
+        "rootCause": "تمدید ترموکوپل با سیم مسی — جبران اتصال سرد در نقطهٔ نادرست انجام می‌شد.",
+        "resolution": "تعویض مسیر مسی با کابل تمدید هم‌نوع ترموکوپل و راستی‌آزمایی قرائت با پراب کالیبره.",
+        "rootCauses": [
+          "تمدید ترموکوپل با سیم مسی",
+          "انجام جبران اتصال سرد در نقطهٔ نادرست",
+          "جابه‌جایی قرائت با تغییر دمای داخل تابلو"
+        ],
+        "verificationSteps": [
+          "بازرسی مسیر تمدید از نظر هادی غیر هم‌نوع",
+          "همبسته‌سازی رانش با باز/بسته‌شدن درب تابلو",
+          "مقایسه با پراب مرجع کالیبره"
+        ],
+        "correctiveActions": [
+          "تعویض مسیر مسی با کابل تمدید هم‌نوع",
+          "راستی‌آزمایی مجدد با مرجع پس از تعمیر",
+          "مستندسازی نوع هادی در هر اتصال"
+        ]
+      }
+    }
+  ]
+}

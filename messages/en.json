@@ -1,0 +1,1196 @@
+{
+  "meta": {
+    "title": "Hermes OS — Industrial AI Platform",
+    "description": "Bilingual industrial automation platform: PLC, SCADA, HMI, and an AI copilot."
+  },
+  "nav": {
+    "home": "Home",
+    "platform": "Platform",
+    "services": "Services",
+    "architecture": "Architecture",
+    "dashboard": "Dashboard",
+    "copilot": "Copilot",
+    "library": "Library",
+    "brain": "Brain"
+  },
+  "common": {
+    "switchLanguage": "فارسی",
+    "comingSoon": "Coming soon",
+    "explore": "Explore",
+    "backToServices": "All services",
+    "viewArchitecture": "See the architecture",
+    "viewPlatform": "Explore the platform"
+  },
+  "home": {
+    "eyebrow": "Industrial AI Platform",
+    "title": "The control layer between your plant and its intelligence.",
+    "lede": "Hermes OS unifies PLC programming, SCADA, HMI, and an AI copilot into one bilingual operations surface — built for Persian and English plant floors alike.",
+    "primaryCta": "Explore the platform",
+    "secondaryCta": "See the architecture",
+    "capabilitiesTitle": "What runs on Hermes",
+    "capabilities": {
+      "plc": {
+        "name": "PLC Programming",
+        "desc": "Author, review, and version ladder and structured-text logic."
+      },
+      "scada": {
+        "name": "SCADA",
+        "desc": "Supervisory control and live process visualization."
+      },
+      "hmi": {
+        "name": "HMI",
+        "desc": "Operator screens that read in both directions."
+      },
+      "copilot": {
+        "name": "AI Copilot",
+        "desc": "An assistant that speaks automation and two languages."
+      },
+      "security": {
+        "name": "Industrial Security",
+        "desc": "Posture and audit for OT networks."
+      },
+      "library": {
+        "name": "Knowledge Library",
+        "desc": "Electrical and automation reference, searchable."
+      }
+    },
+    "status": {
+      "label": "V1 Enterprise Demo",
+      "note": "Industrial telemetry is simulated. The copilot is live."
+    }
+  },
+  "modules": {
+    "sectionTitle": "Six modules, one platform",
+    "sectionLede": "Each module is a focused tool. Together they form the operations surface of the plant.",
+    "aiEngineer": {
+      "name": "Hermes AI Engineer",
+      "tagline": "The reasoning core",
+      "desc": "An automation-literate assistant that drafts logic, explains faults, and routes work to the specialist modules."
+    },
+    "plcCopilot": {
+      "name": "Hermes PLC Copilot",
+      "tagline": "Logic, authored",
+      "desc": "Write and review ladder and structured text with vendor-aware suggestions and version history."
+    },
+    "scadaStudio": {
+      "name": "Hermes SCADA Studio",
+      "tagline": "Supervise and visualize",
+      "desc": "Compose supervisory screens and process views that read correctly in Persian and English."
+    },
+    "knowledgeCloud": {
+      "name": "Hermes Knowledge Cloud",
+      "tagline": "Reference, searchable",
+      "desc": "An electrical and automation library your team can query in plain language."
+    },
+    "protectionCenter": {
+      "name": "Hermes Protection Center",
+      "tagline": "OT posture and audit",
+      "desc": "Track network posture, segmentation, and audit trails across operational technology."
+    },
+    "factoryDashboard": {
+      "name": "Hermes Factory Dashboard",
+      "tagline": "The plant at a glance",
+      "desc": "Live lines, alarms, and KPIs on one screen — simulated in this demo, wired to the historian in production."
+    }
+  },
+  "platform": {
+    "eyebrow": "The platform",
+    "title": "One surface for the people who run the plant.",
+    "lede": "Hermes OS sits between your engineers and your equipment. The modules below share one AI core, one knowledge base, and one bilingual interface.",
+    "principlesTitle": "What holds it together",
+    "principles": {
+      "bilingual": {
+        "name": "Bilingual by design",
+        "desc": "Persian and English are equal — RTL and LTR, not an afterthought."
+      },
+      "modular": {
+        "name": "Modular, not monolithic",
+        "desc": "Adopt one module or all six; each stands on its own."
+      },
+      "onprem": {
+        "name": "On-premise ready",
+        "desc": "Built to run inside the plant, including air-gapped installs."
+      },
+      "vendorNeutral": {
+        "name": "Vendor-neutral",
+        "desc": "Speaks the common industrial protocols rather than locking you in."
+      }
+    }
+  },
+  "services": {
+    "eyebrow": "Services",
+    "title": "Industrial Intelligence Services",
+    "lede": "Engineering services for the operational layer of the plant — from controller logic to supervisory systems to the security of the OT network.",
+    "items": {
+      "plc": {
+        "name": "PLC Programming",
+        "short": "Ladder and structured text, authored and reviewed.",
+        "title": "PLC Programming",
+        "lede": "Author, review, and version control logic for the controllers that run your lines.",
+        "points": {
+          "one": {
+            "name": "Ladder & structured text",
+            "desc": "Write in the languages your controllers already speak."
+          },
+          "two": {
+            "name": "Vendor-aware",
+            "desc": "Patterns aligned with Siemens S7, ABB, and Schneider conventions."
+          },
+          "three": {
+            "name": "Reviewed and versioned",
+            "desc": "Every change is explained and tracked, not pasted blind."
+          }
+        }
+      },
+      "scadaHmi": {
+        "name": "SCADA & HMI",
+        "short": "Supervisory control and operator screens.",
+        "title": "SCADA & HMI",
+        "lede": "Build the screens operators watch and the supervisory layer that drives them.",
+        "points": {
+          "one": {
+            "name": "Process visualization",
+            "desc": "Live mimic diagrams of lines, tanks, and flows."
+          },
+          "two": {
+            "name": "Operator screens",
+            "desc": "HMI layouts that read correctly in both directions."
+          },
+          "three": {
+            "name": "Alarm-aware",
+            "desc": "Surface what matters first, in the operator's language."
+          }
+        }
+      },
+      "industrialAi": {
+        "name": "Industrial AI",
+        "short": "An automation copilot for engineers.",
+        "title": "Industrial AI",
+        "lede": "An assistant that understands controllers, faults, and the vocabulary of the plant floor.",
+        "points": {
+          "one": {
+            "name": "Fault reasoning",
+            "desc": "Describe a symptom; get a structured path to the cause."
+          },
+          "two": {
+            "name": "Logic drafting",
+            "desc": "Turn intent into a reviewable first draft of control logic."
+          },
+          "three": {
+            "name": "Bilingual",
+            "desc": "Ask in Persian or English; get answers in kind."
+          }
+        }
+      },
+      "cybersecurity": {
+        "name": "Industrial Cybersecurity",
+        "short": "Posture and audit for OT networks.",
+        "title": "Industrial Cybersecurity",
+        "lede": "Understand and harden the operational-technology network that connects your equipment.",
+        "points": {
+          "one": {
+            "name": "Network posture",
+            "desc": "See segmentation, zones, and conduits at a glance."
+          },
+          "two": {
+            "name": "Audit trails",
+            "desc": "A record of who changed what, and when."
+          },
+          "three": {
+            "name": "OT-aware",
+            "desc": "Built around the realities of plant networks, not office IT."
+          }
+        }
+      },
+      "knowledgeCloud": {
+        "name": "Knowledge Cloud",
+        "short": "Your electrical and automation reference.",
+        "title": "Knowledge Cloud",
+        "lede": "A searchable library of electrical and automation knowledge your team can query in plain language.",
+        "points": {
+          "one": {
+            "name": "Plain-language search",
+            "desc": "Ask a question instead of guessing a keyword."
+          },
+          "two": {
+            "name": "Electrical reference",
+            "desc": "Standards, components, and practice in one place."
+          },
+          "three": {
+            "name": "Bilingual content",
+            "desc": "Persian and English, side by side."
+          }
+        }
+      }
+    },
+    "strap": "PLC • SCADA • HMI • AI • OT Security"
+  },
+  "architecture": {
+    "eyebrow": "Architecture",
+    "title": "From the engineer's intent to the factory floor.",
+    "lede": "Every request flows through one gateway, fans out to the specialist modules, and reaches equipment only through a defined protocol layer. The diagram below is the spine of Hermes OS.",
+    "note": "In this V1 demo the protocol layer and factory systems are represented, not connected. Live connectivity arrives with the Phase 2 gateways.",
+    "layers": {
+      "human": {
+        "name": "Human Engineer",
+        "desc": "Intent, in Persian or English"
+      },
+      "gateway": {
+        "name": "Hermes AI Gateway",
+        "desc": "Routes every request"
+      },
+      "modules": {
+        "name": "Specialist Modules",
+        "desc": "PLC Copilot · SCADA Studio · Knowledge Cloud · Protection Center"
+      },
+      "protocol": {
+        "name": "Industrial Protocol Layer",
+        "desc": "The defined boundary to equipment"
+      },
+      "buses": {
+        "name": "Field Protocols",
+        "desc": "OPC UA · Modbus TCP · MQTT · Siemens S7"
+      },
+      "factory": {
+        "name": "Factory Systems",
+        "desc": "Controllers, drives, and instruments"
+      }
+    },
+    "future": {
+      "title": "Future Platform Capabilities",
+      "badge": "Phase 2+",
+      "lede": "These services are designed into the architecture today and arrive as independently deployable gateways and engines.",
+      "items": {
+        "opcua": {
+          "name": "OPC UA Gateway",
+          "desc": "Standards-based access to controllers and servers across vendors."
+        },
+        "modbus": {
+          "name": "Modbus Gateway",
+          "desc": "TCP polling of field devices, drives, and meters."
+        },
+        "mqtt": {
+          "name": "MQTT Gateway",
+          "desc": "Broker-based telemetry for sensors and edge publishers."
+        },
+        "historian": {
+          "name": "Historian Service",
+          "desc": "Long-term time-series storage for process data and audits."
+        },
+        "twin": {
+          "name": "Digital Twin Engine",
+          "desc": "Live virtual models of lines and equipment for simulation."
+        },
+        "predictive": {
+          "name": "Predictive Maintenance Engine",
+          "desc": "Failure-pattern detection from vibration, thermal, and cycle data."
+        }
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Industrial AI platform · Persian & English",
+    "demoNote": "V1 Enterprise Demo — telemetry simulated, copilot live"
+  },
+  "brand": {
+    "tagline": "Industrial Intelligence Platform"
+  },
+  "dashboard": {
+    "title": "Factory Dashboard",
+    "eyebrow": "Operations",
+    "simulated": "Simulated telemetry",
+    "updated": "Updated",
+    "panels": {
+      "overview": "Factory Overview",
+      "lines": "Production Lines",
+      "plc": "PLC Status",
+      "scada": "SCADA Status",
+      "network": "OT Network Status",
+      "alarms": "Alarm Summary",
+      "temperature": "Temperature",
+      "pressure": "Pressure",
+      "flow": "Flow",
+      "energy": "Energy",
+      "ai": "AI Recommendations",
+      "maintenance": "Maintenance Priority",
+      "risk": "System Risk Score"
+    },
+    "overview": {
+      "oee": "OEE",
+      "availability": "Availability",
+      "performance": "Performance",
+      "quality": "Quality",
+      "activeLines": "Active lines"
+    },
+    "status": {
+      "running": "Running",
+      "idle": "Idle",
+      "fault": "Fault",
+      "online": "Online",
+      "offline": "Offline",
+      "ok": "Normal",
+      "warning": "Warning",
+      "degraded": "Degraded"
+    },
+    "severity": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "lines": {
+      "throughput": "Throughput",
+      "target": "Target",
+      "unitsHr": "u/hr"
+    },
+    "plcP": {
+      "cycle": "Cycle",
+      "devices": "controllers"
+    },
+    "scadaP": {
+      "servers": "Servers",
+      "tags": "Tags polled",
+      "rate": "Update rate",
+      "latency": "Latency"
+    },
+    "networkP": {
+      "devices": "Devices",
+      "online": "Online",
+      "blocked": "Blocked events",
+      "ids": "Intrusion detection"
+    },
+    "alarmsP": {
+      "active": "Active alarms",
+      "last": "Most recent",
+      "msgs": {
+        "m1": "Line 2 conveyor motor over-temperature",
+        "m2": "Tank B pressure approaching upper limit",
+        "m3": "PLC-04 cycle time variance detected",
+        "m4": "Cooling loop flow below setpoint",
+        "m5": "Unauthorized device blocked on OT VLAN"
+      }
+    },
+    "metrics": {
+      "min": "min",
+      "max": "max",
+      "current": "now"
+    },
+    "energyP": {
+      "now": "Load now",
+      "today": "Today",
+      "peak": "Peak"
+    },
+    "aiP": {
+      "note": "Generated from simulated plant data — illustrative only.",
+      "confidence": "confidence",
+      "recs": {
+        "r1": {
+          "title": "Rebalance Line 2 takt time",
+          "desc": "Throughput variance suggests a 6% takt adjustment would relieve the conveyor over-temperature pattern."
+        },
+        "r2": {
+          "title": "Schedule PLC-04 inspection",
+          "desc": "Cycle-time drift over the last window matches early actuator wear signatures."
+        },
+        "r3": {
+          "title": "Shift compressor duty to off-peak",
+          "desc": "Energy peaks align with compressor staging; off-peak shifting cuts estimated 9% of peak load."
+        }
+      }
+    },
+    "maintenanceP": {
+      "due": "days",
+      "assets": {
+        "a1": "Conveyor motor — Line 2",
+        "a2": "Actuator bank — PLC-04",
+        "a3": "Cooling pump P-7",
+        "a4": "Compressor C-2"
+      }
+    },
+    "riskP": {
+      "trend": {
+        "up": "Rising",
+        "down": "Falling",
+        "flat": "Stable"
+      },
+      "factors": {
+        "f1": "Thermal stress",
+        "f2": "Cycle variance",
+        "f3": "Network exposure",
+        "f4": "Maintenance backlog"
+      }
+    }
+  },
+  "knowledge": {
+    "plcBasics": {
+      "name": "PLC Fundamentals",
+      "summary": "Scan cycle, I/O image, and program organization of programmable logic controllers.",
+      "p1": "A PLC executes a cyclic scan: read inputs, execute logic, write outputs — scan time sets the response latency.",
+      "p2": "I/O process images decouple physical terminals from logic; forcing bypasses logic and must be strictly controlled.",
+      "p3": "Organize programs into cyclic, startup, and interrupt blocks; keep safety logic separate from process logic.",
+      "c1": "Check the CPU diagnostic buffer for faults and scan-time overruns.",
+      "c2": "Verify I/O addressing against the hardware configuration.",
+      "overview": "A programmable logic controller is the deterministic execution core of a machine or process cell: it reads field inputs, solves user logic, and drives outputs on a fixed, repeatable cycle measured in milliseconds.",
+      "purpose": "Guarantees bounded reaction time and predictable behavior for discrete and hybrid control, where a PC operating system cannot.",
+      "how": "Each scan copies physical inputs into the process image, executes the program against that frozen image, then writes the output image back to the terminals. Interrupt blocks preempt the cycle for time-critical events; the watchdog supervises total scan time.",
+      "faults": "Scan-time overrun from unbounded loops or heavy communication; forced I/O left active after maintenance; logic acting on stale data when modules fail silently; battery/memory loss wiping retentive data on power cycle.",
+      "c3": "Confirm retentive memory and clock backup health before any planned power-down.",
+      "safetyNote": "Never treat standard PLC logic as a safety function — emergency stops and guard circuits belong in certified safety relays or F-CPUs, hardwired per the machine's risk assessment.",
+      "commissioning": "Force each I/O point once against the loop drawing before logic test; record scan-time baseline at full load and alarm at 80% of watchdog.",
+      "concepts": "Process image, scan cycle, organization blocks, retentive memory, watchdog, I/O addressing.",
+      "brainUse": "Hermes Brain cites this library when a question involves scan behavior, CPU diagnostics, I/O addressing, or general controller fundamentals across any vendor."
+    },
+    "ladder": {
+      "name": "Ladder Logic",
+      "summary": "Contact and coil patterns: interlocks, latching, and edge detection.",
+      "p1": "Seal-in circuits hold outputs after momentary commands; every stop condition must break the seal.",
+      "p2": "Use rising/falling edge instructions for one-shot actions to avoid re-triggering every scan.",
+      "p3": "Interlocks must be structured so no single rung can bypass a safety condition.",
+      "c1": "Trace rung power flow online to find the blocking contact.",
+      "c2": "Search cross-references for double coil assignments.",
+      "overview": "Ladder logic expresses control as power flow through contacts and coils — the lingua franca of discrete automation, readable by electricians and auditable rung by rung.",
+      "purpose": "Interlocks, sequences, and motor control where visual traceability during live troubleshooting matters more than computational elegance.",
+      "how": "Each rung evaluates left-to-right per scan; seal-in branches latch outputs past momentary commands; edge instructions convert level signals to one-shot events; cross-references track every address.",
+      "faults": "Double coil assignments producing flicker; seal-ins that a stop condition fails to break; edge instructions duplicated so events fire twice; interlock bypass hidden in a parallel branch.",
+      "c3": "Audit every safety-relevant rung for parallel paths that could bypass the interlock condition.",
+      "safetyNote": "A ladder interlock is an availability function, not a safety function — protective stops must remain hardwired or in certified safety logic regardless of program structure.",
+      "commissioning": "Walk each sequence step with the machine in manual, watching rung power flow online; archive a cross-reference listing with the as-commissioned program.",
+      "concepts": "Contacts and coils, seal-in/latch, edge detection, cross-reference, interlocking, scan order.",
+      "brainUse": "Cited when questions mention rungs, coils, latching behavior, outputs that stick or flicker, or interlock logic in any ladder-programmed PLC."
+    },
+    "scadaTags": {
+      "name": "SCADA Tag Architecture",
+      "summary": "Tag naming, polling groups, and data quality in supervisory systems.",
+      "p1": "Structured tag naming (Area_Equipment_Signal) makes alarms and trends scale cleanly.",
+      "p2": "Match polling groups to process dynamics — fast loops 250–500 ms, slow analogs 1–5 s.",
+      "p3": "Propagate data-quality flags to displays; never show stale values as live.",
+      "c1": "Verify tag address mapping against the PLC symbol table.",
+      "c2": "Check communication driver statistics for timeouts and retries.",
+      "overview": "The tag database is the supervisory system's model of the plant: every value displayed, trended, or alarmed traces back to a tag bound to a controller address through a polling group.",
+      "purpose": "Decouples HMI/SCADA applications from raw controller addressing and carries data-quality so operators never mistake stale values for live ones.",
+      "how": "Drivers poll controllers in groups whose rates match process dynamics; tags scale raw values to engineering units; quality flags (good/uncertain/bad) propagate from driver to display and historian.",
+      "faults": "Address mapping drift after PLC changes; one fast polling group starving the channel; quality flags ignored so frozen values look live; tag sprawl from copy-paste without a naming standard.",
+      "c3": "Cross-check a sample of tag addresses against the current PLC symbol table after every controller change.",
+      "safetyNote": "Operator displays are informational — never route a protective action through SCADA tag writes; the controller must protect itself if the supervisory layer dies.",
+      "commissioning": "Load-test polling at full tag count, verify failover behavior of redundant servers, and freeze the naming convention before bulk tag creation.",
+      "concepts": "Polling groups, data quality, engineering-unit scaling, tag naming standards, driver diagnostics.",
+      "brainUse": "Cited when questions involve stale or wrong SCADA values, tag mapping, polling load, or supervisory data quality."
+    },
+    "digitalInputs": {
+      "name": "Digital Inputs",
+      "summary": "Sinking/sourcing, debounce, and contact wiring behavior.",
+      "p1": "Match sensor output type (PNP/NPN) to the input card's sinking/sourcing configuration.",
+      "p2": "Debounce mechanical contacts in logic (10–50 ms) to avoid false transitions.",
+      "p3": "Chattering inputs — rapid repeated transitions — usually indicate wiring or mechanical faults.",
+      "c1": "Measure voltage at the input terminal against the module specification.",
+      "c2": "Compare the input status LED with the logic state to separate field from program issues.",
+      "overview": "Digital inputs carry binary field state into the controller; correctness depends on matching sensor output type, input wiring convention, and debounce handling.",
+      "purpose": "Deliver clean, debounced, correctly-referenced on/off signals so logic acts on real state changes rather than electrical noise.",
+      "how": "PNP (sourcing) sensors feed sinking inputs and vice versa; the input threshold defines on/off voltage bands; mechanical contacts bounce for milliseconds and need logic or hardware debounce; status LEDs reflect terminal state.",
+      "faults": "PNP/NPN mismatch reading permanently off; chatter from unshielded runs beside VFD cables; bounce double-triggering counters; dry contacts wetted with the wrong common reference.",
+      "c3": "Compare the input status LED against the logic state — disagreement isolates field wiring from program faults instantly.",
+      "safetyNote": "Protective stop signals must use safety-rated inputs with line monitoring, not standard DI channels, regardless of how clean the wiring looks.",
+      "commissioning": "Exercise every input from its field device (not jumpers at the terminal) and verify debounce times against the fastest legitimate signal.",
+      "concepts": "Sinking/sourcing, input thresholds, debounce, signal isolation, LED-versus-logic diagnosis.",
+      "brainUse": "Cited for inputs reading wrong or chattering, sensor-to-card mismatches, and noise-induced false transitions."
+    },
+    "analogInputs": {
+      "name": "Analog Inputs",
+      "summary": "4–20 mA loops, scaling, and signal integrity.",
+      "p1": "The 4–20 mA live-zero enables broken-wire detection: below 3.6 mA means fault, not a low reading.",
+      "p2": "Scale raw counts to engineering units in exactly one layer — PLC or SCADA, never both.",
+      "p3": "Use shielded twisted pair grounded at one end; route away from VFD output cables.",
+      "c1": "Inject a calibrated signal and verify the value through PLC and SCADA.",
+      "c2": "Suspect ground loops when readings drift or oscillate.",
+      "overview": "Analog inputs digitize continuous process signals; the 4–20 mA current loop dominates because its live zero exposes broken wires and its current mode resists voltage drops.",
+      "purpose": "Bring temperatures, pressures, levels, and flows into control with known accuracy, scaling, and fault detection.",
+      "how": "Transmitters regulate loop current proportional to the measured variable; the input card digitizes across its range; scaling to engineering units happens in exactly one defined layer; values below 3.6 mA signal faults, not low readings.",
+      "faults": "Double scaling in both PLC and SCADA; ground loops drifting readings; noise coupled from power cables; under-range fault currents displayed as plausible low values.",
+      "c3": "Inject a calibrated mA signal at the field end and verify the displayed value end-to-end through PLC and SCADA.",
+      "safetyNote": "Define and test the control response to bad-quality analog values — a loop frozen at last-good value can quietly drive a process into trouble.",
+      "commissioning": "Document loop power architecture (2/4-wire), verify shield grounding at one end only, and record as-left calibration for every loop.",
+      "concepts": "Live zero, loop powering, single-point scaling, shielding and ground loops, burnout detection.",
+      "brainUse": "Cited for readings stuck at zero or drifting, scaling discrepancies between layers, and loop fault diagnosis."
+    },
+    "sensors": {
+      "name": "Industrial Sensors",
+      "summary": "Proximity, temperature, pressure, and flow measurement behavior.",
+      "p1": "Inductive proximity sensors detect metals only; capacitive types detect non-metals but drift with humidity.",
+      "p2": "RTDs (PT100) suit precision below ~600 °C; thermocouples suit high temperature and fast response.",
+      "p3": "Pressure and flow readings depend on correct process connections — trapped air or sediment biases them.",
+      "c1": "Compare the sensor reading against a local gauge or portable reference.",
+      "c2": "Inspect sensing distance and target alignment after any mechanical work.",
+      "overview": "Industrial sensors translate physical reality into signals; each technology — inductive, capacitive, RTD, thermocouple, pressure, flow — has characteristic blind spots and drift behavior.",
+      "purpose": "Provide the measurements every control decision rests on, with accuracy and reliability matched to the process duty.",
+      "how": "Proximity sensors detect via field disturbance within a rated sensing distance; RTDs vary resistance nearly linearly with temperature; thermocouples generate junction EMF needing cold-junction compensation; pressure and flow devices depend on correct process connections.",
+      "faults": "Capacitive sensors drifting with humidity; misalignment after mechanical work; impulse-line plugging mimicking sensor failure; wrong-type extension cable corrupting thermocouple readings.",
+      "c3": "Compare the suspect reading against an independent local reference before condemning the instrument.",
+      "safetyNote": "Measurements feeding protective decisions need defined failure behavior — know whether each sensor fails high, low, or frozen, and design the response.",
+      "commissioning": "Verify sensing distance and alignment in final mechanical position; document each instrument's range, tag, and as-found calibration.",
+      "concepts": "Sensing technologies, cold-junction compensation, impulse lines, calibration references, failure modes.",
+      "brainUse": "Cited for implausible readings, sensor selection questions, drift, and field-device versus wiring fault isolation."
+    },
+    "vfd": {
+      "name": "VFD / Drives",
+      "summary": "Variable frequency drive parameters, faults, and motor protection.",
+      "p1": "Enter motor nameplate data (V/Hz, FLA) in drive parameters before first start.",
+      "p2": "Overcurrent during acceleration usually means the ramp is too short or the load is abnormal — not a failed drive.",
+      "p3": "Drive output cables emit high dv/dt noise — separate them from signal cabling and use screened cable.",
+      "c1": "Read the drive fault history before resetting — the codes are the diagnosis.",
+      "c2": "Verify cooling: heatsink temperature and fan operation under load.",
+      "overview": "A variable frequency drive synthesizes adjustable voltage and frequency from rectified DC, controlling motor speed and torque — and introducing its own electrical environment of harmonics and dv/dt.",
+      "purpose": "Match motor speed to process demand for energy savings and controllability, with built-in motor protection and diagnostics.",
+      "how": "Rectifier charges the DC bus; the inverter's PWM switching synthesizes the output; V/Hz or vector control governs torque; fault registers log every trip with operating context.",
+      "faults": "Overcurrent at acceleration from ramps shorter than load inertia allows; overheating from clogged heatsinks; output earth faults from cable insulation damage; nuisance trips from supply dips sagging the DC bus.",
+      "c3": "Read the complete fault history with timestamps before any reset — the sequence of codes is the diagnosis.",
+      "safetyNote": "DC bus capacitors hold lethal charge after power-off; respect the discharge time on the nameplate and prove dead before touching power terminals.",
+      "commissioning": "Enter motor nameplate data exactly, run motor identification where supported, set ramps from real load inertia, and verify cooling at full load.",
+      "concepts": "PWM and dv/dt, DC bus, V/Hz vs vector control, ramp tuning, screened motor cables, harmonics.",
+      "brainUse": "Cited for drive trips and fault codes, acceleration problems, drive-related noise on signals, and motor-drive matching."
+    },
+    "motors": {
+      "name": "Electric Motors",
+      "summary": "Induction motor faults, insulation, and thermal behavior.",
+      "p1": "Winding insulation life roughly halves for every 10 °C above rated temperature.",
+      "p2": "Phase current imbalance above ~5% indicates supply or winding asymmetry — investigate before failure.",
+      "p3": "Bearings cause most motor downtime; vibration signature changes precede seizure.",
+      "c1": "Measure insulation resistance to earth (≥1 MΩ minimum, temperature-corrected).",
+      "c2": "Measure and compare phase currents under steady load.",
+      "overview": "Three-phase induction motors are the workhorses of industry; their failures concentrate in bearings and winding insulation, both of which degrade measurably before they fail.",
+      "purpose": "Convert electrical power to mechanical work with predictable thermal and electrical behavior that protection and monitoring can supervise.",
+      "how": "Stator current creates a rotating field dragging the rotor at slip speed; losses heat the winding, and insulation life halves roughly per 10 °C above rated temperature; bearing condition shows in vibration signature.",
+      "faults": "Bearing wear from misalignment, contamination, or VFD shaft currents; phase imbalance heating one winding; insulation breakdown to earth; repeated starts overheating the rotor.",
+      "c3": "Trend insulation resistance (temperature-corrected) over time — the slope matters more than any single reading.",
+      "safetyNote": "Isolate and lock out before touching terminations; prove dead at the motor terminals, not just the starter — backfeeds and capacitors kill.",
+      "commissioning": "Record nameplate data, no-load and full-load current, vibration baseline, and insulation resistance as the reference fingerprint for all future diagnostics.",
+      "concepts": "Slip, thermal class, phase imbalance, bearing signatures, megger testing, VFD shaft currents.",
+      "brainUse": "Cited for hot motors, current imbalance, bearing noise/vibration, insulation testing, and repeated overload trips."
+    },
+    "alarms": {
+      "name": "Alarm Management",
+      "summary": "Alarm rationalization, priorities, and flood prevention.",
+      "p1": "Every alarm must require an operator action; status information belongs on displays, not alarm lists.",
+      "p2": "Apply deadband and on/off delays to suppress chattering alarms near thresholds.",
+      "p3": "Alarm floods (>10 per 10 min per operator) hide critical events — rationalize against ISA-18.2.",
+      "c1": "Review the most frequent alarms weekly; the top ten usually cause most of the load.",
+      "c2": "Verify alarm priorities map to defined response times.",
+      "overview": "Alarm management is the discipline of keeping the alarm list meaningful: every alarm demands an operator action, arrives at the right priority, and never drowns in a flood.",
+      "purpose": "Protect operator attention — the scarcest resource during an upset — per ISA-18.2 lifecycle practice.",
+      "how": "Rationalization assigns each alarm a cause, consequence, action, and priority tied to response time; deadbands and delays suppress chatter near thresholds; flood metrics (alarms per 10 minutes) gate acceptability.",
+      "faults": "Status points configured as alarms; chattering analog alarms at threshold boundaries; priority inflation making everything critical; standing alarms normalized and ignored.",
+      "c3": "Pull the weekly top-10 most frequent alarms — they typically carry most of the load and the fastest wins.",
+      "safetyNote": "Alarm suppression and shelving need authorization and automatic return; a suppressed safety-relevant alarm that stays suppressed is a latent incident.",
+      "commissioning": "Baseline alarm rates during normal operation before handover; an installation that floods on day one will be ignored by month one.",
+      "concepts": "ISA-18.2, rationalization, deadband and delay, alarm flood, shelving, priority/response mapping.",
+      "brainUse": "Cited when questions involve nuisance alarms, floods, chattering, prioritization, or operators ignoring the alarm list."
+    },
+    "protocols": {
+      "name": "Industrial Protocols",
+      "summary": "Fieldbus and industrial Ethernet selection and diagnostics.",
+      "p1": "Cyclic real-time I/O (PROFINET, EtherCAT) and acyclic data (OPC UA, MQTT) solve different problems — don't mix roles.",
+      "p2": "Determinism comes from network design: managed switches, VLANs, and bounded traffic.",
+      "p3": "Every protocol gateway adds latency and a failure point; document each conversion in the data path.",
+      "c1": "Capture traffic with a port mirror before blaming the protocol.",
+      "c2": "Check device and connection counts against the master's documented limits.",
+      "overview": "Industrial protocols divide into cyclic real-time I/O exchange (PROFINET, EtherCAT) and acyclic data movement (OPC UA, MQTT); choosing and diagnosing them is network engineering with process consequences.",
+      "purpose": "Move the right data at the right determinism level, with diagnosability, across controllers, I/O, drives, and supervisory systems.",
+      "how": "Cyclic protocols reserve bandwidth and schedule frames for bounded update times; acyclic protocols trade determinism for flexibility and reach; gateways convert between them at the cost of latency and a failure point.",
+      "faults": "Determinism destroyed by unmanaged switches in real-time paths; device or connection counts exceeding master limits; gateway conversions silently dropping data quality; duplicate IP/device identity collisions.",
+      "c3": "Capture traffic with a port mirror at the suspect segment before blaming any protocol stack.",
+      "safetyNote": "Network failure behavior must be designed: every consumer of cyclic data needs a defined safe reaction to loss of communication.",
+      "commissioning": "Document the full data path including every conversion, baseline cycle/update times, and load-test at full device count before production.",
+      "concepts": "Cyclic vs acyclic exchange, determinism, managed switching, gateways, network load budgeting.",
+      "brainUse": "Cited for protocol selection, intermittent communication faults, update-rate problems, and mixed-vendor network architecture."
+    },
+    "opcua": {
+      "name": "OPC UA",
+      "summary": "Information modeling, sessions, and security in OPC UA.",
+      "p1": "OPC UA models data as a typed address space — browse it rather than hardcoding node IDs.",
+      "p2": "Subscriptions with monitored items outperform polling at scale; tune sampling vs publishing intervals.",
+      "p3": "Security policies and certificates are mandatory in production — anonymous/no-security is for labs only.",
+      "c1": "Validate server certificate trust lists after any host change.",
+      "c2": "Check session and subscription limits on the server before scaling clients.",
+      "overview": "OPC UA is the vendor-neutral information backbone of modern automation: a typed, browsable address space with built-in security, sessions, and subscriptions.",
+      "purpose": "Expose controller and server data with semantics — not just registers — to SCADA, MES, and analytics, securely and across platforms.",
+      "how": "Servers model data as nodes with types and references; clients browse rather than hardcode; subscriptions deliver monitored-item changes at negotiated sampling and publishing intervals; certificates authenticate both ends.",
+      "faults": "Trust-list breakage after hostname or certificate changes; session/subscription limits exhausted by scaling clients; anonymous no-security endpoints left enabled in production; address-space changes orphaning hardcoded node IDs.",
+      "c3": "Browse the live address space to confirm node identity instead of trusting documentation that may have drifted.",
+      "safetyNote": "Treat OPC UA write access as a controlled capability: writable nodes exposed to broad networks are remote control of the plant.",
+      "commissioning": "Establish certificate management ownership, set security policy to Sign&Encrypt, and load-test subscription volume before connecting production clients.",
+      "concepts": "Address space and node model, subscriptions/monitored items, security policies, certificate trust, session limits.",
+      "brainUse": "Cited for OPC UA connectivity failures, certificate trust problems, subscription performance, and secure data exposure design."
+    },
+    "modbusTcp": {
+      "name": "Modbus TCP",
+      "summary": "Register model, function codes, and polling behavior.",
+      "p1": "Modbus is register-based (4xxxx holding, 3xxxx input); off-by-one offsets are the most common mapping error.",
+      "p2": "It has no built-in security or data typing — compensate with segmentation and documented register maps.",
+      "p3": "Poll rate × register count must respect device processing limits; aggressive polling causes timeouts.",
+      "c1": "Test reads with a Modbus client tool against the documented register map.",
+      "c2": "Check exception responses (illegal address/function) in the driver log.",
+      "overview": "Modbus TCP wraps the venerable register-based protocol in Ethernet: simple, universal, and entirely without built-in security or data semantics.",
+      "purpose": "Lowest-common-denominator integration with meters, drives, and legacy devices where simplicity beats sophistication.",
+      "how": "Clients read/write holding and input registers by address using function codes; data meaning lives only in the register map document; polling rate times register count consumes the device's processing budget.",
+      "faults": "Off-by-one addressing from 0-based versus 1-based conventions; timeouts from aggressive polling; 32-bit values assembled with wrong word order; undocumented register maps drifting from reality.",
+      "c3": "Reproduce reads with an independent Modbus test client against the documented map before debugging application code.",
+      "safetyNote": "Modbus has no authentication: anything on the network segment can write registers, so segmentation and write-filtering are the security model.",
+      "commissioning": "Validate the register map end-to-end including word order and scaling, and record per-device polling budgets in the integration documentation.",
+      "concepts": "Register model, function codes, addressing conventions, word order, polling budget, exception responses.",
+      "brainUse": "Cited for Modbus value mismatches, timeouts, register-map confusion, and integration of legacy field devices."
+    },
+    "mqtt": {
+      "name": "MQTT",
+      "summary": "Pub/sub topics, QoS, and edge telemetry patterns.",
+      "p1": "Topic hierarchies (site/area/device/signal) enable selective subscription — design them before deployment.",
+      "p2": "QoS 1 can duplicate and QoS 2 costs throughput — choose per signal criticality.",
+      "p3": "Retained messages and Last Will provide state recovery and device-loss detection.",
+      "c1": "Verify broker authentication and TLS — never run open brokers on OT networks.",
+      "c2": "Monitor client reconnect counts; flapping indicates network or keep-alive issues.",
+      "overview": "MQTT is publish/subscribe telemetry for the edge: lightweight clients push topic-organized data through a broker, decoupling producers from consumers.",
+      "purpose": "Move sensor and edge data to platforms and dashboards efficiently over unreliable links, with state recovery via retained messages and Last Will.",
+      "how": "Clients connect to the broker with keep-alive supervision; topic hierarchies (site/area/device/signal) enable selective subscription; QoS levels trade delivery guarantees against throughput; retained messages give late subscribers current state.",
+      "faults": "Keep-alive exceeding firewall NAT idle timeouts causing periodic drops; QoS 2 throttling throughput unnecessarily; topic sprawl without a designed hierarchy; open brokers on OT networks.",
+      "c3": "Monitor client reconnect counts at the broker — connection flapping localizes network and keep-alive problems.",
+      "safetyNote": "MQTT is telemetry, not control: never close protective loops over a broker, and never run unauthenticated brokers on OT segments.",
+      "commissioning": "Design the topic tree before deployment, enforce TLS and authentication, and verify Last Will behavior for every device class.",
+      "concepts": "Pub/sub decoupling, topic design, QoS levels, retained messages and Last Will, broker security.",
+      "brainUse": "Cited for edge telemetry architecture, broker disconnect patterns, QoS selection, and IIoT data movement."
+    },
+    "troubleshooting": {
+      "name": "Maintenance Troubleshooting",
+      "summary": "Systematic fault isolation: symptom, cause, verification.",
+      "p1": "Change one variable at a time and record the result; parallel changes destroy diagnostic information.",
+      "p2": "Half-split the signal chain (field device → wiring → I/O → logic → display) to isolate the failing layer.",
+      "p3": "Intermittent faults correlate with conditions — log time, temperature, vibration, and operating state.",
+      "c1": "Reproduce the fault under controlled conditions before replacing parts.",
+      "c2": "After repair, confirm the original symptom is gone and no new alarms appeared.",
+      "overview": "Systematic troubleshooting is a discipline of isolation: half-split the chain, change one variable, verify with evidence — the opposite of parts-swapping by intuition.",
+      "purpose": "Reach the failing layer in minimum steps while preserving the diagnostic information that hasty changes destroy.",
+      "how": "The signal chain (field device → wiring → I/O → logic → display) is bisected by tests at its midpoints; one-variable-at-a-time changes keep cause and effect attributable; intermittents are correlated with logged conditions.",
+      "faults": "Multiple simultaneous changes erasing causality; reproducible faults 'fixed' without identified cause and returning; intermittents chased without condition logging; the same failure recurring because nothing was recorded last time.",
+      "c3": "Before replacing any component, reproduce the fault once under controlled conditions and record exactly what produces it.",
+      "safetyNote": "Diagnostic interventions on live equipment follow the same isolation and permit discipline as repairs — troubleshooting urgency does not suspend LOTO.",
+      "commissioning": "Institutionalize the discipline: fault logs with conditions, post-repair verification of the original symptom, and a searchable history of what was concluded.",
+      "concepts": "Half-split isolation, one-variable discipline, condition correlation, evidence preservation, verification of repair.",
+      "brainUse": "Cited as the methodological backbone whenever a question describes a fault without a clear domain signature — and alongside domain libraries when it has one."
+    },
+    "hmiDesign": {
+      "name": "HMI Screen Design",
+      "summary": "Operator display hierarchy, alarm visibility, and bilingual layouts.",
+      "p1": "Follow the overview → unit → detail → diagnostic hierarchy (ISA-101) for predictable navigation.",
+      "p2": "Reserve saturated colors for abnormal states; grey normal operation makes alarms stand out.",
+      "p3": "For RTL languages, mirror navigation and reading order but keep trend time axes left-to-right.",
+      "c1": "Confirm every alarm shown is acknowledgeable from the screen where it appears.",
+      "c2": "Test screens at panel resolution and real viewing distance.",
+      "overview": "HMI design determines whether an operator perceives plant state in one glance or hunts through screens during an upset — display hierarchy, color discipline, and alarm presentation are operational safety factors.",
+      "purpose": "Give operators situation awareness and unambiguous abnormal-state cues, following ISA-101 display hierarchy practice.",
+      "how": "Level-1 overviews show health of everything; level-2 unit screens support operation; level-3/4 detail and diagnostics support intervention. Grey-scale normal operation reserves saturated color for abnormal states.",
+      "faults": "Rainbow screens where everything competes for attention; alarms visible on screens where they cannot be acknowledged; navigation depth hiding critical detail; RTL layouts with broken trend time axes.",
+      "c3": "Time a cold operator finding the cause of a simulated upset — more than two navigations means the hierarchy is wrong.",
+      "safetyNote": "Critical alarms and safety status must remain visible from every screen level; a maximized trend window must never hide an active critical alarm banner.",
+      "commissioning": "Validate screens at panel resolution and arm's-length viewing distance, in both languages, with operators who will actually run the plant.",
+      "concepts": "ISA-101 hierarchy, alarm salience, color discipline, faceplates, bilingual/RTL layout.",
+      "brainUse": "Cited for operator-display questions: confusing screens, alarm visibility, navigation structure, and bilingual HMI layout."
+    },
+    "s71200": {
+      "name": "Siemens S7-1200",
+      "summary": "Compact controller: onboard I/O, signal boards, and sizing limits.",
+      "p1": "The S7-1200 targets compact machines: onboard I/O plus up to 8 signal modules and 3 communication modules.",
+      "p2": "Work memory is the binding constraint (max ~150 KB on the 1217C) — check load before adding libraries.",
+      "p3": "Onboard PROFINET supports PUT/GET only if explicitly enabled under CPU protection settings.",
+      "c1": "Check memory utilization in TIA Portal online diagnostics before expanding the program.",
+      "c2": "Verify signal board/module count against the CPU's expansion limit.",
+      "overview": "The S7-1200 is Siemens' compact controller line for machine-level automation: onboard I/O, integrated PROFINET, signal-board expansion, engineered in TIA Portal.",
+      "purpose": "Cost-efficient control of small machines and skids where panel space and budget rule out modular CPUs.",
+      "how": "A 1200 CPU runs OB1 cyclically with optional cyclic-interrupt and hardware-interrupt OBs; up to 8 signal modules and 3 communication modules extend onboard I/O; optimized data blocks store symbolically.",
+      "faults": "Work-memory exhaustion as programs grow; BF LED after device-name/IP loss on CPU swap; disabled PUT/GET blocking legacy partners; signal-board limits exceeded in retrofit projects.",
+      "c3": "Verify firmware version compatibility between the CPU, signal boards, and TIA project before download.",
+      "safetyNote": "The standard 1200 line is not a safety controller; use 1200F variants with certified F-blocks for safety functions, validated with the safety signature.",
+      "commissioning": "Assign PROFINET device names from the topology view, archive the project with the hardware fingerprint, and record memory utilization as the acceptance baseline.",
+      "concepts": "TIA Portal, PROFINET device naming, optimized DB access, signal boards, OB structure.",
+      "brainUse": "Cited when questions name the S7-1200, compact Siemens CPUs, TIA configuration limits, or PROFINET device identity problems."
+    },
+    "s71500": {
+      "name": "Siemens S7-1500",
+      "summary": "Modular high-end controller: performance, diagnostics, and fail-safe options.",
+      "p1": "The S7-1500 adds display-based diagnostics, faster backplane, and far larger work memory than the 1200 line.",
+      "p2": "F-CPUs run safety and standard logic side by side; safety signature changes require revalidation.",
+      "p3": "Distributed I/O over ET 200MP/SP with PROFINET IRT gives deterministic cycle times for motion.",
+      "c1": "Read the CPU display or web server diagnostics for module-level fault detail.",
+      "c2": "After hardware changes, recompile and check the safety program signature if F-modules exist.",
+      "overview": "The S7-1500 is Siemens' high-end modular controller family: fast backplane, display-based diagnostics, large work memory, fail-safe variants, and deterministic distributed I/O via PROFINET IRT.",
+      "purpose": "Plant-level and high-performance machine control where cycle time, diagnostics depth, and safety integration drive the architecture.",
+      "how": "Program structure mirrors the 1200 (OBs/FBs/FCs/DBs) at higher performance; ET 200MP/SP racks distribute I/O; F-CPUs execute safety and standard logic side by side under a signed safety program.",
+      "faults": "Safety-signature mismatch after module replacement; IRT determinism lost through unmanaged switches; diagnostic interrupts flooding from a failing module; web-server left enabled with default access in production.",
+      "c3": "Read module-level fault detail from the CPU display or web diagnostics before swapping hardware.",
+      "safetyNote": "Any change touching F-modules or F-blocks requires recompiling the safety program and revalidating its signature with documented sign-off.",
+      "commissioning": "Verify IRT topology against plan, set diagnostics-interrupt policies per module, and harden the web server (HTTPS, user accounts) before handover.",
+      "concepts": "ET 200 distributed I/O, PROFINET IRT, fail-safe (F) program, diagnostic buffer, TIA Portal.",
+      "brainUse": "Cited for S7-1500 questions: fail-safe behavior, scan/cycle performance, distributed I/O, and deep Siemens diagnostics."
+    },
+    "structuredText": {
+      "name": "Structured Text (SCL)",
+      "summary": "High-level PLC language: control flow, data handling, and pitfalls.",
+      "p1": "SCL suits calculations, data handling, and state machines; ladder remains clearer for discrete interlocks.",
+      "p2": "CASE-based state machines with named constants are auditable; nested IF chains are not.",
+      "p3": "Loops run within one scan — an unbounded WHILE can exceed cycle time and trip the watchdog.",
+      "c1": "Check cycle-time load after adding loops or heavy string/array operations.",
+      "c2": "Review implicit type conversions — mixed INT/REAL math silently truncates.",
+      "overview": "Structured Text (SCL in Siemens dialect) is the IEC 61131-3 high-level language: typed variables, control flow, and arithmetic for the logic that ladder handles poorly.",
+      "purpose": "Recipe handling, calculations, data structures, and state machines — implemented compactly and reviewably as code.",
+      "how": "ST compiles into the same block model as ladder; CASE statements over named state constants build auditable state machines; loops execute fully within one scan, charging their cost to cycle time.",
+      "faults": "Unbounded WHILE loops tripping the watchdog; implicit INT/REAL conversions truncating silently; deeply nested IF chains hiding dead branches; array indices unchecked at runtime boundaries.",
+      "c3": "Step through CASE state transitions online and confirm every state has a defined exit path.",
+      "safetyNote": "Keep ST computation out of safety paths unless written in certified F-blocks; complex code in protective logic defeats validation.",
+      "commissioning": "Measure cycle-time impact of each heavy ST block under worst-case data; enable range checks during commissioning runs even if disabled later for performance.",
+      "concepts": "IEC 61131-3, state machines, CASE/IF control flow, data types and conversion, cycle-time budget.",
+      "brainUse": "Cited for SCL/ST questions: loops affecting scan time, type-conversion surprises, and state-machine design in code."
+    },
+    "historian": {
+      "name": "Historian Concepts",
+      "summary": "Time-series storage: compression, retention, and retrieval for process data.",
+      "p1": "Deadband (swinging-door) compression stores only significant changes — set it per signal dynamics, not globally.",
+      "p2": "Resolution and retention trade off: raw short-term, aggregated long-term tiers keep storage bounded.",
+      "p3": "Interpolated reads differ from raw reads — trending tools must state which they return.",
+      "c1": "Compare a raw value against the historian value to validate compression settings.",
+      "c2": "Check archive backlog/queue size — growth means the store can't keep up with ingest.",
+      "overview": "A historian is the plant's time-series memory: long-horizon storage of process values, tuned by compression and retention so years of data stay queryable.",
+      "purpose": "Trend analysis, incident reconstruction, regulatory evidence, and the raw material for predictive analytics.",
+      "how": "Swinging-door (deadband) compression stores only significant changes per signal; tiered retention keeps raw data short-term and aggregates long-term; interpolated reads reconstruct values between stored points.",
+      "faults": "Global compression settings flattening fast dynamics; archive queues backing up when ingest outruns storage; clock skew between sources corrupting event sequence; interpolated reads mistaken for raw evidence.",
+      "c3": "Compare a live value against its historian readback to confirm compression is not erasing the dynamics you care about.",
+      "safetyNote": "Incident investigations need raw, time-synchronized data — verify NTP discipline across sources before you ever need to reconstruct an event.",
+      "commissioning": "Set compression per signal class, size storage from measured ingest, and test a restore from archive before declaring the system production-ready.",
+      "concepts": "Time-series compression, retention tiers, interpolation vs raw reads, NTP synchronization, trend retrieval.",
+      "brainUse": "Cited for questions about trends, missing or flattened history, archive growth, and time-series evidence quality."
+    },
+    "contactors": {
+      "name": "Contactors",
+      "summary": "Coil control, contact wear, and switching behavior.",
+      "p1": "Coil voltage sag below ~85% of rated causes chatter — chatter welds main contacts.",
+      "p2": "Size by utilization category (AC-3 for motors); AC-1 ratings overstate motor-switching capacity.",
+      "p3": "Auxiliary contacts mirror state for logic — a welded main with open auxiliary misleads the PLC.",
+      "c1": "Measure coil voltage at pull-in under load, not just at rest.",
+      "c2": "Inspect main contacts for pitting/welding after any chatter event.",
+      "overview": "Contactors switch motor and load power under control-circuit command; their failure modes — chatter, contact welding, coil burnout — sit at the junction of electrical and control faults.",
+      "purpose": "Provide remote, rated, repeatable switching with mirror auxiliary contacts that let logic verify the real power state.",
+      "how": "Coil energization pulls the armature, closing main contacts sized by utilization category (AC-3 for motors); auxiliary contacts mirror state to the PLC; the coil drops out below the holding-voltage threshold.",
+      "faults": "Chatter from coil voltage sag (below ~85% rated) welding main contacts; welded mains with open auxiliaries deceiving the logic; undersized AC-1 selections failing on motor duty; coil burnout from sustained undervoltage.",
+      "c3": "Verify the mirror relationship: command off, then prove all three phases actually opened at the load terminals.",
+      "safetyNote": "A welded contactor means the load may be live with the control circuit off — always verify isolation at the load side before work.",
+      "commissioning": "Measure coil voltage at pull-in under real inrush conditions; confirm utilization category against the actual load, not the catalog default.",
+      "concepts": "Utilization categories (AC-1/AC-3), coil holding voltage, mirror contacts, contact welding, control-circuit design.",
+      "brainUse": "Cited for chattering or humming starters, loads that won't drop out, and discrepancies between commanded and actual power state."
+    },
+    "mcc": {
+      "name": "Motor Control Centers",
+      "summary": "MCC structure: buckets, busbars, coordination, and maintenance.",
+      "p1": "Each bucket combines disconnect, protection, and starter — interlocks must prevent racking under load.",
+      "p2": "Busbar joints are the thermal weak point; torque per schedule and thermo-scan under load.",
+      "p3": "Type 2 coordination keeps the starter serviceable after a short circuit; Type 1 only protects people.",
+      "c1": "Thermal-image bucket stabs and bus joints at representative load.",
+      "c2": "Verify protection settings against the motor list after any swap.",
+      "overview": "A motor control center concentrates starters, protection, and distribution in withdrawable buckets on a common busbar — the electrical room's interface to every driven load.",
+      "purpose": "Standardize motor power, protection, and isolation per load, with maintainability through bucket withdrawal and type-2 coordination.",
+      "how": "Vertical bus feeds bucket stabs; each bucket combines disconnect, short-circuit protection, contactor, and overload; interlocks prevent racking under load; bus joints carry the thermal budget of the lineup.",
+      "faults": "Hot bus joints from lost torque; stab contact erosion from repeated racking; coordination type 1 leaving starters destroyed after faults; moisture and dust tracking across insulation in harsh rooms.",
+      "c3": "Thermo-scan bus joints and bucket stabs at representative load — hotspots announce themselves long before failure.",
+      "safetyNote": "Racking buckets under load risks arc flash; follow the lineup's interlock discipline and the site's PPE category without exception.",
+      "commissioning": "Torque bus joints to schedule with witness marks, verify protection settings against the motor list, and record baseline thermography.",
+      "concepts": "Type-2 coordination, bucket/stab design, busbar thermal management, arc-flash categories, overload classes.",
+      "brainUse": "Cited for MCC heating, starter coordination after faults, racking issues, and lineup-level protection questions."
+    },
+    "protection": {
+      "name": "Electrical Protection",
+      "summary": "Overload, short-circuit, and earth-fault protection coordination.",
+      "p1": "Overload relays protect thermally (I²t); magnetic/instantaneous elements clear short circuits — both are needed.",
+      "p2": "Selectivity: downstream devices must clear faults before upstream ones — verify with coordination curves.",
+      "p3": "Repeated nuisance trips are data, not annoyance: log current at trip before raising any setting.",
+      "c1": "Compare relay settings against the motor FLA and the coordination study.",
+      "c2": "Test earth-fault function with primary or secondary injection, not just the test button.",
+      "overview": "Electrical protection layers thermal overload, short-circuit, and earth-fault functions so faults clear fast, selectively, and as close to their origin as possible.",
+      "purpose": "Protect conductors, machines, and people while keeping healthy circuits running — selectivity is the difference between tripping one feeder and blacking out the plant.",
+      "how": "Overload elements model heating (I²t) and trip on sustained overcurrent; magnetic/instantaneous elements clear short circuits in cycles; coordination studies stack time-current curves so downstream clears before upstream.",
+      "faults": "Settings raised to silence nuisance trips without diagnosis; selectivity broken by replacement devices with different curves; earth-fault elements never primary-injection tested; bypassed protection left bypassed.",
+      "c3": "Log actual current at every trip event before considering any settings change — trips are measurements.",
+      "safetyNote": "Protection settings changes require the coordination study, not field intuition; an upstream device set blind can turn a feeder fault into a plant outage or worse.",
+      "commissioning": "Primary or secondary injection-test each protective function, verify against the coordination study, and seal settings with documented values.",
+      "concepts": "Time-current curves, selectivity/coordination, I²t thermal modeling, earth-fault protection, injection testing.",
+      "brainUse": "Cited for repeated trips, nuisance overloads, coordination failures, and any question about why protection operated."
+    },
+    "transmitters": {
+      "name": "Transmitters",
+      "summary": "Process transmitters: calibration, ranging, and HART diagnostics.",
+      "p1": "Zero and span define the 4–20 mA mapping; re-ranging without recalibration shifts error across the range.",
+      "p2": "HART carries digital diagnostics over the same loop — device status flags precede visible drift.",
+      "p3": "Impulse-line problems (plugging, condensate, trapped gas) imitate sensor failure — check the line before the device.",
+      "c1": "Perform a 3- or 5-point calibration check against a reference standard.",
+      "c2": "Read HART device status for active diagnostic flags before replacing.",
+      "overview": "Process transmitters package sensor, conditioning, and communication into field devices whose calibration, ranging, and diagnostics determine measurement trust.",
+      "purpose": "Deliver accurate, rangeable, diagnosable measurements with digital status that warns before readings visibly fail.",
+      "how": "Zero and span map the measured range onto 4–20 mA; HART superimposes digital communication on the same loop, exposing device status and configuration; impulse lines couple the process to the sensing element.",
+      "faults": "Re-ranging without recalibration shifting error across the span; plugged or gas-locked impulse lines imitating sensor failure; ignored HART diagnostic flags; zero drift from installation orientation changes.",
+      "c3": "Read HART device status before replacing anything — the transmitter usually knows what is wrong with it.",
+      "safetyNote": "Isolate and depressurize impulse lines before opening connections; trapped process pressure at a manifold is a routine injury source.",
+      "commissioning": "Perform a documented 3- or 5-point calibration against a reference standard, and record range, damping, and fail-direction settings.",
+      "concepts": "Zero/span, HART diagnostics, impulse-line practice, calibration standards, damping and fail direction.",
+      "brainUse": "Cited for transmitter drift, suspicious readings after maintenance, calibration questions, and smart-device diagnostics."
+    },
+    "s7comm": {
+      "name": "Siemens S7 Communication",
+      "summary": "PUT/GET, ISO-on-TCP (port 102), and data exchange between Siemens CPUs.",
+      "p1": "S7 communication runs over ISO-on-TCP, port 102; firewalls between cells must pass it explicitly.",
+      "p2": "PUT/GET must be enabled in the partner CPU's protection settings — modern firmware disables it by default.",
+      "p3": "Absolute-address access requires non-optimized DBs on the served side; optimized blocks break legacy clients.",
+      "c1": "Test reachability of port 102 from the client segment before debugging program logic.",
+      "c2": "Confirm the target DB is non-optimized and PUT/GET is permitted on the partner CPU.",
+      "overview": "S7 communication is Siemens' native CPU-to-CPU and engineering protocol over ISO-on-TCP (port 102), powering PUT/GET data exchange and TIA connectivity.",
+      "purpose": "Direct data exchange between Siemens controllers and access for engineering and HMI systems without intermediate servers.",
+      "how": "PUT/GET reads and writes partner data blocks by absolute address over established connections; the served CPU must explicitly permit partner access; non-optimized DBs provide the stable absolute layout legacy clients require.",
+      "faults": "PUT/GET disabled by default on modern firmware blocking legacy partners; firewalls silently dropping port 102 between cells; optimized DBs breaking absolute-address clients; connection-resource exhaustion on busy CPUs.",
+      "c3": "Test TCP reachability of port 102 from the client segment before touching any program logic.",
+      "safetyNote": "Enabled PUT/GET is unauthenticated memory access to the CPU — pair it with strict network segmentation and treat it as a controlled interface.",
+      "commissioning": "Document every S7 connection (partners, DBs, direction), verify firewall rules pass port 102 where required and block it everywhere else.",
+      "concepts": "ISO-on-TCP, PUT/GET access control, optimized vs non-optimized DBs, connection resources, cell firewalls.",
+      "brainUse": "Cited for Siemens CPU-to-CPU data exchange failures, PUT/GET permission issues, and port-102 connectivity through firewalls."
+    },
+    "segmentation": {
+      "name": "Network Segmentation",
+      "summary": "Zones, conduits, and DMZ design per IEC 62443.",
+      "p1": "Group assets into zones by criticality; conduits between zones carry only documented, necessary flows.",
+      "p2": "An OT DMZ brokers all IT/OT exchange — no direct path from enterprise (or internet) to controllers.",
+      "p3": "Flat networks turn one compromised laptop into plant-wide reach; VLANs without ACLs are labels, not segmentation.",
+      "c1": "Review inter-zone firewall rules for any 'any-any' entries.",
+      "c2": "Trace one data flow end-to-end and confirm every hop is documented.",
+      "overview": "Network segmentation is the structural defense of OT: zones group assets by criticality, conduits carry only documented flows, and a DMZ brokers all exchange with IT.",
+      "purpose": "Contain compromise — a flat network turns one infected laptop into plant-wide reach; zones turn it into a contained event.",
+      "how": "IEC 62443 zones-and-conduits modeling assigns assets to security zones; firewalls enforce conduit policy between them; the industrial DMZ terminates all IT-originated sessions so nothing reaches controllers directly.",
+      "faults": "VLANs without enforced ACLs mistaken for segmentation; any-any firewall rules accumulated over years; vendor remote links bypassing the DMZ; undocumented flows breaking when policy finally tightens.",
+      "c3": "Trace one production data flow end-to-end and verify every hop appears in the conduit documentation.",
+      "safetyNote": "Segmentation changes can sever control traffic — stage and test conduit policy changes against an inventory of legitimate flows before enforcement.",
+      "commissioning": "Build the asset inventory first, model zones from it, implement deny-by-default conduits, and schedule periodic rule reviews as an operational duty.",
+      "concepts": "IEC 62443 zones/conduits, industrial DMZ, deny-by-default policy, flow documentation, VLAN vs true segmentation.",
+      "brainUse": "Cited for OT network architecture, firewall policy between cells, DMZ design, and containment of network-borne threats."
+    },
+    "accessControl": {
+      "name": "Access Control",
+      "summary": "Identity, remote access, and least privilege in OT.",
+      "p1": "Remote access goes through a jump host with MFA and session recording — vendor VPN boxes bypass all three.",
+      "p2": "Shared accounts destroy accountability; engineering and operator roles need separate identities and rights.",
+      "p3": "Default and vendor passwords on controllers and HMIs are the most common real-world entry point.",
+      "c1": "Audit who currently holds remote access and when each account was last used.",
+      "c2": "Verify default credentials are changed on every reachable device.",
+      "overview": "Access control in OT governs who can touch controllers, HMIs, and engineering tools — identity, least privilege, and supervised remote access.",
+      "purpose": "Make every privileged action attributable and every remote session supervised, because unattributed access is unauditable risk.",
+      "how": "Jump hosts concentrate remote access behind MFA and session recording; role separation distinguishes operator from engineering rights; credential hygiene eliminates the default passwords that remain the commonest entry point.",
+      "faults": "Vendor VPN appliances bypassing the jump-host path; shared engineering accounts destroying attribution; default credentials on controllers and panels; dormant accounts of departed staff retaining access.",
+      "c3": "Audit current remote-access holders and last-use dates — dormant privileged access is the easiest finding with the highest payoff.",
+      "safetyNote": "Emergency access procedures must be designed in advance; improvised break-glass during an incident becomes the permanent backdoor.",
+      "commissioning": "Enumerate every reachable device, change every default credential, and document the approved remote-access path before connecting anything to wider networks.",
+      "concepts": "Jump hosts and MFA, session recording, role separation, credential hygiene, break-glass procedures.",
+      "brainUse": "Cited for remote-access architecture, unauthorized-access concerns, account and credential policy in OT environments."
+    },
+    "monitoring": {
+      "name": "Security Monitoring",
+      "summary": "Detection of anomalies and intrusions on OT networks.",
+      "p1": "Passive monitoring via SPAN/TAP observes industrial protocols without touching fragile devices.",
+      "p2": "OT traffic is highly regular — new device, new connection, or new function code is a strong signal.",
+      "p3": "Detection without a response plan is noise: every alert class needs a defined owner and action.",
+      "c1": "Verify monitoring sees traffic from every zone, not just the IT boundary.",
+      "c2": "Review recent new-device and new-connection alerts against the asset inventory.",
+      "overview": "Security monitoring for OT observes the network's habits — and OT habits are so regular that novelty itself is a high-quality signal.",
+      "purpose": "Detect intrusions and anomalies early, from passive observation that cannot disturb fragile industrial devices.",
+      "how": "SPAN/TAP mirrors feed passive analyzers that parse industrial protocols; baselines of devices, connections, and function codes define normal; new device, new flow, or new command type raises events tied to response runbooks.",
+      "faults": "Monitoring only the IT boundary while intra-OT traffic goes unseen; alert classes without owners decaying into noise; baselines never updated after legitimate plant changes; active scanning crashing sensitive devices.",
+      "c3": "Verify sensor coverage actually includes every zone's traffic, not merely the convenient core switch.",
+      "safetyNote": "Use passive collection in OT — active scanning has bricked PLCs and instruments; anything active needs explicit engineering approval and a maintenance window.",
+      "commissioning": "Establish the traffic baseline during known-normal operation, assign an owner and action to every alert class, and rehearse the response path.",
+      "concepts": "Passive SPAN/TAP collection, behavioral baselining, industrial protocol parsing, alert ownership, anomaly types.",
+      "brainUse": "Cited for unknown devices on OT networks, intrusion detection design, anomaly triage, and monitoring coverage questions."
+    },
+    "audit": {
+      "name": "Audit & Logging",
+      "summary": "Audit trails, log collection, and compliance evidence in OT.",
+      "p1": "Controller and HMI events (downloads, forces, parameter changes) are the audit trail of record — collect them centrally.",
+      "p2": "Clock sync (NTP) across devices is a precondition: unsynchronized logs cannot reconstruct an incident.",
+      "p3": "Logs prove both compliance and innocence — retention must match regulatory and forensic needs.",
+      "c1": "Confirm program downloads and forces appear in the central log with correct timestamps.",
+      "c2": "Check time synchronization across PLCs, HMIs, and servers.",
+      "overview": "Audit and logging build the evidentiary record of OT: who downloaded what to which controller, when forces were set, and whether time across systems can support reconstruction.",
+      "purpose": "Prove compliance, enable forensics, and — equally — prove innocence when something breaks after a change window.",
+      "how": "Controller and HMI events (downloads, forces, parameter changes, logons) flow to central collection; NTP discipline makes timestamps comparable; retention policy balances forensic depth against storage.",
+      "faults": "Logs scattered on local devices and lost with them; clock drift making sequence reconstruction impossible; retention too short for slow-burn incidents; nobody assigned to actually review anything.",
+      "c3": "Perform a test download and force, then confirm both appear centrally with correct timestamps and attribution.",
+      "safetyNote": "Audit trails around safety-system changes are themselves safety records — protect their integrity and retention accordingly.",
+      "commissioning": "Stand up NTP first, then central collection, then verify the event chain end-to-end before declaring the audit capability operational.",
+      "concepts": "Central log collection, NTP discipline, change attribution, retention policy, review ownership.",
+      "brainUse": "Cited for change-tracking requirements, post-incident reconstruction, compliance evidence, and logging architecture."
+    },
+    "predictive": {
+      "name": "Predictive Maintenance",
+      "summary": "Condition monitoring: vibration, thermal, and trend-based intervention.",
+      "p1": "Predictive maintenance triggers on measured condition (vibration, temperature, current signature), not calendar time.",
+      "p2": "Vibration analysis localizes faults: bearing frequencies, imbalance (1×), misalignment (2×) each have signatures.",
+      "p3": "The value is lead time — alerts must arrive early enough to plan, order parts, and schedule.",
+      "c1": "Compare current vibration spectra against the machine's baseline, not absolute limits alone.",
+      "c2": "Verify alert thresholds produced actionable lead time in past events.",
+      "overview": "Predictive maintenance intervenes on measured condition — vibration spectra, thermal images, current signatures — instead of calendar guesswork or run-to-failure.",
+      "purpose": "Buy lead time: detect degradation early enough to plan, order parts, and schedule, converting breakdowns into planned work.",
+      "how": "Baselines per machine define normal; vibration analysis localizes faults by frequency signature (1× imbalance, 2× misalignment, bearing tones); trends against the machine's own baseline beat absolute limits; alerts map to planning horizons.",
+      "faults": "Absolute thresholds ignoring machine individuality; alerts arriving too late to plan; baselines never re-taken after overhauls; condition data collected and never reviewed.",
+      "c3": "Check whether past alerts actually delivered usable lead time — a predictive program is measured by planning horizon, not alarm count.",
+      "safetyNote": "Condition data collection on running machines follows guarding and access rules; permanently mounted sensors exist so people don't lean into rotating equipment with magnets.",
+      "commissioning": "Baseline every covered machine in known-good state, define alert-to-action workflows, and integrate findings into the planning system from day one.",
+      "concepts": "Vibration signatures, baselining, P-F interval, condition indicators, alert-to-work-order flow.",
+      "brainUse": "Cited for early-warning questions, vibration or thermal anomalies, and building condition-based strategies for critical assets."
+    },
+    "rca": {
+      "name": "Root Cause Analysis",
+      "summary": "Structured methods: 5 Whys, fishbone, and evidence preservation.",
+      "p1": "RCA targets the systemic cause; replacing the failed part treats a symptom and schedules a repeat.",
+      "p2": "5 Whys works when each answer is verified with evidence — unverified chains produce confident fiction.",
+      "p3": "Preserve evidence before cleanup: photos, parameter dumps, alarm history, and the failed component itself.",
+      "c1": "Check whether the same failure mode occurred before and what was concluded then.",
+      "c2": "Validate the proposed root cause by demonstrating it reproduces (or fully explains) the failure.",
+      "overview": "Root cause analysis pursues the systemic cause behind a failure — the conditions that made it possible — rather than the broken part that made it visible.",
+      "purpose": "Prevent recurrence: replacing the failed component without RCA simply schedules the same failure.",
+      "how": "Evidence is preserved before cleanup (photos, parameter dumps, alarm history, the component itself); 5-Whys chains advance only on verified answers; fishbone categories ensure systemic factors get examined; the proposed cause must reproduce or fully explain the event.",
+      "faults": "Unverified why-chains producing confident fiction; evidence destroyed by eager cleanup; analysis stopping at the first human error found; corrective actions never tracked to completion.",
+      "c3": "Search the failure history first — if this mode occurred before, the prior conclusion is your most important piece of evidence.",
+      "safetyNote": "Incident scenes involving injury or near-miss have preservation and reporting obligations that precede any engineering analysis — secure first, analyze second.",
+      "commissioning": "Make RCA a standing process: trigger criteria, evidence kit, template, and corrective-action tracking owned by someone with authority to close loops.",
+      "concepts": "Evidence preservation, verified 5-Whys, fishbone analysis, failure history, corrective-action tracking.",
+      "brainUse": "Cited for repeated failures, post-incident investigation structure, and converting a fixed symptom into a prevented recurrence."
+    }
+  },
+  "brain": {
+    "eyebrow": "Hermes Brain",
+    "title": "Industrial engineering analysis",
+    "lede": "Describe a problem from the plant floor. Hermes Brain classifies the domain, selects the relevant knowledge libraries, and returns a structured engineering analysis. It analyzes — it does not control equipment.",
+    "placeholder": "Describe the problem… e.g. \"S7-1200 digital input chatters when the conveyor starts\"",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing…",
+    "examplesTitle": "Try an example",
+    "examples": {
+      "e1": "VFD trips on overcurrent every time the mixer accelerates",
+      "e2": "4–20 mA level transmitter reads zero but the tank is half full",
+      "e3": "Unknown device appeared on the OT network — what should we check?"
+    },
+    "domainsTitle": "Domain classification",
+    "sourcesTitle": "Knowledge sources used",
+    "mode": {
+      "llm": "AI-generated analysis (via gateway)",
+      "library": "Structured library analysis (rule-based)",
+      "futureRag": "Retrieval-augmented analysis (RAG)"
+    },
+    "sections": {
+      "summary": "Problem summary",
+      "cause": "Likely cause",
+      "analysis": "Engineering analysis",
+      "checks": "Recommended checks",
+      "safety": "Safety",
+      "references": "Related library references",
+      "confidence": "Confidence",
+      "approval": "Human approval"
+    },
+    "confidenceLevels": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "safety": {
+      "electrical": "This topic involves electrical hazards. De-energize, lock out and tag out (LOTO), and verify zero voltage before touching panels, terminals, or motor connections. Work on live equipment is for qualified personnel only.",
+      "mechanical": "This topic involves rotating or moving machinery. Isolate energy sources and apply lockout/tagout before inspecting drives, couplings, or conveyors. Never bypass guards or safety interlocks.",
+      "general": "Follow your site's permit-to-work and lockout/tagout procedures before any physical intervention."
+    },
+    "approvalNote": "Hermes Brain provides analysis only. Every recommendation requires review and approval by a qualified engineer before any action is taken on real equipment. No command is sent to any machine.",
+    "fallback": {
+      "summary": "The question was classified under: {domains}. The analysis below is assembled from the structured engineering library.",
+      "causeIntro": "Based on the \"{lib}\" library, the most likely area to investigate:"
+    },
+    "domains": {
+      "plc": "PLC",
+      "scada": "SCADA",
+      "hmi": "HMI",
+      "electrical": "Electrical",
+      "otNetwork": "OT Network",
+      "cybersecurity": "Cybersecurity",
+      "maintenance": "Maintenance",
+      "sensors": "Sensors",
+      "digitalIo": "Digital I/O",
+      "analogIo": "Analog I/O",
+      "drives": "Drives",
+      "motors": "Motors"
+    },
+    "errors": {
+      "tooShort": "Please describe the problem in a bit more detail (at least a sentence).",
+      "generic": "Analysis failed — please try again."
+    },
+    "unknownSource": "Library reference unavailable",
+    "guardrails": {
+      "safetyBypass": "Hermes Brain will not provide guidance for bypassing, defeating, or disabling safety systems, interlocks, or guards. These protections exist to prevent injury and death. If a safety device is interfering with production, the correct path is diagnosing why it trips and involving your safety engineer — the structured references below cover the diagnostic side."
+    },
+    "intel": {
+      "vendorsTitle": "Detected vendors",
+      "riskTitle": "Risk level",
+      "evidenceTitle": "Evidence score",
+      "evidenceNote": "Knowledge and case support for this analysis — not certainty about your plant.",
+      "casesTitle": "Matched engineering cases",
+      "pipelineTitle": "Reasoning pipeline",
+      "memoryTitle": "Brain memory",
+      "memoryCount": "Analyses recorded",
+      "memoryAvgConfidence": "Average confidence",
+      "memoryTopDomains": "Top domains",
+      "memoryGuardrails": "Guardrail interceptions",
+      "memoryNote": "Held in server session memory — V1 keeps no database.",
+      "memoryEmpty": "No analyses recorded in this session yet.",
+      "memoryKnown": "Known analyses",
+      "memoryUnknown": "Unknown analyses"
+    },
+    "risk": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "unknown": "Unknown"
+    },
+    "vendors": {
+      "siemens": "Siemens",
+      "abb": "ABB",
+      "schneider": "Schneider Electric",
+      "phoenix": "Phoenix Contact",
+      "delta": "Delta",
+      "mitsubishi": "Mitsubishi",
+      "omron": "Omron"
+    },
+    "pipelineSteps": {
+      "domainDetection": "Domain detection",
+      "knowledgeRetrieval": "Knowledge retrieval",
+      "causeAnalysis": "Cause analysis",
+      "riskAnalysis": "Risk analysis",
+      "recommendation": "Recommendation",
+      "finalReport": "Final report",
+      "rootCauseAnalysis": "Root cause analysis"
+    },
+    "cases": {
+      "case-siemens-1200-bf": "S7-1200 BF after CPU swap",
+      "case-siemens-1500-scan": "S7-1500 cycle watchdog from SCL loop",
+      "case-abb-acs580-oc": "ACS580 overcurrent at acceleration",
+      "case-abb-motor-imbalance": "Motor phase imbalance from bus joint",
+      "case-schneider-atv-ocf": "ATV320 OCF from cable fault",
+      "case-schneider-m580-timeout": "M580 Modbus timeouts from over-polling",
+      "case-phoenix-mqtt-drop": "PLCnext MQTT drops behind firewall",
+      "case-phoenix-di-chatter": "DI chatter near VFD cable",
+      "case-delta-vfd-oh": "Delta VFD overheat from clogged heatsink",
+      "case-delta-hmi-rs485": "DOP HMI RS-485 termination loss",
+      "case-mitsubishi-fx5-coil": "FX5 output flicker from double coil",
+      "case-mitsubishi-mrj4-al16": "MR-J4 AL.16 encoder connection",
+      "case-omron-nx-estop-reset": "NX safe-state hold from EDM feedback",
+      "case-omron-e5cc-drift": "E5CC drift from copper TC extension"
+    },
+    "rootCause": {
+      "title": "Root Cause Analysis",
+      "primaryLabel": "Primary cause",
+      "secondaryLabel": "Secondary causes",
+      "verificationLabel": "Verification steps",
+      "correctiveLabel": "Corrective actions",
+      "alternativeLabel": "Alternative causes (lower evidence)",
+      "relatedCaseLow": "Related case found — confidence: low"
+    },
+    "unknown": {
+      "title": "⚠ Additional Information Required",
+      "message": "Hermes Brain cannot confidently classify this problem.",
+      "assessment": "Insufficient information available for reliable classification.",
+      "provide": "Please provide:",
+      "items": {
+        "equipment": "Equipment type",
+        "vendor": "Vendor / Manufacturer",
+        "alarms": "Alarm messages or fault codes",
+        "symptoms": "Observed symptoms",
+        "maintenance": "Recent maintenance or changes",
+        "impact": "Process impact",
+        "time": "Time of occurrence"
+      }
+    }
+  },
+  "library": {
+    "eyebrow": "Knowledge Cloud",
+    "title": "The engineering library behind Hermes",
+    "lede": "Structured, bilingual references for PLC, SCADA, electrical systems, instrumentation, protocols, OT security, maintenance — and vendor field cases.",
+    "brainNote": "Hermes Brain uses this Knowledge Cloud to support structured engineering analysis. Every analysis cites the libraries and cases you see here.",
+    "searchPlaceholder": "Search titles, summaries, keywords…",
+    "allFilter": "All",
+    "categoriesLabel": "Category",
+    "vendorsLabel": "Vendor",
+    "usedByBrain": "Used by Hermes Brain",
+    "resultsCount": "{count} items",
+    "empty": "Nothing matches these filters.",
+    "caseLabel": "Field case",
+    "categories": {
+      "plc": "PLC",
+      "scadaHmi": "SCADA & HMI",
+      "electrical": "Electrical Systems",
+      "instrumentation": "Instrumentation",
+      "protocols": "Industrial Protocols",
+      "cybersecurity": "OT Cybersecurity",
+      "maintenance": "Maintenance",
+      "vendorKnowledge": "Vendor Knowledge"
+    },
+    "article": {
+      "pointsTitle": "Key points",
+      "checksTitle": "Verification checks",
+      "relatedTitle": "Related articles",
+      "casesTitle": "Related engineering cases",
+      "brainStatsTitle": "Hermes Brain references",
+      "referencedCount": "Referenced {count} times in this session",
+      "notReferenced": "Not referenced by the Brain in this session yet.",
+      "back": "Back to the library",
+      "vendorCenter": "Vendor knowledge center",
+      "overviewTitle": "Overview",
+      "purposeTitle": "Engineering purpose",
+      "howTitle": "How it works",
+      "faultsTitle": "Common faults",
+      "checksHeading": "Diagnostic checks",
+      "safetyTitle": "Safety notes",
+      "commissioningTitle": "Commissioning notes",
+      "conceptsTitle": "Related concepts",
+      "brainUseTitle": "When Hermes Brain uses this article"
+    },
+    "stats": {
+      "recentTitle": "Recently used by Hermes Brain",
+      "mostTitle": "Most referenced articles",
+      "sessionNote": "Session statistics — V1 keeps no database.",
+      "empty": "No Brain activity recorded in this session yet."
+    },
+    "vendorPage": {
+      "eyebrow": "Vendor Knowledge Center",
+      "librariesTitle": "Vendor libraries",
+      "casesTitle": "Field cases",
+      "noLibraries": "No vendor-specific libraries yet — general libraries cover this vendor's equipment.",
+      "descs": {
+        "siemens": "S7 controllers, TIA Portal, SINAMICS drives, and PROFINET ecosystems.",
+        "abb": "AC500 controllers, ACS drive families, and motor technologies.",
+        "schneider": "Modicon controllers, Altivar drives, and TeSys motor control.",
+        "phoenix": "PLCnext controllers, Axioline I/O, and industrial connectivity.",
+        "delta": "Compact drives, DOP HMIs, and machine automation.",
+        "mitsubishi": "MELSEC controllers, FX series, and MR servo systems.",
+        "omron": "Sysmac controllers, machine safety, and sensing & control."
+      }
+    }
+  },
+  "knowledgeCases": {
+    "case-siemens-1200-bf": "BF flashing and unreachable remote I/O after a CPU replacement — device name lives on the device.",
+    "case-siemens-1500-scan": "Intermittent cycle-time watchdog trips traced to an unbounded SCL loop over a growing recipe array.",
+    "case-abb-acs580-oc": "Fault 2310 at acceleration — ramp shorter than load inertia allows, not a failed drive.",
+    "case-abb-motor-imbalance": "8% phase-current imbalance caused upstream by a degraded MCC bus joint, not the winding.",
+    "case-schneider-atv-ocf": "OCF at run command from a phase-to-earth short in the motor cable gland.",
+    "case-schneider-m580-timeout": "Modbus TCP timeouts after SCADA expansion — poll rate × registers exceeded the CPU budget.",
+    "case-phoenix-mqtt-drop": "Periodic MQTT disconnects — keep-alive longer than the firewall's NAT idle timeout.",
+    "case-phoenix-di-chatter": "DI chatter above 30 Hz drive speed from an unshielded run sharing the VFD tray.",
+    "case-delta-vfd-oh": "Afternoon OH trips in summer — clogged heatsink and blocked cabinet fan filter.",
+    "case-delta-hmi-rs485": "Intermittent HMI comm loss on a long RS-485 run missing termination and bias.",
+    "case-mitsubishi-fx5-coil": "Output flicker in run mode from a double coil written in two program sections.",
+    "case-mitsubishi-mrj4-al16": "AL.16 encoder error after panel work — partially seated connector, unbonded shield.",
+    "case-omron-nx-estop-reset": "Safe state holds after e-stop release — EDM feedback from a welded contactor correctly refuses reset.",
+    "case-omron-e5cc-drift": "Temperature drift on door opening — thermocouple extended with copper wire."
+  }
+}

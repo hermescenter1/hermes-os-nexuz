@@ -1,0 +1,82 @@
+{
+  "category": "protocols",
+  "libraries": [
+    {
+      "id": "protocols",
+      "domains": [
+        "otNetwork"
+      ],
+      "keywords": [
+        "protocol",
+        "profinet",
+        "ethercat",
+        "fieldbus",
+        "ethernet/ip",
+        "پروتکل",
+        "پروفینت",
+        "فیلدباس",
+        "شبکه صنعتی"
+      ]
+    },
+    {
+      "id": "opcua",
+      "domains": [
+        "otNetwork"
+      ],
+      "keywords": [
+        "opc",
+        "opc ua",
+        "node",
+        "subscription",
+        "certificate",
+        "او پی سی"
+      ]
+    },
+    {
+      "id": "modbusTcp",
+      "domains": [
+        "otNetwork"
+      ],
+      "keywords": [
+        "modbus",
+        "register",
+        "holding",
+        "function code",
+        "مدباس",
+        "رجیستر"
+      ]
+    },
+    {
+      "id": "mqtt",
+      "domains": [
+        "otNetwork"
+      ],
+      "keywords": [
+        "mqtt",
+        "broker",
+        "topic",
+        "publish",
+        "subscribe",
+        "qos",
+        "بروکر",
+        "ام‌کیوتی‌تی"
+      ]
+    },
+    {
+      "id": "s7comm",
+      "domains": [
+        "otNetwork",
+        "plc"
+      ],
+      "keywords": [
+        "s7 communication",
+        "put/get",
+        "put get",
+        "iso-on-tcp",
+        "port 102",
+        "ارتباط اس‌هفت"
+      ],
+      "vendor": "siemens"
+    }
+  ]
+}

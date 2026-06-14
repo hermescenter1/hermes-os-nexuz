@@ -1,0 +1,13 @@
+{
+  "category": "instrumentation",
+  "libraries": [
+    { "id": "sensors", "domains": ["sensors", "maintenance"],
+      "keywords": ["sensor", "proximity", "pt100", "rtd", "thermocouple", "flow", "سنسور", "پراکسیمیتی", "ترموکوپل", "دبی"] },
+    { "id": "digitalInputs", "domains": ["digitalIo"],
+      "keywords": ["digital input", "di", "dq", "pnp", "npn", "dry contact", "sinking", "sourcing", "ورودی دیجیتال", "کنتاکت خشک"] },
+    { "id": "analogInputs", "domains": ["analogIo"],
+      "keywords": ["analog", "4-20", "4–20", "ma loop", "0-10v", "scaling", "آنالوگ", "میلیامپر", "میلیآمپر", "مقیاس"] },
+    { "id": "transmitters", "domains": ["sensors", "analogIo"],
+      "keywords": ["transmitter", "hart", "calibration", "span", "zero", "ترانسمیتر", "کالیبراسیون", "هارت"] }
+  ]
+}

@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Hermes OS visual system — industrial, bilingual, direction-agnostic.
+
+  Typography decisions (see docs/ARCHITECTURE.md):
+  - Display face: Estedad (variable). Geometric, technical Persian letterforms;
+    carries headings and large metrics. Latin glyphs included.
+  - Body face: Vazirmatn (variable). Highest Persian body readability.
+  - Mono: numerals, tags, protocol names, machine IDs.
+  All spacing uses logical properties so layouts mirror under dir="rtl".
+*/
+:root {
+  --bg: #0b0f14;
+  --surface: #121922;
+  --surface-2: #16202c;
+  --line: #1f2b38;
+  --ink: #e7eef6;
+  --muted: #8aa0b4;
+  --signal: #38e0b0;
+  --signal-dim: #1c5f4f;
+  --warn: #e8b339;
+  --danger: #e85c5c;
+
+  --font-display: "Estedad", "Vazirmatn", system-ui, sans-serif;
+  --font-body: "Vazirmatn", system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
+
+  /* Type scale — calm steps, enterprise not startup */
+  --text-xs: 0.78rem;
+  --text-sm: 0.875rem;
+  --text-base: 0.9875rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: clamp(2rem, 1.4rem + 2vw, 2.625rem);
+  --text-4xl: clamp(2.5rem, 1.8rem + 3vw, 3.5rem);
+}
+
+html { background: var(--bg); color: var(--ink); }
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.7;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+h1 { font-weight: 700; }
+
+/*
+  Persian typography corrections — the difference between "functional"
+  and "premium":
+  1. Letter-spacing must be ZERO on connected Arabic-script text; negative
+     tracking visibly breaks letter joins. Override the Latin tracking.
+  2. Persian needs taller leading: ascenders/descenders + nuqta density.
+  3. Slight size compensation: Persian x-height reads smaller at equal px.
+*/
+:lang(fa) { letter-spacing: 0 !important; }
+/* Monospace stacks lack Persian glyphs; per-glyph fallback breaks letter
+   joins. Under fa, mono-styled labels fall back to the body face. */
+:lang(fa) .font-mono { font-family: var(--font-body); }
+:lang(fa) body, body:lang(fa) { line-height: 1.9; }
+:lang(fa) h1, :lang(fa) h2, :lang(fa) h3, :lang(fa) h4 {
+  line-height: 1.45;
+  font-weight: 700;
+}
+:lang(fa) p { line-height: 1.95; }
+
+/* Large metric numerals — tabular, technical */
+.metric {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* Direction-aware back arrow: points toward the reading start. */
+.back-arrow::before { content: "\2190\00a0"; }
+[dir="rtl"] .back-arrow::before { content: "\2192\00a0"; }

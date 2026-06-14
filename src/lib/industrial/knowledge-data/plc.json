@@ -1,0 +1,87 @@
+{
+  "category": "plc",
+  "libraries": [
+    {
+      "id": "plcBasics",
+      "domains": [
+        "plc"
+      ],
+      "keywords": [
+        "plc",
+        "scan",
+        "cycle",
+        "cpu",
+        "logic controller",
+        "پی‌ال‌سی",
+        "اسکن",
+        "سیکل",
+        "کنترلر منطقی"
+      ]
+    },
+    {
+      "id": "s71200",
+      "domains": [
+        "plc"
+      ],
+      "keywords": [
+        "s7-1200",
+        "s7 1200",
+        "1200",
+        "compact plc",
+        "زیمنس ۱۲۰۰",
+        "اس‌هفت ۱۲۰۰"
+      ],
+      "vendor": "siemens"
+    },
+    {
+      "id": "s71500",
+      "domains": [
+        "plc"
+      ],
+      "keywords": [
+        "s7-1500",
+        "s7 1500",
+        "1500",
+        "et200",
+        "fail-safe",
+        "زیمنس ۱۵۰۰",
+        "اس‌هفت ۱۵۰۰"
+      ],
+      "vendor": "siemens"
+    },
+    {
+      "id": "ladder",
+      "domains": [
+        "plc"
+      ],
+      "keywords": [
+        "ladder",
+        "rung",
+        "contact",
+        "coil",
+        "latch",
+        "seal",
+        "interlock",
+        "لدر",
+        "نردبانی",
+        "کنتاکت",
+        "کویل",
+        "اینترلاک"
+      ]
+    },
+    {
+      "id": "structuredText",
+      "domains": [
+        "plc"
+      ],
+      "keywords": [
+        "structured text",
+        "scl",
+        "st code",
+        "case statement",
+        "متن ساختاریافته",
+        "اس‌سی‌ال"
+      ]
+    }
+  ]
+}
