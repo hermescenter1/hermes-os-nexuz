@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { telemetryService } from "@/lib/services/telemetry-service";
+import { ExecutiveOverview } from "./ExecutiveOverview";
 import type {
   DashboardSnapshot,
   MetricSeries,
@@ -188,6 +189,8 @@ export function DashboardClient() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 pb-16 pt-8">
+      <ExecutiveOverview />
+
       <p className="mb-4 font-mono text-[0.7rem] text-muted/70">
         {t("updated")} {tf.format(s.ts)}
       </p>

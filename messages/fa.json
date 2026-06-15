@@ -419,6 +419,45 @@
         "f3": "مواجههٔ شبکه",
         "f4": "انباشت نگهداشت"
       }
+    },
+    "exec": {
+      "sectionKpi": "نمای مدیریتی",
+      "sectionIntel": "هوش مغز هرمس",
+      "sectionStatus": "وضعیت پلتفرم صنعتی",
+      "kpi": {
+        "totalAnalyses": "کل تحلیل‌ها",
+        "knownAnalyses": "تحلیل‌های شناسایی‌شده",
+        "unknownAnalyses": "تحلیل‌های نامشخص",
+        "engineeringCases": "سوابق مهندسی",
+        "knowledgeLibraries": "کتابخانه‌های دانش",
+        "supportedVendors": "سازندگان پشتیبانی‌شده",
+        "avgConfidence": "میانگین اطمینان",
+        "systemHealth": "سلامت سامانه"
+      },
+      "health": {
+        "nominal": "عادی",
+        "watch": "تحت نظر",
+        "degraded": "افت‌کرده"
+      },
+      "intel": {
+        "topDomains": "حوزه‌های برتر",
+        "topVendors": "سازندگان برتر",
+        "guardrailHits": "فعال‌سازی حفاظ ایمنی",
+        "recentAnalyses": "تحلیل‌های اخیر",
+        "none": "هنوز تحلیلی در این نشست ثبت نشده است",
+        "unknownTag": "نامشخص"
+      },
+      "status": {
+        "brainEngine": "موتور مغز",
+        "knowledgeCloud": "ابر دانش",
+        "caseEngine": "موتور سوابق",
+        "telemetry": "تله‌متری داشبورد",
+        "plcConnectivity": "اتصال PLC",
+        "online": "آنلاین",
+        "simulated": "شبیه‌سازی‌شده",
+        "phase2": "فاز ۲"
+      },
+      "sessionNote": "هوش در سطح نشست — با راه‌اندازی مجدد سرور بازنشانی می‌شود (نسخهٔ ۱ بدون پایگاه‌داده)."
     }
   },
   "knowledge": {

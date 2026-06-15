@@ -419,6 +419,45 @@
         "f3": "Network exposure",
         "f4": "Maintenance backlog"
       }
+    },
+    "exec": {
+      "sectionKpi": "Executive Overview",
+      "sectionIntel": "Brain Intelligence",
+      "sectionStatus": "Industrial Platform Status",
+      "kpi": {
+        "totalAnalyses": "Total Analyses",
+        "knownAnalyses": "Known Analyses",
+        "unknownAnalyses": "Unknown Analyses",
+        "engineeringCases": "Engineering Cases",
+        "knowledgeLibraries": "Knowledge Libraries",
+        "supportedVendors": "Supported Vendors",
+        "avgConfidence": "Average Confidence",
+        "systemHealth": "System Health"
+      },
+      "health": {
+        "nominal": "Nominal",
+        "watch": "Watch",
+        "degraded": "Degraded"
+      },
+      "intel": {
+        "topDomains": "Top Domains",
+        "topVendors": "Top Vendors",
+        "guardrailHits": "Guardrail Hits",
+        "recentAnalyses": "Recent Analyses",
+        "none": "No analyses yet this session",
+        "unknownTag": "Unknown"
+      },
+      "status": {
+        "brainEngine": "Brain Engine",
+        "knowledgeCloud": "Knowledge Cloud",
+        "caseEngine": "Case Engine",
+        "telemetry": "Dashboard Telemetry",
+        "plcConnectivity": "PLC Connectivity",
+        "online": "Online",
+        "simulated": "Simulated",
+        "phase2": "Phase 2"
+      },
+      "sessionNote": "Session-scoped intelligence — resets when the server restarts (no database in V1)."
     }
   },
   "knowledge": {

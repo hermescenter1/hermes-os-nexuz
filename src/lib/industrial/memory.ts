@@ -78,6 +78,7 @@ function createInProcessStore(): MemoryStore {
     stats() {
       const count = buf.length;
       const byDomain: Record<string, number> = {};
+      const byVendor: Record<string, number> = {};
       const libraryRefs: Record<string, number> = {};
       let conf = 0;
       let ev = 0;
@@ -96,6 +97,7 @@ function createInProcessStore(): MemoryStore {
         if (r.guardrail) guards++;
         const top = r.domains[0]?.id;
         if (top) byDomain[top] = (byDomain[top] ?? 0) + 1;
+        for (const v of r.vendors) byVendor[v] = (byVendor[v] ?? 0) + 1;
         for (const lib of r.libraries) libraryRefs[lib] = (libraryRefs[lib] ?? 0) + 1;
       }
       const known = count - unknowns;
@@ -106,6 +108,7 @@ function createInProcessStore(): MemoryStore {
         avgConfidence: known ? Math.round((conf / known) * 100) / 100 : 0,
         avgEvidence: known ? Math.round((ev / known) * 100) / 100 : 0,
         byDomain,
+        byVendor,
         libraryRefs,
         guardrailHits: guards,
       };

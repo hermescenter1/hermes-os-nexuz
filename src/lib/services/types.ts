@@ -219,6 +219,8 @@ export interface BrainMemoryStats {
   avgConfidence: number;
   avgEvidence: number;
   byDomain: Record<string, number>;
+  /** Phase A: top vendors aggregated from known analyses (session-scoped) */
+  byVendor: Record<string, number>;
   /** Step 9: per-library Brain reference counts (session-scoped) */
   libraryRefs: Record<string, number>;
   guardrailHits: number;

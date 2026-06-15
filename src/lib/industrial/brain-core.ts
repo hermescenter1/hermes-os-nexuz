@@ -75,6 +75,90 @@ const WEAK_TERMS = new Set([
 /** Minimum best-domain score required for a known classification. */
 export const DOMAIN_THRESHOLD = 2;
 
+/* ----------------------------- Domain Expansion ---------------------------- */
+
+/** Expansion keyword groups (normalized, bilingual where natural). */
+const EXP = {
+  // anomaly / unauthorized-presence signals
+  cyberAnomaly: [
+    "unknown mac", "unknown device", "unauthorized device", "unauthorised device",
+    "new device", "rogue device", "unexpected device", "intrusion", "anomaly",
+    "مک ناشناس", "دستگاه ناشناس", "دستگاه غیرمجاز", "نفوذ",
+  ],
+  // OT / network context terms (the co-occurrence gate for cyber)
+  otTerms: [
+    "ot network", "industrial network", "switch", "vlan", "profinet",
+    "modbus", "opc ua", "opcua", "ethernet/ip", "ethernet ip",
+    "شبکه صنعتی", "سوییچ", "سوئیچ", "پروفینت", "مدباس",
+  ],
+  maintenance: [
+    "after maintenance", "maintenance shutdown", "after replacement",
+    "replacement", "replaced", "replacing", "swapped", "changed",
+    "after work", "shutdown",
+    "پس از تعمیر", "تعمیرات", "تعویض", "جایگزین", "پس از کار", "خاموشی",
+  ],
+  plc: [
+    "profinet", "plc", "s7", "siemens", "controller", "i/o", "io ",
+    "line stops", "machine stops", "packaging line stops", "line stop",
+    "stops every", "randomly stops",
+    "پی‌ال‌سی", "کنترلر", "زیمنس", "خط متوقف", "توقف خط",
+  ],
+  scada: [
+    "wincc", "hmi", "scada", "alarms", "live values", "process values",
+    "tags", "frozen values", "values freeze", "values frozen",
+    "اسکادا", "آلارم", "هشدار", "مقادیر فرآیند", "تگ", "مقادیر منجمد",
+  ],
+} as const;
+
+const anyHit = (text: string, terms: readonly string[]) =>
+  terms.some((t) => text.includes(t));
+
+/** Add a domain at a deliberately modest score if not already present, so
+ *  expansion never outranks a genuinely-scored primary domain. */
+function ensureDomain(
+  domains: { id: BrainDomainId; score: number }[],
+  id: BrainDomainId,
+  score = 0.5
+): void {
+  if (!domains.some((d) => d.id === id)) domains.push({ id, score });
+}
+
+/**
+ * Mutates `domains` in place, applying the expansion rules. Caller guarantees
+ * this runs only for non-Unknown classifications.
+ */
+export function expandDomains(
+  text: string,
+  domains: { id: BrainDomainId; score: number }[]
+): void {
+  const has = (id: BrainDomainId) => domains.some((d) => d.id === id);
+
+  // Rule 1 — Cybersecurity: anomaly/unauthorized-presence AND OT/network context
+  if (anyHit(text, EXP.cyberAnomaly) && anyHit(text, EXP.otTerms)) {
+    ensureDomain(domains, "cybersecurity", 0.55);
+    // such phrasing implies an OT-network concern even if not scored
+    ensureDomain(domains, "otNetwork", 0.5);
+  }
+
+  // Rule 2 — Maintenance context
+  if (anyHit(text, EXP.maintenance)) {
+    ensureDomain(domains, "maintenance", 0.5);
+  }
+
+  // Rule 3 — PLC: controller/line-stop terms, but only once OT network present
+  if (anyHit(text, EXP.plc) && (has("otNetwork") || anyHit(text, EXP.otTerms))) {
+    ensureDomain(domains, "plc", 0.5);
+  }
+
+  // Rule 4 — SCADA / supervisory layer
+  if (anyHit(text, EXP.scada)) {
+    ensureDomain(domains, "scada", 0.5);
+  }
+
+  // Rule 5 is structural: this function is never called for Unknown queries,
+  // so vague inputs ("something is wrong") cannot be expanded into a domain.
+}
+
 function scoreDomain(text: string, keywords: string[]): number {
   let strong = 0;
   let weakHits = 0;
@@ -118,6 +202,19 @@ export function classify(question: string): Classification {
     .map((s) => ({ id: s.id, score: Math.round((s.raw / maxRaw) * 100) / 100 }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 4);
+
+  // --- Domain Expansion Patch ---
+  // Multi-domain industrial queries that already cleared the Unknown
+  // threshold can still classify too narrowly because the keyword scorer
+  // under-weights cross-cutting concerns (security, maintenance context).
+  // Expansion only AUGMENTS an already-valid classification; it never runs
+  // on Unknown queries (we returned above) and never invents a primary.
+  expandDomains(text, domains);
+
+  domains.sort((a, b) => b.score - a.score);
+  const trimmed = domains.slice(0, 5);
+  domains.length = 0;
+  domains.push(...trimmed);
 
   // --- library selection: direct keyword hits first, then domain defaults
   // interleaved round-robin so one broad domain can't crowd out the rest ---
