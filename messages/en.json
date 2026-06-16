@@ -1598,5 +1598,64 @@
       "heading": "Security Notes",
       "body": "Audit logs are required for production accountability. V1 records application-level events only."
     }
+  },
+  "adminDocuments": {
+    "eyebrow": "Operations",
+    "title": "Document Library",
+    "lede": "Upload and manage industrial documents for future retrieval. Extraction, chunking, and indexing are not implemented yet.",
+    "metrics": {
+      "total": "Total Documents",
+      "indexed": "Indexed",
+      "failed": "Failed"
+    },
+    "upload": {
+      "heading": "Upload Document",
+      "title": "Title",
+      "sourceType": "Source Type",
+      "selectSourceType": "Select a type",
+      "vendor": "Vendor (optional)",
+      "domain": "Domain (optional)",
+      "tags": "Tags",
+      "tagsHint": "comma-separated",
+      "file": "File",
+      "fileHint": "PDF, TXT, Markdown, or DOCX — up to 50 MB",
+      "submit": "Upload",
+      "uploading": "Uploading…"
+    },
+    "validation": {
+      "titleRequired": "Title is required.",
+      "sourceTypeRequired": "Source type is required.",
+      "fileRequired": "Choose a file to upload.",
+      "fileTooLarge": "File exceeds the 50 MB limit.",
+      "unsupportedType": "Unsupported file type — choose a PDF, TXT, Markdown, or DOCX file.",
+      "uploadFailed": "Upload failed — please try again."
+    },
+    "list": {
+      "heading": "Documents",
+      "empty": "No documents uploaded yet.",
+      "delete": "Delete"
+    },
+    "status": {
+      "uploaded": "Uploaded",
+      "extracting": "Extracting",
+      "extracted": "Extracted",
+      "chunking": "Chunking",
+      "chunked": "Chunked",
+      "embedding": "Embedding",
+      "embedded": "Embedded",
+      "indexed": "Indexed",
+      "failed": "Failed",
+      "archived": "Archived"
+    },
+    "sourceTypes": {
+      "manual": "Manual",
+      "datasheet": "Datasheet",
+      "commissioning_report": "Commissioning Report",
+      "engineering_report": "Engineering Report",
+      "troubleshooting_note": "Troubleshooting Note",
+      "safety_procedure": "Safety Procedure",
+      "maintenance_procedure": "Maintenance Procedure",
+      "factory_knowledge": "Factory Knowledge"
+    }
   }
 }

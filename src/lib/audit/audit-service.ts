@@ -31,6 +31,9 @@ export const AUDIT_ACTIONS = {
   UNKNOWN_RESOLVED: "unknown.resolved",
   UNKNOWN_CONVERTED: "unknown.converted_to_case",
   UNKNOWN_TO_LIBRARY: "unknown.added_to_library",
+  DOCUMENT_UPLOADED: "document.uploaded",
+  DOCUMENT_UPLOAD_FAILED: "document.upload_failed",
+  DOCUMENT_DELETED: "document.deleted",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

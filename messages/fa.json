@@ -1598,5 +1598,64 @@
       "heading": "یادداشت‌های امنیتی",
       "body": "گزارش‌های ممیزی برای پاسخ‌گویی در محیط تولید لازم‌اند. نسخهٔ ۱ تنها رویدادهای سطح برنامه را ثبت می‌کند."
     }
+  },
+  "adminDocuments": {
+    "eyebrow": "عملیات",
+    "title": "کتابخانهٔ اسناد",
+    "lede": "بارگذاری و مدیریت اسناد صنعتی برای بازیابی در آینده. استخراج، تقطیع و نمایه‌سازی هنوز پیاده‌سازی نشده‌اند.",
+    "metrics": {
+      "total": "تعداد کل اسناد",
+      "indexed": "نمایه‌شده",
+      "failed": "ناموفق"
+    },
+    "upload": {
+      "heading": "بارگذاری سند",
+      "title": "عنوان",
+      "sourceType": "نوع منبع",
+      "selectSourceType": "یک نوع انتخاب کنید",
+      "vendor": "سازنده (اختیاری)",
+      "domain": "حوزه (اختیاری)",
+      "tags": "برچسب‌ها",
+      "tagsHint": "جداشده با کاما",
+      "file": "فایل",
+      "fileHint": "PDF، TXT، Markdown یا DOCX — حداکثر ۵۰ مگابایت",
+      "submit": "بارگذاری",
+      "uploading": "در حال بارگذاری…"
+    },
+    "validation": {
+      "titleRequired": "عنوان الزامی است.",
+      "sourceTypeRequired": "نوع منبع الزامی است.",
+      "fileRequired": "یک فایل برای بارگذاری انتخاب کنید.",
+      "fileTooLarge": "حجم فایل از محدودیت ۵۰ مگابایت بیشتر است.",
+      "unsupportedType": "نوع فایل پشتیبانی نمی‌شود — فایل PDF، TXT، Markdown یا DOCX انتخاب کنید.",
+      "uploadFailed": "بارگذاری ناموفق بود — دوباره تلاش کنید."
+    },
+    "list": {
+      "heading": "اسناد",
+      "empty": "هنوز سندی بارگذاری نشده است.",
+      "delete": "حذف"
+    },
+    "status": {
+      "uploaded": "بارگذاری‌شده",
+      "extracting": "در حال استخراج",
+      "extracted": "استخراج‌شده",
+      "chunking": "در حال تقطیع",
+      "chunked": "تقطیع‌شده",
+      "embedding": "در حال جای‌گذاری برداری",
+      "embedded": "جای‌گذاری‌شده",
+      "indexed": "نمایه‌شده",
+      "failed": "ناموفق",
+      "archived": "بایگانی‌شده"
+    },
+    "sourceTypes": {
+      "manual": "دفترچهٔ راهنما",
+      "datasheet": "برگهٔ اطلاعات فنی",
+      "commissioning_report": "گزارش راه‌اندازی",
+      "engineering_report": "گزارش مهندسی",
+      "troubleshooting_note": "یادداشت عیب‌یابی",
+      "safety_procedure": "دستورالعمل ایمنی",
+      "maintenance_procedure": "دستورالعمل نگهداشت",
+      "factory_knowledge": "دانش کارخانه"
+    }
   }
 }
