@@ -34,6 +34,8 @@ interface DocumentRow {
   sizeBytes: number;
   status: DocumentStatus;
   error?: string;
+  chunkCount: number;
+  lastProcessedAt?: string;
   metadata: { vendor?: string; domain?: string; tags: string[] };
   createdAt: string;
 }
@@ -89,6 +91,7 @@ export function AdminDocumentsClient() {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Phase 16B: persists through /api/documents. Session mode keeps drafts
@@ -163,6 +166,23 @@ export function AdminDocumentsClient() {
       await fetch(`/api/documents/${id}`, { method: "DELETE" });
     } catch {
       /* optimistic removal already applied */
+    }
+  }
+
+  // Phase 16C: runs extraction + chunking synchronously (no background
+  // worker exists yet) — the request blocks until the pipeline finishes,
+  // then the row is refreshed to show the resulting status/chunkCount/
+  // error, whatever that outcome was (success or a documented failure).
+  async function process(id: string) {
+    setProcessingId(id);
+    try {
+      await fetch(`/api/documents/${id}/process`, { method: "POST" });
+      await refresh();
+    } catch {
+      /* best-effort; the document's own status reflects what happened
+         server-side once refresh() catches up on the next poll */
+    } finally {
+      setProcessingId(null);
     }
   }
 
@@ -301,16 +321,34 @@ export function AdminDocumentsClient() {
                         </span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => remove(d.id)}
-                      className="shrink-0 rounded-lg border border-line px-3 py-1.5 font-body text-xs text-muted transition-colors hover:border-[var(--danger)]/40 hover:text-[var(--danger)]"
-                    >
-                      {t("list.delete")}
-                    </button>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        onClick={() => process(d.id)}
+                        disabled={processingId === d.id}
+                        className="rounded-lg border border-line px-3 py-1.5 font-body text-xs text-muted transition-colors hover:border-signal/40 hover:text-ink disabled:opacity-50"
+                      >
+                        {processingId === d.id ? t("list.processing") : t("list.process")}
+                      </button>
+                      <button
+                        onClick={() => remove(d.id)}
+                        className="rounded-lg border border-line px-3 py-1.5 font-body text-xs text-muted transition-colors hover:border-[var(--danger)]/40 hover:text-[var(--danger)]"
+                      >
+                        {t("list.delete")}
+                      </button>
+                    </div>
                   </div>
                   <p className="mt-2 font-mono text-[0.6rem] text-muted/60" dir="ltr">
-                    {df.format(new Date(d.createdAt))} · {nf.format(Math.round(d.sizeBytes / 1024))} KB
+                    {df.format(new Date(d.createdAt))} · {nf.format(Math.round(d.sizeBytes / 1024))} KB ·{" "}
+                    {t("list.chunkCount", { count: nf.format(d.chunkCount) })}
+                    {d.lastProcessedAt && (
+                      <> · {t("list.lastProcessed", { time: df.format(new Date(d.lastProcessedAt)) })}</>
+                    )}
                   </p>
+                  {d.status === "failed" && d.error && (
+                    <p className="mt-1.5 font-body text-[0.65rem] text-[var(--danger)]">
+                      {t("list.failureReason", { reason: d.error })}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>

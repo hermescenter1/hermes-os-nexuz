@@ -131,6 +131,40 @@ export interface DocumentChunkReference {
 }
 
 /**
+ * A chunk's TEXT, persisted before any embedding exists (Phase 16C).
+ *
+ * Deliberately a SEPARATE model from `DocumentChunk` (Phase 14C/the
+ * pgvector table): `DocumentChunk.embedding` is a NOT NULL pgvector
+ * column, so that table cannot represent a chunk that has no embedding
+ * yet. `DocumentTextChunk` is the sibling table for the
+ * extraction/chunking stage — Phase 16D's embedding step is expected to
+ * read these rows and write the corresponding `DocumentChunk` (pgvector)
+ * row once a real embedding provider is wired in; the two tables are
+ * pipeline stages, not duplicates.
+ */
+export interface DocumentTextChunk {
+  id: string;
+  documentId: string;
+  /** 0-based position within the document, stable and deterministic
+   *  (produced by `chunkDocument()` — see `src/lib/rag/chunking.ts`) */
+  position: number;
+  text: string;
+  charCount: number;
+  /** absent — no tokenizer is installed; "if available" per the Phase 16C
+   *  spec, and one currently isn't */
+  tokenCount?: number;
+  /** `RagChunk.metadata.contentHash`, lifted to its own column — see
+   *  chunking.ts's `hashString()` */
+  contentHash?: string;
+  metadata: Record<string, unknown>;
+  /** "chunked" today; Phase 16D may add an "embedded" value once this
+   *  row's embedding has been written to `DocumentChunk` */
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * The document record itself. Field shape intentionally mirrors the
  * `Document` Prisma model 1:1 (see prisma/schema.prisma) — this is the
  * plain-TS projection both the session and database repository
@@ -156,9 +190,14 @@ export interface Document {
   contentHash?: string;
   metadata: DocumentMetadata;
   status: DocumentStatus;
-  /** present only when status === "failed" */
+  /** present only when status === "failed" — a safe, enumerated reason,
+   *  never a raw parser/SDK/SQL error message or stack trace */
   error?: string;
   chunkCount: number;
+  /** Phase 16C: set whenever a /process call completes (success or
+   *  failure) — distinct from `updatedAt`, which changes on ANY update
+   *  (including the upload flow's own internal storageKey-set step) */
+  lastProcessedAt?: string;
   /** User.id of the uploader, when auth is configured */
   uploadedBy?: string;
   /** unused in this single-tenant phase; present so a future multi-tenant

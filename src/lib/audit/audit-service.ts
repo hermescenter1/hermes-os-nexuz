@@ -34,6 +34,8 @@ export const AUDIT_ACTIONS = {
   DOCUMENT_UPLOADED: "document.uploaded",
   DOCUMENT_UPLOAD_FAILED: "document.upload_failed",
   DOCUMENT_DELETED: "document.deleted",
+  DOCUMENT_PROCESSED: "document.processed",
+  DOCUMENT_PROCESS_FAILED: "document.process_failed",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

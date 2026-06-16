@@ -1633,7 +1633,12 @@
     "list": {
       "heading": "اسناد",
       "empty": "هنوز سندی بارگذاری نشده است.",
-      "delete": "حذف"
+      "delete": "حذف",
+      "process": "پردازش",
+      "processing": "در حال پردازش…",
+      "chunkCount": "{count} تکه",
+      "lastProcessed": "آخرین پردازش {time}",
+      "failureReason": "علت ناموفقی: {reason}"
     },
     "status": {
       "uploaded": "بارگذاری‌شده",

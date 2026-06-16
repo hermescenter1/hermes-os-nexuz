@@ -104,6 +104,9 @@ function rowToDocument(r: Record<string, unknown>): Document {
     status: (r.status as DocumentStatus) ?? "uploaded",
     ...(r.error ? { error: String(r.error) } : {}),
     chunkCount: Number(r.chunkCount ?? 0),
+    ...(r.lastProcessedAt
+      ? { lastProcessedAt: new Date(r.lastProcessedAt as string).toISOString() }
+      : {}),
     ...(r.uploadedBy ? { uploadedBy: String(r.uploadedBy) } : {}),
     ...(r.tenantId ? { tenantId: String(r.tenantId) } : {}),
     createdAt: r.createdAt ? new Date(r.createdAt as string).toISOString() : now(),

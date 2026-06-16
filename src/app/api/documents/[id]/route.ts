@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { documentRepository } from "@/lib/documents/document-repository";
+import { documentTextChunkRepository } from "@/lib/documents/chunk-repository";
 import { getDocumentObjectStorage } from "@/lib/documents/object-storage";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -8,11 +9,13 @@ import { can } from "@/lib/auth/roles";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
 
 /**
- * /api/documents/[id] (Phase 16B).
+ * /api/documents/[id] (Phase 16B; Phase 16C adds chunk cleanup on delete).
  *
  * GET: document detail — admin-only.
- * DELETE: removes the object-storage file (best-effort) and the metadata
- * row — admin-only. See route.ts (the collection route) for why both are
+ * DELETE: removes the object-storage file (best-effort), any
+ * `DocumentTextChunk` rows (Phase 16C — there is no foreign key enforcing
+ * this, so the application does it explicitly), and the metadata row —
+ * admin-only. See route.ts (the collection route) for why all of this is
  * admin-gated server-side, not just page-wrapper-gated.
  */
 
@@ -61,6 +64,12 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         // metadata row the operator can no longer remove. Never blocks
         // the response.
       }
+    }
+
+    try {
+      await documentTextChunkRepository().deleteByDocumentId(id);
+    } catch {
+      // Best-effort, same rationale as the storage delete above.
     }
 
     const deleted = await repo.delete(id);

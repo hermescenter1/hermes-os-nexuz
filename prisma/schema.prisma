@@ -96,27 +96,62 @@ model UnknownAnalysis {
 // loosely coupled by convention, exactly as `DocumentChunk`'s own Phase
 // 14C header comment already documents.
 model Document {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   title             String
   sourceType        String
   originalFilename  String
   mimeType          String
   sizeBytes         Int
-  storageProvider   String   @default("local")
+  storageProvider   String    @default("local")
   storageKey        String
   extractedTextKey  String?
   contentHash       String?
-  metadata          Json     @default("{}")
-  status            String   @default("uploaded")
+  metadata          Json      @default("{}")
+  status            String    @default("uploaded")
   error             String?
-  chunkCount        Int      @default(0)
+  chunkCount        Int       @default(0)
+  // Phase 16C: set whenever POST /api/documents/[id]/process completes
+  // (success or failure) — distinct from `updatedAt`, which already
+  // changes on the upload flow's own internal storageKey-set step.
+  lastProcessedAt   DateTime?
   uploadedBy        String?
   tenantId          String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([status])
   @@index([sourceType])
+}
+
+// ---- Phase 16C: pre-embedding chunk storage (additive) ----
+//
+// `DocumentTextChunk` holds chunk TEXT only — no embedding, no vector
+// column. Deliberately a SEPARATE model from `DocumentChunk` above
+// (Phase 14C): that table's `embedding` column is NOT NULL pgvector, so it
+// cannot represent a chunk that has no embedding yet. Phase 16D's
+// embedding step is expected to read these rows and write the
+// corresponding `DocumentChunk` row once a real embedding provider is
+// wired in — the two tables are pipeline stages, not duplicates.
+//
+// No foreign key to `Document` — consistent with `DocumentChunk`'s own
+// loose-coupling-by-convention (see that model's comment); application
+// code (the DELETE /api/documents/[id] route) is responsible for cleaning
+// up a document's chunks when the document itself is deleted.
+model DocumentTextChunk {
+  id          String   @id @default(cuid())
+  documentId  String
+  position    Int
+  text        String
+  charCount   Int
+  tokenCount  Int?
+  contentHash String?
+  metadata    Json     @default("{}")
+  status      String   @default("chunked")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([documentId, position])
+  @@index([documentId])
 }
 
 // ---- Phase 14C: RAG persistence (additive; NOT wired into /api/brain) ----

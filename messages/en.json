@@ -1633,7 +1633,12 @@
     "list": {
       "heading": "Documents",
       "empty": "No documents uploaded yet.",
-      "delete": "Delete"
+      "delete": "Delete",
+      "process": "Process",
+      "processing": "Processing…",
+      "chunkCount": "{count} chunks",
+      "lastProcessed": "last processed {time}",
+      "failureReason": "Failure reason: {reason}"
     },
     "status": {
       "uploaded": "Uploaded",
