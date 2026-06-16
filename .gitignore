@@ -6,3 +6,8 @@
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
+
+# Phase 16A — local document object-storage provider's filesystem root
+# (src/lib/documents/object-storage.ts). Real files once exercised; never
+# committed.
+/.data
