@@ -1,12 +1,14 @@
 import type { AIProvider, AIRequestInput, AIResponse } from "../types";
 
 /**
- * Local provider adapter (Phase 12-A — mock only).
+ * Local provider adapter — always a mock, by design (Phase 12-A; unchanged
+ * by Phase 12-B's real-provider work).
  *
- * Routed to for `deterministic` tasks (and as the hybrid router's safe
- * default for anything else) — see `router.ts`. Needs no API key and no
- * network call, by design: this is the provider the router can always fall
- * back to. Still a mock in this phase, same as the other two adapters.
+ * Routed to for `deterministic` tasks, as the `mock`-mode router's forced
+ * target for every task, and as the hybrid/real router's safe default for
+ * anything else — see `router.ts`. There is no "real" local provider to
+ * integrate: this is intentionally the no-API-key, no-network tier the
+ * router can always fall back to without any failure mode at all.
  */
 export const localProvider: AIProvider = {
   id: "local",

@@ -1,10 +1,10 @@
 import { openaiProvider } from "./providers/openai";
 import { claudeProvider } from "./providers/claude";
 import { localProvider } from "./providers/local";
-import { getAIProviderMode } from "./config";
+import { getAIProviderMode, type AIProviderMode } from "./config";
+import { mockResponse } from "./providers/shared";
 import type {
   AIProvider,
-  AIProviderId,
   AIRequestInput,
   AIResponse,
   AITaskKind,
@@ -12,13 +12,13 @@ import type {
 } from "./types";
 
 /**
- * AI Provider Router (Phase 12-A).
+ * AI Provider Router (Phase 12-A abstraction; Phase 12-B adds real-provider
+ * capability behind the adapters, plus the mock/real/hybrid mode switch).
  *
- * Abstraction layer only — every adapter is a mock (see `providers/*.ts`),
- * and nothing in the existing Brain pipeline calls this yet. It exists so a
- * future phase can re-point real reasoning at openai/claude/local behind one
- * stable `ask()` call, without the current rule-based pipeline (`brain-core
- * .ts`, `pipeline.ts`, `retrieval-engine.ts`) changing at all.
+ * Nothing in the existing Brain pipeline (`brain-core.ts`, `pipeline.ts`,
+ * `retrieval-engine.ts`, `src/lib/llm/*`) calls this yet — it remains an
+ * isolated, currently-unused abstraction layer by design, per Phase 12-B's
+ * "do not wire into /api/brain yet" instruction.
  */
 
 const PROVIDERS: Record<ConcreteProviderId, AIProvider> = {
@@ -28,26 +28,38 @@ const PROVIDERS: Record<ConcreteProviderId, AIProvider> = {
 };
 
 /**
- * Hybrid routing table — which concrete provider handles which task kind
- * when the router is in "hybrid" mode:
- *   - engineering reasoning -> claude  (deep, open-ended technical analysis)
- *   - structured output     -> openai (schema-constrained generation)
- *   - deterministic tasks    -> local  (no model call should be needed at all)
- *   - anything unclassified  -> local  (safe default; never fails closed)
+ * Per-task routing table — which concrete provider handles which task kind:
+ *   - engineering reasoning  -> claude  (deep, open-ended technical analysis)
+ *   - structured output      -> openai (schema-constrained generation)
+ *   - deterministic tasks     -> local  (no model call should be needed at all)
+ *   - anything unclassified   -> local  (safe default; never fails closed)
+ *
+ * Consulted by "real" and "hybrid" modes alike — both honor task routing;
+ * the difference between them is one of stated intent, not mechanics (see
+ * resolveProvider). "mock" mode bypasses this table entirely.
  */
-const HYBRID_ROUTE: Record<AITaskKind, ConcreteProviderId> = {
+const TASK_ROUTE: Record<AITaskKind, ConcreteProviderId> = {
   engineeringReasoning: "claude",
   structuredOutput: "openai",
   deterministic: "local",
   general: "local",
 };
 
-/** Resolves which concrete provider handles a request, given the active
- *  provider mode and the request's task kind. Exported for tests/tools that
- *  want the routing decision without performing the (mock) call. */
-export function resolveProvider(mode: AIProviderId, task: AITaskKind): ConcreteProviderId {
-  if (mode === "hybrid") return HYBRID_ROUTE[task] ?? "local";
-  return mode;
+/**
+ * Resolves which concrete provider handles a request, given the active
+ * provider mode and the request's task kind:
+ *   - "mock"   -> always "local" — the router never reaches openai/claude
+ *                 adapters at all, regardless of task or configured keys.
+ *   - "real"   -> TASK_ROUTE[task]; the resolved adapter then attempts a
+ *                 real call if its key (and SDK) are available, else it
+ *                 degrades to its own mock — never the router's concern.
+ *   - "hybrid" -> identical resolution to "real" (same TASK_ROUTE) — the
+ *                 difference is purely how `aiRouter.ask` reports
+ *                 `provider` (see below), not which adapter runs.
+ */
+export function resolveProvider(mode: AIProviderMode, task: AITaskKind): ConcreteProviderId {
+  if (mode === "mock") return "local";
+  return TASK_ROUTE[task] ?? "local";
 }
 
 export const aiRouter: AIProvider = {
@@ -55,13 +67,23 @@ export const aiRouter: AIProvider = {
   async ask(input: AIRequestInput): Promise<AIResponse> {
     const mode = getAIProviderMode();
     const target = resolveProvider(mode, input.task);
-    const result = await PROVIDERS[target].ask(input);
+
+    // Phase 12-B: even in "mock" mode (target is always "local", which is
+    // already an unconditional mock), call mockResponse directly rather
+    // than the local adapter, so the metadata can record reason
+    // "forced_mock" — distinct from local's own (also-mock) response,
+    // which carries no reason at all since it has nothing to fall back from.
+    const result =
+      mode === "mock"
+        ? mockResponse("local", input, "forced_mock")
+        : await PROVIDERS[target].ask(input);
+
     return {
       ...result,
-      // The router's own identity is "hybrid" only when it actually routed
-      // per-task; a fixed mode (openai/claude/local) reports that provider
-      // directly, since no delegation decision was made.
-      provider: mode === "hybrid" ? "hybrid" : mode,
+      // The router's own identity is "hybrid" only when it genuinely
+      // multiplexed per-task; a fixed policy (mock/real) reports the
+      // concrete provider it actually used.
+      provider: mode === "hybrid" ? "hybrid" : target,
       metadata: {
         ...result.metadata,
         resolvedProvider: target,

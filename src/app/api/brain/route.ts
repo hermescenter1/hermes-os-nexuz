@@ -12,7 +12,19 @@ import { getPublishedCorpus } from "@/lib/industrial/db-bridge";
 import { completeTask, gatewayAvailable } from "@/lib/llm/gateway";
 import { buildPrompt, taskForDomain } from "@/lib/llm/prompts";
 import { screenQuestion } from "@/lib/llm/guardrails";
-import type { BrainAnalysis, BrainDomainId, ReasoningMode } from "@/lib/services/types";
+import { aiRouter } from "@/lib/ai/router";
+import { isAIRouterEnabled, getAIProviderMode } from "@/lib/ai/config";
+import { withTimeout } from "@/lib/ai/providers/shared";
+import type {
+  AIEnhancement,
+  BrainAnalysis,
+  BrainDomainId,
+  ReasoningMode,
+  SafetyKind,
+} from "@/lib/services/types";
+import type { PipelineResult } from "@/lib/industrial/pipeline";
+import type { ReasoningResult } from "@/lib/industrial/reasoning";
+import type { RetrievalResult } from "@/lib/retrieval/retrieval-types";
 import type { Citation } from "@/lib/services/rag-types";
 import type { StoredAnalysis } from "@/lib/storage/types";
 import en from "../../../../messages/en.json";
@@ -38,6 +50,78 @@ function buildCitations(libraryIds: string[]): Citation[] {
       sourceType: "library" as const,
       snippetKey: `knowledge.${id}.summary`,
     }));
+}
+
+const AI_ROUTER_TIMEOUT_MS = 15_000;
+
+/**
+ * Phase 13 — AI Provider Router enhancement layer.
+ *
+ * Builds the router's input from the deterministic analysis ALREADY
+ * produced (question, locale, domains, vendors, safety classification,
+ * deterministic root cause/probable causes/recommended actions, and the
+ * retrieval evidence) and asks the router to enhance it. This function is
+ * the only place that may call `aiRouter.ask()` from this route, and it
+ * never throws and never returns provider error text:
+ *   - the router's own adapters already never throw and always degrade to
+ *     a clean mock on a missing key/SDK/timeout/provider error (Phase 12-B)
+ *   - `withTimeout` is a second, outer safety net in case of an unforeseen
+ *     hang anywhere in that chain
+ *   - the try/catch below is a third backstop in case of an unforeseen
+ *     exception (e.g. a future bug) — on any of these, the deterministic
+ *     Brain response is returned exactly as if the flag were off.
+ */
+async function buildAIEnhancement(
+  question: string,
+  locale: "fa" | "en",
+  pipe: PipelineResult,
+  reasoning: ReasoningResult,
+  retrieval: RetrievalResult | undefined,
+  safety: SafetyKind
+): Promise<AIEnhancement | null> {
+  const mode = getAIProviderMode();
+  try {
+    const context = [
+      `Domains: ${pipe.domains.map((d) => d.id).join(", ") || "none"}`,
+      `Vendors: ${pipe.vendors.join(", ") || "none"}`,
+      `Safety classification: ${safety}`,
+      `Risk level: ${reasoning.riskLevel}`,
+      `Deterministic root cause: ${pipe.rootCause?.primary ?? reasoning.probableCauses[0] ?? "unknown"}`,
+      `Probable causes: ${reasoning.probableCauses.join(" | ") || "none"}`,
+      `Recommended actions: ${reasoning.recommendedActions.join(" | ") || "none"}`,
+      `Retrieval — top cases: ${
+        retrieval?.topCases.map((c) => `${c.id} (score ${c.score})`).join(", ") || "none"
+      }`,
+      `Retrieval — top knowledge: ${
+        retrieval?.topKnowledge.map((k) => `${k.id} (score ${k.score})`).join(", ") || "none"
+      }`,
+    ].join("\n");
+
+    const outcome = await withTimeout(
+      aiRouter.ask({ task: "engineeringReasoning", prompt: question, context, locale }),
+      AI_ROUTER_TIMEOUT_MS
+    );
+    if (!outcome.ok) {
+      // Outer timeout tripped — the router's own adapters already cap at
+      // 20s and never throw, so this only fires on an unforeseen hang.
+      return { enabled: true, provider: "none", mode, content: "", fallbackUsed: true };
+    }
+
+    const res = outcome.value;
+    return {
+      enabled: true,
+      provider: res.provider,
+      mode,
+      // `content` is always either a real completion or the adapters' own
+      // clean "[mock:<provider>] ..." text — never a raw error/stack trace
+      // (see providers/openai.ts and providers/claude.ts's mockResponse()).
+      content: res.content,
+      fallbackUsed: Boolean(res.metadata.mock),
+    };
+  } catch {
+    // Never let an AI Router failure affect the deterministic response.
+    return { enabled: true, provider: "none", mode, content: "", fallbackUsed: true };
+  }
 }
 
 /**
@@ -251,6 +335,32 @@ export async function POST(req: Request) {
       } catch {
         /* malformed -> structured library fallback (already populated) */
       }
+    }
+  }
+
+  // Phase 13: optional AI Provider Router enhancement layer. Off by default
+  // (HERMES_AI_ROUTER_ENABLED unset/not "true") — when off, this block does
+  // not run at all and `analysis` is untouched, so the response is
+  // byte-for-byte identical to before Phase 13. Skipped on a guardrail hit
+  // for the same reason the LLM gateway above is skipped: a flagged
+  // question should not receive additional model-generated content. Every
+  // field already on `analysis` is preserved unchanged — this only ever
+  // ADDS the `aiEnhancement` field, never replaces anything.
+  if (isAIRouterEnabled() && !guardrail) {
+    try {
+      const enhancement = await buildAIEnhancement(
+        question,
+        locale,
+        pipe,
+        reasoning,
+        analysis.retrieval,
+        analysis.safety
+      );
+      if (enhancement) {
+        analysis = { ...analysis, aiEnhancement: enhancement };
+      }
+    } catch {
+      /* never let the AI Router affect the deterministic response */
     }
   }
 

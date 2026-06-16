@@ -1,12 +1,18 @@
 /**
- * AI Provider Router — shared types (Phase 12-A).
+ * AI Provider Router — shared types (Phase 12-A; Phase 12-B adds real
+ * provider capability behind the same shapes).
  *
  * Defines the provider abstraction every adapter (`providers/*.ts`) and the
- * router (`router.ts`) implement. This phase is the abstraction layer only:
- * no adapter calls a real API yet — every `ask()` below returns a
- * deterministic mock `AIResponse`. Phase 12-B re-points the adapters at
- * real providers behind this exact same interface; callers never change.
+ * router (`router.ts`) implement. `AIResponse`/`AIProvider` never changed
+ * between phases — Phase 12-B's openai/claude adapters attempt a real call
+ * when a key (and the optional SDK) is available, and fall back to the same
+ * mock shape Phase 12-A always returned, on any missing prerequisite or
+ * failure. Callers never need to know which happened beyond `metadata.mock`.
  */
+
+// Type-only import (erased at compile time) — config.ts does not import
+// anything from this file, so there is no runtime circularity either way.
+import type { AIProviderMode } from "./config";
 
 /** Concrete providers, plus "hybrid" — the router's own self-id when it is
  *  delegating per-task rather than acting as a single fixed provider. */
@@ -45,10 +51,20 @@ export interface AIResponseMetadata {
    *  top-level `provider` field unless the router (id "hybrid") delegated */
   resolvedProvider: ConcreteProviderId;
   taskKind: AITaskKind;
-  /** always true in Phase 12-A — no adapter calls a real API yet */
+  /** false only for a genuine Phase 12-B real-provider success */
   mock: boolean;
-  /** present when the router itself was invoked (id "hybrid") */
-  routingMode?: AIProviderId;
+  /** present when the request went through `aiRouter` — the runtime policy
+   *  in effect: mock | real | hybrid (see config.ts) */
+  routingMode?: AIProviderMode;
+  /** present whenever `mock` is true: why this call degraded —
+   *  "missing_api_key" | "sdk_not_installed" | "provider_error" |
+   *  "timeout" | "empty_response" | "forced_mock" */
+  reason?: string;
+  /** present only when reason === "sdk_not_installed" */
+  requiredPackage?: string;
+  installCommand?: string;
+  /** present on a real (mock: false) success */
+  model?: string;
   [key: string]: unknown;
 }
 

@@ -191,6 +191,29 @@ export interface BrainAnalysis {
   /** Unknown layer: evidence was insufficient for any classification.
    *  Domains/libraries/citations are empty and retrieval was disabled. */
   unknown?: true;
+  /** Phase 13: optional AI Provider Router enhancement layer, attached only
+   *  when HERMES_AI_ROUTER_ENABLED=true and the question wasn't guardrail-
+   *  flagged. Purely additive — every field above this one is produced by
+   *  the deterministic pipeline and is never altered by this block. Absent
+   *  entirely when the flag is off (default) or the question is unknown. */
+  aiEnhancement?: AIEnhancement;
+}
+
+/** Phase 13: the shape `/api/brain` attaches to `BrainAnalysis.aiEnhancement`. */
+export interface AIEnhancement {
+  enabled: boolean;
+  /** the concrete provider that produced `content` — "none" when the call
+   *  could not be completed at all (caught at the route level) */
+  provider: string;
+  /** the AI Provider Router's active mode for this call: mock | real | hybrid */
+  mode: string;
+  /** the enhancement text itself — never a raw error message or stack trace */
+  content: string;
+  confidence?: number;
+  /** true whenever `content` came from a mock/degraded path rather than a
+   *  genuine real-provider completion (missing key, missing SDK, timeout,
+   *  provider error, or forced mock mode) */
+  fallbackUsed: boolean;
 }
 
 /** Step 8: Knowledge Cloud browser payload (full metadata, key-based text). */
