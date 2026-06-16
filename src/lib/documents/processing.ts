@@ -2,23 +2,29 @@ import { documentRepository } from "./document-repository";
 import { documentTextChunkRepository } from "./chunk-repository";
 import { getDocumentObjectStorage } from "./object-storage";
 import { isExtractable, extractText } from "./extraction";
+import { embedDocumentChunks } from "./embedding";
 import { chunkDocument } from "@/lib/rag/chunking";
 import type { Document } from "./types";
 import type { RagDocument } from "@/lib/rag/types";
 
 /**
- * Document processing pipeline (Phase 16C).
+ * Document processing pipeline (Phase 16C extraction/chunking; Phase 16D
+ * adds embedding).
  *
  * load metadata -> read file from object storage -> extract text (if
  * supported) -> chunk via the EXISTING RAG chunking engine
  * (`src/lib/rag/chunking.ts`, unchanged) -> persist `DocumentTextChunk`
- * rows. Advances `Document.status` through "extracting" -> "extracted" ->
- * "chunking" -> "chunked", persisting each transition (not just the final
- * state), so the row is observably mid-flight if anything ever reads it
- * concurrently.
+ * rows -> embed every chunk (`embedding.ts`, mock provider only — "do not
+ * require live OpenAI"). Advances `Document.status` through "extracting"
+ * -> "extracted" -> "chunking" -> "chunked" -> "embedding" -> "embedded"
+ * -> "indexed", persisting each transition (not just the final state), so
+ * the row is observably mid-flight if anything ever reads it concurrently.
  *
- * NO embeddings, NO pgvector writes — `DocumentTextChunk` has no embedding
- * column at all (see types.ts/schema.prisma). That is Phase 16D's job.
+ * Still NO pgvector writes to the Phase 14C `DocumentChunk` table, and NO
+ * wiring into Hermes Brain or RAG evidence — embeddings are stored on
+ * `DocumentTextChunk` itself (see chunk-vector-store.ts) and are reachable
+ * only through the standalone search service (search.ts) /
+ * `/api/documents/search`.
  *
  * Never throws: every exit path returns a `ProcessResult`. Any unexpected
  * exception is caught and mapped to `status: "failed", error:
@@ -127,9 +133,17 @@ export async function processDocument(documentId: string): Promise<ProcessResult
       );
     }
 
+    await repo.update(documentId, { status: "chunked", chunkCount: chunks.length });
+
+    await repo.update(documentId, { status: "embedding" });
+    const embedResult = await embedDocumentChunks(documentId);
+    if (!embedResult.ok) {
+      return await fail(documentId, embedResult.reason ?? "embedding_failed");
+    }
+    await repo.update(documentId, { status: "embedded" });
+
     const updated = await repo.update(documentId, {
-      status: "chunked",
-      chunkCount: chunks.length,
+      status: "indexed",
       lastProcessedAt: now(),
     });
 

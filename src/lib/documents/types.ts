@@ -131,16 +131,25 @@ export interface DocumentChunkReference {
 }
 
 /**
- * A chunk's TEXT, persisted before any embedding exists (Phase 16C).
+ * A chunk's TEXT (Phase 16C), plus its embedding once one has been
+ * generated (Phase 16D).
  *
- * Deliberately a SEPARATE model from `DocumentChunk` (Phase 14C/the
- * pgvector table): `DocumentChunk.embedding` is a NOT NULL pgvector
- * column, so that table cannot represent a chunk that has no embedding
- * yet. `DocumentTextChunk` is the sibling table for the
- * extraction/chunking stage — Phase 16D's embedding step is expected to
- * read these rows and write the corresponding `DocumentChunk` (pgvector)
- * row once a real embedding provider is wired in; the two tables are
- * pipeline stages, not duplicates.
+ * Deliberately a SEPARATE model from `DocumentChunk` (Phase 14C's pgvector
+ * table, anchored to `PGVECTOR_DIMENSIONS` = 1536 for a real OpenAI
+ * provider): this table's `embedding` column is sized for the MOCK
+ * provider's dimension instead (`DOCUMENT_CHUNK_EMBEDDING_DIMENSIONS` =
+ * 64 — see config.ts), since that's the only provider this phase actually
+ * runs ("do not install OpenAI SDK yet"). The two pgvector-backed tables
+ * are siblings serving different embedding spaces, not duplicates — a
+ * future phase activating a real provider would need a NEW migration to
+ * resize (or replace) whichever column it targets, exactly like
+ * `PGVECTOR_DIMENSIONS`'s own documented constraint.
+ *
+ * `embedding`/`embeddingModel`/`embeddingDimensions` are populated ONLY by
+ * `chunk-vector-store.ts`'s raw-SQL methods — like `DocumentChunk`'s own
+ * `embedding` column, this one is invisible to Prisma's typed client
+ * (`Unsupported("vector(64)")`), so `chunk-repository.ts`'s normal
+ * `list()`/`listByDocumentId()` never populate it.
  */
 export interface DocumentTextChunk {
   id: string;
@@ -157,9 +166,14 @@ export interface DocumentTextChunk {
    *  chunking.ts's `hashString()` */
   contentHash?: string;
   metadata: Record<string, unknown>;
-  /** "chunked" today; Phase 16D may add an "embedded" value once this
-   *  row's embedding has been written to `DocumentChunk` */
+  /** "chunked" (Phase 16C) -> "embedded" (Phase 16D, once `embedding` is
+   *  set) */
   status: string;
+  /** Phase 16D — present only when fetched via `chunk-vector-store.ts`
+   *  (raw SQL); absent from `chunk-repository.ts`'s normal reads */
+  embedding?: number[];
+  embeddingModel?: string;
+  embeddingDimensions?: number;
   createdAt: string;
   updatedAt: string;
 }

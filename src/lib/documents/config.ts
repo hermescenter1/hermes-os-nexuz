@@ -1,3 +1,4 @@
+import { MOCK_EMBEDDING_DIMENSIONS } from "@/lib/rag/config";
 import type { DocumentStorageProvider } from "./types";
 
 /**
@@ -49,3 +50,16 @@ export function getLocalDocumentStorageDir(): string {
  * truth to import rather than inventing a number at upload-route time.
  */
 export const MAX_DOCUMENT_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+
+/**
+ * Phase 16D — `DocumentTextChunk.embedding`'s fixed pgvector width.
+ *
+ * Aliased to `MOCK_EMBEDDING_DIMENSIONS` (not a new literal) because the
+ * mock embedding provider is the ONLY one this phase actually runs ("do
+ * not install OpenAI SDK yet" / "do not require live OpenAI") — there is
+ * no other dimension a chunk embedding could legitimately have today.
+ * Activating a real provider later requires a NEW migration to resize (or
+ * replace) this column, exactly like `rag/config.ts`'s `PGVECTOR_DIMENSIONS`
+ * already documents for the unrelated `DocumentChunk` table.
+ */
+export const DOCUMENT_CHUNK_EMBEDDING_DIMENSIONS = MOCK_EMBEDDING_DIMENSIONS;

@@ -1662,5 +1662,23 @@
       "maintenance_procedure": "Maintenance Procedure",
       "factory_knowledge": "Factory Knowledge"
     }
+  },
+  "adminDocumentSearch": {
+    "eyebrow": "Operations",
+    "title": "Document Search (Test)",
+    "lede": "Semantic search over processed document chunks using mock embeddings. Not connected to Hermes Brain.",
+    "queryPlaceholder": "Search document chunks…",
+    "search": "Search",
+    "searching": "Searching…",
+    "validation": {
+      "queryRequired": "Enter a search query.",
+      "searchFailed": "Search failed — please try again."
+    },
+    "results": {
+      "heading": "Results",
+      "empty": "No matching chunks found.",
+      "notYetSearched": "Run a search to see matching chunks here.",
+      "position": "chunk {position}"
+    }
   }
 }
