@@ -44,6 +44,26 @@ type Card = {
   linkable: boolean;
 };
 
+/**
+ * Resilience fallback for `categories.${value}` lookups (see categoryLabel
+ * below). Published DB knowledge/case rows can carry any BrainDomainId as
+ * their `category` (e.g. "scada", "hmi", "otNetwork"), not just the 7
+ * static-corpus grouping ids the message catalog originally covered — so a
+ * translation key can legitimately be absent even after adding every
+ * currently-known value. This turns an absent key into readable text
+ * ("otNetwork" -> "Ot Network") instead of a crash.
+ */
+function humanizeCategory(value: string): string {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 function Chip({
   active,
   onClick,
@@ -76,6 +96,14 @@ export function LibraryClient() {
     knowledge?: Record<string, { name?: string; summary?: string }>;
     brain?: { cases?: Record<string, string> };
     knowledgeCases?: Record<string, string>;
+  };
+
+  // Resilient category label: checks the key exists before translating
+  // (t.has — no exception involved at all) and falls back to a humanized
+  // version of the raw category value rather than ever crashing the page.
+  const categoryLabel = (value: string) => {
+    const key = `categories.${value}`;
+    return t.has(key) ? t(key) : humanizeCategory(value);
   };
 
   const [data, setData] = useState<KnowledgeBrowseData | null>(null);
@@ -188,7 +216,7 @@ export function LibraryClient() {
         </Chip>
         {CATEGORY_ORDER.map((c) => (
           <Chip key={c} active={category === c} onClick={() => setCategory(c)}>
-            {t(`categories.${c}`)}{" "}
+            {categoryLabel(c)}{" "}
             <span className="font-mono text-[0.65rem] opacity-70">
               {nf.format(countByCategory[c] ?? 0)}
             </span>
@@ -304,10 +332,10 @@ export function LibraryClient() {
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <span className="rounded-full border border-line px-2 py-0.5 font-body text-[0.65rem] text-ink">
-                  {t(`categories.${c.category}`)}
+                  {categoryLabel(c.category)}
                 </span>
                 {c.domains
-                  .filter((d) => b(`domains.${d}`) !== t(`categories.${c.category}`))
+                  .filter((d) => b(`domains.${d}`) !== categoryLabel(c.category))
                   .map((d) => (
                     <span
                       key={d}

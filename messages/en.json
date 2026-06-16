@@ -1206,7 +1206,21 @@
       "protocols": "Industrial Protocols",
       "cybersecurity": "OT Cybersecurity",
       "maintenance": "Maintenance",
-      "vendorKnowledge": "Vendor Knowledge"
+      "vendorKnowledge": "Vendor Knowledge",
+      "scada": "SCADA",
+      "hmi": "HMI",
+      "sensors": "Sensors",
+      "digitalIo": "Digital I/O",
+      "analogIo": "Analog I/O",
+      "otNetwork": "OT Network",
+      "drives": "Drives",
+      "motors": "Motors",
+      "automation": "Automation",
+      "safety": "Safety",
+      "networking": "Networking",
+      "reports": "Reports",
+      "cases": "Engineering Cases",
+      "knowledge": "Knowledge"
     },
     "article": {
       "pointsTitle": "Key points",

@@ -1206,7 +1206,21 @@
       "protocols": "پروتکل‌های صنعتی",
       "cybersecurity": "امنیت سایبری OT",
       "maintenance": "نگهداشت",
-      "vendorKnowledge": "دانش سازندگان"
+      "vendorKnowledge": "دانش سازندگان",
+      "scada": "اسکادا",
+      "hmi": "HMI",
+      "sensors": "سنسورها",
+      "digitalIo": "ورودی/خروجی دیجیتال",
+      "analogIo": "ورودی/خروجی آنالوگ",
+      "otNetwork": "شبکهٔ OT",
+      "drives": "درایوها",
+      "motors": "موتورها",
+      "automation": "اتوماسیون",
+      "safety": "ایمنی",
+      "networking": "شبکه",
+      "reports": "گزارش‌ها",
+      "cases": "سوابق مهندسی",
+      "knowledge": "دانش"
     },
     "article": {
       "pointsTitle": "نکات کلیدی",
