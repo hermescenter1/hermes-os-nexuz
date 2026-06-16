@@ -4,6 +4,7 @@ import type { UsageMetadata } from "@/lib/llm/gateway";
 import type { ReasoningResult } from "@/lib/industrial/reasoning";
 import type { ConfidenceResult } from "@/lib/industrial/confidence";
 import type { RootCauseAnalysis } from "@/lib/industrial/root-cause";
+import type { RetrievalResult } from "@/lib/retrieval/retrieval-types";
 
 /**
  * Hermes OS — Service Interface Layer
@@ -185,6 +186,8 @@ export interface BrainAnalysis {
   /** Step 8: case-driven root cause analysis; present only when an
    *  engineering case matched. Re-exported for API consumers. */
   rootCause?: RootCauseAnalysis;
+  /** Phase 10: hybrid retrieval — ranked evidence + derived confidence band */
+  retrieval?: RetrievalResult;
   /** Unknown layer: evidence was insufficient for any classification.
    *  Domains/libraries/citations are empty and retrieval was disabled. */
   unknown?: true;
@@ -199,14 +202,23 @@ export interface KnowledgeBrowseData {
     keywords: string[];
     vendor?: string;
     futureEmbeddingReady: boolean;
-    titleKey: string;
-    summaryKey: string;
+    /** message-catalog keys — present for the static JSON corpus only */
+    titleKey?: string;
+    summaryKey?: string;
+    /** Phase 11B-B: literal text, present only for PostgreSQL-published
+     *  articles (which carry their own copy, not a message-catalog key) */
+    title?: string;
+    summary?: string;
   }[];
   cases: {
     id: string;
     vendor: string;
     domain: BrainDomainId;
     keywords: string[];
+    /** Phase 11B-B: literal text, present only for PostgreSQL-published
+     *  cases (which carry their own copy, not a message-catalog key) */
+    title?: string;
+    summary?: string;
   }[];
 }
 

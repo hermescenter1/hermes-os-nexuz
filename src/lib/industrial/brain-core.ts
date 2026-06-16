@@ -4,6 +4,7 @@ import {
   DOMAIN_KEYWORDS,
   DOMAIN_LIBS,
   ALL_DOMAINS,
+  type KnowledgeLib,
 } from "./knowledge";
 
 /**
@@ -23,6 +24,8 @@ export interface Classification {
   safety: SafetyKind;
   /** true when evidence was insufficient for any domain */
   unknown?: boolean;
+  /** Phase 9C: sub-threshold near-miss domains (for Unknown triage only) */
+  suggested?: { id: BrainDomainId; score: number }[];
 }
 
 function normalize(q: string): string {
@@ -175,7 +178,15 @@ function scoreDomain(text: string, keywords: string[]): number {
   return strong + Math.min(weakHits, 1);
 }
 
-export function classify(question: string): Classification {
+/**
+ * Phase 11B-A: `knowledgePool` defaults to the static `KNOWLEDGE` corpus so
+ * every existing caller is unaffected; `pipeline.ts` passes a merged
+ * (static + PostgreSQL published) pool when one is available.
+ */
+export function classify(
+  question: string,
+  knowledgePool: KnowledgeLib[] = KNOWLEDGE
+): Classification {
   const text = normalize(question);
 
   // --- domain scores (weak generic terms capped at 1 per domain) ---
@@ -188,12 +199,20 @@ export function classify(question: string): Classification {
   // Unknown/Fallback layer: insufficient evidence -> never force a domain.
   // (Vendor/case evidence can still rescue this at the pipeline level.)
   if (maxRaw < DOMAIN_THRESHOLD) {
+    // Near-miss domains: anything that scored at all, ranked, for triage in
+    // the Unknown Analysis Center. Does NOT promote to a real classification.
+    const suggested = scored
+      .filter((s) => s.raw > 0)
+      .sort((a, b) => b.raw - a.raw)
+      .slice(0, 3)
+      .map((s) => ({ id: s.id, score: Math.round((s.raw / DOMAIN_THRESHOLD) * 100) / 100 }));
     return {
       domains: [],
       libraries: [],
       confidence: 0.2,
       safety: "general",
       unknown: true,
+      ...(suggested.length > 0 ? { suggested } : {}),
     };
   }
 
@@ -218,7 +237,7 @@ export function classify(question: string): Classification {
 
   // --- library selection: direct keyword hits first, then domain defaults
   // interleaved round-robin so one broad domain can't crowd out the rest ---
-  const libScores = KNOWLEDGE.map((lib) => ({
+  const libScores = knowledgePool.map((lib) => ({
     id: lib.id,
     raw: hits(text, lib.keywords.map((k) => k.toLowerCase())),
   }))

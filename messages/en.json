@@ -9,9 +9,36 @@
     "services": "Services",
     "architecture": "Architecture",
     "dashboard": "Dashboard",
-    "copilot": "Copilot",
+    "copilot": "Engineering Copilot",
     "library": "Library",
-    "brain": "Brain"
+    "brain": "Brain",
+    "groups": {
+      "platform": "Platform",
+      "intelligence": "Intelligence",
+      "operations": "Operations",
+      "knowledge": "Knowledge",
+      "services": "Services"
+    },
+    "items": {
+      "overview": "Overview",
+      "architecture": "Architecture",
+      "servicesItem": "Services",
+      "brain": "Brain",
+      "copilot": "Engineering Copilot",
+      "unknownCenter": "Unknown Analysis Center",
+      "dashboard": "Dashboard",
+      "telemetry": "Factory Telemetry",
+      "library": "Library",
+      "cases": "Engineering Cases",
+      "coverage": "Knowledge Coverage",
+      "contact": "Contact",
+      "about": "About",
+      "caseStudio": "Case Studio",
+      "knowledgeStudio": "Knowledge Studio",
+      "admin": "Admin Console"
+    },
+    "menu": "Menu",
+    "close": "Close"
   },
   "common": {
     "switchLanguage": "فارسی",
@@ -1149,6 +1176,13 @@
         "impact": "Process impact",
         "time": "Time of occurrence"
       }
+    },
+    "evidence": {
+      "rankingTitle": "Evidence Ranking",
+      "sourcesTitle": "Top Evidence Sources",
+      "caseTag": "Case",
+      "knowledgeTag": "Knowledge",
+      "scoreLabel": "Evidence"
     }
   },
   "library": {
@@ -1231,5 +1265,324 @@
     "case-mitsubishi-mrj4-al16": "AL.16 encoder error after panel work — partially seated connector, unbonded shield.",
     "case-omron-nx-estop-reset": "Safe state holds after e-stop release — EDM feedback from a welded contactor correctly refuses reset.",
     "case-omron-e5cc-drift": "Temperature drift on door opening — thermocouple extended with copper wire."
+  },
+  "caseExplorer": {
+    "eyebrow": "Engineering Intelligence",
+    "title": "Engineering Case Explorer",
+    "lede": "Field-proven industrial failure cases — the corroborated intelligence Hermes Brain ranks against during root-cause analysis.",
+    "metrics": {
+      "total": "Total Cases",
+      "vendors": "Vendors Covered",
+      "domains": "Domains Covered"
+    },
+    "search": {
+      "label": "Search cases",
+      "placeholder": "Search title, vendor, domain, or root cause…"
+    },
+    "filters": {
+      "vendor": "Vendor",
+      "domain": "Domain",
+      "all": "All",
+      "clear": "Clear filters"
+    },
+    "card": {
+      "rootCause": "Root cause",
+      "corrective": "Corrective action",
+      "confidence": "Confidence"
+    },
+    "none": "No cases match the current filters.",
+    "detail": {
+      "back": "All cases",
+      "problem": "Problem",
+      "rootCause": "Root Cause Analysis",
+      "verification": "Verification Steps",
+      "corrective": "Corrective Actions",
+      "safety": "Safety Notes",
+      "relatedDomain": "Related Domain",
+      "relatedVendor": "Related Vendor",
+      "primaryLabel": "Primary cause",
+      "secondaryLabel": "Contributing causes"
+    },
+    "safetyGeneric": "Verify isolation and lockout/tagout before any intervention. Prove dead at the equipment, follow the vendor procedure, and never defeat a safety function. All corrective work requires qualified-personnel authorization."
+  },
+  "copilot": {
+    "eyebrow": "ENGINEERING COPILOT",
+    "title": "Engineering Copilot",
+    "lede": "Describe an industrial problem in your own words. Hermes Brain classifies the domain, detects the vendor, matches field-proven cases, and retrieves the relevant knowledge — deterministically, with no black box.",
+    "placeholder": "Describe the engineering problem — equipment, symptoms, vendor, alarms, recent changes…",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing…",
+    "emptyHint": "Enter a problem description to run the analysis.",
+    "sections": {
+      "domains": "Detected Domains",
+      "vendors": "Detected Vendors",
+      "cases": "Matched Cases",
+      "sources": "Knowledge Sources"
+    },
+    "none": {
+      "domains": "No domain classified — the description was too general.",
+      "vendors": "No specific vendor detected.",
+      "cases": "No field case matched this signature.",
+      "sources": "No knowledge sources retrieved."
+    },
+    "unknownNote": "Insufficient information for reliable classification. Add equipment type, vendor, alarm text, symptoms, or recent changes.",
+    "approvalNote": "Deterministic analysis from the Hermes knowledge base — no LLM. Engineering judgment and on-site verification remain required.",
+    "confidence": "Confidence",
+    "report": {
+      "title": "Engineering Report",
+      "problemSummary": "Problem Summary",
+      "rootCause": "Most Likely Root Cause",
+      "evidence": "Supporting Evidence",
+      "verification": "Verification Steps",
+      "corrective": "Corrective Actions",
+      "safety": "Safety Notes",
+      "lowConfidenceNote": "Low-confidence match — treat as a lead, not a conclusion.",
+      "safetyGeneric": "Follow site LOTO and network change-control procedures. Verify isolation before any intervention; all corrective work requires qualified-personnel approval.",
+      "ev": {
+        "maintenance": "Maintenance event immediately before the fault",
+        "domain": "{domain} domain detected",
+        "vendor": "{vendor} vendor detected",
+        "cases": "{n} similar engineering case(s) found",
+        "relatedLow": "A related case was found (low confidence)",
+        "score": "Evidence score: {n}"
+      }
+    }
+  },
+  "unknownCenter": {
+    "eyebrow": "Intelligence",
+    "title": "Unknown Analysis Center",
+    "lede": "Queries Hermes Brain could not confidently classify this session — triage them, and flag the ones worth teaching the system.",
+    "metrics": {
+      "total": "Total Unknown",
+      "avgConfidence": "Average Confidence",
+      "topDomain": "Most Suggested Domain",
+      "topVendor": "Most Suggested Vendor",
+      "none": "—"
+    },
+    "sections": {
+      "queue": "Unknown Queue",
+      "suggested": "Suggested Classification",
+      "training": "Training Candidates"
+    },
+    "queue": {
+      "query": "Query",
+      "time": "Time",
+      "confidence": "Confidence",
+      "empty": "No unknown analyses this session. Run a vague query in the Brain or Copilot to see it appear here."
+    },
+    "suggested": {
+      "domains": "Suggested domains",
+      "vendors": "Suggested vendors",
+      "none": "No near-miss signals — the query was too general for any suggestion."
+    },
+    "training": {
+      "lede": "Resolved items become candidates to teach the system in Phase 2.",
+      "empty": "Mark items as resolved to build training candidates.",
+      "count": "{n} candidate(s)"
+    },
+    "actions": {
+      "resolve": "Mark as Resolved",
+      "resolved": "Resolved",
+      "convert": "Convert to Case",
+      "addLibrary": "Add to Knowledge Library"
+    },
+    "actionNote": "Actions are session-scoped placeholders — Phase 2 wires them to persistent case authoring and library ingestion.",
+    "sessionNote": "Session-scoped — resets when the server restarts (no database in V1)."
+  },
+  "caseStudio": {
+    "eyebrow": "Knowledge",
+    "title": "Case Studio",
+    "lede": "Draft new engineering cases from a structured form, preview them as they would appear in the Case Explorer, and queue them for review.",
+    "sessionNote": "Drafts are session/local only in V1 — they are not saved to a database, written to disk, or published. They clear when the server restarts.",
+    "metrics": {
+      "drafts": "Total Drafts",
+      "ready": "Ready to Review",
+      "published": "Published (placeholder)",
+      "vendors": "Vendors Covered"
+    },
+    "form": {
+      "heading": "Create Case",
+      "title": "Title",
+      "vendor": "Vendor",
+      "domain": "Domain",
+      "problem": "Problem",
+      "primary": "Primary Root Cause",
+      "secondary": "Secondary Causes",
+      "verification": "Verification Steps",
+      "corrective": "Corrective Actions",
+      "safety": "Safety Notes",
+      "tags": "Tags",
+      "confidence": "Confidence",
+      "multiHint": "One per line",
+      "tagsHint": "Comma-separated",
+      "selectVendor": "Select vendor",
+      "selectDomain": "Select domain",
+      "reset": "Clear form"
+    },
+    "preview": {
+      "heading": "Draft Preview",
+      "explorerNote": "As it would appear in the Engineering Case Explorer",
+      "empty": "Fill in the title to preview the case.",
+      "rootCause": "Root Cause",
+      "corrective": "Corrective Action"
+    },
+    "queue": {
+      "heading": "Draft Queue",
+      "empty": "No drafts yet this session.",
+      "statusDraft": "Draft",
+      "statusReady": "Ready",
+      "statusPublished": "Published"
+    },
+    "actions": {
+      "save": "Save Draft",
+      "ready": "Mark Ready",
+      "publish": "Publish (placeholder)",
+      "remove": "Remove"
+    },
+    "validation": {
+      "titleRequired": "A title is required to save a draft."
+    }
+  },
+  "knowledgeStudio": {
+    "eyebrow": "Knowledge",
+    "title": "Knowledge Studio",
+    "lede": "Author engineering knowledge libraries that Hermes Brain can consume later — draft, preview, and queue them for review.",
+    "sessionNote": "Knowledge Studio V1 uses session/local state only — nothing is saved to a database, written to disk, or published. Drafts clear when the server restarts.",
+    "metrics": {
+      "total": "Total Libraries",
+      "drafts": "Draft Libraries",
+      "published": "Published Libraries",
+      "domains": "Domains Covered"
+    },
+    "form": {
+      "heading": "Create Knowledge Article",
+      "title": "Title",
+      "domain": "Domain",
+      "vendor": "Vendor (optional)",
+      "summary": "Summary",
+      "content": "Engineering Content",
+      "failureModes": "Failure Modes",
+      "diagnostics": "Diagnostic Guidance",
+      "verification": "Verification Steps",
+      "corrective": "Corrective Actions",
+      "safety": "Safety Notes",
+      "tags": "Tags",
+      "confidence": "Confidence",
+      "multiHint": "One per line",
+      "tagsHint": "Comma-separated",
+      "selectDomain": "Select domain",
+      "vendorNone": "None / vendor-agnostic",
+      "reset": "Clear form"
+    },
+    "preview": {
+      "heading": "Preview",
+      "note": "Live preview while typing",
+      "empty": "Fill in the title to preview the article.",
+      "summary": "Summary",
+      "content": "Engineering content",
+      "verification": "Verification",
+      "corrective": "Corrective actions",
+      "safety": "Safety"
+    },
+    "queue": {
+      "heading": "Knowledge Queue",
+      "empty": "No libraries yet this session.",
+      "statusDraft": "Draft",
+      "statusReview": "Review",
+      "statusPublished": "Published"
+    },
+    "filters": {
+      "heading": "Search & Filter",
+      "search": "Search title, tags, or summary…",
+      "domain": "Domain",
+      "vendor": "Vendor",
+      "status": "Status",
+      "all": "All",
+      "clear": "Clear filters",
+      "none": "No libraries match the current filters."
+    },
+    "actions": {
+      "save": "Save Draft",
+      "ready": "Mark Ready",
+      "publish": "Publish (placeholder)",
+      "delete": "Delete"
+    },
+    "validation": {
+      "titleRequired": "A title is required to save a library."
+    }
+  },
+  "storage": {
+    "label": "Storage",
+    "session": "Session",
+    "database": "Database"
+  },
+  "auth": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "signedInAs": "Signed in as",
+    "loginTitle": "Sign in to Hermes OS",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "invalidCredentials": "Invalid email or password.",
+    "loginLede": "Authoring surfaces require an engineer or admin account.",
+    "setupRequiredTitle": "Authentication not configured",
+    "setupRequired": "This area requires sign-in, but authentication has not been set up in this environment. Set ADMIN_EMAIL and ADMIN_PASSWORD to enable it. Public pages remain fully available.",
+    "loginRequiredTitle": "Sign-in required",
+    "loginRequired": "This area is for engineers and admins. Please sign in to continue.",
+    "deniedTitle": "Access restricted",
+    "denied": "Your account does not have access to this area. Engineer or admin role is required.",
+    "roleAdmin": "Admin",
+    "roleEngineer": "Engineer",
+    "roleViewer": "Viewer"
+  },
+  "admin": {
+    "eyebrow": "Operations",
+    "title": "Admin Console",
+    "lede": "Audit trail and system status for production accountability.",
+    "metrics": {
+      "storage": "Storage Mode",
+      "total": "Total Audit Events",
+      "last": "Last Event",
+      "role": "Your Role",
+      "none": "—"
+    },
+    "table": {
+      "heading": "Audit Log",
+      "time": "Time",
+      "user": "User",
+      "action": "Action",
+      "entity": "Entity",
+      "entityId": "Entity ID",
+      "metadata": "Metadata",
+      "empty": "No audit events match the current filters."
+    },
+    "filters": {
+      "heading": "Filters",
+      "action": "Action",
+      "entityType": "Entity Type",
+      "from": "Date From",
+      "to": "Date To",
+      "limit": "Limit",
+      "all": "All",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "status": {
+      "heading": "System Status",
+      "authConfigured": "Auth configured",
+      "storageMode": "Storage",
+      "prisma": "Prisma available",
+      "protectedRoutes": "Protected routes",
+      "yes": "Yes",
+      "no": "No",
+      "enabled": "Enabled",
+      "session": "Session",
+      "database": "Database"
+    },
+    "security": {
+      "heading": "Security Notes",
+      "body": "Audit logs are required for production accountability. V1 records application-level events only."
+    }
   }
 }

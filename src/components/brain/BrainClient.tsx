@@ -250,6 +250,75 @@ export function BrainClient() {
           </div>
           )}
 
+          {/* Phase 10 — Evidence Ranking (hybrid retrieval) */}
+          {result.retrieval && result.retrieval.ranking.length > 0 && (
+            <div className="rounded-xl border border-line bg-surface p-5">
+              <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
+                {t("evidence.rankingTitle")}
+              </h2>
+              <ol className="mt-4 space-y-2.5">
+                {result.retrieval.ranking.map((e, i) => (
+                  <li key={`${e.kind}-${e.id}`} className="flex items-center gap-3">
+                    <span className="metric flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-signalDim text-[0.65rem] text-signal">
+                      {nf.format(i + 1)}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-body text-sm text-ink">
+                      {e.kind === "case" ? caseTitle(e.id) : k(e.id, "name")}
+                    </span>
+                    <span className="shrink-0 rounded-full border border-line px-2 py-0.5 font-body text-[0.6rem] text-muted">
+                      {e.kind === "case" ? t("evidence.caseTag") : t("evidence.knowledgeTag")}
+                    </span>
+                    <span className="metric shrink-0 text-sm text-signal">
+                      {nf.format(e.score)}{pct}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {/* Phase 10 — Top Evidence Sources (cases + knowledge, linked) */}
+          {result.retrieval &&
+            (result.retrieval.topCases.length > 0 || result.retrieval.topKnowledge.length > 0) && (
+              <div className="rounded-xl border border-line bg-surface p-5">
+                <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
+                  {t("evidence.sourcesTitle")}
+                </h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {result.retrieval.topCases.map((c) => (
+                    <a
+                      key={c.id}
+                      href={`/${locale}/library/cases/${c.id}`}
+                      className="group rounded-lg border border-line bg-bg p-3 transition-colors hover:border-signal/40"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="rounded-full border border-line px-2 py-0.5 font-body text-[0.6rem] text-muted">
+                          {t("evidence.caseTag")}
+                        </span>
+                        <span className="metric text-sm text-signal">{nf.format(c.score)}{pct}</span>
+                      </div>
+                      <p className="mt-1.5 font-body text-sm text-ink group-hover:text-signal">{caseTitle(c.id)}</p>
+                    </a>
+                  ))}
+                  {result.retrieval.topKnowledge.map((kk) => (
+                    <a
+                      key={kk.id}
+                      href={`/${locale}/library/${kk.id}`}
+                      className="group rounded-lg border border-line bg-bg p-3 transition-colors hover:border-signal/40"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="rounded-full border border-line px-2 py-0.5 font-body text-[0.6rem] text-muted">
+                          {t("evidence.knowledgeTag")}
+                        </span>
+                        <span className="metric text-sm text-signal">{nf.format(kk.score)}{pct}</span>
+                      </div>
+                      <p className="mt-1.5 font-body text-sm text-ink group-hover:text-signal">{k(kk.id, "name")}</p>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
           {/* Step 7 — reasoning pipeline trace */}
           {result.pipeline?.steps && result.pipeline.steps.length > 0 && (
             <div className="rounded-xl border border-line bg-surface p-5">

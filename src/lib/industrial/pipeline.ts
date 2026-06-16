@@ -1,9 +1,10 @@
 import { classify } from "./brain-core";
-import { DOMAIN_LIBS } from "./knowledge";
+import { CASES, matchCases, type CaseMatch, type EngineeringCase } from "./cases";
+import { DOMAIN_LIBS, KNOWLEDGE, type KnowledgeLib } from "./knowledge";
 import { detectVendors, type VendorId } from "./vendors";
-import { matchCases, type CaseMatch } from "./cases";
 import type { RootCauseAnalysis } from "./root-cause";
 import { buildRankedRootCause } from "./cause-ranking";
+import { mergeCases, mergeKnowledge } from "./db-bridge";
 import type { BrainDomainId, SafetyKind } from "@/lib/services/types";
 
 /**
@@ -48,7 +49,19 @@ export interface PipelineResult {
   rootCause?: RootCauseAnalysis;
   /** Unknown layer: evidence insufficient for any classification */
   unknown: boolean;
+  /** Phase 9C: sub-threshold near-miss domains (present only when unknown) */
+  suggested?: { id: BrainDomainId; score: number }[];
   steps: PipelineStep[];
+}
+
+/**
+ * Phase 11B-A: optional PostgreSQL-published records to merge with the
+ * static JSON corpus for this call. Omitted (or empty) ⇒ identical behavior
+ * to before — the static-only fallback is always intact.
+ */
+export interface PipelineCorpus {
+  cases?: EngineeringCase[];
+  knowledge?: KnowledgeLib[];
 }
 
 const URGENT = [
@@ -66,15 +79,21 @@ function normalize(q: string): string {
 
 export function runPipeline(
   question: string,
-  locale: "fa" | "en" = "en"
+  locale: "fa" | "en" = "en",
+  corpus?: PipelineCorpus
 ): PipelineResult {
   const steps: PipelineStep[] = [];
   const t0 = () => Date.now();
   const text = normalize(question);
 
+  // Phase 11B-A: merge static + PostgreSQL-published records once per call.
+  // Reference-equal to the static arrays when corpus is omitted/empty.
+  const casePool = mergeCases(CASES, corpus?.cases);
+  const knowledgePool = mergeKnowledge(KNOWLEDGE, corpus?.knowledge);
+
   // 1 — Domain Detection
   let t = t0();
-  const cls = classify(question);
+  const cls = classify(question, knowledgePool);
   steps.push({ id: "domainDetection", ms: Date.now() - t });
 
   // 2 — Knowledge Retrieval: libraries (from classification) + vendor
@@ -91,7 +110,9 @@ export function runPipeline(
   let caseMatches = matchCases(
     text,
     domains.map((d) => d.id),
-    vendors
+    vendors,
+    3,
+    casePool
   );
   let rescueScore = 0;
   if (unknown) {
@@ -194,6 +215,7 @@ export function runPipeline(
     causeSource,
     rootCause,
     unknown,
+    ...(unknown && cls.suggested ? { suggested: cls.suggested } : {}),
     steps,
   };
 }

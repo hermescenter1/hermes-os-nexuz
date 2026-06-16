@@ -1,0 +1,113 @@
+// Hermes OS — Phase 11A database foundation.
+//
+// This schema describes the Phase 2 Postgres persistence layer. In V1 it is
+// OPTIONAL: when DATABASE_URL is absent the app runs entirely in session mode
+// and never touches Prisma. Models mirror the existing JSON/session shapes so
+// migration is a straight copy when the database is provisioned.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model EngineeringCase {
+  id                String   @id @default(cuid())
+  title             String
+  vendor            String
+  domain            String
+  problem           String
+  rootCause         String
+  secondaryCauses   Json
+  verificationSteps Json
+  correctiveActions Json
+  safetyNotes       String
+  tags              Json
+  confidence        Int
+  status            String   @default("draft")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model KnowledgeArticle {
+  id                String   @id @default(cuid())
+  title             String
+  domain            String
+  vendor            String?
+  summary           String
+  content           String
+  failureModes      Json
+  diagnosticGuidance Json
+  verificationSteps Json
+  correctiveActions Json
+  safetyNotes       String
+  tags              Json
+  confidence        Int
+  status            String   @default("draft")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AnalysisRecord {
+  id         String   @id @default(cuid())
+  query      String
+  locale     String
+  mode       String
+  domains    Json
+  vendors    Json
+  cases      Json
+  knowledge  Json
+  confidence Float
+  riskLevel  String
+  isUnknown  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model UnknownAnalysis {
+  id               String   @id @default(cuid())
+  query            String
+  locale           String
+  confidence       Float
+  suggestedDomains Json
+  suggestedVendors Json
+  status           String   @default("open")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ---- Phase 12A: authentication + RBAC (additive) ----
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         String        @default("viewer") // admin | engineer | viewer
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  sessions     AuthSession[]
+  auditLogs    AuditLog[]
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}

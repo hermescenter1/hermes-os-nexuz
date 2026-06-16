@@ -46,14 +46,21 @@ export interface CaseMatch {
   score: number;
 }
 
-/** Keyword/vendor/domain-weighted case matching against a normalized question. */
+/**
+ * Keyword/vendor/domain-weighted case matching against a normalized question.
+ *
+ * Phase 11B-A: `pool` defaults to the static `CASES` corpus so every existing
+ * caller is unaffected; `pipeline.ts` passes a merged (static + PostgreSQL
+ * published) pool when one is available.
+ */
 export function matchCases(
   normalizedText: string,
   domains: BrainDomainId[],
   vendors: VendorId[],
-  limit = 3
+  limit = 3,
+  pool: EngineeringCase[] = CASES
 ): CaseMatch[] {
-  return CASES.map((c) => {
+  return pool.map((c) => {
     let score = 0;
     for (const k of c.keywords) {
       const kk = k.toLowerCase();

@@ -37,6 +37,11 @@ type Card = {
   vendor?: string;
   title: string;
   summary: string;
+  /** Phase 11B-B: published DB records have no static article/case detail
+   *  page (those are statically generated from the JSON corpus only), so
+   *  they render as plain cards instead of links — same treatment the
+   *  static "case" cards already get below. */
+  linkable: boolean;
 };
 
 function Chip({
@@ -103,8 +108,11 @@ export function LibraryClient() {
       domains: l.domains,
       keywords: l.keywords,
       vendor: l.vendor,
-      title: msgs.knowledge?.[l.id]?.name ?? l.id,
-      summary: msgs.knowledge?.[l.id]?.summary ?? "",
+      // Published DB articles carry their own title/summary; static
+      // libraries fall back to the message catalog as before.
+      title: l.title ?? msgs.knowledge?.[l.id]?.name ?? l.id,
+      summary: l.summary ?? msgs.knowledge?.[l.id]?.summary ?? "",
+      linkable: Boolean(l.titleKey),
     }));
     const cases: Card[] = data.cases.map((c) => ({
       id: c.id,
@@ -113,8 +121,9 @@ export function LibraryClient() {
       domains: [c.domain],
       keywords: c.keywords,
       vendor: c.vendor,
-      title: msgs.brain?.cases?.[c.id] ?? c.id,
-      summary: msgs.knowledgeCases?.[c.id] ?? "",
+      linkable: false,
+      title: c.title ?? msgs.brain?.cases?.[c.id] ?? c.id,
+      summary: c.summary ?? msgs.knowledgeCases?.[c.id] ?? "",
     }));
     return [...libs, ...cases];
   }, [data, msgs]);
@@ -273,7 +282,7 @@ export function LibraryClient() {
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-display text-base font-semibold leading-snug text-ink">
-                  {c.kind === "library" ? (
+                  {c.kind === "library" && c.linkable ? (
                     <Link
                       href={`/library/${c.id}`}
                       className="transition-colors hover:text-signal"

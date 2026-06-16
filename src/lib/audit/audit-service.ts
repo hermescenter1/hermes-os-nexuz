@@ -1,0 +1,191 @@
+import { getStorageMode, type StorageMode } from "@/lib/storage/storage-mode";
+import { getPrisma } from "@/lib/db/prisma";
+
+/**
+ * Audit service (Phase 12B).
+ *
+ * Records application-level audit events. Safe in both storage modes:
+ *  - database mode: persists to the Prisma AuditLog table; degrades to the
+ *    in-process buffer if the client is unavailable or a query fails.
+ *  - session mode: keeps an in-process buffer so the console still shows
+ *    events recorded during the running session, and reports storageMode
+ *    "session" so the UI can label the data accordingly.
+ *
+ * recordAuditEvent never throws — auditing must not break the action it logs.
+ */
+
+/** Stable action identifiers for the 15 audited events. */
+export const AUDIT_ACTIONS = {
+  LOGIN_SUCCESS: "login.success",
+  LOGIN_FAILURE: "login.failure",
+  CASE_CREATED: "case.created",
+  CASE_UPDATED: "case.updated",
+  CASE_DELETED: "case.deleted",
+  CASE_MARKED_READY: "case.marked_ready",
+  CASE_PUBLISHED: "case.published",
+  KNOWLEDGE_CREATED: "knowledge.created",
+  KNOWLEDGE_UPDATED: "knowledge.updated",
+  KNOWLEDGE_DELETED: "knowledge.deleted",
+  KNOWLEDGE_MARKED_READY: "knowledge.marked_ready",
+  KNOWLEDGE_PUBLISHED: "knowledge.published",
+  UNKNOWN_RESOLVED: "unknown.resolved",
+  UNKNOWN_CONVERTED: "unknown.converted_to_case",
+  UNKNOWN_TO_LIBRARY: "unknown.added_to_library",
+} as const;
+
+export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
+
+export interface AuditEvent {
+  id: string;
+  userId: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface AuditFilter {
+  action?: string;
+  entityType?: string;
+  userId?: string;
+  limit?: number;
+  from?: string; // ISO date
+  to?: string; // ISO date
+}
+
+export interface AuditInput {
+  userId?: string | null;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+const now = () => new Date().toISOString();
+
+function buffer(): AuditEvent[] {
+  const g = globalThis as unknown as { __hermesAudit?: AuditEvent[] };
+  g.__hermesAudit ??= [];
+  return g.__hermesAudit;
+}
+
+type AuditModel = {
+  create: (a: unknown) => Promise<Record<string, unknown>>;
+  findMany: (a?: unknown) => Promise<Record<string, unknown>[]>;
+};
+
+async function model(): Promise<AuditModel | null> {
+  const db = await getPrisma();
+  return db ? ((db as Record<string, unknown>).auditLog as AuditModel) : null;
+}
+
+function rowToEvent(r: Record<string, unknown>): AuditEvent {
+  return {
+    id: String(r.id),
+    userId: r.userId ? String(r.userId) : null,
+    action: String(r.action ?? ""),
+    entityType: String(r.entityType ?? ""),
+    entityId: r.entityId ? String(r.entityId) : null,
+    metadata: (r.metadata as Record<string, unknown>) ?? {},
+    createdAt: r.createdAt ? new Date(r.createdAt as string).toISOString() : now(),
+  };
+}
+
+/** Record an audit event. Never throws. */
+export async function recordAuditEvent(input: AuditInput): Promise<void> {
+  const event: AuditEvent = {
+    id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    userId: input.userId ?? null,
+    action: input.action,
+    entityType: input.entityType,
+    entityId: input.entityId ?? null,
+    metadata: input.metadata ?? {},
+    createdAt: now(),
+  };
+
+  // Always keep an in-process copy so the running session can see events.
+  const buf = buffer();
+  buf.unshift(event);
+  if (buf.length > 500) buf.length = 500;
+
+  // In database mode, also persist.
+  if (getStorageMode() === "database") {
+    try {
+      const m = await model();
+      if (m) {
+        await m.create({
+          data: {
+            userId: event.userId,
+            action: event.action,
+            entityType: event.entityType,
+            entityId: event.entityId,
+            metadata: event.metadata,
+          },
+        });
+      }
+    } catch {
+      /* persistence is best-effort; the in-process copy already exists */
+    }
+  }
+}
+
+function applyFilter(events: AuditEvent[], f: AuditFilter): AuditEvent[] {
+  let out = events;
+  if (f.action) out = out.filter((e) => e.action === f.action);
+  if (f.entityType) out = out.filter((e) => e.entityType === f.entityType);
+  if (f.userId) out = out.filter((e) => e.userId === f.userId);
+  if (f.from) {
+    const from = new Date(f.from).getTime();
+    out = out.filter((e) => new Date(e.createdAt).getTime() >= from);
+  }
+  if (f.to) {
+    const to = new Date(f.to).getTime();
+    out = out.filter((e) => new Date(e.createdAt).getTime() <= to);
+  }
+  const limit = f.limit && f.limit > 0 ? f.limit : 100;
+  return out.slice(0, limit);
+}
+
+/** List recent events (database when available, else session buffer). */
+export async function listAuditEvents(
+  limit = 100
+): Promise<{ storageMode: StorageMode; events: AuditEvent[] }> {
+  return filterAuditEvents({ limit });
+}
+
+/** Filtered list with storage-mode reporting. Never throws. */
+export async function filterAuditEvents(
+  filter: AuditFilter
+): Promise<{ storageMode: StorageMode; events: AuditEvent[] }> {
+  const mode = getStorageMode();
+
+  if (mode === "database") {
+    try {
+      const m = await model();
+      if (m) {
+        const where: Record<string, unknown> = {};
+        if (filter.action) where.action = filter.action;
+        if (filter.entityType) where.entityType = filter.entityType;
+        if (filter.userId) where.userId = filter.userId;
+        if (filter.from || filter.to) {
+          where.createdAt = {
+            ...(filter.from ? { gte: new Date(filter.from) } : {}),
+            ...(filter.to ? { lte: new Date(filter.to) } : {}),
+          };
+        }
+        const rows = await m.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          take: filter.limit && filter.limit > 0 ? filter.limit : 100,
+        });
+        return { storageMode: "database", events: rows.map(rowToEvent) };
+      }
+    } catch {
+      /* fall through to the in-process buffer */
+    }
+  }
+
+  // Session mode (or database degraded): filter the in-process buffer.
+  return { storageMode: mode, events: applyFilter(buffer(), filter) };
+}

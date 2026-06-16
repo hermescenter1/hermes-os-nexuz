@@ -6,6 +6,7 @@ import type { BrainMemoryStats } from "@/lib/services/types";
 import {
   PLATFORM_FACTS,
   PLATFORM_COMPONENTS,
+  getDynamicPlatformFacts,
   type ComponentState,
 } from "@/lib/industrial/platform-facts";
 
@@ -102,6 +103,19 @@ export function ExecutiveOverview() {
   const td = useTranslations("brain.domains");
   const locale = useLocale();
   const [data, setData] = useState<BrainStatsResponse | null>(null);
+  // Phase 11B-B: database-mode live counts; defaults to (and falls back to)
+  // the static PLATFORM_FACTS baseline so this never blocks rendering.
+  const [facts, setFacts] = useState(PLATFORM_FACTS);
+
+  useEffect(() => {
+    let live = true;
+    getDynamicPlatformFacts().then((f) => {
+      if (live) setFacts(f);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -156,9 +170,9 @@ export function ExecutiveOverview() {
             value={pf.format(Math.round((stats?.avgConfidence ?? 0) * 100))}
             suffix={pct}
           />
-          <KpiCard label={t("kpi.engineeringCases")} value={nf.format(PLATFORM_FACTS.engineeringCases)} />
-          <KpiCard label={t("kpi.knowledgeLibraries")} value={nf.format(PLATFORM_FACTS.knowledgeLibraries)} />
-          <KpiCard label={t("kpi.supportedVendors")} value={nf.format(PLATFORM_FACTS.supportedVendors)} />
+          <KpiCard label={t("kpi.engineeringCases")} value={nf.format(facts.engineeringCases)} />
+          <KpiCard label={t("kpi.knowledgeLibraries")} value={nf.format(facts.knowledgeLibraries)} />
+          <KpiCard label={t("kpi.supportedVendors")} value={nf.format(facts.supportedVendors)} />
           <KpiCard
             label={t("kpi.systemHealth")}
             value={t(`health.${health}`)}

@@ -2,13 +2,19 @@ import { NextResponse } from "next/server";
 import { runPipeline } from "@/lib/industrial/pipeline";
 import { runReasoning, summarizeEvidence } from "@/lib/industrial/reasoning";
 import { computeConfidence, vendorCertainty } from "@/lib/industrial/confidence";
+import { runRetrieval } from "@/lib/retrieval/retrieval-engine";
+import { isDatabaseMode } from "@/lib/storage/storage-mode";
+import { analysisRepository } from "@/lib/storage/analysis-repository";
+import { unknownRepository } from "@/lib/storage/unknown-repository";
 import { CASES } from "@/lib/industrial/cases";
-import { analysisMemory } from "@/lib/industrial/memory";
+import { analysisMemory, computeMemoryStats, type AnalysisRecord } from "@/lib/industrial/memory";
+import { getPublishedCorpus } from "@/lib/industrial/db-bridge";
 import { completeTask, gatewayAvailable } from "@/lib/llm/gateway";
 import { buildPrompt, taskForDomain } from "@/lib/llm/prompts";
 import { screenQuestion } from "@/lib/llm/guardrails";
-import type { BrainAnalysis } from "@/lib/services/types";
+import type { BrainAnalysis, BrainDomainId, ReasoningMode } from "@/lib/services/types";
 import type { Citation } from "@/lib/services/rag-types";
+import type { StoredAnalysis } from "@/lib/storage/types";
 import en from "../../../../messages/en.json";
 
 export const dynamic = "force-dynamic";
@@ -55,7 +61,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "question too short" }, { status: 400 });
   }
 
-  const pipe = runPipeline(question, locale);
+  // Phase 11B-A: in database mode, merge PostgreSQL-published cases/knowledge
+  // into the reasoning pipeline and retrieval engine. Best-effort — any
+  // repository failure resolves to an empty corpus (see getPublishedCorpus),
+  // so the static JSON fallback is never at risk.
+  const corpus = isDatabaseMode() ? await getPublishedCorpus() : undefined;
+  const pipe = runPipeline(question, locale, corpus);
   const guardrail = screenQuestion(normalizeForScreen(question));
   if (pipe.unknown) {
     // Unknown layer: retrieval disabled — no libraries, citations,
@@ -94,8 +105,37 @@ export async function POST(req: Request) {
       confidence: pipe.confidence,
       evidenceScore: 0,
       ...(pipe.vendors.length > 0 ? { vendor: pipe.vendors[0] } : {}),
+      ...(pipe.suggested ? { suggestedDomains: pipe.suggested } : {}),
       unknown: true,
     });
+    // Phase 11B: in database mode, persist the analysis record and an Unknown
+    // triage row to PostgreSQL. Session mode keeps the in-process behavior.
+    if (isDatabaseMode()) {
+      try {
+        await analysisRepository().create({
+          query: question,
+          locale,
+          mode: "library",
+          domains: [],
+          vendors: pipe.vendors,
+          cases: [],
+          knowledge: [],
+          confidence: pipe.confidence,
+          riskLevel: "unknown",
+          isUnknown: true,
+        });
+        await unknownRepository().create({
+          query: question,
+          locale,
+          confidence: pipe.confidence,
+          suggestedDomains: (pipe.suggested ?? []).map((s) => s.id),
+          suggestedVendors: pipe.vendors,
+          status: "open",
+        });
+      } catch {
+        /* best-effort persistence */
+      }
+    }
     return NextResponse.json(analysis);
   }
 
@@ -148,6 +188,13 @@ export async function POST(req: Request) {
       vendorConfidence: vendorCertainty(pipe.vendors.length),
       caseMatches: pipe.caseMatches.length,
       evidenceCount: reasoning.evidence.length,
+    }),
+    retrieval: runRetrieval({
+      text: question,
+      domains: pipe.domains.map((d) => d.id),
+      vendors: pipe.vendors,
+      extraCases: corpus?.cases,
+      extraKnowledge: corpus?.knowledge,
     }),
   };
 
@@ -226,30 +273,106 @@ export async function POST(req: Request) {
     unknown: false,
   });
 
+  // Phase 11B: durable analysis history. In database mode this persists to
+  // PostgreSQL; in session mode the in-process ring above already holds it,
+  // so we skip the repo write to avoid double-storing the same record.
+  if (isDatabaseMode()) {
+    try {
+      await analysisRepository().create({
+        query: question,
+        locale,
+        mode: analysis.mode,
+        domains: pipe.domains.map((d) => d.id),
+        vendors: pipe.vendors,
+        cases: pipe.caseMatches.map((m) => m.case.id),
+        knowledge: pipe.libraries,
+        confidence: analysis.confidence,
+        riskLevel: analysis.riskLevel ?? "low",
+        isUnknown: false,
+      });
+    } catch {
+      /* history persistence is best-effort; never blocks the response */
+    }
+  }
+
   return NextResponse.json(analysis, { headers: { "Cache-Control": "no-store" } });
+}
+
+/** Phase 11B-B: maps a durable StoredAnalysis row into the AnalysisRecord
+ *  shape GET already returns. Lossy in a few fields StoredAnalysis doesn't
+ *  carry (safety, guardrail, a separately-tracked evidenceScore) — those
+ *  fall back to a neutral default rather than breaking the response shape. */
+function rowToAnalysisRecord(row: StoredAnalysis): AnalysisRecord {
+  return {
+    id: row.id,
+    ts: new Date(row.createdAt).getTime(),
+    question: row.query,
+    locale: row.locale === "fa" ? "fa" : "en",
+    domains: row.domains.map((id) => ({ id: id as BrainDomainId, score: 1 })),
+    libraries: row.knowledge,
+    caseMatches: row.cases,
+    vendors: row.vendors,
+    mode: row.mode as ReasoningMode,
+    safety: "general",
+    confidence: row.confidence,
+    evidenceScore: row.confidence,
+    unknown: row.isUnknown,
+  };
+}
+
+function recentLibrariesOf(records: AnalysisRecord[]): string[] {
+  const recentLibraries: string[] = [];
+  for (const r of records) {
+    for (const lib of r.libraries) {
+      if (!recentLibraries.includes(lib)) recentLibraries.push(lib);
+    }
+  }
+  return recentLibraries;
 }
 
 /**
  * Memory inspection on the SAME route (no new routes per Step 6 rules):
  * GET /api/brain returns recent analysis records and aggregate stats.
+ *
+ * Phase 11B-B: in database mode this reads the durable history written by
+ * POST (analysisRepository) instead of the in-process ring buffer, so
+ * "recent"/"stats" survive a server restart. Any repository failure falls
+ * back to the session-memory path below — never a hard error.
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const n = Math.min(Number(url.searchParams.get("n") ?? 20) || 20, 50);
-  const recent = analysisMemory.recent(n);
-  const recentLibraries: string[] = [];
-  for (const r of recent) {
-    for (const lib of r.libraries) {
-      if (!recentLibraries.includes(lib)) recentLibraries.push(lib);
+
+  if (isDatabaseMode()) {
+    try {
+      const rows = await analysisRepository().list();
+      const all = rows.map(rowToAnalysisRecord);
+      const recent = all.slice(0, n);
+      return NextResponse.json(
+        {
+          recent,
+          recentLibraries: recentLibrariesOf(recent),
+          stats: computeMemoryStats(all),
+          caseDatabase: { cases: CASES.length },
+          storageMode: "database",
+          note: "Database mode: history is durable in PostgreSQL (AnalysisRecord) and survives restarts.",
+        },
+        { headers: { "Cache-Control": "no-store" } }
+      );
+    } catch {
+      /* fall through to the session-memory path below */
     }
   }
+
+  const recent = analysisMemory.recent(n);
   return NextResponse.json(
     {
       recent,
-      recentLibraries,
+      recentLibraries: recentLibrariesOf(recent),
       stats: analysisMemory.stats(),
       caseDatabase: { cases: CASES.length },
-      note: "V1 memory is process-lifetime (no database permitted yet); MemoryStore is the Phase 2 Postgres seam.",
+      storageMode: "session",
+      note: "Session mode: history is process-lifetime only (in-memory) — set DATABASE_URL to persist it across restarts.",
     },
     { headers: { "Cache-Control": "no-store" } }
   );
