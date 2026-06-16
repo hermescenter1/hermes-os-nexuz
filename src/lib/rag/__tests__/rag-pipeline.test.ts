@@ -63,16 +63,25 @@ describe("runRagPipeline — enabled (mock mode, mock embeddings)", () => {
     expect(res.results[0].score).toBeCloseTo(1, 5);
   });
 
-  it("reports the configured mode/embeddingProvider even though Phase 14A always executes via mock", async () => {
+  it("reports the configured mode/embeddingProvider, and never crashes even when pgvector has no real database to use", async () => {
+    // Phase 14B: "pgvector" now genuinely selects the pgvector-backed store
+    // (vector-store-pgvector.ts), and "openai" genuinely selects the real
+    // OpenAI embedding adapter (embedding-provider-openai.ts). Neither has
+    // a real backend configured in this test (no DATABASE_URL, no
+    // OPENAI_API_KEY), so both degrade safely: the embedding step falls
+    // back to the mock vector internally, and the pgvector store's add()/
+    // search() are no-ops without a database — so the end-to-end result is
+    // an empty (not crashed, not mock-populated) result set. This is the
+    // correct, intended degrade behavior, not a bug.
     process.env.HERMES_RAG_ENABLED = "true";
     process.env.HERMES_RAG_MODE = "pgvector";
     process.env.HERMES_EMBEDDING_PROVIDER = "openai";
     const res = await runRagPipeline({ documents: docs, query: { text: "PLC drift" } });
     expect(res.mode).toBe("pgvector");
     expect(res.embeddingProvider).toBe("openai");
-    // still produced real (mock) results — neither value crashed or no-opped
     expect(res.enabled).toBe(true);
-    expect(res.results.length).toBeGreaterThan(0);
+    expect(res.reason).toBeUndefined(); // no error — a deliberate empty result, not a failure
+    expect(res.results).toEqual([]);
   });
 
   it("respects topK and metadata filters end-to-end", async () => {

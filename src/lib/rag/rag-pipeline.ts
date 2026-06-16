@@ -1,34 +1,50 @@
 import { isRagEnabled, getRagMode, getEmbeddingProvider } from "./config";
 import { chunkDocument, type ChunkOptions } from "./chunking";
 import { mockEmbeddingProvider } from "./embedding-provider";
+import { openaiEmbeddingProvider } from "./embedding-provider-openai";
+import { localEmbeddingProvider } from "./embedding-provider-local";
 import { createInMemoryVectorStore } from "./vector-store";
-import type { EmbeddingProvider, RagDocument, RagPipelineResult, RagSearchQuery } from "./types";
+import { createPgVectorStore } from "./vector-store-pgvector";
+import type {
+  EmbeddingProvider,
+  RagDocument,
+  RagPipelineResult,
+  RagSearchQuery,
+  VectorStore,
+} from "./types";
 
 /**
- * RAG Pipeline (Phase 14A) — disabled by default, never throws.
+ * RAG Pipeline (Phase 14A foundation; Phase 14B wires in real providers and
+ * a real store) — disabled by default, never throws.
  *
  * NOT wired into `/api/brain` or `retrieval-engine.ts` in this phase. This
  * is a self-contained, independently-testable capability: callers supply
- * the documents to index AND the query in one call (there is no persistent
- * corpus yet — that durability question is Phase 14B/pgvector's, not
- * this phase's).
+ * the documents to index AND the query in one call. Even in "pgvector"
+ * mode there is no durable, populate-once-query-many ingestion path yet —
+ * see vector-store-pgvector.ts's documentation of that gap.
  *
- * Phase 14A note: `HERMES_RAG_MODE` and `HERMES_EMBEDDING_PROVIDER` are
- * read and reported in the result for forward-compatibility, but every
- * configured value currently executes through the same in-memory mock
- * path below — there is no pgvector/external/openai/local execution path
- * yet. Resolving "openai"/"local"/"pgvector"/"external" to the mock
- * implementation here (rather than erroring) is deliberate: it lets ops
- * set the real target value in advance of Phase 14B shipping the matching
- * implementation, without that env var doing anything unsafe today.
+ * Phase 14B: `getEmbeddingProvider()` now selects a genuinely different
+ * adapter per value — "openai"/"local" attempt a real call and degrade to
+ * the mock embedding on any missing key/SDK/server/timeout/error (see
+ * embedding-provider-openai.ts / -local.ts). `getRagMode() === "pgvector"`
+ * now selects the pgvector-backed store (vector-store-pgvector.ts), which
+ * itself degrades to an empty result when the database/table isn't
+ * reachable. `"external"` still has no implementation and resolves to the
+ * safe in-memory store, exactly like an unrecognized value would.
  */
 
 const EMBEDDING_PROVIDERS: Partial<Record<string, EmbeddingProvider>> = {
   mock: mockEmbeddingProvider,
+  openai: openaiEmbeddingProvider,
+  local: localEmbeddingProvider,
 };
 
 function resolveEmbeddingProvider(): EmbeddingProvider {
   return EMBEDDING_PROVIDERS[getEmbeddingProvider()] ?? mockEmbeddingProvider;
+}
+
+function resolveVectorStore(): VectorStore {
+  return getRagMode() === "pgvector" ? createPgVectorStore() : createInMemoryVectorStore();
 }
 
 export interface RagPipelineInput {
@@ -60,7 +76,7 @@ export async function runRagPipeline(input: RagPipelineInput): Promise<RagPipeli
 
   try {
     const provider = resolveEmbeddingProvider();
-    const store = createInMemoryVectorStore();
+    const store = resolveVectorStore();
 
     for (const doc of input.documents) {
       const chunks = chunkDocument(doc, input.chunkOptions);

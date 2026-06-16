@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mockEmbeddingProvider } from "../embedding-provider";
+import { mockEmbeddingProvider, mockEmbedWithReason } from "../embedding-provider";
 import { MOCK_EMBEDDING_DIMENSIONS } from "../config";
 
 describe("mockEmbeddingProvider", () => {
@@ -41,5 +41,20 @@ describe("mockEmbeddingProvider", () => {
       expect(v).toBeGreaterThanOrEqual(-1);
       expect(v).toBeLessThanOrEqual(1);
     }
+  });
+
+  it("Phase 14B: marks itself as mock:true", async () => {
+    const res = await mockEmbeddingProvider.embed({ chunkId: "c1", text: "hello" });
+    expect(res.mock).toBe(true);
+  });
+});
+
+describe("mockEmbedWithReason (Phase 14B)", () => {
+  it("returns the same deterministic vector as the mock provider, plus a reason", async () => {
+    const direct = await mockEmbeddingProvider.embed({ chunkId: "c1", text: "hello" });
+    const withReason = await mockEmbedWithReason({ chunkId: "c1", text: "hello" }, "missing_api_key");
+    expect(withReason.vector).toEqual(direct.vector);
+    expect(withReason.mock).toBe(true);
+    expect(withReason.reason).toBe("missing_api_key");
   });
 });

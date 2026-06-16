@@ -46,6 +46,16 @@ export interface RagEmbedding {
   vector: number[];
   dimensions: number;
   model: string;
+  /** Phase 14B: true when this vector came from the mock provider rather
+   *  than a genuine real-provider call — mirrors `AIResponseMetadata.mock`
+   *  from `src/lib/ai/types.ts` for consistency across the two provider
+   *  families. Optional so Phase 14A code that never set it stays valid. */
+  mock?: boolean;
+  /** present only when `mock` is true and something specifically degraded
+   *  (vs. simply being configured as the mock provider by choice) —
+   *  "missing_api_key" | "sdk_not_installed" | "provider_error" |
+   *  "timeout" | "empty_response" */
+  reason?: string;
 }
 
 export interface RagSearchQuery {

@@ -20,7 +20,7 @@ import type { RetrievalInput, RetrievalResult } from "./retrieval-types";
  * shows genuinely-supported evidence.
  */
 export function runRetrieval(input: RetrievalInput): RetrievalResult {
-  const { text, domains, vendors, extraCases, extraKnowledge } = input;
+  const { text, domains, vendors, extraCases, extraKnowledge, vectorMatches } = input;
 
   // Phase 11B-A: merge static + PostgreSQL-published records once per call.
   // Reference-equal to the static arrays when extra* is omitted/empty.
@@ -41,5 +41,18 @@ export function runRetrieval(input: RetrievalInput): RetrievalResult {
   const confidence = deriveConfidence(topCases, topKnowledge, vendors.length);
   const confidenceBand = bandFor(confidence);
 
-  return { topCases, topKnowledge, ranking, confidence, confidenceBand };
+  // Phase 14B: pass-through only — no fusion with the keyword scoring
+  // above. `strategy` reports "hybrid" purely to signal that vector
+  // evidence was supplied for this call, not that it influenced ranking.
+  const hasVectorMatches = Boolean(vectorMatches && vectorMatches.length > 0);
+
+  return {
+    topCases,
+    topKnowledge,
+    ranking,
+    confidence,
+    confidenceBand,
+    strategy: hasVectorMatches ? "hybrid" : "keyword",
+    ...(hasVectorMatches ? { vectorMatches } : {}),
+  };
 }

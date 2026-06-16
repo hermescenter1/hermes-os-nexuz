@@ -78,4 +78,39 @@ describe("Hybrid Retrieval Engine (Phase 10)", () => {
       expect(r.ranking[i - 1].score).toBeGreaterThanOrEqual(r.ranking[i].score);
     }
   });
+
+  describe("Phase 14B — vector-search seam (pass-through only, no fusion yet)", () => {
+    it("reports strategy 'keyword' and omits vectorMatches when none are supplied", () => {
+      const r = runRetrieval({ text: "ABB ACS580 overcurrent during acceleration", domains: ["drives"], vendors: ["abb"] });
+      expect(r.strategy).toBe("keyword");
+      expect(r.vectorMatches).toBeUndefined();
+    });
+
+    it("reports strategy 'hybrid' and passes vectorMatches through unchanged when supplied", () => {
+      const vectorMatches = [
+        { chunk: { id: "c1", documentId: "d1", sourceType: "knowledge", text: "x", position: 0 }, score: 0.9 },
+      ];
+      const r = runRetrieval({
+        text: "ABB ACS580 overcurrent during acceleration",
+        domains: ["drives"],
+        vendors: ["abb"],
+        vectorMatches,
+      });
+      expect(r.strategy).toBe("hybrid");
+      expect(r.vectorMatches).toEqual(vectorMatches);
+      // the keyword scoring/ranking is completely unaffected by their presence
+      expect(r.topCases[0]?.id).toBe("case-abb-acs580-oc");
+    });
+
+    it("treats an empty vectorMatches array the same as omitted (strategy stays 'keyword')", () => {
+      const r = runRetrieval({
+        text: "ABB ACS580 overcurrent during acceleration",
+        domains: ["drives"],
+        vendors: ["abb"],
+        vectorMatches: [],
+      });
+      expect(r.strategy).toBe("keyword");
+      expect(r.vectorMatches).toBeUndefined();
+    });
+  });
 });

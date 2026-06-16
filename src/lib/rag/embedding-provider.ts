@@ -40,6 +40,24 @@ export const mockEmbeddingProvider: EmbeddingProvider = {
       vector: embedText(text),
       dimensions: MOCK_EMBEDDING_DIMENSIONS,
       model: MOCK_EMBEDDING_MODEL,
+      mock: true,
     };
   },
 };
+
+/**
+ * Phase 14B: the real adapters (embedding-provider-openai.ts,
+ * embedding-provider-local.ts) call this for every degrade path instead of
+ * calling `mockEmbeddingProvider.embed()` directly, so the specific reason
+ * ("missing_api_key", "sdk_not_installed", "provider_error", "timeout",
+ * "empty_response") survives onto the result — mirroring how
+ * `src/lib/ai/providers/shared.ts`'s `mockResponse()` attaches a reason to
+ * every AI Router fallback.
+ */
+export async function mockEmbedWithReason(
+  input: { chunkId: string; text: string },
+  reason: string
+): Promise<RagEmbedding> {
+  const result = await mockEmbeddingProvider.embed(input);
+  return { ...result, mock: true, reason };
+}
