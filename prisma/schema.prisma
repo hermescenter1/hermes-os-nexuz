@@ -78,6 +78,51 @@ model UnknownAnalysis {
   updatedAt        DateTime @updatedAt
 }
 
+// ---- Phase 14C: RAG persistence (additive; NOT wired into /api/brain) ----
+//
+// `embedding` uses Prisma's `Unsupported(...)` escape hatch: pgvector's
+// `vector` type has no native Prisma equivalent, so this column is invisible
+// to the generated Prisma Client — every read/write against it goes through
+// raw SQL in `src/lib/rag/vector-store-pgvector.ts`, exactly like every
+// other column below is reachable through the typed client as usual.
+//
+// The `vector` extension itself is enabled by the migration's own SQL
+// (`CREATE EXTENSION IF NOT EXISTS vector;` — see
+// prisma/migrations/20260616000000_add_document_chunk_pgvector/migration.sql),
+// not by Prisma's `extensions =` datasource block — deliberately avoided so
+// this phase doesn't also have to adopt the `postgresqlExtensions` preview
+// feature for one column.
+//
+// Dimension is fixed at 1536 (OpenAI's text-embedding-3-small — see
+// src/lib/rag/config.ts's PGVECTOR_DIMENSIONS, the single source of truth
+// this literal must match). A pgvector column's width cannot be altered in
+// place without rewriting every row; switching the canonical embedding
+// model/dimension requires a NEW migration, not an edit to this one.
+//
+// `model`/`dimensions` are stored per-row (not just relied on globally) so
+// a future re-embedding migration can identify which rows came from which
+// provider/model before rewriting them.
+model DocumentChunk {
+  id         String                @id
+  documentId String
+  sourceType String
+  text       String
+  position   Int
+  metadata   Json                  @default("{}")
+  model      String
+  dimensions Int
+  embedding  Unsupported("vector(1536)")
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  @@index([documentId])
+  @@index([sourceType])
+  // The HNSW similarity index (`CREATE INDEX ... USING hnsw (embedding
+  // vector_cosine_ops)`) lives only in the migration SQL — Prisma's schema
+  // language has no `@@index` syntax for an operator-class-based index
+  // type, so it cannot be expressed here.
+}
+
 // ---- Phase 12A: authentication + RBAC (additive) ----
 
 model User {

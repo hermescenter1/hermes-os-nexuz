@@ -84,11 +84,31 @@ export function getOpenAIEmbeddingModel(): string {
   return process.env.OPENAI_EMBEDDING_MODEL?.trim() || OPENAI_EMBEDDING_DEFAULT_MODEL;
 }
 
-/** `text-embedding-3-small`'s native output size. Real OpenAI embeddings
- *  are NOT the same dimension as the mock provider — any future vector
- *  store schema must size its column to whichever provider actually wrote
- *  to it (see vector-store-pgvector.ts's documentation of this gap). */
+/** `text-embedding-3-small`'s native output size. */
 export const OPENAI_EMBEDDING_DIMENSIONS = 1536;
+
+/**
+ * Phase 14C — the pgvector `DocumentChunk.embedding` column's fixed width.
+ * Aliased to `OPENAI_EMBEDDING_DIMENSIONS` because that's the provider this
+ * project standardizes the persisted vector space on (see
+ * prisma/schema.prisma's `DocumentChunk` model comment and
+ * prisma/migrations/20260616000000_add_document_chunk_pgvector).
+ *
+ * This is NOT a generic "pad/truncate to fit" knob. Embeddings from
+ * different models occupy different, mutually-incomparable vector spaces —
+ * resizing a vector's array length does not make it semantically
+ * comparable to another model's output, even at equal length. So
+ * `vector-store-pgvector.ts` REJECTS (no-ops) any embedding whose
+ * `dimensions` doesn't equal this constant, rather than attempting to
+ * reshape it. The practical implication: the mock provider's vectors
+ * (64-dim) and an unconfigured/non-1536 local server's vectors are simply
+ * never persisted to pgvector — only a provider that natively emits
+ * exactly `PGVECTOR_DIMENSIONS` floats can be stored. Changing the
+ * canonical provider/dimension requires a NEW migration (a pgvector
+ * column's width cannot be altered in place without rewriting every row),
+ * and this constant must be updated to match it in the same change.
+ */
+export const PGVECTOR_DIMENSIONS = OPENAI_EMBEDDING_DIMENSIONS;
 
 /**
  * Base URL of a self-hosted embedding server (e.g. sentence-transformers
