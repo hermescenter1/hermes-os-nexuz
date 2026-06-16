@@ -18,6 +18,8 @@ import type { RagMode, EmbeddingProviderId } from "./types";
  *                                               reads — embeddings and chat completions
  *                                               share one OpenAI account/key)
  *   HERMES_LOCAL_EMBEDDING_URL                (read only by embedding-provider-local.ts)
+ *   HERMES_RAG_BRAIN_ENABLED  = true | false   (default: false; read only by
+ *                                                /api/brain/route.ts)
  *
  * Phase 14B note: `getRagMode() === "pgvector"` now actually selects the
  * pgvector-backed store (vector-store-pgvector.ts) and
@@ -25,6 +27,17 @@ import type { RagMode, EmbeddingProviderId } from "./types";
  * adapters (embedding-provider-openai.ts / -local.ts) — see rag-pipeline.ts.
  * `"external"` still has no implementation and resolves to the safe
  * in-memory store, exactly like an unrecognized value would.
+ *
+ * Phase 15 note: two independent flags gate `/api/brain`'s RAG evidence
+ * layer, deliberately mirroring Phase 13's `HERMES_AI_ROUTER_ENABLED` vs.
+ * `AI_PROVIDER_MODE` split:
+ *   - `HERMES_RAG_BRAIN_ENABLED` (this file) — whether the ROUTE even
+ *     attempts to call `runRagPipeline()` at all. False (default) ⇒
+ *     `/api/brain`'s response is byte-for-byte identical to before Phase 15.
+ *   - `HERMES_RAG_ENABLED` (above) — whether `runRagPipeline()` ITSELF does
+ *     anything once called. Both must be true for `ragEvidence.enabled` to
+ *     be true; if only the route flag is on, `ragEvidence` is still
+ *     attached (so the shape is consistent) but reports `enabled: false`.
  */
 
 function isTrue(v: string | undefined): boolean {
@@ -35,6 +48,13 @@ function isTrue(v: string | undefined): boolean {
  *  false (anything other than the literal string "true" is disabled). */
 export function isRagEnabled(): boolean {
   return isTrue(process.env.HERMES_RAG_ENABLED);
+}
+
+/** Phase 15 feature flag — gates whether `/api/brain` attempts to call
+ *  `runRagPipeline()` at all. Defaults to false. See the module doc above
+ *  for how this relates to `isRagEnabled()`. */
+export function isRagBrainEnabled(): boolean {
+  return isTrue(process.env.HERMES_RAG_BRAIN_ENABLED);
 }
 
 const VALID_MODES: RagMode[] = ["mock", "pgvector", "external"];

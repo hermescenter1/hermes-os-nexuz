@@ -15,16 +15,21 @@ import { screenQuestion } from "@/lib/llm/guardrails";
 import { aiRouter } from "@/lib/ai/router";
 import { isAIRouterEnabled, getAIProviderMode } from "@/lib/ai/config";
 import { withTimeout } from "@/lib/ai/providers/shared";
+import { runRagPipeline } from "@/lib/rag/rag-pipeline";
+import { isRagBrainEnabled, getRagMode } from "@/lib/rag/config";
 import type {
   AIEnhancement,
   BrainAnalysis,
   BrainDomainId,
   ReasoningMode,
+  RagEvidence,
   SafetyKind,
 } from "@/lib/services/types";
 import type { PipelineResult } from "@/lib/industrial/pipeline";
 import type { ReasoningResult } from "@/lib/industrial/reasoning";
-import type { RetrievalResult } from "@/lib/retrieval/retrieval-types";
+import type { CaseMatch } from "@/lib/industrial/cases";
+import type { RetrievalResult, ScoredKnowledge } from "@/lib/retrieval/retrieval-types";
+import type { RagDocument } from "@/lib/rag/types";
 import type { Citation } from "@/lib/services/rag-types";
 import type { StoredAnalysis } from "@/lib/storage/types";
 import en from "../../../../messages/en.json";
@@ -121,6 +126,96 @@ async function buildAIEnhancement(
   } catch {
     // Never let an AI Router failure affect the deterministic response.
     return { enabled: true, provider: "none", mode, content: "", fallbackUsed: true };
+  }
+}
+
+/**
+ * Phase 15 — RAG evidence layer.
+ *
+ * Builds RAG's input documents FROM the existing (already-computed, already
+ * vetted) evidence — the pipeline's matched engineering cases and the
+ * keyword retrieval's top-scored knowledge libraries — rather than
+ * searching some separate, independent corpus. This keeps the call bounded
+ * (at most a handful of documents, since both sources are already capped
+ * to their own top-3) and means RAG is genuinely "an additional evidence
+ * layer" on top of "existing retrieval", per the requirement, not a
+ * parallel, ungrounded search.
+ *
+ * Case text is locale-aware (`c.en`/`c.fa`, both already on every
+ * EngineeringCase). Knowledge text reuses the same English message-catalog
+ * lookup (`kn[id]`) the legacy LLM gateway above already uses to ground its
+ * prompts — English-only by design, matching that established convention,
+ * not a Phase 15 regression.
+ */
+function buildRagDocuments(
+  locale: "fa" | "en",
+  caseMatches: CaseMatch[],
+  topKnowledge: ScoredKnowledge[]
+): RagDocument[] {
+  const kn = (en as { knowledge: KnowledgeNs }).knowledge;
+
+  const caseDocs: RagDocument[] = caseMatches.map(({ case: c }) => {
+    const content = locale === "fa" ? c.fa : c.en;
+    return {
+      id: c.id,
+      sourceType: "case",
+      text: [content.symptoms, content.rootCause, content.resolution].join(". "),
+      metadata: { vendor: c.vendor, domain: c.category },
+    };
+  });
+
+  const knowledgeDocs: RagDocument[] = topKnowledge
+    .map((k): RagDocument | null => {
+      const lib = kn[k.id];
+      if (!lib) return null;
+      return {
+        id: k.id,
+        sourceType: "knowledge",
+        text: [lib.name, lib.summary, lib.p1, lib.p2, lib.p3].join(". "),
+        metadata: { domain: k.domain, vendor: k.vendor },
+      };
+    })
+    .filter((d): d is RagDocument => d !== null);
+
+  return [...caseDocs, ...knowledgeDocs];
+}
+
+/**
+ * Calls `runRagPipeline()` and maps its result onto `RagEvidence`. Never
+ * throws and never returns raw provider/vector-store error text:
+ *   - `runRagPipeline()` itself already never throws and only ever
+ *     surfaces the safe, enumerated `reason: "pipeline_error"` (Phase
+ *     14A/B/C) — never a raw SDK/SQL error message
+ *   - the try/catch below is a second backstop in case of an unforeseen
+ *     exception (e.g. a future bug) — on any failure, the deterministic
+ *     Brain response is returned exactly as if the flag were off, with
+ *     `ragEvidence` reporting a safe, generic fallback instead.
+ */
+async function buildRagEvidence(
+  question: string,
+  locale: "fa" | "en",
+  caseMatches: CaseMatch[],
+  topKnowledge: ScoredKnowledge[]
+): Promise<RagEvidence> {
+  const mode = getRagMode();
+  try {
+    const documents = buildRagDocuments(locale, caseMatches, topKnowledge);
+    const result = await runRagPipeline({
+      documents,
+      query: { text: question, topK: 5 },
+    });
+    return {
+      enabled: result.enabled,
+      mode: result.mode,
+      results: result.results,
+      // "fallback" here means the RAG layer itself was effectively
+      // inactive for this call (disabled internally, or errored) — NOT
+      // "ran fine but found nothing", which is just an empty `results`.
+      fallbackUsed: !result.enabled || Boolean(result.reason),
+      ...(result.reason ? { error: result.reason } : {}),
+    };
+  } catch {
+    return { enabled: true, mode, results: [], fallbackUsed: true, error: "rag_pipeline_error" };
   }
 }
 
@@ -361,6 +456,30 @@ export async function POST(req: Request) {
       }
     } catch {
       /* never let the AI Router affect the deterministic response */
+    }
+  }
+
+  // Phase 15: optional RAG evidence layer. Off by default
+  // (HERMES_RAG_BRAIN_ENABLED unset/not "true") — when off, this block does
+  // not run at all and `analysis` is untouched, so the response is
+  // byte-for-byte identical to before Phase 15. Skipped on a guardrail hit
+  // for the same reason the AI enhancement above is skipped. Runs AFTER
+  // the deterministic pipeline, reasoning, and existing (keyword)
+  // retrieval have all already completed — `analysis.retrieval` is read,
+  // never recomputed or replaced. This only ever ADDS the `ragEvidence`
+  // field; every field already on `analysis` (including `retrieval`
+  // itself) is preserved unchanged.
+  if (isRagBrainEnabled() && !guardrail) {
+    try {
+      const ragEvidence = await buildRagEvidence(
+        question,
+        locale,
+        pipe.caseMatches,
+        analysis.retrieval?.topKnowledge ?? []
+      );
+      analysis = { ...analysis, ragEvidence };
+    } catch {
+      /* never let the RAG layer affect the deterministic response */
     }
   }
 

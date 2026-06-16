@@ -20,6 +20,10 @@ const ENV_KEYS = [
   "ANTHROPIC_MODEL",
   "DATABASE_URL",
   "HERMES_STORAGE_MODE",
+  "HERMES_RAG_BRAIN_ENABLED",
+  "HERMES_RAG_ENABLED",
+  "HERMES_RAG_MODE",
+  "HERMES_EMBEDDING_PROVIDER",
 ] as const;
 let saved: Record<string, string | undefined>;
 
@@ -191,5 +195,167 @@ describe("/api/brain POST — Unknown classification is unaffected by the flag",
     const body = await res.json();
     expect(body.unknown).toBe(true);
     expect("aiEnhancement" in body).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------
+// Phase 15 — RAG evidence layer
+// ---------------------------------------------------------------------
+
+describe("/api/brain POST — RAG disabled (default)", () => {
+  it("never attaches ragEvidence and keeps every existing field, including retrieval", async () => {
+    // HERMES_RAG_BRAIN_ENABLED intentionally left unset — the documented default.
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect("ragEvidence" in body).toBe(false);
+    for (const key of DETERMINISTIC_KEYS) {
+      expect(body).toHaveProperty(key);
+    }
+    expect(body.mode).toBe("library");
+  });
+
+  it("stays disabled for any non-'true' value, including the literal string 'false'", async () => {
+    process.env.HERMES_RAG_BRAIN_ENABLED = "false";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    const body = await res.json();
+    expect("ragEvidence" in body).toBe(false);
+  });
+
+  it("stays disabled even if the inner HERMES_RAG_ENABLED flag is on, when the route flag is off", async () => {
+    process.env.HERMES_RAG_ENABLED = "true";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    const body = await res.json();
+    expect("ragEvidence" in body).toBe(false);
+  });
+});
+
+describe("/api/brain POST — RAG enabled (mock mode, no provider keys)", () => {
+  it("attaches ragEvidence without altering the existing retrieval field", async () => {
+    process.env.HERMES_RAG_BRAIN_ENABLED = "true";
+    process.env.HERMES_RAG_ENABLED = "true";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect(body.ragEvidence).toBeDefined();
+    expect(typeof body.ragEvidence.enabled).toBe("boolean");
+    expect(typeof body.ragEvidence.mode).toBe("string");
+    expect(Array.isArray(body.ragEvidence.results)).toBe(true);
+    expect(typeof body.ragEvidence.fallbackUsed).toBe("boolean");
+
+    // existing (keyword) retrieval is present and untouched
+    expect(body.retrieval).toBeDefined();
+    expect(Array.isArray(body.retrieval.topCases)).toBe(true);
+    expect(Array.isArray(body.retrieval.topKnowledge)).toBe(true);
+
+    // every other deterministic field is still present and unaltered
+    for (const key of DETERMINISTIC_KEYS) {
+      expect(body).toHaveProperty(key);
+    }
+    expect(body.mode).toBe("library");
+  });
+
+  it("never crashes and the RAG pipeline itself reports enabled:true with mock-mode evidence", async () => {
+    process.env.HERMES_RAG_BRAIN_ENABLED = "true";
+    process.env.HERMES_RAG_ENABLED = "true";
+    process.env.HERMES_RAG_MODE = "mock";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    const body = await res.json();
+    expect(body.ragEvidence.enabled).toBe(true);
+    expect(body.ragEvidence.mode).toBe("mock");
+  });
+});
+
+describe("/api/brain POST — RAG pipeline throws (simulated provider/vector-store failure)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+  afterEach(() => {
+    vi.doUnmock("@/lib/rag/rag-pipeline");
+  });
+
+  it("returns the deterministic response unaffected and never leaks the error", async () => {
+    process.env.HERMES_RAG_BRAIN_ENABLED = "true";
+    process.env.HERMES_RAG_ENABLED = "true";
+    vi.doMock("@/lib/rag/rag-pipeline", () => ({
+      runRagPipeline: vi.fn().mockRejectedValue(
+        new Error("simulated pgvector connection failure: password authentication failed")
+      ),
+    }));
+
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    // the raw error/credential text must never appear anywhere in the response
+    expect(JSON.stringify(body)).not.toContain("simulated pgvector connection failure");
+    expect(JSON.stringify(body)).not.toContain("password authentication failed");
+
+    expect(body.ragEvidence).toBeDefined();
+    expect(body.ragEvidence.fallbackUsed).toBe(true);
+    expect(body.ragEvidence.error).toBe("rag_pipeline_error");
+    expect(body.ragEvidence.results).toEqual([]);
+
+    for (const key of DETERMINISTIC_KEYS) {
+      expect(body).toHaveProperty(key);
+    }
+    expect(body.mode).toBe("library");
+    expect(body.domains.length).toBeGreaterThan(0);
+  });
+});
+
+describe("/api/brain POST — RAG + Persian locale", () => {
+  it("works with RAG enabled on a Persian question", async () => {
+    process.env.HERMES_RAG_BRAIN_ENABLED = "true";
+    process.env.HERMES_RAG_ENABLED = "true";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION_FA, locale: "fa" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ragEvidence).toBeDefined();
+    expect(Array.isArray(body.ragEvidence.results)).toBe(true);
+    expect(body.domains.length).toBeGreaterThan(0);
+  });
+});
+
+describe("/api/brain POST — RAG + AI enhancement enabled together", () => {
+  it("both optional layers are attached independently, neither breaks the other", async () => {
+    process.env.HERMES_AI_ROUTER_ENABLED = "true";
+    process.env.HERMES_RAG_BRAIN_ENABLED = "true";
+    process.env.HERMES_RAG_ENABLED = "true";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect(body.aiEnhancement).toBeDefined();
+    expect(typeof body.aiEnhancement.content).toBe("string");
+    expect(body.ragEvidence).toBeDefined();
+    expect(Array.isArray(body.ragEvidence.results)).toBe(true);
+
+    for (const key of DETERMINISTIC_KEYS) {
+      expect(body).toHaveProperty(key);
+    }
+    expect(body.mode).toBe("library");
+  });
+});
+
+describe("/api/brain POST — RAG on the Unknown path", () => {
+  it("never attaches ragEvidence on the unknown path even when both flags are on", async () => {
+    process.env.HERMES_RAG_BRAIN_ENABLED = "true";
+    process.env.HERMES_RAG_ENABLED = "true";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: UNKNOWN_QUESTION, locale: "en" }));
+    const body = await res.json();
+    expect(body.unknown).toBe(true);
+    expect("ragEvidence" in body).toBe(false);
   });
 });

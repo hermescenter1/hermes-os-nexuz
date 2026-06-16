@@ -5,6 +5,7 @@ import type { ReasoningResult } from "@/lib/industrial/reasoning";
 import type { ConfidenceResult } from "@/lib/industrial/confidence";
 import type { RootCauseAnalysis } from "@/lib/industrial/root-cause";
 import type { RetrievalResult } from "@/lib/retrieval/retrieval-types";
+import type { RagSearchResult } from "@/lib/rag/types";
 
 /**
  * Hermes OS — Service Interface Layer
@@ -197,6 +198,12 @@ export interface BrainAnalysis {
    *  the deterministic pipeline and is never altered by this block. Absent
    *  entirely when the flag is off (default) or the question is unknown. */
   aiEnhancement?: AIEnhancement;
+  /** Phase 15: optional RAG evidence layer, attached only when
+   *  HERMES_RAG_BRAIN_ENABLED=true and the question wasn't guardrail-
+   *  flagged. Purely additive — never alters `retrieval` or any other
+   *  field above. Absent entirely when the flag is off (default) or the
+   *  question is unknown. */
+  ragEvidence?: RagEvidence;
 }
 
 /** Phase 13: the shape `/api/brain` attaches to `BrainAnalysis.aiEnhancement`. */
@@ -214,6 +221,26 @@ export interface AIEnhancement {
    *  genuine real-provider completion (missing key, missing SDK, timeout,
    *  provider error, or forced mock mode) */
   fallbackUsed: boolean;
+}
+
+/** Phase 15: the shape `/api/brain` attaches to `BrainAnalysis.ragEvidence`.
+ *  Embedding/vector-store evidence on top of the existing (keyword)
+ *  `retrieval` field — never a replacement for it. */
+export interface RagEvidence {
+  enabled: boolean;
+  /** the RAG pipeline's active mode for this call: mock | pgvector | external */
+  mode: string;
+  /** chunk + cosine-similarity score pairs — empty when RAG found nothing
+   *  or degraded; never absent (always an array, even when empty) */
+  results: RagSearchResult[];
+  /** true whenever this evidence came from a degraded/disabled path rather
+   *  than a genuine RAG pass — RAG pipeline disabled internally
+   *  (HERMES_RAG_ENABLED=false), or any pipeline-level error */
+  fallbackUsed: boolean;
+  /** present only when something degraded — a safe, enumerated code
+   *  (e.g. "pipeline_error", "rag_pipeline_error"), never a raw provider/
+   *  vector-store error message or stack trace */
+  error?: string;
 }
 
 /** Step 8: Knowledge Cloud browser payload (full metadata, key-based text). */
