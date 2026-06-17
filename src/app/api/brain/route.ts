@@ -16,13 +16,15 @@ import { aiRouter } from "@/lib/ai/router";
 import { isAIRouterEnabled, getAIProviderMode } from "@/lib/ai/config";
 import { withTimeout } from "@/lib/ai/providers/shared";
 import { runRagPipeline } from "@/lib/rag/rag-pipeline";
-import { isRagBrainEnabled, getRagMode } from "@/lib/rag/config";
+import { isRagBrainEnabled, getRagMode, isDocumentRagEnabled } from "@/lib/rag/config";
+import { searchDocuments } from "@/lib/documents/search";
 import type {
   AIEnhancement,
   BrainAnalysis,
   BrainDomainId,
   ReasoningMode,
   RagEvidence,
+  DocumentRagEvidence,
   SafetyKind,
 } from "@/lib/services/types";
 import type { PipelineResult } from "@/lib/industrial/pipeline";
@@ -216,6 +218,32 @@ async function buildRagEvidence(
     };
   } catch {
     return { enabled: true, mode, results: [], fallbackUsed: true, error: "rag_pipeline_error" };
+  }
+}
+
+/**
+ * Phase 17D — Document pipeline semantic search layer.
+ *
+ * Queries the document pipeline's vector index (`DocumentTextChunk.embedding`)
+ * with the same user question and surfaces the top matching chunks as an
+ * additional evidence layer. Like the Phase 15 RAG layer, this function:
+ *   - never throws and never returns raw error/stack trace text
+ *   - `searchDocuments()` already catches all failures and returns [] — the
+ *     try/catch below is a second backstop for any unforeseen exception
+ *   - on any failure the deterministic Brain response is returned exactly
+ *     as if the flag were off, with `documentRagEvidence` reporting a safe
+ *     fallback rather than a raw error.
+ */
+async function buildDocumentRagEvidence(question: string): Promise<DocumentRagEvidence> {
+  try {
+    const result = await searchDocuments(question, 5);
+    return {
+      enabled: true,
+      matches: result.matches,
+      fallbackUsed: false,
+    };
+  } catch {
+    return { enabled: true, matches: [], fallbackUsed: true, error: "document_rag_error" };
   }
 }
 
@@ -480,6 +508,21 @@ export async function POST(req: Request) {
       analysis = { ...analysis, ragEvidence };
     } catch {
       /* never let the RAG layer affect the deterministic response */
+    }
+  }
+
+  // Phase 17D: optional document pipeline semantic search layer. Off by default
+  // (HERMES_DOCUMENT_RAG_ENABLED unset/not "true") — when off, this block does
+  // not run at all and `analysis` is untouched, so the response is
+  // byte-for-byte identical to before Phase 17D. Skipped on a guardrail hit.
+  // Runs after the deterministic pipeline and both optional evidence layers
+  // above — purely additive, never replaces any field already on `analysis`.
+  if (isDocumentRagEnabled() && !guardrail) {
+    try {
+      const documentRagEvidence = await buildDocumentRagEvidence(question);
+      analysis = { ...analysis, documentRagEvidence };
+    } catch {
+      /* never let document search affect the deterministic response */
     }
   }
 

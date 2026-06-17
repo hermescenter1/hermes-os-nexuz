@@ -24,6 +24,8 @@ const ENV_KEYS = [
   "HERMES_RAG_ENABLED",
   "HERMES_RAG_MODE",
   "HERMES_EMBEDDING_PROVIDER",
+  "HERMES_DOCUMENT_RAG_ENABLED",
+  "DOCUMENT_EMBEDDINGS_PROVIDER",
 ] as const;
 let saved: Record<string, string | undefined>;
 
@@ -357,5 +359,145 @@ describe("/api/brain POST — RAG on the Unknown path", () => {
     const body = await res.json();
     expect(body.unknown).toBe(true);
     expect("ragEvidence" in body).toBe(false);
+  });
+});
+
+// -----------------------------------------------------------------------
+// Phase 17D — Document pipeline semantic search layer
+// -----------------------------------------------------------------------
+
+describe("/api/brain POST — Document RAG disabled (default)", () => {
+  it("never attaches documentRagEvidence and keeps every existing field", async () => {
+    // HERMES_DOCUMENT_RAG_ENABLED intentionally left unset — the documented default.
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect("documentRagEvidence" in body).toBe(false);
+    for (const key of DETERMINISTIC_KEYS) {
+      expect(body).toHaveProperty(key);
+    }
+    expect(body.mode).toBe("library");
+  });
+
+  it("stays disabled for any non-'true' value, including the literal string 'false'", async () => {
+    process.env.HERMES_DOCUMENT_RAG_ENABLED = "false";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    const body = await res.json();
+    expect("documentRagEvidence" in body).toBe(false);
+  });
+});
+
+describe("/api/brain POST — Document RAG enabled (session mode — empty index)", () => {
+  it("attaches documentRagEvidence without altering any other field", async () => {
+    process.env.HERMES_DOCUMENT_RAG_ENABLED = "true";
+    process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect(body.documentRagEvidence).toBeDefined();
+    expect(body.documentRagEvidence.enabled).toBe(true);
+    expect(Array.isArray(body.documentRagEvidence.matches)).toBe(true);
+    expect(typeof body.documentRagEvidence.fallbackUsed).toBe("boolean");
+
+    // every deterministic field is still present and unaltered
+    for (const key of DETERMINISTIC_KEYS) {
+      expect(body).toHaveProperty(key);
+    }
+    expect(body.mode).toBe("library");
+  });
+
+  it("returns empty matches (no indexed chunks in session store) — never a 5xx", async () => {
+    process.env.HERMES_DOCUMENT_RAG_ENABLED = "true";
+    process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    // session store has no chunks — correct empty result, not a failure
+    expect(body.documentRagEvidence.matches).toEqual([]);
+    expect(body.documentRagEvidence.fallbackUsed).toBe(false);
+    expect("error" in body.documentRagEvidence).toBe(false);
+  });
+});
+
+describe("/api/brain POST — Document RAG searchDocuments throws (simulated failure)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+  afterEach(() => {
+    vi.doUnmock("@/lib/documents/search");
+  });
+
+  it("returns the deterministic response unaffected and never leaks the error", async () => {
+    process.env.HERMES_DOCUMENT_RAG_ENABLED = "true";
+    process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
+    vi.doMock("@/lib/documents/search", () => ({
+      searchDocuments: vi.fn().mockRejectedValue(
+        new Error("simulated document search failure: pg connection refused")
+      ),
+    }));
+
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    // raw error text must never appear anywhere in the response
+    expect(JSON.stringify(body)).not.toContain("simulated document search failure");
+    expect(JSON.stringify(body)).not.toContain("pg connection refused");
+
+    expect(body.documentRagEvidence).toBeDefined();
+    expect(body.documentRagEvidence.fallbackUsed).toBe(true);
+    expect(body.documentRagEvidence.error).toBe("document_rag_error");
+    expect(body.documentRagEvidence.matches).toEqual([]);
+
+    for (const key of DETERMINISTIC_KEYS) {
+      expect(body).toHaveProperty(key);
+    }
+    expect(body.mode).toBe("library");
+    expect(body.domains.length).toBeGreaterThan(0);
+  });
+});
+
+describe("/api/brain POST — Document RAG on the Unknown path", () => {
+  it("never attaches documentRagEvidence on the unknown path even when the flag is on", async () => {
+    process.env.HERMES_DOCUMENT_RAG_ENABLED = "true";
+    process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: UNKNOWN_QUESTION, locale: "en" }));
+    const body = await res.json();
+    expect(body.unknown).toBe(true);
+    expect("documentRagEvidence" in body).toBe(false);
+  });
+});
+
+describe("/api/brain POST — Document RAG + RAG + AI enhancement all enabled", () => {
+  it("all three optional layers are attached independently, none breaks the others", async () => {
+    process.env.HERMES_AI_ROUTER_ENABLED = "true";
+    process.env.HERMES_RAG_BRAIN_ENABLED = "true";
+    process.env.HERMES_RAG_ENABLED = "true";
+    process.env.HERMES_DOCUMENT_RAG_ENABLED = "true";
+    process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect(body.aiEnhancement).toBeDefined();
+    expect(typeof body.aiEnhancement.content).toBe("string");
+    expect(body.ragEvidence).toBeDefined();
+    expect(Array.isArray(body.ragEvidence.results)).toBe(true);
+    expect(body.documentRagEvidence).toBeDefined();
+    expect(Array.isArray(body.documentRagEvidence.matches)).toBe(true);
+
+    for (const key of DETERMINISTIC_KEYS) {
+      expect(body).toHaveProperty(key);
+    }
+    expect(body.mode).toBe("library");
   });
 });

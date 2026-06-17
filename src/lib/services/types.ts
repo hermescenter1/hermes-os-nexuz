@@ -204,6 +204,13 @@ export interface BrainAnalysis {
    *  field above. Absent entirely when the flag is off (default) or the
    *  question is unknown. */
   ragEvidence?: RagEvidence;
+  /** Phase 17D: optional document-pipeline semantic search layer, attached
+   *  only when HERMES_DOCUMENT_RAG_ENABLED=true and the question wasn't
+   *  guardrail-flagged. Purely additive — a second, independent evidence
+   *  layer alongside `ragEvidence` (which embeds engineering-case and
+   *  knowledge-library text on the fly). Absent entirely when the flag is
+   *  off (default) or the question is unknown. */
+  documentRagEvidence?: DocumentRagEvidence;
 }
 
 /** Phase 13: the shape `/api/brain` attaches to `BrainAnalysis.aiEnhancement`. */
@@ -240,6 +247,31 @@ export interface RagEvidence {
   /** present only when something degraded — a safe, enumerated code
    *  (e.g. "pipeline_error", "rag_pipeline_error"), never a raw provider/
    *  vector-store error message or stack trace */
+  error?: string;
+}
+
+/** Phase 17D: the shape `/api/brain` attaches to
+ *  `BrainAnalysis.documentRagEvidence`. Semantic search over the document
+ *  pipeline index — indexed via `DocumentTextChunk.embedding` (pgvector or
+ *  session-mode in-process buffer). Independent of `ragEvidence`, which
+ *  embeds engineering-case/knowledge-library text per-request. */
+export interface DocumentRagEvidence {
+  enabled: boolean;
+  /** top matching document chunks from the document pipeline index — empty
+   *  when the store has no indexed chunks yet, or when embedding/search
+   *  degraded; never absent (always an array, even when empty) */
+  matches: {
+    chunkId: string;
+    documentId: string;
+    position: number;
+    text: string;
+    score: number;
+  }[];
+  /** true when the search couldn't run at all (unexpected exception) rather
+   *  than when it ran normally but returned 0 results */
+  fallbackUsed: boolean;
+  /** present only when something degraded — a safe, enumerated code, never
+   *  a raw error message or stack trace */
   error?: string;
 }
 

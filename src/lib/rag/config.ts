@@ -57,6 +57,14 @@ export function isRagBrainEnabled(): boolean {
   return isTrue(process.env.HERMES_RAG_BRAIN_ENABLED);
 }
 
+/** Phase 17D feature flag — gates whether `/api/brain` attempts to call
+ *  `searchDocuments()` (the document-pipeline semantic search) at all.
+ *  Defaults to false; when off, `analysis` is byte-for-byte identical to
+ *  before Phase 17D. */
+export function isDocumentRagEnabled(): boolean {
+  return isTrue(process.env.HERMES_DOCUMENT_RAG_ENABLED);
+}
+
 const VALID_MODES: RagMode[] = ["mock", "pgvector", "external"];
 
 export function getRagMode(): RagMode {
