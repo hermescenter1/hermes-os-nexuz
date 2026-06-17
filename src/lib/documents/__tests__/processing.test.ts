@@ -61,11 +61,11 @@ describe("processDocument — not found", () => {
 });
 
 describe("processDocument — TXT success", () => {
-  it("walks the status lifecycle to 'chunked' and creates chunks", async () => {
+  it("walks the status lifecycle to 'indexed' and creates chunks", async () => {
     const doc = await makeDocument("notes.txt", "Hello world. ".repeat(50));
     const result = await processDocument(doc.id);
     expect(result?.ok).toBe(true);
-    expect(result?.document.status).toBe("chunked");
+    expect(result?.document.status).toBe("indexed");
     expect(result?.document.error).toBeUndefined();
     expect(result?.document.lastProcessedAt).toBeTruthy();
     expect(result!.chunkCount).toBeGreaterThan(0);
@@ -100,7 +100,7 @@ describe("processDocument — Markdown success", () => {
     const doc = await makeDocument("notes.md", "# Title\n\nSome content. ".repeat(20));
     const result = await processDocument(doc.id);
     expect(result?.ok).toBe(true);
-    expect(result?.document.status).toBe("chunked");
+    expect(result?.document.status).toBe("indexed");
     expect(result!.chunkCount).toBeGreaterThan(0);
   });
 });

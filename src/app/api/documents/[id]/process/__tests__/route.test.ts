@@ -118,7 +118,7 @@ describe("/api/documents/[id]/process — admin", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
-    expect(body.document.status).toBe("chunked");
+    expect(body.document.status).toBe("indexed");
     expect(body.chunkCount).toBeGreaterThan(0);
   });
 
