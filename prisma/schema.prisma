@@ -214,6 +214,45 @@ model DocumentChunk {
   // type, so it cannot be expressed here.
 }
 
+// ---- Phase 18A: Engineering Memory Foundation (additive) ----
+//
+// `EngineeringMemory` is an explicitly-saved engineering analysis record.
+// Not auto-populated on every Brain request (Phase 18C will add that).
+// Operators/engineers POST notable analyses to /api/memory; field feedback
+// is collected via /api/memory/[id]/feedback in `MemoryFeedback`.
+//
+// `outcome` on `EngineeringMemory` mirrors the latest feedback outcome for
+// quick filtering. `MemoryFeedback` is the append-only audit trail.
+model EngineeringMemory {
+  id                 String           @id @default(cuid())
+  query              String
+  domain             String
+  analysisSummary    String
+  confidence         Float
+  relatedCaseIds     Json             @default("[]")
+  relatedDocumentIds Json             @default("[]")
+  outcome            String           @default("unknown")
+  notes              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  feedback           MemoryFeedback[]
+
+  @@index([domain])
+  @@index([outcome])
+}
+
+model MemoryFeedback {
+  id          String            @id @default(cuid())
+  memoryId    String
+  outcome     String
+  notes       String?
+  submittedBy String?
+  createdAt   DateTime          @default(now())
+  memory      EngineeringMemory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@index([memoryId])
+}
+
 // ---- Phase 12A: authentication + RBAC (additive) ----
 
 model User {

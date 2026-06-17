@@ -75,6 +75,33 @@ export interface StoredUnknown {
   updatedAt: string;
 }
 
+// ---- Phase 18A: Engineering Memory ----
+
+export type MemoryOutcome = "unknown" | "success" | "partial" | "failed";
+
+export interface StoredMemory {
+  id: string;
+  query: string;
+  domain: string;
+  analysisSummary: string;
+  confidence: number;
+  relatedCaseIds: string[];
+  relatedDocumentIds: string[];
+  outcome: MemoryOutcome;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoredMemoryFeedback {
+  id: string;
+  memoryId: string;
+  outcome: MemoryOutcome;
+  notes?: string;
+  submittedBy?: string;
+  createdAt: string;
+}
+
 /** Common repository contract — full CRUD, storage-agnostic. */
 export interface Repository<T, TCreate> {
   list(): Promise<T[]>;
