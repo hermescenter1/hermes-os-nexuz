@@ -29,13 +29,22 @@ describe("openaiEmbeddingProvider — missing API key", () => {
   });
 });
 
-describe("openaiEmbeddingProvider — key present, package not installed", () => {
+describe("openaiEmbeddingProvider — key present, SDK throws synchronously (provider_error)", () => {
+  beforeEach(() => {
+    vi.doMock("openai", () => ({
+      default: class {
+        embeddings = { create: async () => { throw new Error("simulated auth error"); } };
+      },
+    }));
+  });
+  afterEach(() => { vi.doUnmock("openai"); });
+
   it("falls back to the mock embedding, never throws, never leaks the key", async () => {
     process.env.OPENAI_API_KEY = "sk-test-fake-key-not-real";
     const { openaiEmbeddingProvider } = await import("../embedding-provider-openai");
     const res = await openaiEmbeddingProvider.embed({ chunkId: "c1", text: "hello" });
     expect(res.mock).toBe(true);
-    expect(res.reason).toBe("sdk_not_installed");
+    expect(res.reason).toBe("provider_error");
     expect(JSON.stringify(res)).not.toContain("sk-test-fake-key-not-real");
   });
 });

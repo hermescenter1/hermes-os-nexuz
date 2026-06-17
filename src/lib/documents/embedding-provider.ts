@@ -1,25 +1,30 @@
 /**
- * Embedding provider (Phase 16D) — re-exported, not recreated.
+ * Embedding provider (Phase 16D / 17C) — re-exported and resolved here.
  *
- * The `EmbeddingProvider` interface, a deterministic mock implementation,
- * and an OpenAI stub already exist in `src/lib/rag/*` (Phase 14A/B),
- * built with exactly the pattern this phase asks for: optional SDK,
- * never throws, safe mock fallback when no real key/SDK is available.
- * Document chunk embedding reuses the SAME abstraction the RAG pipeline
- * already uses, rather than duplicating it under `src/lib/documents/` and
- * risking two copies drifting apart — this codebase has exactly one
- * embedding provider family.
+ * The `EmbeddingProvider` interface, the mock implementation, and the OpenAI
+ * adapter all live in `src/lib/rag/*` — document chunk embedding reuses the
+ * same abstraction the RAG pipeline uses, rather than duplicating it.
  *
- *   - `mockEmbeddingProvider` — deterministic, fixed-dimension, the only
- *     provider this phase actually exercises ("do not require live
- *     OpenAI").
- *   - `openaiEmbeddingProvider` — a stub today (no `openai` package
- *     installed, explicitly out of scope this phase); already falls back
- *     to the mock on any missing key/SDK/error. Re-exported here for
- *     completeness/parity with Phase 16D's "OpenAIEmbeddingProvider stub
- *     (not active)" requirement — nothing in `src/lib/documents/` calls
- *     it yet.
+ * Phase 17C adds `resolveDocumentEmbeddingProvider()`: an env-driven selector
+ * controlled by DOCUMENT_EMBEDDINGS_PROVIDER (separate from the RAG pipeline's
+ * HERMES_EMBEDDING_PROVIDER so document and brain embeddings can be configured
+ * independently).
+ *
+ *   DOCUMENT_EMBEDDINGS_PROVIDER=openai  →  openaiEmbeddingProvider (default)
+ *   DOCUMENT_EMBEDDINGS_PROVIDER=mock    →  mockEmbeddingProvider (dev/test)
+ *
+ * openaiEmbeddingProvider already degrades to mock on any failure (missing
+ * OPENAI_API_KEY, SDK error, timeout) — it never throws.
  */
 export type { EmbeddingProvider, RagEmbedding, EmbeddingProviderId } from "@/lib/rag/types";
 export { mockEmbeddingProvider } from "@/lib/rag/embedding-provider";
 export { openaiEmbeddingProvider } from "@/lib/rag/embedding-provider-openai";
+
+import type { EmbeddingProvider } from "@/lib/rag/types";
+import { mockEmbeddingProvider } from "@/lib/rag/embedding-provider";
+import { openaiEmbeddingProvider } from "@/lib/rag/embedding-provider-openai";
+
+export function resolveDocumentEmbeddingProvider(): EmbeddingProvider {
+  const val = process.env.DOCUMENT_EMBEDDINGS_PROVIDER?.trim().toLowerCase();
+  return val === "mock" ? mockEmbeddingProvider : openaiEmbeddingProvider;
+}

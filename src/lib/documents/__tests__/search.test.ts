@@ -3,7 +3,7 @@ import { searchDocuments } from "../search";
 import { documentTextChunkRepository } from "../chunk-repository";
 import { embedDocumentChunks } from "../embedding";
 
-const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
+const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL", "DOCUMENT_EMBEDDINGS_PROVIDER"] as const;
 let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
@@ -12,6 +12,7 @@ beforeEach(() => {
     saved[k] = process.env[k];
     delete process.env[k];
   }
+  process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
   (globalThis as unknown as { __hermesDocumentTextChunks?: unknown[] }).__hermesDocumentTextChunks = [];
 });
 

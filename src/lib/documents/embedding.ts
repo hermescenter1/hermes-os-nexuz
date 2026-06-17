@@ -1,17 +1,16 @@
-import { mockEmbeddingProvider } from "./embedding-provider";
+import { resolveDocumentEmbeddingProvider } from "./embedding-provider";
 import { documentTextChunkRepository } from "./chunk-repository";
 import { getChunkVectorStore } from "./chunk-vector-store";
 
 /**
  * Chunk embedding generation (Phase 16D).
  *
- * Embeds every chunk of a document using the mock embedding provider —
- * the only one this phase runs ("do not install OpenAI SDK yet" / "do not
- * require live OpenAI"). Deterministic and repeatable: the same chunk
- * text always produces the same vector (see
- * `src/lib/rag/embedding-provider.ts`), so re-running this on an
- * unchanged document is idempotent in effect, even though it always
- * re-writes every row.
+ * Embeds every chunk of a document using the active document embedding
+ * provider (resolved from DOCUMENT_EMBEDDINGS_PROVIDER — see
+ * embedding-provider.ts). Defaults to openaiEmbeddingProvider
+ * (text-embedding-3-small, 1536-dim); set DOCUMENT_EMBEDDINGS_PROVIDER=mock
+ * for development/testing. Re-running on an unchanged document is
+ * idempotent in effect, even though it always re-writes every row.
  *
  * Never throws: any failure (storage error, an unforeseen exception)
  * resolves to `{ ok: false, reason: "embedding_failed" }` rather than a
@@ -33,10 +32,11 @@ export async function embedDocumentChunks(documentId: string): Promise<EmbedChun
   }
 
   const store = getChunkVectorStore();
+  const provider = resolveDocumentEmbeddingProvider();
   try {
     let embedded = 0;
     for (const chunk of chunks) {
-      const result = await mockEmbeddingProvider.embed({ chunkId: chunk.id, text: chunk.text });
+      const result = await provider.embed({ chunkId: chunk.id, text: chunk.text });
       const stored = await store.setEmbedding(chunk.id, result.vector, result.model);
       if (stored) embedded++;
     }

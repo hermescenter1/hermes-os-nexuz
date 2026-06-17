@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { openaiProvider } from "../providers/openai";
 import { claudeProvider } from "../providers/claude";
 import { localProvider } from "../providers/local";
@@ -42,14 +42,25 @@ describe("claudeProvider — missing API key", () => {
   });
 });
 
-describe("openaiProvider — key present, package not installed", () => {
-  it("falls back to mock with the required install command, never throws", async () => {
+describe("openaiProvider — key present, SDK throws synchronously (provider_error)", () => {
+  beforeEach(() => {
+    vi.doMock("openai", () => ({
+      default: class {
+        chat = {
+          completions: {
+            create: async () => { throw new Error("simulated auth error"); },
+          },
+        };
+      },
+    }));
+  });
+  afterEach(() => { vi.doUnmock("openai"); });
+
+  it("falls back to mock, never throws, never leaks the key", async () => {
     process.env.OPENAI_API_KEY = "sk-test-fake-key-not-real";
     const res = await openaiProvider.ask({ task: "structuredOutput", prompt: "hello" });
     expect(res.metadata.mock).toBe(true);
-    expect(res.metadata.reason).toBe("sdk_not_installed");
-    expect(res.metadata.requiredPackage).toBe("openai");
-    expect(res.metadata.installCommand).toBe("npm install openai");
+    expect(res.metadata.reason).toBe("provider_error");
     // the fake key must never appear anywhere in the response
     expect(JSON.stringify(res)).not.toContain("sk-test-fake-key-not-real");
   });

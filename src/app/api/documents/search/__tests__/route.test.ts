@@ -18,6 +18,7 @@ const ENV_KEYS = [
   "ADMIN_PASSWORD",
   "HERMES_STORAGE_MODE",
   "DATABASE_URL",
+  "DOCUMENT_EMBEDDINGS_PROVIDER",
 ] as const;
 let saved: Record<string, string | undefined>;
 
@@ -27,6 +28,7 @@ beforeEach(() => {
     saved[k] = process.env[k];
     delete process.env[k];
   }
+  process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
   (globalThis as unknown as { __hermesDocumentTextChunks?: unknown[] }).__hermesDocumentTextChunks = [];
   vi.resetModules();
 });

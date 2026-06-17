@@ -1,6 +1,6 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { getStorageMode } from "@/lib/storage/storage-mode";
-import { DOCUMENT_CHUNK_EMBEDDING_DIMENSIONS } from "./config";
+import { getActiveDocumentEmbeddingDimensions } from "./config";
 import type { DocumentTextChunk } from "./types";
 
 /**
@@ -40,7 +40,7 @@ export interface ChunkVectorStore {
 }
 
 function isValidDimension(vector: number[]): boolean {
-  return vector.length === DOCUMENT_CHUNK_EMBEDDING_DIMENSIONS;
+  return vector.length === getActiveDocumentEmbeddingDimensions();
 }
 
 /** Same formula as `rag/vector-store.ts`'s `cosineSimilarity` — not

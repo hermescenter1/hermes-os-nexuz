@@ -138,14 +138,14 @@ model Document {
 // code (the DELETE /api/documents/[id] route) is responsible for cleaning
 // up a document's chunks when the document itself is deleted.
 //
-// ---- Phase 16D: embedding columns (additive) ----
+// ---- Phase 16D / 17C: embedding columns (Phase 16D additive; Phase 17C resize) ----
 //
 // `embedding` uses the same `Unsupported(...)` escape hatch as
-// `DocumentChunk.embedding` above, but at a DIFFERENT fixed width: 64,
-// matching the mock embedding provider — the only one this phase runs
-// ("do not install OpenAI SDK yet"). See
-// src/lib/documents/config.ts's `DOCUMENT_CHUNK_EMBEDDING_DIMENSIONS` for
-// the single source of truth this literal must match, and
+// `DocumentChunk.embedding` above. Phase 16D used vector(64) for the mock
+// provider; Phase 17C resizes to vector(1536) to match text-embedding-3-small
+// (the same dimension as DocumentChunk — both tables now share the same vector
+// space). See src/lib/documents/config.ts's `DOCUMENT_CHUNK_EMBEDDING_DIMENSIONS`
+// for the single source of truth this literal must match, and
 // src/lib/documents/chunk-vector-store.ts for the raw-SQL-only access
 // this column requires (invisible to the typed Prisma client, exactly
 // like `DocumentChunk.embedding`).
@@ -159,7 +159,7 @@ model DocumentTextChunk {
   contentHash         String?
   metadata            Json                       @default("{}")
   status              String                     @default("chunked")
-  embedding           Unsupported("vector(64)")?
+  embedding           Unsupported("vector(1536)")?
   embeddingModel      String?
   embeddingDimensions Int?
   createdAt           DateTime                   @default(now())

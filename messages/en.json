@@ -1673,7 +1673,7 @@
   "adminDocumentSearch": {
     "eyebrow": "Operations",
     "title": "Document Search (Test)",
-    "lede": "Semantic search over processed document chunks using mock embeddings. Not connected to Hermes Brain.",
+    "lede": "Semantic search over indexed document chunks. Uses text-embedding-3-small (1536-dim) when DOCUMENT_EMBEDDINGS_PROVIDER=openai and OPENAI_API_KEY are set; falls back to mock embeddings otherwise.",
     "queryPlaceholder": "Search document chunks…",
     "search": "Search",
     "searching": "Searching…",

@@ -1,4 +1,4 @@
-import { MOCK_EMBEDDING_DIMENSIONS } from "@/lib/rag/config";
+import { MOCK_EMBEDDING_DIMENSIONS, OPENAI_EMBEDDING_DIMENSIONS } from "@/lib/rag/config";
 import type { DocumentStorageProvider } from "./types";
 
 /**
@@ -52,14 +52,32 @@ export function getLocalDocumentStorageDir(): string {
 export const MAX_DOCUMENT_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
 
 /**
- * Phase 16D — `DocumentTextChunk.embedding`'s fixed pgvector width.
+ * Phase 16D / 17C — `DocumentTextChunk.embedding`'s fixed pgvector width.
  *
- * Aliased to `MOCK_EMBEDDING_DIMENSIONS` (not a new literal) because the
- * mock embedding provider is the ONLY one this phase actually runs ("do
- * not install OpenAI SDK yet" / "do not require live OpenAI") — there is
- * no other dimension a chunk embedding could legitimately have today.
- * Activating a real provider later requires a NEW migration to resize (or
- * replace) this column, exactly like `rag/config.ts`'s `PGVECTOR_DIMENSIONS`
- * already documents for the unrelated `DocumentChunk` table.
+ * Phase 16D: was MOCK_EMBEDDING_DIMENSIONS (64).
+ * Phase 17C: resized to OPENAI_EMBEDDING_DIMENSIONS (1536) to match
+ * text-embedding-3-small and the sibling DocumentChunk table. A new
+ * migration (20260618000000_resize_document_text_chunk_embedding) drops and
+ * re-adds the column at 1536. Changing this constant again requires another
+ * migration — the column width cannot be altered in-place.
  */
-export const DOCUMENT_CHUNK_EMBEDDING_DIMENSIONS = MOCK_EMBEDDING_DIMENSIONS;
+export const DOCUMENT_CHUNK_EMBEDDING_DIMENSIONS = OPENAI_EMBEDDING_DIMENSIONS;
+
+/**
+ * Phase 17C — returns the active document embedding provider's declared
+ * dimension count, resolved from DOCUMENT_EMBEDDINGS_PROVIDER at runtime.
+ *
+ * Used by chunk-vector-store.ts's dimension guard so that:
+ *   - DOCUMENT_EMBEDDINGS_PROVIDER=openai (default) → 1536 required
+ *   - DOCUMENT_EMBEDDINGS_PROVIDER=mock            → 64 accepted
+ *
+ * This decoupling is what keeps the test suite working without an API key:
+ * tests set DOCUMENT_EMBEDDINGS_PROVIDER=mock and the guard allows 64-dim
+ * mock vectors in session mode. In database mode with mock selected the
+ * 64-dim vector would pass the JS guard but pgvector would reject the SQL
+ * insert — an expected and loud misconfiguration failure.
+ */
+export function getActiveDocumentEmbeddingDimensions(): number {
+  const val = process.env.DOCUMENT_EMBEDDINGS_PROVIDER?.trim().toLowerCase();
+  return val === "mock" ? MOCK_EMBEDDING_DIMENSIONS : OPENAI_EMBEDDING_DIMENSIONS;
+}

@@ -219,7 +219,6 @@ describe("/api/documents GET — list", () => {
   beforeEach(() => {
     process.env.ADMIN_EMAIL = "a@test.com";
     process.env.ADMIN_PASSWORD = "x";
-    mockUser("admin");
   });
 
   it("rejects non-admins the same way POST does", async () => {
@@ -230,6 +229,7 @@ describe("/api/documents GET — list", () => {
   });
 
   it("returns the documents created via POST", async () => {
+    mockUser("admin");
     const { POST, GET } = await import("../route");
     await POST(uploadRequest({ title: "Doc A", sourceType: "manual", file: pdfFile("a.pdf") }));
     const res = await GET();

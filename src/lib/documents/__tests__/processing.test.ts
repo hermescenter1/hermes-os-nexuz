@@ -11,6 +11,7 @@ const ENV_KEYS = [
   "HERMES_STORAGE_MODE",
   "DATABASE_URL",
   "HERMES_LOCAL_DOCUMENT_STORAGE_DIR",
+  "DOCUMENT_EMBEDDINGS_PROVIDER",
 ] as const;
 let saved: Record<string, string | undefined>;
 let tempDir: string;
@@ -23,6 +24,7 @@ beforeEach(async () => {
   }
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "hermes-doc-processing-"));
   process.env.HERMES_LOCAL_DOCUMENT_STORAGE_DIR = tempDir;
+  process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
   (globalThis as unknown as { __hermesDocumentDrafts?: unknown[] }).__hermesDocumentDrafts = [];
   (globalThis as unknown as { __hermesDocumentTextChunks?: unknown[] }).__hermesDocumentTextChunks = [];
 });
