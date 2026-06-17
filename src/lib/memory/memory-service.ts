@@ -1,11 +1,11 @@
 /**
- * Engineering Memory service (Phase 18A).
+ * Engineering Memory service (Phase 18A/18B).
  *
- * Thin coordination layer over `memoryRepository()` and `feedbackRepository()`.
- * Validates input, enforces the outcome enum, and keeps the memory's `outcome`
- * field in sync with the latest feedback so callers can filter without joining.
+ * Phase 18A: storage + retrieval (CRUD, feedback).
+ * Phase 18B: ranking and search — `rankEngineeringMemories`,
+ *   `searchEngineeringMemories`, `getSimilarMemories`.
  *
- * No Brain reasoning, no scoring, no learning — purely storage + retrieval.
+ * Thin coordination layer: no Brain reasoning, no embeddings, no learning.
  * Phase 18C will add confidence scoring and learning loop on top of this.
  */
 
@@ -20,6 +20,9 @@ import type {
   StoredMemoryFeedback,
   MemoryOutcome,
 } from "@/lib/storage/types";
+import { rankMemories, type MemoryMatch, type SearchOptions } from "./memory-retrieval";
+
+export type { MemoryMatch, SearchOptions };
 
 export const VALID_OUTCOMES: readonly MemoryOutcome[] = [
   "unknown",
@@ -72,4 +75,49 @@ export async function addMemoryFeedback(
   // without loading all feedback rows.
   await memoryRepository().update(memoryId, { outcome: input.outcome });
   return feedback;
+}
+
+// ---- Phase 18B: retrieval + ranking ----------------------------------------
+
+/**
+ * Pure synchronous ranking: scores and sorts the provided memories against
+ * the search query. No I/O — safe to call in tests with hand-crafted records.
+ */
+export function rankEngineeringMemories(
+  query: string,
+  memories: StoredMemory[],
+  options?: SearchOptions
+): MemoryMatch[] {
+  return rankMemories(query, memories, options);
+}
+
+/**
+ * Fetches all stored memories, ranks them against the query, and returns the
+ * top results. Never throws — an empty list is returned on any repo failure.
+ */
+export async function searchEngineeringMemories(
+  query: string,
+  options: SearchOptions = {}
+): Promise<MemoryMatch[]> {
+  let memories: StoredMemory[] = [];
+  try {
+    memories = await memoryRepository().list();
+  } catch {
+    return [];
+  }
+  return rankMemories(query, memories, options);
+}
+
+/**
+ * Convenience wrapper for the common "find similar memories for this query"
+ * pattern.  `domain` provides a 30-point score boost for exact domain
+ * matches; it does not hard-filter results, so cross-domain matches with
+ * strong keyword overlap can still appear.
+ */
+export async function getSimilarMemories(
+  query: string,
+  domain?: string,
+  limit?: number
+): Promise<MemoryMatch[]> {
+  return searchEngineeringMemories(query, { domain, limit });
 }
