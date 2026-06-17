@@ -35,7 +35,9 @@
       "about": "About",
       "caseStudio": "Case Studio",
       "knowledgeStudio": "Knowledge Studio",
-      "admin": "Admin Console"
+      "admin": "Admin Console",
+      "documents": "Document Library",
+      "documentSearch": "Document Search"
     },
     "menu": "Menu",
     "close": "Close"
@@ -1597,12 +1599,17 @@
     "security": {
       "heading": "Security Notes",
       "body": "Audit logs are required for production accountability. V1 records application-level events only."
+    },
+    "links": {
+      "heading": "Document Pipeline",
+      "documentLibrary": "Document Library",
+      "documentSearch": "Document Search"
     }
   },
   "adminDocuments": {
     "eyebrow": "Operations",
     "title": "Document Library",
-    "lede": "Upload and manage industrial documents for future retrieval. Extraction, chunking, and indexing are not implemented yet.",
+    "lede": "Upload and manage industrial documents for semantic search. TXT and Markdown files are processed end-to-end — extracted, chunked, embedded, and indexed. PDF and DOCX can be uploaded but are not yet extracted.",
     "metrics": {
       "total": "Total Documents",
       "indexed": "Indexed",
@@ -1618,7 +1625,7 @@
       "tags": "Tags",
       "tagsHint": "comma-separated",
       "file": "File",
-      "fileHint": "PDF, TXT, Markdown, or DOCX — up to 50 MB",
+      "fileHint": "TXT or Markdown (processed end-to-end) · PDF / DOCX upload accepted, extraction coming soon — up to 50 MB",
       "submit": "Upload",
       "uploading": "Uploading…"
     },

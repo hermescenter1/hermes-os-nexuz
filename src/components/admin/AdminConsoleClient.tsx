@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 interface AuditEvent {
   id: string;
@@ -173,7 +174,30 @@ export function AdminConsoleClient({
         </div>
 
         <div className="space-y-6">
-          {/* 4 — system status */}
+          {/* 4 — document pipeline quick-links */}
+          <section className="rounded-xl border border-line bg-surface p-5">
+            <h2 className="font-mono text-xs uppercase tracking-widest text-muted">{t("links.heading")}</h2>
+            <ul className="mt-3 space-y-1">
+              <li>
+                <Link
+                  href="/admin/documents"
+                  className="block rounded-lg px-3 py-2 font-body text-sm text-muted transition-colors hover:bg-bg hover:text-ink"
+                >
+                  {t("links.documentLibrary")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/documents/search"
+                  className="block rounded-lg px-3 py-2 font-body text-sm text-muted transition-colors hover:bg-bg hover:text-ink"
+                >
+                  {t("links.documentSearch")}
+                </Link>
+              </li>
+            </ul>
+          </section>
+
+          {/* 5 — system status */}
           <section className="rounded-xl border border-line bg-surface p-5">
             <h2 className="font-mono text-xs uppercase tracking-widest text-muted">{t("status.heading")}</h2>
             <ul className="mt-4 space-y-3">
@@ -184,7 +208,7 @@ export function AdminConsoleClient({
             </ul>
           </section>
 
-          {/* 5 — security notes */}
+          {/* 6 — security notes */}
           <section className="rounded-xl border border-signalDim bg-bg/60 p-5">
             <h2 className="font-mono text-xs uppercase tracking-widest text-muted">{t("security.heading")}</h2>
             <p className="mt-3 font-body text-xs leading-relaxed text-muted">{t("security.body")}</p>

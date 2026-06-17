@@ -50,6 +50,8 @@ const GROUPS: NavGroup[] = [
     items: [
       { labelKey: "dashboard", href: "/dashboard" },
       { labelKey: "admin", href: "/admin" },
+      { labelKey: "documents", href: "/admin/documents" },
+      { labelKey: "documentSearch", href: "/admin/documents/search" },
     ],
   },
   {
