@@ -75,7 +75,7 @@ export interface StoredUnknown {
   updatedAt: string;
 }
 
-// ---- Phase 18A: Engineering Memory ----
+// ---- Phase 18A/18C: Engineering Memory ----
 
 export type MemoryOutcome = "unknown" | "success" | "partial" | "failed";
 
@@ -101,6 +101,13 @@ export interface StoredMemoryFeedback {
   submittedBy?: string;
   createdAt: string;
 }
+
+/** A memory record with its full feedback history loaded.
+ *  Defined here (not in memory-service.ts) so memory-learning.ts and
+ *  memory-retrieval.ts can both import it without circular dependencies. */
+export type MemoryWithFeedback = StoredMemory & {
+  feedback: StoredMemoryFeedback[];
+};
 
 /** Common repository contract — full CRUD, storage-agnostic. */
 export interface Repository<T, TCreate> {
