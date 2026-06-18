@@ -92,3 +92,34 @@ h1 { font-weight: 700; }
 /* Direction-aware back arrow: points toward the reading start. */
 .back-arrow::before { content: "\2190\00a0"; }
 [dir="rtl"] .back-arrow::before { content: "\2192\00a0"; }
+
+/* ── Phase 27A: Engineering Dashboard Glass System ──────────────────────── */
+.glass {
+  background: rgba(18, 25, 34, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.glass-hover:hover {
+  background: rgba(18, 25, 34, 0.88);
+  border-color: rgba(28, 95, 79, 0.6) !important;
+  box-shadow: 0 0 28px rgba(56, 224, 176, 0.1), 0 8px 40px rgba(0,0,0,0.5);
+}
+.glow-signal {
+  box-shadow: 0 0 24px rgba(56, 224, 176, 0.08), 0 8px 32px rgba(0,0,0,0.4);
+}
+.glow-signal-strong {
+  box-shadow: 0 0 40px rgba(56, 224, 176, 0.18), 0 12px 48px rgba(0,0,0,0.5);
+}
+.neon-border {
+  border-color: rgba(56, 224, 176, 0.35) !important;
+}
+.sidebar-bg {
+  background: rgba(10, 15, 20, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.topbar-bg {
+  background: rgba(18, 25, 34, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
