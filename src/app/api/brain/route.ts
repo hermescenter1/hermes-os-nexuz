@@ -16,8 +16,10 @@ import { aiRouter } from "@/lib/ai/router";
 import { isAIRouterEnabled, getAIProviderMode } from "@/lib/ai/config";
 import { withTimeout } from "@/lib/ai/providers/shared";
 import { runRagPipeline } from "@/lib/rag/rag-pipeline";
-import { isRagBrainEnabled, getRagMode, isDocumentRagEnabled } from "@/lib/rag/config";
+import { isRagBrainEnabled, getRagMode, isDocumentRagEnabled, isMemoryBrainEnabled, isAutoMemoryEnabled, getAutoMemoryMinConfidence, isProjectIntelligenceEnabled } from "@/lib/rag/config";
 import { searchDocuments } from "@/lib/documents/search";
+import { getSimilarMemories, createEngineeringMemory, listEngineeringMemories } from "@/lib/memory/memory-service";
+import { getProject } from "@/lib/memory/project-service";
 import type {
   AIEnhancement,
   BrainAnalysis,
@@ -25,6 +27,8 @@ import type {
   ReasoningMode,
   RagEvidence,
   DocumentRagEvidence,
+  MemoryEvidence,
+  ProjectContext,
   SafetyKind,
 } from "@/lib/services/types";
 import type { PipelineResult } from "@/lib/industrial/pipeline";
@@ -222,6 +226,134 @@ async function buildRagEvidence(
 }
 
 /**
+ * Phase 18D — Engineering Memory evidence layer.
+ *
+ * Queries the EngineeringMemory store with the same user question and surfaces
+ * the top learning-adjusted matches as an additional evidence layer.
+ * Like all prior optional layers, this function:
+ *   - never throws and never returns raw error/stack trace text
+ *   - `getSimilarMemories()` already never throws (internal try/catch in
+ *     searchEngineeringMemories) — the try/catch below is a second backstop
+ *   - on any failure the deterministic Brain response is returned exactly
+ *     as if the flag were off, with `memoryEvidence` reporting a safe fallback.
+ *
+ * `domain` is derived from `pipe.domains[0]?.id` — memories in the same domain
+ * receive a 30-point scoring boost (Phase 18B WEIGHTS.DOMAIN), making domain-
+ * specific past analyses rank higher than cross-domain ones.
+ */
+async function buildMemoryEvidence(
+  question: string,
+  domain?: string,
+  projectId?: string
+): Promise<MemoryEvidence> {
+  try {
+    const matches = await getSimilarMemories(question, domain, 5, projectId);
+    return { enabled: true, matches, fallbackUsed: false };
+  } catch {
+    return { enabled: true, matches: [], fallbackUsed: true, error: "memory_search_error" };
+  }
+}
+
+/** Phase 18E — builds the analysisSummary string stored on the memory record.
+ *  Caps causes and actions at 2 each to keep the summary concise. */
+function buildMemorySummary(analysis: BrainAnalysis): string {
+  const causes  = (analysis.probableCauses  ?? []).slice(0, 2);
+  const actions = (analysis.recommendedActions ?? []).slice(0, 2);
+  const parts: string[] = [];
+  if (causes.length  > 0) parts.push(`Causes: ${causes.join("; ")}`);
+  if (actions.length > 0) parts.push(`Actions: ${actions.join("; ")}`);
+  if (analysis.riskLevel)  parts.push(`Risk: ${analysis.riskLevel}`);
+  return parts.join(". ") || "Brain analysis completed.";
+}
+
+/**
+ * Phase 18E — Automatic memory capture.
+ *
+ * Saves a completed Brain analysis as an EngineeringMemory record so future
+ * queries can surface it via Phase 18D evidence retrieval (getSimilarMemories).
+ *
+ * Quality gates (all must pass before saving):
+ *   - analysis has at least one detected domain (not unknown)
+ *   - confidenceScore >= getAutoMemoryMinConfidence() (default 30)
+ *   - exact query does not already exist in the memory store (dedup)
+ *
+ * Never throws from the caller's perspective: the POST handler wraps every
+ * call in try/catch. Any uncaught throw propagates there and is swallowed,
+ * leaving the Brain response completely unaffected (triple isolation: memory
+ * service's own try/catch → listEngineeringMemories try/catch below →
+ * POST handler's outer try/catch).
+ */
+async function autoSaveMemory(
+  question: string,
+  analysis: BrainAnalysis,
+  projectId?: string
+): Promise<void> {
+  // Quality gate: unknown path already returns early above, but be defensive.
+  if (analysis.unknown || analysis.domains.length === 0) return;
+
+  const confidenceScore =
+    analysis.confidenceReport?.score ?? Math.round(analysis.confidence * 100);
+  if (confidenceScore < getAutoMemoryMinConfidence()) return;
+
+  // Duplicate prevention: skip if the exact query is already stored.
+  // If the list call itself fails, skip the save conservatively.
+  let existing: { query: string }[] = [];
+  try {
+    existing = await listEngineeringMemories(0); // 0 = no limit, returns all
+  } catch {
+    return;
+  }
+  if (existing.some((m) => m.query === question)) return;
+
+  // May throw — caught by the outer try/catch in the POST handler.
+  await createEngineeringMemory({
+    query: question,
+    domain: analysis.domains[0].id,
+    analysisSummary: buildMemorySummary(analysis),
+    confidence: confidenceScore,
+    relatedCaseIds: analysis.evidence?.caseMatches ?? [],
+    relatedDocumentIds: [],
+    outcome: "unknown",
+    // Phase 19B: tag auto-captured memory with the project context from the
+    // Brain request so future retrieval can apply the project-boost ranking.
+    ...(projectId ? { projectId } : {}),
+  });
+}
+
+/**
+ * Phase 19C — Project reasoning context.
+ *
+ * Loads project metadata for the given projectId and counts how many
+ * EngineeringMemory records are tagged with this project. Returns null when:
+ *   - getProject returns null (project not found or any store error)
+ *   - any unexpected exception (caught; caller swallows it)
+ *
+ * The memory count uses listEngineeringMemories(0) which already has its own
+ * internal try/catch in the service layer. An additional try/catch here keeps
+ * the count best-effort without silently breaking the project metadata itself.
+ */
+async function buildProjectContext(projectId: string): Promise<ProjectContext | null> {
+  const project = await getProject(projectId); // never throws
+  if (!project) return null;
+
+  let relatedMemoriesCount = 0;
+  try {
+    const all = await listEngineeringMemories(0);
+    relatedMemoriesCount = all.filter((m) => m.projectId === projectId).length;
+  } catch {
+    /* count stays 0 on failure — the rest of the context is still useful */
+  }
+
+  return {
+    projectId: project.id,
+    projectName: project.name,
+    description: project.description,
+    status: project.status,
+    relatedMemoriesCount,
+  };
+}
+
+/**
  * Phase 17D — Document pipeline semantic search layer.
  *
  * Queries the document pipeline's vector index (`DocumentTextChunk.embedding`)
@@ -256,7 +388,7 @@ async function buildDocumentRagEvidence(question: string): Promise<DocumentRagEv
  * existing UI keeps working untouched. ANALYSIS ONLY, as before.
  */
 export async function POST(req: Request) {
-  let body: { question?: string; locale?: string };
+  let body: { question?: string; locale?: string; projectId?: string };
   try {
     body = await req.json();
   } catch {
@@ -264,6 +396,11 @@ export async function POST(req: Request) {
   }
   const question = (body.question ?? "").trim().slice(0, 2000);
   const locale = body.locale === "fa" ? "fa" : "en";
+  // Phase 19B: optional project context — no validation needed; an unknown
+  // projectId simply matches no stored memory's projectId and produces zero
+  // project-boost hits, so it degrades silently to pre-19B behavior.
+  const projectId =
+    typeof body.projectId === "string" ? body.projectId.trim() || undefined : undefined;
   if (question.length < 8) {
     return NextResponse.json({ error: "question too short" }, { status: 400 });
   }
@@ -523,6 +660,59 @@ export async function POST(req: Request) {
       analysis = { ...analysis, documentRagEvidence };
     } catch {
       /* never let document search affect the deterministic response */
+    }
+  }
+
+  // Phase 18D: optional engineering-memory evidence layer. Off by default
+  // (HERMES_MEMORY_RAG_ENABLED unset/not "true") — when off, this block does
+  // not run at all and `analysis` is untouched, so the response is
+  // byte-for-byte identical to before Phase 18D. Skipped on a guardrail hit.
+  // Runs last — purely additive, never replaces any field already on `analysis`.
+  // Domain hint from pipe.domains[0]?.id gives a 30-point boost to same-domain
+  // memories (Phase 18B WEIGHTS.DOMAIN), making past analyses for the detected
+  // domain surface higher than cross-domain ones.
+  if (isMemoryBrainEnabled() && !guardrail) {
+    try {
+      const memoryEvidence = await buildMemoryEvidence(
+        question,
+        pipe.domains[0]?.id,
+        projectId
+      );
+      analysis = { ...analysis, memoryEvidence };
+    } catch {
+      /* never let memory evidence affect the deterministic response */
+    }
+  }
+
+  // Phase 18E: automatic memory capture. Off by default
+  // (HERMES_AUTO_MEMORY_ENABLED unset/not "true") — when off, this block
+  // does not run at all and the Brain response is byte-for-byte identical
+  // to before Phase 18E. Skipped on guardrail hits — flagged questions must
+  // not be memorialized. Unknown questions return early above and never reach
+  // this point. Any capture failure is silently swallowed — the Brain
+  // response is never affected by memory persistence outcomes.
+  if (isAutoMemoryEnabled() && !guardrail) {
+    try {
+      await autoSaveMemory(question, analysis, projectId);
+    } catch {
+      /* auto-capture failure must never affect the Brain response */
+    }
+  }
+
+  // Phase 19C: optional project reasoning context. Off by default
+  // (HERMES_PROJECT_INTELLIGENCE_ENABLED unset/not "true") — when off, this
+  // block does not run and the Brain response is byte-for-byte identical to
+  // before Phase 19C. Skipped when no projectId was provided, on guardrail
+  // hits, and when the project cannot be found. Any failure is swallowed —
+  // a missing or broken project must never affect the Brain response.
+  if (isProjectIntelligenceEnabled() && projectId && !guardrail) {
+    try {
+      const projectContext = await buildProjectContext(projectId);
+      if (projectContext) {
+        analysis = { ...analysis, projectContext };
+      }
+    } catch {
+      /* project context failure must never affect the Brain response */
     }
   }
 

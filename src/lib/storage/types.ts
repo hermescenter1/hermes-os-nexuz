@@ -75,6 +75,19 @@ export interface StoredUnknown {
   updatedAt: string;
 }
 
+// ---- Phase 19A: Project Intelligence ----
+
+export type ProjectStatus = "active" | "archived" | "completed";
+
+export interface StoredProject {
+  id: string;
+  name: string;
+  description: string;
+  status: ProjectStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ---- Phase 18A/18C: Engineering Memory ----
 
 export type MemoryOutcome = "unknown" | "success" | "partial" | "failed";
@@ -89,6 +102,8 @@ export interface StoredMemory {
   relatedDocumentIds: string[];
   outcome: MemoryOutcome;
   notes?: string;
+  /** Phase 19A: optional project association; undefined = no project context. */
+  projectId?: string;
   createdAt: string;
   updatedAt: string;
 }

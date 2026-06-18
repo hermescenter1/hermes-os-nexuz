@@ -58,6 +58,10 @@ export async function POST(req: Request) {
     relatedDocumentIds: asStringArray(body.relatedDocumentIds),
     outcome: rawOutcome,
     ...(body.notes != null ? { notes: String(body.notes).trim() } : {}),
+    // Phase 19A: optional project association
+    ...(body.projectId != null && String(body.projectId).trim()
+      ? { projectId: String(body.projectId).trim() }
+      : {}),
   };
 
   try {

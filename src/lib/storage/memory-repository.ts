@@ -88,6 +88,8 @@ function rowToMemory(r: Record<string, unknown>): StoredMemory {
     relatedDocumentIds: (r.relatedDocumentIds as string[]) ?? [],
     outcome: (r.outcome as MemoryOutcome) ?? "unknown",
     ...(r.notes != null ? { notes: String(r.notes) } : {}),
+    // Phase 19A: propagate projectId when present
+    ...(r.projectId != null ? { projectId: String(r.projectId) } : {}),
     createdAt: r.createdAt ? new Date(r.createdAt as string).toISOString() : now(),
     updatedAt: r.updatedAt ? new Date(r.updatedAt as string).toISOString() : now(),
   };

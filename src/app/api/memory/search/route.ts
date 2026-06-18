@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { searchEngineeringMemories } from "@/lib/memory/memory-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
+import { isProjectIntelligenceEnabled } from "@/lib/rag/config";
 
 /**
  * POST /api/memory/search — rank stored engineering memories against a query.
@@ -34,8 +35,12 @@ export async function POST(req: Request) {
     ? Math.min(Math.max(Math.round(rawLimit), 1), 100)
     : 20;
 
+  // Phase 19A: optional project context — only applied when flag is on
+  const rawProjectId = body.projectId != null ? String(body.projectId).trim() : "";
+  const projectId = isProjectIntelligenceEnabled() && rawProjectId ? rawProjectId : undefined;
+
   try {
-    const matches = await searchEngineeringMemories(query, { domain, limit });
+    const matches = await searchEngineeringMemories(query, { domain, limit, projectId });
     return NextResponse.json({ storageMode: getStorageMode(), matches });
   } catch {
     return NextResponse.json(

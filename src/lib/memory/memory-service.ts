@@ -29,6 +29,7 @@ import {
   type MemoryMatch,
   type SearchOptions,
 } from "./memory-retrieval";
+import { isProjectIntelligenceEnabled } from "@/lib/rag/config";
 
 export type { MemoryMatch, SearchOptions, MemoryWithFeedback };
 
@@ -138,13 +139,16 @@ export async function searchEngineeringMemories(
 
 /**
  * Convenience wrapper for the common "find similar memories for this query"
- * pattern.  `domain` provides a 30-point score boost for exact domain
- * matches; it does not hard-filter results.
+ * pattern. `domain` provides a 30-point boost for exact domain matches.
+ * Phase 19A: `projectId` provides a 20-point boost for same-project memories
+ * when HERMES_PROJECT_INTELLIGENCE_ENABLED=true.
  */
 export async function getSimilarMemories(
   query: string,
   domain?: string,
-  limit?: number
+  limit?: number,
+  projectId?: string
 ): Promise<MemoryMatch[]> {
-  return searchEngineeringMemories(query, { domain, limit });
+  const effectiveProjectId = isProjectIntelligenceEnabled() ? projectId : undefined;
+  return searchEngineeringMemories(query, { domain, limit, projectId: effectiveProjectId });
 }

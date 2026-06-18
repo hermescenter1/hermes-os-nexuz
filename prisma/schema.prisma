@@ -214,6 +214,24 @@ model DocumentChunk {
   // type, so it cannot be expressed here.
 }
 
+// ---- Phase 19A: Project Intelligence Foundation (additive) ----
+//
+// `Project` is an organisational context that memories (and future artefacts)
+// can be tagged with. Not required — all existing fields remain optional.
+// Memories in the same project receive a ranking boost during retrieval
+// (Phase 19A WEIGHTS.PROJECT = 20 pts) when HERMES_PROJECT_INTELLIGENCE_ENABLED.
+model Project {
+  id          String              @id @default(cuid())
+  name        String
+  description String
+  status      String              @default("active")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  memories    EngineeringMemory[]
+
+  @@index([status])
+}
+
 // ---- Phase 18A: Engineering Memory Foundation (additive) ----
 //
 // `EngineeringMemory` is an explicitly-saved engineering analysis record.
@@ -223,6 +241,9 @@ model DocumentChunk {
 //
 // `outcome` on `EngineeringMemory` mirrors the latest feedback outcome for
 // quick filtering. `MemoryFeedback` is the append-only audit trail.
+//
+// `projectId` (Phase 19A, nullable): optional link to a Project record.
+// SET NULL on project delete keeps the memory row intact.
 model EngineeringMemory {
   id                 String           @id @default(cuid())
   query              String
@@ -233,12 +254,15 @@ model EngineeringMemory {
   relatedDocumentIds Json             @default("[]")
   outcome            String           @default("unknown")
   notes              String?
+  projectId          String?
+  project            Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   feedback           MemoryFeedback[]
 
   @@index([domain])
   @@index([outcome])
+  @@index([projectId])
 }
 
 model MemoryFeedback {

@@ -65,6 +65,38 @@ export function isDocumentRagEnabled(): boolean {
   return isTrue(process.env.HERMES_DOCUMENT_RAG_ENABLED);
 }
 
+/** Phase 18D feature flag — gates whether `/api/brain` attempts to call
+ *  `getSimilarMemories()` (the engineering-memory retrieval) at all.
+ *  Defaults to false; when off, `analysis` is byte-for-byte identical to
+ *  before Phase 18D. */
+export function isMemoryBrainEnabled(): boolean {
+  return isTrue(process.env.HERMES_MEMORY_RAG_ENABLED);
+}
+
+/** Phase 19A feature flag — gates project-context influence on memory
+ *  retrieval ranking. When off, `projectId` filters are ignored and
+ *  retrieval is byte-for-byte identical to before Phase 19A. */
+export function isProjectIntelligenceEnabled(): boolean {
+  return isTrue(process.env.HERMES_PROJECT_INTELLIGENCE_ENABLED);
+}
+
+/** Phase 18E feature flag — gates automatic EngineeringMemory capture from
+ *  completed Brain analyses. Defaults to false; when off, the Brain POST
+ *  response is byte-for-byte identical to before Phase 18E. */
+export function isAutoMemoryEnabled(): boolean {
+  return isTrue(process.env.HERMES_AUTO_MEMORY_ENABLED);
+}
+
+/** Phase 18E — minimum confidence score a Brain analysis must reach before it
+ *  is automatically saved as an EngineeringMemory record. Default 30 (0-100
+ *  scale). Values above 100 are accepted and always reject (max score is 100),
+ *  which is useful for testing. Invalid/negative values fall back to 30. */
+export function getAutoMemoryMinConfidence(): number {
+  const raw = parseInt(process.env.HERMES_AUTO_MEMORY_MIN_CONFIDENCE ?? "30", 10);
+  if (Number.isNaN(raw) || raw < 0) return 30;
+  return raw;
+}
+
 const VALID_MODES: RagMode[] = ["mock", "pgvector", "external"];
 
 export function getRagMode(): RagMode {

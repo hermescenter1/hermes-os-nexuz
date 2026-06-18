@@ -211,6 +211,19 @@ export interface BrainAnalysis {
    *  knowledge-library text on the fly). Absent entirely when the flag is
    *  off (default) or the question is unknown. */
   documentRagEvidence?: DocumentRagEvidence;
+  /** Phase 18D: optional engineering-memory evidence layer, attached only when
+   *  HERMES_MEMORY_RAG_ENABLED=true and the question wasn't guardrail-flagged.
+   *  Surfaces past similar analyses with learning-adjusted scores (Phase 18C).
+   *  Purely additive — never alters any field above. Absent entirely when the
+   *  flag is off (default) or the question is unknown. */
+  memoryEvidence?: MemoryEvidence;
+  /** Phase 19C: optional project reasoning context, attached only when
+   *  HERMES_PROJECT_INTELLIGENCE_ENABLED=true, a valid projectId was supplied,
+   *  and the project was found. Provides project metadata to the Brain response
+   *  so callers can display project-aware context alongside the analysis.
+   *  Purely additive — never alters any field above. Absent when the flag is
+   *  off (default), no projectId given, project not found, or guardrail hit. */
+  projectContext?: ProjectContext;
 }
 
 /** Phase 13: the shape `/api/brain` attaches to `BrainAnalysis.aiEnhancement`. */
@@ -272,6 +285,49 @@ export interface DocumentRagEvidence {
   fallbackUsed: boolean;
   /** present only when something degraded — a safe, enumerated code, never
    *  a raw error message or stack trace */
+  error?: string;
+}
+
+/** Phase 19C: project metadata injected into the Brain analysis when a project
+ *  is found for the given projectId and the project-intelligence flag is on. */
+export interface ProjectContext {
+  projectId: string;
+  projectName: string;
+  description: string;
+  status: string;
+  /** Number of EngineeringMemory records tagged with this project. */
+  relatedMemoriesCount: number;
+}
+
+/** Phase 18D: a single ranked engineering-memory match with its learning score. */
+export interface MemoryEvidenceMatch {
+  id: string;
+  /** the original question this memory was created from */
+  query: string;
+  domain: string;
+  /** analysisSummary — what the past analysis concluded */
+  summary: string;
+  /** stored confidence 0–100 */
+  confidence: number;
+  /** feedback-mirrored outcome of the past analysis */
+  outcome: "unknown" | "success" | "partial" | "failed";
+  /** 0–100, learning-adjusted score from Phase 18C feedback weighting */
+  score: number;
+  /** scoring reason codes — e.g. "domain_match", "keyword_overlap", "feedback_success" */
+  reasons: string[];
+}
+
+/** Phase 18D: the shape `/api/brain` attaches to `BrainAnalysis.memoryEvidence`.
+ *  Retrieval-based evidence from past engineering analyses — independent of both
+ *  `ragEvidence` (per-request embedding) and `documentRagEvidence` (document chunks). */
+export interface MemoryEvidence {
+  enabled: boolean;
+  /** Top matching past analyses, learning-score sorted descending.
+   *  Always an array (empty when store is empty or retrieval degraded). */
+  matches: MemoryEvidenceMatch[];
+  /** true when retrieval threw unexpectedly — NOT when it ran and returned 0 results */
+  fallbackUsed: boolean;
+  /** present only when degraded — safe enumerated code, never raw error/stack */
   error?: string;
 }
 

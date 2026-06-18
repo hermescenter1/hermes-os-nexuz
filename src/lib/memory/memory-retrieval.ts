@@ -45,6 +45,9 @@ export interface MemoryMatch {
 
 export interface SearchOptions {
   domain?: string;
+  /** Phase 19A: when provided (and HERMES_PROJECT_INTELLIGENCE_ENABLED=true at
+   *  the service layer), memories whose projectId matches receive a PROJECT boost. */
+  projectId?: string;
   limit?: number;
 }
 
@@ -59,6 +62,8 @@ export const WEIGHTS = {
   CONFIDENCE: 15,
   OUTCOME: 10,
   RECENCY: 5,
+  /** Phase 19A: same-project memory boost (applied before learning weight). */
+  PROJECT: 20,
 } as const;
 
 export const OUTCOME_SCORES: Record<MemoryOutcome, number> = {
@@ -164,17 +169,30 @@ function recencyScore(
   return { pts: 0, reasons: [] };
 }
 
+/** Phase 19A: boost memories that belong to the same project as the search. */
+function projectScore(
+  memory: StoredMemory,
+  filterProjectId?: string
+): { pts: number; reasons: string[] } {
+  if (filterProjectId && memory.projectId === filterProjectId) {
+    return { pts: WEIGHTS.PROJECT, reasons: ["project_match"] };
+  }
+  return { pts: 0, reasons: [] };
+}
+
 // ---- Phase 18B scoring (plain StoredMemory, no feedback) -----------------
 
 /**
  * Scores one memory against a search query without feedback data.
- * @param now  Pass a fixed Date in tests to make recency deterministic.
+ * @param now             Pass a fixed Date in tests to make recency deterministic.
+ * @param filterProjectId Phase 19A: same-project memories receive a PROJECT boost.
  */
 export function scoreMemory(
   searchQuery: string,
   memory: StoredMemory,
   filterDomain?: string,
-  now = new Date()
+  now = new Date(),
+  filterProjectId?: string
 ): { score: number; reasons: string[] } {
   const reasons: string[] = [];
 
@@ -196,23 +214,27 @@ export function scoreMemory(
   const r = recencyScore(memory.createdAt, now);
   reasons.push(...r.reasons);
 
+  // Phase 19A: project boost — applied before the 100-point clamp
+  const p = projectScore(memory, filterProjectId);
+  reasons.push(...p.reasons);
+
   return {
-    score: Math.min(d.pts + k.pts + confPts + outcomePts + r.pts, 100),
+    score: Math.min(d.pts + k.pts + confPts + outcomePts + r.pts + p.pts, 100),
     reasons,
   };
 }
 
-/** Rank plain memories (Phase 18B — no feedback). */
+/** Rank plain memories (Phase 18B — no feedback; Phase 19A adds project boost). */
 export function rankMemories(
   searchQuery: string,
   memories: StoredMemory[],
   options: SearchOptions = {},
   now = new Date()
 ): MemoryMatch[] {
-  const { domain: filterDomain, limit } = options;
+  const { domain: filterDomain, projectId: filterProjectId, limit } = options;
 
   const scored: MemoryMatch[] = memories.map((m) => {
-    const { score, reasons } = scoreMemory(searchQuery, m, filterDomain, now);
+    const { score, reasons } = scoreMemory(searchQuery, m, filterDomain, now, filterProjectId);
     return { id: m.id, query: m.query, domain: m.domain, summary: m.analysisSummary,
              confidence: m.confidence, outcome: m.outcome, score, reasons };
   });
@@ -238,13 +260,19 @@ export function rankMemories(
  *   - Outcome: averaged over all feedback via computeOutcomeScore
  *   - Final score multiplied by computeLearningWeight (0.30–1.50)
  *
- * @param now  Pass a fixed Date in tests.
+ * Phase 19A: optional `filterProjectId` applies the PROJECT boost inside the
+ * raw score so the learning weight modulates it consistently with all other
+ * components — a failed-history memory is not fully rescued by project membership.
+ *
+ * @param now             Pass a fixed Date in tests.
+ * @param filterProjectId Phase 19A: same-project memories receive a PROJECT boost.
  */
 export function scoreLearned(
   searchQuery: string,
   memory: MemoryWithFeedback,
   filterDomain?: string,
-  now = new Date()
+  now = new Date(),
+  filterProjectId?: string
 ): { score: number; reasons: string[] } {
   const reasons: string[] = [];
 
@@ -280,12 +308,16 @@ export function scoreLearned(
   const r = recencyScore(memory.createdAt, now);
   reasons.push(...r.reasons);
 
-  // 6. Learning weight — multiplicative, clamped to [0.30, 1.50]
+  // 6. Phase 19A: project boost — inside raw so learning weight modulates it
+  const p = projectScore(memory, filterProjectId);
+  reasons.push(...p.reasons);
+
+  // 7. Learning weight — multiplicative, clamped to [0.30, 1.50]
   const weight = computeLearningWeight(memory);
   if (weight > 1.0) reasons.push("learning_boost");
   else if (weight < 1.0) reasons.push("learning_penalty");
 
-  const rawScore = d.pts + k.pts + confPts + outcomePts + r.pts;
+  const rawScore = d.pts + k.pts + confPts + outcomePts + r.pts + p.pts;
   const score = Math.min(Math.round(rawScore * weight), 100);
 
   return { score, reasons };
@@ -294,7 +326,7 @@ export function scoreLearned(
 /**
  * Ranks memories that have their feedback loaded, using the learning-aware
  * scorer. Falls back to identical behaviour as `rankMemories` when a memory
- * has no feedback.
+ * has no feedback. Phase 19A: passes projectId through to scoreLearned.
  *
  * @param now  Pass a fixed Date in tests.
  */
@@ -304,10 +336,10 @@ export function rankMemoriesWithFeedback(
   options: SearchOptions = {},
   now = new Date()
 ): MemoryMatch[] {
-  const { domain: filterDomain, limit } = options;
+  const { domain: filterDomain, projectId: filterProjectId, limit } = options;
 
   const scored: MemoryMatch[] = memories.map((m) => {
-    const { score, reasons } = scoreLearned(searchQuery, m, filterDomain, now);
+    const { score, reasons } = scoreLearned(searchQuery, m, filterDomain, now, filterProjectId);
     return { id: m.id, query: m.query, domain: m.domain, summary: m.analysisSummary,
              confidence: m.confidence, outcome: m.outcome, score, reasons };
   });
