@@ -45,6 +45,24 @@ export function meterApiCall(
 }
 
 /**
+ * Record industrial telemetry events or gateway calls. Fire-and-forget.
+ * Uses the same UsageRecord table but with industrial-specific metric strings:
+ *   "industrial_telemetry_events" — counted per reading, not per request
+ *   "industrial_gateway_calls"    — one per heartbeat / management call
+ * These are tracked SEPARATELY from "api_calls" so industrial ingestion
+ * does not inflate standard API usage quotas.
+ */
+export function meterIndustrialEvent(orgId: string, metric: string, value = 1): void {
+  getPrisma()
+    .then((db) => {
+      if (!db) return;
+      const m = (db as Record<string, unknown>).usageRecord as UsageModel;
+      return m.create({ data: { organizationId: orgId, metric, value, recordedAt: new Date() } });
+    })
+    .catch(() => undefined);
+}
+
+/**
  * Aggregate API call counts for an org over the last N days.
  * Returns { date: string; count: number }[] sorted ascending.
  */

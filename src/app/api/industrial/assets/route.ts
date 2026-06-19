@@ -1,0 +1,53 @@
+import { NextRequest, NextResponse }    from "next/server";
+import { requirePlatformAuth }          from "@/lib/api/auth";
+import { requireOrgActor }              from "@/lib/org/context";
+import { requirePermission }            from "@/lib/org/rbac";
+import { listAssets, createAsset }      from "@/lib/industrial/assets";
+import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
+
+export async function GET(req: NextRequest) {
+  const auth = await requirePlatformAuth(req);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const { ctx } = auth;
+
+  if (ctx.authMethod === "jwt") {
+    const member = await requireOrgActor(req, ctx.orgId);
+    if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
+    const perm = requirePermission(member.ctx.role, "view_industrial");
+    if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  }
+
+  const siteId    = req.nextUrl.searchParams.get("siteId")    ?? undefined;
+  const gatewayId = req.nextUrl.searchParams.get("gatewayId") ?? undefined;
+  const assets    = await listAssets(ctx.orgId, { siteId, gatewayId });
+  return NextResponse.json({ assets });
+}
+
+export async function POST(req: NextRequest) {
+  const auth = await requirePlatformAuth(req);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const { ctx } = auth;
+
+  if (ctx.authMethod === "jwt") {
+    const member = await requireOrgActor(req, ctx.orgId);
+    if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
+    const perm = requirePermission(member.ctx.role, "manage_industrial");
+    if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const { siteId, name } = body as Record<string, string>;
+  if (!siteId || !name) return NextResponse.json({ error: "siteId and name are required" }, { status: 400 });
+
+  const asset = await createAsset({ ...body, organizationId: ctx.orgId });
+  if (!asset) return NextResponse.json({ error: "Failed to create asset" }, { status: 503 });
+
+  recordAuditEvent({
+    action:   INDUSTRIAL_AUDIT.ASSET_CREATED,
+    entityType: "industrial",
+    userId:  ctx.userId ?? undefined,
+    entityId: asset.id,
+    metadata:  { name, siteId, organizationId: ctx.orgId },
+  });
+  return NextResponse.json({ asset }, { status: 201 });
+}

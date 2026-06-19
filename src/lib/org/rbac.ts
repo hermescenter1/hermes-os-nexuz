@@ -20,7 +20,16 @@ export type OrgPermission =
   | "revoke_invitation"
   // Phase 33: API Platform
   | "manage_api_keys"    // create / revoke / rotate keys
-  | "view_api_keys";     // list keys and usage stats
+  | "view_api_keys"      // list keys and usage stats
+  // Phase 35: Industrial
+  | "manage_industrial"   // create/update sites, gateways, assets, connectors
+  | "view_industrial"     // read industrial resources and telemetry
+  // Phase 36: Digital Twin
+  | "manage_digital_twin" // create/update twin nodes, relations, layouts, asset tags
+  | "view_digital_twin"   // read twin graph, health scores, topology
+  // Phase 37/38: Analytics + Copilot
+  | "view_analytics"      // read time-series analytics, KPIs, trends, alarms
+  | "view_copilot";       // use Industrial Copilot (query, conversations, insights)
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -38,6 +47,15 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   // Phase 33 — VIEWER and ENGINEER cannot touch API keys
   manage_api_keys:      ["OWNER", "ADMIN", "MANAGER"],
   view_api_keys:        ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "BILLING_ADMIN"],
+  // Phase 35 — Industrial Edge Gateway
+  manage_industrial:    ["OWNER", "ADMIN", "MANAGER"],
+  view_industrial:      ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  // Phase 36 — Digital Twin
+  manage_digital_twin:  ["OWNER", "ADMIN", "MANAGER"],
+  view_digital_twin:    ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  // Phase 37/38 — Analytics + Copilot (same role matrix as view_industrial)
+  view_analytics:       ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  view_copilot:         ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

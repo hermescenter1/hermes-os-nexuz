@@ -16,9 +16,13 @@ export const ALL_SCOPES = [
   "organizations.write",
   "telemetry.read",
   "telemetry.write",
-  "industrial.read",    // reserved for Phase 35 Edge Gateway
-  "industrial.write",   // reserved for Phase 35 Edge Gateway
-  "admin",              // superset — implies all scopes above
+  "industrial.read",     // Phase 35 Edge Gateway
+  "industrial.write",    // Phase 35 Edge Gateway
+  "digital_twin.read",   // Phase 36 Digital Twin read access
+  "digital_twin.write",  // Phase 36 Digital Twin write access
+  "analytics.read",      // Phase 37 Time Series Analytics
+  "copilot.read",        // Phase 38 Industrial Copilot
+  "admin",               // superset — implies all scopes above
 ] as const;
 
 export type ApiScope = typeof ALL_SCOPES[number];

@@ -1323,7 +1323,7 @@
   },
   "copilot": {
     "eyebrow": "ENGINEERING COPILOT",
-    "title": "Engineering Copilot",
+    "title": "Industrial Copilot",
     "lede": "Describe an industrial problem in your own words. Hermes Brain classifies the domain, detects the vendor, matches field-proven cases, and retrieves the relevant knowledge — deterministically, with no black box.",
     "placeholder": "Describe the engineering problem — equipment, symptoms, vendor, alarms, recent changes…",
     "analyze": "Analyze",
@@ -1343,7 +1343,11 @@
     },
     "unknownNote": "Insufficient information for reliable classification. Add equipment type, vendor, alarm text, symptoms, or recent changes.",
     "approvalNote": "Deterministic analysis from the Hermes knowledge base — no LLM. Engineering judgment and on-site verification remain required.",
-    "confidence": "Confidence",
+    "confidence": {
+      "HIGH": "High",
+      "MEDIUM": "Medium",
+      "LOW": "Low"
+    },
     "report": {
       "title": "Engineering Report",
       "problemSummary": "Problem Summary",
@@ -1362,7 +1366,28 @@
         "relatedLow": "A related case was found (low confidence)",
         "score": "Evidence score: {n}"
       }
-    }
+    },
+    "subtitle": "Deterministic observe-and-analyze assistant — read-only, no control commands",
+    "queryTitle": "Query",
+    "queryDesc": "Ask natural-language questions about your assets, health, alarms, and KPIs",
+    "queryPlaceholder": "Ask about asset health, alarms, KPIs...",
+    "send": "Send",
+    "conversations": "Conversations",
+    "conversationsDesc": "Your query conversation history",
+    "insightsTitle": "Insights",
+    "insightsDesc": "Automatically detected issues across your asset fleet",
+    "recommendationsTitle": "Recommendations",
+    "recommendationsDesc": "Deterministic recommendations based on insight patterns",
+    "safetyTitle": "Safety Properties",
+    "safetyReadOnly": "Read-only — no control commands, no PLC writes",
+    "safetyDeterministic": "Deterministic — no LLM, no hallucination",
+    "safetyNoLLM": "Evidence-based — every recommendation links to real data",
+    "intentsTitle": "Supported Intents",
+    "noConversations": "No conversations yet. Start a query to begin.",
+    "noInsights": "No insights generated. Data may be limited.",
+    "noRecommendations": "No recommendations. All monitored assets appear stable.",
+    "insufficientData": "I do not have enough industrial data to answer this reliably.",
+    "blocked": "Control actions are not available in Hermes Copilot. This system is read-only and cannot execute commands."
   },
   "unknownCenter": {
     "eyebrow": "Intelligence",
@@ -2102,5 +2127,107 @@
       "keyNotFound": "API key not found.",
       "keyRevoked": "This API key has been revoked."
     }
+  },
+  "industrial": {
+    "eyebrow": "Phase 35",
+    "title": "Industrial Edge Gateway",
+    "subtitle": "Monitor industrial sites, gateways, assets, and telemetry streams.",
+    "safetyBanner": "Safety: Read / Observe only — no control commands to PLCs or actuators.",
+    "loading": "Loading…",
+    "loadError": "Failed to load data. Check your connection.",
+    "sites": {
+      "eyebrow": "Industrial",
+      "title": "Sites",
+      "description": "Physical plant locations and their status.",
+      "empty": "No sites configured."
+    },
+    "gateways": {
+      "eyebrow": "Industrial",
+      "title": "Gateways",
+      "description": "Edge gateway devices collecting field data.",
+      "empty": "No gateways registered."
+    },
+    "assets": {
+      "eyebrow": "Industrial",
+      "title": "Assets",
+      "description": "PLCs, drives, sensors, and other industrial equipment.",
+      "empty": "No assets defined."
+    },
+    "telemetry": {
+      "eyebrow": "Industrial",
+      "title": "Telemetry",
+      "description": "Recent sensor and process data from field gateways.",
+      "empty": "No telemetry records yet.",
+      "readOnlyNote": "Showing last 50 readings. Telemetry is read-only — Hermes does not send commands."
+    },
+    "connectors": {
+      "eyebrow": "Industrial",
+      "title": "Connectors",
+      "description": "Protocol connector configurations per gateway.",
+      "empty": "No connectors configured.",
+      "foundationNote": "Phase 35 foundation — connector definitions only. Real drivers ship in Phase 36+.",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    }
+  },
+  "digitalTwin": {
+    "eyebrow": "Digital Twin",
+    "title": "Digital Twin Engine",
+    "subtitle": "Factory structure, asset hierarchy, and relationship topology — observation only.",
+    "readOnlyBanner": "READ / OBSERVE ONLY — No write-back to PLCs or control systems.",
+    "selectSitePrompt": "Select a site from the Industrial Gateway dashboard to explore its digital twin.",
+    "noNodes": "No nodes found for this site.",
+    "noRelations": "No relations found.",
+    "nodes": "Nodes",
+    "relations": "Relations",
+    "displayName": "Display Name",
+    "nodeType": "Type",
+    "assetId": "Asset ID",
+    "created": "Created",
+    "source": "Source",
+    "relationType": "Relation",
+    "target": "Target",
+    "healthScore": "Asset Health",
+    "overallScore": "Overall Score",
+    "dataMayBeStale": "Data may be stale",
+    "freshness": "Freshness",
+    "quality": "Quality",
+    "status": "Status",
+    "lastTelemetry": "Last telemetry",
+    "graphView": "Graph View",
+    "children": "children",
+    "assets": {
+      "eyebrow": "Asset Nodes",
+      "title": "Digital Twin Assets",
+      "description": "All asset nodes in the factory hierarchy for this site."
+    },
+    "graph": {
+      "eyebrow": "Topology",
+      "title": "Factory Graph",
+      "description": "Visual representation of factory structure and asset relationships."
+    },
+    "layout": {
+      "eyebrow": "Canvas",
+      "title": "Layout Editor",
+      "description": "Arrange nodes on a custom canvas for your factory floor.",
+      "emptyState": "No layouts saved yet. Create one from the API to see it here."
+    }
+  },
+  "analytics": {
+    "title": "Time Series Analytics",
+    "subtitle": "Trends, KPIs, and anomaly detection across your industrial assets",
+    "kpiTitle": "KPIs",
+    "kpiDesc": "Key performance indicators calculated from telemetry",
+    "trendsTitle": "Trends",
+    "trendsDesc": "Historical telemetry trends over selected periods",
+    "anomaliesTitle": "Anomalies",
+    "anomaliesDesc": "Detected spikes, drops, and fault patterns",
+    "alarmsTitle": "Alarm Frequency",
+    "alarmsDesc": "Alarm rate and BAD/STALE record analysis",
+    "availabilityLabel": "Availability",
+    "runtimeLabel": "Runtime",
+    "downtimeLabel": "Downtime",
+    "efficiencyLabel": "Efficiency",
+    "noData": "No analytics data available"
   }
 }

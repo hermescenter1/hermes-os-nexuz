@@ -451,13 +451,30 @@ model Organization {
   settings      Json                     @default("{}")
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
-  members       OrganizationMember[]
-  subscriptions Subscription[]
-  invoices      Invoice[]
-  usageRecords  UsageRecord[]
-  invitations   OrganizationInvitation[]
-  departments   Department[]
-  apiKeys       ApiKey[]
+  members              OrganizationMember[]
+  subscriptions        Subscription[]
+  invoices             Invoice[]
+  usageRecords         UsageRecord[]
+  invitations          OrganizationInvitation[]
+  departments          Department[]
+  apiKeys              ApiKey[]
+  industrialSites      IndustrialSite[]
+  industrialGateways   IndustrialGateway[]
+  industrialAssets     IndustrialAsset[]
+  telemetryRecords     TelemetryRecord[]
+  connectorConfigs     IndustrialConnectorConfig[]
+  // Phase 36: Digital Twin
+  digitalTwinNodes     DigitalTwinNode[]
+  digitalTwinRelations DigitalTwinRelation[]
+  digitalTwinLayouts   DigitalTwinLayout[]
+  assetTags            AssetTag[]
+  // Phase 37: Time Series Analytics
+  analyticsSnapshots   AnalyticsSnapshot[]
+  kpiRecords           KPIRecord[]
+  assetHealthHistory   AssetHealthHistory[]
+  // Phase 38: Industrial Copilot
+  copilotConversations CopilotConversation[]
+  copilotInsights      CopilotInsight[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -631,7 +648,8 @@ model ApiKey {
   revokedById    String?      // userId (loose reference — no FK)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  gateways       IndustrialGateway[] // Phase 35: gateways bound to this key
 
   @@index([organizationId])
 }
@@ -648,4 +666,475 @@ model UsageRecord {
 
   @@index([organizationId])
   @@index([metric])
+}
+
+// ── Industrial Gateway Foundation — Phase 35 ─────────────────────────────────
+//
+// SAFETY INVARIANT: Hermes Cloud is READ/OBSERVE ONLY in this phase.
+// Do NOT implement write-back commands to PLCs, actuators, or control systems.
+// Any command path to industrial hardware requires a separate safety review
+// outside the scope of this codebase.
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum IndustrialSiteStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum IndustrialGatewayStatus {
+  ONLINE
+  OFFLINE
+  DEGRADED
+  REVOKED
+}
+
+enum IndustrialAssetType {
+  PLC
+  SCADA
+  HMI
+  MOTOR
+  PUMP
+  COMPRESSOR
+  CONVEYOR
+  SENSOR
+  DRIVE
+  PANEL
+  OTHER
+}
+
+enum IndustrialProtocol {
+  OPC_UA
+  MQTT
+  MODBUS_TCP
+  SIEMENS_S7
+  SCADA
+  HISTORIAN
+  MANUAL
+  OTHER
+}
+
+enum TelemetryQuality {
+  GOOD
+  BAD
+  UNCERTAIN
+  STALE
+}
+
+enum ConnectorType {
+  OPC_UA
+  MQTT
+  MODBUS_TCP
+  SIEMENS_S7
+  SCADA
+  HISTORIAN
+}
+
+// ── Industrial Site ───────────────────────────────────────────────────────────
+
+model IndustrialSite {
+  id             String               @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  location       String?
+  description    String?
+  status         IndustrialSiteStatus @default(ACTIVE)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  gateways       IndustrialGateway[]
+  assets         IndustrialAsset[]
+  connectors     IndustrialConnectorConfig[]
+  telemetry      TelemetryRecord[]
+  // Phase 36: Digital Twin
+  twinNodes      DigitalTwinNode[]
+  twinLayouts    DigitalTwinLayout[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+}
+
+// ── Industrial Gateway ────────────────────────────────────────────────────────
+
+model IndustrialGateway {
+  id             String                  @id @default(cuid())
+  organizationId String
+  siteId         String
+  name           String
+  // gatewayId: external hardware identifier (e.g. serial number). Globally unique.
+  gatewayId      String                  @unique
+  status         IndustrialGatewayStatus @default(OFFLINE)
+  version        String?
+  // apiKeyId: the specific ApiKey this gateway must authenticate with.
+  // key↔gateway binding: ctx.keyId MUST equal this value on every ingest/heartbeat.
+  apiKeyId       String?
+  lastSeenAt     DateTime?
+  metadata       Json                    @default("{}")
+  revokedAt      DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site           IndustrialSite          @relation(fields: [siteId], references: [id])
+  apiKey         ApiKey?                 @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  assets         IndustrialAsset[]
+  connectors     IndustrialConnectorConfig[]
+  telemetry      TelemetryRecord[]
+
+  @@index([organizationId])
+  @@index([siteId])
+  @@index([apiKeyId])
+}
+
+// ── Industrial Asset ──────────────────────────────────────────────────────────
+
+model IndustrialAsset {
+  id             String              @id @default(cuid())
+  organizationId String
+  siteId         String
+  gatewayId      String?
+  name           String
+  assetType      IndustrialAssetType @default(OTHER)
+  manufacturer   String?
+  model          String?
+  protocol       IndustrialProtocol  @default(OTHER)
+  tagPrefix      String?
+  status         String              @default("ACTIVE")
+  metadata       Json                @default("{}")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site           IndustrialSite      @relation(fields: [siteId], references: [id])
+  gateway        IndustrialGateway?  @relation(fields: [gatewayId], references: [id], onDelete: SetNull)
+  telemetry      TelemetryRecord[]
+  // Phase 36: Digital Twin
+  twinNodes      DigitalTwinNode[]
+  assetTags      AssetTag[]
+
+  @@index([organizationId])
+  @@index([siteId])
+  @@index([gatewayId])
+}
+
+// ── Telemetry Records ─────────────────────────────────────────────────────────
+//
+// SCALING NOTE: This table grows at (gateways × tags × poll_rate).
+// A 100-gateway site at 1Hz with 500 tags = ~4.3B rows/day.
+//
+// PARTITIONING CANDIDATE — design is partition-ready:
+//   - receivedAt is server-set (safe partition key, never client-supplied)
+//   - No circular FKs that would block partition attachment
+//   - Composite indexes mirror partition boundary query patterns
+// Implementation: PostgreSQL PARTITION BY RANGE(receivedAt), or TimescaleDB
+// hypertable on receivedAt. Retention: raw 30d → aggregated 1y.
+// DO NOT implement partitioning in this phase. Add as Phase 36+ migration.
+//
+// FIELD TRUST LEVELS:
+//   timestamp   = GATEWAY-REPORTED, UNTRUSTED (may be wrong, backdated, missing tz)
+//   receivedAt  = SERVER-SET ONLY, never read from the ingestion payload
+
+model TelemetryRecord {
+  id             String           @id @default(cuid())
+  organizationId String
+  siteId         String
+  gatewayId      String
+  assetId        String?
+  tag            String
+  value          Json
+  numericValue   Float?           // denormalized for fast numeric range queries
+  quality        TelemetryQuality @default(GOOD)
+  unit           String?
+  source         String
+  timestamp      DateTime         // gateway-reported, untrusted
+  receivedAt     DateTime         @default(now()) // ALWAYS server-set
+  // sequenceId: gateway-assigned monotonic ID for offline buffering.
+  // Stored now; UNIQUE(gatewayId, sequenceId) deduplication added in Phase 36+.
+  sequenceId     String?
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  site           IndustrialSite   @relation(fields: [siteId], references: [id])
+  gateway        IndustrialGateway @relation(fields: [gatewayId], references: [id])
+  asset          IndustrialAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, assetId, timestamp])
+  @@index([gatewayId, timestamp])
+  @@index([organizationId, tag, timestamp])
+  @@index([organizationId, receivedAt])
+}
+
+// ── Connector Config ──────────────────────────────────────────────────────────
+// Stores connector configuration per gateway. No real protocol drivers in Phase 35.
+// Phase 36+ will instantiate IndustrialConnector instances from these configs.
+
+model IndustrialConnectorConfig {
+  id             String          @id @default(cuid())
+  organizationId String
+  siteId         String
+  gatewayId      String
+  connectorType  ConnectorType
+  name           String
+  enabled        Boolean         @default(false)
+  config         Json            @default("{}")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site           IndustrialSite  @relation(fields: [siteId], references: [id])
+  gateway        IndustrialGateway @relation(fields: [gatewayId], references: [id])
+
+  @@index([organizationId])
+  @@index([gatewayId])
+}
+
+// ── Digital Twin Engine — Phase 36 ───────────────────────────────────────────
+//
+// READ/OBSERVE ONLY INVARIANT:
+// Digital Twin and Brain integration must NEVER create, suggest, or expose
+// direct PLC control commands. This layer is for observation and analysis only.
+//
+// The Digital Twin models the factory structure as a typed graph:
+//   Organization → Site → Area → Line → Cell → Asset/System
+// Relationships between nodes are stored as directed or bidirectional edges.
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum DigitalTwinNodeType {
+  SITE   // top-level physical location (usually mirrors IndustrialSite)
+  AREA   // production area within a site (e.g. "Welding Shop", "Assembly Hall")
+  LINE   // production line within an area
+  CELL   // work cell or process unit within a line
+  ASSET  // leaf node — maps to an IndustrialAsset
+  SYSTEM // cross-cutting system (e.g. MES, SCADA, Historian) — no IndustrialAsset
+}
+
+enum DigitalTwinRelationType {
+  PART_OF      // directed: child PART_OF parent  (e.g. pump is part of cooling system)
+  CONNECTED_TO // bidirectional: physical connection between two nodes
+  CONTROLS     // directed: source CONTROLS target (e.g. PLC controls motor)
+  MONITORS     // directed: source MONITORS target (e.g. sensor monitors conveyor)
+  FEEDS        // directed: source FEEDS target    (e.g. conveyor A feeds conveyor B)
+  BACKUP_FOR   // directed: source is backup for target
+}
+
+// ── DigitalTwinNode ───────────────────────────────────────────────────────────
+//
+// Represents one node in the factory topology graph.
+// AREA / LINE / CELL / SYSTEM nodes have no corresponding IndustrialAsset.
+// ASSET nodes link to an IndustrialAsset via assetId.
+// Hierarchy is expressed via PART_OF relations (not parentNodeId alone),
+// but parentNodeId is kept for fast tree queries without full graph traversal.
+
+model DigitalTwinNode {
+  id             String              @id @default(cuid())
+  organizationId String
+  siteId         String
+  assetId        String?             // null for AREA / LINE / CELL / SYSTEM nodes
+  parentNodeId   String?             // convenience parent pointer; canonical hierarchy uses PART_OF
+  displayName    String
+  nodeType       DigitalTwinNodeType
+  metadata       Json                @default("{}")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site           IndustrialSite      @relation(fields: [siteId], references: [id])
+  asset          IndustrialAsset?    @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  parent         DigitalTwinNode?    @relation("NodeParent", fields: [parentNodeId], references: [id], onDelete: SetNull)
+  children       DigitalTwinNode[]   @relation("NodeParent")
+  outboundEdges  DigitalTwinRelation[] @relation("RelationSource")
+  inboundEdges   DigitalTwinRelation[] @relation("RelationTarget")
+
+  @@index([organizationId, siteId])
+  @@index([organizationId])
+  @@index([assetId])
+}
+
+// ── DigitalTwinRelation ───────────────────────────────────────────────────────
+//
+// Direction semantics (enforced in traversal code):
+//   CONNECTED_TO  — bidirectional  (both directions during graph traversal)
+//   FEEDS         — directed       (source → target)
+//   CONTROLS      — directed       (source → target)
+//   PART_OF       — directed       (source → target / "source is part of target")
+//   MONITORS      — directed       (source → target)
+//   BACKUP_FOR    — directed       (source → target / "source backs up target")
+//
+// @@unique prevents duplicate edges of the same type between the same node pair.
+
+model DigitalTwinRelation {
+  id             String                  @id @default(cuid())
+  organizationId String
+  sourceNodeId   String
+  targetNodeId   String
+  relationType   DigitalTwinRelationType
+  metadata       Json                    @default("{}")
+  createdAt      DateTime                @default(now())
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sourceNode     DigitalTwinNode         @relation("RelationSource", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode     DigitalTwinNode         @relation("RelationTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceNodeId, targetNodeId, relationType])
+  @@index([organizationId, sourceNodeId])
+  @@index([organizationId, targetNodeId])
+}
+
+// ── DigitalTwinLayout ─────────────────────────────────────────────────────────
+// Persists canvas layout data (node positions, zoom, pan) per site.
+// layoutData is free-form JSON understood only by the frontend renderer.
+
+model DigitalTwinLayout {
+  id             String       @id @default(cuid())
+  organizationId String
+  siteId         String
+  name           String
+  layoutData     Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site           IndustrialSite @relation(fields: [siteId], references: [id])
+
+  @@index([organizationId, siteId])
+}
+
+// ── AssetTag ──────────────────────────────────────────────────────────────────
+//
+// Maps an IndustrialAsset to its telemetry tag paths.
+// tagPath corresponds to TelemetryRecord.tag (same format, same pattern).
+// Strict foreign-key enforcement between AssetTag.tagPath and
+// TelemetryRecord.tag is deferred to Phase 37+ — stored now for mapping.
+// Phase 37+ will join on (assetId, tagPath) to correlate telemetry with assets.
+
+model AssetTag {
+  id             String         @id @default(cuid())
+  organizationId String
+  assetId        String
+  tagName        String         // human-readable label
+  tagPath        String         // matches TelemetryRecord.tag format
+  unit           String?
+  dataType       String         @default("float") // float | int | bool | string | enum
+  description    String?
+  metadata       Json           @default("{}")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset          IndustrialAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, tagPath])
+  @@index([organizationId, assetId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 37 — Time Series Analytics Engine
+// ════════════════════════════════════════════════════════════════════════════
+//
+// siteId/assetId are loose references (no FK) on high-write analytics tables
+// to avoid FK constraint overhead at telemetry ingestion scale.
+// organizationId IS always present for multi-tenant isolation.
+
+model AnalyticsSnapshot {
+  id             String       @id @default(cuid())
+  organizationId String
+  siteId         String?
+  assetId        String?
+  metric         String       // "availability" | "efficiency" | "health_score" | "runtime" | "downtime"
+  period         String       // "lastHour" | "last24Hours" | "last7Days" | "last30Days" | ISO range
+  value          Float
+  metadata       Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, assetId, createdAt])
+  @@index([organizationId, metric, createdAt])
+}
+
+model KPIRecord {
+  id             String       @id @default(cuid())
+  organizationId String
+  siteId         String?
+  assetId        String?
+  kpiName        String       // "availability" | "runtime" | "downtime" | "efficiency"
+  value          Float
+  period         String
+  calculatedAt   DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, kpiName, calculatedAt])
+  @@index([organizationId, assetId, calculatedAt])
+}
+
+model AssetHealthHistory {
+  id             String       @id @default(cuid())
+  organizationId String
+  assetId        String
+  healthScore    Float        // 0–100
+  healthStatus   String       // "healthy" | "degraded" | "critical" | "unknown"
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, assetId, createdAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 38 — Industrial Copilot Foundation
+// ════════════════════════════════════════════════════════════════════════════
+//
+// READ-ONLY COPILOT INVARIANT:
+// The Copilot observes, analyzes, explains, and recommends.
+// It MUST NOT control equipment, send commands, modify PLC values, or execute
+// autonomous actions. No write path to industrial hardware exists in this module.
+//
+// DETERMINISTIC: All responses are produced by template/intent formatting
+// over the deterministic insight, analytics, and graph engines.
+// No LLM is used in this phase.
+
+enum CopilotMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum CopilotInsightSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model CopilotConversation {
+  id             String             @id @default(cuid())
+  organizationId String
+  userId         String?
+  title          String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  messages       CopilotMessage[]
+
+  @@index([organizationId, createdAt])
+}
+
+model CopilotMessage {
+  id             String               @id @default(cuid())
+  conversationId String
+  role           CopilotMessageRole
+  content        String
+  metadata       Json                 @default("{}")
+  createdAt      DateTime             @default(now())
+  conversation   CopilotConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model CopilotInsight {
+  id             String                 @id @default(cuid())
+  organizationId String
+  siteId         String?
+  assetId        String?
+  insightType    String  // "stale_telemetry" | "repeated_fault" | "declining_health" | "abnormal_kpi" | "frequent_alarms" | "missing_telemetry" | "disconnected_asset"
+  severity       CopilotInsightSeverity @default(INFO)
+  title          String
+  description    String
+  metadata       Json                   @default("{}")
+  createdAt      DateTime               @default(now())
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, assetId, createdAt])
 }

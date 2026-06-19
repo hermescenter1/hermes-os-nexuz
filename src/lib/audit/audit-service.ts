@@ -49,6 +49,47 @@ export const API_AUDIT = {
   RATE_LIMIT_EXCEEDED: "api.rate_limit.exceeded",
 } as const;
 
+/** Analytics audit action identifiers (Phase 37). */
+export const ANALYTICS_AUDIT = {
+  ANALYTICS_QUERY:      "analytics.query",
+  KPI_CALCULATED:       "analytics.kpi.calculated",
+  HEALTH_ANALYTICS_RUN: "analytics.health.run",
+  ANOMALY_DETECTED:     "analytics.anomaly.detected",
+} as const;
+
+/** Copilot audit action identifiers (Phase 38). */
+export const COPILOT_AUDIT = {
+  COPILOT_QUERY:                "copilot.query",
+  COPILOT_INSIGHT_GENERATED:    "copilot.insight.generated",
+  COPILOT_CONVERSATION_CREATED: "copilot.conversation.created",
+} as const;
+
+/** Digital Twin audit action identifiers (Phase 36). */
+export const DT_AUDIT = {
+  NODE_CREATED:      "digital_twin.node.created",
+  NODE_UPDATED:      "digital_twin.node.updated",
+  RELATION_CREATED:  "digital_twin.relation.created",
+  RELATION_UPDATED:  "digital_twin.relation.updated",
+  LAYOUT_UPDATED:    "digital_twin.layout.updated",
+  TAG_CREATED:       "digital_twin.tag.created",
+  TAG_UPDATED:       "digital_twin.tag.updated",
+} as const;
+
+/** Industrial Edge Gateway audit action identifiers (Phase 35). */
+export const INDUSTRIAL_AUDIT = {
+  SITE_CREATED:        "industrial.site.created",
+  SITE_UPDATED:        "industrial.site.updated",
+  GATEWAY_CREATED:     "industrial.gateway.created",
+  GATEWAY_UPDATED:     "industrial.gateway.updated",
+  GATEWAY_REVOKED:     "industrial.gateway.revoked",
+  GATEWAY_HEARTBEAT:   "industrial.gateway.heartbeat",
+  ASSET_CREATED:       "industrial.asset.created",
+  ASSET_UPDATED:       "industrial.asset.updated",
+  TELEMETRY_INGESTED:  "industrial.telemetry.ingested",
+  CONNECTOR_CREATED:   "industrial.connector.created",
+  CONNECTOR_UPDATED:   "industrial.connector.updated",
+} as const;
+
 /** Organization management audit action identifiers (Phase 32). */
 export const ORG_AUDIT = {
   ORG_CREATED:             "org.created",
