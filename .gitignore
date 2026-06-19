@@ -2,12 +2,26 @@
 /.next
 /out
 /build
-.env*
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
 
 # Phase 16A — local document object-storage provider's filesystem root
-# (src/lib/documents/object-storage.ts). Real files once exercised; never
-# committed.
 /.data
+
+# Env files — .example files are safe to commit (no secrets)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Production backups — never commit DB dumps
+/backups/
+scripts/backups/
+*.sql
+*.sql.gz
+
+# SSL certificates — managed by Certbot on the VPS
+deploy/ssl/certs/
+/etc/letsencrypt/

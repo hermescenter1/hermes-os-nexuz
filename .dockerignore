@@ -1,0 +1,47 @@
+node_modules
+.next
+.git
+.gitignore
+
+# Env files — injected at runtime, not baked into image
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Dev and CI artifacts
+coverage
+.nyc_output
+*.log
+npm-debug.log*
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deploy configs — not needed inside the image
+deploy/
+scripts/
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+vitest.config.*
+
+# Docs
+DEPLOYMENT.md
+*.md
+
+# Backups
+backups/
+*.sql
+*.sql.gz
