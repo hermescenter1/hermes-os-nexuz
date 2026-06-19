@@ -40,6 +40,15 @@ export const AUDIT_ACTIONS = {
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
+/** API Platform audit action identifiers (Phase 33). */
+export const API_AUDIT = {
+  KEY_CREATED:         "api.key.created",
+  KEY_REVOKED:         "api.key.revoked",
+  KEY_ROTATED:         "api.key.rotated",
+  SCOPE_CHANGED:       "api.key.scope_changed",
+  RATE_LIMIT_EXCEEDED: "api.rate_limit.exceeded",
+} as const;
+
 /** Organization management audit action identifiers (Phase 32). */
 export const ORG_AUDIT = {
   ORG_CREATED:             "org.created",

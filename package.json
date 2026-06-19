@@ -29,6 +29,7 @@
     "argon2": "^0.44.0",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.40.0",
+    "ioredis": "^5.11.1",
     "jose": "^6.2.3",
     "next": "15.1.6",
     "next-intl": "3.26.3",

@@ -2037,5 +2037,70 @@
     "settings": {
       "title": "Organization Settings"
     }
+  },
+  "apiPlatform": {
+    "eyebrow": "API Platform",
+    "title": "API Key Management",
+    "subtitle": "Manage API keys, scopes, rate limits, and usage for your organization.",
+    "loading": "Loading...",
+    "creating": "Creating...",
+    "cancel": "Cancel",
+    "optional": "optional",
+    "rawKey": {
+      "title": "Save your API key now",
+      "warning": "This is the only time your secret key will be shown. Copy it and store it securely — it cannot be recovered.",
+      "copy": "Copy key",
+      "copied": "Copied!",
+      "done": "I have saved it"
+    },
+    "keys": {
+      "title": "API Keys",
+      "createTitle": "Create new API key",
+      "new": "New API Key",
+      "name": "Key name",
+      "scopes": "Scopes",
+      "expiresAt": "Expiry date",
+      "create": "Create key",
+      "empty": "No API keys yet. Create one to start integrating.",
+      "created": "Created",
+      "lastUsed": "Last used",
+      "expires": "Expires",
+      "rotate": "Rotate",
+      "revoke": "Revoke",
+      "confirmRevoke": "Revoke this API key? Active integrations using it will stop working immediately.",
+      "confirmRotate": "Rotate this key? A new key will be created and the old one revoked. Your active integrations will need to be updated."
+    },
+    "rateLimit": {
+      "title": "Rate Limits",
+      "perMinute": "Requests this minute",
+      "perDay": "Requests today",
+      "exceeded": "Rate limit exceeded. Requests are being rejected with HTTP 429.",
+      "store": "Redis (fixed window)"
+    },
+    "usage": {
+      "title": "API Usage",
+      "callsPerDay": "Calls per day",
+      "last30Days": "Last 30 days"
+    },
+    "scopes": {
+      "admin": "Admin (all scopes)",
+      "projectsRead": "Projects — Read",
+      "projectsWrite": "Projects — Write",
+      "billingRead": "Billing — Read",
+      "billingWrite": "Billing — Write",
+      "organizationsRead": "Organizations — Read",
+      "organizationsWrite": "Organizations — Write",
+      "telemetryRead": "Telemetry — Read",
+      "telemetryWrite": "Telemetry — Write",
+      "industrialRead": "Industrial Gateway — Read",
+      "industrialWrite": "Industrial Gateway — Write"
+    },
+    "errors": {
+      "authRequired": "Authentication required.",
+      "insufficientScope": "Insufficient API scope.",
+      "rateLimitExceeded": "Rate limit exceeded. Try again later.",
+      "keyNotFound": "API key not found.",
+      "keyRevoked": "This API key has been revoked."
+    }
   }
 }

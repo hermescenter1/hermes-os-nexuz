@@ -457,6 +457,7 @@ model Organization {
   usageRecords  UsageRecord[]
   invitations   OrganizationInvitation[]
   departments   Department[]
+  apiKeys       ApiKey[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -598,6 +599,41 @@ model Payment {
   invoice           Invoice       @relation(fields: [invoiceId], references: [id])
 
   @@index([invoiceId])
+}
+
+// ── API Keys ──────────────────────────────────────────────────────────────────
+//
+// Security invariant: the raw key is NEVER stored. We store only a SHA-256
+// hash of the full key string. SHA-256 is correct here — do NOT upgrade to
+// bcrypt. API keys are high-entropy random values (not passwords), so preimage
+// resistance from bcrypt adds no security and adds latency. Timing-safe
+// comparison (crypto.timingSafeEqual) prevents hash-timing attacks.
+//
+// Lookup flow: find record by prefix (indexed, plaintext) → then verify hash.
+// This avoids a full-table hash scan.
+
+model ApiKey {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  // keyHash: SHA-256 hex of the full key. Unique to prevent duplicate-key collisions.
+  keyHash        String       @unique
+  // prefix: first 8 chars of the random portion; stored plaintext for O(1) lookup.
+  prefix         String       @unique
+  // last4: last 4 chars of the full key, shown in the dashboard for identification.
+  last4          String
+  // scopes: JSON array of scope strings e.g. ["projects.read", "telemetry.write"]
+  scopes         Json         @default("[]")
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  createdById    String?      // userId (loose reference — no FK)
+  revokedAt      DateTime?
+  revokedById    String?      // userId (loose reference — no FK)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }
 
 // ── Usage Records ─────────────────────────────────────────────────────────────

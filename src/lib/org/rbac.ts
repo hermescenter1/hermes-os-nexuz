@@ -17,7 +17,10 @@ export type OrgPermission =
   | "view_billing"
   | "view_members"
   | "view_departments"
-  | "revoke_invitation";
+  | "revoke_invitation"
+  // Phase 33: API Platform
+  | "manage_api_keys"    // create / revoke / rotate keys
+  | "view_api_keys";     // list keys and usage stats
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -32,6 +35,9 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_members:         ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   view_departments:     ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   revoke_invitation:    ["OWNER", "ADMIN", "MANAGER"],
+  // Phase 33 — VIEWER and ENGINEER cannot touch API keys
+  manage_api_keys:      ["OWNER", "ADMIN", "MANAGER"],
+  view_api_keys:        ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "BILLING_ADMIN"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {
