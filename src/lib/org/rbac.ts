@@ -31,7 +31,10 @@ export type OrgPermission =
   | "view_analytics"      // read time-series analytics, KPIs, trends, alarms
   | "view_copilot"        // use Industrial Copilot (query, conversations, insights)
   // Phase 39: Predictive Maintenance
-  | "view_predictive";   // read risk scores, RUL, recommendations, degradation analysis
+  | "view_predictive"    // read risk scores, RUL, recommendations, degradation analysis
+  // Phase 40: Industrial Knowledge Engine
+  | "view_knowledge"     // read articles, failure modes, procedures, cases, search
+  | "manage_knowledge";  // create/update articles, failure modes, procedures, cases
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -60,6 +63,9 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_copilot:         ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   // Phase 39 — Predictive Maintenance (read-only; same role matrix as analytics)
   view_predictive:      ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  // Phase 40 — Industrial Knowledge Engine
+  view_knowledge:       ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  manage_knowledge:     ["OWNER", "ADMIN", "MANAGER", "ENGINEER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

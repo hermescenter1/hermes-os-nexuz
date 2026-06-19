@@ -2374,5 +2374,120 @@
     "weightSetVersion": "Weight Set",
     "noAssets": "No assets found for this organization.",
     "loading": "Loading predictive analysis…"
+  },
+  "ke": {
+    "eyebrow": "Industrial Knowledge Engine",
+    "safetyBanner": "READ-ONLY: Knowledge Engine observes, organizes, and explains. It does not execute maintenance, control equipment, or act autonomously.",
+    "overview": {
+      "title": "Knowledge Engine Overview",
+      "subtitle": "Deterministic engineering knowledge from telemetry, analytics, and maintenance history.",
+      "description": "Organizes failure modes, root causes, maintenance procedures, and engineering cases into a structured, searchable knowledge base."
+    },
+    "search": {
+      "title": "Knowledge Search",
+      "subtitle": "Deterministic bilingual search across articles, failure modes, procedures, and cases.",
+      "placeholder": "Search in English or Persian…",
+      "noResults": "No matching knowledge found.",
+      "resultCount": "{count} result(s)"
+    },
+    "articles": {
+      "title": "Knowledge Articles",
+      "subtitle": "Engineering standards, vendor documentation, and internal guides.",
+      "create": "New Article",
+      "noData": "No articles yet.",
+      "version": "Version",
+      "status": {
+        "draft": "Draft",
+        "review": "Under Review",
+        "published": "Published"
+      }
+    },
+    "failures": {
+      "title": "Failure Mode Library",
+      "subtitle": "Known failure modes for industrial equipment, with root causes and symptoms.",
+      "create": "New Failure Mode",
+      "noData": "No failure modes registered.",
+      "severity": {
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High",
+        "CRITICAL": "Critical"
+      }
+    },
+    "rootCauses": {
+      "title": "Root Causes",
+      "subtitle": "Deterministic root cause candidates ranked by evidence and confidence.",
+      "confidence": "Confidence",
+      "noData": "No root causes available.",
+      "scoringFactors": "Scoring Factors"
+    },
+    "procedures": {
+      "title": "Maintenance Procedures",
+      "subtitle": "Safety-bearing maintenance procedures with versioned audit trail.",
+      "create": "New Procedure",
+      "noData": "No procedures available.",
+      "version": "Procedure Version",
+      "steps": "Steps",
+      "estimatedHours": "Estimated Hours",
+      "safetyNotes": "Safety Notes",
+      "approvalStatus": {
+        "draft": "Draft",
+        "review": "Under Review",
+        "approved": "Approved"
+      }
+    },
+    "engineeringCases": {
+      "title": "Engineering Case Library",
+      "subtitle": "Documented incidents with symptoms, diagnosis, resolution, and lessons learned.",
+      "create": "New Case",
+      "noData": "No engineering cases recorded.",
+      "status": {
+        "open": "Open",
+        "resolved": "Resolved",
+        "closed": "Closed"
+      },
+      "symptoms": "Symptoms",
+      "diagnosis": "Diagnosis",
+      "resolution": "Resolution",
+      "lessonsLearned": "Lessons Learned",
+      "relatedCases": "Related Cases"
+    },
+    "recommendations": {
+      "title": "Knowledge Recommendations",
+      "subtitle": "Procedures recommended based on failure modes and predictive context.",
+      "noData": "No recommendations available."
+    },
+    "evidence": {
+      "title": "Supporting Evidence",
+      "noEvidence": "No evidence records linked.",
+      "types": {
+        "article": "Article",
+        "failureMode": "Failure Mode",
+        "procedure": "Procedure",
+        "case": "Engineering Case",
+        "predictive": "Predictive (Phase 39)",
+        "telemetry": "Telemetry (Phase 35)",
+        "asset": "Asset (Phase 36)"
+      }
+    },
+    "confidence": {
+      "LOW": "Low Confidence",
+      "MEDIUM": "Medium Confidence",
+      "HIGH": "High Confidence"
+    },
+    "sourceType": {
+      "MANUAL": "Manual Entry",
+      "ENGINEERING_STANDARD": "Engineering Standard",
+      "MAINTENANCE_HISTORY": "Maintenance History",
+      "FAILURE_ANALYSIS": "Failure Analysis",
+      "VENDOR_DOCUMENTATION": "Vendor Documentation",
+      "INTERNAL_CASE": "Internal Case"
+    },
+    "assetLink": {
+      "title": "Asset Knowledge Links",
+      "subtitle": "Knowledge items linked to this asset. Exactly one item type per link.",
+      "noLinks": "No knowledge linked to this asset yet."
+    },
+    "engineVersion": "Engine Version"
   }
 }

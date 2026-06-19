@@ -57,6 +57,18 @@ export const ANALYTICS_AUDIT = {
   ANOMALY_DETECTED:     "analytics.anomaly.detected",
 } as const;
 
+/** Industrial Knowledge Engine audit action identifiers (Phase 40). */
+export const KNOWLEDGE_AUDIT = {
+  ARTICLE_CREATED:         "knowledge.article.created",
+  ARTICLE_UPDATED:         "knowledge.article.updated",
+  FAILURE_MODE_CREATED:    "knowledge.failure_mode.created",
+  ROOT_CAUSE_CREATED:      "knowledge.root_cause.created",
+  PROCEDURE_CREATED:       "knowledge.procedure.created",
+  PROCEDURE_UPDATED:       "knowledge.procedure.updated",   // includes version diff
+  ENGINEERING_CASE_CREATED: "knowledge.case.created",
+  KNOWLEDGE_QUERY:          "knowledge.query",
+} as const;
+
 /** Predictive Maintenance audit action identifiers (Phase 39). */
 export const PREDICTIVE_AUDIT = {
   ANALYSIS_RUN:                  "predictive.analysis.run",

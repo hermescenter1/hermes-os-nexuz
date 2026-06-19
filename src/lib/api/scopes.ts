@@ -23,6 +23,8 @@ export const ALL_SCOPES = [
   "analytics.read",      // Phase 37 Time Series Analytics
   "copilot.read",        // Phase 38 Industrial Copilot
   "predictive.read",     // Phase 39 Predictive Maintenance (read-only analysis)
+  "knowledge.read",      // Phase 40 Industrial Knowledge Engine — read
+  "knowledge.write",     // Phase 40 Industrial Knowledge Engine — create/update
   "admin",               // superset — implies all scopes above
 ] as const;
 

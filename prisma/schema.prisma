@@ -481,6 +481,14 @@ model Organization {
   failureIndicators    FailureIndicator[]
   rulSnapshots         RULSnapshot[]
   maintenanceRecs      MaintenanceRecommendation[]
+  // Phase 40: Industrial Knowledge Engine
+  knowledgeCategories  KnowledgeCategory[]
+  knowledgeArticles    IndustrialKnowledgeArticle[]
+  failureModes         IndustrialFailureMode[]
+  rootCauses           IndustrialRootCause[]
+  maintenanceProcs     IndustrialMaintenanceProcedure[]
+  engineeringCases     IndustrialEngineeringCase[]
+  assetKnowledgeLinks  AssetKnowledgeLink[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -1308,4 +1316,202 @@ model MaintenanceRecommendation {
   organization       Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, assetId, createdAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 40 — Industrial Knowledge Engine
+// ════════════════════════════════════════════════════════════════════════════
+//
+// SAFETY INVARIANT: Knowledge Engine is READ/OBSERVE/EXPLAIN ONLY.
+// It MUST NOT control equipment, modify PLC values, trigger maintenance, or
+// act autonomously. All outputs are deterministic, traceable, auditable.
+//
+// BILINGUAL SEARCH: titleNorm / nameNorm columns store pre-normalized FA/EN text.
+// See src/lib/knowledge/normalize.ts for the normalization pipeline.
+//
+// CONFIDENCE SCALE: IndustrialRootCause.confidenceWeight is 0.0–1.0 internally.
+// Display: 0.00–0.39 → LOW, 0.40–0.74 → MEDIUM, 0.75–1.00 → HIGH.
+//
+// VERSIONING:
+//   IndustrialKnowledgeArticle.version — monotonic Int, no history table.
+//   IndustrialMaintenanceProcedure.version — monotonic Int + mandatory audit diff
+//     in AuditLog: { previousVersion, nextVersion, changedFields, changedBy }.
+//
+// ASSET KNOWLEDGE LINK INTEGRITY: AssetKnowledgeLink has four nullable FKs.
+// Exactly ONE must be non-null — enforced by DB CHECK constraint (migration SQL)
+// AND service-level validation in src/lib/knowledge/articles.ts.
+
+enum KnowledgeSourceType {
+  MANUAL
+  ENGINEERING_STANDARD
+  MAINTENANCE_HISTORY
+  FAILURE_ANALYSIS
+  VENDOR_DOCUMENTATION
+  INTERNAL_CASE
+}
+
+enum FailureSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model KnowledgeCategory {
+  id             String                           @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  parentId       String?
+  createdAt      DateTime                         @default(now())
+  updatedAt      DateTime                         @updatedAt
+  organization   Organization                     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent         KnowledgeCategory?               @relation("CategoryParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children       KnowledgeCategory[]              @relation("CategoryParent")
+  articles       IndustrialKnowledgeArticle[]
+  failureModes   IndustrialFailureMode[]
+  procedures     IndustrialMaintenanceProcedure[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, createdAt])
+}
+
+model IndustrialKnowledgeArticle {
+  id             String               @id @default(cuid())
+  organizationId String
+  categoryId     String?
+  title          String
+  titleNorm      String
+  summary        String
+  content        String
+  keywords       Json                 @default("[]")
+  sourceType     KnowledgeSourceType  @default(MANUAL)
+  version        Int                  @default(1)
+  status         String               @default("draft")
+  authorId       String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category       KnowledgeCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  assetLinks     AssetKnowledgeLink[]
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, title])
+}
+
+model IndustrialFailureMode {
+  id             String               @id @default(cuid())
+  organizationId String
+  categoryId     String?
+  name           String
+  nameNorm       String
+  description    String
+  severity       FailureSeverity      @default(MEDIUM)
+  symptoms       Json                 @default("[]")
+  assetTypes     Json                 @default("[]")
+  keywords       Json                 @default("[]")
+  sourceType     KnowledgeSourceType  @default(MANUAL)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category       KnowledgeCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  rootCauses     IndustrialRootCause[]
+  assetLinks     AssetKnowledgeLink[]
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, name])
+}
+
+model IndustrialRootCause {
+  id                 String                @id @default(cuid())
+  organizationId     String
+  failureModeId      String
+  description        String
+  confidenceWeight   Float                 @default(0.5)
+  supportingEvidence Json                  @default("[]")
+  sourceType         KnowledgeSourceType   @default(MANUAL)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  organization       Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  failureMode        IndustrialFailureMode @relation(fields: [failureModeId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, failureModeId])
+}
+
+model IndustrialMaintenanceProcedure {
+  id             String               @id @default(cuid())
+  organizationId String
+  categoryId     String?
+  title          String
+  titleNorm      String
+  description    String
+  steps          Json                 @default("[]")
+  assetTypes     Json                 @default("[]")
+  estimatedHours Float?
+  requiredRoles  Json                 @default("[]")
+  safetyNotes    String?
+  sourceType     KnowledgeSourceType  @default(MANUAL)
+  version        Int                  @default(1)
+  status         String               @default("draft")
+  approvedById   String?
+  approvedAt     DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category       KnowledgeCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  assetLinks     AssetKnowledgeLink[]
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, title])
+}
+
+model IndustrialEngineeringCase {
+  id             String           @id @default(cuid())
+  organizationId String
+  title          String
+  titleNorm      String
+  symptoms       Json             @default("[]")
+  diagnosis      String?
+  resolution     String?
+  lessonsLearned String?
+  assetTypes     Json             @default("[]")
+  assetId        String?
+  siteId         String?
+  failureModeId  String?
+  keywords       Json             @default("[]")
+  status         String           @default("open")
+  severity       FailureSeverity  @default(MEDIUM)
+  reportedById   String?
+  resolvedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assetLinks     AssetKnowledgeLink[]
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, assetId])
+  @@index([organizationId, title])
+}
+
+// EXACTLY ONE of (articleId, failureModeId, procedureId, caseId) must be non-null.
+// DB CHECK constraint in migration SQL; service-level check in articles.ts.
+model AssetKnowledgeLink {
+  id             String                          @id @default(cuid())
+  organizationId String
+  assetId        String
+  articleId      String?
+  failureModeId  String?
+  procedureId    String?
+  caseId         String?
+  notes          String?
+  createdAt      DateTime                        @default(now())
+  organization   Organization                    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  article        IndustrialKnowledgeArticle?     @relation(fields: [articleId],     references: [id], onDelete: SetNull)
+  failureMode    IndustrialFailureMode?           @relation(fields: [failureModeId], references: [id], onDelete: SetNull)
+  procedure      IndustrialMaintenanceProcedure? @relation(fields: [procedureId],   references: [id], onDelete: SetNull)
+  case           IndustrialEngineeringCase?      @relation(fields: [caseId],        references: [id], onDelete: SetNull)
+
+  @@index([organizationId, assetId])
+  @@index([organizationId, createdAt])
 }
