@@ -1978,5 +1978,64 @@
       "changeFailed": "Plan change failed.",
       "cancelFailed": "Could not cancel subscription."
     }
+  },
+  "org": {
+    "eyebrow": "Organization",
+    "title": "Organization Management",
+    "noOrg": "No organization found. Create one to get started.",
+    "loading": "Loading...",
+    "edit": "Edit",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "sending": "Sending...",
+    "creating": "Creating...",
+    "dismiss": "Dismiss",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "website": "Website",
+      "email": "Email Address",
+      "role": "Role",
+      "created": "Created",
+      "updated": "Last Updated"
+    },
+    "notFound": "Organization not found.",
+    "members": {
+      "title": "Team Members",
+      "suspend": "Suspend",
+      "activate": "Activate",
+      "remove": "Remove",
+      "confirmRemove": "Are you sure you want to remove this member?"
+    },
+    "invitations": {
+      "title": "Invitations",
+      "invite": "Invite Member",
+      "send": "Send Invitation",
+      "resend": "Resend",
+      "revoke": "Revoke",
+      "confirmRevoke": "Revoke this invitation?",
+      "empty": "No invitations yet.",
+      "expires": "Expires",
+      "tokenNote": "Invitation token (shown once — share with the invitee):"
+    },
+    "departments": {
+      "title": "Departments",
+      "add": "Add Department",
+      "create": "Create",
+      "empty": "No departments yet.",
+      "type": "Department Type",
+      "types": {
+        "automation": "Automation",
+        "electrical": "Electrical",
+        "maintenance": "Maintenance",
+        "production": "Production",
+        "management": "Management",
+        "it_ot": "IT / OT"
+      }
+    },
+    "settings": {
+      "title": "Organization Settings"
+    }
   }
 }

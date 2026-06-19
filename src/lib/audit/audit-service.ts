@@ -40,6 +40,25 @@ export const AUDIT_ACTIONS = {
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
+/** Organization management audit action identifiers (Phase 32). */
+export const ORG_AUDIT = {
+  ORG_CREATED:             "org.created",
+  ORG_UPDATED:             "org.updated",
+  MEMBER_INVITED:          "org.member.invited",
+  MEMBER_ADDED:            "org.member.added",
+  MEMBER_REMOVED:          "org.member.removed",
+  MEMBER_ROLE_CHANGED:     "org.member.role_changed",
+  MEMBER_STATUS_CHANGED:   "org.member.status_changed",
+  OWNERSHIP_TRANSFERRED:   "org.ownership.transferred",
+  INVITATION_ACCEPTED:     "org.invitation.accepted",
+  INVITATION_REJECTED:     "org.invitation.rejected",
+  INVITATION_EXPIRED:      "org.invitation.expired",
+  INVITATION_RESENT:       "org.invitation.resent",
+  INVITATION_REVOKED:      "org.invitation.revoked",
+  DEPARTMENT_CREATED:      "org.department.created",
+  DEPARTMENT_UPDATED:      "org.department.updated",
+} as const;
+
 /** Billing-specific audit action identifiers (Phase 31). */
 export const BILLING_AUDIT = {
   SUBSCRIPTION_CREATED:    "billing.subscription.created",

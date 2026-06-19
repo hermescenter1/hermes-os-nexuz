@@ -9,7 +9,7 @@ export type SubscriptionStatus = "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELED"
 export type InvoiceStatus      = "DRAFT" | "ISSUED" | "PAID" | "VOID" | "OVERDUE";
 export type PaymentStatus      = "PENDING" | "SUCCEEDED" | "FAILED" | "REFUNDED";
 export type Currency           = "IRR" | "GBP" | "USD" | "EUR";
-export type OrgRole            = "OWNER" | "ADMIN" | "MEMBER";
+export type OrgRole            = "OWNER" | "ADMIN" | "MANAGER" | "ENGINEER" | "VIEWER" | "BILLING_ADMIN" | "MEMBER";
 
 /** Terminal subscription states — no second active sub can be created while one is in these */
 export const TERMINAL_STATUSES: SubscriptionStatus[] = ["CANCELED", "EXPIRED"];

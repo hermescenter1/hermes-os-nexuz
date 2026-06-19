@@ -383,7 +383,24 @@ model AuditLog {
 enum OrgRole {
   OWNER
   ADMIN
-  MEMBER
+  MANAGER
+  ENGINEER
+  VIEWER
+  BILLING_ADMIN
+  MEMBER // deprecated — migrated to ENGINEER in Phase 32
+}
+
+enum MemberStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
 }
 
 enum BillingCycle {
@@ -423,29 +440,84 @@ enum Currency {
 
 // ── Organization ─────────────────────────────────────────────────────────────
 
+// Phase 32: extended with description, website, logoUrl, settings
 model Organization {
-  id            String               @id @default(cuid())
+  id            String                   @id @default(cuid())
   name          String
-  slug          String               @unique
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  slug          String                   @unique
+  description   String?
+  website       String?
+  logoUrl       String?
+  settings      Json                     @default("{}")
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
   members       OrganizationMember[]
   subscriptions Subscription[]
   invoices      Invoice[]
   usageRecords  UsageRecord[]
+  invitations   OrganizationInvitation[]
+  departments   Department[]
 }
 
+// Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
 model OrganizationMember {
-  id             String       @id @default(cuid())
+  id             String                   @id @default(cuid())
   organizationId String
   userId         String
-  role           OrgRole      @default(MEMBER)
-  createdAt      DateTime     @default(now())
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           OrgRole                  @default(ENGINEER)
+  status         MemberStatus             @default(ACTIVE)
+  departmentId   String?
+  invitedById    String?                  // userId of inviter (loose reference — no FK)
+  joinedAt       DateTime?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department     Department?              @relation("DepartmentMembers", fields: [departmentId], references: [id], onDelete: SetNull)
+  managedDepts   Department[]             @relation("DepartmentManager")
 
   @@unique([organizationId, userId])
   @@index([userId])
+  @@index([organizationId])
+  @@index([departmentId])
+}
+
+// ── Organization Invitations ──────────────────────────────────────────────────
+
+model OrganizationInvitation {
+  id             String           @id @default(cuid())
+  organizationId String
+  email          String
+  role           OrgRole          @default(ENGINEER)
+  token          String           @unique
+  status         InvitationStatus @default(PENDING)
+  invitedById    String?          // userId (loose reference — no FK)
+  expiresAt      DateTime
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+// ── Departments ───────────────────────────────────────────────────────────────
+
+model Department {
+  id             String               @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  type           String               // "automation" | "electrical" | "maintenance" | "production" | "management" | "it_ot"
+  managerId      String?              // OrganizationMember.id
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  manager        OrganizationMember?  @relation("DepartmentManager", fields: [managerId], references: [id], onDelete: SetNull)
+  members        OrganizationMember[] @relation("DepartmentMembers")
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
 }
 
 // ── Plans ─────────────────────────────────────────────────────────────────────
