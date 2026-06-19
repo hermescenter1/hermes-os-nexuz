@@ -22,7 +22,7 @@ function mem(id: string, opts: Partial<StoredMemory> = {}): StoredMemory {
 }
 
 function fb(memoryId: string): [string, StoredMemoryFeedback[]] {
-  return [memoryId, [{ id: "f1", memoryId, feedback: "good", outcome: "success", createdAt: "2026-01-15T00:00:00.000Z" }]];
+  return [memoryId, [{ id: "f1", memoryId, outcome: "success", createdAt: "2026-01-15T00:00:00.000Z" }]];
 }
 
 const NOW = new Date("2026-06-18T00:00:00.000Z");

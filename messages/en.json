@@ -1884,5 +1884,99 @@
       "partnerDesc": "Explore technology partnerships, system integrator programmes, and ecosystem opportunities.",
       "partnerBtn": "Partner With Us"
     }
+  },
+  "billing": {
+    "title": "Billing",
+    "eyebrow": "SaaS Billing",
+    "nav": {
+      "billing": "Billing",
+      "subscription": "Subscription",
+      "invoices": "Invoices",
+      "usage": "Usage"
+    },
+    "plan": {
+      "current": "Current Plan",
+      "noSubscription": "No active subscription",
+      "upgrade": "Upgrade",
+      "downgrade": "Downgrade",
+      "cancel": "Cancel Subscription",
+      "renew": "Renew",
+      "changePlan": "Change Plan",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlyDiscount": "Save with annual billing",
+      "features": "Features included",
+      "limits": "Plan limits",
+      "limitLabels": {
+        "unlimited": "Unlimited",
+        "aiRequests": "AI Requests / mo",
+        "projects": "Projects",
+        "members": "Team Members",
+        "storageGb": "Storage",
+        "industrialGateway": "Industrial Gateway",
+        "multiAgent": "Multi-Agent",
+        "apiAccess": "API Access",
+        "prioritySupport": "Priority Support"
+      },
+      "startTrial": "Start free trial",
+      "trialBadge": "Trial",
+      "activeBadge": "Active",
+      "pastDueBadge": "Past due",
+      "canceledBadge": "Canceled",
+      "expiredBadge": "Expired"
+    },
+    "plans": {
+      "community": {
+        "name": "Community",
+        "description": "Open-source engineers and solo automation professionals."
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Individual engineers and small automation teams."
+      },
+      "team": {
+        "name": "Team",
+        "description": "Growing engineering departments and integrators."
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Large plant operators and system integrators at scale."
+      }
+    },
+    "invoices": {
+      "title": "Invoices",
+      "empty": "No invoices yet.",
+      "number": "Invoice",
+      "date": "Date",
+      "amount": "Amount",
+      "status": "Status",
+      "draft": "Draft",
+      "issued": "Issued",
+      "paid": "Paid",
+      "void": "Void",
+      "overdue": "Overdue",
+      "download": "Download"
+    },
+    "usage": {
+      "title": "Usage",
+      "period": "Last 30 days",
+      "aiRequests": "AI Requests",
+      "projects": "Projects",
+      "members": "Members",
+      "storageGb": "Storage (GB)",
+      "noData": "No usage recorded yet."
+    },
+    "currency": {
+      "irr": "IRR",
+      "gbp": "GBP",
+      "usd": "USD",
+      "eur": "EUR",
+      "chooseCurrency": "Currency"
+    },
+    "errors": {
+      "loadFailed": "Could not load billing information.",
+      "changeFailed": "Plan change failed.",
+      "cancelFailed": "Could not cancel subscription."
+    }
   }
 }

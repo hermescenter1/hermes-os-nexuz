@@ -299,6 +299,7 @@ model User {
   refreshTokens        RefreshToken[]
   verificationTokens   VerificationToken[]
   passwordResetTokens  PasswordResetToken[]
+  organizationMembers  OrganizationMember[]
 }
 
 model AuthSession {
@@ -363,4 +364,180 @@ model AuditLog {
 
   @@index([action])
   @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 31 — SaaS Billing Engine Foundation
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Monetary fields: Decimal @db.Decimal(20, 4)
+//   — 20 total digits, 4 decimal places.
+//   — IRR has no minor units (formatting rounds to 0 dp); GBP/USD/EUR use 2 dp.
+//     Storing 4 dp everywhere gives uniform precision without data loss.
+//
+// One-active-subscription invariant: a given Organization must have at most
+// ONE subscription in a non-terminal state (ACTIVE | TRIALING | PAST_DUE) at
+// a time. This is enforced in service logic (src/lib/billing/subscriptions.ts)
+// rather than a DB constraint because Prisma has no partial-unique-index DSL.
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum Currency {
+  IRR
+  GBP
+  USD
+  EUR
+}
+
+// ── Organization ─────────────────────────────────────────────────────────────
+
+model Organization {
+  id            String               @id @default(cuid())
+  name          String
+  slug          String               @unique
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  members       OrganizationMember[]
+  subscriptions Subscription[]
+  invoices      Invoice[]
+  usageRecords  UsageRecord[]
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole      @default(MEMBER)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+// ── Plans ─────────────────────────────────────────────────────────────────────
+
+model Plan {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  description   String
+  monthlyPrice  Decimal        @db.Decimal(20, 4)
+  yearlyPrice   Decimal        @db.Decimal(20, 4)
+  currency      Currency       @default(USD)
+  features      Json           @default("[]")
+  limits        Json           @default("{}")
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions Subscription[]
+}
+
+// ── Subscriptions ─────────────────────────────────────────────────────────────
+
+model Subscription {
+  id             String             @id @default(cuid())
+  organizationId String
+  planId         String
+  status         SubscriptionStatus @default(TRIALING)
+  billingCycle   BillingCycle       @default(MONTHLY)
+  startsAt       DateTime
+  expiresAt      DateTime
+  autoRenew      Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan           Plan               @relation(fields: [planId], references: [id])
+  invoices       Invoice[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ── Invoices ─────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id             String        @id @default(cuid())
+  organizationId String
+  subscriptionId String
+  invoiceNumber  String        @unique
+  currency       Currency
+  subtotal       Decimal       @db.Decimal(20, 4)
+  tax            Decimal       @db.Decimal(20, 4) @default(0)
+  total          Decimal       @db.Decimal(20, 4)
+  status         InvoiceStatus @default(DRAFT)
+  issuedAt       DateTime
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
+  payments       Payment[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ── Payments ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id                String        @id @default(cuid())
+  invoiceId         String
+  provider          String        // "manual" | future: "stripe" | "zarinpal"
+  providerReference String?       @unique // nullable until a real provider is attached
+  amount            Decimal       @db.Decimal(20, 4)
+  currency          Currency
+  status            PaymentStatus @default(PENDING)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  invoice           Invoice       @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+}
+
+// ── Usage Records ─────────────────────────────────────────────────────────────
+
+model UsageRecord {
+  id             String       @id @default(cuid())
+  organizationId String
+  metric         String       // "ai_requests" | "projects" | "members" | "storage_gb"
+  value          Decimal      @db.Decimal(20, 4)
+  recordedAt     DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([metric])
 }

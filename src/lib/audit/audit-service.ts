@@ -40,6 +40,20 @@ export const AUDIT_ACTIONS = {
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
+/** Billing-specific audit action identifiers (Phase 31). */
+export const BILLING_AUDIT = {
+  SUBSCRIPTION_CREATED:    "billing.subscription.created",
+  SUBSCRIPTION_UPGRADED:   "billing.subscription.upgraded",
+  SUBSCRIPTION_DOWNGRADED: "billing.subscription.downgraded",
+  SUBSCRIPTION_CANCELED:   "billing.subscription.canceled",
+  SUBSCRIPTION_RENEWED:    "billing.subscription.renewed",
+  INVOICE_GENERATED:       "billing.invoice.generated",
+  PAYMENT_RECORDED:        "billing.payment.recorded",
+  ORG_CREATED:             "billing.org.created",
+  ORG_MEMBER_ADDED:        "billing.org.member_added",
+  ORG_MEMBER_REMOVED:      "billing.org.member_removed",
+} as const;
+
 export interface AuditEvent {
   id: string;
   userId: string | null;

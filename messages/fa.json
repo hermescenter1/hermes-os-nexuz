@@ -1884,5 +1884,99 @@
       "partnerDesc": "فرصت‌های مشارکت فناوری، برنامه‌های یکپارچه‌ساز سیستم و اکوسیستم را بررسی کنید.",
       "partnerBtn": "مشارکت با ما"
     }
+  },
+  "billing": {
+    "title": "صورتحساب",
+    "eyebrow": "سامانه صدور صورتحساب",
+    "nav": {
+      "billing": "صورتحساب",
+      "subscription": "اشتراک",
+      "invoices": "فاکتورها",
+      "usage": "مصرف"
+    },
+    "plan": {
+      "current": "پلن فعلی",
+      "noSubscription": "اشتراک فعالی وجود ندارد",
+      "upgrade": "ارتقاء",
+      "downgrade": "تنزل",
+      "cancel": "لغو اشتراک",
+      "renew": "تمدید",
+      "changePlan": "تغییر پلن",
+      "monthly": "ماهانه",
+      "yearly": "سالانه",
+      "yearlyDiscount": "صرفه‌جویی با پرداخت سالانه",
+      "features": "امکانات شامل",
+      "limits": "محدودیت‌های پلن",
+      "limitLabels": {
+        "unlimited": "نامحدود",
+        "aiRequests": "درخواست هوش مصنوعی / ماه",
+        "projects": "پروژه‌ها",
+        "members": "اعضای تیم",
+        "storageGb": "فضای ذخیره‌سازی",
+        "industrialGateway": "دروازه صنعتی",
+        "multiAgent": "چند عاملی",
+        "apiAccess": "دسترسی API",
+        "prioritySupport": "پشتیبانی اولویت‌دار"
+      },
+      "startTrial": "شروع دوره آزمایشی",
+      "trialBadge": "آزمایشی",
+      "activeBadge": "فعال",
+      "pastDueBadge": "معوق",
+      "canceledBadge": "لغو شده",
+      "expiredBadge": "منقضی"
+    },
+    "plans": {
+      "community": {
+        "name": "عمومی",
+        "description": "مهندسان منفرد و متخصصان اتوماسیون."
+      },
+      "professional": {
+        "name": "حرفه‌ای",
+        "description": "مهندسان فردی و تیم‌های اتوماسیون کوچک."
+      },
+      "team": {
+        "name": "تیمی",
+        "description": "واحدهای مهندسی در حال رشد و یکپارچه‌سازان."
+      },
+      "enterprise": {
+        "name": "سازمانی",
+        "description": "اپراتورهای بزرگ و یکپارچه‌سازان در مقیاس."
+      }
+    },
+    "invoices": {
+      "title": "فاکتورها",
+      "empty": "هنوز فاکتوری صادر نشده است.",
+      "number": "فاکتور",
+      "date": "تاریخ",
+      "amount": "مبلغ",
+      "status": "وضعیت",
+      "draft": "پیش‌نویس",
+      "issued": "صادر شده",
+      "paid": "پرداخت شده",
+      "void": "باطل",
+      "overdue": "معوق",
+      "download": "دریافت"
+    },
+    "usage": {
+      "title": "مصرف",
+      "period": "۳۰ روز گذشته",
+      "aiRequests": "درخواست‌های هوش مصنوعی",
+      "projects": "پروژه‌ها",
+      "members": "اعضا",
+      "storageGb": "فضای ذخیره‌سازی (گیگابایت)",
+      "noData": "هنوز مصرفی ثبت نشده است."
+    },
+    "currency": {
+      "irr": "ریال",
+      "gbp": "پوند",
+      "usd": "دلار",
+      "eur": "یورو",
+      "chooseCurrency": "ارز"
+    },
+    "errors": {
+      "loadFailed": "بارگذاری اطلاعات صورتحساب ناموفق بود.",
+      "changeFailed": "تغییر پلن ناموفق بود.",
+      "cancelFailed": "لغو اشتراک ناموفق بود."
+    }
   }
 }
