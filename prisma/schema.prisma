@@ -475,6 +475,12 @@ model Organization {
   // Phase 38: Industrial Copilot
   copilotConversations CopilotConversation[]
   copilotInsights      CopilotInsight[]
+  // Phase 39: Predictive Maintenance
+  assetBaselines       AssetBaseline[]
+  assetRiskScores      AssetRiskScore[]
+  failureIndicators    FailureIndicator[]
+  rulSnapshots         RULSnapshot[]
+  maintenanceRecs      MaintenanceRecommendation[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -1136,5 +1142,170 @@ model CopilotInsight {
   organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, createdAt])
+  @@index([organizationId, assetId, createdAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 39 — Predictive Maintenance Foundation
+// ════════════════════════════════════════════════════════════════════════════
+//
+// SAFETY INVARIANT: Predictive Maintenance is READ/OBSERVE/ANALYZE ONLY.
+// It MUST NOT execute maintenance, control equipment, write to PLCs, modify
+// assets, or act autonomously. All outputs are recommendations backed by
+// traceable evidence.
+//
+// AUDITABILITY: Every persisted prediction records formulaVersion and
+// weightSetVersion in metadata so historical predictions remain interpretable
+// after the formula or weight constants change.
+//
+// DATA-SUFFICIENCY: Predictions are only emitted when evidence meets the named
+// minimum thresholds defined in src/lib/predictive/types.ts. Below the gate,
+// state = "insufficientData" is returned — never a fabricated number.
+
+enum PredictiveConfidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DegradationClass {
+  IMPROVING
+  STABLE
+  DEGRADING
+  RAPIDLY_DEGRADING
+  INSUFFICIENT_DATA
+}
+
+enum FailureProbabilityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  INSUFFICIENT_DATA
+}
+
+// ── AssetBaseline ─────────────────────────────────────────────────────────────
+//
+// Baseline statistics per asset, computed over a configurable historical window
+// (30 / 90 / 180 days). A baseline cannot be built without meeting the
+// data-sufficiency gate (MIN_HEALTH_POINTS_FOR_DEGRADATION + MIN_HISTORY_DAYS).
+
+model AssetBaseline {
+  id                  String       @id @default(cuid())
+  organizationId      String
+  assetId             String
+  windowDays          Int          // 30 | 90 | 180
+  avgHealthScore      Float?
+  stdDevHealthScore   Float?
+  avgEfficiency       Float?
+  avgAvailability     Float?
+  avgRuntime          Float?
+  avgDowntime         Float?
+  avgAlarmRate        Float?
+  sampleCount         Int          // number of health history points used
+  coverageDays        Float        // actual calendar days covered by the sample
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  metadata            Json         @default("{}") // formulaVersion, weightSetVersion
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, assetId, createdAt])
+}
+
+// ── AssetRiskScore ────────────────────────────────────────────────────────────
+//
+// Persisted risk score (0–100) per asset. Updated on demand or on a schedule.
+// metadata contains: contributing factors, source evidence IDs, formulaVersion,
+// weightSetVersion. confidence derived from telemetry completeness and freshness.
+
+model AssetRiskScore {
+  id                  String               @id @default(cuid())
+  organizationId      String
+  assetId             String
+  riskScore           Float                // 0–100
+  confidence          PredictiveConfidence
+  healthTrendScore    Float                // contribution from health trend (0–30)
+  alarmTrendScore     Float                // contribution from alarm trend (0–25)
+  kpiDegradationScore Float                // contribution from KPI degradation (0–20)
+  telQualityScore     Float                // contribution from telemetry quality (0–15)
+  telFreshnessScore   Float                // contribution from telemetry freshness (0–10)
+  criticalityFactor   Float                // multiplier from asset type (0.8–1.3)
+  createdAt           DateTime             @default(now())
+  metadata            Json                 @default("{}") // evidenceIds, formulaVersion, weightSetVersion
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, assetId, createdAt])
+}
+
+// ── FailureIndicator ──────────────────────────────────────────────────────────
+//
+// Failure probability assessment for an asset at a point in time.
+// probability is always an enum level — never a raw float — because
+// deterministic classification is more defensible than a pseudo-precise number.
+
+model FailureIndicator {
+  id               String                  @id @default(cuid())
+  organizationId   String
+  assetId          String
+  probability      FailureProbabilityLevel
+  confidence       PredictiveConfidence
+  riskScore        Float                   // snapshot of risk score at calculation time
+  degradationClass DegradationClass
+  alarmTrend       String                  // "rising" | "stable" | "falling" | "unknown"
+  healthTrend      String                  // "improving" | "stable" | "declining" | "unknown"
+  evidence         Json                    @default("[]") // PredictiveEvidence[]
+  createdAt        DateTime                @default(now())
+  metadata         Json                    @default("{}") // formulaVersion, weightSetVersion
+  organization     Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, assetId, createdAt])
+}
+
+// ── RULSnapshot ───────────────────────────────────────────────────────────────
+//
+// Remaining Useful Life estimate. Stored as a range [minDays, maxDays] to
+// reflect projection uncertainty — never a single false-precise number.
+// state encodes special conditions (see RULState in types.ts).
+
+model RULSnapshot {
+  id               String               @id @default(cuid())
+  organizationId   String
+  assetId          String
+  state            String               // "estimated" | "no_degradation" | "at_threshold" | "insufficientData"
+  minDays          Float?               // null if state != "estimated"
+  maxDays          Float?               // null if state != "estimated"
+  currentScore     Float?               // health score at time of estimation
+  degradationRate  Float?               // points/day (negative = degrading)
+  degradationClass DegradationClass
+  confidence       PredictiveConfidence
+  createdAt        DateTime             @default(now())
+  metadata         Json                 @default("{}") // formulaVersion, weightSetVersion
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, assetId, createdAt])
+}
+
+// ── MaintenanceRecommendation ─────────────────────────────────────────────────
+//
+// A maintenance action recommended by the PM engine. Read-only outputs only.
+// No write-back to PLCs, no autonomous action, no command dispatch.
+// evidence links to real record IDs; confidence reflects data quality.
+
+model MaintenanceRecommendation {
+  id                 String               @id @default(cuid())
+  organizationId     String
+  assetId            String
+  recommendationType String               // "inspection" | "alarm_review" | "maintenance_review" | "comms_inspection"
+  priority           String               @default("MEDIUM") // "HIGH" | "MEDIUM" | "LOW"
+  title              String
+  description        String
+  confidence         PredictiveConfidence
+  evidence           Json                 @default("[]") // PredictiveEvidence[]
+  evidenceRecordIds  Json                 @default("[]") // string[] — linked record IDs for traceability
+  dismissed          Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  metadata           Json                 @default("{}") // formulaVersion, weightSetVersion
+  organization       Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([organizationId, assetId, createdAt])
 }

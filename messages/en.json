@@ -2229,5 +2229,150 @@
     "downtimeLabel": "Downtime",
     "efficiencyLabel": "Efficiency",
     "noData": "No analytics data available"
+  },
+  "predictive": {
+    "title": "Predictive Maintenance",
+    "subtitle": "Observe, analyze, and estimate risk — no autonomous actions, no control commands.",
+    "safetyBanner": "READ / ANALYZE ONLY — No write-back to PLCs, no autonomous maintenance actions.",
+    "eyebrow": "Predictive Maintenance",
+    "risk": {
+      "title": "Asset Risk Scores",
+      "subtitle": "Composite risk 0–100 across health, alarms, KPIs, telemetry quality and freshness.",
+      "score": "Risk Score",
+      "confidence": "Confidence",
+      "criticalityFactor": "Criticality Factor",
+      "healthTrend": "Health Trend",
+      "alarmTrend": "Alarm Trend",
+      "kpiDegradation": "KPI Degradation",
+      "telQuality": "Telemetry Quality",
+      "telFreshness": "Telemetry Freshness",
+      "noData": "No risk scores calculated yet.",
+      "highRisk": "High Risk",
+      "mediumRisk": "Medium Risk",
+      "lowRisk": "Low Risk"
+    },
+    "failureProbability": {
+      "title": "Failure Probability",
+      "subtitle": "Deterministic classification: LOW / MEDIUM / HIGH",
+      "level": "Probability Level",
+      "alarmTrend": "Alarm Trend",
+      "healthTrend": "Health Trend",
+      "noData": "No failure probability assessment available."
+    },
+    "remainingUsefulLife": {
+      "title": "Remaining Useful Life (RUL)",
+      "subtitle": "Projected operating days before health reaches failure threshold.",
+      "range": "Estimated Range",
+      "minDays": "Minimum (days)",
+      "maxDays": "Maximum (days)",
+      "degradationRate": "Degradation Rate (score/day)",
+      "currentScore": "Current Health Score",
+      "noData": "Insufficient data to estimate RUL.",
+      "noDegradation": "No degradation detected — asset is stable or improving.",
+      "atThreshold": "At or below failure threshold — immediate inspection recommended.",
+      "estimated": "Estimated"
+    },
+    "recommendations": {
+      "title": "Maintenance Recommendations",
+      "subtitle": "Evidence-backed recommendations derived from telemetry, health, and KPI analysis.",
+      "priority": "Priority",
+      "type": "Type",
+      "confidence": "Confidence",
+      "evidence": "Supporting Evidence",
+      "noData": "No maintenance recommendations at this time.",
+      "types": {
+        "inspection": "Schedule Inspection",
+        "alarm_review": "Alarm Review",
+        "maintenance_review": "Maintenance Review",
+        "comms_inspection": "Communications Inspection"
+      },
+      "priorities": {
+        "HIGH": "High Priority",
+        "MEDIUM": "Medium Priority",
+        "LOW": "Low Priority"
+      }
+    },
+    "baselines": {
+      "title": "Asset Baselines",
+      "subtitle": "Historical average performance computed over configurable windows.",
+      "windowDays": "Window (days)",
+      "avgHealth": "Avg Health Score",
+      "stdDev": "Std Dev",
+      "avgEfficiency": "Avg Efficiency",
+      "avgAvailability": "Avg Availability",
+      "avgAlarmRate": "Avg Alarm Rate",
+      "sampleCount": "Sample Count",
+      "coverageDays": "Coverage (days)",
+      "noData": "No baseline computed yet for this asset.",
+      "notEnoughData": "Not enough data yet — run the baseline engine once sufficient history accumulates."
+    },
+    "degradation": {
+      "title": "Degradation Analysis",
+      "subtitle": "Theil-Sen slope estimate over health history; IQR-filtered for noise resistance.",
+      "slopePerDay": "Slope (score/day)",
+      "class": "Degradation Class",
+      "method": "Method",
+      "sampleCount": "Sample Count",
+      "coverageDays": "Coverage (days)",
+      "classes": {
+        "improving": "Improving",
+        "stable": "Stable",
+        "degrading": "Degrading",
+        "rapidly_degrading": "Rapidly Degrading",
+        "insufficientData": "Insufficient Data"
+      },
+      "noData": "Not enough health history to assess degradation."
+    },
+    "confidence": {
+      "LOW": "Low Confidence",
+      "MEDIUM": "Medium Confidence",
+      "HIGH": "High Confidence",
+      "explanation": "Derived from telemetry completeness, freshness, evidence count, and history span."
+    },
+    "criticality": {
+      "title": "Asset Criticality",
+      "subtitle": "Risk multiplier by asset type (PLC=1.2, SCADA=1.3, SENSOR=0.8, etc.)"
+    },
+    "maintenanceWindow": {
+      "title": "Maintenance Window",
+      "subtitle": "Suggested earliest intervention date based on RUL range lower bound."
+    },
+    "evidence": {
+      "title": "Supporting Evidence",
+      "type": "Evidence Type",
+      "recordId": "Record ID",
+      "assetId": "Asset",
+      "tag": "Tag",
+      "timeframe": "Timeframe",
+      "value": "Value",
+      "description": "Description",
+      "noEvidence": "No linked evidence records."
+    },
+    "insufficientData": {
+      "title": "Not Enough Data Yet",
+      "subtitle": "Predictions require a minimum history threshold. Continue collecting telemetry.",
+      "reason": "Reason",
+      "minPoints": "Minimum data points required",
+      "minDays": "Minimum history span (days)",
+      "banner": "Not enough data yet — this panel will populate once sufficient history accumulates."
+    },
+    "atThreshold": {
+      "title": "At / Over Failure Threshold",
+      "subtitle": "Asset health is at or below the failure threshold.",
+      "action": "Immediate inspection recommended. Do not wait for scheduled maintenance."
+    },
+    "assetRanking": {
+      "title": "Asset Risk Ranking",
+      "subtitle": "Assets ordered by risk score, highest first.",
+      "rank": "Rank",
+      "asset": "Asset",
+      "riskScore": "Risk Score",
+      "probability": "Failure Prob.",
+      "rulRange": "RUL Range"
+    },
+    "formulaVersion": "Formula Version",
+    "weightSetVersion": "Weight Set",
+    "noAssets": "No assets found for this organization.",
+    "loading": "Loading predictive analysis…"
   }
 }

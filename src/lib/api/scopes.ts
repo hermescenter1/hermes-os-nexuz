@@ -22,6 +22,7 @@ export const ALL_SCOPES = [
   "digital_twin.write",  // Phase 36 Digital Twin write access
   "analytics.read",      // Phase 37 Time Series Analytics
   "copilot.read",        // Phase 38 Industrial Copilot
+  "predictive.read",     // Phase 39 Predictive Maintenance (read-only analysis)
   "admin",               // superset — implies all scopes above
 ] as const;
 

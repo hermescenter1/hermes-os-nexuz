@@ -29,7 +29,9 @@ export type OrgPermission =
   | "view_digital_twin"   // read twin graph, health scores, topology
   // Phase 37/38: Analytics + Copilot
   | "view_analytics"      // read time-series analytics, KPIs, trends, alarms
-  | "view_copilot";       // use Industrial Copilot (query, conversations, insights)
+  | "view_copilot"        // use Industrial Copilot (query, conversations, insights)
+  // Phase 39: Predictive Maintenance
+  | "view_predictive";   // read risk scores, RUL, recommendations, degradation analysis
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -56,6 +58,8 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   // Phase 37/38 — Analytics + Copilot (same role matrix as view_industrial)
   view_analytics:       ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   view_copilot:         ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  // Phase 39 — Predictive Maintenance (read-only; same role matrix as analytics)
+  view_predictive:      ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

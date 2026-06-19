@@ -57,6 +57,14 @@ export const ANALYTICS_AUDIT = {
   ANOMALY_DETECTED:     "analytics.anomaly.detected",
 } as const;
 
+/** Predictive Maintenance audit action identifiers (Phase 39). */
+export const PREDICTIVE_AUDIT = {
+  ANALYSIS_RUN:                  "predictive.analysis.run",
+  RISK_SCORE_CALCULATED:         "predictive.risk.calculated",
+  RUL_ESTIMATED:                 "predictive.rul.estimated",
+  MAINTENANCE_RECOMMENDATION_CREATED: "predictive.recommendation.created",
+} as const;
+
 /** Copilot audit action identifiers (Phase 38). */
 export const COPILOT_AUDIT = {
   COPILOT_QUERY:                "copilot.query",
