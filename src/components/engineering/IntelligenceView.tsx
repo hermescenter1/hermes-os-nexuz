@@ -193,7 +193,7 @@ export function IntelligenceView() {
                 {synthData.intelligenceGrade}
               </span>
             </div>
-            <p className="text-xs text-muted">
+            <p className="text-xs text-muted" suppressHydrationWarning>
               Generated {new Date(data.generatedAt).toLocaleString()} ·{" "}
               Coherence {synthData.systemCoherenceScore}/100
             </p>

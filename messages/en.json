@@ -1550,7 +1550,37 @@
     "denied": "Your account does not have access to this area. Engineer or admin role is required.",
     "roleAdmin": "Admin",
     "roleEngineer": "Engineer",
-    "roleViewer": "Viewer"
+    "roleViewer": "Viewer",
+    "register": "Create account",
+    "registerTitle": "Create your account",
+    "registerLede": "Join the Hermes OS industrial intelligence platform.",
+    "namePlaceholder": "Ada Lovelace",
+    "confirmPassword": "Confirm password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordTitle": "Reset your password",
+    "forgotPasswordLede": "Enter your email and we will send you a reset link.",
+    "sendResetLink": "Send reset link",
+    "resetPasswordTitle": "Set new password",
+    "resetPasswordLede": "Choose a strong password for your account.",
+    "resetPassword": "Reset password",
+    "verifyEmailTitle": "Verify your email",
+    "verifyEmailLede": "Confirming your email address.",
+    "passwordStrengthVeryWeak": "Very weak",
+    "passwordStrengthFair": "Fair",
+    "passwordStrengthStrong": "Strong",
+    "passwordStrengthVeryStrong": "Very strong",
+    "accountLocked": "Account temporarily locked. Please try again in 15 minutes.",
+    "tooManyAttempts": "Too many attempts. Please try again later.",
+    "emailNotVerified": "Please verify your email before signing in.",
+    "verificationSent": "Verification email sent. Please check your inbox.",
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "roleSuperAdmin": "Super Admin",
+    "roleCustomer": "Customer",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Do not have an account?",
+    "createOne": "Create one",
+    "backToLogin": "Back to sign in"
   },
   "admin": {
     "eyebrow": "Operations",
@@ -1686,6 +1716,173 @@
       "empty": "No matching chunks found.",
       "notYetSearched": "Run a search to see matching chunks here.",
       "position": "chunk {position}"
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "Live · AI-Powered Platform",
+      "subtitle": "The Engineering Intelligence Platform",
+      "desc": "Industrial AI, Engineering Memory, Knowledge Graphs, Multi-Agent Intelligence, Automation and Decision Support.",
+      "ctaPrimary": "Explore Platform",
+      "ctaSecondary": "Engineering Dashboard",
+      "statAgents": "AI Agents",
+      "statDomains": "KG Domains",
+      "statMemory": "Engineering Mem"
+    },
+    "stats": {
+      "projects": "Projects Analyzed",
+      "domains": "Knowledge Domains",
+      "cases": "Engineering Cases",
+      "agents": "AI Agents"
+    },
+    "capabilities": {
+      "eyebrow": "Platform Capabilities",
+      "title": "Built for Engineering Intelligence",
+      "lede": "Six integrated systems working in concert to give your engineering team unprecedented visibility, memory, and decision power.",
+      "agents": {
+        "title": "Multi-Agent Intelligence",
+        "desc": "Coordinated AI agents — Memory, Project, Domain, and Synthesis — continuously analyse your engineering state and surface actionable intelligence."
+      },
+      "memory": {
+        "title": "Engineering Memory",
+        "desc": "Every decision, failure, and solution is stored with confidence scoring, outcome tracking, and semantic retrieval. Your institutional knowledge never degrades."
+      },
+      "graph": {
+        "title": "Knowledge Graph",
+        "desc": "Interconnected graph of memories, projects, domains, and solutions with hub detection, connectivity scoring, and intelligent traversal."
+      },
+      "domain": {
+        "title": "Domain Analytics",
+        "desc": "Deep health analytics across engineering domains — coverage gaps, expertise breadth, confidence distribution, and domain-level success rates."
+      },
+      "risk": {
+        "title": "Risk Intelligence",
+        "desc": "Real-time risk assessment at project and portfolio level. Early-warning indicators, failure rate tracking, and system-level risk scoring."
+      },
+      "decision": {
+        "title": "Decision Support",
+        "desc": "RAG-powered decision assistant that retrieves relevant engineering memory and synthesises contextual recommendations for complex technical problems."
+      }
+    },
+    "ecosystem": {
+      "eyebrow": "Engineering Ecosystem",
+      "title": "Interconnected Intelligence",
+      "lede": "Every subsystem communicates continuously, sharing knowledge and amplifying the intelligence of the whole platform.",
+      "brain": "Hermes Brain",
+      "memory": "Memory Engine",
+      "kg": "Knowledge Graph",
+      "agents": "Agent System",
+      "risk": "Risk Engine",
+      "domain": "Domain Analytics",
+      "project": "Project Intel"
+    },
+    "industries": {
+      "eyebrow": "Industries",
+      "title": "Engineered for Every Sector",
+      "lede": "From power generation to manufacturing lines, Hermes OS brings AI-powered engineering intelligence to the entire industrial domain.",
+      "power": {
+        "title": "Power Systems",
+        "desc": "Grid protection, relay coordination, substation engineering, and power system fault analysis with AI-assisted diagnostics."
+      },
+      "automation": {
+        "title": "Industrial Automation",
+        "desc": "Process control optimisation, machine learning for predictive maintenance, and automated decision-making for manufacturing lines."
+      },
+      "plcscada": {
+        "title": "PLC & SCADA",
+        "desc": "Siemens, ABB, Schneider PLC programming support, SCADA troubleshooting, and ladder logic analysis through engineering memory."
+      },
+      "oilgas": {
+        "title": "Oil & Gas",
+        "desc": "Upstream and downstream engineering knowledge, pipeline systems, safety instrumented systems (SIS), and process hazard analysis."
+      },
+      "manufacturing": {
+        "title": "Manufacturing",
+        "desc": "Production efficiency analytics, quality control systems, OEE tracking, and lean manufacturing decision support powered by engineering AI."
+      },
+      "infrastructure": {
+        "title": "Infrastructure",
+        "desc": "Civil and electrical infrastructure projects, transmission systems, building management, and large-scale system integration intelligence."
+      }
+    },
+    "architecture": {
+      "eyebrow": "Architecture Overview",
+      "title": "Four-Layer Intelligence Stack",
+      "lede": "A clean, modular architecture designed for reliability, extensibility, and production-grade engineering workloads.",
+      "note": "Session-mode available · PostgreSQL mode for production · Zero-dependency deploy",
+      "l4label": "Public Interface",
+      "l4desc": "End-user surface — web interface, API gateway, and bilingual engineering dashboard.",
+      "l3label": "Intelligence Engine",
+      "l3desc": "Coordinated AI agents that continuously analyse, score, and synthesise engineering knowledge.",
+      "l2label": "Memory & Knowledge Core",
+      "l2desc": "Persistent, interconnected memory system with graph-based knowledge representation.",
+      "l1label": "Data & Persistence",
+      "l1desc": "Durable storage layer with flexible session-based fallback for zero-config deployment."
+    },
+    "cta": {
+      "badge": "Get Started Today",
+      "title": "Build the Future of",
+      "titleAccent": "Engineering Intelligence",
+      "lede": "Join the platform that gives engineering teams an AI-powered memory, multi-agent intelligence, and knowledge graph built for industrial scale.",
+      "primary": "Open Engineering Dashboard",
+      "secondary": "Try the Brain Copilot",
+      "footnote": "Engineering Intelligence Platform · Industrial AI · Multi-Agent Systems"
+    },
+    "about": {
+      "eyebrow": "About Hermes OS",
+      "title": "The Platform That Remembers",
+      "lede": "Hermes OS is an Engineering Intelligence Platform combining Industrial AI, Engineering Memory, Knowledge Graphs and Multi-Agent Reasoning to support engineering decisions.",
+      "memTitle": "Never Forget",
+      "memDesc": "Capture every engineering decision, solution, and failure with structured metadata, confidence scores, and outcome tracking.",
+      "learnTitle": "Always Learning",
+      "learnDesc": "Multi-agent intelligence continuously analyses your engineering state, identifies patterns, and surfaces actionable recommendations.",
+      "connTitle": "Deeply Connected",
+      "connDesc": "Knowledge Graph links memories, projects, domains, and cases into a unified intelligence network with hub detection and traversal.",
+      "decideTitle": "Smarter Decisions",
+      "decideDesc": "RAG-powered decision support retrieves relevant engineering memory and synthesises contextual guidance for complex technical problems."
+    },
+    "projects": {
+      "eyebrow": "Project Portfolio",
+      "title": "Engineering Expertise Across Industries",
+      "lede": "A growing portfolio of engineering intelligence across industrial sectors, powered by Hermes OS memory and knowledge systems.",
+      "automation": "Industrial Automation",
+      "electrical": "Electrical Engineering",
+      "control": "Control Systems",
+      "smart": "Smart Manufacturing",
+      "comingSoon": "Portfolio Coming Soon",
+      "comingSoonDesc": "Project portfolio will populate as engineering memories and cases are added to the system."
+    },
+    "partners": {
+      "eyebrow": "Technology Partners",
+      "title": "Built for the Industrial Ecosystem",
+      "lede": "Hermes OS integrates knowledge and memory for the leading industrial automation and control platforms."
+    },
+    "pricing": {
+      "eyebrow": "Pricing",
+      "title": "Plans for Every Engineering Team",
+      "lede": "From individual engineers to enterprise operations, Hermes OS scales with your team.",
+      "comingSoon": "Coming Soon",
+      "comingSoonDesc": "Pricing plans are being finalised. Join the waitlist for early access.",
+      "community": "Community",
+      "professional": "Professional",
+      "team": "Team",
+      "enterprise": "Enterprise",
+      "free": "Free",
+      "notifyMe": "Notify Me"
+    },
+    "contact": {
+      "eyebrow": "Contact",
+      "title": "Let's Build Together",
+      "lede": "Ready to bring AI-powered intelligence to your engineering team? We're here to help.",
+      "demoTitle": "Request Demo",
+      "demoDesc": "See Hermes OS in action with a personalised walkthrough of the engineering intelligence platform.",
+      "demoBtn": "Request Demo",
+      "salesTitle": "Contact Sales",
+      "salesDesc": "Discuss enterprise plans, custom integrations, and deployment options for your organisation.",
+      "salesBtn": "Contact Sales",
+      "partnerTitle": "Partnership Inquiry",
+      "partnerDesc": "Explore technology partnerships, system integrator programmes, and ecosystem opportunities.",
+      "partnerBtn": "Partner With Us"
     }
   }
 }

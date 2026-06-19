@@ -277,18 +277,28 @@ model MemoryFeedback {
   @@index([memoryId])
 }
 
-// ---- Phase 12A: authentication + RBAC (additive) ----
+// ---- Phase 12A / Phase 28: authentication + RBAC ----
 
 model User {
-  id           String        @id @default(cuid())
-  name         String
-  email        String        @unique
-  passwordHash String
-  role         String        @default("viewer") // admin | engineer | viewer
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  sessions     AuthSession[]
-  auditLogs    AuditLog[]
+  id                   String               @id @default(cuid())
+  name                 String
+  email                String               @unique
+  passwordHash         String
+  role                 String               @default("customer") // superadmin | admin | engineer | customer | viewer
+  // Phase 28: email verification
+  emailVerified        Boolean              @default(false)
+  emailVerifiedAt      DateTime?
+  // Phase 28: brute-force protection
+  failedLoginAttempts  Int                  @default(0)
+  lockedUntil          DateTime?
+  lastLoginAt          DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  sessions             AuthSession[]
+  auditLogs            AuditLog[]
+  refreshTokens        RefreshToken[]
+  verificationTokens   VerificationToken[]
+  passwordResetTokens  PasswordResetToken[]
 }
 
 model AuthSession {
@@ -300,6 +310,47 @@ model AuthSession {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Phase 28: JWT refresh token (stored as SHA-256 hash, never plaintext)
+model RefreshToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  deviceInfo String?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// Phase 28: email verification tokens (plaintext — one-time use)
+model VerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Phase 28: password-reset tokens (stored as SHA-256 hash)
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   userId     String?
@@ -309,4 +360,7 @@ model AuditLog {
   metadata   Json
   createdAt  DateTime @default(now())
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([action])
+  @@index([userId])
 }

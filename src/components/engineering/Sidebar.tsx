@@ -4,11 +4,12 @@ import { usePathname } from "@/i18n/navigation";
 import { Link }        from "@/i18n/navigation";
 
 const NAV = [
-  { href: "/engineering/intelligence",    label: "Intelligence",    icon: IconIntelligence },
-  { href: "/engineering/projects",        label: "Projects",        icon: IconProjects     },
-  { href: "/engineering/memory",          label: "Memory",          icon: IconMemory       },
-  { href: "/engineering/knowledge-graph", label: "Knowledge Graph", icon: IconGraph        },
-  { href: "/engineering/domains",         label: "Domains",         icon: IconDomains      },
+  { href: "/engineering",                 label: "Dashboard",       icon: IconDashboard,    exact: true  },
+  { href: "/engineering/intelligence",    label: "Intelligence",    icon: IconIntelligence, exact: false },
+  { href: "/engineering/projects",        label: "Projects",        icon: IconProjects,     exact: false },
+  { href: "/engineering/memory",          label: "Memory",          icon: IconMemory,       exact: false },
+  { href: "/engineering/knowledge-graph", label: "Knowledge Graph", icon: IconGraph,        exact: false },
+  { href: "/engineering/domains",         label: "Domains",         icon: IconDomains,      exact: false },
 ];
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -45,8 +46,10 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         <p className="px-3 py-2 text-[10px] font-mono uppercase tracking-widest text-muted">
           Modules
         </p>
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + "/");
+        {NAV.map(({ href, label, icon: Icon, exact }) => {
+          const active = exact
+            ? pathname === href
+            : pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
               key={href}
@@ -86,6 +89,16 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
 /* ── Inline icons ─────────────────────────────────────────────────────── */
 
+function IconDashboard({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4 flex-none">
+      <rect x="2" y="2" width="5" height="5" rx="1"   stroke={active ? "var(--signal)" : "currentColor"} strokeWidth="1.5"/>
+      <rect x="9" y="2" width="5" height="3" rx="1"   stroke={active ? "var(--signal)" : "currentColor"} strokeWidth="1.5"/>
+      <rect x="9" y="7" width="5" height="7" rx="1"   stroke={active ? "var(--signal)" : "currentColor"} strokeWidth="1.5"/>
+      <rect x="2" y="9" width="5" height="5" rx="1"   stroke={active ? "var(--signal)" : "currentColor"} strokeWidth="1.5"/>
+    </svg>
+  );
+}
 function IconIntelligence({ active }: { active: boolean }) {
   return (
     <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4 flex-none">

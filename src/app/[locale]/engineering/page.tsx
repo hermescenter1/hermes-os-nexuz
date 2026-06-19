@@ -1,4 +1,7 @@
-import { redirect } from "next/navigation";
+export const dynamic = "force-dynamic";
+
+import { setRequestLocale } from "next-intl/server";
+import { DashboardView }    from "@/components/engineering/DashboardView";
 
 export default async function EngineeringRoot({
   params,
@@ -6,5 +9,6 @@ export default async function EngineeringRoot({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  redirect(`/${locale}/engineering/intelligence`);
+  setRequestLocale(locale);
+  return <DashboardView />;
 }

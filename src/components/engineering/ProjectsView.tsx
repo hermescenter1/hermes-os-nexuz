@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useQuery }         from "@tanstack/react-query";
 import { AnimatedSection }  from "@/components/ui/AnimatedSection";
 import { StatCard }         from "@/components/ui/StatCard";
@@ -61,6 +62,9 @@ function timeAgo(iso: string) {
 // ── Main view ──────────────────────────────────────────────────────────────
 
 export function ProjectsView() {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
   const projects = useQuery<{ projects: Project[] }>({
     queryKey: ["projects"],
     queryFn:  async () => {
@@ -79,7 +83,7 @@ export function ProjectsView() {
     },
   });
 
-  if (projects.isPending) return <LoadingState label="Loading projects…" />;
+  if (!isMounted || projects.isPending) return <LoadingState label="Loading projects…" />;
   if (projects.isError)   return <ErrorState onRetry={() => projects.refetch()} />;
 
   const list    = projects.data?.projects ?? [];
@@ -159,7 +163,7 @@ export function ProjectsView() {
                           ))}
                         </div>
                       )}
-                      <p className="text-[10px] font-mono text-muted">
+                      <p className="text-[10px] font-mono text-muted" suppressHydrationWarning>
                         Updated {timeAgo(p.updatedAt)}
                       </p>
                     </GlassCard>

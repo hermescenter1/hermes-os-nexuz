@@ -123,3 +123,48 @@ h1 { font-weight: 700; }
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
+
+/* ── Phase 28A: Landing Page System ──────────────────────────────────────── */
+.landing-bg {
+  background: linear-gradient(135deg, #050816 0%, #081120 50%, #0A1628 100%);
+}
+.landing-glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.landing-glass-hover:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 32px rgba(0, 229, 255, 0.08), 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+.landing-glow-cyan {
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.12), 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.landing-neon {
+  border-color: rgba(0, 229, 255, 0.35) !important;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+}
+.landing-grid {
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+.landing-scanlines {
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0, 229, 255, 0.007) 3px, rgba(0, 229, 255, 0.007) 4px
+  );
+  pointer-events: none;
+}
+@keyframes lFloat  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes lPulse  { 0%,100%{opacity:.55} 50%{opacity:1} }
+@keyframes lOrbit  {
+  from { transform: rotate(0deg) translateX(140px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(140px) rotate(-360deg); }
+}
+.animate-l-float { animation: lFloat 7s ease-in-out infinite; }
+.animate-l-pulse { animation: lPulse 2.5s ease-in-out infinite; }
+.animate-l-orbit { animation: lOrbit 20s linear infinite; }

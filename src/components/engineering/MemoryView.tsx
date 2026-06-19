@@ -144,7 +144,7 @@ export function MemoryView() {
                       <div className="flex-1">
                         <ConfidenceBar value={m.confidence} />
                       </div>
-                      <span className="text-[10px] font-mono text-muted flex-none">
+                      <span className="text-[10px] font-mono text-muted flex-none" suppressHydrationWarning>
                         {new Date(m.createdAt).toLocaleDateString()}
                       </span>
                     </div>

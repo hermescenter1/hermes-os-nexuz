@@ -3,6 +3,7 @@
 import { usePathname } from "@/i18n/navigation";
 
 const TITLES: Record<string, string> = {
+  "/engineering":                 "Executive Dashboard",
   "/engineering/intelligence":    "Intelligence Overview",
   "/engineering/projects":        "Projects",
   "/engineering/memory":          "Engineering Memory",

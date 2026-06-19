@@ -1,12 +1,12 @@
 /**
- * Auth configuration detection (Phase 12A).
+ * Auth configuration (Phase 12A / Phase 28).
  *
  * Auth is "configured" when a seed admin is provided via env:
  *   ADMIN_EMAIL, ADMIN_PASSWORD (ADMIN_NAME optional).
  *
- * When auth is NOT configured the app still builds and runs; protected routes
- * render a setup-required message instead of crashing, and public pages are
- * entirely unaffected. Secrets are never hardcoded.
+ * Phase 28 adds:
+ *   JWT_SECRET     — signing secret for access tokens (fallback: AUTH_SECRET)
+ *   DATABASE_URL   — when present, full DB auth is enabled
  */
 
 export function isAuthConfigured(): boolean {
@@ -22,4 +22,41 @@ export function adminSeed(): { email: string; password: string; name: string } |
   };
 }
 
+/** HMAC session cookie (legacy Phase 12A path). */
 export const SESSION_COOKIE = "hermes_session";
+
+/** JWT access token cookie (Phase 28). */
+export const ACCESS_TOKEN_COOKIE = "hermes_at";
+
+/** Refresh token cookie (Phase 28). */
+export const REFRESH_TOKEN_COOKIE = "hermes_rt";
+
+/** JWT signing secret — prefer JWT_SECRET, fallback to AUTH_SECRET. */
+export function jwtSecret(): string {
+  return (
+    process.env.JWT_SECRET ||
+    process.env.AUTH_SECRET ||
+    "hermes-dev-jwt-insecure-not-for-production"
+  );
+}
+
+/** Access token TTL seconds. */
+export const ACCESS_TOKEN_TTL = 60 * 60 * 8; // 8 hours
+
+/** Refresh token TTL seconds (no remember-me). */
+export const REFRESH_TOKEN_TTL = 60 * 60 * 24 * 7; // 7 days
+
+/** Refresh token TTL seconds (remember-me). */
+export const REFRESH_TOKEN_TTL_LONG = 60 * 60 * 24 * 30; // 30 days
+
+/** Verification token TTL seconds. */
+export const VERIFICATION_TOKEN_TTL = 60 * 60 * 24; // 24 hours
+
+/** Password reset token TTL seconds. */
+export const PASSWORD_RESET_TTL = 60 * 60; // 1 hour
+
+/** Max failed login attempts before account lock. */
+export const MAX_FAILED_ATTEMPTS = 5;
+
+/** Account lock duration in seconds. */
+export const LOCK_DURATION = 60 * 15; // 15 minutes
