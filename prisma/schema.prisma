@@ -9,7 +9,6 @@ generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
-
 datasource db {
   provider = "postgresql"
 }
@@ -489,6 +488,10 @@ model Organization {
   maintenanceProcs     IndustrialMaintenanceProcedure[]
   engineeringCases     IndustrialEngineeringCase[]
   assetKnowledgeLinks  AssetKnowledgeLink[]
+  // Phase 41: Industrial Knowledge Graph
+  kgNodes              IndustrialKnowledgeGraphNode[]
+  kgEdges              IndustrialKnowledgeGraphEdge[]
+  kgSnapshots          KnowledgeGraphSnapshot[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -1513,5 +1516,132 @@ model AssetKnowledgeLink {
   case           IndustrialEngineeringCase?      @relation(fields: [caseId],        references: [id], onDelete: SetNull)
 
   @@index([organizationId, assetId])
+  @@index([organizationId, createdAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 41 — Industrial Knowledge Graph
+// ════════════════════════════════════════════════════════════════════════════
+//
+// DERIVED VIEW INVARIANT:
+// IndustrialKnowledgeGraphNode and IndustrialKnowledgeGraphEdge are
+// MATERIALIZED from source tables (Phases 35–40). They are never written
+// by application logic outside the graph builder (POST /api/industrial-graph/rebuild).
+// Source tables are authoritative; this graph is a cache.
+//
+// entityId is a SOFT REFERENCE — it points to different source tables
+// depending on nodeType. There is no DB foreign key. Referential integrity
+// is the builder's responsibility (orphan detection + removal on rebuild).
+//
+// WEIGHT NORMALIZATION (common 0.0–1.0 scale):
+//   confidenceWeight (IndustrialRootCause, 0.0–1.0)       → used directly
+//   FailureSeverity enum (LOW/MEDIUM/HIGH/CRITICAL)         → 0.25/0.50/0.75/1.00
+//   riskScore (AssetRiskScore, 0–100)                      → divide by 100
+//   Structural default (no evidence source)                → 0.50
+//
+// PATH-FINDING ALGORITHM (findShortestEvidencePath):
+//   Dijkstra over edge cost (1.0 − weight) → maximizes cumulative evidence
+//   weight → strongest-evidence path, not fewest hops.
+//   BIDIRECTIONAL edge types: CONNECTED_TO, RELATED_TO.
+//   All other edge types are DIRECTED (source → target only).
+//
+// STALENESS: KnowledgeGraphSnapshot.createdAt of the latest snapshot per org
+// is exposed as lastBuiltAt on every query response. If no snapshot exists or
+// lastBuiltAt is older than 24 h, queries include stale:true + stalenessWarning.
+// Stale graph always returns results — it never fails.
+
+enum KnowledgeGraphNodeType {
+  ASSET            // IndustrialAsset
+  FAILURE_MODE     // IndustrialFailureMode
+  ROOT_CAUSE       // IndustrialRootCause
+  PROCEDURE        // IndustrialMaintenanceProcedure
+  ENGINEERING_CASE // IndustrialEngineeringCase
+  PREDICTIVE_RISK  // AssetRiskScore (latest per asset)
+  TELEMETRY_TAG    // AssetTag
+  DIGITAL_TWIN_NODE // DigitalTwinNode
+}
+
+enum KnowledgeGraphEdgeType {
+  HAS_FAILURE_MODE  // DIRECTED: ASSET → FAILURE_MODE
+  CAUSED_BY         // DIRECTED: FAILURE_MODE → ROOT_CAUSE
+  MITIGATED_BY      // DIRECTED: FAILURE_MODE → PROCEDURE
+  DOCUMENTED_IN     // DIRECTED: FAILURE_MODE|ASSET → ENGINEERING_CASE
+  OBSERVED_ON       // DIRECTED: FAILURE_MODE → ASSET (via engineering case)
+  CONNECTED_TO      // BIDIRECTIONAL: asset↔tag or twin_node↔twin_node
+  DEPENDS_ON        // DIRECTED: DIGITAL_TWIN_NODE → ASSET
+  INDICATES_RISK    // DIRECTED: PREDICTIVE_RISK → ASSET
+  RELATED_TO        // BIDIRECTIONAL: general relationship
+}
+
+// ── IndustrialKnowledgeGraphNode ──────────────────────────────────────────────
+//
+// One node per (organizationId, nodeType, entityId) triplet.
+// entityId is a soft reference — no DB FK — pointing to:
+//   ASSET            → IndustrialAsset.id
+//   FAILURE_MODE     → IndustrialFailureMode.id
+//   ROOT_CAUSE       → IndustrialRootCause.id
+//   PROCEDURE        → IndustrialMaintenanceProcedure.id
+//   ENGINEERING_CASE → IndustrialEngineeringCase.id
+//   PREDICTIVE_RISK  → AssetRiskScore.id (latest per asset at build time)
+//   TELEMETRY_TAG    → AssetTag.id
+//   DIGITAL_TWIN_NODE → DigitalTwinNode.id
+
+model IndustrialKnowledgeGraphNode {
+  id             String                         @id @default(cuid())
+  organizationId String
+  nodeType       KnowledgeGraphNodeType
+  entityId       String                         // soft ref; see comment above
+  label          String
+  metadata       Json                           @default("{}")
+  createdAt      DateTime                       @default(now())
+  updatedAt      DateTime                       @updatedAt
+  organization   Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  outboundEdges  IndustrialKnowledgeGraphEdge[] @relation("KGEdgeSource")
+  inboundEdges   IndustrialKnowledgeGraphEdge[] @relation("KGEdgeTarget")
+
+  @@unique([organizationId, nodeType, entityId])
+  @@index([organizationId, nodeType])
+}
+
+// ── IndustrialKnowledgeGraphEdge ──────────────────────────────────────────────
+//
+// weight: 0.0–1.0 normalized (see WEIGHT NORMALIZATION above).
+// evidence: JSON containing source record IDs, formula inputs, and the
+//   normalization applied — making every edge fully traceable.
+
+model IndustrialKnowledgeGraphEdge {
+  id             String                         @id @default(cuid())
+  organizationId String
+  sourceNodeId   String
+  targetNodeId   String
+  edgeType       KnowledgeGraphEdgeType
+  weight         Float                          @default(0.5) // 0.0–1.0 normalized
+  evidence       Json                           @default("{}") // traceability
+  metadata       Json                           @default("{}")
+  createdAt      DateTime                       @default(now())
+  organization   Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sourceNode     IndustrialKnowledgeGraphNode   @relation("KGEdgeSource", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode     IndustrialKnowledgeGraphNode   @relation("KGEdgeTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceNodeId, targetNodeId, edgeType])
+  @@index([organizationId, edgeType])
+  @@index([organizationId, sourceNodeId])
+  @@index([organizationId, targetNodeId])
+}
+
+// ── KnowledgeGraphSnapshot ────────────────────────────────────────────────────
+//
+// Created at the end of every successful rebuild. The most recent snapshot's
+// createdAt is the graph's lastBuiltAt timestamp. summary holds the build
+// report (nodeCount, edgeCount, orphansRemoved, buildDurationMs).
+
+model KnowledgeGraphSnapshot {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  summary        Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([organizationId, createdAt])
 }

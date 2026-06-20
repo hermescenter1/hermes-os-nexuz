@@ -1,5 +1,15 @@
 import "dotenv/config";
-import { defineConfig } from "prisma/config";
+import { defineConfig, env } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  datasource: {
+    url: env("DATABASE_URL"),
+  },
+  migrations: {
+    seed: "tsx prisma/seed.ts",
+  },
+});
 
 /**
  * Prisma 7 configuration (Phase 11A).
@@ -10,12 +20,5 @@ import { defineConfig } from "prisma/config";
  * V1 session mode — Prisma is only invoked in database mode (see
  * src/lib/db/prisma.ts), so an empty string here never breaks the app.
  */
-export default defineConfig({
-  schema: "prisma/schema.prisma",
-  datasource: {
-    url: process.env.DATABASE_URL ?? "",
-  },
-  migrations: {
-    seed: "tsx prisma/seed.ts",
-  },
-});
+
+

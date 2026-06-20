@@ -33,8 +33,11 @@ export type OrgPermission =
   // Phase 39: Predictive Maintenance
   | "view_predictive"    // read risk scores, RUL, recommendations, degradation analysis
   // Phase 40: Industrial Knowledge Engine
-  | "view_knowledge"     // read articles, failure modes, procedures, cases, search
-  | "manage_knowledge";  // create/update articles, failure modes, procedures, cases
+  | "view_knowledge"        // read articles, failure modes, procedures, cases, search
+  | "manage_knowledge"      // create/update articles, failure modes, procedures, cases
+  // Phase 41: Industrial Knowledge Graph
+  | "view_knowledge_graph"    // read graph queries, paths, reasoning
+  | "manage_knowledge_graph"; // rebuild graph (expensive, org-wide)
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -66,6 +69,9 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   // Phase 40 — Industrial Knowledge Engine
   view_knowledge:       ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   manage_knowledge:     ["OWNER", "ADMIN", "MANAGER", "ENGINEER"],
+  // Phase 41 — Industrial Knowledge Graph
+  view_knowledge_graph:   ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  manage_knowledge_graph: ["OWNER", "ADMIN", "MANAGER"],  // rebuild is expensive + org-wide
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

@@ -57,6 +57,14 @@ export const ANALYTICS_AUDIT = {
   ANOMALY_DETECTED:     "analytics.anomaly.detected",
 } as const;
 
+/** Industrial Knowledge Graph audit action identifiers (Phase 41). */
+export const KNOWLEDGE_GRAPH_AUDIT = {
+  GRAPH_REBUILT:      "knowledge_graph.rebuilt",
+  GRAPH_QUERY:        "knowledge_graph.query",
+  PATH_QUERY:         "knowledge_graph.path_query",
+  REASONING_QUERY:    "knowledge_graph.reasoning_query",
+} as const;
+
 /** Industrial Knowledge Engine audit action identifiers (Phase 40). */
 export const KNOWLEDGE_AUDIT = {
   ARTICLE_CREATED:         "knowledge.article.created",
