@@ -37,7 +37,9 @@ export type OrgPermission =
   | "manage_knowledge"      // create/update articles, failure modes, procedures, cases
   // Phase 41: Industrial Knowledge Graph
   | "view_knowledge_graph"    // read graph queries, paths, reasoning
-  | "manage_knowledge_graph"; // rebuild graph (expensive, org-wide)
+  | "manage_knowledge_graph"  // rebuild graph (expensive, org-wide)
+  // Phase 42: Multi-Site Industrial Intelligence
+  | "view_multi_site";        // read cross-site benchmarks, risk rankings, KPI comparisons
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -72,6 +74,8 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   // Phase 41 — Industrial Knowledge Graph
   view_knowledge_graph:   ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   manage_knowledge_graph: ["OWNER", "ADMIN", "MANAGER"],  // rebuild is expensive + org-wide
+  // Phase 42 — Multi-Site Industrial Intelligence (same role matrix as view_industrial)
+  view_multi_site:        ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

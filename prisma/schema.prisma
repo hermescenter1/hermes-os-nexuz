@@ -492,6 +492,11 @@ model Organization {
   kgNodes              IndustrialKnowledgeGraphNode[]
   kgEdges              IndustrialKnowledgeGraphEdge[]
   kgSnapshots          KnowledgeGraphSnapshot[]
+  // Phase 42: Multi-Site Industrial Intelligence
+  multiSiteBenchmarks  MultiSiteBenchmark[]
+  siteRiskSnapshots    SiteRiskSnapshot[]
+  siteKpiComparisons   SiteKPIComparison[]
+  crossSitePatterns    CrossSiteFailurePattern[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -1657,4 +1662,145 @@ model KnowledgeGraphSnapshot {
 
   @@index([organizationId, createdAt])
   @@index([organizationId, status])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 42 — Multi-Site Industrial Intelligence
+// ════════════════════════════════════════════════════════════════════════════
+//
+// ACCESS MODEL: Organization-level only. All sites within an org are
+// included. Site-level RBAC is a Phase 43/44 hardening requirement.
+//
+// SNAPSHOT LIFECYCLE: POST /api/multi-site/benchmarks → RUNNING → SUCCESS/FAILED.
+// GETs read the latest SUCCESS benchmark. Staleness threshold: 4 hours.
+//
+// KPI NORMALIZATION:
+//   availability + efficiency + healthScore: 0–100 rates — comparable directly.
+//   Site value = mean(metric) across qualifying assets.
+//   runtime + downtime counts: excluded from cross-site ranking (not rate-normalized).
+//
+// DATA-SUFFICIENCY GATE:
+//   A site with 0 qualifying assets → dataStatus="insufficientData" → excluded from ranking.
+//   A site with lastDataTimestamp > RISK_DATA_MAX_STALE_HOURS → dataStatus="stale",
+//   confidence="LOW" → included in ranking but labeled low-confidence.
+//
+// FAILURE PATTERN CRITERION (deterministic):
+//   Same IndustrialFailureMode.id appearing in IndustrialEngineeringCase rows
+//   with 2+ distinct non-null siteId values. No fuzzy matching. No ML.
+
+enum MultiSiteSnapshotStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+// ── MultiSiteBenchmark ────────────────────────────────────────────────────────
+//
+// One row per benchmark run. Contains org-level summary and links to per-site
+// snapshots. Child rows (SiteRiskSnapshot, SiteKPIComparison,
+// CrossSiteFailurePattern) are created atomically in the same transaction.
+
+model MultiSiteBenchmark {
+  id              String                  @id @default(cuid())
+  organizationId  String
+  status          MultiSiteSnapshotStatus @default(SUCCESS)
+  periodLabel     String
+  siteCount       Int
+  summary         Json                    @default("{}")
+  errorMessage    String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  computedAt      DateTime                @default(now())
+  organization    Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  riskSnapshots   SiteRiskSnapshot[]
+  kpiSnapshots    SiteKPIComparison[]
+  failurePatterns CrossSiteFailurePattern[]
+
+  @@index([organizationId, computedAt])
+  @@index([organizationId, status])
+}
+
+// ── SiteRiskSnapshot ──────────────────────────────────────────────────────────
+//
+// Per-site risk aggregate for one benchmark run. avgRiskScore is the MEAN
+// of latest AssetRiskScore.riskScore across qualifying assets (not worst-case).
+// maxRiskScore captures the worst single asset for operational awareness.
+// null values mean dataStatus="insufficientData".
+
+model SiteRiskSnapshot {
+  id                String             @id @default(cuid())
+  organizationId    String
+  benchmarkId       String
+  siteId            String
+  siteName          String
+  assetCount        Int
+  assetsWithData    Int
+  avgRiskScore      Float?
+  maxRiskScore      Float?
+  minRiskScore      Float?
+  riskDistribution  Json               @default("{}")
+  dataStatus        String
+  confidence        String
+  lastDataTimestamp DateTime?
+  computedAt        DateTime           @default(now())
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  benchmark         MultiSiteBenchmark @relation(fields: [benchmarkId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, computedAt])
+  @@index([benchmarkId])
+}
+
+// ── SiteKPIComparison ─────────────────────────────────────────────────────────
+//
+// Per-site KPI aggregate for one benchmark run.
+// avgAvailability / avgEfficiency / avgHealthScore: mean across qualifying
+// assets, all 0–100 rates, directly comparable across sites.
+// runtime/downtime counts are NOT stored here — not cross-site comparable.
+
+model SiteKPIComparison {
+  id                 String             @id @default(cuid())
+  organizationId     String
+  benchmarkId        String
+  siteId             String
+  siteName           String
+  periodLabel        String
+  avgAvailability    Float?
+  avgEfficiency      Float?
+  avgHealthScore     Float?
+  assetCount         Int
+  assetsWithKpiData  Int
+  dataStatus         String
+  lastDataTimestamp  DateTime?
+  computedAt         DateTime           @default(now())
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  benchmark          MultiSiteBenchmark @relation(fields: [benchmarkId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, computedAt])
+  @@index([benchmarkId])
+}
+
+// ── CrossSiteFailurePattern ───────────────────────────────────────────────────
+//
+// A failure mode that appears in IndustrialEngineeringCase rows across 2+
+// distinct non-null siteId values within the org. Deterministic: same DB
+// state → same patterns. Evidence stores caseIds + assetIds by site.
+
+model CrossSiteFailurePattern {
+  id                 String             @id @default(cuid())
+  organizationId     String
+  benchmarkId        String
+  failureModeId      String
+  failureModeName    String
+  severity           String
+  siteIds            Json
+  siteCount          Int
+  caseCount          Int
+  affectedAssetTypes Json
+  evidence           Json               @default("{}")
+  computedAt         DateTime           @default(now())
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  benchmark          MultiSiteBenchmark @relation(fields: [benchmarkId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, computedAt])
+  @@index([benchmarkId])
 }

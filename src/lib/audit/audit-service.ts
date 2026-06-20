@@ -123,6 +123,16 @@ export const INDUSTRIAL_AUDIT = {
   CONNECTOR_UPDATED:   "industrial.connector.updated",
 } as const;
 
+/** Multi-Site Industrial Intelligence audit action identifiers (Phase 42). */
+export const MULTI_SITE_AUDIT = {
+  BENCHMARK_RUN:                        "multi_site.benchmark.run",
+  ENTERPRISE_SUMMARY_VIEWED:            "multi_site.enterprise_summary.viewed",
+  CROSS_SITE_FAILURE_PATTERN_QUERIED:   "multi_site.failure_pattern.queried",
+  SITE_KPI_COMPARISON_QUERIED:          "multi_site.kpi_comparison.queried",
+  SITE_RISK_RANKING_QUERIED:            "multi_site.risk_ranking.queried",
+  KNOWLEDGE_COVERAGE_QUERIED:           "multi_site.knowledge_coverage.queried",
+} as const;
+
 /** Organization management audit action identifiers (Phase 32). */
 export const ORG_AUDIT = {
   ORG_CREATED:             "org.created",
