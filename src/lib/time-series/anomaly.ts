@@ -7,6 +7,7 @@
 
 import { getPrisma }        from "@/lib/db/prisma";
 import { STALE_THRESHOLD_MINUTES } from "@/lib/digital-twin/health";
+import { recordAuditEvent, ANALYTICS_AUDIT } from "@/lib/audit/audit-service";
 import type { PeriodRange } from "./periods";
 
 // ── Threshold constants ────────────────────────────────────────────────────────
@@ -144,6 +145,17 @@ export async function detectSimpleAnomalies(
       });
       break;
     }
+  }
+
+  // Emit audit event when anomalies are found — log counts + types, not raw series
+  if (anomalies.length > 0) {
+    const types = [...new Set(anomalies.map((a) => a.type))];
+    recordAuditEvent({
+      action:     ANALYTICS_AUDIT.ANOMALY_DETECTED,
+      entityType: "IndustrialAsset",
+      entityId:   assetId,
+      metadata:   { organizationId, assetId, tag, anomalyCount: anomalies.length, types },
+    }).catch(() => undefined);
   }
 
   return anomalies;

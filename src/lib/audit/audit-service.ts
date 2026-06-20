@@ -49,6 +49,11 @@ export const API_AUDIT = {
   RATE_LIMIT_EXCEEDED: "api.rate_limit.exceeded",
 } as const;
 
+/** Security / infrastructure degradation constants (Phase 41.5). */
+export const INFRA_AUDIT = {
+  RATE_LIMITER_DEGRADED: "infra.rate_limiter.degraded",
+} as const;
+
 /** Analytics audit action identifiers (Phase 37). */
 export const ANALYTICS_AUDIT = {
   ANALYTICS_QUERY:      "analytics.query",

@@ -1629,19 +1629,32 @@ model IndustrialKnowledgeGraphEdge {
   @@index([organizationId, targetNodeId])
 }
 
+enum KnowledgeGraphBuildStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 // ── KnowledgeGraphSnapshot ────────────────────────────────────────────────────
 //
-// Created at the end of every successful rebuild. The most recent snapshot's
-// createdAt is the graph's lastBuiltAt timestamp. summary holds the build
-// report (nodeCount, edgeCount, orphansRemoved, buildDurationMs).
+// One row per rebuild attempt. status: RUNNING while in progress, SUCCESS on
+// completion, FAILED if the transaction or builder threw. Only SUCCESS rows
+// are used as lastBuiltAt. The most recent SUCCESS snapshot's createdAt is
+// the graph's lastBuiltAt timestamp. summary holds the build report
+// (nodeCount, edgeCount, orphansRemoved, buildDurationMs).
 
 model KnowledgeGraphSnapshot {
-  id             String       @id @default(cuid())
+  id             String                   @id @default(cuid())
   organizationId String
   name           String
-  summary        Json         @default("{}")
-  createdAt      DateTime     @default(now())
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  status         KnowledgeGraphBuildStatus @default(SUCCESS)
+  errorMessage   String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  summary        Json                     @default("{}")
+  createdAt      DateTime                 @default(now())
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, createdAt])
+  @@index([organizationId, status])
 }

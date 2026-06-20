@@ -77,10 +77,11 @@ type FindFirstFn = (a: Record<string, unknown>) => Promise<Record<string, unknow
 type UpsertFn = (a: Record<string, unknown>) => Promise<Record<string, unknown>>;
 type DeleteManyFn = (a: Record<string, unknown>) => Promise<{ count: number }>;
 type CreateFn = (a: Record<string, unknown>) => Promise<Record<string, unknown>>;
+type UpdateFn = (a: Record<string, unknown>) => Promise<Record<string, unknown>>;
 
 interface NodeModel  { findMany: FindManyFn; upsert: UpsertFn; deleteMany: DeleteManyFn }
 interface EdgeModel  { upsert: UpsertFn; deleteMany: DeleteManyFn }
-interface SnapModel  { create: CreateFn; findFirst: FindFirstFn }
+interface SnapModel  { create: CreateFn; findFirst: FindFirstFn; update: UpdateFn }
 interface GenModel   { findMany: FindManyFn }
 type PrismaTx = Record<string, unknown>;
 
@@ -177,7 +178,7 @@ function nodeId(map: NodeIdMap, nodeType: string, entityId: string): string | un
 
 // ── Core rebuild logic (runs inside transaction) ──────────────────────────────
 
-async function buildInsideTx(tx: PrismaTx, orgId: string): Promise<KGBuildSummary> {
+async function buildInsideTx(tx: PrismaTx, orgId: string, snapshotId: string, startedAt: Date): Promise<KGBuildSummary> {
   const start = Date.now();
 
   // ── 1. Load all source records in parallel ──────────────────────────────────
@@ -379,15 +380,16 @@ async function buildInsideTx(tx: PrismaTx, orgId: string): Promise<KGBuildSummar
   // Upsert all edges
   for (const spec of edgeSpecs) await upsertEdge(tx, orgId, spec);
 
-  // ── 6. Create snapshot ──────────────────────────────────────────────────────
+  // ── 6. Mark snapshot SUCCESS (atomic with the node/edge changes) ──────────
   const buildDurationMs = Date.now() - start;
   const summary = { nodeCount: nodeSpecs.length, edgeCount: edgeSpecs.length, orphansRemoved, buildDurationMs };
-  const snapshotName = `build-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-  const snap = await snapModel(tx).create({
-    data: { organizationId: orgId, name: snapshotName, summary },
+  const completedAt = new Date();
+  await snapModel(tx).update({
+    where: { id: snapshotId },
+    data:  { status: "SUCCESS", summary, startedAt, completedAt },
   });
 
-  return { ...summary, snapshotId: String(snap.id) };
+  return { ...summary, snapshotId };
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -402,22 +404,44 @@ export async function rebuildKnowledgeGraph(orgId: string): Promise<KGBuildSumma
   if (!db) throw new Error("Database not available");
 
   const txRunner = (db as { $transaction: <T>(fn: (tx: Record<string, unknown>) => Promise<T>) => Promise<T> }).$transaction.bind(db);
+  const snapDb   = (db as Record<string, unknown>).knowledgeGraphSnapshot as SnapModel;
+
+  // Create RUNNING snapshot before the transaction so it persists even if the
+  // transaction rolls back — allows monitoring to detect in-flight rebuilds.
+  const startedAt     = new Date();
+  const snapshotName  = `build-${startedAt.toISOString().replace(/[:.]/g, "-")}`;
+  const runningSnap   = await snapDb.create({
+    data: { organizationId: orgId, name: snapshotName, status: "RUNNING", startedAt },
+  });
+  const snapshotId = String(runningSnap.id);
 
   acquireLock(orgId);
   try {
-    return await txRunner((tx: Record<string, unknown>) => buildInsideTx(tx, orgId));
+    // Transaction: rebuild nodes/edges and atomically marks snapshot SUCCESS
+    return await txRunner((tx: Record<string, unknown>) => buildInsideTx(tx, orgId, snapshotId, startedAt));
+  } catch (err) {
+    // Transaction rolled back — the graph is unchanged. Mark snapshot FAILED.
+    const msg = err instanceof Error ? err.message : String(err);
+    await snapDb.update({
+      where: { id: snapshotId },
+      data:  { status: "FAILED", errorMessage: msg, completedAt: new Date() },
+    }).catch(() => undefined); // defensive: never throw from failure handler
+    throw err;
   } finally {
     releaseLock(orgId);
   }
 }
 
-/** Get the most recent snapshot for an org (returns null if none exists). */
+/** Get the most recent SUCCESS snapshot for an org (returns null if none exists). */
 export async function getLatestSnapshot(orgId: string): Promise<{ id: string; createdAt: Date; summary: Record<string, unknown> } | null> {
   const db = await getPrisma();
   if (!db) return null;
   try {
     const m = (db as Record<string, unknown>).knowledgeGraphSnapshot as SnapModel;
-    const row = await m.findFirst({ where: { organizationId: orgId }, orderBy: { createdAt: "desc" as unknown as undefined } as unknown as undefined });
+    const row = await m.findFirst({
+      where:   { organizationId: orgId, status: "SUCCESS" },
+      orderBy: { createdAt: "desc" as unknown as undefined } as unknown as undefined,
+    });
     if (!row) return null;
     return { id: String(row.id), createdAt: new Date(row.createdAt as string), summary: (row.summary ?? {}) as Record<string, unknown> };
   } catch { return null; }

@@ -27,7 +27,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "RefreshToken_tokenHash_key" ON "RefreshToken"
 CREATE INDEX        IF NOT EXISTS "RefreshToken_userId_idx"    ON "RefreshToken"("userId");
 CREATE INDEX        IF NOT EXISTS "RefreshToken_expiresAt_idx" ON "RefreshToken"("expiresAt");
 ALTER TABLE "RefreshToken"
-    ADD CONSTRAINT IF NOT EXISTS "RefreshToken_userId_fkey"
+    ADD CONSTRAINT"RefreshToken_userId_fkey"
     FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- VerificationToken
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS "VerificationToken" (
 CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_token_key"   ON "VerificationToken"("token");
 CREATE INDEX        IF NOT EXISTS "VerificationToken_userId_idx"  ON "VerificationToken"("userId");
 ALTER TABLE "VerificationToken"
-    ADD CONSTRAINT IF NOT EXISTS "VerificationToken_userId_fkey"
+    ADD CONSTRAINT"VerificationToken_userId_fkey"
     FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- PasswordResetToken
@@ -59,5 +59,5 @@ CREATE TABLE IF NOT EXISTS "PasswordResetToken" (
 CREATE UNIQUE INDEX IF NOT EXISTS "PasswordResetToken_tokenHash_key" ON "PasswordResetToken"("tokenHash");
 CREATE INDEX        IF NOT EXISTS "PasswordResetToken_userId_idx"    ON "PasswordResetToken"("userId");
 ALTER TABLE "PasswordResetToken"
-    ADD CONSTRAINT IF NOT EXISTS "PasswordResetToken_userId_fkey"
+    ADD CONSTRAINT"PasswordResetToken_userId_fkey"
     FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

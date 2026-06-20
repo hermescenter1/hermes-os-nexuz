@@ -8,6 +8,7 @@
 
 import { getPrisma }            from "@/lib/db/prisma";
 import { STALE_THRESHOLD_MINUTES } from "@/lib/digital-twin/health";
+import { recordAuditEvent, ANALYTICS_AUDIT } from "@/lib/audit/audit-service";
 import type { PeriodRange }     from "./periods";
 
 export interface HealthHistoryPoint {
@@ -79,11 +80,21 @@ export async function snapshotAssetHealth(
     data: { organizationId, assetId, healthScore, healthStatus },
   });
 
-  return {
+  const point: HealthHistoryPoint = {
     createdAt:    new Date().toISOString(),
     healthScore,
     healthStatus,
   };
+
+  // Audit summary only — stale flag, score, status (no raw telemetry rows)
+  recordAuditEvent({
+    action:     ANALYTICS_AUDIT.HEALTH_ANALYTICS_RUN,
+    entityType: "IndustrialAsset",
+    entityId:   assetId,
+    metadata:   { organizationId, assetId, healthScore, healthStatus, stale },
+  }).catch(() => undefined);
+
+  return point;
 }
 
 export async function getHealthTrend(

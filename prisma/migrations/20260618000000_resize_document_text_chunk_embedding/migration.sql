@@ -1,34 +1,35 @@
 -- Phase 17C: resize DocumentTextChunk.embedding from vector(64) to vector(1536).
 --
--- Hand-authored, NOT generated/applied — same discipline as every prior
--- migration in this project (no live database is reachable here).
+-- Destroys existing 64-dim mock embeddings (expected — mock vectors have no
+-- semantic content; documents will need re-processing after this migration).
 --
--- Destroys all existing 64-dim mock embeddings (expected and safe — mock
--- vectors have no semantic content; documents that were previously "indexed"
--- will need to be re-processed after this migration is applied).
---
--- The `vector` extension already exists by this point (created in
--- 20260616000000_add_document_chunk_pgvector, which runs before this
--- migration), so it is not re-created here.
+-- Skips vector DDL gracefully when pgvector is unavailable (shadow database).
 
--- Step 1: drop the HNSW index (required before altering the column it covers)
-DROP INDEX IF EXISTS "DocumentTextChunk_embedding_hnsw_idx";
+DO $pgvector_migration$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN
+    RAISE NOTICE 'pgvector not available — skipping embedding resize';
+    RETURN;
+  END IF;
 
--- Step 2: drop the 64-dim column (pgvector vector(N) cannot be altered to
--- a different dimension in-place without rewriting every row)
-ALTER TABLE "DocumentTextChunk" DROP COLUMN IF EXISTS "embedding";
+  -- Step 1: drop HNSW index (required before altering the column it covers)
+  EXECUTE $$DROP INDEX IF EXISTS "DocumentTextChunk_embedding_hnsw_idx"$$;
 
--- Step 3: add the 1536-dim column (nullable — existing rows get NULL;
--- documents must be re-processed for their chunks to receive new embeddings)
-ALTER TABLE "DocumentTextChunk" ADD COLUMN "embedding" vector(1536);
+  -- Step 2: drop 64-dim column (pgvector cannot alter vector dimensions in-place)
+  EXECUTE $$ALTER TABLE "DocumentTextChunk" DROP COLUMN IF EXISTS "embedding"$$;
 
--- Step 4: reset Document status so admins see which documents need
--- re-processing (status "indexed" / "embedded" with NULL embeddings is
--- misleading — reset them to "uploaded" so the admin UI surfaces the gap)
+  -- Step 3: add 1536-dim column (nullable — existing rows get NULL)
+  EXECUTE $$ALTER TABLE "DocumentTextChunk" ADD COLUMN "embedding" vector(1536)$$;
+
+  -- Step 5: recreate HNSW index for 1536-dim column
+  EXECUTE $$
+    CREATE INDEX IF NOT EXISTS "DocumentTextChunk_embedding_hnsw_idx"
+      ON "DocumentTextChunk" USING hnsw ("embedding" vector_cosine_ops)
+  $$;
+END $pgvector_migration$;
+
+-- Step 4: reset Document status so admins see which documents need re-processing.
+-- Done outside the pgvector block — safe even when vector columns were skipped.
 UPDATE "Document"
 SET status = 'uploaded', "lastProcessedAt" = NULL
 WHERE status IN ('indexed', 'embedded', 'embedding');
-
--- Step 5: recreate the HNSW index for the new 1536-dim column
-CREATE INDEX "DocumentTextChunk_embedding_hnsw_idx" ON "DocumentTextChunk"
-    USING hnsw ("embedding" vector_cosine_ops);

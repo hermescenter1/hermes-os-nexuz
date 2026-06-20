@@ -23,7 +23,7 @@
 
 import { getRedis }          from "@/lib/redis/client";
 import { getPrisma }         from "@/lib/db/prisma";
-import { recordAuditEvent, API_AUDIT } from "@/lib/audit/audit-service";
+import { recordAuditEvent, API_AUDIT, INFRA_AUDIT } from "@/lib/audit/audit-service";
 import type { RateLimitState }         from "./types";
 
 // ── Plan-tier limits ──────────────────────────────────────────────────────────
@@ -79,9 +79,47 @@ function msUntilDayReset(): number {
 
 // ── DEV-ONLY in-memory fallback ───────────────────────────────────────────────
 // WARNING: NOT multi-instance safe. For local dev when REDIS_URL is absent.
+// In a multi-instance production deployment this fallback provides per-instance
+// limits only — a single caller can exceed the nominal limit by Nx across N
+// instances. This is logged and surfaced via the health endpoint.
 
 type WinEntry = { count: number; resetAt: number };
 const DEV_STORE = new Map<string, WinEntry>();
+
+// Throttle the degraded-state warning to at most once per minute per instance.
+// Per-instance throttling is intentional and expected in multi-instance deployments.
+let _redisDegradedLastWarnMs = 0;
+const REDIS_DEGRADED_WARN_INTERVAL_MS = 60_000;
+
+let _redisDegradedActive = false;
+
+/** Returns true when the rate-limiter is running on the in-process fallback. */
+export function isRateLimiterDegraded(): boolean {
+  return _redisDegradedActive;
+}
+
+function signalRedisDegraded(): void {
+  _redisDegradedActive = true;
+  const now = Date.now();
+  if (now - _redisDegradedLastWarnMs < REDIS_DEGRADED_WARN_INTERVAL_MS) return;
+  _redisDegradedLastWarnMs = now;
+  // Log at warn level — do not throw, do not recurse into audit if audit itself uses Redis
+  try {
+    console.warn(
+      "[hermes] rate-limiter DEGRADED: Redis unavailable, falling back to in-process Map. " +
+      "Cross-instance rate limits are NOT enforced. " +
+      "Per-instance throttling is intentional in multi-instance deployments."
+    );
+  } catch { /* defensive: never throw from degraded signal */ }
+  // Best-effort audit event — wrapped so it cannot throw or recurse
+  try {
+    recordAuditEvent({
+      action:     INFRA_AUDIT.RATE_LIMITER_DEGRADED,
+      entityType: "infrastructure",
+      metadata:   { component: "rate_limiter", fallback: "in_process_map", note: "cross-instance limits not enforced" },
+    }).catch(() => undefined);
+  } catch { /* defensive */ }
+}
 
 function devIncr(key: string, ttlMs: number): number {
   const now    = Date.now();
@@ -132,7 +170,8 @@ export async function checkAndIncrRateLimit(
     usedMinute = (results?.[0]?.[1] as number) ?? 1;
     usedDay    = (results?.[2]?.[1] as number) ?? 1;
   } else {
-    // DEV_ONLY fallback
+    // In-process fallback — emit degraded signal (throttled)
+    signalRedisDegraded();
     usedMinute = devIncr(mKey, 60_000);
     usedDay    = devIncr(dKey, msUntilDayReset());
   }
@@ -187,6 +226,7 @@ export async function getRateLimitStatus(orgId: string): Promise<RateLimitState>
     usedMinute = m ? parseInt(m, 10) : 0;
     usedDay    = d ? parseInt(d, 10) : 0;
   } else {
+    _redisDegradedActive = true;
     usedMinute = devGet(mKey);
     usedDay    = devGet(dKey);
   }

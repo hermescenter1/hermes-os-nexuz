@@ -15,6 +15,7 @@
  */
 
 import { getPrisma }    from "@/lib/db/prisma";
+import { recordAuditEvent, ANALYTICS_AUDIT } from "@/lib/audit/audit-service";
 import type { PeriodRange } from "./periods";
 
 export interface KPIResult {
@@ -136,4 +137,11 @@ async function persistKPI(
       data: { organizationId: orgId, assetId, kpiName, value, period },
     });
   } catch { /* fire-and-forget */ }
+  // Audit summary only — no raw telemetry series
+  recordAuditEvent({
+    action:     ANALYTICS_AUDIT.KPI_CALCULATED,
+    entityType: "IndustrialAsset",
+    entityId:   assetId,
+    metadata:   { organizationId: orgId, kpiName, period },
+  }).catch(() => undefined);
 }
