@@ -17,6 +17,7 @@ import { getLatestBenchmark }                 from "@/lib/multi-site/benchmarks"
 import { getPrisma }                          from "@/lib/db/prisma";
 import { recordAuditEvent, MULTI_SITE_AUDIT } from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }               from "@/lib/api/meter";
+import { getAllowedSiteIds }                   from "@/lib/site/context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +35,14 @@ export async function GET(req: NextRequest) {
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   meterIndustrialEvent(ctx.orgId, "cross_site_failure_queries");
+
+  const allowedSiteIds = member.ctx.userId
+    ? await getAllowedSiteIds(member.ctx.userId, ctx.orgId)
+    : undefined;
+
+  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) {
+    return NextResponse.json({ patterns: [], reason: "No accessible sites." });
+  }
 
   const bm = await getLatestBenchmark(ctx.orgId);
   if (!bm) {

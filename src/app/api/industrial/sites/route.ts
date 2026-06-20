@@ -5,20 +5,25 @@ import { requirePermission }          from "@/lib/org/rbac";
 import { listSites, createSite }      from "@/lib/industrial/sites";
 import { recordAuditEvent }           from "@/lib/audit/audit-service";
 import { INDUSTRIAL_AUDIT }           from "@/lib/audit/audit-service";
+import { getAllowedSiteIds }          from "@/lib/site/context";
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { ctx } = auth;
 
+  let userId: string | undefined;
   if (ctx.authMethod === "jwt") {
     const member = await requireOrgActor(req, ctx.orgId);
     if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
     const perm = requirePermission(member.ctx.role, "view_industrial");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+    userId = member.ctx.userId;
   }
 
-  const sites = await listSites(ctx.orgId);
+  // Phase 43: scope list to user's accessible sites
+  const allowedIds = userId ? await getAllowedSiteIds(userId, ctx.orgId) : undefined;
+  const sites = await listSites(ctx.orgId, allowedIds);
   return NextResponse.json({ sites });
 }
 

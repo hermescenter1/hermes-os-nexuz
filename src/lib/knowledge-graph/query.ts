@@ -276,15 +276,37 @@ function dijkstraPath(
 
 // ── Public query functions ────────────────────────────────────────────────────
 
-/** Full org graph (all nodes and edges). Always returns results; includes staleness. */
-export async function getKnowledgeGraph(orgId: string): Promise<IGGraphResult> {
+/**
+ * Full org graph (all nodes and edges). Always returns results; includes staleness.
+ *
+ * Phase 43 site isolation: when allowedAssetIds is provided, ASSET nodes are
+ * filtered to those whose entityId is in allowedAssetIds. Non-ASSET nodes
+ * (FAILURE_MODE, ROOT_CAUSE, PROCEDURE, etc.) remain visible — they are
+ * org-level knowledge, not site-scoped. Edges to/from filtered ASSET nodes are
+ * removed (no dangling edges). Pass undefined for OWNER/ADMIN full-access paths.
+ */
+export async function getKnowledgeGraph(
+  orgId:          string,
+  allowedAssetIds?: Set<string>,
+): Promise<IGGraphResult> {
   const [graph, staleness] = await Promise.all([
     loadOrgGraph(orgId),
     getStaleness(orgId),
   ]);
 
-  const nodes = graph?.nodes ?? [];
-  const edges = graph?.edges ?? [];
+  let nodes = graph?.nodes ?? [];
+  let edges = graph?.edges ?? [];
+
+  // Site isolation filter: remove ASSET nodes not in allowedAssetIds
+  if (allowedAssetIds !== undefined) {
+    nodes = nodes.filter(
+      n => n.nodeType !== "ASSET" || allowedAssetIds.has(n.entityId),
+    );
+    const allowedNodeIds = new Set(nodes.map(n => n.id));
+    edges = edges.filter(
+      e => allowedNodeIds.has(e.sourceNodeId) && allowedNodeIds.has(e.targetNodeId),
+    );
+  }
 
   const nodesByType: Record<string, number> = {};
   const edgesByType: Record<string, number> = {};

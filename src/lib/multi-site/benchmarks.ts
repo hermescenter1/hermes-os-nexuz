@@ -81,7 +81,12 @@ export async function getLatestBenchmark(orgId: string): Promise<BenchmarkRecord
   return r ? bmRow(r) : null;
 }
 
-export async function runBenchmark(orgId: string): Promise<BenchmarkRecord> {
+/**
+ * Phase 43: allowedSiteIds scopes the benchmark to the user's accessible sites.
+ * Pass undefined only if caller has verified OWNER/ADMIN implicit access.
+ * Pass [] for a user with no site access — returns a FAILED benchmark immediately.
+ */
+export async function runBenchmark(orgId: string, allowedSiteIds?: string[]): Promise<BenchmarkRecord> {
   if (inFlight.has(orgId)) {
     throw Object.assign(new Error("Benchmark already in progress"), { code: "BENCHMARK_IN_FLIGHT" });
   }
@@ -111,7 +116,7 @@ export async function runBenchmark(orgId: string): Promise<BenchmarkRecord> {
   const bmId = bmCreated.id as string;
 
   try {
-    const result = await compareSites(orgId);
+    const result = await compareSites(orgId, allowedSiteIds);
     if (!result) {
       await bmModel.update({
         where: { id: bmId },

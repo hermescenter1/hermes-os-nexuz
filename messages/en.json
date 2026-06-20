@@ -2557,6 +2557,43 @@
       "transactionDesc": "Full rebuild runs in one DB transaction. Failed rebuild leaves prior graph intact."
     }
   },
+  "siteSecurity": {
+    "siteRole": "Site Role",
+    "sitePermission": "Site Permission",
+    "siteMembership": "Site Membership",
+    "siteIsolation": "Site Isolation",
+    "accessDenied": "Access Denied",
+    "insufficientPermission": "Insufficient site permissions",
+    "noAccessibleSites": "You do not have access to any sites in this organization.",
+    "implicitAccess": "Full Access (Organization Admin)",
+    "siteAdmin": "Site Admin",
+    "siteManager": "Site Manager",
+    "siteEngineer": "Site Engineer",
+    "siteOperator": "Site Operator",
+    "siteViewer": "Site Viewer",
+    "grantAccess": "Grant Site Access",
+    "revokeAccess": "Revoke Site Access",
+    "updateRole": "Update Site Role",
+    "memberships": "Site Memberships",
+    "noMemberships": "No site memberships assigned.",
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended"
+    },
+    "permissions": {
+      "view_site": "View Site",
+      "manage_site": "Manage Site",
+      "view_assets": "View Assets",
+      "manage_assets": "Manage Assets",
+      "view_telemetry": "View Telemetry",
+      "view_kpis": "View KPIs",
+      "view_predictive": "View Predictive",
+      "view_knowledge": "View Knowledge",
+      "manage_knowledge": "Manage Knowledge",
+      "view_multi_site": "View Multi-Site",
+      "view_failures": "View Failures"
+    }
+  },
   "multiSite": {
     "enterpriseSummary": "Enterprise Industrial Summary",
     "enterpriseSummaryDesc": "Cross-site performance overview for the entire organization.",

@@ -299,6 +299,8 @@ model User {
   verificationTokens   VerificationToken[]
   passwordResetTokens  PasswordResetToken[]
   organizationMembers  OrganizationMember[]
+  // Phase 43: Site Isolation
+  userSites            UserSite[]
 }
 
 model AuthSession {
@@ -497,6 +499,8 @@ model Organization {
   siteRiskSnapshots    SiteRiskSnapshot[]
   siteKpiComparisons   SiteKPIComparison[]
   crossSitePatterns    CrossSiteFailurePattern[]
+  // Phase 43: Site Isolation
+  userSites            UserSite[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -773,6 +777,8 @@ model IndustrialSite {
   // Phase 36: Digital Twin
   twinNodes      DigitalTwinNode[]
   twinLayouts    DigitalTwinLayout[]
+  // Phase 43: Site Isolation
+  userSites      UserSite[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -1803,4 +1809,70 @@ model CrossSiteFailurePattern {
 
   @@index([organizationId, computedAt])
   @@index([benchmarkId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 43 — Industrial Multi-Tenant Security & Site Isolation
+// ════════════════════════════════════════════════════════════════════════════
+//
+// OWNER / ADMIN access model:
+//   OrgRole OWNER and ADMIN have IMPLICIT access to all active sites in their
+//   org. This is resolved DYNAMICALLY at runtime by querying IndustrialSite.
+//   NO UserSite rows are created for OWNER or ADMIN — ever. Not at membership
+//   creation, not in the backfill, not when new sites are added.
+//   UserSite rows exist ONLY for explicit site assignments (MANAGER, ENGINEER,
+//   VIEWER, BILLING_ADMIN → respective SiteRole).
+//
+// BACKFILL RULE:
+//   On migration: cross-join non-OWNER/ADMIN ACTIVE members × sites in same org.
+//   Role mapping: MANAGER→SITE_MANAGER, ENGINEER→SITE_ENGINEER,
+//   all others (VIEWER, BILLING_ADMIN, MEMBER)→SITE_VIEWER.
+//   ON CONFLICT DO NOTHING (idempotent).
+//
+// ISOLATION SCOPE:
+//   Site-gated: IndustrialSite, IndustrialGateway, IndustrialAsset,
+//     TelemetryRecord, DigitalTwinNode, DigitalTwinLayout, KPIRecord,
+//     AssetHealthHistory, AssetRiskScore, MultiSiteBenchmark (children).
+//   Org-gated only (no site gate): IndustrialFailureMode, IndustrialRootCause,
+//     IndustrialMaintenanceProcedure, IndustrialKnowledgeArticle,
+//     IndustrialEngineeringCase, KnowledgeGraphNode/Edge.
+//
+// KG TRAVERSAL ISOLATION:
+//   ASSET nodes filtered to allowedAssetIds at query time. Non-ASSET nodes
+//   remain visible (org-level knowledge). Dangling edges are dropped.
+
+enum SiteRole {
+  SITE_ADMIN
+  SITE_MANAGER
+  SITE_ENGINEER
+  SITE_OPERATOR
+  SITE_VIEWER
+}
+
+enum SiteMemberStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+// Explicit site membership. OWNER/ADMIN never have rows here (implicit access).
+model UserSite {
+  id             String           @id @default(cuid())
+  userId         String
+  siteId         String
+  organizationId String
+  role           SiteRole         @default(SITE_VIEWER)
+  status         SiteMemberStatus @default(ACTIVE)
+  // OrganizationMember.id of the person who granted this access (loose ref — no FK)
+  grantedById    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site           IndustrialSite   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // A user may only have one membership per site
+  @@unique([userId, siteId])
+  @@index([userId])
+  @@index([siteId])
+  @@index([organizationId, userId])
 }

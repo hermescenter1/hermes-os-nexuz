@@ -22,11 +22,17 @@ function row(r: Record<string, unknown>): SiteRecord {
   };
 }
 
-export async function listSites(organizationId: string): Promise<SiteRecord[]> {
+export async function listSites(
+  organizationId: string,
+  allowedIds?: string[],
+): Promise<SiteRecord[]> {
+  if (allowedIds !== undefined && allowedIds.length === 0) return [];
   const prisma = await getPrisma();
   if (!prisma) return [];
+  const where: Record<string, unknown> = { organizationId };
+  if (allowedIds !== undefined) where.id = { in: allowedIds };
   const rows = await (prisma.industrialSite as unknown as SiteModel).findMany({
-    where:   { organizationId },
+    where,
     orderBy: { createdAt: "desc" },
   });
   return rows.map(row);

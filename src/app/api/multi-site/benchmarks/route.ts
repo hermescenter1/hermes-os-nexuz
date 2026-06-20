@@ -21,6 +21,7 @@ import { getLatestBenchmark, runBenchmark, isBenchmarkInFlight } from "@/lib/mul
 import { getPrisma }                            from "@/lib/db/prisma";
 import { recordAuditEvent, MULTI_SITE_AUDIT }   from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                 from "@/lib/api/meter";
+import { getAllowedSiteIds }                     from "@/lib/site/context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +42,15 @@ export async function GET(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "site_benchmark_queries");
 
+  // Phase 43: scope to user's accessible sites
+  const allowedSiteIds = member.ctx.userId
+    ? await getAllowedSiteIds(member.ctx.userId, ctx.orgId)
+    : undefined;
+
+  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) {
+    return NextResponse.json({ data: null, reason: "No accessible sites." });
+  }
+
   const bm = await getLatestBenchmark(ctx.orgId);
   if (!bm) {
     return NextResponse.json(
@@ -49,16 +59,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Load child snapshots for the benchmark
+  // Load child snapshots filtered to allowed sites
   const prisma = await getPrisma();
   const db     = prisma as unknown as Record<string, unknown> | null;
 
+  const siteFilter = allowedSiteIds ? { siteId: { in: allowedSiteIds } } : {};
+
   const [riskSnaps, kpiSnaps, patterns] = db ? await Promise.all([
     (db.siteRiskSnapshot as unknown as RiskModel).findMany({
-      where: { benchmarkId: bm.id }, orderBy: [{ avgRiskScore: "desc" as unknown as undefined }],
+      where: { benchmarkId: bm.id, ...siteFilter }, orderBy: [{ avgRiskScore: "desc" as unknown as undefined }],
     }),
     (db.siteKPIComparison as unknown as KPIModel).findMany({
-      where: { benchmarkId: bm.id }, orderBy: [{ avgAvailability: "desc" as unknown as undefined }],
+      where: { benchmarkId: bm.id, ...siteFilter }, orderBy: [{ avgAvailability: "desc" as unknown as undefined }],
     }),
     (db.crossSiteFailurePattern as unknown as PatModel).findMany({
       where: { benchmarkId: bm.id }, orderBy: [{ siteCount: "desc" as unknown as undefined }],
@@ -93,8 +105,13 @@ export async function POST(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "site_benchmark_runs");
 
+  // Phase 43: scope benchmark run to user's accessible sites
+  const allowedSiteIds = member.ctx.userId
+    ? await getAllowedSiteIds(member.ctx.userId, ctx.orgId)
+    : undefined;
+
   try {
-    const result = await runBenchmark(ctx.orgId);
+    const result = await runBenchmark(ctx.orgId, allowedSiteIds);
 
     recordAuditEvent({
       userId:     ctx.userId ?? undefined,

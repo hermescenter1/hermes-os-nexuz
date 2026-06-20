@@ -123,6 +123,24 @@ export const INDUSTRIAL_AUDIT = {
   CONNECTOR_UPDATED:   "industrial.connector.updated",
 } as const;
 
+/**
+ * Site Isolation audit action identifiers (Phase 43).
+ *
+ * VOLUME RULES:
+ *   SITE_ACCESS_DENIED        — always audited (every denial)
+ *   SITE_MEMBERSHIP_*         — always audited (admin actions)
+ *   SITE_ACCESS_GRANTED       — emitted only on UserSite creation, NOT on every access check
+ *   SITE_PERMISSION_CHECK     — NOT individually audited; metered via meterIndustrialEvent
+ */
+export const SITE_AUDIT = {
+  SITE_ACCESS_DENIED:        "site.access.denied",
+  SITE_ACCESS_GRANTED:       "site.access.granted",
+  SITE_PERMISSION_CHECK:     "site.permission.check",
+  SITE_MEMBERSHIP_CREATED:   "site.membership.created",
+  SITE_MEMBERSHIP_UPDATED:   "site.membership.updated",
+  SITE_MEMBERSHIP_REMOVED:   "site.membership.removed",
+} as const;
+
 /** Multi-Site Industrial Intelligence audit action identifiers (Phase 42). */
 export const MULTI_SITE_AUDIT = {
   BENCHMARK_RUN:                        "multi_site.benchmark.run",

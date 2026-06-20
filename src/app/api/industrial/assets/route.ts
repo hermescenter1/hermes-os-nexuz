@@ -4,22 +4,28 @@ import { requireOrgActor }              from "@/lib/org/context";
 import { requirePermission }            from "@/lib/org/rbac";
 import { listAssets, createAsset }      from "@/lib/industrial/assets";
 import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
+import { getAllowedSiteIds }              from "@/lib/site/context";
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { ctx } = auth;
 
+  let userId: string | undefined;
   if (ctx.authMethod === "jwt") {
     const member = await requireOrgActor(req, ctx.orgId);
     if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
     const perm = requirePermission(member.ctx.role, "view_industrial");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+    userId = member.ctx.userId;
   }
 
   const siteId    = req.nextUrl.searchParams.get("siteId")    ?? undefined;
   const gatewayId = req.nextUrl.searchParams.get("gatewayId") ?? undefined;
-  const assets    = await listAssets(ctx.orgId, { siteId, gatewayId });
+
+  // Phase 43: scope assets to user's accessible sites (unless a specific siteId is given)
+  const allowedSiteIds = userId ? await getAllowedSiteIds(userId, ctx.orgId) : undefined;
+  const assets = await listAssets(ctx.orgId, { siteId, gatewayId, allowedSiteIds });
   return NextResponse.json({ assets });
 }
 

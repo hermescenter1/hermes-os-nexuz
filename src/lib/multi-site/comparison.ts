@@ -10,8 +10,9 @@
  * pre-computed output tables (KPIRecord, AssetRiskScore, AssetHealthHistory,
  * AssetKnowledgeLink, IndustrialEngineeringCase).
  *
- * ACCESS MODEL: orgId is always from the authenticated context. siteIds are
- * all ACTIVE sites in the org. No per-site access filtering (Phase 43/44).
+ * ACCESS MODEL: orgId always from authenticated context. Phase 43: compareSites()
+ * accepts allowedSiteIds (from getAllowedSiteIds()) to scope to the user's sites.
+ * OWNER/ADMIN pass undefined → full org access. Others pass their explicit site list.
  */
 
 import { getPrisma }             from "@/lib/db/prisma";
@@ -72,17 +73,27 @@ function buildSummary(
   };
 }
 
-export async function compareSites(orgId: string): Promise<ComparisonResult | null> {
+/**
+ * Phase 43: allowedSiteIds scopes comparison to the caller's accessible sites.
+ *   - undefined  → OWNER/ADMIN full access: all ACTIVE sites in org
+ *   - string[]   → explicit allowed set (may be empty → returns null immediately)
+ */
+export async function compareSites(
+  orgId:          string,
+  allowedSiteIds?: string[],
+): Promise<ComparisonResult | null> {
+  // Zero-sites case: user has no accessible sites — return null, never 500
+  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) return null;
+
   const prisma = await getPrisma();
   if (!prisma) return null;
   const db = prisma as unknown as Record<string, unknown>;
 
-  // TODO(Phase 43): When site-level RBAC is added (UserSite / SiteMembership),
-  // accept an allowedSiteIds: string[] parameter here and add it as an `id: { in: allowedSiteIds }`
-  // filter alongside `organizationId` and `status: "ACTIVE"`. Until then all
-  // ACTIVE org sites are included (org-level access enforced by caller).
+  const siteWhere: Record<string, unknown> = { organizationId: orgId, status: "ACTIVE" };
+  if (allowedSiteIds !== undefined) siteWhere.id = { in: allowedSiteIds };
+
   const siteRows = await (db.industrialSite as unknown as SiteModel).findMany({
-    where:   { organizationId: orgId, status: "ACTIVE" },
+    where:   siteWhere,
     orderBy: { name: "asc" },
     select:  { id: true, name: true },
   });

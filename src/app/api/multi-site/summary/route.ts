@@ -15,6 +15,7 @@ import { requirePermission }                    from "@/lib/org/rbac";
 import { getEnterpriseIndustrialSummary }       from "@/lib/multi-site/summary";
 import { recordAuditEvent, MULTI_SITE_AUDIT }   from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                 from "@/lib/api/meter";
+import { getAllowedSiteIds }                     from "@/lib/site/context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +31,15 @@ export async function GET(req: NextRequest) {
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   meterIndustrialEvent(ctx.orgId, "enterprise_summary_queries");
+
+  // Phase 43: scope summary to user's accessible sites
+  const allowedSiteIds = member.ctx.userId
+    ? await getAllowedSiteIds(member.ctx.userId, ctx.orgId)
+    : undefined;
+
+  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) {
+    return NextResponse.json({ data: null, reason: "No accessible sites.", siteCount: 0 });
+  }
 
   const summary = await getEnterpriseIndustrialSummary(ctx.orgId);
 

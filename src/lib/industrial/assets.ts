@@ -28,14 +28,20 @@ function row(r: Record<string, unknown>): AssetRecord {
 }
 
 export async function listAssets(organizationId: string, opts?: {
-  siteId?:    string;
-  gatewayId?: string;
+  siteId?:       string;
+  gatewayId?:    string;
+  allowedSiteIds?: string[];
 }): Promise<AssetRecord[]> {
+  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) return [];
   const prisma = await getPrisma();
   if (!prisma) return [];
   const where: Record<string, unknown> = { organizationId };
   if (opts?.siteId)    where.siteId    = opts.siteId;
   if (opts?.gatewayId) where.gatewayId = opts.gatewayId;
+  // Phase 43: if no specific siteId filter, scope to allowed sites
+  if (!opts?.siteId && opts?.allowedSiteIds !== undefined) {
+    where.siteId = { in: opts.allowedSiteIds };
+  }
   const rows = await (prisma.industrialAsset as unknown as AssetModel).findMany({
     where,
     orderBy: { createdAt: "desc" },

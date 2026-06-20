@@ -2557,6 +2557,43 @@
       "transactionDesc": "بازسازی کامل در یک تراکنش پایگاه داده اجرا می‌شود."
     }
   },
+  "siteSecurity": {
+    "siteRole": "نقش سایت",
+    "sitePermission": "مجوز سایت",
+    "siteMembership": "عضویت در سایت",
+    "siteIsolation": "جداسازی سایت",
+    "accessDenied": "دسترسی رد شد",
+    "insufficientPermission": "مجوزهای سایت ناکافی است",
+    "noAccessibleSites": "شما به هیچ سایتی در این سازمان دسترسی ندارید.",
+    "implicitAccess": "دسترسی کامل (مدیر سازمان)",
+    "siteAdmin": "مدیر سایت",
+    "siteManager": "مدیر ارشد سایت",
+    "siteEngineer": "مهندس سایت",
+    "siteOperator": "اپراتور سایت",
+    "siteViewer": "بازدیدکننده سایت",
+    "grantAccess": "اعطای دسترسی سایت",
+    "revokeAccess": "لغو دسترسی سایت",
+    "updateRole": "به‌روزرسانی نقش سایت",
+    "memberships": "عضویت‌های سایت",
+    "noMemberships": "هیچ عضویت سایتی اختصاص داده نشده.",
+    "status": {
+      "active": "فعال",
+      "suspended": "معلق"
+    },
+    "permissions": {
+      "view_site": "مشاهده سایت",
+      "manage_site": "مدیریت سایت",
+      "view_assets": "مشاهده دارایی‌ها",
+      "manage_assets": "مدیریت دارایی‌ها",
+      "view_telemetry": "مشاهده تله‌متری",
+      "view_kpis": "مشاهده شاخص‌های کلیدی",
+      "view_predictive": "مشاهده پیش‌بینی",
+      "view_knowledge": "مشاهده دانش",
+      "manage_knowledge": "مدیریت دانش",
+      "view_multi_site": "مشاهده چند سایتی",
+      "view_failures": "مشاهده خرابی‌ها"
+    }
+  },
   "multiSite": {
     "enterpriseSummary": "خلاصه صنعتی سازمانی",
     "enterpriseSummaryDesc": "مرور عملکرد چند سایت برای کل سازمان.",
