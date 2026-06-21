@@ -26,11 +26,20 @@ export function rowToGateway(r: Record<string, unknown>): GatewayRecord {
   };
 }
 
-export async function listGateways(organizationId: string, siteId?: string): Promise<GatewayRecord[]> {
+export async function listGateways(
+  organizationId:  string,
+  siteId?:         string,
+  allowedSiteIds?: string[],
+): Promise<GatewayRecord[]> {
+  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) return [];
   const prisma = await getPrisma();
   if (!prisma) return [];
   const where: Record<string, unknown> = { organizationId };
-  if (siteId) where.siteId = siteId;
+  if (siteId) {
+    where.siteId = siteId;
+  } else if (allowedSiteIds !== undefined) {
+    where.siteId = { in: allowedSiteIds };
+  }
   const rows = await (prisma.industrialGateway as unknown as GatewayModel).findMany({
     where,
     orderBy: { createdAt: "desc" },

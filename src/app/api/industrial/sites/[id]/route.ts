@@ -2,6 +2,8 @@ import { NextRequest, NextResponse }  from "next/server";
 import { requirePlatformAuth }        from "@/lib/api/auth";
 import { requireOrgActor }            from "@/lib/org/context";
 import { requirePermission }          from "@/lib/org/rbac";
+import { requireSiteActor }           from "@/lib/site/context";
+import { requireSitePermission }      from "@/lib/site/rbac";
 import { getSite, updateSite }        from "@/lib/industrial/sites";
 import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
 
@@ -18,6 +20,12 @@ export async function GET(req: NextRequest, { params }: Params) {
     if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
     const perm = requirePermission(member.ctx.role, "view_industrial");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+
+    // Site-level enforcement: 404 on inaccessible site (do not reveal existence via 403)
+    const siteAuth = await requireSiteActor(req, ctx.orgId, id);
+    if ("error" in siteAuth) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+    const sitePerm = requireSitePermission(siteAuth.ctx.role, "view_site");
+    if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
   }
 
   const site = await getSite(id, ctx.orgId);
@@ -36,6 +44,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
     const perm = requirePermission(member.ctx.role, "manage_industrial");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+
+    // Verify site access before write; 404 hides existence from inaccessible-site users
+    const siteAuth = await requireSiteActor(req, ctx.orgId, id);
+    if ("error" in siteAuth) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+    const sitePerm = requireSitePermission(siteAuth.ctx.role, "manage_site");
+    if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
   }
 
   const body = await req.json().catch(() => ({}));

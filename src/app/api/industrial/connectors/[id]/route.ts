@@ -2,6 +2,8 @@ import { NextRequest, NextResponse }          from "next/server";
 import { requirePlatformAuth }                from "@/lib/api/auth";
 import { requireOrgActor }                    from "@/lib/org/context";
 import { requirePermission }                  from "@/lib/org/rbac";
+import { requireSiteActor }                   from "@/lib/site/context";
+import { requireSitePermission }              from "@/lib/site/rbac";
 import { getConnector, updateConnector }      from "@/lib/industrial/connectors";
 import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
 
@@ -22,6 +24,14 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const connector = await getConnector(id, ctx.orgId);
   if (!connector) return NextResponse.json({ error: "Connector not found" }, { status: 404 });
+
+  if (ctx.authMethod === "jwt") {
+    const siteAuth = await requireSiteActor(req, ctx.orgId, connector.siteId);
+    if ("error" in siteAuth) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const sitePerm = requireSitePermission(siteAuth.ctx.role, "view_assets");
+    if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
+  }
+
   return NextResponse.json({ connector });
 }
 
@@ -36,6 +46,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
     const perm = requirePermission(member.ctx.role, "manage_industrial");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  }
+
+  // Load connector to verify site ownership before write
+  const existing = await getConnector(id, ctx.orgId);
+  if (!existing) return NextResponse.json({ error: "Connector not found" }, { status: 404 });
+
+  if (ctx.authMethod === "jwt") {
+    const siteAuth = await requireSiteActor(req, ctx.orgId, existing.siteId);
+    if ("error" in siteAuth) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const sitePerm = requireSitePermission(siteAuth.ctx.role, "manage_assets");
+    if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
   }
 
   const body = await req.json().catch(() => ({}));

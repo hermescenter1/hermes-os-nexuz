@@ -2,6 +2,8 @@ import { NextRequest, NextResponse }               from "next/server";
 import { requirePlatformAuth }                      from "@/lib/api/auth";
 import { requireOrgActor }                          from "@/lib/org/context";
 import { requirePermission }                        from "@/lib/org/rbac";
+import { getAllowedSiteIds }                         from "@/lib/site/context";
+import { getAsset }                                 from "@/lib/industrial/assets";
 import { listFailureModes, createFailureMode, getFailureKnowledge } from "@/lib/knowledge/failures";
 import { recordAuditEvent, KNOWLEDGE_AUDIT }        from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                     from "@/lib/api/meter";
@@ -28,6 +30,12 @@ export async function GET(req: NextRequest) {
   meterIndustrialEvent(ctx.orgId, "failure_knowledge_requests");
 
   if (assetId) {
+    // Validate that the requested asset belongs to a site this user can access
+    const allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
+    const asset = await getAsset(assetId, ctx.orgId);
+    if (!asset || !allowedSiteIds.includes(asset.siteId)) {
+      return NextResponse.json({ error: "Asset not found" }, { status: 404 });
+    }
     const knowledge = await getFailureKnowledge(ctx.orgId, assetId, assetType, symptoms.length > 0 ? symptoms : undefined);
     recordAuditEvent({ action: KNOWLEDGE_AUDIT.KNOWLEDGE_QUERY, entityType: "failure", userId: ctx.userId ?? undefined, metadata: { organizationId: ctx.orgId, assetId } });
     return NextResponse.json({ knowledge });

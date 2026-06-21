@@ -91,17 +91,22 @@ export async function ingestTelemetry(params: {
 }
 
 export async function listTelemetry(organizationId: string, opts?: {
-  gatewayId?: string;
-  assetId?:   string;
-  tag?:       string;
-  limit?:     number;
+  gatewayId?:      string;
+  assetId?:        string;
+  tag?:            string;
+  limit?:          number;
+  allowedSiteIds?: string[];
 }): Promise<TelemetryRecord[]> {
+  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) return [];
   const prisma = await getPrisma();
   if (!prisma) return [];
   const where: Record<string, unknown> = { organizationId };
   if (opts?.gatewayId) where.gatewayId = opts.gatewayId;
   if (opts?.assetId)   where.assetId   = opts.assetId;
   if (opts?.tag)       where.tag       = opts.tag;
+  if (opts?.allowedSiteIds !== undefined) {
+    where.siteId = { in: opts.allowedSiteIds };
+  }
   const rows = await (prisma.telemetryRecord as unknown as TelemetryModel).findMany({
     where,
     orderBy: { receivedAt: "desc" },

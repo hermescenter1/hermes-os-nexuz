@@ -60,12 +60,22 @@ export async function GET(req: NextRequest) {
     where: { benchmarkId: bm.id },
   });
 
+  // Filter patterns to only those involving at least one site the user can access.
+  // siteIds is a JSON array on each pattern — cannot be filtered at the DB layer.
+  const allowedSet = new Set(allowedSiteIds ?? []);
+  const patterns = allowedSiteIds === undefined
+    ? rows
+    : rows.filter(r => {
+        const ids = Array.isArray(r.siteIds) ? (r.siteIds as string[]) : [];
+        return ids.some(sid => allowedSet.has(sid));
+      });
+
   recordAuditEvent({
     userId:     ctx.userId ?? undefined,
     action:     MULTI_SITE_AUDIT.CROSS_SITE_FAILURE_PATTERN_QUERIED,
     entityType: "multi_site",
     entityId:   ctx.orgId,
-    metadata:   { organizationId: ctx.orgId, patternCount: rows.length },
+    metadata:   { organizationId: ctx.orgId, patternCount: patterns.length },
   }).catch(() => undefined);
 
   return NextResponse.json({
@@ -74,6 +84,6 @@ export async function GET(req: NextRequest) {
     stale:         bm.stale,
     stalenessWarning: bm.stalenessWarning,
     matchingCriterion: "Same IndustrialFailureMode.id in IndustrialEngineeringCase rows across 2+ distinct siteIds. Deterministic — no fuzzy matching.",
-    patterns:      rows,
+    patterns,
   });
 }

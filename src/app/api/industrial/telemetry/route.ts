@@ -19,6 +19,7 @@ import { hasScope }                           from "@/lib/api/scopes";
 import { verifyGatewayBinding }               from "@/lib/industrial/gateway-auth";
 import { ingestTelemetry, listTelemetry, validateReading } from "@/lib/industrial/telemetry";
 import { getGateway }                         from "@/lib/industrial/gateways";
+import { getAllowedSiteIds }                   from "@/lib/site/context";
 import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }               from "@/lib/api/meter";
 import { MAX_TELEMETRY_BATCH }                from "@/lib/industrial/types";
@@ -95,11 +96,16 @@ export async function GET(req: NextRequest) {
   if (ctx.authMethod === "apikey" && !hasScope(ctx.scopes, "industrial.read")) {
     return NextResponse.json({ error: "Missing required scope: industrial.read" }, { status: 403 });
   }
+
+  let allowedSiteIds: string[] | undefined;
   if (ctx.authMethod === "jwt") {
     const member = await requireOrgActor(req, ctx.orgId);
     if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
     const perm = requirePermission(member.ctx.role, "view_industrial");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+    if (member.ctx.userId) {
+      allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
+    }
   }
 
   const q = req.nextUrl.searchParams;
@@ -108,6 +114,6 @@ export async function GET(req: NextRequest) {
   const tag       = q.get("tag")        ?? undefined;
   const limit     = Math.min(500, Math.max(1, parseInt(q.get("limit") ?? "100", 10) || 100));
 
-  const records = await listTelemetry(ctx.orgId, { gatewayId, assetId, tag, limit });
+  const records = await listTelemetry(ctx.orgId, { gatewayId, assetId, tag, limit, allowedSiteIds });
   return NextResponse.json({ records, count: records.length });
 }

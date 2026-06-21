@@ -5,12 +5,15 @@
  * plus the deterministic asset risk explanation.
  *
  * Phase 41 — Industrial Knowledge Graph.
+ * Phase 44 — Site-level isolation: assetId must belong to an accessible site.
  */
 
 import { NextRequest, NextResponse }             from "next/server";
 import { requirePlatformAuth }                    from "@/lib/api/auth";
 import { requireOrgActor }                        from "@/lib/org/context";
 import { requirePermission }                      from "@/lib/org/rbac";
+import { getAllowedSiteIds }                       from "@/lib/site/context";
+import { getAsset }                               from "@/lib/industrial/assets";
 import { getAssetKnowledgeGraph }                 from "@/lib/knowledge-graph/query";
 import { explainAssetRisk }                       from "@/lib/knowledge-graph/reasoning";
 import { recordAuditEvent, KNOWLEDGE_GRAPH_AUDIT } from "@/lib/audit/audit-service";
@@ -33,6 +36,13 @@ export async function GET(
   if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
   const perm = requirePermission(member.ctx.role, "view_knowledge_graph");
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+
+  // Verify the asset belongs to a site accessible to this user
+  const allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
+  const asset = await getAsset(assetId, ctx.orgId);
+  if (!asset || !allowedSiteIds.includes(asset.siteId)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   meterIndustrialEvent(ctx.orgId, "knowledge_graph_queries");
 

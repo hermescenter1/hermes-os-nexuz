@@ -3,6 +3,7 @@ import { requirePlatformAuth }              from "@/lib/api/auth";
 import { requireOrgActor }                  from "@/lib/org/context";
 import { requirePermission }                from "@/lib/org/rbac";
 import { listConnectors, createConnector }  from "@/lib/industrial/connectors";
+import { getAllowedSiteIds }                 from "@/lib/site/context";
 import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
 import { ALL_CONNECTOR_TYPES }              from "@/lib/industrial/types";
 import type { ConnectorType }               from "@/lib/industrial/types";
@@ -12,15 +13,19 @@ export async function GET(req: NextRequest) {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { ctx } = auth;
 
+  let allowedSiteIds: string[] | undefined;
   if (ctx.authMethod === "jwt") {
     const member = await requireOrgActor(req, ctx.orgId);
     if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
     const perm = requirePermission(member.ctx.role, "view_industrial");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+    if (member.ctx.userId) {
+      allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
+    }
   }
 
-  const gatewayId   = req.nextUrl.searchParams.get("gatewayId") ?? undefined;
-  const connectors  = await listConnectors(ctx.orgId, { gatewayId });
+  const gatewayId  = req.nextUrl.searchParams.get("gatewayId") ?? undefined;
+  const connectors = await listConnectors(ctx.orgId, { gatewayId, allowedSiteIds });
   return NextResponse.json({ connectors });
 }
 

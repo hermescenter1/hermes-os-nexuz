@@ -24,12 +24,17 @@ function row(r: Record<string, unknown>): ConnectorRecord {
 }
 
 export async function listConnectors(organizationId: string, opts?: {
-  gatewayId?: string;
+  gatewayId?:      string;
+  allowedSiteIds?: string[];
 }): Promise<ConnectorRecord[]> {
+  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) return [];
   const prisma = await getPrisma();
   if (!prisma) return [];
   const where: Record<string, unknown> = { organizationId };
   if (opts?.gatewayId) where.gatewayId = opts.gatewayId;
+  if (!opts?.gatewayId && opts?.allowedSiteIds !== undefined) {
+    where.siteId = { in: opts.allowedSiteIds };
+  }
   const rows = await (prisma.industrialConnectorConfig as unknown as ConnectorModel).findMany({
     where,
     orderBy: { createdAt: "desc" },
