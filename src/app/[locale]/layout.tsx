@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale, getTranslations } from "next-intl/server";
+import { headers } from "next/headers";
 import localFont from "next/font/local";
 import { routing, localeDirection, type Locale } from "@/i18n/routing";
 import "../globals.css";
@@ -50,6 +51,10 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
   const dir = localeDirection[locale as Locale];
+
+  // Reading headers() activates request context so Next.js can inject the
+  // per-request CSP nonce into RSC streaming inline scripts (Phase 45)
+  void (await headers()).get("x-nonce");
 
   return (
     <html lang={locale} dir={dir} className={`${estedad.variable} ${vazir.variable}`}>

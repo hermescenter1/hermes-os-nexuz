@@ -6,6 +6,7 @@
 
 import { cookies } from "next/headers";
 import { getPrisma } from "@/lib/db/prisma";
+import { logger } from "@/lib/logger";
 import {
   signAccessToken,
   verifyAccessToken,
@@ -59,7 +60,7 @@ export async function issueTokens(
         data: { userId: user.id, tokenHash, expiresAt },
       });
     } catch (err) {
-      console.error("[token-session] refresh token persist error:", err);
+      logger.error("[token-session] refresh token persist error", { error: String(err) });
     }
   }
 
@@ -166,7 +167,7 @@ export async function rotateRefreshToken(plainToken: string): Promise<RefreshRes
 
     return { ok: true, user: tokenUser };
   } catch (err) {
-    console.error("[token-session] rotate error:", err);
+    logger.error("[token-session] rotate error", { error: String(err) });
     return { ok: false, error: "db-unavailable" };
   }
 }
@@ -185,7 +186,7 @@ export async function revokeAllTokens(userId: string): Promise<void> {
       data:  { revokedAt: new Date() },
     });
   } catch (err) {
-    console.error("[token-session] revoke-all error:", err);
+    logger.error("[token-session] revoke-all error", { error: String(err) });
   }
 }
 

@@ -4,6 +4,7 @@
  */
 
 import { getPrisma } from "@/lib/db/prisma";
+import { logger } from "@/lib/logger";
 import { generateResetToken, hashResetToken } from "./jwt-server";
 import { sendPasswordResetEmail } from "./email-service";
 import { hashArgon2 } from "./argon2-wrapper";
@@ -49,7 +50,7 @@ export async function initiatePasswordReset(
       metadata:   { email },
     });
   } catch (err) {
-    console.error("[password-reset] initiate error:", err);
+    logger.error("[password-reset] initiate error", { error: String(err) });
   }
 }
 
@@ -101,7 +102,7 @@ export async function completePasswordReset(
 
     return { ok: true };
   } catch (err) {
-    console.error("[password-reset] complete error:", err);
+    logger.error("[password-reset] complete error", { error: String(err) });
     return { ok: false, error: "db-unavailable" };
   }
 }

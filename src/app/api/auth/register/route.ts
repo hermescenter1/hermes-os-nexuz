@@ -7,7 +7,7 @@ import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
 export async function POST(req: Request) {
   // Rate limiting — use IP if available, else fallback key
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!checkRateLimit("register", ip)) {
+  if (!await checkRateLimit("register", ip)) {
     return NextResponse.json(
       { error: "Too many registrations. Please try again later.",
         retryAfterSeconds: retryAfter("register", ip) },

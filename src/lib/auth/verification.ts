@@ -4,6 +4,7 @@
  */
 
 import { getPrisma } from "@/lib/db/prisma";
+import { logger } from "@/lib/logger";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 
 export type VerifyResult =
@@ -49,7 +50,7 @@ export async function verifyEmail(token: string): Promise<VerifyResult> {
 
     return { ok: true };
   } catch (err) {
-    console.error("[verification] error:", err);
+    logger.error("[verification] error", { error: String(err) });
     return { ok: false, error: "db-unavailable" };
   }
 }

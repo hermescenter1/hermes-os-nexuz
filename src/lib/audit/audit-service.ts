@@ -141,6 +141,15 @@ export const SITE_AUDIT = {
   SITE_MEMBERSHIP_REMOVED:   "site.membership.removed",
 } as const;
 
+/** Production operations audit action identifiers (Phase 45). */
+export const OPS_AUDIT = {
+  BACKUP_SUCCESS:           "ops.backup.success",
+  BACKUP_FAILED:            "ops.backup.failed",
+  BACKUP_VERIFIED:          "ops.backup.verified",
+  BACKUP_VERIFICATION_FAILED: "ops.backup.verification_failed",
+  STARTUP_CHECK_WARNING:    "ops.startup.warning",
+} as const;
+
 /** Multi-Site Industrial Intelligence audit action identifiers (Phase 42). */
 export const MULTI_SITE_AUDIT = {
   BENCHMARK_RUN:                        "multi_site.benchmark.run",

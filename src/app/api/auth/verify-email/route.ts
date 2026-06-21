@@ -7,7 +7,7 @@ const schema = z.object({ token: z.string().min(1, "Token required") });
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!checkRateLimit("verify-email", ip)) {
+  if (!await checkRateLimit("verify-email", ip)) {
     return NextResponse.json(
       { error: "Too many attempts.", retryAfterSeconds: retryAfter("verify-email", ip) },
       { status: 429 }

@@ -5,7 +5,7 @@ import { checkRateLimit, retryAfter }  from "@/lib/auth/rate-limiter";
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!checkRateLimit("forgot-password", ip)) {
+  if (!await checkRateLimit("forgot-password", ip)) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later.",
         retryAfterSeconds: retryAfter("forgot-password", ip) },

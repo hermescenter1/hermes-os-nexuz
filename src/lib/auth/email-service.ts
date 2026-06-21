@@ -1,8 +1,10 @@
 /**
  * Email service — mock provider (Phase 28).
- * Logs emails to the console and stores them in an in-process buffer.
+ * Logs emails via structured logger and stores them in an in-process buffer.
  * Replace with a real provider (Resend, SendGrid, SES) by swapping this module.
  */
+
+import { logger } from "@/lib/logger";
 
 export interface EmailMessage {
   to:      string;
@@ -25,12 +27,11 @@ async function send(msg: EmailMessage): Promise<void> {
   buf.unshift(msg);
   if (buf.length > 100) buf.length = 100;
 
-  // Console output so developers can see verification links during development
-  console.log("\n┌─ Hermes OS Mock Email ─────────────────────────");
-  console.log(`│ To:      ${msg.to}`);
-  console.log(`│ Subject: ${msg.subject}`);
-  console.log(`│ Body:    ${msg.text}`);
-  console.log("└────────────────────────────────────────────────\n");
+  logger.info("[email] Mock email (console mode — not delivered)", {
+    to:      msg.to,
+    subject: msg.subject,
+    body:    msg.text,
+  });
 }
 
 export async function sendVerificationEmail(

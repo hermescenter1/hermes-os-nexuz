@@ -31,11 +31,13 @@ export const ACCESS_TOKEN_COOKIE = "hermes_at";
 /** Refresh token cookie (Phase 28). */
 export const REFRESH_TOKEN_COOKIE = "hermes_rt";
 
-/** JWT signing secret — prefer JWT_SECRET, fallback to AUTH_SECRET. */
+/** JWT signing secret. Resolution order: JWT_SECRET → JWT_ACCESS_SECRET → AUTH_SECRET → NEXTAUTH_SECRET → insecure default. */
 export function jwtSecret(): string {
   return (
     process.env.JWT_SECRET ||
+    process.env.JWT_ACCESS_SECRET ||
     process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
     "hermes-dev-jwt-insecure-not-for-production"
   );
 }

@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
 
   // ── Login ─────────────────────────────────────────────────────────────────
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!checkRateLimit("login", ip)) {
+  if (!await checkRateLimit("login", ip)) {
     return NextResponse.json(
       { error: "Too many login attempts. Please try again later.",
         retryAfterSeconds: retryAfter("login", ip) },

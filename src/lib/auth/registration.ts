@@ -4,6 +4,7 @@
  */
 
 import { getPrisma } from "@/lib/db/prisma";
+import { logger } from "@/lib/logger";
 import { hashArgon2 } from "./argon2-wrapper";
 import { generateVerificationToken } from "./jwt-server";
 import { sendVerificationEmail } from "./email-service";
@@ -73,7 +74,7 @@ export async function registerUser(
     if (msg.includes("Unique constraint") || msg.includes("unique")) {
       return { ok: false, error: "email-taken" };
     }
-    console.error("[registration] error:", err);
+    logger.error("[registration] error", { error: String(err) });
     return { ok: false, error: "unknown" };
   }
 }
