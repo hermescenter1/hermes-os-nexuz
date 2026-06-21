@@ -1898,13 +1898,54 @@
       "enterprise": "Enterprise",
       "free": "Free",
       "notifyMe": "Notify Me",
-      "paymentTitle": "Accepted Payment Methods",
+      "paymentTitle": "Supported payment channels for commercial deployment.",
       "paymentStripe": "Stripe",
       "paymentVisa": "Visa",
       "paymentMastercard": "Mastercard",
       "paymentZarinpal": "Zarinpal",
       "ctaContact": "Contact Sales",
-      "ctaGetStarted": "Get Started"
+      "ctaGetStarted": "Get Started",
+      "plans": {
+        "community": {
+          "price": "Free",
+          "audience": "For individual engineers and early evaluation.",
+          "f0": "Basic industrial knowledge access",
+          "f1": "Limited engineering queries",
+          "f2": "Public documentation access",
+          "f3": "Community-level platform access",
+          "cta": "Get Started"
+        },
+        "professional": {
+          "price": "Contact Sales",
+          "audience": "For professional automation and electrical engineers.",
+          "f0": "Engineering Copilot access",
+          "f1": "Case analysis workspace",
+          "f2": "Knowledge Engine access",
+          "f3": "Personal engineering memory",
+          "f4": "Standard support",
+          "cta": "Contact Sales"
+        },
+        "team": {
+          "price": "Contact Sales",
+          "audience": "For engineering teams and small industrial operations.",
+          "f0": "Multi-user workspace",
+          "f1": "Team knowledge base",
+          "f2": "Site and asset analytics",
+          "f3": "Predictive maintenance insights",
+          "f4": "Audit and usage tracking",
+          "cta": "Contact Sales"
+        },
+        "enterprise": {
+          "price": "Custom",
+          "audience": "For factories, industrial groups, EPCs, utilities, and enterprise operations.",
+          "f0": "Multi-site industrial intelligence",
+          "f1": "Site isolation and enterprise RBAC",
+          "f2": "Digital twin and knowledge graph",
+          "f3": "Advanced audit and compliance",
+          "f4": "Dedicated deployment and onboarding",
+          "cta": "Contact Sales"
+        }
+      }
     },
     "contact": {
       "eyebrow": "Contact",
