@@ -14,14 +14,19 @@ const intlMiddleware = createMiddleware(routing);
 // without 'unsafe-inline'. style-src 'unsafe-inline' is required because
 // inline styles cannot be hashed (Framer Motion and CSS-in-JS patterns inject
 // them at runtime).
+// In development, webpack uses eval-based source maps which require
+// 'unsafe-eval'. Production builds use non-eval source maps so this is
+// omitted there for maximum CSP strictness.
 function buildCSP(nonce: string): string {
+  const dev = process.env.NODE_ENV !== "production";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'`,
+    `script-src 'self' 'nonce-${nonce}'${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
-    "connect-src 'self'",
+    // ws: is needed for webpack HMR WebSocket in development
+    `connect-src 'self'${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
