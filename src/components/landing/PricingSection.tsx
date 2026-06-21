@@ -3,6 +3,7 @@
 import { useRef }           from "react";
 import { motion, useInView } from "framer-motion";
 import { useTranslations }  from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 type PlanKey = "community" | "professional" | "team" | "enterprise";
 
@@ -154,19 +155,18 @@ export function PricingSection() {
                 ))}
               </div>
 
-              {/* Coming soon button */}
-              <button
-                disabled
-                className="w-full py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider transition-all"
+              {/* CTA button */}
+              <Link
+                href="/contact"
+                className="block w-full rounded-xl py-2.5 text-center font-mono text-xs uppercase tracking-wider transition-all hover:opacity-90"
                 style={{
-                  background: featured ? "rgba(0,184,255,0.08)" : "rgba(255,255,255,0.03)",
-                  border: featured ? "1px solid rgba(0,229,255,0.2)" : "1px solid rgba(255,255,255,0.06)",
-                  color: featured ? "#00B8FF" : "rgba(140,175,210,0.4)",
-                  cursor: "not-allowed",
+                  background: featured ? "rgba(0,184,255,0.10)" : "rgba(255,255,255,0.04)",
+                  border: featured ? "1px solid rgba(0,229,255,0.25)" : "1px solid rgba(255,255,255,0.08)",
+                  color: featured ? "#00E5FF" : "rgba(140,175,210,0.65)",
                 }}
               >
-                {t("comingSoon")}
-              </button>
+                {key === "enterprise" ? t("ctaContact") : t("ctaGetStarted")}
+              </Link>
 
               {featured && (
                 <div className="absolute inset-0 rounded-2xl pointer-events-none"
@@ -176,15 +176,55 @@ export function PricingSection() {
           ))}
         </motion.div>
 
-        <motion.p
+        {/* Payment methods */}
+        <motion.div
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="text-center mt-8 font-body text-sm"
-          style={{ color: "rgba(140,175,210,0.5)" }}
+          transition={{ delay: 0.7, duration: 0.5 }}
+          className="mt-12 flex flex-col items-center gap-4"
         >
-          {t("comingSoonDesc")}
-        </motion.p>
+          <p className="font-mono text-xs uppercase tracking-widest" style={{ color: "rgba(140,175,210,0.4)" }}>
+            {t("paymentTitle")}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {/* Stripe */}
+            <span className="flex items-center gap-1.5 rounded-lg px-3 py-1.5"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <svg viewBox="0 0 24 10" className="h-3.5" aria-hidden="true">
+                <text x="0" y="8" fontFamily="sans-serif" fontSize="8" fill="#00E5FF" opacity="0.8" fontWeight="700">S</text>
+                <text x="6" y="8" fontFamily="sans-serif" fontSize="7" fill="#8CAFD2" opacity="0.6">tripe</text>
+              </svg>
+              <span className="font-mono text-xs" style={{ color: "rgba(140,175,210,0.6)" }}>{t("paymentStripe")}</span>
+            </span>
+            {/* Visa */}
+            <span className="flex items-center gap-1.5 rounded-lg px-3 py-1.5"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <svg viewBox="0 0 32 10" className="h-3.5" aria-hidden="true">
+                <rect width="32" height="10" rx="2" fill="none"/>
+                <text x="2" y="8" fontFamily="sans-serif" fontSize="8" fill="#1A1F71" fontWeight="900">VISA</text>
+              </svg>
+              <span className="font-mono text-xs" style={{ color: "rgba(140,175,210,0.6)" }}>{t("paymentVisa")}</span>
+            </span>
+            {/* Mastercard */}
+            <span className="flex items-center gap-1.5 rounded-lg px-3 py-1.5"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <svg viewBox="0 0 32 20" className="h-4" aria-hidden="true">
+                <circle cx="12" cy="10" r="9" fill="#EB001B" opacity="0.8"/>
+                <circle cx="20" cy="10" r="9" fill="#F79E1B" opacity="0.8"/>
+              </svg>
+              <span className="font-mono text-xs" style={{ color: "rgba(140,175,210,0.6)" }}>{t("paymentMastercard")}</span>
+            </span>
+            {/* Zarinpal */}
+            <span className="flex items-center gap-1.5 rounded-lg px-3 py-1.5"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <svg viewBox="0 0 16 16" className="h-4" aria-hidden="true">
+                <circle cx="8" cy="8" r="7" fill="none" stroke="#00E5FF" strokeWidth="1.5" opacity="0.6"/>
+                <text x="4.5" y="11.5" fontFamily="sans-serif" fontSize="7" fill="#00E5FF" opacity="0.8" fontWeight="700">Z</text>
+              </svg>
+              <span className="font-mono text-xs" style={{ color: "rgba(140,175,210,0.6)" }}>{t("paymentZarinpal")}</span>
+            </span>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

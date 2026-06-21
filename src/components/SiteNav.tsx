@@ -66,8 +66,8 @@ const GROUPS: NavGroup[] = [
   {
     groupKey: "services",
     items: [
-      { labelKey: "contact", href: "/services" },
-      { labelKey: "about", href: "/" },
+      { labelKey: "about", href: "/about" },
+      { labelKey: "contact", href: "/contact" },
     ],
   },
 ];
