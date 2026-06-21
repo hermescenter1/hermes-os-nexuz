@@ -47,10 +47,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Registration failed. Please try again." }, { status: 500 });
   }
 
-  return NextResponse.json({
-    ok:      true,
-    message: "Account created. Please check your email to verify your account.",
-  }, { status: 201 });
+  let message: string;
+  if (result.emailSent) {
+    message = "Account created. Please check your email to verify your account.";
+  } else if (result.emailMode === "console") {
+    message = "Account created. Email delivery is in development mode — check server logs for your verification link.";
+  } else if (result.emailMode === "smtp-unconfigured") {
+    message = "Account created. Email delivery is not configured yet — please contact the administrator to verify your account.";
+  } else {
+    message = "Account created. Email delivery failed — please contact the administrator to verify your account.";
+  }
+
+  return NextResponse.json({ ok: true, message }, { status: 201 });
 }
 
 // Keep z import used

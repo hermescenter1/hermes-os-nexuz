@@ -35,7 +35,17 @@ export async function generateMetadata({
 }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "meta" });
-  return { title: t("title"), description: t("description") };
+  return {
+    title: t("title"),
+    description: t("description"),
+    icons: {
+      icon: [
+        { url: "/favicon.svg", type: "image/svg+xml", sizes: "any" },
+        { url: "/favicon.ico", sizes: "48x48" },
+      ],
+      apple: { url: "/favicon.svg", type: "image/svg+xml" },
+    },
+  };
 }
 
 export default async function LocaleLayout({

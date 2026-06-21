@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Dark navy background -->
+  <rect width="32" height="32" rx="5" fill="#0B1929"/>
+  <!-- Outer ring - ice-blue, subtle -->
+  <circle cx="16" cy="16" r="12.8" stroke="#00E5FF" stroke-width="0.9" fill="none" opacity="0.45"/>
+  <!-- Circuit nodes at cardinal points - bright cyan -->
+  <circle cx="16" cy="3.2" r="1.1" fill="#00E5FF" opacity="0.90"/>
+  <circle cx="28.8" cy="16" r="1.1" fill="#00E5FF" opacity="0.90"/>
+  <circle cx="16" cy="28.8" r="1.1" fill="#00E5FF" opacity="0.90"/>
+  <circle cx="3.2" cy="16" r="1.1" fill="#00E5FF" opacity="0.90"/>
+  <!-- H letterform — bold, geometric, industrial -->
+  <path d="M10 10v12M22 10v12M10 16h12"
+        stroke="#E8F4FF"
+        stroke-width="2.8"
+        stroke-linecap="square"
+        fill="none"/>
+</svg>

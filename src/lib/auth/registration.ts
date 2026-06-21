@@ -7,12 +7,12 @@ import { getPrisma } from "@/lib/db/prisma";
 import { logger } from "@/lib/logger";
 import { hashArgon2 } from "./argon2-wrapper";
 import { generateVerificationToken } from "./jwt-server";
-import { sendVerificationEmail } from "./email-service";
+import { sendVerificationEmail, type EmailSendMode } from "./email-service";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 import { VERIFICATION_TOKEN_TTL } from "./config";
 
 export type RegisterResult =
-  | { ok: true;  userId: string }
+  | { ok: true;  userId: string; emailSent: boolean; emailMode: EmailSendMode }
   | { ok: false; error: "email-taken" | "db-unavailable" | "unknown" };
 
 export async function registerUser(
@@ -58,17 +58,17 @@ export async function registerUser(
       data: { userId, token, expiresAt },
     });
 
-    await sendVerificationEmail(email, name, token, baseUrl);
+    const emailResult = await sendVerificationEmail(email, name, token, baseUrl);
 
     await recordAuditEvent({
       userId,
       action:     "auth.register",
       entityType: "user",
       entityId:   userId,
-      metadata:   { email, name },
+      metadata:   { email, name, emailSent: emailResult.sent, emailMode: emailResult.mode },
     });
 
-    return { ok: true, userId };
+    return { ok: true, userId, emailSent: emailResult.sent, emailMode: emailResult.mode };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("Unique constraint") || msg.includes("unique")) {

@@ -153,7 +153,7 @@ export function SiteNav() {
                 <div
                   role="menu"
                   className="absolute top-full z-40 pt-1.5"
-                  style={{ insetInlineStart: 0 }}
+                  style={{ insetInlineEnd: 0 }}
                 >
                   <div className="min-w-44 rounded-xl border border-line bg-surface p-1.5 shadow-lg shadow-black/20">
                     {g.items.map((it) => (
