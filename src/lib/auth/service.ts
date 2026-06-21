@@ -13,6 +13,7 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { adminSeed } from "./config";
 import { hashPassword, verifyPassword } from "./crypto";
+import { verifyArgon2, isArgon2Hash } from "./argon2-wrapper";
 import type { Role } from "./roles";
 import { isRole } from "./roles";
 
@@ -68,6 +69,12 @@ async function dbUserByEmail(email: string): Promise<StoredUser | null> {
   }
 }
 
+/** Verify a stored hash (argon2id or legacy scrypt) against the plaintext password. */
+async function checkPassword(password: string, stored: string): Promise<boolean> {
+  if (isArgon2Hash(stored)) return verifyArgon2(stored, password);
+  return verifyPassword(password, stored);
+}
+
 /** Verify credentials; returns the user (without hash) on success. */
 export async function authenticate(
   email: string,
@@ -77,13 +84,13 @@ export async function authenticate(
 
   // Database user takes precedence when present.
   const dbUser = await dbUserByEmail(key);
-  if (dbUser && verifyPassword(password, dbUser.passwordHash)) {
+  if (dbUser && await checkPassword(password, dbUser.passwordHash)) {
     const { passwordHash: _omit, ...safe } = dbUser;
     void _omit;
     return safe;
   }
 
-  // Session/seeded admin.
+  // Session/seeded admin (scrypt hash — legacy, session mode only).
   const local = sessionUsers().get(key);
   if (local && verifyPassword(password, local.passwordHash)) {
     const { passwordHash: _omit, ...safe } = local;

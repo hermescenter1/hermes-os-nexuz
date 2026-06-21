@@ -5,13 +5,15 @@ import { requirePermission }               from "@/lib/org/rbac";
 import { calculateFailureProbability }     from "@/lib/predictive/failure";
 import { recordAuditEvent, PREDICTIVE_AUDIT } from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }            from "@/lib/api/meter";
-import { listAssets }                      from "@/lib/industrial/assets";
+import { listAssets, getAsset }            from "@/lib/industrial/assets";
+import { getAllowedSiteIds }               from "@/lib/site/context";
 
 /**
  * GET /api/predictive/failure?assetId=xxx
  *
- * Returns failure probability for one asset or all assets in the org.
+ * Returns failure probability for one asset or all accessible assets.
  * organizationId from authenticated context only.
+ * Phase 46: site isolation applied — respects allowedSiteIds for all access paths.
  */
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
@@ -28,7 +30,13 @@ export async function GET(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "predictive_queries");
 
+  const allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
+
   if (assetId) {
+    const asset = await getAsset(assetId, ctx.orgId);
+    if (!asset || !allowedSiteIds.includes(asset.siteId)) {
+      return NextResponse.json({ error: "Asset not found" }, { status: 404 });
+    }
     const result = await calculateFailureProbability(ctx.orgId, assetId);
     recordAuditEvent({
       action:     PREDICTIVE_AUDIT.RISK_SCORE_CALCULATED,
@@ -40,7 +48,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ result });
   }
 
-  const assets  = await listAssets(ctx.orgId);
+  if (allowedSiteIds.length === 0) return NextResponse.json({ results: [] });
+
+  const assets  = await listAssets(ctx.orgId, { allowedSiteIds });
   const results = await Promise.all(
     assets.slice(0, 50).map((a) => calculateFailureProbability(ctx.orgId, a.id)),
   );

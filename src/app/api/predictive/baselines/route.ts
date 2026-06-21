@@ -5,6 +5,8 @@ import { requirePermission }              from "@/lib/org/rbac";
 import { buildBaseline, getBaseline }     from "@/lib/predictive/baseline";
 import { recordAuditEvent, PREDICTIVE_AUDIT } from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }           from "@/lib/api/meter";
+import { getAsset }                       from "@/lib/industrial/assets";
+import { getAllowedSiteIds }              from "@/lib/site/context";
 
 /**
  * GET /api/predictive/baselines?assetId=xxx&windowDays=90
@@ -15,6 +17,7 @@ import { meterIndustrialEvent }           from "@/lib/api/meter";
  *   Triggers a fresh baseline computation and returns it.
  *
  * organizationId always from authenticated context.
+ * Phase 46: site isolation — asset must belong to an accessible site.
  */
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
@@ -34,6 +37,12 @@ export async function GET(req: NextRequest) {
   if (!assetId) return NextResponse.json({ error: "assetId is required" }, { status: 400 });
   if (![30, 90, 180].includes(windowDays)) {
     return NextResponse.json({ error: "windowDays must be 30, 90, or 180" }, { status: 400 });
+  }
+
+  const allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
+  const asset = await getAsset(assetId, ctx.orgId);
+  if (!asset || !allowedSiteIds.includes(asset.siteId)) {
+    return NextResponse.json({ error: "Asset not found" }, { status: 404 });
   }
 
   meterIndustrialEvent(ctx.orgId, "predictive_queries");
@@ -60,6 +69,12 @@ export async function POST(req: NextRequest) {
   }
   if (![30, 90, 180].includes(Number(windowDays))) {
     return NextResponse.json({ error: "windowDays must be 30, 90, or 180" }, { status: 400 });
+  }
+
+  const allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
+  const asset = await getAsset(assetId, ctx.orgId);
+  if (!asset || !allowedSiteIds.includes(asset.siteId)) {
+    return NextResponse.json({ error: "Asset not found" }, { status: 404 });
   }
 
   meterIndustrialEvent(ctx.orgId, "predictive_queries");

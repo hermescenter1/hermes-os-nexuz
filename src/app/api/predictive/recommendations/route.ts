@@ -5,14 +5,16 @@ import { requirePermission }                    from "@/lib/org/rbac";
 import { generateMaintenanceRecommendations }   from "@/lib/predictive/maintenance";
 import { recordAuditEvent, PREDICTIVE_AUDIT }   from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                 from "@/lib/api/meter";
-import { listAssets }                           from "@/lib/industrial/assets";
+import { listAssets, getAsset }                 from "@/lib/industrial/assets";
+import { getAllowedSiteIds }                    from "@/lib/site/context";
 
 /**
  * GET /api/predictive/recommendations?assetId=xxx
  *
- * Returns maintenance recommendations for one asset or all assets.
+ * Returns maintenance recommendations for one asset or all accessible assets.
  * READ-ONLY: This route NEVER executes maintenance or controls equipment.
  * organizationId from authenticated context only.
+ * Phase 46: site isolation applied — respects allowedSiteIds for all access paths.
  */
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
@@ -30,7 +32,13 @@ export async function GET(req: NextRequest) {
   meterIndustrialEvent(ctx.orgId, "predictive_queries");
   meterIndustrialEvent(ctx.orgId, "maintenance_recommendations");
 
+  const allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
+
   if (assetId) {
+    const asset = await getAsset(assetId, ctx.orgId);
+    if (!asset || !allowedSiteIds.includes(asset.siteId)) {
+      return NextResponse.json({ error: "Asset not found" }, { status: 404 });
+    }
     const recommendations = await generateMaintenanceRecommendations(ctx.orgId, assetId);
     recordAuditEvent({
       action:     PREDICTIVE_AUDIT.MAINTENANCE_RECOMMENDATION_CREATED,
@@ -42,10 +50,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ recommendations });
   }
 
-  const assets  = await listAssets(ctx.orgId);
+  if (allowedSiteIds.length === 0) return NextResponse.json({ recommendations: [] });
+
+  const assets  = await listAssets(ctx.orgId, { allowedSiteIds });
   const allRecs = await Promise.all(
     assets.slice(0, 30).map(async (a) => ({
-      assetId: a.id,
+      assetId:  a.id,
       assetName: a.name,
       recommendations: await generateMaintenanceRecommendations(ctx.orgId, a.id),
     })),
