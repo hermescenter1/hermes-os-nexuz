@@ -25,3 +25,4 @@ scripts/backups/
 # SSL certificates — managed by Certbot on the VPS
 deploy/ssl/certs/
 /etc/letsencrypt/
+.env.production
