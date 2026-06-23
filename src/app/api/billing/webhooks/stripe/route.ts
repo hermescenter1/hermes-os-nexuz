@@ -184,9 +184,14 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription): Promis
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
   // If the invoice is for a subscription, mark the subscription active
-  const stripeSubId = typeof invoice.subscription === "string"
-    ? invoice.subscription
-    : (invoice.subscription as Stripe.Subscription | null)?.id ?? null;
+ const invoiceWithSubscription = invoice as Stripe.Invoice & {
+  subscription?: string | Stripe.Subscription | null;
+};
+
+const stripeSubId =
+  typeof invoiceWithSubscription.subscription === "string"
+    ? invoiceWithSubscription.subscription
+    : invoiceWithSubscription.subscription?.id ?? null;
 
   if (!stripeSubId) return;
 
