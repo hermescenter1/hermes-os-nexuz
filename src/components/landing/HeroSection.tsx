@@ -118,7 +118,7 @@ export function HeroSection() {
                 {t("desc")}
               </motion.p>
 
-              <motion.div {...fadeUp(0.4)} className="flex flex-wrap gap-4">
+              <motion.div {...fadeUp(0.4)} className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
                 <Link
                   href="/platform"
                   className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-body font-semibold text-sm transition-all duration-300"
@@ -201,6 +201,30 @@ export function HeroSection() {
           </div>
         </div>
       </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.4, duration: 0.6 }}
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-20"
+      >
+        <span
+          className="text-[9px] font-mono tracking-[0.22em] uppercase"
+          style={{ color: "rgba(0,229,255,0.30)" }}
+        >
+          scroll
+        </span>
+        <div
+          className="w-[22px] h-[36px] rounded-full border flex items-start justify-center pt-[6px]"
+          style={{ borderColor: "rgba(0,229,255,0.20)" }}
+        >
+          <div
+            className="w-[3px] h-[8px] rounded-full animate-bounce"
+            style={{ background: "rgba(0,229,255,0.45)", animationDuration: "1.4s" }}
+          />
+        </div>
+      </motion.div>
 
       {/* Bottom gradient fade */}
       <div
