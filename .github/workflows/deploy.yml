@@ -2,16 +2,15 @@ name: Deploy Hermes OS
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -21,17 +20,15 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          ssh root@${{ secrets.SERVER_IP }} << 'EOF'
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             set -e
+            unset DOCKER_HOST
 
             cd /opt/hermes-os-nexuz
 
-            echo "Pull latest code"
             git pull origin main
 
-            echo "Build & Restart Docker"
             docker compose -f docker-compose.prod.yml up -d --build
 
-            echo "Cleanup"
             docker system prune -f
           EOF
