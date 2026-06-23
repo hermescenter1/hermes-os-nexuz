@@ -87,6 +87,19 @@ export async function authenticate(
   if (dbUser && await checkPassword(password, dbUser.passwordHash)) {
     const { passwordHash: _omit, ...safe } = dbUser;
     void _omit;
+    // If this DB user is also the seeded admin, apply the higher privilege.
+    // This fixes the case where the admin registered via the web form (gaining
+    // "customer" role in the DB) and later reset their password — the DB role
+    // would be wrong without this elevation.
+    const local = sessionUsers().get(key);
+    if (local) {
+      const PRIO: Record<string, number> = {
+        superadmin: 4, admin: 3, engineer: 2, customer: 1, viewer: 0,
+      };
+      if ((PRIO[local.role] ?? 0) > (PRIO[safe.role] ?? 0)) {
+        safe.role = local.role;
+      }
+    }
     return safe;
   }
 

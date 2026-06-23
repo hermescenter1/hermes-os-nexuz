@@ -29,9 +29,18 @@ export function NewLoginClient({ locale, from }: Props) {
         body:    JSON.stringify({ action: "login", email, password, rememberMe }),
       });
       if (res.ok) {
-        const dest = from
-          ? decodeURIComponent(from)
-          : `/${locale}/engineering`;
+        const data = await res.json().catch(() => ({})) as { user?: { role?: string } };
+        const role = data.user?.role ?? "";
+        const privileged = ["superadmin", "admin", "engineer"].includes(role);
+        // Default landing: privileged roles go to engineering, others to dashboard
+        const defaultDest = privileged ? `/${locale}/engineering` : `/${locale}/dashboard`;
+        // Only follow a `from` redirect when the role is permitted to access it,
+        // preventing a silent bounce-loop for lower-privilege roles
+        const fromPath = from ? decodeURIComponent(from) : null;
+        const fromNeedsPrivilege = fromPath
+          ? /^\/(fa|en)\/(engineering|admin)/.test(fromPath)
+          : false;
+        const dest = fromPath && (!fromNeedsPrivilege || privileged) ? fromPath : defaultDest;
         window.location.href = dest;
       } else {
         const data = await res.json().catch(() => ({})) as Record<string, unknown>;
