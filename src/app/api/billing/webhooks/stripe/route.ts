@@ -35,6 +35,17 @@ import { getNotificationService }         from "@/lib/notifications/service";
 import { recordAuditEvent, BILLING_AUDIT } from "@/lib/audit/audit-service";
 import { logger }                         from "@/lib/logger";
 
+// ─── Stripe type helpers ──────────────────────────────────────────────────────
+
+function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const invoiceWithSubscription = invoice as Stripe.Invoice & {
+    subscription?: string | Stripe.Subscription | null;
+  };
+  const subscription = invoiceWithSubscription.subscription;
+  if (typeof subscription === "string") return subscription;
+  return subscription?.id ?? null;
+}
+
 // ─── DB helpers ───────────────────────────────────────────────────────────────
 
 async function updateSubStatus(localSubId: string, status: string): Promise<void> {
@@ -183,15 +194,7 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription): Promis
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
-  // If the invoice is for a subscription, mark the subscription active
- const invoiceWithSubscription = invoice as Stripe.Invoice & {
-  subscription?: string | Stripe.Subscription | null;
-};
-
-const stripeSubId =
-  typeof invoiceWithSubscription.subscription === "string"
-    ? invoiceWithSubscription.subscription
-    : invoiceWithSubscription.subscription?.id ?? null;
+  const stripeSubId = getInvoiceSubscriptionId(invoice);
 
   if (!stripeSubId) return;
 
@@ -226,9 +229,7 @@ const stripeSubId =
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
-  const stripeSubId = typeof invoice.subscription === "string"
-    ? invoice.subscription
-    : (invoice.subscription as Stripe.Subscription | null)?.id ?? null;
+  const stripeSubId = getInvoiceSubscriptionId(invoice);
 
   if (!stripeSubId) return;
 
