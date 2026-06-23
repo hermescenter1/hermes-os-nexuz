@@ -8,6 +8,7 @@ import { GlassCard }        from "@/components/ui/GlassCard";
 import { LoadingState }     from "@/components/ui/LoadingState";
 import { ErrorState }       from "@/components/ui/ErrorState";
 import { EmptyState }       from "@/components/ui/EmptyState";
+import { toRenderableText } from "@/lib/utils/renderable";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -27,12 +28,18 @@ interface DomainHealth {
   healthScore:     number;
 }
 
+interface GraphInsight {
+  type:    string;
+  message: string;
+  nodeId?: string;
+}
+
 interface GraphHealth {
   overallScore:      number;
   coverageScore:     number;
   connectivityScore: number;
   qualityScore:      number;
-  insights:          string[];
+  insights:          GraphInsight[];
 }
 
 interface KGAnalyticsResponse {
@@ -190,7 +197,7 @@ export function KnowledgeGraphView() {
                   {health.insights.map((ins, i) => (
                     <li key={i} className="flex gap-2 text-xs text-muted">
                       <span className="text-signal flex-none">·</span>
-                      <span className="leading-relaxed">{ins}</span>
+                      <span className="leading-relaxed">{toRenderableText(ins)}</span>
                     </li>
                   ))}
                 </ul>

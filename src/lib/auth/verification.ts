@@ -1,11 +1,12 @@
 /**
- * Email verification service (Phase 28).
+ * Email verification service.
  * Server-side only.
  */
 
 import { getPrisma } from "@/lib/db/prisma";
 import { logger } from "@/lib/logger";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
+import { authEmitter } from "@/lib/events/auth/emitter";
 
 export type VerifyResult =
   | { ok: true }
@@ -21,21 +22,19 @@ export async function verifyEmail(token: string): Promise<VerifyResult> {
       update:     (a: unknown) => Promise<unknown>;
     };
     const userModel = (db as Record<string, unknown>).user as {
-      update: (a: unknown) => Promise<unknown>;
+      findUnique: (a: unknown) => Promise<Record<string, unknown> | null>;
+      update:     (a: unknown) => Promise<Record<string, unknown>>;
     };
 
     const vt = await vtModel.findUnique({ where: { token } });
 
-    if (!vt)                          return { ok: false, error: "invalid-token" };
-    if (vt.usedAt)                    return { ok: false, error: "already-used" };
-    if (new Date(vt.expiresAt as string) < new Date()) return { ok: false, error: "expired" };
+    if (!vt)                                               return { ok: false, error: "invalid-token" };
+    if (vt.usedAt)                                         return { ok: false, error: "already-used" };
+    if (new Date(vt.expiresAt as string) < new Date())     return { ok: false, error: "expired" };
 
-    await vtModel.update({
-      where: { token },
-      data:  { usedAt: new Date() },
-    });
+    await vtModel.update({ where: { token }, data: { usedAt: new Date() } });
 
-    await userModel.update({
+    const user = await userModel.update({
       where: { id: String(vt.userId) },
       data:  { emailVerified: true, emailVerifiedAt: new Date() },
     });
@@ -46,6 +45,14 @@ export async function verifyEmail(token: string): Promise<VerifyResult> {
       entityType: "user",
       entityId:   String(vt.userId),
       metadata:   {},
+    });
+
+    // Emit event — handler sends welcome email asynchronously (non-blocking)
+    authEmitter.dispatch({
+      type:   "user.email_verified",
+      userId: String(vt.userId),
+      email:  String(user.email),
+      name:   String(user.name),
     });
 
     return { ok: true };

@@ -301,6 +301,8 @@ model User {
   organizationMembers  OrganizationMember[]
   // Phase 43: Site Isolation
   userSites            UserSite[]
+  // Phase 48: Notification System
+  notifications        Notification[]
 }
 
 model AuthSession {
@@ -449,7 +451,9 @@ model Organization {
   description   String?
   website       String?
   logoUrl       String?
-  settings      Json                     @default("{}")
+  settings         Json    @default("{}")
+  // Phase 48C: Stripe integration
+  stripeCustomerId String? @unique
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
   members              OrganizationMember[]
@@ -592,7 +596,9 @@ model Subscription {
   billingCycle   BillingCycle       @default(MONTHLY)
   startsAt       DateTime
   expiresAt      DateTime
-  autoRenew      Boolean            @default(true)
+  autoRenew            Boolean @default(true)
+  // Phase 48C: Stripe subscription reference
+  stripeSubscriptionId String? @unique
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -685,13 +691,16 @@ model ApiKey {
 model UsageRecord {
   id             String       @id @default(cuid())
   organizationId String
-  metric         String       // "ai_requests" | "projects" | "members" | "storage_gb"
+  // Phase 48C: optional per-user tracking alongside org-level
+  userId         String?
+  metric         String       // "ai_requests" | "projects" | "members" | "storage_gb" | "api_calls" | "emails_sent" | "notifications_created"
   value          Decimal      @db.Decimal(20, 4)
   recordedAt     DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([metric])
+  @@index([userId])
 }
 
 // ── Industrial Gateway Foundation — Phase 35 ─────────────────────────────────
@@ -1852,6 +1861,36 @@ enum SiteRole {
 enum SiteMemberStatus {
   ACTIVE
   SUSPENDED
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 48 — Notification System
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Centralized in-app notification store. Notifications are always created even
+// if email delivery fails — the notification system is PRIMARY, email is
+// SECONDARY. All insertions are best-effort (never block business logic).
+//
+// type: info | success | warning | error | security
+// isRead: false on creation; flipped by explicit user action
+//
+// Index strategy:
+//   (userId, createdAt) — primary feed query (ORDER BY createdAt DESC)
+//   (userId, isRead)    — unread-count queries (WHERE isRead = false)
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   @default("info")
+  title     String
+  message   String
+  metadata  Json     @default("{}")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
 }
 
 // Explicit site membership. OWNER/ADMIN never have rows here (implicit access).

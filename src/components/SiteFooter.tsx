@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { HermesLogoMark } from "./HermesLogo";
+import { FooterLangSwitch } from "./FooterLangSwitch";
 
 export function SiteFooter() {
   const t = useTranslations("footer");
@@ -22,9 +23,7 @@ export function SiteFooter() {
             <p className="max-w-xs font-body text-xs leading-relaxed text-muted/70">
               {t("tagline")}
             </p>
-            <p className="font-mono text-xs text-muted/50">
-              🇮🇷 فارسی &nbsp;|&nbsp; 🇬🇧 English
-            </p>
+            <FooterLangSwitch />
           </div>
 
           {/* Footer navigation */}

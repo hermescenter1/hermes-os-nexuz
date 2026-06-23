@@ -9,6 +9,7 @@ import { setAuthCookies, clearAuthCookies } from "@/lib/auth/token-session";
 import { checkRateLimit, retryAfter }       from "@/lib/auth/rate-limiter";
 import { getPrisma }             from "@/lib/db/prisma";
 import { isRole }                from "@/lib/auth/roles";
+import { systemEmitter }         from "@/lib/events/system/emitter";
 
 /**
  * /api/auth — credentials login/logout + session check (Phase 12A / Phase 28).
@@ -128,7 +129,10 @@ export async function POST(req: NextRequest) {
     if (db) {
       const um = (db as Record<string, unknown>).user as { findUnique: (a: unknown) => Promise<Record<string, unknown> | null> };
       const found = await um.findUnique({ where: { email: email.toLowerCase() } }).catch(() => null);
-      if (found) await updateLoginMeta(String(found.id), true);
+      if (found) {
+        await updateLoginMeta(String(found.id), true);
+        systemEmitter.dispatch({ type: "login.failed", userId: String(found.id), email, ip });
+      }
     }
 
     await recordAuditEvent({
@@ -140,6 +144,8 @@ export async function POST(req: NextRequest) {
   }
 
   await updateLoginMeta(user.id, false);
+
+  systemEmitter.dispatch({ type: "login.success", userId: user.id, email: user.email, name: user.name, ip });
 
   await recordAuditEvent({
     userId:     user.id,

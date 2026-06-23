@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { IranFlag, UKFlag } from "./FlagIcons";
 
 // Toggles between fa <-> en, preserving the current path.
 export function LanguageSwitch() {
@@ -15,10 +16,15 @@ export function LanguageSwitch() {
     <button
       type="button"
       onClick={() => router.replace(pathname, { locale: next })}
-      className="font-mono text-sm text-muted hover:text-ink transition-colors border border-line rounded-md px-3 py-1.5"
-      aria-label={`Switch language to ${next}`}
+      className="flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 font-mono text-sm text-muted transition-colors hover:text-ink"
+      aria-label={next === "fa" ? "Switch to Persian" : "Switch to English"}
+      lang={next}
     >
-      {t("switchLanguage")}
+      {/* dir="ltr" keeps flag always visually left of label regardless of page direction */}
+      <span className="flex items-center gap-1.5" dir="ltr">
+        {next === "fa" ? <IranFlag size={18} /> : <UKFlag size={18} />}
+        {t("switchLanguage")}
+      </span>
     </button>
   );
 }

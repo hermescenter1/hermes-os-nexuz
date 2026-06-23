@@ -6,15 +6,22 @@ import { LoadingState }    from "@/components/ui/LoadingState";
 import { ErrorState }      from "@/components/ui/ErrorState";
 import { EmptyState }      from "@/components/ui/EmptyState";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
+import { toRenderableText } from "@/lib/utils/renderable";
 
 // ── Types ─────────────────────────────────────────────────────────────────
+
+interface GraphInsight {
+  type:    string;
+  message: string;
+  nodeId?: string;
+}
 
 interface GraphHealth {
   overallScore:      number;
   coverageScore:     number;
   connectivityScore: number;
   qualityScore:      number;
-  insights:          string[];
+  insights:          GraphInsight[];
 }
 
 interface KGAnalyticsResponse {
@@ -80,7 +87,7 @@ function Content({ data }: { data: KGAnalyticsResponse }) {
       <ScoreRow label="Quality"      score={health.qualityScore}      />
       {health.insights.slice(0, 1).map((ins, i) => (
         <p key={i} className="text-[10px] text-muted leading-relaxed pt-1">
-          <span className="text-signal">· </span>{ins}
+          <span className="text-signal">· </span>{toRenderableText(ins)}
         </p>
       ))}
     </div>

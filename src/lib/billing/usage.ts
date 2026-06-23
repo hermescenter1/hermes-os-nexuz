@@ -22,11 +22,12 @@ export interface UsageMetric {
   recordedAt: string;
 }
 
-/** Record a usage event for an organization. */
+/** Record a usage event for an organization, optionally attributed to a user. */
 export async function recordUsage(
   organizationId: string,
   metric:         string,
   value:          number,
+  userId?:        string,
 ): Promise<boolean> {
   const m = await model();
   if (!m) return false;
@@ -37,6 +38,7 @@ export async function recordUsage(
         metric,
         value:      value.toFixed(4),
         recordedAt: new Date(),
+        ...(userId ? { userId } : {}),
       },
     });
     return true;

@@ -1,22 +1,25 @@
 /**
- * Password reset service (Phase 28).
+ * Password reset service.
  * Server-side only.
+ *
+ * Email is dispatched asynchronously via the auth event system — a failure to
+ * deliver the reset email never breaks the initiation flow.
  */
 
 import { getPrisma } from "@/lib/db/prisma";
 import { logger } from "@/lib/logger";
 import { generateResetToken, hashResetToken } from "./jwt-server";
-import { sendPasswordResetEmail } from "./email-service";
 import { hashArgon2 } from "./argon2-wrapper";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 import { PASSWORD_RESET_TTL } from "./config";
+import { authEmitter } from "@/lib/events/auth/emitter";
 
 // ── Initiate reset ───────────────────────────────────────────────────────────
 
-/** Initiate password reset. Always returns ok:true to prevent email enumeration. */
+/** Always returns void — never reveals whether the email exists (prevents enumeration). */
 export async function initiatePasswordReset(
   email:   string,
-  baseUrl:  string
+  baseUrl: string,
 ): Promise<void> {
   const db = await getPrisma();
   if (!db) return;
@@ -30,7 +33,7 @@ export async function initiatePasswordReset(
     };
 
     const user = await userModel.findUnique({ where: { email: email.toLowerCase() } });
-    if (!user) return; // silent — no email enumeration
+    if (!user) return; // silent — prevent email enumeration
 
     const plainToken = generateResetToken();
     const tokenHash  = hashResetToken(plainToken);
@@ -40,7 +43,15 @@ export async function initiatePasswordReset(
       data: { userId: String(user.id), tokenHash, expiresAt },
     });
 
-    await sendPasswordResetEmail(email, String(user.name), plainToken, baseUrl);
+    // Emit event — handler sends the email asynchronously (non-blocking)
+    authEmitter.dispatch({
+      type:       "user.password_reset_requested",
+      userId:     String(user.id),
+      email,
+      name:       String(user.name),
+      resetToken: plainToken,
+      baseUrl,
+    });
 
     await recordAuditEvent({
       userId:     String(user.id),
@@ -61,8 +72,8 @@ export type ResetResult =
   | { ok: false; error: "invalid-token" | "expired" | "already-used" | "db-unavailable" };
 
 export async function completePasswordReset(
-  plainToken: string,
-  newPassword: string
+  plainToken:  string,
+  newPassword: string,
 ): Promise<ResetResult> {
   const db = await getPrisma();
   if (!db) return { ok: false, error: "db-unavailable" };
@@ -80,9 +91,9 @@ export async function completePasswordReset(
 
     const prt = await prtModel.findUnique({ where: { tokenHash } });
 
-    if (!prt)                              return { ok: false, error: "invalid-token" };
-    if (prt.usedAt)                        return { ok: false, error: "already-used" };
-    if (new Date(prt.expiresAt as string) < new Date()) return { ok: false, error: "expired" };
+    if (!prt)                                               return { ok: false, error: "invalid-token" };
+    if (prt.usedAt)                                         return { ok: false, error: "already-used" };
+    if (new Date(prt.expiresAt as string) < new Date())     return { ok: false, error: "expired" };
 
     const passwordHash = await hashArgon2(newPassword);
 

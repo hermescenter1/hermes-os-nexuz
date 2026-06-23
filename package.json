@@ -28,6 +28,7 @@
     "@tanstack/react-query": "^5.101.0",
     "argon2": "^0.44.0",
     "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
     "framer-motion": "^12.40.0",
     "ioredis": "^5.11.1",
     "jose": "^6.2.3",
@@ -39,6 +40,8 @@
     "prisma": "^7.8.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "resend": "^6.14.0",
+    "stripe": "^22.2.3",
     "three": "^0.184.0",
     "zod": "^4.4.3"
   },

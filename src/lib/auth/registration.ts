@@ -1,25 +1,28 @@
 /**
- * User registration service (Phase 28).
+ * User registration service.
  * Server-side only.
+ *
+ * Email is dispatched asynchronously via the auth event system — a failure to
+ * deliver the verification email never blocks or fails the registration itself.
  */
 
 import { getPrisma } from "@/lib/db/prisma";
 import { logger } from "@/lib/logger";
 import { hashArgon2 } from "./argon2-wrapper";
 import { generateVerificationToken } from "./jwt-server";
-import { sendVerificationEmail, type EmailSendMode } from "./email-service";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 import { VERIFICATION_TOKEN_TTL } from "./config";
+import { authEmitter } from "@/lib/events/auth/emitter";
 
 export type RegisterResult =
-  | { ok: true;  userId: string; emailSent: boolean; emailMode: EmailSendMode }
+  | { ok: true;  userId: string }
   | { ok: false; error: "email-taken" | "db-unavailable" | "unknown" };
 
 export async function registerUser(
-  name:    string,
-  email:   string,
+  name:     string,
+  email:    string,
   password: string,
-  baseUrl:  string
+  baseUrl:  string,
 ): Promise<RegisterResult> {
   const db = await getPrisma();
   if (!db) return { ok: false, error: "db-unavailable" };
@@ -33,7 +36,6 @@ export async function registerUser(
       create: (a: unknown) => Promise<unknown>;
     };
 
-    // Check for existing email
     const existing = await userModel.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) return { ok: false, error: "email-taken" };
 
@@ -42,33 +44,38 @@ export async function registerUser(
     const user = await userModel.create({
       data: {
         name,
-        email:        email.toLowerCase(),
+        email:         email.toLowerCase(),
         passwordHash,
-        role:         "customer",
+        role:          "customer",
         emailVerified: false,
       },
     });
 
     const userId = String(user.id);
 
-    // Issue verification token
-    const token    = generateVerificationToken();
+    const token     = generateVerificationToken();
     const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL * 1000);
-    await vtModel.create({
-      data: { userId, token, expiresAt },
-    });
+    await vtModel.create({ data: { userId, token, expiresAt } });
 
-    const emailResult = await sendVerificationEmail(email, name, token, baseUrl);
+    // Emit event — handler sends the email asynchronously (non-blocking)
+    authEmitter.dispatch({
+      type:              "user.registered",
+      userId,
+      email,
+      name,
+      verificationToken: token,
+      baseUrl,
+    });
 
     await recordAuditEvent({
       userId,
       action:     "auth.register",
       entityType: "user",
       entityId:   userId,
-      metadata:   { email, name, emailSent: emailResult.sent, emailMode: emailResult.mode },
+      metadata:   { email, name },
     });
 
-    return { ok: true, userId, emailSent: emailResult.sent, emailMode: emailResult.mode };
+    return { ok: true, userId };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("Unique constraint") || msg.includes("unique")) {

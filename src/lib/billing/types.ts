@@ -17,14 +17,17 @@ export const TERMINAL_STATUSES: SubscriptionStatus[] = ["CANCELED", "EXPIRED"];
 export const ACTIVE_STATUSES: SubscriptionStatus[]   = ["TRIALING", "ACTIVE", "PAST_DUE"];
 
 export interface PlanLimits {
-  ai_requests:        number;  // -1 = unlimited
-  projects:           number;
-  members:            number;
-  storage_gb:         number;
-  industrial_gateway: boolean;
-  multi_agent:        boolean;
-  api_access:         boolean;
-  priority_support:   boolean;
+  ai_requests:            number;  // -1 = unlimited
+  projects:               number;
+  members:                number;
+  storage_gb:             number;
+  api_calls:              number;  // external API calls per month; -1 = unlimited
+  emails_sent:            number;  // outbound emails per month; -1 = unlimited
+  notifications_created:  number;  // in-app notifications per month; -1 = unlimited
+  industrial_gateway:     boolean;
+  multi_agent:            boolean;
+  api_access:             boolean;
+  priority_support:       boolean;
 }
 
 export interface PlanRecord {

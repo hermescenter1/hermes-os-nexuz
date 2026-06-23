@@ -117,14 +117,17 @@ async function seedKnowledge() {
 // ── Phase 31 — Billing plans ──────────────────────────────────────────────
 
 interface PlanLimits {
-  ai_requests:        number;
-  projects:           number;
-  members:            number;
-  storage_gb:         number;
-  industrial_gateway: boolean;
-  multi_agent:        boolean;
-  api_access:         boolean;
-  priority_support:   boolean;
+  ai_requests:           number;
+  projects:              number;
+  members:               number;
+  storage_gb:            number;
+  api_calls:             number;
+  emails_sent:           number;
+  notifications_created: number;
+  industrial_gateway:    boolean;
+  multi_agent:           boolean;
+  api_access:            boolean;
+  priority_support:      boolean;
 }
 
 interface PlanSeed {
@@ -155,6 +158,7 @@ const PLANS: PlanSeed[] = [
     ],
     limits: {
       ai_requests: 100, projects: 1, members: 3, storage_gb: 0.5,
+      api_calls: 500, emails_sent: 50, notifications_created: 200,
       industrial_gateway: false, multi_agent: false, api_access: false, priority_support: false,
     },
   },
@@ -169,6 +173,7 @@ const PLANS: PlanSeed[] = [
       "5 projects",
       "10 team members",
       "AI Copilot (2 000 req/mo)",
+      "5 000 API calls/mo",
       "SCADA Studio access",
       "Multi-Agent access",
       "API access",
@@ -176,6 +181,7 @@ const PLANS: PlanSeed[] = [
     ],
     limits: {
       ai_requests: 2000, projects: 5, members: 10, storage_gb: 5,
+      api_calls: 5000, emails_sent: 500, notifications_created: 5000,
       industrial_gateway: false, multi_agent: true, api_access: true, priority_support: true,
     },
   },
@@ -190,6 +196,7 @@ const PLANS: PlanSeed[] = [
       "25 projects",
       "50 team members",
       "AI Copilot (10 000 req/mo)",
+      "50 000 API calls/mo",
       "All modules unlocked",
       "Industrial Gateway access",
       "RBAC and audit logs",
@@ -197,6 +204,7 @@ const PLANS: PlanSeed[] = [
     ],
     limits: {
       ai_requests: 10000, projects: 25, members: 50, storage_gb: 50,
+      api_calls: 50000, emails_sent: 5000, notifications_created: 50000,
       industrial_gateway: true, multi_agent: true, api_access: true, priority_support: true,
     },
   },
@@ -211,6 +219,7 @@ const PLANS: PlanSeed[] = [
       "Unlimited projects",
       "Unlimited members",
       "AI Copilot (unlimited)",
+      "Unlimited API calls",
       "On-premise deployment",
       "Custom integrations",
       "Dedicated support SLA",
@@ -218,6 +227,7 @@ const PLANS: PlanSeed[] = [
     ],
     limits: {
       ai_requests: -1, projects: -1, members: -1, storage_gb: -1,
+      api_calls: -1, emails_sent: -1, notifications_created: -1,
       industrial_gateway: true, multi_agent: true, api_access: true, priority_support: true,
     },
   },

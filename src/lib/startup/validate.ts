@@ -80,6 +80,23 @@ function runChecks(): CheckResult[] {
     results.push({ id: "W2_EMAIL_PROVIDER", level: "OK", message: "Email provider configured." });
   }
 
+  // W2B — Resend API key absent when provider=resend
+  if (process.env.EMAIL_PROVIDER === "resend" && !process.env.RESEND_API_KEY) {
+    const level = isProd ? "FATAL" : "WARNING" as const;
+    results.push({
+      id:      "W2B_RESEND_API_KEY_MISSING",
+      level,
+      message: "EMAIL_PROVIDER=resend but RESEND_API_KEY is not set. Email delivery will fail silently.",
+    });
+    if (isProd) {
+      logger.fatal("[startup] FATAL W2B_RESEND_API_KEY_MISSING: RESEND_API_KEY required when EMAIL_PROVIDER=resend.");
+    } else {
+      logger.warn("[startup] WARNING W2B_RESEND_API_KEY_MISSING: RESEND_API_KEY not set — Resend will fall back to console.");
+    }
+  } else if (process.env.EMAIL_PROVIDER === "resend") {
+    results.push({ id: "W2B_RESEND_API_KEY", level: "OK", message: "RESEND_API_KEY present." });
+  }
+
   // W3 — APP_URL is localhost in production
   if (isProd && (process.env.APP_URL ?? "").includes("localhost")) {
     results.push({

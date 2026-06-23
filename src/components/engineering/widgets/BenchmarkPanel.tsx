@@ -6,6 +6,7 @@ import { LoadingState }    from "@/components/ui/LoadingState";
 import { ErrorState }      from "@/components/ui/ErrorState";
 import { EmptyState }      from "@/components/ui/EmptyState";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
+import { toRenderableText } from "@/lib/utils/renderable";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -18,6 +19,14 @@ interface RankingEntry {
 interface ProjectLeader {
   projectId:   string;
   projectName: string;
+}
+
+interface BenchmarkInsight {
+  type:         string;
+  description:  string;
+  projectId?:   string;
+  projectName?: string;
+  value:        string | number;
 }
 
 interface BenchmarkResponse {
@@ -36,7 +45,7 @@ interface BenchmarkResponse {
   rankings: {
     successRate: RankingEntry[];
   };
-  insights: string[];
+  insights: BenchmarkInsight[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -89,7 +98,7 @@ function Content({ data }: { data: BenchmarkResponse }) {
           {data.insights.slice(0, 2).map((ins, i) => (
             <p key={i} className="text-[10px] text-muted leading-relaxed flex gap-2">
               <span className="text-signal flex-none">·</span>
-              <span>{ins}</span>
+              <span>{toRenderableText(ins)}</span>
             </p>
           ))}
         </div>

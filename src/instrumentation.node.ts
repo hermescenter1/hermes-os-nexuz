@@ -10,6 +10,8 @@
 
 import { executeAndMaybeAbort } from "@/lib/startup/validate";
 import { logger }               from "@/lib/logger";
+import "@/lib/events/auth/handlers";
+import "@/lib/events/system/handlers";
 
 // Run startup checks on first load
 executeAndMaybeAbort();

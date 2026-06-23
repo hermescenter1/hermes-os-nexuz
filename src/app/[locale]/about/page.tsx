@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { PageShell } from "@/components/PageShell";
@@ -82,15 +83,14 @@ export default async function AboutPage({
           <div className="grid gap-10 lg:grid-cols-[auto_1fr]">
             {/* Avatar */}
             <div className="flex flex-col items-center gap-3 lg:items-start">
-              <div
-                className="flex h-24 w-24 items-center justify-center rounded-2xl border border-signalDim text-3xl font-bold font-display"
-                style={{
-                  background: "linear-gradient(135deg, rgba(0,229,255,0.08) 0%, rgba(0,100,200,0.08) 100%)",
-                  color: "#00E5FF",
-                }}
-              >
-                HF
-              </div>
+              <Image
+                src="/brand/founder.jpg"
+                alt="Hamid Reza Forozandeh — Founder, CEO & Chief Industrial Systems Architect"
+                width={192}
+                height={192}
+                className="h-24 w-24 rounded-2xl object-cover border border-signalDim"
+                style={{ boxShadow: "0 0 20px rgba(0,229,255,0.08)" }}
+              />
               <p className="font-display text-base font-bold text-ink">{t("founderName")}</p>
               <p className="font-body text-xs text-signal/80 text-center lg:text-start">{t("founderRole")}</p>
             </div>

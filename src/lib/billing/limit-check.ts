@@ -40,6 +40,9 @@ const NUMERIC_METRICS = [
   "projects",
   "members",
   "storage_gb",
+  "api_calls",
+  "emails_sent",
+  "notifications_created",
 ] as const;
 
 const DEFAULT_ACCESS = {
@@ -108,7 +111,7 @@ export async function getPlanLimitReport(
  */
 export async function checkMetricAllowed(
   organizationId: string,
-  metric:         "ai_requests" | "projects" | "members" | "storage_gb",
+  metric:         "ai_requests" | "projects" | "members" | "storage_gb" | "api_calls" | "emails_sent" | "notifications_created",
   increment       = 1,
 ): Promise<{ allowed: boolean; limit: number; used: number }> {
   const report = await getPlanLimitReport(organizationId);
