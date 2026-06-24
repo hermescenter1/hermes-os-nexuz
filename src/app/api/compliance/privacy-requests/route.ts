@@ -22,10 +22,10 @@ async function resolveAdmin(req: NextRequest) {
   if (!["admin", "superadmin"].includes(payload.role as string)) return null;
   const db = await getPrisma();
   if (!db) return null;
-  const row = await (db as Record<string, unknown>).organizationMember as {
+  const memberModel = (db as Record<string, unknown>).organizationMember as {
     findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
   };
-  const member = await row.findFirst({
+  const member = await memberModel.findFirst({
     where: { userId: payload.sub, status: "ACTIVE" },
     orderBy: { createdAt: "asc" },
   });

@@ -2,19 +2,21 @@
 
 import { Link, usePathname } from "@/i18n/navigation";
 
-const TABS = [
-  { label: "Courses",     href: "/academy"          },
-  { label: "My Learning", href: "/academy/learning" },
-  { label: "Certificates",href: "/academy/certs"    },
-  { label: "Admin",       href: "/academy/admin"    },
+const BASE_TABS = [
+  { label: "Courses",      href: "/academy"          },
+  { label: "My Learning",  href: "/academy/learning" },
+  { label: "Certificates", href: "/academy/certs"    },
 ] as const;
 
-export function AcademySubNav() {
+const ADMIN_TAB = { label: "Admin", href: "/academy/admin" } as const;
+
+export function AcademySubNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const tabs = isAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS;
 
   return (
     <nav className="mb-8 flex gap-1 overflow-x-auto border-b border-line pb-0">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const active =
           tab.href === "/academy"
             ? pathname === "/academy"

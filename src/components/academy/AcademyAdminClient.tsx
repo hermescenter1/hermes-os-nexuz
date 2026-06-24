@@ -43,7 +43,7 @@ export function AcademyAdminClient() {
   async function loadData() {
     setLoading(true);
     const [cr, or] = await Promise.all([
-      fetch("/api/academy/courses?all=true").then((r) => r.json()),
+      fetch("/api/academy/courses?view=admin").then((r) => r.json()),
       fetch("/api/academy/overview").then((r) => r.json()),
     ]);
     const c = cr as { courses?: CourseRow[] };
