@@ -56,6 +56,9 @@ export const PROTECTED_PATHS = [
   // /candidate/register is a PUBLIC signup page — exclude it from protection.
   // All other /candidate/* paths (dashboard, applications, profile) are protected.
   /^\/[a-z]{2}\/candidate(?!\/register)/,
+  // Phase 61: Compliance dashboard (admin only); privacy-center (any authenticated user)
+  /^\/[a-z]{2}\/compliance/,
+  /^\/[a-z]{2}\/privacy-center/,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -74,6 +77,13 @@ export function isAuthorizedForPath(
   }
   if (/^\/[a-z]{2}\/candidate(?!\/register)/.test(pathname)) {
     return role === "candidate" || role === "admin" || role === "superadmin";
+  }
+  if (/^\/[a-z]{2}\/compliance/.test(pathname)) {
+    return role === "admin" || role === "superadmin";
+  }
+  // privacy-center: any authenticated user
+  if (/^\/[a-z]{2}\/privacy-center/.test(pathname)) {
+    return true; // all authenticated roles
   }
   return true;
 }

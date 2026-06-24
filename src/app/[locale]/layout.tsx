@@ -5,6 +5,7 @@ import { getMessages, setRequestLocale, getTranslations } from "next-intl/server
 import { headers } from "next/headers";
 import localFont from "next/font/local";
 import { routing, localeDirection, type Locale } from "@/i18n/routing";
+import { CookieConsentBanner } from "@/components/compliance/CookieConsentBanner";
 import "../globals.css";
 
 // Self-hosted fonts (variable). Air-gapped / on-prem safe — no external
@@ -71,6 +72,7 @@ export default async function LocaleLayout({
       <body>
         <NextIntlClientProvider messages={messages}>
           {children}
+          <CookieConsentBanner />
         </NextIntlClientProvider>
       </body>
     </html>

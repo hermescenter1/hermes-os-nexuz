@@ -310,6 +310,13 @@ model User {
   academyProgress      AcademyProgress[]
   academyCertificates  AcademyCertificate[]
   academyQuizAttempts  AcademyQuizAttempt[]
+  // Phase 61: Compliance
+  consentRecords       ConsentRecord[]
+  cookieConsents       CookieConsent[]
+  privacyRequests      PrivacyRequest[]
+  legalAcceptances     LegalAcceptance[]
+  dataExportRequests   DataExportRequest[]
+  dataDeletionRequests DataDeletionRequest[]
 }
 
 model AuthSession {
@@ -407,6 +414,8 @@ enum OrgRole {
   ACADEMY_ADMIN
   CUSTOMER_SUCCESS_MANAGER
   STUDENT
+  // Phase 61: Compliance
+  COMPLIANCE_MANAGER
 }
 
 enum MemberStatus {
@@ -534,6 +543,14 @@ model Organization {
   academyCourses       AcademyCourse[]
   academyEnrollments   AcademyEnrollment[]
   academyCertificates  AcademyCertificate[]
+  // Phase 61: Compliance
+  privacyRequests      PrivacyRequest[]
+  legalDocuments       LegalDocument[]
+  legalAcceptances     LegalAcceptance[]
+  dataExportRequests   DataExportRequest[]
+  dataDeletionRequests DataDeletionRequest[]
+  processingActivities ProcessingActivity[]
+  consentRecords       ConsentRecord[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -2132,6 +2149,9 @@ model AtsCandidate {
   applications      AtsApplication[]
   // Phase 60: Academy — candidates can be enrolled in training
   academyEnrollments AcademyEnrollment[]
+  // Phase 61: Compliance
+  consentRecords    ConsentRecord[]
+  privacyRequests   PrivacyRequest[]
 
   @@index([userId])
 }
@@ -2517,4 +2537,269 @@ model AcademyQuizAttempt {
   @@index([quizId, enrollmentId])
   @@index([enrollmentId])
   @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 61 — Compliance, GDPR & Privacy Governance
+// ════════════════════════════════════════════════════════════════════════════
+//
+// IMMUTABILITY: ConsentRecord and LegalAcceptance are append-only — no updatedAt.
+// MULTI-TENANT: organizationId present where applicable; null = global.
+// CANDIDATE AWARE: candidateId links to AtsCandidate for careers/ATS consent.
+// AUDIT: ipAddress + userAgent captured on all consent/request events.
+// VERSIONING: LegalDocument version field; LegalAcceptance records which version.
+
+enum PrivacyRequestType {
+  DATA_EXPORT
+  DATA_DELETION
+  CONSENT_WITHDRAWAL
+  ACCESS_REQUEST
+  CORRECTION_REQUEST
+}
+
+enum PrivacyRequestStatus {
+  PENDING
+  IN_REVIEW
+  COMPLETED
+  REJECTED
+}
+
+enum LegalDocumentType {
+  PRIVACY_POLICY
+  TERMS_OF_SERVICE
+  COOKIE_POLICY
+  DPA
+  CANDIDATE_CONSENT
+  ACADEMY_TERMS
+  MARKETING_CONSENT
+}
+
+// ── ConsentRecord ─────────────────────────────────────────────────────────────
+//
+// Immutable audit record of every explicit consent grant or withdrawal.
+// consentType: cookie_analytics | cookie_marketing | cookie_preferences |
+//   candidate_privacy | academy_terms | marketing | data_processing
+// Append-only — never update, never delete (compliance requirement).
+
+model ConsentRecord {
+  id             String        @id @default(cuid())
+  userId         String?
+  candidateId    String?
+  organizationId String?
+  consentType    String
+  consentVersion String        @default("1.0")
+  granted        Boolean
+  locale         String        @default("en")
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json          @default("{}")
+  createdAt      DateTime      @default(now())
+
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  candidate      AtsCandidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, consentType, createdAt])
+  @@index([candidateId, consentType])
+  @@index([organizationId, createdAt])
+}
+
+// ── CookieConsent ─────────────────────────────────────────────────────────────
+//
+// Per-session cookie preference store. sessionId is an anonymous cookie set by
+// the banner before the user authenticates. After login, userId is backfilled.
+// Updated on preference change (updatedAt tracks latest banner interaction).
+
+model CookieConsent {
+  id             String    @id @default(cuid())
+  sessionId      String    @unique
+  userId         String?
+  necessary      Boolean   @default(true)
+  analytics      Boolean   @default(false)
+  marketing      Boolean   @default(false)
+  preferences    Boolean   @default(false)
+  ipAddress      String?
+  userAgent      String?
+  locale         String    @default("en")
+  consentVersion String    @default("1.0")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ── PrivacyRequest ────────────────────────────────────────────────────────────
+//
+// GDPR/CCPA data subject request. email is always stored for contact
+// even when userId is null (e.g. former user or public visitor request).
+
+model PrivacyRequest {
+  id             String               @id @default(cuid())
+  userId         String?
+  candidateId    String?
+  organizationId String?
+  requestType    PrivacyRequestType
+  status         PrivacyRequestStatus @default(PENDING)
+  email          String
+  description    String?
+  locale         String               @default("en")
+  ipAddress      String?
+  userAgent      String?
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  completedAt    DateTime?
+  responseNote   String?
+  metadata       Json                 @default("{}")
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  candidate      AtsCandidate?        @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  organization   Organization?        @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([email])
+  @@index([organizationId, createdAt])
+}
+
+// ── LegalDocument ─────────────────────────────────────────────────────────────
+//
+// Versioned legal content. @@unique([documentType, version, locale]) ensures
+// one canonical document per type/version/language combination.
+// organizationId = null → global document (all orgs see it).
+// publishedAt is set when isPublished flips to true.
+
+model LegalDocument {
+  id             String            @id @default(cuid())
+  documentType   LegalDocumentType
+  version        String
+  title          String
+  content        String            @db.Text
+  locale         String            @default("en")
+  isPublished    Boolean           @default(false)
+  publishedAt    DateTime?
+  effectiveDate  DateTime?
+  organizationId String?
+  createdBy      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  acceptances    LegalAcceptance[]
+  organization   Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@unique([documentType, version, locale])
+  @@index([documentType, isPublished, locale])
+  @@index([organizationId, documentType])
+}
+
+// ── LegalAcceptance ───────────────────────────────────────────────────────────
+//
+// Immutable record of a user/candidate accepting a specific legal document
+// version. Append-only — once recorded it must never change (audit trail).
+
+model LegalAcceptance {
+  id              String        @id @default(cuid())
+  legalDocumentId String
+  userId          String?
+  candidateId     String?
+  organizationId  String?
+  ipAddress       String?
+  userAgent       String?
+  locale          String        @default("en")
+  createdAt       DateTime      @default(now())
+
+  legalDocument   LegalDocument  @relation(fields: [legalDocumentId], references: [id])
+  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([legalDocumentId, createdAt])
+  @@index([userId, legalDocumentId])
+  @@index([candidateId, legalDocumentId])
+}
+
+// ── DataExportRequest ─────────────────────────────────────────────────────────
+//
+// GDPR Article 20 data portability request. downloadUrl is populated when
+// the export job completes. expiresAt controls how long the download is valid.
+
+model DataExportRequest {
+  id             String    @id @default(cuid())
+  userId         String?
+  candidateId    String?
+  organizationId String?
+  email          String
+  status         String    @default("PENDING")  // PENDING | PROCESSING | COMPLETED | FAILED
+  downloadUrl    String?
+  expiresAt      DateTime?
+  locale         String    @default("en")
+  ipAddress      String?
+  completedAt    DateTime?
+  metadata       Json      @default("{}")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+// ── DataDeletionRequest ───────────────────────────────────────────────────────
+//
+// GDPR Article 17 right to erasure. scheduledFor is set once deletion is
+// approved and queued. completedAt marks execution.
+
+model DataDeletionRequest {
+  id             String    @id @default(cuid())
+  userId         String?
+  candidateId    String?
+  organizationId String?
+  email          String
+  status         String    @default("PENDING")  // PENDING | VERIFIED | PROCESSING | COMPLETED | REJECTED
+  reason         String?
+  scheduledFor   DateTime?
+  completedAt    DateTime?
+  locale         String    @default("en")
+  ipAddress      String?
+  metadata       Json      @default("{}")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+// ── ProcessingActivity ────────────────────────────────────────────────────────
+//
+// Article 30 GDPR Record of Processing Activities (RoPA).
+// legalBasis: consent | contract | legal_obligation | vital_interests |
+//   public_task | legitimate_interests
+
+model ProcessingActivity {
+  id              String        @id @default(cuid())
+  organizationId  String?
+  name            String
+  purpose         String
+  legalBasis      String
+  dataCategories  Json          @default("[]")
+  recipients      Json          @default("[]")
+  retentionPeriod String?
+  thirdCountries  Json          @default("[]")
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, isActive])
 }

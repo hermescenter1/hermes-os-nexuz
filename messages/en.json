@@ -44,7 +44,9 @@
       "csCenter":        "Customer Success",
       "careersBoard":    "Careers",
       "candidatePortal": "My Applications",
-      "academy":         "Academy"
+      "academy":         "Academy",
+      "compliance":      "Compliance",
+      "privacyCenter":   "Privacy Center"
     },
     "menu": "Menu",
     "close": "Close"

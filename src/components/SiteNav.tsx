@@ -55,6 +55,8 @@ const GROUPS: NavGroup[] = [
       { labelKey: "careersBoard",   href: "/careers" },
       { labelKey: "candidatePortal",href: "/candidate" },
       { labelKey: "academy",        href: "/academy" },
+      { labelKey: "compliance",     href: "/compliance" },
+      { labelKey: "privacyCenter",  href: "/privacy-center" },
       { labelKey: "admin",          href: "/admin" },
       { labelKey: "documents",   href: "/admin/documents" },
       { labelKey: "documentSearch", href: "/admin/documents/search" },

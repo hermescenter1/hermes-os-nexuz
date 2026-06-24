@@ -44,7 +44,9 @@
       "csCenter":        "مرکز موفقیت مشتری",
       "careersBoard":    "موقعیت‌های شغلی",
       "candidatePortal": "درخواست‌های من",
-      "academy":         "آکادمی"
+      "academy":         "آکادمی",
+      "compliance":      "انطباق",
+      "privacyCenter":   "مرکز حریم خصوصی"
     },
     "menu": "منو",
     "close": "بستن"
