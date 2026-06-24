@@ -62,6 +62,8 @@ function IconDecision() {
   );
 }
 
+const ACCENTS = ["#00E5FF", "#38BDF8", "#7DD3FC", "#00E5FF", "#38BDF8", "#7DD3FC"] as const;
+
 const CAPABILITY_KEYS = [
   { key: "agents",   Icon: IconBrain    },
   { key: "memory",   Icon: IconMemory   },
@@ -87,8 +89,13 @@ export function CapabilitiesSection() {
 
   return (
     <section ref={ref} className="relative py-24" style={{ background: "#070E1C" }}>
-      <div className="max-w-6xl mx-auto px-6">
+      <div
+        className="absolute top-0 inset-x-0 h-px"
+        aria-hidden="true"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.18), transparent)" }}
+      />
 
+      <div className="max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -98,12 +105,16 @@ export function CapabilitiesSection() {
           <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#00E5FF" }}>
             {t("eyebrow")}
           </p>
-          <h2 className="font-display font-bold mb-4"
-            style={{ fontSize: "clamp(1.8rem,4vw,2.8rem)", color: "#E8F4FF" }}>
+          <h2
+            className="font-display font-bold mb-4"
+            style={{ fontSize: "clamp(1.8rem,4vw,2.8rem)", color: "#E8F4FF" }}
+          >
             {t("title")}
           </h2>
-          <p className="max-w-2xl mx-auto font-body"
-            style={{ color: "rgba(140,175,210,0.75)", lineHeight: "1.7" }}>
+          <p
+            className="max-w-2xl mx-auto font-body"
+            style={{ color: "rgba(140,175,210,0.75)", lineHeight: "1.7" }}
+          >
             {t("lede")}
           </p>
         </motion.div>
@@ -114,38 +125,52 @@ export function CapabilitiesSection() {
           animate={isInView ? "visible" : "hidden"}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {CAPABILITY_KEYS.map(({ key, Icon }) => (
-            <motion.div
-              key={key}
-              variants={cardVariants}
-              className="group relative rounded-2xl p-7 transition-all duration-300 landing-glass landing-glass-hover"
-            >
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-110"
-                style={{
-                  background: "rgba(0,184,255,0.08)",
-                  border: "1px solid rgba(0,184,255,0.2)",
-                  color: "#00B8FF",
-                }}
+          {CAPABILITY_KEYS.map(({ key, Icon }, idx) => {
+            const accent = ACCENTS[idx];
+            return (
+              <motion.div
+                key={key}
+                variants={cardVariants}
+                className="group relative rounded-2xl p-7 overflow-hidden transition-all duration-300 landing-glass landing-glass-hover"
               >
-                <Icon />
-              </div>
-              <h3 className="font-display font-semibold text-base mb-3" style={{ color: "#E8F4FF" }}>
-                {t(`${key}.title` as Parameters<typeof t>[0])}
-              </h3>
-              <p className="font-body text-sm leading-relaxed" style={{ color: "rgba(140,175,210,0.72)" }}>
-                {t(`${key}.desc` as Parameters<typeof t>[0])}
-              </p>
-              <div
-                className="absolute inset-y-6 start-0 w-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{ background: "linear-gradient(180deg, transparent, #00B8FF, transparent)" }}
-              />
-              <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{ background: "radial-gradient(ellipse at 0% 0%, rgba(0,184,255,0.04) 0%, transparent 60%)" }}
-              />
-            </motion.div>
-          ))}
+                {/* Top accent line */}
+                <div
+                  className="absolute top-0 inset-x-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: `linear-gradient(90deg, transparent, ${accent}55, transparent)` }}
+                />
+                {/* Left bar */}
+                <div
+                  className="absolute inset-y-6 start-0 w-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: `linear-gradient(180deg, transparent, ${accent}, transparent)` }}
+                />
+
+                {/* Icon */}
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-105"
+                  style={{
+                    background: `${accent}10`,
+                    border:     `1px solid ${accent}28`,
+                    color:      accent,
+                  }}
+                >
+                  <Icon />
+                </div>
+
+                <h3 className="font-display font-semibold text-base mb-3" style={{ color: "#E8F4FF" }}>
+                  {t(`${key}.title` as Parameters<typeof t>[0])}
+                </h3>
+                <p className="font-body text-sm leading-relaxed" style={{ color: "rgba(140,175,210,0.72)" }}>
+                  {t(`${key}.desc` as Parameters<typeof t>[0])}
+                </p>
+
+                {/* Corner bloom */}
+                <div
+                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                  style={{ background: `radial-gradient(ellipse at 0% 0%, ${accent}06 0%, transparent 60%)` }}
+                />
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
     </section>

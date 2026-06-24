@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 /*
-  Hermes OS visual system — industrial, bilingual, direction-agnostic.
+  Hermes OS visual system — Phase 50A: Premium Visual Upgrade.
+
+  Design language: Apple Vision Pro glass · SpaceX mission-control data density ·
+  cinematic dark · neon-teal / ice-blue accents · enterprise industrial AI.
 
   Typography decisions (see docs/ARCHITECTURE.md):
   - Display face: Estedad (variable). Geometric, technical Persian letterforms;
@@ -12,34 +15,76 @@
   - Mono: numerals, tags, protocol names, machine IDs.
   All spacing uses logical properties so layouts mirror under dir="rtl".
 */
+
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
 :root {
-  --bg: #0b0f14;
-  --surface: #121922;
-  --surface-2: #16202c;
-  --line: #1f2b38;
-  --ink: #e7eef6;
+  /* Depth layers — 4 surfaces, each lighter = closer to viewer */
+  --bg:        #07090d;
+  --surface:   #0d1319;
+  --surface-2: #111a24;
+  --surface-3: #16202c;
+  --line:      #1a2535;
+  --line-2:    #243344;
+
+  /* Text */
+  --ink:   #e7eef6;
   --muted: #8aa0b4;
-  --signal: #38e0b0;
+  --faint: #4a6070;
+
+  /* Primary accent — teal-green */
+  --signal:     #38e0b0;
   --signal-dim: #1c5f4f;
-  --warn: #e8b339;
-  --danger: #e85c5c;
+  --signal-rgb: 56, 224, 176;
 
+  /* Secondary accent — ice blue */
+  --ice:     #7dd3fc;
+  --ice-dim: #1e4060;
+  --ice-rgb: 125, 211, 252;
+
+  /* Status */
+  --warn:       #e8b339;
+  --warn-rgb:   232, 179, 57;
+  --danger:     #e85c5c;
+  --danger-rgb: 232, 92, 92;
+
+  /* Typography */
   --font-display: "Estedad", "Vazirmatn", system-ui, sans-serif;
-  --font-body: "Vazirmatn", system-ui, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
+  --font-body:    "Vazirmatn", system-ui, sans-serif;
+  --font-mono:    ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
 
-  /* Type scale — calm steps, enterprise not startup */
-  --text-xs: 0.78rem;
-  --text-sm: 0.875rem;
+  /* Type scale — calm, enterprise, not startup */
+  --text-xs:   0.78rem;
+  --text-sm:   0.875rem;
   --text-base: 0.9875rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.375rem;
-  --text-2xl: 1.75rem;
-  --text-3xl: clamp(2rem, 1.4rem + 2vw, 2.625rem);
-  --text-4xl: clamp(2.5rem, 1.8rem + 3vw, 3.5rem);
+  --text-lg:   1.125rem;
+  --text-xl:   1.375rem;
+  --text-2xl:  1.75rem;
+  --text-3xl:  clamp(2rem, 1.4rem + 2vw, 2.625rem);
+  --text-4xl:  clamp(2.5rem, 1.8rem + 3vw, 3.5rem);
+
+  /* Glow scale */
+  --glow-xs: 0 0 12px rgba(var(--signal-rgb), 0.06);
+  --glow-sm: 0 0 20px rgba(var(--signal-rgb), 0.10);
+  --glow-md: 0 0 32px rgba(var(--signal-rgb), 0.14), 0 8px 40px rgba(0,0,0,0.5);
+  --glow-lg: 0 0 48px rgba(var(--signal-rgb), 0.20), 0 16px 64px rgba(0,0,0,0.6);
+  --glow-xl: 0 0 72px rgba(var(--signal-rgb), 0.28), 0 24px 80px rgba(0,0,0,0.7);
+
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Transitions */
+  --t-fast: 150ms var(--ease-out-expo);
+  --t-mid:  250ms var(--ease-out-expo);
+  --t-slow: 400ms var(--ease-out-expo);
 }
 
-html { background: var(--bg); color: var(--ink); }
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+html {
+  background: var(--bg);
+  color: var(--ink);
+  scroll-behavior: smooth;
+}
 body {
   font-family: var(--font-body);
   font-size: var(--text-base);
@@ -57,25 +102,6 @@ h1, h2, h3, h4 {
 }
 h1 { font-weight: 700; }
 
-/*
-  Persian typography corrections — the difference between "functional"
-  and "premium":
-  1. Letter-spacing must be ZERO on connected Arabic-script text; negative
-     tracking visibly breaks letter joins. Override the Latin tracking.
-  2. Persian needs taller leading: ascenders/descenders + nuqta density.
-  3. Slight size compensation: Persian x-height reads smaller at equal px.
-*/
-:lang(fa) { letter-spacing: 0 !important; }
-/* Monospace stacks lack Persian glyphs; per-glyph fallback breaks letter
-   joins. Under fa, mono-styled labels fall back to the body face. */
-:lang(fa) .font-mono { font-family: var(--font-body); }
-:lang(fa) body, body:lang(fa) { line-height: 1.9; }
-:lang(fa) h1, :lang(fa) h2, :lang(fa) h3, :lang(fa) h4 {
-  line-height: 1.45;
-  font-weight: 700;
-}
-:lang(fa) p { line-height: 1.95; }
-
 /* Large metric numerals — tabular, technical */
 .metric {
   font-family: var(--font-display);
@@ -85,86 +111,270 @@ h1 { font-weight: 700; }
   line-height: 1.1;
 }
 
+/* ── Persian typography corrections ─────────────────────────────────────────
+   1. Letter-spacing must be ZERO on connected Arabic-script text; negative
+      tracking visibly breaks letter joins. Override the Latin tracking.
+   2. Persian needs taller leading: ascenders/descenders + nuqta density.
+   3. Slight size compensation: Persian x-height reads smaller at equal px.
+*/
+:lang(fa) { letter-spacing: 0 !important; }
+:lang(fa) .font-mono { font-family: var(--font-body); }
+:lang(fa) body, body:lang(fa) { line-height: 1.9; }
+:lang(fa) h1, :lang(fa) h2, :lang(fa) h3, :lang(fa) h4 {
+  line-height: 1.45;
+  font-weight: 700;
+}
+:lang(fa) p { line-height: 1.95; }
+
+/* ── Motion control ──────────────────────────────────────────────────────────
+   All animations and transitions are suppressed for users who have requested
+   reduced motion at the OS level. No exceptions.
+*/
 @media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
+  *, *::before, *::after {
+    animation-duration:   0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration:  0.01ms !important;
+  }
 }
 
 /* Direction-aware back arrow: points toward the reading start. */
-.back-arrow::before { content: "\2190\00a0"; }
+.back-arrow::before         { content: "\2190\00a0"; }
 [dir="rtl"] .back-arrow::before { content: "\2192\00a0"; }
 
-/* ── Phase 27A: Engineering Dashboard Glass System ──────────────────────── */
+/* ── Phase 50A: Premium Glass System ─────────────────────────────────────────
+   Three levels of glass depth, matching the depth-layer token scale.
+   Inner top highlight (inset 0 1px 0 …) is the key Vision-Pro detail —
+   it gives panels physical presence as if light is grazing the top edge.
+*/
+
+/* Level 1 — standard panel (most common) */
 .glass {
-  background: rgba(18, 25, 34, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-.glass-hover:hover {
-  background: rgba(18, 25, 34, 0.88);
-  border-color: rgba(28, 95, 79, 0.6) !important;
-  box-shadow: 0 0 28px rgba(56, 224, 176, 0.1), 0 8px 40px rgba(0,0,0,0.5);
-}
-.glow-signal {
-  box-shadow: 0 0 24px rgba(56, 224, 176, 0.08), 0 8px 32px rgba(0,0,0,0.4);
-}
-.glow-signal-strong {
-  box-shadow: 0 0 40px rgba(56, 224, 176, 0.18), 0 12px 48px rgba(0,0,0,0.5);
-}
-.neon-border {
-  border-color: rgba(56, 224, 176, 0.35) !important;
-}
-.sidebar-bg {
-  background: rgba(10, 15, 20, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-.topbar-bg {
-  background: rgba(18, 25, 34, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(13, 19, 25, 0.82);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 0 rgba(0, 0, 0, 0.3);
 }
 
-/* ── Phase 28A: Landing Page System ──────────────────────────────────────── */
+/* Level 2 — deeper for overlay/modal surfaces */
+.glass-deep {
+  background: rgba(7, 9, 13, 0.92);
+  backdrop-filter: blur(32px) saturate(1.4);
+  -webkit-backdrop-filter: blur(32px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Level 3 — lightest, for surface cards on panels */
+.glass-light {
+  background: rgba(22, 32, 44, 0.65);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Hover state — shared across card types */
+.glass-hover {
+  transition:
+    background var(--t-mid),
+    border-color var(--t-mid),
+    box-shadow var(--t-mid),
+    transform var(--t-mid);
+}
+.glass-hover:hover {
+  background: rgba(13, 19, 25, 0.94) !important;
+  border-color: rgba(var(--signal-rgb), 0.30) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 0 32px rgba(var(--signal-rgb), 0.10),
+    0 12px 48px rgba(0, 0, 0, 0.55) !important;
+  transform: translateY(-1px);
+}
+
+/* Lift — deeper lift for featured interactive cards */
+.hover-lift {
+  transition: transform var(--t-mid), box-shadow var(--t-mid);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(var(--signal-rgb), 0.12),
+    0 0 40px rgba(var(--signal-rgb), 0.10),
+    0 16px 56px rgba(0, 0, 0, 0.55);
+}
+
+/* ── Glow utilities ────────────────────────────────────────────────────────── */
+.glow-signal {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 24px rgba(var(--signal-rgb), 0.09),
+    0 8px 32px rgba(0, 0, 0, 0.4);
+}
+.glow-signal-strong {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 0 0 1px rgba(var(--signal-rgb), 0.10),
+    0 0 48px rgba(var(--signal-rgb), 0.18),
+    0 16px 64px rgba(0, 0, 0, 0.55);
+}
+.glow-ice {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 32px rgba(var(--ice-rgb), 0.12),
+    0 8px 40px rgba(0, 0, 0, 0.4);
+}
+.glow-danger {
+  box-shadow:
+    0 0 24px rgba(var(--danger-rgb), 0.16),
+    0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Border utilities ─────────────────────────────────────────────────────── */
+.neon-border {
+  border-color: rgba(var(--signal-rgb), 0.35) !important;
+}
+.ice-border {
+  border-color: rgba(var(--ice-rgb), 0.30) !important;
+}
+
+/* ── Navigation backgrounds ──────────────────────────────────────────────── */
+.sidebar-bg {
+  background: rgba(7, 9, 13, 0.96);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+}
+.topbar-bg {
+  background: rgba(13, 19, 25, 0.88);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  box-shadow:
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03),
+    0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ── Text effects ─────────────────────────────────────────────────────────── */
+.text-gradient-signal {
+  background: linear-gradient(135deg, #38e0b0 0%, #7dd3fc 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-ice {
+  background: linear-gradient(135deg, #7dd3fc 0%, #bfdbfe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-glow {
+  text-shadow: 0 0 20px rgba(var(--signal-rgb), 0.45);
+}
+.text-glow-ice {
+  text-shadow: 0 0 20px rgba(var(--ice-rgb), 0.40);
+}
+
+/* ── Landing page system ─────────────────────────────────────────────────── */
 .landing-bg {
-  background: linear-gradient(135deg, #050816 0%, #081120 50%, #0A1628 100%);
+  background: linear-gradient(145deg, #04060a 0%, #070b14 50%, #080d18 100%);
 }
 .landing-glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .landing-glass-hover:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(0, 229, 255, 0.25);
-  box-shadow: 0 0 32px rgba(0, 229, 255, 0.08), 0 8px 40px rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(0, 229, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 0 40px rgba(0, 229, 255, 0.08),
+    0 12px 48px rgba(0, 0, 0, 0.6);
 }
 .landing-glow-cyan {
-  box-shadow: 0 0 40px rgba(0, 229, 255, 0.12), 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 48px rgba(0, 229, 255, 0.12), 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 .landing-neon {
   border-color: rgba(0, 229, 255, 0.35) !important;
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.14);
 }
 .landing-grid {
   background-image:
-    linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(0, 229, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.035) 1px, transparent 1px);
   background-size: 64px 64px;
 }
 .landing-scanlines {
   background: repeating-linear-gradient(
     0deg, transparent, transparent 3px,
-    rgba(0, 229, 255, 0.007) 3px, rgba(0, 229, 255, 0.007) 4px
+    rgba(0, 229, 255, 0.006) 3px, rgba(0, 229, 255, 0.006) 4px
   );
   pointer-events: none;
 }
-@keyframes lFloat  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-@keyframes lPulse  { 0%,100%{opacity:.55} 50%{opacity:1} }
-@keyframes lOrbit  {
-  from { transform: rotate(0deg) translateX(140px) rotate(0deg); }
+
+/* ── Shimmer skeleton ─────────────────────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% auto;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ── Keyframes ────────────────────────────────────────────────────────────── */
+@keyframes lFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+@keyframes lPulse {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 1; }
+}
+@keyframes lOrbit {
+  from { transform: rotate(0deg)   translateX(140px) rotate(0deg); }
   to   { transform: rotate(360deg) translateX(140px) rotate(-360deg); }
 }
-.animate-l-float { animation: lFloat 7s ease-in-out infinite; }
-.animate-l-pulse { animation: lPulse 2.5s ease-in-out infinite; }
-.animate-l-orbit { animation: lOrbit 20s linear infinite; }
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes ambientPulse {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%       { opacity: 0.60; transform: scale(1.06); }
+}
+@keyframes statusDot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+  50%       { opacity: 0.7; }
+}
+@keyframes spinRing {
+  to { transform: rotate(360deg); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Animation classes */
+.animate-l-float       { animation: lFloat 7s ease-in-out infinite; }
+.animate-l-pulse       { animation: lPulse 2.5s ease-in-out infinite; }
+.animate-l-orbit       { animation: lOrbit 20s linear infinite; }
+.animate-slide-up      { animation: slideUp 0.4s var(--ease-out-expo) both; }
+.animate-fade-in       { animation: fadeIn 0.35s ease both; }
+.animate-scale-in      { animation: scaleIn 0.35s var(--ease-out-expo) both; }
+.animate-ambient-pulse { animation: ambientPulse 5s ease-in-out infinite; }
+.animate-status-dot    { animation: statusDot 2s ease-in-out infinite; }

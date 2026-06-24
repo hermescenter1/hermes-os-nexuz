@@ -5,6 +5,7 @@ import { StatsSection }        from "./StatsSection";
 import { HowHermesWorks }      from "@/components/HowHermesWorks";
 import { AboutSection }        from "./AboutSection";
 import { CapabilitiesSection } from "./CapabilitiesSection";
+import { TrustSection }        from "./TrustSection";
 import { EcosystemSection }    from "./EcosystemSection";
 import { IndustriesSection }   from "./IndustriesSection";
 import { ProjectsSection }     from "./ProjectsSection";
@@ -22,6 +23,7 @@ export function LandingPage() {
       <StatsSection />
       <AboutSection />
       <CapabilitiesSection />
+      <TrustSection />
       <EcosystemSection />
       <IndustriesSection />
       <ProjectsSection />
