@@ -1,8 +1,16 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
-import { PageShell } from "@/components/PageShell";
-import { PageIntro } from "@/components/PageIntro";
-import { ModuleGrid } from "@/components/ModuleGrid";
+import { Link }         from "@/i18n/navigation";
+import { PageShell }    from "@/components/PageShell";
+import { PageIntro }    from "@/components/PageIntro";
+import { ModuleGrid }   from "@/components/ModuleGrid";
+import { buildMetadata } from "@/lib/seo/metadata";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
+  return buildMetadata({ locale, path: "/platform", title: p.platform.title, description: p.platform.description, keywords: p.platform.keywords });
+}
 
 const PRINCIPLES = ["bilingual", "modular", "onprem", "vendorNeutral"] as const;
 

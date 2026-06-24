@@ -1,9 +1,15 @@
-import { setRequestLocale }  from "next-intl/server";
-import { LegalPageShell }    from "@/components/compliance/LegalPageShell";
-import { PageShell }         from "@/components/PageShell";
-import { Link }              from "@/i18n/navigation";
+import { setRequestLocale, getTranslations } from "next-intl/server";
+import { LegalPageShell } from "@/components/compliance/LegalPageShell";
+import { PageShell }      from "@/components/PageShell";
+import { Link }           from "@/i18n/navigation";
+import { buildMetadata }  from "@/lib/seo/metadata";
 
-export const metadata = { title: "GDPR Rights · Hermes OS" };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
+  return buildMetadata({ locale, path: "/gdpr", title: p.gdpr.title, description: p.gdpr.description, keywords: p.gdpr.keywords });
+}
 
 export default async function GdprPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

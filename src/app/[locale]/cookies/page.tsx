@@ -1,8 +1,14 @@
-import { setRequestLocale } from "next-intl/server";
-import { LegalPageShell }   from "@/components/compliance/LegalPageShell";
-import { PageShell }        from "@/components/PageShell";
+import { setRequestLocale, getTranslations } from "next-intl/server";
+import { LegalPageShell } from "@/components/compliance/LegalPageShell";
+import { PageShell }      from "@/components/PageShell";
+import { buildMetadata }  from "@/lib/seo/metadata";
 
-export const metadata = { title: "Cookie Policy · Hermes OS" };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
+  return buildMetadata({ locale, path: "/cookies", title: p.cookies.title, description: p.cookies.description, keywords: p.cookies.keywords });
+}
 
 export default async function CookiesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

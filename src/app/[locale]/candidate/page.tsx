@@ -1,3 +1,5 @@
+export const metadata = { title: "Candidate Portal · Hermes OS", robots: { index: false, follow: false } };
+
 import { setRequestLocale } from "next-intl/server";
 import { CandidateDashboardClient } from "@/components/candidate/CandidateDashboardClient";
 

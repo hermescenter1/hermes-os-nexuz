@@ -6,6 +6,23 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const nextConfig: NextConfig = {
   output: "standalone",
 
+  // Trailing slash: Next.js default is false (no trailing slash).
+  // Explicit declaration ensures consistent canonical URL generation.
+  trailingSlash: false,
+
+  // URL normalization redirects (Phase 62).
+  // Handles canonical redirect for bare domain root → default locale.
+  async redirects() {
+    return [
+      // Redirect bare root to the default Persian locale
+      {
+        source:      "/",
+        destination: "/fa",
+        permanent:   true,
+      },
+    ];
+  },
+
   // Static security headers applied to all routes (Phase 45).
   // CSP is handled per-request in middleware (nonce-based) and is NOT set here.
   // HSTS is set exclusively by Nginx (deploy/nginx/default.conf HTTPS block)

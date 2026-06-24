@@ -1,4 +1,6 @@
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Case Studio · Hermes OS", robots: { index: false, follow: false } };
+
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PageShell } from "@/components/PageShell";
 import { PageIntro } from "@/components/PageIntro";

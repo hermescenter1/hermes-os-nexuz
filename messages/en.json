@@ -59,6 +59,81 @@
         "openJobs": "Open Jobs",
         "eyebrow": "Admin · SEO Engine",
         "lede": "Search engine visibility, structured data, sitemap, and indexation status for the Hermes OS platform."
+      },
+      "about": {
+        "title": "About Hermes OS — Industrial AI Pioneer",
+        "description": "Hermes OS is building the intelligence layer for industrial operations — bilingual, modular, and designed for real plant floors worldwide.",
+        "keywords": "about Hermes OS, industrial AI company, automation platform, industrial intelligence, bilingual SCADA"
+      },
+      "architecture": {
+        "title": "Hermes OS Architecture — Industrial AI Design",
+        "description": "Explore the layered architecture of Hermes OS: from PLC signal capture to AI reasoning, SCADA integration, and bilingual HMI output.",
+        "keywords": "industrial AI architecture, SCADA architecture, PLC integration, OPC-UA, IIoT design, AI pipeline"
+      },
+      "brain": {
+        "title": "Hermes Brain — Industrial Knowledge Engine",
+        "description": "Hermes Brain is a domain-specific knowledge engine trained on industrial automation: PLC logic, SCADA alarms, HMI design, and OT cybersecurity.",
+        "keywords": "industrial AI brain, knowledge engine, PLC AI, SCADA intelligence, automation knowledge base, OT AI"
+      },
+      "copilot": {
+        "title": "Engineering Copilot — AI for Industrial Engineers",
+        "description": "An AI copilot that speaks automation: draft PLC logic, explain alarms, debug SCADA, and manage HMI — in Persian and English.",
+        "keywords": "engineering copilot, AI for PLC, SCADA AI assistant, industrial AI copilot, automation AI, bilingual AI"
+      },
+      "serviceIndustrialAi": {
+        "title": "Industrial AI Integration Services — Hermes OS",
+        "description": "Deploy AI-driven intelligence across your industrial operations: predictive maintenance, anomaly detection, and process optimization.",
+        "keywords": "industrial AI services, predictive maintenance, AI process optimization, IIoT AI, automation intelligence"
+      },
+      "serviceCybersecurity": {
+        "title": "Industrial Cybersecurity Services — OT/ICS Security",
+        "description": "Protect your OT network, SCADA systems, and PLC infrastructure with enterprise-grade industrial cybersecurity services.",
+        "keywords": "industrial cybersecurity, OT security, ICS security, SCADA cybersecurity, PLC network security, OT/IT convergence"
+      },
+      "servicePlc": {
+        "title": "PLC Engineering Services — Siemens, Schneider, ABB",
+        "description": "Professional PLC programming, commissioning, and optimization for Siemens TIA Portal, Schneider Electric, ABB, and more.",
+        "keywords": "PLC engineering services, Siemens TIA Portal, PLC programming, IEC 61131-3, ladder logic, structured text"
+      },
+      "serviceScadaHmi": {
+        "title": "SCADA & HMI Engineering Services — Process Visualization",
+        "description": "Design, deploy, and optimize enterprise SCADA systems and HMI panels for manufacturing, oil & gas, and utilities.",
+        "keywords": "SCADA engineering, HMI design, Wonderware, FactoryTalk, SCADA architecture, process visualization, operator screens"
+      },
+      "serviceKnowledgeCloud": {
+        "title": "Knowledge Cloud — Industrial Data Intelligence",
+        "description": "Connect your plant data to a structured knowledge layer: tag libraries, alarm management, historian integration, and AI-ready pipelines.",
+        "keywords": "industrial knowledge cloud, tag library, historian integration, alarm management, data intelligence, IIoT data"
+      },
+      "libraryCases": {
+        "title": "Engineering Case Library — Industrial Incidents & Solutions",
+        "description": "Real-world industrial automation cases: fault diagnoses, root cause analyses, and engineering solutions across PLC, SCADA, HMI, and electrical systems.",
+        "keywords": "industrial engineering cases, fault diagnosis, root cause analysis, PLC troubleshooting, SCADA incidents, automation cases"
+      },
+      "libraryVendor": {
+        "title": "Vendor Knowledge Center — Industrial Automation",
+        "description": "Technical documentation, engineering cases, and deep knowledge for industrial automation vendors: Siemens, Schneider Electric, ABB, Mitsubishi, and more.",
+        "keywords": "Siemens knowledge, Schneider Electric documentation, ABB industrial, Mitsubishi PLC, industrial vendor library"
+      },
+      "privacy": {
+        "title": "Privacy Policy — Hermes OS",
+        "description": "How Hermes OS collects, uses, and protects your personal data in compliance with GDPR and international privacy standards.",
+        "keywords": "privacy policy, data protection, personal data, GDPR, Hermes OS privacy"
+      },
+      "terms": {
+        "title": "Terms of Service — Hermes OS",
+        "description": "Terms and conditions governing the use of Hermes OS industrial AI platform and all related services.",
+        "keywords": "terms of service, terms and conditions, Hermes OS terms, service agreement"
+      },
+      "cookies": {
+        "title": "Cookie Policy — Hermes OS",
+        "description": "How Hermes OS uses cookies and similar technologies. Understand your options and manage your cookie preferences.",
+        "keywords": "cookie policy, cookies, tracking, browser cookies, Hermes OS cookies"
+      },
+      "gdpr": {
+        "title": "GDPR Data Rights — Hermes OS",
+        "description": "Your rights under GDPR: access, correction, deletion, portability, and objection. Submit data requests and manage your privacy.",
+        "keywords": "GDPR, data rights, right to erasure, data portability, privacy rights, GDPR compliance"
       }
     }
   },

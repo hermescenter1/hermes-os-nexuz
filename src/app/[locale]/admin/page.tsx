@@ -1,7 +1,9 @@
+export const metadata = { title: "Admin Console · Hermes OS", robots: { index: false, follow: false } };
+
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
-import { PageIntro } from "@/components/PageIntro";
-import { RequireCapability } from "@/components/auth/RequireCapability";
+import { PageShell }          from "@/components/PageShell";
+import { PageIntro }          from "@/components/PageIntro";
+import { RequireCapability }  from "@/components/auth/RequireCapability";
 import { AdminConsoleClient } from "@/components/admin/AdminConsoleClient";
 import { getCurrentUser } from "@/lib/auth/session";
 import { isAuthConfigured } from "@/lib/auth/config";

@@ -1,7 +1,9 @@
+export const metadata = { title: "Document Library · Hermes OS", robots: { index: false, follow: false } };
+
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
-import { PageIntro } from "@/components/PageIntro";
-import { RequireCapability } from "@/components/auth/RequireCapability";
+import { PageShell }            from "@/components/PageShell";
+import { PageIntro }            from "@/components/PageIntro";
+import { RequireCapability }    from "@/components/auth/RequireCapability";
 import { AdminDocumentsClient } from "@/components/admin/AdminDocumentsClient";
 
 /**

@@ -1,8 +1,10 @@
-import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
-import { PageIntro } from "@/components/PageIntro";
-import { RequireCapability } from "@/components/auth/RequireCapability";
-import { AdminDocumentSearchClient } from "@/components/admin/AdminDocumentSearchClient";
+export const metadata = { title: "Document Search · Hermes OS", robots: { index: false, follow: false } };
+
+import { setRequestLocale, getTranslations }   from "next-intl/server";
+import { PageShell }                            from "@/components/PageShell";
+import { PageIntro }                            from "@/components/PageIntro";
+import { RequireCapability }                    from "@/components/auth/RequireCapability";
+import { AdminDocumentSearchClient }            from "@/components/admin/AdminDocumentSearchClient";
 
 /**
  * /admin/documents/search (Phase 16D).

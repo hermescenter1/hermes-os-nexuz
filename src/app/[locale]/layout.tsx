@@ -137,7 +137,12 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir} className={`${estedad.variable} ${vazir.variable}`}>
       <head>
+        {/* Structured data — global on every page */}
         <JsonLd data={[organizationSchema(), webSiteSchema()]} />
+        {/* Performance: DNS prefetch for canonical domain */}
+        <link rel="dns-prefetch" href="https://hermesnovin.com" />
+        {/* Favicon fallback for legacy browsers */}
+        <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body>
         <NextIntlClientProvider messages={messages}>

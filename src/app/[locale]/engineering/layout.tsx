@@ -1,3 +1,5 @@
+export const metadata = { title: "Engineering Hub · Hermes OS", robots: { index: false, follow: false } };
+
 import type { ReactNode }   from "react";
 import { setRequestLocale } from "next-intl/server";
 import { QueryProvider }    from "@/components/providers/QueryProvider";

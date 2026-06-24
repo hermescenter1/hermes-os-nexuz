@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Verify Email · Hermes OS", robots: { index: false, follow: false } };
 
-import { setRequestLocale }   from "next-intl/server";
-import { AuthShell }           from "@/components/auth/AuthShell";
+import { setRequestLocale } from "next-intl/server";
+import { AuthShell }        from "@/components/auth/AuthShell";
 import { VerifyEmailClient }   from "@/components/auth/VerifyEmailClient";
 
 export default async function VerifyEmailPage({

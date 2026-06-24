@@ -1,7 +1,15 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
-import { PageIntro } from "@/components/PageIntro";
+import { PageShell }        from "@/components/PageShell";
+import { PageIntro }        from "@/components/PageIntro";
 import { ArchitectureFlow } from "@/components/ArchitectureFlow";
+import { buildMetadata }    from "@/lib/seo/metadata";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
+  return buildMetadata({ locale, path: "/architecture", title: p.architecture.title, description: p.architecture.description, keywords: p.architecture.keywords });
+}
 
 const FUTURE = [
   "opcua",

@@ -1,3 +1,5 @@
+export const metadata = { title: "Apply — Hermes OS Careers", robots: { index: false, follow: false } };
+
 import { setRequestLocale } from "next-intl/server";
 import { ApplyFormClient }   from "@/components/careers/ApplyFormClient";
 

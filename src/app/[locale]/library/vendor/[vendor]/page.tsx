@@ -1,15 +1,25 @@
-import { notFound } from "next/navigation";
+import { notFound }    from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
-import { Link } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
-import { VENDORS } from "@/lib/industrial/vendors";
+import { PageShell }  from "@/components/PageShell";
+import { Link }       from "@/i18n/navigation";
+import { routing }    from "@/i18n/routing";
+import { VENDORS }    from "@/lib/industrial/vendors";
 import { vendorContent } from "@/lib/industrial/related";
+import { buildMetadata } from "@/lib/seo/metadata";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
     VENDORS.map((v) => ({ locale, vendor: v.id }))
   );
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string; vendor: string }> }) {
+  const { locale, vendor } = await params;
+  const v = VENDORS.find((x) => x.id === vendor);
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
+  const title = v ? `${v.name} — ${p.libraryVendor.title}` : p.libraryVendor.title;
+  return buildMetadata({ locale, path: `/library/vendor/${vendor}`, title, description: p.libraryVendor.description, keywords: `${v?.name ?? ""}, ${p.libraryVendor.keywords}` });
 }
 
 export default async function VendorPage({

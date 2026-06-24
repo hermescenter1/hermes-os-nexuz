@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Set New Password · Hermes OS", robots: { index: false, follow: false } };
 
-import { setRequestLocale }     from "next-intl/server";
-import { AuthShell }             from "@/components/auth/AuthShell";
+import { setRequestLocale } from "next-intl/server";
+import { AuthShell }        from "@/components/auth/AuthShell";
 import { ResetPasswordClient }   from "@/components/auth/ResetPasswordClient";
 
 export default async function ResetPasswordPage({
