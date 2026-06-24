@@ -203,6 +203,19 @@ export function DashboardClient() {
 
           {/* 1A: Factory Operational Status */}
           <Panel title={t("panels.overview")}>
+            {/* Site status strip */}
+            <div className="flex items-center gap-2.5 mb-4 px-3 py-2 rounded-lg border border-line/60 bg-surface2/50">
+              <StatusDot tone={s.alarms.counts.critical > 0 ? "text-danger" : s.alarms.counts.high > 0 ? "text-warn" : "text-signal"} />
+              <span className="font-body text-xs text-ink font-medium">
+                {s.alarms.counts.critical > 0 ? "Site Alert — Critical Events Active"
+                  : s.alarms.counts.high > 0 ? "Site Status — High Priority Events"
+                  : "Site Status — Operational"}
+              </span>
+              <span className="ms-auto font-mono text-xs text-faint" dir="ltr">
+                {nf.format(s.overview.activeLines)}/{nf.format(s.overview.totalLines)} lines active
+              </span>
+            </div>
+
             {/* KPI row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-4 mb-5">
               {(
@@ -218,6 +231,15 @@ export function DashboardClient() {
                   <p className="metric text-2xl text-ink">
                     {nf.format(v)}<span className="text-sm text-muted ms-0.5">{pct}</span>
                   </p>
+                  <div className="mt-1.5 h-0.5 rounded bg-line">
+                    <div
+                      className="h-0.5 rounded"
+                      style={{
+                        inlineSize: `${Math.min(v, 100)}%`,
+                        background: v >= 80 ? "var(--signal)" : v >= 65 ? "var(--warn)" : "var(--danger)",
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -226,22 +248,32 @@ export function DashboardClient() {
             <div className="border-t border-line pt-4">
               <p className="type-eyebrow mb-3">{t("panels.lines")}</p>
               <ul className="grid sm:grid-cols-2 gap-2">
-                {s.lines.map((l) => (
-                  <li key={l.id} className="flex items-center justify-between gap-2 rounded-lg border border-line/50 bg-surface2/50 px-3 py-2">
-                    <span className="font-mono text-xs text-muted" dir="ltr">{l.id}</span>
-                    <div className="flex items-center gap-2">
-                      <StatusDot tone={statusColor[l.status] ?? ""} />
-                      <span className="metric text-sm text-ink" dir="ltr">
-                        {nf.format(l.throughput)}<span className="font-body text-[0.65rem] text-muted">/{nf.format(l.target)}</span>
-                      </span>
-                    </div>
-                  </li>
-                ))}
+                {s.lines.map((l) => {
+                  const fillPct = l.target > 0 ? Math.min(Math.round((l.throughput / l.target) * 100), 100) : 0;
+                  return (
+                    <li key={l.id} className="rounded-lg border border-line/50 bg-surface2/50 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="font-mono text-xs text-muted" dir="ltr">{l.id}</span>
+                        <div className="flex items-center gap-2">
+                          <StatusDot tone={statusColor[l.status] ?? ""} />
+                          <span className="metric text-sm text-ink" dir="ltr">
+                            {nf.format(l.throughput)}<span className="font-body text-[0.65rem] text-muted">/{nf.format(l.target)}</span>
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-0.5 rounded bg-line">
+                        <div
+                          className="h-0.5 rounded"
+                          style={{
+                            inlineSize: `${fillPct}%`,
+                            background: fillPct >= 90 ? "var(--signal)" : fillPct >= 70 ? "var(--warn)" : "var(--danger)",
+                          }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
-              <p className="mt-3 font-body text-xs text-muted">
-                {t("overview.activeLines")}:{" "}
-                <span className="font-mono text-ink">{nf.format(s.overview.activeLines)}/{nf.format(s.overview.totalLines)}</span>
-              </p>
             </div>
           </Panel>
 
@@ -321,7 +353,45 @@ export function DashboardClient() {
             </ul>
           </Panel>
 
-          {/* 2B: Action Required */}
+          {/* 2B: Asset Health Summary */}
+          <Panel title="Asset Health">
+            {(() => {
+              const critical = s.maintenance.filter((m) => m.severity === "critical").length;
+              const high     = s.maintenance.filter((m) => m.severity === "high").length;
+              const medium   = s.maintenance.filter((m) => m.severity === "medium").length;
+              const total    = s.maintenance.length;
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    {[
+                      { label: "Critical",  count: critical, color: "text-danger",  dot: "bg-danger"    },
+                      { label: "High",      count: high,     color: "text-danger/70",dot: "bg-danger/60" },
+                      { label: "Medium",    count: medium,   color: "text-warn",    dot: "bg-warn"      },
+                      { label: "Tracked",   count: total,    color: "text-muted",   dot: "bg-muted/50"  },
+                    ].map((row) => (
+                      <div key={row.label} className="rounded-lg border border-line/50 bg-surface2/40 px-3 py-2.5">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${row.dot}`} />
+                          <span className="type-caption">{row.label}</span>
+                        </div>
+                        <p className={`metric text-xl ${row.color}`}>{nf.format(row.count)}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {critical > 0 && (
+                    <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/[0.04] px-3 py-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-danger flex-shrink-0" />
+                      <p className="font-body text-xs text-danger">
+                        {nf.format(critical)} critical asset{critical !== 1 ? "s" : ""} require immediate attention
+                      </p>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </Panel>
+
+          {/* 2C: Action Required */}
           <Panel title={t("panels.maintenance")}>
             <ul className="space-y-2.5 mb-4">
               {s.maintenance.slice(0, 5).map((m) => (

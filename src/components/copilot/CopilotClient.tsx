@@ -1,14 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { brainService } from "@/lib/services/brain-service";
-import type { BrainAnalysis } from "@/lib/services/types";
-import { buildEngineeringReport } from "@/lib/industrial/engineering-report";
-import { ResultSection, Chip } from "@/components/copilot/ResultSection";
-import { ConfidenceRing }       from "@/components/copilot/ConfidenceRing";
-import { RootCausePanel }       from "@/components/copilot/RootCausePanel";
-import { AssetContextPanel }    from "@/components/copilot/AssetContextPanel";
+import { brainService }              from "@/lib/services/brain-service";
+import type { BrainAnalysis, BrainMemoryStats } from "@/lib/services/types";
+import { buildEngineeringReport }    from "@/lib/industrial/engineering-report";
+import { ResultSection, Chip }       from "@/components/copilot/ResultSection";
+import { ConfidenceRing }            from "@/components/copilot/ConfidenceRing";
+import { RootCausePanel }            from "@/components/copilot/RootCausePanel";
+import { AssetContextPanel }         from "@/components/copilot/AssetContextPanel";
+import { KNOWLEDGE_DOMAINS }         from "@/lib/knowledge/types";
+import { VENDORS }                   from "@/lib/industrial/vendors";
+import { PLATFORM_COMPONENTS }       from "@/lib/industrial/platform-facts";
+
+interface BrainRow {
+  id:         string;
+  ts:         number;
+  question:   string;
+  locale:     string;
+  domains:    { id: string; score: number }[];
+  confidence: number;
+  unknown?:   boolean;
+}
+interface BrainResponse {
+  recent: BrainRow[];
+  stats:  BrainMemoryStats;
+}
+
+const stateColor: Record<string, string> = {
+  online: "text-signal", simulated: "text-warn", phase2: "text-muted",
+};
+const stateDot: Record<string, string> = {
+  online: "bg-signal", simulated: "bg-warn", phase2: "bg-muted/50",
+};
+
+function Panel({ title, children, className = "" }: {
+  title: string; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <section
+      className={`rounded-xl border border-line bg-surface p-5 ${className}`}
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}
+    >
+      <h2 className="type-panel-title mb-4">{title}</h2>
+      {children}
+    </section>
+  );
+}
 
 export function CopilotClient() {
   const t       = useTranslations("copilot");
@@ -17,13 +55,23 @@ export function CopilotClient() {
   const tCase   = useTranslations("brain.cases");
   const k       = useTranslations("knowledge");
   const locale  = useLocale();
-  const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+  const nf  = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   const pct = locale === "fa" ? "٪" : "%";
+  const tf  = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
 
-  const [question, setQuestion] = useState("");
-  const [result,   setResult]   = useState<BrainAnalysis | null>(null);
-  const [busy,     setBusy]     = useState(false);
-  const [error,    setError]    = useState<string | null>(null);
+  const [question,  setQuestion]  = useState("");
+  const [result,    setResult]    = useState<BrainAnalysis | null>(null);
+  const [busy,      setBusy]      = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+  const [brainData, setBrainData] = useState<BrainResponse | null>(null);
+
+  function refreshStats() {
+    fetch("/api/brain?n=5", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j: BrainResponse) => setBrainData(j))
+      .catch(() => {});
+  }
+  useEffect(() => { refreshStats(); }, []);
 
   async function analyze() {
     const q = question.trim();
@@ -31,12 +79,8 @@ export function CopilotClient() {
     setBusy(true);
     setError(null);
     const r = await brainService.analyze(q, locale);
-    if (r.ok) {
-      setResult(r.data);
-    } else {
-      setError(r.error);
-      setResult(null);
-    }
+    if (r.ok) { setResult(r.data); refreshStats(); }
+    else { setError(r.error); setResult(null); }
     setBusy(false);
   }
 
@@ -48,8 +92,7 @@ export function CopilotClient() {
   const tr = useTranslations("copilot.report");
   const report = result
     ? buildEngineeringReport(
-        question,
-        result,
+        question, result,
         {
           maintenanceEvent:  tr("ev.maintenance"),
           domainDetected:    (d) => tr("ev.domain",  { domain: tDomain(d) }),
@@ -62,77 +105,280 @@ export function CopilotClient() {
       )
     : null;
 
-  /* derived labels for V2 panels */
-  const topDomainLabel =
-    result?.domains?.[0] ? tDomain(result.domains[0].id) : "Unknown";
-  const topVendorLabels =
-    (result?.vendors ?? []).map((v) => tVendor(v));
-  const topDomainLabels =
-    (result?.domains ?? []).map((d) => tDomain(d.id));
+  const topDomainLabel  = result?.domains?.[0] ? tDomain(result.domains[0].id) : "Unknown";
+  const topVendorLabels = (result?.vendors ?? []).map((v) => tVendor(v));
+  const topDomainLabels = (result?.domains ?? []).map((d) => tDomain(d.id));
+
+  const stats    = brainData?.stats;
+  const recent   = brainData?.recent ?? [];
+  const total    = stats?.count ?? 0;
+  const known    = stats?.knownCount ?? 0;
+  const knownPct = total > 0 ? Math.round((known / total) * 100) : 0;
+  const avgConf  = Math.round((stats?.avgConfidence ?? 0) * 100);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 pb-16 pt-8">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-16">
 
-      {/* ── Input panel ───────────────────────────────────────────────────── */}
+      {/* ── KPI Strip ────────────────────────────────────────────────────── */}
       <div
-        className="rounded-xl border border-line bg-surface p-5"
-        style={{ boxShadow: "0 4px 32px rgba(0,0,0,0.35)" }}
+        className="flex items-stretch divide-x divide-line border border-line rounded-xl overflow-x-auto mb-6"
+        style={{ background: "var(--surface)" }}
       >
-        <label htmlFor="copilot-input" className="sr-only">
-          {t("placeholder")}
-        </label>
-        <textarea
-          id="copilot-input"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") analyze();
-          }}
-          rows={5}
-          placeholder={t("placeholder")}
-          className="w-full resize-y rounded-lg border border-line bg-bg px-4 py-3 font-body text-sm leading-relaxed text-ink placeholder:text-muted/50 focus:border-signal/50 focus:outline-none focus:ring-1 focus:ring-signal/20 transition-colors"
-        />
-        <div className="mt-3 flex items-center justify-between">
-          <p className="hidden sm:block text-xs text-muted/50 font-mono">
-            Ctrl+Enter to analyze
-          </p>
-          <button
-            onClick={analyze}
-            disabled={busy || question.trim() === ""}
-            className="ms-auto rounded-lg bg-signal px-6 py-2.5 font-body text-sm font-semibold text-bg transition-all hover:opacity-90 hover:shadow-[0_0_20px_rgba(56,224,176,0.30)] disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            {busy ? t("analyzing") : t("analyze")}
-          </button>
+        {[
+          { label: "Analyses",       value: nf.format(total),                                                                     note: "this session",               color: "text-ink" },
+          { label: "Known %",        value: total > 0 ? `${nf.format(knownPct)}${pct}` : "—",                                    note: `${nf.format(known)} classified`, color: knownPct >= 70 ? "text-signal" : knownPct >= 40 ? "text-warn" : "text-ink" },
+          { label: "Avg Confidence", value: total > 0 ? `${nf.format(avgConf)}${pct}` : "—",                                     note: "deterministic scoring",       color: avgConf >= 70 ? "text-signal" : avgConf >= 40 ? "text-warn" : "text-ink" },
+          { label: "Guardrails",     value: nf.format(stats?.guardrailHits ?? 0),                                                 note: "blocked queries",             color: (stats?.guardrailHits ?? 0) > 0 ? "text-warn" : "text-ink" },
+          { label: "Domains",        value: String(KNOWLEDGE_DOMAINS.length),                                                     note: "query classifications",       color: "text-ink" },
+          { label: "Vendors",        value: String(VENDORS.length),                                                               note: "OEMs indexed",               color: "text-ink" },
+        ].map((kpi) => (
+          <div key={kpi.label} className="flex-1 min-w-[95px] px-4 py-4">
+            <p className="type-eyebrow mb-1.5">{kpi.label}</p>
+            <p className={`metric text-xl ${kpi.color}`}>{kpi.value}</p>
+            <p className="mt-1 type-caption">{kpi.note}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Intelligence Context (2/3 + 1/3) ────────────────────────────── */}
+      <div className="grid gap-5 lg:grid-cols-3 mb-8">
+
+        {/* PRIMARY (2/3) */}
+        <div className="lg:col-span-2 flex flex-col gap-5">
+
+          {/* Supported Domains */}
+          <Panel title="Supported Domains">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {KNOWLEDGE_DOMAINS.map((d) => {
+                const hitCount = stats?.byDomain?.[d as string] ?? 0;
+                return (
+                  <div
+                    key={d as string}
+                    className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 ${
+                      hitCount > 0
+                        ? "border-signal/25 bg-signal/[0.03]"
+                        : "border-line/50 bg-surface2/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${hitCount > 0 ? "bg-signal" : "bg-muted/40"}`} />
+                      <span className="font-body text-xs text-ink truncate">{tDomain(d as string)}</span>
+                    </div>
+                    {hitCount > 0 && (
+                      <span className="font-mono text-[0.60rem] text-muted flex-shrink-0">{nf.format(hitCount)}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-3 type-caption">Queried domains highlighted · session-scoped usage counts</p>
+          </Panel>
+
+          {/* Vendor Coverage */}
+          <Panel title="Vendor Intelligence Coverage">
+            <div className="flex flex-wrap gap-2">
+              {VENDORS.map((v) => {
+                const hitCount = stats?.byVendor?.[v.id] ?? 0;
+                return (
+                  <span
+                    key={v.id}
+                    dir="ltr"
+                    className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1 font-body text-xs ${
+                      hitCount > 0
+                        ? "border-signal/30 bg-signal/[0.04] text-ink"
+                        : "border-line/40 text-muted"
+                    }`}
+                  >
+                    {hitCount > 0 && <span className="h-1 w-1 rounded-full bg-signal flex-shrink-0" />}
+                    {tVendor(v.id)}
+                    {hitCount > 0 && (
+                      <span className="font-mono text-[0.60rem] text-muted/70">{nf.format(hitCount)}</span>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+            <p className="mt-3 type-caption">
+              {VENDORS.length} industrial OEMs indexed · active vendors highlighted with session counts
+            </p>
+          </Panel>
+
+          {/* Recent Analyses */}
+          {recent.length > 0 && (
+            <Panel title="Recent Analyses">
+              <ul className="space-y-2.5">
+                {recent.map((row) => (
+                  <li
+                    key={row.id}
+                    className="flex items-start gap-3 rounded-lg border border-line/50 bg-surface2/40 px-4 py-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-body text-sm text-ink truncate mb-1">{row.question}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {row.domains.slice(0, 2).map((d) => (
+                          <span key={d.id} className="rounded border border-line px-1.5 py-0.5 font-body text-[0.60rem] text-muted">
+                            {tDomain(d.id)}
+                          </span>
+                        ))}
+                        {row.unknown && (
+                          <span className="rounded border border-warn/30 px-1.5 py-0.5 font-body text-[0.60rem] text-warn">
+                            Unknown
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className={`font-mono text-xs ${
+                        row.confidence >= 0.75 ? "text-signal" : row.confidence >= 0.40 ? "text-warn" : "text-danger"
+                      }`}>
+                        {nf.format(Math.round(row.confidence * 100))}{pct}
+                      </span>
+                      <span className="font-mono text-[0.60rem] text-faint">{tf.format(row.ts)}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+
+        </div>
+
+        {/* SECONDARY (1/3) */}
+        <div className="flex flex-col gap-5">
+
+          {/* System Status */}
+          <Panel title="System Status">
+            <ul className="space-y-3 mb-5">
+              {PLATFORM_COMPONENTS.map((c) => (
+                <li key={c.key} className="flex items-center justify-between gap-2">
+                  <span className="font-body text-sm text-ink">
+                    {c.key.replace(/([A-Z])/g, " $1").trim()}
+                  </span>
+                  <span className={`flex items-center gap-1.5 font-body text-xs ${stateColor[c.state]}`}>
+                    <span className={`inline-block h-1.5 w-1.5 rounded-full ${stateDot[c.state]}`} />
+                    {c.state.charAt(0).toUpperCase() + c.state.slice(1)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-line pt-4">
+              <p className="type-caption leading-relaxed">
+                Session-scoped intelligence. Analyses reset on server restart.
+              </p>
+            </div>
+          </Panel>
+
+          {/* Capability & Safety */}
+          <Panel title={t("safetyTitle")}>
+            <ul className="space-y-3 mb-5">
+              {[
+                { text: t("safetyReadOnly"),      icon: "◈" },
+                { text: t("safetyDeterministic"), icon: "◎" },
+                { text: t("safetyNoLLM"),         icon: "⊕" },
+              ].map((item) => (
+                <li key={item.text} className="flex items-start gap-2.5">
+                  <span className="text-signal text-sm flex-shrink-0 mt-0.5">{item.icon}</span>
+                  <p className="font-body text-xs text-muted leading-relaxed">{item.text}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-line pt-4">
+              <p className="type-eyebrow mb-3">{t("confidence")}</p>
+              <div className="space-y-2">
+                {[
+                  { label: "HIGH",   range: "≥ 75%",  color: "text-signal" },
+                  { label: "MEDIUM", range: "40–74%", color: "text-warn"   },
+                  { label: "LOW",    range: "< 40%",  color: "text-danger" },
+                ].map((tier) => (
+                  <div key={tier.label} className="flex items-center justify-between">
+                    <span className={`font-mono text-xs ${tier.color}`}>{tier.label}</span>
+                    <span className="type-caption">{tier.range}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Panel>
+
+          {/* Session domain distribution */}
+          {stats?.byDomain && Object.keys(stats.byDomain).length > 0 && (
+            <Panel title="Session Distribution">
+              <ul className="space-y-2.5">
+                {Object.entries(stats.byDomain)
+                  .sort(([, a], [, b]) => b - a)
+                  .slice(0, 7)
+                  .map(([domain, count]) => {
+                    const maxCount = Math.max(...Object.values(stats.byDomain));
+                    const barPct   = Math.round((count / maxCount) * 100);
+                    return (
+                      <li key={domain}>
+                        <div className="flex items-center justify-between font-body text-xs mb-1">
+                          <span className="text-muted">{tDomain(domain)}</span>
+                          <span className="font-mono text-ink">{nf.format(count)}</span>
+                        </div>
+                        <div className="h-0.5 rounded bg-line">
+                          <div className="h-0.5 rounded bg-signal/60" style={{ inlineSize: `${barPct}%` }} />
+                        </div>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </Panel>
+          )}
+
         </div>
       </div>
 
-      {/* ── Error ─────────────────────────────────────────────────────────── */}
-      {error && (
-        <div className="mt-4 rounded-lg border border-[var(--danger)]/40 bg-surface px-4 py-3 font-mono text-sm text-[var(--danger)]">
-          {error}
-        </div>
-      )}
+      {/* ── Analysis Interface ─────────────────────────────────────────────── */}
+      <div className="border-t border-line pt-6">
+        <p className="type-eyebrow mb-4">Analysis Interface</p>
 
-      {/* ── Empty hint ────────────────────────────────────────────────────── */}
-      {!result && !error && (
-        <div className="mt-12 flex flex-col items-center gap-3 text-center">
-          <div
-            className="w-12 h-12 rounded-xl border border-signalDim/30 flex items-center justify-center"
-            style={{ background: "rgba(56,224,176,0.06)" }}
-          >
-            <span className="text-signal text-xl">⚙</span>
+        <div
+          className="rounded-xl border border-line bg-surface p-5 mb-4"
+          style={{ boxShadow: "0 4px 32px rgba(0,0,0,0.35)" }}
+        >
+          <label htmlFor="copilot-input" className="sr-only">{t("placeholder")}</label>
+          <textarea
+            id="copilot-input"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") analyze();
+            }}
+            rows={5}
+            placeholder={t("placeholder")}
+            className="w-full resize-y rounded-lg border border-line bg-bg px-4 py-3 font-body text-sm leading-relaxed text-ink placeholder:text-muted/50 focus:border-signal/50 focus:outline-none focus:ring-1 focus:ring-signal/20 transition-colors"
+          />
+          <div className="mt-3 flex items-center justify-between">
+            <p className="hidden sm:block text-xs text-muted/50 font-mono">Ctrl+Enter</p>
+            <button
+              onClick={analyze}
+              disabled={busy || question.trim() === ""}
+              className="ms-auto rounded-lg bg-signal px-6 py-2.5 font-body text-sm font-semibold text-bg transition-all hover:opacity-90 disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              {busy ? t("analyzing") : t("analyze")}
+            </button>
           </div>
-          <p className="font-body text-sm text-muted/70 max-w-xs leading-relaxed">
-            {t("emptyHint")}
-          </p>
         </div>
-      )}
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-danger/40 bg-surface px-4 py-3 font-mono text-sm text-danger">
+            {error}
+          </div>
+        )}
+
+        {!result && !error && (
+          <div className="py-6 text-center">
+            <p className="font-body text-sm text-muted/70 max-w-xs mx-auto leading-relaxed">
+              {t("emptyHint")}
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* ── Results ───────────────────────────────────────────────────────── */}
       {result && (
         <div className="mt-6 space-y-4">
 
-          {/* Confidence ring — V2 */}
           <div className="rounded-xl border border-line bg-surface p-6">
             <ConfidenceRing
               value={result.confidence}
@@ -141,14 +387,12 @@ export function CopilotClient() {
             />
           </div>
 
-          {/* Unknown flag */}
           {result.unknown && (
-            <div className="rounded-lg border border-[var(--warn)]/40 bg-[var(--warn)]/5 px-4 py-3 font-body text-sm leading-relaxed text-[var(--warn)]">
+            <div className="rounded-lg border border-warn/40 bg-warn/5 px-4 py-3 font-body text-sm leading-relaxed text-warn">
               {t("unknownNote")}
             </div>
           )}
 
-          {/* Root cause chain — V2, only when report has a root cause */}
           {report?.available && report.rootCause && (
             <RootCausePanel
               result={result}
@@ -158,13 +402,8 @@ export function CopilotClient() {
             />
           )}
 
-          {/* Industrial asset context — V2 */}
-          <AssetContextPanel
-            domains={topDomainLabels}
-            vendors={topVendorLabels}
-          />
+          <AssetContextPanel domains={topDomainLabels} vendors={topVendorLabels} />
 
-          {/* Detected Domains */}
           <ResultSection
             title={t("sections.domains")}
             empty={t("none.domains")}
@@ -182,7 +421,6 @@ export function CopilotClient() {
             </div>
           </ResultSection>
 
-          {/* Detected Vendors */}
           <ResultSection
             title={t("sections.vendors")}
             empty={t("none.vendors")}
@@ -195,7 +433,6 @@ export function CopilotClient() {
             </div>
           </ResultSection>
 
-          {/* Matched Cases */}
           <ResultSection
             title={t("sections.cases")}
             empty={t("none.cases")}
@@ -221,7 +458,6 @@ export function CopilotClient() {
             </ul>
           </ResultSection>
 
-          {/* Knowledge Sources */}
           <ResultSection
             title={t("sections.sources")}
             empty={t("none.sources")}
@@ -238,11 +474,7 @@ export function CopilotClient() {
                     <p className="font-display text-sm font-semibold text-ink group-hover:text-signal transition-colors">
                       {k(`${id}.name`)}
                     </p>
-                    <svg
-                      viewBox="0 0 12 12"
-                      fill="none"
-                      className="w-3 h-3 flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-60 transition-opacity text-signal"
-                    >
+                    <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3 flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-60 transition-opacity text-signal">
                       <path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                     </svg>
                   </div>
@@ -254,25 +486,23 @@ export function CopilotClient() {
             </div>
           </ResultSection>
 
-          {/* Approval note */}
-          <p className="rounded-lg border border-signalDim/30 bg-bg/60 px-4 py-3 font-body text-xs leading-relaxed text-muted">
+          <p className="rounded-lg border border-line/30 bg-bg/60 px-4 py-3 font-body text-xs leading-relaxed text-muted">
             {t("approvalNote")}
           </p>
 
-          {/* Engineering report — deterministic */}
           {report?.available && (
             <section
-              className="rounded-xl border border-signalDim/30 bg-surface p-6"
+              className="rounded-xl border border-line bg-surface p-6"
               style={{ boxShadow: "0 4px 32px rgba(0,0,0,0.30)" }}
             >
               <div className="flex items-center gap-3 mb-6">
                 <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ background: "rgba(56,224,176,0.10)", border: "1px solid rgba(56,224,176,0.25)" }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(var(--signal-rgb),0.08)", border: "1px solid rgba(var(--signal-rgb),0.18)" }}
                 >
-                  <span className="text-signal text-sm">📋</span>
+                  <span className="text-signal text-sm">◉</span>
                 </div>
-                <h2 className="font-display text-lg font-bold text-ink">{tr("title")}</h2>
+                <h2 className="font-display text-base font-bold text-ink">{tr("title")}</h2>
               </div>
 
               <ReportBlock title={tr("problemSummary")}>
@@ -282,9 +512,7 @@ export function CopilotClient() {
               <ReportBlock title={tr("rootCause")}>
                 <p className="font-body text-sm leading-relaxed text-ink">{report.rootCause}</p>
                 {report.rootCauseLowConfidence && (
-                  <p className="mt-2 font-body text-xs leading-relaxed text-[var(--warn)]">
-                    {tr("lowConfidenceNote")}
-                  </p>
+                  <p className="mt-2 font-body text-xs leading-relaxed text-warn">{tr("lowConfidenceNote")}</p>
                 )}
               </ReportBlock>
 
@@ -306,9 +534,7 @@ export function CopilotClient() {
                   <ol className="space-y-2">
                     {report.verificationSteps.map((v, i) => (
                       <li key={i} className="flex gap-3 font-body text-sm leading-relaxed text-ink">
-                        <span className="metric w-5 shrink-0 text-sm text-muted/60 font-bold">
-                          {nf.format(i + 1)}.
-                        </span>
+                        <span className="metric w-5 shrink-0 text-sm text-muted/60 font-bold">{nf.format(i + 1)}.</span>
                         {v}
                       </li>
                     ))}
@@ -321,9 +547,7 @@ export function CopilotClient() {
                   <ol className="space-y-2">
                     {report.correctiveActions.map((a, i) => (
                       <li key={i} className="flex gap-3 font-body text-sm leading-relaxed text-ink">
-                        <span className="metric w-5 shrink-0 text-sm text-muted/60 font-bold">
-                          {nf.format(i + 1)}.
-                        </span>
+                        <span className="metric w-5 shrink-0 text-sm text-muted/60 font-bold">{nf.format(i + 1)}.</span>
                         {a}
                       </li>
                     ))}
@@ -332,11 +556,9 @@ export function CopilotClient() {
               )}
 
               <ReportBlock title={tr("safety")}>
-                <div className="flex gap-3 rounded-lg border border-[var(--warn)]/40 bg-[var(--warn)]/5 px-4 py-3">
-                  <span className="text-[var(--warn)] text-base flex-shrink-0 mt-0.5">⚠</span>
-                  <p className="font-body text-sm leading-relaxed text-[var(--warn)]">
-                    {report.safetyNote}
-                  </p>
+                <div className="flex gap-3 rounded-lg border border-warn/40 bg-warn/5 px-4 py-3">
+                  <span className="text-warn text-base flex-shrink-0 mt-0.5">⚠</span>
+                  <p className="font-body text-sm leading-relaxed text-warn">{report.safetyNote}</p>
                 </div>
               </ReportBlock>
             </section>
@@ -350,9 +572,7 @@ export function CopilotClient() {
 function ReportBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-6 pt-5 border-t border-line first:border-0 first:mt-0 first:pt-0">
-      <h3 className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted mb-2.5">
-        {title}
-      </h3>
+      <h3 className="type-eyebrow mb-2.5">{title}</h3>
       {children}
     </div>
   );

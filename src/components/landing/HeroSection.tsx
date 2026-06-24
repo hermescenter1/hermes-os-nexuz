@@ -177,8 +177,7 @@ export function HeroSection() {
                   }}
                 >
                   <span
-                    className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-signal"
-                    style={{ animation: "statusDot 2.5s ease-in-out infinite" }}
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-signal/70"
                   />
                   <span
                     className="font-mono uppercase"
@@ -212,7 +211,6 @@ export function HeroSection() {
                     WebkitTextFillColor:  "transparent",
                     backgroundClip:       "text",
                     marginInlineStart:    "0.3em",
-                    filter:               "drop-shadow(0 0 24px rgba(45,212,191,0.20))",
                   }}
                 >
                   OS
@@ -222,11 +220,11 @@ export function HeroSection() {
               {/* Subtitle */}
               <motion.p
                 {...fadeUp(0.17)}
-                className="font-display font-semibold mb-5 leading-snug"
+                className="font-display font-medium mb-4 leading-snug"
                 style={{
-                  fontSize: "clamp(1.05rem,2.2vw,1.5rem)",
-                  color:    "rgba(203,213,225,0.85)",
-                  letterSpacing: "-0.01em",
+                  fontSize: "clamp(0.95rem,1.8vw,1.25rem)",
+                  color:    "rgba(203,213,225,0.75)",
+                  letterSpacing: "-0.005em",
                 }}
               >
                 {t("subtitle")}
@@ -236,7 +234,7 @@ export function HeroSection() {
               <motion.p
                 {...fadeUp(0.26)}
                 className="font-body leading-relaxed mb-10 max-w-lg"
-                style={{ fontSize: "1rem", color: "rgba(148,163,184,0.80)", lineHeight: "1.80" }}
+                style={{ fontSize: "0.9375rem", color: "rgba(148,163,184,0.72)", lineHeight: "1.75" }}
               >
                 {t("desc")}
               </motion.p>
@@ -307,14 +305,14 @@ export function HeroSection() {
                       }}
                     >
                       <p
-                        className="metric text-2xl font-bold"
-                        style={{ color: "#F1F5F9" }}
+                        className="metric text-xl font-semibold"
+                        style={{ color: "#E2E8F0" }}
                       >
                         {value}
                       </p>
                       <p
-                        className="font-mono mt-0.5 uppercase tracking-wider"
-                        style={{ fontSize: "9px", color: "rgba(148,163,184,0.50)" }}
+                        className="font-body mt-1 uppercase"
+                        style={{ fontSize: "9.5px", letterSpacing: "0.08em", color: "rgba(148,163,184,0.45)" }}
                       >
                         {t(key)}
                       </p>
