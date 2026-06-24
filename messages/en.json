@@ -38,7 +38,8 @@
       "admin": "Admin Console",
       "documents": "Document Library",
       "documentSearch": "Document Search",
-      "engGraph": "Engineering Knowledge Graph"
+      "engGraph":   "Engineering Knowledge Graph",
+      "opsCenter":  "Operations Command Center"
     },
     "menu": "Menu",
     "close": "Close"
