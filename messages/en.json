@@ -346,7 +346,10 @@
       "energy": "Energy",
       "ai": "AI Recommendations",
       "maintenance": "Maintenance Priority",
-      "risk": "System Risk Score"
+      "risk": "System Risk Score",
+      "thermal": "Thermal Sensors",
+      "process": "Process & Energy",
+      "control": "Control Systems"
     },
     "overview": {
       "oee": "OEE",
@@ -429,7 +432,8 @@
           "title": "Shift compressor duty to off-peak",
           "desc": "Energy peaks align with compressor staging; off-peak shifting cuts estimated 9% of peak load."
         }
-      }
+      },
+      "topRec": "Top AI Insight"
     },
     "maintenanceP": {
       "due": "days",
@@ -491,7 +495,18 @@
         "phase2": "Phase 2"
       },
       "sessionNote": "Session-scoped intelligence — resets when the server restarts (no database in V1)."
-    }
+    },
+    "kpi": {
+      "oee": "OEE",
+      "lines": "Active Lines",
+      "linesNote": "production lines",
+      "alarms": "Active Alarms",
+      "critical": "critical",
+      "risk": "Risk Score",
+      "power": "Power Draw",
+      "totalAlarms": "Total Alarms"
+    },
+    "platformIntel": "Platform Intelligence"
   },
   "knowledge": {
     "plcBasics": {
