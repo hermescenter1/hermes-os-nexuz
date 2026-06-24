@@ -328,9 +328,12 @@ export function CopilotClient() {
         </div>
       </div>
 
-      {/* ── Analysis Interface ─────────────────────────────────────────────── */}
-      <div className="border-t border-line pt-6">
-        <p className="type-eyebrow mb-4">Analysis Interface</p>
+      {/* ── Reasoning Interface ────────────────────────────────────────────── */}
+      <div className="h-layer-sep mb-5">
+        <span className="kpi-label">Reasoning Interface</span>
+      </div>
+      <div className="pt-1">
+
 
         <div
           className="rounded-xl border border-line bg-surface p-5 mb-4"

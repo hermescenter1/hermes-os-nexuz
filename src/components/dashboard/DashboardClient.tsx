@@ -6,6 +6,8 @@ import { telemetryService } from "@/lib/services/telemetry-service";
 import { ExecutiveOverview } from "./ExecutiveOverview";
 import { ExecKpiStrip }     from "@/components/ui/ExecKpiStrip";
 import { HermesSignal }     from "@/components/hermes/HermesSignal";
+import { PLATFORM_FACTS }   from "@/lib/industrial/platform-facts";
+import { EcosystemStatus }  from "@/components/hermes/EcosystemStatus";
 import type {
   DashboardSnapshot,
   MetricSeries,
@@ -197,6 +199,32 @@ export function DashboardClient() {
           note:   `${nf.format(s.energy.todayKwh)} kWh ${t("energyP.today")}`,
         },
       ]} />
+
+      {/* ── Global Operations Center ──────────────────────────────────────── */}
+      <div className="global-ops-strip">
+        <div className="global-ops-cell">
+          <p className="kpi-label mb-1.5">Connected Assets</p>
+          <p className="exec-kpi-value">{nf.format(s.network.devices)}</p>
+        </div>
+        <div className="global-ops-cell">
+          <p className="kpi-label mb-1.5">Knowledge Volume</p>
+          <p className="exec-kpi-value">{nf.format(PLATFORM_FACTS.knowledgeLibraries)}</p>
+        </div>
+        <div className="global-ops-cell">
+          <p className="kpi-label mb-1.5">Engineering Cases</p>
+          <p className="exec-kpi-value">{nf.format(PLATFORM_FACTS.engineeringCases)}</p>
+        </div>
+        <div className="global-ops-cell">
+          <p className="kpi-label mb-1.5">Supported Vendors</p>
+          <p className="exec-kpi-value">{nf.format(PLATFORM_FACTS.supportedVendors)}</p>
+        </div>
+        <div className="global-ops-cell">
+          <p className="kpi-label mb-1.5">Platform Confidence</p>
+          <p className={`exec-kpi-value ${100 - s.risk.score >= 70 ? "text-signal" : 100 - s.risk.score >= 50 ? "text-ink" : "text-warn"}`}>
+            {nf.format(Math.max(0, Math.round(100 - s.risk.score)))}<span className="font-mono text-base font-normal text-muted ms-1">{pct}</span>
+          </p>
+        </div>
+      </div>
 
       {/* ── Primary + Secondary row ────────────────────────────────────────── */}
       <div className="grid gap-5 lg:grid-cols-3 mb-5">
@@ -570,7 +598,14 @@ export function DashboardClient() {
         <div className="h-layer-sep mb-5">
           <span className="kpi-label">{t("platformIntel")}</span>
         </div>
-        <ExecutiveOverview />
+        <div className="grid gap-5 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <ExecutiveOverview />
+          </div>
+          <Panel title="Intelligence Network" executive>
+            <EcosystemStatus />
+          </Panel>
+        </div>
       </div>
 
       {/* Timestamp */}

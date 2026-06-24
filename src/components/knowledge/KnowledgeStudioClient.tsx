@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { VENDORS } from "@/lib/industrial/vendors";
-import { StorageIndicator } from "@/components/StorageIndicator";
+import { StorageIndicator }   from "@/components/StorageIndicator";
+import { KnowledgeDomainMap } from "@/components/hermes/EcosystemVisual";
 import {
   KNOWLEDGE_DOMAINS,
   type KnowledgeArticle,
@@ -186,23 +187,20 @@ export function KnowledgeStudioClient() {
         <StorageIndicator />
       </div>
 
-      {/* ── KPI Strip ────────────────────────────────────────────────────── */}
-      <div
-        className="flex items-stretch divide-x divide-line border border-line rounded-xl overflow-x-auto mb-6"
-        style={{ background: "var(--surface)" }}
-      >
+      {/* ── Knowledge Operations KPI Strip ───────────────────────────────── */}
+      <div className="global-ops-strip mb-6">
         {[
-          { label: t("metrics.total"),     value: nf.format(metrics.total),     note: "in library",          color: "text-ink" },
-          { label: t("metrics.published"), value: nf.format(metrics.published), note: "live in system",      color: metrics.published > 0 ? "text-signal" : "text-ink" },
-          { label: t("metrics.drafts"),    value: nf.format(metrics.drafts),    note: "pending review",      color: metrics.drafts > 0 ? "text-warn" : "text-ink" },
-          { label: "Review",               value: nf.format(metrics.review),    note: "awaiting publish",    color: metrics.review > 0 ? "text-ice" : "text-ink" },
-          { label: t("metrics.domains"),   value: nf.format(metrics.domains),   note: "domains covered",     color: "text-ink" },
-          { label: "Avg Confidence",       value: metrics.total > 0 ? `${nf.format(metrics.avgConf)}${pct}` : "—",  note: "quality score",  color: metrics.avgConf >= 70 ? "text-signal" : metrics.avgConf >= 40 ? "text-warn" : "text-ink" },
+          { label: "Knowledge Volume",   value: nf.format(metrics.total),     note: "total records",       color: "text-ink" },
+          { label: "Active Records",     value: nf.format(metrics.published), note: "live in network",     color: metrics.published > 0 ? "text-signal" : "text-ink" },
+          { label: "Staging",            value: nf.format(metrics.drafts),    note: "pending validation",  color: metrics.drafts > 0 ? "text-warn" : "text-ink" },
+          { label: "Validation Queue",   value: nf.format(metrics.review),    note: "awaiting activation", color: metrics.review > 0 ? "text-ice" : "text-ink" },
+          { label: "Domain Coverage",    value: nf.format(metrics.domains),   note: "domains active",      color: "text-ink" },
+          { label: "Quality Index",      value: metrics.total > 0 ? `${nf.format(metrics.avgConf)}${pct}` : "—", note: "confidence score", color: metrics.avgConf >= 70 ? "text-signal" : metrics.avgConf >= 40 ? "text-warn" : "text-ink" },
         ].map((kpi) => (
-          <div key={kpi.label} className="flex-1 min-w-[95px] px-4 py-4">
-            <p className="type-eyebrow mb-1.5">{kpi.label}</p>
-            <p className={`metric text-xl ${kpi.color}`}>{kpi.value}</p>
-            <p className="mt-1 type-caption">{kpi.note}</p>
+          <div key={kpi.label} className="global-ops-cell">
+            <p className="kpi-label mb-2">{kpi.label}</p>
+            <p className={`intel-kpi-value ${kpi.color}`}>{kpi.value}</p>
+            <p className="kpi-label text-faint mt-1">{kpi.note}</p>
           </div>
         ))}
       </div>
@@ -281,38 +279,19 @@ export function KnowledgeStudioClient() {
             ) : null}
           </section>
 
-          {/* Domain Distribution */}
+          {/* Knowledge Domain Map */}
           {metrics.total > 0 && (
             <section
-              className="rounded-xl border border-line bg-surface p-5"
-              style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}
+              className="rounded-xl border border-signal/10 bg-surface h-s3 p-5"
+              style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.28)" }}
             >
-              <h2 className="type-panel-title mb-4">Domain Distribution</h2>
-              {Object.keys(metrics.domainCounts).length > 0 ? (
-                <div className="space-y-3">
-                  {Object.entries(metrics.domainCounts)
-                    .sort(([, a], [, b]) => b - a)
-                    .map(([d, count]) => {
-                      const maxCount = Math.max(...Object.values(metrics.domainCounts));
-                      return (
-                        <div key={d}>
-                          <div className="flex justify-between font-body text-xs mb-1">
-                            <span className="text-muted">{domainLabel(d)}</span>
-                            <span className="font-mono text-ink">{nf.format(count)}</span>
-                          </div>
-                          <div className="h-1 rounded bg-line">
-                            <div
-                              className="h-1 rounded bg-signal/70"
-                              style={{ inlineSize: `${Math.round((count / maxCount) * 100)}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              ) : (
-                <p className="type-caption">No domain data yet — add articles to see distribution</p>
-              )}
+              <h2 className="intel-title mb-1">Knowledge Domain Map</h2>
+              <p className="kpi-label text-faint mb-4">
+                {Object.keys(metrics.domainCounts).length} / {KNOWLEDGE_DOMAINS.length} domains with active records
+              </p>
+              <KnowledgeDomainMap
+                activeDomains={Object.entries(metrics.domainCounts).map(([domain, count]) => ({ domain, count }))}
+              />
             </section>
           )}
         </div>

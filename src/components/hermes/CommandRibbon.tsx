@@ -67,18 +67,18 @@ export function CommandRibbon() {
       <div className="mx-auto max-w-7xl px-6 sm:px-8 flex items-stretch overflow-x-auto">
 
         {/* Platform identity */}
-        <div className="flex items-center gap-3 pe-5 me-1 flex-shrink-0 py-[9px]">
+        <div className="flex items-center gap-2 pe-5 me-1 flex-shrink-0 py-[9px]">
           <span
             className="signal-text"
             style={{ fontSize: "0.6rem", letterSpacing: "0.16em" }}
           >
-            HERMES OS
+            HERMES INTELLIGENCE NETWORK
           </span>
           <span
             className="kpi-label"
-            style={{ fontSize: "0.52rem", letterSpacing: "0.16em", color: "var(--faint)" }}
+            style={{ fontSize: "0.48rem", letterSpacing: "0.14em", color: "var(--faint)" }}
           >
-            COMMAND
+            GLOBAL OPS
           </span>
         </div>
 

@@ -886,3 +886,91 @@ h6 { font-weight: 550; letter-spacing: 0; }
   color:          var(--muted);
   line-height:    1.2;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 55B — GLOBAL IDENTITY & ECOSYSTEM AUTHORITY
+   Technology ecosystem, not a dashboard. Intelligence network, not widgets.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Global Operations KPI Strip ────────────────────────────────────────
+   Ecosystem-scale metrics. Wider cells, h-s3 surface, signal-tinted.
+   These numbers communicate platform scale, not individual site metrics.
+   ──────────────────────────────────────────────────────────────────────── */
+.global-ops-strip {
+  display:     flex;
+  align-items: stretch;
+  border:      1px solid rgba(var(--signal-rgb), 0.10);
+  border-radius: 0.75rem;
+  overflow:    hidden;
+  background:  var(--surface-2);
+  box-shadow:  0 2px 16px rgba(0,0,0,0.28),
+               0 0 0 1px rgba(var(--signal-rgb), 0.04);
+  margin-bottom: 1.25rem;
+}
+.global-ops-cell {
+  flex:         1;
+  min-width:    130px;
+  padding:      1rem 1.25rem;
+  border-right: 1px solid rgba(var(--signal-rgb), 0.07);
+}
+.global-ops-cell:last-child { border-right: none; }
+
+/* ── Ecosystem Layer Card ────────────────────────────────────────────────
+   Each of the 5 Hermes ecosystem layers rendered as a status row.
+   State-aware: active/simulated/phase2/offline each has distinct treatment.
+   ──────────────────────────────────────────────────────────────────────── */
+.eco-layer {
+  display:               grid;
+  grid-template-columns: auto 1fr;
+  align-items:           center;
+  gap:                   0.75rem;
+  padding:               0.625rem 0.875rem;
+  border-radius:         4px;
+  border:                1px solid var(--line);
+  background:            var(--surface);
+}
+.eco-layer--active {
+  border-color: rgba(var(--signal-rgb), 0.12);
+  background:   var(--surface-2);
+}
+.eco-layer--simulated {
+  border-color: rgba(var(--warn-rgb), 0.09);
+  background:   var(--surface);
+}
+.eco-layer--phase2 {
+  border-color: rgba(var(--warn-rgb), 0.09);
+  background:   var(--bg);
+}
+.eco-layer--offline {
+  border-color: var(--line);
+  background:   var(--bg);
+  opacity:      0.55;
+}
+
+/* ── Knowledge Domain Tile ───────────────────────────────────────────────
+   Compact tile in the knowledge domain map.
+   Active tiles have a signal-tinted bottom bar (knowledge depth indicator).
+   Angular geometry: border-radius 3px matches hs-badge language.
+   ──────────────────────────────────────────────────────────────────────── */
+.domain-tile {
+  position:      relative;
+  overflow:      hidden;
+  padding:       0.5rem 0.5rem 0.5rem 0.625rem;
+  border-radius: 3px;
+  border:        1px solid var(--line);
+  background:    var(--surface);
+  transition:    border-color 0.2s ease, background 0.2s ease;
+}
+.domain-tile--active {
+  border-color: rgba(var(--signal-rgb), 0.16);
+  background:   var(--surface-2);
+}
+.domain-tile--active::after {
+  content:          "";
+  position:         absolute;
+  bottom:           0;
+  inset-inline:     0;
+  height:           2px;
+  background:       var(--signal);
+  opacity:          0.40;
+}
