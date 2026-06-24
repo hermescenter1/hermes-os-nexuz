@@ -39,7 +39,8 @@
       "documents": "Document Library",
       "documentSearch": "Document Search",
       "engGraph":   "Engineering Knowledge Graph",
-      "opsCenter":  "Operations Command Center"
+      "opsCenter":  "Operations Command Center",
+      "atsPortal":  "ATS"
     },
     "menu": "Menu",
     "close": "Close"
