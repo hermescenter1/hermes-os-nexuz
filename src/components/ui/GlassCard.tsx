@@ -3,27 +3,47 @@
 import { forwardRef, type HTMLAttributes } from "react";
 
 interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
-  glow?:     boolean;
-  hover?:    boolean;
-  neon?:     boolean;
-  featured?: boolean;
-  lift?:     boolean;
-  deep?:     boolean;
+  glow?:       boolean;
+  hover?:      boolean;
+  neon?:       boolean;
+  featured?:   boolean;
+  lift?:       boolean;
+  deep?:       boolean;
+  /** "standard" = glass panel · "enterprise" = heavier depth, more opaque */
+  variant?:    "standard" | "enterprise" | "surface";
 }
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
   (
-    { className = "", glow, hover, neon, featured, lift, deep, children, style, ...props },
+    {
+      className = "",
+      glow,
+      hover,
+      neon,
+      featured,
+      lift,
+      deep,
+      variant = "standard",
+      children,
+      style,
+      ...props
+    },
     ref
   ) => {
+    const base =
+      variant === "enterprise"
+        ? "relative rounded-2xl card-enterprise"
+        : variant === "surface"
+          ? "relative rounded-xl card-surface"
+          : `relative rounded-2xl border border-line ${deep ? "glass-deep" : "glass"}`;
+
     const classes = [
-      "relative rounded-2xl border border-line",
-      deep ? "glass-deep" : "glass",
-      glow     ? "glow-signal"        : "",
-      hover    ? "glass-hover"        : "",
-      lift     ? "hover-lift cursor-pointer" : "",
+      base,
+      glow     ? "glow-signal"                  : "",
+      hover    ? "glass-hover"                  : "",
+      lift     ? "hover-lift cursor-pointer"    : "",
       neon     ? "neon-border glow-signal-strong" : "",
-      featured ? "neon-border glow-signal-strong ring-1 ring-signal/10" : "",
+      featured ? "card-active"                  : "",
       className,
     ]
       .filter(Boolean)

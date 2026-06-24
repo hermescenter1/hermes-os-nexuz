@@ -67,13 +67,12 @@ function KpiCard({
   tone?: string;
 }) {
   return (
-    <div className="rounded-xl border border-line bg-surface p-4 transition-colors hover:border-signal/30">
-      <p className="font-body text-[0.7rem] uppercase tracking-wide text-muted">{label}</p>
-      <p
-        className={`metric mt-2 text-2xl ${
-          tone ?? (accent ? "text-signal" : "text-ink")
-        }`}
-      >
+    <div
+      className="rounded-xl border border-line bg-surface p-5 transition-all hover:border-line2"
+      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.20)" }}
+    >
+      <p className="type-eyebrow mb-3">{label}</p>
+      <p className={`metric text-2xl ${tone ?? (accent ? "text-signal" : "text-ink")}`}>
         {value}
         {suffix && <span className="ms-1 font-body text-sm font-normal text-muted">{suffix}</span>}
       </p>
@@ -91,9 +90,12 @@ function ExecPanel({
   className?: string;
 }) {
   return (
-    <section className={`rounded-xl border border-line bg-surface p-5 ${className}`}>
-      <h3 className="font-mono text-xs uppercase tracking-widest text-muted">{title}</h3>
-      <div className="mt-4">{children}</div>
+    <section
+      className={`rounded-xl border border-line bg-surface p-6 ${className}`}
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.20)" }}
+    >
+      <h3 className="type-panel-title mb-4">{title}</h3>
+      {children}
     </section>
   );
 }

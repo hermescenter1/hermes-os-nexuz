@@ -60,7 +60,7 @@ export default async function AboutPage({
 
           {/* Mission card */}
           <div className="rounded-2xl border border-signalDim bg-surface p-8"
-            style={{ background: "linear-gradient(135deg, rgba(0,229,255,0.04) 0%, transparent 60%)" }}>
+            style={{ background: "linear-gradient(135deg, rgba(45,212,191,0.04) 0%, transparent 60%)" }}>
             <p className="font-mono text-xs uppercase tracking-widest text-signal mb-4">
               {t("missionEyebrow")}
             </p>
@@ -89,7 +89,7 @@ export default async function AboutPage({
                 width={192}
                 height={192}
                 className="h-24 w-24 rounded-2xl object-cover border border-signalDim"
-                style={{ boxShadow: "0 0 20px rgba(0,229,255,0.08)" }}
+                style={{ boxShadow: "0 0 20px rgba(45,212,191,0.08)" }}
               />
               <p className="font-display text-base font-bold text-ink">{t("founderName")}</p>
               <p className="font-body text-xs text-signal/80 text-center lg:text-start">{t("founderRole")}</p>

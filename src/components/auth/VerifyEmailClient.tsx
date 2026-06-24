@@ -50,7 +50,7 @@ export function VerifyEmailClient({ locale, token }: Props) {
     return (
       <div className="text-center py-4">
         <div className="inline-block w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-          style={{ borderColor: "rgba(0,229,255,0.4)", borderTopColor: "transparent" }}
+          style={{ borderColor: "rgba(45,212,191,0.4)", borderTopColor: "transparent" }}
         />
         <p className="mt-3 text-sm" style={{ color: "rgba(140,178,215,0.75)" }}>Verifying your email…</p>
       </div>
@@ -63,9 +63,9 @@ export function VerifyEmailClient({ locale, token }: Props) {
         {/* Checkmark icon */}
         <div className="flex justify-center">
           <div className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0,229,255,0.08)", border: "1px solid rgba(0,229,255,0.25)" }}>
+            style={{ background: "rgba(45,212,191,0.08)", border: "1px solid rgba(45,212,191,0.25)" }}>
             <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8">
-              <path d="M5 13l4 4L19 7" stroke="#00E5FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M5 13l4 4L19 7" stroke="#2DD4BF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
         </div>
@@ -73,7 +73,7 @@ export function VerifyEmailClient({ locale, token }: Props) {
         <Link
           href={`/${locale}/auth/login`}
           className="inline-block text-sm hover:underline"
-          style={{ color: "#00E5FF" }}
+          style={{ color: "#2DD4BF" }}
         >
           Sign in to your account →
         </Link>
@@ -85,7 +85,7 @@ export function VerifyEmailClient({ locale, token }: Props) {
     <div className="space-y-4 text-center">
       <p style={errorStyle}>{message}</p>
       <div className="flex flex-col gap-2">
-        <Link href={`/${locale}/auth/login`} className="text-sm hover:underline" style={{ color: "#00E5FF" }}>
+        <Link href={`/${locale}/auth/login`} className="text-sm hover:underline" style={{ color: "#2DD4BF" }}>
           ← Back to sign in
         </Link>
         <Link href={`/${locale}/auth/forgot-password`} className="text-sm hover:underline" style={{ color: "rgba(140,178,215,0.60)" }}>

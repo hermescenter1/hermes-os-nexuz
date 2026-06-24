@@ -7,7 +7,7 @@ import { inputStyle, labelStyle, primaryBtnStyle, errorStyle, successStyle } fro
 
 interface Props { locale: string }
 
-const STRENGTH_COLORS = ["#e85c5c", "#e87939", "#e8c639", "#38bdf8", "#00E5FF"] as const;
+const STRENGTH_COLORS = ["#e85c5c", "#e87939", "#e8c639", "#38bdf8", "#2DD4BF"] as const;
 const STRENGTH_LABELS = ["Very weak", "Weak", "Fair", "Strong", "Very strong"] as const;
 
 export function RegisterClient({ locale }: Props) {

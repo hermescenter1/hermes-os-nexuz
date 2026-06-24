@@ -94,7 +94,7 @@ export function PartnersSection() {
     <section ref={ref} className="relative py-24 overflow-hidden"
       style={{ background: "linear-gradient(180deg, #050816 0%, #070E1C 100%)" }}>
       <div className="absolute top-0 inset-x-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.12), transparent)" }} />
+        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.12), transparent)" }} />
 
       <div className="max-w-6xl mx-auto px-6">
 

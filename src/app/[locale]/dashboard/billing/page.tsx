@@ -1,6 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PageShell }        from "@/components/PageShell";
 import { BillingDashboard } from "@/components/billing/BillingDashboard";
+import { PageHeader }       from "@/components/ui/PageHeader";
 
 export default async function BillingPage({
   params,
@@ -13,13 +14,12 @@ export default async function BillingPage({
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-7xl px-6 pt-10">
-        <div className="mb-8">
-          <p className="font-mono text-sm uppercase tracking-widest text-signal">
-            {t("eyebrow")}
-          </p>
-          <h1 className="mt-2 font-display text-3xl font-bold">{t("title")}</h1>
-        </div>
+      <div className="mx-auto max-w-7xl px-6 sm:px-8">
+        <PageHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          level="page"
+        />
         <BillingDashboard />
       </div>
     </PageShell>

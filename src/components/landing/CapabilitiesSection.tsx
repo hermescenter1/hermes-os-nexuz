@@ -62,7 +62,7 @@ function IconDecision() {
   );
 }
 
-const ACCENTS = ["#00E5FF", "#38BDF8", "#7DD3FC", "#00E5FF", "#38BDF8", "#7DD3FC"] as const;
+const ACCENTS = ["#2DD4BF", "#38BDF8", "#7DD3FC", "#2DD4BF", "#38BDF8", "#7DD3FC"] as const;
 
 const CAPABILITY_KEYS = [
   { key: "agents",   Icon: IconBrain    },
@@ -92,7 +92,7 @@ export function CapabilitiesSection() {
       <div
         className="absolute top-0 inset-x-0 h-px"
         aria-hidden="true"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.18), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.18), transparent)" }}
       />
 
       <div className="max-w-6xl mx-auto px-6">
@@ -102,7 +102,7 @@ export function CapabilitiesSection() {
           transition={{ duration: 0.6, ease: "easeOut" as const }}
           className="text-center mb-16"
         >
-          <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#00E5FF" }}>
+          <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#2DD4BF" }}>
             {t("eyebrow")}
           </p>
           <h2

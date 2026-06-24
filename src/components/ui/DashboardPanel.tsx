@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 import { GlassCard } from "./GlassCard";
 
-type Accent = "signal" | "ice" | "warn" | "danger" | "none";
+type Accent = "signal" | "ice" | "warn" | "danger" | "steel" | "none";
 
 const ACCENT_COLOR: Record<Accent, string> = {
   signal: "var(--signal)",
   ice:    "var(--ice)",
   warn:   "var(--warn)",
   danger: "var(--danger)",
+  steel:  "var(--steel)",
   none:   "transparent",
 };
 
@@ -30,40 +31,29 @@ export function DashboardPanel({
   className = "",
   glow,
   badge,
-  accent = "signal",
+  accent = "steel",
 }: DashboardPanelProps) {
   const color = ACCENT_COLOR[accent];
 
   return (
     <GlassCard glow={glow} className={`overflow-hidden ${className}`}>
-      {/* Top gradient accent line */}
-      <div
-        className="absolute top-0 inset-x-0 h-px"
-        style={{
-          background: `linear-gradient(90deg, transparent 0%, ${color}50 30%, ${color}80 50%, ${color}50 70%, transparent 100%)`,
-        }}
-      />
-
       {/* Panel header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
-        <div className="flex items-center gap-2.5 min-w-0">
-          {/* Accent dot */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-line/60">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Left accent marker — color-codes the panel by severity/type */}
           {accent !== "none" && (
             <div
-              className="w-1 h-4 rounded-full flex-shrink-0"
-              style={{
-                background: `linear-gradient(180deg, ${color} 0%, transparent 100%)`,
-                boxShadow: `0 0 8px ${color}60`,
-              }}
+              className="w-[3px] h-5 rounded-full flex-shrink-0"
+              style={{ background: color, opacity: 0.55 }}
             />
           )}
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-[0.82rem] font-semibold text-ink truncate">{title}</h3>
+              <h3 className="type-panel-title">{title}</h3>
               {badge && <div className="flex-shrink-0">{badge}</div>}
             </div>
             {subtitle && (
-              <p className="text-[0.7rem] text-muted mt-0.5 leading-tight">{subtitle}</p>
+              <p className="type-caption mt-0.5">{subtitle}</p>
             )}
           </div>
         </div>
@@ -73,7 +63,7 @@ export function DashboardPanel({
       </div>
 
       {/* Panel body */}
-      <div className="p-5">{children}</div>
+      <div className="p-5 sm:p-6">{children}</div>
     </GlassCard>
   );
 }

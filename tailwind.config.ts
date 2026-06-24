@@ -18,6 +18,8 @@ export default {
         signalDim: "var(--signal-dim)",
         ice:       "var(--ice)",
         iceDim:    "var(--ice-dim)",
+        steel:     "var(--steel)",
+        steelDim:  "var(--steel-dim)",
         warn:      "var(--warn)",
         danger:    "var(--danger)",
       },
@@ -26,8 +28,16 @@ export default {
         body:    ["var(--font-body)",    "system-ui", "sans-serif"],
         mono:    ["var(--font-mono)",    "monospace"],
       },
+      fontSize: {
+        "5xl-hero": ["var(--text-5xl)", { lineHeight: "1.05", letterSpacing: "-0.025em" }],
+      },
       transitionTimingFunction: {
         "out-expo": "cubic-bezier(0.16, 1, 0.3, 1)",
+      },
+      spacing: {
+        "18": "4.5rem",
+        "22": "5.5rem",
+        "26": "6.5rem",
       },
     },
   },

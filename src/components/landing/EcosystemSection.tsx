@@ -28,7 +28,7 @@ function NodeMap({ labels }: { labels: Record<NodeId, string> }) {
 
   return (
     <svg viewBox="0 0 800 480" className="w-full max-w-3xl mx-auto"
-      style={{ filter: "drop-shadow(0 0 20px rgba(0,229,255,0.08))" }}>
+      style={{ filter: "drop-shadow(0 0 20px rgba(45,212,191,0.08))" }}>
       <defs>
         <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
           <stop offset="0%"   stopColor="#00E5FF" stopOpacity="0.3" />

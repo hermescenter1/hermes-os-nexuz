@@ -29,15 +29,15 @@ export default function BaselineCard({ baseline }: Props) {
   return (
     <GlassCard>
       <div className="px-5 pt-5 pb-2 border-b border-white/5">
-        <p className="font-mono text-xs uppercase tracking-widest text-white/40">
+        <p className="font-mono text-xs uppercase tracking-widest text-ink/40">
           Baseline · {b.windowDays}-day window
         </p>
       </div>
       <div className="divide-y divide-white/5">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between px-5 py-2.5">
-            <span className="text-white/50 text-xs">{r.label}</span>
-            <span className="text-white font-mono text-xs">{r.value}</span>
+            <span className="text-ink/50 text-xs">{r.label}</span>
+            <span className="text-ink font-mono text-xs">{r.value}</span>
           </div>
         ))}
       </div>

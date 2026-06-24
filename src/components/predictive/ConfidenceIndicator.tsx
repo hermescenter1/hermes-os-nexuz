@@ -10,7 +10,7 @@ interface Props {
 const STYLES: Record<PredictiveConfidence, { dot: string; text: string; label: string }> = {
   HIGH:   { dot: "bg-cyan-400",   text: "text-cyan-400",   label: "High" },
   MEDIUM: { dot: "bg-amber-400",  text: "text-amber-400",  label: "Medium" },
-  LOW:    { dot: "bg-white/30",   text: "text-white/40",   label: "Low" },
+  LOW:    { dot: "bg-white/30",   text: "text-ink/40",   label: "Low" },
 };
 
 export default function ConfidenceIndicator({ confidence, label }: Props) {

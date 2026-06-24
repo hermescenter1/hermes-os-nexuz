@@ -22,7 +22,7 @@ export default function QueryInput({ onSubmit, loading }: Props) {
   return (
     <div className="flex gap-2">
       <input
-        className="flex-1 rounded border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-cyan-400/50"
+        className="flex-1 rounded border border-white/10 bg-white/5 px-4 py-2 text-sm text-ink placeholder-white/30 focus:outline-none focus:border-cyan-400/50"
         placeholder={t("queryPlaceholder")}
         value={v}
         onChange={(e) => setV(e.target.value)}

@@ -16,24 +16,31 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <aside className="sidebar-bg h-full w-60 flex flex-col border-e border-line flex-none">
+    <aside className="sidebar-bg h-full w-60 flex flex-col flex-none">
       {/* Brand */}
       <div className="px-5 py-5 border-b border-line flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="w-5 h-5 rounded flex items-center justify-center"
-              style={{ background: "rgba(56, 224, 176, 0.15)" }}>
-              <svg viewBox="0 0 16 16" fill="none" className="w-3 h-3">
+          <div className="flex items-center gap-2.5 mb-1">
+            <span
+              className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(30,200,164,0.10)", border: "1px solid rgba(30,200,164,0.18)" }}
+            >
+              <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5">
                 <path d="M8 2L14 5v6L8 14 2 11V5L8 2z" stroke="var(--signal)" strokeWidth="1.5" strokeLinejoin="round"/>
               </svg>
             </span>
-            <span className="text-xs font-mono font-semibold text-signal tracking-wider">HERMES</span>
+            <span className="font-display text-sm font-bold tracking-tight text-ink">Hermes OS</span>
           </div>
-          <p className="text-[10px] font-mono text-muted tracking-widest uppercase">Engineering Hub</p>
+          <p className="text-[0.65rem] font-body font-medium text-faint tracking-[0.05em] uppercase ps-[34px]">
+            Engineering Hub
+          </p>
         </div>
         {onClose && (
-          <button onClick={onClose}
-            className="lg:hidden text-muted hover:text-ink transition-colors p-1 rounded">
+          <button
+            onClick={onClose}
+            className="lg:hidden text-faint hover:text-muted transition-colors p-1.5 rounded"
+            aria-label="Close menu"
+          >
             <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4">
               <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
@@ -42,8 +49,8 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        <p className="px-3 py-2 text-[10px] font-mono uppercase tracking-widest text-muted">
+      <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
+        <p className="px-2 pb-2 text-[0.65rem] font-body font-semibold tracking-[0.08em] uppercase text-faint">
           Modules
         </p>
         {NAV.map(({ href, label, icon: Icon, exact }) => {
@@ -55,27 +62,24 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
               key={href}
               href={href as Parameters<typeof Link>[0]["href"]}
               className={[
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 border-s-2",
                 active
-                  ? "bg-signal/10 text-signal neon-border border border-signal/20"
-                  : "text-muted hover:text-ink hover:bg-surface border border-transparent",
+                  ? "border-s-signal bg-white/[0.05] text-ink font-medium"
+                  : "border-s-transparent text-muted hover:text-ink hover:bg-white/[0.03] font-normal",
               ].join(" ")}
             >
               <Icon active={active} />
-              <span>{label}</span>
-              {active && (
-                <span className="ms-auto w-1.5 h-1.5 rounded-full bg-signal flex-none" />
-              )}
+              <span className="truncate">{label}</span>
             </Link>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-line space-y-2">
+      <div className="px-3 py-4 border-t border-line">
         <Link
           href="/"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted hover:text-ink transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-faint hover:text-muted transition-colors"
         >
           <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5 flex-none">
             <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

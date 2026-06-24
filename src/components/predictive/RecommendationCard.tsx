@@ -34,19 +34,19 @@ export default function RecommendationCard({ recommendation: rec }: Props) {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className={`h-1.5 w-1.5 rounded-full ${PRIORITY_DOT[rec.priority]}`} />
-            <span className="font-mono text-xs uppercase tracking-wider text-white/40">
+            <span className="font-mono text-xs uppercase tracking-wider text-ink/40">
               {rec.priority} · {TYPE_LABELS[rec.recommendationType] ?? rec.recommendationType}
             </span>
           </div>
-          <p className="font-semibold text-white text-sm">{rec.title}</p>
-          <p className="text-white/60 text-xs">{rec.description}</p>
+          <p className="font-semibold text-ink text-sm">{rec.title}</p>
+          <p className="text-ink/60 text-xs">{rec.description}</p>
         </div>
         <ConfidenceIndicator confidence={rec.confidence} />
       </div>
 
       {rec.evidence.length > 0 && (
         <details className="group">
-          <summary className="text-white/30 font-mono text-xs cursor-pointer hover:text-white/50">
+          <summary className="text-ink/30 font-mono text-xs cursor-pointer hover:text-ink/50">
             {rec.evidence.length} evidence record{rec.evidence.length !== 1 ? "s" : ""} ▾
           </summary>
           <div className="mt-2">
@@ -55,7 +55,7 @@ export default function RecommendationCard({ recommendation: rec }: Props) {
         </details>
       )}
 
-      <p className="text-white/20 font-mono text-xs">{rec.formulaVersion} / {rec.weightSetVersion}</p>
+      <p className="text-ink/20 font-mono text-xs">{rec.formulaVersion} / {rec.weightSetVersion}</p>
     </div>
   );
 }

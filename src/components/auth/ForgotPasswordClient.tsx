@@ -68,7 +68,7 @@ export function ForgotPasswordClient({ locale }: Props) {
       </button>
 
       <div className="text-center text-sm">
-        <Link href={`/${locale}/auth/login`} style={{ color: "#00E5FF" }} className="hover:underline">
+        <Link href={`/${locale}/auth/login`} style={{ color: "#2DD4BF" }} className="hover:underline">
           ← Back to sign in
         </Link>
       </div>

@@ -6,13 +6,13 @@ export default function KnowledgePage() {
   const t = useTranslations("ke");
 
   const nav = [
-    { href: "knowledge/articles",  label: t("articles.title"),         desc: t("articles.subtitle") },
-    { href: "knowledge/failures",  label: t("failures.title"),         desc: t("failures.subtitle") },
-    { href: "knowledge/procedures", label: t("procedures.title"),      desc: t("procedures.subtitle") },
-    { href: "knowledge/cases",     label: t("engineeringCases.title"), desc: t("engineeringCases.subtitle") },
+    { href: "knowledge/articles",   label: t("articles.title"),         desc: t("articles.subtitle") },
+    { href: "knowledge/failures",   label: t("failures.title"),         desc: t("failures.subtitle") },
+    { href: "knowledge/procedures", label: t("procedures.title"),       desc: t("procedures.subtitle") },
+    { href: "knowledge/cases",      label: t("engineeringCases.title"), desc: t("engineeringCases.subtitle") },
   ];
 
-  const designPillars = [
+  const designPillars: [string, string][] = [
     ["Bilingual Search",   "Unicode NFC → Arabic→Persian char map → diacritics strip → lowercase → token match"],
     ["Confidence Scale",   "0.0–1.0 internal Float; ≤0.39 LOW · 0.40–0.74 MEDIUM · ≥0.75 HIGH"],
     ["Root Cause Scoring", "Named weight constants: health −0.20 · alarms +0.15 · indicator +0.10 · type +0.10"],
@@ -22,40 +22,50 @@ export default function KnowledgePage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-signal">{t("eyebrow")}</p>
-        <h1 className="text-2xl font-bold text-white mt-1">{t("overview.title")}</h1>
-        <p className="text-white/50 text-sm mt-1">{t("overview.subtitle")}</p>
+    <div className="space-y-6 p-6 sm:p-8 max-w-7xl mx-auto">
+      <div className="page-header-premium">
+        <p className="eyebrow-mono mb-2">{t("eyebrow")}</p>
+        <h1 className="page-title" style={{ fontSize: "clamp(1.75rem,3vw,2.5rem)" }}>
+          {t("overview.title")}
+        </h1>
+        <p className="mt-2 text-base text-muted leading-relaxed max-w-2xl">{t("overview.subtitle")}</p>
       </div>
 
-      <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-        <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
-        <p className="text-amber-300 text-sm">{t("safetyBanner")}</p>
+      {/* Safety notice */}
+      <div className="flex items-center gap-3 rounded-xl border border-warn/20 bg-warn/[0.04] px-4 py-3">
+        <span className="h-1.5 w-1.5 rounded-full bg-warn flex-shrink-0" />
+        <p className="text-warn text-sm">{t("safetyBanner")}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Navigation cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {nav.map((n) => (
           <Link key={n.href} href={n.href}>
-            <GlassCard hover className="p-5 space-y-2">
-              <p className="font-semibold text-white">{n.label}</p>
-              <p className="text-white/40 text-sm">{n.desc}</p>
+            <GlassCard hover className="p-6 space-y-2.5 group">
+              <p className="font-display font-semibold text-ink group-hover:text-signal transition-colors duration-200">
+                {n.label}
+              </p>
+              <p className="text-sm text-muted leading-relaxed">{n.desc}</p>
+              <div className="flex items-center gap-1.5 pt-1">
+                <span className="text-xs text-faint group-hover:text-muted transition-colors">
+                  Open →
+                </span>
+              </div>
             </GlassCard>
           </Link>
         ))}
       </div>
 
-      <GlassCard>
-        <div className="px-5 py-4 space-y-3">
-          <p className="font-mono text-xs uppercase tracking-widest text-white/30">Engine Design</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-white/50">
-            {designPillars.map(([k, v]) => (
-              <div key={k} className="rounded-lg border border-white/5 bg-white/5 px-3 py-2">
-                <p className="text-cyan-400 font-mono text-xs mb-0.5">{k}</p>
-                <p className="text-white/40">{v}</p>
-              </div>
-            ))}
-          </div>
+      {/* Engine design */}
+      <GlassCard className="p-6">
+        <p className="eyebrow-label mb-4">Engine Design</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {designPillars.map(([k, v]) => (
+            <div key={k} className="rounded-xl border border-line/60 bg-surface2/60 px-4 py-3">
+              <p className="font-mono text-xs text-signal mb-1">{k}</p>
+              <p className="text-xs text-muted leading-relaxed">{v}</p>
+            </div>
+          ))}
         </div>
       </GlassCard>
     </div>

@@ -24,9 +24,12 @@ function Panel({
   className?: string;
 }) {
   return (
-    <section className={`rounded-xl border border-line bg-surface p-5 ${className}`}>
-      <h2 className="font-display text-sm font-semibold text-muted">{title}</h2>
-      <div className="mt-3">{children}</div>
+    <section
+      className={`rounded-xl border border-line bg-surface p-6 ${className}`}
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}
+    >
+      <h2 className="type-panel-title mb-4">{title}</h2>
+      {children}
     </section>
   );
 }
@@ -166,8 +169,8 @@ export function DashboardClient() {
 
   if (error)
     return (
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <p className="rounded-lg border border-[var(--danger)]/40 bg-surface px-4 py-3 font-mono text-sm text-[var(--danger)]">
+      <div className="mx-auto max-w-7xl px-6 sm:px-8 py-12">
+        <p className="rounded-xl border border-danger/30 bg-surface px-5 py-4 font-mono text-sm text-danger">
           {error}
         </p>
       </div>
@@ -188,14 +191,14 @@ export function DashboardClient() {
     s.alarms.counts.low;
 
   return (
-    <div className="mx-auto max-w-7xl px-6 pb-16 pt-8">
+    <div className="mx-auto max-w-7xl px-6 sm:px-8 pb-20 pt-6">
       <ExecutiveOverview />
 
-      <p className="mb-4 font-mono text-[0.7rem] text-muted/70">
+      <p className="mb-5 font-mono text-[0.7rem] text-faint">
         {t("updated")} {tf.format(s.ts)}
       </p>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {/* 1 — Factory Overview */}
         <Panel title={t("panels.overview")} className="md:col-span-2">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -417,16 +420,16 @@ export function DashboardClient() {
         <Panel title={t("panels.ai")} className="md:col-span-2">
           <ul className="space-y-3">
             {s.ai.map((r) => (
-              <li key={r.id} className="rounded-lg border border-line bg-bg/60 p-3.5">
-                <div className="flex items-baseline justify-between gap-3">
-                  <h3 className="font-display text-sm font-semibold text-ink">
+              <li key={r.id} className="rounded-xl border border-line/70 bg-surface2/60 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-display text-sm font-semibold text-ink leading-snug">
                     {t(`aiP.recs.${r.recKey}.title`)}
                   </h3>
-                  <span className="shrink-0 font-mono text-[0.65rem] text-signal">
-                    {nf.format(Math.round(r.confidence * 100))}{pct} {t("aiP.confidence")}
+                  <span className="shrink-0 rounded-full border border-signal/20 bg-signal/[0.05] px-2 py-0.5 font-mono text-[0.65rem] text-signal">
+                    {nf.format(Math.round(r.confidence * 100))}{pct}
                   </span>
                 </div>
-                <p className="mt-1 font-body text-xs leading-relaxed text-muted">
+                <p className="mt-1.5 font-body text-xs leading-relaxed text-muted">
                   {t(`aiP.recs.${r.recKey}.desc`)}
                 </p>
               </li>

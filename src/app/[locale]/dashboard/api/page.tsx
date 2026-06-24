@@ -1,6 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }          from "@/components/PageShell";
-import { ApiKeysDashboard }   from "@/components/api/ApiKeysDashboard";
+import { PageShell }        from "@/components/PageShell";
+import { ApiKeysDashboard } from "@/components/api/ApiKeysDashboard";
+import { PageHeader }       from "@/components/ui/PageHeader";
 
 export default async function ApiPlatformPage({
   params,
@@ -13,14 +14,13 @@ export default async function ApiPlatformPage({
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-7xl px-6 pt-10">
-        <div className="mb-8">
-          <p className="font-mono text-sm uppercase tracking-widest text-signal">
-            {t("eyebrow")}
-          </p>
-          <h1 className="mt-2 font-display text-3xl font-bold">{t("title")}</h1>
-          <p className="mt-1 text-muted text-sm">{t("subtitle")}</p>
-        </div>
+      <div className="mx-auto max-w-7xl px-6 sm:px-8">
+        <PageHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          subtitle={t("subtitle")}
+          level="page"
+        />
         <ApiKeysDashboard />
       </div>
     </PageShell>

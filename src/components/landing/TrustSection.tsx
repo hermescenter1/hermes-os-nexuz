@@ -63,13 +63,13 @@ const TRUST_ITEMS = [
     Icon:   IconShield,
     label:  "Secure by Design",
     desc:   "Zero-trust architecture with end-to-end encryption at rest and in transit. Built to meet industrial cybersecurity standards.",
-    accent: "#00E5FF",
+    accent: "#2DD4BF",
   },
   {
     Icon:   IconFactory,
     label:  "Industrial-Grade Architecture",
     desc:   "Engineered for OT/IT convergence. Native support for PLC, SCADA, HMI, OPC-UA, MQTT, and Modbus protocols.",
-    accent: "#38BDF8",
+    accent: "#CBD5E1",
   },
   {
     Icon:   IconNetwork,
@@ -81,7 +81,7 @@ const TRUST_ITEMS = [
     Icon:   IconGraph,
     label:  "Knowledge Graph",
     desc:   "Persistent semantic memory that grows with your operation. Every asset, procedure, and incident permanently encoded.",
-    accent: "#00E5FF",
+    accent: "#2DD4BF",
   },
   {
     Icon:   IconCopilot,
@@ -162,19 +162,19 @@ export function TrustSection() {
       <div
         className="absolute top-0 inset-x-0 h-px"
         aria-hidden="true"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.16), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.16), transparent)" }}
       />
       <div
         className="absolute bottom-0 inset-x-0 h-px"
         aria-hidden="true"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.08), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.08), transparent)" }}
       />
 
       {/* Ambient bloom */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full pointer-events-none"
         aria-hidden="true"
-        style={{ background: "radial-gradient(ellipse, rgba(0,229,255,0.04) 0%, transparent 65%)" }}
+        style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.04) 0%, transparent 65%)" }}
       />
 
       <div className="max-w-6xl mx-auto px-6">
@@ -185,7 +185,7 @@ export function TrustSection() {
           transition={{ duration: 0.6, ease: "easeOut" as const }}
           className="text-center mb-16"
         >
-          <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#00E5FF" }}>
+          <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#2DD4BF" }}>
             Enterprise Foundation
           </p>
           <h2

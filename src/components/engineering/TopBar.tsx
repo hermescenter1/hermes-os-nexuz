@@ -38,11 +38,10 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         <h2 className="text-sm font-semibold text-ink tracking-tight">{title}</h2>
       </div>
 
-      {/* Status pill */}
-      <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-line"
-        style={{ background: "rgba(56, 224, 176, 0.05)" }}>
-        <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
-        <span className="text-[10px] font-mono text-signal tracking-wider">LIVE</span>
+      {/* System status — neutral, static */}
+      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded border border-line">
+        <span className="w-1.5 h-1.5 rounded-full bg-signal/70" />
+        <span className="text-[0.65rem] font-body font-medium text-faint tracking-[0.04em]">Online</span>
       </div>
     </header>
   );

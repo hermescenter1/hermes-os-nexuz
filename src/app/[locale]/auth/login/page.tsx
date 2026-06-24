@@ -23,7 +23,7 @@ export default async function AuthLoginPage({
       footer={
         <span>
           Don&apos;t have an account?{" "}
-          <Link href={`/${locale}/auth/register`} style={{ color: "#00E5FF" }} className="hover:underline">
+          <Link href={`/${locale}/auth/register`} style={{ color: "#2DD4BF" }} className="hover:underline">
             Create one
           </Link>
         </span>

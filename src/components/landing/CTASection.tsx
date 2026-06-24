@@ -13,20 +13,20 @@ function OrbitRing({ radius, delay }: { radius: number; delay: number }) {
         width: radius * 2, height: radius * 2,
         top: "50%", left: "50%",
         transform: "translate(-50%, -50%)",
-        borderColor: "rgba(0,229,255,0.05)",
+        borderColor: "rgba(45,212,191,0.05)",
       }}
     >
       <div
         className="absolute w-1.5 h-1.5 rounded-full animate-l-orbit"
         style={{
-          background:      "#00E5FF",
+          background:      "#2DD4BF",
           top: "50%", left: "50%",
           marginTop:       "-3px",
           marginLeft:      `-${radius}px`,
           transformOrigin: `${radius}px 3px`,
           animationDelay:  `${delay}s`,
           animationDuration:`${15 + delay * 2}s`,
-          boxShadow:       "0 0 8px rgba(0,229,255,0.55)",
+          boxShadow:       "0 0 8px rgba(45,212,191,0.55)",
           opacity:         0.55,
         }}
       />
@@ -60,7 +60,7 @@ export function CTASection() {
       <div
         className="absolute top-0 inset-x-0 h-px"
         aria-hidden="true"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.18), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.18), transparent)" }}
       />
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
@@ -72,14 +72,14 @@ export function CTASection() {
             background:     "rgba(255,255,255,0.03)",
             backdropFilter: "blur(40px) saturate(1.4)",
             border:         "1px solid rgba(255,255,255,0.07)",
-            boxShadow:      "inset 0 1px 0 rgba(255,255,255,0.07), 0 0 80px rgba(0,229,255,0.05)",
+            boxShadow:      "inset 0 1px 0 rgba(255,255,255,0.07), 0 0 80px rgba(45,212,191,0.05)",
           }}
         >
           {/* Panel top accent */}
           <div
             className="absolute top-0 inset-x-0 h-px"
             aria-hidden="true"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.28), transparent)" }}
+            style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.28), transparent)" }}
           />
 
           {/* Badge */}
@@ -115,7 +115,7 @@ export function CTASection() {
             {t("title")}<br />
             <span
               style={{
-                background:           "linear-gradient(135deg, #00E5FF 0%, #38BDF8 60%, #7DD3FC 100%)",
+                background:           "linear-gradient(135deg, #2DD4BF 0%, #38BDF8 60%, #7DD3FC 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor:  "transparent",
                 backgroundClip:       "text",
@@ -145,11 +145,11 @@ export function CTASection() {
           >
             <Link
               href="/engineering"
-              className="group inline-flex items-center gap-2.5 px-8 py-4 rounded-xl font-mono font-semibold text-sm uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]/50"
+              className="group inline-flex items-center gap-2.5 px-8 py-4 rounded-xl font-mono font-semibold text-sm uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2DD4BF]/50"
               style={{
-                background: "linear-gradient(135deg, rgba(0,229,255,0.94) 0%, rgba(0,140,220,0.94) 100%)",
+                background: "linear-gradient(135deg, rgba(45,212,191,0.94) 0%, rgba(0,140,220,0.94) 100%)",
                 color:      "#050816",
-                boxShadow:  "0 0 32px rgba(0,229,255,0.35), 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.22)",
+                boxShadow:  "0 0 32px rgba(45,212,191,0.35), 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.22)",
                 transition: "all 220ms cubic-bezier(0.16,1,0.3,1)",
               }}
             >
@@ -161,11 +161,11 @@ export function CTASection() {
 
             <Link
               href="/brain"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-mono font-semibold text-sm uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]/40"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-mono font-semibold text-sm uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2DD4BF]/40"
               style={{
                 background:     "rgba(255,255,255,0.04)",
                 backdropFilter: "blur(12px)",
-                border:         "1px solid rgba(0,229,255,0.22)",
+                border:         "1px solid rgba(45,212,191,0.22)",
                 color:          "rgba(180,220,255,0.90)",
                 boxShadow:      "inset 0 1px 0 rgba(255,255,255,0.06)",
                 transition:     "all 220ms cubic-bezier(0.16,1,0.3,1)",

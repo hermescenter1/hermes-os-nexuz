@@ -29,10 +29,10 @@ function Counter({ to, suffix = "", prefix = "" }: CounterProps) {
 }
 
 const STATS_META = [
-  { value: 2400, suffix: "+", icon: "⊞", key: "projects", accent: "#00E5FF" },
-  { value: 120,  suffix: "+", icon: "◈", key: "domains",  accent: "#38BDF8" },
-  { value: 8500, suffix: "+", icon: "◎", key: "cases",    accent: "#7DD3FC" },
-  { value: 7,    suffix: "",  icon: "⊙", key: "agents",   accent: "#00E5FF" },
+  { value: 2400, suffix: "+", icon: "⊞", key: "projects", accent: "#2DD4BF" },
+  { value: 120,  suffix: "+", icon: "◈", key: "domains",  accent: "#7DD3FC" },
+  { value: 8500, suffix: "+", icon: "◎", key: "cases",    accent: "#CBD5E1" },
+  { value: 7,    suffix: "",  icon: "⊙", key: "agents",   accent: "#2DD4BF" },
 ] as const;
 
 const containerVariants = {
@@ -58,7 +58,7 @@ export function StatsSection() {
       <div
         className="absolute top-0 left-1/4 right-1/4 h-px"
         aria-hidden="true"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.25), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }}
       />
 
       <div className="max-w-6xl mx-auto px-6">
@@ -98,20 +98,12 @@ export function StatsSection() {
               {/* Metric */}
               <div
                 className="metric text-4xl lg:text-5xl font-bold mb-2"
-                style={{
-                  color:      stat.accent,
-                  textShadow: `0 0 20px ${stat.accent}45`,
-                }}
+                style={{ color: stat.accent }}
               >
                 <Counter to={stat.value} suffix={stat.suffix} />
               </div>
 
-              <p
-                className="font-mono text-xs uppercase tracking-widest"
-                style={{ color: "rgba(140,175,210,0.65)" }}
-              >
-                {t(stat.key)}
-              </p>
+              <p className="type-eyebrow">{t(stat.key)}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -120,7 +112,7 @@ export function StatsSection() {
       <div
         className="absolute bottom-0 left-1/4 right-1/4 h-px"
         aria-hidden="true"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.15), transparent)" }}
       />
     </section>
   );

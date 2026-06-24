@@ -10,7 +10,7 @@ interface Props {
   token:  string;
 }
 
-const STRENGTH_COLORS = ["#e85c5c", "#e87939", "#e8c639", "#38bdf8", "#00E5FF"] as const;
+const STRENGTH_COLORS = ["#e85c5c", "#e87939", "#e8c639", "#38bdf8", "#2DD4BF"] as const;
 const STRENGTH_LABELS = ["Very weak", "Weak", "Fair", "Strong", "Very strong"] as const;
 
 export function ResetPasswordClient({ locale, token }: Props) {
@@ -56,7 +56,7 @@ export function ResetPasswordClient({ locale, token }: Props) {
     return (
       <div className="text-center space-y-4">
         <p style={errorStyle}>Invalid or missing reset token. Please request a new password reset.</p>
-        <Link href={`/${locale}/auth/forgot-password`} style={{ color: "#00E5FF" }} className="text-sm hover:underline">
+        <Link href={`/${locale}/auth/forgot-password`} style={{ color: "#2DD4BF" }} className="text-sm hover:underline">
           Request new link →
         </Link>
       </div>

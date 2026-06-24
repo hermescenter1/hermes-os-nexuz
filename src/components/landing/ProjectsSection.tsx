@@ -42,7 +42,7 @@ export function ProjectsSection() {
   return (
     <section ref={ref} className="relative py-24" style={{ background: "#070E1C" }}>
       <div className="absolute top-0 inset-x-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.12), transparent)" }} />
+        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.12), transparent)" }} />
 
       <div className="max-w-6xl mx-auto px-6">
 
@@ -52,7 +52,7 @@ export function ProjectsSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#00E5FF" }}>
+          <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#2DD4BF" }}>
             {t("eyebrow")}
           </p>
           <h2 className="font-display font-bold mb-4"
@@ -79,11 +79,11 @@ export function ProjectsSection() {
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider transition-all duration-200"
               style={{
                 background:   active === cat ? "rgba(0,184,255,0.12)" : "rgba(255,255,255,0.04)",
-                border:       active === cat ? "1px solid rgba(0,229,255,0.35)" : "1px solid rgba(255,255,255,0.08)",
-                color:        active === cat ? "#00E5FF" : "rgba(140,175,210,0.6)",
+                border:       active === cat ? "1px solid rgba(45,212,191,0.35)" : "1px solid rgba(255,255,255,0.08)",
+                color:        active === cat ? "#2DD4BF" : "rgba(140,175,210,0.6)",
               }}
             >
-              <span style={{ color: active === cat ? "#00E5FF" : "rgba(140,175,210,0.5)" }}>
+              <span style={{ color: active === cat ? "#2DD4BF" : "rgba(140,175,210,0.5)" }}>
                 {CATEGORY_ICONS[cat]}
               </span>
               {t(cat)}
@@ -108,7 +108,7 @@ export function ProjectsSection() {
                 width: "4px", height: "4px",
                 left: `${10 + (i % 3) * 40}%`,
                 top:  `${15 + Math.floor(i / 3) * 35}%`,
-                background: "rgba(0,229,255,0.12)",
+                background: "rgba(45,212,191,0.12)",
               }}
             />
           ))}
@@ -130,9 +130,9 @@ export function ProjectsSection() {
 
           {/* Neon badge */}
           <div className="mt-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full"
-            style={{ background: "rgba(0,229,255,0.06)", border: "1px solid rgba(0,229,255,0.2)" }}>
-            <span className="w-1.5 h-1.5 rounded-full animate-l-pulse" style={{ background: "#00E5FF" }} />
-            <span className="font-mono text-xs" style={{ color: "#00E5FF" }}>
+            style={{ background: "rgba(45,212,191,0.06)", border: "1px solid rgba(45,212,191,0.2)" }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-l-pulse" style={{ background: "#2DD4BF" }} />
+            <span className="font-mono text-xs" style={{ color: "#2DD4BF" }}>
               {t(active)}
             </span>
           </div>

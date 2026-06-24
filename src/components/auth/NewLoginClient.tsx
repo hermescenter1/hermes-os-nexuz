@@ -96,14 +96,14 @@ export function NewLoginClient({ locale, from }: Props) {
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-3.5 h-3.5 accent-[#00E5FF]"
+            className="w-3.5 h-3.5 accent-[#2DD4BF]"
           />
           <span style={{ color: "rgba(180,210,240,0.70)" }}>Remember me</span>
         </label>
         <Link
           href={`/${locale}/auth/forgot-password`}
           className="text-sm hover:underline"
-          style={{ color: "#00E5FF" }}
+          style={{ color: "#2DD4BF" }}
         >
           Forgot password?
         </Link>

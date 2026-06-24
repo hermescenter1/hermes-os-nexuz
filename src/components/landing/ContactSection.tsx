@@ -7,7 +7,7 @@ import { useTranslations }  from "next-intl";
 const CONTACT_CARDS = [
   {
     key:   "demo",
-    color: "#00E5FF",
+    color: "#2DD4BF",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
         <path d="M15 10l4.5-4.5M15 10h4M15 10v-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -62,7 +62,7 @@ export function ContactSection() {
     <section ref={ref} className="relative py-24 overflow-hidden"
       style={{ background: "linear-gradient(180deg, #050816 0%, #070E1C 100%)" }}>
       <div className="absolute top-0 inset-x-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent)" }} />
+        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.15), transparent)" }} />
 
       {/* Background radial glow */}
       <div className="absolute inset-0 pointer-events-none">
@@ -78,7 +78,7 @@ export function ContactSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-14"
         >
-          <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#00E5FF" }}>
+          <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#2DD4BF" }}>
             {t("eyebrow")}
           </p>
           <h2 className="font-display font-bold mb-4"

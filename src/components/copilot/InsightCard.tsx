@@ -20,15 +20,15 @@ export default function InsightCard({ insight }: Props) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-mono text-xs uppercase tracking-wider mb-1 opacity-70">{insight.severity}</p>
-          <p className="font-semibold text-white text-sm">{insight.title}</p>
-          <p className="mt-1 text-white/60 text-xs">{insight.description}</p>
+          <p className="font-semibold text-ink text-sm">{insight.title}</p>
+          <p className="mt-1 text-ink/60 text-xs">{insight.description}</p>
         </div>
-        <p className="text-white/30 text-xs whitespace-nowrap">
+        <p className="text-ink/30 text-xs whitespace-nowrap">
           {new Date(insight.createdAt).toLocaleTimeString()}
         </p>
       </div>
       {insight.assetId && (
-        <p className="mt-2 text-white/30 font-mono text-xs">asset: {insight.assetId.slice(0, 12)}…</p>
+        <p className="mt-2 text-ink/30 font-mono text-xs">asset: {insight.assetId.slice(0, 12)}…</p>
       )}
     </div>
   );

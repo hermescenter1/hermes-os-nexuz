@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { cookies }     from "next/headers";
 import { PageShell }   from "@/components/PageShell";
 import { OrgOverview } from "@/components/organization/OrgOverview";
+import { PageHeader }  from "@/components/ui/PageHeader";
 import { verifyAccessToken }   from "@/lib/auth/jwt";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
 import { getPrisma }           from "@/lib/db/prisma";
@@ -29,11 +30,12 @@ export default async function OrgPage({ params }: { params: Promise<{ locale: st
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-7xl px-6 pt-10">
-        <div className="mb-8">
-          <p className="font-mono text-sm uppercase tracking-widest text-signal">{t("eyebrow")}</p>
-          <h1 className="mt-2 font-display text-3xl font-bold">{t("title")}</h1>
-        </div>
+      <div className="mx-auto max-w-7xl px-6 sm:px-8">
+        <PageHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          level="page"
+        />
         {orgId ? (
           <OrgOverview orgId={orgId} />
         ) : (

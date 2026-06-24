@@ -1,50 +1,57 @@
 import type { ReactNode } from "react";
 import { GlassCard } from "./GlassCard";
 
-type Accent = "signal" | "warn" | "danger" | "muted" | "ice";
+type Accent = "signal" | "warn" | "danger" | "muted" | "ice" | "steel";
 type Trend  = "up" | "down" | "stable";
 
 const ACCENT: Record<Accent, {
-  text:    string;
-  bg:      string;
-  border:  string;
-  stripe:  string;
-  glow:    string;
+  text:   string;
+  bg:     string;
+  border: string;
+  stripe: string;
+  glow:   string;
 }> = {
   signal: {
     text:   "text-signal",
-    bg:     "bg-signal/[0.07]",
+    bg:     "bg-signal/[0.06]",
     border: "border-signalDim/40",
     stripe: "var(--signal)",
-    glow:   "rgba(var(--signal-rgb), 0.20)",
+    glow:   "rgba(var(--signal-rgb), 0.18)",
   },
   ice: {
     text:   "text-ice",
-    bg:     "bg-ice/[0.07]",
+    bg:     "bg-ice/[0.06]",
     border: "border-iceDim/40",
     stripe: "var(--ice)",
-    glow:   "rgba(var(--ice-rgb), 0.20)",
+    glow:   "rgba(var(--ice-rgb), 0.18)",
+  },
+  steel: {
+    text:   "text-steel",
+    bg:     "bg-steelDim/60",
+    border: "border-line2",
+    stripe: "var(--steel)",
+    glow:   "rgba(var(--steel-rgb), 0.15)",
   },
   warn: {
     text:   "text-warn",
-    bg:     "bg-warn/[0.07]",
+    bg:     "bg-warn/[0.06]",
     border: "border-warn/30",
     stripe: "var(--warn)",
-    glow:   "rgba(var(--warn-rgb), 0.20)",
+    glow:   "rgba(var(--warn-rgb), 0.18)",
   },
   danger: {
     text:   "text-danger",
-    bg:     "bg-danger/[0.07]",
+    bg:     "bg-danger/[0.06]",
     border: "border-danger/30",
     stripe: "var(--danger)",
-    glow:   "rgba(var(--danger-rgb), 0.20)",
+    glow:   "rgba(var(--danger-rgb), 0.18)",
   },
   muted: {
     text:   "text-muted",
     bg:     "bg-muted/[0.05]",
     border: "border-line",
     stripe: "var(--muted)",
-    glow:   "rgba(138, 160, 180, 0.15)",
+    glow:   "rgba(148, 163, 184, 0.12)",
   },
 };
 
@@ -79,23 +86,13 @@ export function StatCard({
   const a = ACCENT[accent];
 
   return (
-    <GlassCard glow={glow} hover={hover} className="p-5 flex flex-col gap-3 overflow-hidden">
-      {/* Top accent stripe */}
-      <div
-        className="absolute top-0 inset-x-0 h-px rounded-t-2xl"
-        style={{
-          background: `linear-gradient(90deg, transparent, ${a.stripe}40, transparent)`,
-        }}
-      />
-
+    <GlassCard glow={glow} hover={hover} className="p-6 flex flex-col gap-3 overflow-hidden">
       {/* Header row */}
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-mono uppercase tracking-widest text-muted">
-          {label}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="type-eyebrow">{label}</p>
         {icon && (
           <div
-            className={`w-7 h-7 rounded-lg flex items-center justify-center border ${a.bg} ${a.border}`}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center border flex-shrink-0 ${a.bg} ${a.border}`}
           >
             <span className={`text-sm leading-none ${a.text}`}>{icon}</span>
           </div>
@@ -104,8 +101,7 @@ export function StatCard({
 
       {/* Value + trend */}
       <div className="flex items-end justify-between gap-2">
-        <span className={`metric text-3xl font-bold ${a.text}`}
-          style={{ textShadow: `0 0 24px ${a.glow}` }}>
+        <span className={`metric text-3xl font-bold ${a.text}`}>
           {value}
         </span>
         {trend && (
@@ -117,7 +113,7 @@ export function StatCard({
 
       {/* Subtitle */}
       {subtitle && (
-        <p className="text-xs text-muted leading-snug">{subtitle}</p>
+        <p className="type-caption -mt-1">{subtitle}</p>
       )}
     </GlassCard>
   );

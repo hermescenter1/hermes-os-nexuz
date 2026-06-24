@@ -26,7 +26,7 @@ export function SiteHeader() {
           className="absolute top-0 inset-x-0 h-px"
           style={{
             background:
-              "linear-gradient(90deg, transparent, rgba(var(--signal-rgb),0.25), transparent)",
+              "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)",
           }}
           aria-hidden="true"
         />
@@ -38,18 +38,11 @@ export function SiteHeader() {
           aria-label="Hermes OS — home"
         >
           <span className="flex items-center gap-2.5" dir="ltr">
-            <span style={{ filter: "drop-shadow(0 0 8px rgba(var(--signal-rgb),0.35))" }}>
-              <HermesLogoMark className="h-8 w-8 shrink-0" />
-            </span>
+            <HermesLogoMark className="h-8 w-8 shrink-0" />
             <span className="flex flex-col">
               <span className="font-display text-[1.05rem] font-bold tracking-tight leading-none">
-                <span
-                  className="text-signal"
-                  style={{ textShadow: "0 0 16px rgba(var(--signal-rgb),0.40)" }}
-                >
-                  Hermes
-                </span>
-                <span className="text-muted"> OS</span>
+                <span className="text-ink">Hermes</span>
+                <span className="text-signal"> OS</span>
               </span>
               <span className="font-body text-[0.58rem] font-medium leading-none text-muted/60 mt-0.5">
                 {b("tagline")}

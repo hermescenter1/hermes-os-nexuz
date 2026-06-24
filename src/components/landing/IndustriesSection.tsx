@@ -80,7 +80,7 @@ export function IndustriesSection() {
   return (
     <section ref={ref} className="relative py-24" style={{ background: "#070E1C" }}>
       <div className="absolute top-0 inset-x-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(0,229,255,0.15) 50%, transparent 100%)" }} />
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(45,212,191,0.15) 50%, transparent 100%)" }} />
 
       <div className="max-w-6xl mx-auto px-6">
 
