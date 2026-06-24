@@ -4,6 +4,7 @@ import { PageShell }        from "@/components/PageShell";
 
 export const metadata = {
   title: "Candidate Portal · Hermes OS",
+  robots: { index: false, follow: false },
 };
 
 export default async function CandidateLayout({

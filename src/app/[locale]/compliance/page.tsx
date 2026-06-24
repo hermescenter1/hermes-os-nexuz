@@ -1,8 +1,20 @@
-import { setRequestLocale }          from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { ComplianceDashboardClient }  from "@/components/compliance/ComplianceDashboardClient";
 import { PageShell }                  from "@/components/PageShell";
+import { buildMetadata }              from "@/lib/seo/metadata";
 
-export const metadata = { title: "Compliance Dashboard · Hermes OS" };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
+  return buildMetadata({
+    locale,
+    path: "/compliance",
+    title:       p.compliance.title,
+    description: p.compliance.description,
+    keywords:    p.compliance.keywords,
+  });
+}
 
 export default async function CompliancePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

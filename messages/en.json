@@ -1,7 +1,66 @@
 {
   "meta": {
     "title": "Hermes OS — Industrial AI Platform",
-    "description": "Bilingual industrial automation platform: PLC, SCADA, HMI, and an AI copilot."
+    "description": "Enterprise industrial automation platform: PLC, SCADA, HMI, AI copilot, and intelligent operations — built for Persian and English plant floors.",
+    "keywords": "industrial AI, PLC programming, SCADA, HMI, industrial automation, AI copilot, OPC-UA, factory intelligence, Hermes OS, industrial IoT",
+    "pages": {
+      "academy": {
+        "title": "Hermes Academy — Industrial Training & Certification",
+        "description": "Professional industrial automation courses: PLC, SCADA, HMI, safety systems, and AI-driven operations. Earn certificates and advance your career.",
+        "keywords": "industrial training, PLC courses, SCADA certification, automation training, HMI learning, industrial safety"
+      },
+      "careers": {
+        "title": "Careers at Hermes — Industrial AI & Automation Jobs",
+        "description": "Join the team building the future of industrial intelligence. Open positions in PLC engineering, SCADA architecture, AI, and software development.",
+        "keywords": "industrial automation jobs, PLC engineer, SCADA architect, AI engineer, automation software developer"
+      },
+      "library": {
+        "title": "Industrial Knowledge Library — PLC, SCADA, HMI Reference",
+        "description": "Deep technical reference covering PLC, SCADA, HMI, electrical engineering, instrumentation, industrial protocols, and cybersecurity.",
+        "keywords": "PLC documentation, SCADA reference, HMI design guide, industrial protocols, OT cybersecurity, instrumentation"
+      },
+      "compliance": {
+        "title": "Compliance & Privacy Center — GDPR",
+        "description": "GDPR compliance tools, data privacy management, cookie consent, and legal documentation for enterprise operations.",
+        "keywords": "GDPR compliance, data privacy, cookie consent, privacy center, data protection"
+      },
+      "services": {
+        "title": "Industrial AI Services — Automation, SCADA, Cybersecurity",
+        "description": "End-to-end automation services: PLC engineering, SCADA architecture, industrial cybersecurity, and AI-powered operations intelligence.",
+        "keywords": "PLC engineering, SCADA architecture, industrial cybersecurity, automation consulting, IIoT integration"
+      },
+      "contact": {
+        "title": "Contact Hermes OS — Industrial AI Partnership",
+        "description": "Reach out to discuss enterprise automation solutions, industrial AI partnerships, and system integration projects.",
+        "keywords": "contact, industrial automation, enterprise AI, automation consulting"
+      },
+      "platform": {
+        "title": "Hermes OS Platform — Architecture & Capabilities",
+        "description": "Explore the Hermes OS platform architecture combining SCADA, HMI, PLC, and AI into a unified industrial operations surface.",
+        "keywords": "industrial platform, SCADA architecture, PLC integration, AI operations, HMI design"
+      },
+      "seo": {
+        "title": "SEO Dashboard",
+        "description": "Monitor and manage search engine optimization across Hermes OS.",
+        "overview": "Overview",
+        "totalPages": "Indexed Routes",
+        "locales": "Locales",
+        "publicRoutes": "Public Routes",
+        "previewSitemap": "Sitemap Preview",
+        "previewRobots": "Robots.txt Preview",
+        "schemaTypes": "Schema Types Active",
+        "hreflang": "hreflang",
+        "ogTags": "Open Graph",
+        "status": "Status",
+        "active": "Active",
+        "configured": "Configured",
+        "verified": "Verified",
+        "knowledgeArticles": "Knowledge Articles",
+        "openJobs": "Open Jobs",
+        "eyebrow": "Admin · SEO Engine",
+        "lede": "Search engine visibility, structured data, sitemap, and indexation status for the Hermes OS platform."
+      }
+    }
   },
   "nav": {
     "home": "Home",

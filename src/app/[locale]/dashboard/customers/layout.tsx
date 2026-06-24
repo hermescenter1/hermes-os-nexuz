@@ -5,6 +5,7 @@ import { CustomerSubNav }   from "@/components/customers/CustomerSubNav";
 
 export const metadata = {
   title: "Customer Success Center · Hermes OS",
+  robots: { index: false, follow: false },
 };
 
 export default async function CustomersLayout({

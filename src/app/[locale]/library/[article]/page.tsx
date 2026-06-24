@@ -1,16 +1,45 @@
-import { notFound } from "next/navigation";
+import { notFound }            from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
-import { Link } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
-import { KNOWLEDGE } from "@/lib/industrial/knowledge";
+import { PageShell }          from "@/components/PageShell";
+import { Link }               from "@/i18n/navigation";
+import { routing }            from "@/i18n/routing";
+import { KNOWLEDGE }          from "@/lib/industrial/knowledge";
 import { relatedArticles, relatedCases } from "@/lib/industrial/related";
-import { ArticleBrainStats } from "@/components/library/ArticleBrainStats";
+import { ArticleBrainStats }  from "@/components/library/ArticleBrainStats";
+import { JsonLd }             from "@/components/seo/JsonLd";
+import { articleSchema }      from "@/lib/seo/schemas";
+import { buildMetadata }      from "@/lib/seo/metadata";
+import { BASE_URL }           from "@/lib/seo/config";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
     KNOWLEDGE.map((l) => ({ locale, article: l.id }))
   );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; article: string }>;
+}) {
+  const { locale, article } = await params;
+  const lib = KNOWLEDGE.find((l) => l.id === article);
+  if (!lib) return { title: "Article Not Found" };
+
+  const k = await getTranslations({ locale, namespace: "knowledge" });
+  const name    = k(`${lib.id}.name`    as Parameters<typeof k>[0]);
+  const summary = k(`${lib.id}.summary` as Parameters<typeof k>[0]);
+
+  return buildMetadata({
+    locale,
+    path:        `/library/${article}`,
+    title:       `${name} — Industrial Knowledge Library`,
+    description: summary,
+    keywords:    lib.keywords.join(", "),
+    ogType:      "article",
+    publishedTime: "2026-01-01T00:00:00Z",
+    modifiedTime:  "2026-06-25T00:00:00Z",
+  });
 }
 
 export default async function ArticlePage({
@@ -28,10 +57,33 @@ export default async function ArticlePage({
   const b = await getTranslations("brain");
   const k = await getTranslations("knowledge");
   const related = relatedArticles(lib.id);
-  const cases = relatedCases(lib.id);
+  const cases   = relatedCases(lib.id);
+
+  const name    = k(`${lib.id}.name`    as Parameters<typeof k>[0]);
+  const summary = k(`${lib.id}.summary` as Parameters<typeof k>[0]);
 
   return (
     <PageShell>
+      <JsonLd
+        data={[
+          articleSchema({
+            headline:    name,
+            description: summary,
+            url:         `${BASE_URL}/${locale}/library/${lib.id}`,
+            keywords:    lib.keywords,
+            locale,
+          }),
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home",    item: `${BASE_URL}/${locale}` },
+              { "@type": "ListItem", position: 2, name: "Library", item: `${BASE_URL}/${locale}/library` },
+              { "@type": "ListItem", position: 3, name: name,      item: `${BASE_URL}/${locale}/library/${lib.id}` },
+            ],
+          },
+        ]}
+      />
       <article className="mx-auto max-w-3xl px-6 pb-20 pt-14">
         <Link href="/library" className="font-mono text-xs text-muted hover:text-ink">
           <span className="back-arrow" aria-hidden="true" />{t("article.back")}
@@ -41,10 +93,10 @@ export default async function ArticlePage({
           {t(`categories.${lib.category}`)}
         </p>
         <h1 className="mt-3 font-display text-3xl font-bold leading-tight md:text-4xl">
-          {k(`${lib.id}.name`)}
+          {name}
         </h1>
         <p className="mt-4 font-body text-lg leading-relaxed text-muted">
-          {k(`${lib.id}.summary`)}
+          {summary}
         </p>
 
         <div className="mt-5 flex flex-wrap gap-1.5">
@@ -66,25 +118,25 @@ export default async function ArticlePage({
         {/* 1 — Overview */}
         <h2 className="mt-10 font-display text-xl font-bold">{t("article.overviewTitle")}</h2>
         <p className="mt-3 font-body text-base leading-relaxed text-ink">
-          {k(`${lib.id}.overview`)}
+          {k(`${lib.id}.overview` as Parameters<typeof k>[0])}
         </p>
 
         {/* 2 — Engineering purpose */}
         <h2 className="mt-10 font-display text-xl font-bold">{t("article.purposeTitle")}</h2>
         <p className="mt-3 font-body text-base leading-relaxed text-ink">
-          {k(`${lib.id}.purpose`)}
+          {k(`${lib.id}.purpose` as Parameters<typeof k>[0])}
         </p>
 
-        {/* 3 — How it works: narrative + the engineering points */}
+        {/* 3 — How it works */}
         <h2 className="mt-10 font-display text-xl font-bold">{t("article.howTitle")}</h2>
         <p className="mt-3 font-body text-base leading-relaxed text-ink">
-          {k(`${lib.id}.how`)}
+          {k(`${lib.id}.how` as Parameters<typeof k>[0])}
         </p>
         <ul className="mt-4 space-y-3">
           {(["p1", "p2", "p3"] as const).map((p) => (
             <li key={p} className="flex gap-3 font-body text-base leading-relaxed text-ink">
               <span className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-signal" />
-              {k(`${lib.id}.${p}`)}
+              {k(`${lib.id}.${p}` as Parameters<typeof k>[0])}
             </li>
           ))}
         </ul>
@@ -92,7 +144,7 @@ export default async function ArticlePage({
         {/* 4 — Common faults */}
         <h2 className="mt-10 font-display text-xl font-bold">{t("article.faultsTitle")}</h2>
         <p className="mt-3 font-body text-base leading-relaxed text-ink">
-          {k(`${lib.id}.faults`)}
+          {k(`${lib.id}.faults` as Parameters<typeof k>[0])}
         </p>
 
         {/* 5 — Diagnostic checks */}
@@ -101,7 +153,7 @@ export default async function ArticlePage({
           {(["c1", "c2", "c3"] as const).map((c, i) => (
             <li key={c} className="flex gap-3 font-body text-base leading-relaxed text-ink">
               <span className="metric w-5 shrink-0 text-base text-muted">{i + 1}</span>
-              {k(`${lib.id}.${c}`)}
+              {k(`${lib.id}.${c}` as Parameters<typeof k>[0])}
             </li>
           ))}
         </ol>
@@ -109,25 +161,25 @@ export default async function ArticlePage({
         {/* 6 — Safety notes */}
         <h2 className="mt-10 font-display text-xl font-bold">{t("article.safetyTitle")}</h2>
         <p className="mt-3 rounded-lg border border-[var(--warn)]/40 bg-[var(--warn)]/5 px-4 py-3 font-body text-base leading-relaxed text-[var(--warn)]">
-          {k(`${lib.id}.safetyNote`)}
+          {k(`${lib.id}.safetyNote` as Parameters<typeof k>[0])}
         </p>
 
         {/* 7 — Commissioning notes */}
         <h2 className="mt-10 font-display text-xl font-bold">{t("article.commissioningTitle")}</h2>
         <p className="mt-3 font-body text-base leading-relaxed text-ink">
-          {k(`${lib.id}.commissioning`)}
+          {k(`${lib.id}.commissioning` as Parameters<typeof k>[0])}
         </p>
 
-        {/* 8 — Related concepts (narrative; case links and related articles follow) */}
+        {/* 8 — Related concepts */}
         <h2 className="mt-10 font-display text-xl font-bold">{t("article.conceptsTitle")}</h2>
         <p className="mt-3 font-body text-base leading-relaxed text-ink">
-          {k(`${lib.id}.concepts`)}
+          {k(`${lib.id}.concepts` as Parameters<typeof k>[0])}
         </p>
         <p className="mt-4 font-mono text-xs text-muted/70" dir="ltr">
           {lib.keywords.join(" · ")}
         </p>
 
-        {/* engineering case links */}
+        {/* Engineering case links */}
         {cases.length > 0 && (
           <>
             <h2 className="mt-12 border-t border-line pt-8 font-display text-xl font-bold">
@@ -156,7 +208,7 @@ export default async function ArticlePage({
           </>
         )}
 
-        {/* related articles */}
+        {/* Related articles */}
         {related.length > 0 && (
           <>
             <h2 className="mt-12 border-t border-line pt-8 font-display text-xl font-bold">
@@ -170,10 +222,10 @@ export default async function ArticlePage({
                   className="rounded-xl border border-line bg-surface p-4 transition-colors hover:border-signal/40"
                 >
                   <h3 className="font-display text-sm font-semibold text-ink">
-                    {k(`${r.id}.name`)}
+                    {k(`${r.id}.name` as Parameters<typeof k>[0])}
                   </h3>
                   <p className="mt-1 font-body text-xs leading-relaxed text-muted">
-                    {k(`${r.id}.summary`)}
+                    {k(`${r.id}.summary` as Parameters<typeof k>[0])}
                   </p>
                 </Link>
               ))}
@@ -186,7 +238,7 @@ export default async function ArticlePage({
           {t("article.brainUseTitle")}
         </h2>
         <p className="mt-3 font-body text-base leading-relaxed text-ink">
-          {k(`${lib.id}.brainUse`)}
+          {k(`${lib.id}.brainUse` as Parameters<typeof k>[0])}
         </p>
         <div className="mt-4">
           <ArticleBrainStats articleId={lib.id} />

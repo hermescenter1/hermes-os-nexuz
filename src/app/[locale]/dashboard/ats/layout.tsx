@@ -5,6 +5,7 @@ import { AtsSubNav }        from "@/components/ats/AtsSubNav";
 
 export const metadata = {
   title: "ATS — Enterprise Recruitment Platform · Hermes OS",
+  robots: { index: false, follow: false },
 };
 
 export default async function AtsLayout({

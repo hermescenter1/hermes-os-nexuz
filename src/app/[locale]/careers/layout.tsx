@@ -1,11 +1,24 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { ReactNode }   from "react";
 import { PageShell }        from "@/components/PageShell";
+import { buildMetadata }    from "@/lib/seo/metadata";
 
-export const metadata = {
-  title: "Careers — Open Positions · Hermes OS",
-  description: "Join the Hermes OS team. Browse open positions in industrial automation, engineering, and software.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
+  return buildMetadata({
+    locale,
+    path: "/careers",
+    title:       p.careers.title,
+    description: p.careers.description,
+    keywords:    p.careers.keywords,
+  });
+}
 
 export default async function CareersLayout({
   children,

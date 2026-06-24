@@ -5,6 +5,7 @@ import { OperationsSubNav } from "@/components/operations/OperationsSubNav";
 
 export const metadata = {
   title: "Global Operations Command Center — Hermes Intelligence Network",
+  robots: { index: false, follow: false },
 };
 
 export default async function OperationsLayout({

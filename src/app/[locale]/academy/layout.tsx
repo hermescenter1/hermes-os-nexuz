@@ -1,13 +1,26 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { ReactNode }   from "react";
 import { PageShell }        from "@/components/PageShell";
 import { AcademySubNav }    from "@/components/academy/AcademySubNav";
 import { getCurrentUser }   from "@/lib/auth/session";
+import { buildMetadata }    from "@/lib/seo/metadata";
 
-export const metadata = {
-  title: "Hermes Training Academy · Hermes OS",
-  description: "Enterprise learning, certification, and professional development platform.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
+  return buildMetadata({
+    locale,
+    path: "/academy",
+    title:       p.academy.title,
+    description: p.academy.description,
+    keywords:    p.academy.keywords,
+  });
+}
 
 export default async function AcademyLayout({
   children,

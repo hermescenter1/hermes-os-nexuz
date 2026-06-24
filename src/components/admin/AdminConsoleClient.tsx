@@ -206,6 +206,14 @@ export function AdminConsoleClient({
                   {t("links.documentSearch")}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/admin/seo"
+                  className="block rounded-lg px-3 py-2 font-body text-sm text-signal transition-colors hover:bg-bg hover:text-ink"
+                >
+                  SEO Dashboard
+                </Link>
+              </li>
             </ul>
           </section>
 

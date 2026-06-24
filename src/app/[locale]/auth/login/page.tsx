@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Sign In · Hermes OS", robots: { index: false, follow: false } };
 
 import { setRequestLocale } from "next-intl/server";
 import { AuthShell }        from "@/components/auth/AuthShell";
