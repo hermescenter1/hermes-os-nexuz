@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { telemetryService } from "@/lib/services/telemetry-service";
 import { ExecutiveOverview } from "./ExecutiveOverview";
 import { ExecKpiStrip }     from "@/components/ui/ExecKpiStrip";
+import { HermesSignal }     from "@/components/hermes/HermesSignal";
 import type {
   DashboardSnapshot,
   MetricSeries,
@@ -206,15 +207,21 @@ export function DashboardClient() {
           {/* 1A: Factory Operational Status */}
           <Panel title={t("panels.overview")} executive>
             {/* Site status strip */}
-            <div className="flex items-center gap-2.5 mb-4 px-3 py-2 rounded-lg border border-line/60 bg-surface2/50">
-              <StatusDot tone={s.alarms.counts.critical > 0 ? "text-danger" : s.alarms.counts.high > 0 ? "text-warn" : "text-signal"} />
-              <span className="font-body text-xs text-ink font-medium">
-                {s.alarms.counts.critical > 0 ? "Site Alert — Critical Events Active"
-                  : s.alarms.counts.high > 0 ? "Site Status — High Priority Events"
-                  : "Site Status — Operational"}
-              </span>
-              <span className="ms-auto font-mono text-xs text-faint" dir="ltr">
-                {nf.format(s.overview.activeLines)}/{nf.format(s.overview.totalLines)} lines active
+            <div className="flex items-center justify-between gap-3 mb-4 px-3 py-[7px] rounded border border-signal/[0.09] bg-surface">
+              <HermesSignal
+                type={
+                  s.alarms.counts.critical > 0 ? "risk-detected"
+                  : s.alarms.counts.high > 0   ? "warning-active"
+                  : "system-online"
+                }
+                label={
+                  s.alarms.counts.critical > 0 ? "Critical Events Active"
+                  : s.alarms.counts.high > 0   ? "High Priority Events"
+                  : "Site Operational"
+                }
+              />
+              <span className="kpi-label" dir="ltr">
+                {nf.format(s.overview.activeLines)}/{nf.format(s.overview.totalLines)} Lines Active
               </span>
             </div>
 
@@ -229,9 +236,9 @@ export function DashboardClient() {
                 ] as const
               ).map(([k, v]) => (
                 <div key={k}>
-                  <p className="type-caption mb-0.5">{t(`overview.${k}`)}</p>
-                  <p className="metric text-2xl text-ink">
-                    {nf.format(v)}<span className="text-sm text-muted ms-0.5">{pct}</span>
+                  <p className="kpi-label mb-1">{t(`overview.${k}`)}</p>
+                  <p className="exec-kpi-value">
+                    {nf.format(v)}<span className="font-mono text-base font-normal text-muted ms-1">{pct}</span>
                   </p>
                   <div className="mt-1.5 h-0.5 rounded bg-line">
                     <div
@@ -284,8 +291,8 @@ export function DashboardClient() {
             {/* Summary row */}
             <div className="flex flex-wrap items-center gap-4 mb-4">
               <div>
-                <p className="type-caption mb-0.5">{t("kpi.totalAlarms")}</p>
-                <p className={`metric text-3xl ${totalAlarms > 0 ? "text-ink" : "text-signal"}`}>
+                <p className="kpi-label mb-1">{t("kpi.totalAlarms")}</p>
+                <p className={`exec-kpi-value ${totalAlarms > 0 ? "text-ink" : "text-signal"}`}>
                   {nf.format(totalAlarms)}
                 </p>
               </div>
@@ -293,11 +300,20 @@ export function DashboardClient() {
                 {(Object.keys(s.alarms.counts) as Severity[]).map((sev) => (
                   <span
                     key={sev}
-                    className="inline-flex items-center gap-1.5 rounded border border-line/60 bg-surface2/50 px-2.5 py-1 font-body text-xs"
+                    className={`hs-badge ${
+                      sev === "critical" ? "hs--risk"
+                      : sev === "high"   ? "hs--risk"
+                      : sev === "medium" ? "hs--warning"
+                      : "hs--nominal"
+                    }`}
                   >
-                    <span className={`h-1.5 w-1.5 rounded-full ${sevColor[sev]}`} />
-                    <span className={sevText[sev]}>{t(`severity.${sev}`)}</span>
-                    <span className="font-mono text-ink ms-0.5">{nf.format(s.alarms.counts[sev])}</span>
+                    <span className={`hs-dot ${
+                      sev === "critical" || sev === "high" ? "hs-dot--risk"
+                      : sev === "medium" ? "hs-dot--warning"
+                      : "hs-dot--nominal"
+                    }`} />
+                    {t(`severity.${sev}`)}
+                    <span className="ms-1 font-mono font-bold opacity-90">{nf.format(s.alarms.counts[sev])}</span>
                   </span>
                 ))}
               </div>
@@ -327,8 +343,8 @@ export function DashboardClient() {
           <Panel title={t("panels.risk")} executive>
             {/* Risk score hero */}
             <div className="text-center py-3 mb-4 border-b border-line">
-              <p className="metric text-5xl text-ink leading-none">{nf.format(s.risk.score)}</p>
-              <p className={`mt-2 font-body text-sm ${statusColor[s.risk.trend]}`}>
+              <p className="cmd-kpi-value">{nf.format(s.risk.score)}</p>
+              <p className={`mt-2 kpi-label ${statusColor[s.risk.trend]}`}>
                 {t(`riskP.trend.${s.risk.trend}`)}
               </p>
             </div>
@@ -372,11 +388,11 @@ export function DashboardClient() {
                       { label: "Tracked",   count: total,    color: "text-muted",   dot: "bg-muted/50"  },
                     ].map((row) => (
                       <div key={row.label} className="rounded-lg border border-line/50 bg-surface2/40 px-3 py-2.5">
-                        <div className="flex items-center gap-1.5 mb-1">
+                        <div className="flex items-center gap-1.5 mb-1.5">
                           <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${row.dot}`} />
-                          <span className="type-caption">{row.label}</span>
+                          <span className="kpi-label">{row.label}</span>
                         </div>
-                        <p className={`metric text-xl ${row.color}`}>{nf.format(row.count)}</p>
+                        <p className={`intel-kpi-value ${row.color}`}>{nf.format(row.count)}</p>
                       </div>
                     ))}
                   </div>
@@ -421,7 +437,7 @@ export function DashboardClient() {
                     <h3 className="font-body text-xs font-semibold text-ink leading-snug">
                       {t(`aiP.recs.${s.ai[0].recKey}.title`)}
                     </h3>
-                    <span className="shrink-0 rounded border border-line px-1.5 py-0.5 font-mono text-[0.60rem] text-muted">
+                    <span className="hs-badge hs--confident shrink-0">
                       {nf.format(Math.round(s.ai[0].confidence * 100))}{pct}
                     </span>
                   </div>
@@ -437,6 +453,9 @@ export function DashboardClient() {
       </div>
 
       {/* ── Telemetry + Systems row ───────────────────────────────────────── */}
+      <div className="h-layer-sep">
+        <span className="kpi-label">Telemetry · Process · Control Systems</span>
+      </div>
       <div className="grid gap-5 lg:grid-cols-3 mb-6">
 
         {/* Thermal sensors */}
@@ -532,7 +551,7 @@ export function DashboardClient() {
                   <h3 className="font-body text-sm font-semibold text-ink leading-snug">
                     {t(`aiP.recs.${r.recKey}.title`)}
                   </h3>
-                  <span className="shrink-0 rounded border border-line px-1.5 py-0.5 font-mono text-[0.60rem] text-muted">
+                  <span className="hs-badge hs--confident shrink-0">
                     {nf.format(Math.round(r.confidence * 100))}{pct}
                   </span>
                 </div>
@@ -547,13 +566,15 @@ export function DashboardClient() {
       )}
 
       {/* ── Platform Intelligence ─────────────────────────────────────────── */}
-      <div className="border-t border-line pt-6 mb-4">
-        <p className="type-eyebrow mb-5">{t("platformIntel")}</p>
+      <div className="mb-4">
+        <div className="h-layer-sep mb-5">
+          <span className="kpi-label">{t("platformIntel")}</span>
+        </div>
         <ExecutiveOverview />
       </div>
 
       {/* Timestamp */}
-      <p className="font-mono text-[0.65rem] text-faint" dir="ltr">
+      <p className="kpi-label text-faint" dir="ltr">
         {t("updated")} {tf.format(s.ts)}
       </p>
     </div>

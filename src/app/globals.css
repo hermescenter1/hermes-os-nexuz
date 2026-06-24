@@ -795,3 +795,94 @@ h6 { font-weight: 550; letter-spacing: 0; }
     var(--ice)    100%
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 55A — INDUSTRIAL INTELLIGENCE COMMAND CENTER
+   From "Premium SaaS" to "Engineering Operations Platform"
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hermes Command Ribbon ───────────────────────────────────────────────
+   Top-level operational strip. Persistent platform intelligence state.
+   Every datum shown here is live and derived from real platform state.
+   ──────────────────────────────────────────────────────────────────────── */
+.hermes-command-ribbon {
+  background:              rgba(1, 2, 8, 0.97);
+  border-bottom:           1px solid rgba(var(--signal-rgb), 0.09);
+  backdrop-filter:         blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+}
+
+/* ── Operational Layer Separator ────────────────────────────────────────
+   Visual punctuation between functional zones of the command center.
+   Signal-tinted, with a gradient tail — information flows left to right.
+   ──────────────────────────────────────────────────────────────────────── */
+.h-layer-sep {
+  display:       flex;
+  align-items:   center;
+  gap:           0.75rem;
+  padding-top:   0.5rem;
+  margin-top:    0.25rem;
+  margin-bottom: 1.25rem;
+  border-top:    1px solid rgba(var(--signal-rgb), 0.07);
+}
+.h-layer-sep::after {
+  content:    "";
+  flex:       1;
+  height:     1px;
+  background: linear-gradient(
+    to right,
+    rgba(var(--signal-rgb), 0.06),
+    transparent 80%
+  );
+}
+
+/* ── KPI Tier System ────────────────────────────────────────────────────
+   Four tiers descending in scale: Command → Executive → Intelligence → Industrial
+   Numbers must dominate. Labels are subordinate. Units are smallest.
+   Tabular-nums ensures columns align when values change live.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Command KPI — flagship metric; maximum authority; risk score, OEE hero  */
+.cmd-kpi-value {
+  font-family:          var(--font-mono);
+  font-size:            clamp(2.75rem, 2rem + 2.5vw, 4.5rem);
+  font-weight:          700;
+  letter-spacing:       -0.040em;
+  line-height:          1;
+  color:                var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Executive KPI — section metric; OEE/Avail/Perf/Quality, alarm totals  */
+.exec-kpi-value {
+  font-family:          var(--font-mono);
+  font-size:            clamp(1.75rem, 1.3rem + 1.3vw, 2.75rem);
+  font-weight:          700;
+  letter-spacing:       -0.030em;
+  line-height:          1;
+  color:                var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Intelligence KPI — analytical metric; confidence scores, asset counts  */
+.intel-kpi-value {
+  font-family:          var(--font-mono);
+  font-size:            clamp(1.25rem, 1rem + 0.8vw, 2rem);
+  font-weight:          600;
+  letter-spacing:       -0.020em;
+  line-height:          1;
+  color:                var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* KPI Label — the subordinate label beneath a number                     */
+/* Monospaced + uppercase + tracked = machine-generated, not authored     */
+.kpi-label {
+  font-family:    var(--font-mono);
+  font-size:      0.58rem;
+  font-weight:    500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color:          var(--muted);
+  line-height:    1.2;
+}

@@ -34,27 +34,27 @@ export function ExecKpiStrip({ items, className = "", children }: ExecKpiStripPr
       aria-label="Key performance indicators"
     >
       {items.map((item, i) => (
-        <div key={i} className="flex-1 min-w-[110px] px-5 py-4">
-          <p className="type-eyebrow mb-1.5">{item.label}</p>
-          <div className="flex items-baseline gap-1 flex-wrap">
+        <div key={i} className="flex-1 min-w-[120px] px-5 py-4">
+          <p className="kpi-label mb-2">{item.label}</p>
+          <div className="flex items-baseline gap-1.5 flex-wrap">
             <span
-              className={`metric text-2xl leading-none ${
+              className={`exec-kpi-value ${
                 item.accent ? (ACCENT_VALUE[item.accent] ?? "text-ink") : "text-ink"
               }`}
             >
               {item.value}
             </span>
             {item.unit && (
-              <span className="text-xs text-muted font-body">{item.unit}</span>
+              <span className="font-mono text-xs text-muted">{item.unit}</span>
             )}
           </div>
           {item.delta && item.trend && (
-            <p className={`mt-1 text-xs font-body ${TREND_CLASS[item.trend]}`}>
+            <p className={`mt-1.5 kpi-label ${TREND_CLASS[item.trend]}`}>
               {TREND_ICON[item.trend]} {item.delta}
             </p>
           )}
           {item.note && !item.delta && (
-            <p className="mt-1 text-xs font-body text-muted">{item.note}</p>
+            <p className="mt-1.5 kpi-label text-faint">{item.note}</p>
           )}
         </div>
       ))}
@@ -71,13 +71,13 @@ export function KpiSlot({
   accent,
 }: Pick<KpiItem, "label" | "value" | "unit" | "accent">) {
   return (
-    <div className="flex-1 min-w-[110px] px-5 py-4 border-l border-line">
-      <p className="type-eyebrow mb-1.5">{label}</p>
-      <div className="flex items-baseline gap-1">
-        <span className={`metric text-2xl leading-none ${accent ? (ACCENT_VALUE[accent] ?? "text-ink") : "text-ink"}`}>
+    <div className="flex-1 min-w-[120px] px-5 py-4 border-l border-line">
+      <p className="kpi-label mb-2">{label}</p>
+      <div className="flex items-baseline gap-1.5">
+        <span className={`exec-kpi-value ${accent ? (ACCENT_VALUE[accent] ?? "text-ink") : "text-ink"}`}>
           {value}
         </span>
-        {unit && <span className="text-xs text-muted font-body">{unit}</span>}
+        {unit && <span className="font-mono text-xs text-muted">{unit}</span>}
       </div>
     </div>
   );

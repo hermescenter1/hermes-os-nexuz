@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PageShell }       from "@/components/PageShell";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { PageHeader, PageStatusBadge } from "@/components/ui/PageHeader";
+import { CommandRibbon }   from "@/components/hermes/CommandRibbon";
 
 export default async function DashboardPage({
   params,
@@ -24,6 +25,7 @@ export default async function DashboardPage({
           }
         />
       </div>
+      <CommandRibbon />
       <DashboardClient />
     </PageShell>
   );
