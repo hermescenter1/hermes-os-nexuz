@@ -34,15 +34,15 @@ const stateDot: Record<string, string> = {
   online: "bg-signal", simulated: "bg-warn", phase2: "bg-muted/50",
 };
 
-function Panel({ title, children, className = "" }: {
-  title: string; children: React.ReactNode; className?: string;
+function Panel({ title, children, className = "", executive = false }: {
+  title: string; children: React.ReactNode; className?: string; executive?: boolean;
 }) {
   return (
     <section
-      className={`rounded-xl border border-line bg-surface p-5 ${className}`}
-      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}
+      className={`rounded-xl p-5 ${executive ? "border border-signal/10 bg-surface h-s3" : "border border-line bg-surface"} ${className}`}
+      style={{ boxShadow: executive ? "0 2px 16px rgba(0,0,0,0.28), 0 0 0 1px rgba(30,200,164,0.04)" : "0 2px 8px rgba(0,0,0,0.18)" }}
     >
-      <h2 className="type-panel-title mb-4">{title}</h2>
+      <h2 className={executive ? "intel-title mb-4" : "type-panel-title mb-4"}>{title}</h2>
       {children}
     </section>
   );
@@ -147,7 +147,7 @@ export function CopilotClient() {
         <div className="lg:col-span-2 flex flex-col gap-5">
 
           {/* Supported Domains */}
-          <Panel title="Supported Domains">
+          <Panel title="Supported Domains" executive>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {KNOWLEDGE_DOMAINS.map((d) => {
                 const hitCount = stats?.byDomain?.[d as string] ?? 0;
@@ -175,7 +175,7 @@ export function CopilotClient() {
           </Panel>
 
           {/* Vendor Coverage */}
-          <Panel title="Vendor Intelligence Coverage">
+          <Panel title="Vendor Intelligence Coverage" executive>
             <div className="flex flex-wrap gap-2">
               {VENDORS.map((v) => {
                 const hitCount = stats?.byVendor?.[v.id] ?? 0;

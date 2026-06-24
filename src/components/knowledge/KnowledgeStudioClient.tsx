@@ -215,10 +215,10 @@ export function KnowledgeStudioClient() {
 
           {/* Publishing Pipeline */}
           <section
-            className="rounded-xl border border-line bg-surface p-5"
-            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}
+            className="rounded-xl border border-signal/10 bg-surface h-s3 p-5"
+            style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.28), 0 0 0 1px rgba(30,200,164,0.04)" }}
           >
-            <h2 className="type-panel-title mb-4">Publishing Pipeline</h2>
+            <h2 className="intel-title mb-4">Publishing Pipeline</h2>
             <div className="flex items-center gap-0 mb-5">
               {[
                 { label: "Draft",     count: metrics.drafts,    color: "border-line text-muted",        dot: "bg-muted/50"  },
@@ -322,10 +322,10 @@ export function KnowledgeStudioClient() {
 
           {/* Health overview */}
           <section
-            className="rounded-xl border border-line bg-surface p-5"
-            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}
+            className="rounded-xl border border-signal/10 bg-surface h-s3 p-5"
+            style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.28), 0 0 0 1px rgba(30,200,164,0.04)" }}
           >
-            <h2 className="type-panel-title mb-4">Library Health</h2>
+            <h2 className="intel-title mb-4">Library Health</h2>
             <ul className="space-y-3 mb-5">
               {[
                 {

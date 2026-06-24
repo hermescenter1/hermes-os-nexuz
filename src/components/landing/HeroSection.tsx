@@ -55,25 +55,19 @@ function StatusChip({
     >
       {live && (
         <span
-          className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-signal"
-          style={{ animation: "statusDot 2.5s ease-in-out infinite" }}
+          className="w-[5px] h-[5px] rounded-full flex-shrink-0 bg-signal animate-h-reason-pulse"
         />
       )}
       <div>
         <p
-          className="font-mono leading-none"
-          style={{
-            fontSize: "8px",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "rgba(148,163,184,0.60)",
-          }}
+          className="signal-text leading-none"
+          style={{ color: "rgba(148,163,184,0.55)" }}
         >
           {label}
         </p>
         <p
-          className="font-mono font-semibold leading-none mt-0.5"
-          style={{ fontSize: "11px", color: "#CBD5E1" }}
+          className="font-mono font-semibold leading-none mt-[3px]"
+          style={{ fontSize: "11.5px", letterSpacing: "0.03em", color: "#CBD5E1" }}
         >
           {value}
         </p>

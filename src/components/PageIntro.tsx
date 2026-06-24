@@ -12,18 +12,18 @@ export function PageIntro({
 }) {
   return (
     <div className="mx-auto max-w-6xl px-6 pt-16 md:pt-20">
-      <p className="font-mono text-sm uppercase tracking-widest text-signal">
+      <p className="signal-text text-signal">
         {eyebrow}
       </p>
-      <h1 className="mt-4 max-w-3xl font-display text-4xl font-bold leading-tight md:text-5xl">
+      <h1 className="exec-display mt-4 max-w-3xl">
         {title}
       </h1>
       {strap && (
-        <p className="mt-4 font-mono text-sm tracking-wide text-signal/90">
+        <p className="mt-4 signal-text text-signal/90">
           {strap}
         </p>
       )}
-      <p className="mt-5 max-w-2xl font-body text-lg leading-relaxed text-muted">
+      <p className="eng-body mt-5 max-w-2xl text-muted">
         {lede}
       </p>
     </div>

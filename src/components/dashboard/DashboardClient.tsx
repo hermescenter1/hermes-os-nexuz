@@ -20,18 +20,20 @@ function Panel({
   children,
   className = "",
   compact = false,
+  executive = false,
 }: {
-  title:      string;
-  children:   React.ReactNode;
-  className?: string;
-  compact?:   boolean;
+  title:       string;
+  children:    React.ReactNode;
+  className?:  string;
+  compact?:    boolean;
+  executive?:  boolean;
 }) {
   return (
     <section
-      className={`rounded-xl border border-line bg-surface ${compact ? "p-4" : "p-5"} ${className}`}
-      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}
+      className={`rounded-xl border ${executive ? "border-signal/10 bg-surface h-s3" : "border-line bg-surface"} ${compact ? "p-4" : "p-5"} ${className}`}
+      style={{ boxShadow: executive ? "0 2px 16px rgba(0,0,0,0.28), 0 0 0 1px rgba(30,200,164,0.04)" : "0 2px 8px rgba(0,0,0,0.18)" }}
     >
-      <h2 className="type-panel-title mb-4">{title}</h2>
+      <h2 className={executive ? "intel-title mb-4" : "type-panel-title mb-4"}>{title}</h2>
       {children}
     </section>
   );
@@ -202,7 +204,7 @@ export function DashboardClient() {
         <div className="lg:col-span-2 flex flex-col gap-5">
 
           {/* 1A: Factory Operational Status */}
-          <Panel title={t("panels.overview")}>
+          <Panel title={t("panels.overview")} executive>
             {/* Site status strip */}
             <div className="flex items-center gap-2.5 mb-4 px-3 py-2 rounded-lg border border-line/60 bg-surface2/50">
               <StatusDot tone={s.alarms.counts.critical > 0 ? "text-danger" : s.alarms.counts.high > 0 ? "text-warn" : "text-signal"} />
@@ -322,7 +324,7 @@ export function DashboardClient() {
         <div className="flex flex-col gap-5">
 
           {/* 2A: System Risk */}
-          <Panel title={t("panels.risk")}>
+          <Panel title={t("panels.risk")} executive>
             {/* Risk score hero */}
             <div className="text-center py-3 mb-4 border-b border-line">
               <p className="metric text-5xl text-ink leading-none">{nf.format(s.risk.score)}</p>

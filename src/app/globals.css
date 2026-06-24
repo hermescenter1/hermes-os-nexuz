@@ -537,3 +537,261 @@ h6 { font-weight: 550; letter-spacing: 0; }
 .animate-scale-in      { animation: scaleIn 0.35s var(--ease-expo) both; }
 .animate-ambient-pulse { animation: ambientPulse 6s ease-in-out infinite; }
 .animate-status-dot    { animation: statusDot 2.5s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERMES DESIGN DNA — Phase 54
+   Proprietary visual identity. Not a dashboard. An engineering intelligence.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hermes Color Spectrum ───────────────────────────────────────────────
+   Every color in this spectrum has a semantic meaning within the platform.
+   No random colors. No decoration. Each hue is a signal.
+   ──────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Knowledge Gold — warm authority; signals stored intelligence and knowledge */
+  --hermes-gold:      #C4A028;
+  --hermes-gold-dim:  #1E1600;
+  --hermes-gold-rgb:  196, 160, 40;
+
+  /* Reality Black — deeper than --bg; the ground layer of all surfaces */
+  --hermes-black:     #010208;
+
+  /* Authority White — precise cool white; reserved for executive labels */
+  --hermes-white:     #EDF2F7;
+}
+
+/* ── Hermes Typography DNA ──────────────────────────────────────────────
+   Five tiers of language. Each tier carries a different emotional register.
+   A CTO reads authority. An engineer reads trust. An operator reads clarity.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* HERMES DISPLAY — System identity. Brand-level only. Massive, geometric. */
+.hermes-display {
+  font-family:    var(--font-display);
+  font-size:      clamp(3.5rem, 3rem + 4vw, 8rem);
+  font-weight:    900;
+  letter-spacing: -0.050em;
+  line-height:    0.92;
+  color:          var(--ink);
+}
+
+/* EXECUTIVE DISPLAY — Platform page headers. Command center presence. */
+.exec-display {
+  font-family:    var(--font-display);
+  font-size:      clamp(1.875rem, 1.4rem + 2.2vw, 3.5rem);
+  font-weight:    800;
+  letter-spacing: -0.032em;
+  line-height:    1.04;
+  color:          var(--ink);
+}
+
+/* INTELLIGENCE TITLE — Analytical sections. Technical elegance. */
+.intel-title {
+  font-family:    var(--font-display);
+  font-size:      clamp(1.125rem, 0.9rem + 0.8vw, 1.5rem);
+  font-weight:    700;
+  letter-spacing: -0.018em;
+  line-height:    1.20;
+  color:          var(--ink);
+}
+
+/* ENGINEERING BODY — Long-form operational readability. Tuned for sustained use. */
+.eng-body {
+  font-family:    var(--font-body);
+  font-size:      1rem;
+  font-weight:    420;
+  line-height:    1.74;
+  color:          var(--ink);
+  letter-spacing: 0.004em;
+}
+
+/* SIGNAL TEXT — Telemetry, metadata, IDs, system labels. Information density. */
+.signal-text {
+  font-family:    var(--font-mono);
+  font-size:      0.63rem;
+  font-weight:    500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--signal);
+  line-height:    1.25;
+}
+
+/* ── Hermes Surface Architecture ────────────────────────────────────────
+   Five depth layers. Every surface lives at exactly one depth.
+   Elevation communicates information importance, not decoration.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Surface-0: Reality Layer — the void; deepest context, negative space */
+.h-s0 { background: var(--hermes-black); }
+
+/* Surface-1: Information Layer — raw data at rest */
+.h-s1 {
+  background: var(--bg);
+  border:     1px solid rgba(255,255,255,0.045);
+}
+
+/* Surface-2: Knowledge Layer — processed information */
+.h-s2 {
+  background:  var(--surface);
+  border:      1px solid var(--line);
+  box-shadow:  0 1px 4px rgba(0,0,0,0.22);
+}
+
+/* Surface-3: Intelligence Layer — signal-aware, reasoning in progress */
+.h-s3 {
+  background: var(--surface-2);
+  border:     1px solid rgba(var(--signal-rgb), 0.11);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.30),
+              0 0 0 1px rgba(var(--signal-rgb), 0.04);
+}
+
+/* Surface-4: Executive Layer — highest authority; command-level surfaces */
+.h-s4 {
+  background: var(--surface-3);
+  border:     1px solid rgba(var(--signal-rgb), 0.17);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.42),
+              0 0 0 1px rgba(var(--signal-rgb), 0.08),
+              inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* ── Hermes Signal Language ─────────────────────────────────────────────
+   Proprietary status indicators. Not generic badges.
+   Each signal carries a specific engineering meaning.
+   Angular geometry (border-radius: 2px) = engineering precision.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.hs-badge {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             0.35rem;
+  padding:         0.18rem 0.5rem;
+  border-radius:   2px;
+  font-family:     var(--font-mono);
+  font-size:       0.60rem;
+  font-weight:     600;
+  letter-spacing:  0.10em;
+  text-transform:  uppercase;
+  border:          1px solid transparent;
+  white-space:     nowrap;
+  line-height:     1.4;
+}
+
+.hs--knowledge  { background: rgba(196,160,40,0.09);          border-color: rgba(196,160,40,0.24);          color: #C4A028; }
+.hs--reasoning  { background: rgba(var(--signal-rgb),0.09);   border-color: rgba(var(--signal-rgb),0.24);   color: var(--signal); }
+.hs--memory     { background: rgba(var(--ice-rgb),0.07);      border-color: rgba(var(--ice-rgb),0.19);      color: var(--ice); }
+.hs--risk       { background: rgba(var(--danger-rgb),0.09);   border-color: rgba(var(--danger-rgb),0.24);   color: var(--danger); }
+.hs--warning    { background: rgba(var(--warn-rgb),0.09);     border-color: rgba(var(--warn-rgb),0.24);     color: var(--warn); }
+.hs--growing    { background: rgba(196,160,40,0.06);          border-color: rgba(196,160,40,0.16);          color: #B89018; }
+.hs--confident  { background: rgba(var(--signal-rgb),0.05);   border-color: rgba(var(--signal-rgb),0.13);   color: var(--signal); }
+.hs--nominal    { background: rgba(var(--steel-rgb),0.07);    border-color: rgba(var(--steel-rgb),0.16);    color: var(--steel); }
+
+.hs-dot {
+  display:       inline-block;
+  width:         4px;
+  height:        4px;
+  border-radius: 50%;
+  flex-shrink:   0;
+}
+.hs-dot--knowledge { background: #C4A028; }
+.hs-dot--reasoning { background: var(--signal); }
+.hs-dot--memory    { background: var(--ice); }
+.hs-dot--risk      { background: var(--danger); }
+.hs-dot--warning   { background: var(--warn); }
+.hs-dot--nominal   { background: var(--steel); }
+
+/* ── Hermes Motion System ───────────────────────────────────────────────
+   Every motion represents information. No decorative animation.
+   The system communicates: knowledge accumulating, signals propagating,
+   intelligence reasoning, telemetry flowing.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Knowledge synchronization: data becoming wisdom */
+@keyframes hKnowledgeSync {
+  0%   { opacity: 0.18; transform: scaleX(0.05) translateZ(0); }
+  50%  { opacity: 0.75; transform: scaleX(1.00) translateZ(0); }
+  100% { opacity: 0.18; transform: scaleX(0.05) translateZ(0); }
+}
+
+/* Signal propagation: intelligence flowing through the network */
+@keyframes hSignalFlow {
+  0%   { transform: translateX(-110%); opacity: 0;   }
+  20%  { opacity: 0.65; }
+  80%  { opacity: 0.65; }
+  100% { transform: translateX(110%);  opacity: 0;   }
+}
+
+/* Intelligence expansion: system understanding growing */
+@keyframes hIntelExpand {
+  from { opacity: 0; transform: scale(0.965) translateZ(0); }
+  to   { opacity: 1; transform: scale(1.000) translateZ(0); }
+}
+
+/* Reasoning pulse: active computation — quiet, measured */
+@keyframes hReasonPulse {
+  0%, 100% { opacity: 0.38; }
+  50%       { opacity: 1.00; }
+}
+
+/* Memory access: retrieving from stored intelligence */
+@keyframes hMemoryAccess {
+  0%   { border-color: rgba(var(--ice-rgb), 0.09); }
+  50%  { border-color: rgba(var(--ice-rgb), 0.32); }
+  100% { border-color: rgba(var(--ice-rgb), 0.09); }
+}
+
+/* Telemetry flow: live data streaming through the system */
+@keyframes hTelemetryFlow {
+  0%   { stroke-dashoffset: 200; opacity: 0; }
+  15%  { opacity: 0.8; }
+  85%  { opacity: 0.8; }
+  100% { stroke-dashoffset: 0;   opacity: 0; }
+}
+
+.animate-h-knowledge-sync { animation: hKnowledgeSync 3.5s ease-in-out infinite; }
+.animate-h-signal-flow    { animation: hSignalFlow 2.2s ease-in-out infinite; }
+.animate-h-intel-expand   { animation: hIntelExpand 0.42s var(--ease-expo) both; }
+.animate-h-reason-pulse   { animation: hReasonPulse 2.4s ease-in-out infinite; }
+.animate-h-memory-access  { animation: hMemoryAccess 3.2s ease-in-out infinite; }
+
+/* ── Hermes Data Visualization helpers ──────────────────────────────────
+   Primitive classes for native visualization components.
+   These are not chart libraries. They are Hermes-native.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Knowledge flow bar — horizontal fill representing knowledge density */
+.h-flow-bar {
+  position:      relative;
+  overflow:      hidden;
+  height:        2px;
+  border-radius: 1px;
+  background:    rgba(var(--signal-rgb), 0.10);
+}
+.h-flow-bar::after {
+  content:    "";
+  position:   absolute;
+  inset:      0;
+  background: linear-gradient(90deg, transparent, var(--signal), transparent);
+  transform:  translateX(-100%);
+  animation:  hSignalFlow 2.2s ease-in-out infinite;
+}
+
+/* Intelligence density ring — circular confidence indicator */
+.h-density-ring {
+  border-radius: 50%;
+  border:        1.5px solid rgba(var(--signal-rgb), 0.12);
+  box-shadow:    0 0 0 4px rgba(var(--signal-rgb), 0.04),
+                 inset 0 0 12px rgba(var(--signal-rgb), 0.06);
+}
+
+/* Confidence gradient bar */
+.h-confidence-bar {
+  height:        3px;
+  border-radius: 1.5px;
+  background:    linear-gradient(
+    90deg,
+    var(--danger) 0%,
+    var(--warn)   40%,
+    var(--signal) 75%,
+    var(--ice)    100%
+  );
+}

@@ -37,21 +37,15 @@ export function PageHeader({
         {/* Left: title block */}
         <div className="min-w-0 flex-1">
           {eyebrow && (
-            <p className="eyebrow-label mb-2">{eyebrow}</p>
+            <p className="signal-text mb-2">{eyebrow}</p>
           )}
 
           {isPage ? (
-            <h1
-              className="page-title"
-              style={{ fontSize: "clamp(1.75rem, 1.2rem + 2vw, 2.75rem)" }}
-            >
+            <h1 className="exec-display">
               {title}
             </h1>
           ) : (
-            <h2
-              className="section-title"
-              style={{ fontSize: "clamp(1.375rem, 1rem + 1.5vw, 2rem)" }}
-            >
+            <h2 className="intel-title">
               {title}
             </h2>
           )}
