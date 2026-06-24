@@ -9,9 +9,9 @@
  *   - viewer:     read-only public access (legacy / unauthenticated)
  */
 
-export type Role = "superadmin" | "admin" | "engineer" | "customer" | "viewer";
+export type Role = "superadmin" | "admin" | "engineer" | "customer" | "viewer" | "candidate";
 
-export const ROLES: Role[] = ["superadmin", "admin", "engineer", "customer", "viewer"];
+export const ROLES: Role[] = ["superadmin", "admin", "engineer", "customer", "viewer", "candidate"];
 
 export function isRole(v: unknown): v is Role {
   return typeof v === "string" && (ROLES as string[]).includes(v);
@@ -26,6 +26,7 @@ const ROLE_CAPS: Record<Role, Capability[]> = {
   engineer:   ["authoring", "dashboard"],
   customer:   ["dashboard"],
   viewer:     [],
+  candidate:  [],
 };
 
 export function can(role: Role | null | undefined, cap: Capability): boolean {

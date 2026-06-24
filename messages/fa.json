@@ -40,8 +40,10 @@
       "documentSearch": "جست‌وجوی اسناد",
       "engGraph":  "گراف دانش مهندسی",
       "opsCenter": "مرکز فرماندهی عملیات",
-      "atsPortal": "سیستم استخدام",
-      "csCenter":  "مرکز موفقیت مشتری"
+      "atsPortal":       "سیستم استخدام",
+      "csCenter":        "مرکز موفقیت مشتری",
+      "careersBoard":    "موقعیت‌های شغلی",
+      "candidatePortal": "درخواست‌های من"
     },
     "menu": "منو",
     "close": "بستن"

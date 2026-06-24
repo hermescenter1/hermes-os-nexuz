@@ -303,6 +303,8 @@ model User {
   userSites            UserSite[]
   // Phase 48: Notification System
   notifications        Notification[]
+  // Phase 58B: ATS Candidate profile (optional — only registered candidates)
+  atsCandidate         AtsCandidate?
 }
 
 model AuthSession {
@@ -390,7 +392,12 @@ enum OrgRole {
   ENGINEER
   VIEWER
   BILLING_ADMIN
-  MEMBER // deprecated — migrated to ENGINEER in Phase 32
+  MEMBER         // deprecated — migrated to ENGINEER in Phase 32
+  // Phase 58B: ATS roles
+  HR_MANAGER
+  RECRUITER
+  HIRING_MANAGER
+  INTERVIEWER
 }
 
 enum MemberStatus {
@@ -508,6 +515,12 @@ model Organization {
   // Phase 49: Asset Intelligence Automation
   assetAlerts          AssetAlert[]
   intelligenceSnapshots AssetIntelligenceSnapshot[]
+  // Phase 58B: ATS Persistence
+  atsJobs              AtsJob[]
+  atsApplications      AtsApplication[]
+  atsInterviews        AtsInterview[]
+  atsPipelineEvents    AtsPipelineEvent[]
+  atsCandidateScores   AtsCandidateScore[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -1993,4 +2006,239 @@ model UserSite {
   @@index([userId])
   @@index([siteId])
   @@index([organizationId, userId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 58B — ATS Persistence Layer
+// ════════════════════════════════════════════════════════════════════════════
+//
+// MULTI-TENANT: All tables except AtsCandidate are organization-scoped.
+// AtsCandidate is global (one profile per email, reused across orgs).
+//
+// SOFT DELETE: deletedAt on AtsJob, AtsCandidate, AtsApplication.
+// All queries must filter WHERE deletedAt IS NULL.
+//
+// PIPELINE AUDIT: Every status change on AtsApplication creates an
+// AtsPipelineEvent row. Applications never lose history.
+//
+// SCORING: AtsCandidateScore is 1:1 with AtsApplication (unique constraint).
+// Rescoring overwrites via upsert on applicationId.
+
+enum AtsJobStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  ON_HOLD
+}
+
+enum AtsApplicationStatus {
+  APPLIED
+  SCREENING
+  TECHNICAL_REVIEW
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+enum AtsInterviewType {
+  PHONE_SCREEN
+  VIDEO_CALL
+  TECHNICAL
+  PANEL
+  ONSITE
+}
+
+enum AtsInterviewDecision {
+  PENDING
+  ADVANCE
+  HOLD
+  REJECT
+}
+
+// ── AtsJob ─────────────────────────────────────────────────────────────────────
+//
+// Organization-scoped job posting. isPublic=true → visible on careers portal.
+// postedById is a loose reference to User.id (no FK — recruiter may leave org).
+
+model AtsJob {
+  id               String         @id @default(cuid())
+  organizationId   String
+  departmentId     String?        // loose ref to Department
+  title            String
+  description      String
+  requirements     Json           @default("[]")
+  responsibilities Json           @default("[]")
+  benefits         Json           @default("[]")
+  skills           Json           @default("[]")
+  location         String
+  locationType     String         @default("onsite")  // onsite | remote | hybrid
+  department       String
+  salaryCurrency   String         @default("USD")
+  salaryMin        Int?
+  salaryMax        Int?
+  status           AtsJobStatus   @default(DRAFT)
+  closingDate      DateTime?
+  postedById       String?
+  isPublic         Boolean        @default(true)
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  applications     AtsApplication[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([status, isPublic])
+}
+
+// ── AtsCandidate ──────────────────────────────────────────────────────────────
+//
+// Global candidate identity. One profile per email address.
+// userId links to User when the candidate creates an account.
+// userId is nullable — candidates can apply without registering.
+// Once a candidate registers, their User.id is set here permanently.
+
+model AtsCandidate {
+  id                String         @id @default(cuid())
+  userId            String?        @unique
+  email             String         @unique
+  name              String
+  phone             String?
+  location          String?
+  linkedinUrl       String?
+  portfolioUrl      String?
+  summary           String?
+  skills            Json           @default("[]")
+  languages         Json           @default("[]")
+  workAuthorization String         @default("citizen")
+  deletedAt         DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  applications      AtsApplication[]
+
+  @@index([userId])
+}
+
+// ── AtsApplication ────────────────────────────────────────────────────────────
+//
+// One application per (job, candidate). Enforced by @@unique([jobId, candidateId]).
+// experience / education / certifications: JSON arrays of structured records.
+// assignedTo is a loose ref to the recruiter User.id managing this application.
+
+model AtsApplication {
+  id             String               @id @default(cuid())
+  organizationId String
+  jobId          String
+  candidateId    String
+  status         AtsApplicationStatus @default(APPLIED)
+  coverLetter    String?
+  resumeUrl      String?
+  resumeText     String?
+  experience     Json                 @default("[]")
+  education      Json                 @default("[]")
+  certifications Json                 @default("[]")
+  totalYearsExp  Int?
+  source         String               @default("careers_portal")
+  notes          String?
+  assignedTo     String?
+  deletedAt      DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  job            AtsJob               @relation(fields: [jobId], references: [id])
+  candidate      AtsCandidate         @relation(fields: [candidateId], references: [id])
+  interviews     AtsInterview[]
+  pipelineEvents AtsPipelineEvent[]
+  score          AtsCandidateScore?
+
+  @@unique([jobId, candidateId])
+  @@index([organizationId, status])
+  @@index([organizationId, jobId])
+  @@index([candidateId])
+}
+
+// ── AtsInterview ──────────────────────────────────────────────────────────────
+//
+// Scheduled interview for an application. interviewerId is a loose ref to User.id
+// (no FK — interviewer may leave org). interviewerName is denormalized for display.
+// All score fields are optional until the interview is completed (completedAt set).
+
+model AtsInterview {
+  id                 String               @id @default(cuid())
+  organizationId     String
+  applicationId      String
+  interviewType      AtsInterviewType     @default(VIDEO_CALL)
+  scheduledAt        DateTime
+  durationMinutes    Int                  @default(60)
+  interviewerId      String?
+  interviewerName    String?
+  location           String?
+  notes              String?
+  feedback           String?
+  technicalScore     Int?
+  culturalScore      Int?
+  communicationScore Int?
+  overallScore       Int?
+  decision           AtsInterviewDecision @default(PENDING)
+  completedAt        DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  organization       Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  application        AtsApplication       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, applicationId])
+  @@index([organizationId, scheduledAt])
+}
+
+// ── AtsPipelineEvent ──────────────────────────────────────────────────────────
+//
+// Immutable audit log of every status transition on an AtsApplication.
+// fromStatus is nullable on the first event (APPLIED, no prior status).
+// changedByName is denormalized for history display when user leaves.
+
+model AtsPipelineEvent {
+  id             String                @id @default(cuid())
+  organizationId String
+  applicationId  String
+  fromStatus     AtsApplicationStatus?
+  toStatus       AtsApplicationStatus
+  changedById    String?
+  changedByName  String?
+  notes          String?
+  createdAt      DateTime              @default(now())
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  application    AtsApplication        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, applicationId, createdAt])
+  @@index([organizationId, createdAt])
+}
+
+// ── AtsCandidateScore ─────────────────────────────────────────────────────────
+//
+// Scoring result from the ATS rule-based engine (see src/lib/ats/scoring.ts).
+// 1:1 with AtsApplication. Upsert on applicationId for re-scoring.
+// scoringVersion tracks which formula version produced the result.
+
+model AtsCandidateScore {
+  id                 String         @id @default(cuid())
+  organizationId     String
+  applicationId      String         @unique
+  skillScore         Int            @default(0)
+  experienceScore    Int            @default(0)
+  locationScore      Int            @default(0)
+  authorizationScore Int            @default(0)
+  salaryScore        Int            @default(0)
+  industryScore      Int            @default(0)
+  overallScore       Int            @default(0)
+  riskFlags          Json           @default("[]")
+  explanations       Json           @default("[]")
+  scoredAt           DateTime       @default(now())
+  scoringVersion     String         @default("1.0")
+  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  application        AtsApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, overallScore])
 }

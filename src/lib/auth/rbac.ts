@@ -53,6 +53,7 @@ export const PROTECTED_PATHS = [
   /^\/[a-z]{2}\/knowledge\/case-studio/,
   /^\/[a-z]{2}\/knowledge\/studio/,
   /^\/[a-z]{2}\/intelligence\/unknown/,
+  /^\/[a-z]{2}\/candidate/,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -68,6 +69,9 @@ export function isAuthorizedForPath(
   }
   if (/^\/[a-z]{2}\/admin/.test(pathname)) {
     return role === "admin" || role === "superadmin";
+  }
+  if (/^\/[a-z]{2}\/candidate/.test(pathname)) {
+    return role === "candidate" || role === "admin" || role === "superadmin";
   }
   return true;
 }

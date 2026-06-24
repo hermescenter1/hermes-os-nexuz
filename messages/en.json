@@ -40,8 +40,10 @@
       "documentSearch": "Document Search",
       "engGraph":   "Engineering Knowledge Graph",
       "opsCenter":  "Operations Command Center",
-      "atsPortal":  "ATS",
-      "csCenter":   "Customer Success"
+      "atsPortal":       "ATS",
+      "csCenter":        "Customer Success",
+      "careersBoard":    "Careers",
+      "candidatePortal": "My Applications"
     },
     "menu": "Menu",
     "close": "Close"

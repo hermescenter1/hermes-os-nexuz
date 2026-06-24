@@ -48,11 +48,13 @@ const GROUPS: NavGroup[] = [
   {
     groupKey: "operations",
     items: [
-      { labelKey: "dashboard",   href: "/dashboard" },
-      { labelKey: "opsCenter",   href: "/dashboard/operations" },
-      { labelKey: "atsPortal",      href: "/dashboard/ats"       },
+      { labelKey: "dashboard",       href: "/dashboard" },
+      { labelKey: "opsCenter",      href: "/dashboard/operations" },
+      { labelKey: "atsPortal",      href: "/dashboard/ats" },
       { labelKey: "csCenter",       href: "/dashboard/customers" },
-      { labelKey: "admin",       href: "/admin" },
+      { labelKey: "careersBoard",   href: "/careers" },
+      { labelKey: "candidatePortal",href: "/candidate" },
+      { labelKey: "admin",          href: "/admin" },
       { labelKey: "documents",   href: "/admin/documents" },
       { labelKey: "documentSearch", href: "/admin/documents/search" },
     ],
