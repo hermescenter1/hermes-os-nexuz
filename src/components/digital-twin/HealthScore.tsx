@@ -27,7 +27,7 @@ export default function HealthScore({ health }: Props) {
         <div className="flex items-center gap-4">
           <span className={`text-4xl font-bold ${scoreColor(health.score)}`}>{health.score}</span>
           <div>
-            <p className="text-white/50 text-xs">{t("overallScore")}</p>
+            <p className="text-ink/50 text-xs">{t("overallScore")}</p>
             {health.stale && (
               <p className="text-amber-400 text-xs mt-0.5">{t("dataMayBeStale")}</p>
             )}
@@ -42,7 +42,7 @@ export default function HealthScore({ health }: Props) {
             { label: t("status"),    score: health.statusScore,    max: 25 },
           ].map(({ label, score, max }) => (
             <div key={label}>
-              <div className="flex justify-between text-xs text-white/50 mb-1">
+              <div className="flex justify-between text-xs text-ink/50 mb-1">
                 <span>{label}</span>
                 <span>{score}/{max}</span>
               </div>
@@ -57,7 +57,7 @@ export default function HealthScore({ health }: Props) {
         </div>
 
         {health.lastTelemetryAt && (
-          <p className="text-white/30 text-xs">
+          <p className="text-ink/30 text-xs">
             {t("lastTelemetry")}: {new Date(health.lastTelemetryAt).toLocaleString()}
           </p>
         )}

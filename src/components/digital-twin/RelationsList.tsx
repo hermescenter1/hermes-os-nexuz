@@ -24,7 +24,7 @@ export default function RelationsList({ relations }: Props) {
   if (relations.length === 0) {
     return (
       <GlassCard title="">
-        <p className="text-white/40 text-sm py-8 text-center">{t("noRelations")}</p>
+        <p className="text-ink/40 text-sm py-8 text-center">{t("noRelations")}</p>
       </GlassCard>
     );
   }
@@ -34,7 +34,7 @@ export default function RelationsList({ relations }: Props) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10 text-white/50">
+            <tr className="border-b border-white/10 text-ink/50">
               <th className="text-left py-2 pr-4">{t("source")}</th>
               <th className="text-left py-2 pr-4">{t("relationType")}</th>
               <th className="text-left py-2">{t("target")}</th>
@@ -43,14 +43,14 @@ export default function RelationsList({ relations }: Props) {
           <tbody>
             {relations.map((r) => (
               <tr key={r.id} className="border-b border-white/5 hover:bg-white/5">
-                <td className="py-2 pr-4 text-white/70 font-mono text-xs">{r.sourceNodeId.slice(0, 8)}…</td>
-                <td className={`py-2 pr-4 font-mono text-xs font-semibold ${REL_COLORS[r.relationType] ?? "text-white/70"}`}>
+                <td className="py-2 pr-4 text-ink/70 font-mono text-xs">{r.sourceNodeId.slice(0, 8)}…</td>
+                <td className={`py-2 pr-4 font-mono text-xs font-semibold ${REL_COLORS[r.relationType] ?? "text-ink/70"}`}>
                   {r.relationType}
                   {BIDIRECTIONAL_RELATIONS.has(r.relationType) && (
-                    <span className="ml-1 text-white/30">↔</span>
+                    <span className="ml-1 text-ink/30">↔</span>
                   )}
                 </td>
-                <td className="py-2 text-white/70 font-mono text-xs">{r.targetNodeId.slice(0, 8)}…</td>
+                <td className="py-2 text-ink/70 font-mono text-xs">{r.targetNodeId.slice(0, 8)}…</td>
               </tr>
             ))}
           </tbody>

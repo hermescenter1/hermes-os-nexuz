@@ -2,14 +2,14 @@
 
 export type IndustrialSiteStatus    = "ACTIVE" | "INACTIVE" | "MAINTENANCE";
 export type IndustrialGatewayStatus = "ONLINE" | "OFFLINE" | "DEGRADED" | "REVOKED";
-export type IndustrialAssetType     = "PLC" | "SCADA" | "HMI" | "MOTOR" | "PUMP" | "COMPRESSOR" | "CONVEYOR" | "SENSOR" | "DRIVE" | "PANEL" | "OTHER";
+export type IndustrialAssetType     = "PLC" | "SCADA" | "HMI" | "MOTOR" | "PUMP" | "COMPRESSOR" | "CONVEYOR" | "SENSOR" | "DRIVE" | "PANEL" | "VFD" | "VALVE" | "OTHER";
 export type IndustrialProtocol      = "OPC_UA" | "MQTT" | "MODBUS_TCP" | "SIEMENS_S7" | "SCADA" | "HISTORIAN" | "MANUAL" | "OTHER";
 export type TelemetryQuality        = "GOOD" | "BAD" | "UNCERTAIN" | "STALE";
 export type ConnectorType           = "OPC_UA" | "MQTT" | "MODBUS_TCP" | "SIEMENS_S7" | "SCADA" | "HISTORIAN";
 
 export const ALL_SITE_STATUSES:    IndustrialSiteStatus[]    = ["ACTIVE", "INACTIVE", "MAINTENANCE"];
 export const ALL_GATEWAY_STATUSES: IndustrialGatewayStatus[] = ["ONLINE", "OFFLINE", "DEGRADED", "REVOKED"];
-export const ALL_ASSET_TYPES:      IndustrialAssetType[]     = ["PLC", "SCADA", "HMI", "MOTOR", "PUMP", "COMPRESSOR", "CONVEYOR", "SENSOR", "DRIVE", "PANEL", "OTHER"];
+export const ALL_ASSET_TYPES:      IndustrialAssetType[]     = ["PLC", "SCADA", "HMI", "MOTOR", "PUMP", "COMPRESSOR", "CONVEYOR", "SENSOR", "DRIVE", "PANEL", "VFD", "VALVE", "OTHER"];
 export const ALL_PROTOCOLS:        IndustrialProtocol[]      = ["OPC_UA", "MQTT", "MODBUS_TCP", "SIEMENS_S7", "SCADA", "HISTORIAN", "MANUAL", "OTHER"];
 export const ALL_QUALITIES:        TelemetryQuality[]        = ["GOOD", "BAD", "UNCERTAIN", "STALE"];
 export const ALL_CONNECTOR_TYPES:  ConnectorType[]           = ["OPC_UA", "MQTT", "MODBUS_TCP", "SIEMENS_S7", "SCADA", "HISTORIAN"];

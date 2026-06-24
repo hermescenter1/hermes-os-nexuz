@@ -505,6 +505,9 @@ model Organization {
   crossSitePatterns    CrossSiteFailurePattern[]
   // Phase 43: Site Isolation
   userSites            UserSite[]
+  // Phase 49: Asset Intelligence Automation
+  assetAlerts          AssetAlert[]
+  intelligenceSnapshots AssetIntelligenceSnapshot[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -736,6 +739,9 @@ enum IndustrialAssetType {
   SENSOR
   DRIVE
   PANEL
+  // Phase 48 additions
+  VFD
+  VALVE
   OTHER
 }
 
@@ -1891,6 +1897,79 @@ model Notification {
 
   @@index([userId, createdAt])
   @@index([userId, isRead])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 49 — Asset Intelligence Automation
+// ════════════════════════════════════════════════════════════════════════════
+//
+// SAFETY INVARIANT: Automation is READ/ANALYZE/ALERT ONLY.
+// The engine recalculates risk, health, and maintenance recommendations from
+// existing telemetry and history. It NEVER writes to PLCs or control systems.
+//
+// ALERT DEDUPLICATION: Only one non-dismissed alert per (assetId, alertType)
+// is ever active. The automation engine skips creating an alert when an
+// undismissed alert of the same type already exists for the same asset.
+//
+// SNAPSHOT PURPOSE: AssetIntelligenceSnapshot stores one row per automation
+// run per asset. deltaRiskScore / deltaHealth track change from the previous
+// snapshot so trends and degradation velocity can be computed without a full
+// history scan.
+
+enum AssetAlertType {
+  CRITICAL_RISK
+  HEALTH_DEGRADATION
+  COMMUNICATION_FAILURE
+  KNOWLEDGE_COVERAGE_LOW
+}
+
+enum AssetAlertSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model AssetAlert {
+  id             String             @id @default(cuid())
+  organizationId String
+  assetId        String
+  alertType      AssetAlertType
+  severity       AssetAlertSeverity
+  title          String
+  description    String
+  metadata       Json               @default("{}")
+  dismissed      Boolean            @default(false)
+  dismissedAt    DateTime?
+  dismissedBy    String?
+  resolvedAt     DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, assetId, createdAt])
+  @@index([organizationId, alertType, createdAt])
+  @@index([organizationId, dismissed, createdAt])
+}
+
+model AssetIntelligenceSnapshot {
+  id             String       @id @default(cuid())
+  organizationId String
+  assetId        String
+  riskScore      Float?
+  riskLevel      String       @default("UNKNOWN")
+  healthScore    Float?
+  healthStatus   String       @default("unknown")
+  healthTrend    String       @default("unknown")
+  tagCount       Int          @default(0)
+  knowledgeTotal Int          @default(0)
+  deltaRiskScore Float?
+  deltaHealth    Float?
+  metadata       Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, assetId, createdAt])
 }
 
 // Explicit site membership. OWNER/ADMIN never have rows here (implicit access).

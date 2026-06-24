@@ -23,7 +23,7 @@ export default function NodesList({ nodes }: Props) {
   if (nodes.length === 0) {
     return (
       <GlassCard title="">
-        <p className="text-white/40 text-sm py-8 text-center">{t("noNodes")}</p>
+        <p className="text-ink/40 text-sm py-8 text-center">{t("noNodes")}</p>
       </GlassCard>
     );
   }
@@ -33,7 +33,7 @@ export default function NodesList({ nodes }: Props) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10 text-white/50">
+            <tr className="border-b border-white/10 text-ink/50">
               <th className="text-left py-2 pr-4">{t("displayName")}</th>
               <th className="text-left py-2 pr-4">{t("nodeType")}</th>
               <th className="text-left py-2 pr-4">{t("assetId")}</th>
@@ -43,12 +43,12 @@ export default function NodesList({ nodes }: Props) {
           <tbody>
             {nodes.map((n) => (
               <tr key={n.id} className="border-b border-white/5 hover:bg-white/5">
-                <td className="py-2 pr-4 text-white font-medium">{n.displayName}</td>
-                <td className={`py-2 pr-4 font-mono text-xs ${TYPE_COLORS[n.nodeType] ?? "text-white/70"}`}>
+                <td className="py-2 pr-4 text-ink font-medium">{n.displayName}</td>
+                <td className={`py-2 pr-4 font-mono text-xs ${TYPE_COLORS[n.nodeType] ?? "text-ink/70"}`}>
                   {n.nodeType}
                 </td>
-                <td className="py-2 pr-4 text-white/50 font-mono text-xs">{n.assetId ?? "—"}</td>
-                <td className="py-2 text-white/40 text-xs">
+                <td className="py-2 pr-4 text-ink/50 font-mono text-xs">{n.assetId ?? "—"}</td>
+                <td className="py-2 text-ink/40 text-xs">
                   {new Date(n.createdAt).toLocaleDateString()}
                 </td>
               </tr>
