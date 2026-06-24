@@ -57,10 +57,11 @@ const GROUPS: NavGroup[] = [
   {
     groupKey: "knowledge",
     items: [
-      { labelKey: "library", href: "/library" },
-      { labelKey: "cases", href: "/library/cases" },
-      { labelKey: "caseStudio", href: "/knowledge/case-studio" },
-      { labelKey: "knowledgeStudio", href: "/knowledge/studio" },
+      { labelKey: "library",        href: "/library" },
+      { labelKey: "cases",          href: "/library/cases" },
+      { labelKey: "caseStudio",     href: "/knowledge/case-studio" },
+      { labelKey: "knowledgeStudio",href: "/knowledge/studio" },
+      { labelKey: "engGraph",       href: "/dashboard/knowledge-graph" },
     ],
   },
   {

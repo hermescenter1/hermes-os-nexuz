@@ -20,8 +20,9 @@ export default {
         iceDim:    "var(--ice-dim)",
         steel:     "var(--steel)",
         steelDim:  "var(--steel-dim)",
-        warn:      "var(--warn)",
-        danger:    "var(--danger)",
+        warn:       "var(--warn)",
+        danger:     "var(--danger)",
+        hermesGold: "var(--hermes-gold)",
       },
       fontFamily: {
         display: ["var(--font-display)", "system-ui", "sans-serif"],

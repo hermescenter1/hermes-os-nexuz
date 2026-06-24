@@ -37,7 +37,8 @@
       "knowledgeStudio": "Knowledge Studio",
       "admin": "Admin Console",
       "documents": "Document Library",
-      "documentSearch": "Document Search"
+      "documentSearch": "Document Search",
+      "engGraph": "Engineering Knowledge Graph"
     },
     "menu": "Menu",
     "close": "Close"
