@@ -139,31 +139,43 @@ export function AdminConsoleClient({
           <section className="mt-6">
             <h2 className="font-mono text-xs uppercase tracking-widest text-muted">{t("table.heading")}</h2>
             {events.length > 0 ? (
-              <div className="mt-3 overflow-x-auto rounded-xl border border-line">
-                <table className="w-full border-collapse text-start font-body text-xs">
-                  <thead>
-                    <tr className="border-b border-line bg-surface text-muted">
-                      <Th>{t("table.time")}</Th>
-                      <Th>{t("table.user")}</Th>
-                      <Th>{t("table.action")}</Th>
-                      <Th>{t("table.entity")}</Th>
-                      <Th>{t("table.entityId")}</Th>
-                      <Th>{t("table.metadata")}</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {events.map((e) => (
-                      <tr key={e.id} className="border-b border-line/60 last:border-0">
-                        <Td ltr>{df.format(new Date(e.createdAt))}</Td>
-                        <Td ltr>{e.userId ?? "—"}</Td>
-                        <Td><span className="font-mono text-signal">{e.action}</span></Td>
-                        <Td>{e.entityType}</Td>
-                        <Td ltr>{e.entityId ?? "—"}</Td>
-                        <Td ltr><span className="text-muted/80">{JSON.stringify(e.metadata)}</span></Td>
+              <div className="mt-3 rounded-xl border border-line overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] border-collapse text-start font-body text-xs">
+                    <thead>
+                      <tr className="border-b border-line bg-surface text-muted">
+                        <Th width="w-36">{t("table.time")}</Th>
+                        <Th width="w-28">{t("table.user")}</Th>
+                        <Th width="w-40">{t("table.action")}</Th>
+                        <Th width="w-24">{t("table.entity")}</Th>
+                        <Th width="w-28">{t("table.entityId")}</Th>
+                        <Th>{t("table.metadata")}</Th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {events.map((e) => (
+                        <tr key={e.id} className="border-b border-line/60 last:border-0 hover:bg-bg/40 transition-colors">
+                          <Td ltr width="w-36">
+                            <span className="whitespace-nowrap">{df.format(new Date(e.createdAt))}</span>
+                          </Td>
+                          <Td ltr width="w-28">
+                            <span className="block truncate max-w-[6rem]" title={e.userId ?? "—"}>{e.userId ?? "—"}</span>
+                          </Td>
+                          <Td width="w-40">
+                            <span className="font-mono text-signal whitespace-nowrap">{e.action}</span>
+                          </Td>
+                          <Td width="w-24">{e.entityType}</Td>
+                          <Td ltr width="w-28">
+                            <span className="block truncate max-w-[6rem]" title={e.entityId ?? "—"}>{e.entityId ?? "—"}</span>
+                          </Td>
+                          <Td ltr>
+                            <MetadataCell metadata={e.metadata} />
+                          </Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
               <p className="mt-3 rounded-xl border border-line bg-surface px-5 py-8 text-center font-body text-sm text-muted/70">
@@ -235,11 +247,44 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-2 text-start font-mono text-[0.6rem] uppercase tracking-widest">{children}</th>;
+function Th({ children, width = "" }: { children: React.ReactNode; width?: string }) {
+  return (
+    <th className={`px-3 py-2.5 text-start font-mono text-[0.6rem] uppercase tracking-widest whitespace-nowrap ${width}`}>
+      {children}
+    </th>
+  );
 }
-function Td({ children, ltr = false }: { children: React.ReactNode; ltr?: boolean }) {
-  return <td className="px-3 py-2 align-top text-ink" {...(ltr ? { dir: "ltr" } : {})}>{children}</td>;
+function Td({ children, ltr = false, width = "" }: { children: React.ReactNode; ltr?: boolean; width?: string }) {
+  return (
+    <td className={`px-3 py-2.5 align-top text-ink ${width}`} {...(ltr ? { dir: "ltr" } : {})}>
+      {children}
+    </td>
+  );
+}
+function MetadataCell({ metadata }: { metadata: Record<string, unknown> }) {
+  const keys   = Object.keys(metadata);
+  const isEmpty = keys.length === 0;
+  if (isEmpty) return <span className="text-muted/40">—</span>;
+
+  const summary = keys.slice(0, 2).map((k) => {
+    const v = metadata[k];
+    const display = typeof v === "object" ? "[…]" : String(v).slice(0, 20);
+    return `${k}: ${display}`;
+  }).join(" · ");
+
+  return (
+    <details className="group">
+      <summary className="cursor-pointer list-none select-none">
+        <span className="inline-flex items-center gap-1 rounded-md border border-line/60 bg-bg/60 px-2 py-0.5 text-[10px] font-mono text-muted hover:text-ink hover:border-signal/40 transition-colors max-w-[220px]">
+          <span className="truncate">{summary}{keys.length > 2 ? ` +${keys.length - 2}` : ""}</span>
+          <span className="shrink-0 group-open:rotate-90 transition-transform text-[8px]">▶</span>
+        </span>
+      </summary>
+      <pre className="mt-1.5 max-w-[320px] overflow-auto rounded-lg border border-line bg-bg p-2.5 text-[10px] leading-relaxed text-muted/80 whitespace-pre-wrap break-all">
+        {JSON.stringify(metadata, null, 2)}
+      </pre>
+    </details>
+  );
 }
 function StatusRow({ label, value, ok }: { label: string; value: string; ok: boolean }) {
   return (
