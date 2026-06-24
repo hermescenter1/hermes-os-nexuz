@@ -305,6 +305,11 @@ model User {
   notifications        Notification[]
   // Phase 58B: ATS Candidate profile (optional — only registered candidates)
   atsCandidate         AtsCandidate?
+  // Phase 60: Academy
+  academyEnrollments   AcademyEnrollment[]
+  academyProgress      AcademyProgress[]
+  academyCertificates  AcademyCertificate[]
+  academyQuizAttempts  AcademyQuizAttempt[]
 }
 
 model AuthSession {
@@ -398,6 +403,10 @@ enum OrgRole {
   RECRUITER
   HIRING_MANAGER
   INTERVIEWER
+  // Phase 60: Academy roles
+  ACADEMY_ADMIN
+  CUSTOMER_SUCCESS_MANAGER
+  STUDENT
 }
 
 enum MemberStatus {
@@ -521,6 +530,10 @@ model Organization {
   atsInterviews        AtsInterview[]
   atsPipelineEvents    AtsPipelineEvent[]
   atsCandidateScores   AtsCandidateScore[]
+  // Phase 60: Academy
+  academyCourses       AcademyCourse[]
+  academyEnrollments   AcademyEnrollment[]
+  academyCertificates  AcademyCertificate[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -2117,6 +2130,8 @@ model AtsCandidate {
   updatedAt         DateTime       @updatedAt
   user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   applications      AtsApplication[]
+  // Phase 60: Academy — candidates can be enrolled in training
+  academyEnrollments AcademyEnrollment[]
 
   @@index([userId])
 }
@@ -2241,4 +2256,265 @@ model AtsCandidateScore {
   application        AtsApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, overallScore])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 60 — Hermes Training Academy
+// ════════════════════════════════════════════════════════════════════════════
+//
+// STRUCTURE: Course → Module → Lesson → Quiz → Certificate
+//
+// MULTI-TENANT: All tables are organization-scoped.
+//
+// ENROLLMENT: AcademyEnrollment is the hub — links User (always) and
+// optionally AtsCandidate. @@unique([courseId, userId]) prevents duplicates.
+//
+// PROGRESS: AcademyProgress is lesson-level. Completion is computed by
+// comparing progress count against lesson count for the course.
+//
+// QUIZ SECURITY: Correct answers stored in AcademyQuizQuestion.correctAnswers
+// (JSONB). Never returned by GET /api/academy/quizzes/[id]. Scoring done
+// server-side in POST /api/academy/quizzes/[id]/attempt.
+//
+// CERTIFICATION: AcademyCertificate issued when:
+//   1. All published lessons in the course are complete.
+//   2. All quizzes in the course are passed.
+//   3. Course has certificateEnabled = true.
+//   certificateNumber is globally unique (includes org slug + sequential ID).
+//   verificationToken enables public /academy/certificate/[id] page.
+
+// ── AcademyCourse ─────────────────────────────────────────────────────────────
+
+model AcademyCourse {
+  id                String              @id @default(cuid())
+  organizationId    String
+  title             String
+  slug              String
+  description       String
+  category          String              @default("general")
+  level             String              @default("beginner")
+  estimatedHours    Int                 @default(0)
+  thumbnailUrl      String?
+  isPublished       Boolean             @default(false)
+  isFeatured        Boolean             @default(false)
+  enrollmentType    String              @default("open")
+  certificateEnabled Boolean            @default(true)
+  passingScore      Int                 @default(80)
+  instructorName    String?
+  instructorBio     String?
+  tags              Json                @default("[]")
+  targetAudience    Json                @default("[]")
+  createdById       String?
+  deletedAt         DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  modules           AcademyModule[]
+  lessons           AcademyLesson[]
+  quizzes           AcademyQuiz[]
+  enrollments       AcademyEnrollment[]
+  certificates      AcademyCertificate[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, isPublished])
+  @@index([organizationId, category])
+}
+
+// ── AcademyModule ─────────────────────────────────────────────────────────────
+
+model AcademyModule {
+  id             String          @id @default(cuid())
+  courseId       String
+  organizationId String
+  title          String
+  description    String?
+  orderIndex     Int             @default(0)
+  isPublished    Boolean         @default(true)
+  deletedAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  course         AcademyCourse   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons        AcademyLesson[]
+
+  @@index([courseId, orderIndex])
+}
+
+// ── AcademyLesson ─────────────────────────────────────────────────────────────
+
+model AcademyLesson {
+  id              String           @id @default(cuid())
+  moduleId        String
+  courseId        String
+  organizationId  String
+  title           String
+  content         String?
+  lessonType      String           @default("text")
+  videoUrl        String?
+  resourceUrl     String?
+  resourceName    String?
+  durationMinutes Int              @default(0)
+  orderIndex      Int              @default(0)
+  isPublished     Boolean          @default(true)
+  isFree          Boolean          @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  module          AcademyModule    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  course          AcademyCourse    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  quizzes         AcademyQuiz[]
+  progress        AcademyProgress[]
+
+  @@index([courseId, orderIndex])
+  @@index([moduleId, orderIndex])
+}
+
+// ── AcademyQuiz ───────────────────────────────────────────────────────────────
+
+model AcademyQuiz {
+  id               String               @id @default(cuid())
+  courseId         String
+  lessonId         String?
+  organizationId   String
+  title            String
+  description      String?
+  passingScore     Int                  @default(80)
+  timeLimitMinutes Int?
+  maxAttempts      Int?
+  shuffleQuestions Boolean              @default(false)
+  isPublished      Boolean              @default(true)
+  deletedAt        DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  course           AcademyCourse        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson           AcademyLesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  questions        AcademyQuizQuestion[]
+  attempts         AcademyQuizAttempt[]
+
+  @@index([courseId])
+  @@index([lessonId])
+}
+
+// ── AcademyQuizQuestion ───────────────────────────────────────────────────────
+
+model AcademyQuizQuestion {
+  id             String        @id @default(cuid())
+  quizId         String
+  organizationId String
+  questionText   String
+  questionType   String        @default("single_choice")
+  options        Json          @default("[]")
+  correctAnswers Json          @default("[]")
+  explanation    String?
+  points         Int           @default(1)
+  orderIndex     Int           @default(0)
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  quiz           AcademyQuiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId, orderIndex])
+}
+
+// ── AcademyEnrollment ─────────────────────────────────────────────────────────
+
+model AcademyEnrollment {
+  id              String               @id @default(cuid())
+  courseId        String
+  organizationId  String
+  userId          String
+  candidateId     String?
+  enrolledById    String?
+  completedAt     DateTime?
+  progressPercent Int                  @default(0)
+  status          String               @default("active")
+  expiresAt       DateTime?
+  source          String               @default("self")
+  deletedAt       DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  course          AcademyCourse        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  candidate       AtsCandidate?        @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  progress        AcademyProgress[]
+  certificate     AcademyCertificate?
+  quizAttempts    AcademyQuizAttempt[]
+
+  @@unique([courseId, userId])
+  @@index([organizationId, userId])
+  @@index([organizationId, courseId])
+  @@index([candidateId])
+}
+
+// ── AcademyProgress ───────────────────────────────────────────────────────────
+
+model AcademyProgress {
+  id               String            @id @default(cuid())
+  enrollmentId     String
+  lessonId         String
+  organizationId   String
+  userId           String
+  completedAt      DateTime?
+  timeSpentSeconds Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  enrollment       AcademyEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson           AcademyLesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId])
+  @@index([userId])
+}
+
+// ── AcademyCertificate ────────────────────────────────────────────────────────
+
+model AcademyCertificate {
+  id                String            @id @default(cuid())
+  organizationId    String
+  courseId          String
+  userId            String
+  enrollmentId      String            @unique
+  certificateNumber String            @unique
+  verificationToken String            @unique
+  issuedAt          DateTime          @default(now())
+  expiresAt         DateTime?
+  metadata          Json              @default("{}")
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  course            AcademyCourse     @relation(fields: [courseId], references: [id])
+  user              User              @relation(fields: [userId], references: [id])
+  enrollment        AcademyEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, userId])
+  @@index([organizationId, courseId])
+  @@index([verificationToken])
+}
+
+// ── AcademyQuizAttempt ────────────────────────────────────────────────────────
+
+model AcademyQuizAttempt {
+  id               String            @id @default(cuid())
+  quizId           String
+  enrollmentId     String
+  userId           String
+  organizationId   String
+  answers          Json              @default("[]")
+  score            Int               @default(0)
+  passed           Boolean           @default(false)
+  startedAt        DateTime          @default(now())
+  completedAt      DateTime?
+  timeSpentSeconds Int               @default(0)
+  attemptNumber    Int               @default(1)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  quiz             AcademyQuiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  enrollment       AcademyEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([quizId, enrollmentId])
+  @@index([enrollmentId])
+  @@index([userId])
 }

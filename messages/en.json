@@ -43,7 +43,8 @@
       "atsPortal":       "ATS",
       "csCenter":        "Customer Success",
       "careersBoard":    "Careers",
-      "candidatePortal": "My Applications"
+      "candidatePortal": "My Applications",
+      "academy":         "Academy"
     },
     "menu": "Menu",
     "close": "Close"
