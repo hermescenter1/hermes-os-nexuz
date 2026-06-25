@@ -3320,3 +3320,322 @@ model CustomerPortalPreference {
 
   @@index([accountId])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 66 — CRM & CUSTOMER SUCCESS INTELLIGENCE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum CrmLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CONVERTED
+  LOST
+}
+
+enum CrmLeadSource {
+  WEBSITE
+  LINKEDIN
+  REFERRAL
+  VENDOR
+  ACADEMY
+  ATS
+  MANUAL
+}
+
+enum CrmOpportunityStage {
+  DISCOVERY
+  QUALIFICATION
+  PROPOSAL
+  TECHNICAL_REVIEW
+  COMMERCIAL_REVIEW
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum CrmHealthCategory {
+  HEALTHY
+  WATCH
+  AT_RISK
+  CRITICAL
+}
+
+enum CrmJourneyEventType {
+  LEAD_CREATED
+  LEAD_QUALIFIED
+  DEMO_REQUESTED
+  PROPOSAL_SENT
+  CUSTOMER_WON
+  PORTAL_ACTIVATED
+  ACADEMY_ENROLLED
+  SUPPORT_TICKET_CREATED
+  RENEWAL_STARTED
+  RENEWAL_COMPLETED
+}
+
+model CrmLead {
+  id              String         @id @default(cuid())
+  organizationId  String?
+  firstName       String
+  lastName        String
+  email           String
+  phone           String?
+  company         String?
+  jobTitle        String?
+  status          CrmLeadStatus  @default(NEW)
+  source          CrmLeadSource  @default(MANUAL)
+  score           Int            @default(0)
+  ownerId         String?
+  notes           String?
+  convertedAt     DateTime?
+  convertedToId   String?
+  deletedAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  activities      CrmLeadActivity[]
+  leadNotes       CrmLeadNote[]
+
+  @@index([status])
+  @@index([source])
+  @@index([ownerId])
+  @@index([email])
+  @@index([organizationId])
+}
+
+model CrmLeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      CrmLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId    String?
+  type      String
+  summary   String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model CrmLeadNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      CrmLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId  String?
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leadId])
+}
+
+model CrmAccount {
+  id               String   @id @default(cuid())
+  organizationId   String?  @unique
+  name             String
+  industry         String?
+  website          String?
+  phone            String?
+  address          String?
+  country          String?
+  tier             String   @default("STANDARD")
+  status           String   @default("ACTIVE")
+  annualRevenue    Float?
+  employeeCount    Int?
+  ownerId          String?
+  notes            String?
+  deletedAt        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  contacts         CrmAccountContact[]
+  opportunities    CrmOpportunity[]
+  deals            CrmDeal[]
+  healthScores     CrmHealthScore[]
+  journeyEvents    CrmJourneyEvent[]
+  renewalForecasts CrmRenewalForecast[]
+  expansions       CrmExpansionOpportunity[]
+
+  @@index([status])
+  @@index([ownerId])
+  @@index([tier])
+}
+
+model CrmAccountContact {
+  id         String     @id @default(cuid())
+  accountId  String
+  account    CrmAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  firstName  String
+  lastName   String
+  email      String
+  phone      String?
+  jobTitle   String?
+  isPrimary  Boolean    @default(false)
+  deletedAt  DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([accountId])
+  @@index([email])
+}
+
+model CrmOpportunity {
+  id                String              @id @default(cuid())
+  accountId         String?
+  account           CrmAccount?         @relation(fields: [accountId], references: [id])
+  leadId            String?
+  title             String
+  stage             CrmOpportunityStage @default(DISCOVERY)
+  value             Float               @default(0)
+  probability       Int                 @default(0)
+  expectedCloseDate DateTime?
+  ownerId           String?
+  teamIds           Json                @default("[]")
+  notes             String?
+  wonAt             DateTime?
+  lostAt            DateTime?
+  lostReason        String?
+  deletedAt         DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  activities        CrmOpportunityActivity[]
+
+  @@index([stage])
+  @@index([accountId])
+  @@index([ownerId])
+  @@index([expectedCloseDate])
+}
+
+model CrmOpportunityActivity {
+  id            String         @id @default(cuid())
+  opportunityId String
+  opportunity   CrmOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  userId        String?
+  type          String
+  summary       String
+  metadata      Json           @default("{}")
+  createdAt     DateTime       @default(now())
+
+  @@index([opportunityId])
+}
+
+model CrmDeal {
+  id             String      @id @default(cuid())
+  accountId      String?
+  account        CrmAccount? @relation(fields: [accountId], references: [id])
+  opportunityId  String?
+  title          String
+  value          Float       @default(0)
+  status         String      @default("OPEN")
+  closedAt       DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  notes          CrmDealNote[]
+
+  @@index([accountId])
+  @@index([status])
+}
+
+model CrmDealNote {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      CrmDeal  @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  authorId  String?
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
+}
+
+model CrmHealthScore {
+  id            String            @id @default(cuid())
+  accountId     String
+  account       CrmAccount        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  score         Int               @default(0)
+  category      CrmHealthCategory @default(HEALTHY)
+  loginScore    Int               @default(0)
+  projectScore  Int               @default(0)
+  ticketScore   Int               @default(0)
+  academyScore  Int               @default(0)
+  billingScore  Int               @default(0)
+  adoptionScore Int               @default(0)
+  metadata      Json              @default("{}")
+  computedAt    DateTime          @default(now())
+
+  @@index([accountId])
+  @@index([category])
+  @@index([computedAt])
+}
+
+model CrmJourneyEvent {
+  id          String              @id @default(cuid())
+  accountId   String?
+  account     CrmAccount?         @relation(fields: [accountId], references: [id])
+  leadId      String?
+  eventType   CrmJourneyEventType
+  description String?
+  metadata    Json                @default("{}")
+  occurredAt  DateTime            @default(now())
+
+  @@index([accountId])
+  @@index([leadId])
+  @@index([eventType])
+  @@index([occurredAt])
+}
+
+model CrmSuccessManager {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  displayName String
+  email       String
+  accountIds  Json     @default("[]")
+  capacity    Int      @default(20)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model CrmRenewalForecast {
+  id          String     @id @default(cuid())
+  accountId   String
+  account     CrmAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  renewalDate DateTime
+  value       Float      @default(0)
+  probability Int        @default(50)
+  status      String     @default("PENDING")
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([accountId])
+  @@index([renewalDate])
+  @@index([status])
+}
+
+model CrmExpansionOpportunity {
+  id          String     @id @default(cuid())
+  accountId   String
+  account     CrmAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  value       Float      @default(0)
+  status      String     @default("IDENTIFIED")
+  type        String     @default("UPSELL")
+  dueDate     DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([accountId])
+  @@index([status])
+  @@index([type])
+}

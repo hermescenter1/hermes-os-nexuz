@@ -65,6 +65,8 @@ export const PROTECTED_PATHS = [
   /^\/[a-z]{2}\/vendor(?!s)/,
   // Phase 65: Customer portal — all /customer/* paths require authentication
   /^\/[a-z]{2}\/customer/,
+  // Phase 66: CRM — admin/engineer only
+  /^\/[a-z]{2}\/crm/,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -101,6 +103,10 @@ export function isAuthorizedForPath(
   // customer portal: customer role + admin/superadmin/engineer
   if (/^\/[a-z]{2}\/customer/.test(pathname)) {
     return role === "customer" || role === "admin" || role === "superadmin" || role === "engineer";
+  }
+  // CRM: admin/superadmin/engineer only
+  if (/^\/[a-z]{2}\/crm/.test(pathname)) {
+    return role === "admin" || role === "superadmin" || role === "engineer";
   }
   return true;
 }
