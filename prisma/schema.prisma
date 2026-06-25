@@ -2803,3 +2803,285 @@ model ProcessingActivity {
 
   @@index([organizationId, isActive])
 }
+
+// ── Phase 64: Vendor Ecosystem Platform ──────────────────────────────────────
+
+enum VendorType {
+  TECHNOLOGY_PROVIDER
+  SYSTEM_INTEGRATOR
+  SERVICE_PROVIDER
+  MANUFACTURER
+  DISTRIBUTOR
+  CONSULTANT
+  TRAINING_PROVIDER
+}
+
+enum VendorTier {
+  PREMIUM
+  CERTIFIED
+  STANDARD
+}
+
+enum VendorStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum VendorComplianceStatus {
+  PENDING
+  COMPLIANT
+  NON_COMPLIANT
+  UNDER_REVIEW
+  EXEMPT
+}
+
+enum VendorDocType {
+  CERTIFICATION
+  INSURANCE
+  COMPANY_REGISTRATION
+  PRODUCT_CATALOG
+  CASE_STUDY
+  PARTNERSHIP_AGREEMENT
+  NDA
+  OTHER
+}
+
+model VendorCategory {
+  id            String          @id @default(cuid())
+  slug          String          @unique
+  nameEn        String
+  nameFa        String
+  descriptionEn String?
+  descriptionFa String?
+  icon          String?
+  sortOrder     Int             @default(0)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  vendors       VendorProfile[]
+
+  @@index([isActive, sortOrder])
+}
+
+model VendorProfile {
+  id                  String                  @id @default(cuid())
+  slug                String                  @unique
+  nameEn              String
+  nameFa              String
+  logoUrl             String?
+  websiteUrl          String?
+  headquartersCity    String?
+  headquartersCountry String                  @default("Iran")
+  foundedYear         Int?
+  employeeCount       String?
+  descriptionEn       String?                 @db.Text
+  descriptionFa       String?                 @db.Text
+
+  categoryId          String?
+  category            VendorCategory?         @relation(fields: [categoryId], references: [id])
+  vendorType          VendorType              @default(TECHNOLOGY_PROVIDER)
+  tier                VendorTier              @default(STANDARD)
+  status              VendorStatus            @default(PENDING)
+  isActive            Boolean                 @default(true)
+  isFeatured          Boolean                 @default(false)
+  isVerified          Boolean                 @default(false)
+
+  contactEmail        String?
+  contactPhone        String?
+  regionsServed       String[]                @default([])
+
+  performanceScore    Float?
+  reviewCount         Int                     @default(0)
+  averageRating       Float?
+  complianceStatus    VendorComplianceStatus  @default(PENDING)
+
+  userId              String?
+  organizationId      String?
+  approvedAt          DateTime?
+  approvedBy          String?
+  deletedAt           DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  capabilities        VendorCapability[]
+  services            VendorService[]
+  products            VendorProduct[]
+  documents           VendorDocument[]
+  complianceRecords   VendorComplianceRecord[]
+  reviews             VendorReview[]
+  performanceMetrics  VendorPerformanceMetric[]
+
+  @@index([status, isActive])
+  @@index([categoryId])
+  @@index([isFeatured])
+  @@index([slug])
+  @@index([createdAt])
+}
+
+model VendorCapability {
+  id          String        @id @default(cuid())
+  vendorId    String
+  vendor      VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  nameEn      String
+  nameFa      String
+  category    String
+  level       String        @default("STANDARD")
+  certifiedBy String?
+  isVerified  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+
+  @@index([vendorId])
+  @@index([category])
+}
+
+model VendorService {
+  id            String        @id @default(cuid())
+  vendorId      String
+  vendor        VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  nameEn        String
+  nameFa        String
+  descriptionEn String?       @db.Text
+  descriptionFa String?       @db.Text
+  category      String?
+  priceModel    String?
+  isActive      Boolean       @default(true)
+  sortOrder     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([vendorId])
+}
+
+model VendorProduct {
+  id            String        @id @default(cuid())
+  vendorId      String
+  vendor        VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  nameEn        String
+  nameFa        String
+  skuCode       String?
+  descriptionEn String?       @db.Text
+  descriptionFa String?       @db.Text
+  category      String?
+  imageUrl      String?
+  productUrl    String?
+  isActive      Boolean       @default(true)
+  sortOrder     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([vendorId])
+}
+
+model VendorDocument {
+  id           String          @id @default(cuid())
+  vendorId     String
+  vendor       VendorProfile   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  title        String
+  documentType VendorDocType
+  fileUrl      String?
+  isPublic     Boolean         @default(false)
+  expiresAt    DateTime?
+  uploadedBy   String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([vendorId])
+}
+
+model VendorComplianceRecord {
+  id             String                 @id @default(cuid())
+  vendorId       String
+  vendor         VendorProfile          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  complianceType String
+  status         VendorComplianceStatus @default(PENDING)
+  certBody       String?
+  certNumber     String?
+  issuedAt       DateTime?
+  expiresAt      DateTime?
+  notes          String?                @db.Text
+  reviewedBy     String?
+  version        Int                    @default(1)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([vendorId])
+  @@index([complianceType])
+}
+
+model VendorReview {
+  id             String        @id @default(cuid())
+  vendorId       String
+  vendor         VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  reviewerUserId String?
+  rating         Int
+  title          String?
+  bodyEn         String?       @db.Text
+  bodyFa         String?       @db.Text
+  projectType    String?
+  isVerified     Boolean       @default(false)
+  isPublic       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([vendorId])
+  @@index([reviewerUserId])
+}
+
+model VendorPerformanceMetric {
+  id         String        @id @default(cuid())
+  vendorId   String
+  vendor     VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  metricName String
+  value      Float
+  unit       String?
+  period     String?
+  recordedAt DateTime      @default(now())
+  recordedBy String?
+
+  @@index([vendorId])
+  @@index([metricName])
+}
+
+model VendorOnboardingRequest {
+  id                  String    @id @default(cuid())
+  companyNameEn       String
+  companyNameFa       String?
+  websiteUrl          String?
+  headquartersCity    String?
+  headquartersCountry String    @default("Iran")
+  foundedYear         Int?
+  employeeCount       String?
+  contactNameEn       String
+  contactNameFa       String?
+  contactEmail        String
+  contactPhone        String?
+  contactTitle        String?
+  vendorType          String
+  categorySlug        String?
+  servicesOffered     String[]  @default([])
+  industrialExpertise String[]  @default([])
+  regionsServed       String[]  @default([])
+  certifications      String[]  @default([])
+  companyDescEn       String?   @db.Text
+  companyDescFa       String?   @db.Text
+  status              String    @default("PENDING")
+  reviewedBy          String?
+  reviewNotes         String?   @db.Text
+  rejectionReason     String?   @db.Text
+  privacyAccepted     Boolean   @default(false)
+  termsAccepted       Boolean   @default(false)
+  gdprAccepted        Boolean   @default(false)
+  sessionId           String?
+  resultVendorId      String?
+  submittedAt         DateTime  @default(now())
+  reviewedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([contactEmail])
+}
