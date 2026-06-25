@@ -3058,5 +3058,62 @@
     "failed": "ناموفق",
     "partial": "جزئی",
     "cancelled": "لغو شده"
+  },
+  "erp": {
+    "nav": {
+      "dashboard": "داشبورد",
+      "projects": "پروژه‌ها",
+      "tasks": "وظایف",
+      "teams": "تیم‌ها",
+      "resources": "منابع",
+      "inventory": "انبار",
+      "workOrders": "دستور کار",
+      "approvals": "تأییدیه‌ها",
+      "kpis": "شاخص‌های کلیدی",
+      "settings": "تنظیمات"
+    },
+    "dashboard": {
+      "title": "داشبورد عملیاتی",
+      "activeProjects": "پروژه‌های فعال",
+      "overdueTasks": "وظایف عقب‌افتاده",
+      "openWorkOrders": "دستورکارهای باز",
+      "inventoryWarnings": "هشدار انبار",
+      "pendingApprovals": "تأییدیه‌های در انتظار",
+      "resourceUtilization": "بهره‌وری منابع",
+      "budgetOverview": "خلاصه بودجه",
+      "recentActivity": "فعالیت اخیر"
+    },
+    "projects": {
+      "title": "پروژه‌ها",
+      "newProject": "پروژه جدید"
+    },
+    "tasks": {
+      "title": "تابلوی وظایف"
+    },
+    "teams": {
+      "title": "تیم‌ها"
+    },
+    "resources": {
+      "title": "منابع"
+    },
+    "inventory": {
+      "title": "انبار",
+      "lowStock": "موجودی کم",
+      "inStock": "موجود"
+    },
+    "workOrders": {
+      "title": "دستورکارها"
+    },
+    "approvals": {
+      "title": "درخواست‌های تأیید",
+      "approve": "تأیید",
+      "reject": "رد"
+    },
+    "kpis": {
+      "title": "شاخص‌های کلیدی عملیاتی"
+    },
+    "settings": {
+      "title": "تنظیمات ERP"
+    }
   }
 }

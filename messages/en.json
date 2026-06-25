@@ -3058,5 +3058,62 @@
     "failed": "Failed",
     "partial": "Partial",
     "cancelled": "Cancelled"
+  },
+  "erp": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "projects": "Projects",
+      "tasks": "Tasks",
+      "teams": "Teams",
+      "resources": "Resources",
+      "inventory": "Inventory",
+      "workOrders": "Work Orders",
+      "approvals": "Approvals",
+      "kpis": "KPIs",
+      "settings": "Settings"
+    },
+    "dashboard": {
+      "title": "Operations Dashboard",
+      "activeProjects": "Active Projects",
+      "overdueTasks": "Overdue Tasks",
+      "openWorkOrders": "Open Work Orders",
+      "inventoryWarnings": "Inventory Warnings",
+      "pendingApprovals": "Pending Approvals",
+      "resourceUtilization": "Resource Utilization",
+      "budgetOverview": "Budget Overview",
+      "recentActivity": "Recent Activity"
+    },
+    "projects": {
+      "title": "Projects",
+      "newProject": "New Project"
+    },
+    "tasks": {
+      "title": "Task Board"
+    },
+    "teams": {
+      "title": "Teams"
+    },
+    "resources": {
+      "title": "Resources"
+    },
+    "inventory": {
+      "title": "Inventory",
+      "lowStock": "Low Stock",
+      "inStock": "In Stock"
+    },
+    "workOrders": {
+      "title": "Work Orders"
+    },
+    "approvals": {
+      "title": "Approval Requests",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "kpis": {
+      "title": "Operational KPIs"
+    },
+    "settings": {
+      "title": "ERP Settings"
+    }
   }
 }

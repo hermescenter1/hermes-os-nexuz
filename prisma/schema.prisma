@@ -3904,3 +3904,377 @@ model WorkflowAuditEvent {
   @@index([eventType])
   @@index([createdAt])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 68 — Enterprise ERP & Operations Intelligence Platform
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ErpProjectStatus {
+  PLANNED
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ErpTaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  REVIEW
+  DONE
+  CANCELLED
+}
+
+enum ErpTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ErpResourceType {
+  HUMAN
+  EQUIPMENT
+  SOFTWARE
+  VEHICLE
+  FACILITY
+  TOOL
+}
+
+enum ErpInventoryMovementType {
+  IN
+  OUT
+  TRANSFER
+  ADJUSTMENT
+  RESERVED
+  RELEASED
+}
+
+enum ErpWorkOrderStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  WAITING_APPROVAL
+  COMPLETED
+  CANCELLED
+}
+
+enum ErpApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model ErpProject {
+  id               String           @id @default(cuid())
+  organizationId   String?
+  name             String
+  description      String?
+  status           ErpProjectStatus @default(PLANNED)
+  startDate        DateTime?
+  endDate          DateTime?
+  budget           Float?
+  actualCost       Float            @default(0)
+  crmAccountId     String?
+  crmOpportunityId String?
+  managerId        String?
+  createdBy        String?
+  deletedAt        DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  milestones       ErpProjectMilestone[]
+  tasks            ErpTask[]
+  costs            ErpProjectCost[]
+  workOrders       ErpWorkOrder[]
+  approvalRequests ErpApprovalRequest[]
+  kpis             ErpOperationalKpi[]
+
+  @@index([status])
+  @@index([organizationId])
+  @@index([managerId])
+  @@index([createdAt])
+}
+
+model ErpProjectMilestone {
+  id          String     @id @default(cuid())
+  projectId   String
+  project     ErpProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([projectId])
+}
+
+model ErpTask {
+  id             String          @id @default(cuid())
+  projectId      String?
+  project        ErpProject?     @relation(fields: [projectId], references: [id])
+  teamId         String?
+  team           ErpTeam?        @relation(fields: [teamId], references: [id])
+  assigneeId     String?
+  createdBy      String?
+  title          String
+  description    String?
+  status         ErpTaskStatus   @default(TODO)
+  priority       ErpTaskPriority @default(MEDIUM)
+  dueDate        DateTime?
+  completedAt    DateTime?
+  estimatedHours Float?
+  actualHours    Float?
+  deletedAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  comments       ErpTaskComment[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([dueDate])
+}
+
+model ErpTaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      ErpTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String?
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+}
+
+model ErpTeam {
+  id             String   @id @default(cuid())
+  organizationId String?
+  name           String
+  description    String?
+  leadId         String?
+  capacity       Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  members    ErpTeamMember[]
+  tasks      ErpTask[]
+  workOrders ErpWorkOrder[]
+
+  @@index([organizationId])
+}
+
+model ErpTeamMember {
+  id           String   @id @default(cuid())
+  teamId       String
+  team         ErpTeam  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId       String
+  role         String   @default("member")
+  availability Int      @default(100)
+  joinedAt     DateTime @default(now())
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model ErpResource {
+  id             String          @id @default(cuid())
+  organizationId String?
+  name           String
+  type           ErpResourceType @default(HUMAN)
+  description    String?
+  costRate       Float?
+  currency       String          @default("USD")
+  isAvailable    Boolean         @default(true)
+  projectId      String?
+  workOrderId    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([type])
+  @@index([isAvailable])
+  @@index([organizationId])
+}
+
+model ErpInventoryItem {
+  id             String   @id @default(cuid())
+  organizationId String?
+  sku            String
+  name           String
+  category       String?
+  description    String?
+  quantity       Int      @default(0)
+  reserved       Int      @default(0)
+  reorderLevel   Int      @default(0)
+  unitCost       Float?
+  currency       String   @default("USD")
+  location       String?
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  movements      ErpInventoryMovement[]
+
+  @@index([sku])
+  @@index([category])
+  @@index([organizationId])
+  @@index([quantity])
+}
+
+model ErpInventoryMovement {
+  id        String                   @id @default(cuid())
+  itemId    String
+  item      ErpInventoryItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type      ErpInventoryMovementType
+  quantity  Int
+  reason    String?
+  reference String?
+  createdBy String?
+  createdAt DateTime                 @default(now())
+
+  @@index([itemId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model ErpWorkOrder {
+  id               String             @id @default(cuid())
+  organizationId   String?
+  projectId        String?
+  project          ErpProject?        @relation(fields: [projectId], references: [id])
+  teamId           String?
+  team             ErpTeam?           @relation(fields: [teamId], references: [id])
+  title            String
+  description      String?
+  status           ErpWorkOrderStatus @default(OPEN)
+  priority         ErpTaskPriority    @default(MEDIUM)
+  assigneeId       String?
+  createdBy        String?
+  dueDate          DateTime?
+  completedAt      DateTime?
+  completionNote   String?
+  requiresApproval Boolean            @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  activities       ErpWorkOrderActivity[]
+  approvalRequests ErpApprovalRequest[]
+
+  @@index([status])
+  @@index([projectId])
+  @@index([teamId])
+  @@index([organizationId])
+}
+
+model ErpWorkOrderActivity {
+  id          String       @id @default(cuid())
+  workOrderId String
+  workOrder   ErpWorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  userId      String?
+  action      String
+  notes       String?
+  createdAt   DateTime     @default(now())
+
+  @@index([workOrderId])
+}
+
+model ErpOperationalKpi {
+  id          String      @id @default(cuid())
+  projectId   String?
+  project     ErpProject? @relation(fields: [projectId], references: [id])
+  name        String
+  value       Float
+  target      Float?
+  unit        String?
+  category    String
+  periodStart DateTime?
+  periodEnd   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([projectId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model ErpProjectCost {
+  id          String     @id @default(cuid())
+  projectId   String
+  project     ErpProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  description String
+  amount      Float
+  currency    String     @default("USD")
+  category    String?
+  date        DateTime
+  createdBy   String?
+  createdAt   DateTime   @default(now())
+
+  @@index([projectId])
+  @@index([date])
+}
+
+model ErpApprovalRequest {
+  id             String            @id @default(cuid())
+  organizationId String?
+  projectId      String?
+  project        ErpProject?       @relation(fields: [projectId], references: [id])
+  workOrderId    String?
+  workOrder      ErpWorkOrder?     @relation(fields: [workOrderId], references: [id])
+  requestedBy    String?
+  title          String
+  description    String?
+  status         ErpApprovalStatus @default(PENDING)
+  decidedAt      DateTime?
+  decidedBy      String?
+  decision       String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  steps          ErpApprovalStep[]
+
+  @@index([status])
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([workOrderId])
+}
+
+model ErpApprovalStep {
+  id           String             @id @default(cuid())
+  requestId    String
+  request      ErpApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  order        Int
+  approverRole String
+  status       ErpApprovalStatus  @default(PENDING)
+  decidedBy    String?
+  decidedAt    DateTime?
+  notes        String?
+  createdAt    DateTime           @default(now())
+
+  @@index([requestId])
+}
+
+model ErpAuditEvent {
+  id             String   @id @default(cuid())
+  organizationId String?
+  entityType     String
+  entityId       String?
+  userId         String?
+  eventType      String
+  description    String
+  before         Json?
+  after          Json?
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@index([entityType])
+  @@index([entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
