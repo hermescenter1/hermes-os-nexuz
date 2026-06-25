@@ -3085,3 +3085,238 @@ model VendorOnboardingRequest {
   @@index([status, createdAt])
   @@index([contactEmail])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 65 — Customer Portal & Account Workspace
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum CustomerDocCategory {
+  CONTRACT
+  PROPOSAL
+  REPORT
+  INVOICE
+  TECHNICAL
+  COMPLIANCE
+  OTHER
+}
+
+model CustomerAccount {
+  id             String    @id @default(cuid())
+  organizationId String    @unique
+  accountNumber  String    @unique @default(cuid())
+  displayName    String
+  industry       String?
+  region         String?
+  tier           String    @default("STANDARD")
+  csManagerId    String?
+  status         String    @default("ACTIVE")
+  notes          String?   @db.Text
+  healthScore    Float?
+  contractStart  DateTime?
+  contractEnd    DateTime?
+  onboardedAt    DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  contacts         CustomerContact[]
+  projects         CustomerProject[]
+  tickets          CustomerSupportTicket[]
+  documents        CustomerDocument[]
+  activityLogs     CustomerActivityLog[]
+  preference       CustomerPortalPreference?
+  subscriptionView CustomerSubscriptionView?
+
+  @@index([organizationId])
+  @@index([status, createdAt])
+  @@index([csManagerId])
+}
+
+model CustomerContact {
+  id          String          @id @default(cuid())
+  accountId   String
+  account     CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  userId      String?
+  fullName    String
+  email       String
+  phone       String?
+  title       String?
+  isPrimary   Boolean         @default(false)
+  isBilling   Boolean         @default(false)
+  isTechnical Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([accountId])
+  @@index([email])
+}
+
+model CustomerProject {
+  id            String          @id @default(cuid())
+  accountId     String
+  account       CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  title         String
+  descriptionEn String?         @db.Text
+  descriptionFa String?         @db.Text
+  status        ProjectStatus   @default(ACTIVE)
+  priority      String          @default("MEDIUM")
+  managerName   String?
+  teamMembers   String[]        @default([])
+  tags          String[]        @default([])
+  startDate     DateTime?
+  endDate       DateTime?
+  completedAt   DateTime?
+  progress      Int             @default(0)
+  milestones    Json            @default("[]")
+  deletedAt     DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  tickets   CustomerSupportTicket[]
+  documents CustomerDocument[]
+
+  @@index([accountId, status])
+  @@index([createdAt])
+}
+
+model CustomerSupportTicket {
+  id              String          @id @default(cuid())
+  accountId       String
+  account         CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  projectId       String?
+  project         CustomerProject? @relation(fields: [projectId], references: [id])
+  createdByUserId String?
+  assignedToId    String?
+  title           String
+  descriptionEn   String          @db.Text
+  priority        TicketPriority  @default(MEDIUM)
+  status          TicketStatus    @default(OPEN)
+  category        String          @default("GENERAL")
+  slaDeadline     DateTime?
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  messages CustomerSupportMessage[]
+
+  @@index([accountId, status])
+  @@index([priority, status])
+  @@index([createdAt])
+}
+
+model CustomerSupportMessage {
+  id             String                @id @default(cuid())
+  ticketId       String
+  ticket         CustomerSupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId       String?
+  authorName     String
+  authorRole     String               @default("customer")
+  body           String               @db.Text
+  isInternal     Boolean              @default(false)
+  attachmentUrls String[]             @default([])
+  createdAt      DateTime             @default(now())
+
+  @@index([ticketId, createdAt])
+  @@index([isInternal])
+}
+
+model CustomerDocument {
+  id            String              @id @default(cuid())
+  accountId     String
+  account       CustomerAccount     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  projectId     String?
+  project       CustomerProject?    @relation(fields: [projectId], references: [id])
+  title         String
+  category      CustomerDocCategory @default(OTHER)
+  fileUrl       String?
+  fileSizeBytes Int?
+  mimeType      String?
+  version       String              @default("1.0")
+  isPublic      Boolean             @default(false)
+  uploadedBy    String?
+  expiresAt     DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([accountId, category])
+  @@index([createdAt])
+}
+
+model CustomerActivityLog {
+  id          String          @id @default(cuid())
+  accountId   String
+  account     CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  userId      String?
+  eventType   String
+  description String
+  metadata    Json            @default("{}")
+  ipAddress   String?
+  createdAt   DateTime        @default(now())
+
+  @@index([accountId, createdAt])
+  @@index([eventType])
+}
+
+model CustomerSubscriptionView {
+  id                 String          @id @default(cuid())
+  accountId          String          @unique
+  account            CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  planName           String          @default("STARTER")
+  planTier           String          @default("STANDARD")
+  billingCycle       String          @default("MONTHLY")
+  status             String          @default("ACTIVE")
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  usersCount         Int             @default(0)
+  usersLimit         Int             @default(10)
+  storageUsedGb      Float           @default(0)
+  storageLimitGb     Float           @default(10)
+  apiCallsMonth      Int             @default(0)
+  apiCallsLimit      Int             @default(10000)
+  features           String[]        @default([])
+  updatedAt          DateTime        @updatedAt
+
+  @@index([accountId])
+}
+
+model CustomerPortalPreference {
+  id                 String          @id @default(cuid())
+  accountId          String          @unique
+  account            CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  userId             String?
+  language           String          @default("en")
+  timezone           String          @default("Asia/Tehran")
+  emailNotifications Boolean         @default(true)
+  ticketUpdates      Boolean         @default(true)
+  projectUpdates     Boolean         @default(true)
+  documentAlerts     Boolean         @default(true)
+  marketingEmails    Boolean         @default(false)
+  updatedAt          DateTime        @updatedAt
+
+  @@index([accountId])
+}

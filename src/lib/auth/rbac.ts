@@ -63,6 +63,8 @@ export const PROTECTED_PATHS = [
   /^\/[a-z]{2}\/privacy-center/,
   // Phase 64: Vendor portal (singular /vendor) — protected; /vendors directory is public
   /^\/[a-z]{2}\/vendor(?!s)/,
+  // Phase 65: Customer portal — all /customer/* paths require authentication
+  /^\/[a-z]{2}\/customer/,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -95,6 +97,10 @@ export function isAuthorizedForPath(
   // vendor portal: vendor role + admin/superadmin
   if (/^\/[a-z]{2}\/vendor(?!s)/.test(pathname)) {
     return role === "vendor" || role === "admin" || role === "superadmin";
+  }
+  // customer portal: customer role + admin/superadmin/engineer
+  if (/^\/[a-z]{2}\/customer/.test(pathname)) {
+    return role === "customer" || role === "admin" || role === "superadmin" || role === "engineer";
   }
   return true;
 }
