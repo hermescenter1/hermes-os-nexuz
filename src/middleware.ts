@@ -17,16 +17,27 @@ const intlMiddleware = createMiddleware(routing);
 // In development, webpack uses eval-based source maps which require
 // 'unsafe-eval'. Production builds use non-eval source maps so this is
 // omitted there for maximum CSP strictness.
+// Phase 63: When analytics env vars are set, Google domains are added to the
+// allowlist so GA4/GTM scripts can load. If no analytics vars are configured
+// the CSP remains maximally strict.
+const GA_ID  = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+const HAS_ANALYTICS = Boolean(GA_ID || GTM_ID);
+
+const GA_SCRIPT_DOMAINS  = HAS_ANALYTICS ? " https://www.googletagmanager.com https://www.google-analytics.com" : "";
+const GA_CONNECT_DOMAINS = HAS_ANALYTICS ? " https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com" : "";
+const GA_IMG_DOMAINS     = HAS_ANALYTICS ? " https://www.google-analytics.com https://www.googletagmanager.com" : "";
+
 function buildCSP(nonce: string): string {
   const dev = process.env.NODE_ENV !== "production";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'${dev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}'${GA_SCRIPT_DOMAINS}${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    `img-src 'self' data:${GA_IMG_DOMAINS}`,
     "font-src 'self'",
     // ws: is needed for webpack HMR WebSocket in development
-    `connect-src 'self'${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
+    `connect-src 'self'${GA_CONNECT_DOMAINS}${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

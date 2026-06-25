@@ -32,6 +32,7 @@ export function CookieConsentBanner() {
     });
     setSaving(false);
     setVisible(false);
+    window.dispatchEvent(new CustomEvent("hermes:consent-updated", { detail: accepted }));
   }
 
   if (!visible) return null;

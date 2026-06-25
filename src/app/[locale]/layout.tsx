@@ -6,6 +6,7 @@ import { headers }              from "next/headers";
 import localFont                from "next/font/local";
 import { routing, localeDirection, type Locale } from "@/i18n/routing";
 import { CookieConsentBanner }  from "@/components/compliance/CookieConsentBanner";
+import { AnalyticsProvider }    from "@/components/analytics/AnalyticsProvider";
 import { JsonLd }               from "@/components/seo/JsonLd";
 import { organizationSchema, webSiteSchema } from "@/lib/seo/schemas";
 import { BASE_URL, SITE_NAME, OG_IMAGE_URL, TWITTER_HANDLE, OG_LOCALE, type SeoLocale } from "@/lib/seo/config";
@@ -148,6 +149,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           {children}
           <CookieConsentBanner />
+          <AnalyticsProvider />
         </NextIntlClientProvider>
       </body>
     </html>

@@ -214,6 +214,14 @@ export function AdminConsoleClient({
                   SEO Dashboard
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/admin/analytics"
+                  className="block rounded-lg px-3 py-2 font-body text-sm text-signal transition-colors hover:bg-bg hover:text-ink"
+                >
+                  Analytics Dashboard
+                </Link>
+              </li>
             </ul>
           </section>
 
