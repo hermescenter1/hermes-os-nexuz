@@ -13,6 +13,15 @@ interface Props {
   gaId: string;
 }
 
+const CONSENT_KEY = "hermes_cookie_consent";
+
+function readLocalConsent(): { analytics: boolean } | null {
+  try {
+    const raw = localStorage.getItem(CONSENT_KEY);
+    return raw ? (JSON.parse(raw) as { analytics: boolean }) : null;
+  } catch { return null; }
+}
+
 export function AnalyticsProvider({ gaId }: Props) {
   const [allowed, setAllowed] = useState(false);
 
@@ -24,17 +33,27 @@ export function AnalyticsProvider({ gaId }: Props) {
     console.log("[GA] AnalyticsProvider mounted. gaId:", gaId);
 
     async function checkConsent() {
+      // Fast path: localStorage has priority — no round-trip needed if already stored
+      const local = readLocalConsent();
+      if (local?.analytics === true) {
+        console.log("[GA] checkConsent: localStorage has analytics=true");
+        setAllowed(true);
+        activateGA4(gaId);
+        return;
+      }
+
+      // DB path: covers the case where consent was granted on another device/browser
       try {
         const res  = await fetch("/api/compliance/cookie-consent");
         const data = await res.json() as { consent?: ConsentPrefs | null };
         const granted = data.consent?.analytics === true;
-        console.log("[GA] checkConsent resolved: analytics=", granted);
+        console.log("[GA] checkConsent DB resolved: analytics=", granted);
         if (granted) {
           setAllowed(true);
           activateGA4(gaId);
         }
       } catch (err) {
-        console.log("[GA] checkConsent failed:", err);
+        console.log("[GA] checkConsent DB failed:", err);
       }
     }
     void checkConsent();

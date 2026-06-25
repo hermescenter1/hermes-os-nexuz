@@ -7,30 +7,64 @@ interface Prefs { necessary: boolean; analytics: boolean; marketing: boolean; pr
 
 const DEFAULT_PREFS: Prefs = { necessary: true, analytics: false, marketing: false, preferences: false };
 
+// localStorage key for consent fallback — used when DB is unavailable or slow.
+const CONSENT_KEY = "hermes_cookie_consent";
+
+function readLocalConsent(): Prefs | null {
+  try {
+    const raw = localStorage.getItem(CONSENT_KEY);
+    return raw ? (JSON.parse(raw) as Prefs) : null;
+  } catch { return null; }
+}
+
+function writeLocalConsent(prefs: Prefs): void {
+  try { localStorage.setItem(CONSENT_KEY, JSON.stringify(prefs)); } catch { /* quota / incognito */ }
+}
+
 export function CookieConsentBanner() {
-  const [visible,      setVisible]      = useState(false);
-  const [customizing,  setCustomizing]  = useState(false);
-  const [prefs,        setPrefs]        = useState<Prefs>(DEFAULT_PREFS);
-  const [saving,       setSaving]       = useState(false);
+  const [visible,     setVisible]     = useState(false);
+  const [customizing, setCustomizing] = useState(false);
+  const [prefs,       setPrefs]       = useState<Prefs>(DEFAULT_PREFS);
+  const [saving,      setSaving]      = useState(false);
 
   useEffect(() => {
-    // Check existing consent
+    function applyLocalConsent(local: Prefs) {
+      // Re-dispatch so AnalyticsProvider picks up the stored prefs
+      window.dispatchEvent(new CustomEvent("hermes:consent-updated", { detail: local }));
+    }
+
     fetch("/api/compliance/cookie-consent")
       .then((r) => r.json())
       .then((d: { consent?: Prefs | null }) => {
-        if (!d.consent) setVisible(true);
+        if (d.consent) return; // DB has consent — banner stays hidden
+        // DB returned null. Check localStorage fallback before showing banner.
+        const local = readLocalConsent();
+        if (local) { applyLocalConsent(local); return; }
+        setVisible(true);
       })
-      .catch(() => setVisible(true));
+      .catch(() => {
+        // API unreachable — fall back to localStorage
+        const local = readLocalConsent();
+        if (local) { applyLocalConsent(local); return; }
+        setVisible(true);
+      });
   }, []);
 
   async function save(accepted: Prefs) {
     setSaving(true);
-    await fetch("/api/compliance/cookie-consent", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(accepted),
-    });
-    setSaving(false);
+    try {
+      await fetch("/api/compliance/cookie-consent", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(accepted),
+      });
+    } catch {
+      // Network error — consent is still saved locally below
+    } finally {
+      setSaving(false);
+    }
+    // Always persist locally so consent survives regardless of DB availability
+    writeLocalConsent(accepted);
     setVisible(false);
     window.dispatchEvent(new CustomEvent("hermes:consent-updated", { detail: accepted }));
   }

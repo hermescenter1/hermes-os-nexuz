@@ -19,7 +19,10 @@ type AnyModel = Record<string, (...args: unknown[]) => Promise<unknown>>;
 
 async function m() {
   const db = await getPrisma();
-  if (!db) return null;
+  if (!db) {
+    console.error("[compliance/db] DB unavailable. HERMES_STORAGE_MODE=" + (process.env.HERMES_STORAGE_MODE ?? "auto") + " DATABASE_URL=" + (process.env.DATABASE_URL ? "set" : "missing"));
+    return null;
+  }
   const d = db as Record<string, unknown>;
   return {
     consent:    d.consentRecord    as AnyModel,
@@ -76,7 +79,10 @@ export async function upsertCookieConsent(data: {
         updatedAt:      new Date(),
       },
     } as unknown)) as DbCookieConsent;
-  } catch { return null; }
+  } catch (err) {
+    console.error("[compliance/db] upsertCookieConsent failed for sessionId=" + data.sessionId + ":", err);
+    return null;
+  }
 }
 
 export async function getCookieConsent(sessionId: string): Promise<DbCookieConsent | null> {
@@ -84,7 +90,10 @@ export async function getCookieConsent(sessionId: string): Promise<DbCookieConse
   if (!db) return null;
   try {
     return (await db.cookie.findUnique({ where: { sessionId } } as unknown)) as DbCookieConsent | null;
-  } catch { return null; }
+  } catch (err) {
+    console.error("[compliance/db] getCookieConsent failed for sessionId=" + sessionId + ":", err);
+    return null;
+  }
 }
 
 // ── Consent Records ───────────────────────────────────────────────────────────
