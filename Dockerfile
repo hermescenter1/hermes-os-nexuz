@@ -21,7 +21,16 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# NEXT_PUBLIC_* variables are inlined by webpack at build time — they cannot be
+# overridden at runtime. Pass them as --build-arg so the bundle contains the
+# real values. Example:
+#   docker build --build-arg NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX .
+ARG NEXT_PUBLIC_GA_MEASUREMENT_ID=""
+ARG NEXT_PUBLIC_GTM_ID=""
+
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=$NEXT_PUBLIC_GA_MEASUREMENT_ID
+ENV NEXT_PUBLIC_GTM_ID=$NEXT_PUBLIC_GTM_ID
 ENV DATABASE_URL="postgresql://hermes:changeme@localhost:5432/hermes_db"
 ENV JWT_ACCESS_SECRET="build-time-placeholder-64-chars-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 ENV JWT_REFRESH_SECRET="build-time-placeholder-64-chars-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"

@@ -133,7 +133,11 @@ export default async function LocaleLayout({
   const messages = await getMessages();
   const dir      = localeDirection[locale as Locale];
 
-  void (await headers()).get("x-nonce");
+  // Capture nonce (reading headers() also forces dynamic rendering — no cache stale mismatch)
+  const nonce = (await headers()).get("x-nonce") ?? "";
+  // Read GA ID server-side at request time — avoids the NEXT_PUBLIC_* build-time baking
+  // constraint that causes analyticsEnabled=false when the env var is absent at docker build.
+  const gaId  = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
 
   return (
     <html lang={locale} dir={dir} className={`${estedad.variable} ${vazir.variable}`}>
@@ -144,12 +148,25 @@ export default async function LocaleLayout({
         <link rel="dns-prefetch" href="https://hermesnovin.com" />
         {/* Favicon fallback for legacy browsers */}
         <link rel="shortcut icon" href="/favicon.ico" />
+        {/* GA4 Consent Mode v2 — script always in HTML so curl/bots see it;
+            defaults to denied so NO data is sent until the user grants consent. */}
+        {gaId && (
+          <>
+            <script
+              nonce={nonce}
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];function gtag(){window.dataLayer.push(arguments)}gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'});`,
+              }}
+            />
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+          </>
+        )}
       </head>
       <body>
         <NextIntlClientProvider messages={messages}>
           {children}
           <CookieConsentBanner />
-          <AnalyticsProvider />
+          <AnalyticsProvider gaId={gaId} />
         </NextIntlClientProvider>
       </body>
     </html>
