@@ -24,6 +24,8 @@ const STATIC_PATHS = [
   { path: "/library/cases", priority: 0.8,  changeFreq: "weekly"  as const },
   { path: "/academy",       priority: 0.9,  changeFreq: "weekly"  as const },
   { path: "/careers",       priority: 0.9,  changeFreq: "daily"   as const },
+  { path: "/vendors",       priority: 0.9,  changeFreq: "weekly"  as const },
+  { path: "/vendors/apply", priority: 0.7,  changeFreq: "monthly" as const },
   { path: "/contact",       priority: 0.7,  changeFreq: "yearly"  as const },
   { path: "/about",         priority: 0.7,  changeFreq: "yearly"  as const },
   { path: "/privacy",       priority: 0.5,  changeFreq: "yearly"  as const },
@@ -80,6 +82,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch {
     // DB not available at build time — courses omitted from static sitemap
+  }
+
+  // Dynamic: approved vendor profiles (DB-backed — skip gracefully if unavailable)
+  try {
+    const { listApprovedVendorSlugs } = await import("@/lib/vendors/db");
+    const slugs = await listApprovedVendorSlugs();
+    for (const slug of slugs ?? []) {
+      entries.push(...localeEntries(`/vendors/${slug}`, 0.8, "weekly"));
+    }
+  } catch {
+    // DB not available at build time — vendor profiles omitted from static sitemap
   }
 
   return entries;

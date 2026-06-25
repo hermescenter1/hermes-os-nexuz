@@ -236,3 +236,61 @@ export function faqSchema(items: FaqEntry[]) {
     })),
   };
 }
+
+/* ── Vendor Schemas ──────────────────────────────────────────────────────── */
+
+interface VendorForSchema {
+  id:          string;
+  slug:        string;
+  nameEn:      string;
+  descriptionEn?: string | null;
+  websiteUrl?:    string | null;
+  contactEmail?:  string | null;
+  vendorType:  string;
+  tier:        string;
+  isVerified:  boolean;
+  headquartersCity?:    string | null;
+  headquartersCountry?: string | null;
+}
+
+export function buildVendorSchema(vendor: VendorForSchema) {
+  return {
+    "@context": "https://schema.org",
+    "@type":    "Organization",
+    name:       vendor.nameEn,
+    url:        `${BASE_URL}/fa/vendors/${vendor.slug}`,
+    ...(vendor.websiteUrl   ? { sameAs: [vendor.websiteUrl] } : {}),
+    ...(vendor.descriptionEn ? { description: vendor.descriptionEn } : {}),
+    ...(vendor.contactEmail  ? { email: vendor.contactEmail } : {}),
+    ...(vendor.headquartersCity ? {
+      address: {
+        "@type":          "PostalAddress",
+        addressLocality:  vendor.headquartersCity,
+        addressCountry:   vendor.headquartersCountry ?? "",
+      },
+    } : {}),
+    memberOf: {
+      "@type": "Organization",
+      name:    ORG_NAME,
+      url:     BASE_URL,
+    },
+  };
+}
+
+export function buildVendorListSchema(vendors: VendorForSchema[]) {
+  if (vendors.length === 0) return null;
+  return {
+    "@context":     "https://schema.org",
+    "@type":        "ItemList",
+    name:           "Hermes OS Vendor Directory",
+    description:    "Certified industrial technology vendors, system integrators, and service providers in the Hermes OS ecosystem.",
+    url:            `${BASE_URL}/fa/vendors`,
+    numberOfItems:  vendors.length,
+    itemListElement: vendors.map((v, i) => ({
+      "@type":    "ListItem",
+      position:   i + 1,
+      name:       v.nameEn,
+      url:        `${BASE_URL}/fa/vendors/${v.slug}`,
+    })),
+  };
+}

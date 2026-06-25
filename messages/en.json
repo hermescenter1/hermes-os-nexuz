@@ -163,6 +163,71 @@
         "eventDesc": "Description",
         "setupGuide": "Environment Variables",
         "setupNote": "Add these to your .env.local or deployment environment. Analytics automatically enables when either variable is set. See docs/analytics.md for full documentation."
+      },
+      "vendors": {
+        "title": "Vendor Directory — Hermes OS",
+        "description": "Browse certified industrial technology vendors, system integrators, service providers and manufacturers in the Hermes OS ecosystem.",
+        "keywords": "vendor directory, industrial vendors, system integrators, technology providers, Hermes OS partners",
+        "eyebrow": "Vendor Ecosystem",
+        "heading": "Vendor Directory",
+        "lede": "Discover certified industrial technology partners — from automation specialists to enterprise software integrators — all vetted by the Hermes OS team.",
+        "applyBtn": "Apply to Join →",
+        "noResults": "No vendors found",
+        "noResultsFilter": "Try adjusting your filters to find vendors.",
+        "noResultsEmpty": "The vendor ecosystem is growing. Be the first to apply.",
+        "becomePartner": "Become a Partner →",
+        "filters": {
+          "allTypes": "All Types",
+          "allTiers": "All Tiers",
+          "search": "Search vendors…",
+          "searchBtn": "Search"
+        },
+        "card": {
+          "featured": "Featured",
+          "verified": "Verified",
+          "services": "Services",
+          "skills": "Skills",
+          "compliance": "Compliance"
+        }
+      },
+      "vendorsApply": {
+        "title": "Become a Vendor Partner — Hermes OS",
+        "description": "Apply to join the Hermes OS Vendor Ecosystem. We partner with industrial technology companies, system integrators, and service providers.",
+        "keywords": "vendor application, partner program, industrial technology partner, Hermes OS vendor",
+        "eyebrow": "Partner Program",
+        "heading": "Become a Vendor Partner",
+        "lede": "Join the Hermes OS Vendor Ecosystem and connect with enterprise clients across the industrial technology sector. Our team reviews each application within 5 business days.",
+        "backLink": "← Vendor Directory",
+        "benefits": {
+          "badge": { "title": "Verified Badge", "desc": "Get a verified partner badge displayed on your profile after compliance review." },
+          "reach": { "title": "Enterprise Reach", "desc": "Connect with enterprise clients actively sourcing industrial technology." },
+          "panel": { "title": "Admin Panel", "desc": "Manage your vendor profile, services catalog, and performance metrics." }
+        },
+        "form": {
+          "company": "Company Information",
+          "contact": "Contact Person",
+          "expertise": "Industrial Expertise & Services",
+          "description": "Company Description",
+          "legal": "Legal & Compliance",
+          "submit": "Submit Application →",
+          "submitting": "Submitting…",
+          "successTitle": "Application Submitted!",
+          "successBody": "Thank you for applying to join the Hermes OS Vendor Ecosystem. We will review your application and contact you at your provided email within 5 business days.",
+          "successCta": "Browse Vendor Directory →"
+        }
+      },
+      "vendorPortal": {
+        "eyebrow": "Vendor Portal",
+        "heading": "My Vendor Dashboard",
+        "lede": "Manage your vendor profile, services, and partnership status.",
+        "noProfile": "No Vendor Profile Found",
+        "noProfileBody": "Your application may still be under review, or you have not yet submitted an application to join the Hermes OS Vendor Ecosystem.",
+        "applyLink": "Apply to Become a Partner →"
+      },
+      "adminVendors": {
+        "eyebrow": "Admin — Vendor Management",
+        "heading": "Vendor Ecosystem",
+        "lede": "Review vendor applications, manage approved vendor profiles, and maintain ecosystem health."
       }
     }
   },

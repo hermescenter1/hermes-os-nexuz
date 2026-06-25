@@ -61,6 +61,8 @@ export const PROTECTED_PATHS = [
   // Phase 61: Compliance dashboard (admin only); privacy-center (any authenticated user)
   /^\/[a-z]{2}\/compliance/,
   /^\/[a-z]{2}\/privacy-center/,
+  // Phase 64: Vendor portal (singular /vendor) — protected; /vendors directory is public
+  /^\/[a-z]{2}\/vendor(?!s)/,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -89,6 +91,10 @@ export function isAuthorizedForPath(
   // privacy-center: any authenticated user
   if (/^\/[a-z]{2}\/privacy-center/.test(pathname)) {
     return true; // all authenticated roles
+  }
+  // vendor portal: vendor role + admin/superadmin
+  if (/^\/[a-z]{2}\/vendor(?!s)/.test(pathname)) {
+    return role === "vendor" || role === "admin" || role === "superadmin";
   }
   return true;
 }
