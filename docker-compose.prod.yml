@@ -4,20 +4,32 @@
 # See deploy/ssl/README.md for Cloudflare and external-proxy alternatives.
 #
 # Usage:
-#   docker-compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up --build -d
+#
+# The --env-file flag lets docker compose read .env.production for ${VAR} interpolation
+# inside this file (build args), in addition to injecting vars into the container at runtime.
 #
 # With monitoring (ideally on a separate host — see deploy/monitoring/README.md):
-#   docker-compose -f docker-compose.prod.yml --profile monitoring up -d
+#   docker compose -f docker-compose.prod.yml --profile monitoring up -d
 #
 # First run — apply migrations before starting the app:
-#   docker-compose -f docker-compose.prod.yml run --rm hermes-web \
+#   docker compose -f docker-compose.prod.yml run --rm hermes-web \
 #     node -e "const {execSync}=require('child_process'); execSync('npx prisma migrate deploy', {stdio:'inherit'})"
+#
+# Required in .env.production:
+#   NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX   (client bundle — baked at build time)
+#   GA_MEASUREMENT_ID=G-XXXXXXXXXX               (server layout — read at request time)
 
 services:
   hermes-web:
     build:
       context: .
       dockerfile: Dockerfile
+      # NEXT_PUBLIC_* must be build-args so webpack bakes them into the client bundle.
+      # Pass --env-file .env.production to docker compose so ${VAR} interpolation works.
+      args:
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+        NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID:-}
     restart: unless-stopped
     env_file: .env.production
     depends_on:

@@ -20,8 +20,11 @@ const intlMiddleware = createMiddleware(routing);
 // Phase 63: When analytics env vars are set, Google domains are added to the
 // allowlist so GA4/GTM scripts can load. If no analytics vars are configured
 // the CSP remains maximally strict.
-const GA_ID  = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+// GA_MEASUREMENT_ID (no NEXT_PUBLIC_ prefix) is read at module-init time from
+// the runtime process.env — webpack does NOT inline non-NEXT_PUBLIC_ vars,
+// so this correctly reflects the value injected via docker-compose env_file.
+const GA_ID  = process.env.GA_MEASUREMENT_ID  ?? process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const GTM_ID = process.env.GTM_ID             ?? process.env.NEXT_PUBLIC_GTM_ID;
 const HAS_ANALYTICS = Boolean(GA_ID || GTM_ID);
 
 const GA_SCRIPT_DOMAINS  = HAS_ANALYTICS ? " https://www.googletagmanager.com https://www.google-analytics.com" : "";

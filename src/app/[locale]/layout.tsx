@@ -135,9 +135,11 @@ export default async function LocaleLayout({
 
   // Capture nonce (reading headers() also forces dynamic rendering — no cache stale mismatch)
   const nonce = (await headers()).get("x-nonce") ?? "";
-  // Read GA ID server-side at request time — avoids the NEXT_PUBLIC_* build-time baking
-  // constraint that causes analyticsEnabled=false when the env var is absent at docker build.
-  const gaId  = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
+  // GA_MEASUREMENT_ID (no NEXT_PUBLIC_ prefix) is read from Node.js process.env at request
+  // time — webpack's DefinePlugin does NOT inline non-NEXT_PUBLIC_ variables, so this works
+  // correctly even when NEXT_PUBLIC_GA_MEASUREMENT_ID was absent at docker build time.
+  // NEXT_PUBLIC_GA_MEASUREMENT_ID serves as a local-dev fallback (baked at build time).
+  const gaId = process.env.GA_MEASUREMENT_ID ?? process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
 
   return (
     <html lang={locale} dir={dir} className={`${estedad.variable} ${vazir.variable}`}>
