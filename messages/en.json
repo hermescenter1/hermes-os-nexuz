@@ -199,9 +199,18 @@
         "lede": "Join the Hermes OS Vendor Ecosystem and connect with enterprise clients across the industrial technology sector. Our team reviews each application within 5 business days.",
         "backLink": "← Vendor Directory",
         "benefits": {
-          "badge": { "title": "Verified Badge", "desc": "Get a verified partner badge displayed on your profile after compliance review." },
-          "reach": { "title": "Enterprise Reach", "desc": "Connect with enterprise clients actively sourcing industrial technology." },
-          "panel": { "title": "Admin Panel", "desc": "Manage your vendor profile, services catalog, and performance metrics." }
+          "badge": {
+            "title": "Verified Badge",
+            "desc": "Get a verified partner badge displayed on your profile after compliance review."
+          },
+          "reach": {
+            "title": "Enterprise Reach",
+            "desc": "Connect with enterprise clients actively sourcing industrial technology."
+          },
+          "panel": {
+            "title": "Admin Panel",
+            "desc": "Manage your vendor profile, services catalog, and performance metrics."
+          }
         },
         "form": {
           "company": "Company Information",
@@ -266,15 +275,15 @@
       "admin": "Admin Console",
       "documents": "Document Library",
       "documentSearch": "Document Search",
-      "engGraph":   "Engineering Knowledge Graph",
-      "opsCenter":  "Operations Command Center",
-      "atsPortal":       "ATS",
-      "csCenter":        "Customer Success",
-      "careersBoard":    "Careers",
+      "engGraph": "Engineering Knowledge Graph",
+      "opsCenter": "Operations Command Center",
+      "atsPortal": "ATS",
+      "csCenter": "Customer Success",
+      "careersBoard": "Careers",
       "candidatePortal": "My Applications",
-      "academy":         "Academy",
-      "compliance":      "Compliance",
-      "privacyCenter":   "Privacy Center"
+      "academy": "Academy",
+      "compliance": "Compliance",
+      "privacyCenter": "Privacy Center"
     },
     "menu": "Menu",
     "close": "Close"
@@ -3028,5 +3037,26 @@
     "linkedinUrl": "https://www.linkedin.com/in/hamid-reza-forozandeh",
     "githubUrl": "https://github.com/hermescenter1",
     "websiteUrl": "https://www.hermesnovin.com"
+  },
+  "automation": {
+    "dashboard": "Dashboard",
+    "workflows": "Workflows",
+    "templates": "Templates",
+    "executions": "Executions",
+    "webhooks": "Webhooks",
+    "settings": "Settings",
+    "newWorkflow": "New Workflow",
+    "editWorkflow": "Edit Workflow",
+    "noWorkflows": "No workflows yet.",
+    "noExecutions": "No executions yet.",
+    "noWebhooks": "No webhooks registered.",
+    "active": "Active",
+    "paused": "Paused",
+    "draft": "Draft",
+    "archived": "Archived",
+    "success": "Success",
+    "failed": "Failed",
+    "partial": "Partial",
+    "cancelled": "Cancelled"
   }
 }

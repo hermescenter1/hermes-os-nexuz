@@ -3639,3 +3639,268 @@ model CrmExpansionOpportunity {
   @@index([status])
   @@index([type])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 67 — ENTERPRISE WORKFLOW & AUTOMATION ENGINE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum WorkflowTriggerType {
+  MANUAL
+  SCHEDULED
+  CRM_LEAD_CREATED
+  CRM_OPPORTUNITY_WON
+  CRM_CUSTOMER_AT_RISK
+  ATS_CANDIDATE_CREATED
+  ATS_APPLICATION_SUBMITTED
+  ACADEMY_COURSE_COMPLETED
+  VENDOR_ONBOARDING_REQUESTED
+  CUSTOMER_SUPPORT_TICKET_CREATED
+  INDUSTRIAL_ASSET_RISK_HIGH
+  KNOWLEDGE_ARTICLE_CREATED
+}
+
+enum WorkflowConditionType {
+  ALWAYS
+  FIELD_EQUALS
+  FIELD_NOT_EQUALS
+  FIELD_GREATER_THAN
+  FIELD_LESS_THAN
+  STATUS_IS
+  ROLE_IS
+  HEALTH_SCORE_BELOW
+  PRIORITY_IS
+}
+
+enum WorkflowActionType {
+  CREATE_NOTIFICATION
+  CREATE_TASK
+  CREATE_SUPPORT_TICKET
+  CREATE_CRM_ACTIVITY
+  UPDATE_RECORD_STATUS
+  ASSIGN_OWNER
+  CREATE_AUDIT_LOG
+  SEND_WEBHOOK
+  CREATE_KNOWLEDGE_NOTE
+  CREATE_MAINTENANCE_ALERT
+}
+
+enum WorkflowExecutionStatus {
+  QUEUED
+  RUNNING
+  SUCCESS
+  FAILED
+  PARTIAL
+  CANCELLED
+}
+
+model WorkflowDefinition {
+  id             String              @id @default(cuid())
+  organizationId String?
+  name           String
+  description    String?
+  status         WorkflowStatus      @default(DRAFT)
+  triggerType    WorkflowTriggerType
+  templateId     String?
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  versions       WorkflowVersion[]
+  triggers       WorkflowTrigger[]
+  conditions     WorkflowCondition[]
+  actions        WorkflowAction[]
+  executions     WorkflowExecution[]
+  schedules      WorkflowSchedule[]
+  auditEvents    WorkflowAuditEvent[]
+
+  @@index([status])
+  @@index([triggerType])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model WorkflowVersion {
+  id         String             @id @default(cuid())
+  workflowId String
+  workflow   WorkflowDefinition @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  version    Int
+  snapshot   Json
+  createdBy  String?
+  createdAt  DateTime           @default(now())
+
+  @@index([workflowId])
+}
+
+model WorkflowTrigger {
+  id         String              @id @default(cuid())
+  workflowId String
+  workflow   WorkflowDefinition  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  type       WorkflowTriggerType
+  config     Json                @default("{}")
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@index([workflowId])
+  @@index([type])
+}
+
+model WorkflowCondition {
+  id         String                @id @default(cuid())
+  workflowId String
+  workflow   WorkflowDefinition    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  type       WorkflowConditionType
+  field      String?
+  operator   String?
+  value      String?
+  logicGroup Int                   @default(0)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  @@index([workflowId])
+}
+
+model WorkflowAction {
+  id         String             @id @default(cuid())
+  workflowId String
+  workflow   WorkflowDefinition @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  type       WorkflowActionType
+  order      Int                @default(0)
+  config     Json               @default("{}")
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([workflowId])
+  @@index([order])
+}
+
+model WorkflowExecution {
+  id           String                  @id @default(cuid())
+  workflowId   String
+  workflow     WorkflowDefinition      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  status       WorkflowExecutionStatus @default(QUEUED)
+  triggeredBy  String?
+  triggerData  Json                    @default("{}")
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  durationMs   Int?
+  errorMessage String?
+  isSimulation Boolean                 @default(false)
+  createdAt    DateTime                @default(now())
+
+  steps        WorkflowExecutionStep[]
+  logs         WorkflowExecutionLog[]
+
+  @@index([workflowId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model WorkflowExecutionStep {
+  id          String            @id @default(cuid())
+  executionId String
+  execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  stepType    String
+  stepOrder   Int               @default(0)
+  status      String            @default("PENDING")
+  input       Json              @default("{}")
+  output      Json              @default("{}")
+  error       String?
+  durationMs  Int?
+  executedAt  DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([executionId])
+  @@index([stepOrder])
+}
+
+model WorkflowExecutionLog {
+  id          String            @id @default(cuid())
+  executionId String
+  execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  level       String            @default("INFO")
+  message     String
+  metadata    Json              @default("{}")
+  createdAt   DateTime          @default(now())
+
+  @@index([executionId])
+  @@index([createdAt])
+}
+
+model WorkflowTemplate {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  category    String              @default("GENERAL")
+  triggerType WorkflowTriggerType
+  definition  Json
+  isBuiltIn   Boolean             @default(false)
+  usageCount  Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([category])
+  @@index([triggerType])
+  @@index([isBuiltIn])
+}
+
+model WorkflowSchedule {
+  id         String             @id @default(cuid())
+  workflowId String
+  workflow   WorkflowDefinition @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  cronExpr   String
+  timezone   String             @default("Asia/Tehran")
+  isActive   Boolean            @default(true)
+  lastRunAt  DateTime?
+  nextRunAt  DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([workflowId])
+  @@index([isActive])
+  @@index([nextRunAt])
+}
+
+model WorkflowWebhookEndpoint {
+  id              String   @id @default(cuid())
+  workflowId      String?
+  organizationId  String?
+  name            String
+  url             String
+  isActive        Boolean  @default(true)
+  lastDeliveredAt DateTime?
+  failureCount    Int      @default(0)
+  retryCount      Int      @default(0)
+  deletedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([workflowId])
+  @@index([isActive])
+  @@index([organizationId])
+}
+
+model WorkflowAuditEvent {
+  id         String              @id @default(cuid())
+  workflowId String?
+  workflow   WorkflowDefinition? @relation(fields: [workflowId], references: [id])
+  userId     String?
+  eventType  String
+  description String
+  before     Json?
+  after      Json?
+  metadata   Json                @default("{}")
+  createdAt  DateTime            @default(now())
+
+  @@index([workflowId])
+  @@index([eventType])
+  @@index([createdAt])
+}
