@@ -21,6 +21,8 @@ next-env.d.ts
 scripts/backups/
 *.sql
 *.sql.gz
+# Prisma migration files must be committed so deployments can run migrate deploy
+!prisma/migrations/**/*.sql
 
 # SSL certificates — managed by Certbot on the VPS
 deploy/ssl/certs/
