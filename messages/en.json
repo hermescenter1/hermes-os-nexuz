@@ -3115,5 +3115,30 @@
     "settings": {
       "title": "ERP Settings"
     }
+  },
+  "documents": {
+    "nav": {
+      "dashboard":  "Dashboard",
+      "explorer":   "Explorer",
+      "search":     "Search",
+      "approvals":  "Approvals",
+      "revisions":  "Revisions",
+      "comments":   "Comments",
+      "audit":      "Audit",
+      "folders":    "Folders",
+      "categories": "Categories",
+      "templates":  "Templates",
+      "retention":  "Retention",
+      "settings":   "Settings"
+    },
+    "dashboard": {
+      "title":           "EDMS — Document Management",
+      "totalDocuments":  "Total Documents",
+      "drafts":          "Drafts",
+      "inReview":        "In Review",
+      "approved":        "Approved",
+      "pendingApprovals":"Pending Approvals",
+      "activeCheckouts": "Active Checkouts"
+    }
   }
 }

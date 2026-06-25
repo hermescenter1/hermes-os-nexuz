@@ -3115,5 +3115,30 @@
     "settings": {
       "title": "تنظیمات ERP"
     }
+  },
+  "documents": {
+    "nav": {
+      "dashboard":  "داشبورد",
+      "explorer":   "مرورگر",
+      "search":     "جستجو",
+      "approvals":  "تأییدیه‌ها",
+      "revisions":  "بازبینی‌ها",
+      "comments":   "نظرات",
+      "audit":      "حسابرسی",
+      "folders":    "پوشه‌ها",
+      "categories": "دسته‌بندی‌ها",
+      "templates":  "قالب‌ها",
+      "retention":  "نگهداری",
+      "settings":   "تنظیمات"
+    },
+    "dashboard": {
+      "title":           "سیستم مدیریت اسناد",
+      "totalDocuments":  "کل اسناد",
+      "drafts":          "پیش‌نویس‌ها",
+      "inReview":        "در حال بررسی",
+      "approved":        "تأیید شده",
+      "pendingApprovals":"تأییدیه‌های معلق",
+      "activeCheckouts": "برداشت‌های فعال"
+    }
   }
 }
