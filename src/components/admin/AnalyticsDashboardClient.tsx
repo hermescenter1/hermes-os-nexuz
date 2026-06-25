@@ -1,6 +1,8 @@
 "use client";
 
-import { TRACKED_EVENTS } from "@/lib/analytics/events";
+import { useEffect, useState }  from "react";
+import { TRACKED_EVENTS }       from "@/lib/analytics/events";
+import { GA_MEASUREMENT_ID }    from "@/lib/analytics/config";
 
 interface AnalyticsStats {
   gaConfigured:   boolean;
@@ -17,6 +19,12 @@ interface AnalyticsStats {
 interface AnalyticsDashboardClientProps {
   stats:  AnalyticsStats;
   labels: Record<string, string>;
+}
+
+interface RuntimeStatus {
+  consentAnalytics: boolean | null;
+  scriptMounted:    boolean;
+  gtagAvailable:    boolean;
 }
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -42,9 +50,69 @@ function StatusChip({ label, ok }: { label: string; ok: boolean }) {
   );
 }
 
+function RuntimeRow({
+  label,
+  value,
+  ok,
+  mono,
+}: {
+  label: string;
+  value: string;
+  ok:    boolean | null;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2.5 border-b border-line last:border-0">
+      <span className="text-sm text-muted">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className={`${mono ? "font-mono" : ""} text-xs ${
+          ok === true  ? "text-signal" :
+          ok === false ? "text-amber-400" :
+          "text-muted"
+        }`}>
+          {value}
+        </span>
+        {ok !== null && (
+          <span className={`h-2 w-2 rounded-full ${ok ? "bg-signal" : "bg-amber-400"}`} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AnalyticsDashboardClient({ stats, labels }: AnalyticsDashboardClientProps) {
   const maskedGa  = stats.measurementId ? `G-••••••${stats.measurementId.slice(-4)}` : labels.notConfigured ?? "Not Configured";
   const maskedGtm = stats.containerId   ? `GTM-••••${stats.containerId.slice(-4)}`   : labels.notConfigured ?? "Not Configured";
+
+  const [runtime,     setRuntime]     = useState<RuntimeStatus | null>(null);
+  const [runtimeKey,  setRuntimeKey]  = useState(0);
+
+  useEffect(() => {
+    async function probe() {
+      let consentAnalytics: boolean | null = null;
+      try {
+        const res  = await fetch("/api/compliance/cookie-consent");
+        const data = await res.json() as { consent?: { analytics?: boolean } | null };
+        consentAnalytics = data.consent?.analytics ?? false;
+      } catch {
+        consentAnalytics = null;
+      }
+
+      const scriptMounted = Boolean(
+        typeof document !== "undefined" &&
+        document.querySelector(
+          `script[data-ga-id="${GA_MEASUREMENT_ID}"], script[src*="googletagmanager.com/gtag/js"]`
+        )
+      );
+
+      const gtagAvailable =
+        typeof window !== "undefined" && typeof window.gtag === "function";
+
+      setRuntime({ consentAnalytics, scriptMounted, gtagAvailable });
+    }
+
+    void probe();
+  }, [runtimeKey]);
 
   return (
     <div className="space-y-8">
@@ -70,6 +138,59 @@ export function AnalyticsDashboardClient({ stats, labels }: AnalyticsDashboardCl
           label={labels.privacyMode ?? "Privacy Mode"}
           value={stats.privacyMode}
         />
+      </div>
+
+      {/* Runtime debug panel */}
+      <div className="rounded-xl border border-signal/20 bg-signal/5 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-signal/70">
+            Runtime Status
+          </h2>
+          <button
+            onClick={() => setRuntimeKey((k) => k + 1)}
+            className="rounded border border-signal/30 px-3 py-1 text-xs font-mono text-signal hover:bg-signal/10 transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
+        {runtime === null ? (
+          <p className="text-xs text-muted animate-pulse">Probing runtime…</p>
+        ) : (
+          <div>
+            <RuntimeRow
+              label="GA Env Present (build-time)"
+              value={stats.gaConfigured ? maskedGa : "Not configured"}
+              ok={stats.gaConfigured}
+              mono
+            />
+            <RuntimeRow
+              label="Consent — analytics"
+              value={
+                runtime.consentAnalytics === null
+                  ? "DB unavailable"
+                  : runtime.consentAnalytics
+                  ? "Granted"
+                  : "Denied / not set"
+              }
+              ok={runtime.consentAnalytics}
+            />
+            <RuntimeRow
+              label="GA4 script in DOM"
+              value={runtime.scriptMounted ? "Injected ✓" : "Not found — accept analytics cookies first"}
+              ok={runtime.scriptMounted}
+              mono={false}
+            />
+            <RuntimeRow
+              label="window.gtag available"
+              value={runtime.gtagAvailable ? "Available ✓" : "Not available — script may still be loading"}
+              ok={runtime.gtagAvailable}
+              mono={false}
+            />
+          </div>
+        )}
+        <p className="mt-4 text-[11px] text-muted/70">
+          Accept analytics cookies, then click Refresh to verify the script loaded. All four rows should be green.
+        </p>
       </div>
 
       {/* Feature flags */}
@@ -149,7 +270,10 @@ export function AnalyticsDashboardClient({ stats, labels }: AnalyticsDashboardCl
           <p><span className="text-signal">NEXT_PUBLIC_GA_MEASUREMENT_ID</span>=G-XXXXXXXXXX</p>
           <p><span className="text-signal">NEXT_PUBLIC_GTM_ID</span>=GTM-XXXXXXX</p>
         </div>
-        <p className="mt-4 text-xs text-muted">
+        <p className="mt-3 text-[11px] text-amber-400/80 font-mono">
+          ⚠ GTM_ID must start with &quot;GTM-&quot; — G-XXXXXX is a GA4 measurement ID, not a GTM container ID.
+        </p>
+        <p className="mt-3 text-xs text-muted">
           {labels.setupNote ?? "Add these to your .env.local or deployment environment. Analytics automatically enables when either variable is set. See docs/analytics.md for full documentation."}
         </p>
       </div>

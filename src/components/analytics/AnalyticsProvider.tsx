@@ -22,9 +22,11 @@ export function AnalyticsProvider() {
       try {
         const res  = await fetch("/api/compliance/cookie-consent");
         const data = await res.json() as { consent?: ConsentPrefs | null };
-        setAllowed(data.consent?.analytics === true);
+        const granted = data.consent?.analytics === true;
+        // Use functional update so a concurrent consent-updated event is never overridden
+        setAllowed((prev) => prev || granted);
       } catch {
-        setAllowed(false);
+        // DB unavailable — keep whatever the event handler set
       } finally {
         setReady(true);
       }
@@ -33,9 +35,10 @@ export function AnalyticsProvider() {
     void checkConsent();
 
     function onConsentUpdate(e: Event) {
-      const prefs = (e as CustomEvent<ConsentPrefs>).detail;
+      const prefs   = (e as CustomEvent<ConsentPrefs>).detail;
       const granted = prefs.analytics === true;
       setAllowed(granted);
+      setReady(true); // Unblock rendering immediately, even if checkConsent is still in-flight
       updateConsent(granted);
     }
 
