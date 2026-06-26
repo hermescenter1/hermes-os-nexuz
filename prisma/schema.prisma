@@ -4278,3 +4278,923 @@ model ErpAuditEvent {
   @@index([userId])
   @@index([createdAt])
 }
+
+
+// =============================================================================
+// Phase 69 � Enterprise Document Management System (EDMS)
+// All models prefixed with Edms to avoid collision with existing Document model
+// =============================================================================
+
+enum EdmsDocumentStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+  OBSOLETE
+}
+
+enum EdmsDocumentType {
+  ENGINEERING_DRAWING
+  PID
+  ELECTRICAL_DRAWING
+  PLC_PROGRAM
+  SCADA_PROJECT
+  COMMISSIONING_REPORT
+  INSPECTION_REPORT
+  FAT
+  SAT
+  MANUAL
+  PROCEDURE
+  WORK_INSTRUCTION
+  CERTIFICATE
+  VENDOR_DATASHEET
+  CONTRACT
+  QUOTATION
+  INVOICE
+  OTHER
+}
+
+enum EdmsApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EdmsRevisionType {
+  MAJOR
+  MINOR
+  PATCH
+}
+
+model EdmsFolder {
+  id             String   @id @default(cuid())
+  organizationId String?
+  parentId       String?
+  name           String
+  description    String?
+  path           String   @default("/")
+  color          String?
+  icon           String?
+  createdBy      String?
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  documents EdmsDocument[]
+}
+
+model EdmsCategory {
+  id             String   @id @default(cuid())
+  organizationId String?
+  name           String
+  description    String?
+  color          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  documents EdmsDocument[]
+}
+
+model EdmsTemplate {
+  id             String           @id @default(cuid())
+  organizationId String?
+  name           String
+  description    String?
+  documentType   EdmsDocumentType @default(OTHER)
+  templateData   String?
+  isActive       Boolean          @default(true)
+  createdBy      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  documents EdmsDocument[]
+}
+
+model EdmsRetentionPolicy {
+  id             String            @id @default(cuid())
+  organizationId String?
+  name           String
+  documentType   EdmsDocumentType?
+  retentionDays  Int               @default(365)
+  autoArchive    Boolean           @default(true)
+  autoDelete     Boolean           @default(false)
+  description    String?
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model EdmsDocument {
+  id               String              @id @default(cuid())
+  organizationId   String?
+  folderId         String?
+  categoryId       String?
+  templateId       String?
+  title            String
+  description      String?
+  documentType     EdmsDocumentType    @default(OTHER)
+  status           EdmsDocumentStatus  @default(DRAFT)
+  currentRevision  String?
+  language         String              @default("en")
+  keywords         String[]
+  ownerId          String?
+  erpProjectId     String?
+  workOrderId      String?
+  crmAccountId     String?
+  vendorId         String?
+  siteId           String?
+  equipmentId      String?
+  filePath         String?
+  fileSize         Int?
+  mimeType         String?
+  checksum         String?
+  isLocked         Boolean             @default(false)
+  lockedBy         String?
+  lockedAt         DateTime?
+  deletedAt        DateTime?
+  createdBy        String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  folder      EdmsFolder?   @relation(fields: [folderId],   references: [id])
+  category    EdmsCategory? @relation(fields: [categoryId], references: [id])
+  template    EdmsTemplate? @relation(fields: [templateId], references: [id])
+
+  revisions   EdmsRevision[]
+  approvals   EdmsApproval[]
+  comments    EdmsComment[]
+  tags        EdmsTag[]
+  links       EdmsLink[]
+  permissions EdmsPermission[]
+  checkouts   EdmsCheckout[]
+  favorites   EdmsFavorite[]
+  shares      EdmsShare[]
+  signatures  EdmsSignature[]
+  audit       EdmsAudit[]
+  workflows   EdmsWorkflow[]
+  attachments EdmsAttachment[]
+  metadata    EdmsMetadata[]
+}
+
+model EdmsRevision {
+  id             String           @id @default(cuid())
+  documentId     String
+  revisionNumber String
+  revisionType   EdmsRevisionType @default(MINOR)
+  summary        String?
+  filePath       String?
+  fileSize       Int?
+  mimeType       String?
+  checksum       String?
+  createdBy      String?
+  createdAt      DateTime         @default(now())
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsApproval {
+  id           String              @id @default(cuid())
+  documentId   String
+  revisionId   String?
+  stage        Int                 @default(1)
+  approverRole String              @default("admin")
+  assignedTo   String?
+  status       EdmsApprovalStatus  @default(PENDING)
+  comment      String?
+  decidedAt    DateTime?
+  decidedBy    String?
+  dueDate      DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsComment {
+  id         String    @id @default(cuid())
+  documentId String
+  revisionId String?
+  parentId   String?
+  userId     String?
+  content    String
+  isResolved Boolean   @default(false)
+  resolvedBy String?
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsTag {
+  id         String   @id @default(cuid())
+  documentId String
+  tagName    String
+  createdBy  String?
+  createdAt  DateTime @default(now())
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsLink {
+  id               String   @id @default(cuid())
+  documentId       String
+  linkedDocumentId String
+  linkType         String   @default("reference")
+  createdBy        String?
+  createdAt        DateTime @default(now())
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsPermission {
+  id         String   @id @default(cuid())
+  documentId String?
+  folderId   String?
+  userId     String
+  role       String   @default("reader")
+  grantedBy  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  document EdmsDocument? @relation(fields: [documentId], references: [id])
+}
+
+model EdmsCheckout {
+  id           String    @id @default(cuid())
+  documentId   String
+  userId       String
+  checkedOutAt DateTime  @default(now())
+  dueAt        DateTime?
+  checkedInAt  DateTime?
+  message      String?
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsFavorite {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsShare {
+  id          String    @id @default(cuid())
+  documentId  String
+  sharedWith  String
+  sharedBy    String?
+  expiresAt   DateTime?
+  accessLevel String    @default("reader")
+  token       String?
+  createdAt   DateTime  @default(now())
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsSignature {
+  id          String   @id @default(cuid())
+  documentId  String
+  revisionId  String?
+  userId      String
+  signedAt    DateTime @default(now())
+  role        String?
+  certificate String?
+  ipAddress   String?
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsAudit {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String?
+  action     String
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsWorkflow {
+  id                   String    @id @default(cuid())
+  documentId           String
+  workflowDefinitionId String?
+  status               String    @default("PENDING")
+  startedAt            DateTime?
+  completedAt          DateTime?
+  triggeredBy          String?
+  createdAt            DateTime  @default(now())
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsAttachment {
+  id         String   @id @default(cuid())
+  documentId String
+  fileName   String
+  fileSize   Int?
+  mimeType   String?
+  filePath   String?
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model EdmsMetadata {
+  id         String   @id @default(cuid())
+  documentId String
+  key        String
+  value      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  document EdmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+
+// =============================================================================
+// Phase 70 — Enterprise CMMS (Computerized Maintenance Management System)
+// =============================================================================
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  EMERGENCY
+}
+
+enum MaintenanceStatus {
+  DRAFT
+  PLANNED
+  SCHEDULED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  PREDICTIVE
+  CORRECTIVE
+  EMERGENCY
+  SHUTDOWN
+  INSPECTION
+  LUBRICATION
+  CALIBRATION
+}
+
+enum FailureSeverity {
+  MINOR
+  MODERATE
+  MAJOR
+  CRITICAL
+}
+
+enum FailureCategory {
+  MECHANICAL
+  ELECTRICAL
+  INSTRUMENTATION
+  SOFTWARE
+  HYDRAULIC
+  PNEUMATIC
+  STRUCTURAL
+  OPERATIONAL
+}
+
+enum WorkOrderType {
+  PLANNED
+  UNPLANNED
+  EMERGENCY
+  PROJECT
+}
+
+enum DowntimeReason {
+  PLANNED_MAINTENANCE
+  BREAKDOWN
+  SETUP
+  WAITING_PARTS
+  WAITING_APPROVAL
+  EXTERNAL
+  UNKNOWN
+}
+
+enum CmmsApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model MaintenancePlan {
+  id              String              @id @default(cuid())
+  organizationId  String?
+  assetId         String?
+  workCenterId    String?
+  name            String
+  description     String?
+  maintenanceType MaintenanceType     @default(PREVENTIVE)
+  priority        MaintenancePriority @default(MEDIUM)
+  frequencyDays   Int                 @default(30)
+  estimatedHours  Float               @default(2)
+  leadTimeDays    Int                 @default(7)
+  isActive        Boolean             @default(true)
+  lastExecutedAt  DateTime?
+  nextDueAt       DateTime?
+  createdBy       String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  schedules MaintenanceSchedule[]
+  tasks     MaintenanceTask[]
+
+  @@index([organizationId])
+  @@index([assetId])
+  @@index([maintenanceType])
+  @@index([nextDueAt])
+}
+
+model MaintenanceSchedule {
+  id             String              @id @default(cuid())
+  organizationId String?
+  planId         String?
+  assetId        String?
+  taskId         String?
+  name           String
+  scheduledDate  DateTime
+  estimatedHours Float               @default(2)
+  priority       MaintenancePriority @default(MEDIUM)
+  status         MaintenanceStatus   @default(PLANNED)
+  technicianId   String?
+  teamId         String?
+  notes          String?
+  completedAt    DateTime?
+  createdBy      String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  plan MaintenancePlan? @relation(fields: [planId], references: [id])
+
+  @@index([organizationId])
+  @@index([planId])
+  @@index([assetId])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+model MaintenanceTask {
+  id               String              @id @default(cuid())
+  organizationId   String?
+  planId           String?
+  assetId          String?
+  workCenterId     String?
+  failureId        String?
+  workOrderType    WorkOrderType       @default(PLANNED)
+  title            String
+  description      String?
+  maintenanceType  MaintenanceType     @default(PREVENTIVE)
+  priority         MaintenancePriority @default(MEDIUM)
+  status           MaintenanceStatus   @default(DRAFT)
+  scheduledDate    DateTime?
+  dueDate          DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  estimatedHours   Float?
+  actualHours      Float?
+  technicianId     String?
+  teamId           String?
+  workCenterCode   String?
+  erpWorkOrderId   String?
+  vendorId         String?
+  requiresApproval Boolean             @default(false)
+  approvalStatus   CmmsApprovalStatus?
+  createdBy        String?
+  deletedAt        DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  plan          MaintenancePlan?          @relation(fields: [planId], references: [id])
+  executions    MaintenanceExecution[]
+  checklists    MaintenanceChecklist[]
+  costs         MaintenanceCost[]
+  spareUsages   MaintenanceSpareUsage[]
+  photos        MaintenancePhoto[]
+  attachments   MaintenanceAttachment[]
+  comments      MaintenanceComment[]
+  approvals     MaintenanceApproval[]
+  history       MaintenanceHistory[]
+  notifications MaintenanceNotification[]
+
+  @@index([organizationId])
+  @@index([planId])
+  @@index([assetId])
+  @@index([status])
+  @@index([priority])
+  @@index([scheduledDate])
+  @@index([technicianId])
+}
+
+model MaintenanceExecution {
+  id           String    @id @default(cuid())
+  taskId       String
+  technicianId String?
+  startedAt    DateTime
+  completedAt  DateTime?
+  actualHours  Float?
+  notes        String?
+  outcome      String?
+  meterReading Float?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  task MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([technicianId])
+}
+
+model MaintenanceChecklist {
+  id          String   @id @default(cuid())
+  taskId      String?
+  templateId  String?
+  name        String
+  description String?
+  isTemplate  Boolean  @default(false)
+  assetType   String?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  task  MaintenanceTask? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  items ChecklistItem[]
+
+  @@index([taskId])
+  @@index([isTemplate])
+}
+
+model ChecklistItem {
+  id            String    @id @default(cuid())
+  checklistId   String
+  order         Int
+  description   String
+  isRequired    Boolean   @default(true)
+  expectedValue String?
+  actualValue   String?
+  isCompleted   Boolean   @default(false)
+  completedBy   String?
+  completedAt   DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  checklist MaintenanceChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  @@index([checklistId])
+}
+
+model MaintenanceTechnician {
+  id             String   @id @default(cuid())
+  organizationId String?
+  userId         String?
+  name           String
+  employeeId     String?
+  specialty      String?
+  skills         String[]
+  certifications String[]
+  teamId         String?
+  isAvailable    Boolean  @default(true)
+  laborRate      Float?
+  phone          String?
+  email          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([teamId])
+}
+
+model MaintenanceTeam {
+  id             String   @id @default(cuid())
+  organizationId String?
+  name           String
+  description    String?
+  leadId         String?
+  specialty      String?
+  capacity       Int      @default(5)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model MaintenanceWorkCenter {
+  id             String   @id @default(cuid())
+  organizationId String?
+  code           String
+  name           String
+  description    String?
+  location       String?
+  costCenter     String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([code])
+}
+
+model MaintenanceCalendar {
+  id             String              @id @default(cuid())
+  organizationId String?
+  taskId         String?
+  title          String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime?
+  allDay         Boolean             @default(false)
+  eventType      String              @default("maintenance")
+  assetId        String?
+  technicianId   String?
+  priority       MaintenancePriority @default(MEDIUM)
+  color          String?
+  createdBy      String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId])
+  @@index([taskId])
+  @@index([startDate])
+  @@index([assetId])
+}
+
+model MaintenanceDowntime {
+  id              String         @id @default(cuid())
+  organizationId  String?
+  assetId         String?
+  taskId          String?
+  reason          DowntimeReason @default(UNKNOWN)
+  startedAt       DateTime
+  endedAt         DateTime?
+  durationMinutes Int?
+  description     String?
+  impact          String?
+  productionLoss  Float?
+  currency        String         @default("USD")
+  reportedBy      String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([organizationId])
+  @@index([assetId])
+  @@index([startedAt])
+  @@index([reason])
+}
+
+model MaintenanceFailure {
+  id              String          @id @default(cuid())
+  organizationId  String?
+  assetId         String?
+  taskId          String?
+  failureCodeId   String?
+  title           String
+  description     String
+  severity        FailureSeverity @default(MODERATE)
+  category        FailureCategory @default(MECHANICAL)
+  occurredAt      DateTime
+  detectedAt      DateTime?
+  resolvedAt      DateTime?
+  downtimeMinutes Int?
+  reportedBy      String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  failureCode       FailureCode?      @relation(fields: [failureCodeId], references: [id])
+  causes            FailureCause[]
+  correctiveActions CorrectiveAction[]
+
+  @@index([organizationId])
+  @@index([assetId])
+  @@index([severity])
+  @@index([occurredAt])
+}
+
+model FailureCode {
+  id          String          @id @default(cuid())
+  code        String          @unique
+  name        String
+  category    FailureCategory @default(MECHANICAL)
+  description String?
+  severity    FailureSeverity @default(MODERATE)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+
+  failures MaintenanceFailure[]
+
+  @@index([category])
+  @@index([code])
+}
+
+model FailureCause {
+  id          String   @id @default(cuid())
+  failureId   String
+  cause       String
+  probability Float    @default(0.5)
+  isConfirmed Boolean  @default(false)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  failure MaintenanceFailure @relation(fields: [failureId], references: [id], onDelete: Cascade)
+
+  @@index([failureId])
+}
+
+model CorrectiveAction {
+  id          String    @id @default(cuid())
+  failureId   String
+  action      String
+  assignedTo  String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  status      String    @default("OPEN")
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  failure MaintenanceFailure @relation(fields: [failureId], references: [id], onDelete: Cascade)
+
+  @@index([failureId])
+}
+
+model MaintenanceCost {
+  id          String   @id @default(cuid())
+  taskId      String
+  category    String
+  description String
+  amount      Float
+  currency    String   @default("USD")
+  date        DateTime
+  invoiceRef  String?
+  vendorId    String?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  task MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([category])
+  @@index([date])
+}
+
+model MaintenanceSparePart {
+  id             String   @id @default(cuid())
+  organizationId String?
+  partNumber     String
+  name           String
+  description    String?
+  category       String?
+  manufacturer   String?
+  unitCost       Float    @default(0)
+  currency       String   @default("USD")
+  stockQty       Int      @default(0)
+  minStockQty    Int      @default(1)
+  unit           String   @default("pcs")
+  location       String?
+  erpItemId      String?
+  vendorId       String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  usages MaintenanceSpareUsage[]
+
+  @@index([organizationId])
+  @@index([partNumber])
+  @@index([category])
+}
+
+model MaintenanceSpareUsage {
+  id        String   @id @default(cuid())
+  taskId    String
+  partId    String
+  quantity  Float
+  unitCost  Float
+  totalCost Float
+  usedBy    String?
+  notes     String?
+  usedAt    DateTime @default(now())
+
+  task MaintenanceTask      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  part MaintenanceSparePart @relation(fields: [partId], references: [id])
+
+  @@index([taskId])
+  @@index([partId])
+}
+
+model MaintenancePhoto {
+  id       String   @id @default(cuid())
+  taskId   String
+  fileName String
+  filePath String
+  caption  String?
+  takenAt  DateTime @default(now())
+  takenBy  String?
+  fileSize Int?
+  mimeType String?
+
+  task MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model MaintenanceAttachment {
+  id          String   @id @default(cuid())
+  taskId      String
+  fileName    String
+  filePath    String
+  fileSize    Int?
+  mimeType    String?
+  description String?
+  uploadedBy  String?
+  uploadedAt  DateTime @default(now())
+
+  task MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model MaintenanceComment {
+  id         String   @id @default(cuid())
+  taskId     String
+  userId     String?
+  content    String
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  task MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model MaintenanceApproval {
+  id           String             @id @default(cuid())
+  taskId       String
+  stage        Int                @default(1)
+  approverRole String             @default("admin")
+  assignedTo   String?
+  status       CmmsApprovalStatus @default(PENDING)
+  comment      String?
+  decidedAt    DateTime?
+  decidedBy    String?
+  dueDate      DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  task MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([status])
+}
+
+model MaintenanceHistory {
+  id          String   @id @default(cuid())
+  taskId      String
+  userId      String?
+  action      String
+  description String?
+  before      Json?
+  after       Json?
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  task MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([createdAt])
+}
+
+model MaintenanceNotification {
+  id      String    @id @default(cuid())
+  taskId  String?
+  userId  String?
+  type    String
+  title   String
+  message String
+  isRead  Boolean   @default(false)
+  readAt  DateTime?
+  sentAt  DateTime  @default(now())
+
+  task MaintenanceTask? @relation(fields: [taskId], references: [id])
+
+  @@index([taskId])
+  @@index([userId])
+  @@index([isRead])
+}
