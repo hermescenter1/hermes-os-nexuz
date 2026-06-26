@@ -73,6 +73,8 @@ export const PROTECTED_PATHS = [
   /^\/[a-z]{2}\/erp/,
   // Phase 69: EDMS — admin/engineer only
   /^\/[a-z]{2}\/documents/,
+  // Phase 70: CMMS — admin/engineer only
+  /^\/[a-z]{2}\/cmms/,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -124,6 +126,10 @@ export function isAuthorizedForPath(
   }
   // EDMS: admin/superadmin/engineer only
   if (/^\/[a-z]{2}\/documents/.test(pathname)) {
+    return role === "admin" || role === "superadmin" || role === "engineer";
+  }
+  // CMMS: admin/superadmin/engineer only
+  if (/^\/[a-z]{2}\/cmms/.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
   return true;

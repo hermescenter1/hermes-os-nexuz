@@ -4653,14 +4653,14 @@ enum MaintenanceType {
   CALIBRATION
 }
 
-enum FailureSeverity {
+enum CmmsFailureSeverity {
   MINOR
   MODERATE
   MAJOR
   CRITICAL
 }
 
-enum FailureCategory {
+enum CmmsFailureCategory {
   MECHANICAL
   ELECTRICAL
   INSTRUMENTATION
@@ -4966,8 +4966,8 @@ model MaintenanceFailure {
   failureCodeId   String?
   title           String
   description     String
-  severity        FailureSeverity @default(MODERATE)
-  category        FailureCategory @default(MECHANICAL)
+  severity        CmmsFailureSeverity @default(MODERATE)
+  category        CmmsFailureCategory @default(MECHANICAL)
   occurredAt      DateTime
   detectedAt      DateTime?
   resolvedAt      DateTime?
@@ -4990,9 +4990,9 @@ model FailureCode {
   id          String          @id @default(cuid())
   code        String          @unique
   name        String
-  category    FailureCategory @default(MECHANICAL)
+  category    CmmsFailureCategory @default(MECHANICAL)
   description String?
-  severity    FailureSeverity @default(MODERATE)
+  severity    CmmsFailureSeverity @default(MODERATE)
   isActive    Boolean         @default(true)
   createdAt   DateTime        @default(now())
 
