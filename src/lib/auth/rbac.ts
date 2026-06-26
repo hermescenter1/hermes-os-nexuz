@@ -75,6 +75,8 @@ export const PROTECTED_PATHS = [
   /^\/[a-z]{2}\/documents/,
   // Phase 70: CMMS — admin/engineer only
   /^\/[a-z]{2}\/cmms/,
+  // Phase 72: Asset Registry — admin/engineer only
+  /^\/[a-z]{2}\/assets/,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -130,6 +132,10 @@ export function isAuthorizedForPath(
   }
   // CMMS: admin/superadmin/engineer only
   if (/^\/[a-z]{2}\/cmms/.test(pathname)) {
+    return role === "admin" || role === "superadmin" || role === "engineer";
+  }
+  // Asset Registry: admin/superadmin/engineer only
+  if (/^\/[a-z]{2}\/assets/.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
   return true;

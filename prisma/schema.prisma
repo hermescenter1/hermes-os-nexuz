@@ -5198,3 +5198,274 @@ model MaintenanceNotification {
   @@index([userId])
   @@index([isRead])
 }
+
+// ─── Phase 72 — Enterprise Asset Registry ─────────────────────────────────────
+
+enum AssetStatus {
+  PLANNED
+  COMMISSIONED
+  IN_SERVICE
+  DEGRADED
+  UNDER_MAINTENANCE
+  STANDBY
+  RETIRED
+  REPLACED
+  DECOMMISSIONED
+}
+
+enum AssetCriticality {
+  NON_CRITICAL
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AssetRiskState {
+  HEALTHY
+  MONITOR
+  AT_RISK
+  CRITICAL
+  UNKNOWN
+}
+
+enum AssetLifecycleState {
+  DESIGN
+  PROCUREMENT
+  INSTALLATION
+  COMMISSIONING
+  IN_SERVICE
+  DEGRADED
+  DECOMMISSIONING
+  RETIRED
+}
+
+enum RegistryAssetType {
+  PRODUCTION_LINE
+  MACHINE
+  PLC
+  HMI
+  SCADA_NODE
+  ELECTRICAL_PANEL
+  MCC_PANEL
+  VFD
+  MOTOR
+  PUMP
+  VALVE
+  SENSOR
+  INSTRUMENT
+  ROBOT
+  CONVEYOR
+  COMPRESSOR
+  UTILITY_SYSTEM
+  SAFETY_SYSTEM
+  NETWORK_DEVICE
+  INDUSTRIAL_PC
+}
+
+model RegistryAsset {
+  id               String           @id @default(cuid())
+  organizationId   String?
+  siteId           String?
+  assetNumber      String
+  name             String
+  nameEn           String?
+  nameFa           String?
+  description      String?
+  assetType        RegistryAssetType
+  status           AssetStatus         @default(IN_SERVICE)
+  criticality      AssetCriticality    @default(MEDIUM)
+  riskState        AssetRiskState      @default(HEALTHY)
+  lifecycleState   AssetLifecycleState @default(IN_SERVICE)
+  healthScore      Float               @default(100)
+  parentAssetId    String?
+  locationId       String?
+  manufacturer     String?
+  model            String?
+  serialNumber     String?
+  firmwareVersion  String?
+  installationDate DateTime?
+  commissionDate   DateTime?
+  warrantyExpiry   DateTime?
+  expectedLifeYears Int?
+  lastInspectionAt DateTime?
+  nextInspectionAt DateTime?
+  technicalSpecs   Json                @default("{}")
+  tags             String[]
+  isActive         Boolean             @default(true)
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  location         AssetLocation?              @relation(fields: [locationId], references: [id])
+  children         RegistryAsset[]             @relation("RegistryAssetHierarchy")
+  parent           RegistryAsset?              @relation("RegistryAssetHierarchy", fields: [parentAssetId], references: [id])
+  criticalities    AssetCriticalityAssessment[]
+  healthSnapshots  AssetHealthSnapshot[]
+  lifecycleEvents  AssetLifecycleEvent[]
+  maintenanceLinks AssetMaintenanceLink[]
+  documentLinks    AssetDocumentLink[]
+  telemetryLinks   AssetTelemetryLink[]
+  registryTags     RegistryAssetTag[]
+
+  @@index([organizationId])
+  @@index([siteId])
+  @@index([assetType])
+  @@index([status])
+  @@index([criticality])
+  @@index([parentAssetId])
+  @@index([locationId])
+}
+
+model AssetLocation {
+  id             String   @id @default(cuid())
+  organizationId String?
+  siteId         String?
+  code           String
+  name           String
+  nameEn         String?
+  nameFa         String?
+  description    String?
+  locationType   String   @default("AREA")
+  parentId       String?
+  gpsLat         Float?
+  gpsLon         Float?
+  building       String?
+  floor          String?
+  room           String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  assets RegistryAsset[]
+
+  @@index([organizationId])
+  @@index([siteId])
+  @@index([code])
+}
+
+model AssetCriticalityAssessment {
+  id                    String           @id @default(cuid())
+  assetId               String
+  assessedBy            String?
+  safetyImpact          Int              @default(1)
+  productionImpact      Int              @default(1)
+  maintenanceImpact     Int              @default(1)
+  downtimeRisk          Int              @default(1)
+  replacementDifficulty Int              @default(1)
+  spareAvailability     Int              @default(5)
+  overallScore          Float            @default(0)
+  criticality           AssetCriticality @default(MEDIUM)
+  notes                 String?
+  isActive              Boolean          @default(true)
+  assessedAt            DateTime         @default(now())
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  asset RegistryAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+}
+
+model AssetHealthSnapshot {
+  id            String         @id @default(cuid())
+  assetId       String
+  healthScore   Float
+  riskState     AssetRiskState
+  vibrationRms  Float?
+  temperature   Float?
+  pressure      Float?
+  currentDraw   Float?
+  notes         String?
+  takenBy       String?
+  takenAt       DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+
+  asset RegistryAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([takenAt])
+}
+
+model AssetLifecycleEvent {
+  id          String               @id @default(cuid())
+  assetId     String
+  eventType   String
+  fromState   AssetLifecycleState?
+  toState     AssetLifecycleState
+  performedBy String?
+  notes       String?
+  documents   String[]
+  metadata    Json                 @default("{}")
+  occurredAt  DateTime             @default(now())
+  createdAt   DateTime             @default(now())
+
+  asset RegistryAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([occurredAt])
+}
+
+model AssetMaintenanceLink {
+  id          String   @id @default(cuid())
+  assetId     String
+  workOrderId String?
+  planId      String?
+  linkType    String   @default("WORK_ORDER")
+  notes       String?
+  linkedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  asset RegistryAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([workOrderId])
+}
+
+model AssetDocumentLink {
+  id          String   @id @default(cuid())
+  assetId     String
+  documentId  String?
+  docType     String   @default("MANUAL")
+  title       String
+  description String?
+  fileRef     String?
+  linkedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  asset RegistryAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([documentId])
+}
+
+model AssetTelemetryLink {
+  id          String   @id @default(cuid())
+  assetId     String
+  tagPath     String
+  protocol    String   @default("OPC_UA")
+  description String?
+  unit        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  asset RegistryAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([tagPath])
+}
+
+model RegistryAssetTag {
+  id        String   @id @default(cuid())
+  assetId   String
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+
+  asset RegistryAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([key])
+}

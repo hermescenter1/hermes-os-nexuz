@@ -60,6 +60,7 @@ const GROUPS: NavGroup[] = [
       { labelKey: "admin",          href: "/admin" },
       { labelKey: "documents",   href: "/admin/documents" },
       { labelKey: "documentSearch", href: "/admin/documents/search" },
+      { labelKey: "assetRegistry", href: "/assets/dashboard" },
     ],
   },
   {
