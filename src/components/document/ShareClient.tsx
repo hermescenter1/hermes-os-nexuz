@@ -1,38 +1,72 @@
 "use client";
+import { usePathname } from "next/navigation";
 import type { EdmsShare } from "@/lib/document/types";
+
+const ACCESS_STYLE: Record<string, { bg: string; text: string }> = {
+  VIEW:        { bg: "bg-faint/[0.08]",  text: "text-faint"  },
+  DOWNLOAD:    { bg: "bg-ice/[0.08]",    text: "text-ice"    },
+  COMMENT:     { bg: "bg-warn/[0.08]",   text: "text-warn"   },
+  EDIT:        { bg: "bg-signal/[0.08]", text: "text-signal" },
+  FULL_ACCESS: { bg: "bg-danger/[0.08]", text: "text-danger" },
+};
 
 interface Props { shares: EdmsShare[] }
 
 export function ShareClient({ shares }: Props) {
+  const pathname = usePathname();
+  const isFa     = pathname.startsWith("/fa");
+
   if (shares.length === 0) {
-    return <p className="text-sm text-text-muted py-8 text-center">No active shares.</p>;
+    return (
+      <div className="card-enterprise rounded-xl px-5 py-12 text-center">
+        <p className="text-muted text-sm">{isFa ? "اشتراک‌گذاری فعالی وجود ندارد" : "No active shares"}</p>
+      </div>
+    );
   }
+
   return (
-    <div className="bg-surface-1 rounded-xl overflow-hidden">
+    <div className="card-enterprise rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-ink">{isFa ? "اشتراک‌گذاری‌ها" : "Document Shares"}</h3>
+        <span className="text-xs text-faint">{shares.length} {isFa ? "مورد" : "items"}</span>
+      </div>
       <table className="w-full text-sm">
-        <thead className="bg-surface-2 text-text-muted text-xs uppercase">
-          <tr>
-            <th className="text-left px-4 py-2">Document</th>
-            <th className="text-left px-4 py-2">Shared With</th>
-            <th className="text-left px-4 py-2 hidden md:table-cell">Access</th>
-            <th className="text-left px-4 py-2 hidden lg:table-cell">Expires</th>
-            <th className="text-left px-4 py-2 hidden lg:table-cell">Created</th>
+        <thead>
+          <tr className="border-b border-line bg-surface2">
+            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "سند" : "Document"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "با" : "Shared With"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "سطح دسترسی" : "Access"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "انقضا" : "Expires"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "تاریخ" : "Created"}</th>
           </tr>
         </thead>
-        <tbody>
-          {shares.map(s => (
-            <tr key={s.id} className="border-t border-surface-2 hover:bg-surface-2/40 transition-colors">
-              <td className="px-4 py-2.5 font-mono text-xs text-text-muted">{s.documentId.slice(0, 8)}…</td>
-              <td className="px-4 py-2.5 text-text-primary text-sm">{s.sharedWith}</td>
-              <td className="px-4 py-2.5 hidden md:table-cell">
-                <span className="text-xs bg-brand/10 text-brand px-2 py-0.5 rounded-full font-medium">{s.accessLevel}</span>
-              </td>
-              <td className="px-4 py-2.5 hidden lg:table-cell text-text-muted text-xs">
-                {s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : "Never"}
-              </td>
-              <td className="px-4 py-2.5 hidden lg:table-cell text-text-muted text-xs">{new Date(s.createdAt).toLocaleDateString()}</td>
-            </tr>
-          ))}
+        <tbody className="divide-y divide-line">
+          {shares.map(s => {
+            const a = ACCESS_STYLE[s.accessLevel] ?? { bg: "bg-muted/[0.06]", text: "text-muted" };
+            return (
+              <tr key={s.id} className="hover:bg-surface2 transition-colors">
+                <td className="px-4 py-3">
+                  <span className="text-xs font-mono text-faint">{s.documentId.slice(0, 8)}…</span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-sm text-ink">{s.sharedWith}</span>
+                </td>
+                <td className="px-4 py-3 hidden md:table-cell">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-white/[0.05] ${a.bg} ${a.text}`}>
+                    {s.accessLevel.replace(/_/g, " ")}
+                  </span>
+                </td>
+                <td className="px-4 py-3 hidden lg:table-cell">
+                  <span className="text-xs text-faint">
+                    {s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : (isFa ? "هرگز" : "Never")}
+                  </span>
+                </td>
+                <td className="px-4 py-3 hidden lg:table-cell">
+                  <span className="text-xs text-faint font-mono">{new Date(s.createdAt).toLocaleDateString()}</span>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

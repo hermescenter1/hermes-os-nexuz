@@ -1,56 +1,89 @@
 "use client";
-
+import { usePathname } from "next/navigation";
 import type { MaintenanceSchedule } from "@/lib/cmms/types";
 
-const STATUS_STYLE: Record<string, string> = {
-  PLANNED:     "bg-blue-500/20 text-blue-400",
-  SCHEDULED:   "bg-cyan-500/20 text-cyan-400",
-  IN_PROGRESS: "bg-yellow-500/20 text-yellow-400",
-  COMPLETED:   "bg-green-500/20 text-green-400",
-  OVERDUE:     "bg-red-500/20 text-red-400",
-  CANCELLED:   "bg-slate-500/20 text-slate-400",
+const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
+  PLANNED:     { bg: "bg-ice/[0.08]",    text: "text-ice"    },
+  SCHEDULED:   { bg: "bg-signal/[0.08]", text: "text-signal" },
+  IN_PROGRESS: { bg: "bg-warn/[0.10]",   text: "text-warn"   },
+  COMPLETED:   { bg: "bg-signal/[0.08]", text: "text-signal" },
+  OVERDUE:     { bg: "bg-danger/[0.10]", text: "text-danger" },
+  CANCELLED:   { bg: "bg-faint/[0.06]",  text: "text-faint"  },
+};
+
+const PRIORITY_COLOR: Record<string, string> = {
+  LOW:       "text-signal",
+  MEDIUM:    "text-warn",
+  HIGH:      "text-warn",
+  CRITICAL:  "text-danger",
+  EMERGENCY: "text-danger",
 };
 
 export function SchedulesClient({ schedules }: { schedules: MaintenanceSchedule[] }) {
+  const pathname = usePathname();
+  const isFa     = pathname.startsWith("/fa");
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">
-        Maintenance Schedules <span className="text-muted-foreground text-sm">({schedules.length})</span>
-      </h2>
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-x-auto">
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <h2 className="text-base font-semibold text-ink">{isFa ? "زمان‌بندی‌های نگهداشت" : "Maintenance Schedules"}</h2>
+        <span className="text-xs text-faint font-mono">({schedules.length})</span>
+      </div>
+
+      <div className="card-enterprise rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10 text-xs text-muted-foreground">
-              <th className="text-left px-4 py-3">Name</th>
-              <th className="text-left px-4 py-3">Status</th>
-              <th className="text-left px-4 py-3">Priority</th>
-              <th className="text-left px-4 py-3">Scheduled Date</th>
-              <th className="text-left px-4 py-3">Est. Hours</th>
-              <th className="text-left px-4 py-3">Technician</th>
-              <th className="text-left px-4 py-3">Asset</th>
+            <tr className="border-b border-line bg-surface2">
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "نام" : "Name"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "وضعیت" : "Status"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "اولویت" : "Priority"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "تاریخ" : "Date"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "ساعت" : "Hours"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "تکنیسین" : "Technician"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{isFa ? "دستگاه" : "Asset"}</th>
             </tr>
           </thead>
-          <tbody>
-            {schedules.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-8 text-muted-foreground">No schedules found</td></tr>
-            )}
-            {schedules.map(s => (
-              <tr key={s.id} className="border-b border-white/5 hover:bg-white/5">
-                <td className="px-4 py-3 font-medium max-w-[200px] truncate">{s.name}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_STYLE[s.status] ?? ""}`}>
-                    {s.status.replace(/_/g, " ")}
-                  </span>
+          <tbody className="divide-y divide-line">
+            {schedules.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-10 text-muted text-sm">
+                  {isFa ? "زمان‌بندی‌ای یافت نشد" : "No schedules found"}
                 </td>
-                <td className="px-4 py-3 text-xs font-medium">{s.priority}</td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">
-                  {new Date(s.scheduledDate).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3 text-xs">{s.estimatedHours}h</td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">{s.technicianId ?? "—"}</td>
-                <td className="px-4 py-3 text-xs font-mono text-muted-foreground">{s.assetId ?? "—"}</td>
               </tr>
-            ))}
+            ) : (
+              schedules.map(s => {
+                const st = STATUS_STYLE[s.status] ?? { bg: "bg-muted/[0.06]", text: "text-muted" };
+                return (
+                  <tr key={s.id} className="hover:bg-surface2 transition-colors">
+                    <td className="px-4 py-3 max-w-[200px]">
+                      <p className="font-medium text-ink truncate">{s.name}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-white/[0.05] ${st.bg} ${st.text}`}>
+                        {s.status.replace(/_/g, " ")}
+                      </span>
+                    </td>
+                    <td className={`px-4 py-3 hidden md:table-cell text-xs font-bold ${PRIORITY_COLOR[s.priority] ?? "text-muted"}`}>
+                      {s.priority}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-faint font-mono">
+                        {new Date(s.scheduledDate).toLocaleDateString()}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <span className="text-xs font-mono text-muted">{s.estimatedHours}h</span>
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <span className="text-xs text-muted">{s.technicianId ?? "—"}</span>
+                    </td>
+                    <td className="px-4 py-3 hidden xl:table-cell">
+                      <span className="text-xs font-mono text-faint">{s.assetId ?? "—"}</span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

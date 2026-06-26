@@ -1,75 +1,75 @@
 "use client";
-
+import { usePathname } from "next/navigation";
 import type { CmmsKpis } from "@/lib/cmms/types";
 
 interface ReportData {
-  kpis:            CmmsKpis;
-  failurePareto:   { category: string; count: number }[];
-  costByCategory:  Record<string, number>;
-  totalCost:       number;
-  lowStockParts:   number;
-  totalParts:      number;
-  taskSummary:     {
-    total: number; completed: number; overdue: number;
-    inProgress: number; planned: number;
-  };
+  kpis:           CmmsKpis;
+  failurePareto:  { category: string; count: number }[];
+  costByCategory: Record<string, number>;
+  totalCost:      number;
+  lowStockParts:  number;
+  totalParts:     number;
+  taskSummary:    { total: number; completed: number; overdue: number; inProgress: number; planned: number };
 }
 
 export function ReportsClient({ report }: { report: ReportData }) {
+  const pathname = usePathname();
+  const isFa     = pathname.startsWith("/fa");
   const { kpis, failurePareto, costByCategory, totalCost, taskSummary } = report;
 
   return (
-    <div className="space-y-8">
-      {/* KPI Summary */}
+    <div className="space-y-7">
+      {/* Module hero */}
+      <div className="rounded-xl border border-warn/15 bg-warn/[0.04] px-6 py-5">
+        <p className="eyebrow-mono text-warn mb-1">{isFa ? "گزارش مدیریت نگهداشت" : "Maintenance Intelligence Report"}</p>
+        <h1 className="text-xl font-bold text-ink">{isFa ? "گزارش‌های CMMS" : "CMMS Reports"}</h1>
+      </div>
+
+      {/* Reliability KPIs */}
       <section>
-        <h2 className="text-base font-semibold mb-4">Equipment Reliability KPIs</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="text-xs text-muted-foreground mb-1">MTBF</div>
-            <div className="text-2xl font-bold text-blue-400">{kpis.mtbf}<span className="text-sm text-muted-foreground ml-1">h</span></div>
-            <div className="text-xs text-muted-foreground mt-1">Mean Time Between Failures</div>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="text-xs text-muted-foreground mb-1">MTTR</div>
-            <div className="text-2xl font-bold text-orange-400">{kpis.mttr}<span className="text-sm text-muted-foreground ml-1">h</span></div>
-            <div className="text-xs text-muted-foreground mt-1">Mean Time To Repair</div>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="text-xs text-muted-foreground mb-1">Availability</div>
-            <div className={`text-2xl font-bold ${kpis.availability >= 95 ? "text-green-400" : "text-red-400"}`}>
-              {kpis.availability}%
+        <p className="eyebrow-label text-faint mb-3">{isFa ? "KPIهای قابلیت اطمینان تجهیزات" : "Equipment Reliability KPIs"}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "MTBF", sub: isFa ? "میانگین زمان بین خرابی‌ها" : "Mean Time Between Failures", value: kpis.mtbf, unit: "h", color: "text-ice",    border: "border-ice/20" },
+            { label: "MTTR", sub: isFa ? "میانگین زمان تعمیر"        : "Mean Time To Repair",         value: kpis.mttr, unit: "h", color: "text-warn",   border: "border-warn/20" },
+            { label: isFa ? "دسترس‌پذیری" : "Availability",
+              sub: isFa ? "زمان بدون توقف" : "Equipment uptime",
+              value: `${kpis.availability}%`, unit: "",
+              color: kpis.availability >= 95 ? "text-signal" : "text-danger",
+              border: kpis.availability >= 95 ? "border-signal/20" : "border-danger/20" },
+            { label: isFa ? "تطابق PM" : "PM Compliance",
+              sub: isFa ? "نگهداشت پیشگیرانه به‌موقع" : "Preventive maintenance on-time",
+              value: `${kpis.maintenanceCompliance}%`, unit: "",
+              color: kpis.maintenanceCompliance >= 90 ? "text-signal" : "text-warn",
+              border: "border-warn/20" },
+          ].map(k => (
+            <div key={k.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${k.border}`}>
+              <div className="text-xs text-faint mb-1">{k.label}</div>
+              <div className={`text-2xl font-bold font-mono ${k.color}`}>
+                {k.value}{k.unit && <span className="text-xs font-normal text-faint ms-1">{k.unit}</span>}
+              </div>
+              <div className="text-xs text-faint mt-1.5 leading-snug">{k.sub}</div>
             </div>
-            <div className="text-xs text-muted-foreground mt-1">Equipment uptime</div>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="text-xs text-muted-foreground mb-1">PM Compliance</div>
-            <div className={`text-2xl font-bold ${kpis.maintenanceCompliance >= 90 ? "text-green-400" : "text-yellow-400"}`}>
-              {kpis.maintenanceCompliance}%
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">Preventive maintenance on-time</div>
-          </div>
+          ))}
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Failure Pareto */}
         <section>
-          <h2 className="text-base font-semibold mb-4">Failure Pareto (by Category)</h2>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <p className="eyebrow-label text-faint mb-3">{isFa ? "پارتو خرابی‌ها (بر اساس دسته)" : "Failure Pareto (by Category)"}</p>
+          <div className="card-enterprise rounded-xl p-5 space-y-4">
             {failurePareto.map(({ category, count }, i) => {
               const max   = failurePareto[0]?.count ?? 1;
               const width = Math.round((count / max) * 100);
               return (
                 <div key={category}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="font-medium">{i + 1}. {category}</span>
-                    <span className="text-muted-foreground">{count} failures</span>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="font-medium text-ink">{i + 1}. {category}</span>
+                    <span className="text-faint font-mono">{count} {isFa ? "خرابی" : "failures"}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-white/10">
-                    <div
-                      className="h-2 rounded-full bg-gradient-to-r from-primary to-primary/60"
-                      style={{ width: `${width}%` }}
-                    />
+                  <div className="h-1.5 rounded-full bg-surface3">
+                    <div className="h-1.5 rounded-full bg-danger/70" style={{ width: `${width}%` }} />
                   </div>
                 </div>
               );
@@ -79,44 +79,44 @@ export function ReportsClient({ report }: { report: ReportData }) {
 
         {/* Cost Breakdown */}
         <section>
-          <h2 className="text-base font-semibold mb-4">Cost Breakdown</h2>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <p className="eyebrow-label text-faint mb-3">{isFa ? "تفکیک هزینه‌ها" : "Cost Breakdown"}</p>
+          <div className="card-enterprise rounded-xl p-5 space-y-4">
             {Object.entries(costByCategory).map(([cat, amt]) => {
               const pct = Math.round((amt / (totalCost || 1)) * 100);
               return (
                 <div key={cat}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="font-medium">{cat}</span>
-                    <span className="text-muted-foreground">${Math.round(amt).toLocaleString()} ({pct}%)</span>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="font-medium text-ink">{cat}</span>
+                    <span className="text-faint font-mono">${Math.round(amt).toLocaleString()} ({pct}%)</span>
                   </div>
-                  <div className="h-2 rounded-full bg-white/10">
-                    <div className="h-2 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-400" style={{ width: `${pct}%` }} />
+                  <div className="h-1.5 rounded-full bg-surface3">
+                    <div className="h-1.5 rounded-full bg-warn/70" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
             })}
-            <div className="pt-2 border-t border-white/10 flex justify-between text-sm font-bold">
-              <span>Total</span>
-              <span>${Math.round(totalCost).toLocaleString()}</span>
+            <div className="pt-3 border-t border-line flex justify-between text-sm font-bold">
+              <span className="text-muted">{isFa ? "جمع کل" : "Total"}</span>
+              <span className="text-signal font-mono">${Math.round(totalCost).toLocaleString()}</span>
             </div>
           </div>
         </section>
       </div>
 
-      {/* Task Summary */}
+      {/* Work Order Summary */}
       <section>
-        <h2 className="text-base font-semibold mb-4">Work Order Summary</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <p className="eyebrow-label text-faint mb-3">{isFa ? "خلاصه دستورکارها" : "Work Order Summary"}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { label: "Total", value: taskSummary.total, color: "" },
-            { label: "Completed", value: taskSummary.completed, color: "text-green-400" },
-            { label: "In Progress", value: taskSummary.inProgress, color: "text-yellow-400" },
-            { label: "Planned", value: taskSummary.planned, color: "text-blue-400" },
-            { label: "Overdue", value: taskSummary.overdue, color: "text-red-400" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-              <div className={`text-2xl font-bold ${color}`}>{value}</div>
-              <div className="text-xs text-muted-foreground mt-1">{label}</div>
+            { label: isFa ? "کل"          : "Total",       value: taskSummary.total,      ac: "text-ink",    b: "border-line"      },
+            { label: isFa ? "تکمیل‌شده"   : "Completed",   value: taskSummary.completed,  ac: "text-signal", b: "border-signal/20" },
+            { label: isFa ? "در حال اجرا" : "In Progress", value: taskSummary.inProgress, ac: "text-warn",   b: "border-warn/20"   },
+            { label: isFa ? "برنامه‌ریزی" : "Planned",     value: taskSummary.planned,    ac: "text-ice",    b: "border-ice/20"    },
+            { label: isFa ? "معوقه"       : "Overdue",     value: taskSummary.overdue,    ac: taskSummary.overdue > 0 ? "text-danger" : "text-signal", b: taskSummary.overdue > 0 ? "border-danger/30" : "border-signal/20" },
+          ].map(s => (
+            <div key={s.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${s.b}`}>
+              <div className={`text-2xl font-bold font-mono ${s.ac}`}>{s.value}</div>
+              <div className="text-xs text-muted mt-1.5">{s.label}</div>
             </div>
           ))}
         </div>

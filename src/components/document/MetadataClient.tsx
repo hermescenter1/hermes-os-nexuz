@@ -1,31 +1,52 @@
 "use client";
+import { usePathname } from "next/navigation";
 import type { EdmsMetadata } from "@/lib/document/types";
 import { getMetadataDisplayLabel } from "@/lib/document/metadata";
 
 interface Props { metadata: EdmsMetadata[] }
 
 export function MetadataClient({ metadata }: Props) {
+  const pathname = usePathname();
+  const isFa     = pathname.startsWith("/fa");
+
   if (metadata.length === 0) {
-    return <p className="text-sm text-text-muted py-8 text-center">No metadata entries.</p>;
+    return (
+      <div className="card-enterprise rounded-xl px-5 py-12 text-center">
+        <p className="text-muted text-sm">{isFa ? "ورودی‌های فراداده یافت نشد" : "No metadata entries"}</p>
+      </div>
+    );
   }
+
   return (
-    <div className="bg-surface-1 rounded-xl overflow-hidden">
+    <div className="card-enterprise rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-ink">{isFa ? "فراداده‌ها" : "Metadata"}</h3>
+        <span className="text-xs text-faint">{metadata.length} {isFa ? "ورودی" : "entries"}</span>
+      </div>
       <table className="w-full text-sm">
-        <thead className="bg-surface-2 text-text-muted text-xs uppercase">
-          <tr>
-            <th className="text-left px-4 py-2">Key</th>
-            <th className="text-left px-4 py-2">Value</th>
-            <th className="text-left px-4 py-2 hidden md:table-cell">Document</th>
-            <th className="text-left px-4 py-2 hidden lg:table-cell">Updated</th>
+        <thead>
+          <tr className="border-b border-line bg-surface2">
+            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "کلید" : "Key"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "مقدار" : "Value"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "سند" : "Document"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "بروزرسانی" : "Updated"}</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-line">
           {metadata.map(m => (
-            <tr key={m.id} className="border-t border-surface-2 hover:bg-surface-2/40 transition-colors">
-              <td className="px-4 py-2.5 font-medium text-text-secondary">{getMetadataDisplayLabel(m.key)}</td>
-              <td className="px-4 py-2.5 text-text-primary">{m.value}</td>
-              <td className="px-4 py-2.5 hidden md:table-cell text-text-muted font-mono text-xs">{m.documentId.slice(0, 8)}…</td>
-              <td className="px-4 py-2.5 hidden lg:table-cell text-text-muted text-xs">{new Date(m.updatedAt).toLocaleDateString()}</td>
+            <tr key={m.id} className="hover:bg-surface2 transition-colors">
+              <td className="px-4 py-3">
+                <span className="text-xs font-mono font-medium text-ice">{getMetadataDisplayLabel(m.key)}</span>
+              </td>
+              <td className="px-4 py-3">
+                <span className="text-sm text-ink">{m.value}</span>
+              </td>
+              <td className="px-4 py-3 hidden md:table-cell">
+                <span className="text-xs font-mono text-faint">{m.documentId.slice(0, 8)}…</span>
+              </td>
+              <td className="px-4 py-3 hidden lg:table-cell">
+                <span className="text-xs text-faint font-mono">{new Date(m.updatedAt).toLocaleDateString()}</span>
+              </td>
             </tr>
           ))}
         </tbody>

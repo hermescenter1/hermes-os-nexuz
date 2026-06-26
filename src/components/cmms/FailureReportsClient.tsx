@@ -1,112 +1,135 @@
 "use client";
-
+import { usePathname } from "next/navigation";
 import type { MaintenanceFailure } from "@/lib/cmms/types";
 
-const SEV_STYLE: Record<string, string> = {
-  MINOR:    "bg-green-500/15 text-green-400",
-  MODERATE: "bg-yellow-500/15 text-yellow-400",
-  MAJOR:    "bg-orange-500/15 text-orange-400",
-  CRITICAL: "bg-red-500/15 text-red-400",
+const SEV_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
+  MINOR:    { bg: "bg-signal/[0.08]", text: "text-signal", dot: "bg-signal" },
+  MODERATE: { bg: "bg-warn/[0.08]",   text: "text-warn",   dot: "bg-warn"   },
+  MAJOR:    { bg: "bg-warn/[0.12]",   text: "text-warn",   dot: "bg-warn"   },
+  CRITICAL: { bg: "bg-danger/[0.10]", text: "text-danger", dot: "bg-danger" },
 };
 
 const CAT_ICON: Record<string, string> = {
-  MECHANICAL:       "⚙️",
-  ELECTRICAL:       "⚡",
-  INSTRUMENTATION:  "📡",
-  SOFTWARE:         "💻",
-  HYDRAULIC:        "💧",
-  PNEUMATIC:        "💨",
-  STRUCTURAL:       "🏗️",
-  OPERATIONAL:      "📋",
+  MECHANICAL:      "M",
+  ELECTRICAL:      "E",
+  INSTRUMENTATION: "I",
+  SOFTWARE:        "SW",
+  HYDRAULIC:       "H",
+  PNEUMATIC:       "P",
+  STRUCTURAL:      "S",
+  OPERATIONAL:     "O",
+};
+
+const CA_STYLE: Record<string, { bg: string; text: string }> = {
+  OPEN:        { bg: "bg-ice/[0.08]",    text: "text-ice"    },
+  IN_PROGRESS: { bg: "bg-warn/[0.08]",   text: "text-warn"   },
+  CLOSED:      { bg: "bg-signal/[0.08]", text: "text-signal" },
+  CANCELLED:   { bg: "bg-faint/[0.06]",  text: "text-faint"  },
 };
 
 export function FailureReportsClient({ failures }: { failures: MaintenanceFailure[] }) {
-  const resolvedCount  = failures.filter(f => f.resolvedAt).length;
-  const criticalCount  = failures.filter(f => f.severity === "CRITICAL").length;
-  const totalDowntime  = failures.reduce((s, f) => s + (f.downtimeMinutes ?? 0), 0);
+  const pathname     = usePathname();
+  const isFa         = pathname.startsWith("/fa");
+  const resolved     = failures.filter(f => f.resolvedAt).length;
+  const critical     = failures.filter(f => f.severity === "CRITICAL").length;
+  const totalDown    = failures.reduce((s, f) => s + (f.downtimeMinutes ?? 0), 0);
 
   return (
     <div className="space-y-6">
-      {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-          <div className="text-2xl font-bold text-foreground">{failures.length}</div>
-          <div className="text-xs text-muted-foreground mt-1">Total Failures</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-          <div className="text-2xl font-bold text-red-400">{criticalCount}</div>
-          <div className="text-xs text-muted-foreground mt-1">Critical</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">{resolvedCount}</div>
-          <div className="text-xs text-muted-foreground mt-1">Resolved</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-400">{Math.round(totalDowntime / 60)}h</div>
-          <div className="text-xs text-muted-foreground mt-1">Total Downtime</div>
-        </div>
+      {/* Summary KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: isFa ? "کل خرابی‌ها" : "Total Failures",  value: failures.length, ac: "text-ink",    b: "border-line"     },
+          { label: isFa ? "بحرانی"       : "Critical",         value: critical,        ac: "text-danger", b: "border-danger/30" },
+          { label: isFa ? "حل‌شده"        : "Resolved",         value: resolved,        ac: "text-signal", b: "border-signal/30" },
+          { label: isFa ? "توقف (ساعت)"  : "Total Downtime",  value: `${Math.round(totalDown / 60)}h`, ac: "text-warn", b: "border-warn/30" },
+        ].map(s => (
+          <div key={s.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${s.b}`}>
+            <div className={`text-2xl font-bold font-mono ${s.ac}`}>{s.value}</div>
+            <div className="text-xs text-muted mt-1.5">{s.label}</div>
+          </div>
+        ))}
       </div>
 
       {/* Failure list */}
-      <div className="space-y-4">
-        {failures.map(f => (
-          <div key={f.id} className="rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{CAT_ICON[f.category] ?? "❓"}</span>
-                <h3 className="font-semibold">{f.title}</h3>
+      <div className="space-y-3">
+        {failures.map(f => {
+          const s = SEV_STYLE[f.severity] ?? { bg: "bg-muted/[0.06]", text: "text-muted", dot: "bg-muted" };
+          const catCode = CAT_ICON[f.category] ?? f.category.charAt(0);
+          return (
+            <div key={f.id} className="card-enterprise rounded-xl p-5">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 mb-3 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-warn/[0.08] border border-warn/15 flex items-center justify-center text-xs font-mono font-bold text-warn shrink-0">
+                    {catCode}
+                  </div>
+                  <h3 className="font-semibold text-ink text-sm leading-snug">{f.title}</h3>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/[0.06] text-xs font-medium ${s.bg} ${s.text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                    {f.severity}
+                  </span>
+                  <span className={`text-xs px-2.5 py-1 rounded-lg border border-white/[0.05] font-medium ${f.resolvedAt ? "bg-signal/[0.08] text-signal" : "bg-danger/[0.08] text-danger"}`}>
+                    {f.resolvedAt ? (isFa ? "حل‌شده" : "Resolved") : (isFa ? "باز" : "Open")}
+                  </span>
+                </div>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${SEV_STYLE[f.severity] ?? ""}`}>
-                  {f.severity}
-                </span>
-                <span className={`px-2 py-0.5 rounded text-xs ${f.resolvedAt ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
-                  {f.resolvedAt ? "Resolved" : "Open"}
-                </span>
+
+              {/* Description */}
+              <p className="text-sm text-muted mb-3 line-clamp-2 leading-relaxed">{f.description}</p>
+
+              {/* Meta row */}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-faint mb-4">
+                <span>{isFa ? "دسته" : "Category"}: <span className="text-muted">{f.category}</span></span>
+                <span>{isFa ? "وقوع" : "Occurred"}: <span className="font-mono text-muted">{new Date(f.occurredAt).toLocaleDateString()}</span></span>
+                {f.resolvedAt && (
+                  <span>{isFa ? "حل‌شده در" : "Resolved"}: <span className="font-mono text-muted">{new Date(f.resolvedAt).toLocaleDateString()}</span></span>
+                )}
+                {f.downtimeMinutes != null && (
+                  <span>{isFa ? "توقف" : "Downtime"}: <span className="font-mono text-warn">{Math.round(f.downtimeMinutes / 60)}h</span></span>
+                )}
               </div>
+
+              {/* Root Causes */}
+              {f.causes && f.causes.length > 0 && (
+                <div className="mb-3">
+                  <p className="eyebrow-label text-faint mb-2">{isFa ? "علل ریشه‌ای" : "Root Causes"}</p>
+                  <div className="space-y-1">
+                    {f.causes.map(c => (
+                      <div key={c.id} className="flex items-center gap-2.5 text-xs">
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.isConfirmed ? "bg-warn" : "bg-faint"}`} />
+                        <span className="text-muted flex-1">{c.cause}</span>
+                        <span className="text-faint font-mono">{Math.round(c.probability * 100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Corrective Actions */}
+              {f.correctiveActions && f.correctiveActions.length > 0 && (
+                <div>
+                  <p className="eyebrow-label text-faint mb-2">{isFa ? "اقدامات اصلاحی" : "Corrective Actions"}</p>
+                  <div className="space-y-1">
+                    {f.correctiveActions.map(ca => {
+                      const cs = CA_STYLE[ca.status] ?? { bg: "bg-muted/[0.06]", text: "text-muted" };
+                      return (
+                        <div key={ca.id} className="flex items-center gap-2.5 text-xs">
+                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium border border-white/[0.05] ${cs.bg} ${cs.text}`}>
+                            {ca.status}
+                          </span>
+                          <span className="text-muted">{ca.action}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-
-            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{f.description}</p>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground mb-4">
-              <div><span className="font-medium text-foreground">Category:</span> {f.category}</div>
-              <div><span className="font-medium text-foreground">Occurred:</span> {new Date(f.occurredAt).toLocaleDateString()}</div>
-              {f.resolvedAt && <div><span className="font-medium text-foreground">Resolved:</span> {new Date(f.resolvedAt).toLocaleDateString()}</div>}
-              {f.downtimeMinutes != null && <div><span className="font-medium text-foreground">Downtime:</span> {Math.round(f.downtimeMinutes / 60)}h</div>}
-            </div>
-
-            {f.causes && f.causes.length > 0 && (
-              <div className="mb-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Root Causes</p>
-                <ul className="space-y-1">
-                  {f.causes.map(c => (
-                    <li key={c.id} className="text-xs flex items-center gap-2">
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.isConfirmed ? "bg-orange-400" : "bg-slate-500"}`} />
-                      <span className="text-muted-foreground">{c.cause}</span>
-                      <span className="text-slate-500">({Math.round(c.probability * 100)}%)</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {f.correctiveActions && f.correctiveActions.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Corrective Actions</p>
-                <ul className="space-y-1">
-                  {f.correctiveActions.map(ca => (
-                    <li key={ca.id} className="text-xs flex items-center gap-2">
-                      <span className={`px-1.5 py-0.5 rounded ${ca.status === "CLOSED" ? "bg-green-500/15 text-green-400" : ca.status === "IN_PROGRESS" ? "bg-yellow-500/15 text-yellow-400" : "bg-blue-500/15 text-blue-400"}`}>
-                        {ca.status}
-                      </span>
-                      <span className="text-muted-foreground">{ca.action}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

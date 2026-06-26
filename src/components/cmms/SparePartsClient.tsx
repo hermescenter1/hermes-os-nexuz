@@ -1,42 +1,46 @@
 "use client";
-
+import { usePathname } from "next/navigation";
 import type { MaintenanceSparePart } from "@/lib/cmms/types";
 
 export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
+  const pathname   = usePathname();
+  const isFa       = pathname.startsWith("/fa");
   const lowStock   = parts.filter(p => p.stockQty <= p.minStockQty);
   const outOfStock = parts.filter(p => p.stockQty === 0);
   const totalValue = parts.reduce((s, p) => s + p.unitCost * p.stockQty, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-          <div className="text-2xl font-bold">{parts.length}</div>
-          <div className="text-xs text-muted-foreground mt-1">Total Parts</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-          <div className="text-2xl font-bold text-red-400">{outOfStock.length}</div>
-          <div className="text-xs text-muted-foreground mt-1">Out of Stock</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-400">{lowStock.length}</div>
-          <div className="text-xs text-muted-foreground mt-1">Low Stock</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">${Math.round(totalValue).toLocaleString()}</div>
-          <div className="text-xs text-muted-foreground mt-1">Inventory Value</div>
-        </div>
+    <div className="space-y-5">
+      {/* Summary KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: isFa ? "کل قطعات"          : "Total Parts",      value: parts.length,                                   ac: "text-ink",    b: "border-line"      },
+          { label: isFa ? "موجودی صفر"         : "Out of Stock",     value: outOfStock.length,                              ac: outOfStock.length > 0 ? "text-danger" : "text-signal",  b: outOfStock.length > 0 ? "border-danger/30" : "border-signal/20" },
+          { label: isFa ? "موجودی کم"          : "Low Stock",        value: lowStock.length,                                ac: lowStock.length > 0 ? "text-warn" : "text-signal",      b: lowStock.length > 0 ? "border-warn/30" : "border-signal/20"   },
+          { label: isFa ? "ارزش موجودی"        : "Inventory Value",  value: `$${Math.round(totalValue).toLocaleString()}`,   ac: "text-signal", b: "border-signal/20" },
+        ].map(s => (
+          <div key={s.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${s.b}`}>
+            <div className={`text-2xl font-bold font-mono ${s.ac}`}>{s.value}</div>
+            <div className="text-xs text-muted mt-1.5">{s.label}</div>
+          </div>
+        ))}
       </div>
 
+      {/* Low stock alert */}
       {lowStock.length > 0 && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-          <h3 className="text-sm font-semibold text-red-400 mb-2">⚠️ Low Stock Alerts ({lowStock.length})</h3>
-          <div className="space-y-1">
+        <div className="card-enterprise rounded-xl p-4 border border-warn/20 bg-warn/[0.04]">
+          <div className="flex items-center gap-2 mb-3">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-warn">
+              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd"/>
+            </svg>
+            <h3 className="text-sm font-semibold text-warn">{isFa ? "هشدار موجودی کم" : "Low Stock Alerts"} ({lowStock.length})</h3>
+          </div>
+          <div className="space-y-1.5">
             {lowStock.map(p => (
-              <div key={p.id} className="text-xs flex items-center justify-between">
-                <span className="font-mono">{p.partNumber}</span>
-                <span className="text-muted-foreground">{p.name}</span>
-                <span className={p.stockQty === 0 ? "text-red-400 font-bold" : "text-yellow-400"}>
+              <div key={p.id} className="flex items-center justify-between text-xs">
+                <span className="font-mono text-faint">{p.partNumber}</span>
+                <span className="text-muted truncate mx-3 flex-1">{p.name}</span>
+                <span className={`font-mono font-bold ${p.stockQty === 0 ? "text-danger" : "text-warn"}`}>
                   {p.stockQty}/{p.minStockQty} {p.unit}
                 </span>
               </div>
@@ -45,35 +49,51 @@ export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
         </div>
       )}
 
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-x-auto">
+      {/* Parts table */}
+      <div className="card-enterprise rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10 text-xs text-muted-foreground">
-              <th className="text-left px-4 py-3">Part Number</th>
-              <th className="text-left px-4 py-3">Name</th>
-              <th className="text-left px-4 py-3">Category</th>
-              <th className="text-left px-4 py-3">Manufacturer</th>
-              <th className="text-right px-4 py-3">Stock</th>
-              <th className="text-right px-4 py-3">Min</th>
-              <th className="text-right px-4 py-3">Unit Cost</th>
-              <th className="text-left px-4 py-3">Location</th>
+            <tr className="border-b border-line bg-surface2">
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "شماره قطعه" : "Part Number"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "نام" : "Name"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "دسته" : "Category"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "سازنده" : "Manufacturer"}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "موجودی" : "Stock"}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "حداقل" : "Min"}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "هزینه واحد" : "Unit Cost"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{isFa ? "محل" : "Location"}</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-line">
             {parts.map(p => {
-              const isLow = p.stockQty <= p.minStockQty;
+              const isLow  = p.stockQty <= p.minStockQty;
+              const isOut  = p.stockQty === 0;
               return (
-                <tr key={p.id} className="border-b border-white/5 hover:bg-white/5">
-                  <td className="px-4 py-3 text-xs font-mono text-primary">{p.partNumber}</td>
-                  <td className="px-4 py-3 text-xs font-medium max-w-[200px] truncate">{p.name}</td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">{p.category ?? "—"}</td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">{p.manufacturer ?? "—"}</td>
-                  <td className={`px-4 py-3 text-xs text-right font-bold ${isLow ? (p.stockQty === 0 ? "text-red-400" : "text-yellow-400") : "text-green-400"}`}>
+                <tr key={p.id} className="hover:bg-surface2 transition-colors">
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-mono text-signal">{p.partNumber}</span>
+                  </td>
+                  <td className="px-4 py-3 max-w-[200px]">
+                    <span className="text-sm font-medium text-ink truncate block">{p.name}</span>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className="text-xs text-muted">{p.category ?? "—"}</span>
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    <span className="text-xs text-muted">{p.manufacturer ?? "—"}</span>
+                  </td>
+                  <td className={`px-4 py-3 text-end text-xs font-bold font-mono ${isOut ? "text-danger" : isLow ? "text-warn" : "text-signal"}`}>
                     {p.stockQty} {p.unit}
                   </td>
-                  <td className="px-4 py-3 text-xs text-right text-muted-foreground">{p.minStockQty}</td>
-                  <td className="px-4 py-3 text-xs text-right">${p.unitCost.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground max-w-[160px] truncate">{p.location ?? "—"}</td>
+                  <td className="px-4 py-3 hidden md:table-cell text-end">
+                    <span className="text-xs font-mono text-faint">{p.minStockQty}</span>
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell text-end">
+                    <span className="text-xs font-mono text-muted">${p.unitCost.toFixed(2)}</span>
+                  </td>
+                  <td className="px-4 py-3 hidden xl:table-cell max-w-[160px]">
+                    <span className="text-xs text-faint truncate block">{p.location ?? "—"}</span>
+                  </td>
                 </tr>
               );
             })}

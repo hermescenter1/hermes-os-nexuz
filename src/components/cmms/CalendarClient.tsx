@@ -1,78 +1,92 @@
 "use client";
-
+import { usePathname } from "next/navigation";
 import type { MaintenanceCalendarEvent } from "@/lib/cmms/types";
 
-const EVENT_TYPE_STYLE: Record<string, string> = {
-  preventive:  "border-blue-500/40 bg-blue-500/10",
-  calibration: "border-purple-500/40 bg-purple-500/10",
-  inspection:  "border-cyan-500/40 bg-cyan-500/10",
-  lubrication: "border-yellow-500/40 bg-yellow-500/10",
-  shutdown:    "border-red-500/40 bg-red-500/10",
-  corrective:  "border-orange-500/40 bg-orange-500/10",
-  maintenance: "border-slate-500/40 bg-slate-500/10",
+const EVENT_STYLE: Record<string, { border: string; bg: string; text: string }> = {
+  preventive:  { border: "border-s-2 border-ice/50",    bg: "bg-ice/[0.04]",    text: "text-ice"    },
+  calibration: { border: "border-s-2 border-muted/40",  bg: "bg-muted/[0.04]",  text: "text-muted"  },
+  inspection:  { border: "border-s-2 border-signal/40", bg: "bg-signal/[0.04]", text: "text-signal" },
+  lubrication: { border: "border-s-2 border-warn/40",   bg: "bg-warn/[0.04]",   text: "text-warn"   },
+  shutdown:    { border: "border-s-2 border-danger/50", bg: "bg-danger/[0.04]", text: "text-danger" },
+  corrective:  { border: "border-s-2 border-warn/50",   bg: "bg-warn/[0.06]",   text: "text-warn"   },
+  maintenance: { border: "border-s-2 border-faint/30",  bg: "bg-surface3",      text: "text-faint"  },
 };
 
-export function CalendarClient({ events }: { events: MaintenanceCalendarEvent[] }) {
-  const sorted = [...events].sort(
-    (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-  );
+const PRIORITY_COLOR: Record<string, string> = {
+  LOW:       "text-signal",
+  MEDIUM:    "text-warn",
+  HIGH:      "text-warn",
+  CRITICAL:  "text-danger",
+  EMERGENCY: "text-danger",
+};
 
-  const upcoming = sorted.filter(e => new Date(e.startDate) >= new Date());
-  const past     = sorted.filter(e => new Date(e.startDate) <  new Date());
+function EventCard({ event: ev, dimmed = false }: { event: MaintenanceCalendarEvent; dimmed?: boolean }) {
+  const s = EVENT_STYLE[ev.eventType] ?? EVENT_STYLE.maintenance;
+  return (
+    <div className={`card-enterprise rounded-xl p-4 ${s.border} ${s.bg} ${dimmed ? "opacity-55" : ""}`}>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`text-xs font-mono font-semibold capitalize ${s.text}`}>{ev.eventType}</span>
+            <span className={`text-xs font-bold ${PRIORITY_COLOR[ev.priority] ?? "text-muted"}`}>{ev.priority}</span>
+          </div>
+          <h3 className="font-semibold text-ink text-sm">{ev.title}</h3>
+          {ev.description && <p className="text-xs text-muted mt-0.5 line-clamp-1">{ev.description}</p>}
+        </div>
+        <div className="text-end shrink-0">
+          <p className="text-xs font-mono font-medium text-ink">{new Date(ev.startDate).toLocaleDateString()}</p>
+          {ev.endDate && (
+            <p className="text-xs text-faint font-mono">→ {new Date(ev.endDate).toLocaleDateString()}</p>
+          )}
+        </div>
+      </div>
+      <div className="mt-2.5 flex flex-wrap gap-3 text-xs text-faint">
+        {ev.assetId     && <span>{ev.assetId}</span>}
+        {ev.technicianId && <span>{ev.technicianId}</span>}
+      </div>
+    </div>
+  );
+}
+
+export function CalendarClient({ events }: { events: MaintenanceCalendarEvent[] }) {
+  const pathname = usePathname();
+  const isFa     = pathname.startsWith("/fa");
+  const now      = new Date();
+  const sorted   = [...events].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  const upcoming = sorted.filter(e => new Date(e.startDate) >= now);
+  const past     = sorted.filter(e => new Date(e.startDate) <  now);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       {upcoming.length > 0 && (
         <section>
-          <h2 className="text-base font-semibold mb-4 text-green-400">Upcoming Events ({upcoming.length})</h2>
+          <div className="flex items-center gap-3 mb-4">
+            <p className="eyebrow-label text-signal">{isFa ? "رویدادهای آتی" : "Upcoming Events"}</p>
+            <span className="text-xs text-faint font-mono">({upcoming.length})</span>
+          </div>
           <div className="space-y-3">
-            {upcoming.map(ev => (
-              <EventCard key={ev.id} event={ev} />
-            ))}
+            {upcoming.map(ev => <EventCard key={ev.id} event={ev} />)}
           </div>
         </section>
       )}
 
       {past.length > 0 && (
         <section>
-          <h2 className="text-base font-semibold mb-4 text-muted-foreground">Past Events ({past.length})</h2>
+          <div className="flex items-center gap-3 mb-4">
+            <p className="eyebrow-label text-faint">{isFa ? "رویدادهای گذشته" : "Past Events"}</p>
+            <span className="text-xs text-faint font-mono">({past.length})</span>
+          </div>
           <div className="space-y-3">
-            {past.map(ev => (
-              <EventCard key={ev.id} event={ev} dimmed />
-            ))}
+            {past.map(ev => <EventCard key={ev.id} event={ev} dimmed />)}
           </div>
         </section>
       )}
-    </div>
-  );
-}
 
-function EventCard({ event: ev, dimmed = false }: { event: MaintenanceCalendarEvent; dimmed?: boolean }) {
-  const style = EVENT_TYPE_STYLE[ev.eventType] ?? EVENT_TYPE_STYLE.maintenance;
-  return (
-    <div className={`rounded-xl border p-4 ${style} ${dimmed ? "opacity-60" : ""}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-semibold text-sm">{ev.title}</h3>
-          {ev.description && <p className="text-xs text-muted-foreground mt-0.5">{ev.description}</p>}
+      {events.length === 0 && (
+        <div className="card-enterprise rounded-xl px-5 py-12 text-center">
+          <p className="text-muted text-sm">{isFa ? "رویدادی یافت نشد" : "No calendar events found"}</p>
         </div>
-        <div className="text-right shrink-0">
-          <p className="text-xs font-medium">{new Date(ev.startDate).toLocaleDateString()}</p>
-          {ev.endDate && (
-            <p className="text-xs text-muted-foreground">→ {new Date(ev.endDate).toLocaleDateString()}</p>
-          )}
-        </div>
-      </div>
-      <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-        {ev.assetId && <span>Asset: {ev.assetId}</span>}
-        {ev.technicianId && <span>Tech: {ev.technicianId}</span>}
-        <span className="capitalize">{ev.eventType}</span>
-        <span className={`ml-auto font-medium ${
-          ev.priority === "EMERGENCY" ? "text-red-400" :
-          ev.priority === "CRITICAL"  ? "text-red-400" :
-          ev.priority === "HIGH"      ? "text-orange-400" : "text-muted-foreground"
-        }`}>{ev.priority}</span>
-      </div>
+      )}
     </div>
   );
 }
