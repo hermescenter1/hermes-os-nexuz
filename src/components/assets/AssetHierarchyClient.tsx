@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { IndustrialAsset } from "@/lib/assets/types";
+import type { RegistryAssetRecord } from "@/lib/assets/types";
 
 function healthColor(s: number) {
   if (s >= 85) return "text-signal";
@@ -19,7 +19,7 @@ function riskBadge(r: string) {
   return "bg-surface2 text-faint";
 }
 
-function AssetNode({ asset, locale, depth = 0 }: { asset: IndustrialAsset; locale: string; depth?: number }) {
+function AssetNode({ asset, locale, depth = 0 }: { asset: RegistryAssetRecord; locale: string; depth?: number }) {
   const [expanded, setExpanded] = useState(depth < 1);
   const hasChildren = (asset.children?.length ?? 0) > 0;
 
@@ -72,7 +72,7 @@ function AssetNode({ asset, locale, depth = 0 }: { asset: IndustrialAsset; local
   );
 }
 
-interface Props { assets: IndustrialAsset[] }
+interface Props { assets: RegistryAssetRecord[] }
 
 export function AssetHierarchyClient({ assets }: Props) {
   const pathname = usePathname();

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { IndustrialAsset } from "@/lib/assets/types";
+import type { RegistryAssetRecord } from "@/lib/assets/types";
 
 const TYPE_OPTS = ["ALL","PRODUCTION_LINE","MACHINE","PLC","HMI","SCADA_NODE","ELECTRICAL_PANEL","MCC_PANEL","VFD","MOTOR","PUMP","VALVE","SENSOR","INSTRUMENT","ROBOT","CONVEYOR","COMPRESSOR","UTILITY_SYSTEM","SAFETY_SYSTEM","NETWORK_DEVICE","INDUSTRIAL_PC"];
 const STATUS_OPTS = ["ALL","IN_SERVICE","DEGRADED","UNDER_MAINTENANCE","STANDBY","PLANNED","COMMISSIONED","RETIRED","DECOMMISSIONED"];
@@ -45,7 +45,7 @@ function healthColor(n: number) {
   return "bg-danger";
 }
 
-interface Props { assets: IndustrialAsset[] }
+interface Props { assets: RegistryAssetRecord[] }
 
 export function AssetsRegistryClient({ assets }: Props) {
   const pathname = usePathname();

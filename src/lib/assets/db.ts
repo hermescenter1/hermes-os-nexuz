@@ -1,7 +1,7 @@
 // Phase 72 — Enterprise Asset Registry data access layer (Prisma + deterministic mock fallback)
 
 import type {
-  IndustrialAsset, AssetLocation, AssetCriticalityAssessment,
+  RegistryAssetRecord, AssetLocation, AssetCriticalityAssessment,
   AssetHealthSnapshot, AssetLifecycleEvent, AssetMaintenanceLink,
   AssetDocumentLink, AssetTelemetryLink, AssetTag, AssetDashboard,
 } from "./types";
@@ -45,7 +45,7 @@ export interface AssetFilters {
   search?:     string;
 }
 
-export async function getAssets(filters: AssetFilters = {}): Promise<IndustrialAsset[]> {
+export async function getAssets(filters: AssetFilters = {}): Promise<RegistryAssetRecord[]> {
   const db = await getDb();
   if (db) {
     try {
@@ -69,7 +69,7 @@ export async function getAssets(filters: AssetFilters = {}): Promise<IndustrialA
         },
         orderBy: [{ criticality: "desc" }, { name: "asc" }],
       });
-      return ts(rows) as IndustrialAsset[];
+      return ts(rows) as RegistryAssetRecord[];
     } catch { /* fall through */ }
   }
   // Mock fallback
@@ -92,7 +92,7 @@ export async function getAssets(filters: AssetFilters = {}): Promise<IndustrialA
   }));
 }
 
-export async function getAssetById(id: string): Promise<(IndustrialAsset & {
+export async function getAssetById(id: string): Promise<(RegistryAssetRecord & {
   criticalities:   AssetCriticalityAssessment[];
   healthSnapshots: AssetHealthSnapshot[];
   lifecycleEvents: AssetLifecycleEvent[];
@@ -150,7 +150,7 @@ export async function getAssetLocations(): Promise<AssetLocation[]> {
   return MOCK_LOCATIONS.filter(l => l.isActive);
 }
 
-export async function getAssetHierarchy(): Promise<IndustrialAsset[]> {
+export async function getAssetHierarchy(): Promise<RegistryAssetRecord[]> {
   const db = await getDb();
   if (db) {
     try {
@@ -168,11 +168,11 @@ export async function getAssetHierarchy(): Promise<IndustrialAsset[]> {
         },
         orderBy: [{ criticality: "desc" }, { name: "asc" }],
       });
-      return ts(topLevel) as IndustrialAsset[];
+      return ts(topLevel) as RegistryAssetRecord[];
     } catch { /* fall through */ }
   }
   // Build hierarchy from mock
-  function buildChildren(parentId: string): IndustrialAsset[] {
+  function buildChildren(parentId: string): RegistryAssetRecord[] {
     return MOCK_ASSETS
       .filter(a => a.parentAssetId === parentId)
       .map(a => ({
@@ -194,7 +194,7 @@ export async function getAssetDashboard(): Promise<AssetDashboard> {
   const db = await getDb();
   if (db) {
     try {
-      const [assets, recentEvents] = await Promise.all([
+      const [assets, recentEvents, maintenanceLinks] = await Promise.all([
         (db as never as { registryAsset: { findMany: (args: unknown) => Promise<unknown[]> } }).registryAsset.findMany({
           include: { _count: { select: { maintenanceLinks: true, documentLinks: true } } },
         }),
@@ -202,21 +202,25 @@ export async function getAssetDashboard(): Promise<AssetDashboard> {
           orderBy: { occurredAt: "desc" },
           take: 8,
         }),
+        (db as never as { assetMaintenanceLink: { findMany: (args: unknown) => Promise<unknown[]> } }).assetMaintenanceLink.findMany({
+          select: { assetId: true, linkType: true },
+        }),
       ]);
-      const tsAssets = ts(assets) as IndustrialAsset[];
+      const tsAssets = ts(assets) as RegistryAssetRecord[];
       const tsEvents = ts(recentEvents) as AssetLifecycleEvent[];
-      return buildDashboard(tsAssets, tsEvents);
+      const tsLinks  = ts(maintenanceLinks) as AssetMaintenanceLink[];
+      return buildDashboard(tsAssets, tsEvents, tsLinks);
     } catch { /* fall through */ }
   }
-  return buildDashboard(MOCK_ASSETS, MOCK_LIFECYCLE_EVENTS);
+  return buildDashboard(MOCK_ASSETS, MOCK_LIFECYCLE_EVENTS, MOCK_MAINTENANCE_LINKS);
 }
 
-function buildDashboard(assets: IndustrialAsset[], lifecycleEvents: AssetLifecycleEvent[]): AssetDashboard {
+function buildDashboard(assets: RegistryAssetRecord[], lifecycleEvents: AssetLifecycleEvent[], maintenanceLinks: AssetMaintenanceLink[]): AssetDashboard {
   const totalAssets = assets.length;
   const criticalAssets = assets.filter(a => a.criticality === "CRITICAL").length;
   const degradedAssets = assets.filter(a => a.status === "DEGRADED" || a.riskState === "AT_RISK" || a.riskState === "CRITICAL").length;
   const atRiskAssets = assets.filter(a => a.riskState === "AT_RISK" || a.riskState === "CRITICAL").length;
-  const assetsWithOpenWO = MOCK_MAINTENANCE_LINKS.filter(m => m.linkType === "CORRECTIVE_WORK_ORDER" || m.linkType === "WORK_ORDER").map(m => m.assetId);
+  const assetsWithOpenWO = maintenanceLinks.filter(m => m.linkType === "CORRECTIVE_WORK_ORDER" || m.linkType === "WORK_ORDER").map(m => m.assetId);
   const uniqueAssetsWithWO = new Set(assetsWithOpenWO).size;
   const assetsMissingDocs = assets.filter(a => (a._count?.documentLinks ?? 0) === 0).length;
 

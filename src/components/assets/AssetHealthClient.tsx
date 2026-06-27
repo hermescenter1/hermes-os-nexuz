@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { IndustrialAsset, AssetHealthSnapshot } from "@/lib/assets/types";
+import type { RegistryAssetRecord, AssetHealthSnapshot } from "@/lib/assets/types";
 
 function riskBadge(r: string) {
   if (r === "HEALTHY")  return "bg-signal/[0.08] text-signal";
@@ -24,7 +24,7 @@ function healthText(n: number) {
   return "text-danger";
 }
 
-interface AssetWithHealth extends IndustrialAsset {
+interface AssetWithHealth extends RegistryAssetRecord {
   healthSnapshots: AssetHealthSnapshot[];
 }
 

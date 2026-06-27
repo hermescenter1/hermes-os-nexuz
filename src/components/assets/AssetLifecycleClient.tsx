@@ -26,7 +26,6 @@ interface Props { events: AssetLifecycleEvent[] }
 export function AssetLifecycleClient({ events }: Props) {
   const pathname = usePathname();
   const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
   const sorted = [...events].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 
   const stateDistribution: Record<string, number> = {};

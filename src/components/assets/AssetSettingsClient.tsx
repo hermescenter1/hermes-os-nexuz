@@ -8,7 +8,6 @@ interface Props { locations: AssetLocation[] }
 export function AssetSettingsClient({ locations }: Props) {
   const pathname = usePathname();
   const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
 
   const byType: Record<string, number> = {};
   for (const l of locations) {

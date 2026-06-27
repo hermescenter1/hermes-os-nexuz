@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type {
-  IndustrialAsset, AssetCriticalityAssessment, AssetHealthSnapshot,
+  RegistryAssetRecord, AssetCriticalityAssessment, AssetHealthSnapshot,
   AssetLifecycleEvent, AssetMaintenanceLink, AssetDocumentLink,
   AssetTelemetryLink, AssetTag,
 } from "@/lib/assets/types";
 
-type FullAsset = IndustrialAsset & {
+type FullAsset = RegistryAssetRecord & {
   criticalities:   AssetCriticalityAssessment[];
   healthSnapshots: AssetHealthSnapshot[];
   lifecycleEvents: AssetLifecycleEvent[];

@@ -6,7 +6,7 @@ export type AssetRiskState      = "HEALTHY"|"MONITOR"|"AT_RISK"|"CRITICAL"|"UNKN
 export type AssetLifecycleState = "DESIGN"|"PROCUREMENT"|"INSTALLATION"|"COMMISSIONING"|"IN_SERVICE"|"DEGRADED"|"DECOMMISSIONING"|"RETIRED";
 export type IndustrialAssetType = "PRODUCTION_LINE"|"MACHINE"|"PLC"|"HMI"|"SCADA_NODE"|"ELECTRICAL_PANEL"|"MCC_PANEL"|"VFD"|"MOTOR"|"PUMP"|"VALVE"|"SENSOR"|"INSTRUMENT"|"ROBOT"|"CONVEYOR"|"COMPRESSOR"|"UTILITY_SYSTEM"|"SAFETY_SYSTEM"|"NETWORK_DEVICE"|"INDUSTRIAL_PC";
 
-export interface IndustrialAsset {
+export interface RegistryAssetRecord {
   id:               string;
   organizationId:   string | null;
   siteId:           string | null;
@@ -41,7 +41,7 @@ export interface IndustrialAsset {
   createdAt:        string;
   updatedAt:        string;
   location?:        AssetLocation | null;
-  children?:        IndustrialAsset[];
+  children?:        RegistryAssetRecord[];
   _count?: {
     children:        number;
     maintenanceLinks:number;
@@ -173,6 +173,6 @@ export interface AssetDashboard {
   assetsByCriticality:   Record<string, number>;
   lifecycleDistribution: Record<string, number>;
   recentLifecycleEvents: AssetLifecycleEvent[];
-  topCriticalAssets:     IndustrialAsset[];
+  topCriticalAssets:     RegistryAssetRecord[];
   healthDistribution:    { healthy: number; monitor: number; atRisk: number; critical: number; unknown: number };
 }

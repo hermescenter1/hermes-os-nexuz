@@ -1,7 +1,7 @@
 // Phase 72 — Enterprise Asset Registry — Deterministic Mock Data
 
 import type {
-  IndustrialAsset, AssetLocation, AssetCriticalityAssessment,
+  RegistryAssetRecord, AssetLocation, AssetCriticalityAssessment,
   AssetHealthSnapshot, AssetLifecycleEvent, AssetMaintenanceLink,
   AssetDocumentLink, AssetTelemetryLink, AssetTag,
 } from "./types";
@@ -55,7 +55,7 @@ export const MOCK_LOCATIONS: AssetLocation[] = [
 
 // ── Assets ────────────────────────────────────────────────────────────────────
 
-export const MOCK_ASSETS: IndustrialAsset[] = [
+export const MOCK_ASSETS: RegistryAssetRecord[] = [
   // ── Production Lines ──
   {
     id: "ast-001", organizationId: null, siteId: "site-main",

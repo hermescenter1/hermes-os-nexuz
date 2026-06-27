@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { IndustrialAsset, AssetDocumentLink } from "@/lib/assets/types";
+import type { RegistryAssetRecord, AssetDocumentLink } from "@/lib/assets/types";
 
 function docTypeBadge(t: string) {
   if (t === "MANUAL")      return "bg-ice/[0.08] text-ice";
@@ -12,7 +12,7 @@ function docTypeBadge(t: string) {
   return "bg-surface2 text-faint";
 }
 
-interface AssetWithDocs extends IndustrialAsset {
+interface AssetWithDocs extends RegistryAssetRecord {
   documentLinks: AssetDocumentLink[];
 }
 

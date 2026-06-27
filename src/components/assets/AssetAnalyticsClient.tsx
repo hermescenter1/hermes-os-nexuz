@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import type { IndustrialAsset } from "@/lib/assets/types";
+import type { RegistryAssetRecord } from "@/lib/assets/types";
 
 const TYPE_LABELS: Record<string, string> = {
   PRODUCTION_LINE:"Production Line",MACHINE:"Machine",PLC:"PLC",HMI:"HMI",SCADA_NODE:"SCADA Node",
@@ -11,12 +11,11 @@ const TYPE_LABELS: Record<string, string> = {
   NETWORK_DEVICE:"Network",INDUSTRIAL_PC:"IPC",
 };
 
-interface Props { assets: IndustrialAsset[] }
+interface Props { assets: RegistryAssetRecord[] }
 
 export function AssetAnalyticsClient({ assets }: Props) {
   const pathname = usePathname();
   const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
 
   // Type distribution
   const byType: Record<string, number> = {};

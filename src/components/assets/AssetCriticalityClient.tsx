@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { IndustrialAsset, AssetCriticalityAssessment } from "@/lib/assets/types";
+import type { RegistryAssetRecord, AssetCriticalityAssessment } from "@/lib/assets/types";
 
 function critBadge(c: string) {
   if (c === "CRITICAL") return "bg-danger/[0.10] text-danger";
@@ -36,7 +36,7 @@ function DimensionBar({ label, value }: { label: string; value: number }) {
   );
 }
 
-interface AssetWithCriticality extends IndustrialAsset {
+interface AssetWithCriticality extends RegistryAssetRecord {
   criticalities: AssetCriticalityAssessment[];
 }
 

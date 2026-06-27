@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { IndustrialAsset, AssetMaintenanceLink } from "@/lib/assets/types";
+import type { RegistryAssetRecord, AssetMaintenanceLink } from "@/lib/assets/types";
 
 function linkTypeBadge(t: string) {
   if (t === "CORRECTIVE_WORK_ORDER") return "bg-danger/[0.10] text-danger";
@@ -11,7 +11,7 @@ function linkTypeBadge(t: string) {
   return "bg-surface2 text-faint";
 }
 
-interface AssetWithLinks extends IndustrialAsset {
+interface AssetWithLinks extends RegistryAssetRecord {
   maintenanceLinks: AssetMaintenanceLink[];
 }
 
