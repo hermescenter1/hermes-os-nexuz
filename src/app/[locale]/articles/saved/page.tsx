@@ -9,9 +9,12 @@ export const dynamic  = "force-dynamic";
 function SavedContent({ isFa, locale }: { isFa: boolean; locale: string }) {
   return (
     <div className="min-h-screen">
-      <div className="border-b border-line/50 bg-surface/60 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <p className="eyebrow-mono text-signal text-[10px] mb-2">
+      <div className="relative border-b border-line/30 overflow-hidden"
+        style={{ background: "linear-gradient(180deg, rgba(30,200,164,0.05) 0%, rgba(6,8,13,0.98) 100%)" }}>
+        <div className="absolute inset-0 pointer-events-none opacity-25"
+          style={{ backgroundImage: "radial-gradient(rgba(30,200,164,0.14) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+        <div className="relative max-w-4xl mx-auto px-6 py-10">
+          <p className="eyebrow-mono text-signal text-[9px] mb-2 tracking-[0.2em]">
             {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
           </p>
           <h1 className="text-2xl font-bold text-ink">
@@ -19,23 +22,28 @@ function SavedContent({ isFa, locale }: { isFa: boolean; locale: string }) {
           </h1>
         </div>
       </div>
-      <div className="max-w-4xl mx-auto px-6 py-12 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface2 border border-line/60 mb-5">
-          <svg viewBox="0 0 20 20" fill="currentColor" className="w-7 h-7 text-faint">
-            <path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-2.5L5 18V4Z"/>
-          </svg>
+
+      <div className="max-w-4xl mx-auto px-6 py-16 flex flex-col items-center text-center">
+        <div className="relative mb-8">
+          <div className="w-20 h-20 rounded-2xl bg-surface/80 border border-signal/20 flex items-center justify-center shadow-[0_0_30px_rgba(30,200,164,0.06)]">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-8 h-8 text-signal/50">
+              <path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-2.5L5 18V4Z"/>
+            </svg>
+          </div>
+          <div className="absolute -inset-2 rounded-2xl"
+            style={{ background: "radial-gradient(circle, rgba(30,200,164,0.06) 0%, transparent 70%)" }} />
         </div>
-        <h2 className="text-lg font-semibold text-ink mb-2">
+        <h2 className="text-lg font-bold text-ink mb-2">
           {isFa ? "مقاله‌ای ذخیره نشده" : "No saved articles"}
         </h2>
-        <p className="text-muted text-sm mb-6">
+        <p className="text-muted text-sm mb-8 max-w-sm leading-relaxed">
           {isFa
-            ? "مقالاتی که ذخیره می‌کنید اینجا نمایش داده می‌شوند."
-            : "Articles you save will appear here for later reading."}
+            ? "مقالاتی که برای مطالعه بعدی ذخیره می‌کنید اینجا نمایش داده می‌شوند."
+            : "Articles you bookmark will appear here for later reading. Explore the journal to find valuable content."}
         </p>
         <Link href={`/${locale}/articles`}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-signal text-signal text-sm font-medium hover:bg-signal/10 transition-colors">
-          {isFa ? "مرور مقالات" : "Browse Articles"}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-signal text-signal text-sm font-bold hover:bg-signal/8 transition-all">
+          {isFa ? "مرور ژورنال" : "Browse Journal"}
         </Link>
       </div>
     </div>

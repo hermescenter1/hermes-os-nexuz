@@ -26,7 +26,7 @@ export default async function AuthorsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isFa   = locale === "fa";
+  const isFa    = locale === "fa";
   const authors = await getAllAuthors();
 
   function fmtNum(n: number) {
@@ -37,19 +37,24 @@ export default async function AuthorsPage({
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="border-b border-line/50 bg-surface/60 backdrop-blur-sm"
-        style={{ background: "linear-gradient(180deg, rgba(30,200,164,0.05) 0%, rgba(6,8,13,0.98) 100%)" }}>
-        <div className="max-w-5xl mx-auto px-6 py-8">
-          <p className="eyebrow-mono text-signal text-[10px] mb-2">
+      <div className="relative border-b border-line/30 overflow-hidden"
+        style={{ background: "linear-gradient(180deg, rgba(30,200,164,0.06) 0%, rgba(6,8,13,0.98) 100%)" }}>
+        <div className="absolute inset-0 pointer-events-none opacity-40"
+          style={{ backgroundImage: "radial-gradient(rgba(30,200,164,0.14) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+        <div className="absolute -top-12 start-0 w-64 h-64 rounded-full blur-[80px] pointer-events-none"
+          style={{ background: "rgba(30,200,164,0.07)" }} />
+
+        <div className="relative max-w-5xl mx-auto px-6 py-12">
+          <p className="eyebrow-mono text-signal text-[9px] mb-3 tracking-[0.2em]">
             {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
           </p>
-          <h1 className="text-3xl font-bold text-ink mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-ink mb-3">
             {isFa ? "شبکه متخصصان صنعتی" : "Industrial Expert Network"}
           </h1>
-          <p className="text-muted text-sm">
+          <p className="text-muted text-sm max-w-xl leading-relaxed">
             {isFa
-              ? `${authors.length} متخصص تأییدشده در پلتفرم هرمس`
-              : `${authors.length} verified industrial experts on the Hermes platform`}
+              ? `${authors.length} متخصص تأییدشده از حوزه‌های اتوماسیون، نگهداشت، PLC، SCADA، و هوش مصنوعی صنعتی`
+              : `${authors.length} verified experts across automation, maintenance, PLC/SCADA, and industrial AI`}
           </p>
         </div>
       </div>
@@ -58,24 +63,30 @@ export default async function AuthorsPage({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {authors.map(author => (
             <Link key={author.id} href={`/${locale}/articles/author/${author.handle}`}
-              className="group flex flex-col gap-4 p-5 rounded-xl border border-line/60 hover:border-signal/30 bg-surface hover:bg-surface2/40 transition-all duration-200">
+              className="group flex flex-col gap-4 p-5 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/60 hover:bg-surface2/40 hover:shadow-[0_0_24px_rgba(30,200,164,0.05)] transition-all duration-200 overflow-hidden">
+
+              {/* Colored top bar */}
+              <div className="h-0.5 -mx-5 -mt-5 bg-gradient-to-r from-signal/40 to-transparent" />
+
               {/* Avatar + Name */}
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-signal/30 to-ice/20 border border-signal/30 flex items-center justify-center text-lg font-bold text-signal shrink-0">
-                  {author.displayName.charAt(0)}
+              <div className="flex items-start gap-3 pt-1">
+                <div className="relative shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-signal/30 to-ice/20 border border-signal/25 flex items-center justify-center text-lg font-bold text-signal">
+                    {author.displayName.charAt(0)}
+                  </div>
+                  {author.verifiedExpert && (
+                    <div className="absolute -bottom-1 -end-1 w-5 h-5 rounded-full bg-signal flex items-center justify-center border border-bg">
+                      <svg viewBox="0 0 20 20" fill="white" className="w-3 h-3">
+                        <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <p className="text-sm font-semibold text-ink group-hover:text-signal transition-colors truncate">
-                      {author.displayName}
-                    </p>
-                    {author.verifiedExpert && (
-                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-signal shrink-0">
-                        <path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd"/>
-                      </svg>
-                    )}
-                  </div>
-                  <p className="text-xs text-faint truncate">{author.roleTitle ?? author.company}</p>
+                  <p className="text-sm font-bold text-ink group-hover:text-signal transition-colors truncate mb-0.5">
+                    {author.displayName}
+                  </p>
+                  <p className="text-[10px] text-faint truncate font-mono">{author.roleTitle ?? author.company}</p>
                 </div>
               </div>
 
@@ -84,35 +95,42 @@ export default async function AuthorsPage({
                 <p className="text-xs text-muted leading-relaxed line-clamp-2">{author.headline}</p>
               )}
 
-              {/* Stats */}
-              <div className="flex items-center gap-4 text-xs text-faint">
-                <span>{fmtNum(author.followerCount)} {isFa ? "دنبال‌کننده" : "followers"}</span>
-                <span>·</span>
-                <span>{author.articleCount} {isFa ? "مقاله" : "articles"}</span>
-                <span>·</span>
-                <span>{fmtNum(author.totalViews)} {isFa ? "بازدید" : "views"}</span>
-              </div>
-
               {/* Credibility score */}
               {author.industrialCredibilityScore && (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1 rounded-full bg-surface3 overflow-hidden">
-                    <div className="h-full rounded-full bg-signal" style={{ width: `${(author.industrialCredibilityScore / 10) * 100}%` }} />
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] text-faint uppercase tracking-widest font-mono">
+                      {isFa ? "اعتبار صنعتی" : "Industrial Credibility"}
+                    </p>
+                    <p className="text-[10px] font-bold font-mono text-signal">{author.industrialCredibilityScore.toFixed(1)}</p>
                   </div>
-                  <span className="text-[10px] font-mono text-signal">{author.industrialCredibilityScore.toFixed(1)}</span>
+                  <div className="h-1 rounded-full bg-surface3 overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-signal to-ice"
+                      style={{ width: `${(author.industrialCredibilityScore / 10) * 100}%` }} />
+                  </div>
                 </div>
               )}
+
+              {/* Stats */}
+              <div className="flex items-center gap-4 text-[10px] text-faint font-mono">
+                <span>{author.articleCount} {isFa ? "مقاله" : "articles"}</span>
+                <span className="text-line">·</span>
+                <span>{fmtNum(author.followerCount)} {isFa ? "دنبال‌کننده" : "followers"}</span>
+                <span className="text-line">·</span>
+                <span>{fmtNum(author.totalViews)} {isFa ? "بازدید" : "views"}</span>
+              </div>
 
               {/* Expertise tags */}
               {author.expertiseAreas.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-auto">
                   {author.expertiseAreas.slice(0, 3).map(area => (
-                    <span key={area} className="text-[10px] px-1.5 py-0.5 rounded bg-surface3 text-muted font-mono border border-line/30">
+                    <span key={area}
+                      className="text-[9px] px-2 py-0.5 rounded-full border border-signal/15 text-signal/70 font-mono bg-signal/5">
                       {area}
                     </span>
                   ))}
                   {author.expertiseAreas.length > 3 && (
-                    <span className="text-[10px] text-faint">+{author.expertiseAreas.length - 3}</span>
+                    <span className="text-[9px] text-faint font-mono">+{author.expertiseAreas.length - 3}</span>
                   )}
                 </div>
               )}

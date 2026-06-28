@@ -36,10 +36,10 @@ const CONTENT_TYPE_LABELS: Record<string, { en: string; fa: string }> = {
 };
 
 function contentTypeBadgeColor(t: string) {
-  if (t === "FAILURE_ANALYSIS" || t === "SAFETY_COMPLIANCE_NOTE") return "bg-danger/[0.10] text-danger";
-  if (t === "TROUBLESHOOTING_REPORT") return "bg-warn/[0.10] text-warn";
-  if (t === "INDUSTRIAL_CASE_STUDY")  return "bg-hermes-gold/[0.12] text-hermes-gold";
-  return "bg-signal/[0.10] text-signal";
+  if (t === "FAILURE_ANALYSIS" || t === "SAFETY_COMPLIANCE_NOTE") return "bg-danger/[0.10] text-danger border-danger/20";
+  if (t === "TROUBLESHOOTING_REPORT") return "bg-warn/[0.10] text-warn border-warn/20";
+  if (t === "INDUSTRIAL_CASE_STUDY")  return "bg-hermes-gold/[0.12] text-hermes-gold border-hermes-gold/20";
+  return "bg-signal/[0.08] text-signal border-signal/20";
 }
 
 interface Props {
@@ -66,52 +66,84 @@ export function AuthorProfileClient({ author, articles }: Props) {
   }
 
   const contentTypes = ["ALL", ...Array.from(new Set(articles.map(a => a.contentType)))];
-  const filtered = filter === "ALL" ? articles : articles.filter(a => a.contentType === filter);
-
-  const score = author.industrialCredibilityScore;
+  const filtered     = filter === "ALL" ? articles : articles.filter(a => a.contentType === filter);
+  const score        = author.industrialCredibilityScore;
 
   return (
     <div className="min-h-screen">
       {/* Profile hero */}
-      <div className="relative border-b border-line/50 overflow-hidden"
+      <div className="relative border-b border-line/30 overflow-hidden"
         style={{ background: "linear-gradient(180deg, rgba(30,200,164,0.07) 0%, rgba(6,8,13,0.98) 100%)" }}>
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse at 30% 0%, rgba(30,200,164,0.12) 0%, transparent 60%)" }} />
 
-        <div className="relative max-w-4xl mx-auto px-6 py-12">
-          <div className="flex flex-col sm:flex-row gap-6 items-start">
+        {/* Grid texture */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(rgba(30,200,164,0.12) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+            opacity: 0.5,
+          }} />
+        {/* Glows */}
+        <div className="absolute -top-20 start-0 w-80 h-80 rounded-full blur-[90px] pointer-events-none"
+          style={{ background: "rgba(30,200,164,0.09)" }} />
+        <div className="absolute top-0 end-0 w-48 h-48 rounded-full blur-[60px] pointer-events-none"
+          style={{ background: "rgba(30,200,164,0.04)" }} />
+
+        <div className="relative max-w-4xl mx-auto px-6 py-14">
+          {/* Top eyebrow */}
+          <div className="mb-8">
+            <Link href={`/${locale}/articles/authors`}
+              className="inline-flex items-center gap-1.5 text-[10px] text-faint hover:text-signal font-mono uppercase tracking-wider transition-colors">
+              <svg viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 ${isFa ? "" : "rotate-180"}`}>
+                <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
+              </svg>
+              {isFa ? "شبکه متخصصان" : "Expert Network"}
+            </Link>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-7 items-start">
             {/* Avatar */}
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-signal/40 to-ice/30 border-2 border-signal/40 flex items-center justify-center text-3xl font-bold text-signal shrink-0">
-              {author.displayName.charAt(0)}
+            <div className="relative shrink-0">
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-signal/35 to-ice/25 border-2 border-signal/30 flex items-center justify-center text-4xl font-bold text-signal shadow-[0_0_30px_rgba(30,200,164,0.12)]">
+                {author.displayName.charAt(0)}
+              </div>
+              {author.verifiedExpert && (
+                <div className="absolute -bottom-1 -end-1 w-7 h-7 rounded-full bg-signal flex items-center justify-center border-2"
+                  style={{ borderColor: "var(--bg)" }}>
+                  <svg viewBox="0 0 20 20" fill="white" className="w-3.5 h-3.5">
+                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd"/>
+                  </svg>
+                </div>
+              )}
             </div>
 
-            {/* Info */}
+            {/* Identity */}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-3 mb-1">
-                    <h1 className="text-2xl font-bold text-ink">{author.displayName}</h1>
+                    <h1 className="text-3xl font-bold text-ink">{author.displayName}</h1>
                     {author.verifiedExpert && (
                       <span className="hs-badge hs--knowledge">{isFa ? "متخصص تأییدشده" : "VERIFIED EXPERT"}</span>
                     )}
                   </div>
-                  <p className="text-muted text-sm">@{author.handle}</p>
+                  <p className="text-muted text-sm font-mono">@{author.handle}</p>
                 </div>
+
                 <button onClick={handleFollow}
-                  className={`shrink-0 text-sm px-5 py-2 rounded-xl border-2 transition-all font-semibold ${
+                  className={`shrink-0 text-sm px-6 py-2.5 rounded-xl border-2 transition-all font-bold ${
                     following
-                      ? "border-signal bg-signal/15 text-signal"
-                      : "border-signal text-signal hover:bg-signal/10"
+                      ? "border-signal bg-signal/12 text-signal"
+                      : "border-signal text-signal hover:bg-signal/8"
                   }`}>
-                  {following ? (isFa ? "دنبال‌شده" : "Following") : (isFa ? "دنبال کردن" : "Follow")}
+                  {following ? (isFa ? "✓ دنبال‌شده" : "✓ Following") : (isFa ? "دنبال کردن" : "Follow")}
                 </button>
               </div>
 
-              {author.roleTitle && <p className="text-base text-ink font-medium mb-0.5">{author.roleTitle}</p>}
-              {author.company    && <p className="text-sm text-muted mb-0.5">{author.company}</p>}
+              {author.roleTitle && <p className="text-base text-ink font-semibold mb-0.5">{author.roleTitle}</p>}
+              {author.company    && <p className="text-sm text-muted mb-1">{author.company}</p>}
               {author.location   && (
-                <p className="text-xs text-faint flex items-center gap-1">
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                <p className="text-xs text-faint flex items-center gap-1.5">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 opacity-60">
                     <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 0 0 .281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 1 0 3 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 0 0 2.273 1.765 11.842 11.842 0 0 0 .994.573l.018.008.006.003ZM10 11.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" clipRule="evenodd"/>
                   </svg>
                   {author.location}
@@ -120,59 +152,70 @@ export function AuthorProfileClient({ author, articles }: Props) {
             </div>
           </div>
 
-          {/* Stats row */}
-          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {/* Stats grid */}
+          <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: isFa ? "مقالات" : "Articles",   value: author.articleCount },
-              { label: isFa ? "دنبال‌کننده" : "Followers", value: author.followerCount },
-              { label: isFa ? "بازدید کل" : "Total Views", value: author.totalViews },
-              { label: isFa ? "ذخیره‌شده" : "Total Saves", value: author.totalSaves },
+              { label: isFa ? "مقالات" : "Articles",          value: author.articleCount,   main: true  },
+              { label: isFa ? "دنبال‌کننده" : "Followers",     value: author.followerCount,  main: false },
+              { label: isFa ? "بازدید کل" : "Total Views",     value: author.totalViews,     main: false },
+              { label: isFa ? "ذخیره‌شده" : "Total Saves",     value: author.totalSaves,     main: false },
             ].map(s => (
-              <div key={s.label} className="bg-surface/60 rounded-xl p-4 border border-line/40 text-center">
-                <p className="text-xl font-bold text-signal font-mono">{fmtNum(s.value)}</p>
-                <p className="text-xs text-faint mt-0.5">{s.label}</p>
+              <div key={s.label}
+                className={`rounded-xl p-4 border text-center transition-all ${
+                  s.main
+                    ? "border-signal/20 bg-signal/5"
+                    : "border-line/40 bg-surface/50"
+                }`}>
+                <p className={`text-2xl font-bold font-mono ${s.main ? "text-signal" : "text-ink"}`}>
+                  {fmtNum(s.value)}
+                </p>
+                <p className="text-[10px] text-faint mt-0.5 uppercase tracking-wider font-mono">{s.label}</p>
               </div>
             ))}
           </div>
 
           {/* Credibility score */}
           {score && (
-            <div className="mt-5 flex items-center gap-3">
-              <p className="text-xs text-faint">{isFa ? "امتیاز اعتبار صنعتی:" : "Industrial Credibility:"}</p>
+            <div className="mt-6 flex items-center gap-3">
+              <p className="text-xs text-faint font-mono uppercase tracking-wider shrink-0">
+                {isFa ? "اعتبار صنعتی" : "Industrial Credibility"}
+              </p>
               <div className="flex-1 h-1.5 rounded-full bg-surface2 overflow-hidden max-w-xs">
-                <div className="h-full rounded-full bg-gradient-to-r from-signal to-ice" style={{ width: `${(score / 10) * 100}%` }} />
+                <div className="h-full rounded-full bg-gradient-to-r from-signal to-ice"
+                  style={{ width: `${(score / 10) * 100}%` }} />
               </div>
-              <p className="text-xs font-mono text-signal">{score.toFixed(1)}/10</p>
+              <p className="text-sm font-bold font-mono text-signal shrink-0">{score.toFixed(1)}<span className="text-faint font-normal text-xs">/10</span></p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-        {/* Bio */}
-        {author.bio && (
-          <section>
-            <p className="text-muted leading-relaxed">{author.bio}</p>
+      <div className="max-w-4xl mx-auto px-6 py-10 space-y-10">
+        {/* Bio + headline */}
+        {(author.bio ?? author.headline) && (
+          <section className="space-y-4">
+            {author.headline && (
+              <div className="rounded-xl border border-signal/15 overflow-hidden">
+                <div className="h-0.5 bg-gradient-to-r from-signal/50 to-transparent" />
+                <p className="p-5 text-base text-muted leading-[1.8] italic">{author.headline}</p>
+              </div>
+            )}
+            {author.bio && (
+              <p className="text-muted leading-[1.8] text-sm">{author.bio}</p>
+            )}
           </section>
         )}
 
-        {/* Headline */}
-        {author.headline && (
-          <div className="p-4 rounded-xl border border-line/40 bg-surface2/40"
-            style={{ borderInlineStart: "3px solid var(--signal)" }}>
-            <p className="text-sm text-muted leading-relaxed italic">{author.headline}</p>
-          </div>
-        )}
-
-        {/* Expertise */}
+        {/* Expertise areas */}
         {author.expertiseAreas.length > 0 && (
           <section>
-            <p className="text-xs font-semibold text-faint uppercase tracking-widest mb-3">
-              {isFa ? "حوزه‌های تخصص" : "Areas of Expertise"}
+            <p className="eyebrow-mono text-signal text-[9px] mb-3 tracking-[0.2em]">
+              {isFa ? "حوزه‌های تخصص" : "AREAS OF EXPERTISE"}
             </p>
             <div className="flex flex-wrap gap-2">
               {author.expertiseAreas.map(area => (
-                <span key={area} className="text-xs px-3 py-1 rounded-full border border-signal/30 text-signal/90 font-mono bg-signal/5">
+                <span key={area}
+                  className="text-xs px-3 py-1.5 rounded-full border border-signal/20 text-signal/80 font-mono bg-signal/5 hover:border-signal/40 hover:text-signal transition-colors">
                   {area}
                 </span>
               ))}
@@ -182,19 +225,24 @@ export function AuthorProfileClient({ author, articles }: Props) {
 
         {/* Articles section */}
         <section>
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <span className="w-1 h-5 rounded-full bg-signal inline-block" />
-              <h2 className="text-sm font-semibold text-ink uppercase tracking-wider">
-                {isFa ? "مقالات نویسنده" : "Articles"}
-              </h2>
-              <span className="text-xs text-faint">({articles.length})</span>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="eyebrow-mono text-signal text-[9px] mb-1 tracking-[0.2em]">
+                {isFa ? "محتوای منتشرشده" : "PUBLISHED CONTENT"}
+              </p>
+              <div className="flex items-center gap-2.5">
+                <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
+                <h2 className="text-sm font-bold text-ink uppercase tracking-wider">
+                  {isFa ? "مقالات نویسنده" : "Articles"}
+                  <span className="ms-2 text-xs text-faint font-normal font-mono">({articles.length})</span>
+                </h2>
+              </div>
             </div>
           </div>
 
           {/* Content type filter */}
           {contentTypes.length > 2 && (
-            <div className="flex flex-wrap gap-2 mb-5">
+            <div className="flex flex-wrap gap-2 mb-6">
               {contentTypes.map(ct => {
                 const lab = ct === "ALL"
                   ? (isFa ? "همه" : "All")
@@ -203,10 +251,10 @@ export function AuthorProfileClient({ author, articles }: Props) {
                     : (CONTENT_TYPE_LABELS[ct]?.en ?? ct));
                 return (
                   <button key={ct} onClick={() => setFilter(ct)}
-                    className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                    className={`text-xs px-3.5 py-1.5 rounded-full border transition-all font-mono ${
                       filter === ct
-                        ? "border-signal text-signal bg-signal/10 font-medium"
-                        : "border-line text-muted hover:border-signal/40 hover:text-ink"
+                        ? "border-signal text-signal bg-signal/8 font-semibold"
+                        : "border-line/60 text-muted hover:border-signal/30 hover:text-ink"
                     }`}>
                     {lab}
                   </button>
@@ -216,36 +264,47 @@ export function AuthorProfileClient({ author, articles }: Props) {
           )}
 
           {filtered.length === 0 ? (
-            <div className="text-center py-16 border border-line/40 rounded-xl">
+            <div className="flex flex-col items-center py-16 border border-line/30 rounded-2xl bg-surface/30">
               <p className="text-muted text-sm">{isFa ? "مقاله‌ای یافت نشد" : "No articles found"}</p>
             </div>
           ) : (
             <div className="space-y-3">
               {filtered.map(a => (
                 <Link key={a.id} href={`/${locale}/articles/${a.slug}`}
-                  className="group flex gap-4 p-4 rounded-xl border border-line/60 hover:border-signal/30 bg-surface hover:bg-surface2/40 transition-all">
+                  className="group flex gap-4 p-4 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/60 hover:bg-surface2/40 hover:shadow-[0_0_16px_rgba(30,200,164,0.04)] transition-all overflow-hidden">
+                  {/* Type indicator */}
+                  <div className="w-0.5 rounded-full shrink-0 self-stretch"
+                    style={{ background: `linear-gradient(to bottom, rgba(30,200,164,0.6), rgba(30,200,164,0.1))` }} />
+
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider ${contentTypeBadgeColor(a.contentType)}`}>
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase tracking-wider ${contentTypeBadgeColor(a.contentType)}`}>
                         {isFa ? (CONTENT_TYPE_LABELS[a.contentType]?.fa ?? a.contentType) : (CONTENT_TYPE_LABELS[a.contentType]?.en ?? a.contentType)}
                       </span>
                       {a.knowledgeMetadata?.humanReviewed && (
                         <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "بررسی شده" : "REVIEWED"}</span>
                       )}
                     </div>
-                    <h3 className="text-sm font-semibold text-ink group-hover:text-signal transition-colors line-clamp-2 leading-snug mb-1">
+                    <h3 className="text-sm font-bold text-ink group-hover:text-signal transition-colors line-clamp-2 leading-snug mb-1.5">
                       {a.title}
                     </h3>
                     {a.excerpt && (
-                      <p className="text-xs text-muted line-clamp-1">{a.excerpt}</p>
+                      <p className="text-xs text-muted line-clamp-1 mb-2">{a.excerpt}</p>
                     )}
-                    <div className="flex items-center gap-3 mt-2 text-xs text-faint">
+                    <div className="flex items-center gap-3 text-[10px] text-faint font-mono">
                       <span>{fmtDate(a.publishedAt ?? a.createdAt, isFa)}</span>
-                      <span>·</span>
+                      <span className="text-line">·</span>
                       <span>{a.readingTimeMinutes} {isFa ? "دقیقه" : "min"}</span>
-                      <span>·</span>
+                      <span className="text-line">·</span>
                       <span>{fmtNum(a.viewCount)} {isFa ? "بازدید" : "views"}</span>
                     </div>
+                  </div>
+
+                  {/* Arrow */}
+                  <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg viewBox="0 0 20 20" fill="currentColor" className={`w-4 h-4 text-signal ${isFa ? "rotate-180" : ""}`}>
+                      <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
+                    </svg>
                   </div>
                 </Link>
               ))}
