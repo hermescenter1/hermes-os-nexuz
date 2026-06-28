@@ -265,6 +265,23 @@ export async function getAuthorArticles(handle: string): Promise<ArticleListItem
   return getArticlesByAuthor(handle);
 }
 
+// ── User article history ──────────────────────────────────────────────────────
+
+export async function getUserArticles(userId: string): Promise<ArticleListItem[]> {
+  const db = await getDb();
+  if (db) {
+    try {
+      const rows = await (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article.findMany({
+        where: { author: { userId } },
+        include: { author: true, category: true, tags: { include: { tag: true } } },
+        orderBy: { updatedAt: "desc" },
+      });
+      return rows.map(r => ts(r as object)) as ArticleListItem[];
+    } catch { /* fall through */ }
+  }
+  return [];
+}
+
 // ── Moderation helpers ────────────────────────────────────────────────────────
 
 export async function getSubmissionQueue(): Promise<ArticleListItem[]> {

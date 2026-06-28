@@ -64,8 +64,8 @@ export function SiteFooter() {
             </p>
             <FooterLangSwitch />
 
-            {/* Social icons */}
-            <div className="flex items-center gap-2 mt-1">
+            {/* Social icons — dir="ltr" keeps icon order consistent in RTL */}
+            <div className="flex items-center gap-2 mt-1" dir="ltr">
               {SOCIAL_LINKS.map((s) => (
                 <a
                   key={s.icon}

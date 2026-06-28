@@ -442,6 +442,7 @@ h6 { font-weight: 550; letter-spacing: 0; }
   background: rgba(255, 255, 255, 0.055);
   border-color: rgba(255, 255, 255, 0.10);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 8px 32px rgba(0,0,0,0.50);
+  transform: translateY(-2px);
 }
 .landing-glow-cyan  { box-shadow: 0 0 40px rgba(30,200,164,0.08),  0 8px 24px rgba(0,0,0,0.45); }
 .landing-neon       { border-color: rgba(30,200,164,0.20) !important; }
@@ -976,34 +977,40 @@ h6 { font-weight: 550; letter-spacing: 0; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PHASE 72.5E — PREMIUM DEPTH & 2029 CARD GLOW SYSTEM
+   PHASE 72.5F — PREMIUM DEPTH & 2029 CARD GLOW SYSTEM (Refined)
    Volumetric card depth with LED under-glow.
    Industrial premium. Not gaming UI. Not cheap neon.
-   Design: soft cyan/signal LED strip beneath floating card surface.
+   Design: soft cyan/signal LED bloom beneath a floating card surface.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Premium card depth base ────────────────────────────────────────────
-   Adds: lift on hover, deeper shadow, border highlight, LED glow
-   Safe with overflow:hidden — uses box-shadow for glow, not absolute el.
+   Lift on hover, deepened shadows, border signal highlight, LED bloom.
+   Box-shadow is NOT clipped by overflow:hidden — safe on all card types.
    ──────────────────────────────────────────────────────────────────────── */
 .hs-card-depth {
   position:   relative;
   transition:
-    transform      200ms var(--ease-expo),
-    border-color   200ms var(--ease-expo),
-    box-shadow     250ms var(--ease-expo);
+    transform      220ms var(--ease-expo),
+    border-color   220ms var(--ease-expo),
+    box-shadow     280ms var(--ease-expo);
 }
 .hs-card-depth:hover {
-  transform:    translateY(-3px);
-  border-color: rgba(var(--signal-rgb), 0.22) !important;
+  transform:    translateY(-4px);
+  border-color: rgba(var(--signal-rgb), 0.26) !important;
   box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.42),           /* deep cast shadow    */
-    0  4px 12px rgba(0, 0, 0, 0.24),            /* medium contact      */
-    inset 0 1px 0 rgba(255, 255, 255, 0.045),   /* glass top highlight */
-    0 22px 28px -10px rgba(var(--signal-rgb), 0.13); /* LED under-glow */
+    /* Ambient cast — card floating above page */
+    0 24px 64px rgba(0, 0, 0, 0.54),
+    /* Contact shadow — grounded base */
+    0  8px 20px rgba(0, 0, 0, 0.30),
+    /* Glass top highlight */
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    /* LED primary bloom — concentrated under card bottom */
+    0 28px 44px -6px rgba(var(--signal-rgb), 0.22),
+    /* LED ambient halo — wider, faint spread */
+    0 16px 60px -12px rgba(var(--signal-rgb), 0.12);
 }
 
-/* Bottom accent line that fades in on hover — works inside overflow:hidden */
+/* Bottom accent line — dual-tone ice/signal. Works inside overflow:hidden */
 .hs-card-depth::before {
   content:          "";
   position:         absolute;
@@ -1013,34 +1020,37 @@ h6 { font-weight: 550; letter-spacing: 0; }
   background:       linear-gradient(
     90deg,
     transparent 0%,
-    rgba(var(--signal-rgb), 0.45) 50%,
+    rgba(var(--ice-rgb),    0.28) 15%,
+    rgba(var(--signal-rgb), 0.65) 50%,
+    rgba(var(--ice-rgb),    0.28) 85%,
     transparent 100%
   );
   opacity:          0;
   pointer-events:   none;
   border-radius:    0 0 inherit inherit;
-  transition:       opacity 250ms var(--ease-expo);
+  transition:       opacity 280ms var(--ease-expo);
 }
 .hs-card-depth:hover::before { opacity: 1; }
 
 /* ── LED runner card modifier ────────────────────────────────────────────
-   Use on cards WITHOUT overflow:hidden for a sweeping LED bottom runner.
-   Adds an animated light sweep along the bottom edge on hover.
+   Use on cards WITHOUT overflow:hidden — animated sweep along bottom edge.
+   blur(0.5px) adds the soft bloom that makes the line feel illuminated.
    ──────────────────────────────────────────────────────────────────────── */
 .hs-led-card { overflow: visible !important; }
 
 .hs-led-card::after {
   content:        "";
   position:       absolute;
-  bottom:         -1px;
+  bottom:         -2px;
   inset-inline:   0;
   height:         2px;
   border-radius:  1px;
+  filter:         blur(0.5px);
   background:     linear-gradient(
     90deg,
     transparent   0%,
-    rgba(var(--signal-rgb), 0.70) 40%,
-    rgba(var(--ice-rgb),    0.50) 60%,
+    rgba(var(--signal-rgb), 0.80) 40%,
+    rgba(var(--ice-rgb),    0.60) 60%,
     transparent   100%
   );
   transform:       translateX(-110%);
@@ -1048,15 +1058,53 @@ h6 { font-weight: 550; letter-spacing: 0; }
   pointer-events:  none;
 }
 .hs-led-card:hover::after {
-  animation: hLedSweep 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: hLedSweep 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   opacity:   1;
 }
 
 @keyframes hLedSweep {
   0%   { transform: translateX(-110%); opacity: 0; }
-  12%  { opacity: 1; }
-  88%  { opacity: 1; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
   100% { transform: translateX(210%);  opacity: 0; }
+}
+
+/* ── Landing glass + LED: when used together, LED wins the box-shadow ───── */
+.landing-glass-hover.hs-card-depth:hover {
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.54),
+    0  8px 20px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 28px 44px -6px rgba(var(--signal-rgb), 0.22),
+    0 16px 60px -12px rgba(var(--signal-rgb), 0.12);
+}
+
+/* ── Writer form fields — dark glass inputs ──────────────────────────────
+   bg-surface/xx fails with hex CSS vars; use solid bg-surface instead.
+   Autofill override prevents browser white-flash.
+   ──────────────────────────────────────────────────────────────────────── */
+.hs-writer-field {
+  background:    var(--surface);
+  border:        1px solid rgba(var(--signal-rgb), 0);
+  color:         var(--ink);
+  caret-color:   var(--ink);
+  transition:    border-color 150ms var(--ease-expo), background 150ms var(--ease-expo);
+}
+.hs-writer-field::placeholder { color: var(--faint); }
+.hs-writer-field:focus {
+  outline:       none;
+  border-color:  rgba(var(--signal-rgb), 0.32);
+  background:    var(--surface-2);
+  box-shadow:    0 0 0 3px rgba(var(--signal-rgb), 0.08);
+}
+/* Chrome autofill — force dark surface */
+.hs-writer-field:-webkit-autofill,
+.hs-writer-field:-webkit-autofill:hover,
+.hs-writer-field:-webkit-autofill:focus {
+  -webkit-box-shadow:      0 0 0 1000px var(--surface) inset;
+  -webkit-text-fill-color: var(--ink);
+  caret-color:             var(--ink);
+  transition:              background-color 600000s 0s;
 }
 
 /* ── Reduced motion — disable all card motion, keep depth only ─────────── */

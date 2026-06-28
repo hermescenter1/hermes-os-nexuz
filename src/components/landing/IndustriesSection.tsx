@@ -113,7 +113,7 @@ export function IndustriesSection() {
             <motion.article
               key={key}
               variants={cardVariants}
-              className="group relative rounded-2xl p-7 transition-all duration-300 landing-glass landing-glass-hover overflow-hidden"
+              className="group relative rounded-2xl p-7 transition-all duration-300 landing-glass landing-glass-hover hs-card-depth overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ background: "radial-gradient(circle at top right, rgba(0,184,255,0.06) 0%, transparent 70%)" }} />

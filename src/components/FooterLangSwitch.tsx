@@ -16,34 +16,41 @@ export function FooterLangSwitch() {
   };
 
   return (
-    // dir="ltr" keeps flag-left-of-label order consistent on both LTR and RTL pages
+    /*
+     * dir="ltr" on the wrapper keeps the [fa | en] order consistent
+     * on both LTR (/en) and RTL (/fa) pages.
+     * Each button also carries dir="ltr" so that the flag + label
+     * pairing is always flag-first regardless of page direction.
+     */
     <div className="flex items-center gap-2.5" dir="ltr">
       <button
         type="button"
+        dir="ltr"
         onClick={() => switchTo("fa")}
         lang="fa"
         aria-label="Switch to Persian"
         aria-current={isFa ? "true" : undefined}
-        className={`flex items-center gap-1.5 font-body text-xs transition-colors ${
+        className={`inline-flex items-center gap-1.5 font-body text-xs transition-colors ${
           isFa ? "text-signal" : "text-muted/50 hover:text-muted"
         }`}
       >
         <IranFlag size={18} />
-        <span>فارسی</span>
+        <span dir="ltr">فارسی</span>
       </button>
       <span className="select-none text-muted/25" aria-hidden="true">|</span>
       <button
         type="button"
+        dir="ltr"
         onClick={() => switchTo("en")}
         lang="en"
         aria-label="Switch to English"
         aria-current={!isFa ? "true" : undefined}
-        className={`flex items-center gap-1.5 font-body text-xs transition-colors ${
+        className={`inline-flex items-center gap-1.5 font-body text-xs transition-colors ${
           !isFa ? "text-signal" : "text-muted/50 hover:text-muted"
         }`}
       >
         <UKFlag size={18} />
-        <span>English</span>
+        <span dir="ltr">English</span>
       </button>
     </div>
   );

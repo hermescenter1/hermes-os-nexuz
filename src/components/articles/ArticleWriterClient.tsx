@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter }   from "next/navigation";
 import { usePathname } from "next/navigation";
 
 const CONTENT_TYPES = [
@@ -34,31 +33,40 @@ const CATEGORIES_FA = [
   "انرژی و تأسیسات","عملیات کارخانه","امنیت سایبری صنعتی",
 ];
 
+/* Input/textarea/select base classes — uses .hs-writer-field from globals.css
+   to guarantee dark surface + visible ink text before/during/after focus. */
+const FIELD_CLS =
+  "hs-writer-field rounded-xl px-4 py-3 text-sm w-full resize-none border border-line/60";
+const SELECT_CLS =
+  "hs-writer-field rounded-xl px-3 py-2.5 text-sm w-full border border-line/60";
+
 interface FormData {
-  title:       string;
-  subtitle:    string;
-  excerpt:     string;
-  content:     string;
-  contentType: string;
-  language:    string;
-  category:    string;
-  tags:        string;
-  seoTitle:    string;
-  seoDesc:     string;
-  domain:      string;
-  assetType:   string;
-  technology:  string;
-  plcPlatform: string;
+  title:          string;
+  subtitle:       string;
+  excerpt:        string;
+  content:        string;
+  contentType:    string;
+  language:       string;
+  category:       string;
+  tags:           string;
+  seoTitle:       string;
+  seoDesc:        string;
+  domain:         string;
+  assetType:      string;
+  technology:     string;
+  plcPlatform:    string;
   safetyCritical: boolean;
+}
+
+interface SubmitResult {
+  articleId?: string;
+  articleSlug?: string;
+  articleStatus?: string;
 }
 
 export function ArticleWriterClient() {
   const pathname = usePathname();
   const isFa     = pathname.startsWith("/fa");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const locale   = isFa ? "fa" : "en";
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const router   = useRouter();
 
   const [form, setForm] = useState<FormData>({
     title: "", subtitle: "", excerpt: "", content: "",
@@ -69,20 +77,28 @@ export function ArticleWriterClient() {
   });
   const [tab, setTab]         = useState<"write" | "seo" | "meta">("write");
   const [saving, setSaving]   = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+    result?: SubmitResult;
+  } | null>(null);
 
   function update(f: keyof FormData, value: string | boolean) {
     setForm(prev => ({ ...prev, [f]: value }));
   }
 
-  function field(label: string, key: keyof FormData, opts?: { placeholder?: string; rows?: number; required?: boolean }) {
+  function field(
+    label: string,
+    key: keyof FormData,
+    opts?: { placeholder?: string; rows?: number; required?: boolean },
+  ) {
     const val  = form[key] as string;
     const rows = opts?.rows;
     const Tag  = rows ? "textarea" : "input";
     return (
       <div className="flex flex-col gap-1.5">
         <label className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
-          {label} {opts?.required && <span className="text-danger">*</span>}
+          {label}{opts?.required && <span className="text-danger ms-1">*</span>}
         </label>
         <Tag
           value={val}
@@ -90,26 +106,71 @@ export function ArticleWriterClient() {
           placeholder={opts?.placeholder}
           required={opts?.required}
           rows={rows}
-          className="bg-surface/80 border border-line/60 text-sm text-ink rounded-xl px-4 py-3 focus:outline-none focus:border-signal/40 focus:bg-surface resize-none transition-all placeholder:text-faint"
+          className={FIELD_CLS}
         />
       </div>
     );
   }
 
   async function handleSubmit(action: "draft" | "submit") {
-    if (!form.title.trim() || !form.content.trim()) {
-      setMessage({ type: "error", text: isFa ? "عنوان و محتوا الزامی هستند." : "Title and content are required." });
+    if (!form.title.trim()) {
+      setMessage({
+        type: "error",
+        text: isFa ? "عنوان مقاله الزامی است." : "Article title is required.",
+      });
       return;
     }
+    if (!form.content.trim()) {
+      setMessage({
+        type: "error",
+        text: isFa ? "محتوای مقاله الزامی است." : "Article content is required.",
+      });
+      return;
+    }
+
     setSaving(true);
     setMessage(null);
+
     try {
-      await new Promise(r => setTimeout(r, 600));
+      const res = await fetch("/api/articles/submit", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ ...form, action }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errMsg =
+          typeof data?.error === "string"
+            ? data.error
+            : isFa
+              ? "ارسال مقاله ناموفق بود. لطفاً دوباره تلاش کنید."
+              : "Article submission failed. Please try again.";
+        setMessage({ type: "error", text: errMsg });
+        return;
+      }
+
+      const successText =
+        action === "draft"
+          ? isFa ? "پیش‌نویس ذخیره شد." : "Draft saved successfully."
+          : isFa ? "مقاله برای بررسی ارسال شد." : "Article submitted for review.";
+
       setMessage({
-        type: "success",
-        text: action === "draft"
-          ? (isFa ? "پیش‌نویس ذخیره شد." : "Draft saved successfully.")
-          : (isFa ? "مقاله برای بررسی ارسال شد." : "Article submitted for review."),
+        type:   "success",
+        text:   successText,
+        result: {
+          articleId:     data.article?.id,
+          articleSlug:   data.article?.slug,
+          articleStatus: data.article?.status,
+        },
+      });
+    } catch {
+      setMessage({
+        type: "error",
+        text: isFa
+          ? "خطای شبکه. لطفاً اتصال اینترنت را بررسی کنید."
+          : "Network error. Please check your connection and try again.",
       });
     } finally {
       setSaving(false);
@@ -166,21 +227,31 @@ export function ArticleWriterClient() {
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Status message */}
         {message && (
-          <div className={`mb-6 flex items-center gap-3 p-4 rounded-xl border text-sm ${
+          <div className={`mb-6 flex items-start gap-3 p-4 rounded-xl border text-sm ${
             message.type === "success"
               ? "border-signal/20 bg-signal/5 text-signal"
               : "border-danger/20 bg-danger/5 text-danger"
           }`}>
             {message.type === "success" ? (
-              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0 mt-0.5">
                 <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd"/>
               </svg>
             ) : (
-              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0 mt-0.5">
                 <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd"/>
               </svg>
             )}
-            {message.text}
+            <div>
+              <p>{message.text}</p>
+              {message.result?.articleId && (
+                <p className="mt-1 text-[11px] opacity-70 font-mono">
+                  {isFa ? "شناسه مقاله:" : "Article ID:"} {message.result.articleId}
+                  {message.result.articleStatus && (
+                    <span className="ms-2">· {message.result.articleStatus}</span>
+                  )}
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -289,7 +360,7 @@ export function ArticleWriterClient() {
           {/* Sidebar */}
           <div className="space-y-5">
             {/* Article settings */}
-            <div className="rounded-xl border border-line/40 bg-surface/50 overflow-hidden">
+            <div className="rounded-xl border border-line/40 overflow-hidden" style={{ background: "var(--surface)" }}>
               <div className="px-4 py-3 border-b border-line/30"
                 style={{ background: "linear-gradient(90deg, rgba(30,200,164,0.05) 0%, transparent 100%)" }}>
                 <p className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
@@ -303,7 +374,7 @@ export function ArticleWriterClient() {
                     {isFa ? "نوع محتوا" : "Content Type"}
                   </label>
                   <select value={form.contentType} onChange={e => update("contentType", e.target.value)}
-                    className="bg-surface/80 border border-line/60 text-sm text-ink rounded-xl px-3 py-2.5 focus:outline-none focus:border-signal/40 transition-all">
+                    className={SELECT_CLS}>
                     {CONTENT_TYPES.map(ct => (
                       <option key={ct.key} value={ct.key}>{isFa ? ct.fa : ct.en}</option>
                     ))}
@@ -316,7 +387,7 @@ export function ArticleWriterClient() {
                     {isFa ? "زبان مقاله" : "Language"}
                   </label>
                   <select value={form.language} onChange={e => update("language", e.target.value)}
-                    className="bg-surface/80 border border-line/60 text-sm text-ink rounded-xl px-3 py-2.5 focus:outline-none focus:border-signal/40 transition-all">
+                    className={SELECT_CLS}>
                     <option value="EN">English</option>
                     <option value="FA">فارسی</option>
                   </select>
@@ -328,7 +399,7 @@ export function ArticleWriterClient() {
                     {isFa ? "دسته‌بندی" : "Category"}
                   </label>
                   <select value={form.category} onChange={e => update("category", e.target.value)}
-                    className="bg-surface/80 border border-line/60 text-sm text-ink rounded-xl px-3 py-2.5 focus:outline-none focus:border-signal/40 transition-all">
+                    className={SELECT_CLS}>
                     <option value="">{isFa ? "— انتخاب کنید —" : "— Select —"}</option>
                     {(isFa ? CATEGORIES_FA : CATEGORIES_EN).map(c => (
                       <option key={c} value={c}>{c}</option>
@@ -344,7 +415,7 @@ export function ArticleWriterClient() {
                   <input
                     value={form.tags} onChange={e => update("tags", e.target.value)}
                     placeholder={isFa ? "مثال: Siemens, SCADA, PLC" : "e.g. Siemens, SCADA, PLC"}
-                    className="bg-surface/80 border border-line/60 text-sm text-ink rounded-xl px-3 py-2.5 focus:outline-none focus:border-signal/40 placeholder:text-faint transition-all"
+                    className={SELECT_CLS}
                   />
                   <p className="text-[9px] text-faint font-mono">{isFa ? "با کاما جدا کنید" : "Separate with commas"}</p>
                 </div>

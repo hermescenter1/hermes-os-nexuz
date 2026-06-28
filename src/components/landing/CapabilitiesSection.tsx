@@ -131,7 +131,7 @@ export function CapabilitiesSection() {
               <motion.div
                 key={key}
                 variants={cardVariants}
-                className="group relative rounded-2xl p-7 overflow-hidden transition-all duration-300 landing-glass landing-glass-hover"
+                className="group relative rounded-2xl p-7 overflow-hidden transition-all duration-300 landing-glass landing-glass-hover hs-card-depth"
               >
                 {/* Top accent line */}
                 <div
