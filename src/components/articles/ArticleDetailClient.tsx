@@ -22,6 +22,57 @@ const CONTENT_TYPE_LABELS: Record<string, { en: string; fa: string }> = {
   SAFETY_COMPLIANCE_NOTE:   { en: "Safety & Compliance",      fa: "ایمنی و انطباق"         },
 };
 
+const FA_ARTICLE_MAP: Record<string, { title: string; subtitle?: string; excerpt?: string }> = {
+  "siemens-s7-1500-programming-best-practices": {
+    title:    "بهترین شیوه‌های برنامه‌نویسی PLC زیمنس S7-1500",
+    subtitle: "راهنمای جامع ساختاردهی و بهینه‌سازی پروژه‌های TIA Portal V18",
+  },
+  "scada-modernization-tehran-refinery-case-study": {
+    title:    "مدرن‌سازی SCADA در پالایشگاه تهران: مطالعه موردی",
+    subtitle: "مهاجرت ۱۸ ماهه از DCS قدیمی به SCADA مدرن بدون وقفه تولید",
+  },
+  "predictive-maintenance-vibration-analysis-field-results": {
+    title:    "نگهداری پیش‌بینانه با آنالیز ارتعاشات: نتایج ۱۸ ماهه میدانی",
+    subtitle: "نتایج کمّی پایش آنلاین ارتعاشات روی ۶۴ ماشین دوار در فولاد مبارکه",
+  },
+  "iec-61850-substation-protection-implementation": {
+    title:    "پیاده‌سازی IEC 61850 در حفاظت پست‌های فشار قوی",
+    subtitle: "راهنمای عملی GOOSE Messaging و Sampled Values در طرح‌های حفاظتی مدرن",
+  },
+  "vfd-motor-overheating-high-temperature-troubleshooting": {
+    title:    "عیب‌یابی اضافه‌حرارت موتور VFD در محیط‌های با دمای بالا",
+    subtitle: "تشخیص سیستماتیک تریپ حرارتی موتورهای ۲۵۰kW کمپرسور یک کارخانه سیمان",
+  },
+  "opc-ua-server-implementation-process-integration": {
+    title:    "پیاده‌سازی سرور OPC-UA برای یکپارچه‌سازی داده فرآیندی",
+    subtitle: "معماری امن و مقیاس‌پذیر OPC-UA برای یکپارچه‌سازی داده در سطح کارخانه",
+  },
+  "ai-anomaly-detection-gas-turbine": {
+    title:    "تشخیص ناهنجاری با هوش مصنوعی در سیستم‌های توربین گاز",
+    subtitle: "چگونه مدل‌های یادگیری ماشین تشخیص خرابی در جریان‌های سنسور توربین را متحول می‌کنند",
+  },
+  "digital-twin-pump-station-roi-analysis": {
+    title:    "دوقلوی دیجیتال ایستگاه پمپاژ: تحلیل ROI پس از ۲۴ ماه",
+    subtitle: "بازگشت سرمایه کمّی از دوقلوی دیجیتال با شبیه‌سازی هیدرولیکی آنی",
+  },
+  "ot-cybersecurity-scada-protection": {
+    title:    "امنیت سایبری OT: حفاظت SCADA در برابر تهدیدات مدرن",
+    subtitle: "راهنمای عملی پیاده‌سازی IEC 62443 در محیط‌های فناوری عملیاتی",
+  },
+  "future-industrial-ai-cognitive-automation": {
+    title:    "آینده هوش مصنوعی صنعتی: از سیستم‌های قانون‌محور تا اتوماسیون شناختی",
+    subtitle: "چشم‌انداز مهندسی از مسیر هوش ماشین در سیستم‌های صنعتی",
+  },
+  "bearing-failure-analysis-2mw-induction-motor": {
+    title:    "آنالیز خرابی: شکست فاجعه‌بار بلبرینگ در موتور القایی ۲.۲ مگاواتی",
+    subtitle: "تحلیل ریشه‌ای متالورژیکی و عملیاتی خرابی بلبرینگ موتور کیلن سیمان",
+  },
+  "sil-verification-process-plants-guide": {
+    title:    "تأیید سطح یکپارچگی ایمنی (SIL): راهنمای گام‌به‌گام برای واحدهای فرآیندی",
+    subtitle: "مرور عملی تأیید SIL طبق IEC 61511 برای سیستم ESD فشار بالا",
+  },
+};
+
 function fmtDate(d?: string | null, isFa = false) {
   if (!d) return "";
   const date = new Date(d);
@@ -477,7 +528,9 @@ export function ArticleDetailClient({ article, related }: Props) {
             </>
           )}
           <span className="text-line">/</span>
-          <span className="text-muted line-clamp-1">{article.title}</span>
+          <span className="text-muted line-clamp-1">
+            {(isFa ? FA_ARTICLE_MAP[article.slug]?.title : null) ?? article.title}
+          </span>
         </div>
       </div>
 
@@ -516,13 +569,18 @@ export function ArticleDetailClient({ article, related }: Props) {
           </div>
 
           {/* Title */}
+          {isFa && FA_ARTICLE_MAP[article.slug] && (
+            <p className="text-[10px] text-faint font-mono mb-2 opacity-55">{article.title}</p>
+          )}
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-ink leading-tight mb-5 max-w-3xl">
-            {article.title}
+            {(isFa ? FA_ARTICLE_MAP[article.slug]?.title : null) ?? article.title}
           </h1>
 
           {/* Subtitle */}
-          {article.subtitle && (
-            <p className="text-lg md:text-xl text-muted leading-relaxed mb-7 max-w-2xl">{article.subtitle}</p>
+          {((isFa ? FA_ARTICLE_MAP[article.slug]?.subtitle : null) ?? article.subtitle) && (
+            <p className="text-lg md:text-xl text-muted leading-relaxed mb-7 max-w-2xl">
+              {(isFa ? FA_ARTICLE_MAP[article.slug]?.subtitle : null) ?? article.subtitle}
+            </p>
           )}
 
           {/* Author + meta row */}

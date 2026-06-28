@@ -5,6 +5,82 @@ import Link                  from "next/link";
 import { usePathname }       from "next/navigation";
 import type { ArticleListItem, ArticleAuthorProfile, ArticleCategory, ArticleFeed } from "@/lib/articles/types";
 
+// ── Persian content overlay map (slug → FA title/subtitle/excerpt) ───────────
+
+const FA_ARTICLE_MAP: Record<string, { title: string; subtitle?: string; excerpt?: string }> = {
+  "siemens-s7-1500-programming-best-practices": {
+    title:    "بهترین شیوه‌های برنامه‌نویسی PLC زیمنس S7-1500",
+    subtitle: "راهنمای جامع ساختاردهی و بهینه‌سازی پروژه‌های TIA Portal V18",
+    excerpt:  "الگوهای برنامه‌نویسی اثبات‌شده، قراردادهای نام‌گذاری و ملاحظات ایمنی برای پروژه‌های PLC مقیاس‌بزرگ در محیط‌های صنعتی پرتقاضا.",
+  },
+  "scada-modernization-tehran-refinery-case-study": {
+    title:    "مدرن‌سازی SCADA در پالایشگاه تهران: مطالعه موردی",
+    subtitle: "مهاجرت ۱۸ ماهه از DCS قدیمی به SCADA مدرن بدون وقفه تولید",
+    excerpt:  "جایگزینی DCS ۲۵ ساله در واحد تقطیر خام با ظرفیت ۱۵۰٬۰۰۰ بشکه در روز، با حفظ تولید پیوسته و صرفه‌جویی ۴.۹ میلیون دلاری.",
+  },
+  "predictive-maintenance-vibration-analysis-field-results": {
+    title:    "نگهداری پیش‌بینانه با آنالیز ارتعاشات: نتایج ۱۸ ماهه میدانی",
+    subtitle: "نتایج کمّی پایش آنلاین ارتعاشات روی ۶۴ ماشین دوار در فولاد مبارکه",
+    excerpt:  "نرخ تشخیص ۹۰.۳٪، جلوگیری از ۳ خرابی فاجعه‌بار و صرفه‌جویی ۳.۲ میلیون دلاری در هزینه توقف تولید غیرمنتظره.",
+  },
+  "iec-61850-substation-protection-implementation": {
+    title:    "پیاده‌سازی IEC 61850 در حفاظت پست‌های فشار قوی",
+    subtitle: "راهنمای عملی GOOSE Messaging و Sampled Values در طرح‌های حفاظتی مدرن",
+    excerpt:  "راهنمای گام‌به‌گام IEC 61850 در اتوماسیون پست برق: پیام‌رسانی GOOSE، مقادیر نمونه‌گیری‌شده، پیکربندی IED با فایل‌های SCL.",
+  },
+  "vfd-motor-overheating-high-temperature-troubleshooting": {
+    title:    "عیب‌یابی اضافه‌حرارت موتور VFD در محیط‌های با دمای بالا",
+    subtitle: "تشخیص سیستماتیک تریپ حرارتی موتورهای ۲۵۰kW کمپرسور یک کارخانه سیمان",
+    excerpt:  "مطالعه موردی تریپ‌های مکرر اضافه‌بار حرارتی در دمای محیط ۵۲°C: علت ریشه‌ای هارمونیک‌های EDM و راهکارهای اصلاحی.",
+  },
+  "opc-ua-server-implementation-process-integration": {
+    title:    "پیاده‌سازی سرور OPC-UA برای یکپارچه‌سازی داده فرآیندی",
+    subtitle: "معماری امن و مقیاس‌پذیر OPC-UA برای یکپارچه‌سازی داده در سطح کارخانه",
+    excerpt:  "راهنمای عملی سرور OPC-UA: طراحی فضای آدرس، انتخاب مدل امنیتی (IEC 62541) و تنظیم عملکرد برای پایگاه‌های بزرگ.",
+  },
+  "ai-anomaly-detection-gas-turbine": {
+    title:    "تشخیص ناهنجاری با هوش مصنوعی در سیستم‌های توربین گاز",
+    subtitle: "چگونه مدل‌های یادگیری ماشین تشخیص خرابی در جریان‌های سنسور توربین را متحول می‌کنند",
+    excerpt:  "معماری LSTM Autoencoder و نتایج ۶ ماهه عملیاتی روی توربین ۵۰ مگاواتی: بازیابی ۹۴٪ با نرخ مثبت کاذب ۲.۱٪.",
+  },
+  "digital-twin-pump-station-roi-analysis": {
+    title:    "دوقلوی دیجیتال ایستگاه پمپاژ: تحلیل ROI پس از ۲۴ ماه",
+    subtitle: "بازگشت سرمایه کمّی از دوقلوی دیجیتال با شبیه‌سازی هیدرولیکی آنی",
+    excerpt:  "تحلیل ۲۴ ماهه ROI: ۱۸.۳٪ صرفه‌جویی انرژی، ۴۸۰ هزار یورو پس‌انداز کل، بازگشت سرمایه ۷.۴ برابری (۷۴۲٪).",
+  },
+  "ot-cybersecurity-scada-protection": {
+    title:    "امنیت سایبری OT: حفاظت SCADA در برابر تهدیدات مدرن",
+    subtitle: "راهنمای عملی پیاده‌سازی IEC 62443 در محیط‌های فناوری عملیاتی",
+    excerpt:  "چارچوب آزموده‌شده برای امنیت ICS: از بخش‌بندی شبکه و سخت‌سازی نقطه پایانی تا رویه‌های واکنش به حادثه.",
+  },
+  "future-industrial-ai-cognitive-automation": {
+    title:    "آینده هوش مصنوعی صنعتی: از سیستم‌های قانون‌محور تا اتوماسیون شناختی",
+    subtitle: "چشم‌انداز مهندسی از مسیر هوش ماشین در سیستم‌های صنعتی",
+    excerpt:  "با ورود مدل‌های یادگیری ماشین به بهینه‌سازی فرآیند و تصمیم‌گیری خودمختار، نقش مهندس صنعتی از اپراتور به ناظر هوش مصنوعی ارتقا می‌یابد.",
+  },
+  "bearing-failure-analysis-2mw-induction-motor": {
+    title:    "آنالیز خرابی: شکست فاجعه‌بار بلبرینگ در موتور القایی ۲.۲ مگاواتی",
+    subtitle: "تحلیل ریشه‌ای متالورژیکی و عملیاتی خرابی بلبرینگ موتور کیلن سیمان",
+    excerpt:  "خرابی بلبرینگ که ۴ روز توقف تولید ایجاد کرد. علت ریشه‌ای: آسیب EDM از جریان‌های شافت ناشی از عملکرد اینورتر VFD.",
+  },
+  "sil-verification-process-plants-guide": {
+    title:    "تأیید سطح یکپارچگی ایمنی (SIL): راهنمای گام‌به‌گام برای واحدهای فرآیندی",
+    subtitle: "مرور عملی تأیید SIL طبق IEC 61511 برای سیستم ESD فشار بالا",
+    excerpt:  "فرآیند کامل تأیید SIL: تحلیل LOPA، تعیین SIL 2، محاسبه PFD با معماری 1oo2 و مستندسازی الزامات IEC 61511.",
+  },
+};
+
+function getDisplay(article: { title: string; slug: string; subtitle?: string | null; excerpt?: string | null }, isFa: boolean) {
+  if (!isFa) return { title: article.title, subtitle: article.subtitle ?? null, excerpt: article.excerpt ?? null, titleEn: null as string | null };
+  const fa = FA_ARTICLE_MAP[article.slug];
+  return {
+    title:    fa?.title    ?? article.title,
+    subtitle: fa?.subtitle ?? (article.subtitle ?? null),
+    excerpt:  fa?.excerpt  ?? (article.excerpt  ?? null),
+    titleEn:  fa ? article.title : null,
+  };
+}
+
 // ── Label maps ────────────────────────────────────────────────────────────────
 
 const CONTENT_TYPE_LABELS: Record<string, { en: string; fa: string }> = {
@@ -132,6 +208,8 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
   const catHref   = article.category ? `/${locale}/articles/category/${article.category.slug}` : null;
   const authorHref = `/${locale}/articles/author/${article.author.handle}`;
 
+  const display = getDisplay(article, isFa);
+
   if (size === "compact") return (
     <Link href={href}
       className="group flex gap-3 items-start p-3.5 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/60 hover:bg-surface2/60 transition-all duration-150">
@@ -144,7 +222,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
             <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "بررسی" : "REVIEWED"}</span>
           )}
         </div>
-        <h3 className="text-xs font-semibold text-ink group-hover:text-signal transition-colors line-clamp-2 leading-snug mb-1.5">{article.title}</h3>
+        <h3 className="text-xs font-semibold text-ink group-hover:text-signal transition-colors line-clamp-2 leading-snug mb-1.5">{display.title}</h3>
         <div className="flex items-center gap-2 text-[10px] text-faint">
           <span className="truncate max-w-[80px]">{article.author.displayName}</span>
           <span className="text-line">·</span>
@@ -184,15 +262,18 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
 
         {/* Title */}
         <Link href={href}>
+          {display.titleEn && (
+            <p className="text-[10px] text-faint font-mono mb-2 tracking-wide opacity-70">{display.titleEn}</p>
+          )}
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-ink hover:text-signal transition-colors leading-tight mb-4 max-w-2xl">
-            {article.title}
+            {display.title}
           </h2>
         </Link>
 
         {/* Subtitle / excerpt */}
-        {(article.subtitle ?? article.excerpt) && (
+        {(display.subtitle ?? display.excerpt) && (
           <p className="text-base text-muted leading-relaxed mb-8 max-w-xl line-clamp-3">
-            {article.subtitle ?? article.excerpt}
+            {display.subtitle ?? display.excerpt}
           </p>
         )}
 
@@ -251,11 +332,14 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
 
         {/* Title + excerpt */}
         <Link href={href} className="flex-1">
+          {display.titleEn && (
+            <p className="text-[9px] text-faint font-mono mb-1 truncate opacity-60">{display.titleEn}</p>
+          )}
           <h3 className="font-bold text-ink group-hover:text-signal transition-colors leading-snug mb-2 line-clamp-2 text-[0.9375rem]">
-            {article.title}
+            {display.title}
           </h3>
-          {article.excerpt && (
-            <p className="text-sm text-muted leading-relaxed line-clamp-2">{article.excerpt}</p>
+          {display.excerpt && (
+            <p className="text-sm text-muted leading-relaxed line-clamp-2">{display.excerpt}</p>
           )}
         </Link>
 
@@ -364,22 +448,43 @@ function JournalMasthead({ isFa, locale }: { isFa: boolean; locale: string }) {
       <div className="absolute -bottom-20 end-0 w-64 h-64 rounded-full blur-[80px] pointer-events-none"
         style={{ background: "rgba(30,200,164,0.04)" }} />
 
-      <div className="relative max-w-[1400px] mx-auto px-6 py-14 md:py-20">
+      <div className="relative max-w-[1400px] mx-auto px-6 py-10 md:py-14">
         <div className="max-w-3xl">
-          <p className="eyebrow-mono text-signal mb-4 tracking-[0.2em]">
+          <p className="eyebrow-mono text-signal mb-3 tracking-[0.2em]">
             {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold text-ink leading-tight mb-4">
+          <h1 className="text-3xl md:text-5xl font-bold text-ink leading-tight mb-3">
             {isFa ? "شبکه دانش صنعتی" : "Industrial Knowledge Network"}
           </h1>
-          <p className="text-base md:text-lg text-muted leading-relaxed max-w-2xl mb-8">
+          <p className="text-base text-muted leading-relaxed max-w-xl mb-6">
             {isFa
-              ? "مقالات تخصصی، مطالعات موردی صنعتی، و بینش‌های عملیاتی از متخصصان برتر حوزه اتوماسیون، نگهداشت، و هوش مصنوعی صنعتی"
+              ? "مقالات تخصصی، مطالعات موردی صنعتی و بینش‌های عملیاتی از متخصصان برتر اتوماسیون، نگهداشت و هوش مصنوعی صنعتی"
               : "Technical articles, industrial case studies, and operational insights from verified automation, maintenance, and industrial AI experts"}
           </p>
 
+          {/* Editorial metrics strip */}
+          <div className="flex flex-wrap gap-5 mb-6 ps-0.5">
+            {(isFa ? [
+              { value: "۱٬۲۰۰+", label: "مقاله تخصصی", live: true  },
+              { value: "۱۹",     label: "دسته‌بندی صنعتی", live: false },
+              { value: "۱۴۰+",   label: "متخصص تأییدشده", live: false },
+              { value: "۴.۲م",   label: "بازدید کل",      live: true  },
+            ] : [
+              { value: "1,200+", label: "Technical Articles", live: true  },
+              { value: "19",     label: "Industry Categories", live: false },
+              { value: "140+",   label: "Verified Experts",   live: false },
+              { value: "4.2M",   label: "Total Views",        live: true  },
+            ]).map(m => (
+              <div key={m.label} className="flex items-center gap-2">
+                {m.live && <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse shrink-0" />}
+                <span className="text-lg font-bold text-ink font-mono">{m.value}</span>
+                <span className="text-[10px] text-faint uppercase tracking-wide">{m.label}</span>
+              </div>
+            ))}
+          </div>
+
           {/* Signal chips */}
-          <div className="flex flex-wrap gap-2 mb-8">
+          <div className="flex flex-wrap gap-2 mb-6">
             {chips.map(chip => (
               <span key={chip}
                 className="inline-flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-full border border-signal/20 bg-signal/5 text-signal font-mono uppercase tracking-wider">
@@ -524,7 +629,15 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                 <input
                   type="text" value={search} onChange={e => setSearch(e.target.value)}
                   placeholder={isFa ? "جست‌وجو…" : "Search…"}
-                  className="bg-surface/80 border border-line/60 text-[11px] text-ink rounded-lg px-3 py-1.5 ps-8 focus:outline-none focus:border-signal/40 w-44 placeholder:text-faint"
+                  className="text-[11px] text-ink rounded-lg px-3 py-1.5 ps-8 focus:outline-none w-44 placeholder:text-faint transition-all"
+                  style={{
+                    background: "rgba(6,8,13,0.75)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    backdropFilter: "blur(8px)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
+                  }}
+                  onFocus={e => { (e.target as HTMLInputElement).style.borderColor = "rgba(30,200,164,0.35)"; (e.target as HTMLInputElement).style.boxShadow = "0 0 0 1px rgba(30,200,164,0.15), inset 0 1px 0 rgba(255,255,255,0.03)"; }}
+                  onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = "rgba(255,255,255,0.07)"; (e.target as HTMLInputElement).style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.03)"; }}
                 />
                 <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-faint absolute start-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                   <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd"/>
@@ -656,7 +769,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                         </span>
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-muted group-hover:text-ink transition-colors line-clamp-2 leading-snug">
-                            {a.title}
+                            {(isFa ? FA_ARTICLE_MAP[a.slug]?.title : null) ?? a.title}
                           </p>
                           <p className="text-[10px] text-faint mt-1">
                             {fmtNum(a.viewCount)} {isFa ? "بازدید" : "views"} · {a.readingTimeMinutes}{isFa ? "د" : "m"}

@@ -70,36 +70,45 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
       <Link
         href={href}
         className={[
-          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150",
+          "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150",
           active
-            ? "bg-signal/[0.10] text-signal border border-signal/25 font-medium"
-            : "text-muted hover:text-ink hover:bg-surface3 border border-transparent",
+            ? "bg-signal/[0.12] text-signal border border-signal/30 font-semibold shadow-[0_0_12px_rgba(30,200,164,0.08)]"
+            : "text-muted hover:text-ink hover:bg-surface2/60 border border-transparent hover:border-line/30",
         ].join(" ")}
       >
-        <span className={active ? "text-signal" : "text-faint"}>{ICONS[l.key]}</span>
-        <span>{label}</span>
+        <span className={`transition-colors ${active ? "text-signal" : "text-faint group-hover:text-muted"}`}>
+          {ICONS[l.key]}
+        </span>
+        <span className="truncate">{label}</span>
+        {active && (
+          <span className="ms-auto w-1.5 h-1.5 rounded-full bg-signal shrink-0" />
+        )}
       </Link>
     );
   }
 
   return (
-    <nav className="flex flex-col py-5 px-3">
-      <div className="px-3 mb-5">
-        <p className="eyebrow-mono text-signal mb-0.5">JOURNAL</p>
-        <p className="text-xs text-faint leading-none">{isFa ? "ژورنال صنعتی هرمس" : "Hermes Industrial Journal"}</p>
+    <nav className="flex flex-col py-5 px-2.5">
+      {/* Brand header */}
+      <div className="px-3 mb-5 pb-4 border-b border-line/25">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
+          <p className="eyebrow-mono text-signal text-[9px] tracking-[0.2em]">JOURNAL</p>
+        </div>
+        <p className="text-[11px] text-muted leading-none ps-3.5">{isFa ? "ژورنال صنعتی هرمس" : "Hermes Industrial Journal"}</p>
       </div>
 
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-1">
         {PUBLIC_LINKS.map(l => <NavLink key={l.href} l={l} />)}
       </div>
 
       {showAuth && (
         <>
-          <div className="my-3 border-t border-line/40" />
-          <p className="px-3 mb-2 text-[10px] font-medium text-faint uppercase tracking-widest">
+          <div className="my-4 border-t border-line/25" />
+          <p className="px-3 mb-2.5 text-[9px] font-semibold text-faint uppercase tracking-[0.18em]">
             {isFa ? "حساب کاربری" : "My Account"}
           </p>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             {AUTH_LINKS.map(l => <NavLink key={l.href} l={l} />)}
           </div>
         </>
@@ -107,11 +116,11 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
 
       {showEditorial && (
         <>
-          <div className="my-3 border-t border-line/40" />
-          <p className="px-3 mb-2 text-[10px] font-medium text-faint uppercase tracking-widest">
+          <div className="my-4 border-t border-line/25" />
+          <p className="px-3 mb-2.5 text-[9px] font-semibold text-faint uppercase tracking-[0.18em]">
             {isFa ? "هیئت تحریریه" : "Editorial"}
           </p>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             {EDITORIAL_LINKS.map(l => <NavLink key={l.href} l={l} />)}
           </div>
         </>
