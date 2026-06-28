@@ -254,7 +254,8 @@
       "intelligence": "هوش صنعتی",
       "operations": "عملیات",
       "knowledge": "دانش",
-      "services": "خدمات"
+      "journal":   "ژورنال صنعتی",
+      "services":  "خدمات"
     },
     "items": {
       "overview": "نمای کلی",
@@ -284,7 +285,12 @@
       "academy": "آکادمی",
       "compliance": "انطباق",
       "privacyCenter": "مرکز حریم خصوصی",
-      "assetRegistry": "مدیریت دارایی‌ها"
+      "assetRegistry":     "مدیریت دارایی‌ها",
+      "journalFeed":       "فید مقالات",
+      "journalLatest":     "جدیدترین مقالات",
+      "journalTrending":   "پرطرفدار",
+      "journalAuthors":    "نویسندگان متخصص",
+      "journalCategories": "دسته‌بندی‌ها"
     },
     "menu": "منو",
     "close": "بستن"
@@ -565,12 +571,25 @@
     }
   },
   "footer": {
-    "tagline": "پلتفرم هوش صنعتی سازمانی",
-    "copyright": "© ۲۰۲۶ هرمس نوین مهر آیریک. تمام حقوق محفوظ است.",
-    "navAbout": "درباره",
-    "navPlatform": "پلتفرم",
-    "navDocs": "مستندات",
-    "navContact": "تماس"
+    "tagline":      "پلتفرم هوش صنعتی سازمانی",
+    "description":  "هرمس یک پلتفرم هوشمند صنعتی برای اتوماسیون، نگهداری، مدیریت دارایی‌ها، اسناد مهندسی و دانش تخصصی مهندسان است.",
+    "copyright":    "© ۲۰۲۶ هرمس نوین مهر آیریک. تمام حقوق محفوظ است.",
+    "navAbout":     "درباره",
+    "navPlatform":  "پلتفرم",
+    "navDocs":      "مستندات",
+    "navContact":   "تماس",
+    "navHome":      "خانه",
+    "navLogin":     "ورود",
+    "navJournal":   "ژورنال صنعتی",
+    "navFeed":      "فید مقالات",
+    "navLatest":    "جدیدترین مقالات",
+    "navTrending":  "پرطرفدار",
+    "navAuthors":   "نویسندگان",
+    "navCategories":"دسته‌بندی‌ها",
+    "colPlatform":  "پلتفرم",
+    "colJournal":   "ژورنال صنعتی",
+    "colCompany":   "شرکت",
+    "socialTitle":  "ارتباط با ما"
   },
   "brand": {
     "tagline": "پلتفرم هوش صنعتی"

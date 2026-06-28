@@ -74,6 +74,16 @@ const GROUPS: NavGroup[] = [
     ],
   },
   {
+    groupKey: "journal",
+    items: [
+      { labelKey: "journalFeed",       href: "/articles" },
+      { labelKey: "journalLatest",     href: "/articles/latest" },
+      { labelKey: "journalTrending",   href: "/articles/trending" },
+      { labelKey: "journalAuthors",    href: "/articles/authors" },
+      { labelKey: "journalCategories", href: "/articles/categories" },
+    ],
+  },
+  {
     groupKey: "services",
     items: [
       { labelKey: "about", href: "/about" },
@@ -136,10 +146,11 @@ export function SiteNav() {
   return (
     <>
       {/* Desktop grouped nav */}
-      <nav ref={navRef} className="hidden items-center gap-1 md:flex">
+      <nav ref={navRef} className="hidden items-center gap-0.5 md:flex">
         {GROUPS.map((g) => {
           const open = openGroup === g.groupKey;
           const isActive = activeGroup === g.groupKey;
+          const isJournal = g.groupKey === "journal";
           return (
             <div
               key={g.groupKey}
@@ -153,26 +164,55 @@ export function SiteNav() {
                 aria-haspopup="menu"
                 onClick={() => setOpenGroup(open ? null : g.groupKey)}
                 onFocus={() => setOpenGroup(g.groupKey)}
-                className={`rounded-md px-3 py-2 font-body text-sm transition-colors ${
-                  open || isActive ? "text-ink" : "text-muted hover:text-ink"
-                }`}
+                className={[
+                  "flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
+                  isJournal
+                    ? open || isActive
+                      ? "bg-signal/10 text-signal border border-signal/20"
+                      : "text-signal/80 hover:text-signal hover:bg-signal/8 border border-transparent"
+                    : open || isActive
+                    ? "text-ink bg-surface2/60"
+                    : "text-muted hover:text-ink hover:bg-surface2/40 border border-transparent",
+                ].join(" ")}
               >
+                {isJournal && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-signal shrink-0" aria-hidden="true" />
+                )}
                 {t(`groups.${g.groupKey}`)}
+                <svg viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 opacity-40 transition-transform ${open ? "rotate-180" : ""}`}>
+                  <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"/>
+                </svg>
               </button>
               {open && (
                 <div
                   role="menu"
-                  className="absolute top-full z-40 pt-1.5"
+                  className="absolute top-full z-40 pt-2"
                   style={{ insetInlineEnd: 0 }}
                 >
-                  <div className="min-w-44 rounded-xl border border-line bg-surface p-1.5 shadow-lg shadow-black/20">
+                  <div
+                    className="min-w-48 rounded-xl border border-line/60 p-1.5 shadow-xl shadow-black/30"
+                    style={{
+                      background: "rgba(10,12,18,0.96)",
+                      backdropFilter: "blur(20px) saturate(1.2)",
+                    }}
+                  >
+                    {isJournal && (
+                      <div className="px-3 pt-1.5 pb-2 mb-1 border-b border-line/30">
+                        <p className="text-[9px] font-mono text-signal/70 uppercase tracking-[0.18em]">
+                          {t("groups.journal")}
+                        </p>
+                      </div>
+                    )}
                     {g.items.map((it) => (
                       <Link
                         key={it.labelKey}
                         href={it.href}
                         role="menuitem"
-                        className="block rounded-lg px-3 py-2 font-body text-sm text-muted transition-colors hover:bg-bg hover:text-ink"
+                        className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition-all duration-100 hover:bg-surface2/70 hover:text-ink"
                       >
+                        {isJournal && (
+                          <span className="w-1 h-1 rounded-full bg-signal/40 shrink-0" />
+                        )}
                         {t(`items.${it.labelKey}`)}
                       </Link>
                     ))}
@@ -190,36 +230,44 @@ export function SiteNav() {
         aria-expanded={mobileOpen}
         aria-label={t(mobileOpen ? "close" : "menu")}
         onClick={() => setMobileOpen((v) => !v)}
-        className="rounded-md border border-line p-2 text-muted transition-colors hover:text-ink md:hidden"
+        className="flex flex-col justify-center gap-1 rounded-lg border border-line/50 p-2.5 text-muted transition-colors hover:text-ink hover:border-signal/30 md:hidden"
       >
-        <span className="block h-0.5 w-5 bg-current" />
-        <span className="mt-1 block h-0.5 w-5 bg-current" />
-        <span className="mt-1 block h-0.5 w-5 bg-current" />
+        <span className={`block h-0.5 w-5 bg-current transition-all ${mobileOpen ? "rotate-45 translate-y-1.5" : ""}`} />
+        <span className={`block h-0.5 w-5 bg-current transition-all ${mobileOpen ? "opacity-0" : ""}`} />
+        <span className={`block h-0.5 w-5 bg-current transition-all ${mobileOpen ? "-rotate-45 -translate-y-1.5" : ""}`} />
       </button>
 
-      {/* Mobile panel — same route map */}
+      {/* Mobile panel */}
       {mobileOpen && (
-        <div className="absolute inset-x-0 top-full z-30 border-b border-line bg-bg shadow-lg shadow-black/30 md:hidden">
-          <div className="mx-auto max-w-6xl space-y-4 px-6 py-5">
-            {GROUPS.map((g) => (
-              <div key={g.groupKey}>
-                <p className="font-mono text-xs uppercase tracking-widest text-muted/70">
-                  {t(`groups.${g.groupKey}`)}
-                </p>
-                <ul className="mt-2 space-y-1">
-                  {g.items.map((it) => (
-                    <li key={it.labelKey}>
-                      <Link
-                        href={it.href}
-                        className="block rounded-lg px-2 py-2 font-body text-sm text-ink transition-colors hover:bg-surface"
-                      >
-                        {t(`items.${it.labelKey}`)}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+        <div
+          className="absolute inset-x-0 top-full z-30 border-b border-line/40 shadow-xl shadow-black/40 md:hidden"
+          style={{ background: "rgba(7,9,13,0.97)", backdropFilter: "blur(24px)" }}
+        >
+          <div className="mx-auto max-w-6xl px-6 py-5 space-y-5">
+            {GROUPS.map((g) => {
+              const isJournal = g.groupKey === "journal";
+              return (
+                <div key={g.groupKey}>
+                  <p className={`text-[10px] font-semibold uppercase tracking-[0.15em] mb-2 ${isJournal ? "text-signal/80" : "text-faint"}`}>
+                    {isJournal && <span className="inline-block w-1.5 h-1.5 rounded-full bg-signal me-2 align-middle" />}
+                    {t(`groups.${g.groupKey}`)}
+                  </p>
+                  <ul className="space-y-0.5">
+                    {g.items.map((it) => (
+                      <li key={it.labelKey}>
+                        <Link
+                          href={it.href}
+                          className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isJournal ? "text-muted hover:text-signal hover:bg-signal/5" : "text-ink hover:bg-surface2/60"}`}
+                        >
+                          {isJournal && <span className="w-1 h-1 rounded-full bg-signal/40 shrink-0" />}
+                          {t(`items.${it.labelKey}`)}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

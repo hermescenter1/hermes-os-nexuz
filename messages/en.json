@@ -254,7 +254,8 @@
       "intelligence": "Intelligence",
       "operations": "Operations",
       "knowledge": "Knowledge",
-      "services": "Services"
+      "journal":   "Industrial Journal",
+      "services":  "Services"
     },
     "items": {
       "overview": "Overview",
@@ -284,7 +285,12 @@
       "academy": "Academy",
       "compliance": "Compliance",
       "privacyCenter": "Privacy Center",
-      "assetRegistry": "Asset Registry"
+      "assetRegistry": "Asset Registry",
+      "journalFeed":       "Article Feed",
+      "journalLatest":     "Latest Articles",
+      "journalTrending":   "Trending",
+      "journalAuthors":    "Expert Authors",
+      "journalCategories": "Categories"
     },
     "menu": "Menu",
     "close": "Close"
@@ -565,12 +571,25 @@
     }
   },
   "footer": {
-    "tagline": "Enterprise Industrial Intelligence Platform",
-    "copyright": "© 2026 Hermes Novin Mehr IRIC. All Rights Reserved.",
-    "navAbout": "About",
-    "navPlatform": "Platform",
-    "navDocs": "Documentation",
-    "navContact": "Contact"
+    "tagline":      "Enterprise Industrial Intelligence Platform",
+    "description":  "Hermes is an industrial intelligence platform for automation, maintenance, asset management, engineering documents, and expert knowledge.",
+    "copyright":    "© 2026 Hermes Novin Mehr IRIC. All Rights Reserved.",
+    "navAbout":     "About",
+    "navPlatform":  "Platform",
+    "navDocs":      "Documentation",
+    "navContact":   "Contact",
+    "navHome":      "Home",
+    "navLogin":     "Login",
+    "navJournal":   "Industrial Journal",
+    "navFeed":      "Article Feed",
+    "navLatest":    "Latest Articles",
+    "navTrending":  "Trending",
+    "navAuthors":   "Expert Authors",
+    "navCategories":"Categories",
+    "colPlatform":  "Platform",
+    "colJournal":   "Industrial Journal",
+    "colCompany":   "Company",
+    "socialTitle":  "Connect"
   },
   "brand": {
     "tagline": "Industrial Intelligence Platform"
