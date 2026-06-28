@@ -35,10 +35,19 @@ export function SiteFooter() {
 
   return (
     <footer
-      className="border-t border-line/40"
+      className="relative border-t border-line/40 overflow-hidden"
       style={{ background: "rgba(6,8,13,0.98)" }}
     >
-      <div className="mx-auto max-w-6xl px-6 pt-12 pb-8">
+      {/* Subtle ambient glow at footer top — low-opacity signal radial */}
+      <div
+        className="absolute inset-x-0 top-0 h-32 pointer-events-none"
+        aria-hidden="true"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 100% at 50% 0%, rgba(30,200,164,0.04) 0%, transparent 80%)",
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl px-6 pt-12 pb-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
 
           {/* Brand block */}
@@ -64,7 +73,7 @@ export function SiteFooter() {
                   aria-label={s.ariaLabel}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-line/40 text-faint transition-all duration-150 hover:border-signal/30 hover:text-signal hover:shadow-[0_0_8px_rgba(30,200,164,0.12)]"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-line/60 bg-surface/30 text-muted/50 transition-all duration-200 hover:border-signal/40 hover:text-signal hover:bg-signal/5 hover:shadow-[0_0_14px_rgba(30,200,164,0.16)]"
                 >
                   <SocialIcon icon={s.icon} />
                 </a>

@@ -974,3 +974,97 @@ h6 { font-weight: 550; letter-spacing: 0; }
   background:       var(--signal);
   opacity:          0.40;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 72.5E — PREMIUM DEPTH & 2029 CARD GLOW SYSTEM
+   Volumetric card depth with LED under-glow.
+   Industrial premium. Not gaming UI. Not cheap neon.
+   Design: soft cyan/signal LED strip beneath floating card surface.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Premium card depth base ────────────────────────────────────────────
+   Adds: lift on hover, deeper shadow, border highlight, LED glow
+   Safe with overflow:hidden — uses box-shadow for glow, not absolute el.
+   ──────────────────────────────────────────────────────────────────────── */
+.hs-card-depth {
+  position:   relative;
+  transition:
+    transform      200ms var(--ease-expo),
+    border-color   200ms var(--ease-expo),
+    box-shadow     250ms var(--ease-expo);
+}
+.hs-card-depth:hover {
+  transform:    translateY(-3px);
+  border-color: rgba(var(--signal-rgb), 0.22) !important;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.42),           /* deep cast shadow    */
+    0  4px 12px rgba(0, 0, 0, 0.24),            /* medium contact      */
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),   /* glass top highlight */
+    0 22px 28px -10px rgba(var(--signal-rgb), 0.13); /* LED under-glow */
+}
+
+/* Bottom accent line that fades in on hover — works inside overflow:hidden */
+.hs-card-depth::before {
+  content:          "";
+  position:         absolute;
+  bottom:           0;
+  inset-inline:     0;
+  height:           1px;
+  background:       linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--signal-rgb), 0.45) 50%,
+    transparent 100%
+  );
+  opacity:          0;
+  pointer-events:   none;
+  border-radius:    0 0 inherit inherit;
+  transition:       opacity 250ms var(--ease-expo);
+}
+.hs-card-depth:hover::before { opacity: 1; }
+
+/* ── LED runner card modifier ────────────────────────────────────────────
+   Use on cards WITHOUT overflow:hidden for a sweeping LED bottom runner.
+   Adds an animated light sweep along the bottom edge on hover.
+   ──────────────────────────────────────────────────────────────────────── */
+.hs-led-card { overflow: visible !important; }
+
+.hs-led-card::after {
+  content:        "";
+  position:       absolute;
+  bottom:         -1px;
+  inset-inline:   0;
+  height:         2px;
+  border-radius:  1px;
+  background:     linear-gradient(
+    90deg,
+    transparent   0%,
+    rgba(var(--signal-rgb), 0.70) 40%,
+    rgba(var(--ice-rgb),    0.50) 60%,
+    transparent   100%
+  );
+  transform:       translateX(-110%);
+  opacity:         0;
+  pointer-events:  none;
+}
+.hs-led-card:hover::after {
+  animation: hLedSweep 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  opacity:   1;
+}
+
+@keyframes hLedSweep {
+  0%   { transform: translateX(-110%); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(210%);  opacity: 0; }
+}
+
+/* ── Reduced motion — disable all card motion, keep depth only ─────────── */
+@media (prefers-reduced-motion: reduce) {
+  .hs-card-depth {
+    transition: border-color 0.01ms, box-shadow 0.01ms !important;
+  }
+  .hs-card-depth:hover   { transform: none !important; }
+  .hs-card-depth::before { transition: opacity 0.01ms !important; }
+  .hs-led-card::after    { animation: none !important; opacity: 0 !important; }
+}

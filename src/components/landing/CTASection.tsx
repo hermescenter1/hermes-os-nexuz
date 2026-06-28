@@ -42,7 +42,7 @@ export function CTASection() {
   return (
     <section
       ref={ref}
-      className="relative py-32 overflow-hidden"
+      className="relative pt-24 pb-16 overflow-hidden"
       style={{
         background:
           "radial-gradient(ellipse 100% 70% at 50% 50%, rgba(0,40,80,0.5) 0%, transparent 70%)," +

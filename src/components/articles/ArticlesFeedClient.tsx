@@ -314,7 +314,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
 
   // Normal card
   return (
-    <div className="group rounded-xl border border-line/40 bg-surface hover:border-signal/20 hover:shadow-[0_0_24px_rgba(30,200,164,0.05)] transition-all duration-200 flex flex-col overflow-hidden">
+    <div className="hs-card-depth group rounded-xl border border-line/40 bg-surface hover:border-signal/20 flex flex-col overflow-hidden">
       {/* Content type color bar */}
       <div className={`h-0.5 w-full bg-gradient-to-r ${contentTypeBarColor(article.contentType)}`} />
 
@@ -386,7 +386,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
 function AuthorCard({ author, locale, isFa }: { author: ArticleAuthorProfile; locale: string; isFa: boolean }) {
   return (
     <Link href={`/${locale}/articles/author/${author.handle}`}
-      className="group flex gap-3 items-start p-4 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/60 hover:bg-surface2/40 hover:shadow-[0_0_20px_rgba(30,200,164,0.05)] transition-all duration-200">
+      className="hs-card-depth group flex gap-3 items-start p-4 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/60 hover:bg-surface2/40">
       <Avatar name={author.displayName} size="lg" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5">
@@ -848,7 +848,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {feed.topAuthors.slice(0, 6).map(a => (
                 <Link key={a.id} href={`/${locale}/articles/author/${a.handle}`}
-                  className="group flex gap-4 p-5 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/60 hover:bg-surface2/40 hover:shadow-[0_0_20px_rgba(30,200,164,0.05)] transition-all duration-200">
+                  className="hs-card-depth group flex gap-4 p-5 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/60 hover:bg-surface2/40">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-signal/25 to-ice/15 border border-signal/25 flex items-center justify-center text-lg font-bold text-signal shrink-0">
                     {a.displayName.charAt(0)}
                   </div>
