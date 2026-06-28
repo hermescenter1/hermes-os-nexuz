@@ -77,6 +77,8 @@ export const PROTECTED_PATHS = [
   /^\/[a-z]{2}\/cmms/,
   // Phase 72: Asset Registry — admin/engineer only
   /^\/[a-z]{2}\/assets/,
+  // Phase 72.5: Journal — authenticated-only sub-paths (public paths remain open)
+  /^\/[a-z]{2}\/articles\/(write|drafts|saved|following|my-articles|editor|submissions|settings|moderation|review-queue|reports|editorial-board)/,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -137,6 +139,14 @@ export function isAuthorizedForPath(
   // Asset Registry: admin/superadmin/engineer only
   if (/^\/[a-z]{2}\/assets/.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
+  }
+  // Journal editorial (moderation/review-queue/reports/editorial-board/editor/submissions): admin only
+  if (/^\/[a-z]{2}\/articles\/(moderation|review-queue|reports|editorial-board|editor|submissions)/.test(pathname)) {
+    return role === "admin" || role === "superadmin";
+  }
+  // Journal authenticated (write/drafts/saved/following/my-articles/settings): any logged-in user
+  if (/^\/[a-z]{2}\/articles\/(write|drafts|saved|following|my-articles|settings)/.test(pathname)) {
+    return true;
   }
   return true;
 }

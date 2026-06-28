@@ -5469,3 +5469,354 @@ model RegistryAssetTag {
   @@index([assetId])
   @@index([key])
 }
+
+// --- Phase 72.5 - Hermes Industrial Knowledge Network ---
+
+enum ArtStatus {
+  DRAFT
+  SUBMITTED
+  IN_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum ArtVisibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+enum ArtContentType {
+  TECHNICAL_ARTICLE
+  INDUSTRIAL_CASE_STUDY
+  TROUBLESHOOTING_REPORT
+  PROJECT_REPORT
+  MAINTENANCE_INSIGHT
+  PLC_SCADA_TUTORIAL
+  FAILURE_ANALYSIS
+  ASSET_RELIABILITY_NOTE
+  ENGINEERING_OPINION
+  RESEARCH_SUMMARY
+  FIELD_COMMISSIONING_NOTE
+  SAFETY_COMPLIANCE_NOTE
+}
+
+enum ArtLanguage {
+  EN
+  FA
+}
+
+enum ArtReactionType {
+  INSIGHTFUL
+  HELPFUL
+  DETAILED
+  PRACTICAL
+}
+
+model Article {
+  id                 String         @id @default(cuid())
+  title              String
+  slug               String         @unique
+  subtitle           String?
+  excerpt            String?
+  content            String         @db.Text
+  coverImageUrl      String?
+  language           ArtLanguage    @default(EN)
+  contentType        ArtContentType @default(TECHNICAL_ARTICLE)
+  status             ArtStatus      @default(DRAFT)
+  visibility         ArtVisibility  @default(PUBLIC)
+  authorId           String
+  categoryId         String?
+  readingTimeMinutes Int            @default(5)
+  publishedAt        DateTime?
+  viewCount          Int            @default(0)
+  saveCount          Int            @default(0)
+  reactionCount      Int            @default(0)
+  commentCount       Int            @default(0)
+  shareCount         Int            @default(0)
+  seoTitle           String?
+  seoDescription     String?
+  canonicalUrl       String?
+  ogImageUrl         String?
+  noIndex            Boolean        @default(false)
+  rejectionReason    String?
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  author             ArticleAuthorProfile    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category           ArticleCategory?        @relation(fields: [categoryId], references: [id])
+  tags               ArticleTagOnArticle[]
+  saves              ArticleSave[]
+  reactions          ArticleReaction[]
+  comments           ArticleComment[]
+  views              ArticleView[]
+  shares             ArticleShare[]
+  reports            ArticleReport[]
+  moderationEvents   ArticleModerationEvent[]
+  editorialReviews   ArticleEditorialReview[]
+  qualitySignals     ArticleQualitySignal[]
+  knowledgeMetadata  ArticleKnowledgeMetadata?
+  readingHistory     ArticleReadingHistory[]
+
+  @@index([status, visibility])
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([slug])
+  @@index([publishedAt])
+  @@index([language])
+}
+
+model ArticleAuthorProfile {
+  id                         String   @id @default(cuid())
+  userId                     String   @unique
+  handle                     String   @unique
+  displayName                String
+  headline                   String?
+  bio                        String?  @db.Text
+  company                    String?
+  roleTitle                  String?
+  expertiseAreas             String[]
+  location                   String?
+  avatarUrl                  String?
+  bannerUrl                  String?
+  followerCount              Int      @default(0)
+  articleCount               Int      @default(0)
+  totalViews                 Int      @default(0)
+  totalSaves                 Int      @default(0)
+  verifiedExpert             Boolean  @default(false)
+  industrialCredibilityScore Float?
+  isActive                   Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  articles    Article[]
+  followers   ArticleFollow[] @relation("Following")
+  following   ArticleFollow[] @relation("Follower")
+
+  @@index([handle])
+  @@index([userId])
+}
+
+model ArticleCategory {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  nameFa      String
+  description String?
+  color       String   @default("signal")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  articles Article[]
+
+  @@index([slug])
+}
+
+model ArticleTag {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  nameFa    String?
+  createdAt DateTime @default(now())
+
+  articles ArticleTagOnArticle[]
+
+  @@index([slug])
+}
+
+model ArticleTagOnArticle {
+  articleId String
+  tagId     String
+
+  article Article    @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag     ArticleTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+  @@index([articleId])
+  @@index([tagId])
+}
+
+model ArticleFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  ArticleAuthorProfile @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following ArticleAuthorProfile @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model ArticleSave {
+  id        String   @id @default(cuid())
+  userId    String
+  articleId String
+  createdAt DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@index([articleId])
+}
+
+model ArticleReaction {
+  id           String          @id @default(cuid())
+  userId       String
+  articleId    String
+  reactionType ArtReactionType
+  createdAt    DateTime        @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([articleId])
+}
+
+model ArticleComment {
+  id        String   @id @default(cuid())
+  userId    String
+  articleId String
+  parentId  String?
+  content   String   @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  article  Article         @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  parent   ArticleComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  ArticleComment[] @relation("CommentReplies")
+
+  @@index([articleId])
+  @@index([userId])
+}
+
+model ArticleView {
+  id        String   @id @default(cuid())
+  articleId String
+  userId    String?
+  ipHash    String?
+  userAgent String?
+  viewedAt  DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([viewedAt])
+}
+
+model ArticleShare {
+  id        String   @id @default(cuid())
+  articleId String
+  userId    String?
+  platform  String   @default("COPY")
+  sharedAt  DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+}
+
+model ArticleReport {
+  id         String   @id @default(cuid())
+  articleId  String
+  reporterId String
+  reason     String
+  detail     String?
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([resolved])
+}
+
+model ArticleModerationEvent {
+  id          String   @id @default(cuid())
+  articleId   String
+  moderatorId String
+  action      String
+  reason      String?
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+}
+
+model ArticleEditorialReview {
+  id         String   @id @default(cuid())
+  articleId  String
+  reviewerId String
+  verdict    String
+  feedback   String?  @db.Text
+  quality    Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+}
+
+model ArticleQualitySignal {
+  id            String   @id @default(cuid())
+  articleId     String
+  signalType    String
+  score         Float
+  computedBy    String   @default("SYSTEM")
+  computedAt    DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+}
+
+model ArticleKnowledgeMetadata {
+  id                      String   @id @default(cuid())
+  articleId               String   @unique
+  knowledgeEligible       Boolean  @default(false)
+  reviewedForKnowledge    Boolean  @default(false)
+  articleQualityScore     Float?
+  sourceReliability       String?
+  evidenceLevel           String?
+  industrialDomain        String?
+  linkedAssetType         String?
+  linkedFailureMode       String?
+  linkedTechnology        String?
+  linkedStandard          String?
+  linkedVendor            String?
+  linkedPLCPlatform       String?
+  linkedMaintenanceDomain String?
+  safetyCritical          Boolean  @default(false)
+  humanReviewed           Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+model ArticleReadingHistory {
+  id             String   @id @default(cuid())
+  userId         String
+  articleId      String
+  progressPct    Int      @default(0)
+  completedAt    DateTime?
+  lastReadAt     DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@index([articleId])
+}
