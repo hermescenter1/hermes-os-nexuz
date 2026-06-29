@@ -1,7 +1,7 @@
 "use client";
 
-import { useState }  from "react";
-import { useLocale } from "next-intl";
+import { useState, useRef } from "react";
+import { useLocale }        from "next-intl";
 
 const CONTENT_TYPES = [
   { key: "TECHNICAL_ARTICLE",        en: "Technical Article",        fa: "مقاله فنی"              },
@@ -61,15 +61,21 @@ interface FormData {
 interface SubmitResult {
   articleId?:     string;
   articleStatus?: string;
+  forReview:      boolean; // true = submit action, false = draft
 }
 
 export function ArticleWriterClient() {
   // useLocale() reads from the next-intl request context — always a stable string,
-  // never null. Do NOT use usePathname() from next/navigation for locale detection
-  // because next-intl middleware may rewrite the path before Next.js sees it,
-  // making the pathname inconsistent between SSR and client re-renders.
+  // never null. Do NOT use usePathname() from next/navigation for locale detection:
+  // next-intl middleware rewrites paths before Next.js sees them, making usePathname()
+  // from next/navigation unstable (can return null on async re-renders in App Router).
   const locale = useLocale();
   const isFa   = locale === "fa";
+
+  // useRef guard prevents double-submit from impatient multi-clicks during the
+  // async fetch. React's disabled={saving} is not instantaneous — the ref fires
+  // synchronously, before any re-render can happen.
+  const submittingRef = useRef(false);
 
   const [form, setForm] = useState<FormData>({
     title: "", subtitle: "", excerpt: "", content: "",
@@ -131,6 +137,10 @@ export function ArticleWriterClient() {
   }
 
   async function handleSubmit(action: "draft" | "submit") {
+    // Synchronous guard — fires before any re-render, so even rapid multi-clicks
+    // before React's disabled={saving} takes effect are blocked.
+    if (submittingRef.current) return;
+
     if (!form.title.trim()) {
       setMessage({
         type: "error",
@@ -146,6 +156,7 @@ export function ArticleWriterClient() {
       return;
     }
 
+    submittingRef.current = true;
     setSaving(true);
     setMessage(null);
 
@@ -176,37 +187,37 @@ export function ArticleWriterClient() {
         return;
       }
 
-      // Safe article extraction — never assume shape
-      const artRaw  = (data.article && typeof data.article === "object" && !Array.isArray(data.article))
+      // Safe article extraction — never assume shape.
+      // Intentionally NOT extracting slug — DRAFT/SUBMITTED are PRIVATE and must
+      // never be navigated to via the public /articles/[slug] route.
+      const artRaw        = (data.article && typeof data.article === "object" && !Array.isArray(data.article))
         ? (data.article as Record<string, unknown>)
         : {};
       const articleId     = typeof artRaw.id     === "string" ? artRaw.id     : undefined;
       const articleStatus = typeof artRaw.status === "string" ? artRaw.status : undefined;
-      // Intentionally NOT extracting articleSlug — DRAFT/SUBMITTED articles are
-      // PRIVATE and must not be navigated to via the public /articles/[slug] route.
 
-      if (action === "submit") {
-        // Hard navigation to my-articles: avoids any React reconciliation on the
-        // current page and guarantees no client-side transition to the private slug.
-        window.location.href = `/${locale}/articles/my-articles?submitted=1`;
-        return;
-      }
-
-      // Draft: stay on write page and show inline success with my-articles link.
+      // Stay on the write page for both draft and submit.
+      // Do NOT call router.push, router.replace, or window.location.href.
+      // Any automatic navigation in Next.js 15 App Router triggers a hybrid
+      // browser-native + RSC navigation simultaneously, which inserts two document
+      // roots and causes HierarchyRequestError in the browser console.
       setMessage({
         type:   "success",
-        text:   isFa ? "پیش‌نویس ذخیره شد." : "Draft saved successfully.",
-        result: { articleId, articleStatus },
+        text:   action === "draft"
+          ? (isFa ? "پیش‌نویس ذخیره شد." : "Draft saved.")
+          : (isFa ? "مقاله برای بررسی ارسال شد." : "Article submitted for review."),
+        result: { articleId, articleStatus, forReview: action === "submit" },
       });
     } catch {
       setMessage({
         type: "error",
         text: isFa
           ? "خطای شبکه. لطفاً اتصال اینترنت را بررسی کنید."
-          : "Network error. Please check your connection and try again.",
+          : "Network error. Please check your connection.",
       });
     } finally {
       setSaving(false);
+      submittingRef.current = false;
     }
   }
 
@@ -242,12 +253,12 @@ export function ArticleWriterClient() {
             </h1>
           </div>
           <div className="flex items-center gap-2.5">
-            <button onClick={() => handleSubmit("draft")} disabled={saving}
-              className="text-xs px-4 py-2 rounded-xl border border-line/60 text-muted hover:text-ink hover:border-signal/30 transition-all disabled:opacity-50 font-medium">
+            <button type="button" onClick={() => handleSubmit("draft")} disabled={saving}
+              className="text-xs px-4 py-2 rounded-xl border border-line/60 text-muted hover:text-ink hover:border-signal/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium">
               {saving ? "…" : (isFa ? "ذخیره پیش‌نویس" : "Save Draft")}
             </button>
-            <button onClick={() => handleSubmit("submit")} disabled={saving}
-              className="inline-flex items-center gap-1.5 text-xs px-5 py-2 rounded-xl bg-signal text-bg font-bold hover:bg-signal/90 transition-colors disabled:opacity-50">
+            <button type="button" onClick={() => handleSubmit("submit")} disabled={saving}
+              className="inline-flex items-center gap-1.5 text-xs px-5 py-2 rounded-xl bg-signal text-bg font-bold hover:bg-signal/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
                 <path d="M3.105 2.288a.75.75 0 0 0-.826.95l1.414 4.926A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.897 28.897 0 0 0 15.293-7.154.75.75 0 0 0 0-1.115A28.897 28.897 0 0 0 3.105 2.288Z"/>
               </svg>
@@ -286,10 +297,10 @@ export function ArticleWriterClient() {
               )}
               {message.type === "success" && (
                 <a
-                  href={`/${locale}/articles/my-articles`}
+                  href={`/${locale}/articles/my-articles${message.result?.forReview ? "?submitted=1" : ""}`}
                   className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium opacity-80 hover:opacity-100 underline underline-offset-2"
                 >
-                  {isFa ? "مشاهده مقالات من ←" : "View My Articles →"}
+                  {isFa ? "مشاهده مقالات من" : "View my articles"}
                 </a>
               )}
             </div>
@@ -496,12 +507,12 @@ export function ArticleWriterClient() {
 
             {/* Action buttons (mobile duplicate) */}
             <div className="flex flex-col gap-2.5 lg:hidden">
-              <button onClick={() => handleSubmit("submit")} disabled={saving}
-                className="w-full py-3 rounded-xl bg-signal text-bg font-bold text-sm hover:bg-signal/90 transition-colors disabled:opacity-50">
+              <button type="button" onClick={() => handleSubmit("submit")} disabled={saving}
+                className="w-full py-3 rounded-xl bg-signal text-bg font-bold text-sm hover:bg-signal/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 {saving ? "…" : (isFa ? "ارسال برای بررسی" : "Submit for Review")}
               </button>
-              <button onClick={() => handleSubmit("draft")} disabled={saving}
-                className="w-full py-2.5 rounded-xl border border-line/60 text-muted text-sm hover:text-ink hover:border-signal/30 transition-all disabled:opacity-50">
+              <button type="button" onClick={() => handleSubmit("draft")} disabled={saving}
+                className="w-full py-2.5 rounded-xl border border-line/60 text-muted text-sm hover:text-ink hover:border-signal/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 {saving ? "…" : (isFa ? "ذخیره پیش‌نویس" : "Save Draft")}
               </button>
             </div>
