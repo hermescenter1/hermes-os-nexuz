@@ -56,12 +56,15 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Prisma files needed at runtime for migrations + client
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/pg      ./node_modules/pg
+COPY --from=builder --chown=nextjs:nodejs /app/prisma           ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/.prisma  ./node_modules/.prisma
+COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/@prisma  ./node_modules/@prisma
+COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/pg       ./node_modules/pg
 COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/pg-types ./node_modules/pg-types
-COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/pgpass  ./node_modules/pgpass
+COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/pgpass   ./node_modules/pgpass
+# dotenv is required by prisma.config.ts during `npx prisma migrate deploy`
+COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/dotenv   ./node_modules/dotenv
 
 USER nextjs
 

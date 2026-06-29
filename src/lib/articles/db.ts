@@ -10,6 +10,7 @@ import {
   getArticlesByAuthor, getPublishedArticles, getTrendingArticles,
   getEditorsPicks, getCaseStudies, getAuthorByHandle,
 } from "./mock-data";
+import { getPrisma } from "@/lib/db/prisma";
 
 function ts<T extends object>(row: T): T {
   const out: Record<string, unknown> = {};
@@ -20,16 +21,10 @@ function ts<T extends object>(row: T): T {
   return out as T;
 }
 
-let prisma: typeof import("@prisma/client").PrismaClient.prototype | null = null;
+// Uses shared getPrisma() singleton which supplies the PrismaPg driver adapter
+// required by Prisma 7 driverAdapters — do NOT create a bare new PrismaClient() here.
 async function getDb() {
-  if (!process.env.DATABASE_URL) return null;
-  if (!prisma) {
-    try {
-      const { PrismaClient } = await import("@prisma/client");
-      prisma = new PrismaClient();
-    } catch { return null; }
-  }
-  return prisma;
+  return getPrisma();
 }
 
 // ── Public feed ───────────────────────────────────────────────────────────────

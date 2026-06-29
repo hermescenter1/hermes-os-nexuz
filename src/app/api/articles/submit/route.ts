@@ -1,5 +1,6 @@
-import { NextResponse }    from "next/server";
-import { getCurrentUser }  from "@/lib/auth/session";
+import { NextResponse }   from "next/server";
+import { getCurrentUser } from "@/lib/auth/session";
+import { getPrisma }      from "@/lib/db/prisma";
 import type { ArtContentType, ArtLanguage, ArtStatus } from "@/lib/articles/types";
 
 export const runtime = "nodejs";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 function toSlug(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[؀-ۿ]+/g, (m) => m.replace(/\s+/g, "-")) // keep Persian chars
+    .replace(/[؀-ۿ]+/g, (m) => m.replace(/\s+/g, "-"))
     .replace(/[^a-z0-9؀-ۿ-]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
@@ -21,7 +22,7 @@ function slug36(): string {
 
 function safeHandle(name: string): string {
   return (
-    name
+    String(name ?? "")
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9-]/g, "")
@@ -31,17 +32,6 @@ function safeHandle(name: string): string {
 
 type DbProfile = { id: string };
 type DbArticle = { id: string; slug: string; status: ArtStatus };
-
-type Db = {
-  articleAuthorProfile: {
-    findUnique: (a: unknown) => Promise<DbProfile | null>;
-    create:    (a: unknown) => Promise<DbProfile>;
-  };
-  article: {
-    create: (a: unknown) => Promise<DbArticle>;
-  };
-  $disconnect: () => Promise<void>;
-};
 
 export async function POST(req: Request): Promise<NextResponse> {
   const user = await getCurrentUser();
@@ -67,33 +57,33 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Content is required." }, { status: 422 });
   }
 
-  if (!process.env.DATABASE_URL) {
+  // Use shared singleton (PrismaPg adapter — required by Prisma 7 driverAdapters pattern)
+  const db = await getPrisma();
+  if (!db) {
     return NextResponse.json(
       { error: "Database unavailable. Contact support." },
       { status: 503 },
     );
   }
 
-  let db: Db | null = null;
-  try {
-    const { PrismaClient } = await import("@prisma/client");
-    db = new PrismaClient() as unknown as Db;
-  } catch {
-    return NextResponse.json({ error: "Database connection failed." }, { status: 503 });
-  }
+  const profileModel = (db as Record<string, unknown>).articleAuthorProfile as {
+    findUnique: (a: unknown) => Promise<DbProfile | null>;
+    create:    (a: unknown) => Promise<DbProfile>;
+  };
+  const articleModel = (db as Record<string, unknown>).article as {
+    create: (a: unknown) => Promise<DbArticle>;
+  };
 
   try {
     // Find or create author profile for this user
-    let profile = await db.articleAuthorProfile.findUnique({
-      where: { userId: user.id },
-    });
+    let profile = await profileModel.findUnique({ where: { userId: user.id } });
 
     if (!profile) {
-      profile = await db.articleAuthorProfile.create({
+      profile = await profileModel.create({
         data: {
           userId:      user.id,
-          handle:      safeHandle(user.name),
-          displayName: user.name,
+          handle:      safeHandle(user.name ?? ""),
+          displayName: user.name || user.email,
         },
       });
     }
@@ -101,7 +91,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     const status: ArtStatus = action === "draft" ? "DRAFT" : "SUBMITTED";
     const uniqueSlug = `${toSlug(title)}-${slug36()}`;
 
-    const article = await db.article.create({
+    const article = await articleModel.create({
       data: {
         title,
         slug:           uniqueSlug,
@@ -113,7 +103,6 @@ export async function POST(req: Request): Promise<NextResponse> {
         seoTitle:       String(body.seoTitle ?? "").trim() || undefined,
         seoDescription: String(body.seoDesc  ?? "").trim() || undefined,
         status,
-        /* Submitted/draft articles are PRIVATE until an admin publishes them */
         visibility: "PRIVATE",
         noIndex:    true,
         authorId:   profile.id,
@@ -124,12 +113,11 @@ export async function POST(req: Request): Promise<NextResponse> {
       article: { id: article.id, slug: article.slug, status: article.status },
     });
   } catch (err) {
-    console.error("[api/articles/submit]", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[api/articles/submit] persist error | user:", user.id, "| action:", action, "| error:", msg);
     return NextResponse.json(
       { error: "Failed to save article. Please try again." },
       { status: 500 },
     );
-  } finally {
-    await db.$disconnect();
   }
 }
