@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import Link          from "next/link";
-import { usePathname } from "next/navigation";
+import { useState }  from "react";
+import Link            from "next/link";
+import { useLocale }   from "next-intl";
 import type { ArticleDetail, ArticleListItem } from "@/lib/articles/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -500,9 +500,12 @@ interface Props {
 }
 
 export function ArticleDetailClient({ article, related }: Props) {
-  const pathname = usePathname();
-  const isFa     = pathname.startsWith("/fa");
-  const locale   = isFa ? "fa" : "en";
+  // useLocale() reads from the next-intl middleware request context — always a
+  // stable string, never null. Do NOT use usePathname() from next/navigation here:
+  // next-intl middleware rewrites paths before Next.js sees them, so usePathname()
+  // can return null on async re-renders in App Router and crash the component.
+  const locale = useLocale();
+  const isFa   = locale === "fa";
 
   const typeLabel = CONTENT_TYPE_LABELS[article.contentType] ?? { en: article.contentType, fa: article.contentType };
   const catHref   = article.category ? `/${locale}/articles/category/${article.category.slug}` : null;
