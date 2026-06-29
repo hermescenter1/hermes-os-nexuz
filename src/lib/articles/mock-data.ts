@@ -146,10 +146,11 @@ const tags = (...slugs: string[]) => MOCK_TAGS.filter(t => slugs.includes(t.slug
 const auth = (id: string) => MOCK_AUTHORS.find(a => a.id === id)!;
 
 const BASE: Omit<ArticleListItem, "id"|"title"|"slug"|"subtitle"|"excerpt"|"contentType"|"authorId"|"author"|"categoryId"|"category"|"tags"|"readingTimeMinutes"|"publishedAt"|"viewCount"|"saveCount"|"reactionCount"|"commentCount"|"shareCount"|"createdAt"|"updatedAt"> = {
-  coverImageUrl: null,
-  language: "EN",
-  status: "PUBLISHED",
-  visibility: "PUBLIC",
+  coverImageUrl:   null,
+  language:        "EN",
+  status:          "PUBLISHED",
+  visibility:      "PUBLIC",
+  rejectionReason: null,
 };
 
 export const MOCK_ARTICLES: ArticleDetail[] = [

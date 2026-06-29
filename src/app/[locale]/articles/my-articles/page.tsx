@@ -51,6 +51,12 @@ function ArticleRow({ article, isFa, locale }: { article: ArticleListItem; isFa:
         {article.excerpt && (
           <p className="text-xs text-muted line-clamp-2 leading-relaxed">{article.excerpt}</p>
         )}
+        {article.status === "REJECTED" && article.rejectionReason && (
+          <p className="mt-1.5 text-xs text-danger/80 bg-danger/5 border border-danger/15 rounded-lg px-3 py-2 leading-relaxed">
+            <span className="font-semibold">{isFa ? "دلیل رد: " : "Reason: "}</span>
+            {article.rejectionReason}
+          </p>
+        )}
         <p className="mt-2 text-[10px] text-faint font-mono">
           {isFa ? "بروزرسانی:" : "Updated:"} {fmtDate(article.updatedAt, isFa)}
         </p>

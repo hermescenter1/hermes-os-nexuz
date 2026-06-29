@@ -98,6 +98,7 @@ export interface ArticleListItem {
   tags: ArticleTag[];
   readingTimeMinutes: number;
   publishedAt: string | null;
+  rejectionReason: string | null;
   viewCount: number;
   saveCount: number;
   reactionCount: number;
@@ -115,7 +116,6 @@ export interface ArticleDetail extends ArticleListItem {
   canonicalUrl: string | null;
   ogImageUrl: string | null;
   noIndex: boolean;
-  rejectionReason: string | null;
   knowledgeMetadata: ArticleKnowledgeMetadata | null;
 }
 
