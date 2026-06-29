@@ -21,6 +21,21 @@ function ts<T extends object>(row: T): T {
   return out as T;
 }
 
+// Recursively converts all Date instances to ISO strings.
+// ts() is shallow and misses Date objects nested in author/category/tags/knowledgeMetadata.
+function deepTs(val: unknown): unknown {
+  if (val instanceof Date) return val.toISOString();
+  if (Array.isArray(val)) return val.map(deepTs);
+  if (val !== null && typeof val === "object") {
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(val as object)) {
+      out[k] = deepTs((val as Record<string, unknown>)[k]);
+    }
+    return out;
+  }
+  return val;
+}
+
 // Uses shared getPrisma() singleton which supplies the PrismaPg driver adapter
 // required by Prisma 7 driverAdapters — do NOT create a bare new PrismaClient() here.
 async function getDb() {
@@ -121,19 +136,53 @@ export async function getArticleDetailBySlug(slug: string): Promise<ArticleDetai
   const db = await getDb();
   if (db) {
     try {
-      const row = await (db as never as { article: { findUnique: (a: unknown) => Promise<unknown> } }).article.findUnique({
+      // findFirst is used instead of findUnique for robustness with Prisma 7
+      // driverAdapters + complex nested includes. Both use WHERE slug = $1 but
+      // findFirst generates a simpler query path in the adapter layer.
+      const row = await (db as never as {
+        article: { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
+      }).article.findFirst({
         where: { slug },
         include: {
-          author: true,
-          category: true,
-          tags: { include: { tag: true } },
+          author:            true,
+          category:          true,
+          tags:              { include: { tag: true } },
           knowledgeMetadata: true,
         },
       });
+
       if (!row) return null;
-      return ts(row as object) as ArticleDetail;
-    } catch { /* fall through */ }
+
+      // Deep-convert all Date objects to ISO strings (ts() only handles the top level;
+      // author.createdAt, category.createdAt, tag.createdAt etc. would remain as Dates
+      // without this deep conversion, potentially causing RSC serialisation issues).
+      const r = deepTs(row) as Record<string, unknown>;
+
+      // Prisma returns tags as ArticleTagOnArticle[] (join-table shape):
+      //   [{ articleId, tagId, tag: { id, slug, name, nameFa, createdAt } }]
+      // ArticleDetailClient expects the flat ArticleTag[] shape.
+      type JoinTag = { tag?: Record<string, unknown> };
+      const rawTags  = Array.isArray(r.tags) ? (r.tags as JoinTag[]) : [];
+      const tags: ArticleTag[] = rawTags
+        .filter((t): t is JoinTag & { tag: Record<string, unknown> } => !!t?.tag)
+        .map(t => ({
+          id:     String(t.tag.id     ?? ""),
+          slug:   String(t.tag.slug   ?? ""),
+          name:   String(t.tag.name   ?? ""),
+          nameFa: t.tag.nameFa != null ? String(t.tag.nameFa) : null,
+        }));
+
+      return { ...r, tags } as ArticleDetail;
+    } catch (err) {
+      // Log the real DB error so it is visible in server logs.
+      // Do NOT fall through to mock-data when the DB is reachable —
+      // that would hide valid published articles from the public.
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[db/articles] getArticleDetailBySlug slug="${slug.slice(0, 80)}" error: ${msg}`);
+      return null;
+    }
   }
+  // DB is unavailable — fall back to mock for offline/dev mode.
   return getArticleBySlug(slug) ?? null;
 }
 
