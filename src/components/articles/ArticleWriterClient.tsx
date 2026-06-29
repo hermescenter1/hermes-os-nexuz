@@ -60,7 +60,6 @@ interface FormData {
 
 interface SubmitResult {
   articleId?:     string;
-  articleSlug?:   string;
   articleStatus?: string;
 }
 
@@ -182,18 +181,22 @@ export function ArticleWriterClient() {
         ? (data.article as Record<string, unknown>)
         : {};
       const articleId     = typeof artRaw.id     === "string" ? artRaw.id     : undefined;
-      const articleSlug   = typeof artRaw.slug   === "string" ? artRaw.slug   : undefined;
       const articleStatus = typeof artRaw.status === "string" ? artRaw.status : undefined;
+      // Intentionally NOT extracting articleSlug — DRAFT/SUBMITTED articles are
+      // PRIVATE and must not be navigated to via the public /articles/[slug] route.
 
-      const successText =
-        action === "draft"
-          ? isFa ? "پیش‌نویس ذخیره شد." : "Draft saved successfully."
-          : isFa ? "مقاله برای بررسی ارسال شد." : "Article submitted for review.";
+      if (action === "submit") {
+        // Hard navigation to my-articles: avoids any React reconciliation on the
+        // current page and guarantees no client-side transition to the private slug.
+        window.location.href = `/${locale}/articles/my-articles?submitted=1`;
+        return;
+      }
 
+      // Draft: stay on write page and show inline success with my-articles link.
       setMessage({
         type:   "success",
-        text:   successText,
-        result: { articleId, articleSlug, articleStatus },
+        text:   isFa ? "پیش‌نویس ذخیره شد." : "Draft saved successfully.",
+        result: { articleId, articleStatus },
       });
     } catch {
       setMessage({
@@ -273,11 +276,11 @@ export function ArticleWriterClient() {
             )}
             <div className="min-w-0 flex-1">
               <p>{message.text}</p>
-              {message.type === "success" && message.result?.articleId && (
+              {message.type === "success" && message.result?.articleStatus && (
                 <p className="mt-1 text-[11px] opacity-70 font-mono">
-                  ID: {message.result.articleId}
-                  {message.result.articleStatus && (
-                    <span className="ms-2">· {message.result.articleStatus}</span>
+                  {message.result.articleStatus}
+                  {message.result.articleId && (
+                    <span className="ms-2 opacity-60">· {message.result.articleId.slice(0, 8)}</span>
                   )}
                 </p>
               )}
