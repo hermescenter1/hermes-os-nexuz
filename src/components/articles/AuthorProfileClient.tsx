@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import Link          from "next/link";
-import { usePathname } from "next/navigation";
+import { useState }   from "react";
+import Link            from "next/link";
+import { useLocale }   from "next-intl";
 import type { ArticleAuthorProfile, ArticleListItem } from "@/lib/articles/types";
 
 function fmtNum(n: number) {
@@ -48,26 +48,14 @@ interface Props {
 }
 
 export function AuthorProfileClient({ author, articles }: Props) {
-  const pathname  = usePathname();
-  const isFa      = pathname.startsWith("/fa");
-  const locale    = isFa ? "fa" : "en";
-  const [following, setFollowing] = useState(false);
-  const [filter, setFilter]       = useState("ALL");
+  const locale = useLocale();
+  const isFa   = locale === "fa";
+  const [filter, setFilter] = useState("ALL");
 
-  async function handleFollow() {
-    const next = !following;
-    setFollowing(next);
-    await fetch("/api/articles/follow", {
-      method: next ? "POST" : "DELETE",
-      ...(next
-        ? { body: JSON.stringify({ authorHandle: author.handle }), headers: { "Content-Type": "application/json" } }
-        : {}),
-    }).catch(() => setFollowing(!next));
-  }
-
-  const contentTypes = ["ALL", ...Array.from(new Set(articles.map(a => a.contentType)))];
-  const filtered     = filter === "ALL" ? articles : articles.filter(a => a.contentType === filter);
-  const score        = author.industrialCredibilityScore;
+  const contentTypes    = ["ALL", ...Array.from(new Set(articles.map(a => a.contentType)))];
+  const filtered        = filter === "ALL" ? articles : articles.filter(a => a.contentType === filter);
+  const score           = author.industrialCredibilityScore;
+  const isPublishedAuth = articles.length > 0;
 
   return (
     <div className="min-h-screen">
@@ -123,20 +111,19 @@ export function AuthorProfileClient({ author, articles }: Props) {
                   <div className="flex flex-wrap items-center gap-3 mb-1">
                     <h1 className="text-3xl font-bold text-ink">{author.displayName}</h1>
                     {author.verifiedExpert && (
-                      <span className="hs-badge hs--knowledge">{isFa ? "متخصص تأییدشده" : "VERIFIED EXPERT"}</span>
+                      <span className="hs-badge hs--knowledge">{isFa ? "متخصص تأییدشده صنعتی" : "VERIFIED EXPERT"}</span>
+                    )}
+                    {isPublishedAuth && (
+                      <span className="hs-badge hs--reasoning">{isFa ? "نویسنده منتشرشده" : "PUBLISHED AUTHOR"}</span>
                     )}
                   </div>
                   <p className="text-muted text-sm font-mono">@{author.handle}</p>
                 </div>
 
-                <button onClick={handleFollow}
-                  className={`shrink-0 text-sm px-6 py-2.5 rounded-xl border-2 transition-all font-bold ${
-                    following
-                      ? "border-signal bg-signal/12 text-signal"
-                      : "border-signal text-signal hover:bg-signal/8"
-                  }`}>
-                  {following ? (isFa ? "✓ دنبال‌شده" : "✓ Following") : (isFa ? "دنبال کردن" : "Follow")}
-                </button>
+                {/* Follow is a future feature — no fake persistence */}
+                <span className="shrink-0 text-xs px-4 py-2 rounded-xl border border-line/40 text-faint cursor-default opacity-60 select-none">
+                  {isFa ? "به زودی" : "Coming Soon"}
+                </span>
               </div>
 
               {author.roleTitle && <p className="text-base text-ink font-semibold mb-0.5">{author.roleTitle}</p>}

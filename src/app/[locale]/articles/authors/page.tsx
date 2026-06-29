@@ -53,8 +53,8 @@ export default async function AuthorsPage({
           </h1>
           <p className="text-muted text-sm max-w-xl leading-relaxed">
             {isFa
-              ? `${authors.length} متخصص تأییدشده از حوزه‌های اتوماسیون، نگهداشت، PLC، SCADA، و هوش مصنوعی صنعتی`
-              : `${authors.length} verified experts across automation, maintenance, PLC/SCADA, and industrial AI`}
+              ? `${authors.length} نویسنده و متخصص صنعتی در حوزه‌های اتوماسیون، نگهداشت، PLC، SCADA، و هوش مصنوعی صنعتی`
+              : `${authors.length} industrial authors and experts across automation, maintenance, PLC/SCADA, and industrial AI`}
           </p>
         </div>
       </div>
@@ -87,6 +87,10 @@ export default async function AuthorsPage({
                     {author.displayName}
                   </p>
                   <p className="text-[10px] text-faint truncate font-mono">{author.roleTitle ?? author.company}</p>
+                  {/* All authors in this directory have published articles */}
+                  <span className="inline-flex items-center gap-1 mt-1 text-[9px] px-1.5 py-px rounded border font-mono uppercase tracking-wider bg-signal/[0.08] text-signal border-signal/20">
+                    {isFa ? "نویسنده منتشرشده" : "Published Author"}
+                  </span>
                 </div>
               </div>
 
@@ -113,7 +117,7 @@ export default async function AuthorsPage({
 
               {/* Stats */}
               <div className="flex items-center gap-4 text-[10px] text-faint font-mono">
-                <span>{author.articleCount} {isFa ? "مقاله" : "articles"}</span>
+                <span>{author.articleCount} {isFa ? "مقاله منتشرشده" : "published"}</span>
                 <span className="text-line">·</span>
                 <span>{fmtNum(author.followerCount)} {isFa ? "دنبال‌کننده" : "followers"}</span>
                 <span className="text-line">·</span>

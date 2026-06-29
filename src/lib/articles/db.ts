@@ -233,12 +233,18 @@ export async function getAuthorProfile(handle: string): Promise<ArticleAuthorPro
   const db = await getDb();
   if (db) {
     try {
-      const row = await (db as never as { articleAuthorProfile: { findUnique: (a: unknown) => Promise<unknown> } }).articleAuthorProfile.findUnique({
+      const row = await (db as never as {
+        articleAuthorProfile: { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
+      }).articleAuthorProfile.findFirst({
         where: { handle },
       });
       if (!row) return null;
-      return ts(row as object) as ArticleAuthorProfile;
-    } catch { /* fall through */ }
+      return deepTs(row) as ArticleAuthorProfile;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[db/articles] getAuthorProfile handle="${handle}" error: ${msg}`);
+      return null;
+    }
   }
   return getAuthorByHandle(handle) ?? null;
 }
@@ -247,11 +253,33 @@ export async function getAllAuthors(): Promise<ArticleAuthorProfile[]> {
   const db = await getDb();
   if (db) {
     try {
-      const rows = await (db as never as { articleAuthorProfile: { findMany: (a: unknown) => Promise<unknown[]> } }).articleAuthorProfile.findMany({
-        where: { isActive: true }, orderBy: { followerCount: "desc" },
+      // Only include authors who have at least one PUBLISHED + PUBLIC article.
+      // The _count.articles filter computes the real published count to override
+      // the stale articleCount counter field on the profile model.
+      type CountedRow = Record<string, unknown> & { _count: { articles: number } };
+      const rows = await (db as never as {
+        articleAuthorProfile: { findMany: (a: unknown) => Promise<CountedRow[]> };
+      }).articleAuthorProfile.findMany({
+        where: {
+          isActive:  true,
+          articles:  { some: { status: "PUBLISHED", visibility: "PUBLIC" } },
+        },
+        include: {
+          _count: {
+            select: { articles: { where: { status: "PUBLISHED", visibility: "PUBLIC" } } },
+          },
+        },
+        orderBy: { followerCount: "desc" },
       });
-      return rows.map(r => ts(r as object)) as ArticleAuthorProfile[];
-    } catch { /* fall through */ }
+      return rows.map(r => {
+        const publishedCount = r._count?.articles ?? 0;
+        const a = deepTs(r) as ArticleAuthorProfile;
+        return { ...a, articleCount: publishedCount };
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[db/articles] getAllAuthors error: ${msg}`);
+    }
   }
   return MOCK_AUTHORS;
 }
@@ -298,13 +326,34 @@ export async function getAuthorArticles(handle: string): Promise<ArticleListItem
   const db = await getDb();
   if (db) {
     try {
-      const rows = await (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article.findMany({
+      const rows = await (db as never as {
+        article: { findMany: (a: unknown) => Promise<unknown[]> };
+      }).article.findMany({
         where: { status: "PUBLISHED", visibility: "PUBLIC", author: { handle } },
         include: { author: true, category: true, tags: { include: { tag: true } } },
         orderBy: { publishedAt: "desc" },
       });
-      return rows.map(r => ts(r as object)) as ArticleListItem[];
-    } catch { /* fall through */ }
+      return rows.map(r => {
+        const d = deepTs(r) as Record<string, unknown>;
+        type JoinTag = { tag?: Record<string, unknown> };
+        const rawTags = Array.isArray(d.tags) ? (d.tags as JoinTag[]) : [];
+        const tags: ArticleTag[] = rawTags
+          .filter((t): t is JoinTag & { tag: Record<string, unknown> } => !!t?.tag)
+          .map(t => ({
+            id:     String(t.tag.id     ?? ""),
+            slug:   String(t.tag.slug   ?? ""),
+            name:   String(t.tag.name   ?? ""),
+            nameFa: t.tag.nameFa != null ? String(t.tag.nameFa) : null,
+          }));
+        return { ...d, tags } as ArticleListItem;
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Log and return empty — do NOT fall through to mock when DB is reachable.
+      // Mock returns wrong articles for real DB author handles.
+      console.error(`[db/articles] getAuthorArticles handle="${handle}" error: ${msg}`);
+      return [];
+    }
   }
   return getArticlesByAuthor(handle);
 }

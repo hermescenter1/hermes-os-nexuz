@@ -54,10 +54,13 @@ export default async function AuthorProfilePage({
 
   if (!author || !author.isActive) notFound();
 
+  // Override the stale counter field with the real PUBLISHED + PUBLIC count.
+  const authorWithRealCount = { ...author, articleCount: articles.length };
+
   return (
     <>
       <JsonLd data={[buildPersonJsonLd(author, locale)]} />
-      <AuthorProfileClient author={author} articles={articles} />
+      <AuthorProfileClient author={authorWithRealCount} articles={articles} />
     </>
   );
 }
