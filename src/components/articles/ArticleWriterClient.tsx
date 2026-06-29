@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState }  from "react";
+import { useLocale } from "next-intl";
 
 const CONTENT_TYPES = [
   { key: "TECHNICAL_ARTICLE",        en: "Technical Article",        fa: "مقاله فنی"              },
@@ -59,14 +59,18 @@ interface FormData {
 }
 
 interface SubmitResult {
-  articleId?: string;
-  articleSlug?: string;
+  articleId?:     string;
+  articleSlug?:   string;
   articleStatus?: string;
 }
 
 export function ArticleWriterClient() {
-  const pathname = usePathname();
-  const isFa     = pathname.startsWith("/fa");
+  // useLocale() reads from the next-intl request context — always a stable string,
+  // never null. Do NOT use usePathname() from next/navigation for locale detection
+  // because next-intl middleware may rewrite the path before Next.js sees it,
+  // making the pathname inconsistent between SSR and client re-renders.
+  const locale = useLocale();
+  const isFa   = locale === "fa";
 
   const [form, setForm] = useState<FormData>({
     title: "", subtitle: "", excerpt: "", content: "",
@@ -94,18 +98,33 @@ export function ArticleWriterClient() {
   ) {
     const val  = form[key] as string;
     const rows = opts?.rows;
-    const Tag  = rows ? "textarea" : "input";
+    if (rows) {
+      return (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
+            {label}{opts?.required && <span className="text-danger ms-1">*</span>}
+          </label>
+          <textarea
+            value={val}
+            onChange={e => update(key, e.target.value)}
+            placeholder={opts?.placeholder}
+            required={opts?.required}
+            rows={rows}
+            className={FIELD_CLS}
+          />
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col gap-1.5">
         <label className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
           {label}{opts?.required && <span className="text-danger ms-1">*</span>}
         </label>
-        <Tag
+        <input
           value={val}
           onChange={e => update(key, e.target.value)}
           placeholder={opts?.placeholder}
           required={opts?.required}
-          rows={rows}
           className={FIELD_CLS}
         />
       </div>
@@ -138,11 +157,18 @@ export function ArticleWriterClient() {
         body:    JSON.stringify({ ...form, action }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      // Safe parse: never crash if body is empty or malformed
+      let data: Record<string, unknown> = {};
+      try {
+        const raw = await res.json();
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+          data = raw as Record<string, unknown>;
+        }
+      } catch { /* non-JSON or empty body — keep data = {} */ }
 
       if (!res.ok) {
         const errMsg =
-          typeof data?.error === "string"
+          typeof data.error === "string"
             ? data.error
             : isFa
               ? "ارسال مقاله ناموفق بود. لطفاً دوباره تلاش کنید."
@@ -150,6 +176,14 @@ export function ArticleWriterClient() {
         setMessage({ type: "error", text: errMsg });
         return;
       }
+
+      // Safe article extraction — never assume shape
+      const artRaw  = (data.article && typeof data.article === "object" && !Array.isArray(data.article))
+        ? (data.article as Record<string, unknown>)
+        : {};
+      const articleId     = typeof artRaw.id     === "string" ? artRaw.id     : undefined;
+      const articleSlug   = typeof artRaw.slug   === "string" ? artRaw.slug   : undefined;
+      const articleStatus = typeof artRaw.status === "string" ? artRaw.status : undefined;
 
       const successText =
         action === "draft"
@@ -159,11 +193,7 @@ export function ArticleWriterClient() {
       setMessage({
         type:   "success",
         text:   successText,
-        result: {
-          articleId:     data.article?.id,
-          articleSlug:   data.article?.slug,
-          articleStatus: data.article?.status,
-        },
+        result: { articleId, articleSlug, articleStatus },
       });
     } catch {
       setMessage({
@@ -178,12 +208,12 @@ export function ArticleWriterClient() {
   }
 
   const tabs = [
-    { key: "write" as const, en: "Write",   fa: "نوشتن",  icon: (
+    { key: "write" as const, en: "Write",   fa: "نوشتن",   icon: (
       <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
         <path d="M2.695 14.763l-1.262 3.154a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.885 1.343Z"/>
       </svg>
     )},
-    { key: "seo"   as const, en: "SEO",     fa: "SEO",    icon: (
+    { key: "seo"   as const, en: "SEO",     fa: "SEO",     icon: (
       <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
         <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd"/>
       </svg>
@@ -241,15 +271,23 @@ export function ArticleWriterClient() {
                 <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd"/>
               </svg>
             )}
-            <div>
+            <div className="min-w-0 flex-1">
               <p>{message.text}</p>
-              {message.result?.articleId && (
+              {message.type === "success" && message.result?.articleId && (
                 <p className="mt-1 text-[11px] opacity-70 font-mono">
-                  {isFa ? "شناسه مقاله:" : "Article ID:"} {message.result.articleId}
+                  ID: {message.result.articleId}
                   {message.result.articleStatus && (
                     <span className="ms-2">· {message.result.articleStatus}</span>
                   )}
                 </p>
+              )}
+              {message.type === "success" && (
+                <a
+                  href={`/${locale}/articles/my-articles`}
+                  className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium opacity-80 hover:opacity-100 underline underline-offset-2"
+                >
+                  {isFa ? "مشاهده مقالات من ←" : "View My Articles →"}
+                </a>
               )}
             </div>
           </div>

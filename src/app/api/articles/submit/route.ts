@@ -110,7 +110,17 @@ export async function POST(req: Request): Promise<NextResponse> {
     });
 
     return NextResponse.json({
-      article: { id: article.id, slug: article.slug, status: article.status },
+      ok: true,
+      article: {
+        id:         article.id,
+        slug:       article.slug,
+        status:     article.status,
+        visibility: "PRIVATE",
+        noIndex:    true,
+      },
+      message: status === "DRAFT"
+        ? "Draft saved successfully."
+        : "Article submitted for review.",
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
