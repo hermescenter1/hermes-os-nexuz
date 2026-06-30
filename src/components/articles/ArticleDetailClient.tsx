@@ -344,9 +344,20 @@ function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: b
       <div className="p-6">
         {/* Author identity */}
         <div className="flex flex-col sm:flex-row gap-5">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-signal/30 to-ice/20 border-2 border-signal/25 flex items-center justify-center text-2xl font-bold text-signal shrink-0">
-            {author.displayName.charAt(0)}
-          </div>
+          {author.avatarUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={author.avatarUrl}
+              alt={`${author.displayName} profile photo`}
+              width={64}
+              height={64}
+              className="w-16 h-16 rounded-full object-cover border-2 border-signal/25 shrink-0"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-signal/30 to-ice/20 border-2 border-signal/25 flex items-center justify-center text-2xl font-bold text-signal shrink-0">
+              {author.displayName.charAt(0)}
+            </div>
+          )}
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-3">

@@ -32,6 +32,10 @@ services:
         NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID:-}
     restart: unless-stopped
     env_file: .env.production
+    volumes:
+      # Phase 76: Persist author avatar uploads across container rebuilds.
+      # Without this volume, /app/public/uploads is lost on every docker build.
+      - uploads_data:/app/public/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -136,6 +140,7 @@ volumes:
   postgres_data:
   redis_data:
   uptime_kuma_data:
+  uploads_data:
 
 networks:
   hermes_internal:

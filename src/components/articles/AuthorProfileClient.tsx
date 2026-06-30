@@ -213,9 +213,20 @@ export function AuthorProfileClient({ author, articles }: Props) {
           <div className="flex flex-col sm:flex-row gap-7 items-start">
             {/* Avatar */}
             <div className="relative shrink-0">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-signal/35 to-ice/25 border-2 border-signal/30 flex items-center justify-center text-4xl font-bold text-signal shadow-[0_0_30px_rgba(30,200,164,0.12)]">
-                {author.displayName.charAt(0)}
-              </div>
+              {author.avatarUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={author.avatarUrl}
+                  alt={`${author.displayName} profile photo`}
+                  width={96}
+                  height={96}
+                  className="w-24 h-24 rounded-2xl object-cover border-2 border-signal/30 shadow-[0_0_30px_rgba(30,200,164,0.12)]"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-signal/35 to-ice/25 border-2 border-signal/30 flex items-center justify-center text-4xl font-bold text-signal shadow-[0_0_30px_rgba(30,200,164,0.12)]">
+                  {author.displayName.charAt(0)}
+                </div>
+              )}
               {author.verifiedExpert && (
                 <div className="absolute -bottom-1 -end-1 w-7 h-7 rounded-full bg-signal flex items-center justify-center border-2"
                   style={{ borderColor: "var(--bg)" }}>

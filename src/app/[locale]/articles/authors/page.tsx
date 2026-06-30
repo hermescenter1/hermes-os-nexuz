@@ -78,9 +78,20 @@ export default async function AuthorsPage({
               {/* Avatar + Name */}
               <div className="flex items-start gap-3 pt-1">
                 <div className="relative shrink-0">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-signal/30 to-ice/20 border border-signal/25 flex items-center justify-center text-lg font-bold text-signal">
-                    {author.displayName.charAt(0)}
-                  </div>
+                  {author.avatarUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={author.avatarUrl}
+                      alt={`${author.displayName} profile photo`}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded-xl object-cover border border-signal/25"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-signal/30 to-ice/20 border border-signal/25 flex items-center justify-center text-lg font-bold text-signal">
+                      {author.displayName.charAt(0)}
+                    </div>
+                  )}
                   {author.verifiedExpert && (
                     <div className="absolute -bottom-1 -end-1 w-5 h-5 rounded-full bg-signal flex items-center justify-center border border-bg">
                       <svg viewBox="0 0 20 20" fill="white" className="w-3 h-3">
