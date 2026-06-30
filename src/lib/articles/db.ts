@@ -451,3 +451,191 @@ export async function getAllArticlesForModeration(): Promise<ArticleListItem[]> 
   }
   return MOCK_ARTICLES as ArticleListItem[];
 }
+
+// ── Phase 77: Editorial Operations Dashboard ──────────────────────────────────
+
+export interface OpsTopArticle {
+  id: string; title: string; slug: string;
+  viewCount: number; reactionCount: number; publishedAt: string | null;
+  authorDisplayName: string;
+}
+
+export interface OpsTopAuthor {
+  id: string; handle: string; displayName: string; avatarUrl: string | null;
+  publishedCount: number; totalViews: number;
+}
+
+export interface OpsEditorialEvent {
+  id: string; articleTitle: string; articleSlug: string;
+  action: string; reason: string | null; createdAt: string;
+}
+
+export interface EditorialOperationsDashboard {
+  lifecycleCounts:          Array<{ status: string; count: number }>;
+  visibilityCounts:         Array<{ visibility: string; count: number }>;
+  pendingReview:            { count: number; oldestAt: string | null; latestAt: string | null };
+  publicPerformance:        { articleCount: number; totalViews: number; totalReactions: number; authorCount: number };
+  topArticles:              OpsTopArticle[];
+  topAuthors:               OpsTopAuthor[];
+  recentEditorialActivity:  OpsEditorialEvent[];
+  generatedAt:              string;
+  dbAvailable:              boolean;
+}
+
+export async function getEditorialOperationsDashboard(): Promise<EditorialOperationsDashboard> {
+  const empty: EditorialOperationsDashboard = {
+    lifecycleCounts: [], visibilityCounts: [],
+    pendingReview: { count: 0, oldestAt: null, latestAt: null },
+    publicPerformance: { articleCount: 0, totalViews: 0, totalReactions: 0, authorCount: 0 },
+    topArticles: [], topAuthors: [], recentEditorialActivity: [],
+    generatedAt: new Date().toISOString(), dbAvailable: false,
+  };
+
+  const db = await getDb();
+  if (!db) return empty;
+
+  type Db = Record<string, unknown>;
+  type ArtModel = {
+    groupBy:   (a: unknown) => Promise<Array<{ status?: string; visibility?: string; _count: Record<string, number> }>>;
+    count:     (a: unknown) => Promise<number>;
+    findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
+    findMany:  (a: unknown) => Promise<Array<Record<string, unknown>>>;
+    aggregate: (a: unknown) => Promise<{ _sum: Record<string, number | null>; _count: Record<string, number> }>;
+  };
+  type ProfModel = {
+    count:    (a: unknown) => Promise<number>;
+    findMany: (a: unknown) => Promise<Array<Record<string, unknown>>>;
+  };
+  type EventModel = {
+    findMany: (a: unknown) => Promise<Array<Record<string, unknown>>>;
+  };
+
+  const art  = (db as Db).article as ArtModel;
+  const prof = (db as Db).articleAuthorProfile as ProfModel;
+  const evt  = (db as Db).articleModerationEvent as EventModel;
+
+  try {
+    const [
+      lifecycleRaw, visibilityRaw,
+      pendingCount, oldestPending, latestPending,
+      pubAgg, authorCount,
+      topArticlesRaw, topAuthorsRaw, topAuthorsAgg,
+      recentEventsRaw,
+    ] = await Promise.all([
+      // Lifecycle distribution
+      art.groupBy({ by: ["status"], _count: { id: true } }),
+      // Visibility distribution
+      art.groupBy({ by: ["visibility"], _count: { id: true } }),
+      // Pending review count
+      art.count({ where: { status: { in: ["SUBMITTED", "IN_REVIEW"] } } }),
+      // Oldest pending
+      art.findFirst({ where: { status: { in: ["SUBMITTED", "IN_REVIEW"] } }, orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
+      // Latest pending
+      art.findFirst({ where: { status: { in: ["SUBMITTED", "IN_REVIEW"] } }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
+      // Public performance aggregate
+      art.aggregate({
+        where: { status: "PUBLISHED", visibility: "PUBLIC" },
+        _count: { id: true },
+        _sum:   { viewCount: true, reactionCount: true },
+      }),
+      // Public author count
+      prof.count({ where: { isActive: true, articles: { some: { status: "PUBLISHED", visibility: "PUBLIC" } } } }),
+      // Top articles by views
+      art.findMany({
+        where:   { status: "PUBLISHED", visibility: "PUBLIC" },
+        orderBy: { viewCount: "desc" },
+        take:    8,
+        select:  { id: true, title: true, slug: true, viewCount: true, reactionCount: true, publishedAt: true,
+                   author: { select: { displayName: true } } },
+      }),
+      // Top authors by followerCount (refine below with view agg)
+      prof.findMany({
+        where:   { isActive: true, articles: { some: { status: "PUBLISHED", visibility: "PUBLIC" } } },
+        orderBy: { followerCount: "desc" },
+        take:    8,
+        select:  { id: true, handle: true, displayName: true, avatarUrl: true,
+                   _count: { select: { articles: { where: { status: "PUBLISHED", visibility: "PUBLIC" } } } } },
+      }),
+      // Aggregate views per author for top authors
+      art.groupBy({
+        by:    ["authorId"],
+        where: { status: "PUBLISHED", visibility: "PUBLIC" },
+        _sum:  { viewCount: true },
+      }),
+      // Recent moderation events with article info
+      evt.findMany({
+        orderBy: { createdAt: "desc" },
+        take:    10,
+        include: { article: { select: { title: true, slug: true } } },
+      }),
+    ]);
+
+    // Build a map of authorId → total views for top authors
+    type AggViewRow = { authorId: string; _sum: { viewCount: number | null } };
+    const viewMap = new Map<string, number>(
+      (topAuthorsAgg as unknown as AggViewRow[]).map(r => [r.authorId, r._sum.viewCount ?? 0])
+    );
+
+    const lifecycleCounts = lifecycleRaw.map(r => ({ status: String(r.status ?? ""), count: r._count.id ?? 0 }));
+    const visibilityCounts = visibilityRaw.map(r => ({ visibility: String(r.visibility ?? ""), count: r._count.id ?? 0 }));
+
+    const oldestAtRaw = oldestPending ? (oldestPending as Record<string, unknown>).createdAt : null;
+    const latestAtRaw = latestPending ? (latestPending as Record<string, unknown>).createdAt : null;
+    const oldestAt = oldestAtRaw instanceof Date ? oldestAtRaw.toISOString() : typeof oldestAtRaw === "string" ? oldestAtRaw : null;
+    const latestAt = latestAtRaw instanceof Date ? latestAtRaw.toISOString() : typeof latestAtRaw === "string" ? latestAtRaw : null;
+
+    const topArticles: OpsTopArticle[] = topArticlesRaw.map(r => ({
+      id:                String(r.id ?? ""),
+      title:             String(r.title ?? ""),
+      slug:              String(r.slug ?? ""),
+      viewCount:         Number(r.viewCount ?? 0),
+      reactionCount:     Number(r.reactionCount ?? 0),
+      publishedAt:       r.publishedAt instanceof Date ? r.publishedAt.toISOString() : typeof r.publishedAt === "string" ? r.publishedAt : null,
+      authorDisplayName: String((r.author as Record<string, unknown>)?.displayName ?? ""),
+    }));
+
+    type CountedProf = Record<string, unknown> & { _count: { articles: number } };
+    const topAuthors: OpsTopAuthor[] = (topAuthorsRaw as CountedProf[]).map(r => ({
+      id:            String(r.id ?? ""),
+      handle:        String(r.handle ?? ""),
+      displayName:   String(r.displayName ?? ""),
+      avatarUrl:     typeof r.avatarUrl === "string" ? r.avatarUrl : null,
+      publishedCount: r._count?.articles ?? 0,
+      totalViews:    viewMap.get(String(r.id ?? "")) ?? 0,
+    })).sort((a, b) => b.totalViews - a.totalViews || b.publishedCount - a.publishedCount);
+
+    type EvtRow = Record<string, unknown> & { article: Record<string, unknown> | null };
+    const recentEditorialActivity: OpsEditorialEvent[] = (recentEventsRaw as EvtRow[]).map(r => {
+      const at = r.createdAt instanceof Date ? r.createdAt.toISOString() : typeof r.createdAt === "string" ? r.createdAt : new Date().toISOString();
+      return {
+        id:           String(r.id ?? ""),
+        articleTitle: String(r.article?.title ?? "—"),
+        articleSlug:  String(r.article?.slug  ?? ""),
+        action:       String(r.action  ?? ""),
+        reason:       typeof r.reason === "string" ? r.reason : null,
+        createdAt:    at,
+      };
+    });
+
+    return {
+      lifecycleCounts,
+      visibilityCounts,
+      pendingReview: { count: pendingCount, oldestAt, latestAt },
+      publicPerformance: {
+        articleCount:    pubAgg._count.id ?? 0,
+        totalViews:      pubAgg._sum.viewCount      ?? 0,
+        totalReactions:  pubAgg._sum.reactionCount  ?? 0,
+        authorCount,
+      },
+      topArticles,
+      topAuthors,
+      recentEditorialActivity,
+      generatedAt: new Date().toISOString(),
+      dbAvailable: true,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[db/articles] getEditorialOperationsDashboard error:", msg);
+    return { ...empty, dbAvailable: false };
+  }
+}

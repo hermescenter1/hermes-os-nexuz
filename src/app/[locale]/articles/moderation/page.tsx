@@ -1,10 +1,12 @@
-import { setRequestLocale }         from "next-intl/server";
-import { RequireCapability }        from "@/components/auth/RequireCapability";
-import { getAllArticlesForModeration } from "@/lib/articles/db";
-import { ModerationDashboardClient } from "@/components/articles/ModerationDashboardClient";
-import { noIndexMetadata }          from "@/lib/seo/metadata";
+import { setRequestLocale }               from "next-intl/server";
+import { RequireCapability }             from "@/components/auth/RequireCapability";
+import { getAllArticlesForModeration,
+         getEditorialOperationsDashboard } from "@/lib/articles/db";
+import { ModerationDashboardClient }     from "@/components/articles/ModerationDashboardClient";
+import { EditorialOperationsDashboard }  from "@/components/articles/EditorialOperationsDashboard";
+import { noIndexMetadata }               from "@/lib/seo/metadata";
 
-export const metadata = noIndexMetadata("Moderation — Hermes Industrial Journal");
+export const metadata = noIndexMetadata("Journal Operations — Hermes Industrial Journal");
 export const dynamic  = "force-dynamic";
 
 export default async function ModerationPage({
@@ -14,11 +16,31 @@ export default async function ModerationPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const articles = await getAllArticlesForModeration();
+  const isFa = locale === "fa";
+
+  const [articles, opsData] = await Promise.all([
+    getAllArticlesForModeration(),
+    getEditorialOperationsDashboard(),
+  ]);
 
   return (
     <RequireCapability capability="admin">
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-6">
+        <EditorialOperationsDashboard data={opsData} isFa={isFa} locale={locale} />
+
+        <div className="my-8 border-t border-line/20" />
+
+        <div className="mb-4">
+          <p className="eyebrow-mono text-signal text-[9px] mb-1 tracking-[0.2em]">
+            {isFa ? "مدیریت محتوا" : "CONTENT MANAGEMENT"}
+          </p>
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
+            <h2 className="text-sm font-bold text-ink uppercase tracking-wider">
+              {isFa ? "میز مدیریت مقالات" : "Article Management"}
+            </h2>
+          </div>
+        </div>
         <ModerationDashboardClient articles={articles} mode="moderation" />
       </div>
     </RequireCapability>
