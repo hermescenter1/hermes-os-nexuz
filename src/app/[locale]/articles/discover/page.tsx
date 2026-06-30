@@ -365,11 +365,12 @@ export default async function DiscoverPage({
                 placeholder={T.placeholder}
                 maxLength={80}
                 autoComplete="off"
-                className={`w-full h-10 rounded-xl border border-line/50 bg-surface/80 text-ink text-sm placeholder:text-faint focus:outline-none focus:border-signal/40 focus:ring-1 focus:ring-signal/20 transition-all ${isFa ? "pe-10 ps-4 text-right" : "ps-10 pe-4"}`}
+                style={{ colorScheme: "dark", boxShadow: "none" }}
+                className={`w-full h-10 rounded-xl border border-[#1E2E40] bg-[#0C1420] text-[#F0F4F8] text-sm placeholder:text-[#5A6B80] focus:outline-none focus:border-[rgba(30,200,164,0.5)] focus:ring-2 focus:ring-[rgba(30,200,164,0.15)] transition-all ${isFa ? "pe-10 ps-4 text-right" : "ps-10 pe-4"}`}
               />
             </div>
             <button type="submit"
-              className="px-5 h-10 rounded-xl bg-signal/10 border border-signal/30 text-signal text-sm font-semibold hover:bg-signal/15 transition-all shrink-0">
+              className="px-5 h-10 rounded-xl bg-[rgba(30,200,164,0.10)] border border-[rgba(30,200,164,0.30)] text-[#1EC8A4] text-sm font-semibold hover:bg-[rgba(30,200,164,0.16)] transition-all shrink-0">
               {T.searchBtn}
             </button>
           </div>
@@ -382,7 +383,8 @@ export default async function DiscoverPage({
 
             {/* Category */}
             <select name="category" defaultValue={categorySlug ?? ""}
-              className="h-8 rounded-lg border border-line/40 bg-surface/80 text-xs text-ink font-mono px-2 focus:outline-none focus:border-signal/30 transition-all">
+              style={{ colorScheme: "dark" }}
+              className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
               <option value="">{T.catAll}</option>
               {(categories as ArticleCategory[]).map(c => (
                 <option key={c.id} value={c.slug}>
@@ -393,7 +395,8 @@ export default async function DiscoverPage({
 
             {/* Tag */}
             <select name="tag" defaultValue={tagSlug ?? ""}
-              className="h-8 rounded-lg border border-line/40 bg-surface/80 text-xs text-ink font-mono px-2 focus:outline-none focus:border-signal/30 transition-all">
+              style={{ colorScheme: "dark" }}
+              className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
               <option value="">{T.tagAll}</option>
               {(tags as ArticleTag[]).map(t => (
                 <option key={t.id} value={t.slug}>
@@ -404,7 +407,8 @@ export default async function DiscoverPage({
 
             {/* Language */}
             <select name="lang" defaultValue={lang ?? ""}
-              className="h-8 rounded-lg border border-line/40 bg-surface/80 text-xs text-ink font-mono px-2 focus:outline-none focus:border-signal/30 transition-all">
+              style={{ colorScheme: "dark" }}
+              className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
               <option value="">{T.langAll}</option>
               <option value="EN">{T.langEn}</option>
               <option value="FA">{T.langFa}</option>
@@ -413,7 +417,8 @@ export default async function DiscoverPage({
             {/* Content type (articles only) */}
             {tab === "articles" && (
               <select name="type" defaultValue={contentType ?? ""}
-                className="h-8 rounded-lg border border-line/40 bg-surface/80 text-xs text-ink font-mono px-2 focus:outline-none focus:border-signal/30 transition-all">
+                style={{ colorScheme: "dark" }}
+              className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
                 <option value="">{T.typeAll}</option>
                 {Object.entries(CONTENT_TYPE_LABELS).map(([v, l]) => (
                   <option key={v} value={v}>{isFa ? l.fa : l.en}</option>
@@ -423,7 +428,8 @@ export default async function DiscoverPage({
 
             {/* Sort */}
             <select name="sort" defaultValue={rawSort ?? ""}
-              className="h-8 rounded-lg border border-line/40 bg-surface/80 text-xs text-ink font-mono px-2 focus:outline-none focus:border-signal/30 transition-all">
+              style={{ colorScheme: "dark" }}
+              className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
               <option value="">{T.sortLabel}</option>
               {sortOptions.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -432,7 +438,7 @@ export default async function DiscoverPage({
 
             {hasFilters && (
               <Link href={buildClearUrl(locale)}
-                className="h-8 px-2.5 rounded-lg border border-line/30 text-faint hover:text-ink text-xs font-mono flex items-center transition-colors">
+                className="h-8 px-2.5 rounded-lg border border-[#1E2E40] text-[#4A5A6E] hover:text-[#F0F4F8] text-xs font-mono flex items-center transition-colors">
                 × {T.clearBtn}
               </Link>
             )}
