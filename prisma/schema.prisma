@@ -5820,3 +5820,32 @@ model ArticleReadingHistory {
   @@index([userId])
   @@index([articleId])
 }
+
+// ── Phase 79: Sales entry / demo request lead capture ──────────────────────────
+
+model SalesLead {
+  id            String   @id @default(cuid())
+  fullName      String
+  email         String
+  phone         String?
+  company       String?
+  roleTitle     String?
+  country       String?
+  industry      String?
+  companySize   String?
+  interest      String?
+  useCase       String?  @db.Text
+  preferredDemo String?
+  message       String?  @db.Text
+  source        String   @default("WEBSITE")
+  locale        String?
+  status        String   @default("NEW")
+  ipHash        String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}

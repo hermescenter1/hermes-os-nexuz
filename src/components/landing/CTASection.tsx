@@ -173,6 +173,21 @@ export function CTASection() {
             >
               {t("secondary")}
             </Link>
+
+            <Link
+              href="/demo"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-mono font-semibold text-sm uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1EC8A4]/40"
+              style={{
+                background:     "rgba(30,200,164,0.08)",
+                backdropFilter: "blur(12px)",
+                border:         "1px solid rgba(30,200,164,0.28)",
+                color:          "#1EC8A4",
+                boxShadow:      "inset 0 1px 0 rgba(255,255,255,0.04)",
+                transition:     "all 220ms cubic-bezier(0.16,1,0.3,1)",
+              }}
+            >
+              {t("demo")}
+            </Link>
           </motion.div>
 
           {/* Footnote */}
