@@ -91,7 +91,7 @@ const DOMAIN_FA: Record<IndustrialDomain, string> = {
 
 // ─── Alarm parsing ────────────────────────────────────────────────────────────
 
-function parseAlarms(alarmText: string, domain: IndustrialDomain): AlarmItem[] {
+function parseAlarms(alarmText: string): AlarmItem[] {
   if (!alarmText || alarmText.trim().length < 2) return [];
   const t = alarmText.trim().toLowerCase();
 
@@ -160,13 +160,6 @@ function parseAlarms(alarmText: string, domain: IndustrialDomain): AlarmItem[] {
 }
 
 // ─── Signal matrix ────────────────────────────────────────────────────────────
-
-function inferStatus(text: string, positiveTerms: string[], negativeTerms: string[]): SignalStatus {
-  if (!text || text.trim() === "" || has(text, "unknown","not reported","not checked","n/a")) return "UNKNOWN";
-  if (negativeTerms.some(t => text.toLowerCase().includes(t))) return "CRITICAL";
-  if (positiveTerms.some(t => text.toLowerCase().includes(t))) return "NORMAL";
-  return "UNKNOWN";
-}
 
 function buildSignalMatrix(input: IndustrialFaultInput, allText: string): SignalMatrixItem[] {
   const hmi = (input.hmiCommandState ?? "").toLowerCase();
@@ -900,7 +893,7 @@ function computeEvidenceGaps(matrix: SignalMatrixItem[]): EvidenceGap[] {
 
 // ─── Inspection checklist ─────────────────────────────────────────────────────
 
-function generateChecklist(domain: IndustrialDomain, causes: LikelyCause[]): ChecklistItem[] {
+function generateChecklist(domain: IndustrialDomain): ChecklistItem[] {
   const items: ChecklistItem[] = [];
   let id = 0;
   const add = (text: string, textFa: string, cat: string, catFa: string, qp = false) => {
@@ -947,7 +940,7 @@ function generateChecklist(domain: IndustrialDomain, causes: LikelyCause[]): Che
 
 // ─── Recommended actions ──────────────────────────────────────────────────────
 
-function generateActions(_domain: IndustrialDomain, _causes: LikelyCause[], _risk: RiskResult): ActionGroup[] {
+function generateActions(): ActionGroup[] {
 
   return [
     {
@@ -1125,15 +1118,15 @@ export function analyzeIndustrialFault(input: IndustrialFaultInput): IndustrialB
   const domains = detectDomains(allText);
   const classification = classify(domains, allText, input);
 
-  const alarms = parseAlarms(input.activeAlarms ?? "", classification.domain);
+  const alarms = parseAlarms(input.activeAlarms ?? "");
   const signalMatrix = buildSignalMatrix(input, allText);
   const uncertainty = computeUncertainty(signalMatrix);
   const risk = computeRisk(input, classification.domain, classification.severity);
   const causes = generateCauses(input, allText, classification.domain, signalMatrix);
   const reasoningMap = buildReasoningMap(causes, signalMatrix);
   const evidenceGaps = computeEvidenceGaps(signalMatrix);
-  const checklist = generateChecklist(classification.domain, causes);
-  const actions = generateActions(classification.domain, causes, risk);
+  const checklist = generateChecklist(classification.domain);
+  const actions = generateActions();
   const relatedKnowledge = findRelatedKnowledge(allText, domains);
   const summary = buildSummary(input, classification, uncertainty, causes);
 
