@@ -639,3 +639,242 @@ export async function getEditorialOperationsDashboard(): Promise<EditorialOperat
     return { ...empty, dbAvailable: false };
   }
 }
+
+// ── Phase 78: Discovery search helpers ───────────────────────────────────────
+
+export interface DiscoveryArticleParams {
+  q?:           string;
+  category?:    string;
+  tag?:         string;
+  language?:    string;
+  contentType?: string;
+  sort?:        "latest" | "views" | "reactions";
+  limit?:       number;
+}
+
+export interface DiscoveryExpert {
+  id:             string;
+  handle:         string;
+  displayName:    string;
+  headline:       string | null;
+  roleTitle:      string | null;
+  company:        string | null;
+  location:       string | null;
+  avatarUrl:      string | null;
+  expertiseAreas: string[];
+  verifiedExpert: boolean;
+  publishedCount: number;
+  totalViews:     number;
+  latestPublishedAt: string | null;
+}
+
+export interface DiscoveryExpertParams {
+  q?:          string;
+  expertise?:  string;
+  sort?:       "latest" | "views" | "published";
+  limit?:      number;
+}
+
+function sanitizeQ(q: string | undefined): string {
+  return (q ?? "").trim().slice(0, 80);
+}
+
+export async function searchDiscoveryArticles(
+  params: DiscoveryArticleParams = {},
+): Promise<ArticleListItem[]> {
+  const db = await getDb();
+  const q  = sanitizeQ(params.q);
+
+  const sort  = params.sort ?? "latest";
+  const limit = Math.min(params.limit ?? 20, 40);
+
+  const orderBy: unknown[] =
+    sort === "views"     ? [{ viewCount: "desc" }, { publishedAt: "desc" }] :
+    sort === "reactions" ? [{ reactionCount: "desc" }, { publishedAt: "desc" }] :
+                           [{ publishedAt: "desc" }];
+
+  if (db) {
+    try {
+      const where: Record<string, unknown> = {
+        status:     "PUBLISHED",
+        visibility: "PUBLIC",
+      };
+      if (params.category)    where.category    = { slug: params.category };
+      if (params.tag)         where.tags        = { some: { tag: { slug: params.tag } } };
+      if (params.language)    where.language    = params.language;
+      if (params.contentType) where.contentType = params.contentType;
+      if (q) {
+        where.OR = [
+          { title:   { contains: q, mode: "insensitive" } },
+          { excerpt: { contains: q, mode: "insensitive" } },
+          { author:  { displayName: { contains: q, mode: "insensitive" } } },
+        ];
+      }
+      const rows = await (db as never as {
+        article: { findMany: (a: unknown) => Promise<unknown[]> };
+      }).article.findMany({
+        where,
+        include: { author: true, category: true, tags: { include: { tag: true } } },
+        orderBy,
+        take: limit,
+      });
+      return rows.map(r => {
+        const d = deepTs(r) as Record<string, unknown>;
+        type JoinTag = { tag?: Record<string, unknown> };
+        const rawTags = Array.isArray(d.tags) ? (d.tags as JoinTag[]) : [];
+        const tags: ArticleTag[] = rawTags
+          .filter((t): t is JoinTag & { tag: Record<string, unknown> } => !!t?.tag)
+          .map(t => ({
+            id:     String(t.tag.id     ?? ""),
+            slug:   String(t.tag.slug   ?? ""),
+            name:   String(t.tag.name   ?? ""),
+            nameFa: t.tag.nameFa != null ? String(t.tag.nameFa) : null,
+          }));
+        return { ...d, tags } as ArticleListItem;
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[db/discovery] searchDiscoveryArticles error:", msg);
+    }
+  }
+
+  // Mock fallback: filter from in-memory mock
+  let data = getPublishedArticles() as ArticleListItem[];
+  if (q) {
+    const lq = q.toLowerCase();
+    data = data.filter(a =>
+      a.title.toLowerCase().includes(lq) ||
+      (a.excerpt ?? "").toLowerCase().includes(lq) ||
+      a.author.displayName.toLowerCase().includes(lq),
+    );
+  }
+  if (params.category)    data = data.filter(a => a.category?.slug === params.category);
+  if (params.tag)         data = data.filter(a => a.tags.some(t => t.slug === params.tag));
+  if (params.language)    data = data.filter(a => a.language === params.language);
+  if (params.contentType) data = data.filter(a => a.contentType === params.contentType);
+  if (sort === "views")     data = [...data].sort((a, b) => b.viewCount - a.viewCount);
+  if (sort === "reactions") data = [...data].sort((a, b) => b.reactionCount - a.reactionCount);
+  return data.slice(0, limit);
+}
+
+export async function searchDiscoveryExperts(
+  params: DiscoveryExpertParams = {},
+): Promise<DiscoveryExpert[]> {
+  const db    = await getDb();
+  const q     = sanitizeQ(params.q);
+  const limit = Math.min(params.limit ?? 12, 24);
+  const sort  = params.sort ?? "views";
+
+  if (db) {
+    try {
+      const where: Record<string, unknown> = {
+        isActive: true,
+        articles: { some: { status: "PUBLISHED", visibility: "PUBLIC" } },
+      };
+      if (q) {
+        where.OR = [
+          { displayName: { contains: q, mode: "insensitive" } },
+          { handle:      { contains: q, mode: "insensitive" } },
+          { headline:    { contains: q, mode: "insensitive" } },
+          { bio:         { contains: q, mode: "insensitive" } },
+          { roleTitle:   { contains: q, mode: "insensitive" } },
+          { company:     { contains: q, mode: "insensitive" } },
+        ];
+      }
+      if (params.expertise) {
+        // Merge expertise filter with any existing conditions
+        const expertiseFilter = { expertiseAreas: { has: params.expertise } };
+        if (where.OR) {
+          where.AND = [{ OR: where.OR }, expertiseFilter];
+          delete where.OR;
+        } else {
+          Object.assign(where, expertiseFilter);
+        }
+      }
+
+      type CountedRow = Record<string, unknown> & { _count: { articles: number } };
+      const rows = await (db as never as {
+        articleAuthorProfile: { findMany: (a: unknown) => Promise<CountedRow[]> };
+      }).articleAuthorProfile.findMany({
+        where,
+        include: {
+          _count: {
+            select: { articles: { where: { status: "PUBLISHED", visibility: "PUBLIC" } } },
+          },
+        },
+        orderBy: { followerCount: "desc" },
+        take: limit * 2, // over-fetch for post-sort
+      });
+
+      // Aggregate views per author for the matched set
+      const ids = rows.map(r => String((r as Record<string, unknown>).id ?? ""));
+      type AggRow = { authorId: string; _sum: { viewCount: number | null }; _max: { publishedAt: unknown } };
+      const aggRows = ids.length > 0
+        ? await (db as never as {
+            article: { groupBy: (a: unknown) => Promise<AggRow[]> };
+          }).article.groupBy({
+            by:    ["authorId"],
+            where: { authorId: { in: ids }, status: "PUBLISHED", visibility: "PUBLIC" },
+            _sum:  { viewCount: true },
+            _max:  { publishedAt: true },
+          })
+        : [];
+      const aggMap = new Map(aggRows.map(r => [r.authorId, r]));
+
+      const experts: DiscoveryExpert[] = rows.map(r => {
+        const id  = String((r as Record<string, unknown>).id ?? "");
+        const agg = aggMap.get(id);
+        const rawMax = agg?._max?.publishedAt;
+        const latestPublishedAt =
+          rawMax instanceof Date ? rawMax.toISOString() :
+          typeof rawMax === "string" ? rawMax : null;
+        return {
+          id,
+          handle:         String((r as Record<string, unknown>).handle ?? ""),
+          displayName:    String((r as Record<string, unknown>).displayName ?? ""),
+          headline:       (r as Record<string, unknown>).headline as string | null,
+          roleTitle:      (r as Record<string, unknown>).roleTitle as string | null,
+          company:        (r as Record<string, unknown>).company as string | null,
+          location:       (r as Record<string, unknown>).location as string | null,
+          avatarUrl:      (r as Record<string, unknown>).avatarUrl as string | null,
+          expertiseAreas: (r as Record<string, unknown>).expertiseAreas as string[] ?? [],
+          verifiedExpert: Boolean((r as Record<string, unknown>).verifiedExpert),
+          publishedCount: r._count?.articles ?? 0,
+          totalViews:     agg?._sum?.viewCount ?? 0,
+          latestPublishedAt,
+        };
+      });
+
+      // Sort post-query
+      if (sort === "views")     experts.sort((a, b) => b.totalViews - a.totalViews || b.publishedCount - a.publishedCount);
+      if (sort === "published") experts.sort((a, b) => b.publishedCount - a.publishedCount);
+      if (sort === "latest")    experts.sort((a, b) => {
+        const da = a.latestPublishedAt ?? "";
+        const db2 = b.latestPublishedAt ?? "";
+        return db2 > da ? 1 : db2 < da ? -1 : 0;
+      });
+
+      return experts.slice(0, limit);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[db/discovery] searchDiscoveryExperts error:", msg);
+    }
+  }
+
+  // Mock fallback
+  return MOCK_AUTHORS.slice(0, limit).map(a => ({
+    id:             a.id,
+    handle:         a.handle,
+    displayName:    a.displayName,
+    headline:       a.headline,
+    roleTitle:      a.roleTitle,
+    company:        a.company,
+    location:       a.location,
+    avatarUrl:      a.avatarUrl,
+    expertiseAreas: a.expertiseAreas,
+    verifiedExpert: a.verifiedExpert,
+    publishedCount: a.articleCount,
+    totalViews:     a.totalViews,
+    latestPublishedAt: null,
+  }));
+}
