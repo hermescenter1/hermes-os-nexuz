@@ -1,6 +1,6 @@
 import { notFound }              from "next/navigation";
 import { setRequestLocale }       from "next-intl/server";
-import { getArticleDetailBySlug, getArticleFeed } from "@/lib/articles/db";
+import { getArticleDetailBySlug, getArticleFeed, incrementArticleViewCount } from "@/lib/articles/db";
 import { ArticleDetailClient }    from "@/components/articles/ArticleDetailClient";
 import { buildMetadata }          from "@/lib/seo/metadata";
 import { JsonLd }                 from "@/components/seo/JsonLd";
@@ -73,6 +73,13 @@ export default async function ArticleDetailPage({
   if (!article || article.status !== "PUBLISHED" || article.visibility !== "PUBLIC") {
     notFound();
   }
+
+  // Phase 75: Fire-and-forget view count increment.
+  // Only reached after PUBLISHED + PUBLIC check above.
+  // Errors are logged and swallowed — never blocks page render.
+  incrementArticleViewCount(article.id).catch((e: unknown) => {
+    console.error("[articles] viewCount increment failed:", e instanceof Error ? e.message : String(e));
+  });
 
   // Related: same category, excluding current article, up to 3
   const related = feed.latest

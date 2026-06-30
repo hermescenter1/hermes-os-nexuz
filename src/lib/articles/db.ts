@@ -254,15 +254,14 @@ export async function getAllAuthors(): Promise<ArticleAuthorProfile[]> {
   if (db) {
     try {
       // Only include authors who have at least one PUBLISHED + PUBLIC article.
-      // The _count.articles filter computes the real published count to override
-      // the stale articleCount counter field on the profile model.
+      // _count.articles computes the real published count (overrides stale articleCount).
       type CountedRow = Record<string, unknown> & { _count: { articles: number } };
       const rows = await (db as never as {
         articleAuthorProfile: { findMany: (a: unknown) => Promise<CountedRow[]> };
       }).articleAuthorProfile.findMany({
         where: {
-          isActive:  true,
-          articles:  { some: { status: "PUBLISHED", visibility: "PUBLIC" } },
+          isActive: true,
+          articles: { some: { status: "PUBLISHED", visibility: "PUBLIC" } },
         },
         include: {
           _count: {
@@ -271,10 +270,40 @@ export async function getAllAuthors(): Promise<ArticleAuthorProfile[]> {
         },
         orderBy: { followerCount: "desc" },
       });
+
+      // Phase 75: Aggregate real views, reactions, and latest publication date
+      // from PUBLISHED + PUBLIC articles per author. Overrides stale profile counters.
+      type AggRow = {
+        authorId: string;
+        _sum: { viewCount: number | null; reactionCount: number | null };
+        _max: { publishedAt: Date | string | null };
+      };
+      const aggRows = await (db as never as {
+        article: { groupBy: (a: unknown) => Promise<AggRow[]> };
+      }).article.groupBy({
+        by: ["authorId"],
+        where: { status: "PUBLISHED", visibility: "PUBLIC" },
+        _sum: { viewCount: true, reactionCount: true },
+        _max: { publishedAt: true },
+      });
+      const aggMap = new Map(aggRows.map(r => [r.authorId, r]));
+
       return rows.map(r => {
         const publishedCount = r._count?.articles ?? 0;
+        const id = String((r as Record<string, unknown>).id ?? "");
+        const agg = aggMap.get(id);
         const a = deepTs(r) as ArticleAuthorProfile;
-        return { ...a, articleCount: publishedCount };
+        const rawMax = agg?._max?.publishedAt;
+        const latestPublishedAt = rawMax instanceof Date
+          ? rawMax.toISOString()
+          : typeof rawMax === "string" ? rawMax : null;
+        return {
+          ...a,
+          articleCount:    publishedCount,
+          totalViews:      agg?._sum?.viewCount      ?? 0,
+          totalReactions:  agg?._sum?.reactionCount  ?? 0,
+          latestPublishedAt,
+        };
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -373,6 +402,22 @@ export async function getUserArticles(userId: string): Promise<ArticleListItem[]
     } catch { /* fall through */ }
   }
   return [];
+}
+
+// ── Phase 75: View count tracking ────────────────────────────────────────────
+// Increments viewCount for a single article by id.
+// Must only be called after confirming status=PUBLISHED + visibility=PUBLIC.
+// Errors are caught by the caller; this never throws.
+
+export async function incrementArticleViewCount(id: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await (db as never as {
+    article: { update: (a: unknown) => Promise<unknown> };
+  }).article.update({
+    where: { id },
+    data:  { viewCount: { increment: 1 } },
+  });
 }
 
 // ── Moderation helpers ────────────────────────────────────────────────────────

@@ -157,6 +157,60 @@ function ArticleContent({ content, isFa }: { content: string; isFa: boolean }) {
   );
 }
 
+// ── Trust strip ──────────────────────────────────────────────────────────────
+// Shown only for PUBLISHED + PUBLIC articles (enforced by the page server component).
+// Displays editorial trust badges and key metrics from real DB fields only.
+
+function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }) {
+  const showUpdated = article.updatedAt &&
+    article.publishedAt &&
+    // Only show "Updated" when the article was meaningfully re-edited after publish
+    new Date(article.updatedAt).getTime() - new Date(article.publishedAt).getTime() > 86_400_000;
+
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-2 py-3 px-4 rounded-xl border border-signal/10 bg-signal/[0.03]">
+      {/* Editorial Approved badge */}
+      <span className="inline-flex items-center gap-1.5 text-[9px] px-2.5 py-1 rounded-full border border-signal/30 text-signal/90 bg-signal/[0.08] font-mono uppercase tracking-wider">
+        <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 shrink-0">
+          <path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd"/>
+        </svg>
+        {isFa ? "تأییدشده توسط سردبیر" : "Editorial Approved"}
+      </span>
+
+      {/* Published Public badge */}
+      <span className="inline-flex items-center gap-1.5 text-[9px] px-2.5 py-1 rounded-full border border-ice/30 text-ice/80 bg-ice/[0.06] font-mono uppercase tracking-wider">
+        <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 shrink-0">
+          <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.536-4.464a.75.75 0 1 0-1.061-1.061 3.5 3.5 0 0 1-4.95 0 .75.75 0 0 0-1.06 1.06 5 5 0 0 0 7.07 0Zm.343-6.555-.144-.143a.75.75 0 0 0-1.06 1.06l.143.144a.75.75 0 0 0 1.061-1.061Zm-6.779-.21a.75.75 0 0 0 0 1.06l.144.144a.75.75 0 1 0 1.06-1.06l-.143-.144a.75.75 0 0 0-1.061 0Z" clipRule="evenodd"/>
+        </svg>
+        {isFa ? "مقاله منتشرشده" : "Published Article"}
+      </span>
+
+      {/* Right-side meta */}
+      <div className="flex flex-wrap items-center gap-3 ms-auto text-[9px] text-faint font-mono">
+        {article.viewCount > 0 && (
+          <>
+            <span>{fmtNum(article.viewCount)} {isFa ? "بازدید" : "views"}</span>
+            <span className="text-line">·</span>
+          </>
+        )}
+        <span>{article.readingTimeMinutes} {isFa ? "دقیقه مطالعه" : "min read"}</span>
+        {article.publishedAt && (
+          <>
+            <span className="text-line">·</span>
+            <span>{isFa ? "انتشار:" : "Published:"} {fmtDate(article.publishedAt, isFa)}</span>
+          </>
+        )}
+        {showUpdated && (
+          <>
+            <span className="text-line">·</span>
+            <span>{isFa ? "به‌روز:" : "Updated:"} {fmtDate(article.updatedAt, isFa)}</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Actions bar ───────────────────────────────────────────────────────────────
 
 function ActionsBar({ article, isFa }: { article: ArticleDetail; isFa: boolean }) {
@@ -625,6 +679,9 @@ export function ArticleDetailClient({ article, related }: Props) {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-10">
+        {/* Trust strip — editorial approval + key metrics (real DB fields only) */}
+        <TrustStrip article={article} isFa={isFa} />
+
         {/* Excerpt / lead */}
         {article.excerpt && (
           <div className="mb-8 rounded-xl overflow-hidden border border-signal/15 bg-surface/40">

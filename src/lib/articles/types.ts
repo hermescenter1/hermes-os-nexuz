@@ -40,6 +40,9 @@ export interface ArticleAuthorProfile {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  // Phase 75: computed from real PUBLISHED + PUBLIC articles (overrides stale counters)
+  totalReactions?: number;
+  latestPublishedAt?: string | null;
 }
 
 export interface ArticleCategory {

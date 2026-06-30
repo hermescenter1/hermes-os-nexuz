@@ -42,6 +42,123 @@ function contentTypeBadgeColor(t: string) {
   return "bg-signal/[0.08] text-signal border-signal/20";
 }
 
+// ── Expert Reputation Block ───────────────────────────────────────────────────
+// Computes all metrics from the real PUBLISHED + PUBLIC articles array.
+// No fake scores, no stale counters, no AI labels.
+
+function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProfile; articles: ArticleListItem[]; isFa: boolean }) {
+  const publishedCount = articles.length;
+  if (publishedCount === 0) return null;
+
+  const totalViews     = articles.reduce((s, a) => s + (a.viewCount     ?? 0), 0);
+  const totalReactions = articles.reduce((s, a) => s + (a.reactionCount ?? 0), 0);
+  const latestPublishedAt = articles.reduce((max, a) => {
+    if (!a.publishedAt) return max;
+    return !max || a.publishedAt > max ? a.publishedAt : max;
+  }, null as string | null);
+
+  // Deterministic trust level — transparent rule, no AI, no hidden weights
+  const trustLevel = author.verifiedExpert || publishedCount >= 5
+    ? (isFa ? "متخصص شناخته‌شده" : "Recognized Expert")
+    : publishedCount >= 3
+    ? (isFa ? "مشارکت‌کننده فعال" : "Active Contributor")
+    : (isFa ? "مشارکت‌کننده جدید" : "New Contributor");
+
+  return (
+    <section className="rounded-xl border border-signal/15 overflow-hidden">
+      {/* Header bar */}
+      <div className="px-5 py-3.5 border-b border-signal/10 flex items-center gap-2.5 flex-wrap"
+        style={{ background: "linear-gradient(90deg, rgba(30,200,164,0.07) 0%, rgba(30,200,164,0.02) 100%)" }}>
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-md bg-signal/15 border border-signal/25 flex items-center justify-center">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-signal">
+              <path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd"/>
+            </svg>
+          </div>
+          <p className="text-xs font-bold text-signal uppercase tracking-wider">
+            {isFa ? "اعتبار تخصصی" : "Expert Reputation"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 ms-auto flex-wrap">
+          {author.verifiedExpert && (
+            <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "متخصص تأییدشده" : "VERIFIED EXPERT"}</span>
+          )}
+          <span className="hs-badge hs--reasoning text-[9px]">{isFa ? "تأییدشده توسط سردبیر" : "EDITORIAL APPROVED"}</span>
+          <span className="hs-badge text-[9px] bg-signal/[0.08] text-signal border-signal/25">{isFa ? "نویسنده منتشرشده" : "PUBLISHED AUTHOR"}</span>
+        </div>
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* Trust level — deterministic, labeled clearly */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-faint font-mono uppercase tracking-wider shrink-0">
+            {isFa ? "سطح اعتبار:" : "Trust Level:"}
+          </span>
+          <span className="text-xs font-semibold text-ink">{trustLevel}</span>
+        </div>
+
+        {/* Stats grid — all from real PUBLISHED + PUBLIC articles */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-signal/15">
+            <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+              {isFa ? "مقالات منتشرشده" : "Published"}
+            </p>
+            <p className="text-base font-bold text-signal">{publishedCount}</p>
+          </div>
+          {totalViews > 0 ? (
+            <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
+              <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+                {isFa ? "مجموع بازدید" : "Total Views"}
+              </p>
+              <p className="text-base font-bold text-ink">{fmtNum(totalViews)}</p>
+            </div>
+          ) : (
+            <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
+              <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+                {isFa ? "مجموع بازدید" : "Total Views"}
+              </p>
+              <p className="text-[10px] text-faint font-mono">{isFa ? "در انتظار" : "Pending"}</p>
+            </div>
+          )}
+          {totalReactions > 0 && (
+            <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
+              <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+                {isFa ? "مجموع واکنش‌ها" : "Total Reactions"}
+              </p>
+              <p className="text-base font-bold text-ink">{fmtNum(totalReactions)}</p>
+            </div>
+          )}
+          {latestPublishedAt && (
+            <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
+              <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+                {isFa ? "آخرین انتشار" : "Latest Pub."}
+              </p>
+              <p className="text-xs font-semibold text-ink">{fmtDate(latestPublishedAt, isFa)}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Expertise areas */}
+        {author.expertiseAreas.length > 0 && (
+          <div>
+            <p className="text-[9px] text-faint uppercase tracking-widest mb-2 font-mono">
+              {isFa ? "حوزه‌های تخصص" : "Expertise Areas"}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {author.expertiseAreas.map(area => (
+                <span key={area}
+                  className="text-[10px] px-2 py-0.5 rounded-full border border-signal/20 text-signal/80 font-mono bg-signal/5">
+                  {area}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 interface Props {
   author:   ArticleAuthorProfile;
   articles: ArticleListItem[];
@@ -56,6 +173,11 @@ export function AuthorProfileClient({ author, articles }: Props) {
   const filtered        = filter === "ALL" ? articles : articles.filter(a => a.contentType === filter);
   const score           = author.industrialCredibilityScore;
   const isPublishedAuth = articles.length > 0;
+
+  // Phase 75: Compute real totals from the PUBLISHED + PUBLIC articles array.
+  // These override the stale denormalized counters on the profile model.
+  const realTotalViews     = articles.reduce((s, a) => s + (a.viewCount     ?? 0), 0);
+  const realTotalReactions = articles.reduce((s, a) => s + (a.reactionCount ?? 0), 0);
 
   return (
     <div className="min-h-screen">
@@ -139,13 +261,13 @@ export function AuthorProfileClient({ author, articles }: Props) {
             </div>
           </div>
 
-          {/* Stats grid */}
+          {/* Stats grid — Phase 75: totalViews uses real computed value from PUBLISHED+PUBLIC articles */}
           <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: isFa ? "مقالات" : "Articles",          value: author.articleCount,   main: true  },
-              { label: isFa ? "دنبال‌کننده" : "Followers",     value: author.followerCount,  main: false },
-              { label: isFa ? "بازدید کل" : "Total Views",     value: author.totalViews,     main: false },
-              { label: isFa ? "ذخیره‌شده" : "Total Saves",     value: author.totalSaves,     main: false },
+              { label: isFa ? "مقالات منتشرشده" : "Published",    value: author.articleCount,    main: true  },
+              { label: isFa ? "دنبال‌کننده" : "Followers",         value: author.followerCount,   main: false },
+              { label: isFa ? "مجموع بازدید" : "Total Views",      value: realTotalViews,         main: false },
+              { label: isFa ? "مجموع واکنش‌ها" : "Total Reactions", value: realTotalReactions,     main: false },
             ].map(s => (
               <div key={s.label}
                 className={`rounded-xl p-4 border text-center transition-all ${
@@ -178,6 +300,9 @@ export function AuthorProfileClient({ author, articles }: Props) {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-10">
+        {/* Phase 75: Expert Reputation & Trust Signals block */}
+        <ReputationBlock author={author} articles={articles} isFa={isFa} />
+
         {/* Bio + headline */}
         {(author.bio ?? author.headline) && (
           <section className="space-y-4">

@@ -34,6 +34,13 @@ export default async function AuthorsPage({
     return String(n);
   }
 
+  function fmtDate(d: string | null | undefined) {
+    if (!d) return null;
+    try {
+      return new Date(d).toLocaleDateString(isFa ? "fa-IR" : "en-US", { year: "numeric", month: "short" });
+    } catch { return null; }
+  }
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -115,13 +122,17 @@ export default async function AuthorsPage({
                 </div>
               )}
 
-              {/* Stats */}
-              <div className="flex items-center gap-4 text-[10px] text-faint font-mono">
-                <span>{author.articleCount} {isFa ? "مقاله منتشرشده" : "published"}</span>
-                <span className="text-line">·</span>
-                <span>{fmtNum(author.followerCount)} {isFa ? "دنبال‌کننده" : "followers"}</span>
+              {/* Stats — Phase 75: totalViews is real aggregate from PUBLISHED+PUBLIC articles */}
+              <div className="flex flex-wrap items-center gap-3 text-[10px] text-faint font-mono">
+                <span>{author.articleCount} {isFa ? "منتشرشده" : "published"}</span>
                 <span className="text-line">·</span>
                 <span>{fmtNum(author.totalViews)} {isFa ? "بازدید" : "views"}</span>
+                {author.latestPublishedAt && fmtDate(author.latestPublishedAt) && (
+                  <>
+                    <span className="text-line">·</span>
+                    <span>{isFa ? "آخرین:" : "Latest:"} {fmtDate(author.latestPublishedAt)}</span>
+                  </>
+                )}
               </div>
 
               {/* Expertise tags */}
