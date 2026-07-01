@@ -159,6 +159,53 @@ function parseAlarms(alarmText: string): AlarmItem[] {
   });
 }
 
+// ─── Negation-aware interlock/permissive evidence ────────────────────────────
+//
+// Explicit negation cues that mean an interlock/permissive condition is NOT confirmed
+// open — these must never be read as positive evidence of a blocking condition.
+const INTERLOCK_NEGATION_CUES = [
+  "no known open interlock", "no open interlock", "no known open permissive",
+  "no permissive issue known", "permissive chain was not fully checked",
+  "interlock not confirmed", "no confirmed interlock fault", "no known open safety chain",
+  "not fully checked", "not confirmed", "not verified", "unconfirmed", "no known open", "no confirmed",
+];
+
+// Subject/state word pairs that, co-occurring in the same clause with no negation cue,
+// indicate a genuinely open/blocking interlock or permissive condition.
+const INTERLOCK_SUBJECT_WORDS = ["interlock", "permissive", "safety chain", "safety relay", "guard door", "guard", "e-stop", "estop"];
+const INTERLOCK_STATE_WORDS = ["open", "blocked", "block", "tripped", "trip", "inhibit", "not satisfied", "active", "fault"];
+
+// Explicit multi-word phrases that confirm the permissive/interlock chain is clear.
+const INTERLOCK_CLEAR_PHRASES = [
+  "permissive clear", "permissives clear", "permissive satisfied", "permissives satisfied",
+  "interlock clear", "interlocks clear", "all clear", "all permissives clear",
+  "safety chain clear", "guard closed", "e-stop released", "estop released", "safety satisfied",
+];
+
+function splitIntoClauses(text: string): string[] {
+  return text.split(/[.;,]|\bbut\b|\bhowever\b|\balthough\b/i).map(c => c.trim()).filter(Boolean);
+}
+
+function clauseHasPositiveInterlockEvidence(clause: string): boolean {
+  if (INTERLOCK_NEGATION_CUES.some(cue => clause.includes(cue))) return false;
+  const hasSubject = INTERLOCK_SUBJECT_WORDS.some(w => clause.includes(w));
+  const hasState = INTERLOCK_STATE_WORDS.some(w => clause.includes(w));
+  return hasSubject && hasState;
+}
+
+function deriveSafetyStatus(interlock: string, sym: string, allText: string): { status: SignalStatus; value: string } {
+  const clauses = [...splitIntoClauses(interlock), ...splitIntoClauses(sym + " " + allText)];
+  const hasPositiveOpen = clauses.some(clauseHasPositiveInterlockEvidence);
+
+  if (hasPositiveOpen) {
+    return { status: "CRITICAL", value: "Open / blocked permissive reported" };
+  }
+  if (INTERLOCK_CLEAR_PHRASES.some(p => interlock.includes(p))) {
+    return { status: "NORMAL", value: "Clear / Satisfied" };
+  }
+  return { status: "UNKNOWN", value: "Not confirmed" };
+}
+
 // ─── Signal matrix ────────────────────────────────────────────────────────────
 
 function buildSignalMatrix(input: IndustrialFaultInput, allText: string): SignalMatrixItem[] {
@@ -319,21 +366,10 @@ function buildSignalMatrix(input: IndustrialFaultInput, allText: string): Signal
   });
 
   // ── Safety / Permissive / E-stop ──────────────────────────────────────────
-  // Only mark this CRITICAL/OPEN when evidence explicitly describes an open interlock,
-  // permissive, or E-stop condition. A bare word like "active" is ambiguous (in relay/PLC
-  // terminology an "active" permissive commonly means satisfied) and must not by itself
-  // flip this to CRITICAL. Unconfirmed state stays UNKNOWN with an explicit "not confirmed" value.
-  let safetyStatus: SignalStatus = "UNKNOWN";
-  let safetyValue = "Not confirmed";
-  if (has(interlock, "ok","clear","released","satisfied","all clear","normal")) {
-    safetyStatus = "NORMAL"; safetyValue = "Clear / Satisfied";
-  } else if (has(interlock, "open","not clear","interlock fault","permissive fault","interlock open","permissive open","missing","blocked","tripped")) {
-    safetyStatus = "CRITICAL"; safetyValue = "Open / blocked permissive reported";
-  } else if (has(sym + " " + allText, "e-stop active","estop active","emergency stop active","guard open","door open","interlock open","permissive open")) {
-    safetyStatus = "CRITICAL"; safetyValue = "Safety condition active";
-  } else if (has(sym + " " + allText, "e-stop released","estop released","safety clear","guard closed")) {
-    safetyStatus = "NORMAL"; safetyValue = "Safety chain clear";
-  }
+  // Negation-aware: a phrase like "no known open interlock" or "permissive chain was not
+  // fully checked" must NOT read as positive evidence of an open interlock/permissive.
+  // Only explicit positive language, in a clause with no negation cue, marks this CRITICAL.
+  const { status: safetyStatus, value: safetyValue } = deriveSafetyStatus(interlock, sym, allText);
 
   items.push({
     signalName: "Safety / Permissive Chain",
@@ -1181,6 +1217,14 @@ function generateCauses(
     }
     if (tmpl.id === "permissive-interlock" && safety?.status === "CRITICAL") {
       confidence = Math.min(confidence + 25, 95); hasDirectEvidence = true;
+    }
+    // "Permissive or Interlock Chain Open" requires positive interlock/permissive evidence
+    // to rank as a top cause. When the signal is not confirmed CRITICAL (i.e. only unknown/
+    // unverified interlock evidence, as in a negated statement like "no known open interlock")
+    // and overall evidence entropy is HIGH, cap it well below the direct-evidence causes so it
+    // surfaces only as a lower-ranked possibility to verify, never as the confirmed top cause.
+    if (tmpl.id === "permissive-interlock" && safety?.status !== "CRITICAL" && uncertainty.level === "HIGH") {
+      confidence = Math.min(confidence, 65);
     }
     if (tmpl.id === "plc-output-not-reaching" && plcOut?.status === "UNKNOWN") {
       confidence = Math.min(confidence + 12, 85);
