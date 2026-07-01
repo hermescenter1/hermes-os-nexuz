@@ -299,6 +299,17 @@
     "menu": "منو",
     "close": "بستن"
   },
+  "industrialBrainReport": {
+    "evidencePack": "بسته شواهد",
+    "engineeringReport": "گزارش مهندسی",
+    "copySummary": "کپی خلاصه",
+    "copyFullReport": "کپی گزارش کامل",
+    "printReport": "چاپ گزارش",
+    "generated": "تولید شده در",
+    "disclaimerDecisionSupport": "گزارش پشتیبان تصمیم‌گیری",
+    "disclaimerNotCertified": "گزارش ایمنی تأییدشده نیست",
+    "disclaimerVerify": "با پرسنل متخصص و رویه‌های ایمنی سایت راستی‌آزمایی شود"
+  },
   "common": {
     "switchLanguage": "English",
     "comingSoon": "به‌زودی",

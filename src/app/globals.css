@@ -1116,3 +1116,19 @@ h6 { font-weight: 550; letter-spacing: 0; }
   .hs-card-depth::before { transition: opacity 0.01ms !important; }
   .hs-led-card::after    { animation: none !important; opacity: 0 !important; }
 }
+
+/* ── Phase 81 — Industrial Brain print-friendly evidence pack ──────────── */
+@media print {
+  .ib-print-hide { display: none !important; }
+  .ib-report-print,
+  .ib-report-print * {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+  }
+  .ib-report-print { padding: 0 !important; }
+}

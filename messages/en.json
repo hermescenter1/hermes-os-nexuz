@@ -299,6 +299,17 @@
     "menu": "Menu",
     "close": "Close"
   },
+  "industrialBrainReport": {
+    "evidencePack": "Evidence Pack",
+    "engineeringReport": "Engineering Report",
+    "copySummary": "Copy Summary",
+    "copyFullReport": "Copy Full Report",
+    "printReport": "Print Report",
+    "generated": "Generated",
+    "disclaimerDecisionSupport": "Decision-support report",
+    "disclaimerNotCertified": "Not a certified safety report",
+    "disclaimerVerify": "Verify with qualified personnel and site procedures"
+  },
   "common": {
     "switchLanguage": "فارسی",
     "comingSoon": "Coming soon",

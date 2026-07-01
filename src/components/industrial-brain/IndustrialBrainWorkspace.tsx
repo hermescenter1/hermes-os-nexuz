@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Link } from "@/i18n/navigation";
-import type { IndustrialBrainAnalysis } from "@/lib/industrial-brain/types";
+import type { IndustrialBrainAnalysis, UncertaintyLevel } from "@/lib/industrial-brain/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -166,6 +166,147 @@ const SAMPLE_SCENARIOS: Record<string, { labelEn: string; labelFa: string; en: S
   },
 };
 
+// ─── Evidence Pack / Engineering Report helpers ────────────────────────────────
+
+interface ReportMeta {
+  problemTitle: string;
+  assetType: string;
+  systemArea: string;
+  plcPlatform: string;
+  generatedAt: Date;
+}
+
+function fmtDateTime(date: Date, isFa: boolean): string {
+  try {
+    return new Intl.DateTimeFormat(isFa ? "fa-IR" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  } catch {
+    return date.toISOString();
+  }
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fall through to legacy copy path
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+function uncertaintyLabel(level: UncertaintyLevel, isFa: boolean): string {
+  if (!isFa) return level;
+  return level === "HIGH" ? "بالا" : level === "MEDIUM" ? "متوسط" : "پایین";
+}
+
+function buildSummaryText(analysis: IndustrialBrainAnalysis, meta: ReportMeta, isFa: boolean): string {
+  const top = analysis.likelyCauses[0];
+  const nextChecks = analysis.likelyCauses.slice(0, 3).map(c => (isFa ? c.suggestedCheckFa : c.suggestedCheck)).filter(Boolean);
+
+  const lines = isFa
+    ? [
+        `عنوان مشکل: ${meta.problemTitle}`,
+        top ? `فرضیه اصلی: ${top.titleFa} (اطمینان ${top.confidence}%)` : "فرضیه‌ای شناسایی نشد",
+        `آنتروپی شواهد: ${uncertaintyLabel(analysis.uncertainty.level, true)}`,
+        `فوریت: ${analysis.risk.urgencyFa} (${analysis.risk.urgencyLevel})`,
+        "بررسی‌های بعدی کلیدی:",
+        ...(nextChecks.length ? nextChecks.map(c => `- ${c}`) : ["- بررسی مشخصی ثبت نشده است"]),
+      ]
+    : [
+        `Problem: ${meta.problemTitle}`,
+        top ? `Top hypothesis: ${top.title} (${top.confidence}% confidence)` : "No hypothesis identified",
+        `Evidence entropy: ${analysis.uncertainty.level}`,
+        `Urgency: ${analysis.risk.urgency} (${analysis.risk.urgencyLevel})`,
+        "Key next checks:",
+        ...(nextChecks.length ? nextChecks.map(c => `- ${c}`) : ["- No specific check recorded"]),
+      ];
+
+  return lines.join("\n");
+}
+
+function buildFullReportText(analysis: IndustrialBrainAnalysis, meta: ReportMeta, isFa: boolean): string {
+  const L = (en: string, fa: string) => (isFa ? fa : en);
+  const sec = (title: string) => `\n── ${title} ──\n`;
+  const lines: string[] = [];
+
+  lines.push(L("HERMES INDUSTRIAL BRAIN — ENGINEERING REPORT", "مغز صنعتی هرمس — گزارش مهندسی"));
+  lines.push(`${L("Title", "عنوان")}: ${meta.problemTitle}`);
+  lines.push(`${L("Asset Type", "نوع دارایی")}: ${meta.assetType || L("Not reported", "گزارش نشده")}`);
+  lines.push(`${L("System Area", "ناحیه سیستم")}: ${meta.systemArea || L("Not reported", "گزارش نشده")}`);
+  lines.push(`${L("PLC / Platform", "پلتفرم PLC")}: ${meta.plcPlatform || L("Not reported", "گزارش نشده")}`);
+  lines.push(`${L("Generated", "تولید شده در")}: ${fmtDateTime(meta.generatedAt, isFa)}`);
+
+  lines.push(sec(L("Executive Summary", "خلاصه اجرایی")));
+  lines.push(isFa ? analysis.summaryFa : analysis.summary);
+  lines.push(`${L("Primary Domain", "حوزه اصلی")}: ${isFa ? analysis.classification.domainFa : analysis.classification.domain}`);
+  lines.push(`${L("Severity", "شدت")}: ${analysis.classification.severity}`);
+  lines.push(`${L("Diagnostic Confidence", "اطمینان تشخیصی")}: ${analysis.confidence}%`);
+  lines.push(`${L("Evidence Entropy", "آنتروپی شواهد")}: ${uncertaintyLabel(analysis.uncertainty.level, isFa)}`);
+
+  lines.push(sec(L("Alarm Intelligence", "هوشمندی آلارم")));
+  if (!analysis.alarms.length) {
+    lines.push(L(
+      "No alarm was reported. The absence of a reported alarm does not confirm healthy operation.",
+      "هیچ آلارمی گزارش نشده است. عدم وجود آلارم گزارش‌شده، سالم بودن عملکرد را تأیید نمی‌کند."
+    ));
+  } else {
+    for (const a of analysis.alarms) {
+      lines.push(`- [${a.severity}] ${a.alarmText} (${a.source})`);
+      lines.push(`  ${a.interpretation}`);
+      lines.push(`  ${a.possibleMeaning}`);
+    }
+  }
+
+  lines.push(sec(L("Signal Matrix", "ماتریس سیگنال")));
+  for (const s of analysis.signalMatrix) {
+    lines.push(`- ${isFa ? s.signalNameFa : s.signalName} | ${s.source} | ${L("Observed", "مشاهده‌شده")}: ${s.observedValue} | ${L("Expected", "مورد انتظار")}: ${s.expectedValue} | ${L("Status", "وضعیت")}: ${s.status} | ${L("Next check", "بررسی بعدی")}: ${s.nextCheck}`);
+  }
+
+  lines.push(sec(L("Evidence Entropy", "آنتروپی شواهد")));
+  lines.push(`${L("Level", "سطح")}: ${uncertaintyLabel(analysis.uncertainty.level, isFa)}`);
+  lines.push(isFa ? analysis.uncertainty.explanationFa : analysis.uncertainty.explanation);
+  if (analysis.uncertainty.missingCriticalSignals.length) {
+    lines.push(`${L("Missing Critical Signals", "سیگنال‌های حیاتی مفقود")}: ${(isFa ? analysis.uncertainty.missingCriticalSignalsFa : analysis.uncertainty.missingCriticalSignals).join(", ")}`);
+  }
+
+  lines.push(sec(L("Likely Causes", "علل محتمل")));
+  analysis.likelyCauses.forEach((c, i) => {
+    lines.push(`${i + 1}. ${isFa ? c.titleFa : c.title} (${c.confidence}%)`);
+    lines.push(`   ${isFa ? c.explanationFa : c.explanation}`);
+    if (c.supportingEvidence.length) lines.push(`   ${L("Supporting", "شواهد پشتیبان")}: ${c.supportingEvidence.join("; ")}`);
+    if (c.missingEvidence.length) lines.push(`   ${L("Missing", "شواهد مفقود")}: ${c.missingEvidence.join("; ")}`);
+    lines.push(`   ${L("Suggested check", "بررسی پیشنهادی")}: ${isFa ? c.suggestedCheckFa : c.suggestedCheck}`);
+  });
+
+  lines.push(sec(L("Safe Action Path", "مسیر اقدام ایمن")));
+  for (const group of analysis.recommendedActions) {
+    lines.push(`${group.icon} ${isFa ? group.categoryFa : group.category}`);
+    for (const item of group.items) lines.push(`  - ${isFa ? item.fa : item.en}`);
+  }
+
+  lines.push(sec(L("Disclaimer", "سلب مسئولیت")));
+  lines.push(L("Decision-support report.", "گزارش پشتیبان تصمیم‌گیری."));
+  lines.push(L("Not a certified safety report.", "گزارش ایمنی تأییدشده نیست."));
+  lines.push(L("Verify with qualified personnel and site procedures.", "با پرسنل متخصص و رویه‌های ایمنی سایت راستی‌آزمایی شود."));
+
+  return lines.join("\n");
+}
+
 function fillSampleForm(form: HTMLFormElement, data: SampleFields) {
   for (const [name, value] of Object.entries(data)) {
     const el = form.elements.namedItem(name);
@@ -230,7 +371,18 @@ function FormSection({ title, titleFa, isFa, children }: { title: string; titleF
 // ─── Analysis result sections ─────────────────────────────────────────────────
 
 function AlarmPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
-  if (!analysis.alarms.length) return null;
+  if (!analysis.alarms.length) {
+    return (
+      <Panel>
+        <SectionHeader label="Alarm Intelligence" labelFa="هوشمندی آلارم" accent="#38BDF8" isFa={isFa} />
+        <p className="text-xs text-slate-400 leading-relaxed">
+          {isFa
+            ? "هیچ آلارمی گزارش نشده است. عدم وجود آلارم گزارش‌شده، سالم بودن عملکرد را تأیید نمی‌کند — سیم‌بندی میدانی، VFD، MCC یا وضعیت مکانیکی را جداگانه بررسی کنید."
+            : "No alarm was reported. The absence of a reported alarm does not confirm healthy operation — check field wiring, VFD, MCC, or mechanical state separately."}
+        </p>
+      </Panel>
+    );
+  }
   return (
     <Panel>
       <SectionHeader label="Alarm Intelligence" labelFa="هوشمندی آلارم" accent="#38BDF8" isFa={isFa} />
@@ -624,7 +776,7 @@ function ChecklistPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis;
 function ActionsPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
   return (
     <Panel>
-      <SectionHeader label="Recommended Safe Actions" labelFa="اقدامات ایمن پیشنهادی" accent="#60B4F0" isFa={isFa} />
+      <SectionHeader label="Safe Action Path" labelFa="مسیر اقدام ایمن" accent="#60B4F0" isFa={isFa} />
       <div className="space-y-5">
         {analysis.recommendedActions.map(group => (
           <div key={group.category}>
@@ -682,6 +834,97 @@ function RelatedKnowledgePanel({ analysis, isFa }: { analysis: IndustrialBrainAn
   );
 }
 
+function ReportHeader({ meta, isFa }: { meta: ReportMeta; isFa: boolean }) {
+  const notReported = isFa ? "گزارش نشده" : "Not reported";
+  const fields = [
+    { label: isFa ? "نوع دارایی" : "Asset Type", value: meta.assetType },
+    { label: isFa ? "ناحیه سیستم" : "System Area", value: meta.systemArea },
+    { label: isFa ? "پلتفرم PLC" : "PLC / Platform", value: meta.plcPlatform },
+  ];
+  return (
+    <Panel className="border-cyan-500/25 ib-report-header">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+        <div>
+          <p className="text-[9px] font-mono uppercase tracking-[0.22em] text-cyan-400 mb-1.5">
+            {isFa ? "هرمس OS · مغز صنعتی" : "HERMES OS · INDUSTRIAL BRAIN"}
+          </p>
+          <p className="text-lg font-bold text-slate-100">{isFa ? "گزارش مهندسی" : "Engineering Report"}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{isFa ? "بسته شواهد" : "Evidence Pack"}</p>
+        </div>
+        <div className="text-end shrink-0">
+          <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600">
+            {isFa ? "تولید شده در" : "Generated"}
+          </p>
+          <p className="text-xs font-mono text-slate-400">{fmtDateTime(meta.generatedAt, isFa)}</p>
+        </div>
+      </div>
+
+      <p className="text-sm font-semibold text-slate-200 mb-3">{meta.problemTitle}</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pb-4 border-b border-white/6">
+        {fields.map(f => (
+          <div key={f.label}>
+            <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">{f.label}</p>
+            <p className="text-xs text-slate-300 break-words">{f.value || notReported}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/6 p-3">
+        <p className="text-[10px] text-amber-400 leading-relaxed font-mono">
+          {isFa
+            ? "⚠ گزارش پشتیبان تصمیم‌گیری — گزارش ایمنی تأییدشده نیست. با پرسنل متخصص و رویه‌های ایمنی سایت راستی‌آزمایی شود."
+            : "⚠ Decision-support report — not a certified safety report. Verify with qualified personnel and site procedures before acting."}
+        </p>
+      </div>
+    </Panel>
+  );
+}
+
+function ReportActions({ analysis, meta, isFa }: { analysis: IndustrialBrainAnalysis; meta: ReportMeta; isFa: boolean }) {
+  const [copied, setCopied] = useState<"summary" | "full" | null>(null);
+
+  async function handleCopy(kind: "summary" | "full") {
+    const text = kind === "summary" ? buildSummaryText(analysis, meta, isFa) : buildFullReportText(analysis, meta, isFa);
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopied(kind);
+      setTimeout(() => setCopied(prev => (prev === kind ? null : prev)), 2000);
+    }
+  }
+
+  const btnBase = "flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-mono text-[11px] font-semibold uppercase tracking-wider border transition-all disabled:opacity-40 disabled:cursor-not-allowed";
+
+  return (
+    <div className="ib-print-hide flex flex-wrap gap-3">
+      <button
+        type="button"
+        onClick={() => handleCopy("summary")}
+        disabled={!analysis}
+        className={`${btnBase} border-cyan-400/25 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12]`}
+      >
+        {copied === "summary" ? (isFa ? "کپی شد ✓" : "Copied ✓") : (isFa ? "کپی خلاصه" : "Copy Summary")}
+      </button>
+      <button
+        type="button"
+        onClick={() => handleCopy("full")}
+        disabled={!analysis}
+        className={`${btnBase} border-violet-400/25 bg-violet-400/[0.06] text-violet-300 hover:bg-violet-400/[0.12]`}
+      >
+        {copied === "full" ? (isFa ? "کپی شد ✓" : "Copied ✓") : (isFa ? "کپی گزارش کامل" : "Copy Full Report")}
+      </button>
+      <button
+        type="button"
+        onClick={() => window.print()}
+        disabled={!analysis}
+        className={`${btnBase} border-sky-400/25 bg-sky-400/[0.06] text-sky-300 hover:bg-sky-400/[0.12]`}
+      >
+        {isFa ? "چاپ گزارش" : "Print Report"}
+      </button>
+    </div>
+  );
+}
+
 function AnalysisDemoCTA({ isFa }: { isFa: boolean }) {
   return (
     <Panel className="border-cyan-500/20">
@@ -718,9 +961,12 @@ function AnalysisDemoCTA({ isFa }: { isFa: boolean }) {
   );
 }
 
-function AnalysisResult({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+function AnalysisResult({ analysis, meta, isFa }: { analysis: IndustrialBrainAnalysis; meta: ReportMeta; isFa: boolean }) {
   return (
-    <div className="space-y-5 mt-8">
+    <div className="ib-report-print space-y-5 mt-8">
+      <ReportHeader meta={meta} isFa={isFa} />
+      <ReportActions analysis={analysis} meta={meta} isFa={isFa} />
+
       {/* Executive Summary + Classification */}
       <Panel>
         <SectionHeader label="Executive Summary" labelFa="خلاصه اجرایی" accent="#1EC8A4" isFa={isFa} />
@@ -819,6 +1065,7 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<IndustrialBrainAnalysis | null>(null);
+  const [reportMeta, setReportMeta] = useState<ReportMeta | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -856,6 +1103,13 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
       const data = await res.json() as { ok: boolean; analysis?: IndustrialBrainAnalysis; error?: string };
       if (!data.ok) { setError(data.error ?? "Analysis failed"); return; }
       setAnalysis(data.analysis ?? null);
+      setReportMeta({
+        problemTitle: String(body.problemTitle ?? ""),
+        assetType: String(body.assetType ?? ""),
+        systemArea: String(body.systemArea ?? ""),
+        plcPlatform: String(body.plcPlatform ?? ""),
+        generatedAt: new Date(),
+      });
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     } catch {
       setError(isFa ? "خطا در ارتباط با سرور. دوباره تلاش کنید." : "Connection error. Please try again.");
@@ -867,7 +1121,7 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
   return (
     <div>
       {/* ── Demo-ready examples ────────────────────────────────────────────── */}
-      <div className="mb-5 rounded-xl border border-white/8 p-3.5" style={{ background: "rgba(7,16,26,0.6)" }}>
+      <div className="print:hidden mb-5 rounded-xl border border-white/8 p-3.5" style={{ background: "rgba(7,16,26,0.6)" }}>
         <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 mb-2.5">
           {isFa ? "نمونه‌های آماده دمو" : "Demo-Ready Examples"}
         </p>
@@ -886,7 +1140,7 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
       </div>
 
       {/* ── Input Form ─────────────────────────────────────────────────────── */}
-      <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+      <form ref={formRef} onSubmit={handleSubmit} className="print:hidden space-y-5">
 
         {/* Problem title + asset */}
         <FormSection title="Fault Identification" titleFa="شناسایی خرابی" isFa={isFa}>
@@ -1072,7 +1326,7 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
 
       {/* ── Analysis result ────────────────────────────────────────────────── */}
       <div ref={resultRef}>
-        {analysis && <AnalysisResult analysis={analysis} isFa={isFa} />}
+        {analysis && reportMeta && <AnalysisResult analysis={analysis} meta={reportMeta} isFa={isFa} />}
       </div>
     </div>
   );

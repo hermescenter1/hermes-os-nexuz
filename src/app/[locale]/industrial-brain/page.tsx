@@ -94,7 +94,7 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #04080F 0%, #060A16 100%)" }}>
 
       {/* ── Dot grid background ───────────────────────────────────────────── */}
-      <div className="fixed inset-0 pointer-events-none" aria-hidden="true"
+      <div className="fixed inset-0 pointer-events-none print:hidden" aria-hidden="true"
         style={{
           backgroundImage: "radial-gradient(rgba(30,200,164,0.06) 1px, transparent 1px)",
           backgroundSize: "32px 32px",
@@ -102,15 +102,15 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
       />
 
       {/* ── Ambient glows ─────────────────────────────────────────────────── */}
-      <div className="fixed top-0 start-1/4 w-96 h-96 rounded-full blur-[160px] pointer-events-none" aria-hidden="true"
+      <div className="fixed top-0 start-1/4 w-96 h-96 rounded-full blur-[160px] pointer-events-none print:hidden" aria-hidden="true"
         style={{ background: "rgba(30,200,164,0.04)" }} />
-      <div className="fixed top-40 end-0 w-80 h-80 rounded-full blur-[140px] pointer-events-none" aria-hidden="true"
+      <div className="fixed top-40 end-0 w-80 h-80 rounded-full blur-[140px] pointer-events-none print:hidden" aria-hidden="true"
         style={{ background: "rgba(96,180,240,0.04)" }} />
 
       <div className="relative z-10">
 
         {/* ── Brain status strip ────────────────────────────────────────────── */}
-        <div className="border-b border-white/6 overflow-x-auto"
+        <div className="border-b border-white/6 overflow-x-auto print:hidden"
           style={{ background: "rgba(4,8,15,0.92)", backdropFilter: "blur(16px)" }}>
           <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-6 min-w-max">
             <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-slate-600 shrink-0">
@@ -129,7 +129,7 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
         </div>
 
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <div className="relative border-b border-white/6 overflow-hidden py-14 px-6">
+        <div className="relative border-b border-white/6 overflow-hidden py-14 px-6 print:hidden">
           <div className="max-w-7xl mx-auto">
             <div className="max-w-3xl">
               <p className="text-[9px] font-mono uppercase tracking-[0.25em] text-cyan-400 mb-4">
@@ -168,11 +168,11 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
         </div>
 
         {/* ── Main workspace ───────────────────────────────────────────────── */}
-        <div className="max-w-7xl mx-auto px-6 py-10">
-          <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
+        <div className="max-w-7xl mx-auto px-6 py-10 print:p-0 print:max-w-none">
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-8 print:block">
 
             {/* ── Left: Value props ────────────────────────────────────────── */}
-            <div className="xl:col-span-2 space-y-6">
+            <div className="xl:col-span-2 space-y-6 print:hidden">
               <div>
                 <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-600 mb-4">
                   {isFa ? "قابلیت‌های مغز صنعتی" : "BRAIN CAPABILITIES"}
@@ -243,11 +243,11 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
             </div>
 
             {/* ── Right: Fault input workspace ─────────────────────────────── */}
-            <div className="xl:col-span-3">
-              <div className="rounded-2xl border border-white/8 overflow-hidden"
+            <div className="xl:col-span-3 print:col-span-1">
+              <div className="rounded-2xl border border-white/8 overflow-hidden print:!bg-white print:!border-slate-300 print:rounded-none"
                 style={{ background: "rgba(7,16,26,0.85)", backdropFilter: "blur(16px)" }}>
                 {/* Workspace header */}
-                <div className="border-b border-white/6 px-5 py-4 flex items-center gap-3">
+                <div className="border-b border-white/6 px-5 py-4 flex items-center gap-3 print:hidden">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
                     <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
@@ -265,9 +265,9 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
                 </div>
 
                 {/* Gradient accent line */}
-                <div className="h-px" style={{ background: "linear-gradient(90deg, #1EC8A4, #60B4F0, #818CF8)" }} />
+                <div className="h-px print:hidden" style={{ background: "linear-gradient(90deg, #1EC8A4, #60B4F0, #818CF8)" }} />
 
-                <div className="px-5 py-6">
+                <div className="px-5 py-6 print:p-0">
                   <IndustrialBrainWorkspace locale={locale} isFa={isFa} />
                 </div>
               </div>
