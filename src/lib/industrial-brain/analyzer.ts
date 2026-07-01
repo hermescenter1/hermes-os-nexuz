@@ -319,13 +319,17 @@ function buildSignalMatrix(input: IndustrialFaultInput, allText: string): Signal
   });
 
   // ── Safety / Permissive / E-stop ──────────────────────────────────────────
+  // Only mark this CRITICAL/OPEN when evidence explicitly describes an open interlock,
+  // permissive, or E-stop condition. A bare word like "active" is ambiguous (in relay/PLC
+  // terminology an "active" permissive commonly means satisfied) and must not by itself
+  // flip this to CRITICAL. Unconfirmed state stays UNKNOWN with an explicit "not confirmed" value.
   let safetyStatus: SignalStatus = "UNKNOWN";
-  let safetyValue = "Not reported";
+  let safetyValue = "Not confirmed";
   if (has(interlock, "ok","clear","released","satisfied","all clear","normal")) {
     safetyStatus = "NORMAL"; safetyValue = "Clear / Satisfied";
-  } else if (has(interlock, "open","active","tripped","not clear","fault","missing","blocked")) {
-    safetyStatus = "CRITICAL"; safetyValue = "Open / Active permissive block";
-  } else if (has(sym + " " + allText, "e-stop active","estop active","emergency stop active","guard open","door open")) {
+  } else if (has(interlock, "open","not clear","interlock fault","permissive fault","interlock open","permissive open","missing","blocked","tripped")) {
+    safetyStatus = "CRITICAL"; safetyValue = "Open / blocked permissive reported";
+  } else if (has(sym + " " + allText, "e-stop active","estop active","emergency stop active","guard open","door open","interlock open","permissive open")) {
     safetyStatus = "CRITICAL"; safetyValue = "Safety condition active";
   } else if (has(sym + " " + allText, "e-stop released","estop released","safety clear","guard closed")) {
     safetyStatus = "NORMAL"; safetyValue = "Safety chain clear";
@@ -1091,6 +1095,7 @@ function generateCauses(
   allText: string,
   domain: IndustrialDomain,
   matrix: SignalMatrixItem[],
+  uncertainty: UncertaintyResult,
 ): LikelyCause[] {
   const results: LikelyCause[] = [];
 
@@ -1128,32 +1133,81 @@ function generateCauses(
       }
     }
 
-    // Signal matrix context
+    // Signal matrix context — a template only gets a large confidence boost when the signal
+    // state DIRECTLY and SPECIFICALLY supports it. Templates that get a direct-evidence boost
+    // are exempt from the high-uncertainty confidence cap applied below; all others are not.
     const plcOut = matrix.find(s => s.signalName.includes("PLC Output"));
     const vfd = matrix.find(s => s.signalName.includes("VFD"));
     const overload = matrix.find(s => s.signalName.includes("Overload"));
     const safety = matrix.find(s => s.signalName.includes("Safety"));
+    const motorCurrent = matrix.find(s => s.signalName.includes("Motor Current"));
+    const vibration = matrix.find(s => s.signalName.includes("Vibration"));
+    const bearingTemp = matrix.find(s => s.signalName.includes("Bearing"));
+    const mechFreeRotation = matrix.find(s => s.signalName.includes("Mechanical Free Rotation"));
+    const ioModule = matrix.find(s => s.signalName.includes("IO Module"));
+    const supply24v = matrix.find(s => s.signalName.includes("24V"));
+    const inputMapping = matrix.find(s => s.signalName.includes("PLC Input Address Mapping"));
+    const commLink = matrix.find(s => s.signalName.includes("Communication Link"));
+    const switchHealth = matrix.find(s => s.signalName.includes("Switch"));
+    const ipConfig = matrix.find(s => s.signalName.includes("IP Configuration"));
 
-    if (tmpl.id === "field-wiring" && plcOut?.status === "NORMAL") {
-      confidence = Math.min(confidence + 15, 95);
-    }
-    if (tmpl.id === "mcc-vfd-not-ready" && vfd?.status === "CRITICAL") {
-      confidence = Math.min(confidence + 20, 95);
+    let hasDirectEvidence = false;
+
+    // VFD overcurrent/overload and elevated motor current are direct evidence for VFD/load/
+    // mechanical causes — NOT for field wiring, which needs its own wiring-specific language.
+    if (tmpl.id === "mcc-vfd-not-ready" && (vfd?.status === "CRITICAL" || overload?.status === "CRITICAL")) {
+      confidence = Math.min(confidence + 20, 95); hasDirectEvidence = true;
     }
     if (tmpl.id === "mcc-vfd-not-ready" && vfd?.status === "UNKNOWN") {
       confidence = Math.min(confidence + 10, 90);
     }
+    if (tmpl.id === "vfd-parameter-mismatch" && (overload?.status === "CRITICAL" || motorCurrent?.status === "CRITICAL")) {
+      confidence = Math.min(confidence + 20, 92); hasDirectEvidence = true;
+    }
+    if (tmpl.id === "mechanical-coupling-load" && (vibration?.status === "WARNING" || bearingTemp?.status === "WARNING" || mechFreeRotation?.status === "WARNING")) {
+      confidence = Math.min(confidence + 20, 92); hasDirectEvidence = true;
+    }
+    if (tmpl.id === "bearing-lubrication-trend" && (vibration?.status === "WARNING" || bearingTemp?.status === "WARNING")) {
+      confidence = Math.min(confidence + 20, 92); hasDirectEvidence = true;
+    }
+    if (tmpl.id === "pump-process-blockage" && motorCurrent?.status === "CRITICAL") {
+      confidence = Math.min(confidence + 15, 88); hasDirectEvidence = true;
+    }
+    if (tmpl.id === "cable-motor-insulation" && (overload?.status === "CRITICAL" || motorCurrent?.status === "CRITICAL")) {
+      confidence = Math.min(confidence + 10, 85);
+    }
     if (tmpl.id === "permissive-interlock" && safety?.status === "UNKNOWN") {
-      confidence = Math.min(confidence + 10, 90);
+      confidence = Math.min(confidence + 10, 88);
     }
     if (tmpl.id === "permissive-interlock" && safety?.status === "CRITICAL") {
-      confidence = Math.min(confidence + 25, 95);
+      confidence = Math.min(confidence + 25, 95); hasDirectEvidence = true;
     }
     if (tmpl.id === "plc-output-not-reaching" && plcOut?.status === "UNKNOWN") {
-      confidence = Math.min(confidence + 12, 88);
+      confidence = Math.min(confidence + 12, 85);
     }
-    if (tmpl.id === "mcc-vfd-not-ready" && overload?.status === "CRITICAL") {
-      confidence = Math.min(confidence + 20, 95);
+    // Field wiring only gets a strong boost when there is wiring/terminal-specific language —
+    // the PLC output being confirmed active is not, on its own, specific evidence of a wiring
+    // fault over any other field-side cause (VFD, mechanical, sensor, etc.).
+    if (tmpl.id === "field-wiring" && plcOut?.status === "NORMAL" && has(allText, "terminal","wiring","cable","rewired","reconnected")) {
+      confidence = Math.min(confidence + 10, 85); hasDirectEvidence = true;
+    }
+    if (tmpl.id === "sensor-io-module-power" && (ioModule?.status !== "NORMAL" || supply24v?.status !== "NORMAL" || inputMapping?.status !== "NORMAL")) {
+      confidence = Math.min(confidence + 15, 88); hasDirectEvidence = true;
+    }
+    if (tmpl.id === "network-switch-cable" && (switchHealth?.status === "WARNING" || commLink?.status === "WARNING")) {
+      confidence = Math.min(confidence + 15, 88); hasDirectEvidence = true;
+    }
+    if (tmpl.id === "ip-network-config" && ipConfig?.status === "CRITICAL") {
+      confidence = Math.min(confidence + 20, 90); hasDirectEvidence = true;
+    }
+    if (tmpl.id === "plc-scada-comm-load" && commLink?.status === "WARNING") {
+      confidence = Math.min(confidence + 10, 85);
+    }
+
+    // Confidence calibration: when overall evidence entropy is HIGH, a single hypothesis
+    // should not present as 90%+ confident unless it has direct alarm/signal support.
+    if (uncertainty.level === "HIGH" && !hasDirectEvidence) {
+      confidence = Math.min(confidence, 82);
     }
 
     // Build supporting evidence from matrix
@@ -1587,7 +1641,7 @@ export function analyzeIndustrialFault(input: IndustrialFaultInput): IndustrialB
   const signalMatrix = buildSignalMatrix(input, allText);
   const uncertainty = computeUncertainty(signalMatrix);
   const risk = computeRisk(input, classification.domain, classification.severity);
-  const causes = generateCauses(input, allText, classification.domain, signalMatrix);
+  const causes = generateCauses(input, allText, classification.domain, signalMatrix, uncertainty);
   const reasoningMap = buildReasoningMap(causes, signalMatrix, risk, uncertainty);
   const evidenceGaps = computeEvidenceGaps(signalMatrix);
   const checklist = generateChecklist(classification.domain, allText);
