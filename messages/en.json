@@ -291,7 +291,10 @@
       "journalLatest":     "Latest Articles",
       "journalTrending":   "Trending",
       "journalAuthors":    "Expert Authors",
-      "journalCategories": "Categories"
+      "journalCategories": "Categories",
+      "industrialBrain":   "Industrial Brain",
+      "discover":          "Discovery",
+      "demo":              "Demo"
     },
     "menu": "Menu",
     "close": "Close"

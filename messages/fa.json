@@ -291,7 +291,10 @@
       "journalLatest":     "جدیدترین مقالات",
       "journalTrending":   "پرطرفدار",
       "journalAuthors":    "نویسندگان متخصص",
-      "journalCategories": "دسته‌بندی‌ها"
+      "journalCategories": "دسته‌بندی‌ها",
+      "industrialBrain":   "مغز صنعتی",
+      "discover":          "کشف صنعتی",
+      "demo":              "درخواست دمو"
     },
     "menu": "منو",
     "close": "بستن"

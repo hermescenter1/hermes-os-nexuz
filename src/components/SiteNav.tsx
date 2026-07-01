@@ -44,6 +44,7 @@ const GROUPS: NavGroup[] = [
       { labelKey: "industrialBrain", href: "/industrial-brain" },
       { labelKey: "copilot", href: "/copilot" },
       { labelKey: "unknownCenter", href: "/intelligence/unknown" },
+      { labelKey: "discover", href: "/articles/discover" },
     ],
   },
   {
@@ -89,6 +90,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { labelKey: "about", href: "/about" },
       { labelKey: "contact", href: "/contact" },
+      { labelKey: "demo", href: "/demo" },
     ],
   },
 ];

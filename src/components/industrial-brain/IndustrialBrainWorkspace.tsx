@@ -564,7 +564,7 @@ function AnalysisDemoCTA({ locale, isFa }: { locale: string; isFa: boolean }) {
           </p>
         </div>
         <Link
-          href={`/${locale}/demo`}
+          href="/demo"
           className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-semibold text-sm uppercase tracking-wider"
           style={{
             background: "linear-gradient(135deg, rgba(30,200,164,0.15) 0%, rgba(96,180,240,0.15) 100%)",

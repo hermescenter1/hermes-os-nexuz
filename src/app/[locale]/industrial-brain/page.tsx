@@ -150,7 +150,7 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
                   : "Deterministic reasoning engine — evidence-first, safety-aware, explainable. Decision support only."}
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href={`/${locale}/demo`}
+                <Link href="/demo"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider"
                   style={{
                     background: "linear-gradient(135deg, rgba(30,200,164,0.85) 0%, rgba(96,180,240,0.85) 100%)",
@@ -158,7 +158,7 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
                   }}>
                   {isFa ? "درخواست دمو" : "Request Demo"}
                 </Link>
-                <Link href={`/${locale}/articles/discover`}
+                <Link href="/articles/discover"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider border border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 transition-colors">
                   {isFa ? "کشف دانش صنعتی" : "Explore Industrial Knowledge"}
                 </Link>
@@ -232,7 +232,7 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
                     ? "یکپارچه‌سازی کامل با CMMS، EDMS، شبکه متخصصان و عملیات صنعتی"
                     : "Full integration with CMMS, EDMS, expert network, and industrial operations"}
                 </p>
-                <Link href={`/${locale}/demo`}
+                <Link href="/demo"
                   className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
                   {isFa ? "درخواست دمو" : "Request Demo"}
                   <svg viewBox="0 0 16 16" fill="none" className="w-3 h-3">
