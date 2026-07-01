@@ -54,10 +54,10 @@ const DOMAIN_KW: Record<IndustrialDomain, string[]> = {
   PLC:         ["plc","cpu","program","ladder","scan","watchdog","output coil","input coil","rung","function block","sfb","ob","s7-","controllogix","micrologix","modicon"],
   HMI:         ["hmi","scada panel","operator panel","display","operator screen","run command","hmi run","hmi command","wonder","intouch","wincc","vijeo"],
   SCADA:       ["scada","historian","dcs","distributed control","igss","wonderware","pi historian","ignition"],
-  SENSOR:      ["sensor","encoder","proximity","limit switch","position sensor","speed sensor","temperature sensor","pressure sensor","level sensor","flow sensor","photoelectric","inductive","capacitive","ultrasonic","thermocouple","rtd"],
-  NETWORK:     ["network","ethernet","profibus","profinet","devicenet","modbus","can bus","io module","remote io","comm fault","communication timeout","network fault"],
+  SENSOR:      ["sensor","encoder","proximity","limit switch","position sensor","speed sensor","temperature sensor","pressure sensor","level sensor","flow sensor","photoelectric","inductive","capacitive","ultrasonic","thermocouple","rtd","io module","24vdc","input mapping"],
+  NETWORK:     ["network","ethernet","profibus","profinet","devicenet","modbus","can bus","io module","remote io","comm fault","communication timeout","network fault","switch","vlan","firewall","ip conflict","duplicate ip","packet loss","scan time","scada driver"],
   ELECTRICAL:  ["voltage","phase","wiring","terminal","fuse","breaker","cable","short circuit","ground fault","insulation","resistance","ohm","ampere","volt","neutral","earth","earthing"],
-  MECHANICAL:  ["vibration","noise","alignment","balance","bearing","coupling","gearbox","seal","leak","wear","mechanical","breakage","lubrication","grease"],
+  MECHANICAL:  ["vibration","noise","alignment","balance","bearing","coupling","gearbox","seal","leak","wear","mechanical","breakage","lubrication","grease","temperature rising","overheating","cooling","vibration trend"],
   MAINTENANCE: ["maintenance","overhaul","replacement","inspection","preventive","service","filter","worn","corroded","aged","pm ","scheduled"],
   UNKNOWN:     [],
 };
@@ -380,7 +380,8 @@ function buildSignalMatrix(input: IndustrialFaultInput, allText: string): Signal
   let mechStatus: SignalStatus = "UNKNOWN";
   let mechValue = "Not checked";
   const mechChecked = has(checked, "free rotation","mechanical rotation","shaft rotation","hand rotation","manual rotation");
-  const motorReplaced = has(changes, "motor replacement","motor replaced","new motor","replaced motor","motor change");
+  const recentMechWork = has(changes, "motor replacement","motor replaced","new motor","replaced motor","motor change",
+    "coupling maintenance","coupling work","coupling replaced","alignment work","pump coupling");
 
   if (mechChecked) {
     if (has(allText, "rotates freely","free rotation ok","shaft free","mechanical ok","rotates fine")) {
@@ -390,8 +391,8 @@ function buildSignalMatrix(input: IndustrialFaultInput, allText: string): Signal
     } else {
       mechStatus = "WARNING"; mechValue = "Checked but result unclear";
     }
-  } else if (motorReplaced) {
-    mechStatus = "WARNING"; mechValue = "Motor replaced — full check recommended";
+  } else if (recentMechWork) {
+    mechStatus = "WARNING"; mechValue = "Recent mechanical work — full check recommended";
   } else if (has(sensor, "encoder","rotation","speed feedback")) {
     mechStatus = "UNKNOWN"; mechValue = "Not directly verified";
   }
@@ -413,15 +414,19 @@ function buildSignalMatrix(input: IndustrialFaultInput, allText: string): Signal
   });
 
   // ── Sensor / Feedback ─────────────────────────────────────────────────────
-  if (sensor && sensor.length > 3 && !has(sensor,"unknown","n/a","not applicable")) {
-    let sensorStatus: SignalStatus = "UNKNOWN";
-    const sensorValue = sensor.slice(0, 80);
+  const sensorRelevant = (sensor && sensor.length > 3 && !has(sensor,"unknown","n/a","not applicable")) ||
+    has(allText, "sensor","feedback","proximity","limit switch","encoder","io module","24v","input mapping");
 
-    if (has(sensor, "ok","normal","active","triggered","detected","working","good")) {
+  if (sensorRelevant) {
+    let sensorStatus: SignalStatus = "UNKNOWN";
+    const sensorValue = sensor && sensor.length > 0 ? sensor.slice(0, 80) : "See symptom description";
+    const sensorCombined = sensor + " " + sym;
+
+    if (has(sensorCombined, "ok","normal","active","triggered","detected","working","good")) {
       sensorStatus = "NORMAL";
-    } else if (has(sensor, "not active","not triggered","missing","failed","fault","no signal","open circuit")) {
+    } else if (has(sensorCombined, "not active","not triggered","missing","failed","fault","no signal","open circuit","does not receive","no feedback")) {
       sensorStatus = "CRITICAL";
-    } else if (has(sensor, "intermittent","unstable","noisy","floating")) {
+    } else if (has(sensorCombined, "intermittent","unstable","noisy","floating")) {
       sensorStatus = "WARNING";
     }
 
@@ -433,12 +438,224 @@ function buildSignalMatrix(input: IndustrialFaultInput, allText: string): Signal
       expectedValue: "Active and stable feedback matching machine state",
       status: sensorStatus,
       diagnosticMeaning: sensorStatus === "CRITICAL"
-        ? "Feedback signal missing or failed. If PLC requires this feedback for permissive, motor will not start."
+        ? "Feedback signal missing or failed. If PLC requires this feedback for permissive, motor will not start. Do not assume the program is at fault — hardware and wiring must be ruled out first."
         : sensorStatus === "WARNING"
           ? "Intermittent or unstable feedback. Check sensor mounting, cable shielding, and power supply."
           : "Feedback appears normal.",
       confidence: sensorStatus !== "UNKNOWN" ? 65 : 0,
       nextCheck: "Check sensor LED indicator, supply voltage (10-30VDC), cable condition, and PLC input I-bit state in online monitor.",
+    });
+
+    // IO module channel health
+    let ioStatus: SignalStatus = "UNKNOWN";
+    let ioValue = "Not reported";
+    if (has(allText, "io module fault","io module fail","module fault")) { ioStatus = "CRITICAL"; ioValue = "Possible IO module fault"; }
+    else if (has(allText, "io module ok","module ok","io module checked")) { ioStatus = "NORMAL"; ioValue = "Checked — appears normal"; }
+    items.push({
+      signalName: "IO Module Health",
+      signalNameFa: "سلامت ماژول IO",
+      source: "PLC IO Rack",
+      observedValue: ioValue,
+      expectedValue: "Channel LED healthy, no module fault reported",
+      status: ioStatus,
+      diagnosticMeaning: ioStatus === "UNKNOWN"
+        ? "IO module channel health not confirmed. A faulty input channel can silently drop a sensor signal even when the sensor itself and its wiring are healthy."
+        : ioStatus === "CRITICAL"
+          ? "IO module fault suspected — the sensor signal may never reach the PLC program regardless of field wiring."
+          : "IO module appears healthy.",
+      confidence: ioStatus !== "UNKNOWN" ? 66 : 0,
+      nextCheck: "Check the IO module channel status LED and diagnostic word in the PLC. Swap to a known-good channel if a fault is suspected.",
+    });
+
+    // 24V DC sensor supply
+    let supplyStatus: SignalStatus = "UNKNOWN";
+    let supplyValue = "Not measured";
+    if (has(allText, "24v ok","24vdc confirmed","supply confirmed","supply ok")) { supplyStatus = "NORMAL"; supplyValue = "Confirmed present"; }
+    else if (has(allText, "24v missing","no 24v","supply missing","power missing")) { supplyStatus = "CRITICAL"; supplyValue = "Missing / absent"; }
+    items.push({
+      signalName: "24V DC Sensor Supply",
+      signalNameFa: "تغذیه 24 ولت سنسور",
+      source: "Field Power Supply",
+      observedValue: supplyValue,
+      expectedValue: "Stable 24VDC (±10%) at sensor terminal",
+      status: supplyStatus,
+      diagnosticMeaning: supplyStatus === "UNKNOWN"
+        ? "Sensor supply voltage not measured. Many 'no feedback' cases after a sensor replacement are a missing or miswired 24V supply, not a program issue."
+        : supplyStatus === "CRITICAL"
+          ? "Sensor supply voltage confirmed missing — the sensor cannot operate without it."
+          : "Sensor supply confirmed present.",
+      confidence: supplyStatus !== "UNKNOWN" ? 70 : 0,
+      nextCheck: "Measure 24VDC at the sensor connector with a multimeter. Check the fuse/breaker feeding the sensor supply rail.",
+    });
+
+    // PLC input address mapping
+    let mappingStatus: SignalStatus = "UNKNOWN";
+    let mappingValue = "Not reported";
+    if (has(allText, "input mapping confirmed","address confirmed","tag confirmed","mapping verified")) { mappingStatus = "NORMAL"; mappingValue = "Verified"; }
+    items.push({
+      signalName: "PLC Input Address Mapping",
+      signalNameFa: "نگاشت آدرس ورودی PLC",
+      source: "PLC Program",
+      observedValue: mappingValue,
+      expectedValue: "Input tag/address matches the physical terminal used after sensor replacement",
+      status: mappingStatus,
+      diagnosticMeaning: mappingStatus === "UNKNOWN"
+        ? "PLC input address/tag mapping not confirmed after sensor replacement. Rewiring to a different physical channel without updating the program mapping is a common cause of 'no feedback' after replacement."
+        : "Input mapping confirmed correct.",
+      confidence: mappingStatus !== "UNKNOWN" ? 60 : 0,
+      nextCheck: "Go PLC online, monitor the exact input tag/address used by the program for this sensor, and confirm it corresponds to the physical terminal the sensor is wired to.",
+    });
+
+    // Mechanical position — physical confirmation
+    let posStatus: SignalStatus = "UNKNOWN";
+    let posValue = "Not reported";
+    if (has(allText, "reaches position","physically reaches","position confirmed physically","physically present","physically in position")) { posStatus = "NORMAL"; posValue = "Physically confirmed in position"; }
+    items.push({
+      signalName: "Mechanical Position (Physical Confirmation)",
+      signalNameFa: "موقعیت مکانیکی (تأیید فیزیکی)",
+      source: "Visual / Manual Field Check",
+      observedValue: posValue,
+      expectedValue: "Physical position matches the expected sensing point",
+      status: posStatus,
+      diagnosticMeaning: posStatus === "NORMAL"
+        ? "Physical position is confirmed correct — this isolates the fault to the sensing/signal chain rather than the mechanical motion itself."
+        : "Physical position not independently confirmed by an observer at the machine.",
+      confidence: posStatus !== "UNKNOWN" ? 58 : 0,
+      nextCheck: "Have an observer confirm the physical position matches the expected sensing point while a second person monitors the PLC input in real time.",
+    });
+  }
+
+  // ── Network / Communication (only when relevant) ──────────────────────────
+  const networkRelevant = has(allText, "network","scada","switch","ethernet","profinet","communication","comm loss","packet loss","vlan","ip conflict","firewall");
+  if (networkRelevant) {
+    let commStatus: SignalStatus = "UNKNOWN";
+    let commValue = "Not reported";
+    if (has(allText, "communication loss","comm loss","communication timeout","intermittent communication","comm fault")) {
+      commStatus = "WARNING"; commValue = "Intermittent communication loss reported";
+    } else if (has(allText, "communication ok","comm stable","communication normal")) {
+      commStatus = "NORMAL"; commValue = "Stable";
+    }
+    items.push({
+      signalName: "SCADA–PLC Communication Link",
+      signalNameFa: "لینک ارتباطی SCADA–PLC",
+      source: "Network / Communication",
+      observedValue: commValue,
+      expectedValue: "Stable, continuous communication with no timeouts",
+      status: commStatus,
+      diagnosticMeaning: commStatus === "WARNING"
+        ? "Intermittent communication loss reported. This can be caused by physical layer (switch/cable), IP/VLAN misconfiguration, or PLC/SCADA load issues."
+        : "Communication link state not confirmed with timestamps or logs.",
+      confidence: commStatus !== "UNKNOWN" ? 70 : 0,
+      nextCheck: "Correlate SCADA communication loss timestamps with PLC diagnostics buffer and switch port logs.",
+    });
+
+    let switchStatus: SignalStatus = "UNKNOWN";
+    let switchValue = "Not reported";
+    if (has(allText, "switch replaced","new switch","replaced switch","switch replacement")) { switchStatus = "WARNING"; switchValue = "Recently replaced — configuration not fully verified"; }
+    items.push({
+      signalName: "Network Switch / Cable Health",
+      signalNameFa: "سلامت سوییچ شبکه / کابل",
+      source: "Network Infrastructure",
+      observedValue: switchValue,
+      expectedValue: "Correct port speed/duplex, no CRC errors, cable intact",
+      status: switchStatus,
+      diagnosticMeaning: switchStatus === "WARNING"
+        ? "Switch was recently replaced — port configuration, VLAN assignment, or duplex settings may not match the original device."
+        : "Switch/cable health not confirmed. Physical layer issues are a common root cause of intermittent industrial network faults.",
+      confidence: switchStatus !== "UNKNOWN" ? 68 : 0,
+      nextCheck: "Check switch port LEDs and error counters. Verify VLAN/port configuration matches the original switch. Test cable continuity.",
+    });
+
+    let ipStatus: SignalStatus = "UNKNOWN";
+    let ipValue = "Not reported";
+    if (has(allText, "ip conflict","duplicate ip")) { ipStatus = "CRITICAL"; ipValue = "Possible IP conflict reported"; }
+    else if (has(allText, "ip confirmed","no ip conflict","static ip verified")) { ipStatus = "NORMAL"; ipValue = "Verified, no conflict"; }
+    items.push({
+      signalName: "IP Configuration / VLAN Assignment",
+      signalNameFa: "پیکربندی IP / تخصیص VLAN",
+      source: "Network Configuration",
+      observedValue: ipValue,
+      expectedValue: "Unique static IP, correct VLAN, no duplicate address",
+      status: ipStatus,
+      diagnosticMeaning: ipStatus === "CRITICAL"
+        ? "IP conflict can cause intermittent, hard-to-reproduce communication drops."
+        : "IP/VLAN configuration not confirmed after the network change.",
+      confidence: ipStatus !== "UNKNOWN" ? 65 : 0,
+      nextCheck: "Run a network scan to check for duplicate IP addresses. Confirm VLAN assignment for the PLC/SCADA devices.",
+    });
+
+    items.push({
+      signalName: "PLC Scan Load / SCADA Driver Health",
+      signalNameFa: "بار اسکن PLC / سلامت درایور SCADA",
+      source: "PLC / SCADA Server",
+      observedValue: "Not measured",
+      expectedValue: "Scan time within normal range; SCADA driver polling without timeout errors",
+      status: "UNKNOWN",
+      diagnosticMeaning: "PLC scan time and SCADA communication driver load not measured. High scan load or an outdated driver can cause intermittent polling failures that mimic a network fault.",
+      confidence: 0,
+      nextCheck: "Check PLC scan time/CPU load trend. Review SCADA driver communication statistics and error/timeout counters.",
+    });
+  }
+
+  // ── Vibration / Temperature Trend (only when relevant) ────────────────────
+  const vibrationRelevant = has(allText, "vibration","temperature rising","bearing temperature","overheating","running hot","temperature increase");
+  if (vibrationRelevant) {
+    let vibStatus: SignalStatus = "UNKNOWN";
+    let vibValue = "Not measured";
+    if (has(allText, "vibration increase","increasing vibration","rising vibration","vibration high","high vibration")) {
+      vibStatus = "WARNING"; vibValue = "Rising trend reported";
+    } else if (has(allText, "vibration normal","vibration ok","vibration stable")) {
+      vibStatus = "NORMAL"; vibValue = "Stable / within normal range";
+    }
+    items.push({
+      signalName: "Vibration Trend",
+      signalNameFa: "روند ارتعاش",
+      source: "Vibration Sensor / Portable Meter",
+      observedValue: vibValue,
+      expectedValue: "Stable, within ISO 10816 velocity limits for equipment class",
+      status: vibStatus,
+      diagnosticMeaning: vibStatus === "WARNING"
+        ? "A rising vibration trend without a PLC alarm is a classic early indicator of bearing wear, misalignment, or imbalance — mechanical degradation typically precedes an electrical fault code."
+        : "Vibration trend not measured. A single reading is less informative than a trend over time.",
+      confidence: vibStatus !== "UNKNOWN" ? 70 : 0,
+      nextCheck: "Take a vibration reading (velocity mm/s RMS) and compare to the baseline/previous reading. Identify dominant frequency if possible (1x RPM = imbalance, 2x = misalignment).",
+    });
+
+    let tempStatus: SignalStatus = "UNKNOWN";
+    let tempValue = "Not measured";
+    if (has(allText, "temperature rising","running hot","overheating","temperature increase","hot bearing")) {
+      tempStatus = "WARNING"; tempValue = "Slow rising trend reported";
+    } else if (has(allText, "temperature normal","temperature stable","temperature ok")) {
+      tempStatus = "NORMAL"; tempValue = "Stable / within normal range";
+    }
+    items.push({
+      signalName: "Bearing / Housing Temperature",
+      signalNameFa: "دمای یاتاقان / بدنه",
+      source: "Thermal Sensor / Handheld IR",
+      observedValue: tempValue,
+      expectedValue: "Stable, within OEM bearing temperature limit",
+      status: tempStatus,
+      diagnosticMeaning: tempStatus === "WARNING"
+        ? "Slow-rising temperature without an alarm suggests developing friction — lubrication degradation, bearing wear, or misalignment. The escalating trend increases failure risk even without an active PLC alarm."
+        : "Temperature trend not confirmed. A one-time spot reading may miss a slow-developing trend.",
+      confidence: tempStatus !== "UNKNOWN" ? 68 : 0,
+      nextCheck: "Take a spot temperature reading at the bearing housing and compare to baseline. Check the last lubrication date and grease condition.",
+    });
+
+    let lubeStatus: SignalStatus = "UNKNOWN";
+    let lubeValue = "Not reported";
+    if (has(allText, "lubrication overdue","grease overdue","missed lubrication")) { lubeStatus = "WARNING"; lubeValue = "Possibly overdue"; }
+    else if (has(allText, "lubrication ok","recently greased","lubrication up to date")) { lubeStatus = "NORMAL"; lubeValue = "Recently performed"; }
+    items.push({
+      signalName: "Lubrication Status",
+      signalNameFa: "وضعیت روان‌کاری",
+      source: "Maintenance Records",
+      observedValue: lubeValue,
+      expectedValue: "Lubrication performed per OEM schedule; correct grease type and quantity",
+      status: lubeStatus,
+      diagnosticMeaning: "Lubrication schedule and condition not fully confirmed. Under- or over-greasing is a common contributor to rising bearing temperature and vibration.",
+      confidence: lubeStatus !== "UNKNOWN" ? 55 : 0,
+      nextCheck: "Check the last lubrication date against the OEM schedule. Verify correct grease type and quantity was used.",
     });
   }
 
@@ -508,6 +725,27 @@ function computeUncertainty(matrix: SignalMatrixItem[]): UncertaintyResult {
   if (missingCriticalSignals.some(s => s.includes("Mechanical"))) {
     recommendedEvidenceToReduceUncertainty.push("LOTO, decouple load, rotate motor shaft by hand to verify mechanical freedom");
   }
+  if (missingCriticalSignals.some(s => s.includes("Communication") || s.includes("Switch"))) {
+    recommendedEvidenceToReduceUncertainty.push("Check network switch logs and correlate communication loss timestamps with PLC/SCADA diagnostics");
+  }
+  if (missingCriticalSignals.some(s => s.includes("IP Configuration"))) {
+    recommendedEvidenceToReduceUncertainty.push("Scan the network for duplicate IP addresses and confirm VLAN assignment");
+  }
+  if (missingCriticalSignals.some(s => s.includes("PLC Scan Load"))) {
+    recommendedEvidenceToReduceUncertainty.push("Check PLC scan time/CPU load trend and SCADA driver communication statistics");
+  }
+  if (missingCriticalSignals.some(s => s.includes("Vibration") || s.includes("Temperature"))) {
+    recommendedEvidenceToReduceUncertainty.push("Record a vibration and temperature trend reading and compare to baseline");
+  }
+  if (missingCriticalSignals.some(s => s.includes("Lubrication"))) {
+    recommendedEvidenceToReduceUncertainty.push("Check lubrication schedule and last service date against OEM recommendation");
+  }
+  if (missingCriticalSignals.some(s => s.includes("IO Module") || s.includes("24V") || s.includes("Input Mapping"))) {
+    recommendedEvidenceToReduceUncertainty.push("Measure 24VDC sensor supply, check IO module channel diagnostic LED, and confirm PLC input address mapping");
+  }
+  if (missingCriticalSignals.some(s => s.includes("Mechanical Position"))) {
+    recommendedEvidenceToReduceUncertainty.push("Have an observer confirm physical position while a second person monitors the PLC input in real time");
+  }
   if (recommendedEvidenceToReduceUncertainty.length === 0) {
     recommendedEvidenceToReduceUncertainty.push("Confirm all signal states before hardware intervention");
   }
@@ -565,10 +803,13 @@ function computeRisk(input: IndustrialFaultInput, domain: IndustrialDomain, seve
   const p = prodMap[prodImpact] ?? prodMap.MEDIUM;
   const s = safeMap[safeImpact] ?? safeMap.LOW;
   const u = urgencyMap[urgencyLevel];
+  const validLevels = ["NONE","LOW","MEDIUM","HIGH","CRITICAL"];
+  const productionImpactLevel = (validLevels.includes(prodImpact) ? prodImpact : "MEDIUM") as RiskResult["productionImpactLevel"];
+  const safetyImpactLevel = (validLevels.includes(safeImpact) ? safeImpact : "LOW") as RiskResult["safetyImpactLevel"];
 
   return {
-    productionImpact: p.en, productionImpactFa: p.fa,
-    safetyImpact: s.en, safetyImpactFa: s.fa,
+    productionImpact: p.en, productionImpactFa: p.fa, productionImpactLevel,
+    safetyImpact: s.en, safetyImpactFa: s.fa, safetyImpactLevel,
     downtimeRisk: hasProductionStop
       ? "Unplanned downtime in progress — every minute of delay increases cost impact."
       : "Potential downtime if fault is not diagnosed promptly.",
@@ -603,7 +844,7 @@ const CAUSE_TEMPLATES: CauseTemplate[] = [
     id: "field-wiring",
     title: "Field Wiring or Motor Terminal Connection Issue",
     titleFa: "مشکل سیم‌بندی میدانی یا اتصال ترمینال موتور",
-    triggerKeywords: ["motor","replacement","replaced","rewired","reconnected","terminal","cable"],
+    triggerKeywords: ["motor","replaced","rewired","reconnected","terminal","cable"],
     triggerDomains: ["MOTOR","ELECTRICAL","MAINTENANCE"],
     explanation: "After motor replacement, incorrect terminal connection, loose terminal, wrong phase sequence, or damaged cable between MCC and motor can prevent starting even when PLC commands run.",
     explanationFa: "پس از تعویض موتور، اتصال نادرست ترمینال، ترمینال شل، توالی اشتباه فاز یا کابل آسیب‌دیده بین MCC و موتور می‌تواند از راه‌اندازی جلوگیری کند حتی اگر PLC فرمان اجرا بدهد.",
@@ -637,8 +878,8 @@ const CAUSE_TEMPLATES: CauseTemplate[] = [
     triggerDomains: ["PLC","MOTOR","SENSOR"],
     explanation: "PLC program requires all permissives to be satisfied before issuing run command. If any permissive input (guard, temperature limit, pressure, upstream/downstream equipment status) is not fulfilled, the PLC will not command the output even with no active alarm.",
     explanationFa: "برنامه PLC نیاز دارد همه شرایط مجوز قبل از صدور فرمان اجرا برآورده شوند. اگر هر ورودی مجوز (گارد، محدودیت دما، فشار، وضعیت تجهیزات بالادست/پایین‌دست) برقرار نباشد، PLC حتی بدون آلارم فعال، خروجی را فرمان نمی‌دهد.",
-    suggestedCheck: "Go PLC online. Navigate to the motor run rung. Check each enabling condition. Monitor all interlock input I-bits in real time. Identify which permissive input is not satisfied.",
-    suggestedCheckFa: "PLC را آنلاین کنید. به رانگ اجرای موتور بروید. هر شرط فعال‌ساز را بررسی کنید. تمام بیت‌های ورودی اینترلاک را در زمان واقعی پایش کنید. تعیین کنید کدام ورودی مجوز برقرار نیست.",
+    suggestedCheck: "Go PLC online. Navigate to the relevant run/output rung for this equipment. Check each enabling condition. Monitor all interlock input I-bits in real time. Identify which permissive input is not satisfied.",
+    suggestedCheckFa: "PLC را آنلاین کنید. به رانگ اجرا/خروجی مربوط به این تجهیز بروید. هر شرط فعال‌ساز را بررسی کنید. تمام بیت‌های ورودی اینترلاک را در زمان واقعی پایش کنید. تعیین کنید کدام ورودی مجوز برقرار نیست.",
     baseConfidence: 68,
     boostIf: [["permissive"],["interlock"],["guard"],["not start"],["plc no fault"]],
     penaltyIf: ["permissives clear","interlocks ok","all clear","safety satisfied"],
@@ -663,7 +904,7 @@ const CAUSE_TEMPLATES: CauseTemplate[] = [
     id: "motor-connection-phase-sequence",
     title: "Incorrect Motor Phase Sequence or Connection After Replacement",
     titleFa: "توالی فاز نادرست یا اتصال اشتباه موتور پس از تعویض",
-    triggerKeywords: ["replacement","replaced","new motor","phase","rotation","direction","winding","delta","star","terminal"],
+    triggerKeywords: ["replaced","new motor","phase","rotation","direction","winding","delta","star","terminal"],
     triggerDomains: ["MOTOR","ELECTRICAL","MAINTENANCE"],
     explanation: "After motor replacement, wrong phase sequence (R-S-T reversed) or wrong winding connection (delta vs star jumper) can cause motor to not start, start backwards, or trip on overload immediately.",
     explanationFa: "پس از تعویض موتور، توالی فاز اشتباه (معکوس R-S-T) یا اتصال اشتباه سیم‌پیچ (جامپر مثلث در مقابل ستاره) می‌تواند باعث شود موتور راه‌اندازی نشود، معکوس شروع به کار کند، یا فوری روی اضافه‌بار عمل کند.",
@@ -676,18 +917,18 @@ const CAUSE_TEMPLATES: CauseTemplate[] = [
   },
   {
     id: "mechanical-coupling-load",
-    title: "Mechanical Coupling, Alignment, or Load Issue",
-    titleFa: "مشکل کوپلینگ مکانیکی، تراز یا بار",
-    triggerKeywords: ["coupling","alignment","mechanical","gearbox","load","conveyor","pump","replacement","replaced"],
+    title: "Mechanical Coupling, Alignment, Bearing, or Load Issue",
+    titleFa: "مشکل کوپلینگ مکانیکی، تراز، یاتاقان یا بار",
+    triggerKeywords: ["coupling","alignment","mechanical","gearbox","load","conveyor","pump","replacement","replaced","bearing","friction"],
     triggerDomains: ["MECHANICAL","MOTOR","MAINTENANCE"],
-    explanation: "After motor replacement, coupling may be incorrectly installed, keyway may be damaged, or load may be jammed or seized. This can prevent motor from starting or cause immediate overload trip.",
-    explanationFa: "پس از تعویض موتور، کوپلینگ ممکن است نادرست نصب شده، کی‌وی آسیب دیده، یا بار گیر کرده باشد. این می‌تواند مانع راه‌اندازی موتور شود یا باعث عمل فوری اضافه‌بار شود.",
-    suggestedCheck: "LOTO. Disconnect coupling. Rotate load shaft by hand — should be free. Rotate motor shaft by hand — should be free. Re-check coupling alignment with dial gauge or laser aligner. Verify keyway and coupling bush are intact.",
-    suggestedCheckFa: "LOTO. کوپلینگ را جدا کنید. شفت بار را با دست بچرخانید — باید آزاد باشد. شفت موتور را با دست بچرخانید — باید آزاد باشد. تراز کوپلینگ را با گیج یا تراز‌یاب لیزری مجدداً بررسی کنید. کی‌وی و بوش کوپلینگ را بررسی کنید.",
+    explanation: "After motor replacement or coupling maintenance, the coupling may be incorrectly installed, the keyway may be damaged, bearing friction may have increased, or the load may be jammed or seized. This can prevent starting, cause immediate overload trip, or produce intermittent stoppage under load.",
+    explanationFa: "پس از تعویض موتور یا تعمیر کوپلینگ، کوپلینگ ممکن است نادرست نصب شده، کی‌وی آسیب دیده، اصطکاک یاتاقان افزایش یافته، یا بار گیر کرده باشد. این می‌تواند مانع راه‌اندازی شود، باعث عمل فوری اضافه‌بار شود، یا توقف متناوب تحت بار ایجاد کند.",
+    suggestedCheck: "LOTO. Disconnect coupling. Rotate load shaft by hand — should be free. Rotate motor shaft by hand — should be free. Re-check coupling alignment with dial gauge or laser aligner. Verify keyway, coupling bush, and bearing condition (feel for excess friction/heat).",
+    suggestedCheckFa: "LOTO. کوپلینگ را جدا کنید. شفت بار را با دست بچرخانید — باید آزاد باشد. شفت موتور را با دست بچرخانید — باید آزاد باشد. تراز کوپلینگ را با گیج یا تراز‌یاب لیزری مجدداً بررسی کنید. کی‌وی، بوش کوپلینگ و وضعیت یاتاقان را بررسی کنید (اصطکاک/گرمای اضافی).",
     baseConfidence: 55,
-    boostIf: [["coupling"],["alignment","issue"],["alignment","motor replacement"],["jammed"],["seized"],["load stuck"]],
+    boostIf: [["coupling"],["alignment","issue"],["alignment","motor replacement"],["jammed"],["seized"],["load stuck"],["bearing","friction"],["coupling maintenance"]],
     penaltyIf: ["coupling ok","alignment ok","load free","mechanical ok"],
-    missingEvidence: ["Load side rotation check (hand)", "Coupling condition inspection", "Alignment measurement"],
+    missingEvidence: ["Load side rotation check (hand)", "Coupling condition inspection", "Alignment measurement", "Bearing friction/heat check"],
   },
   {
     id: "sensor-feedback-missing",
@@ -704,7 +945,146 @@ const CAUSE_TEMPLATES: CauseTemplate[] = [
     penaltyIf: ["sensor ok","feedback confirmed","encoder working"],
     missingEvidence: ["Sensor I-bit state during start attempt", "Sensor supply voltage", "PLC run sequence logic around feedback requirements"],
   },
+  {
+    id: "sensor-io-module-power",
+    title: "IO Module, 24V Supply, or PLC Input Mapping Issue",
+    titleFa: "مشکل ماژول IO، تغذیه 24 ولت یا نگاشت ورودی PLC",
+    triggerKeywords: ["io module","input module","24v","power supply","plc input","mapping","address","channel","sensor replaced","sensor replacement"],
+    triggerDomains: ["SENSOR","PLC","ELECTRICAL"],
+    explanation: "Even if the sensor itself is functioning correctly, a faulty IO module channel, missing 24VDC supply, loose field wiring, or an incorrect PLC input address mapping can prevent the signal from being seen by the program — especially after a sensor replacement changed wiring or terminal position.",
+    explanationFa: "حتی اگر خود سنسور به‌درستی کار کند، یک کانال ماژول IO معیوب، تغذیه 24 ولت مفقود، سیم‌بندی میدانی شل، یا نگاشت آدرس ورودی نادرست PLC می‌تواند مانع دیده‌شدن سیگنال توسط برنامه شود — به‌ویژه پس از تعویض سنسور که سیم‌بندی یا موقعیت ترمینال را تغییر داده است.",
+    suggestedCheck: "Check 24VDC supply at the sensor and IO module terminals. Check the IO module channel status LED. Verify the PLC input tag/address mapping matches the physical channel used, especially after any recent sensor replacement.",
+    suggestedCheckFa: "تغذیه 24 ولت را در ترمینال سنسور و ماژول IO بررسی کنید. LED وضعیت کانال ماژول IO را بررسی کنید. تأیید کنید نگاشت آدرس/تگ ورودی PLC با کانال فیزیکی مورد استفاده مطابقت دارد، به‌ویژه پس از هرگونه تعویض اخیر سنسور.",
+    baseConfidence: 50,
+    boostIf: [["io module"],["24v"],["input mapping"],["sensor","replaced"],["sensor replacement"]],
+    penaltyIf: ["io module ok","24v confirmed","mapping verified"],
+    missingEvidence: ["24VDC supply voltage measurement", "IO module channel diagnostic LED state", "PLC input address/tag mapping verification"],
+  },
+  {
+    id: "vfd-parameter-mismatch",
+    title: "VFD Parameter Mismatch or Nuisance Trip Setting",
+    titleFa: "عدم تطابق پارامتر VFD یا تنظیم تریپ ناخواسته",
+    triggerKeywords: ["vfd","overcurrent","overload","parameter","trip","current limit","nuisance"],
+    triggerDomains: ["VFD","MOTOR","ELECTRICAL"],
+    explanation: "VFD current limit, acceleration/deceleration ramp, or motor nameplate parameters that are misconfigured after maintenance work can cause nuisance overcurrent/overload trips under normal load, appearing as intermittent stoppage.",
+    explanationFa: "پارامترهای محدودیت جریان، شتاب/کاهش سرعت یا پلاک موتور VFD که پس از کار تعمیراتی به‌درستی تنظیم نشده‌اند می‌توانند باعث تریپ ناخواسته اضافه‌جریان/اضافه‌بار تحت بار عادی شوند و به‌صورت توقف متناوب ظاهر شوند.",
+    suggestedCheck: "Verify VFD parameters (current limit, accel/decel ramp, motor nameplate voltage/current/frequency) match the motor nameplate after any component change or maintenance.",
+    suggestedCheckFa: "پارامترهای VFD (محدودیت جریان، شتاب/کاهش سرعت، ولتاژ/جریان/فرکانس پلاک موتور) را پس از هرگونه تغییر قطعه یا تعمیرات با پلاک موتور مطابقت دهید.",
+    baseConfidence: 50,
+    boostIf: [["vfd","overcurrent"],["parameter"],["nuisance trip"],["vfd","trip"]],
+    penaltyIf: ["parameters verified","vfd parameters ok"],
+    missingEvidence: ["VFD parameter list compared to motor nameplate", "Trip history / timestamp log", "Load current trend during trip"],
+  },
+  {
+    id: "pump-process-blockage",
+    title: "Process Blockage or Increased Load on Pump/Driven Equipment",
+    titleFa: "انسداد فرآیند یا افزایش بار روی پمپ/تجهیز محرک",
+    triggerKeywords: ["pump","blockage","blocked","clogg","strainer","valve closed","cavitation","process","intermittent"],
+    triggerDomains: ["MOTOR","MECHANICAL"],
+    explanation: "A partial blockage, closed/throttled valve, clogged strainer, or cavitation can intermittently increase load on the pump, causing current spikes and stoppage that look electrical but originate in the process.",
+    explanationFa: "انسداد جزئی، شیر بسته/تنگ‌شده، صافی گرفته یا کاویتاسیون می‌تواند به‌صورت متناوب بار روی پمپ را افزایش دهد و باعث افزایش جریان و توقف شود که ظاهراً برقی به نظر می‌رسد اما منشأ آن فرآیند است.",
+    suggestedCheck: "Check strainer/filter for blockage, valve positions, suction conditions, and process flow/pressure trend during fault events.",
+    suggestedCheckFa: "صافی/فیلتر را از نظر انسداد، وضعیت شیرها، شرایط مکش و روند جریان/فشار فرآیند حین رویداد خطا بررسی کنید.",
+    baseConfidence: 48,
+    boostIf: [["blockage"],["blocked"],["clogg"],["cavitation"],["pump stops"],["intermittent","pump"]],
+    penaltyIf: ["strainer clear","no blockage","process normal"],
+    missingEvidence: ["Process flow/pressure trend at fault time", "Strainer/valve inspection result", "Suction pressure reading"],
+  },
+  {
+    id: "cable-motor-insulation",
+    title: "Motor Cable or Winding Insulation Degradation",
+    titleFa: "افت عایق کابل موتور یا سیم‌پیچ",
+    triggerKeywords: ["insulation","cable","winding","megger","ground fault","intermittent trip"],
+    triggerDomains: ["ELECTRICAL","MOTOR","VFD"],
+    explanation: "Degraded cable or motor winding insulation can cause intermittent ground faults or overcurrent trips, particularly if recent mechanical work disturbed cable routing near the coupling or terminal box.",
+    explanationFa: "افت عایق کابل یا سیم‌پیچ موتور می‌تواند باعث اتصال زمین یا تریپ اضافه‌جریان متناوب شود، به‌ویژه اگر کار مکانیکی اخیر مسیر کابل نزدیک کوپلینگ یا جعبه ترمینال را مختل کرده باشد.",
+    suggestedCheck: "Megger test motor cable and winding insulation resistance (qualified electrician, LOTO). Inspect cable for chafing or damage near recent mechanical work.",
+    suggestedCheckFa: "تست مگر مقاومت عایق کابل و سیم‌پیچ موتور (برقکار متخصص، LOTO). کابل را از نظر سایش یا آسیب نزدیک کار مکانیکی اخیر بازرسی کنید.",
+    baseConfidence: 45,
+    boostIf: [["insulation"],["megger"],["ground fault"],["intermittent","trip"]],
+    penaltyIf: ["insulation confirmed","megger passed","cable ok"],
+    missingEvidence: ["Insulation resistance test (megger) result", "Cable visual inspection near recent work", "Ground fault history"],
+  },
+  {
+    id: "network-switch-cable",
+    title: "Network Switch or Cable Fault After Replacement",
+    titleFa: "خرابی سوییچ شبکه یا کابل پس از تعویض",
+    triggerKeywords: ["switch","network","cable","ethernet","profinet","communication","replaced switch","new switch"],
+    triggerDomains: ["NETWORK","SCADA","PLC"],
+    explanation: "A recently replaced network switch or cable can introduce port misconfiguration, duplex mismatch, a faulty port, or a damaged cable, causing intermittent communication loss and HMI freezes.",
+    explanationFa: "سوییچ شبکه یا کابل تازه تعویض‌شده می‌تواند پیکربندی پورت نادرست، عدم تطابق دوپلکس، پورت معیوب یا کابل آسیب‌دیده ایجاد کند و باعث قطع ارتباط متناوب و فریز شدن HMI شود.",
+    suggestedCheck: "Check switch port status/LEDs, cable continuity, duplex/speed settings, and swap the suspect cable/port. Review the switch replacement configuration against the original.",
+    suggestedCheckFa: "وضعیت/LED پورت سوییچ، پیوستگی کابل، تنظیمات دوپلکس/سرعت را بررسی کنید و کابل/پورت مشکوک را تعویض کنید. پیکربندی سوییچ جدید را با سوییچ قبلی مقایسه کنید.",
+    baseConfidence: 55,
+    boostIf: [["switch","replaced"],["new switch"],["cable"],["duplex"]],
+    penaltyIf: ["switch configuration verified","cable tested ok"],
+    missingEvidence: ["Switch port diagnostic/log", "Cable test result", "Switch configuration compared to original device"],
+  },
+  {
+    id: "ip-network-config",
+    title: "IP Address Conflict or Network Configuration Issue",
+    titleFa: "تداخل آدرس IP یا مشکل پیکربندی شبکه",
+    triggerKeywords: ["ip conflict","ip address","subnet","vlan","duplicate ip","dhcp","static ip"],
+    triggerDomains: ["NETWORK","SCADA","PLC"],
+    explanation: "A duplicate IP address, wrong subnet/VLAN assignment, or DHCP/static IP conflict after a network change can cause intermittent communication drops that appear random.",
+    explanationFa: "آدرس IP تکراری، تخصیص نادرست ساب‌نت/VLAN، یا تداخل DHCP/IP ثابت پس از تغییر شبکه می‌تواند باعث قطعی‌های متناوب ارتباط شود که به نظر تصادفی می‌رسند.",
+    suggestedCheck: "Verify PLC/SCADA IP settings, VLAN assignment, and check for a duplicate IP using network diagnostic tools.",
+    suggestedCheckFa: "تنظیمات IP و تخصیص VLAN مربوط به PLC/SCADA را تأیید کنید و با ابزارهای تشخیص شبکه، وجود آدرس IP تکراری را بررسی کنید.",
+    baseConfidence: 45,
+    boostIf: [["ip conflict"],["duplicate ip"],["vlan"]],
+    penaltyIf: ["ip verified","no duplicate ip"],
+    missingEvidence: ["Network configuration audit", "Duplicate IP scan result", "VLAN assignment confirmation"],
+  },
+  {
+    id: "plc-scada-comm-load",
+    title: "PLC Scan Load, SCADA Driver, or Firewall/VLAN Filtering Issue",
+    titleFa: "بار اسکن PLC، درایور SCADA یا فیلترینگ فایروال/VLAN",
+    triggerKeywords: ["scada","plc load","driver","firewall","vlan","scan time","communication timeout","packet loss"],
+    triggerDomains: ["NETWORK","SCADA","PLC"],
+    explanation: "High PLC scan load, an outdated SCADA communication driver, or firewall/VLAN filtering can intermittently block or delay polling, appearing as random communication loss and HMI freezes even when the physical network is healthy.",
+    explanationFa: "بار بالای اسکن PLC، درایور ارتباطی قدیمی SCADA، یا فیلترینگ فایروال/VLAN می‌تواند به‌طور متناوب پولینگ را مسدود یا با تأخیر مواجه کند و حتی وقتی شبکه فیزیکی سالم است، به‌صورت قطع ارتباط تصادفی و فریز HMI ظاهر شود.",
+    suggestedCheck: "Check PLC scan time and CPU load, review SCADA driver/polling logs, and confirm firewall/VLAN rules are not intermittently blocking the PLC-SCADA port.",
+    suggestedCheckFa: "زمان اسکن و بار CPU پی‌ال‌سی را بررسی کنید، لاگ‌های درایور/پولینگ SCADA را مرور کنید، و تأیید کنید قوانین فایروال/VLAN به‌طور متناوب پورت PLC-SCADA را مسدود نمی‌کنند.",
+    baseConfidence: 48,
+    boostIf: [["scan time"],["firewall"],["packet loss"],["scada driver"]],
+    penaltyIf: ["scan time normal","driver updated","firewall rules confirmed"],
+    missingEvidence: ["PLC scan time/CPU load trend", "SCADA communication driver log", "Firewall/VLAN rule review", "Packet loss / ping timestamp log"],
+  },
+  {
+    id: "bearing-lubrication-trend",
+    title: "Bearing Wear, Lubrication Degradation, or Misalignment (Rising Vibration/Temperature)",
+    titleFa: "فرسودگی یاتاقان، افت روان‌کاری یا عدم تراز (روند صعودی ارتعاش/دما)",
+    triggerKeywords: ["vibration","temperature","bearing","lubrication","misalignment","grease","overheating"],
+    triggerDomains: ["MECHANICAL","MAINTENANCE","MOTOR"],
+    explanation: "Gradually rising vibration and temperature without a PLC alarm is a classic early indicator of bearing wear, lubrication degradation, or misalignment — mechanical degradation trends typically precede an electrical fault code, so absence of an alarm does not mean the equipment is healthy.",
+    explanationFa: "روند صعودی تدریجی ارتعاش و دما بدون آلارم PLC، نشانه اولیه کلاسیک فرسودگی یاتاقان، افت روان‌کاری یا عدم تراز است — روندهای فرسودگی مکانیکی معمولاً قبل از کد خطای برقی رخ می‌دهند، پس نبود آلارم به معنای سالم بودن تجهیز نیست.",
+    suggestedCheck: "Trend vibration (velocity/acceleration) and bearing temperature over time. Check lubrication schedule and grease condition. Verify shaft alignment and check for load imbalance.",
+    suggestedCheckFa: "ارتعاش (سرعت/شتاب) و دمای یاتاقان را در طول زمان روند‌یابی کنید. برنامه روان‌کاری و وضعیت گریس را بررسی کنید. تراز شفت را تأیید کنید و عدم توازن بار را بررسی کنید.",
+    baseConfidence: 50,
+    boostIf: [["vibration"],["temperature","rising"],["bearing"],["lubrication"]],
+    penaltyIf: ["vibration normal","bearing ok","lubrication up to date"],
+    missingEvidence: ["Vibration trend data (velocity mm/s or acceleration g)", "Bearing temperature trend", "Last lubrication/grease date", "Alignment check history"],
+  },
+  {
+    id: "cooling-sensor-calibration",
+    title: "Cooling System Degradation or Temperature Sensor Calibration Drift",
+    titleFa: "افت سیستم خنک‌کاری یا انحراف کالیبراسیون سنسور دما",
+    triggerKeywords: ["cooling","fan","calibration","sensor drift","ambient temperature","ventilation"],
+    triggerDomains: ["MECHANICAL","SENSOR","MAINTENANCE"],
+    explanation: "Reduced cooling airflow, a blocked ventilation path, or a drifted temperature sensor calibration can cause an apparent slow temperature rise that is not purely mechanical wear in origin.",
+    explanationFa: "کاهش جریان هوای خنک‌کننده، مسدود شدن مسیر تهویه، یا انحراف کالیبراسیون سنسور دما می‌تواند باعث افزایش دمای ظاهری شود که منشأ آن صرفاً فرسودگی مکانیکی نیست.",
+    suggestedCheck: "Check cooling fan operation and ventilation path for blockage. Verify temperature sensor calibration against a reference instrument.",
+    suggestedCheckFa: "عملکرد فن خنک‌کننده و مسیر تهویه را از نظر انسداد بررسی کنید. کالیبراسیون سنسور دما را در برابر یک ابزار مرجع تأیید کنید.",
+    baseConfidence: 40,
+    boostIf: [["cooling"],["fan"],["calibration"],["sensor drift"]],
+    penaltyIf: ["cooling confirmed","calibration verified"],
+    missingEvidence: ["Cooling fan/airflow check result", "Temperature sensor calibration record", "Ambient temperature reading comparison"],
+  },
 ];
+
+// Generic maintenance/swap language shared across many unrelated fault domains — matching one
+// of these alone should not be enough to pull a template into an unrelated scenario.
+const GENERIC_MAINTENANCE_TERMS = new Set(["replaced", "replacement", "new motor", "terminal"]);
 
 function generateCauses(
   input: IndustrialFaultInput,
@@ -716,13 +1096,18 @@ function generateCauses(
 
   for (const tmpl of CAUSE_TEMPLATES) {
     // Domain relevance
-    const domainMatch = tmpl.triggerDomains.includes(domain) ||
-      tmpl.triggerDomains.some(d => detectDomains(allText).slice(0,3).map(r=>r.domain).includes(d));
+    // Domain match is scoped to the classified primary domain only — matching against the
+    // broader top-3 detected domains let unrelated hypotheses (e.g. VFD/motor wiring) leak
+    // into scenarios sharing only an incidental keyword (e.g. "replaced") with a different domain.
+    const domainMatch = tmpl.triggerDomains.includes(domain);
 
-    // Keyword trigger
+    // Keyword trigger — require at least 2 matches, at least one of which is domain-specific,
+    // to qualify a template outside its own domain. A generic maintenance word like "replaced"
+    // is common to many unrelated fault types and is not distinctive evidence on its own.
     const kwMatches = tmpl.triggerKeywords.filter(kw => allText.includes(kw.toLowerCase()));
+    const hasSpecificMatch = kwMatches.some(kw => !GENERIC_MAINTENANCE_TERMS.has(kw));
 
-    if (!domainMatch && kwMatches.length === 0) continue;
+    if (!domainMatch && (kwMatches.length < 2 || !hasSpecificMatch)) continue;
 
     let confidence = tmpl.baseConfidence;
 
@@ -824,9 +1209,15 @@ function generateCauses(
 
 // ─── Reasoning Map ────────────────────────────────────────────────────────────
 
+function mapImpactToRiskLevel(level: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"): "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" {
+  return level === "NONE" ? "LOW" : level;
+}
+
 function buildReasoningMap(
   causes: LikelyCause[],
   matrix: SignalMatrixItem[],
+  risk: RiskResult,
+  uncertainty: UncertaintyResult,
 ): ReasoningMap {
   const evidenceNodes: EvidenceNode[] = matrix.map((s, i) => ({
     id: `ev-${i}`,
@@ -846,36 +1237,65 @@ function buildReasoningMap(
     supportedBy: c.supportingEvidence.slice(0, 2),
   }));
 
+  // Risk nodes reflect the actual computed risk result, not fixed placeholders.
   const riskNodes: RiskNode[] = [
     {
       id: "risk-prod",
-      label: "Production Downtime",
-      labelFa: "توقف تولید",
-      level: "HIGH",
+      label: `Production Impact — ${risk.productionImpact}`,
+      labelFa: `تأثیر تولید — ${risk.productionImpactFa}`,
+      level: mapImpactToRiskLevel(risk.productionImpactLevel),
     },
     {
-      id: "risk-electrical",
-      label: "Electrical / Mechanical Hazard",
-      labelFa: "خطر برقی / مکانیکی",
-      level: "MEDIUM",
+      id: "risk-safety",
+      label: `Safety — ${risk.safetyImpact}`,
+      labelFa: `ایمنی — ${risk.safetyImpactFa}`,
+      level: mapImpactToRiskLevel(risk.safetyImpactLevel),
     },
     {
-      id: "risk-repeat",
-      label: "Repeat Fault Risk",
-      labelFa: "خطر تکرار خرابی",
-      level: "MEDIUM",
+      id: "risk-urgency",
+      label: `Urgency — ${risk.urgency}`,
+      labelFa: `فوریت — ${risk.urgencyFa}`,
+      level: risk.urgencyLevel,
     },
   ];
 
-  const actionNodes: ActionNode[] = [
-    { id: "act-1", label: "Gather missing signal evidence", labelFa: "جمع‌آوری شواهد سیگنال مفقود", priority: "IMMEDIATE" },
-    { id: "act-2", label: "Check PLC output command state online", labelFa: "بررسی وضعیت فرمان خروجی PLC آنلاین", priority: "IMMEDIATE" },
-    { id: "act-3", label: "Inspect field wiring and VFD/MCC", labelFa: "بازرسی سیم‌بندی میدانی و VFD/MCC", priority: "NEXT" },
-    { id: "act-4", label: "LOTO — mechanical coupling inspection", labelFa: "LOTO — بازرسی کوپلینگ مکانیکی", priority: "NEXT" },
-    { id: "act-5", label: "Escalate to instrumentation/electrical engineer", labelFa: "تشدید به مهندس ابزار دقیق/برق", priority: "ESCALATE" },
-  ];
+  // Action nodes are derived from the actual top causes and missing evidence for this analysis.
+  const actionNodes: ActionNode[] = [];
+  const firstUnknown = matrix.find(s => s.status === "UNKNOWN");
+  if (firstUnknown) {
+    actionNodes.push({
+      id: "act-1",
+      label: `Confirm ${firstUnknown.signalName}`,
+      labelFa: `تأیید ${firstUnknown.signalNameFa}`,
+      priority: "IMMEDIATE",
+    });
+  }
+  if (causes[0]) {
+    actionNodes.push({ id: "act-2", label: causes[0].suggestedCheck, labelFa: causes[0].suggestedCheckFa, priority: "IMMEDIATE" });
+  }
+  if (causes[1]) {
+    actionNodes.push({ id: "act-3", label: causes[1].suggestedCheck, labelFa: causes[1].suggestedCheckFa, priority: "NEXT" });
+  }
+  if (uncertainty.conflictingSignals[0]) {
+    actionNodes.push({
+      id: "act-4",
+      label: `Resolve conflicting evidence: ${uncertainty.conflictingSignals[0]}`,
+      labelFa: `رفع شواهد متعارض: ${uncertainty.conflictingSignals[0]}`,
+      priority: "NEXT",
+    });
+  }
+  actionNodes.push({
+    id: "act-5",
+    label: causes[0]
+      ? `Escalate to the appropriate specialist if "${causes[0].title}" is not confirmed after field checks`
+      : "Escalate to the appropriate specialist if field checks do not resolve the fault",
+    labelFa: causes[0]
+      ? `در صورت عدم تأیید «${causes[0].titleFa}» پس از بررسی‌های میدانی، به متخصص مربوطه ارجاع دهید`
+      : "در صورت عدم رفع خرابی پس از بررسی‌های میدانی، به متخصص مربوطه ارجاع دهید",
+    priority: "ESCALATE",
+  });
 
-  return { evidenceNodes, causeNodes, riskNodes, actionNodes };
+  return { evidenceNodes, causeNodes, riskNodes, actionNodes: actionNodes.slice(0, 5) };
 }
 
 // ─── Evidence gaps ────────────────────────────────────────────────────────────
@@ -893,7 +1313,7 @@ function computeEvidenceGaps(matrix: SignalMatrixItem[]): EvidenceGap[] {
 
 // ─── Inspection checklist ─────────────────────────────────────────────────────
 
-function generateChecklist(domain: IndustrialDomain): ChecklistItem[] {
+function generateChecklist(domain: IndustrialDomain, allText: string = ""): ChecklistItem[] {
   const items: ChecklistItem[] = [];
   let id = 0;
   const add = (text: string, textFa: string, cat: string, catFa: string, qp = false) => {
@@ -931,6 +1351,18 @@ function generateChecklist(domain: IndustrialDomain): ChecklistItem[] {
     add("Check load side for jam or mechanical seizure — rotate by hand if safely possible.", "بار را از نظر گیر کردن یا قفل مکانیکی بررسی کنید — در صورت امکان ایمن، با دست بچرخانید.", "Mechanical", "مکانیک", true);
   }
 
+  // Network / communication checks (only when relevant)
+  if (domain === "NETWORK" || domain === "SCADA" || has(allText, "switch","network","profinet","vlan","ip conflict")) {
+    add("Check network switch port LEDs, error counters, and cable continuity.", "LED پورت سوییچ شبکه، شمارنده خطا و پیوستگی کابل را بررسی کنید.", "Network / Communication", "شبکه / ارتباطات", false);
+    add("Verify PLC/SCADA IP address assignment and check for duplicate IP or VLAN misconfiguration.", "تخصیص آدرس IP پی‌ال‌سی/اسکادا را تأیید کنید و پیکربندی نادرست IP تکراری یا VLAN را بررسی کنید.", "Network / Communication", "شبکه / ارتباطات", false);
+  }
+
+  // Vibration / temperature checks (only when relevant)
+  if (has(allText, "vibration","temperature rising","bearing temperature","overheating")) {
+    add("Take a vibration reading and compare to the baseline trend.", "یک قرائت ارتعاش انجام دهید و با روند پایه مقایسه کنید.", "Mechanical", "مکانیک", false);
+    add("Check bearing temperature and lubrication schedule/condition.", "دمای یاتاقان و برنامه/وضعیت روان‌کاری را بررسی کنید.", "Mechanical", "مکانیک", false);
+  }
+
   // Data to collect
   add("Document current nameplate data (FLA, voltage, connection type, IP rating) for the replacement motor.", "داده‌های پلاک موتور جایگزین را مستند کنید (FLA، ولتاژ، نوع اتصال، IP).", "Data Collection", "جمع‌آوری داده", false);
   add("Save screenshot of PLC diagnostics page and online monitor during start attempt.", "تصویر صفحه صفحه دیاگنوستیک PLC و مانیتور آنلاین را حین تلاش برای استارت ذخیره کنید.", "Data Collection", "جمع‌آوری داده", false);
@@ -940,75 +1372,96 @@ function generateChecklist(domain: IndustrialDomain): ChecklistItem[] {
 
 // ─── Recommended actions ──────────────────────────────────────────────────────
 
-function generateActions(): ActionGroup[] {
+function generateActions(domain: IndustrialDomain, allText: string): ActionGroup[] {
+  const isNetwork = domain === "NETWORK" || domain === "SCADA" || has(allText, "switch","profinet","packet loss","ip conflict","comm loss","communication loss","vlan");
+  const isVibration = has(allText, "vibration","temperature rising","bearing temperature","overheating","running hot");
+  const isSensorIO = domain === "SENSOR" || has(allText, "sensor","feedback","io module","24v","input mapping");
+
+  const immediate = [
+    { en: "Go PLC online — check motor run Q-bit state and all permissive I-bits", fa: "PLC را آنلاین کنید — وضعیت بیت Q اجرا و تمام بیت‌های I مجوز را بررسی کنید" },
+    { en: "Check HMI operator screen — confirm run command active and correct operating mode", fa: "صفحه اپراتور HMI را بررسی کنید — تأیید فرمان اجرا فعال و حالت عملیاتی صحیح است" },
+    { en: "Read VFD keypad display — note any fault codes without clearing", fa: "نمایشگر VFD را بخوانید — کدهای خطا را بدون پاک کردن یادداشت کنید" },
+    { en: "Check MCC breaker position and overload relay indicator", fa: "وضعیت کلید MCC و نشانگر رله اضافه‌بار را بررسی کنید" },
+  ];
+  if (isNetwork) immediate.push({ en: "Check network switch port LEDs and note any error indicators", fa: "LED پورت سوییچ شبکه را بررسی کنید و هرگونه نشانگر خطا را یادداشت کنید" });
+  if (isVibration) immediate.push({ en: "Take a spot vibration and temperature reading and compare to baseline", fa: "یک قرائت لحظه‌ای ارتعاش و دما بگیرید و با روند پایه مقایسه کنید" });
+
+  const electrical = [
+    { en: "Qualified electrician: apply LOTO, verify absence of voltage at motor terminals", fa: "برقکار متخصص: LOTO اجرا کنید، عدم وجود ولتاژ در ترمینال موتور را تأیید کنید" },
+    { en: "Inspect motor terminal box — verify U/V/W connections, delta/star jumper, terminal tightness", fa: "جعبه ترمینال موتور را بازرسی کنید — اتصالات U/V/W، جامپر مثلث/ستاره و سفتی ترمینال" },
+    { en: "Measure cable insulation resistance (>1 MΩ) from MCC output to motor terminals", fa: "مقاومت عایق کابل (بیش از 1 مگا اهم) از خروجی MCC تا ترمینال موتور را اندازه بگیرید" },
+    { en: "Verify overload relay is set to motor nameplate FLA (±5%)", fa: "تأیید رله اضافه‌بار روی FLA پلاک موتور تنظیم شده است (±5%)" },
+  ];
+  if (isNetwork) electrical.push(
+    { en: "Check switch port duplex/speed settings and cable continuity", fa: "تنظیمات دوپلکس/سرعت پورت سوییچ و پیوستگی کابل را بررسی کنید" },
+    { en: "Scan the network for duplicate IP addresses and confirm VLAN assignment", fa: "شبکه را از نظر آدرس IP تکراری بررسی کنید و تخصیص VLAN را تأیید کنید" },
+  );
+  if (isSensorIO) electrical.push(
+    { en: "Measure 24VDC sensor supply and check IO module channel diagnostic LED", fa: "تغذیه 24 ولت سنسور را اندازه بگیرید و LED تشخیصی کانال ماژول IO را بررسی کنید" },
+  );
+
+  const plcHmi = [
+    { en: "Navigate to motor run rung in PLC online — verify all enabling conditions are TRUE", fa: "در PLC آنلاین به رانگ اجرای موتور بروید — تأیید همه شرایط فعال‌ساز TRUE هستند" },
+    { en: "Use force/monitor table to check output Q-bit state during start attempt", fa: "از جدول force/monitor برای بررسی وضعیت بیت Q خروجی هنگام تلاش برای استارت استفاده کنید" },
+    { en: "Capture PLC diagnostics log and alarm history since motor replacement date", fa: "لاگ دیاگنوستیک PLC و تاریخچه آلارم از تاریخ تعویض موتور را ضبط کنید" },
+    { en: "Verify PLC program has correct motor parameters if soft-start or VFD-controlled", fa: "تأیید برنامه PLC پارامترهای صحیح موتور را دارد اگر با soft-start یا VFD کنترل می‌شود" },
+  ];
+  if (isNetwork) plcHmi.push(
+    { en: "Check PLC scan time/CPU load trend and review SCADA driver communication statistics", fa: "روند زمان اسکن/بار CPU پی‌ال‌سی را بررسی کنید و آمار ارتباطی درایور اسکادا را مرور کنید" },
+    { en: "Confirm firewall/VLAN rules are not intermittently blocking the PLC–SCADA port", fa: "تأیید کنید قوانین فایروال/VLAN پورت PLC–SCADA را به‌صورت متناوب مسدود نمی‌کنند" },
+  );
+  if (isSensorIO) plcHmi.push(
+    { en: "Confirm PLC input tag/address mapping matches the physical channel used for the sensor", fa: "تأیید کنید نگاشت تگ/آدرس ورودی PLC با کانال فیزیکی مورد استفاده سنسور مطابقت دارد" },
+  );
+
+  const mechanical = [
+    { en: "LOTO + mechanical isolation: rotate motor shaft by hand — verify smooth, free rotation", fa: "LOTO + ایزولاسیون مکانیکی: شفت موتور را با دست بچرخانید — چرخش روان و آزاد را تأیید کنید" },
+    { en: "Inspect coupling: correct half-coupling match, keyway intact, bolts torqued to spec", fa: "کوپلینگ را بازرسی کنید: تطابق نیمه کوپلینگ، کی‌وی سالم، پیچ‌ها با گشتاور مشخص" },
+    { en: "Rotate load side by hand if possible — identify any jam or resistance", fa: "در صورت امکان بار را با دست بچرخانید — هرگونه گیر کردن یا مقاومت را شناسایی کنید" },
+    { en: "Verify coupling alignment within OEM tolerances (angular and parallel)", fa: "تراز کوپلینگ را در محدوده تلرانس OEM تأیید کنید (زاویه‌ای و موازی)" },
+  ];
+  if (isVibration) mechanical.push(
+    { en: "Trend vibration and bearing temperature over time; check lubrication schedule and grease condition", fa: "ارتعاش و دمای یاتاقان را در طول زمان روند‌یابی کنید؛ برنامه روان‌کاری و وضعیت گریس را بررسی کنید" },
+    { en: "Check cooling airflow/ventilation path and load balance", fa: "جریان هوای خنک‌کننده/مسیر تهویه و توازن بار را بررسی کنید" },
+  );
+
+  const dataToCollect = [
+    { en: "Motor nameplate photo: FLA, voltage, power, speed, connection type, IP, efficiency class", fa: "عکس پلاک موتور: FLA، ولتاژ، توان، سرعت، نوع اتصال، IP، کلاس بازده" },
+    { en: "VFD fault code (if any) and current parameter list (P0304 motor rated voltage, P0305 FLA, etc.)", fa: "کد خطای VFD (در صورت وجود) و فهرست پارامترهای فعلی" },
+    { en: "PLC online screenshot: output rung state and all permissive input states", fa: "اسکرین‌شات آنلاین PLC: وضعیت رانگ خروجی و تمام وضعیت‌های ورودی مجوز" },
+    { en: "Photo of motor terminal box showing current wiring", fa: "عکس جعبه ترمینال موتور که سیم‌بندی فعلی را نشان می‌دهد" },
+  ];
+  if (isNetwork) dataToCollect.push(
+    { en: "Switch port error counters and a configuration backup of the new switch", fa: "شمارنده خطای پورت سوییچ و نسخه پشتیبان پیکربندی سوییچ جدید" },
+    { en: "Network scan result for duplicate IP addresses and VLAN assignment", fa: "نتیجه اسکن شبکه برای آدرس‌های IP تکراری و تخصیص VLAN" },
+  );
+  if (isVibration) dataToCollect.push(
+    { en: "Vibration trend log and bearing temperature trend log", fa: "لاگ روند ارتعاش و لاگ روند دمای یاتاقان" },
+  );
+  if (isSensorIO) dataToCollect.push(
+    { en: "IO module diagnostic word and 24VDC sensor supply reading", fa: "کلمه تشخیصی ماژول IO و قرائت تغذیه 24 ولت سنسور" },
+  );
+
+  const escalation = [
+    { en: "Escalate to instrumentation/electrical engineer if PLC output Q-bit confirmed active but motor still does not start", fa: "در صورت تأیید فعال بودن Q-bit خروجی PLC اما عدم راه‌اندازی موتور، موضوع را به مهندس ابزار دقیق/برق ارجاع دهید" },
+    { en: "Escalate to mechanical engineer if coupling/alignment issue suspected", fa: "در صورت مشکوک بودن به مشکل کوپلینگ/تراز، موضوع را به مهندس مکانیک ارجاع دهید" },
+    { en: "Contact motor OEM if motor winding/insulation issue suspected after terminal check", fa: "در صورت مشکوک بودن به مشکل سیم‌پیچ/عایق موتور پس از بررسی ترمینال، با OEM موتور تماس بگیرید" },
+    { en: "Notify shift supervisor of downtime impact and timeline", fa: "اطلاع به سرپرست شیفت درباره تأثیر و جدول زمانی توقف" },
+  ];
+  if (isNetwork) escalation.push(
+    { en: "Escalate to network/OT engineer if switch, cable, and IP checks do not resolve the fault", fa: "در صورت عدم رفع خرابی توسط بررسی سوییچ، کابل و IP، به مهندس شبکه/OT ارجاع دهید" },
+  );
+  if (isVibration) escalation.push(
+    { en: "Escalate to reliability/maintenance engineer for vibration analysis if the trend continues to rise", fa: "در صورت ادامه روند صعودی، برای تحلیل ارتعاش به مهندس قابلیت اطمینان/نگهداری ارجاع دهید" },
+  );
 
   return [
-    {
-      category: "Immediate Safe Checks (No hardware contact)",
-      categoryFa: "بررسی‌های فوری ایمن (بدون تماس با سخت‌افزار)",
-      icon: "⚡",
-      items: [
-        { en: "Go PLC online — check motor run Q-bit state and all permissive I-bits", fa: "PLC را آنلاین کنید — وضعیت بیت Q اجرا و تمام بیت‌های I مجوز را بررسی کنید" },
-        { en: "Check HMI operator screen — confirm run command active and correct operating mode", fa: "صفحه اپراتور HMI را بررسی کنید — تأیید فرمان اجرا فعال و حالت عملیاتی صحیح است" },
-        { en: "Read VFD keypad display — note any fault codes without clearing", fa: "نمایشگر VFD را بخوانید — کدهای خطا را بدون پاک کردن یادداشت کنید" },
-        { en: "Check MCC breaker position and overload relay indicator", fa: "وضعیت کلید MCC و نشانگر رله اضافه‌بار را بررسی کنید" },
-      ],
-    },
-    {
-      category: "Electrical / Control Diagnostics",
-      categoryFa: "دیاگنوستیک برق / کنترل",
-      icon: "🔧",
-      items: [
-        { en: "Qualified electrician: apply LOTO, verify absence of voltage at motor terminals", fa: "برقکار متخصص: LOTO اجرا کنید، عدم وجود ولتاژ در ترمینال موتور را تأیید کنید" },
-        { en: "Inspect motor terminal box — verify U/V/W connections, delta/star jumper, terminal tightness", fa: "جعبه ترمینال موتور را بازرسی کنید — اتصالات U/V/W، جامپر مثلث/ستاره و سفتی ترمینال" },
-        { en: "Measure cable insulation resistance (>1 MΩ) from MCC output to motor terminals", fa: "مقاومت عایق کابل (بیش از 1 مگا اهم) از خروجی MCC تا ترمینال موتور را اندازه بگیرید" },
-        { en: "Verify overload relay is set to motor nameplate FLA (±5%)", fa: "تأیید رله اضافه‌بار روی FLA پلاک موتور تنظیم شده است (±5%)" },
-      ],
-    },
-    {
-      category: "PLC / HMI Diagnostics",
-      categoryFa: "دیاگنوستیک PLC / HMI",
-      icon: "💻",
-      items: [
-        { en: "Navigate to motor run rung in PLC online — verify all enabling conditions are TRUE", fa: "در PLC آنلاین به رانگ اجرای موتور بروید — تأیید همه شرایط فعال‌ساز TRUE هستند" },
-        { en: "Use force/monitor table to check output Q-bit state during start attempt", fa: "از جدول force/monitor برای بررسی وضعیت بیت Q خروجی هنگام تلاش برای استارت استفاده کنید" },
-        { en: "Capture PLC diagnostics log and alarm history since motor replacement date", fa: "لاگ دیاگنوستیک PLC و تاریخچه آلارم از تاریخ تعویض موتور را ضبط کنید" },
-        { en: "Verify PLC program has correct motor parameters if soft-start or VFD-controlled", fa: "تأیید برنامه PLC پارامترهای صحیح موتور را دارد اگر با soft-start یا VFD کنترل می‌شود" },
-      ],
-    },
-    {
-      category: "Mechanical / Field Checks",
-      categoryFa: "بررسی‌های مکانیکی / میدانی",
-      icon: "⚙️",
-      items: [
-        { en: "LOTO + mechanical isolation: rotate motor shaft by hand — verify smooth, free rotation", fa: "LOTO + ایزولاسیون مکانیکی: شفت موتور را با دست بچرخانید — چرخش روان و آزاد را تأیید کنید" },
-        { en: "Inspect coupling: correct half-coupling match, keyway intact, bolts torqued to spec", fa: "کوپلینگ را بازرسی کنید: تطابق نیمه کوپلینگ، کی‌وی سالم، پیچ‌ها با گشتاور مشخص" },
-        { en: "Rotate load side by hand if possible — identify any jam or resistance", fa: "در صورت امکان بار را با دست بچرخانید — هرگونه گیر کردن یا مقاومت را شناسایی کنید" },
-        { en: "Verify coupling alignment within OEM tolerances (angular and parallel)", fa: "تراز کوپلینگ را در محدوده تلرانس OEM تأیید کنید (زاویه‌ای و موازی)" },
-      ],
-    },
-    {
-      category: "Data to Collect Before Escalation",
-      categoryFa: "داده‌های مورد نیاز قبل از تشدید",
-      icon: "📋",
-      items: [
-        { en: "Motor nameplate photo: FLA, voltage, power, speed, connection type, IP, efficiency class", fa: "عکس پلاک موتور: FLA، ولتاژ، توان، سرعت، نوع اتصال، IP، کلاس بازده" },
-        { en: "VFD fault code (if any) and current parameter list (P0304 motor rated voltage, P0305 FLA, etc.)", fa: "کد خطای VFD (در صورت وجود) و فهرست پارامترهای فعلی" },
-        { en: "PLC online screenshot: output rung state and all permissive input states", fa: "اسکرین‌شات آنلاین PLC: وضعیت رانگ خروجی و تمام وضعیت‌های ورودی مجوز" },
-        { en: "Photo of motor terminal box showing current wiring", fa: "عکس جعبه ترمینال موتور که سیم‌بندی فعلی را نشان می‌دهد" },
-      ],
-    },
-    {
-      category: "Escalation Path",
-      categoryFa: "مسیر تشدید",
-      icon: "🚨",
-      items: [
-        { en: "Escalate to instrumentation/electrical engineer if PLC output Q-bit confirmed active but motor still does not start", fa: "در صورت تأیید فعال بودن Q-bit خروجی PLC اما عدم راه‌اندازی موتور، موضوع را به مهندس ابزار دقیق/برق ارجاع دهید" },
-        { en: "Escalate to mechanical engineer if coupling/alignment issue suspected", fa: "در صورت مشکوک بودن به مشکل کوپلینگ/تراز، موضوع را به مهندس مکانیک ارجاع دهید" },
-        { en: "Contact motor OEM if motor winding/insulation issue suspected after terminal check", fa: "در صورت مشکوک بودن به مشکل سیم‌پیچ/عایق موتور پس از بررسی ترمینال، با OEM موتور تماس بگیرید" },
-        { en: "Notify shift supervisor of downtime impact and timeline", fa: "اطلاع به سرپرست شیفت درباره تأثیر و جدول زمانی توقف" },
-      ],
-    },
+    { category: "Immediate Safe Checks (No hardware contact)", categoryFa: "بررسی‌های فوری ایمن (بدون تماس با سخت‌افزار)", icon: "⚡", items: immediate },
+    { category: "Electrical / Control Diagnostics", categoryFa: "دیاگنوستیک برق / کنترل", icon: "🔧", items: electrical },
+    { category: "PLC / HMI Diagnostics", categoryFa: "دیاگنوستیک PLC / HMI", icon: "💻", items: plcHmi },
+    { category: "Mechanical / Field Checks", categoryFa: "بررسی‌های مکانیکی / میدانی", icon: "⚙️", items: mechanical },
+    { category: "Data to Collect Before Escalation", categoryFa: "داده‌های مورد نیاز قبل از تشدید", icon: "📋", items: dataToCollect },
+    { category: "Escalation Path", categoryFa: "مسیر تشدید", icon: "🚨", items: escalation },
   ];
 }
 
@@ -1045,13 +1498,22 @@ function findRelatedKnowledge(allText: string, domains: { domain: IndustrialDoma
 
 // ─── Classification ───────────────────────────────────────────────────────────
 
+// Interface-layer domains (HMI/SCADA) report a fault but are rarely its root-cause domain —
+// their keywords (e.g. "run command") repeat often in operator-facing phrasing and can
+// outscore the actual equipment domain. Prefer a hardware/equipment domain when present.
+const HARDWARE_DOMAINS: IndustrialDomain[] = ["MOTOR", "VFD", "SENSOR", "NETWORK", "MECHANICAL", "ELECTRICAL"];
+
 function classify(
   domains: { domain: IndustrialDomain; score: number }[],
   allText: string,
   input: IndustrialFaultInput,
 ): ClassificationResult {
-  const primary = domains[0]?.domain ?? "UNKNOWN";
-  const secondary = domains.slice(1, 4).map(d => d.domain);
+  let primary = domains[0]?.domain ?? "UNKNOWN";
+  if (primary === "HMI" || primary === "SCADA") {
+    const hardwareAlt = domains.find(d => HARDWARE_DOMAINS.includes(d.domain) && d.score > 0);
+    if (hardwareAlt) primary = hardwareAlt.domain;
+  }
+  const secondary = domains.filter(d => d.domain !== primary).slice(0, 3).map(d => d.domain);
   const domainConf = Math.min(65 + (domains[0]?.score ?? 0) * 2, 92);
 
   const hasProductionStop = has(allText, "not start","stopped","line down","does not run","not running","not rotate");
@@ -1077,6 +1539,7 @@ function buildSummary(
   input: IndustrialFaultInput,
   classification: ClassificationResult,
   uncertainty: UncertaintyResult,
+  risk: RiskResult,
   causes: LikelyCause[],
 ): { en: string; fa: string } {
   const topCause = causes[0];
@@ -1089,22 +1552,24 @@ function buildSummary(
     `Primary domain classification: ${classification.domain} (confidence ${classification.confidence}%). ` +
     `Evidence entropy is ${uncertainty.level} — ` +
     (uncertainty.level === "HIGH"
-      ? `${uncertainty.missingCriticalSignals.length} critical signals are missing. Gather field evidence before hardware intervention. `
+      ? `${uncertainty.missingCriticalSignals.length} critical signals are missing, so no single cause can be confirmed yet. Gather field evidence before hardware intervention. `
       : uncertainty.level === "MEDIUM"
-        ? `${uncertainty.missingCriticalSignals.length} signals unconfirmed. Prioritize evidence collection. `
+        ? `${uncertainty.missingCriticalSignals.length} signals unconfirmed. Prioritize evidence collection before ruling out any hypothesis. `
         : "Most signals confirmed. Focus on top-ranked causes. ") +
     (topCause ? `Highest-confidence hypothesis: ${topCause.title} (${topCause.confidence}% confidence). ` : "") +
+    `Urgency: ${risk.urgency}. ` +
     "All recommendations follow site safety procedures. Qualified personnel required for electrical/mechanical inspection.";
 
   const fa = `مغز صنعتی هرمس ${titleFa} روی ${assetFa} را تحلیل کرد. ` +
     `طبقه‌بندی حوزه اصلی: ${classification.domainFa}. ` +
     `آنتروپی شواهد: ${uncertainty.level} — ` +
     (uncertainty.level === "HIGH"
-      ? `${uncertainty.missingCriticalSignals.length} سیگنال حیاتی مفقود. قبل از مداخله سخت‌افزاری شواهد میدانی را جمع‌آوری کنید. `
+      ? `${uncertainty.missingCriticalSignals.length} سیگنال حیاتی مفقود است، بنابراین هنوز نمی‌توان یک علت واحد را تأیید کرد. قبل از مداخله سخت‌افزاری شواهد میدانی را جمع‌آوری کنید. `
       : uncertainty.level === "MEDIUM"
-        ? `${uncertainty.missingCriticalSignals.length} سیگنال تأیید نشده. جمع‌آوری شواهد را اولویت‌بندی کنید. `
+        ? `${uncertainty.missingCriticalSignals.length} سیگنال تأیید نشده. قبل از رد کردن هر فرضیه، جمع‌آوری شواهد را اولویت‌بندی کنید. `
         : "اکثر سیگنال‌ها تأیید شده. روی علل رتبه‌بالا تمرکز کنید. ") +
     (topCause ? `فرضیه با بالاترین اطمینان: ${topCause.titleFa} (${topCause.confidence}٪ اطمینان). ` : "") +
+    `فوریت: ${risk.urgencyFa}. ` +
     "تمام توصیه‌ها از رویه‌های ایمنی سایت پیروی می‌کنند. پرسنل متخصص برای بازرسی برقی/مکانیکی الزامی است.";
 
   return { en, fa };
@@ -1123,12 +1588,12 @@ export function analyzeIndustrialFault(input: IndustrialFaultInput): IndustrialB
   const uncertainty = computeUncertainty(signalMatrix);
   const risk = computeRisk(input, classification.domain, classification.severity);
   const causes = generateCauses(input, allText, classification.domain, signalMatrix);
-  const reasoningMap = buildReasoningMap(causes, signalMatrix);
+  const reasoningMap = buildReasoningMap(causes, signalMatrix, risk, uncertainty);
   const evidenceGaps = computeEvidenceGaps(signalMatrix);
-  const checklist = generateChecklist(classification.domain);
-  const actions = generateActions();
+  const checklist = generateChecklist(classification.domain, allText);
+  const actions = generateActions(classification.domain, allText);
   const relatedKnowledge = findRelatedKnowledge(allText, domains);
-  const summary = buildSummary(input, classification, uncertainty, causes);
+  const summary = buildSummary(input, classification, uncertainty, risk, causes);
 
   // Overall confidence: weighted by uncertainty and top cause
   const topConfidence = causes[0]?.confidence ?? 50;

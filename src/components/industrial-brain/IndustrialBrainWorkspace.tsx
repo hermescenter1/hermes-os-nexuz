@@ -6,9 +6,9 @@ import type { IndustrialBrainAnalysis } from "@/lib/industrial-brain/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const IC = "w-full rounded-xl px-3 py-2.5 text-sm bg-[#07101A] text-slate-100 border border-white/10 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400/40 focus:ring-2 focus:ring-cyan-400/10 transition-all font-mono";
-const SC = "w-full rounded-xl px-3 py-2 text-sm bg-[#07101A] text-slate-100 border border-white/10 focus:outline-none focus:border-cyan-400/40 focus:ring-1 focus:ring-cyan-400/10 transition-all font-mono";
-const TC = "w-full rounded-xl px-3 py-2.5 text-sm bg-[#07101A] text-slate-100 border border-white/10 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400/40 focus:ring-2 focus:ring-cyan-400/10 transition-all resize-none font-mono";
+const IC = "w-full rounded-xl px-3 py-2.5 text-sm bg-[#0C1420] text-slate-100 border border-white/10 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/20 transition-all font-mono";
+const SC = "w-full rounded-xl px-3 py-2 text-sm bg-[#0C1420] text-slate-100 border border-white/10 focus:outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/20 transition-all font-mono";
+const TC = "w-full rounded-xl px-3 py-2.5 text-sm bg-[#0C1420] text-slate-100 border border-white/10 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/20 transition-all resize-none font-mono";
 
 const STATUS_COLORS = {
   NORMAL:   { bg: "bg-emerald-500/10",   border: "border-emerald-500/30",   text: "text-emerald-400",   dot: "bg-emerald-400" },
@@ -38,6 +38,142 @@ const UNCERTAINTY_COLORS = {
   MEDIUM: { text: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/30" },
   HIGH:   { text: "text-rose-400",    bg: "bg-rose-500/10",    border: "border-rose-500/30" },
 };
+
+// ─── Demo-ready sample scenarios ───────────────────────────────────────────────
+
+type SampleFields = Record<string, string>;
+
+const SAMPLE_SCENARIOS: Record<string, { labelEn: string; labelFa: string; en: SampleFields; fa: SampleFields }> = {
+  conveyor: {
+    labelEn: "Load conveyor motor sample",
+    labelFa: "بارگذاری نمونه موتور کانوایر",
+    en: {
+      problemTitle: "Conveyor motor does not start after replacement",
+      assetType: "22kW Conveyor Motor",
+      systemArea: "Production Line 1, Loading Area",
+      plcPlatform: "Siemens S7-1500",
+      observedSymptoms: "HMI run command is active. PLC shows no active fault. Motor does not rotate. Motor was recently replaced.",
+      recentChanges: "Motor replacement and mechanical alignment.",
+      activeAlarms: "No active PLC alarm.",
+      hmiCommandState: "Run command active",
+      plcOutputState: "Unknown",
+      vfdMccState: "Unknown",
+      interlockStatus: "Unknown",
+      sensorFeedback: "Unknown",
+      productionImpact: "HIGH",
+      safetyImpact: "LOW",
+      alreadyChecked: "HMI command, PLC fault page, basic mechanical free rotation.",
+      additionalInfo: "Motor was recently replaced. Detailed electrical test was not recorded.",
+    },
+    fa: {
+      problemTitle: "موتور کانوایر پس از تعویض راه‌اندازی نمی‌شود",
+      assetType: "موتور کانوایر 22 کیلووات",
+      systemArea: "خط تولید 1، ناحیه بارگیری",
+      plcPlatform: "زیمنس S7-1500",
+      observedSymptoms: "فرمان اجرا از HMI فعال است. PLC خطای فعالی نشان نمی‌دهد. موتور نمی‌چرخد. موتور اخیراً تعویض شده است.",
+      recentChanges: "تعویض موتور و تراز مکانیکی.",
+      activeAlarms: "آلارم فعال PLC وجود ندارد.",
+      hmiCommandState: "فرمان اجرا فعال است",
+      plcOutputState: "نامشخص",
+      vfdMccState: "نامشخص",
+      interlockStatus: "نامشخص",
+      sensorFeedback: "نامشخص",
+      productionImpact: "HIGH",
+      safetyImpact: "LOW",
+      alreadyChecked: "فرمان HMI، صفحه خطای PLC، چرخش آزاد مکانیکی اولیه.",
+      additionalInfo: "موتور اخیراً تعویض شده است. تست الکتریکی دقیق ثبت نشده است.",
+    },
+  },
+  vfdPump: {
+    labelEn: "Load VFD pump fault sample",
+    labelFa: "بارگذاری نمونه خرابی VFD پمپ",
+    en: {
+      problemTitle: "Pump stops intermittently with VFD overcurrent alarm",
+      assetType: "Centrifugal Pump, 11kW",
+      systemArea: "Cooling Water Pump Station",
+      plcPlatform: "Allen-Bradley ControlLogix",
+      observedSymptoms: "Pump stops intermittently. VFD shows overcurrent/overload alarm. Motor current sometimes spikes above nameplate FLA.",
+      recentChanges: "Recent maintenance work on pump coupling alignment.",
+      activeAlarms: "VFD overcurrent alarm, intermittent.",
+      hmiCommandState: "Run command active",
+      plcOutputState: "Active",
+      vfdMccState: "Fault / tripped intermittently",
+      interlockStatus: "Unknown",
+      sensorFeedback: "Unknown",
+      productionImpact: "HIGH",
+      safetyImpact: "LOW",
+      alreadyChecked: "VFD fault code logged, basic coupling visual check.",
+      additionalInfo: "Coupling maintenance was performed one week before symptoms started.",
+    },
+    fa: {
+      problemTitle: "پمپ به‌طور متناوب متوقف می‌شود همراه با آلارم اضافه‌جریان VFD",
+      assetType: "پمپ گریز از مرکز، 11 کیلووات",
+      systemArea: "ایستگاه پمپ آب خنک‌کننده",
+      plcPlatform: "Allen-Bradley ControlLogix",
+      observedSymptoms: "پمپ به‌طور متناوب متوقف می‌شود. VFD آلارم اضافه‌جریان/اضافه‌بار نشان می‌دهد. جریان موتور گاهی بالاتر از FLA پلاک می‌رود.",
+      recentChanges: "کار تعمیراتی اخیر روی تراز کوپلینگ پمپ.",
+      activeAlarms: "آلارم اضافه‌جریان VFD، به‌صورت متناوب.",
+      hmiCommandState: "فرمان اجرا فعال است",
+      plcOutputState: "فعال",
+      vfdMccState: "خطا / تریپ به‌صورت متناوب",
+      interlockStatus: "نامشخص",
+      sensorFeedback: "نامشخص",
+      productionImpact: "HIGH",
+      safetyImpact: "LOW",
+      alreadyChecked: "کد خطای VFD ثبت شده، بازرسی چشمی اولیه کوپلینگ.",
+      additionalInfo: "تعمیرات کوپلینگ یک هفته قبل از شروع علائم انجام شده است.",
+    },
+  },
+  sensorFeedback: {
+    labelEn: "Load sensor feedback sample",
+    labelFa: "بارگذاری نمونه فیدبک سنسور",
+    en: {
+      problemTitle: "Cylinder reaches position but PLC/HMI shows no feedback",
+      assetType: "Pneumatic Cylinder with Proximity Sensor",
+      systemArea: "Packaging Cell 3",
+      plcPlatform: "Mitsubishi FX / GOT HMI",
+      observedSymptoms: "Cylinder physically reaches position. No mechanical jam visible. PLC/HMI does not receive position feedback. Sensor was replaced recently.",
+      recentChanges: "Proximity sensor replaced last shift.",
+      activeAlarms: "No active PLC alarm.",
+      hmiCommandState: "Run command active",
+      plcOutputState: "Active",
+      vfdMccState: "Unknown",
+      interlockStatus: "Unknown",
+      sensorFeedback: "Sensor replaced, no feedback signal seen at PLC input",
+      productionImpact: "MEDIUM",
+      safetyImpact: "LOW",
+      alreadyChecked: "Physical position confirmed by operator, sensor LED not checked.",
+      additionalInfo: "No wiring diagram change was recorded after sensor replacement.",
+    },
+    fa: {
+      problemTitle: "سیلندر به موقعیت می‌رسد اما PLC/HMI فیدبکی نشان نمی‌دهد",
+      assetType: "سیلندر پنوماتیک با سنسور پروکسیمیتی",
+      systemArea: "سلول بسته‌بندی 3",
+      plcPlatform: "Mitsubishi FX / HMI GOT",
+      observedSymptoms: "سیلندر به‌صورت فیزیکی به موقعیت می‌رسد. گیر مکانیکی مشاهده نمی‌شود. PLC/HMI فیدبک موقعیت را دریافت نمی‌کند. سنسور اخیراً تعویض شده است.",
+      recentChanges: "سنسور پروکسیمیتی در شیفت قبل تعویض شد.",
+      activeAlarms: "آلارم فعال PLC وجود ندارد.",
+      hmiCommandState: "فرمان اجرا فعال است",
+      plcOutputState: "فعال",
+      vfdMccState: "نامشخص",
+      interlockStatus: "نامشخص",
+      sensorFeedback: "سنسور تعویض شده، سیگنال فیدبک در ورودی PLC دیده نمی‌شود",
+      productionImpact: "MEDIUM",
+      safetyImpact: "LOW",
+      alreadyChecked: "موقعیت فیزیکی توسط اپراتور تأیید شده، LED سنسور بررسی نشده.",
+      additionalInfo: "پس از تعویض سنسور، تغییری در نقشه سیم‌بندی ثبت نشده است.",
+    },
+  },
+};
+
+function fillSampleForm(form: HTMLFormElement, data: SampleFields) {
+  for (const [name, value] of Object.entries(data)) {
+    const el = form.elements.namedItem(name);
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+      el.value = value;
+    }
+  }
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -546,7 +682,7 @@ function RelatedKnowledgePanel({ analysis, isFa }: { analysis: IndustrialBrainAn
   );
 }
 
-function AnalysisDemoCTA({ locale, isFa }: { locale: string; isFa: boolean }) {
+function AnalysisDemoCTA({ isFa }: { isFa: boolean }) {
   return (
     <Panel className="border-cyan-500/20">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -582,7 +718,7 @@ function AnalysisDemoCTA({ locale, isFa }: { locale: string; isFa: boolean }) {
   );
 }
 
-function AnalysisResult({ analysis, locale, isFa }: { analysis: IndustrialBrainAnalysis; locale: string; isFa: boolean }) {
+function AnalysisResult({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
   return (
     <div className="space-y-5 mt-8">
       {/* Executive Summary + Classification */}
@@ -670,7 +806,7 @@ function AnalysisResult({ analysis, locale, isFa }: { analysis: IndustrialBrainA
       <ChecklistPanel analysis={analysis} isFa={isFa} />
       <ActionsPanel analysis={analysis} isFa={isFa} />
       <RelatedKnowledgePanel analysis={analysis} isFa={isFa} />
-      <AnalysisDemoCTA locale={locale} isFa={isFa} />
+      <AnalysisDemoCTA isFa={isFa} />
     </div>
   );
 }
@@ -684,6 +820,13 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<IndustrialBrainAnalysis | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function loadSample(key: keyof typeof SAMPLE_SCENARIOS) {
+    if (!formRef.current) return;
+    fillSampleForm(formRef.current, SAMPLE_SCENARIOS[key][isFa ? "fa" : "en"]);
+    setError(null);
+  }
 
   const impactOptions = [
     { v: "", l: isFa ? "انتخاب کنید..." : "Select..." },
@@ -723,8 +866,27 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
 
   return (
     <div>
+      {/* ── Demo-ready examples ────────────────────────────────────────────── */}
+      <div className="mb-5 rounded-xl border border-white/8 p-3.5" style={{ background: "rgba(7,16,26,0.6)" }}>
+        <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 mb-2.5">
+          {isFa ? "نمونه‌های آماده دمو" : "Demo-Ready Examples"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(SAMPLE_SCENARIOS) as Array<keyof typeof SAMPLE_SCENARIOS>).map(key => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => loadSample(key)}
+              className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12] hover:border-cyan-400/35 transition-all"
+            >
+              {isFa ? SAMPLE_SCENARIOS[key].labelFa : SAMPLE_SCENARIOS[key].labelEn}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Input Form ─────────────────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
 
         {/* Problem title + asset */}
         <FormSection title="Fault Identification" titleFa="شناسایی خرابی" isFa={isFa}>
@@ -887,7 +1049,7 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
         <button
           type="submit"
           disabled={busy}
-          className="w-full h-12 rounded-xl font-mono font-bold text-sm uppercase tracking-widest transition-all disabled:opacity-50"
+          className="w-full h-12 rounded-xl font-mono font-bold text-sm uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
           style={{
             background: busy
               ? "rgba(30,200,164,0.12)"
@@ -896,6 +1058,12 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
             border: "1px solid rgba(30,200,164,0.30)",
           }}
         >
+          {busy && (
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.25" />
+              <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          )}
           {busy
             ? (isFa ? "در حال تحلیل..." : "Analyzing...")
             : (isFa ? "تحلیل خرابی" : "Analyze Fault")}
@@ -904,7 +1072,7 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
 
       {/* ── Analysis result ────────────────────────────────────────────────── */}
       <div ref={resultRef}>
-        {analysis && <AnalysisResult analysis={analysis} locale={locale} isFa={isFa} />}
+        {analysis && <AnalysisResult analysis={analysis} isFa={isFa} />}
       </div>
     </div>
   );

@@ -106,11 +106,15 @@ export interface UncertaintyResult {
   recommendedEvidenceToReduceUncertainty: string[];
 }
 
+export type ImpactLevel = "NONE" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+
 export interface RiskResult {
   productionImpact: string;
   productionImpactFa: string;
+  productionImpactLevel: ImpactLevel;
   safetyImpact: string;
   safetyImpactFa: string;
+  safetyImpactLevel: ImpactLevel;
   downtimeRisk: string;
   downtimeRiskFa: string;
   urgency: string;

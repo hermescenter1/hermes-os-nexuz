@@ -25,10 +25,27 @@ const AnalyzeSchema = z.object({
   locale:            z.enum(["en","fa"]).optional().default("en"),
 });
 
+// Backward-compatible field aliases — mapped only when the canonical field is absent.
+// Does not weaken validation: the canonical schema still applies after mapping.
+function applyFieldAliases(raw: unknown): unknown {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
+  const obj = { ...(raw as Record<string, unknown>) };
+  const alias = (canonical: string, legacy: string) => {
+    if (obj[canonical] === undefined && typeof obj[legacy] === "string") {
+      obj[canonical] = obj[legacy];
+    }
+  };
+  alias("problemTitle", "title");
+  alias("plcPlatform", "platform");
+  alias("observedSymptoms", "symptoms");
+  alias("activeAlarms", "alarms");
+  return obj;
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: unknown;
   try {
-    body = await req.json();
+    body = applyFieldAliases(await req.json());
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
   }
