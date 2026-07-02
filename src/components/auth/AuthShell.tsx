@@ -4,25 +4,34 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 interface AuthShellProps {
-  title:    string;
-  subtitle?: string;
-  children: ReactNode;
-  footer?:  ReactNode;
+  title:      string;
+  subtitle?:  string;
+  tagline?:   string;
+  trustLine?: string;
+  children:   ReactNode;
+  footer?:    ReactNode;
 }
 
-export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
+export function AuthShell({
+  title,
+  subtitle,
+  tagline   = "Industrial Intelligence Platform",
+  trustLine = "Enterprise-grade · End-to-end encrypted · SOC 2 aligned",
+  children,
+  footer,
+}: AuthShellProps) {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4 py-16"
       style={{
-        background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(45,212,191,0.04) 0%, transparent 60%), linear-gradient(160deg, #060A0F 0%, #080F18 60%, #060A0F 100%)",
+        background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(var(--signal-rgb),0.04) 0%, transparent 60%), linear-gradient(160deg, #060A0F 0%, #080F18 60%, #060A0F 100%)",
       }}
     >
       {/* Ambient depth */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px]"
-          style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.025) 0%, transparent 65%)" }}
+          style={{ background: "radial-gradient(ellipse, rgba(var(--signal-rgb),0.025) 0%, transparent 65%)" }}
         />
       </div>
 
@@ -31,13 +40,13 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{
-            background: "rgba(45,212,191,0.08)",
-            border:     "1px solid rgba(45,212,191,0.20)",
+            background: "rgba(var(--signal-rgb),0.08)",
+            border:     "1px solid rgba(var(--signal-rgb),0.20)",
           }}
         >
           <svg viewBox="0 0 16 16" fill="none" className="w-4.5 h-4.5" width="18" height="18">
-            <circle cx="8" cy="8" r="2.8"  stroke="#2DD4BF" strokeWidth="1.2"/>
-            <circle cx="8" cy="8" r="6.2"  stroke="rgba(45,212,191,0.30)" strokeWidth="0.8" strokeDasharray="2.5 2"/>
+            <circle cx="8" cy="8" r="2.8"  stroke="var(--signal)" strokeWidth="1.2"/>
+            <circle cx="8" cy="8" r="6.2"  stroke="rgba(var(--signal-rgb),0.30)" strokeWidth="0.8" strokeDasharray="2.5 2"/>
           </svg>
         </div>
         <div>
@@ -51,7 +60,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
             className="font-body text-[10px] tracking-[0.08em] uppercase block"
             style={{ color: "rgba(148,163,184,0.55)" }}
           >
-            Industrial Intelligence Platform
+            {tagline}
           </span>
         </div>
       </Link>
@@ -70,7 +79,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
         {/* Top accent */}
         <div
           className="absolute top-0 inset-x-8 h-px rounded-full"
-          style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.30), transparent)" }}
+          style={{ background: "linear-gradient(90deg, transparent, rgba(var(--signal-rgb),0.30), transparent)" }}
         />
 
         <h1
@@ -101,7 +110,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
         className="mt-10 text-center font-body text-[11px]"
         style={{ color: "rgba(71,85,105,0.70)", letterSpacing: "0.03em" }}
       >
-        Enterprise-grade · End-to-end encrypted · SOC 2 aligned
+        {trustLine}
       </p>
     </div>
   );
@@ -123,8 +132,8 @@ export const inputStyle: React.CSSProperties = {
 };
 
 export const inputFocusStyle: React.CSSProperties = {
-  borderColor: "rgba(45,212,191,0.35)",
-  boxShadow:   "0 0 0 3px rgba(45,212,191,0.08)",
+  borderColor: "rgba(var(--signal-rgb),0.35)",
+  boxShadow:   "0 0 0 3px rgba(var(--signal-rgb),0.08)",
 };
 
 export const labelStyle: React.CSSProperties = {
@@ -138,7 +147,7 @@ export const labelStyle: React.CSSProperties = {
 
 export const primaryBtnStyle: React.CSSProperties = {
   width:         "100%",
-  background:    "linear-gradient(135deg, #2DD4BF 0%, #0EA5E9 100%)",
+  background:    "linear-gradient(135deg, var(--signal) 0%, #0EA5E9 100%)",
   border:        "none",
   borderRadius:  "10px",
   padding:       "0.75rem 1rem",
@@ -148,7 +157,7 @@ export const primaryBtnStyle: React.CSSProperties = {
   cursor:        "pointer",
   transition:    "opacity 0.2s, box-shadow 0.2s",
   fontFamily:    "inherit",
-  boxShadow:     "0 4px 20px rgba(45,212,191,0.20)",
+  boxShadow:     "0 4px 20px rgba(var(--signal-rgb),0.20)",
 };
 
 export const errorStyle: React.CSSProperties = {
@@ -163,8 +172,8 @@ export const errorStyle: React.CSSProperties = {
 export const successStyle: React.CSSProperties = {
   padding:      "0.6rem 0.8rem",
   borderRadius: "8px",
-  background:   "rgba(45,212,191,0.06)",
-  border:       "1px solid rgba(45,212,191,0.22)",
-  color:        "#2DD4BF",
+  background:   "rgba(var(--signal-rgb),0.06)",
+  border:       "1px solid rgba(var(--signal-rgb),0.22)",
+  color:        "var(--signal)",
   fontSize:     "0.82rem",
 };

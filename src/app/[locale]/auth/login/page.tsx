@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign In · Hermes OS", robots: { index: false, follow: false } };
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { AuthShell }        from "@/components/auth/AuthShell";
 import { NewLoginClient }   from "@/components/auth/NewLoginClient";
 import Link                 from "next/link";
@@ -17,15 +17,20 @@ export default async function AuthLoginPage({
   const { from }      = await searchParams;
   setRequestLocale(locale);
 
+  const t = await getTranslations("auth");
+  const b = await getTranslations("brand");
+
   return (
     <AuthShell
-      title="Sign in to Hermes OS"
-      subtitle="Industrial intelligence platform"
+      title={t("loginTitle")}
+      subtitle={b("tagline")}
+      tagline={b("tagline")}
+      trustLine={t("trustLine")}
       footer={
         <span>
-          Don&apos;t have an account?{" "}
-          <Link href={`/${locale}/auth/register`} style={{ color: "#2DD4BF" }} className="hover:underline">
-            Create one
+          {t("dontHaveAccount")}{" "}
+          <Link href={`/${locale}/auth/register`} style={{ color: "var(--signal)" }} className="hover:underline">
+            {t("requestAccessLinkLabel")}
           </Link>
         </span>
       }

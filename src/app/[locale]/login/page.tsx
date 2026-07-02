@@ -1,35 +1,20 @@
 export const dynamic = "force-dynamic";
-import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
-import { PageIntro } from "@/components/PageIntro";
-import { LoginClient } from "@/components/auth/LoginClient";
-import { isAuthConfigured } from "@/lib/auth/config";
+import { redirect } from "next/navigation";
 
+/**
+ * Phase 81A: legacy compatibility route. /auth/login is now the canonical
+ * login surface; this thin wrapper keeps existing `/login` links (nav,
+ * RequireCapability, footer, assets guards) working without a third auth UI.
+ */
 export default async function LoginPage({
   params,
+  searchParams,
 }: {
-  params: Promise<{ locale: string }>;
+  params:       Promise<{ locale: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { locale } = await params;
-  setRequestLocale(locale);
-  const t = await getTranslations("auth");
-
-  if (!isAuthConfigured()) {
-    return (
-      <PageShell>
-        <PageIntro
-          eyebrow="Hermes OS"
-          title={t("setupRequiredTitle")}
-          lede={t("setupRequired")}
-        />
-      </PageShell>
-    );
-  }
-
-  return (
-    <PageShell>
-      <PageIntro eyebrow="Hermes OS" title={t("loginTitle")} lede={t("loginLede")} />
-      <LoginClient />
-    </PageShell>
-  );
+  const { from }    = await searchParams;
+  const qs = from ? `?from=${encodeURIComponent(from)}` : "";
+  redirect(`/${locale}/auth/login${qs}`);
 }

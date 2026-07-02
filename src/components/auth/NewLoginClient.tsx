@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import Link         from "next/link";
 import { inputStyle, labelStyle, primaryBtnStyle, errorStyle } from "./AuthShell";
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function NewLoginClient({ locale, from }: Props) {
+  const t = useTranslations("auth");
   const [email,      setEmail]      = useState("");
   const [password,   setPassword]   = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -43,17 +45,19 @@ export function NewLoginClient({ locale, from }: Props) {
         const dest = fromPath && (!fromNeedsPrivilege || privileged) ? fromPath : defaultDest;
         window.location.href = dest;
       } else {
-        const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+        // Status-code driven, never the server's raw (English, sometimes
+        // code-like e.g. "invalid-credentials") payload — keeps /fa fully
+        // Persian and avoids leaking internal error strings.
         if (res.status === 423) {
-          setError("Account temporarily locked. Please try again in 15 minutes.");
+          setError(t("accountLocked"));
         } else if (res.status === 429) {
-          setError("Too many attempts. Please try again later.");
+          setError(t("tooManyAttempts"));
         } else {
-          setError(String(data.error ?? "Invalid email or password."));
+          setError(t("invalidCredentials"));
         }
       }
     } catch {
-      setError("Unable to connect. Please check your connection.");
+      setError(t("connectionError"));
     } finally {
       setBusy(false);
     }
@@ -62,12 +66,12 @@ export function NewLoginClient({ locale, from }: Props) {
   return (
     <form onSubmit={submit} className="space-y-4">
       <label>
-        <span style={labelStyle}>Email address</span>
+        <span style={labelStyle}>{t("email")}</span>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@company.com"
+          placeholder={t("emailPlaceholder")}
           dir="ltr"
           autoComplete="email"
           required
@@ -76,7 +80,7 @@ export function NewLoginClient({ locale, from }: Props) {
       </label>
 
       <label>
-        <span style={labelStyle}>Password</span>
+        <span style={labelStyle}>{t("password")}</span>
         <input
           type="password"
           value={password}
@@ -96,16 +100,17 @@ export function NewLoginClient({ locale, from }: Props) {
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-3.5 h-3.5 accent-[#2DD4BF]"
+            className="w-3.5 h-3.5"
+            style={{ accentColor: "var(--signal)" }}
           />
-          <span style={{ color: "rgba(180,210,240,0.70)" }}>Remember me</span>
+          <span style={{ color: "rgba(180,210,240,0.70)" }}>{t("rememberMe")}</span>
         </label>
         <Link
           href={`/${locale}/auth/forgot-password`}
           className="text-sm hover:underline"
-          style={{ color: "#2DD4BF" }}
+          style={{ color: "var(--signal)" }}
         >
-          Forgot password?
+          {t("forgotPassword")}
         </Link>
       </div>
 
@@ -116,7 +121,7 @@ export function NewLoginClient({ locale, from }: Props) {
         disabled={busy || !email || !password}
         style={{ ...primaryBtnStyle, opacity: (busy || !email || !password) ? 0.45 : 1 }}
       >
-        {busy ? "Signing in…" : "Sign in"}
+        {busy ? t("signingIn") : t("submit")}
       </button>
     </form>
   );

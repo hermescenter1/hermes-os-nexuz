@@ -21,6 +21,7 @@ import { recordAuditEvent, INFRA_AUDIT } from "@/lib/audit/audit-service";
 const LIMITS: Record<string, { max: number; windowMs: number }> = {
   login:             { max: 10, windowMs: 15 * 60 * 1000 },
   register:          { max: 5,  windowMs: 60 * 60 * 1000 },
+  "access-request":  { max: 5,  windowMs: 60 * 60 * 1000 },
   "forgot-password": { max: 3,  windowMs: 60 * 60 * 1000 },
   "reset-password":  { max: 5,  windowMs: 60 * 60 * 1000 },
   "verify-email":    { max: 10, windowMs: 60 * 60 * 1000 },
