@@ -4,7 +4,7 @@ import { caseRepository } from "@/lib/storage/case-repository";
 import { knowledgeRepository } from "@/lib/storage/knowledge-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireAuthoring, hasAuthoring } from "@/lib/auth/api-guards";
 
 /**
  * /api/unknown — Unknown analysis triage (Phase 11B).
@@ -12,6 +12,11 @@ import { getCurrentUser } from "@/lib/auth/session";
  *  - action "convert"  → creates a draft EngineeringCase from the unknown
  *  - action "library"  → creates a draft KnowledgeArticle from the unknown
  * Both also flip the unknown record's status. Degrades to session safely.
+ *
+ * Phase 82C hardening: writes require the "authoring" capability (the gate
+ * of the Unknown Center page) — critically, the convert/library actions were
+ * a public side door into the case/knowledge corpora hardened in 82A/82B.
+ * GET stays 200 but returns an empty list to non-authoring callers.
  */
 
 function asArray(v: unknown): string[] {
@@ -21,6 +26,9 @@ function asArray(v: unknown): string[] {
 export async function GET() {
   const repo = unknownRepository();
   try {
+    if (!await hasAuthoring()) {
+      return NextResponse.json({ storageMode: getStorageMode(), unknowns: [] });
+    }
     return NextResponse.json({ storageMode: getStorageMode(), unknowns: await repo.list() });
   } catch {
     return NextResponse.json({ storageMode: getStorageMode(), unknowns: [] });
@@ -28,6 +36,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -54,6 +65,9 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -90,8 +104,7 @@ export async function PATCH(req: Request) {
       });
       created = { kind: "case", id: c.id };
       await repo.update(id, { status: "converted" });
-      const uu = await getCurrentUser();
-      await recordAuditEvent({ userId: uu?.id ?? null, action: AUDIT_ACTIONS.UNKNOWN_CONVERTED, entityType: "unknown", entityId: id, metadata: { caseId: c.id } });
+      await recordAuditEvent({ userId: gate.user.id, action: AUDIT_ACTIONS.UNKNOWN_CONVERTED, entityType: "unknown", entityId: id, metadata: { caseId: c.id } });
     } else if (action === "library") {
       // Create a draft KnowledgeArticle seeded from the unknown query.
       const a = await knowledgeRepository().create({
@@ -111,16 +124,14 @@ export async function PATCH(req: Request) {
       });
       created = { kind: "knowledge", id: a.id };
       await repo.update(id, { status: "library" });
-      const uu = await getCurrentUser();
-      await recordAuditEvent({ userId: uu?.id ?? null, action: AUDIT_ACTIONS.UNKNOWN_TO_LIBRARY, entityType: "unknown", entityId: id, metadata: { articleId: a.id } });
+      await recordAuditEvent({ userId: gate.user.id, action: AUDIT_ACTIONS.UNKNOWN_TO_LIBRARY, entityType: "unknown", entityId: id, metadata: { articleId: a.id } });
     } else {
       // Plain status update (e.g. resolved).
       const status = body.status as UnknownCreate["status"];
       if (status) {
         await repo.update(id, { status });
         if (status === "resolved") {
-          const uu = await getCurrentUser();
-          await recordAuditEvent({ userId: uu?.id ?? null, action: AUDIT_ACTIONS.UNKNOWN_RESOLVED, entityType: "unknown", entityId: id, metadata: {} });
+          await recordAuditEvent({ userId: gate.user.id, action: AUDIT_ACTIONS.UNKNOWN_RESOLVED, entityType: "unknown", entityId: id, metadata: {} });
         }
       }
     }

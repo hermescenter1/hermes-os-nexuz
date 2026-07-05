@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { getProjectTimeline } from "@/lib/analytics/timeline-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
+import { requireAuthoring } from "@/lib/auth/api-guards";
 
-/** GET /api/projects/[id]/timeline — chronological project activity history. */
+/** GET /api/projects/[id]/timeline — chronological project activity history.
+ *  Phase 82C: authoring only. */
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   const { id } = await params;
   try {
     const result = await getProjectTimeline(id);

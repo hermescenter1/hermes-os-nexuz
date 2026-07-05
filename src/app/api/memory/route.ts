@@ -6,14 +6,20 @@ import {
 } from "@/lib/memory/memory-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import type { MemoryCreate } from "@/lib/storage/memory-repository";
+import { requireAuthoring, hasAuthoring } from "@/lib/auth/api-guards";
 
 /** GET /api/memory — list saved engineering memories (newest first).
- *  Accepts optional `?limit=N` query param (default 50, max 200). */
+ *  Accepts optional `?limit=N` query param (default 50, max 200).
+ *  Phase 82C: memories (internal engineering text) are returned to
+ *  authoring callers only; everyone else gets an empty list, same shape. */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const rawLimit = url.searchParams.get("limit");
   const limit = Math.min(Math.max(Number(rawLimit ?? 50) || 50, 1), 200);
   try {
+    if (!await hasAuthoring()) {
+      return NextResponse.json({ storageMode: getStorageMode(), memories: [] });
+    }
     const memories = await listEngineeringMemories(limit);
     return NextResponse.json({ storageMode: getStorageMode(), memories });
   } catch {
@@ -28,6 +34,9 @@ export async function GET(req: Request) {
  *            outcome, notes
  */
 export async function POST(req: Request) {
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { addMemoryFeedback, isValidOutcome } from "@/lib/memory/memory-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import type { FeedbackCreate } from "@/lib/storage/memory-repository";
+import { requireAuthoring } from "@/lib/auth/api-guards";
 
 /** POST /api/memory/[id]/feedback — record field outcome feedback for a memory.
  *
@@ -15,6 +16,10 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Phase 82C: feedback mutates memory outcome state — authoring only
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   const { id } = await params;
 
   let body: Record<string, unknown>;

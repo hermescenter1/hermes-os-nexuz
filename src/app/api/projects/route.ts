@@ -5,10 +5,16 @@ import {
   isValidProjectStatus,
 } from "@/lib/memory/project-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
+import { requireAuthoring, hasAuthoring } from "@/lib/auth/api-guards";
 
-/** GET /api/projects — list all projects, newest first. */
+/** GET /api/projects — list all projects, newest first.
+ *  Phase 82C: project records go to authoring callers only; everyone else
+ *  gets an empty list with the same response shape. */
 export async function GET() {
   try {
+    if (!await hasAuthoring()) {
+      return NextResponse.json({ storageMode: getStorageMode(), projects: [] });
+    }
     const projects = await listProjects();
     return NextResponse.json({ storageMode: getStorageMode(), projects });
   } catch {
@@ -23,6 +29,9 @@ export async function GET() {
  * Optional: description, status (default "active")
  */
 export async function POST(req: Request) {
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();

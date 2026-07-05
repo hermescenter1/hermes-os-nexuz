@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { searchEngineeringMemories } from "@/lib/memory/memory-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { isProjectIntelligenceEnabled } from "@/lib/rag/config";
+import { requireAuthoring } from "@/lib/auth/api-guards";
 
 /**
  * POST /api/memory/search — rank stored engineering memories against a query.
@@ -16,6 +17,10 @@ import { isProjectIntelligenceEnabled } from "@/lib/rag/config";
  * Never throws — returns an empty matches array on any internal failure.
  */
 export async function POST(req: Request) {
+  // Phase 82C: memory search ranks internal engineering text — authoring only
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();

@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { getProjectRisk } from "@/lib/services/project-risk-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
+import { requireAuthoring } from "@/lib/auth/api-guards";
 
-/** GET /api/projects/[id]/risk-history — project risk evolution over time. */
+/** GET /api/projects/[id]/risk-history — project risk evolution over time.
+ *  Phase 82C: authoring only. */
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   const { id } = await params;
   try {
     const result = await getProjectRisk(id);
