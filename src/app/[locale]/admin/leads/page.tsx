@@ -1,7 +1,8 @@
-import { setRequestLocale }  from "next-intl/server";
-import { RequireCapability } from "@/components/auth/RequireCapability";
-import { noIndexMetadata }   from "@/lib/seo/metadata";
-import { getPrisma }         from "@/lib/db/prisma";
+import { setRequestLocale, getTranslations } from "next-intl/server";
+import { RequireCapability }    from "@/components/auth/RequireCapability";
+import { noIndexMetadata }      from "@/lib/seo/metadata";
+import { getPrisma }            from "@/lib/db/prisma";
+import { AccessRequestActions } from "@/components/admin/AccessRequestActions";
 
 export const metadata = noIndexMetadata("Sales Leads — Hermes Admin");
 export const dynamic  = "force-dynamic";
@@ -22,6 +23,7 @@ interface SalesLeadRow {
   companySize:   string | null;
   roleTitle:     string | null;
   preferredDemo: string | null;
+  source:        string;
   status:        string;
   locale:        string | null;
   createdAt:     string;
@@ -42,7 +44,7 @@ async function getLeads(): Promise<SalesLeadRow[]> {
         id: true, fullName: true, email: true, phone: true,
         company: true, country: true, industry: true, interest: true,
         useCase: true, message: true, companySize: true, roleTitle: true,
-        preferredDemo: true, status: true, locale: true, createdAt: true,
+        preferredDemo: true, source: true, status: true, locale: true, createdAt: true,
       },
     });
     return rows.map(r => {
@@ -61,6 +63,7 @@ async function getLeads(): Promise<SalesLeadRow[]> {
         companySize:   d.companySize as string | null,
         roleTitle:     d.roleTitle as string | null,
         preferredDemo: d.preferredDemo as string | null,
+        source:        String(d.source ?? "WEBSITE"),
         status:        String(d.status ?? "NEW"),
         locale:        d.locale as string | null,
         createdAt:     d.createdAt instanceof Date
@@ -84,47 +87,16 @@ const STATUS_CLS: Record<string, string> = {
   NEW:       "bg-[rgba(30,200,164,0.08)] text-[#1EC8A4] border-[rgba(30,200,164,0.2)]",
   REVIEWED:  "bg-[rgba(96,180,240,0.08)] text-[#60B4F0] border-[rgba(96,180,240,0.2)]",
   CONTACTED: "bg-[rgba(234,179,8,0.08)]  text-[#EAB308] border-[rgba(234,179,8,0.2)]",
+  APPROVED:  "bg-[rgba(56,189,248,0.08)] text-[#38BDF8] border-[rgba(56,189,248,0.2)]",
+  REJECTED:  "bg-[rgba(239,68,68,0.08)]  text-[#EF4444] border-[rgba(239,68,68,0.22)]",
   CLOSED:    "bg-[#172234]/60           text-[#4A5A6E]  border-[#1E2E40]",
 };
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Lead card (shared by both sections) ───────────────────────────────────────
 
-export default async function AdminLeadsPage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-  const isFa = locale === "fa";
-
-  const leads = await getLeads();
-
+function LeadCard({ lead, isFa, actions }: { lead: SalesLeadRow; isFa: boolean; actions?: boolean }) {
   return (
-    <RequireCapability capability="admin">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-[#1EC8A4] mb-1">
-            {isFa ? "لایه فروش هرمس" : "HERMES SALES LAYER"}
-          </p>
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-[#1EC8A4] to-[rgba(30,200,164,0.2)]" />
-            <h1 className="text-lg font-bold text-[#F0F4F8] uppercase tracking-wider">
-              {isFa ? "درخواست‌های دمو" : "Demo Requests & Sales Leads"}
-            </h1>
-          </div>
-          <p className="text-xs text-[#4A5A6E] font-mono">
-            {leads.length} {isFa ? "درخواست" : "leads"} · {isFa ? "فقط مدیران ارشد" : "admin/superadmin only"}
-          </p>
-        </div>
-
-        {leads.length === 0 ? (
-          <div className="rounded-xl border border-[#1E2E40] bg-[#0C1420]/40 p-12 text-center">
-            <p className="text-sm text-[#4A5A6E] font-mono">
-              {isFa ? "هنوز درخواستی دریافت نشده است." : "No leads yet."}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {leads.map(lead => (
-              <details key={lead.id}
+    <details
                 className="group rounded-xl border border-[#1E2E40] bg-[#0C1420]/50 overflow-hidden">
                 {/* Summary row */}
                 <summary className="flex flex-wrap items-center gap-3 px-4 py-3.5 cursor-pointer list-none hover:bg-[#111C2A]/60 transition-colors">
@@ -190,8 +162,89 @@ export default async function AdminLeadsPage({ params }: { params: Promise<{ loc
                       <p className="text-xs text-[#8A9BB0] leading-relaxed whitespace-pre-wrap">{lead.message}</p>
                     </div>
                   )}
+                  {actions && <AccessRequestActions leadId={lead.id} initialStatus={lead.status} />}
                 </div>
               </details>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default async function AdminLeadsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const isFa = locale === "fa";
+  const t = await getTranslations("adminAccess");
+
+  const leads = await getLeads();
+  const accessRequests = leads.filter(l => l.source === "AUTH_ACCESS_REQUEST");
+  const demoLeads      = leads.filter(l => l.source !== "AUTH_ACCESS_REQUEST");
+
+  return (
+    <RequireCapability capability="admin">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-6">
+          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-[#1EC8A4] mb-1">
+            {isFa ? "لایه فروش هرمس" : "HERMES SALES LAYER"}
+          </p>
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-[#1EC8A4] to-[rgba(30,200,164,0.2)]" />
+            <h1 className="text-lg font-bold text-[#F0F4F8] uppercase tracking-wider">
+              {isFa ? "درخواست‌های دمو و دسترسی" : "Demo Requests & Access Requests"}
+            </h1>
+          </div>
+          <p className="text-xs text-[#4A5A6E] font-mono">
+            {leads.length} {isFa ? "درخواست" : "leads"} · {isFa ? "فقط مدیران ارشد" : "admin/superadmin only"}
+          </p>
+        </div>
+
+        {/* ── Access requests (Phase 81C) — distinct from demo/sales leads ── */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[9px] px-2 py-0.5 rounded border bg-[rgba(56,189,248,0.06)] text-[#38BDF8] border-[rgba(56,189,248,0.2)] font-mono uppercase">
+              AUTH
+            </span>
+            <h2 className="text-sm font-bold text-[#F0F4F8] uppercase tracking-wider">
+              {t("accessRequests")}
+            </h2>
+            <span className="text-[10px] text-[#4A5A6E] font-mono">({accessRequests.length})</span>
+          </div>
+          {accessRequests.length === 0 ? (
+            <div className="rounded-xl border border-[#1E2E40] bg-[#0C1420]/40 p-6 text-center">
+              <p className="text-xs text-[#4A5A6E] font-mono">
+                {isFa ? "درخواست دسترسی در انتظار نیست." : "No access requests waiting."}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {accessRequests.map(lead => (
+                <LeadCard key={lead.id} lead={lead} isFa={isFa} actions />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Demo requests / sales leads ── */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-[9px] px-2 py-0.5 rounded border bg-[rgba(30,200,164,0.06)] text-[#1EC8A4] border-[rgba(30,200,164,0.2)] font-mono uppercase">
+            SALES
+          </span>
+          <h2 className="text-sm font-bold text-[#F0F4F8] uppercase tracking-wider">
+            {isFa ? "درخواست‌های دمو" : "Demo Requests & Sales Leads"}
+          </h2>
+          <span className="text-[10px] text-[#4A5A6E] font-mono">({demoLeads.length})</span>
+        </div>
+        {demoLeads.length === 0 ? (
+          <div className="rounded-xl border border-[#1E2E40] bg-[#0C1420]/40 p-12 text-center">
+            <p className="text-sm text-[#4A5A6E] font-mono">
+              {isFa ? "هنوز درخواستی دریافت نشده است." : "No leads yet."}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {demoLeads.map(lead => (
+              <LeadCard key={lead.id} lead={lead} isFa={isFa} />
             ))}
           </div>
         )}

@@ -29,3 +29,13 @@ export function hashResetToken(token: string): string {
 export function generateVerificationToken(): string {
   return randomBytes(24).toString("base64url");
 }
+
+/** Generate a cryptographically random 32-byte hex access-invite token (Phase 81C). */
+export function generateInviteToken(): string {
+  return randomBytes(32).toString("hex");
+}
+
+/** Store only the SHA-256 hash of the invite token in the database. */
+export function hashInviteToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}

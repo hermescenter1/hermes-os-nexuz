@@ -369,6 +369,30 @@ model PasswordResetToken {
   @@index([userId])
 }
 
+// Phase 81C: admin-issued access invites (token stored as SHA-256 hash, never
+// plaintext). Created when an admin approves an AUTH_ACCESS_REQUEST lead; the
+// User row is created only when the invite is accepted. Loose references (no
+// FK) to the approving admin and source lead, matching OrganizationMember.
+model AccessInvite {
+  id              String    @id @default(cuid())
+  email           String
+  fullName        String?
+  company         String?
+  role            String    @default("customer") // granted on accept — never admin/superadmin
+  tokenHash       String    @unique
+  status          String    @default("PENDING") // PENDING | ACCEPTED | EXPIRED | REVOKED
+  expiresAt       DateTime
+  usedAt          DateTime?
+  createdByUserId String?   // approving admin userId (loose reference — no FK)
+  sourceLeadId    String?   // SalesLead.id (loose reference — no FK)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([sourceLeadId])
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   userId     String?

@@ -1926,7 +1926,27 @@
     "signingIn": "Signing in…",
     "connectionError": "Unable to connect. Please check your connection.",
     "invalidEmail": "Please enter a valid email address.",
-    "invalidInput": "Please check your details and try again."
+    "invalidInput": "Please check your details and try again.",
+    "acceptInviteTitle": "Accept invite",
+    "acceptInviteLede": "You have been invited to Hermes OS. Set a password to activate your account.",
+    "setPassword": "Set password",
+    "acceptInviteConfirmPassword": "Confirm password",
+    "acceptInviteSubmitting": "Setting password…",
+    "inviteInvalid": "Invite expired or invalid.",
+    "inviteAccepted": "Account created. You can now sign in.",
+    "passwordPolicyHint": "Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character."
+  },
+  "adminAccess": {
+    "accessRequests": "Access Requests",
+    "reviewTitle": "Reviewed access request",
+    "approve": "Approve",
+    "reject": "Reject",
+    "inviteRole": "Invite role",
+    "inviteCreated": "Invite created",
+    "copyInviteLink": "Copy invite link",
+    "inviteLinkCopied": "Invite link copied",
+    "rejectedNote": "Rejected — no invite can be created for this request.",
+    "actionFailed": "Action failed. Please try again."
   },
   "admin": {
     "eyebrow": "Operations",

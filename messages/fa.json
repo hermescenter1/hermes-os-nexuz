@@ -1926,7 +1926,27 @@
     "signingIn": "در حال ورود…",
     "connectionError": "امکان برقراری ارتباط نیست. لطفاً اتصال خود را بررسی کنید.",
     "invalidEmail": "لطفاً یک ایمیل معتبر وارد کنید.",
-    "invalidInput": "لطفاً اطلاعات را بررسی و دوباره تلاش کنید."
+    "invalidInput": "لطفاً اطلاعات را بررسی و دوباره تلاش کنید.",
+    "acceptInviteTitle": "پذیرش دعوت‌نامه",
+    "acceptInviteLede": "شما به هرمس‌اواس دعوت شده‌اید. برای فعال‌سازی حساب خود گذرواژه تعیین کنید.",
+    "setPassword": "تعیین گذرواژه",
+    "acceptInviteConfirmPassword": "تکرار گذرواژه",
+    "acceptInviteSubmitting": "در حال تعیین گذرواژه…",
+    "inviteInvalid": "دعوت‌نامه نامعتبر یا منقضی شده است.",
+    "inviteAccepted": "حساب ساخته شد. اکنون می‌توانید وارد شوید.",
+    "passwordPolicyHint": "گذرواژه باید دست‌کم ۸ نویسه و شامل حرف بزرگ، حرف کوچک، عدد و نویسهٔ ویژه باشد."
+  },
+  "adminAccess": {
+    "accessRequests": "درخواست‌های دسترسی",
+    "reviewTitle": "درخواست دسترسی بررسی‌شده",
+    "approve": "تأیید",
+    "reject": "رد",
+    "inviteRole": "نقش دعوت",
+    "inviteCreated": "دعوت‌نامه ساخته شد",
+    "copyInviteLink": "کپی لینک دعوت",
+    "inviteLinkCopied": "لینک دعوت کپی شد",
+    "rejectedNote": "رد شد — برای این درخواست دعوت‌نامه‌ای ساخته نمی‌شود.",
+    "actionFailed": "عملیات ناموفق بود. لطفاً دوباره تلاش کنید."
   },
   "admin": {
     "eyebrow": "عملیات",

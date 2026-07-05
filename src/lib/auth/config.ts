@@ -57,6 +57,9 @@ export const VERIFICATION_TOKEN_TTL = 60 * 60 * 24; // 24 hours
 /** Password reset token TTL seconds. */
 export const PASSWORD_RESET_TTL = 60 * 60; // 1 hour
 
+/** Access invite token TTL seconds (Phase 81C). */
+export const ACCESS_INVITE_TTL = 60 * 60 * 24 * 7; // 7 days
+
 /** Max failed login attempts before account lock. */
 export const MAX_FAILED_ATTEMPTS = 5;
 
