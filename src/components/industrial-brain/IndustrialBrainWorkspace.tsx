@@ -881,8 +881,15 @@ function ReportHeader({ meta, isFa }: { meta: ReportMeta; isFa: boolean }) {
   );
 }
 
-function ReportActions({ analysis, meta, isFa }: { analysis: IndustrialBrainAnalysis; meta: ReportMeta; isFa: boolean }) {
+function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
+  analysis: IndustrialBrainAnalysis;
+  meta: ReportMeta;
+  isFa: boolean;
+  locale: string;
+  canSaveCase: boolean;
+}) {
   const [copied, setCopied] = useState<"summary" | "full" | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   async function handleCopy(kind: "summary" | "full") {
     const text = kind === "summary" ? buildSummaryText(analysis, meta, isFa) : buildFullReportText(analysis, meta, isFa);
@@ -893,34 +900,106 @@ function ReportActions({ analysis, meta, isFa }: { analysis: IndustrialBrainAnal
     }
   }
 
+  // Phase 82: save the analysis as an EngineeringCase draft via the
+  // authenticated route — never the public /api/cases endpoint.
+  async function handleSave() {
+    if (saveState === "saving" || saveState === "saved") return;
+    setSaveState("saving");
+    try {
+      const res = await fetch("/api/industrial-brain/save-case", {
+        method:  "POST",
+        headers: { "content-type": "application/json" },
+        body:    JSON.stringify({
+          analysis,
+          meta: {
+            problemTitle: meta.problemTitle,
+            assetType:    meta.assetType,
+            systemArea:   meta.systemArea,
+            plcPlatform:  meta.plcPlatform,
+          },
+        }),
+      });
+      setSaveState(res.ok ? "saved" : "error");
+    } catch {
+      setSaveState("error");
+    }
+  }
+
   const btnBase = "flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-mono text-[11px] font-semibold uppercase tracking-wider border transition-all disabled:opacity-40 disabled:cursor-not-allowed";
 
+  const saveLabel =
+    saveState === "saving" ? (isFa ? "در حال ذخیره…" : "Saving…")
+    : saveState === "error" ? (isFa ? "ذخیره ناموفق — دوباره تلاش کنید" : "Save failed — try again")
+    : (isFa ? "ذخیره به‌عنوان کیس مهندسی" : "Save as Engineering Case");
+
   return (
-    <div className="ib-print-hide flex flex-wrap gap-3">
-      <button
-        type="button"
-        onClick={() => handleCopy("summary")}
-        disabled={!analysis}
-        className={`${btnBase} border-cyan-400/25 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12]`}
-      >
-        {copied === "summary" ? (isFa ? "کپی شد ✓" : "Copied ✓") : (isFa ? "کپی خلاصه" : "Copy Summary")}
-      </button>
-      <button
-        type="button"
-        onClick={() => handleCopy("full")}
-        disabled={!analysis}
-        className={`${btnBase} border-violet-400/25 bg-violet-400/[0.06] text-violet-300 hover:bg-violet-400/[0.12]`}
-      >
-        {copied === "full" ? (isFa ? "کپی شد ✓" : "Copied ✓") : (isFa ? "کپی گزارش کامل" : "Copy Full Report")}
-      </button>
-      <button
-        type="button"
-        onClick={() => window.print()}
-        disabled={!analysis}
-        className={`${btnBase} border-sky-400/25 bg-sky-400/[0.06] text-sky-300 hover:bg-sky-400/[0.12]`}
-      >
-        {isFa ? "چاپ گزارش" : "Print Report"}
-      </button>
+    <div className="ib-print-hide space-y-3">
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={() => handleCopy("summary")}
+          disabled={!analysis}
+          className={`${btnBase} border-cyan-400/25 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12]`}
+        >
+          {copied === "summary" ? (isFa ? "کپی شد ✓" : "Copied ✓") : (isFa ? "کپی خلاصه" : "Copy Summary")}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleCopy("full")}
+          disabled={!analysis}
+          className={`${btnBase} border-violet-400/25 bg-violet-400/[0.06] text-violet-300 hover:bg-violet-400/[0.12]`}
+        >
+          {copied === "full" ? (isFa ? "کپی شد ✓" : "Copied ✓") : (isFa ? "کپی گزارش کامل" : "Copy Full Report")}
+        </button>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          disabled={!analysis}
+          className={`${btnBase} border-sky-400/25 bg-sky-400/[0.06] text-sky-300 hover:bg-sky-400/[0.12]`}
+        >
+          {isFa ? "چاپ گزارش" : "Print Report"}
+        </button>
+      </div>
+
+      {/* Phase 82: save as engineering case (authoring users) or sign-in CTA */}
+      <div className="flex flex-wrap items-center gap-3">
+        {canSaveCase ? (
+          saveState === "saved" ? (
+            <Link
+              href="/knowledge/case-studio"
+              className={`${btnBase} border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-300 hover:bg-emerald-400/[0.14]`}
+            >
+              {isFa ? "ذخیره شد ✓ — مشاهده در کیس استودیو" : "Saved ✓ — view in Case Studio"}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!analysis || saveState === "saving"}
+              className={`${btnBase} ${saveState === "error"
+                ? "border-rose-400/30 bg-rose-400/[0.06] text-rose-300 hover:bg-rose-400/[0.12]"
+                : "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-300 hover:bg-emerald-400/[0.12]"}`}
+            >
+              {saveLabel}
+            </button>
+          )
+        ) : (
+          <>
+            <Link
+              href={`/auth/login?from=${encodeURIComponent(`/${locale}/industrial-brain`)}`}
+              className={`${btnBase} border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-300 hover:bg-emerald-400/[0.12]`}
+            >
+              {isFa ? "برای ذخیره به‌عنوان کیس مهندسی وارد شوید" : "Sign in to save as an engineering case"}
+            </Link>
+            <Link
+              href="/auth/register"
+              className="shrink-0 text-[11px] font-mono text-slate-500 hover:text-slate-300 underline underline-offset-4 transition-colors"
+            >
+              {isFa ? "درخواست دسترسی" : "Request access"}
+            </Link>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -961,11 +1040,17 @@ function AnalysisDemoCTA({ isFa }: { isFa: boolean }) {
   );
 }
 
-function AnalysisResult({ analysis, meta, isFa }: { analysis: IndustrialBrainAnalysis; meta: ReportMeta; isFa: boolean }) {
+function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
+  analysis: IndustrialBrainAnalysis;
+  meta: ReportMeta;
+  isFa: boolean;
+  locale: string;
+  canSaveCase: boolean;
+}) {
   return (
     <div className="ib-report-print space-y-5 mt-8">
       <ReportHeader meta={meta} isFa={isFa} />
-      <ReportActions analysis={analysis} meta={meta} isFa={isFa} />
+      <ReportActions analysis={analysis} meta={meta} isFa={isFa} locale={locale} canSaveCase={canSaveCase} />
 
       {/* Executive Summary + Classification */}
       <Panel>
@@ -1059,9 +1144,9 @@ function AnalysisResult({ analysis, meta, isFa }: { analysis: IndustrialBrainAna
 
 // ─── Main workspace ───────────────────────────────────────────────────────────
 
-interface Props { locale: string; isFa: boolean }
+interface Props { locale: string; isFa: boolean; canSaveCase?: boolean }
 
-export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
+export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<IndustrialBrainAnalysis | null>(null);
@@ -1326,7 +1411,7 @@ export function IndustrialBrainWorkspace({ locale, isFa }: Props) {
 
       {/* ── Analysis result ────────────────────────────────────────────────── */}
       <div ref={resultRef}>
-        {analysis && reportMeta && <AnalysisResult analysis={analysis} meta={reportMeta} isFa={isFa} />}
+        {analysis && reportMeta && <AnalysisResult analysis={analysis} meta={reportMeta} isFa={isFa} locale={locale} canSaveCase={canSaveCase} />}
       </div>
     </div>
   );

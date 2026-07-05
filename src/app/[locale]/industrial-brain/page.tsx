@@ -1,6 +1,8 @@
 import { setRequestLocale } from "next-intl/server";
 import { buildMetadata }    from "@/lib/seo/metadata";
 import { Link }             from "@/i18n/navigation";
+import { getCurrentUser }   from "@/lib/auth/session";
+import { can }              from "@/lib/auth/roles";
 import { IndustrialBrainWorkspace } from "@/components/industrial-brain/IndustrialBrainWorkspace";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -89,6 +91,11 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
   const { locale } = await params;
   setRequestLocale(locale);
   const isFa = locale === "fa";
+
+  // Phase 82: page stays fully public — auth only decides whether the
+  // report shows an active "Save as Engineering Case" button or a sign-in CTA.
+  const user = await getCurrentUser();
+  const canSaveCase = can(user?.role, "authoring");
 
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #04080F 0%, #060A16 100%)" }}>
@@ -268,7 +275,7 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
                 <div className="h-px print:hidden" style={{ background: "linear-gradient(90deg, #1EC8A4, #60B4F0, #818CF8)" }} />
 
                 <div className="px-5 py-6 print:p-0">
-                  <IndustrialBrainWorkspace locale={locale} isFa={isFa} />
+                  <IndustrialBrainWorkspace locale={locale} isFa={isFa} canSaveCase={canSaveCase} />
                 </div>
               </div>
             </div>
