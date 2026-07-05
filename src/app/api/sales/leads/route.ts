@@ -37,7 +37,10 @@ const LeadSchema = z.object({
   preferredDemo: z.string().trim().max(100).optional().or(z.literal("")),
   message:       z.string().trim().max(1000).optional().or(z.literal("")),
   locale:        z.string().trim().max(5).optional(),
-  _gotcha:       z.string().max(0).optional(), // honeypot — must be empty
+  // Honeypot: real users leave this empty (hidden via CSS). No max(0) here —
+  // that would fail schema validation before the honeypot branch below ever
+  // runs, leaking a 400 to bots instead of a silent fake-success response.
+  _gotcha:       z.string().max(200).optional(),
 });
 
 // ── Handler ───────────────────────────────────────────────────────────────────
