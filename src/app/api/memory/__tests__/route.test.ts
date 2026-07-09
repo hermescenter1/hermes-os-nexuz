@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 /**
  * Phase 18A — /api/memory route integration tests.
+ * Phase 82C.1 — memory root + detail routes are authoring-gated. Every test
+ * mocks an authoring session by default (via `@/lib/auth/session`, the module
+ * `requireAuthoring` reads through), so the behavioral tests below exercise
+ * the same repository paths as before. The dedicated "auth gate" describe
+ * blocks override the mock to prove the 401/403 invariants.
  *
  * All tests run in session mode (no DATABASE_URL). Each test resets the
  * in-process globalThis stores and re-imports route modules so state never
@@ -10,6 +15,20 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
 let saved: Record<string, string | undefined>;
+
+type TestRole = "superadmin" | "admin" | "engineer" | "customer" | "viewer";
+
+/** Mock the session `requireAuthoring` resolves through. Must be called after
+ *  `vi.resetModules()` and before the route module is imported. Clears any
+ *  prior registration first so a later call always wins (a plain second
+ *  `doMock` over the beforeEach default is not reliably applied). */
+function mockUser(role: TestRole | null) {
+  vi.doUnmock("@/lib/auth/session");
+  vi.doMock("@/lib/auth/session", () => ({
+    getCurrentUser: async () =>
+      role ? { id: "u1", email: "u@test.com", name: "Test User", role } : null,
+  }));
+}
 
 beforeEach(() => {
   saved = {};
@@ -20,6 +39,8 @@ beforeEach(() => {
   (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [];
   (globalThis as Record<string, unknown>).__hermesMemoryFeedback = [];
   vi.resetModules();
+  // Default: an authoring user, so existing behavioral tests reach the repo.
+  mockUser("engineer");
 });
 
 afterEach(() => {
@@ -27,6 +48,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  vi.doUnmock("@/lib/auth/session");
 });
 
 function postMemory(body: Record<string, unknown>): Request {
@@ -335,5 +357,78 @@ describe("POST /api/memory/[id]/feedback — success", () => {
     const res = await POST(req, { params });
     const text = JSON.stringify(await res.json());
     expect(text).not.toMatch(/stack|at Object\.|Error:/i);
+  });
+});
+
+// ---- Auth gate (Phase 82C.1) — /api/memory/[id] ----
+
+describe("GET /api/memory/[id] — auth gate", () => {
+  it("returns 401 when unauthenticated", async () => {
+    vi.resetModules();
+    mockUser(null);
+    const { GET } = await import("../[id]/route");
+    const { req, params } = idReq("any-id", "/api/memory/any-id");
+    const res = await GET(req, { params });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+  });
+
+  it("returns 403 for a non-authoring (viewer) user", async () => {
+    vi.resetModules();
+    mockUser("viewer");
+    const { GET } = await import("../[id]/route");
+    const { req, params } = idReq("any-id", "/api/memory/any-id");
+    const res = await GET(req, { params });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+  });
+
+  it("lets an authoring user through to the repository (404 for unknown id)", async () => {
+    // Default beforeEach mock is an authoring engineer.
+    const { GET } = await import("../[id]/route");
+    const { req, params } = idReq("no-such-id", "/api/memory/no-such-id");
+    const res = await GET(req, { params });
+    expect(res.status).toBe(404);
+    expect((await res.json()).error).toBe("not_found");
+  });
+});
+
+// ---- Auth gate (Phase 82C.1) — /api/memory/[id]/feedback ----
+
+describe("POST /api/memory/[id]/feedback — auth gate", () => {
+  it("returns 401 when unauthenticated", async () => {
+    vi.resetModules();
+    mockUser(null);
+    const { POST } = await import("../[id]/feedback/route");
+    const { req, params } = idReq("any-id", "/api/memory/any-id/feedback", "POST", {
+      outcome: "success",
+    });
+    const res = await POST(req, { params });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+  });
+
+  it("returns 403 for a non-authoring (viewer) user", async () => {
+    vi.resetModules();
+    mockUser("viewer");
+    const { POST } = await import("../[id]/feedback/route");
+    const { req, params } = idReq("any-id", "/api/memory/any-id/feedback", "POST", {
+      outcome: "success",
+    });
+    const res = await POST(req, { params });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+  });
+
+  it("lets an authoring user through to the repository (404 for unknown memory)", async () => {
+    // Default beforeEach mock is an authoring engineer.
+    const { POST } = await import("../[id]/feedback/route");
+    const { req, params } = idReq("no-such-id", "/api/memory/no-such-id/feedback", "POST", {
+      outcome: "success",
+    });
+    const res = await POST(req, { params });
+    // Past the auth gate: a valid outcome for a missing memory yields 404.
+    expect(res.status).toBe(404);
+    expect((await res.json()).error).toBe("not_found");
   });
 });
