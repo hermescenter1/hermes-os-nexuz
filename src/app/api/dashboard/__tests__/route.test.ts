@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 23 — GET /api/dashboard route tests.
  * All tests run in session mode (no DATABASE_URL).
+ *
+ * Phase 82D.1A: the backward-compat block below invokes the now authoring-gated
+ * /api/projects/analytics and /api/projects/benchmark handlers, so those tests
+ * mock an authoring session before importing them. The dashboard route itself
+ * is unchanged and needs no auth mock.
  */
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
@@ -23,6 +29,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -244,6 +251,8 @@ describe("GET /api/dashboard — backward compat", () => {
   });
 
   it("projects/analytics route unaffected", async () => {
+    vi.resetModules();
+    mockEngineer();
     const { GET } = await import("../../projects/analytics/route");
     const body = await (await GET()).json();
     expect(body).toHaveProperty("projectStats");
@@ -251,6 +260,8 @@ describe("GET /api/dashboard — backward compat", () => {
   });
 
   it("benchmark route unaffected", async () => {
+    vi.resetModules();
+    mockEngineer();
     const { GET } = await import("../../projects/benchmark/route");
     const body = await (await GET()).json();
     expect(body).toHaveProperty("leaders");
