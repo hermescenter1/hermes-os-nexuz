@@ -1,10 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, mockViewer, mockNoUser, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 19A — /api/projects route tests.
  *
  * All tests run in session mode (no DATABASE_URL).
  * Covers GET /api/projects, POST /api/projects, GET /api/projects/[id].
+ *
+ * Phase 82D.1: /api/projects writes and /api/projects/[id] are authoring-gated
+ * (root GET is a soft gate that returns an empty list to non-authoring
+ * callers). Tests mock an authoring session by default; the "auth gate" blocks
+ * override it to prove the 401/403/empty-list invariants.
  */
 
 const ENV_KEYS = [
@@ -22,6 +28,7 @@ beforeEach(() => {
   (globalThis as Record<string, unknown>).__hermesProjects = [];
   (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [];
   (globalThis as Record<string, unknown>).__hermesMemoryFeedback = [];
+  mockEngineer();
 });
 
 afterEach(() => {
@@ -29,6 +36,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
 });
 
 function postReq(path: string, body: Record<string, unknown>): Request {
@@ -246,5 +254,92 @@ describe("backward compatibility — existing /api/memory endpoints unchanged", 
     const body = await res.json();
     // Phase 19A: projectId is now stored on the memory record
     expect(body.memory.projectId).toBe(project.id);
+  });
+});
+
+// ── Auth gate (Phase 82D.1) ───────────────────────────────────────────────
+
+describe("POST /api/projects — auth gate", () => {
+  it("returns 401 when unauthenticated", async () => {
+    vi.resetModules();
+    mockNoUser();
+    const { POST } = await import("../route");
+    const res = await POST(postReq("/api/projects", { name: "X" }));
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+  });
+
+  it("returns 403 for a non-authoring (viewer) user", async () => {
+    vi.resetModules();
+    mockViewer();
+    const { POST } = await import("../route");
+    const res = await POST(postReq("/api/projects", { name: "X" }));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+  });
+});
+
+describe("GET /api/projects — soft gate returns empty list to non-authoring", () => {
+  it("unauthenticated GET returns 200 with storageMode and empty projects", async () => {
+    // Seed a project via the authoring default, then re-query as anonymous.
+    const { POST } = await import("../route");
+    await POST(postReq("/api/projects", { name: "Seeded" }));
+
+    vi.resetModules();
+    mockNoUser();
+    const { GET } = await import("../route");
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.storageMode).toBe("session");
+    expect(body.projects).toEqual([]);
+  });
+
+  it("viewer GET returns 200 with storageMode and empty projects", async () => {
+    const { POST } = await import("../route");
+    await POST(postReq("/api/projects", { name: "Seeded" }));
+
+    vi.resetModules();
+    mockViewer();
+    const { GET } = await import("../route");
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.storageMode).toBe("session");
+    expect(body.projects).toEqual([]);
+  });
+});
+
+describe("GET /api/projects/[id] — auth gate", () => {
+  it("returns 401 when unauthenticated", async () => {
+    vi.resetModules();
+    mockNoUser();
+    const { GET } = await import("../[id]/route");
+    const res = await GET(getReq("/api/projects/any"), {
+      params: Promise.resolve({ id: "any" }),
+    });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+  });
+
+  it("returns 403 for a non-authoring (viewer) user", async () => {
+    vi.resetModules();
+    mockViewer();
+    const { GET } = await import("../[id]/route");
+    const res = await GET(getReq("/api/projects/any"), {
+      params: Promise.resolve({ id: "any" }),
+    });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+  });
+
+  it("lets an authoring user reach the repository (404 for unknown id)", async () => {
+    // Default beforeEach mock is an authoring engineer.
+    const { GET } = await import("../[id]/route");
+    const res = await GET(getReq("/api/projects/no-such-id"), {
+      params: Promise.resolve({ id: "no-such-id" }),
+    });
+    expect(res.status).toBe(404);
+    expect((await res.json()).error).toBe("not_found");
   });
 });

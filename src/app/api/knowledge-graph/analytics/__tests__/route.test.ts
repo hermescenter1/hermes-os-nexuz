@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 22 — GET /api/knowledge-graph/analytics route tests.
  * All tests run in session mode (no DATABASE_URL).
+ *
+ * Phase 82D.1: the backward-compat test that invokes the now authoring-gated
+ * /api/projects/benchmark handler mocks an authoring session first.
  */
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
@@ -23,6 +27,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -203,6 +208,8 @@ describe("GET /api/knowledge-graph/analytics — backward compat", () => {
   });
 
   it("benchmark route unaffected", async () => {
+    vi.resetModules();
+    mockEngineer();
     const { GET } = await import("../../../projects/benchmark/route");
     const body = await (await GET()).json();
     expect(body).toHaveProperty("leaders");

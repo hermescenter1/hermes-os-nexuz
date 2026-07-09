@@ -1,10 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, mockViewer, mockNoUser, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 18B — POST /api/memory/search route integration tests.
  *
  * All tests run in session mode (no DATABASE_URL). The globalThis stores are
  * reset before each test to prevent state bleed between runs.
+ *
+ * Phase 82D.1: /api/memory/search is authoring-gated. Every test mocks an
+ * authoring session by default so the behavioral tests reach the ranker; the
+ * "auth gate" block overrides the mock to prove the 401/403 invariants.
  */
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
@@ -19,6 +24,7 @@ beforeEach(() => {
   (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [];
   (globalThis as Record<string, unknown>).__hermesMemoryFeedback = [];
   vi.resetModules();
+  mockEngineer();
 });
 
 afterEach(() => {
@@ -26,6 +32,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
 });
 
 function searchRequest(body: Record<string, unknown>): Request {
@@ -271,6 +278,38 @@ describe("POST /api/memory/search — safe error behavior", () => {
     const body = await res.json();
     expect(body).toHaveProperty("storageMode");
     expect(body).toHaveProperty("matches");
+    expect(Array.isArray(body.matches)).toBe(true);
+  });
+});
+
+// ---- Auth gate (Phase 82D.1) --------------------------------------------
+
+describe("POST /api/memory/search — auth gate", () => {
+  it("returns 401 when unauthenticated", async () => {
+    vi.resetModules();
+    mockNoUser();
+    const { POST } = await import("../route");
+    const res = await POST(searchRequest({ query: "PLC fault" }));
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+  });
+
+  it("returns 403 for a non-authoring (viewer) user", async () => {
+    vi.resetModules();
+    mockViewer();
+    const { POST } = await import("../route");
+    const res = await POST(searchRequest({ query: "PLC fault" }));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+  });
+
+  it("lets an authoring user reach the ranker (200)", async () => {
+    // Default beforeEach mock is an authoring engineer.
+    const { POST } = await import("../route");
+    const res = await POST(searchRequest({ query: "PLC fault" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.storageMode).toBe("session");
     expect(Array.isArray(body.matches)).toBe(true);
   });
 });

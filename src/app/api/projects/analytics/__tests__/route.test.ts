@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, mockViewer, mockNoUser, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 20A — GET /api/projects/analytics route tests.
  *
  * All tests run in session mode (no DATABASE_URL).
+ *
+ * Phase 82D.1: /api/projects/analytics is authoring-gated (hard 401/403).
+ * Tests mock an authoring session by default; the "auth gate" block overrides
+ * it to prove the invariants.
  */
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
@@ -17,6 +22,7 @@ beforeEach(() => {
   (globalThis as Record<string, unknown>).__hermesProjects = [];
   (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [];
   (globalThis as Record<string, unknown>).__hermesMemoryFeedback = [];
+  mockEngineer();
 });
 
 afterEach(() => {
@@ -24,6 +30,35 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
+});
+
+// ── Auth gate (Phase 82D.1) ───────────────────────────────────────────────
+
+describe("GET /api/projects/analytics — auth gate", () => {
+  it("returns 401 when unauthenticated", async () => {
+    vi.resetModules();
+    mockNoUser();
+    const { GET } = await import("../route");
+    const res = await GET();
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+  });
+
+  it("returns 403 for a non-authoring (viewer) user", async () => {
+    vi.resetModules();
+    mockViewer();
+    const { GET } = await import("../route");
+    const res = await GET();
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+  });
+
+  it("lets an authoring user reach the analytics service (200)", async () => {
+    const { GET } = await import("../route");
+    const res = await GET();
+    expect(res.status).toBe(200);
+  });
 });
 
 // ── Response shape ─────────────────────────────────────────────────────────

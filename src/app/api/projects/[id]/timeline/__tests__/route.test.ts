@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, mockViewer, mockNoUser, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 20B — GET /api/projects/[id]/timeline route tests.
  *
  * All tests run in session mode (no DATABASE_URL).
  * Globals are reset before each test to ensure isolation.
+ *
+ * Phase 82D.1: this route is authoring-gated (hard 401/403). Tests mock an
+ * authoring session by default; the "auth gate" block overrides it.
  */
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
@@ -67,6 +71,7 @@ beforeEach(() => {
   for (const k of ENV_KEYS) delete process.env[k];
   vi.resetModules();
   resetGlobals();
+  mockEngineer();
 });
 
 afterEach(() => {
@@ -74,6 +79,33 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
+});
+
+// ── Auth gate (Phase 82D.1) ───────────────────────────────────────────────
+
+describe("GET /api/projects/[id]/timeline — auth gate", () => {
+  it("returns 401 when unauthenticated", async () => {
+    vi.resetModules();
+    mockNoUser();
+    const res = await GET("p1");
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+  });
+
+  it("returns 403 for a non-authoring (viewer) user", async () => {
+    vi.resetModules();
+    mockViewer();
+    const res = await GET("p1");
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+  });
+
+  it("lets an authoring user reach the route (past the gate)", async () => {
+    const res = await GET("p1");
+    expect(res.status).not.toBe(401);
+    expect(res.status).not.toBe(403);
+  });
 });
 
 // ── 404 / not found ─────────────────────────────────────────────────────────

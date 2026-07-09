@@ -1,9 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 21A — GET /api/knowledge-graph route tests.
  *
  * All tests run in session mode (no DATABASE_URL).
+ *
+ * Phase 82D.1: the backward-compat block below invokes the now authoring-gated
+ * /api/projects/benchmark and /api/projects/analytics handlers, so those tests
+ * mock an authoring session before importing them. The knowledge-graph route
+ * itself is unchanged and needs no auth mock.
  */
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
@@ -24,6 +30,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -191,6 +198,8 @@ describe("GET /api/knowledge-graph — storage failure fallback", () => {
 
 describe("GET /api/knowledge-graph — backward compatibility", () => {
   it("benchmark route still returns correct shape", async () => {
+    vi.resetModules();
+    mockEngineer();
     const { GET } = await import("../../projects/benchmark/route");
     const res = await GET();
     expect(res.status).toBe(200);
@@ -201,6 +210,8 @@ describe("GET /api/knowledge-graph — backward compatibility", () => {
   });
 
   it("analytics route still returns correct shape", async () => {
+    vi.resetModules();
+    mockEngineer();
     const { GET } = await import("../../projects/analytics/route");
     const res = await GET();
     expect(res.status).toBe(200);
