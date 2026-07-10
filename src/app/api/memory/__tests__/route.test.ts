@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockNoUser, mockViewer, mockEngineer, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 18A — /api/memory route integration tests.
  * Phase 82C.1 — memory root + detail routes are authoring-gated. Every test
- * mocks an authoring session by default (via `@/lib/auth/session`, the module
- * `requireAuthoring` reads through), so the behavioral tests below exercise
- * the same repository paths as before. The dedicated "auth gate" describe
+ * mocks an authoring session by default, so the behavioral tests below
+ * exercise the same repository paths as before; the "auth gate" describe
  * blocks override the mock to prove the 401/403 invariants.
+ * Phase 82D.4 — normalised onto the shared `@/test/mock-auth` helper so every
+ * 82C/82D security suite mocks the session through one reliable mechanism
+ * (the helper always `doUnmock`s before `doMock`, so the latest role wins).
  *
  * All tests run in session mode (no DATABASE_URL). Each test resets the
  * in-process globalThis stores and re-imports route modules so state never
@@ -16,19 +19,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
 let saved: Record<string, string | undefined>;
 
-type TestRole = "superadmin" | "admin" | "engineer" | "customer" | "viewer";
-
-/** Mock the session `requireAuthoring` resolves through. Must be called after
- *  `vi.resetModules()` and before the route module is imported. Clears any
- *  prior registration first so a later call always wins (a plain second
- *  `doMock` over the beforeEach default is not reliably applied). */
-function mockUser(role: TestRole | null) {
-  vi.doUnmock("@/lib/auth/session");
-  vi.doMock("@/lib/auth/session", () => ({
-    getCurrentUser: async () =>
-      role ? { id: "u1", email: "u@test.com", name: "Test User", role } : null,
-  }));
-}
+const g = () => globalThis as Record<string, unknown>;
+const memoryStore = () => g().__hermesEngineeringMemory as unknown[];
+const feedbackStore = () => g().__hermesMemoryFeedback as unknown[];
 
 beforeEach(() => {
   saved = {};
@@ -36,11 +29,11 @@ beforeEach(() => {
     saved[k] = process.env[k];
     delete process.env[k];
   }
-  (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [];
-  (globalThis as Record<string, unknown>).__hermesMemoryFeedback = [];
+  g().__hermesEngineeringMemory = [];
+  g().__hermesMemoryFeedback = [];
   vi.resetModules();
   // Default: an authoring user, so existing behavioral tests reach the repo.
-  mockUser("engineer");
+  mockEngineer();
 });
 
 afterEach(() => {
@@ -48,7 +41,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
-  vi.doUnmock("@/lib/auth/session");
+  unmockAuth();
 });
 
 function postMemory(body: Record<string, unknown>): Request {
@@ -360,27 +353,54 @@ describe("POST /api/memory/[id]/feedback — success", () => {
   });
 });
 
-// ---- Auth gate (Phase 82C.1) — /api/memory/[id] ----
+// ---- Auth gate (Phase 82C.1, normalised 82D.4) ----
+
+const PRIVATE_QUERY = "E-Stop relay latched no reset";
+
+/** Seed one memory straight through the service (not auth-gated) so the
+ *  denied-access tests below run against real private content. */
+async function seedMemory(query = PRIVATE_QUERY) {
+  const { createEngineeringMemory } = await import("@/lib/memory/memory-service");
+  return createEngineeringMemory({
+    query,
+    domain: "electrical",
+    analysisSummary: "Safety relay fault",
+    confidence: 85,
+    relatedCaseIds: [],
+    relatedDocumentIds: [],
+    outcome: "unknown",
+  });
+}
 
 describe("GET /api/memory/[id] — auth gate", () => {
-  it("returns 401 when unauthenticated", async () => {
+  it("returns 401 and no private content when unauthenticated", async () => {
+    const mem = await seedMemory();
+
     vi.resetModules();
-    mockUser(null);
+    mockNoUser();
     const { GET } = await import("../[id]/route");
-    const { req, params } = idReq("any-id", "/api/memory/any-id");
+    const { req, params } = idReq(mem.id, `/api/memory/${mem.id}`);
     const res = await GET(req, { params });
+
     expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+    const body = await res.json();
+    expect(body).toEqual({ ok: false, error: "Authentication required." });
+    expect(JSON.stringify(body)).not.toContain(PRIVATE_QUERY);
   });
 
-  it("returns 403 for a non-authoring (viewer) user", async () => {
+  it("returns 403 and no private content for a non-authoring (viewer) user", async () => {
+    const mem = await seedMemory();
+
     vi.resetModules();
-    mockUser("viewer");
+    mockViewer();
     const { GET } = await import("../[id]/route");
-    const { req, params } = idReq("any-id", "/api/memory/any-id");
+    const { req, params } = idReq(mem.id, `/api/memory/${mem.id}`);
     const res = await GET(req, { params });
+
     expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+    const body = await res.json();
+    expect(body).toEqual({ ok: false, error: "Insufficient permissions." });
+    expect(JSON.stringify(body)).not.toContain(PRIVATE_QUERY);
   });
 
   it("lets an authoring user through to the repository (404 for unknown id)", async () => {
@@ -393,31 +413,40 @@ describe("GET /api/memory/[id] — auth gate", () => {
   });
 });
 
-// ---- Auth gate (Phase 82C.1) — /api/memory/[id]/feedback ----
-
 describe("POST /api/memory/[id]/feedback — auth gate", () => {
-  it("returns 401 when unauthenticated", async () => {
+  it("returns 401 and writes no feedback when unauthenticated", async () => {
+    const mem = await seedMemory();
+
     vi.resetModules();
-    mockUser(null);
+    mockNoUser();
     const { POST } = await import("../[id]/feedback/route");
-    const { req, params } = idReq("any-id", "/api/memory/any-id/feedback", "POST", {
+    const { req, params } = idReq(mem.id, `/api/memory/${mem.id}/feedback`, "POST", {
       outcome: "success",
     });
     const res = await POST(req, { params });
+
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+    // Denied write leaves both stores untouched.
+    expect(feedbackStore()).toHaveLength(0);
+    expect((memoryStore()[0] as { outcome: string }).outcome).toBe("unknown");
   });
 
-  it("returns 403 for a non-authoring (viewer) user", async () => {
+  it("returns 403 and writes no feedback for a non-authoring (viewer) user", async () => {
+    const mem = await seedMemory();
+
     vi.resetModules();
-    mockUser("viewer");
+    mockViewer();
     const { POST } = await import("../[id]/feedback/route");
-    const { req, params } = idReq("any-id", "/api/memory/any-id/feedback", "POST", {
+    const { req, params } = idReq(mem.id, `/api/memory/${mem.id}/feedback`, "POST", {
       outcome: "success",
     });
     const res = await POST(req, { params });
+
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+    expect(feedbackStore()).toHaveLength(0);
+    expect((memoryStore()[0] as { outcome: string }).outcome).toBe("unknown");
   });
 
   it("lets an authoring user through to the repository (404 for unknown memory)", async () => {
@@ -430,5 +459,82 @@ describe("POST /api/memory/[id]/feedback — auth gate", () => {
     // Past the auth gate: a valid outcome for a missing memory yields 404.
     expect(res.status).toBe(404);
     expect((await res.json()).error).toBe("not_found");
+  });
+});
+
+// ---- Auth gate (Phase 82D.4) — root /api/memory ----
+
+describe("GET /api/memory — public read returns an empty list", () => {
+  it("unauthenticated GET stays 200 with { storageMode, memories: [] }", async () => {
+    await seedMemory();
+
+    vi.resetModules();
+    mockNoUser();
+    const { GET } = await import("../route");
+    const res = await GET(new Request("http://localhost/api/memory"));
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.storageMode).toBe("session");
+    expect(body.memories).toEqual([]);
+    expect(JSON.stringify(body)).not.toContain(PRIVATE_QUERY);
+  });
+
+  it("viewer (non-authoring) GET stays 200 and hides memories", async () => {
+    await seedMemory();
+
+    vi.resetModules();
+    mockViewer();
+    const { GET } = await import("../route");
+    const res = await GET(new Request("http://localhost/api/memory"));
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.memories).toEqual([]);
+    expect(JSON.stringify(body)).not.toContain(PRIVATE_QUERY);
+  });
+
+  it("authoring (engineer) GET returns the seeded memory", async () => {
+    await seedMemory();
+
+    // Default beforeEach mock is an authoring engineer.
+    const { GET } = await import("../route");
+    const body = await (await GET(new Request("http://localhost/api/memory"))).json();
+    expect(body.memories).toHaveLength(1);
+    expect(body.memories[0].query).toBe(PRIVATE_QUERY);
+  });
+});
+
+describe("POST /api/memory — write protection", () => {
+  it("returns 401 and persists nothing when unauthenticated", async () => {
+    vi.resetModules();
+    mockNoUser();
+    const { POST } = await import("../route");
+    const res = await POST(postMemory({ query: "anon memory", domain: "plc" }));
+
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: "Authentication required." });
+    expect(memoryStore()).toHaveLength(0);
+  });
+
+  it("returns 403 and persists nothing for a non-authoring (viewer) user", async () => {
+    vi.resetModules();
+    mockViewer();
+    const { POST } = await import("../route");
+    const res = await POST(postMemory({ query: "viewer memory", domain: "plc" }));
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, error: "Insufficient permissions." });
+    expect(memoryStore()).toHaveLength(0);
+  });
+
+  it("lets an authoring user create a memory", async () => {
+    // Default beforeEach mock is an authoring engineer.
+    const { POST } = await import("../route");
+    const res = await POST(postMemory({ query: "authored memory", domain: "plc" }));
+
+    expect(res.status).toBe(201);
+    expect((await res.json()).memory.query).toBe("authored memory");
+    expect(memoryStore()).toHaveLength(1);
   });
 });

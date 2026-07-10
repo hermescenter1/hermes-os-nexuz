@@ -312,4 +312,28 @@ describe("POST /api/memory/search — auth gate", () => {
     expect(body.storageMode).toBe("session");
     expect(Array.isArray(body.matches)).toBe(true);
   });
+
+  it("a denied search exposes no memory content (Phase 82D.4)", async () => {
+    const { createEngineeringMemory } = await import("@/lib/memory/memory-service");
+    await createEngineeringMemory({
+      query: "E-Stop relay latched no reset",
+      domain: "electrical",
+      analysisSummary: "Safety relay fault",
+      confidence: 85,
+      relatedCaseIds: [],
+      relatedDocumentIds: [],
+      outcome: "unknown",
+    });
+
+    vi.resetModules();
+    mockNoUser();
+    const { POST } = await import("../route");
+    const res = await POST(searchRequest({ query: "E-Stop relay latched" }));
+
+    expect(res.status).toBe(401);
+    const text = JSON.stringify(await res.json());
+    expect(text).not.toContain("E-Stop");
+    expect(text).not.toContain("Safety relay fault");
+    expect(text).not.toContain("matches");
+  });
 });
