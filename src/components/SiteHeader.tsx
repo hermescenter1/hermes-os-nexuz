@@ -1,13 +1,22 @@
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Link }            from "@/i18n/navigation";
 import { LanguageSwitch }  from "./LanguageSwitch";
 import { SiteNav }         from "./SiteNav";
 import { AuthIndicator }   from "./auth/AuthIndicator";
 import { HermesLogoMark }  from "./HermesLogo";
 import { NotificationCenter } from "./NotificationCenter";
+import { getCurrentUser }  from "@/lib/auth/session";
+import type { Role }       from "@/lib/auth/roles";
 
-export function SiteHeader() {
-  const b = useTranslations("brand");
+export async function SiteHeader() {
+  const b = await getTranslations("brand");
+
+  // Canonical platform role resolved server-side from the session, so admin nav
+  // links are filtered before render (never fetched from a client endpoint).
+  let role: Role | null = null;
+  try {
+    role = (await getCurrentUser())?.role ?? null;
+  } catch { /* unauthenticated or auth not configured */ }
 
   return (
     <header
@@ -53,7 +62,7 @@ export function SiteHeader() {
 
         {/* Nav + action cluster */}
         <div className="ms-auto flex items-center gap-3">
-          <SiteNav />
+          <SiteNav role={role} />
           <div
             className="hidden h-5 w-px shrink-0 bg-line/40 md:block"
             aria-hidden="true"

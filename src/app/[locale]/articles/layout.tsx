@@ -1,6 +1,7 @@
 import type { ReactNode }  from "react";
 import { ArticlesNav }     from "@/components/articles/ArticlesNav";
 import { getCurrentUser }  from "@/lib/auth/session";
+import { can }             from "@/lib/auth/roles";
 
 export default async function ArticlesLayout({ children }: { children: ReactNode }) {
   let isAuth  = false;
@@ -8,7 +9,9 @@ export default async function ArticlesLayout({ children }: { children: ReactNode
   try {
     const user = await getCurrentUser();
     isAuth  = !!user;
-    isAdmin = user?.role === "admin" || user?.role === "superadmin";
+    // Editorial nav is gated by the "admin" capability (matches the editorial
+    // route guards + middleware) rather than a duplicated role-name list.
+    isAdmin = can(user?.role, "admin");
   } catch { /* unauthenticated or auth not configured */ }
 
   return (

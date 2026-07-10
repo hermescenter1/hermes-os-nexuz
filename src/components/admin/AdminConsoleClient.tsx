@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { controlCenterFor } from "@/lib/navigation/control-center";
+import type { Role } from "@/lib/auth/roles";
 
 interface AuditEvent {
   id: string;
@@ -83,6 +85,13 @@ export function AdminConsoleClient({
     return map[role] ?? role;
   }, [role]);
   const tAuth = useTranslations();
+
+  // Capability-driven Control Center: every administrative, editorial and
+  // contributor destination the current role can actually reach, from the
+  // single navigation registry (no hard-coded role lists). Empty groups are
+  // dropped.
+  const isFa = locale === "fa";
+  const controlGroups = useMemo(() => controlCenterFor(role as Role), [role]);
 
   return (
     <div className="mx-auto max-w-6xl px-6 pb-16 pt-8">
@@ -186,44 +195,26 @@ export function AdminConsoleClient({
         </div>
 
         <div className="space-y-6">
-          {/* 4 — document pipeline quick-links */}
-          <section className="rounded-xl border border-line bg-surface p-5">
-            <h2 className="font-mono text-xs uppercase tracking-widest text-muted">{t("links.heading")}</h2>
-            <ul className="mt-3 space-y-1">
-              <li>
-                <Link
-                  href="/admin/documents"
-                  className="block rounded-lg px-3 py-2 font-body text-sm text-muted transition-colors hover:bg-bg hover:text-ink"
-                >
-                  {t("links.documentLibrary")}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/documents/search"
-                  className="block rounded-lg px-3 py-2 font-body text-sm text-muted transition-colors hover:bg-bg hover:text-ink"
-                >
-                  {t("links.documentSearch")}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/seo"
-                  className="block rounded-lg px-3 py-2 font-body text-sm text-signal transition-colors hover:bg-bg hover:text-ink"
-                >
-                  SEO Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/analytics"
-                  className="block rounded-lg px-3 py-2 font-body text-sm text-signal transition-colors hover:bg-bg hover:text-ink"
-                >
-                  Analytics Dashboard
-                </Link>
-              </li>
-            </ul>
-          </section>
+          {/* 4 — Control Center: capability-filtered admin/editorial/contributor nav */}
+          {controlGroups.map((group) => (
+            <section key={group.key} className="rounded-xl border border-line bg-surface p-5">
+              <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
+                {isFa ? group.labelFa : group.labelEn}
+              </h2>
+              <ul className="mt-3 space-y-1">
+                {group.items.map((item) => (
+                  <li key={item.key}>
+                    <Link
+                      href={item.href}
+                      className="block rounded-lg px-3 py-2 font-body text-sm text-muted transition-colors hover:bg-bg hover:text-ink"
+                    >
+                      {isFa ? item.labelFa : item.labelEn}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
 
           {/* 5 — system status */}
           <section className="rounded-xl border border-line bg-surface p-5">

@@ -3,120 +3,40 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
+import type { Role } from "@/lib/auth/roles";
+import { visibleSiteNavGroups, activeGroupFor } from "@/lib/navigation/site-nav";
 
 /**
- * Grouped navigation (display-only).
+ * Grouped navigation.
  *
- * Five top-level groups, each a dropdown of links to existing routes.
- * Links use the locale-aware Link from @/i18n/navigation, so the active
- * locale prefix is applied automatically (no hardcoded "/en", no
- * window.location, no plain <a>). usePathname() here is also locale-aware
- * and returns the path WITHOUT the locale prefix, so active-state matching
- * works identically in EN and FA.
+ * Six top-level groups, each a dropdown of links to existing routes. The group
+ * data + visibility policy live in @/lib/navigation/site-nav (pure + testable);
+ * this component is presentation only. Admin-only links are filtered by the
+ * server-resolved `role` prop via can(role, "admin") — so non-admins (and
+ * unauthenticated visitors) never receive admin links in the markup.
+ *
+ * Links use the locale-aware Link from @/i18n/navigation, so the active locale
+ * prefix is applied automatically (no hardcoded "/en", no window.location, no
+ * plain <a>). usePathname() here is also locale-aware and returns the path
+ * WITHOUT the locale prefix, so active-state matching works identically in EN
+ * and FA.
  *
  * Dropdowns close on route change (via the pathname effect), never by
- * unmounting the link synchronously on click — that previously swallowed
- * the navigation before it fired.
+ * unmounting the link synchronously on click — that previously swallowed the
+ * navigation before it fired.
  */
 
-interface NavItem {
-  labelKey: string; // under nav.items
-  href: string; // locale-agnostic route; Link adds the prefix
-}
-interface NavGroup {
-  groupKey: string; // under nav.groups
-  items: NavItem[];
-}
-
-const GROUPS: NavGroup[] = [
-  {
-    groupKey: "platform",
-    items: [
-      { labelKey: "overview", href: "/" },
-      { labelKey: "architecture", href: "/architecture" },
-      { labelKey: "servicesItem", href: "/services" },
-    ],
-  },
-  {
-    groupKey: "intelligence",
-    items: [
-      { labelKey: "brain", href: "/brain" },
-      { labelKey: "industrialBrain", href: "/industrial-brain" },
-      { labelKey: "copilot", href: "/copilot" },
-      { labelKey: "unknownCenter", href: "/intelligence/unknown" },
-      { labelKey: "discover", href: "/articles/discover" },
-    ],
-  },
-  {
-    groupKey: "operations",
-    items: [
-      { labelKey: "dashboard",       href: "/dashboard" },
-      { labelKey: "opsCenter",      href: "/dashboard/operations" },
-      { labelKey: "atsPortal",      href: "/dashboard/ats" },
-      { labelKey: "csCenter",       href: "/dashboard/customers" },
-      { labelKey: "careersBoard",   href: "/careers" },
-      { labelKey: "candidatePortal",href: "/candidate" },
-      { labelKey: "academy",        href: "/academy" },
-      { labelKey: "compliance",     href: "/compliance" },
-      { labelKey: "privacyCenter",  href: "/privacy-center" },
-      { labelKey: "admin",          href: "/admin" },
-      { labelKey: "documents",   href: "/admin/documents" },
-      { labelKey: "documentSearch", href: "/admin/documents/search" },
-      { labelKey: "assetRegistry", href: "/assets/dashboard" },
-    ],
-  },
-  {
-    groupKey: "knowledge",
-    items: [
-      { labelKey: "library",        href: "/library" },
-      { labelKey: "cases",          href: "/library/cases" },
-      { labelKey: "caseStudio",     href: "/knowledge/case-studio" },
-      { labelKey: "knowledgeStudio",href: "/knowledge/studio" },
-      { labelKey: "engGraph",       href: "/dashboard/knowledge-graph" },
-    ],
-  },
-  {
-    groupKey: "journal",
-    items: [
-      { labelKey: "journalFeed",       href: "/articles" },
-      { labelKey: "journalLatest",     href: "/articles/latest" },
-      { labelKey: "journalTrending",   href: "/articles/trending" },
-      { labelKey: "journalAuthors",    href: "/articles/authors" },
-      { labelKey: "journalCategories", href: "/articles/categories" },
-    ],
-  },
-  {
-    groupKey: "services",
-    items: [
-      { labelKey: "about", href: "/about" },
-      { labelKey: "contact", href: "/contact" },
-      { labelKey: "demo", href: "/demo" },
-    ],
-  },
-];
-
-/** Which group owns the current path (locale-stripped), for active state. */
-function activeGroupFor(pathname: string): string | null {
-  // longest-prefix match so /library/cases resolves to knowledge, /library too
-  let best: { key: string; len: number } | null = null;
-  for (const g of GROUPS) {
-    for (const it of g.items) {
-      const h = it.href;
-      const match = h === "/" ? pathname === "/" : pathname === h || pathname.startsWith(h + "/");
-      if (match && (!best || h.length > best.len)) best = { key: g.groupKey, len: h.length };
-    }
-  }
-  return best?.key ?? null;
-}
-
-export function SiteNav() {
+export function SiteNav({ role }: { role: Role | null }) {
   const t = useTranslations("nav");
   const pathname = usePathname(); // locale-stripped, e.g. "/library/cases"
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
 
-  const activeGroup = activeGroupFor(pathname);
+  // Role is resolved server-side and passed in, so the same value is used for
+  // SSR and hydration → no flash of admin links, no hydration mismatch.
+  const GROUPS = visibleSiteNavGroups(role);
+  const activeGroup = activeGroupFor(pathname, GROUPS);
 
   // Close menus on route change — this is what closes the dropdown after a
   // link is clicked, WITHOUT unmounting the link mid-click.
