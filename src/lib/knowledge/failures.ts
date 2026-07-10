@@ -15,10 +15,11 @@ import type {
 } from "./types";
 
 type FMModel = {
-  create:   (a: unknown) => Promise<Record<string, unknown>>;
-  findMany: (a: unknown) => Promise<Record<string, unknown>[]>;
-  findFirst:(a: unknown) => Promise<Record<string, unknown> | null>;
-  update:   (a: unknown) => Promise<Record<string, unknown>>;
+  create:     (a: unknown) => Promise<Record<string, unknown>>;
+  findMany:   (a: unknown) => Promise<Record<string, unknown>[]>;
+  findFirst:  (a: unknown) => Promise<Record<string, unknown> | null>;
+  update:     (a: unknown) => Promise<Record<string, unknown>>;
+  updateMany: (a: unknown) => Promise<{ count: number }>;
 };
 type RCModel  = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
 type ProcModel = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
@@ -172,6 +173,14 @@ export async function createFailureMode(
   } catch { return null; }
 }
 
+/** Fields a client may mutate through PATCH. Server-owned columns
+ *  (id, organizationId, nameNorm, createdAt, updatedAt) are excluded —
+ *  never spread a raw request body into Prisma. */
+const FAILURE_MODE_MUTABLE_FIELDS = [
+  "name", "description", "severity", "symptoms", "assetTypes", "keywords",
+  "sourceType", "categoryId",
+] as const;
+
 export async function updateFailureMode(
   organizationId: string,
   id:             string,
@@ -180,10 +189,20 @@ export async function updateFailureMode(
   const m = await fmModel();
   if (!m) return null;
   try {
-    const data: Record<string, unknown> = { ...input };
-    if (input.name) data.nameNorm = normalizeText(input.name);
-    const row = await m.update({ where: { id }, data });
-    return rowToFM(row);
+    const src = input as Record<string, unknown>;
+    const data: Record<string, unknown> = {};
+    for (const k of FAILURE_MODE_MUTABLE_FIELDS) {
+      if (src[k] !== undefined) data[k] = src[k];
+    }
+    if (typeof data.name === "string" && data.name) {
+      data.nameNorm = normalizeText(data.name);
+    }
+    // Tenant-scoped write: a failure mode owned by another org cannot be
+    // mutated even if its id is known (Phase 82E.0 — cross-tenant IDOR write).
+    const res = await m.updateMany({ where: { id, organizationId }, data });
+    if (!res || res.count === 0) return null;
+    const row = await m.findFirst({ where: { id, organizationId } });
+    return row ? rowToFM(row) : null;
   } catch { return null; }
 }
 

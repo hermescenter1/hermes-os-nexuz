@@ -16,11 +16,12 @@ import { KNOWLEDGE_ENGINE_VERSION } from "./types";
 import type { ArticleRecord, AssetKnowledgeLinkRecord } from "./types";
 
 type ArtModel = {
-  create:   (a: unknown) => Promise<Record<string, unknown>>;
-  findMany: (a: unknown) => Promise<Record<string, unknown>[]>;
-  findFirst:(a: unknown) => Promise<Record<string, unknown> | null>;
-  update:   (a: unknown) => Promise<Record<string, unknown>>;
-  delete:   (a: unknown) => Promise<Record<string, unknown>>;
+  create:     (a: unknown) => Promise<Record<string, unknown>>;
+  findMany:   (a: unknown) => Promise<Record<string, unknown>[]>;
+  findFirst:  (a: unknown) => Promise<Record<string, unknown> | null>;
+  update:     (a: unknown) => Promise<Record<string, unknown>>;
+  updateMany: (a: unknown) => Promise<{ count: number }>;
+  delete:     (a: unknown) => Promise<Record<string, unknown>>;
 };
 type LinkModel = {
   create:   (a: unknown) => Promise<Record<string, unknown>>;
@@ -132,6 +133,13 @@ export async function createArticle(
   } catch { return null; }
 }
 
+/** Fields a client may mutate through PATCH. Server-owned columns
+ *  (id, organizationId, authorId, version, titleNorm, createdAt, updatedAt)
+ *  are deliberately excluded — never spread a raw request body into Prisma. */
+const ARTICLE_MUTABLE_FIELDS = [
+  "title", "summary", "content", "keywords", "sourceType", "categoryId", "status",
+] as const;
+
 export async function updateArticle(
   organizationId: string,
   id:             string,
@@ -149,10 +157,20 @@ export async function updateArticle(
   const m = await artModel();
   if (!m) return null;
   try {
-    const data: Record<string, unknown> = { ...input, version: currentVersion + 1 };
-    if (input.title) data.titleNorm = normalizeText(input.title);
-    const row = await m.update({ where: { id }, data });
-    return rowToArticle(row);
+    const src = input as Record<string, unknown>;
+    const data: Record<string, unknown> = { version: currentVersion + 1 };
+    for (const k of ARTICLE_MUTABLE_FIELDS) {
+      if (src[k] !== undefined) data[k] = src[k];
+    }
+    if (typeof data.title === "string" && data.title) {
+      data.titleNorm = normalizeText(data.title);
+    }
+    // Tenant-scoped write: the mutation itself is bounded by organizationId,
+    // so a record owned by another org cannot be touched even if its id leaks.
+    const res = await m.updateMany({ where: { id, organizationId }, data });
+    if (!res || res.count === 0) return null;
+    const row = await m.findFirst({ where: { id, organizationId } });
+    return row ? rowToArticle(row) : null;
   } catch { return null; }
 }
 

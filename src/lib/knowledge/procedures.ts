@@ -108,6 +108,14 @@ export async function createProcedure(
  * Update a maintenance procedure (safety-bearing).
  * Increments version + writes audit diff with changedFields.
  */
+/** Fields a client may mutate through PATCH. Server-owned columns
+ *  (id, organizationId, version, titleNorm, createdAt, updatedAt) are
+ *  excluded — never spread a raw request body into Prisma. */
+const PROCEDURE_MUTABLE_FIELDS = [
+  "title", "categoryId", "description", "steps", "assetTypes", "estimatedHours",
+  "requiredRoles", "safetyNotes", "sourceType", "status", "approvedById", "approvedAt",
+] as const;
+
 export async function updateProcedure(
   organizationId: string,
   id:             string,
@@ -123,11 +131,22 @@ export async function updateProcedure(
 
     const prevVersion  = current.version as number;
     const nextVersion  = prevVersion + 1;
-    const changedFields = Object.keys(input).filter((k) => (input as Record<string, unknown>)[k] !== undefined);
 
-    const data: Record<string, unknown> = { ...input, version: nextVersion };
-    if (input.title) data.titleNorm = normalizeText(input.title as string);
+    // Allowlist mutable fields — never spread a raw request body into Prisma,
+    // so server-owned columns (id, organizationId, version, titleNorm, …)
+    // cannot be reassigned through the PATCH payload (Phase 82E.0).
+    const src = input as Record<string, unknown>;
+    const data: Record<string, unknown> = { version: nextVersion };
+    for (const k of PROCEDURE_MUTABLE_FIELDS) {
+      if (src[k] !== undefined) data[k] = src[k];
+    }
+    const changedFields = PROCEDURE_MUTABLE_FIELDS.filter((k) => src[k] !== undefined);
+    if (typeof data.title === "string" && data.title) {
+      data.titleNorm = normalizeText(data.title);
+    }
 
+    // The target was already confirmed to belong to organizationId via the
+    // scoped findFirst above, and organizationId is not a mutable field.
     const row = await m.update({ where: { id }, data });
 
     // Audit diff — mandatory for safety-bearing procedures

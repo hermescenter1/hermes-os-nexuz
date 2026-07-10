@@ -13,10 +13,11 @@ import type { CaseRecord } from "./types";
 import { _rowToCase } from "./failures";
 
 type CaseModel = {
-  create:   (a: unknown) => Promise<Record<string, unknown>>;
-  findMany: (a: unknown) => Promise<Record<string, unknown>[]>;
-  findFirst:(a: unknown) => Promise<Record<string, unknown> | null>;
-  update:   (a: unknown) => Promise<Record<string, unknown>>;
+  create:     (a: unknown) => Promise<Record<string, unknown>>;
+  findMany:   (a: unknown) => Promise<Record<string, unknown>[]>;
+  findFirst:  (a: unknown) => Promise<Record<string, unknown> | null>;
+  update:     (a: unknown) => Promise<Record<string, unknown>>;
+  updateMany: (a: unknown) => Promise<{ count: number }>;
 };
 
 async function caseModel(): Promise<CaseModel | null> {
@@ -106,22 +107,42 @@ export async function createCase(
   } catch { return null; }
 }
 
+/** Fields a client may mutate through PATCH. Server-owned columns
+ *  (id, organizationId, titleNorm, createdAt, updatedAt) are excluded —
+ *  never spread a raw request body into Prisma. */
+const CASE_MUTABLE_FIELDS = [
+  "title", "symptoms", "diagnosis", "resolution", "lessonsLearned", "assetTypes",
+  "assetId", "siteId", "failureModeId", "keywords", "status", "severity",
+  "reportedById", "resolvedAt",
+] as const;
+
 export async function updateCase(
   organizationId: string,
   id:             string,
   input: Partial<Omit<CaseRecord, "id" | "organizationId" | "createdAt" | "updatedAt" | "titleNorm">>,
   userId?: string,
 ): Promise<CaseRecord | null> {
+  void userId; // accepted for signature/route compatibility; not persisted here
   const m = await caseModel();
   if (!m) return null;
   try {
-    const data: Record<string, unknown> = { ...input };
-    if (input.title) data.titleNorm = normalizeText(input.title as string);
-    if (input.status === "resolved" && !input.resolvedAt) {
+    const src = input as Record<string, unknown>;
+    const data: Record<string, unknown> = {};
+    for (const k of CASE_MUTABLE_FIELDS) {
+      if (src[k] !== undefined) data[k] = src[k];
+    }
+    if (typeof data.title === "string" && data.title) {
+      data.titleNorm = normalizeText(data.title);
+    }
+    if (data.status === "resolved" && data.resolvedAt == null) {
       data.resolvedAt = new Date();
     }
-    const row = await m.update({ where: { id }, data });
-    return _rowToCase(row);
+    // Tenant-scoped write: a case owned by another org cannot be mutated even
+    // if its id is known (Phase 82E.0 — closes cross-tenant IDOR write).
+    const res = await m.updateMany({ where: { id, organizationId }, data });
+    if (!res || res.count === 0) return null;
+    const row = await m.findFirst({ where: { id, organizationId } });
+    return row ? _rowToCase(row) : null;
   } catch { return null; }
 }
 
