@@ -17,9 +17,12 @@ export async function generateMetadata({
   if (!article || article.status !== "PUBLISHED" || article.visibility !== "PUBLIC") {
     return { title: "Article Not Found", robots: { index: false, follow: false } };
   }
+  // Build canonical + hreflang URLs from the PERSISTED slug, never the raw route
+  // param (which may be percent-encoded or NFD). Keeps one canonical URL per
+  // article regardless of how the incoming request encoded the slug (Phase 83).
   return buildMetadata({
     locale,
-    path:          `/articles/${slug}`,
+    path:          `/articles/${article.slug}`,
     title:         article.seoTitle  ?? article.title,
     description:   article.seoDescription ?? article.excerpt ?? "",
     noIndex:       article.noIndex || article.status !== "PUBLISHED",

@@ -11,6 +11,7 @@ import {
   getEditorsPicks, getCaseStudies, getAuthorByHandle,
 } from "./mock-data";
 import { getPrisma } from "@/lib/db/prisma";
+import { normalizeArticleSlug } from "./slug";
 
 function ts<T extends object>(row: T): T {
   const out: Record<string, unknown> = {};
@@ -133,6 +134,13 @@ export async function getPublicArticles(filters: ArticleFilters = {}): Promise<A
 }
 
 export async function getArticleDetailBySlug(slug: string): Promise<ArticleDetail | null> {
+  // Canonicalize the route slug BEFORE any lookup: decode percent-encoding once,
+  // NFC-normalize, and reject unsafe values. A Persian slug arriving encoded or
+  // in NFD form is byte-different from the persisted NFC slug and would 404 on
+  // an exact match otherwise (Phase 83). null => never hits the DB => notFound().
+  const lookupSlug = normalizeArticleSlug(slug);
+  if (!lookupSlug) return null;
+
   const db = await getDb();
   if (db) {
     try {
@@ -142,7 +150,7 @@ export async function getArticleDetailBySlug(slug: string): Promise<ArticleDetai
       const row = await (db as never as {
         article: { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
       }).article.findFirst({
-        where: { slug },
+        where: { slug: lookupSlug },
         include: {
           author:            true,
           category:          true,
@@ -178,12 +186,12 @@ export async function getArticleDetailBySlug(slug: string): Promise<ArticleDetai
       // Do NOT fall through to mock-data when the DB is reachable —
       // that would hide valid published articles from the public.
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[db/articles] getArticleDetailBySlug slug="${slug.slice(0, 80)}" error: ${msg}`);
+      console.error(`[db/articles] getArticleDetailBySlug slug="${lookupSlug.slice(0, 80)}" error: ${msg}`);
       return null;
     }
   }
   // DB is unavailable — fall back to mock for offline/dev mode.
-  return getArticleBySlug(slug) ?? null;
+  return getArticleBySlug(lookupSlug) ?? null;
 }
 
 export async function getTrendingArticlesList(limit = 8): Promise<ArticleListItem[]> {
