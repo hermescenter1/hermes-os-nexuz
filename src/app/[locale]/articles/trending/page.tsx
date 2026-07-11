@@ -1,19 +1,16 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getArticleFeed }   from "@/lib/articles/db";
 import { ArticlesFeedClient } from "@/components/articles/ArticlesFeedClient";
 import { buildMetadata }    from "@/lib/seo/metadata";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "journal" });
   return buildMetadata({
     locale,
     path:        "/articles/trending",
-    title:       locale === "fa"
-      ? "مقالات پرطرفدار — ژورنال صنعتی هرمس"
-      : "Trending Articles — Hermes Industrial Journal",
-    description: locale === "fa"
-      ? "محبوب‌ترین مقالات تخصصی صنعتی در هرمس"
-      : "Most popular industrial technical articles on Hermes",
+    title:       t("meta.trendingTitle"),
+    description: t("meta.trendingDescription"),
   });
 }
 

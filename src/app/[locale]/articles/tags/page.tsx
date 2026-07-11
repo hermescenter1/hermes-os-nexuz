@@ -1,19 +1,16 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getAllTags }        from "@/lib/articles/db";
 import { buildMetadata }    from "@/lib/seo/metadata";
 import Link                  from "next/link";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "journal" });
   return buildMetadata({
     locale,
     path:        "/articles/tags",
-    title:       locale === "fa"
-      ? "برچسب‌های مقالات — ژورنال صنعتی هرمس"
-      : "Article Tags — Hermes Industrial Journal",
-    description: locale === "fa"
-      ? "مرور برچسب‌های تخصصی مقالات صنعتی در هرمس"
-      : "Browse all industrial article tags on Hermes",
+    title:       t("meta.tagsTitle"),
+    description: t("meta.tagsDescription"),
   });
 }
 
@@ -27,6 +24,7 @@ export default async function TagsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const isFa = locale === "fa";
+  const t     = await getTranslations({ locale, namespace: "journal" });
   const tags  = await getAllTags();
 
   const maxCount = Math.max(...tags.map(t => t.articleCount ?? 0), 1);
@@ -51,15 +49,13 @@ export default async function TagsPage({
 
         <div className="relative max-w-4xl mx-auto px-6 py-12">
           <p className="eyebrow-mono text-signal text-[9px] mb-3 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+            {t("brandUpper")}
           </p>
           <h1 className="text-3xl md:text-4xl font-bold text-ink mb-3">
-            {isFa ? "برچسب‌های تخصصی" : "Industrial Tags"}
+            {t("browse.tagsHeading")}
           </h1>
           <p className="text-muted text-sm">
-            {isFa
-              ? `${tags.length} برچسب تخصصی صنعتی — اندازه بر اساس تعداد مقالات`
-              : `${tags.length} specialized industrial tags — size indicates article count`}
+            {t("browse.tagsCount", { count: String(tags.length) })}
           </p>
         </div>
       </div>
@@ -69,7 +65,7 @@ export default async function TagsPage({
         <div className="flex items-center gap-2.5 mb-8">
           <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
           <p className="text-xs font-bold text-faint uppercase tracking-widest font-mono">
-            {isFa ? "ابر برچسب‌ها" : "TAG CLOUD"}
+            {t("browse.tagCloud")}
           </p>
         </div>
 

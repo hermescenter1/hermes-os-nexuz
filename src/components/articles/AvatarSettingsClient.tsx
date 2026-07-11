@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface Props {
   initialAvatarUrl: string | null;
   displayName:      string;
-  isFa:             boolean;
 }
 
 function AvatarImage({ src, alt, size }: { src: string; alt: string; size: "lg" }) {
@@ -25,7 +25,9 @@ function Initials({ name }: { name: string }) {
   );
 }
 
-export function AvatarSettingsClient({ initialAvatarUrl, displayName, isFa }: Props) {
+export function AvatarSettingsClient({ initialAvatarUrl, displayName }: Props) {
+  const t  = useTranslations("journalWriter");
+  const tj = useTranslations("journal");
   // persistedUrl: what's saved in DB (updated after successful upload/remove)
   const [persistedUrl, setPersistedUrl] = useState<string | null>(initialAvatarUrl);
   // previewUrl: local object URL for immediate preview before upload completes; cleared after upload
@@ -44,17 +46,17 @@ export function AvatarSettingsClient({ initialAvatarUrl, displayName, isFa }: Pr
   }, [previewUrl]);
 
   const T = {
-    title:      isFa ? "تنظیمات پروفایل نویسنده"        : "Author Profile Settings",
-    section:    isFa ? "عکس پروفایل"                    : "Profile Photo",
-    hint:       isFa ? "فقط JPG، PNG یا WebP تا ۲ مگابایت مجاز است." : "JPG, PNG, or WebP up to 2MB only.",
-    upload:     isFa ? "بارگذاری عکس"                   : "Upload Photo",
-    change:     isFa ? "تغییر عکس"                      : "Change Photo",
-    remove:     isFa ? "حذف عکس"                        : "Remove Photo",
-    successUp:  isFa ? "عکس پروفایل به‌روزرسانی شد."    : "Profile photo updated.",
-    successDel: isFa ? "عکس پروفایل حذف شد."            : "Profile photo removed.",
-    errType:    isFa ? "فایل مجاز نیست. فقط JPG، PNG یا WebP." : "Invalid file. JPG, PNG, or WebP only.",
-    errSize:    isFa ? "فایل بیش از ۲ مگابایت است."    : "File exceeds 2MB limit.",
-    errGeneric: isFa ? "خطا در بارگذاری. دوباره تلاش کنید." : "Upload failed. Please try again.",
+    title:      t("settings.title"),
+    section:    t("settings.section"),
+    hint:       t("settings.hint"),
+    upload:     t("settings.upload"),
+    change:     t("settings.change"),
+    remove:     t("settings.remove"),
+    successUp:  t("settings.successUp"),
+    successDel: t("settings.successDel"),
+    errType:    t("settings.errType"),
+    errSize:    t("settings.errSize"),
+    errGeneric: t("settings.errGeneric"),
   };
 
   function flashBanner(ok: boolean, msg: string) {
@@ -153,11 +155,11 @@ export function AvatarSettingsClient({ initialAvatarUrl, displayName, isFa }: Pr
           style={{ backgroundImage: "radial-gradient(rgba(30,200,164,0.14) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
         <div className="relative max-w-2xl mx-auto px-6 py-10">
           <p className="eyebrow-mono text-signal text-[9px] mb-2 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+            {tj("brandUpper")}
           </p>
           <h1 className="text-2xl font-bold text-ink">{T.title}</h1>
           <p className="text-xs text-muted mt-1">
-            {isFa ? "مدیریت عکس پروفایل نویسنده" : "Manage your author profile photo"}
+            {t("settings.subtitle")}
           </p>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import Link       from "next/link";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 // Renders WITHIN articles/layout.tsx and [locale]/layout.tsx — no <html>/<body>.
 // Called by Next.js App Router when notFound() is thrown from the [slug] page
@@ -10,7 +10,7 @@ export default async function ArticleSlugNotFound() {
     locale = await getLocale();
   } catch { /* middleware header not set — default to fa */ }
 
-  const isFa = locale === "fa";
+  const t = await getTranslations({ locale, namespace: "journal" });
 
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-6 text-center">
@@ -21,7 +21,7 @@ export default async function ArticleSlugNotFound() {
       <div className="relative z-10 flex flex-col items-center">
         {/* Signal badge */}
         <p className="text-[9px] font-mono text-signal uppercase tracking-[0.25em] mb-5">
-          {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+          {t("brandUpper")}
         </p>
 
         {/* 404 numeral */}
@@ -31,14 +31,12 @@ export default async function ArticleSlugNotFound() {
 
         {/* Headline */}
         <h1 className="text-xl font-bold text-ink mb-3 -mt-4">
-          {isFa ? "مقاله یافت نشد" : "Article Not Found"}
+          {t("notFound.title")}
         </h1>
 
         {/* Body */}
         <p className="text-sm text-muted max-w-sm mb-8 leading-relaxed">
-          {isFa
-            ? "مقاله‌ای که به دنبال آن هستید وجود ندارد، هنوز منتشر نشده، یا دسترسی به آن محدود شده است."
-            : "The article you are looking for does not exist, has not been published yet, or access is restricted."}
+          {t("notFound.body")}
         </p>
 
         {/* CTA */}
@@ -49,7 +47,7 @@ export default async function ArticleSlugNotFound() {
           <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
             <path fillRule="evenodd" d="M9.707 16.707a1 1 0 0 1-1.414 0l-6-6a1 1 0 0 1 0-1.414l6-6a1 1 0 0 1 1.414 1.414L5.414 9H17a1 1 0 1 1 0 2H5.414l4.293 4.293a1 1 0 0 1 0 1.414Z" clipRule="evenodd"/>
           </svg>
-          {isFa ? "بازگشت به ژورنال" : "Back to Journal"}
+          {t("notFound.back")}
         </Link>
       </div>
     </div>

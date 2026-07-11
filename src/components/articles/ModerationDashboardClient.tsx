@@ -2,7 +2,7 @@
 
 import { useState }    from "react";
 import Link             from "next/link";
-import { useLocale }   from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ArticleListItem } from "@/lib/articles/types";
 
 function fmtDate(d: string, isFa = false) {
@@ -19,16 +19,17 @@ function fmtNum(n: number) {
   return String(n);
 }
 
-function statusConfig(s: string): { color: string; dot: string; label_en: string; label_fa: string } {
-  const map: Record<string, { color: string; dot: string; label_en: string; label_fa: string }> = {
-    DRAFT:      { color: "bg-surface3 text-faint border-line/40",          dot: "bg-faint",   label_en: "Draft",     label_fa: "پیش‌نویس"  },
-    SUBMITTED:  { color: "bg-warn/[0.10] text-warn border-warn/20",        dot: "bg-warn",    label_en: "Submitted", label_fa: "ارسال‌شده"  },
-    IN_REVIEW:  { color: "bg-ice/[0.10] text-ice border-ice/20",           dot: "bg-ice",     label_en: "In Review", label_fa: "در بررسی"   },
-    PUBLISHED:  { color: "bg-signal/[0.10] text-signal border-signal/20",  dot: "bg-signal",  label_en: "Published", label_fa: "منتشرشده"   },
-    REJECTED:   { color: "bg-danger/[0.10] text-danger border-danger/20",  dot: "bg-danger",  label_en: "Rejected",  label_fa: "رد شده"     },
-    ARCHIVED:   { color: "bg-surface3 text-muted border-line/40",          dot: "bg-muted",   label_en: "Archived",  label_fa: "آرشیوشده"   },
+// Status → badge CSS (label comes from journalEditorial.modStatus.*)
+function statusStyle(s: string): { color: string; dot: string } {
+  const map: Record<string, { color: string; dot: string }> = {
+    DRAFT:      { color: "bg-surface3 text-faint border-line/40",          dot: "bg-faint"   },
+    SUBMITTED:  { color: "bg-warn/[0.10] text-warn border-warn/20",        dot: "bg-warn"    },
+    IN_REVIEW:  { color: "bg-ice/[0.10] text-ice border-ice/20",           dot: "bg-ice"     },
+    PUBLISHED:  { color: "bg-signal/[0.10] text-signal border-signal/20",  dot: "bg-signal"  },
+    REJECTED:   { color: "bg-danger/[0.10] text-danger border-danger/20",  dot: "bg-danger"  },
+    ARCHIVED:   { color: "bg-surface3 text-muted border-line/40",          dot: "bg-muted"   },
   };
-  return map[s] ?? { color: "bg-surface3 text-faint border-line/40", dot: "bg-faint", label_en: s, label_fa: s };
+  return map[s] ?? { color: "bg-surface3 text-faint border-line/40", dot: "bg-faint" };
 }
 
 interface ArticleActionState {
@@ -51,6 +52,8 @@ interface Props {
 export function ModerationDashboardClient({ articles, mode }: Props) {
   const locale = useLocale();
   const isFa   = locale === "fa";
+  const t      = useTranslations("journalEditorial");
+  const tj     = useTranslations("journal");
 
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch]             = useState("");
@@ -64,6 +67,9 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
     setActionStates(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultState), ...delta } }));
   }
 
+  const statusLabel = (s: string) =>
+    t.has(`modStatus.${s}`) ? t(`modStatus.${s}`) : s;
+
   async function handleApprove(id: string) {
     const st = getState(id);
     if (st.loading) return;
@@ -74,13 +80,13 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
       if (!res.ok) {
         const errMsg = typeof (data as { error?: string }).error === "string"
           ? (data as { error: string }).error
-          : (isFa ? "خطا در تأیید مقاله" : "Approval failed");
+          : t("mod.errApprove");
         patch(id, { loading: false, error: errMsg });
         return;
       }
       patch(id, { loading: false, overrideStatus: "PUBLISHED", error: null });
     } catch {
-      patch(id, { loading: false, error: isFa ? "خطای شبکه" : "Network error" });
+      patch(id, { loading: false, error: t("mod.errNetwork") });
     }
   }
 
@@ -106,13 +112,13 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
       if (!res.ok) {
         const errMsg = typeof (data as { error?: string }).error === "string"
           ? (data as { error: string }).error
-          : (isFa ? "خطا در رد مقاله" : "Rejection failed");
+          : t("mod.errReject");
         patch(id, { loading: false, error: errMsg });
         return;
       }
       patch(id, { loading: false, overrideStatus: "REJECTED", showRejectForm: false, rejectReason: "", error: null });
     } catch {
-      patch(id, { loading: false, error: isFa ? "خطای شبکه" : "Network error" });
+      patch(id, { loading: false, error: t("mod.errNetwork") });
     }
   }
 
@@ -135,14 +141,21 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
     rejected:  articles.filter(a => (getState(a.id).overrideStatus ?? a.status) === "REJECTED").length,
   };
 
-  const titles: Record<Props["mode"], { en: string; fa: string }> = {
-    moderation:    { en: "Content Moderation",   fa: "اعتدال محتوا"       },
-    submissions:   { en: "Submitted Articles",   fa: "مقالات ارسال‌شده"   },
-    "review-queue":{ en: "Review Queue",         fa: "صف بررسی"           },
-    reports:       { en: "Content Reports",      fa: "گزارش‌های محتوا"    },
-    editorial:     { en: "Editorial Dashboard",  fa: "داشبورد تحریریه"    },
-    all:           { en: "All Articles",         fa: "همه مقالات"         },
+  const titleKey: Record<Props["mode"], string> = {
+    moderation:     "mod.titleModeration",
+    submissions:    "mod.titleSubmissions",
+    "review-queue": "mod.titleReviewQueue",
+    reports:        "mod.titleReports",
+    editorial:      "mod.titleEditorial",
+    all:            "mod.titleAll",
   };
+
+  const statCards = [
+    { label: t("mod.statTotal"),     value: stats.total,     color: "text-ink",    border: "border-line/40",   bg: "bg-surface/50"  },
+    { label: t("mod.statPending"),   value: stats.pending,   color: "text-warn",   border: "border-warn/15",   bg: "bg-warn/5"      },
+    { label: t("mod.statPublished"), value: stats.published, color: "text-signal", border: "border-signal/15", bg: "bg-signal/5"    },
+    { label: t("mod.statRejected"),  value: stats.rejected,  color: "text-danger", border: "border-danger/15", bg: "bg-danger/5"    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -155,27 +168,20 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
           style={{ background: "rgba(30,200,164,0.05)" }} />
         <div className="relative">
           <p className="eyebrow-mono text-signal text-[9px] mb-2 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس — مدیریت محتوا" : "HERMES INDUSTRIAL JOURNAL — EDITORIAL"}
+            {t("mod.brand")}
           </p>
           <h1 className="text-2xl font-bold text-ink">
-            {isFa ? titles[mode].fa : titles[mode].en}
+            {t(titleKey[mode])}
           </h1>
           <p className="text-xs text-muted mt-1">
-            {isFa
-              ? `${filtered.length} مورد از ${articles.length} کل`
-              : `${filtered.length} of ${articles.length} total`}
+            {t("mod.countOfTotal", { filtered: String(filtered.length), total: String(articles.length) })}
           </p>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: isFa ? "کل مقالات" : "Total",    value: stats.total,     color: "text-ink",    border: "border-line/40",   bg: "bg-surface/50"  },
-          { label: isFa ? "در انتظار" : "Pending",   value: stats.pending,   color: "text-warn",   border: "border-warn/15",   bg: "bg-warn/5"      },
-          { label: isFa ? "منتشرشده" : "Published",  value: stats.published, color: "text-signal", border: "border-signal/15", bg: "bg-signal/5"    },
-          { label: isFa ? "رد شده" : "Rejected",     value: stats.rejected,  color: "text-danger", border: "border-danger/15", bg: "bg-danger/5"    },
-        ].map(s => (
+        {statCards.map(s => (
           <div key={s.label} className={`rounded-xl p-4 border ${s.border} ${s.bg}`}>
             <p className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</p>
             <p className="text-[10px] text-faint mt-1 uppercase tracking-wider font-mono">{s.label}</p>
@@ -188,7 +194,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
         <div className="relative">
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder={isFa ? "جست‌وجو در مقالات…" : "Search articles…"}
+            placeholder={t("mod.searchPlaceholder")}
             className="bg-surface/80 border border-line/60 text-sm text-ink rounded-xl px-4 py-2 ps-9 focus:outline-none focus:border-signal/40 w-52 placeholder:text-faint"
           />
           <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-faint absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -197,10 +203,8 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
         </div>
         <div className="flex flex-wrap gap-1.5">
           {statuses.map(s => {
-            const cfg = statusConfig(s);
-            const label = s === "ALL"
-              ? (isFa ? "همه وضعیت‌ها" : "All Statuses")
-              : (isFa ? cfg.label_fa : cfg.label_en);
+            const cfg   = statusStyle(s);
+            const label = s === "ALL" ? t("mod.allStatuses") : statusLabel(s);
             return (
               <button key={s} type="button" onClick={() => setStatusFilter(s)}
                 className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all font-mono ${
@@ -224,14 +228,14 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
               <path fillRule="evenodd" d="M4 4a2 2 0 0 1 2-2h4.586A2 2 0 0 1 12 2.586L15.414 6A2 2 0 0 1 16 7.414V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Z" clipRule="evenodd"/>
             </svg>
           </div>
-          <p className="text-muted text-sm">{isFa ? "موردی یافت نشد" : "No articles found"}</p>
+          <p className="text-muted text-sm">{t("mod.noArticles")}</p>
         </div>
       ) : (
         <div className="space-y-2.5">
           {filtered.map(a => {
             const st          = getState(a.id);
             const effStatus   = st.overrideStatus ?? a.status;
-            const cfg         = statusConfig(effStatus);
+            const cfg         = statusStyle(effStatus);
             const isPending   = effStatus === "SUBMITTED" || effStatus === "IN_REVIEW";
             const isPublished = effStatus === "PUBLISHED";
             const isDone      = st.overrideStatus !== null;
@@ -253,10 +257,10 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                         <span className="text-sm font-semibold text-ink line-clamp-1">{a.title}</span>
                       )}
                       <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase tracking-wider ${cfg.color}`}>
-                        {isFa ? cfg.label_fa : cfg.label_en}
+                        {statusLabel(effStatus)}
                       </span>
                       {a.author.verifiedExpert && (
-                        <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "متخصص" : "EXPERT"}</span>
+                        <span className="hs-badge hs--knowledge text-[9px]">{tj("badge.expert")}</span>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-[10px] text-faint font-mono">
@@ -270,7 +274,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                       <span className="text-line">·</span>
                       <span>{fmtDate(a.updatedAt, isFa)}</span>
                       <span className="text-line">·</span>
-                      <span>{fmtNum(a.viewCount)} {isFa ? "بازدید" : "views"}</span>
+                      <span>{fmtNum(a.viewCount)} {tj("viewsUnit")}</span>
                     </div>
 
                     {st.error && (
@@ -278,9 +282,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                     )}
                     {isDone && (
                       <p className="mt-1.5 text-[10px] text-signal font-mono">
-                        {effStatus === "PUBLISHED"
-                          ? (isFa ? "✓ مقاله منتشر شد" : "✓ Article published")
-                          : (isFa ? "✓ مقاله رد شد" : "✓ Article rejected")}
+                        {effStatus === "PUBLISHED" ? t("mod.publishedMsg") : t("mod.rejectedMsg")}
                       </p>
                     )}
                   </div>
@@ -290,7 +292,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                     {isPublished && (
                       <Link href={`/${locale}/articles/${a.slug}`}
                         className="text-[10px] px-2.5 py-1.5 rounded-lg border border-line/50 text-muted hover:border-signal/30 hover:text-signal transition-all font-mono">
-                        {isFa ? "مشاهده" : "View"}
+                        {t("view")}
                       </Link>
                     )}
                     {isPending && !st.showRejectForm && (
@@ -300,14 +302,14 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                           onClick={() => handleApprove(a.id)}
                           disabled={st.loading}
                           className="text-[10px] px-2.5 py-1.5 rounded-lg border border-signal/25 text-signal hover:bg-signal/8 transition-all font-mono font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                          {st.loading ? "…" : (isFa ? "تأیید" : "Approve")}
+                          {st.loading ? "…" : t("mod.approve")}
                         </button>
                         <button
                           type="button"
                           onClick={() => openRejectForm(a.id)}
                           disabled={st.loading}
                           className="text-[10px] px-2.5 py-1.5 rounded-lg border border-danger/25 text-danger hover:bg-danger/8 transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed">
-                          {isFa ? "رد" : "Reject"}
+                          {t("mod.reject")}
                         </button>
                       </>
                     )}
@@ -318,13 +320,13 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                 {st.showRejectForm && isPending && (
                   <div className="border-t border-line/30 px-4 pb-4 pt-3 bg-danger/[0.03]">
                     <p className="text-[10px] text-danger font-mono mb-2">
-                      {isFa ? "دلیل رد مقاله (اختیاری):" : "Rejection reason (optional):"}
+                      {t("mod.rejectReasonLabel")}
                     </p>
                     <textarea
                       value={st.rejectReason}
                       onChange={e => patch(a.id, { rejectReason: e.target.value })}
                       rows={2}
-                      placeholder={isFa ? "توضیح دهید چرا این مقاله رد شد…" : "Explain why this article is being rejected…"}
+                      placeholder={t("mod.rejectPlaceholder")}
                       className="w-full bg-surface border border-line/50 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-faint focus:outline-none focus:border-danger/40 resize-none mb-2.5"
                     />
                     <div className="flex items-center gap-2">
@@ -333,14 +335,14 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                         onClick={() => submitReject(a.id)}
                         disabled={st.loading}
                         className="text-[10px] px-3 py-1.5 rounded-lg bg-danger/10 border border-danger/30 text-danger hover:bg-danger/15 transition-all font-mono font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
-                        {st.loading ? (isFa ? "در حال ارسال…" : "Sending…") : (isFa ? "تأیید رد" : "Confirm Reject")}
+                        {st.loading ? t("mod.sending") : t("mod.confirmReject")}
                       </button>
                       <button
                         type="button"
                         onClick={() => cancelReject(a.id)}
                         disabled={st.loading}
                         className="text-[10px] px-3 py-1.5 rounded-lg border border-line/50 text-muted hover:text-ink transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed">
-                        {isFa ? "لغو" : "Cancel"}
+                        {t("mod.cancel")}
                       </button>
                     </div>
                   </div>
@@ -353,9 +355,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
 
       {filtered.length > 0 && (
         <p className="text-[10px] text-faint font-mono text-center pt-2">
-          {isFa
-            ? `${filtered.length} مقاله نمایش داده شده`
-            : `Showing ${filtered.length} article${filtered.length !== 1 ? "s" : ""}`}
+          {t("mod.showing", { count: filtered.length, n: String(filtered.length) })}
         </p>
       )}
     </div>

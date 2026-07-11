@@ -1,4 +1,4 @@
-import { setRequestLocale }  from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { noIndexMetadata }   from "@/lib/seo/metadata";
 import Link                   from "next/link";
@@ -6,7 +6,8 @@ import Link                   from "next/link";
 export const metadata = noIndexMetadata("Saved Articles — Hermes Industrial Journal");
 export const dynamic  = "force-dynamic";
 
-function SavedContent({ isFa, locale }: { isFa: boolean; locale: string }) {
+async function SavedContent({ locale }: { locale: string }) {
+  const t = await getTranslations("journal");
   return (
     <div className="min-h-screen">
       <div className="relative border-b border-line/30 overflow-hidden"
@@ -15,10 +16,10 @@ function SavedContent({ isFa, locale }: { isFa: boolean; locale: string }) {
           style={{ backgroundImage: "radial-gradient(rgba(30,200,164,0.14) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
         <div className="relative max-w-4xl mx-auto px-6 py-10">
           <p className="eyebrow-mono text-signal text-[9px] mb-2 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+            {t("brandUpper")}
           </p>
           <h1 className="text-2xl font-bold text-ink">
-            {isFa ? "مقالات ذخیره‌شده" : "Saved Articles"}
+            {t("lists.savedTitle")}
           </h1>
         </div>
       </div>
@@ -34,16 +35,14 @@ function SavedContent({ isFa, locale }: { isFa: boolean; locale: string }) {
             style={{ background: "radial-gradient(circle, rgba(30,200,164,0.06) 0%, transparent 70%)" }} />
         </div>
         <h2 className="text-lg font-bold text-ink mb-2">
-          {isFa ? "مقاله‌ای ذخیره نشده" : "No saved articles"}
+          {t("lists.savedEmpty")}
         </h2>
         <p className="text-muted text-sm mb-8 max-w-sm leading-relaxed">
-          {isFa
-            ? "مقالاتی که برای مطالعه بعدی ذخیره می‌کنید اینجا نمایش داده می‌شوند."
-            : "Articles you bookmark will appear here for later reading. Explore the journal to find valuable content."}
+          {t("lists.savedBody")}
         </p>
         <Link href={`/${locale}/articles`}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-signal text-signal text-sm font-bold hover:bg-signal/8 transition-all">
-          {isFa ? "مرور ژورنال" : "Browse Journal"}
+          {t("lists.browseJournal")}
         </Link>
       </div>
     </div>
@@ -57,11 +56,10 @@ export default async function SavedPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isFa = locale === "fa";
 
   return (
     <RequireCapability capability="dashboard">
-      <SavedContent isFa={isFa} locale={locale} />
+      <SavedContent locale={locale} />
     </RequireCapability>
   );
 }

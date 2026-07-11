@@ -33,7 +33,6 @@ export default async function SettingsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isFa = locale === "fa";
 
   const user    = await getCurrentUser();
   const profile = user ? await fetchProfile(user.id) : null;
@@ -43,7 +42,6 @@ export default async function SettingsPage({
       <AvatarSettingsClient
         initialAvatarUrl={profile?.avatarUrl ?? null}
         displayName={profile?.displayName ?? user?.name ?? "?"}
-        isFa={isFa}
       />
     </RequireCapability>
   );

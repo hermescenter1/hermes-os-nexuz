@@ -2,26 +2,12 @@
 
 import { useState }  from "react";
 import Link            from "next/link";
-import { useLocale }   from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ArticleDetail, ArticleListItem } from "@/lib/articles/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const CONTENT_TYPE_LABELS: Record<string, { en: string; fa: string }> = {
-  TECHNICAL_ARTICLE:        { en: "Technical Article",        fa: "مقاله فنی"              },
-  INDUSTRIAL_CASE_STUDY:    { en: "Industrial Case Study",    fa: "مطالعه موردی صنعتی"     },
-  TROUBLESHOOTING_REPORT:   { en: "Troubleshooting Report",   fa: "گزارش عیب‌یابی"         },
-  PROJECT_REPORT:           { en: "Project Report",           fa: "گزارش پروژه"            },
-  MAINTENANCE_INSIGHT:      { en: "Maintenance Insight",      fa: "بینش نگهداشت"           },
-  PLC_SCADA_TUTORIAL:       { en: "PLC/SCADA Tutorial",       fa: "آموزش PLC/SCADA"        },
-  FAILURE_ANALYSIS:         { en: "Failure Analysis",         fa: "آنالیز خرابی"           },
-  ASSET_RELIABILITY_NOTE:   { en: "Asset Reliability Note",   fa: "یادداشت قابلیت اطمینان" },
-  ENGINEERING_OPINION:      { en: "Engineering Opinion",      fa: "دیدگاه مهندسی"         },
-  RESEARCH_SUMMARY:         { en: "Research Summary",         fa: "خلاصه پژوهش"           },
-  FIELD_COMMISSIONING_NOTE: { en: "Field Commissioning Note", fa: "یادداشت راه‌اندازی"     },
-  SAFETY_COMPLIANCE_NOTE:   { en: "Safety & Compliance",      fa: "ایمنی و انطباق"         },
-};
-
+// Persian ARTICLE CONTENT overlay for seed/mock articles (data, not UI chrome).
 const FA_ARTICLE_MAP: Record<string, { title: string; subtitle?: string; excerpt?: string }> = {
   "siemens-s7-1500-programming-best-practices": {
     title:    "بهترین شیوه‌های برنامه‌نویسی PLC زیمنس S7-1500",
@@ -162,6 +148,7 @@ function ArticleContent({ content, isFa }: { content: string; isFa: boolean }) {
 // Displays editorial trust badges and key metrics from real DB fields only.
 
 function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }) {
+  const t = useTranslations("journal");
   const showUpdated = article.updatedAt &&
     article.publishedAt &&
     // Only show "Updated" when the article was meaningfully re-edited after publish
@@ -174,7 +161,7 @@ function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }
         <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 shrink-0">
           <path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd"/>
         </svg>
-        {isFa ? "تأییدشده توسط سردبیر" : "Editorial Approved"}
+        {t("detail.editorialApproved")}
       </span>
 
       {/* Published Public badge */}
@@ -182,28 +169,28 @@ function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }
         <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 shrink-0">
           <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.536-4.464a.75.75 0 1 0-1.061-1.061 3.5 3.5 0 0 1-4.95 0 .75.75 0 0 0-1.06 1.06 5 5 0 0 0 7.07 0Zm.343-6.555-.144-.143a.75.75 0 0 0-1.06 1.06l.143.144a.75.75 0 0 0 1.061-1.061Zm-6.779-.21a.75.75 0 0 0 0 1.06l.144.144a.75.75 0 1 0 1.06-1.06l-.143-.144a.75.75 0 0 0-1.061 0Z" clipRule="evenodd"/>
         </svg>
-        {isFa ? "مقاله منتشرشده" : "Published Article"}
+        {t("detail.publishedArticle")}
       </span>
 
       {/* Right-side meta */}
       <div className="flex flex-wrap items-center gap-3 ms-auto text-[9px] text-faint font-mono">
         {article.viewCount > 0 && (
           <>
-            <span>{fmtNum(article.viewCount)} {isFa ? "بازدید" : "views"}</span>
+            <span>{fmtNum(article.viewCount)} {t("viewsUnit")}</span>
             <span className="text-line">·</span>
           </>
         )}
-        <span>{article.readingTimeMinutes} {isFa ? "دقیقه مطالعه" : "min read"}</span>
+        <span>{article.readingTimeMinutes} {t("minRead")}</span>
         {article.publishedAt && (
           <>
             <span className="text-line">·</span>
-            <span>{isFa ? "انتشار:" : "Published:"} {fmtDate(article.publishedAt, isFa)}</span>
+            <span>{t("detail.publishedLabel")} {fmtDate(article.publishedAt, isFa)}</span>
           </>
         )}
         {showUpdated && (
           <>
             <span className="text-line">·</span>
-            <span>{isFa ? "به‌روز:" : "Updated:"} {fmtDate(article.updatedAt, isFa)}</span>
+            <span>{t("detail.updatedLabel")} {fmtDate(article.updatedAt, isFa)}</span>
           </>
         )}
       </div>
@@ -213,17 +200,13 @@ function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }
 
 // ── Actions bar ───────────────────────────────────────────────────────────────
 
-function ActionsBar({ article, isFa }: { article: ArticleDetail; isFa: boolean }) {
+function ActionsBar({ article }: { article: ArticleDetail }) {
+  const t = useTranslations("journal");
   const [saved, setSaved]     = useState(false);
   const [reacted, setReacted] = useState<string | null>(null);
   const [copied, setCopied]   = useState(false);
 
-  const reactions = [
-    { key: "INSIGHTFUL", en: "Insightful", fa: "بینش‌افزا" },
-    { key: "HELPFUL",    en: "Helpful",    fa: "مفید"       },
-    { key: "DETAILED",   en: "Detailed",   fa: "جامع"       },
-    { key: "PRACTICAL",  en: "Practical",  fa: "کاربردی"    },
-  ] as const;
+  const reactions = ["INSIGHTFUL", "HELPFUL", "DETAILED", "PRACTICAL"] as const;
 
   async function handleSave() {
     const next = !saved;
@@ -257,23 +240,23 @@ function ActionsBar({ article, isFa }: { article: ArticleDetail; isFa: boolean }
     <div className="flex flex-wrap items-center gap-2.5 py-5 border-y border-line/30">
       {/* Stats */}
       <div className="flex items-center gap-4 text-xs text-faint me-auto font-mono">
-        <span>{fmtNum(article.viewCount)} {isFa ? "بازدید" : "views"}</span>
+        <span>{fmtNum(article.viewCount)} {t("viewsUnit")}</span>
         <span className="text-line">·</span>
-        <span>{fmtNum(article.saveCount)} {isFa ? "ذخیره" : "saves"}</span>
+        <span>{fmtNum(article.saveCount)} {t("detail.savesUnit")}</span>
         <span className="text-line">·</span>
-        <span>{fmtNum(article.reactionCount)} {isFa ? "واکنش" : "reactions"}</span>
+        <span>{fmtNum(article.reactionCount)} {t("detail.reactionsUnit")}</span>
       </div>
 
       {/* Reactions */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        {reactions.map(r => (
-          <button key={r.key} onClick={() => handleReact(r.key)}
+        {reactions.map(key => (
+          <button key={key} onClick={() => handleReact(key)}
             className={`text-[10px] px-2.5 py-1.5 rounded-full border transition-all font-mono uppercase tracking-wide ${
-              reacted === r.key
+              reacted === key
                 ? "border-signal bg-signal/12 text-signal font-semibold"
                 : "border-line/60 text-faint hover:border-signal/30 hover:text-ink"
             }`}>
-            {isFa ? r.fa : r.en}
+            {t(`detail.reaction.${key}`)}
           </button>
         ))}
       </div>
@@ -288,7 +271,7 @@ function ActionsBar({ article, isFa }: { article: ArticleDetail; isFa: boolean }
         <svg viewBox="0 0 20 20" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5} className="w-3.5 h-3.5">
           <path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-2.5L5 18V4Z"/>
         </svg>
-        {isFa ? "ذخیره" : "Save"}
+        {t("detail.save")}
       </button>
 
       {/* Share */}
@@ -303,14 +286,14 @@ function ActionsBar({ article, isFa }: { article: ArticleDetail; isFa: boolean }
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
               <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd"/>
             </svg>
-            {isFa ? "کپی شد" : "Copied"}
+            {t("detail.copied")}
           </>
         ) : (
           <>
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
               <path d="M13 4.5a2.5 2.5 0 1 1 .702 1.737L6.97 9.604a2.518 2.518 0 0 1 0 .792l6.733 3.367a2.5 2.5 0 1 1-.671 1.341l-6.733-3.367a2.5 2.5 0 1 1 0-3.474l6.733-3.366A2.52 2.52 0 0 1 13 4.5Z"/>
             </svg>
-            {isFa ? "اشتراک‌گذاری" : "Share"}
+            {t("detail.share")}
           </>
         )}
       </button>
@@ -321,6 +304,7 @@ function ActionsBar({ article, isFa }: { article: ArticleDetail; isFa: boolean }
 // ── Author card ───────────────────────────────────────────────────────────────
 
 function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: boolean; locale: string }) {
+  const t = useTranslations("journal");
   const [following, setFollowing] = useState(false);
   const { author } = article;
 
@@ -368,7 +352,7 @@ function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: b
                     {author.displayName}
                   </Link>
                   {author.verifiedExpert && (
-                    <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "متخصص تأییدشده" : "VERIFIED EXPERT"}</span>
+                    <span className="hs-badge hs--knowledge text-[9px]">{t("detail.verifiedExpert")}</span>
                   )}
                 </div>
                 <p className="text-sm text-muted">{author.roleTitle ?? author.company}</p>
@@ -387,17 +371,17 @@ function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: b
                     ? "border-signal bg-signal/12 text-signal"
                     : "border-signal text-signal hover:bg-signal/8"
                 }`}>
-                {following ? (isFa ? "دنبال‌شده" : "Following ✓") : (isFa ? "دنبال کردن" : "Follow")}
+                {following ? t("detail.following") : t("detail.follow")}
               </button>
             </div>
 
             {/* Stats */}
             <div className="flex flex-wrap items-center gap-5 text-xs text-faint mb-3 font-mono">
-              <span>{author.articleCount} {isFa ? "مقاله" : "articles"}</span>
+              <span>{author.articleCount} {t("articlesUnit")}</span>
               <span className="text-line">·</span>
-              <span>{fmtNum(author.followerCount)} {isFa ? "دنبال‌کننده" : "followers"}</span>
+              <span>{fmtNum(author.followerCount)} {t("followersUnit")}</span>
               <span className="text-line">·</span>
-              <span>{fmtNum(author.totalViews)} {isFa ? "بازدید" : "views"}</span>
+              <span>{fmtNum(author.totalViews)} {t("viewsUnit")}</span>
             </div>
 
             {/* Expertise tags */}
@@ -420,7 +404,7 @@ function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: b
             <p className="text-sm text-muted leading-relaxed line-clamp-3">{author.bio}</p>
             <Link href={`/${locale}/articles/author/${author.handle}`}
               className="inline-flex items-center gap-1 text-xs text-signal hover:text-signal/80 transition-colors mt-2.5 font-medium">
-              {isFa ? "مشاهده پروفایل کامل" : "View full profile"}
+              {t("detail.viewFullProfile")}
               <svg viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 ${isFa ? "rotate-180" : ""}`}>
                 <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
               </svg>
@@ -434,18 +418,19 @@ function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: b
 
 // ── Knowledge metadata block ──────────────────────────────────────────────────
 
-function KnowledgeMetaBlock({ article, isFa }: { article: ArticleDetail; isFa: boolean }) {
+function KnowledgeMetaBlock({ article }: { article: ArticleDetail }) {
+  const t = useTranslations("journal");
   const km = article.knowledgeMetadata;
   if (!km || (!km.humanReviewed && !km.knowledgeEligible)) return null;
 
   const fields: Array<[string, string | null | boolean]> = [
-    [isFa ? "حوزه صنعتی" : "Industrial Domain",   km.industrialDomain],
-    [isFa ? "نوع دارایی" : "Asset Type",           km.linkedAssetType],
-    [isFa ? "تکنولوژی" : "Technology",             km.linkedTechnology],
-    [isFa ? "پلتفرم PLC" : "PLC Platform",         km.linkedPLCPlatform],
-    [isFa ? "فروشنده" : "Vendor",                  km.linkedVendor],
-    [isFa ? "استاندارد" : "Standard",              km.linkedStandard],
-    [isFa ? "حوزه نگهداشت" : "Maintenance Domain", km.linkedMaintenanceDomain],
+    [t("detail.km.industrialDomain"),  km.industrialDomain],
+    [t("detail.km.assetType"),         km.linkedAssetType],
+    [t("detail.km.technology"),        km.linkedTechnology],
+    [t("detail.km.plcPlatform"),       km.linkedPLCPlatform],
+    [t("detail.km.vendor"),            km.linkedVendor],
+    [t("detail.km.standard"),          km.linkedStandard],
+    [t("detail.km.maintenanceDomain"), km.linkedMaintenanceDomain],
   ].filter(([, val]) => !!val) as Array<[string, string]>;
 
   return (
@@ -460,15 +445,15 @@ function KnowledgeMetaBlock({ article, isFa }: { article: ArticleDetail; isFa: b
             </svg>
           </div>
           <p className="text-xs font-bold text-signal uppercase tracking-wider">
-            {isFa ? "متادیتای دانش صنعتی" : "Industrial Knowledge Metadata"}
+            {t("detail.knowledgeMetadata")}
           </p>
         </div>
         <div className="flex items-center gap-2 ms-auto flex-wrap">
           {km.humanReviewed && (
-            <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "بررسی انسانی" : "HUMAN REVIEWED"}</span>
+            <span className="hs-badge hs--knowledge text-[9px]">{t("detail.humanReviewed")}</span>
           )}
           {km.safetyCritical && (
-            <span className="hs-badge hs--risk text-[9px]">{isFa ? "ایمنی بحرانی" : "SAFETY CRITICAL"}</span>
+            <span className="hs-badge hs--risk text-[9px]">{t("badge.safetyCritical")}</span>
           )}
         </div>
       </div>
@@ -479,7 +464,7 @@ function KnowledgeMetaBlock({ article, isFa }: { article: ArticleDetail; isFa: b
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <p className="text-[10px] text-faint uppercase tracking-wider font-mono">
-                {isFa ? "امتیاز کیفیت محتوا" : "Content Quality Score"}
+                {t("detail.contentQualityScore")}
               </p>
               <p className="text-xs font-bold font-mono text-signal">{km.articleQualityScore.toFixed(1)}<span className="text-faint font-normal">/10</span></p>
             </div>
@@ -504,7 +489,7 @@ function KnowledgeMetaBlock({ article, isFa }: { article: ArticleDetail; isFa: b
 
         {km.evidenceLevel && (
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-faint">{isFa ? "سطح شواهد:" : "Evidence level:"}</span>
+            <span className="text-faint">{t("detail.evidenceLevel")}</span>
             <span className="text-ink font-medium">{km.evidenceLevel}</span>
           </div>
         )}
@@ -516,6 +501,7 @@ function KnowledgeMetaBlock({ article, isFa }: { article: ArticleDetail; isFa: b
 // ── Related articles ──────────────────────────────────────────────────────────
 
 function RelatedArticles({ articles, isFa, locale }: { articles: ArticleListItem[]; isFa: boolean; locale: string }) {
+  const t = useTranslations("journal");
   if (!articles.length) return null;
   return (
     <section>
@@ -523,10 +509,10 @@ function RelatedArticles({ articles, isFa, locale }: { articles: ArticleListItem
         <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
         <div>
           <p className="eyebrow-mono text-signal text-[9px] mb-0.5">
-            {isFa ? "بیشتر بخوانید" : "KEEP READING"}
+            {t("detail.keepReading")}
           </p>
           <h2 className="text-sm font-bold text-ink uppercase tracking-wider">
-            {isFa ? "مقالات مرتبط" : "Related Articles"}
+            {t("detail.relatedArticles")}
           </h2>
         </div>
       </div>
@@ -548,7 +534,7 @@ function RelatedArticles({ articles, isFa, locale }: { articles: ArticleListItem
             <div className="flex items-center gap-2 text-[10px] text-faint mt-auto font-mono">
               <span className="truncate max-w-[80px]">{a.author.displayName}</span>
               <span className="text-line">·</span>
-              <span>{a.readingTimeMinutes} {isFa ? "د" : "m"}</span>
+              <span>{a.readingTimeMinutes} {t("readingUnit")}</span>
             </div>
           </Link>
         ))}
@@ -571,8 +557,10 @@ export function ArticleDetailClient({ article, related }: Props) {
   // can return null on async re-renders in App Router and crash the component.
   const locale = useLocale();
   const isFa   = locale === "fa";
+  const t      = useTranslations("journal");
 
-  const typeLabel = CONTENT_TYPE_LABELS[article.contentType] ?? { en: article.contentType, fa: article.contentType };
+  const typeKey   = `contentType.${article.contentType}`;
+  const typeLabel = t.has(typeKey) ? t(typeKey) : article.contentType;
   const catHref   = article.category ? `/${locale}/articles/category/${article.category.slug}` : null;
 
   return (
@@ -585,7 +573,7 @@ export function ArticleDetailClient({ article, related }: Props) {
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
               <path d="M2 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3Z"/>
             </svg>
-            {isFa ? "ژورنال" : "Journal"}
+            {t("detail.breadcrumbJournal")}
           </Link>
           {article.category && catHref && (
             <>
@@ -617,7 +605,7 @@ export function ArticleDetailClient({ article, related }: Props) {
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-2 mb-6">
             <span className={`text-[10px] px-2.5 py-0.5 rounded-full border font-mono uppercase tracking-wider ${contentTypeBadgeColor(article.contentType)}`}>
-              {isFa ? typeLabel.fa : typeLabel.en}
+              {typeLabel}
             </span>
             {catHref && article.category && (
               <Link href={catHref}
@@ -626,11 +614,12 @@ export function ArticleDetailClient({ article, related }: Props) {
               </Link>
             )}
             {article.knowledgeMetadata?.humanReviewed && (
-              <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "بررسی شده" : "REVIEWED"}</span>
+              <span className="hs-badge hs--knowledge text-[9px]">{t("detail.reviewed")}</span>
             )}
             {article.knowledgeMetadata?.safetyCritical && (
-              <span className="hs-badge hs--risk text-[9px]">{isFa ? "ایمنی بحرانی" : "SAFETY CRITICAL"}</span>
+              <span className="hs-badge hs--risk text-[9px]">{t("badge.safetyCritical")}</span>
             )}
+            {/* article.language is the persisted ArtLanguage field (data, not UI locale) */}
             <span className="ms-auto text-[9px] text-faint font-mono uppercase tracking-wider border border-line/40 px-2 py-0.5 rounded-full">
               {article.language === "FA" ? "فارسی / FA" : "English / EN"}
             </span>
@@ -677,7 +666,7 @@ export function ArticleDetailClient({ article, related }: Props) {
             <div className="flex flex-wrap items-center gap-3 text-xs text-faint font-mono">
               <span>{fmtDate(article.publishedAt, isFa)}</span>
               <span className="text-line">·</span>
-              <span>{article.readingTimeMinutes} {isFa ? "دقیقه مطالعه" : "min read"}</span>
+              <span>{article.readingTimeMinutes} {t("minRead")}</span>
               {article.knowledgeMetadata?.articleQualityScore && (
                 <>
                   <span className="text-line">·</span>
@@ -702,7 +691,7 @@ export function ArticleDetailClient({ article, related }: Props) {
         )}
 
         {/* Actions bar */}
-        <ActionsBar article={article} isFa={isFa} />
+        <ActionsBar article={article} />
 
         {/* Article content */}
         <article className="mt-10 mb-12">
@@ -713,7 +702,7 @@ export function ArticleDetailClient({ article, related }: Props) {
         {article.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 py-6 border-t border-line/30">
             <span className="text-xs text-faint me-1 font-mono uppercase tracking-wider self-center">
-              {isFa ? "برچسب‌ها:" : "Tags:"}
+              {t("detail.tagsLabel")}
             </span>
             {article.tags.map(tag => (
               <Link key={tag.id} href={`/${locale}/articles/tag/${tag.slug}`}
@@ -725,12 +714,12 @@ export function ArticleDetailClient({ article, related }: Props) {
         )}
 
         {/* Bottom actions */}
-        <ActionsBar article={article} isFa={isFa} />
+        <ActionsBar article={article} />
 
         {/* Knowledge metadata */}
         {article.knowledgeMetadata && (
           <div className="mt-10">
-            <KnowledgeMetaBlock article={article} isFa={isFa} />
+            <KnowledgeMetaBlock article={article} />
           </div>
         )}
 
@@ -739,7 +728,7 @@ export function ArticleDetailClient({ article, related }: Props) {
           <div className="flex items-center gap-2.5 mb-5">
             <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
             <p className="text-xs font-bold text-ink uppercase tracking-wider">
-              {isFa ? "درباره نویسنده" : "About the Author"}
+              {t("detail.aboutAuthor")}
             </p>
           </div>
           <AuthorCard article={article} isFa={isFa} locale={locale} />

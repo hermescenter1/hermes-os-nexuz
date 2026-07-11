@@ -3,9 +3,12 @@
 import { useState, useMemo } from "react";
 import Link                  from "next/link";
 import { usePathname }       from "next/navigation";
+import { useTranslations }   from "next-intl";
 import type { ArticleListItem, ArticleAuthorProfile, ArticleCategory, ArticleFeed } from "@/lib/articles/types";
 
 // ── Persian content overlay map (slug → FA title/subtitle/excerpt) ───────────
+// NOTE: This is localized ARTICLE CONTENT for seed/mock articles (not UI chrome),
+// so it stays as data — it is not part of the message-catalog extraction.
 
 const FA_ARTICLE_MAP: Record<string, { title: string; subtitle?: string; excerpt?: string }> = {
   "siemens-s7-1500-programming-best-practices": {
@@ -81,22 +84,7 @@ function getDisplay(article: { title: string; slug: string; subtitle?: string | 
   };
 }
 
-// ── Label maps ────────────────────────────────────────────────────────────────
-
-const CONTENT_TYPE_LABELS: Record<string, { en: string; fa: string }> = {
-  TECHNICAL_ARTICLE:        { en: "Technical Article",          fa: "مقاله فنی"              },
-  INDUSTRIAL_CASE_STUDY:    { en: "Industrial Case Study",      fa: "مطالعه موردی صنعتی"     },
-  TROUBLESHOOTING_REPORT:   { en: "Troubleshooting Report",     fa: "گزارش عیب‌یابی"         },
-  PROJECT_REPORT:           { en: "Project Report",             fa: "گزارش پروژه"            },
-  MAINTENANCE_INSIGHT:      { en: "Maintenance Insight",        fa: "بینش نگهداشت"           },
-  PLC_SCADA_TUTORIAL:       { en: "PLC/SCADA Tutorial",         fa: "آموزش PLC/SCADA"        },
-  FAILURE_ANALYSIS:         { en: "Failure Analysis",           fa: "آنالیز خرابی"           },
-  ASSET_RELIABILITY_NOTE:   { en: "Asset Reliability Note",     fa: "یادداشت قابلیت اطمینان" },
-  ENGINEERING_OPINION:      { en: "Engineering Opinion",        fa: "دیدگاه مهندسی"         },
-  RESEARCH_SUMMARY:         { en: "Research Summary",           fa: "خلاصه پژوهش"           },
-  FIELD_COMMISSIONING_NOTE: { en: "Field Commissioning Note",   fa: "یادداشت راه‌اندازی"     },
-  SAFETY_COMPLIANCE_NOTE:   { en: "Safety & Compliance",        fa: "ایمنی و انطباق"         },
-};
+// ── Content-type badge/bar colors (enum → CSS class; not user-facing text) ────
 
 function contentTypeBadgeColor(t: string) {
   if (t === "FAILURE_ANALYSIS" || t === "SAFETY_COMPLIANCE_NOTE") return "bg-danger/[0.10] text-danger border-danger/20";
@@ -114,18 +102,19 @@ function contentTypeBarColor(t: string) {
   return "from-signal/60 to-signal/20";
 }
 
-function qualityBadge(score?: number | null, isFa = false) {
+function QualityBadge({ score }: { score?: number | null }) {
+  const t = useTranslations("journal");
   if (!score) return null;
   if (score >= 9.5) return (
     <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded font-mono bg-signal/10 text-signal border border-signal/20 uppercase tracking-wide">
       <span className="w-1.5 h-1.5 rounded-full bg-signal inline-block" />
-      {isFa ? "برتر" : "TOP"}
+      {t("badge.top")}
     </span>
   );
   if (score >= 8.5) return (
     <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded font-mono bg-ice/10 text-ice border border-ice/20 uppercase tracking-wide">
       <span className="w-1.5 h-1.5 rounded-full bg-ice inline-block" />
-      {isFa ? "عالی" : "HIGH"}
+      {t("badge.high")}
     </span>
   );
   return null;
@@ -186,6 +175,7 @@ function SectionHeader({ label, eyebrow, href, linkLabel, isFa }: {
         <Link href={href}
           className="flex items-center gap-1 text-xs text-signal/80 hover:text-signal transition-colors font-mono">
           {linkLabel}
+          {/* isFa here flips the arrow for RTL — CSS direction, not user-facing text */}
           <svg viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 ${isFa ? "rotate-180" : ""}`}>
             <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
           </svg>
@@ -203,7 +193,9 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
   isFa: boolean;
   size?: "normal" | "compact" | "hero";
 }) {
-  const typeLabel = CONTENT_TYPE_LABELS[article.contentType] ?? { en: article.contentType, fa: article.contentType };
+  const t = useTranslations("journal");
+  const typeKey   = `contentType.${article.contentType}`;
+  const typeLabel = t.has(typeKey) ? t(typeKey) : article.contentType;
   const href      = `/${locale}/articles/${article.slug}`;
   const catHref   = article.category ? `/${locale}/articles/category/${article.category.slug}` : null;
   const authorHref = `/${locale}/articles/author/${article.author.handle}`;
@@ -216,17 +208,17 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-1.5">
           <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase tracking-wider ${contentTypeBadgeColor(article.contentType)}`}>
-            {isFa ? typeLabel.fa : typeLabel.en}
+            {typeLabel}
           </span>
           {article.knowledgeMetadata?.humanReviewed && (
-            <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "بررسی" : "REVIEWED"}</span>
+            <span className="hs-badge hs--knowledge text-[9px]">{t("badge.reviewed")}</span>
           )}
         </div>
         <h3 className="text-xs font-semibold text-ink group-hover:text-signal transition-colors line-clamp-2 leading-snug mb-1.5">{display.title}</h3>
         <div className="flex items-center gap-2 text-[10px] text-faint">
           <span className="truncate max-w-[80px]">{article.author.displayName}</span>
           <span className="text-line">·</span>
-          <span>{article.readingTimeMinutes}{isFa ? "د" : "m"}</span>
+          <span>{article.readingTimeMinutes}{t("readingUnit")}</span>
           <span className="text-line">·</span>
           <span>{fmtNum(article.viewCount)}</span>
         </div>
@@ -247,7 +239,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
       <div className="relative p-8 md:p-12">
         {/* Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-5">
-          <span className="hs-badge hs--knowledge">{isFa ? "انتخاب سردبیر" : "EDITOR'S PICK"}</span>
+          <span className="hs-badge hs--knowledge">{t("badge.editorsPick")}</span>
           {catHref && article.category && (
             <Link href={catHref}
               className="text-[10px] px-2.5 py-0.5 rounded-full border border-signal/30 text-signal hover:bg-signal/10 transition-colors font-mono uppercase tracking-wider">
@@ -255,9 +247,9 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
             </Link>
           )}
           {article.knowledgeMetadata?.safetyCritical && (
-            <span className="hs-badge hs--risk">{isFa ? "ایمنی بحرانی" : "SAFETY CRITICAL"}</span>
+            <span className="hs-badge hs--risk">{t("badge.safetyCritical")}</span>
           )}
-          {qualityBadge(article.knowledgeMetadata?.articleQualityScore, isFa)}
+          <QualityBadge score={article.knowledgeMetadata?.articleQualityScore} />
         </div>
 
         {/* Title */}
@@ -294,16 +286,16 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
           <div className="flex items-center gap-3 text-xs text-faint">
             <span>{fmtDate(article.publishedAt, isFa)}</span>
             <span className="text-line">·</span>
-            <span>{article.readingTimeMinutes} {isFa ? "دقیقه مطالعه" : "min read"}</span>
+            <span>{article.readingTimeMinutes} {t("minRead")}</span>
             <span className="text-line">·</span>
-            <span>{fmtNum(article.viewCount)} {isFa ? "بازدید" : "views"}</span>
+            <span>{fmtNum(article.viewCount)} {t("viewsUnit")}</span>
           </div>
         </div>
 
         {/* CTA */}
         <Link href={href}
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-signal text-bg text-sm font-bold hover:bg-signal/90 transition-colors">
-          {isFa ? "خواندن مقاله" : "Read Article"}
+          {t("readArticle")}
           <svg viewBox="0 0 20 20" fill="currentColor" className={`w-4 h-4 ${isFa ? "rotate-180" : ""}`}>
             <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
           </svg>
@@ -322,12 +314,12 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
         {/* Badges row */}
         <div className="flex items-center gap-1.5 mb-3 flex-wrap">
           <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase tracking-wider ${contentTypeBadgeColor(article.contentType)}`}>
-            {isFa ? typeLabel.fa : typeLabel.en}
+            {typeLabel}
           </span>
           {article.author.verifiedExpert && (
-            <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "متخصص" : "EXPERT"}</span>
+            <span className="hs-badge hs--knowledge text-[9px]">{t("badge.expert")}</span>
           )}
-          {qualityBadge(article.knowledgeMetadata?.articleQualityScore, isFa)}
+          <QualityBadge score={article.knowledgeMetadata?.articleQualityScore} />
         </div>
 
         {/* Title + excerpt */}
@@ -366,7 +358,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
           </span>
         </Link>
         <div className="flex items-center gap-2.5 text-[10px] text-faint font-mono shrink-0">
-          <span>{article.readingTimeMinutes}{isFa ? "د" : "m"}</span>
+          <span>{article.readingTimeMinutes}{t("readingUnit")}</span>
           <span className="text-line">·</span>
           <span>{fmtNum(article.viewCount)}</span>
           {article.reactionCount > 0 && (
@@ -383,7 +375,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
 
 // ── Author Card (sidebar) ─────────────────────────────────────────────────────
 
-function AuthorCard({ author, locale, isFa }: { author: ArticleAuthorProfile; locale: string; isFa: boolean }) {
+function AuthorCard({ author, locale }: { author: ArticleAuthorProfile; locale: string }) {
   return (
     <Link href={`/${locale}/articles/author/${author.handle}`}
       className="hs-card-depth group flex gap-3 items-start p-4 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/60 hover:bg-surface2/40">
@@ -419,18 +411,12 @@ function AuthorCard({ author, locale, isFa }: { author: ArticleAuthorProfile; lo
 
 // ── Journal Masthead (feed view hero) ─────────────────────────────────────────
 
-function JournalMasthead({ isFa, locale }: { isFa: boolean; locale: string }) {
-  const chips = isFa ? [
-    "مقالات تخصصی صنعتی",
-    "۱۹ دسته‌بندی",
-    "نویسندگان تأییدشده",
-    "بررسی‌شده توسط متخصصان",
-  ] : [
-    "Peer-Reviewed Technical Articles",
-    "19 Industrial Categories",
-    "Verified Expert Authors",
-    "Engineering-Grade Insights",
-  ];
+function JournalMasthead({ locale }: { locale: string }) {
+  const t = useTranslations("journal");
+  const chips   = t.raw("masthead.chips") as string[];
+  const metrics = t.raw("masthead.metrics") as { value: string; label: string }[];
+  // metric "live" flags are presentation, keyed by index (1st and 4th pulse)
+  const liveIdx = new Set([0, 3]);
 
   return (
     <div className="relative overflow-hidden border-b border-line/30"
@@ -451,32 +437,20 @@ function JournalMasthead({ isFa, locale }: { isFa: boolean; locale: string }) {
       <div className="relative max-w-[1400px] mx-auto px-6 py-10 md:py-14">
         <div className="max-w-3xl">
           <p className="eyebrow-mono text-signal mb-3 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+            {t("brandUpper")}
           </p>
           <h1 className="text-3xl md:text-5xl font-bold text-ink leading-tight mb-3">
-            {isFa ? "شبکه دانش صنعتی" : "Industrial Knowledge Network"}
+            {t("knowledgeNetwork")}
           </h1>
           <p className="text-base text-muted leading-relaxed max-w-xl mb-6">
-            {isFa
-              ? "مقالات تخصصی، مطالعات موردی صنعتی و بینش‌های عملیاتی از متخصصان برتر اتوماسیون، نگهداشت و هوش مصنوعی صنعتی"
-              : "Technical articles, industrial case studies, and operational insights from verified automation, maintenance, and industrial AI experts"}
+            {t("masthead.lede")}
           </p>
 
           {/* Editorial metrics strip */}
           <div className="flex flex-wrap gap-5 mb-6 ps-0.5">
-            {(isFa ? [
-              { value: "۱٬۲۰۰+", label: "مقاله تخصصی", live: true  },
-              { value: "۱۹",     label: "دسته‌بندی صنعتی", live: false },
-              { value: "۱۴۰+",   label: "متخصص تأییدشده", live: false },
-              { value: "۴.۲م",   label: "بازدید کل",      live: true  },
-            ] : [
-              { value: "1,200+", label: "Technical Articles", live: true  },
-              { value: "19",     label: "Industry Categories", live: false },
-              { value: "140+",   label: "Verified Experts",   live: false },
-              { value: "4.2M",   label: "Total Views",        live: true  },
-            ]).map(m => (
+            {metrics.map((m, i) => (
               <div key={m.label} className="flex items-center gap-2">
-                {m.live && <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse shrink-0" />}
+                {liveIdx.has(i) && <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse shrink-0" />}
                 <span className="text-lg font-bold text-ink font-mono">{m.value}</span>
                 <span className="text-[10px] text-faint uppercase tracking-wide">{m.label}</span>
               </div>
@@ -498,14 +472,14 @@ function JournalMasthead({ isFa, locale }: { isFa: boolean; locale: string }) {
           <div className="flex flex-wrap gap-3">
             <Link href={`/${locale}/articles/categories`}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-signal text-bg text-sm font-bold hover:bg-signal/90 transition-colors">
-              {isFa ? "مرور دسته‌بندی‌ها" : "Browse Categories"}
-              <svg viewBox="0 0 20 20" fill="currentColor" className={`w-4 h-4 ${isFa ? "rotate-180" : ""}`}>
+              {t("browseCategories")}
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                 <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
               </svg>
             </Link>
             <Link href={`/${locale}/articles/write`}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-signal/25 text-signal text-sm font-bold hover:bg-signal/8 transition-colors">
-              {isFa ? "+ نوشتن مقاله" : "+ Write Article"}
+              {t("writeArticlePlus")}
             </Link>
           </div>
         </div>
@@ -516,29 +490,30 @@ function JournalMasthead({ isFa, locale }: { isFa: boolean; locale: string }) {
 
 // ── View Header (for sub-views) ───────────────────────────────────────────────
 
-function ViewHeader({ view, articleCount, isFa, locale }: {
-  view: string; articleCount: number; isFa: boolean; locale: string;
+function ViewHeader({ view, articleCount, isFa }: {
+  view: string; articleCount: number; isFa: boolean;
 }) {
-  const views: Record<string, { en: string; fa: string; eyebrow: string }> = {
-    trending:       { en: "Trending Articles",  fa: "مقالات پرطرفدار",   eyebrow: "TRENDING NOW"      },
-    latest:         { en: "Latest Articles",    fa: "جدیدترین مقالات",   eyebrow: "RECENTLY PUBLISHED" },
-    "editors-picks":{ en: "Editor's Picks",     fa: "انتخاب سردبیر",     eyebrow: "CURATED SELECTION"  },
-    "case-studies": { en: "Industrial Case Studies", fa: "مطالعات موردی صنعتی", eyebrow: "FIELD INTELLIGENCE" },
+  const t = useTranslations("journal");
+  const views: Record<string, { title: string; eyebrow: string }> = {
+    trending:        { title: t("viewHeader.trendingTitle"),    eyebrow: t("viewHeader.trendingEyebrow") },
+    latest:          { title: t("viewHeader.latestTitle"),      eyebrow: t("viewHeader.latestEyebrow") },
+    "editors-picks": { title: t("viewHeader.picksTitle"),       eyebrow: t("viewHeader.picksEyebrow") },
+    "case-studies":  { title: t("viewHeader.caseStudiesTitle"), eyebrow: t("viewHeader.caseStudiesEyebrow") },
   };
-  const v = views[view] ?? { en: "Articles", fa: "مقالات", eyebrow: "JOURNAL" };
+  const v = views[view] ?? { title: t("viewHeader.defaultTitle"), eyebrow: t("viewHeader.defaultEyebrow") };
 
   return (
     <div className="relative border-b border-line/30 overflow-hidden"
       style={{ background: "linear-gradient(180deg, rgba(30,200,164,0.04) 0%, transparent 100%)" }}>
       <div className="max-w-[1400px] mx-auto px-6 py-10">
         <p className="eyebrow-mono text-signal text-[9px] mb-2 tracking-[0.2em]">
-          {isFa ? "ژورنال صنعتی هرمس — " : "HERMES INDUSTRIAL JOURNAL — "}
+          {t("viewHeaderBrand")}
           {v.eyebrow}
         </p>
         <div className="flex flex-wrap items-end gap-4">
-          <h1 className="text-3xl font-bold text-ink">{isFa ? v.fa : v.en}</h1>
+          <h1 className="text-3xl font-bold text-ink">{v.title}</h1>
           <span className="text-sm text-faint font-mono mb-1">
-            {articleCount} {isFa ? "مقاله" : "articles"}
+            {articleCount} {t("articlesUnit")}
           </span>
         </div>
       </div>
@@ -554,6 +529,7 @@ interface Props {
 }
 
 export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
+  const t = useTranslations("journal");
   const pathname = usePathname();
   const isFa   = pathname.startsWith("/fa");
   const locale = isFa ? "fa" : "en";
@@ -584,6 +560,14 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
   const picks   = view === "feed" ? feed.editorsPicks.slice(0, 3) : [];
   const trending = view === "feed" ? feed.trending.slice(0, 6) : [];
 
+  const topNav = [
+    { href: `/articles`,           label: t("topNav.feed") },
+    { href: `/articles/trending`,   label: t("topNav.trending") },
+    { href: `/articles/latest`,     label: t("topNav.latest") },
+    { href: `/articles/authors`,    label: t("topNav.experts") },
+    { href: `/articles/categories`, label: t("topNav.categories") },
+  ];
+
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
 
@@ -598,17 +582,11 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                 </div>
                 <div>
                   <p className="eyebrow-mono text-signal text-[9px] leading-none">HERMES INDUSTRIAL JOURNAL</p>
-                  <p className="text-[10px] text-faint leading-none mt-0.5">{isFa ? "شبکه دانش صنعتی" : "Industrial Knowledge Network"}</p>
+                  <p className="text-[10px] text-faint leading-none mt-0.5">{t("knowledgeNetwork")}</p>
                 </div>
               </div>
               <nav className="hidden md:flex items-center gap-0.5">
-                {[
-                  { href: `/articles`,               label: isFa ? "فید" : "Feed"             },
-                  { href: `/articles/trending`,       label: isFa ? "پرطرفدار" : "Trending"    },
-                  { href: `/articles/latest`,         label: isFa ? "جدیدترین" : "Latest"      },
-                  { href: `/articles/authors`,        label: isFa ? "نویسندگان" : "Experts"    },
-                  { href: `/articles/categories`,     label: isFa ? "دسته‌بندی" : "Categories" },
-                ].map(l => {
+                {topNav.map(l => {
                   const fullHref = `/${locale}${l.href}`;
                   const active   = l.href === "/articles" ? pathname === fullHref : pathname.startsWith(fullHref);
                   return (
@@ -628,7 +606,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
               <div className="relative hidden sm:block">
                 <input
                   type="text" value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder={isFa ? "جست‌وجو…" : "Search…"}
+                  placeholder={t("searchPlaceholder")}
                   className="text-[11px] text-ink rounded-lg px-3 py-1.5 ps-8 focus:outline-none w-44 placeholder:text-faint transition-all"
                   style={{
                     background: "rgba(6,8,13,0.75)",
@@ -648,7 +626,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                 <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
                   <path d="M2.695 14.763l-1.262 3.154a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.885 1.343Z"/>
                 </svg>
-                {isFa ? "نوشتن" : "Write"}
+                {t("write")}
               </Link>
             </div>
           </div>
@@ -656,11 +634,11 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
       </div>
 
       {/* Journal masthead (feed view only) */}
-      {view === "feed" && <JournalMasthead isFa={isFa} locale={locale} />}
+      {view === "feed" && <JournalMasthead locale={locale} />}
 
       {/* View header (sub-views) */}
       {view !== "feed" && (
-        <ViewHeader view={view} articleCount={articles.length} isFa={isFa} locale={locale} />
+        <ViewHeader view={view} articleCount={articles.length} isFa={isFa} />
       )}
 
       <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -676,10 +654,10 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
         {view === "feed" && picks.length > 0 && (
           <section className="mb-12">
             <SectionHeader
-              label={isFa ? "انتخاب سردبیر" : "Editor's Picks"}
-              eyebrow={isFa ? "محتوای برگزیده" : "CURATED CONTENT"}
+              label={t("sections.editorsPicks")}
+              eyebrow={t("sections.curatedContent")}
               href={`/${locale}/articles/editors-picks`}
-              linkLabel={isFa ? "مشاهده همه" : "See all"}
+              linkLabel={t("seeAll")}
               isFa={isFa}
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -695,8 +673,8 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
             {/* Latest articles header (feed) */}
             {view === "feed" && (
               <SectionHeader
-                label={isFa ? "جدیدترین مقالات" : "Latest Articles"}
-                eyebrow={isFa ? "به‌روزترین محتوا" : "RECENTLY PUBLISHED"}
+                label={t("sections.latestArticles")}
+                eyebrow={t("sections.recentlyPublished")}
                 isFa={isFa}
               />
             )}
@@ -707,7 +685,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                 {["ALL", ...feed.categories.map(c => c.slug)].map(s => {
                   const cat = feed.categories.find(c => c.slug === s);
                   const label = s === "ALL"
-                    ? (isFa ? "همه دسته‌بندی‌ها" : "All Categories")
+                    ? t("allCategories")
                     : (isFa ? (cat?.nameFa ?? s) : (cat?.name ?? s));
                   return (
                     <button key={s} onClick={() => setCatFilter(s)}
@@ -730,7 +708,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                     <path fillRule="evenodd" d="M4 4a2 2 0 0 1 2-2h4.586A2 2 0 0 1 12 2.586L15.414 6A2 2 0 0 1 16 7.414V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Z" clipRule="evenodd"/>
                   </svg>
                 </div>
-                <p className="text-muted text-sm">{isFa ? "مقاله‌ای یافت نشد" : "No articles found"}</p>
+                <p className="text-muted text-sm">{t("noArticles")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -753,11 +731,11 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                         <path fillRule="evenodd" d="M12.577 4.878a.75.75 0 0 1 .919-.53l4.78 1.281a.75.75 0 0 1 .531.919l-1.281 4.78a.75.75 0 0 1-1.449-.387l.81-3.022a19.407 19.407 0 0 0-5.594 5.203.75.75 0 0 1-1.139.093L7 10.06l-4.72 4.72a.75.75 0 0 1-1.06-1.061l5.25-5.25a.75.75 0 0 1 1.06 0l3.074 3.073a20.923 20.923 0 0 1 5.545-5.062l-3.041-.815a.75.75 0 0 1-.53-.919Z" clipRule="evenodd"/>
                       </svg>
                       <p className="text-[10px] font-bold text-ink uppercase tracking-wider">
-                        {isFa ? "پرطرفدار" : "Trending"}
+                        {t("sections.trending")}
                       </p>
                     </div>
                     <Link href={`/${locale}/articles/trending`} className="text-[10px] text-signal/70 hover:text-signal font-mono transition-colors">
-                      {isFa ? "همه" : "All"}
+                      {t("all")}
                     </Link>
                   </div>
                   <div className="p-3 flex flex-col gap-1">
@@ -772,7 +750,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                             {(isFa ? FA_ARTICLE_MAP[a.slug]?.title : null) ?? a.title}
                           </p>
                           <p className="text-[10px] text-faint mt-1">
-                            {fmtNum(a.viewCount)} {isFa ? "بازدید" : "views"} · {a.readingTimeMinutes}{isFa ? "د" : "m"}
+                            {fmtNum(a.viewCount)} {t("viewsUnit")} · {a.readingTimeMinutes}{t("readingUnit")}
                           </p>
                         </div>
                       </Link>
@@ -781,7 +759,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                   <div className="px-4 py-2.5 border-t border-line/20">
                     <Link href={`/${locale}/articles/trending`}
                       className="text-[10px] text-signal/70 hover:text-signal font-mono transition-colors">
-                      {isFa ? "مشاهده همه پرطرفدارها →" : "View all trending →"}
+                      {t("sections.viewAllTrending")}
                     </Link>
                   </div>
                 </section>
@@ -791,14 +769,14 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
               {feed.topAuthors.length > 0 && (
                 <section>
                   <SectionHeader
-                    label={isFa ? "نویسندگان برتر" : "Top Experts"}
+                    label={t("sections.topExperts")}
                     href={`/${locale}/articles/authors`}
-                    linkLabel={isFa ? "همه" : "All"}
+                    linkLabel={t("all")}
                     isFa={isFa}
                   />
                   <div className="flex flex-col gap-2.5">
                     {feed.topAuthors.slice(0, 4).map(a => (
-                      <AuthorCard key={a.id} author={a} locale={locale} isFa={isFa} />
+                      <AuthorCard key={a.id} author={a} locale={locale} />
                     ))}
                   </div>
                 </section>
@@ -810,10 +788,10 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                   <div className="px-4 py-3 border-b border-line/30 flex items-center justify-between"
                     style={{ background: "linear-gradient(90deg, rgba(30,200,164,0.05) 0%, transparent 100%)" }}>
                     <p className="text-[10px] font-bold text-ink uppercase tracking-wider">
-                      {isFa ? "دسته‌بندی‌ها" : "Categories"}
+                      {t("sections.categories")}
                     </p>
                     <Link href={`/${locale}/articles/categories`} className="text-[10px] text-signal/70 hover:text-signal font-mono transition-colors">
-                      {isFa ? "همه" : "All"}
+                      {t("all")}
                     </Link>
                   </div>
                   <div className="p-2">
@@ -839,10 +817,10 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
         {view === "feed" && feed.topAuthors.length > 0 && (
           <section className="mt-14 pt-10 border-t border-line/30">
             <SectionHeader
-              label={isFa ? "شبکه متخصصان" : "Expert Network"}
-              eyebrow={isFa ? "نویسندگان تأییدشده" : "VERIFIED AUTHORS"}
+              label={t("sections.expertNetwork")}
+              eyebrow={t("sections.verifiedAuthors")}
               href={`/${locale}/articles/authors`}
-              linkLabel={isFa ? "مشاهده همه متخصصان" : "View all experts"}
+              linkLabel={t("sections.viewAllExperts")}
               isFa={isFa}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -859,9 +837,9 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                     </div>
                     <p className="text-[10px] text-faint truncate mb-2">{a.roleTitle ?? a.company}</p>
                     <div className="flex items-center gap-3 text-[10px] text-faint">
-                      <span>{a.articleCount} {isFa ? "مقاله" : "articles"}</span>
+                      <span>{a.articleCount} {t("articlesUnit")}</span>
                       <span className="text-line">·</span>
-                      <span>{fmtNum(a.followerCount)} {isFa ? "دنبال‌کننده" : "followers"}</span>
+                      <span>{fmtNum(a.followerCount)} {t("followersUnit")}</span>
                     </div>
                     {a.industrialCredibilityScore && (
                       <div className="flex items-center gap-2 mt-2">

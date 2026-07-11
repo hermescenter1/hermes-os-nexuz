@@ -1,5 +1,5 @@
 import { notFound }            from "next/navigation";
-import { setRequestLocale }     from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getAuthorProfile, getAuthorArticles } from "@/lib/articles/db";
 import { AuthorProfileClient }  from "@/components/articles/AuthorProfileClient";
 import { buildMetadata }        from "@/lib/seo/metadata";
@@ -16,12 +16,11 @@ export async function generateMetadata({
   if (!author || !author.isActive) {
     return { title: "Author Not Found", robots: { index: false, follow: false } };
   }
+  const t = await getTranslations({ locale, namespace: "journal" });
   return buildMetadata({
     locale,
     path:        `/articles/author/${handle}`,
-    title:       locale === "fa"
-      ? `${author.displayName} — متخصص صنعتی | ژورنال هرمس`
-      : `${author.displayName} — Industrial Expert | Hermes Journal`,
+    title:       t("meta.authorProfileTitle", { name: author.displayName }),
     description: author.headline ?? author.bio?.slice(0, 160) ?? "",
   });
 }

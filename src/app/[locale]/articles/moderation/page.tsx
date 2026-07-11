@@ -1,4 +1,4 @@
-import { setRequestLocale }               from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { RequireCapability }             from "@/components/auth/RequireCapability";
 import { getAllArticlesForModeration,
          getEditorialOperationsDashboard } from "@/lib/articles/db";
@@ -17,6 +17,7 @@ export default async function ModerationPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const isFa = locale === "fa";
+  const t    = await getTranslations({ locale, namespace: "journalEditorial" });
 
   const [articles, opsData] = await Promise.all([
     getAllArticlesForModeration(),
@@ -32,12 +33,12 @@ export default async function ModerationPage({
 
         <div className="mb-4">
           <p className="eyebrow-mono text-signal text-[9px] mb-1 tracking-[0.2em]">
-            {isFa ? "مدیریت محتوا" : "CONTENT MANAGEMENT"}
+            {t("modContentMgmt")}
           </p>
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
             <h2 className="text-sm font-bold text-ink uppercase tracking-wider">
-              {isFa ? "میز مدیریت مقالات" : "Article Management"}
+              {t("modArticleMgmt")}
             </h2>
           </div>
         </div>

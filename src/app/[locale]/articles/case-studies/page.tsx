@@ -1,19 +1,16 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getArticleFeed }   from "@/lib/articles/db";
 import { ArticlesFeedClient } from "@/components/articles/ArticlesFeedClient";
 import { buildMetadata }    from "@/lib/seo/metadata";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "journal" });
   return buildMetadata({
     locale,
     path:        "/articles/case-studies",
-    title:       locale === "fa"
-      ? "مطالعات موردی صنعتی — ژورنال صنعتی هرمس"
-      : "Industrial Case Studies — Hermes Industrial Journal",
-    description: locale === "fa"
-      ? "مطالعات موردی واقعی از پروژه‌های صنعتی، اتوماسیون، نگهداشت و مدیریت دارایی"
-      : "Real-world industrial project case studies covering automation, maintenance, and asset management",
+    title:       t("meta.caseStudiesTitle"),
+    description: t("meta.caseStudiesDescription"),
   });
 }
 

@@ -1,19 +1,16 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getAllCategories }  from "@/lib/articles/db";
 import { buildMetadata }    from "@/lib/seo/metadata";
 import Link                  from "next/link";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "journal" });
   return buildMetadata({
     locale,
     path:        "/articles/categories",
-    title:       locale === "fa"
-      ? "دسته‌بندی مقالات — ژورنال صنعتی هرمس"
-      : "Article Categories — Hermes Industrial Journal",
-    description: locale === "fa"
-      ? "مرور دسته‌بندی‌های تخصصی مقالات صنعتی در هرمس"
-      : "Browse all industrial article categories on Hermes",
+    title:       t("meta.categoriesTitle"),
+    description: t("meta.categoriesDescription"),
   });
 }
 
@@ -27,6 +24,7 @@ export default async function CategoriesPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const isFa       = locale === "fa";
+  const t          = await getTranslations({ locale, namespace: "journal" });
   const categories = await getAllCategories();
 
   const maxCount = Math.max(...categories.map(c => c.articleCount ?? 0), 1);
@@ -41,15 +39,13 @@ export default async function CategoriesPage({
 
         <div className="relative max-w-5xl mx-auto px-6 py-12">
           <p className="eyebrow-mono text-signal text-[9px] mb-3 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+            {t("brandUpper")}
           </p>
           <h1 className="text-3xl md:text-4xl font-bold text-ink mb-3">
-            {isFa ? "دسته‌بندی‌های تخصصی" : "Industrial Categories"}
+            {t("browse.catsHeading")}
           </h1>
           <p className="text-muted text-sm">
-            {isFa
-              ? `${categories.length} دسته‌بندی تخصصی صنعتی`
-              : `${categories.length} specialized industrial categories`}
+            {t("browse.catsCount", { count: String(categories.length) })}
           </p>
         </div>
       </div>
@@ -90,7 +86,7 @@ export default async function CategoriesPage({
 
                 <div className="flex items-center gap-1.5 mt-auto">
                   <span className="text-xs text-signal/70 group-hover:text-signal transition-colors font-mono">
-                    {isFa ? "مشاهده مقالات" : "Browse articles"}
+                    {t("browse.browseArticles")}
                   </span>
                   <svg viewBox="0 0 20 20" fill="currentColor"
                     className={`w-3 h-3 text-signal/60 group-hover:text-signal transition-all group-hover:translate-x-0.5 ${isFa ? "rotate-180" : ""}`}>

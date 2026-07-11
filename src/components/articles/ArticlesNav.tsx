@@ -1,6 +1,7 @@
 "use client";
 import Link            from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 const ICONS: Record<string, React.ReactNode> = {
   feed:           <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M2 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3Zm8 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3Zm0 6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V9ZM2 13a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-4Z"/></svg>,
@@ -24,33 +25,35 @@ const ICONS: Record<string, React.ReactNode> = {
   editorial:      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM1.49 15.326a.78.78 0 0 1-.358-.442 3 3 0 0 1 4.308-3.516 6.484 6.484 0 0 0-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 0 1-2.07-.655ZM16.44 15.98a4.97 4.97 0 0 0 2.07-.654.78.78 0 0 0 .357-.442 3 3 0 0 0-4.308-3.517 6.484 6.484 0 0 1 1.907 3.96 2.32 2.32 0 0 1-.026.654ZM18 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM5.304 16.19a.844.844 0 0 1-.277-.71 5 5 0 0 1 9.947 0 .843.843 0 0 1-.277.71A6.975 6.975 0 0 1 10 18a6.974 6.974 0 0 1-4.696-1.81Z"/></svg>,
 };
 
+// Link definitions: `icon` selects the SVG in ICONS; `tkey` selects the label
+// under the journal.nav.* message namespace.
 const PUBLIC_LINKS = [
-  { href: "/articles",               key: "feed",        label: "Feed",             fa: "فید مقالات"       },
-  { href: "/articles/discover",      key: "discover",    label: "Discover",         fa: "کشف صنعتی"        },
-  { href: "/articles/trending",      key: "trending",    label: "Trending",         fa: "پرطرفدار"         },
-  { href: "/articles/latest",        key: "latest",      label: "Latest",           fa: "جدیدترین‌ها"      },
-  { href: "/articles/editors-picks", key: "picks",       label: "Editor's Picks",   fa: "انتخاب سردبیر"    },
-  { href: "/articles/case-studies",  key: "casestudies", label: "Case Studies",     fa: "مطالعات موردی"    },
-  { href: "/articles/categories",    key: "categories",  label: "Categories",       fa: "دسته‌بندی‌ها"     },
-  { href: "/articles/tags",          key: "tags",        label: "Tags",             fa: "برچسب‌ها"         },
-  { href: "/articles/authors",       key: "authors",     label: "Authors",          fa: "نویسندگان"        },
+  { href: "/articles",               icon: "feed",        tkey: "feed"        },
+  { href: "/articles/discover",      icon: "discover",    tkey: "discover"    },
+  { href: "/articles/trending",      icon: "trending",    tkey: "trending"    },
+  { href: "/articles/latest",        icon: "latest",      tkey: "latest"      },
+  { href: "/articles/editors-picks", icon: "picks",       tkey: "picks"       },
+  { href: "/articles/case-studies",  icon: "casestudies", tkey: "casestudies" },
+  { href: "/articles/categories",    icon: "categories",  tkey: "categories"  },
+  { href: "/articles/tags",          icon: "tags",        tkey: "tags"        },
+  { href: "/articles/authors",       icon: "authors",     tkey: "authors"     },
 ];
 
 const AUTH_LINKS = [
-  { href: "/articles/write",         key: "write",       label: "Write Article",    fa: "نوشتن مقاله"      },
-  { href: "/articles/my-articles",   key: "myarticles",  label: "My Articles",      fa: "مقالات من"        },
-  { href: "/articles/drafts",        key: "drafts",      label: "Drafts",           fa: "پیش‌نویس‌ها"      },
-  { href: "/articles/saved",         key: "saved",       label: "Saved",            fa: "ذخیره‌شده‌ها"     },
-  { href: "/articles/following",     key: "following",   label: "Following",        fa: "دنبال‌شده‌ها"     },
-  { href: "/articles/settings",      key: "settings",    label: "Settings",         fa: "تنظیمات"          },
+  { href: "/articles/write",         icon: "write",       tkey: "write"       },
+  { href: "/articles/my-articles",   icon: "myarticles",  tkey: "myarticles"  },
+  { href: "/articles/drafts",        icon: "drafts",      tkey: "drafts"      },
+  { href: "/articles/saved",         icon: "saved",       tkey: "saved"       },
+  { href: "/articles/following",     icon: "following",   tkey: "following"   },
+  { href: "/articles/settings",      icon: "settings",    tkey: "settings"    },
 ];
 
 const EDITORIAL_LINKS = [
-  { href: "/articles/editor",        key: "editorial",   label: "Editorial Board",  fa: "هیئت تحریریه"     },
-  { href: "/articles/submissions",   key: "reviewqueue", label: "Submissions",      fa: "ارسال‌شده‌ها"     },
-  { href: "/articles/moderation",    key: "moderation",  label: "Moderation",       fa: "اعتدال محتوا"     },
-  { href: "/articles/review-queue",  key: "reviewqueue", label: "Review Queue",     fa: "صف بررسی"         },
-  { href: "/articles/reports",       key: "reports",     label: "Reports",          fa: "گزارش‌ها"         },
+  { href: "/articles/editor",        icon: "editorial",   tkey: "editorialBoard" },
+  { href: "/articles/submissions",   icon: "reviewqueue", tkey: "submissions"    },
+  { href: "/articles/moderation",    icon: "moderation",  tkey: "moderation"     },
+  { href: "/articles/review-queue",  icon: "reviewqueue", tkey: "reviewqueue"    },
+  { href: "/articles/reports",       icon: "reports",     tkey: "reports"        },
 ];
 
 interface Props {
@@ -62,12 +65,12 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
   const pathname = usePathname();
   const isFa     = pathname.startsWith("/fa");
   const locale   = isFa ? "fa" : "en";
+  const t        = useTranslations("journal");
 
   function NavLink({ l }: { l: typeof PUBLIC_LINKS[0] }) {
     const href   = `/${locale}${l.href}`;
     const exact  = l.href === "/articles";
     const active = exact ? pathname === href : pathname.startsWith(href);
-    const label  = isFa ? l.fa : l.label;
     return (
       <Link
         href={href}
@@ -79,9 +82,9 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
         ].join(" ")}
       >
         <span className={`transition-colors ${active ? "text-signal" : "text-faint group-hover:text-muted"}`}>
-          {ICONS[l.key]}
+          {ICONS[l.icon]}
         </span>
-        <span className="truncate">{label}</span>
+        <span className="truncate">{t(`nav.${l.tkey}`)}</span>
         {active && (
           <span className="ms-auto w-1.5 h-1.5 rounded-full bg-signal shrink-0" />
         )}
@@ -97,7 +100,7 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
           <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
           <p className="eyebrow-mono text-signal text-[9px] tracking-[0.2em]">JOURNAL</p>
         </div>
-        <p className="text-[11px] text-muted leading-none ps-3.5">{isFa ? "ژورنال صنعتی هرمس" : "Hermes Industrial Journal"}</p>
+        <p className="text-[11px] text-muted leading-none ps-3.5">{t("nav.brandTitle")}</p>
       </div>
 
       <div className="flex flex-col gap-1">
@@ -108,7 +111,7 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
         <>
           <div className="my-4 border-t border-line/25" />
           <p className="px-3 mb-2.5 text-[9px] font-semibold text-faint uppercase tracking-[0.18em]">
-            {isFa ? "حساب کاربری" : "My Account"}
+            {t("nav.myAccount")}
           </p>
           <div className="flex flex-col gap-1">
             {AUTH_LINKS.map(l => <NavLink key={l.href} l={l} />)}
@@ -120,7 +123,7 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
         <>
           <div className="my-4 border-t border-line/25" />
           <p className="px-3 mb-2.5 text-[9px] font-semibold text-faint uppercase tracking-[0.18em]">
-            {isFa ? "هیئت تحریریه" : "Editorial"}
+            {t("nav.editorial")}
           </p>
           <div className="flex flex-col gap-1">
             {EDITORIAL_LINKS.map(l => <NavLink key={l.href} l={l} />)}

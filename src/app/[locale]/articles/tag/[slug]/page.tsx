@@ -1,5 +1,5 @@
 import { notFound }              from "next/navigation";
-import { setRequestLocale }       from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getArticlesByTag_, getTagBySlug, getAllCategories, getArticleFeed } from "@/lib/articles/db";
 import { ArticlesFeedClient }     from "@/components/articles/ArticlesFeedClient";
 import { buildMetadata }          from "@/lib/seo/metadata";
@@ -12,15 +12,13 @@ export async function generateMetadata({
   const { locale, slug } = await params;
   const tag = await getTagBySlug(slug);
   if (!tag) return { title: "Tag Not Found", robots: { index: false, follow: false } };
+  const t = await getTranslations({ locale, namespace: "journal" });
+  const name = locale === "fa" ? (tag.nameFa ?? tag.name) : tag.name;
   return buildMetadata({
     locale,
     path:        `/articles/tag/${slug}`,
-    title:       locale === "fa"
-      ? `${tag.nameFa ?? tag.name} — برچسب | ژورنال صنعتی هرمس`
-      : `${tag.name} — Tag | Hermes Industrial Journal`,
-    description: locale === "fa"
-      ? `مقالات صنعتی با برچسب ${tag.nameFa ?? tag.name} در هرمس`
-      : `Industrial articles tagged with ${tag.name} on Hermes`,
+    title:       t("meta.tagTitle", { name }),
+    description: t("meta.tagDescription", { name }),
   });
 }
 
@@ -44,6 +42,7 @@ export default async function TagPage({
   if (!tag) notFound();
 
   const isFa = locale === "fa";
+  const t    = await getTranslations({ locale, namespace: "journal" });
 
   const tagFeed = {
     ...feed,
@@ -61,13 +60,13 @@ export default async function TagPage({
       <div className="border-b border-line/50 bg-surface/60 backdrop-blur-sm">
         <div className="max-w-[1400px] mx-auto px-6 py-6">
           <p className="eyebrow-mono text-signal text-[10px] mb-1">
-            {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+            {t("brandUpper")}
           </p>
           <h1 className="text-2xl font-bold text-ink">
             #{isFa ? (tag.nameFa ?? tag.name) : tag.name}
           </h1>
           <p className="text-faint text-xs mt-2">
-            {isFa ? `${articles.length} مقاله` : `${articles.length} articles`}
+            {articles.length} {t("articlesUnit")}
           </p>
         </div>
       </div>

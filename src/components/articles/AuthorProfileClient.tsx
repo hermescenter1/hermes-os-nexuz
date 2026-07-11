@@ -2,7 +2,7 @@
 
 import { useState }   from "react";
 import Link            from "next/link";
-import { useLocale }   from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ArticleAuthorProfile, ArticleListItem } from "@/lib/articles/types";
 
 function fmtNum(n: number) {
@@ -20,21 +20,6 @@ function fmtDate(d: string, isFa = false) {
   return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
-const CONTENT_TYPE_LABELS: Record<string, { en: string; fa: string }> = {
-  TECHNICAL_ARTICLE:        { en: "Technical Article",      fa: "مقاله فنی"          },
-  INDUSTRIAL_CASE_STUDY:    { en: "Case Study",             fa: "مطالعه موردی"       },
-  TROUBLESHOOTING_REPORT:   { en: "Troubleshooting",        fa: "عیب‌یابی"           },
-  PROJECT_REPORT:           { en: "Project Report",         fa: "گزارش پروژه"        },
-  MAINTENANCE_INSIGHT:      { en: "Maintenance Insight",    fa: "بینش نگهداشت"       },
-  PLC_SCADA_TUTORIAL:       { en: "PLC/SCADA Tutorial",     fa: "آموزش PLC/SCADA"    },
-  FAILURE_ANALYSIS:         { en: "Failure Analysis",       fa: "آنالیز خرابی"       },
-  ASSET_RELIABILITY_NOTE:   { en: "Reliability Note",       fa: "قابلیت اطمینان"     },
-  ENGINEERING_OPINION:      { en: "Engineering Opinion",    fa: "دیدگاه مهندسی"     },
-  RESEARCH_SUMMARY:         { en: "Research Summary",       fa: "خلاصه پژوهش"       },
-  FIELD_COMMISSIONING_NOTE: { en: "Field Note",             fa: "یادداشت میدانی"     },
-  SAFETY_COMPLIANCE_NOTE:   { en: "Safety & Compliance",    fa: "ایمنی و انطباق"     },
-};
-
 function contentTypeBadgeColor(t: string) {
   if (t === "FAILURE_ANALYSIS" || t === "SAFETY_COMPLIANCE_NOTE") return "bg-danger/[0.10] text-danger border-danger/20";
   if (t === "TROUBLESHOOTING_REPORT") return "bg-warn/[0.10] text-warn border-warn/20";
@@ -47,6 +32,7 @@ function contentTypeBadgeColor(t: string) {
 // No fake scores, no stale counters, no AI labels.
 
 function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProfile; articles: ArticleListItem[]; isFa: boolean }) {
+  const t = useTranslations("journal");
   const publishedCount = articles.length;
   if (publishedCount === 0) return null;
 
@@ -59,10 +45,10 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
 
   // Deterministic trust level — transparent rule, no AI, no hidden weights
   const trustLevel = author.verifiedExpert || publishedCount >= 5
-    ? (isFa ? "متخصص شناخته‌شده" : "Recognized Expert")
+    ? t("authorProfile.trustRecognized")
     : publishedCount >= 3
-    ? (isFa ? "مشارکت‌کننده فعال" : "Active Contributor")
-    : (isFa ? "مشارکت‌کننده جدید" : "New Contributor");
+    ? t("authorProfile.trustActive")
+    : t("authorProfile.trustNew");
 
   return (
     <section className="rounded-xl border border-signal/15 overflow-hidden">
@@ -76,15 +62,15 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
             </svg>
           </div>
           <p className="text-xs font-bold text-signal uppercase tracking-wider">
-            {isFa ? "اعتبار تخصصی" : "Expert Reputation"}
+            {t("authorProfile.expertReputation")}
           </p>
         </div>
         <div className="flex items-center gap-2 ms-auto flex-wrap">
           {author.verifiedExpert && (
-            <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "متخصص تأییدشده" : "VERIFIED EXPERT"}</span>
+            <span className="hs-badge hs--knowledge text-[9px]">{t("authorProfile.verifiedExpert")}</span>
           )}
-          <span className="hs-badge hs--reasoning text-[9px]">{isFa ? "تأییدشده توسط سردبیر" : "EDITORIAL APPROVED"}</span>
-          <span className="hs-badge text-[9px] bg-signal/[0.08] text-signal border-signal/25">{isFa ? "نویسنده منتشرشده" : "PUBLISHED AUTHOR"}</span>
+          <span className="hs-badge hs--reasoning text-[9px]">{t("authorProfile.editorialApproved")}</span>
+          <span className="hs-badge text-[9px] bg-signal/[0.08] text-signal border-signal/25">{t("authorProfile.publishedAuthor")}</span>
         </div>
       </div>
 
@@ -92,7 +78,7 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
         {/* Trust level — deterministic, labeled clearly */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-faint font-mono uppercase tracking-wider shrink-0">
-            {isFa ? "سطح اعتبار:" : "Trust Level:"}
+            {t("authorProfile.trustLevel")}
           </span>
           <span className="text-xs font-semibold text-ink">{trustLevel}</span>
         </div>
@@ -101,29 +87,29 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-signal/15">
             <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
-              {isFa ? "مقالات منتشرشده" : "Published"}
+              {t("authorProfile.publishedStat")}
             </p>
             <p className="text-base font-bold text-signal">{publishedCount}</p>
           </div>
           {totalViews > 0 ? (
             <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
               <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
-                {isFa ? "مجموع بازدید" : "Total Views"}
+                {t("authorProfile.totalViews")}
               </p>
               <p className="text-base font-bold text-ink">{fmtNum(totalViews)}</p>
             </div>
           ) : (
             <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
               <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
-                {isFa ? "مجموع بازدید" : "Total Views"}
+                {t("authorProfile.totalViews")}
               </p>
-              <p className="text-[10px] text-faint font-mono">{isFa ? "در انتظار" : "Pending"}</p>
+              <p className="text-[10px] text-faint font-mono">{t("authorProfile.pending")}</p>
             </div>
           )}
           {totalReactions > 0 && (
             <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
               <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
-                {isFa ? "مجموع واکنش‌ها" : "Total Reactions"}
+                {t("authorProfile.totalReactions")}
               </p>
               <p className="text-base font-bold text-ink">{fmtNum(totalReactions)}</p>
             </div>
@@ -131,7 +117,7 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
           {latestPublishedAt && (
             <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
               <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
-                {isFa ? "آخرین انتشار" : "Latest Pub."}
+                {t("authorProfile.latestPub")}
               </p>
               <p className="text-xs font-semibold text-ink">{fmtDate(latestPublishedAt, isFa)}</p>
             </div>
@@ -142,7 +128,7 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
         {author.expertiseAreas.length > 0 && (
           <div>
             <p className="text-[9px] text-faint uppercase tracking-widest mb-2 font-mono">
-              {isFa ? "حوزه‌های تخصص" : "Expertise Areas"}
+              {t("authorProfile.expertiseAreas")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {author.expertiseAreas.map(area => (
@@ -167,6 +153,7 @@ interface Props {
 export function AuthorProfileClient({ author, articles }: Props) {
   const locale = useLocale();
   const isFa   = locale === "fa";
+  const t      = useTranslations("journal");
   const [filter, setFilter] = useState("ALL");
 
   const contentTypes    = ["ALL", ...Array.from(new Set(articles.map(a => a.contentType)))];
@@ -174,10 +161,22 @@ export function AuthorProfileClient({ author, articles }: Props) {
   const score           = author.industrialCredibilityScore;
   const isPublishedAuth = articles.length > 0;
 
+  const typeLabel = (ct: string) => {
+    const key = `authorProfile.type.${ct}`;
+    return t.has(key) ? t(key) : ct;
+  };
+
   // Phase 75: Compute real totals from the PUBLISHED + PUBLIC articles array.
   // These override the stale denormalized counters on the profile model.
   const realTotalViews     = articles.reduce((s, a) => s + (a.viewCount     ?? 0), 0);
   const realTotalReactions = articles.reduce((s, a) => s + (a.reactionCount ?? 0), 0);
+
+  const stats = [
+    { label: t("authorProfile.publishedStat"), value: author.articleCount,  main: true  },
+    { label: t("authorProfile.followers"),     value: author.followerCount, main: false },
+    { label: t("authorProfile.totalViews"),    value: realTotalViews,       main: false },
+    { label: t("authorProfile.totalReactions"),value: realTotalReactions,   main: false },
+  ];
 
   return (
     <div className="min-h-screen">
@@ -203,10 +202,11 @@ export function AuthorProfileClient({ author, articles }: Props) {
           <div className="mb-8">
             <Link href={`/${locale}/articles/authors`}
               className="inline-flex items-center gap-1.5 text-[10px] text-faint hover:text-signal font-mono uppercase tracking-wider transition-colors">
+              {/* back arrow — rotated for LTR (en), unrotated for RTL (fa) */}
               <svg viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 ${isFa ? "" : "rotate-180"}`}>
                 <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
               </svg>
-              {isFa ? "شبکه متخصصان" : "Expert Network"}
+              {t("sections.expertNetwork")}
             </Link>
           </div>
 
@@ -244,10 +244,10 @@ export function AuthorProfileClient({ author, articles }: Props) {
                   <div className="flex flex-wrap items-center gap-3 mb-1">
                     <h1 className="text-3xl font-bold text-ink">{author.displayName}</h1>
                     {author.verifiedExpert && (
-                      <span className="hs-badge hs--knowledge">{isFa ? "متخصص تأییدشده صنعتی" : "VERIFIED EXPERT"}</span>
+                      <span className="hs-badge hs--knowledge">{t("authorProfile.verifiedExpertLong")}</span>
                     )}
                     {isPublishedAuth && (
-                      <span className="hs-badge hs--reasoning">{isFa ? "نویسنده منتشرشده" : "PUBLISHED AUTHOR"}</span>
+                      <span className="hs-badge hs--reasoning">{t("authorProfile.publishedAuthor")}</span>
                     )}
                   </div>
                   <p className="text-muted text-sm font-mono">@{author.handle}</p>
@@ -255,7 +255,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
 
                 {/* Follow is a future feature — no fake persistence */}
                 <span className="shrink-0 text-xs px-4 py-2 rounded-xl border border-line/40 text-faint cursor-default opacity-60 select-none">
-                  {isFa ? "به زودی" : "Coming Soon"}
+                  {t("authorProfile.comingSoon")}
                 </span>
               </div>
 
@@ -274,12 +274,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
 
           {/* Stats grid — Phase 75: totalViews uses real computed value from PUBLISHED+PUBLIC articles */}
           <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: isFa ? "مقالات منتشرشده" : "Published",    value: author.articleCount,    main: true  },
-              { label: isFa ? "دنبال‌کننده" : "Followers",         value: author.followerCount,   main: false },
-              { label: isFa ? "مجموع بازدید" : "Total Views",      value: realTotalViews,         main: false },
-              { label: isFa ? "مجموع واکنش‌ها" : "Total Reactions", value: realTotalReactions,     main: false },
-            ].map(s => (
+            {stats.map(s => (
               <div key={s.label}
                 className={`rounded-xl p-4 border text-center transition-all ${
                   s.main
@@ -298,7 +293,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
           {score && (
             <div className="mt-6 flex items-center gap-3">
               <p className="text-xs text-faint font-mono uppercase tracking-wider shrink-0">
-                {isFa ? "اعتبار صنعتی" : "Industrial Credibility"}
+                {t("browse.industrialCredibility")}
               </p>
               <div className="flex-1 h-1.5 rounded-full bg-surface2 overflow-hidden max-w-xs">
                 <div className="h-full rounded-full bg-gradient-to-r from-signal to-ice"
@@ -333,7 +328,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
         {author.expertiseAreas.length > 0 && (
           <section>
             <p className="eyebrow-mono text-signal text-[9px] mb-3 tracking-[0.2em]">
-              {isFa ? "حوزه‌های تخصص" : "AREAS OF EXPERTISE"}
+              {t("authorProfile.areasOfExpertise")}
             </p>
             <div className="flex flex-wrap gap-2">
               {author.expertiseAreas.map(area => (
@@ -351,12 +346,12 @@ export function AuthorProfileClient({ author, articles }: Props) {
           <div className="flex items-center justify-between mb-6">
             <div>
               <p className="eyebrow-mono text-signal text-[9px] mb-1 tracking-[0.2em]">
-                {isFa ? "محتوای منتشرشده" : "PUBLISHED CONTENT"}
+                {t("authorProfile.publishedContent")}
               </p>
               <div className="flex items-center gap-2.5">
                 <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
                 <h2 className="text-sm font-bold text-ink uppercase tracking-wider">
-                  {isFa ? "مقالات نویسنده" : "Articles"}
+                  {t("authorProfile.articlesHeading")}
                   <span className="ms-2 text-xs text-faint font-normal font-mono">({articles.length})</span>
                 </h2>
               </div>
@@ -367,11 +362,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
           {contentTypes.length > 2 && (
             <div className="flex flex-wrap gap-2 mb-6">
               {contentTypes.map(ct => {
-                const lab = ct === "ALL"
-                  ? (isFa ? "همه" : "All")
-                  : (isFa
-                    ? (CONTENT_TYPE_LABELS[ct]?.fa ?? ct)
-                    : (CONTENT_TYPE_LABELS[ct]?.en ?? ct));
+                const lab = ct === "ALL" ? t("all") : typeLabel(ct);
                 return (
                   <button key={ct} onClick={() => setFilter(ct)}
                     className={`text-xs px-3.5 py-1.5 rounded-full border transition-all font-mono ${
@@ -388,7 +379,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
 
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center py-16 border border-line/30 rounded-2xl bg-surface/30">
-              <p className="text-muted text-sm">{isFa ? "مقاله‌ای یافت نشد" : "No articles found"}</p>
+              <p className="text-muted text-sm">{t("noArticles")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -402,10 +393,10 @@ export function AuthorProfileClient({ author, articles }: Props) {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
                       <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase tracking-wider ${contentTypeBadgeColor(a.contentType)}`}>
-                        {isFa ? (CONTENT_TYPE_LABELS[a.contentType]?.fa ?? a.contentType) : (CONTENT_TYPE_LABELS[a.contentType]?.en ?? a.contentType)}
+                        {typeLabel(a.contentType)}
                       </span>
                       {a.knowledgeMetadata?.humanReviewed && (
-                        <span className="hs-badge hs--knowledge text-[9px]">{isFa ? "بررسی شده" : "REVIEWED"}</span>
+                        <span className="hs-badge hs--knowledge text-[9px]">{t("detail.reviewed")}</span>
                       )}
                     </div>
                     <h3 className="text-sm font-bold text-ink group-hover:text-signal transition-colors line-clamp-2 leading-snug mb-1.5">
@@ -417,9 +408,9 @@ export function AuthorProfileClient({ author, articles }: Props) {
                     <div className="flex items-center gap-3 text-[10px] text-faint font-mono">
                       <span>{fmtDate(a.publishedAt ?? a.createdAt, isFa)}</span>
                       <span className="text-line">·</span>
-                      <span>{a.readingTimeMinutes} {isFa ? "دقیقه" : "min"}</span>
+                      <span>{a.readingTimeMinutes} {t("authorProfile.minUnit")}</span>
                       <span className="text-line">·</span>
-                      <span>{fmtNum(a.viewCount)} {isFa ? "بازدید" : "views"}</span>
+                      <span>{fmtNum(a.viewCount)} {t("viewsUnit")}</span>
                     </div>
                   </div>
 

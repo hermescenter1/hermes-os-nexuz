@@ -1,4 +1,4 @@
-import { setRequestLocale }  from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { noIndexMetadata }   from "@/lib/seo/metadata";
 import Link                   from "next/link";
@@ -6,7 +6,8 @@ import Link                   from "next/link";
 export const metadata = noIndexMetadata("Following — Hermes Industrial Journal");
 export const dynamic  = "force-dynamic";
 
-function FollowingContent({ isFa, locale }: { isFa: boolean; locale: string }) {
+async function FollowingContent({ locale }: { locale: string }) {
+  const t = await getTranslations("journal");
   return (
     <div className="min-h-screen">
       <div className="relative border-b border-line/30 overflow-hidden"
@@ -15,10 +16,10 @@ function FollowingContent({ isFa, locale }: { isFa: boolean; locale: string }) {
           style={{ backgroundImage: "radial-gradient(rgba(30,200,164,0.14) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
         <div className="relative max-w-4xl mx-auto px-6 py-10">
           <p className="eyebrow-mono text-signal text-[9px] mb-2 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+            {t("brandUpper")}
           </p>
           <h1 className="text-2xl font-bold text-ink">
-            {isFa ? "نویسندگان دنبال‌شده" : "Following"}
+            {t("lists.followingTitle")}
           </h1>
         </div>
       </div>
@@ -34,16 +35,14 @@ function FollowingContent({ isFa, locale }: { isFa: boolean; locale: string }) {
             style={{ background: "radial-gradient(circle, rgba(30,200,164,0.06) 0%, transparent 70%)" }} />
         </div>
         <h2 className="text-lg font-bold text-ink mb-2">
-          {isFa ? "هیچ نویسنده‌ای دنبال نشده" : "Not following anyone yet"}
+          {t("lists.followingEmpty")}
         </h2>
         <p className="text-muted text-sm mb-8 max-w-sm leading-relaxed">
-          {isFa
-            ? "متخصصان صنعتی را دنبال کنید تا مقالات جدید آن‌ها را اینجا ببینید."
-            : "Follow verified industrial experts to see their latest articles here in your personalized feed."}
+          {t("lists.followingBody")}
         </p>
         <Link href={`/${locale}/articles/authors`}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-signal text-signal text-sm font-bold hover:bg-signal/8 transition-all">
-          {isFa ? "مرور متخصصان" : "Browse Experts"}
+          {t("lists.browseExperts")}
         </Link>
       </div>
     </div>
@@ -57,11 +56,10 @@ export default async function FollowingPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isFa = locale === "fa";
 
   return (
     <RequireCapability capability="dashboard">
-      <FollowingContent isFa={isFa} locale={locale} />
+      <FollowingContent locale={locale} />
     </RequireCapability>
   );
 }

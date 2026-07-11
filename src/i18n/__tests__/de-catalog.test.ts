@@ -84,7 +84,8 @@ describe("de.json — parses and mirrors catalog structure", () => {
   it("parses as an object with the same 44 top-level namespaces as en", () => {
     expect(typeof de).toBe("object");
     expect(Object.keys(de)).toEqual(Object.keys(en));
-    expect(Object.keys(de).length).toBe(44);
+    // Phase 86C2-PRE added journal namespaces to all three catalogs equally.
+    expect(Object.keys(de).length).toBe(Object.keys(en).length);
   });
 
   it("has exactly the same key paths as en.json (no missing keys)", () => {
@@ -107,9 +108,11 @@ describe("de.json — parses and mirrors catalog structure", () => {
     }
   });
 
-  it("carries the expected total leaf count", () => {
-    const leaves = [...dePaths.keys()].filter((k) => !k.endsWith("//shape"));
-    expect(leaves.length).toBe(2467);
+  it("carries the same total leaf count as en", () => {
+    const deLeaves = [...dePaths.keys()].filter((k) => !k.endsWith("//shape"));
+    const enLeaves = [...enPaths.keys()].filter((k) => !k.endsWith("//shape"));
+    expect(deLeaves.length).toBe(enLeaves.length);
+    expect(deLeaves.length).toBeGreaterThanOrEqual(2467);
   });
 });
 
@@ -214,8 +217,10 @@ describe("de.json — Phase 86C1 translation audit", () => {
   });
 
   it("all non-batch namespaces temporarily carry English verbatim", () => {
-    expect(nonBatch.length).toBe(1929);
-    expect(carryover.length).toBe(1929);
+    // Journal namespaces (86C2-PRE) are also English-verbatim in de for now,
+    // so every non-batch-1 key remains a carryover.
+    expect(carryover.length).toBe(nonBatch.length);
+    expect(nonBatch.length).toBeGreaterThanOrEqual(1929);
   });
 
   it("prints the audit report", () => {
@@ -234,7 +239,7 @@ describe("de.json — Phase 86C1 translation audit", () => {
     };
     // eslint-disable-next-line no-console
     console.log("[86C1 de.json audit]", JSON.stringify(report, null, 2));
-    expect(report.totalLeafKeys).toBe(2467);
+    expect(report.totalLeafKeys).toBeGreaterThanOrEqual(2467);
     expect(report.placeholderMismatches).toBe(0);
     expect(report.emptyStrings).toBe(0);
     expect(report.malformedIcu).toBe(0);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type {
   EditorialOperationsDashboard,
   OpsTopArticle,
@@ -43,6 +44,7 @@ function KpiCard({ label, value, accent = false, sub }: {
 }
 
 // ── Status Badge ─────────────────────────────────────────────────────────────
+// Renders the raw ArtStatus enum value (technical, not a translated label).
 
 const STATUS_STYLE: Record<string, string> = {
   DRAFT:      "bg-surface3 text-faint border-line/40",
@@ -78,31 +80,30 @@ function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
 
 // ── Top Articles Table ────────────────────────────────────────────────────────
 
-function TopArticlesSection({ articles, isFa, locale }: {
+async function TopArticlesSection({ articles, isFa, locale }: {
   articles: OpsTopArticle[]; isFa: boolean; locale: string;
 }) {
+  const t  = await getTranslations("journalEditorial");
+  const tj = await getTranslations("journal");
   if (articles.length === 0) return null;
   return (
     <section>
-      <SectionHeader
-        eyebrow={isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
-        title={isFa ? "مقالات برتر" : "Top Articles"}
-      />
+      <SectionHeader eyebrow={tj("brandUpper")} title={t("ops.topArticles")} />
       <div className="rounded-xl border border-line/40 overflow-hidden">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-line/30 bg-surface/60">
               <th className="text-start px-4 py-2.5 text-faint font-mono uppercase tracking-wider text-[9px] w-full">
-                {isFa ? "عنوان" : "Title"}
+                {t("ops.colTitle")}
               </th>
               <th className="text-end px-4 py-2.5 text-faint font-mono uppercase tracking-wider text-[9px] whitespace-nowrap">
-                {isFa ? "بازدید" : "Views"}
+                {t("ops.colViews")}
               </th>
               <th className="text-end px-4 py-2.5 text-faint font-mono uppercase tracking-wider text-[9px] whitespace-nowrap hidden sm:table-cell">
-                {isFa ? "واکنش" : "React."}
+                {t("ops.colReact")}
               </th>
               <th className="text-end px-4 py-2.5 text-faint font-mono uppercase tracking-wider text-[9px] whitespace-nowrap hidden md:table-cell">
-                {isFa ? "تاریخ" : "Date"}
+                {t("ops.colDate")}
               </th>
             </tr>
           </thead>
@@ -136,16 +137,15 @@ function TopArticlesSection({ articles, isFa, locale }: {
 
 // ── Top Authors ───────────────────────────────────────────────────────────────
 
-function TopAuthorsSection({ authors, isFa, locale }: {
-  authors: OpsTopAuthor[]; isFa: boolean; locale: string;
+async function TopAuthorsSection({ authors, locale }: {
+  authors: OpsTopAuthor[]; locale: string;
 }) {
+  const t  = await getTranslations("journalEditorial");
+  const tj = await getTranslations("journal");
   if (authors.length === 0) return null;
   return (
     <section>
-      <SectionHeader
-        eyebrow={isFa ? "شبکه متخصصان" : "EXPERT NETWORK"}
-        title={isFa ? "متخصصان برتر" : "Top Experts"}
-      />
+      <SectionHeader eyebrow={t("ops.expertNetwork")} title={t("ops.topExperts")} />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {authors.map(a => (
           <Link key={a.id} href={`/${locale}/articles/author/${a.handle}`}
@@ -164,9 +164,9 @@ function TopAuthorsSection({ authors, isFa, locale }: {
               <p className="text-xs font-bold text-ink group-hover:text-signal transition-colors truncate">{a.displayName}</p>
               <p className="text-[10px] text-faint font-mono truncate">@{a.handle}</p>
               <div className="flex items-center gap-2 mt-0.5 text-[9px] text-faint font-mono">
-                <span>{a.publishedCount} {isFa ? "مقاله" : "pub"}</span>
+                <span>{a.publishedCount} {t("ops.pubUnit")}</span>
                 <span className="text-line">·</span>
-                <span>{fmtNum(a.totalViews)} {isFa ? "بازدید" : "views"}</span>
+                <span>{fmtNum(a.totalViews)} {tj("viewsUnit")}</span>
               </div>
             </div>
           </Link>
@@ -178,23 +178,20 @@ function TopAuthorsSection({ authors, isFa, locale }: {
 
 // ── Status Distribution ───────────────────────────────────────────────────────
 
-function StatusDistributionSection({ lifecycleCounts, visibilityCounts, isFa }: {
+async function StatusDistributionSection({ lifecycleCounts, visibilityCounts }: {
   lifecycleCounts: Array<{ status: string; count: number }>;
   visibilityCounts: Array<{ visibility: string; count: number }>;
-  isFa: boolean;
 }) {
+  const t = await getTranslations("journalEditorial");
   const total = lifecycleCounts.reduce((s, r) => s + r.count, 0);
   return (
     <section>
-      <SectionHeader
-        eyebrow={isFa ? "تحلیل وضعیت" : "STATUS ANALYSIS"}
-        title={isFa ? "توزیع وضعیت مقالات" : "Article Status Distribution"}
-      />
+      <SectionHeader eyebrow={t("ops.statusAnalysis")} title={t("ops.statusDistribution")} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Lifecycle */}
         <div className="rounded-xl border border-line/40 p-4">
           <p className="text-[10px] text-faint uppercase tracking-wider font-mono mb-3">
-            {isFa ? "چرخه حیات" : "Lifecycle"}
+            {t("ops.lifecycle")}
           </p>
           <div className="space-y-2">
             {lifecycleCounts.map(r => (
@@ -212,11 +209,12 @@ function StatusDistributionSection({ lifecycleCounts, visibilityCounts, isFa }: 
         {/* Visibility */}
         <div className="rounded-xl border border-line/40 p-4">
           <p className="text-[10px] text-faint uppercase tracking-wider font-mono mb-3">
-            {isFa ? "دید" : "Visibility"}
+            {t("ops.visibility")}
           </p>
           <div className="space-y-2">
             {visibilityCounts.map(r => (
               <div key={r.visibility} className="flex items-center gap-2.5">
+                {/* raw ArtVisibility enum value (technical, not translated) */}
                 <span className="text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase tracking-wider bg-surface3 text-muted border-line/40 shrink-0 w-20 text-center">
                   {r.visibility}
                 </span>
@@ -236,18 +234,16 @@ function StatusDistributionSection({ lifecycleCounts, visibilityCounts, isFa }: 
 
 // ── Recent Editorial Activity ─────────────────────────────────────────────────
 
-function RecentActivitySection({ events, isFa }: {
+async function RecentActivitySection({ events, isFa }: {
   events: OpsEditorialEvent[]; isFa: boolean;
 }) {
+  const t = await getTranslations("journalEditorial");
   if (events.length === 0) return (
     <section>
-      <SectionHeader
-        eyebrow={isFa ? "سردبیری" : "EDITORIAL"}
-        title={isFa ? "فعالیت‌های اخیر سردبیری" : "Recent Editorial Activity"}
-      />
+      <SectionHeader eyebrow={t("ops.editorial")} title={t("ops.recentActivity")} />
       <div className="rounded-xl border border-line/30 bg-surface/20 p-8 text-center">
         <p className="text-faint text-xs font-mono">
-          {isFa ? "فعالیت سردبیری یافت نشد" : "No editorial activity yet"}
+          {t("ops.noActivity")}
         </p>
       </div>
     </section>
@@ -255,10 +251,7 @@ function RecentActivitySection({ events, isFa }: {
 
   return (
     <section>
-      <SectionHeader
-        eyebrow={isFa ? "سردبیری" : "EDITORIAL"}
-        title={isFa ? "فعالیت‌های اخیر سردبیری" : "Recent Editorial Activity"}
-      />
+      <SectionHeader eyebrow={t("ops.editorial")} title={t("ops.recentActivity")} />
       <div className="space-y-2">
         {events.map(e => (
           <div key={e.id} className="flex items-start gap-3 p-3.5 rounded-xl border border-line/30 bg-surface/40 hover:bg-surface2/40 transition-colors">
@@ -292,7 +285,9 @@ interface Props {
   locale: string;
 }
 
-export function EditorialOperationsDashboard({ data, isFa, locale }: Props) {
+export async function EditorialOperationsDashboard({ data, isFa, locale }: Props) {
+  const t  = await getTranslations("journalEditorial");
+  const tj = await getTranslations("journal");
   const { pendingReview, publicPerformance, lifecycleCounts } = data;
 
   const published = lifecycleCounts.find(r => r.status === "PUBLISHED")?.count ?? 0;
@@ -310,20 +305,20 @@ export function EditorialOperationsDashboard({ data, isFa, locale }: Props) {
           style={{ background: "rgba(30,200,164,0.08)" }} />
         <div className="relative">
           <p className="eyebrow-mono text-signal text-[9px] mb-2 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+            {tj("brandUpper")}
           </p>
           <h1 className="text-2xl font-bold text-ink mb-0.5">
-            {isFa ? "مرکز عملیات ژورنال" : "Journal Operations Center"}
+            {t("ops.opsCenter")}
           </h1>
           <p className="text-xs text-muted">
-            {isFa ? "هوشمندی سردبیری" : "Editorial Intelligence"}
+            {t("ops.editorialIntelligence")}
             <span className="ms-3 text-[9px] text-faint font-mono">
-              {isFa ? "آخرین به‌روزرسانی:" : "Last updated:"} {fmtDate(data.generatedAt, isFa)}
+              {t("ops.lastUpdated")} {fmtDate(data.generatedAt, isFa)}
             </span>
           </p>
           {!data.dbAvailable && (
             <p className="mt-2 text-xs text-warn font-mono">
-              {isFa ? "پایگاه داده در دسترس نیست — داده‌های آماری موجود نیست" : "Database unavailable — metrics not available"}
+              {t("ops.dbUnavailable")}
             </p>
           )}
         </div>
@@ -332,34 +327,31 @@ export function EditorialOperationsDashboard({ data, isFa, locale }: Props) {
       {/* ── KPI Grid ──────────────────────────────────────────────────── */}
       <section>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <KpiCard label={isFa ? "در انتظار بررسی" : "Pending Review"}    value={pendingReview.count}            accent />
-          <KpiCard label={isFa ? "مقالات منتشرشده" : "Published Articles"} value={published}                     accent />
-          <KpiCard label={isFa ? "مقالات ردشده"   : "Rejected Articles"}  value={rejected} />
-          <KpiCard label={isFa ? "پیش‌نویس‌ها"    : "Drafts"}             value={drafts} />
-          <KpiCard label={isFa ? "بازدید عمومی"   : "Public Views"}       value={publicPerformance.totalViews} />
-          <KpiCard label={isFa ? "نویسندگان عمومی" : "Public Authors"}     value={publicPerformance.authorCount} />
+          <KpiCard label={t("ops.kpiPendingReview")}  value={pendingReview.count}            accent />
+          <KpiCard label={t("ops.kpiPublished")}       value={published}                     accent />
+          <KpiCard label={t("ops.kpiRejected")}        value={rejected} />
+          <KpiCard label={t("ops.kpiDrafts")}          value={drafts} />
+          <KpiCard label={t("ops.kpiPublicViews")}     value={publicPerformance.totalViews} />
+          <KpiCard label={t("ops.kpiPublicAuthors")}   value={publicPerformance.authorCount} />
         </div>
       </section>
 
       {/* ── Review Queue Health ───────────────────────────────────────── */}
       {pendingReview.count > 0 && (
         <section>
-          <SectionHeader
-            eyebrow={isFa ? "کنترل صف" : "QUEUE CONTROL"}
-            title={isFa ? "سلامت صف بررسی" : "Review Queue Health"}
-          />
+          <SectionHeader eyebrow={t("ops.queueControl")} title={t("ops.queueHealth")} />
           <div className="rounded-xl border border-warn/20 bg-warn/[0.03] p-5 flex flex-wrap gap-6 items-center">
             <div>
               <p className="text-2xl font-bold text-warn font-mono">{pendingReview.count}</p>
               <p className="text-[10px] text-faint uppercase tracking-wider font-mono mt-0.5">
-                {isFa ? "در انتظار بررسی" : "Pending Review"}
+                {t("ops.kpiPendingReview")}
               </p>
             </div>
             {pendingReview.oldestAt && (
               <div>
                 <p className="text-xs font-semibold text-ink">{fmtDate(pendingReview.oldestAt, isFa)}</p>
                 <p className="text-[10px] text-faint font-mono uppercase tracking-wider">
-                  {isFa ? "قدیمی‌ترین ارسال" : "Oldest Submission"}
+                  {t("ops.oldestSubmission")}
                 </p>
               </div>
             )}
@@ -367,14 +359,14 @@ export function EditorialOperationsDashboard({ data, isFa, locale }: Props) {
               <div>
                 <p className="text-xs font-semibold text-ink">{fmtDate(pendingReview.latestAt, isFa)}</p>
                 <p className="text-[10px] text-faint font-mono uppercase tracking-wider">
-                  {isFa ? "آخرین ارسال" : "Latest Submission"}
+                  {t("ops.latestSubmission")}
                 </p>
               </div>
             )}
             <div className="ms-auto">
               <Link href={`/${locale}/articles/review-queue`}
                 className="text-xs px-3.5 py-2 rounded-lg border border-warn/30 text-warn hover:bg-warn/[0.08] transition-colors font-medium">
-                {isFa ? "باز کردن صف بررسی" : "Open Review Queue"}
+                {t("ops.openReviewQueue")}
                 <svg viewBox="0 0 20 20" fill="currentColor" className={`inline-block w-3.5 h-3.5 ms-1.5 ${isFa ? "rotate-180" : ""}`}>
                   <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
                 </svg>
@@ -386,15 +378,12 @@ export function EditorialOperationsDashboard({ data, isFa, locale }: Props) {
 
       {/* ── Public Performance ────────────────────────────────────────── */}
       <section>
-        <SectionHeader
-          eyebrow={isFa ? "عملکرد عمومی" : "PUBLIC PERFORMANCE"}
-          title={isFa ? "عملکرد محتوای عمومی" : "Public Content Performance"}
-        />
+        <SectionHeader eyebrow={t("ops.publicPerformance")} title={t("ops.publicContentPerf")} />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <KpiCard label={isFa ? "مقالات منتشرشده عمومی" : "Published + Public"} value={publicPerformance.articleCount} accent />
-          <KpiCard label={isFa ? "مجموع بازدید"           : "Total Views"}       value={publicPerformance.totalViews} />
-          <KpiCard label={isFa ? "مجموع واکنش‌ها"          : "Total Reactions"}   value={publicPerformance.totalReactions} />
-          <KpiCard label={isFa ? "نویسندگان عمومی"         : "Public Authors"}    value={publicPerformance.authorCount} />
+          <KpiCard label={t("ops.publishedPublic")}   value={publicPerformance.articleCount} accent />
+          <KpiCard label={t("ops.totalViews")}         value={publicPerformance.totalViews} />
+          <KpiCard label={t("ops.totalReactions")}     value={publicPerformance.totalReactions} />
+          <KpiCard label={t("ops.kpiPublicAuthors")}   value={publicPerformance.authorCount} />
         </div>
       </section>
 
@@ -402,13 +391,12 @@ export function EditorialOperationsDashboard({ data, isFa, locale }: Props) {
       <TopArticlesSection articles={data.topArticles} isFa={isFa} locale={locale} />
 
       {/* ── Top Authors ───────────────────────────────────────────────── */}
-      <TopAuthorsSection authors={data.topAuthors} isFa={isFa} locale={locale} />
+      <TopAuthorsSection authors={data.topAuthors} locale={locale} />
 
       {/* ── Status Distribution ───────────────────────────────────────── */}
       <StatusDistributionSection
         lifecycleCounts={data.lifecycleCounts}
         visibilityCounts={data.visibilityCounts}
-        isFa={isFa}
       />
 
       {/* ── Recent Editorial Activity ─────────────────────────────────── */}

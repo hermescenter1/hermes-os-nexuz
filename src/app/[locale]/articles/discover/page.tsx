@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import {
   getAllCategories,
@@ -12,15 +12,12 @@ import type { ArticleListItem, ArticleCategory, ArticleTag } from "@/lib/article
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "journal" });
   return buildMetadata({
     locale,
     path: "/articles/discover",
-    title: locale === "fa"
-      ? "کشف صنعتی — ژورنال صنعتی هرمس"
-      : "Industrial Discovery — Hermes Industrial Journal",
-    description: locale === "fa"
-      ? "جستجوی مقاله‌ها و متخصصان صنعتی هرمس با فیلترهای پیشرفته"
-      : "Search articles and experts on Hermes Industrial Journal with advanced filters",
+    title: t("meta.discoverTitle"),
+    description: t("meta.discoverDescription"),
   });
 }
 
@@ -57,34 +54,25 @@ function fmtDate(d: string | null | undefined, isFa = false) {
   } catch { return d.slice(0, 10); }
 }
 
-const CONTENT_TYPE_LABELS: Record<string, { en: string; fa: string }> = {
-  TECHNICAL_ARTICLE:        { en: "Technical Article",   fa: "مقاله فنی" },
-  INDUSTRIAL_CASE_STUDY:    { en: "Case Study",          fa: "مطالعه موردی" },
-  TROUBLESHOOTING_REPORT:   { en: "Troubleshooting",     fa: "عیب‌یابی" },
-  PROJECT_REPORT:           { en: "Project Report",      fa: "گزارش پروژه" },
-  MAINTENANCE_INSIGHT:      { en: "Maintenance",         fa: "تعمیرات" },
-  PLC_SCADA_TUTORIAL:       { en: "PLC/SCADA",           fa: "PLC/SCADA" },
-  FAILURE_ANALYSIS:         { en: "Failure Analysis",    fa: "تحلیل خرابی" },
-  ASSET_RELIABILITY_NOTE:   { en: "Reliability",         fa: "قابلیت اطمینان" },
-  ENGINEERING_OPINION:      { en: "Opinion",             fa: "دیدگاه" },
-  RESEARCH_SUMMARY:         { en: "Research",            fa: "پژوهش" },
-  FIELD_COMMISSIONING_NOTE: { en: "Commissioning",       fa: "راه‌اندازی" },
-  SAFETY_COMPLIANCE_NOTE:   { en: "Safety",              fa: "ایمنی" },
-};
+// Enum values for the content-type filter; labels come from journal.discover.type.*
+const CONTENT_TYPE_VALUES = [
+  "TECHNICAL_ARTICLE", "INDUSTRIAL_CASE_STUDY", "TROUBLESHOOTING_REPORT",
+  "PROJECT_REPORT", "MAINTENANCE_INSIGHT", "PLC_SCADA_TUTORIAL",
+  "FAILURE_ANALYSIS", "ASSET_RELIABILITY_NOTE", "ENGINEERING_OPINION",
+  "RESEARCH_SUMMARY", "FIELD_COMMISSIONING_NOTE", "SAFETY_COMPLIANCE_NOTE",
+] as const;
 
 // ── Sub-components (server-only) ──────────────────────────────────────────────
 
-function ArticleCard({ article, isFa, locale }: {
+async function ArticleCard({ article, isFa, locale }: {
   article: ArticleListItem; isFa: boolean; locale: string;
 }) {
+  const t = await getTranslations("journal");
   const categoryLabel = isFa
     ? article.category?.nameFa ?? article.category?.name
     : article.category?.name;
-  const ctLabel = article.contentType
-    ? (isFa
-        ? CONTENT_TYPE_LABELS[article.contentType]?.fa
-        : CONTENT_TYPE_LABELS[article.contentType]?.en) ?? article.contentType
-    : null;
+  const ctKey   = article.contentType ? `discover.type.${article.contentType}` : null;
+  const ctLabel = ctKey ? (t.has(ctKey) ? t(ctKey) : article.contentType) : null;
   return (
     <article className="group p-4 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/50 hover:bg-surface2/40 transition-all">
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -99,6 +87,7 @@ function ArticleCard({ article, isFa, locale }: {
               {ctLabel}
             </span>
           )}
+          {/* article.language is the persisted ArtLanguage field (data, not UI locale) */}
           {article.language === "FA" && (
             <span className="inline-block text-[9px] px-1.5 py-0.5 rounded border border-line/30 bg-surface3 text-muted font-mono">
               FA
@@ -106,8 +95,8 @@ function ArticleCard({ article, isFa, locale }: {
           )}
         </div>
         <div className="flex items-center gap-3 text-[10px] text-faint font-mono shrink-0">
-          <span>{fmtNum(article.viewCount)} {isFa ? "بازدید" : "views"}</span>
-          <span>{fmtNum(article.reactionCount)} {isFa ? "واکنش" : "react"}</span>
+          <span>{fmtNum(article.viewCount)} {t("viewsUnit")}</span>
+          <span>{fmtNum(article.reactionCount)} {t("discover.reactUnit")}</span>
         </div>
       </div>
       <Link href={`/${locale}/articles/${article.slug}`}
@@ -143,9 +132,10 @@ function ArticleCard({ article, isFa, locale }: {
   );
 }
 
-function ExpertCard({ expert, isFa, locale }: {
+async function ExpertCard({ expert, isFa, locale }: {
   expert: DiscoveryExpert; isFa: boolean; locale: string;
 }) {
+  const t = await getTranslations("journal");
   return (
     <Link href={`/${locale}/articles/author/${expert.handle}`}
       className="group flex gap-4 p-4 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/50 hover:bg-surface2/40 transition-all">
@@ -168,7 +158,7 @@ function ExpertCard({ expert, isFa, locale }: {
           </div>
           {expert.verifiedExpert && (
             <span className="text-[9px] px-1.5 py-0.5 rounded border border-signal/20 bg-signal/[0.06] text-signal font-mono shrink-0">
-              {isFa ? "تایید شده" : "Verified"}
+              {t("discover.verified")}
             </span>
           )}
         </div>
@@ -188,10 +178,10 @@ function ExpertCard({ expert, isFa, locale }: {
         )}
         <div className="flex items-center gap-3 text-[9px] text-faint font-mono flex-wrap">
           <span className="text-signal font-semibold">
-            {expert.publishedCount} {isFa ? "مقاله" : "pub"}
+            {expert.publishedCount} {t("discover.pubUnit")}
           </span>
           <span className="text-line">·</span>
-          <span>{fmtNum(expert.totalViews)} {isFa ? "بازدید" : "views"}</span>
+          <span>{fmtNum(expert.totalViews)} {t("viewsUnit")}</span>
           {expert.latestPublishedAt && (
             <>
               <span className="text-line">·</span>
@@ -201,11 +191,11 @@ function ExpertCard({ expert, isFa, locale }: {
         </div>
         <div className="flex gap-1.5 mt-1.5 flex-wrap">
           <span className="text-[8px] px-1.5 py-0.5 rounded border border-signal/20 bg-signal/[0.04] text-signal font-mono">
-            {isFa ? "نویسنده منتشرشده" : "Published Author"}
+            {t("discover.publishedAuthor")}
           </span>
           {expert.verifiedExpert && (
             <span className="text-[8px] px-1.5 py-0.5 rounded border border-ice/20 bg-ice/[0.04] text-ice font-mono">
-              {isFa ? "متخصص تایید شده" : "Verified Expert"}
+              {t("discover.verifiedExpert")}
             </span>
           )}
         </div>
@@ -214,7 +204,8 @@ function ExpertCard({ expert, isFa, locale }: {
   );
 }
 
-function EmptyState({ isFa }: { isFa: boolean }) {
+async function EmptyState() {
+  const t = await getTranslations("journal");
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-xl border border-line/30 bg-surface/20">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-10 h-10 text-faint mb-3" aria-hidden="true">
@@ -222,10 +213,10 @@ function EmptyState({ isFa }: { isFa: boolean }) {
         <path d="m21 21-4.35-4.35" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
       <p className="text-sm font-semibold text-muted mb-1">
-        {isFa ? "نتیجه‌ای یافت نشد" : "No results found"}
+        {t("discover.emptyTitle")}
       </p>
       <p className="text-xs text-faint">
-        {isFa ? "فیلترها را تغییر دهید یا واژه دیگری جستجو کنید" : "Try adjusting your filters or search term"}
+        {t("discover.emptyBody")}
       </p>
     </div>
   );
@@ -253,6 +244,7 @@ export default async function DiscoverPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const isFa = locale === "fa";
+  const t    = await getTranslations({ locale, namespace: "journal" });
 
   const sp          = await searchParams;
   const q           = sanitizeParam(sp.q);
@@ -288,42 +280,17 @@ export default async function DiscoverPage({
 
   const hasFilters = !!(q || categorySlug || tagSlug || lang || contentType || rawSort);
 
-  const T = {
-    title:        isFa ? "کشف صنعتی"                     : "Industrial Discovery",
-    subtitle:     isFa ? "جستجوی مقاله‌ها و متخصصان"    : "Search articles and experts",
-    placeholder:  isFa ? "جستجو کنید..."                  : "Search articles, experts…",
-    searchBtn:    isFa ? "جستجو"                          : "Search",
-    clearBtn:     isFa ? "پاک‌کردن فیلترها"               : "Clear Filters",
-    tabArticles:  isFa ? "مقاله‌ها"                       : "Articles",
-    tabExperts:   isFa ? "متخصصان"                        : "Experts",
-    filterLabel:  isFa ? "فیلترها"                        : "Filters",
-    catLabel:     isFa ? "دسته‌بندی"                      : "Category",
-    catAll:       isFa ? "همه دسته‌ها"                    : "All Categories",
-    tagLabel:     isFa ? "برچسب / حوزه تخصص"             : "Tag / Expertise",
-    tagAll:       isFa ? "همه برچسب‌ها"                   : "All Tags",
-    langLabel:    isFa ? "زبان"                           : "Language",
-    langAll:      isFa ? "همه زبان‌ها"                    : "All Languages",
-    langEn:       isFa ? "انگلیسی"                        : "English",
-    langFa:       isFa ? "فارسی"                         : "Persian",
-    typeLabel:    isFa ? "نوع محتوا"                      : "Content Type",
-    typeAll:      isFa ? "همه انواع"                       : "All Types",
-    sortLabel:    isFa ? "مرتب‌سازی"                      : "Sort",
-    sortLatest:   isFa ? "جدیدترین"                       : "Latest",
-    sortViews:    isFa ? "پربازدیدترین"                   : "Most Viewed",
-    sortReact:    isFa ? "پربازخوردترین"                  : "Most Reacted",
-    sortPub:      isFa ? "بیشترین انتشار"                 : "Most Published",
-    results:      (n: number) => isFa ? `${n} نتیجه` : `${n} result${n === 1 ? "" : "s"}`,
-  };
+  const results = (n: number) => t("discover.results", { count: n, n: String(n) });
 
   const articleSortOptions = [
-    { value: "latest",    label: T.sortLatest },
-    { value: "views",     label: T.sortViews },
-    { value: "reactions", label: T.sortReact },
+    { value: "latest",    label: t("discover.sortLatest") },
+    { value: "views",     label: t("discover.sortViews") },
+    { value: "reactions", label: t("discover.sortReact") },
   ];
   const expertSortOptions = [
-    { value: "views",     label: T.sortViews },
-    { value: "published", label: T.sortPub },
-    { value: "latest",    label: T.sortLatest },
+    { value: "views",     label: t("discover.sortViews") },
+    { value: "published", label: t("discover.sortPub") },
+    { value: "latest",    label: t("discover.sortLatest") },
   ];
   const sortOptions = tab === "experts" ? expertSortOptions : articleSortOptions;
 
@@ -338,10 +305,10 @@ export default async function DiscoverPage({
           style={{ background: "rgba(100,180,255,0.05)" }} />
         <div className="relative max-w-5xl mx-auto px-6 py-10">
           <p className="eyebrow-mono text-signal text-[9px] mb-2 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس" : "HERMES INDUSTRIAL JOURNAL"}
+            {t("brandUpper")}
           </p>
-          <h1 className="text-2xl font-bold text-ink mb-1">{T.title}</h1>
-          <p className="text-xs text-muted">{T.subtitle}</p>
+          <h1 className="text-2xl font-bold text-ink mb-1">{t("discover.title")}</h1>
+          <p className="text-xs text-muted">{t("discover.subtitle")}</p>
         </div>
       </div>
 
@@ -362,7 +329,7 @@ export default async function DiscoverPage({
                 type="search"
                 name="q"
                 defaultValue={q}
-                placeholder={T.placeholder}
+                placeholder={t("discover.placeholder")}
                 maxLength={80}
                 autoComplete="off"
                 style={{ colorScheme: "dark", boxShadow: "none" }}
@@ -371,21 +338,21 @@ export default async function DiscoverPage({
             </div>
             <button type="submit"
               className="px-5 h-10 rounded-xl bg-[rgba(30,200,164,0.10)] border border-[rgba(30,200,164,0.30)] text-[#1EC8A4] text-sm font-semibold hover:bg-[rgba(30,200,164,0.16)] transition-all shrink-0">
-              {T.searchBtn}
+              {t("discover.searchBtn")}
             </button>
           </div>
 
           {/* Filter row */}
           <div className={`flex flex-wrap gap-2 items-center ${isFa ? "flex-row-reverse" : ""}`}>
             <span className="text-[10px] text-faint font-mono uppercase tracking-wider shrink-0">
-              {T.filterLabel}:
+              {t("discover.filterLabel")}:
             </span>
 
             {/* Category */}
             <select name="category" defaultValue={categorySlug ?? ""}
               style={{ colorScheme: "dark" }}
               className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
-              <option value="">{T.catAll}</option>
+              <option value="">{t("discover.catAll")}</option>
               {(categories as ArticleCategory[]).map(c => (
                 <option key={c.id} value={c.slug}>
                   {isFa ? c.nameFa : c.name}
@@ -397,10 +364,10 @@ export default async function DiscoverPage({
             <select name="tag" defaultValue={tagSlug ?? ""}
               style={{ colorScheme: "dark" }}
               className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
-              <option value="">{T.tagAll}</option>
-              {(tags as ArticleTag[]).map(t => (
-                <option key={t.id} value={t.slug}>
-                  {isFa ? (t.nameFa ?? t.name) : t.name}
+              <option value="">{t("discover.tagAll")}</option>
+              {(tags as ArticleTag[]).map(tg => (
+                <option key={tg.id} value={tg.slug}>
+                  {isFa ? (tg.nameFa ?? tg.name) : tg.name}
                 </option>
               ))}
             </select>
@@ -409,9 +376,9 @@ export default async function DiscoverPage({
             <select name="lang" defaultValue={lang ?? ""}
               style={{ colorScheme: "dark" }}
               className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
-              <option value="">{T.langAll}</option>
-              <option value="EN">{T.langEn}</option>
-              <option value="FA">{T.langFa}</option>
+              <option value="">{t("discover.langAll")}</option>
+              <option value="EN">{t("discover.langEn")}</option>
+              <option value="FA">{t("discover.langFa")}</option>
             </select>
 
             {/* Content type (articles only) */}
@@ -419,9 +386,9 @@ export default async function DiscoverPage({
               <select name="type" defaultValue={contentType ?? ""}
                 style={{ colorScheme: "dark" }}
               className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
-                <option value="">{T.typeAll}</option>
-                {Object.entries(CONTENT_TYPE_LABELS).map(([v, l]) => (
-                  <option key={v} value={v}>{isFa ? l.fa : l.en}</option>
+                <option value="">{t("discover.typeAll")}</option>
+                {CONTENT_TYPE_VALUES.map(v => (
+                  <option key={v} value={v}>{t(`discover.type.${v}`)}</option>
                 ))}
               </select>
             )}
@@ -430,7 +397,7 @@ export default async function DiscoverPage({
             <select name="sort" defaultValue={rawSort ?? ""}
               style={{ colorScheme: "dark" }}
               className="h-8 rounded-lg border border-[#1E2E40] bg-[#0C1420] text-xs text-[#F0F4F8] font-mono px-2 focus:outline-none focus:border-[rgba(30,200,164,0.45)] focus:ring-1 focus:ring-[rgba(30,200,164,0.15)] transition-all">
-              <option value="">{T.sortLabel}</option>
+              <option value="">{t("discover.sortLabel")}</option>
               {sortOptions.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -439,7 +406,7 @@ export default async function DiscoverPage({
             {hasFilters && (
               <Link href={buildClearUrl(locale)}
                 className="h-8 px-2.5 rounded-lg border border-[#1E2E40] text-[#4A5A6E] hover:text-[#F0F4F8] text-xs font-mono flex items-center transition-colors">
-                × {T.clearBtn}
+                × {t("discover.clearBtn")}
               </Link>
             )}
           </div>
@@ -453,7 +420,7 @@ export default async function DiscoverPage({
                 ? "border-signal text-signal"
                 : "border-transparent text-muted hover:text-ink"
             }`}>
-            {T.tabArticles}
+            {t("discover.tabArticles")}
             <span className="ms-1.5 text-[9px] font-mono text-faint">({articles.length})</span>
           </Link>
           <Link href={buildTabUrl(currentParams, "experts")}
@@ -462,16 +429,16 @@ export default async function DiscoverPage({
                 ? "border-signal text-signal"
                 : "border-transparent text-muted hover:text-ink"
             }`}>
-            {T.tabExperts}
+            {t("discover.tabExperts")}
             <span className="ms-1.5 text-[9px] font-mono text-faint">({experts.length})</span>
           </Link>
         </div>
 
         {/* ── Results ───────────────────────────────────────────────────── */}
         {tab === "articles" && (
-          <section aria-label={T.tabArticles}>
+          <section aria-label={t("discover.tabArticles")}>
             <p className="text-[10px] text-faint font-mono mb-3">
-              {T.results(articles.length)}
+              {results(articles.length)}
               {articleSort !== "latest" && (
                 <span className="ms-2 text-signal">
                   — {articleSortOptions.find(o => o.value === articleSort)?.label}
@@ -479,7 +446,7 @@ export default async function DiscoverPage({
               )}
             </p>
             {articles.length === 0 ? (
-              <EmptyState isFa={isFa} />
+              <EmptyState />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {articles.map(a => (
@@ -491,9 +458,9 @@ export default async function DiscoverPage({
         )}
 
         {tab === "experts" && (
-          <section aria-label={T.tabExperts}>
+          <section aria-label={t("discover.tabExperts")}>
             <p className="text-[10px] text-faint font-mono mb-3">
-              {T.results(experts.length)}
+              {results(experts.length)}
               {expertSort !== "views" && (
                 <span className="ms-2 text-signal">
                   — {expertSortOptions.find(o => o.value === expertSort)?.label}
@@ -501,7 +468,7 @@ export default async function DiscoverPage({
               )}
             </p>
             {experts.length === 0 ? (
-              <EmptyState isFa={isFa} />
+              <EmptyState />
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {experts.map(e => (

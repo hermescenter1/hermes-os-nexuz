@@ -1,11 +1,12 @@
-import { setRequestLocale }  from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { noIndexMetadata }   from "@/lib/seo/metadata";
 
 export const metadata = noIndexMetadata("Content Reports — Hermes Industrial Journal");
 export const dynamic  = "force-dynamic";
 
-function ReportsContent({ isFa }: { isFa: boolean }) {
+async function ReportsContent() {
+  const t = await getTranslations("journalEditorial");
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -15,13 +16,13 @@ function ReportsContent({ isFa }: { isFa: boolean }) {
           style={{ backgroundImage: "radial-gradient(rgba(30,200,164,0.14) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
         <div className="relative max-w-5xl mx-auto px-6 py-10">
           <p className="eyebrow-mono text-signal text-[9px] mb-2 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس — هیئت تحریریه" : "HERMES INDUSTRIAL JOURNAL — EDITORIAL"}
+            {t("reportsBrand")}
           </p>
           <h1 className="text-2xl font-bold text-ink">
-            {isFa ? "گزارش‌های محتوا" : "Content Reports"}
+            {t("reportsTitle")}
           </h1>
           <p className="text-xs text-muted mt-1">
-            {isFa ? "گزارش‌های محتوای نامناسب ارسال‌شده توسط کاربران" : "User-submitted content reports for editorial review"}
+            {t("reportsSubtitle")}
           </p>
         </div>
       </div>
@@ -34,10 +35,10 @@ function ReportsContent({ isFa }: { isFa: boolean }) {
             </svg>
           </div>
           <p className="text-sm font-semibold text-ink mb-1">
-            {isFa ? "صف گزارش‌ها پاک است" : "Reports queue is clear"}
+            {t("reportsClear")}
           </p>
           <p className="text-xs text-muted">
-            {isFa ? "گزارش فعالی برای بررسی وجود ندارد" : "No active reports to review at this time"}
+            {t("reportsClearBody")}
           </p>
         </div>
       </div>
@@ -52,11 +53,10 @@ export default async function ReportsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isFa = locale === "fa";
 
   return (
     <RequireCapability capability="admin">
-      <ReportsContent isFa={isFa} />
+      <ReportsContent />
     </RequireCapability>
   );
 }

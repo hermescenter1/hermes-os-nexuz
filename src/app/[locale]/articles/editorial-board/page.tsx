@@ -1,4 +1,4 @@
-import { setRequestLocale }  from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { noIndexMetadata }   from "@/lib/seo/metadata";
 import Link                   from "next/link";
@@ -6,12 +6,13 @@ import Link                   from "next/link";
 export const metadata = noIndexMetadata("Editorial Board — Hermes Industrial Journal");
 export const dynamic  = "force-dynamic";
 
-function EditorialBoardContent({ isFa, locale }: { isFa: boolean; locale: string }) {
-  const links = isFa ? [
+async function EditorialBoardContent({ locale }: { locale: string }) {
+  const t = await getTranslations("journalEditorial");
+  const links = [
     {
       href:  `/${locale}/articles/submissions`,
-      label: "مقالات ارسال‌شده",
-      desc:  "مقالات ارسال‌شده برای بررسی اولیه",
+      label: t("ebLink.submissionsLabel"),
+      desc:  t("ebLink.submissionsDesc"),
       badge: "SUBMISSIONS",
       color: "border-warn/20 bg-warn/5 text-warn",
       icon: (
@@ -22,8 +23,8 @@ function EditorialBoardContent({ isFa, locale }: { isFa: boolean; locale: string
     },
     {
       href:  `/${locale}/articles/review-queue`,
-      label: "صف بررسی",
-      desc:  "مقالات در حال بررسی توسط تیم تحریریه",
+      label: t("ebLink.reviewLabel"),
+      desc:  t("ebLink.reviewDesc"),
       badge: "REVIEW",
       color: "border-ice/20 bg-ice/5 text-ice",
       icon: (
@@ -34,8 +35,8 @@ function EditorialBoardContent({ isFa, locale }: { isFa: boolean; locale: string
     },
     {
       href:  `/${locale}/articles/moderation`,
-      label: "اعتدال محتوا",
-      desc:  "مدیریت و نظارت بر همه محتوای ژورنال",
+      label: t("ebLink.moderationLabel"),
+      desc:  t("ebLink.moderationDesc"),
       badge: "MODERATION",
       color: "border-signal/20 bg-signal/5 text-signal",
       icon: (
@@ -46,57 +47,8 @@ function EditorialBoardContent({ isFa, locale }: { isFa: boolean; locale: string
     },
     {
       href:  `/${locale}/articles/reports`,
-      label: "گزارش‌های محتوا",
-      desc:  "گزارش‌های محتوای نامناسب توسط کاربران",
-      badge: "REPORTS",
-      color: "border-danger/20 bg-danger/5 text-danger",
-      icon: (
-        <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-          <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd"/>
-        </svg>
-      ),
-    },
-  ] : [
-    {
-      href:  `/${locale}/articles/submissions`,
-      label: "Submissions",
-      desc:  "Articles submitted for initial editorial review",
-      badge: "SUBMISSIONS",
-      color: "border-warn/20 bg-warn/5 text-warn",
-      icon: (
-        <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-          <path d="M3.105 2.288a.75.75 0 0 0-.826.95l1.414 4.926A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.897 28.897 0 0 0 15.293-7.154.75.75 0 0 0 0-1.115A28.897 28.897 0 0 0 3.105 2.288Z"/>
-        </svg>
-      ),
-    },
-    {
-      href:  `/${locale}/articles/review-queue`,
-      label: "Review Queue",
-      desc:  "Articles currently under editorial peer review",
-      badge: "REVIEW",
-      color: "border-ice/20 bg-ice/5 text-ice",
-      icon: (
-        <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-          <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clipRule="evenodd"/>
-        </svg>
-      ),
-    },
-    {
-      href:  `/${locale}/articles/moderation`,
-      label: "Moderation",
-      desc:  "Manage and oversee all journal content",
-      badge: "MODERATION",
-      color: "border-signal/20 bg-signal/5 text-signal",
-      icon: (
-        <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-          <path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd"/>
-        </svg>
-      ),
-    },
-    {
-      href:  `/${locale}/articles/reports`,
-      label: "Content Reports",
-      desc:  "User-submitted reports of inappropriate content",
+      label: t("ebLink.reportsLabel"),
+      desc:  t("ebLink.reportsDesc"),
       badge: "REPORTS",
       color: "border-danger/20 bg-danger/5 text-danger",
       icon: (
@@ -119,15 +71,13 @@ function EditorialBoardContent({ isFa, locale }: { isFa: boolean; locale: string
 
         <div className="relative max-w-4xl mx-auto px-6 py-12">
           <p className="eyebrow-mono text-signal text-[9px] mb-3 tracking-[0.2em]">
-            {isFa ? "ژورنال صنعتی هرمس — سطح دسترسی: تحریریه" : "HERMES INDUSTRIAL JOURNAL — EDITORIAL ACCESS"}
+            {t("ebBrand")}
           </p>
           <h1 className="text-3xl font-bold text-ink mb-2">
-            {isFa ? "مرکز فرماندهی تحریریه" : "Editorial Command Center"}
+            {t("ebTitle")}
           </h1>
           <p className="text-muted text-sm max-w-lg">
-            {isFa
-              ? "مرکز مدیریت محتوا، بررسی مقالات، و نظارت بر ژورنال صنعتی هرمس"
-              : "Content management hub for the Hermes Industrial Journal editorial team"}
+            {t("ebSubtitle")}
           </p>
         </div>
       </div>
@@ -158,10 +108,10 @@ function EditorialBoardContent({ isFa, locale }: { isFa: boolean; locale: string
 
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-signal/60 group-hover:text-signal transition-colors font-mono">
-                  {isFa ? "ورود به بخش" : "Enter section"}
+                  {t("ebEnter")}
                 </span>
                 <svg viewBox="0 0 20 20" fill="currentColor"
-                  className={`w-3 h-3 text-signal/50 group-hover:text-signal transition-all group-hover:translate-x-0.5 ${isFa ? "rotate-180" : ""}`}>
+                  className={`w-3 h-3 text-signal/50 group-hover:text-signal transition-all group-hover:translate-x-0.5 ${locale === "fa" ? "rotate-180" : ""}`}>
                   <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
                 </svg>
               </div>
@@ -180,11 +130,10 @@ export default async function EditorialBoardPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isFa = locale === "fa";
 
   return (
     <RequireCapability capability="admin">
-      <EditorialBoardContent isFa={isFa} locale={locale} />
+      <EditorialBoardContent locale={locale} />
     </RequireCapability>
   );
 }
