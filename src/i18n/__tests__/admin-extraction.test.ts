@@ -118,9 +118,49 @@ describe("admin namespaces — value quality", () => {
     expect(bad).toEqual([]);
   });
 
-  it("de admin values are temporary English copies (not yet translated)", () => {
-    const diverged = adminKeys.filter((k) => JSON.stringify(deFlat.get(k)) !== JSON.stringify(enFlat.get(k)));
-    expect(diverged).toEqual([]);
+  // Justified identical-to-English German values: brand/label eyebrows,
+  // acronyms, and words German shares verbatim.
+  const GERMAN_JUSTIFIED_IDENTICAL: RegExp[] = [
+    /^[\d.,+×%\s]+$/,                                                       // numeric/symbol
+    /^(SEO|Status|Version|VERSION|Marketing|Software|Compliance|Onboarding|Moderation|Tickets|robots\.txt|Twitter Cards)$/,
+    /HERMES OS · COMPLIANCE · PHASE 61/,                                    // brand/label eyebrow
+  ];
+
+  it("de admin values are now translated to German (Phase 86C3)", () => {
+    const translated = adminKeys.filter((k) => JSON.stringify(deFlat.get(k)) !== JSON.stringify(enFlat.get(k)));
+    // 259 keys; only justified brand/acronym/shared-word values stay identical.
+    expect(translated.length).toBeGreaterThanOrEqual(230);
+  });
+
+  it("has no unintended English-copy German values (only justified terms stay identical)", () => {
+    const unjustified = adminKeys.filter((k) => {
+      const enV = String(enFlat.get(k)), deV = String(deFlat.get(k));
+      if (enV !== deV) return false;
+      return !GERMAN_JUSTIFIED_IDENTICAL.some((re) => re.test(deV));
+    });
+    expect(unjustified).toEqual([]);
+  });
+
+  it("has no informal German address (du/dein/dich/dir/euch/euer…)", () => {
+    const informal = adminKeys.filter((k) =>
+      /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i.test(String(deFlat.get(k)))
+    );
+    expect(informal).toEqual([]);
+  });
+
+  it("preserves protected technical/brand tokens in German", () => {
+    const TOKENS = ["Hermes OS", "API", "RBAC", "HTTP", "URL", "GDPR", "SEO", "GTM_ID", "GA4", "PWA", "DOM", "window.gtag"];
+    const lost: string[] = [];
+    for (const k of adminKeys) {
+      const enV = String(enFlat.get(k)), deV = String(deFlat.get(k));
+      for (const t of TOKENS) if (enV.includes(t) && !deV.includes(t)) lost.push(`${k}[${t}]`);
+    }
+    expect(lost).toEqual([]);
+  });
+
+  it("contains genuine German (umlauts/ß) across the admin catalog", () => {
+    const withGerman = adminKeys.filter((k) => /[äöüÄÖÜß]/.test(String(deFlat.get(k))));
+    expect(withGerman.length).toBeGreaterThan(15);
   });
 
   it("fa carries the moved Persian for control-center and leads (real prior fa/en surfaces)", () => {
