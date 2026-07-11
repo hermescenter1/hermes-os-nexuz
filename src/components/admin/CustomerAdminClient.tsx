@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { AdminCustomerListItem } from "@/lib/customer-portal/types";
 
 const TIER_COLORS: Record<string, string> = {
@@ -16,6 +17,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function CustomerAdminClient() {
+  const t = useTranslations("adminOperations.customers");
   const [accounts, setAccounts] = useState<AdminCustomerListItem[]>([]);
   const [loading, setLoading]   = useState(true);
   const [filter, setFilter]     = useState<string>("ALL");
@@ -42,7 +44,7 @@ export function CustomerAdminClient() {
               filter === f ? "border-signal/30 bg-signal/10 text-signal" : "border-line text-muted hover:text-ink"
             }`}
           >
-            {f === "ALL" ? "All Accounts" : f}
+            {f === "ALL" ? t("allAccounts") : f}
           </button>
         ))}
       </div>
@@ -50,10 +52,10 @@ export function CustomerAdminClient() {
       {/* Summary */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total Accounts",  value: accounts.length },
-          { label: "Active",          value: accounts.filter((a) => a.status === "ACTIVE").length },
-          { label: "Open Tickets",    value: accounts.reduce((s, a) => s + a.openTickets, 0) },
-          { label: "Active Projects", value: accounts.reduce((s, a) => s + a.activeProjects, 0) },
+          { label: t("totalAccounts"),  value: accounts.length },
+          { label: t("active"),         value: accounts.filter((a) => a.status === "ACTIVE").length },
+          { label: t("openTickets"),    value: accounts.reduce((s, a) => s + a.openTickets, 0) },
+          { label: t("activeProjects"), value: accounts.reduce((s, a) => s + a.activeProjects, 0) },
         ].map(({ label, value }) => (
           <div key={label} className="rounded-xl border border-line bg-surface p-4 text-center">
             <p className="text-2xl font-bold text-ink">{value}</p>
@@ -71,8 +73,8 @@ export function CustomerAdminClient() {
         </div>
       ) : accounts.length === 0 ? (
         <div className="rounded-xl border border-line bg-surface px-8 py-16 text-center space-y-2">
-          <h2 className="text-lg font-bold text-ink">No Customer Accounts</h2>
-          <p className="text-sm text-muted">Create customer portal accounts via the API or by provisioning through the admin panel.</p>
+          <h2 className="text-lg font-bold text-ink">{t("emptyTitle")}</h2>
+          <p className="text-sm text-muted">{t("emptyBody")}</p>
         </div>
       ) : (
         <div className="rounded-xl border border-line bg-surface overflow-hidden">
@@ -80,13 +82,13 @@ export function CustomerAdminClient() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line bg-surface-2">
-                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">Account</th>
-                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">Industry</th>
-                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">Tier</th>
-                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">Status</th>
-                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-faint">Health</th>
-                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-faint">Tickets</th>
-                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-faint">Projects</th>
+                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">{t("colAccount")}</th>
+                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">{t("colIndustry")}</th>
+                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">{t("colTier")}</th>
+                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">{t("colStatus")}</th>
+                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-faint">{t("colHealth")}</th>
+                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-faint">{t("colTickets")}</th>
+                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-faint">{t("colProjects")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">

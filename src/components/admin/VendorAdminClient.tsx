@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations }                  from "next-intl";
 import { track }                            from "@/lib/analytics/events";
 import type { VendorListItem, VendorOnboardingRequestItem } from "@/lib/vendors/types";
 
 type Tab = "pending" | "approved" | "rejected";
 
 export function VendorAdminClient() {
+  // Named tv (not t): load()'s callback parameter is already `t: Tab`.
+  const tv = useTranslations("adminOperations.vendors");
   const [tab,      setTab]      = useState<Tab>("pending");
   const [requests, setRequests] = useState<VendorOnboardingRequestItem[]>([]);
   const [vendors,  setVendors]  = useState<VendorListItem[]>([]);
@@ -26,11 +29,11 @@ export function VendorAdminClient() {
       setRequests(data.requests ?? []);
       setVendors(data.vendors   ?? []);
     } catch {
-      setError("Failed to load vendor data.");
+      setError(tv("loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tv]);
 
   useEffect(() => { void load(tab); }, [tab, load]);
 
@@ -46,7 +49,7 @@ export function VendorAdminClient() {
   }
 
   async function reject(id: string) {
-    const reason = window.prompt("Rejection reason (optional):");
+    const reason = window.prompt(tv("rejectPrompt"));
     setActing(id);
     try {
       const res = await fetch(`/api/admin/vendors/${id}/reject`, {
@@ -89,7 +92,7 @@ export function VendorAdminClient() {
                 : "border-transparent text-muted hover:text-ink"
             }`}
           >
-            {t}
+            {t === "pending" ? tv("tabPending") : t === "approved" ? tv("tabApproved") : tv("tabRejected")}
           </button>
         ))}
       </div>
@@ -107,7 +110,7 @@ export function VendorAdminClient() {
       ) : tab === "pending" || tab === "rejected" ? (
         requests.length === 0 ? (
           <p className="rounded-xl border border-line bg-surface px-6 py-10 text-center text-sm text-muted">
-            No {tab} applications.
+            {tab === "pending" ? tv("noPending") : tv("noRejected")}
           </p>
         ) : (
           <div className="space-y-3">
@@ -127,7 +130,7 @@ export function VendorAdminClient() {
                       ))}
                     </div>
                     <p className="text-[10px] text-muted/60 mt-1" dir="ltr">
-                      Submitted {df.format(new Date(r.createdAt))}
+                      {tv("submitted", { date: df.format(new Date(r.createdAt)) })}
                     </p>
                   </div>
                   {tab === "pending" && (
@@ -137,14 +140,14 @@ export function VendorAdminClient() {
                         onClick={() => approve(r.id)}
                         className="rounded-lg bg-signal px-4 py-2 text-xs font-semibold text-bg hover:bg-signal/90 transition-colors disabled:opacity-50"
                       >
-                        {acting === r.id ? "…" : "Approve"}
+                        {acting === r.id ? "…" : tv("approve")}
                       </button>
                       <button
                         disabled={acting === r.id}
                         onClick={() => reject(r.id)}
                         className="rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-2 text-xs font-semibold text-red-400 hover:bg-red-400/20 transition-colors disabled:opacity-50"
                       >
-                        Reject
+                        {tv("reject")}
                       </button>
                     </div>
                   )}
@@ -161,7 +164,7 @@ export function VendorAdminClient() {
       ) : (
         vendors.length === 0 ? (
           <p className="rounded-xl border border-line bg-surface px-6 py-10 text-center text-sm text-muted">
-            No approved vendors yet.
+            {tv("noApproved")}
           </p>
         ) : (
           <div className="space-y-3">
@@ -175,7 +178,7 @@ export function VendorAdminClient() {
                         {v.tier}
                       </span>
                       {v.isVerified && (
-                        <span className="text-xs text-signal">✓ Verified</span>
+                        <span className="text-xs text-signal">{tv("verified")}</span>
                       )}
                     </div>
                     <p className="text-xs text-muted">{v.vendorType.replace(/_/g, " ")} · {v.complianceStatus}</p>
@@ -186,7 +189,7 @@ export function VendorAdminClient() {
                       onClick={() => updateStatus(v.id, v.status === "APPROVED" ? "SUSPENDED" : "APPROVED")}
                       className="rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:text-ink hover:border-signal/30 transition-colors disabled:opacity-50"
                     >
-                      {v.status === "SUSPENDED" ? "Reinstate" : "Suspend"}
+                      {v.status === "SUSPENDED" ? tv("reinstate") : tv("suspend")}
                     </button>
                   </div>
                 </div>

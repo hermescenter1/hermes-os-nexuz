@@ -89,8 +89,8 @@ export function AdminConsoleClient({
   // Capability-driven Control Center: every administrative, editorial and
   // contributor destination the current role can actually reach, from the
   // single navigation registry (no hard-coded role lists). Empty groups are
-  // dropped.
-  const isFa = locale === "fa";
+  // dropped. Labels resolve from adminOperations.controlCenter.* by key.
+  const tNav = useTranslations("adminOperations.controlCenter");
   const controlGroups = useMemo(() => controlCenterFor(role as Role), [role]);
 
   return (
@@ -199,7 +199,7 @@ export function AdminConsoleClient({
           {controlGroups.map((group) => (
             <section key={group.key} className="rounded-xl border border-line bg-surface p-5">
               <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
-                {isFa ? group.labelFa : group.labelEn}
+                {tNav(`groups.${group.key}`)}
               </h2>
               <ul className="mt-3 space-y-1">
                 {group.items.map((item) => (
@@ -208,7 +208,7 @@ export function AdminConsoleClient({
                       href={item.href}
                       className="block rounded-lg px-3 py-2 font-body text-sm text-muted transition-colors hover:bg-bg hover:text-ink"
                     >
-                      {isFa ? item.labelFa : item.labelEn}
+                      {tNav(`items.${item.key}`)}
                     </Link>
                   </li>
                 ))}

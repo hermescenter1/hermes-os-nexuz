@@ -28,7 +28,8 @@ export default async function AnalyticsAdminPage({
     measurementId: GA_MEASUREMENT_ID,
     containerId:   GTM_ID,
     eventsCount:   TRACKED_EVENTS.length,
-    privacyMode:   "Anonymous Only",
+    // Display label from the catalog (same English value; fa translation already exists)
+    privacyMode:   labels?.anonymous ?? "Anonymous Only",
     cspUpdated:    analyticsEnabled,
     consentGated:  true,
     gdprCompliant: true,

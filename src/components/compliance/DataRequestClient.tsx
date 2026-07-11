@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type RequestType = "DATA_EXPORT" | "DATA_DELETION" | "CONSENT_WITHDRAWAL" | "ACCESS_REQUEST" | "CORRECTION_REQUEST";
 
-const TYPES: { value: RequestType; label: string; desc: string }[] = [
-  { value: "ACCESS_REQUEST",      label: "Access My Data",       desc: "Receive a copy of all personal data we hold about you." },
-  { value: "DATA_EXPORT",         label: "Export My Data",       desc: "Download a machine-readable export of your data." },
-  { value: "CORRECTION_REQUEST",  label: "Correct My Data",      desc: "Request correction of inaccurate personal information." },
-  { value: "CONSENT_WITHDRAWAL",  label: "Withdraw Consent",     desc: "Withdraw previously given consent for data processing." },
-  { value: "DATA_DELETION",       label: "Delete My Data",       desc: "Request erasure of your personal data (right to be forgotten)." },
+// Raw API request-type values; display labels come from
+// adminGovernance.dataRequest.types.<VALUE>.{label,desc}.
+const TYPE_VALUES: RequestType[] = [
+  "ACCESS_REQUEST", "DATA_EXPORT", "CORRECTION_REQUEST", "CONSENT_WITHDRAWAL", "DATA_DELETION",
 ];
 
 export function DataRequestClient() {
+  const t = useTranslations("adminGovernance.dataRequest");
   const [type,        setType]        = useState<RequestType>("ACCESS_REQUEST");
   const [email,       setEmail]       = useState("");
   const [description, setDescription] = useState("");
@@ -22,7 +22,7 @@ export function DataRequestClient() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email) { setError("Email is required."); return; }
+    if (!email) { setError(t("emailRequired")); return; }
     setSubmitting(true); setError("");
     const res  = await fetch("/api/compliance/privacy-requests", {
       method:  "POST",
@@ -31,40 +31,39 @@ export function DataRequestClient() {
     });
     const data = await res.json() as { message?: string; error?: string };
     if (res.ok) {
-      setSuccess(data.message ?? "Request received.");
+      setSuccess(data.message ?? t("receivedFallback"));
       setEmail(""); setDescription("");
     } else {
-      setError(data.error ?? "Failed to submit request.");
+      setError(data.error ?? t("failedFallback"));
     }
     setSubmitting(false);
   }
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal/70 mb-2">GDPR · PRIVACY RIGHTS</p>
-      <h1 className="font-mono text-2xl font-bold text-ink mb-3">Data Request Center</h1>
+      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-signal/70 mb-2">{t("eyebrow")}</p>
+      <h1 className="font-mono text-2xl font-bold text-ink mb-3">{t("title")}</h1>
       <p className="text-sm text-muted mb-8 leading-relaxed">
-        Exercise your privacy rights under GDPR and applicable data protection law.
-        All requests are processed within 30 days.
+        {t("lede")}
       </p>
 
       {success ? (
         <div className="rounded-xl border border-signal/30 bg-signal/5 p-6 text-center space-y-3">
           <div className="text-3xl">✓</div>
           <p className="text-signal font-mono text-sm">{success}</p>
-          <button onClick={() => setSuccess("")} className="text-xs text-muted hover:text-ink font-mono transition-colors">Submit another request</button>
+          <button onClick={() => setSuccess("")} className="text-xs text-muted hover:text-ink font-mono transition-colors">{t("submitAnother")}</button>
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-5">
           <div className="space-y-2">
-            <label className="kpi-label block">REQUEST TYPE</label>
+            <label className="kpi-label block">{t("requestType")}</label>
             <div className="space-y-2">
-              {TYPES.map((t) => (
-                <label key={t.value} className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${type === t.value ? "border-signal/40 bg-signal/5" : "border-line bg-surface hover:border-line/70"}`}>
-                  <input type="radio" name="type" value={t.value} checked={type === t.value} onChange={() => setType(t.value)} className="mt-0.5 accent-signal shrink-0" />
+              {TYPE_VALUES.map((value) => (
+                <label key={value} className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${type === value ? "border-signal/40 bg-signal/5" : "border-line bg-surface hover:border-line/70"}`}>
+                  <input type="radio" name="type" value={value} checked={type === value} onChange={() => setType(value)} className="mt-0.5 accent-signal shrink-0" />
                   <div>
-                    <p className="text-xs font-mono font-semibold text-ink">{t.label}</p>
-                    <p className="text-[11px] text-muted mt-0.5">{t.desc}</p>
+                    <p className="text-xs font-mono font-semibold text-ink">{t(`types.${value}.label`)}</p>
+                    <p className="text-[11px] text-muted mt-0.5">{t(`types.${value}.desc`)}</p>
                   </div>
                 </label>
               ))}
@@ -72,7 +71,7 @@ export function DataRequestClient() {
           </div>
 
           <div>
-            <label className="kpi-label mb-1 block">EMAIL ADDRESS *</label>
+            <label className="kpi-label mb-1 block">{t("emailLabel")}</label>
             <input
               type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
               className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal"
@@ -81,11 +80,11 @@ export function DataRequestClient() {
           </div>
 
           <div>
-            <label className="kpi-label mb-1 block">ADDITIONAL DETAILS</label>
+            <label className="kpi-label mb-1 block">{t("detailsLabel")}</label>
             <textarea
               value={description} onChange={(e) => setDescription(e.target.value)}
               rows={4} className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal resize-none"
-              placeholder="Describe your request in detail…"
+              placeholder={t("detailsPlaceholder")}
             />
           </div>
 
@@ -95,12 +94,11 @@ export function DataRequestClient() {
             type="submit" disabled={submitting}
             className="w-full rounded-lg bg-signal py-3 text-sm font-mono font-semibold text-bg hover:bg-signal/90 transition-colors disabled:opacity-50"
           >
-            {submitting ? "Submitting…" : "Submit Privacy Request"}
+            {submitting ? t("submitting") : t("submit")}
           </button>
 
           <p className="text-[11px] text-muted text-center leading-relaxed">
-            We will verify your identity before processing data access or deletion requests.
-            For urgent matters contact <span className="text-ink">privacy@hermes-os.io</span>
+            {t("verifyNote")} <span className="text-ink">privacy@hermes-os.io</span>
           </p>
         </form>
       )}

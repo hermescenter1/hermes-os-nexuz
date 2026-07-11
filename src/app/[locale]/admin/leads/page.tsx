@@ -94,7 +94,8 @@ const STATUS_CLS: Record<string, string> = {
 
 // ── Lead card (shared by both sections) ───────────────────────────────────────
 
-function LeadCard({ lead, isFa, actions }: { lead: SalesLeadRow; isFa: boolean; actions?: boolean }) {
+async function LeadCard({ lead, actions }: { lead: SalesLeadRow; actions?: boolean }) {
+  const t = await getTranslations("adminOperations.leads");
   return (
     <details
                 className="group rounded-xl border border-[#1E2E40] bg-[#0C1420]/50 overflow-hidden">
@@ -134,11 +135,11 @@ function LeadCard({ lead, isFa, actions }: { lead: SalesLeadRow; isFa: boolean; 
                 <div className="border-t border-[#1E2E40] px-4 py-4 bg-[#0a111e]/40">
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4 text-[10px] font-mono">
                     {[
-                      { k: isFa ? "تلفن" : "Phone",         v: lead.phone },
-                      { k: isFa ? "سمت"  : "Role",          v: lead.roleTitle },
-                      { k: isFa ? "اندازه شرکت" : "Size",   v: lead.companySize },
-                      { k: isFa ? "زمان دمو" : "Pref. Demo",v: lead.preferredDemo },
-                      { k: isFa ? "محل ارسال" : "Locale",   v: lead.locale },
+                      { k: t("phone"),    v: lead.phone },
+                      { k: t("role"),     v: lead.roleTitle },
+                      { k: t("size"),     v: lead.companySize },
+                      { k: t("prefDemo"), v: lead.preferredDemo },
+                      { k: t("locale"),   v: lead.locale },
                     ].map(({ k, v }) => v ? (
                       <div key={k}>
                         <p className="text-[#4A5A6E] uppercase tracking-wider mb-0.5">{k}</p>
@@ -149,7 +150,7 @@ function LeadCard({ lead, isFa, actions }: { lead: SalesLeadRow; isFa: boolean; 
                   {lead.useCase && (
                     <div className="mb-3">
                       <p className="text-[9px] font-mono uppercase tracking-wider text-[#4A5A6E] mb-1">
-                        {isFa ? "توضیح کاربرد" : "Use Case"}
+                        {t("useCase")}
                       </p>
                       <p className="text-xs text-[#8A9BB0] leading-relaxed whitespace-pre-wrap">{lead.useCase}</p>
                     </div>
@@ -157,7 +158,7 @@ function LeadCard({ lead, isFa, actions }: { lead: SalesLeadRow; isFa: boolean; 
                   {lead.message && (
                     <div>
                       <p className="text-[9px] font-mono uppercase tracking-wider text-[#4A5A6E] mb-1">
-                        {isFa ? "پیام" : "Message"}
+                        {t("message")}
                       </p>
                       <p className="text-xs text-[#8A9BB0] leading-relaxed whitespace-pre-wrap">{lead.message}</p>
                     </div>
@@ -173,8 +174,8 @@ function LeadCard({ lead, isFa, actions }: { lead: SalesLeadRow; isFa: boolean; 
 export default async function AdminLeadsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isFa = locale === "fa";
-  const t = await getTranslations("adminAccess");
+  const t  = await getTranslations("adminAccess");
+  const tl = await getTranslations("adminOperations.leads");
 
   const leads = await getLeads();
   const accessRequests = leads.filter(l => l.source === "AUTH_ACCESS_REQUEST");
@@ -186,16 +187,16 @@ export default async function AdminLeadsPage({ params }: { params: Promise<{ loc
         {/* Header */}
         <div className="mb-6">
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-[#1EC8A4] mb-1">
-            {isFa ? "لایه فروش هرمس" : "HERMES SALES LAYER"}
+            {tl("brand")}
           </p>
           <div className="flex items-center gap-2.5 mb-1">
             <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-[#1EC8A4] to-[rgba(30,200,164,0.2)]" />
             <h1 className="text-lg font-bold text-[#F0F4F8] uppercase tracking-wider">
-              {isFa ? "درخواست‌های دمو و دسترسی" : "Demo Requests & Access Requests"}
+              {tl("title")}
             </h1>
           </div>
           <p className="text-xs text-[#4A5A6E] font-mono">
-            {leads.length} {isFa ? "درخواست" : "leads"} · {isFa ? "فقط مدیران ارشد" : "admin/superadmin only"}
+            {leads.length} {tl("leadsUnit")} · {tl("adminOnly")}
           </p>
         </div>
 
@@ -213,13 +214,13 @@ export default async function AdminLeadsPage({ params }: { params: Promise<{ loc
           {accessRequests.length === 0 ? (
             <div className="rounded-xl border border-[#1E2E40] bg-[#0C1420]/40 p-6 text-center">
               <p className="text-xs text-[#4A5A6E] font-mono">
-                {isFa ? "درخواست دسترسی در انتظار نیست." : "No access requests waiting."}
+                {tl("accessEmpty")}
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               {accessRequests.map(lead => (
-                <LeadCard key={lead.id} lead={lead} isFa={isFa} actions />
+                <LeadCard key={lead.id} lead={lead} actions />
               ))}
             </div>
           )}
@@ -231,20 +232,20 @@ export default async function AdminLeadsPage({ params }: { params: Promise<{ loc
             SALES
           </span>
           <h2 className="text-sm font-bold text-[#F0F4F8] uppercase tracking-wider">
-            {isFa ? "درخواست‌های دمو" : "Demo Requests & Sales Leads"}
+            {tl("salesTitle")}
           </h2>
           <span className="text-[10px] text-[#4A5A6E] font-mono">({demoLeads.length})</span>
         </div>
         {demoLeads.length === 0 ? (
           <div className="rounded-xl border border-[#1E2E40] bg-[#0C1420]/40 p-12 text-center">
             <p className="text-sm text-[#4A5A6E] font-mono">
-              {isFa ? "هنوز درخواستی دریافت نشده است." : "No leads yet."}
+              {tl("salesEmpty")}
             </p>
           </div>
         ) : (
           <div className="space-y-3">
             {demoLeads.map(lead => (
-              <LeadCard key={lead.id} lead={lead} isFa={isFa} />
+              <LeadCard key={lead.id} lead={lead} />
             ))}
           </div>
         )}

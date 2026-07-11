@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 interface SeoStats {
   totalRoutes:       number;
   staticRoutes:      number;
@@ -45,6 +47,7 @@ function ActiveChip({ label }: { label: string }) {
 }
 
 export function SeoAdminClient({ stats, labels }: SeoAdminClientProps) {
+  const t = useTranslations("adminOperations.seo");
   return (
     <div className="space-y-8">
 
@@ -52,8 +55,8 @@ export function SeoAdminClient({ stats, labels }: SeoAdminClientProps) {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label={labels.totalPages   ?? "Indexed Routes"} value={stats.totalRoutes} />
         <StatCard label={labels.locales      ?? "Locales"}        value={stats.locales} />
-        <StatCard label={labels.knowledgeArticles ?? "Articles"}  value={stats.knowledgeArticles} sub="× 2 locales" />
-        <StatCard label={labels.openJobs     ?? "Open Jobs"}      value={stats.openJobs}    sub="× 2 locales" />
+        <StatCard label={labels.knowledgeArticles ?? "Articles"}  value={stats.knowledgeArticles} sub={t("perLocales")} />
+        <StatCard label={labels.openJobs     ?? "Open Jobs"}      value={stats.openJobs}    sub={t("perLocales")} />
       </div>
 
       {/* Feature flags */}
@@ -62,13 +65,13 @@ export function SeoAdminClient({ stats, labels }: SeoAdminClientProps) {
           {labels.overview ?? "SEO Features"}
         </h2>
         <div className="flex flex-wrap gap-3">
-          {stats.canonicalEnabled  && <ActiveChip label={`Canonical URLs — ${labels.configured ?? "Configured"}`} />}
+          {stats.canonicalEnabled  && <ActiveChip label={`${t("canonicalUrls")} — ${labels.configured ?? "Configured"}`} />}
           {stats.hreflangEnabled   && <ActiveChip label={`${labels.hreflang ?? "hreflang"} fa / en / x-default — ${labels.configured ?? "Configured"}`} />}
           {stats.ogEnabled         && <ActiveChip label={`${labels.ogTags ?? "Open Graph"} — ${labels.configured ?? "Configured"}`} />}
-          {stats.twitterEnabled    && <ActiveChip label={`Twitter Cards — ${labels.configured ?? "Configured"}`} />}
-          <ActiveChip label={`XML Sitemap — ${labels.active ?? "Active"}`} />
-          <ActiveChip label={`robots.txt — ${labels.active ?? "Active"}`} />
-          <ActiveChip label={`Web Manifest (PWA) — ${labels.active ?? "Active"}`} />
+          {stats.twitterEnabled    && <ActiveChip label={`${t("twitterCards")} — ${labels.configured ?? "Configured"}`} />}
+          <ActiveChip label={`${t("xmlSitemap")} — ${labels.active ?? "Active"}`} />
+          <ActiveChip label={`${t("robotsTxt")} — ${labels.active ?? "Active"}`} />
+          <ActiveChip label={`${t("webManifest")} — ${labels.active ?? "Active"}`} />
         </div>
       </div>
 
@@ -94,25 +97,25 @@ export function SeoAdminClient({ stats, labels }: SeoAdminClientProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line text-xs uppercase tracking-wider text-muted">
-              <th className="pb-2 text-start">Route Group</th>
-              <th className="pb-2 text-end">Count</th>
+              <th className="pb-2 text-start">{t("routeGroup")}</th>
+              <th className="pb-2 text-end">{t("count")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
             <tr>
-              <td className="py-2 text-ink">Static public routes × 2 locales</td>
+              <td className="py-2 text-ink">{t("staticRoutes")}</td>
               <td className="py-2 text-end tabular-nums text-ink">{stats.staticRoutes}</td>
             </tr>
             <tr>
-              <td className="py-2 text-ink">Knowledge articles × 2 locales</td>
+              <td className="py-2 text-ink">{t("knowledgeRoutes")}</td>
               <td className="py-2 text-end tabular-nums text-ink">{stats.articleRoutes}</td>
             </tr>
             <tr>
-              <td className="py-2 text-ink">Open job postings × 2 locales</td>
+              <td className="py-2 text-ink">{t("jobRoutes")}</td>
               <td className="py-2 text-end tabular-nums text-ink">{stats.jobRoutes}</td>
             </tr>
             <tr className="font-semibold">
-              <td className="py-2 text-signal">Total sitemap entries</td>
+              <td className="py-2 text-signal">{t("totalEntries")}</td>
               <td className="py-2 text-end tabular-nums text-signal">{stats.totalRoutes}</td>
             </tr>
           </tbody>
@@ -122,13 +125,13 @@ export function SeoAdminClient({ stats, labels }: SeoAdminClientProps) {
       {/* Resource links */}
       <div className="rounded-xl border border-line bg-surface p-6">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">
-          Live SEO Resources
+          {t("liveResources")}
         </h2>
         <div className="space-y-3">
           {[
             { label: labels.previewSitemap ?? "Sitemap", url: stats.sitemapUrl },
             { label: labels.previewRobots  ?? "Robots.txt", url: stats.robotsUrl },
-            { label: "Web Manifest (PWA)", url: stats.manifestUrl },
+            { label: t("webManifest"), url: stats.manifestUrl },
           ].map(({ label, url }) => (
             <div key={url} className="flex items-center justify-between gap-4">
               <span className="text-sm text-muted">{label}</span>

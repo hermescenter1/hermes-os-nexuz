@@ -9,6 +9,7 @@ import {
 } from "@/lib/navigation/control-center";
 import { isAuthorizedForPath, isProtectedPath } from "@/lib/auth/rbac";
 import { can, type Role } from "@/lib/auth/roles";
+import en from "../../../../messages/en.json";
 
 /**
  * Phase 84 — Admin Control Center navigation / RBAC visibility regression suite.
@@ -101,7 +102,8 @@ describe("control center — contributor tools policy", () => {
 
   it("the contributor group exists with contributor (not authoring) terminology", () => {
     expect(contributor).toBeDefined();
-    expect(contributor.labelEn).toBe("Contributor Tools");
+    // Labels moved to the i18n catalog in Phase 86C3-PRE — assert there.
+    expect(en.adminOperations.controlCenter.groups.contributor).toBe("Contributor Tools");
     expect(CONTROL_CENTER.some((g) => g.key === "authoring")).toBe(false);
   });
 

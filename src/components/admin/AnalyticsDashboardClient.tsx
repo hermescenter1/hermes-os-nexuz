@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState }  from "react";
+import { useTranslations }      from "next-intl";
 import { TRACKED_EVENTS }       from "@/lib/analytics/events";
 import { GA_MEASUREMENT_ID }    from "@/lib/analytics/config";
 
@@ -81,6 +82,7 @@ function RuntimeRow({
 }
 
 export function AnalyticsDashboardClient({ stats, labels }: AnalyticsDashboardClientProps) {
+  const t = useTranslations("adminOperations.analytics");
   const maskedGa  = stats.measurementId ? `G-••••••${stats.measurementId.slice(-4)}` : labels.notConfigured ?? "Not Configured";
   const maskedGtm = stats.containerId   ? `GTM-••••${stats.containerId.slice(-4)}`   : labels.notConfigured ?? "Not Configured";
 
@@ -132,7 +134,7 @@ export function AnalyticsDashboardClient({ stats, labels }: AnalyticsDashboardCl
         <StatCard
           label={labels.eventsTracked ?? "Events Tracked"}
           value={stats.eventsCount}
-          sub="custom + standard"
+          sub={t("customStandard")}
         />
         <StatCard
           label={labels.privacyMode ?? "Privacy Mode"}
@@ -144,52 +146,52 @@ export function AnalyticsDashboardClient({ stats, labels }: AnalyticsDashboardCl
       <div className="rounded-xl border border-signal/20 bg-signal/5 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-signal/70">
-            Runtime Status
+            {t("runtimeStatus")}
           </h2>
           <button
             onClick={() => setRuntimeKey((k) => k + 1)}
             className="rounded border border-signal/30 px-3 py-1 text-xs font-mono text-signal hover:bg-signal/10 transition-colors"
           >
-            Refresh
+            {t("refresh")}
           </button>
         </div>
         {runtime === null ? (
-          <p className="text-xs text-muted animate-pulse">Probing runtime…</p>
+          <p className="text-xs text-muted animate-pulse">{t("probing")}</p>
         ) : (
           <div>
             <RuntimeRow
-              label="GA Env Present (build-time)"
-              value={stats.gaConfigured ? maskedGa : "Not configured"}
+              label={t("gaEnvPresent")}
+              value={stats.gaConfigured ? maskedGa : t("notConfiguredLow")}
               ok={stats.gaConfigured}
               mono
             />
             <RuntimeRow
-              label="Consent — analytics"
+              label={t("consentAnalytics")}
               value={
                 runtime.consentAnalytics === null
-                  ? "DB unavailable"
+                  ? t("dbUnavailable")
                   : runtime.consentAnalytics
-                  ? "Granted"
-                  : "Denied / not set"
+                  ? t("granted")
+                  : t("deniedNotSet")
               }
               ok={runtime.consentAnalytics}
             />
             <RuntimeRow
-              label="GA4 script in DOM"
-              value={runtime.scriptMounted ? "Injected ✓" : "Not found — accept analytics cookies first"}
+              label={t("gaScriptInDom")}
+              value={runtime.scriptMounted ? t("injected") : t("scriptNotFound")}
               ok={runtime.scriptMounted}
               mono={false}
             />
             <RuntimeRow
-              label="window.gtag available"
-              value={runtime.gtagAvailable ? "Available ✓" : "Not available — script may still be loading"}
+              label={t("gtagAvailable")}
+              value={runtime.gtagAvailable ? t("available") : t("gtagNotAvailable")}
               ok={runtime.gtagAvailable}
               mono={false}
             />
           </div>
         )}
         <p className="mt-4 text-[11px] text-muted/70">
-          Accept analytics cookies, then click Refresh to verify the script loaded. All four rows should be green.
+          {t("verifyNote")}
         </p>
       </div>
 
@@ -271,7 +273,7 @@ export function AnalyticsDashboardClient({ stats, labels }: AnalyticsDashboardCl
           <p><span className="text-signal">NEXT_PUBLIC_GTM_ID</span>=GTM-XXXXXXX</p>
         </div>
         <p className="mt-3 text-[11px] text-amber-400/80 font-mono">
-          ⚠ GTM_ID must start with &quot;GTM-&quot; — G-XXXXXX is a GA4 measurement ID, not a GTM container ID.
+          {t("gtmWarning")}
         </p>
         <p className="mt-3 text-xs text-muted">
           {labels.setupNote ?? "Add these to your .env.local or deployment environment. Analytics automatically enables when either variable is set. See docs/analytics.md for full documentation."}

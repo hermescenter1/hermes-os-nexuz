@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 interface CourseRow {
   id: string;
@@ -30,6 +31,7 @@ const BLANK_COURSE = {
 };
 
 export function AcademyAdminClient() {
+  const t = useTranslations("adminGovernance.academyAdmin");
   const [courses, setCourses]   = useState<CourseRow[]>([]);
   const [stats,   setStats]     = useState<StatsData | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -66,7 +68,7 @@ export function AcademyAdminClient() {
       setForm({ ...BLANK_COURSE });
       await loadData();
     } else {
-      setError(data.error ?? "Failed to create course");
+      setError(data.error ?? t("createFailed"));
     }
     setSaving(false);
   }
@@ -98,23 +100,23 @@ export function AcademyAdminClient() {
       {stats && (
         <div className="global-ops-strip">
           <div className="global-ops-cell">
-            <span className="kpi-label">TOTAL COURSES</span>
+            <span className="kpi-label">{t("kpiTotalCourses")}</span>
             <span className="intel-kpi-value">{stats.totalCourses}</span>
           </div>
           <div className="global-ops-cell">
-            <span className="kpi-label">PUBLISHED</span>
+            <span className="kpi-label">{t("kpiPublished")}</span>
             <span className="intel-kpi-value text-signal">{stats.publishedCourses}</span>
           </div>
           <div className="global-ops-cell">
-            <span className="kpi-label">TOTAL ENROLLMENTS</span>
+            <span className="kpi-label">{t("kpiEnrollments")}</span>
             <span className="intel-kpi-value">{stats.totalEnrollments}</span>
           </div>
           <div className="global-ops-cell">
-            <span className="kpi-label">COMPLETION RATE</span>
+            <span className="kpi-label">{t("kpiCompletion")}</span>
             <span className="intel-kpi-value text-emerald-400">{stats.completionRate}%</span>
           </div>
           <div className="global-ops-cell">
-            <span className="kpi-label">CERTIFICATES ISSUED</span>
+            <span className="kpi-label">{t("kpiCertificates")}</span>
             <span className="intel-kpi-value text-amber-400">{stats.totalCertificates}</span>
           </div>
         </div>
@@ -122,62 +124,62 @@ export function AcademyAdminClient() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-mono text-sm uppercase tracking-widest text-muted/70">Course Management</h2>
+        <h2 className="font-mono text-sm uppercase tracking-widest text-muted/70">{t("courseManagement")}</h2>
         <button
           onClick={() => setCreating((v) => !v)}
           className="rounded-lg bg-signal px-4 py-2 text-xs font-mono font-semibold text-bg hover:bg-signal/90 transition-colors"
         >
-          {creating ? "✕ Cancel" : "+ New Course"}
+          {creating ? t("cancelNew") : t("newCourse")}
         </button>
       </div>
 
       {/* Create form */}
       {creating && (
         <div className="rounded-xl border border-signal/30 bg-surface p-6 space-y-4">
-          <h3 className="font-mono text-sm font-semibold text-ink">Create New Course</h3>
+          <h3 className="font-mono text-sm font-semibold text-ink">{t("createTitle")}</h3>
           {error && <p className="rounded-lg bg-danger/10 p-3 text-xs text-danger">{error}</p>}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="kpi-label mb-1 block">COURSE TITLE *</label>
+              <label className="kpi-label mb-1 block">{t("formTitle")}</label>
               <input
                 value={form.title} onChange={(e) => field("title", e.target.value)}
                 className="w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal"
-                placeholder="e.g. Industrial Safety Fundamentals"
+                placeholder={t("titlePlaceholder")}
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="kpi-label mb-1 block">DESCRIPTION</label>
+              <label className="kpi-label mb-1 block">{t("formDescription")}</label>
               <textarea
                 value={form.description} onChange={(e) => field("description", e.target.value)}
                 rows={3}
                 className="w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal resize-none"
-                placeholder="What will students learn?"
+                placeholder={t("descPlaceholder")}
               />
             </div>
             <div>
-              <label className="kpi-label mb-1 block">CATEGORY</label>
+              <label className="kpi-label mb-1 block">{t("formCategory")}</label>
               <select
                 value={form.category} onChange={(e) => field("category", e.target.value)}
                 className="w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal"
               >
-                {["general","industrial","automation","software","safety","compliance","onboarding"].map((c) => (
-                  <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                {(["general","industrial","automation","software","safety","compliance","onboarding"] as const).map((c) => (
+                  <option key={c} value={c}>{t(`categories.${c}`)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="kpi-label mb-1 block">LEVEL</label>
+              <label className="kpi-label mb-1 block">{t("formLevel")}</label>
               <select
                 value={form.level} onChange={(e) => field("level", e.target.value)}
                 className="w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal"
               >
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="advanced">Advanced</option>
+                <option value="beginner">{t("levels.beginner")}</option>
+                <option value="intermediate">{t("levels.intermediate")}</option>
+                <option value="advanced">{t("levels.advanced")}</option>
               </select>
             </div>
             <div>
-              <label className="kpi-label mb-1 block">ESTIMATED HOURS</label>
+              <label className="kpi-label mb-1 block">{t("formHours")}</label>
               <input
                 type="number" min={1} max={200}
                 value={form.estimatedHours}
@@ -186,19 +188,19 @@ export function AcademyAdminClient() {
               />
             </div>
             <div>
-              <label className="kpi-label mb-1 block">INSTRUCTOR NAME</label>
+              <label className="kpi-label mb-1 block">{t("formInstructor")}</label>
               <input
                 value={form.instructorName} onChange={(e) => field("instructorName", e.target.value)}
                 className="w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal"
-                placeholder="e.g. Dr. Sara Ahmadi"
+                placeholder={t("instructorPlaceholder")}
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="kpi-label mb-1 block">INSTRUCTOR BIO</label>
+              <label className="kpi-label mb-1 block">{t("formBio")}</label>
               <input
                 value={form.instructorBio} onChange={(e) => field("instructorBio", e.target.value)}
                 className="w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal"
-                placeholder="Short bio"
+                placeholder={t("bioPlaceholder")}
               />
             </div>
             <div className="flex items-center gap-3">
@@ -208,7 +210,7 @@ export function AcademyAdminClient() {
                 onChange={(e) => field("certificateEnabled", e.target.checked)}
                 className="accent-signal"
               />
-              <label htmlFor="cert" className="text-xs text-ink font-mono">Enable Certificate</label>
+              <label htmlFor="cert" className="text-xs text-ink font-mono">{t("enableCertificate")}</label>
             </div>
             <div className="flex items-center gap-3">
               <input
@@ -217,7 +219,7 @@ export function AcademyAdminClient() {
                 onChange={(e) => field("isFeatured", e.target.checked)}
                 className="accent-signal"
               />
-              <label htmlFor="featured" className="text-xs text-ink font-mono">Featured Course</label>
+              <label htmlFor="featured" className="text-xs text-ink font-mono">{t("featuredCourse")}</label>
             </div>
           </div>
           <div className="flex justify-end gap-3">
@@ -225,14 +227,14 @@ export function AcademyAdminClient() {
               onClick={() => setCreating(false)}
               className="rounded-lg border border-line px-4 py-2 text-xs font-mono text-muted hover:text-ink transition-colors"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               onClick={createCourse}
               disabled={saving || !form.title}
               className="rounded-lg bg-signal px-6 py-2 text-xs font-mono font-semibold text-bg hover:bg-signal/90 transition-colors disabled:opacity-50"
             >
-              {saving ? "Creating…" : "Create Course"}
+              {saving ? t("creating") : t("createCourse")}
             </button>
           </div>
         </div>
@@ -240,18 +242,18 @@ export function AcademyAdminClient() {
 
       {/* Course list */}
       {loading ? (
-        <div className="py-16 text-center text-muted text-sm">Loading courses…</div>
+        <div className="py-16 text-center text-muted text-sm">{t("loading")}</div>
       ) : courses.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="text-muted text-sm">No courses yet.</p>
-          <p className="text-xs text-muted/60 mt-1">Create the first course using the button above.</p>
+          <p className="text-muted text-sm">{t("empty")}</p>
+          <p className="text-xs text-muted/60 mt-1">{t("emptyHint")}</p>
         </div>
       ) : (
         <div className="rounded-xl border border-line overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-line bg-bg">
-                {["Title", "Category", "Level", "Hours", "Status", ""].map((h) => (
+                {[t("colTitle"), t("colCategory"), t("colLevel"), t("colHours"), t("colStatus"), ""].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-muted/70">{h}</th>
                 ))}
               </tr>
@@ -279,7 +281,7 @@ export function AcademyAdminClient() {
                           ? "bg-signal/10 text-signal"
                           : "bg-amber-400/10 text-amber-300"
                     }`}>
-                      {course.isArchived ? "Archived" : course.isPublished ? "Published" : "Draft"}
+                      {course.isArchived ? t("statusArchived") : course.isPublished ? t("statusPublished") : t("statusDraft")}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -289,7 +291,7 @@ export function AcademyAdminClient() {
                           onClick={() => togglePublish(course.id, course.isPublished)}
                           className="text-[10px] font-mono text-muted hover:text-ink transition-colors"
                         >
-                          {course.isPublished ? "Unpublish" : "Publish"}
+                          {course.isPublished ? t("unpublish") : t("publish")}
                         </button>
                       )}
                       {!course.isArchived && (
@@ -297,7 +299,7 @@ export function AcademyAdminClient() {
                           onClick={() => archiveCourse(course.id)}
                           className="text-[10px] font-mono text-muted/60 hover:text-danger transition-colors"
                         >
-                          Archive
+                          {t("archive")}
                         </button>
                       )}
                     </div>
