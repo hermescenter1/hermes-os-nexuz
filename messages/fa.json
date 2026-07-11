@@ -4061,5 +4061,267 @@
       "unpublish": "Unpublish",
       "archive": "Archive"
     }
+  },
+  "industrialBrain": {
+    "meta": {
+      "title": "مغز صنعتی هرمس — تحلیل خرابی، ماتریس سیگنال",
+      "description": "نقشه استدلال عصبی هرمس برای تحلیل خرابی صنعتی، تشخیص آلارم، و ماتریس سیگنال."
+    },
+    "status": {
+      "heading": "وضعیت سیستم",
+      "online": "آنلاین",
+      "modules": {
+        "signalIntake": "دریافت سیگنال",
+        "alarmIntelligence": "هوشمندی آلارم",
+        "signalMatrix": "ماتریس سیگنال",
+        "evidenceEntropy": "آنتروپی شواهد",
+        "neuralReasoningMap": "نقشه استدلال عصبی",
+        "safeActionPath": "مسیر اقدام ایمن"
+      }
+    },
+    "hero": {
+      "eyebrow": "هرمس OS · مغز صنعتی V1",
+      "title": "مغز صنعتی هرمس",
+      "subtitle": "هوشمندی آلارم، ماتریس سیگنال و نقشه استدلال عصبی",
+      "tagline": "موتور استدلال قطعی — شواهد‌اول، ایمنی‌آگاه، قابل توضیح. فقط برای پشتیبانی تصمیم‌گیری.",
+      "requestDemo": "درخواست دمو",
+      "exploreKnowledge": "کشف دانش صنعتی"
+    },
+    "capabilities": {
+      "heading": "قابلیت‌های مغز صنعتی",
+      "items": {
+        "alarmIntelligence": {
+          "title": "هوشمندی آلارم",
+          "desc": "تجزیه و تفسیر آلارم‌های PLC/SCADA/VFD، تشخیص شواهد مفقود، طبقه‌بندی منبع و شدت"
+        },
+        "signalMatrix": {
+          "title": "ماتریس سیگنال",
+          "desc": "ساخت ماتریس سیگنال ساختارمند: فرمان HMI، خروجی PLC، VFD/MCC، اضافه‌بار، مجوز، فیدبک"
+        },
+        "neuralReasoningMap": {
+          "title": "نقشه استدلال عصبی",
+          "desc": "فرضیه‌های علت قابل توضیح با رتبه‌بندی بر اساس شواهد، کمبود سیگنال و امتیاز اطمینان"
+        },
+        "evidenceEntropy": {
+          "title": "آنتروپی شواهد",
+          "desc": "کمی‌سازی عدم قطعیت تشخیصی، شناسایی سیگنال‌های متعارض، کاهش سیستماتیک عدم قطعیت"
+        },
+        "safeInspectionPath": {
+          "title": "مسیر بررسی ایمن",
+          "desc": "چک‌لیست اقدام ایمن ساختاریافته برای بازرسی PLC/SCADA، برق و مکانیک"
+        },
+        "industrialKnowledgeBase": {
+          "title": "پایگاه دانش صنعتی",
+          "desc": "تطبیق با پرونده‌های مهندسی واقعی، مقالات دانش و محتوای منتشر‌شده توسط متخصصان"
+        }
+      }
+    },
+    "safety": {
+      "heading": "ایمنی صنعتی",
+      "items": [
+        "هرگز اینترلاک‌های ایمنی را دور نزنید",
+        "بازرسی برق نیاز به پرسنل متخصص دارد",
+        "قبل از لمس فیزیکی LOTO اجرا کنید",
+        "با مستندات OEM و رویه‌های سایت عمل کنید"
+      ]
+    },
+    "deploy": {
+      "eyebrow": "هرمس صنعتی",
+      "title": "مغز صنعتی را برای سازمانتان دریافت کنید",
+      "desc": "یکپارچه‌سازی کامل با CMMS، EDMS، شبکه متخصصان و عملیات صنعتی",
+      "requestDemo": "درخواست دمو"
+    },
+    "workspace": {
+      "header": "فضای کاری تحلیل خرابی — ورودی سیگنال صنعتی",
+      "online": "آنلاین"
+    },
+    "sections": {
+      "alarmIntelligence": "هوشمندی آلارم",
+      "signalMatrix": "ماتریس سیگنال",
+      "reasoningMap": "نقشه استدلال عصبی هرمس",
+      "evidenceEntropy": "آنتروپی شواهد",
+      "riskUrgency": "ریسک و فوریت",
+      "likelyCauses": "علل محتمل",
+      "inspectionChecklist": "چک‌لیست بررسی",
+      "safeActionPath": "مسیر اقدام ایمن",
+      "relatedKnowledge": "دانش و کیس‌های مرتبط",
+      "executiveSummary": "خلاصه اجرایی",
+      "evidenceGaps": "کمبود شواهد"
+    },
+    "alarm": {
+      "none": "هیچ آلارمی گزارش نشده است. عدم وجود آلارم گزارش‌شده، سالم بودن عملکرد را تأیید نمی‌کند — سیم‌بندی میدانی، VFD، MCC یا وضعیت مکانیکی را جداگانه بررسی کنید."
+    },
+    "signalTable": {
+      "signal": "سیگنال",
+      "source": "منبع",
+      "observed": "مقدار مشاهده‌شده",
+      "status": "وضعیت",
+      "conf": "اطمینان"
+    },
+    "reasoning": {
+      "subtitle": "موتور استدلال قطعی — شواهد → فرضیه علت → گره ریسک → اقدام",
+      "evidenceNodes": "گره‌های شواهد",
+      "causeHypotheses": "فرضیه‌های علت",
+      "riskNodes": "گره‌های ریسک",
+      "actionNodes": "گره‌های اقدام"
+    },
+    "uncertainty": {
+      "missingCritical": "سیگنال‌های حیاتی مفقود",
+      "conflicting": "سیگنال‌های متعارض",
+      "recommendedEvidence": "شواهد پیشنهادی برای کاهش عدم قطعیت"
+    },
+    "uncertaintyLevel": {
+      "HIGH": "بالا",
+      "MEDIUM": "متوسط",
+      "LOW": "پایین"
+    },
+    "risk": {
+      "production": "تأثیر تولید",
+      "safety": "تأثیر ایمنی",
+      "downtime": "ریسک توقف"
+    },
+    "causes": {
+      "conf": "اطمینان",
+      "supporting": "شواهد پشتیبان",
+      "missing": "شواهد مفقود",
+      "suggestedCheck": "بررسی پیشنهادی"
+    },
+    "checklist": {
+      "warning": "⚠ همه بررسی‌های برق/مکانیک نیاز به پرسنل متخصص، LOTO و رویه‌های سایت دارند.",
+      "qualified": "متخصص"
+    },
+    "related": {
+      "empty": "هنوز دانش یا کیس مرتبطی یافت نشد."
+    },
+    "reportHeader": {
+      "eyebrow": "هرمس OS · مغز صنعتی",
+      "engineeringReport": "گزارش مهندسی",
+      "evidencePack": "بسته شواهد",
+      "generated": "تولید شده در",
+      "notReported": "گزارش نشده",
+      "assetType": "نوع دارایی",
+      "systemArea": "ناحیه سیستم",
+      "plcPlatform": "پلتفرم PLC",
+      "disclaimer": "⚠ گزارش پشتیبان تصمیم‌گیری — گزارش ایمنی تأییدشده نیست. با پرسنل متخصص و رویه‌های ایمنی سایت راستی‌آزمایی شود."
+    },
+    "summary": {
+      "primaryDomain": "حوزه اصلی",
+      "severity": "شدت",
+      "diagnosticConfidence": "اطمینان تشخیصی",
+      "evidenceEntropy": "آنتروپی شواهد",
+      "overallConfidence": "اطمینان تشخیصی کلی",
+      "engineFootnote": "موتور هرمس برین V1 · {ms}ms · فقط برای پشتیبانی تصمیم‌گیری"
+    },
+    "actions": {
+      "copySummary": "کپی خلاصه",
+      "copyFull": "کپی گزارش کامل",
+      "copied": "کپی شد ✓",
+      "printReport": "چاپ گزارش",
+      "saving": "در حال ذخیره…",
+      "saveFailed": "ذخیره ناموفق — دوباره تلاش کنید",
+      "saveAsCase": "ذخیره به‌عنوان کیس مهندسی",
+      "savedViewStudio": "ذخیره شد ✓ — مشاهده در کیس استودیو",
+      "signInToSave": "برای ذخیره به‌عنوان کیس مهندسی وارد شوید",
+      "requestAccess": "درخواست دسترسی"
+    },
+    "demoCta": {
+      "eyebrow": "هرمس OS · مغز صنعتی",
+      "title": "درخواست دمو مغز صنعتی",
+      "desc": "ببینید چطور هرمس OS عملیات صنعتی شما را با هوشمندی داده‌محور متحول می‌کند.",
+      "requestDemo": "درخواست دمو"
+    },
+    "form": {
+      "demoExamples": "نمونه‌های آماده دمو",
+      "faultIdentification": "شناسایی خرابی",
+      "problemTitle": "عنوان مشکل *",
+      "problemTitlePh": "مثال: موتور کانوایر پس از تعویض راه‌اندازی نمی‌شود",
+      "assetType": "نوع دارایی / تجهیز",
+      "assetTypePh": "مثال: موتور کانوایر 22kW",
+      "systemArea": "ناحیه سیستم",
+      "systemAreaPh": "مثال: خط تولید ۱، ناحیه بارگیری",
+      "plcPlatform": "پلتفرم PLC / SCADA / HMI",
+      "plcPlatformPh": "مثال: Siemens S7-1500، Allen-Bradley",
+      "recentChanges": "تغییرات اخیر",
+      "recentChangesPh": "مثال: تعویض موتور، تراز مکانیکی",
+      "symptomsSection": "علائم مشاهده‌شده و آلارم‌ها",
+      "observedSymptoms": "علائم مشاهده‌شده *",
+      "observedSymptomsPh": "مثال: فرمان اجرا از HMI فعال است. PLC خطای فعالی نشان نمی‌دهد. موتور نمی‌چرخد.",
+      "alarms": "آلارم‌ها و کدهای خطا",
+      "alarmsPh": "مثال: آلارم PLC فعالی وجود ندارد، یا کد VFD: F0001، یا هر آلارم فعال دیگر",
+      "signalStates": "وضعیت سیگنال‌ها",
+      "signalStatesNote": "هر اطلاعاتی که دارید وارد کنید. اطلاعات مفقود به عنوان UNKNOWN تشخیص داده می‌شود.",
+      "hmiCommand": "وضعیت فرمان HMI",
+      "hmiCommandPh": "مثال: فرمان اجرا فعال است",
+      "plcOutput": "وضعیت خروجی PLC",
+      "plcOutputPh": "مثال: نامشخص، یا خروجی Q0.0 فعال است",
+      "vfdMcc": "وضعیت VFD / MCC / کنتاکتور",
+      "vfdMccPh": "مثال: نامشخص، یا VFD آماده، یا خطای VFD",
+      "interlock": "وضعیت اینترلاک / مجوزها",
+      "interlockPh": "مثال: نامشخص، یا همه آزاد است",
+      "sensorFeedback": "سیگنال سنسور / فیدبک",
+      "sensorFeedbackPh": "مثال: انکودر فعال نیست، یا سنسور پروکسیمیتی کار می‌کند",
+      "otherSignals": "سیگنال‌های مشاهده‌شده دیگر",
+      "otherSignalsPh": "هر وضعیت سیگنال مرتبط دیگر",
+      "impactAssessment": "ارزیابی تأثیر",
+      "productionImpact": "تأثیر تولید",
+      "safetyImpact": "تأثیر ایمنی",
+      "alreadyCheckedSection": "آنچه قبلاً بررسی شده",
+      "alreadyChecked": "قبلاً بررسی شده",
+      "alreadyCheckedPh": "مثال: فرمان HMI، صفحه خطای PLC، چرخش آزاد مکانیکی اولیه",
+      "additionalInfo": "اطلاعات اضافی",
+      "additionalInfoPh": "هر اطلاعات اضافی مرتبط...",
+      "privacyWarning": "⚠ رمزها، اسرار فنی یا نقشه‌های محرمانه کارخانه را وارد نکنید. فقط برای پشتیبانی تصمیم‌گیری.",
+      "analyze": "تحلیل خرابی",
+      "analyzing": "در حال تحلیل...",
+      "connectionError": "خطا در ارتباط با سرور. دوباره تلاش کنید."
+    },
+    "impact": {
+      "select": "انتخاب کنید...",
+      "none": "بدون تأثیر",
+      "low": "کم",
+      "medium": "متوسط",
+      "high": "بالا",
+      "critical": "بحرانی"
+    },
+    "report": {
+      "summaryProblem": "عنوان مشکل: {title}",
+      "summaryTopHypothesis": "فرضیه اصلی: {title} (اطمینان {confidence}%)",
+      "summaryNoHypothesis": "فرضیه‌ای شناسایی نشد",
+      "summaryEntropy": "آنتروپی شواهد: {level}",
+      "summaryUrgency": "فوریت: {urgency} ({level})",
+      "summaryKeyChecks": "بررسی‌های بعدی کلیدی:",
+      "summaryNoCheck": "- بررسی مشخصی ثبت نشده است",
+      "reportTitle": "مغز صنعتی هرمس — گزارش مهندسی",
+      "fieldTitle": "عنوان",
+      "fieldAssetType": "نوع دارایی",
+      "fieldSystemArea": "ناحیه سیستم",
+      "fieldPlcPlatform": "پلتفرم PLC",
+      "fieldGenerated": "تولید شده در",
+      "notReported": "گزارش نشده",
+      "secExecutiveSummary": "خلاصه اجرایی",
+      "primaryDomain": "حوزه اصلی",
+      "severity": "شدت",
+      "diagnosticConfidence": "اطمینان تشخیصی",
+      "evidenceEntropy": "آنتروپی شواهد",
+      "secAlarmIntelligence": "هوشمندی آلارم",
+      "noAlarmReport": "هیچ آلارمی گزارش نشده است. عدم وجود آلارم گزارش‌شده، سالم بودن عملکرد را تأیید نمی‌کند.",
+      "secSignalMatrix": "ماتریس سیگنال",
+      "observed": "مشاهده‌شده",
+      "expected": "مورد انتظار",
+      "status": "وضعیت",
+      "nextCheck": "بررسی بعدی",
+      "secEvidenceEntropy": "آنتروپی شواهد",
+      "level": "سطح",
+      "missingCriticalSignals": "سیگنال‌های حیاتی مفقود",
+      "secLikelyCauses": "علل محتمل",
+      "supporting": "شواهد پشتیبان",
+      "missing": "شواهد مفقود",
+      "suggestedCheck": "بررسی پیشنهادی",
+      "secSafeActionPath": "مسیر اقدام ایمن",
+      "secDisclaimer": "سلب مسئولیت",
+      "disclaimerDecision": "گزارش پشتیبان تصمیم‌گیری.",
+      "disclaimerNotCertified": "گزارش ایمنی تأییدشده نیست.",
+      "disclaimerVerify": "با پرسنل متخصص و رویه‌های ایمنی سایت راستی‌آزمایی شود."
+    }
   }
 }

@@ -4061,5 +4061,267 @@
       "unpublish": "Unpublish",
       "archive": "Archive"
     }
+  },
+  "industrialBrain": {
+    "meta": {
+      "title": "Hermes Industrial Brain — Alarm Intelligence, Signal Matrix",
+      "description": "Hermes Industrial Brain — deterministic fault analysis, alarm intelligence, signal matrix, and neural reasoning map for industrial operations."
+    },
+    "status": {
+      "heading": "SYSTEM STATUS",
+      "online": "ONLINE",
+      "modules": {
+        "signalIntake": "Signal Intake",
+        "alarmIntelligence": "Alarm Intelligence",
+        "signalMatrix": "Signal Matrix",
+        "evidenceEntropy": "Evidence Entropy",
+        "neuralReasoningMap": "Neural Reasoning Map",
+        "safeActionPath": "Safe Action Path"
+      }
+    },
+    "hero": {
+      "eyebrow": "HERMES OS · INDUSTRIAL BRAIN V1",
+      "title": "Hermes Industrial Brain",
+      "subtitle": "Alarm Intelligence, Signal Matrix & Neural Reasoning Workspace",
+      "tagline": "Deterministic reasoning engine — evidence-first, safety-aware, explainable. Decision support only.",
+      "requestDemo": "Request Demo",
+      "exploreKnowledge": "Explore Industrial Knowledge"
+    },
+    "capabilities": {
+      "heading": "BRAIN CAPABILITIES",
+      "items": {
+        "alarmIntelligence": {
+          "title": "Alarm Intelligence",
+          "desc": "Parse and interpret PLC/SCADA/VFD alarms, detect missing evidence, classify source and severity"
+        },
+        "signalMatrix": {
+          "title": "Signal Matrix",
+          "desc": "Build a structured signal matrix: HMI command, PLC output, VFD/MCC, overload, permissive, feedback"
+        },
+        "neuralReasoningMap": {
+          "title": "Neural Reasoning Map",
+          "desc": "Explainable cause hypotheses ranked by evidence, with missing signal gaps and confidence scoring"
+        },
+        "evidenceEntropy": {
+          "title": "Evidence Entropy",
+          "desc": "Quantify diagnostic uncertainty, identify conflicting signals, reduce uncertainty systematically"
+        },
+        "safeInspectionPath": {
+          "title": "Safe Inspection Path",
+          "desc": "Structured safe-action checklist for PLC/SCADA, electrical, and mechanical inspection"
+        },
+        "industrialKnowledgeBase": {
+          "title": "Industrial Knowledge Base",
+          "desc": "Match against real engineering cases, knowledge articles, and expert-published content"
+        }
+      }
+    },
+    "safety": {
+      "heading": "INDUSTRIAL SAFETY",
+      "items": [
+        "Never bypass safety interlocks",
+        "Electrical inspection requires qualified personnel",
+        "Apply LOTO before physical contact",
+        "Follow OEM manuals and site procedures"
+      ]
+    },
+    "deploy": {
+      "eyebrow": "HERMES INDUSTRIAL",
+      "title": "Deploy Industrial Brain for your organization",
+      "desc": "Full integration with CMMS, EDMS, expert network, and industrial operations",
+      "requestDemo": "Request Demo"
+    },
+    "workspace": {
+      "header": "FAULT ANALYSIS WORKSPACE — INDUSTRIAL SIGNAL INTAKE",
+      "online": "ONLINE"
+    },
+    "sections": {
+      "alarmIntelligence": "Alarm Intelligence",
+      "signalMatrix": "Signal Matrix",
+      "reasoningMap": "Hermes Neural Reasoning Map",
+      "evidenceEntropy": "Evidence Entropy",
+      "riskUrgency": "Risk & Urgency",
+      "likelyCauses": "Likely Causes",
+      "inspectionChecklist": "Inspection Checklist",
+      "safeActionPath": "Safe Action Path",
+      "relatedKnowledge": "Related Knowledge and Cases",
+      "executiveSummary": "Executive Summary",
+      "evidenceGaps": "Evidence Gaps"
+    },
+    "alarm": {
+      "none": "No alarm was reported. The absence of a reported alarm does not confirm healthy operation — check field wiring, VFD, MCC, or mechanical state separately."
+    },
+    "signalTable": {
+      "signal": "Signal",
+      "source": "Source",
+      "observed": "Observed",
+      "status": "Status",
+      "conf": "Conf."
+    },
+    "reasoning": {
+      "subtitle": "Deterministic reasoning engine — Evidence → Cause Hypothesis → Risk Node → Action",
+      "evidenceNodes": "Evidence Nodes",
+      "causeHypotheses": "Cause Hypotheses",
+      "riskNodes": "Risk Nodes",
+      "actionNodes": "Action Nodes"
+    },
+    "uncertainty": {
+      "missingCritical": "Missing Critical Signals",
+      "conflicting": "Conflicting Signals",
+      "recommendedEvidence": "Recommended Evidence to Reduce Uncertainty"
+    },
+    "uncertaintyLevel": {
+      "HIGH": "HIGH",
+      "MEDIUM": "MEDIUM",
+      "LOW": "LOW"
+    },
+    "risk": {
+      "production": "Production Impact",
+      "safety": "Safety Impact",
+      "downtime": "Downtime Risk"
+    },
+    "causes": {
+      "conf": "CONF",
+      "supporting": "Supporting Evidence",
+      "missing": "Missing Evidence",
+      "suggestedCheck": "Suggested Check"
+    },
+    "checklist": {
+      "warning": "⚠ All electrical/mechanical checks require qualified personnel, LOTO, and site safety procedures.",
+      "qualified": "QUALIFIED"
+    },
+    "related": {
+      "empty": "No related knowledge or cases found yet."
+    },
+    "reportHeader": {
+      "eyebrow": "HERMES OS · INDUSTRIAL BRAIN",
+      "engineeringReport": "Engineering Report",
+      "evidencePack": "Evidence Pack",
+      "generated": "Generated",
+      "notReported": "Not reported",
+      "assetType": "Asset Type",
+      "systemArea": "System Area",
+      "plcPlatform": "PLC / Platform",
+      "disclaimer": "⚠ Decision-support report — not a certified safety report. Verify with qualified personnel and site procedures before acting."
+    },
+    "summary": {
+      "primaryDomain": "Primary Domain",
+      "severity": "Severity",
+      "diagnosticConfidence": "Diagnostic Confidence",
+      "evidenceEntropy": "Evidence Entropy",
+      "overallConfidence": "Overall Diagnostic Confidence",
+      "engineFootnote": "Hermes Industrial Brain V1 · {ms}ms · Decision support only"
+    },
+    "actions": {
+      "copySummary": "Copy Summary",
+      "copyFull": "Copy Full Report",
+      "copied": "Copied ✓",
+      "printReport": "Print Report",
+      "saving": "Saving…",
+      "saveFailed": "Save failed — try again",
+      "saveAsCase": "Save as Engineering Case",
+      "savedViewStudio": "Saved ✓ — view in Case Studio",
+      "signInToSave": "Sign in to save as an engineering case",
+      "requestAccess": "Request access"
+    },
+    "demoCta": {
+      "eyebrow": "HERMES OS · INDUSTRIAL BRAIN",
+      "title": "Request Industrial Brain Demo",
+      "desc": "See how Hermes OS transforms industrial operations with data-driven intelligence.",
+      "requestDemo": "Request Demo"
+    },
+    "form": {
+      "demoExamples": "Demo-Ready Examples",
+      "faultIdentification": "Fault Identification",
+      "problemTitle": "Problem Title *",
+      "problemTitlePh": "e.g. Conveyor motor does not start after replacement",
+      "assetType": "Asset / Equipment Type",
+      "assetTypePh": "e.g. 22kW Conveyor Motor",
+      "systemArea": "System Area",
+      "systemAreaPh": "e.g. Production Line 1, Loading Area",
+      "plcPlatform": "PLC / SCADA / HMI Platform",
+      "plcPlatformPh": "e.g. Siemens S7-1500, Allen-Bradley",
+      "recentChanges": "Recent Changes",
+      "recentChangesPh": "e.g. Motor replacement, mechanical alignment",
+      "symptomsSection": "Observed Symptoms & Alarms",
+      "observedSymptoms": "Observed Symptoms *",
+      "observedSymptomsPh": "e.g. HMI run command is active. PLC shows no active fault. Motor does not rotate.",
+      "alarms": "Alarms and Fault Codes",
+      "alarmsPh": "e.g. No active PLC alarm, or VFD fault code F0001, or list any active alarms",
+      "signalStates": "Signal States",
+      "signalStatesNote": "Enter any known state. Missing information is automatically identified as UNKNOWN.",
+      "hmiCommand": "HMI Command State",
+      "hmiCommandPh": "e.g. Run command active",
+      "plcOutput": "PLC Output State",
+      "plcOutputPh": "e.g. Unknown, or Q0.0 output active",
+      "vfdMcc": "VFD / MCC / Contactor Status",
+      "vfdMccPh": "e.g. Unknown, or VFD ready, or VFD fault",
+      "interlock": "Interlock / Permissive Status",
+      "interlockPh": "e.g. Unknown, or all permissives clear",
+      "sensorFeedback": "Sensor / Feedback Signal",
+      "sensorFeedbackPh": "e.g. Encoder not active, or proximity sensor working",
+      "otherSignals": "Other Observed Signals",
+      "otherSignalsPh": "Any other relevant signal states",
+      "impactAssessment": "Impact Assessment",
+      "productionImpact": "Production Impact",
+      "safetyImpact": "Safety Impact",
+      "alreadyCheckedSection": "What Has Already Been Checked",
+      "alreadyChecked": "Already Checked",
+      "alreadyCheckedPh": "e.g. HMI command, PLC fault page, basic mechanical free rotation",
+      "additionalInfo": "Additional Information",
+      "additionalInfoPh": "Any additional relevant information...",
+      "privacyWarning": "⚠ Do not enter passwords, secrets, or confidential plant drawings. Decision support only.",
+      "analyze": "Analyze Fault",
+      "analyzing": "Analyzing...",
+      "connectionError": "Connection error. Please try again."
+    },
+    "impact": {
+      "select": "Select...",
+      "none": "None",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "report": {
+      "summaryProblem": "Problem: {title}",
+      "summaryTopHypothesis": "Top hypothesis: {title} ({confidence}% confidence)",
+      "summaryNoHypothesis": "No hypothesis identified",
+      "summaryEntropy": "Evidence entropy: {level}",
+      "summaryUrgency": "Urgency: {urgency} ({level})",
+      "summaryKeyChecks": "Key next checks:",
+      "summaryNoCheck": "- No specific check recorded",
+      "reportTitle": "HERMES INDUSTRIAL BRAIN — ENGINEERING REPORT",
+      "fieldTitle": "Title",
+      "fieldAssetType": "Asset Type",
+      "fieldSystemArea": "System Area",
+      "fieldPlcPlatform": "PLC / Platform",
+      "fieldGenerated": "Generated",
+      "notReported": "Not reported",
+      "secExecutiveSummary": "Executive Summary",
+      "primaryDomain": "Primary Domain",
+      "severity": "Severity",
+      "diagnosticConfidence": "Diagnostic Confidence",
+      "evidenceEntropy": "Evidence Entropy",
+      "secAlarmIntelligence": "Alarm Intelligence",
+      "noAlarmReport": "No alarm was reported. The absence of a reported alarm does not confirm healthy operation.",
+      "secSignalMatrix": "Signal Matrix",
+      "observed": "Observed",
+      "expected": "Expected",
+      "status": "Status",
+      "nextCheck": "Next check",
+      "secEvidenceEntropy": "Evidence Entropy",
+      "level": "Level",
+      "missingCriticalSignals": "Missing Critical Signals",
+      "secLikelyCauses": "Likely Causes",
+      "supporting": "Supporting",
+      "missing": "Missing",
+      "suggestedCheck": "Suggested check",
+      "secSafeActionPath": "Safe Action Path",
+      "secDisclaimer": "Disclaimer",
+      "disclaimerDecision": "Decision-support report.",
+      "disclaimerNotCertified": "Not a certified safety report.",
+      "disclaimerVerify": "Verify with qualified personnel and site procedures."
+    }
   }
 }

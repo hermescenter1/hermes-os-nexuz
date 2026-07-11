@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { IndustrialBrainAnalysis, UncertaintyLevel } from "@/lib/industrial-brain/types";
+
+/** Loosely-typed next-intl translator for the report-text builders below. */
+type Translator = ReturnType<typeof useTranslations>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -40,6 +44,10 @@ const UNCERTAINTY_COLORS = {
 };
 
 // ─── Demo-ready sample scenarios ───────────────────────────────────────────────
+// Bilingual demo dataset that fills the form. `labelEn/labelFa` are the button
+// captions and `en/fa` are the sample field values loaded into the form — this
+// is locale content data (like a stored bilingual record), so the isFa lookups
+// against it below are data selection, not display strings.
 
 type SampleFields = Record<string, string>;
 
@@ -178,6 +186,7 @@ interface ReportMeta {
 
 function fmtDateTime(date: Date, isFa: boolean): string {
   try {
+    // Locale-specific date formatting (non-display-string conditional).
     return new Intl.DateTimeFormat(isFa ? "fa-IR" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(date);
   } catch {
     return date.toISOString();
@@ -209,61 +218,49 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-function uncertaintyLabel(level: UncertaintyLevel, isFa: boolean): string {
-  if (!isFa) return level;
-  return level === "HIGH" ? "بالا" : level === "MEDIUM" ? "متوسط" : "پایین";
+function uncertaintyLabel(level: UncertaintyLevel, t: Translator): string {
+  return t(`uncertaintyLevel.${level}`);
 }
 
-function buildSummaryText(analysis: IndustrialBrainAnalysis, meta: ReportMeta, isFa: boolean): string {
+function buildSummaryText(analysis: IndustrialBrainAnalysis, meta: ReportMeta, isFa: boolean, t: Translator): string {
   const top = analysis.likelyCauses[0];
   const nextChecks = analysis.likelyCauses.slice(0, 3).map(c => (isFa ? c.suggestedCheckFa : c.suggestedCheck)).filter(Boolean);
 
-  const lines = isFa
-    ? [
-        `عنوان مشکل: ${meta.problemTitle}`,
-        top ? `فرضیه اصلی: ${top.titleFa} (اطمینان ${top.confidence}%)` : "فرضیه‌ای شناسایی نشد",
-        `آنتروپی شواهد: ${uncertaintyLabel(analysis.uncertainty.level, true)}`,
-        `فوریت: ${analysis.risk.urgencyFa} (${analysis.risk.urgencyLevel})`,
-        "بررسی‌های بعدی کلیدی:",
-        ...(nextChecks.length ? nextChecks.map(c => `- ${c}`) : ["- بررسی مشخصی ثبت نشده است"]),
-      ]
-    : [
-        `Problem: ${meta.problemTitle}`,
-        top ? `Top hypothesis: ${top.title} (${top.confidence}% confidence)` : "No hypothesis identified",
-        `Evidence entropy: ${analysis.uncertainty.level}`,
-        `Urgency: ${analysis.risk.urgency} (${analysis.risk.urgencyLevel})`,
-        "Key next checks:",
-        ...(nextChecks.length ? nextChecks.map(c => `- ${c}`) : ["- No specific check recorded"]),
-      ];
+  const lines = [
+    t("report.summaryProblem", { title: meta.problemTitle }),
+    top
+      ? t("report.summaryTopHypothesis", { title: isFa ? top.titleFa : top.title, confidence: String(top.confidence) })
+      : t("report.summaryNoHypothesis"),
+    t("report.summaryEntropy", { level: uncertaintyLabel(analysis.uncertainty.level, t) }),
+    t("report.summaryUrgency", { urgency: isFa ? analysis.risk.urgencyFa : analysis.risk.urgency, level: analysis.risk.urgencyLevel }),
+    t("report.summaryKeyChecks"),
+    ...(nextChecks.length ? nextChecks.map(c => `- ${c}`) : [t("report.summaryNoCheck")]),
+  ];
 
   return lines.join("\n");
 }
 
-function buildFullReportText(analysis: IndustrialBrainAnalysis, meta: ReportMeta, isFa: boolean): string {
-  const L = (en: string, fa: string) => (isFa ? fa : en);
+function buildFullReportText(analysis: IndustrialBrainAnalysis, meta: ReportMeta, isFa: boolean, t: Translator): string {
   const sec = (title: string) => `\n── ${title} ──\n`;
   const lines: string[] = [];
 
-  lines.push(L("HERMES INDUSTRIAL BRAIN — ENGINEERING REPORT", "مغز صنعتی هرمس — گزارش مهندسی"));
-  lines.push(`${L("Title", "عنوان")}: ${meta.problemTitle}`);
-  lines.push(`${L("Asset Type", "نوع دارایی")}: ${meta.assetType || L("Not reported", "گزارش نشده")}`);
-  lines.push(`${L("System Area", "ناحیه سیستم")}: ${meta.systemArea || L("Not reported", "گزارش نشده")}`);
-  lines.push(`${L("PLC / Platform", "پلتفرم PLC")}: ${meta.plcPlatform || L("Not reported", "گزارش نشده")}`);
-  lines.push(`${L("Generated", "تولید شده در")}: ${fmtDateTime(meta.generatedAt, isFa)}`);
+  lines.push(t("report.reportTitle"));
+  lines.push(`${t("report.fieldTitle")}: ${meta.problemTitle}`);
+  lines.push(`${t("report.fieldAssetType")}: ${meta.assetType || t("report.notReported")}`);
+  lines.push(`${t("report.fieldSystemArea")}: ${meta.systemArea || t("report.notReported")}`);
+  lines.push(`${t("report.fieldPlcPlatform")}: ${meta.plcPlatform || t("report.notReported")}`);
+  lines.push(`${t("report.fieldGenerated")}: ${fmtDateTime(meta.generatedAt, isFa)}`);
 
-  lines.push(sec(L("Executive Summary", "خلاصه اجرایی")));
+  lines.push(sec(t("report.secExecutiveSummary")));
   lines.push(isFa ? analysis.summaryFa : analysis.summary);
-  lines.push(`${L("Primary Domain", "حوزه اصلی")}: ${isFa ? analysis.classification.domainFa : analysis.classification.domain}`);
-  lines.push(`${L("Severity", "شدت")}: ${analysis.classification.severity}`);
-  lines.push(`${L("Diagnostic Confidence", "اطمینان تشخیصی")}: ${analysis.confidence}%`);
-  lines.push(`${L("Evidence Entropy", "آنتروپی شواهد")}: ${uncertaintyLabel(analysis.uncertainty.level, isFa)}`);
+  lines.push(`${t("report.primaryDomain")}: ${isFa ? analysis.classification.domainFa : analysis.classification.domain}`);
+  lines.push(`${t("report.severity")}: ${analysis.classification.severity}`);
+  lines.push(`${t("report.diagnosticConfidence")}: ${analysis.confidence}%`);
+  lines.push(`${t("report.evidenceEntropy")}: ${uncertaintyLabel(analysis.uncertainty.level, t)}`);
 
-  lines.push(sec(L("Alarm Intelligence", "هوشمندی آلارم")));
+  lines.push(sec(t("report.secAlarmIntelligence")));
   if (!analysis.alarms.length) {
-    lines.push(L(
-      "No alarm was reported. The absence of a reported alarm does not confirm healthy operation.",
-      "هیچ آلارمی گزارش نشده است. عدم وجود آلارم گزارش‌شده، سالم بودن عملکرد را تأیید نمی‌کند."
-    ));
+    lines.push(t("report.noAlarmReport"));
   } else {
     for (const a of analysis.alarms) {
       lines.push(`- [${a.severity}] ${a.alarmText} (${a.source})`);
@@ -272,37 +269,37 @@ function buildFullReportText(analysis: IndustrialBrainAnalysis, meta: ReportMeta
     }
   }
 
-  lines.push(sec(L("Signal Matrix", "ماتریس سیگنال")));
+  lines.push(sec(t("report.secSignalMatrix")));
   for (const s of analysis.signalMatrix) {
-    lines.push(`- ${isFa ? s.signalNameFa : s.signalName} | ${s.source} | ${L("Observed", "مشاهده‌شده")}: ${s.observedValue} | ${L("Expected", "مورد انتظار")}: ${s.expectedValue} | ${L("Status", "وضعیت")}: ${s.status} | ${L("Next check", "بررسی بعدی")}: ${s.nextCheck}`);
+    lines.push(`- ${isFa ? s.signalNameFa : s.signalName} | ${s.source} | ${t("report.observed")}: ${s.observedValue} | ${t("report.expected")}: ${s.expectedValue} | ${t("report.status")}: ${s.status} | ${t("report.nextCheck")}: ${s.nextCheck}`);
   }
 
-  lines.push(sec(L("Evidence Entropy", "آنتروپی شواهد")));
-  lines.push(`${L("Level", "سطح")}: ${uncertaintyLabel(analysis.uncertainty.level, isFa)}`);
+  lines.push(sec(t("report.secEvidenceEntropy")));
+  lines.push(`${t("report.level")}: ${uncertaintyLabel(analysis.uncertainty.level, t)}`);
   lines.push(isFa ? analysis.uncertainty.explanationFa : analysis.uncertainty.explanation);
   if (analysis.uncertainty.missingCriticalSignals.length) {
-    lines.push(`${L("Missing Critical Signals", "سیگنال‌های حیاتی مفقود")}: ${(isFa ? analysis.uncertainty.missingCriticalSignalsFa : analysis.uncertainty.missingCriticalSignals).join(", ")}`);
+    lines.push(`${t("report.missingCriticalSignals")}: ${(isFa ? analysis.uncertainty.missingCriticalSignalsFa : analysis.uncertainty.missingCriticalSignals).join(", ")}`);
   }
 
-  lines.push(sec(L("Likely Causes", "علل محتمل")));
+  lines.push(sec(t("report.secLikelyCauses")));
   analysis.likelyCauses.forEach((c, i) => {
     lines.push(`${i + 1}. ${isFa ? c.titleFa : c.title} (${c.confidence}%)`);
     lines.push(`   ${isFa ? c.explanationFa : c.explanation}`);
-    if (c.supportingEvidence.length) lines.push(`   ${L("Supporting", "شواهد پشتیبان")}: ${c.supportingEvidence.join("; ")}`);
-    if (c.missingEvidence.length) lines.push(`   ${L("Missing", "شواهد مفقود")}: ${c.missingEvidence.join("; ")}`);
-    lines.push(`   ${L("Suggested check", "بررسی پیشنهادی")}: ${isFa ? c.suggestedCheckFa : c.suggestedCheck}`);
+    if (c.supportingEvidence.length) lines.push(`   ${t("report.supporting")}: ${c.supportingEvidence.join("; ")}`);
+    if (c.missingEvidence.length) lines.push(`   ${t("report.missing")}: ${c.missingEvidence.join("; ")}`);
+    lines.push(`   ${t("report.suggestedCheck")}: ${isFa ? c.suggestedCheckFa : c.suggestedCheck}`);
   });
 
-  lines.push(sec(L("Safe Action Path", "مسیر اقدام ایمن")));
+  lines.push(sec(t("report.secSafeActionPath")));
   for (const group of analysis.recommendedActions) {
     lines.push(`${group.icon} ${isFa ? group.categoryFa : group.category}`);
     for (const item of group.items) lines.push(`  - ${isFa ? item.fa : item.en}`);
   }
 
-  lines.push(sec(L("Disclaimer", "سلب مسئولیت")));
-  lines.push(L("Decision-support report.", "گزارش پشتیبان تصمیم‌گیری."));
-  lines.push(L("Not a certified safety report.", "گزارش ایمنی تأییدشده نیست."));
-  lines.push(L("Verify with qualified personnel and site procedures.", "با پرسنل متخصص و رویه‌های ایمنی سایت راستی‌آزمایی شود."));
+  lines.push(sec(t("report.secDisclaimer")));
+  lines.push(t("report.disclaimerDecision"));
+  lines.push(t("report.disclaimerNotCertified"));
+  lines.push(t("report.disclaimerVerify"));
 
   return lines.join("\n");
 }
@@ -318,12 +315,12 @@ function fillSampleForm(form: HTMLFormElement, data: SampleFields) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function SectionHeader({ label, labelFa, accent, isFa }: { label: string; labelFa: string; accent: string; isFa: boolean }) {
+function SectionHeader({ title, accent }: { title: string; accent: string }) {
   return (
     <div className="flex items-center gap-3 mb-4">
       <div className="w-0.5 h-5 rounded-full shrink-0" style={{ background: accent }} />
       <p className="text-[9px] font-mono uppercase tracking-[0.2em]" style={{ color: accent }}>
-        {isFa ? labelFa : label}
+        {title}
       </p>
     </div>
   );
@@ -359,10 +356,10 @@ function FormRow({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>;
 }
 
-function FormSection({ title, titleFa, isFa, children }: { title: string; titleFa: string; isFa: boolean; children: React.ReactNode }) {
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border border-white/6 rounded-xl p-4 space-y-4">
-      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-cyan-400/70">{isFa ? titleFa : title}</p>
+      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-cyan-400/70">{title}</p>
       {children}
     </div>
   );
@@ -370,22 +367,21 @@ function FormSection({ title, titleFa, isFa, children }: { title: string; titleF
 
 // ─── Analysis result sections ─────────────────────────────────────────────────
 
-function AlarmPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+function AlarmPanel({ analysis }: { analysis: IndustrialBrainAnalysis }) {
+  const t = useTranslations("industrialBrain");
   if (!analysis.alarms.length) {
     return (
       <Panel>
-        <SectionHeader label="Alarm Intelligence" labelFa="هوشمندی آلارم" accent="#38BDF8" isFa={isFa} />
+        <SectionHeader title={t("sections.alarmIntelligence")} accent="#38BDF8" />
         <p className="text-xs text-slate-400 leading-relaxed">
-          {isFa
-            ? "هیچ آلارمی گزارش نشده است. عدم وجود آلارم گزارش‌شده، سالم بودن عملکرد را تأیید نمی‌کند — سیم‌بندی میدانی، VFD، MCC یا وضعیت مکانیکی را جداگانه بررسی کنید."
-            : "No alarm was reported. The absence of a reported alarm does not confirm healthy operation — check field wiring, VFD, MCC, or mechanical state separately."}
+          {t("alarm.none")}
         </p>
       </Panel>
     );
   }
   return (
     <Panel>
-      <SectionHeader label="Alarm Intelligence" labelFa="هوشمندی آلارم" accent="#38BDF8" isFa={isFa} />
+      <SectionHeader title={t("sections.alarmIntelligence")} accent="#38BDF8" />
       <div className="space-y-3">
         {analysis.alarms.map((alarm, i) => {
           const cls = ALARM_COLORS[alarm.severity] ?? ALARM_COLORS.UNKNOWN;
@@ -414,19 +410,20 @@ function AlarmPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isF
 }
 
 function SignalMatrixPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+  const t = useTranslations("industrialBrain");
   return (
     <Panel>
-      <SectionHeader label="Signal Matrix" labelFa="ماتریس سیگنال" accent="#1EC8A4" isFa={isFa} />
+      <SectionHeader title={t("sections.signalMatrix")} accent="#1EC8A4" />
       <div className="overflow-x-auto">
         <table className="w-full text-[11px] font-mono">
           <thead>
             <tr className="border-b border-white/8">
               {[
-                isFa ? "سیگنال" : "Signal",
-                isFa ? "منبع" : "Source",
-                isFa ? "مقدار مشاهده‌شده" : "Observed",
-                isFa ? "وضعیت" : "Status",
-                isFa ? "اطمینان" : "Conf.",
+                t("signalTable.signal"),
+                t("signalTable.source"),
+                t("signalTable.observed"),
+                t("signalTable.status"),
+                t("signalTable.conf"),
               ].map(h => (
                 <th key={h} className="py-2 px-2 text-left text-[9px] uppercase tracking-widest text-slate-600 font-normal whitespace-nowrap">
                   {h}
@@ -484,6 +481,7 @@ function SignalMatrixPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
 }
 
 function ReasoningMapPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+  const t = useTranslations("industrialBrain");
   const { reasoningMap } = analysis;
   const nodeTypeColors: Record<string, string> = {
     PRESENT:    "border-cyan-500/40 bg-cyan-500/6 text-cyan-300",
@@ -504,18 +502,16 @@ function ReasoningMapPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
 
   return (
     <Panel>
-      <SectionHeader label="Hermes Neural Reasoning Map" labelFa="نقشه استدلال عصبی هرمس" accent="#818CF8" isFa={isFa} />
+      <SectionHeader title={t("sections.reasoningMap")} accent="#818CF8" />
       <p className="text-[10px] text-slate-600 font-mono mb-4">
-        {isFa
-          ? "موتور استدلال قطعی — شواهد → فرضیه علت → گره ریسک → اقدام"
-          : "Deterministic reasoning engine — Evidence → Cause Hypothesis → Risk Node → Action"}
+        {t("reasoning.subtitle")}
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
         {/* Evidence */}
         <div>
           <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
-            {isFa ? "گره‌های شواهد" : "Evidence Nodes"}
+            {t("reasoning.evidenceNodes")}
           </p>
           <div className="space-y-1.5">
             {reasoningMap.evidenceNodes.map(ev => (
@@ -537,7 +533,7 @@ function ReasoningMapPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
         {/* Cause hypotheses */}
         <div>
           <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
-            {isFa ? "فرضیه‌های علت" : "Cause Hypotheses"}
+            {t("reasoning.causeHypotheses")}
           </p>
           <div className="space-y-1.5">
             {reasoningMap.causeNodes.map(c => (
@@ -558,7 +554,7 @@ function ReasoningMapPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
         <div className="space-y-3">
           <div>
             <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
-              {isFa ? "گره‌های ریسک" : "Risk Nodes"}
+              {t("reasoning.riskNodes")}
             </p>
             <div className="space-y-1.5">
               {reasoningMap.riskNodes.map(r => (
@@ -571,7 +567,7 @@ function ReasoningMapPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
           </div>
           <div>
             <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
-              {isFa ? "گره‌های اقدام" : "Action Nodes"}
+              {t("reasoning.actionNodes")}
             </p>
             <div className="space-y-1.5">
               {reasoningMap.actionNodes.map(a => (
@@ -589,15 +585,16 @@ function ReasoningMapPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
 }
 
 function UncertaintyPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+  const t = useTranslations("industrialBrain");
   const unc = analysis.uncertainty;
   const cls = UNCERTAINTY_COLORS[unc.level];
   return (
     <Panel>
-      <SectionHeader label="Evidence Entropy" labelFa="آنتروپی شواهد" accent="#F59E0B" isFa={isFa} />
+      <SectionHeader title={t("sections.evidenceEntropy")} accent="#F59E0B" />
       <div className="flex flex-wrap items-start gap-4 mb-4">
         <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-mono font-bold ${cls.bg} ${cls.border} ${cls.text}`}>
           <span className={`w-2 h-2 rounded-full animate-pulse ${cls.text.replace("text-","bg-")}`} />
-          {isFa ? (unc.level === "HIGH" ? "بالا" : unc.level === "MEDIUM" ? "متوسط" : "پایین") : unc.level}
+          {t(`uncertaintyLevel.${unc.level}`)}
         </div>
         <p className="flex-1 text-xs text-slate-400 leading-relaxed">{isFa ? unc.explanationFa : unc.explanation}</p>
       </div>
@@ -605,7 +602,7 @@ function UncertaintyPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysi
       {unc.missingCriticalSignals.length > 0 && (
         <div className="mb-4">
           <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
-            {isFa ? "سیگنال‌های حیاتی مفقود" : "Missing Critical Signals"}
+            {t("uncertainty.missingCritical")}
           </p>
           <div className="flex flex-wrap gap-2">
             {(isFa ? unc.missingCriticalSignalsFa : unc.missingCriticalSignals).map((s, i) => (
@@ -620,7 +617,7 @@ function UncertaintyPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysi
       {unc.conflictingSignals.length > 0 && (
         <div className="mb-4">
           <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
-            {isFa ? "سیگنال‌های متعارض" : "Conflicting Signals"}
+            {t("uncertainty.conflicting")}
           </p>
           <div className="space-y-1">
             {unc.conflictingSignals.map((s, i) => (
@@ -632,7 +629,7 @@ function UncertaintyPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysi
 
       <div>
         <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
-          {isFa ? "شواهد پیشنهادی برای کاهش عدم قطعیت" : "Recommended Evidence to Reduce Uncertainty"}
+          {t("uncertainty.recommendedEvidence")}
         </p>
         <div className="space-y-1.5">
           {unc.recommendedEvidenceToReduceUncertainty.map((e, i) => (
@@ -648,16 +645,17 @@ function UncertaintyPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysi
 }
 
 function RiskPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+  const t = useTranslations("industrialBrain");
   const risk = analysis.risk;
   const urg = URGENCY_COLORS[risk.urgencyLevel];
   const items = [
-    { label: isFa ? "تأثیر تولید" : "Production Impact", value: isFa ? risk.productionImpactFa : risk.productionImpact },
-    { label: isFa ? "تأثیر ایمنی" : "Safety Impact",     value: isFa ? risk.safetyImpactFa    : risk.safetyImpact },
-    { label: isFa ? "ریسک توقف"  : "Downtime Risk",       value: isFa ? risk.downtimeRiskFa    : risk.downtimeRisk },
+    { label: t("risk.production"), value: isFa ? risk.productionImpactFa : risk.productionImpact },
+    { label: t("risk.safety"),     value: isFa ? risk.safetyImpactFa    : risk.safetyImpact },
+    { label: t("risk.downtime"),   value: isFa ? risk.downtimeRiskFa    : risk.downtimeRisk },
   ];
   return (
     <Panel>
-      <SectionHeader label="Risk & Urgency" labelFa="ریسک و فوریت" accent="#F87171" isFa={isFa} />
+      <SectionHeader title={t("sections.riskUrgency")} accent="#F87171" />
       <div className="flex items-center gap-3 mb-4">
         <span className={`text-lg font-bold font-mono uppercase ${urg}`}>{isFa ? risk.urgencyFa : risk.urgency}</span>
         <span className={`text-[9px] px-2 py-0.5 rounded-full border font-mono uppercase ${urg.replace("text-","border-").replace("400","400/30")} bg-current/10`}>
@@ -677,9 +675,10 @@ function RiskPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa
 }
 
 function LikelyCausesPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+  const t = useTranslations("industrialBrain");
   return (
     <Panel>
-      <SectionHeader label="Likely Causes" labelFa="علل محتمل" accent="#C084FC" isFa={isFa} />
+      <SectionHeader title={t("sections.likelyCauses")} accent="#C084FC" />
       <div className="space-y-4">
         {analysis.likelyCauses.map((cause, i) => (
           <div key={cause.id} className="border border-white/8 rounded-xl p-4">
@@ -689,7 +688,7 @@ function LikelyCausesPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
                 <p className="text-sm font-semibold text-slate-100">{isFa ? cause.titleFa : cause.title}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[9px] font-mono text-slate-500">{isFa ? "اطمینان" : "CONF"}</span>
+                <span className="text-[9px] font-mono text-slate-500">{t("causes.conf")}</span>
                 <span className="text-sm font-bold font-mono text-violet-300">{cause.confidence}%</span>
               </div>
             </div>
@@ -699,7 +698,7 @@ function LikelyCausesPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
             {cause.supportingEvidence.length > 0 && (
               <div className="mt-3">
                 <p className="text-[9px] font-mono uppercase tracking-widest text-emerald-600 mb-1.5">
-                  {isFa ? "شواهد پشتیبان" : "Supporting Evidence"}
+                  {t("causes.supporting")}
                 </p>
                 {cause.supportingEvidence.map((e, j) => (
                   <p key={j} className="text-[11px] text-emerald-400/80 font-mono">✓ {e}</p>
@@ -710,7 +709,7 @@ function LikelyCausesPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
             {cause.missingEvidence.length > 0 && (
               <div className="mt-2">
                 <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1.5">
-                  {isFa ? "شواهد مفقود" : "Missing Evidence"}
+                  {t("causes.missing")}
                 </p>
                 {cause.missingEvidence.map((e, j) => (
                   <p key={j} className="text-[11px] text-slate-500 font-mono">○ {e}</p>
@@ -720,7 +719,7 @@ function LikelyCausesPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
 
             <div className="mt-3 pt-3 border-t border-white/6">
               <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
-                {isFa ? "بررسی پیشنهادی" : "Suggested Check"}
+                {t("causes.suggestedCheck")}
               </p>
               <p className="text-xs text-slate-400 leading-relaxed">{isFa ? cause.suggestedCheckFa : cause.suggestedCheck}</p>
             </div>
@@ -732,6 +731,7 @@ function LikelyCausesPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
 }
 
 function ChecklistPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+  const t = useTranslations("industrialBrain");
   const byCategory = analysis.inspectionChecklist.reduce<Record<string, typeof analysis.inspectionChecklist>>((acc, item) => {
     const cat = isFa ? item.categoryFa : item.category;
     if (!acc[cat]) acc[cat] = [];
@@ -741,11 +741,9 @@ function ChecklistPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis;
 
   return (
     <Panel>
-      <SectionHeader label="Inspection Checklist" labelFa="چک‌لیست بررسی" accent="#34D399" isFa={isFa} />
+      <SectionHeader title={t("sections.inspectionChecklist")} accent="#34D399" />
       <p className="text-[10px] text-slate-600 font-mono mb-4">
-        {isFa
-          ? "⚠ همه بررسی‌های برق/مکانیک نیاز به پرسنل متخصص، LOTO و رویه‌های سایت دارند."
-          : "⚠ All electrical/mechanical checks require qualified personnel, LOTO, and site safety procedures."}
+        {t("checklist.warning")}
       </p>
       <div className="space-y-4">
         {Object.entries(byCategory).map(([cat, items]) => (
@@ -759,7 +757,7 @@ function ChecklistPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis;
                     {isFa ? item.textFa : item.text}
                     {item.requiresQualifiedPersonnel && (
                       <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono">
-                        {isFa ? "متخصص" : "QUALIFIED"}
+                        {t("checklist.qualified")}
                       </span>
                     )}
                   </span>
@@ -774,9 +772,10 @@ function ChecklistPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis;
 }
 
 function ActionsPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+  const t = useTranslations("industrialBrain");
   return (
     <Panel>
-      <SectionHeader label="Safe Action Path" labelFa="مسیر اقدام ایمن" accent="#60B4F0" isFa={isFa} />
+      <SectionHeader title={t("sections.safeActionPath")} accent="#60B4F0" />
       <div className="space-y-5">
         {analysis.recommendedActions.map(group => (
           <div key={group.category}>
@@ -801,13 +800,14 @@ function ActionsPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; i
   );
 }
 
-function RelatedKnowledgePanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+function RelatedKnowledgePanel({ analysis }: { analysis: IndustrialBrainAnalysis }) {
+  const t = useTranslations("industrialBrain");
   return (
     <Panel>
-      <SectionHeader label="Related Knowledge and Cases" labelFa="دانش و کیس‌های مرتبط" accent="#A78BFA" isFa={isFa} />
+      <SectionHeader title={t("sections.relatedKnowledge")} accent="#A78BFA" />
       {analysis.relatedKnowledge.length === 0 ? (
         <p className="text-xs text-slate-600 font-mono">
-          {isFa ? "هنوز دانش یا کیس مرتبطی یافت نشد." : "No related knowledge or cases found yet."}
+          {t("related.empty")}
         </p>
       ) : (
         <div className="space-y-3">
@@ -835,25 +835,26 @@ function RelatedKnowledgePanel({ analysis, isFa }: { analysis: IndustrialBrainAn
 }
 
 function ReportHeader({ meta, isFa }: { meta: ReportMeta; isFa: boolean }) {
-  const notReported = isFa ? "گزارش نشده" : "Not reported";
+  const t = useTranslations("industrialBrain");
+  const notReported = t("reportHeader.notReported");
   const fields = [
-    { label: isFa ? "نوع دارایی" : "Asset Type", value: meta.assetType },
-    { label: isFa ? "ناحیه سیستم" : "System Area", value: meta.systemArea },
-    { label: isFa ? "پلتفرم PLC" : "PLC / Platform", value: meta.plcPlatform },
+    { label: t("reportHeader.assetType"), value: meta.assetType },
+    { label: t("reportHeader.systemArea"), value: meta.systemArea },
+    { label: t("reportHeader.plcPlatform"), value: meta.plcPlatform },
   ];
   return (
     <Panel className="border-cyan-500/25 ib-report-header">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div>
           <p className="text-[9px] font-mono uppercase tracking-[0.22em] text-cyan-400 mb-1.5">
-            {isFa ? "هرمس OS · مغز صنعتی" : "HERMES OS · INDUSTRIAL BRAIN"}
+            {t("reportHeader.eyebrow")}
           </p>
-          <p className="text-lg font-bold text-slate-100">{isFa ? "گزارش مهندسی" : "Engineering Report"}</p>
-          <p className="text-xs text-slate-500 mt-0.5">{isFa ? "بسته شواهد" : "Evidence Pack"}</p>
+          <p className="text-lg font-bold text-slate-100">{t("reportHeader.engineeringReport")}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{t("reportHeader.evidencePack")}</p>
         </div>
         <div className="text-end shrink-0">
           <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600">
-            {isFa ? "تولید شده در" : "Generated"}
+            {t("reportHeader.generated")}
           </p>
           <p className="text-xs font-mono text-slate-400">{fmtDateTime(meta.generatedAt, isFa)}</p>
         </div>
@@ -872,9 +873,7 @@ function ReportHeader({ meta, isFa }: { meta: ReportMeta; isFa: boolean }) {
 
       <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/6 p-3">
         <p className="text-[10px] text-amber-400 leading-relaxed font-mono">
-          {isFa
-            ? "⚠ گزارش پشتیبان تصمیم‌گیری — گزارش ایمنی تأییدشده نیست. با پرسنل متخصص و رویه‌های ایمنی سایت راستی‌آزمایی شود."
-            : "⚠ Decision-support report — not a certified safety report. Verify with qualified personnel and site procedures before acting."}
+          {t("reportHeader.disclaimer")}
         </p>
       </div>
     </Panel>
@@ -888,11 +887,12 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
   locale: string;
   canSaveCase: boolean;
 }) {
+  const t = useTranslations("industrialBrain");
   const [copied, setCopied] = useState<"summary" | "full" | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   async function handleCopy(kind: "summary" | "full") {
-    const text = kind === "summary" ? buildSummaryText(analysis, meta, isFa) : buildFullReportText(analysis, meta, isFa);
+    const text = kind === "summary" ? buildSummaryText(analysis, meta, isFa, t) : buildFullReportText(analysis, meta, isFa, t);
     const ok = await copyToClipboard(text);
     if (ok) {
       setCopied(kind);
@@ -928,9 +928,9 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
   const btnBase = "flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-mono text-[11px] font-semibold uppercase tracking-wider border transition-all disabled:opacity-40 disabled:cursor-not-allowed";
 
   const saveLabel =
-    saveState === "saving" ? (isFa ? "در حال ذخیره…" : "Saving…")
-    : saveState === "error" ? (isFa ? "ذخیره ناموفق — دوباره تلاش کنید" : "Save failed — try again")
-    : (isFa ? "ذخیره به‌عنوان کیس مهندسی" : "Save as Engineering Case");
+    saveState === "saving" ? t("actions.saving")
+    : saveState === "error" ? t("actions.saveFailed")
+    : t("actions.saveAsCase");
 
   return (
     <div className="ib-print-hide space-y-3">
@@ -941,7 +941,7 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
           disabled={!analysis}
           className={`${btnBase} border-cyan-400/25 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12]`}
         >
-          {copied === "summary" ? (isFa ? "کپی شد ✓" : "Copied ✓") : (isFa ? "کپی خلاصه" : "Copy Summary")}
+          {copied === "summary" ? t("actions.copied") : t("actions.copySummary")}
         </button>
         <button
           type="button"
@@ -949,7 +949,7 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
           disabled={!analysis}
           className={`${btnBase} border-violet-400/25 bg-violet-400/[0.06] text-violet-300 hover:bg-violet-400/[0.12]`}
         >
-          {copied === "full" ? (isFa ? "کپی شد ✓" : "Copied ✓") : (isFa ? "کپی گزارش کامل" : "Copy Full Report")}
+          {copied === "full" ? t("actions.copied") : t("actions.copyFull")}
         </button>
         <button
           type="button"
@@ -957,7 +957,7 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
           disabled={!analysis}
           className={`${btnBase} border-sky-400/25 bg-sky-400/[0.06] text-sky-300 hover:bg-sky-400/[0.12]`}
         >
-          {isFa ? "چاپ گزارش" : "Print Report"}
+          {t("actions.printReport")}
         </button>
       </div>
 
@@ -969,7 +969,7 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
               href="/knowledge/case-studio"
               className={`${btnBase} border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-300 hover:bg-emerald-400/[0.14]`}
             >
-              {isFa ? "ذخیره شد ✓ — مشاهده در کیس استودیو" : "Saved ✓ — view in Case Studio"}
+              {t("actions.savedViewStudio")}
             </Link>
           ) : (
             <button
@@ -989,13 +989,13 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
               href={`/auth/login?from=${encodeURIComponent(`/${locale}/industrial-brain`)}`}
               className={`${btnBase} border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-300 hover:bg-emerald-400/[0.12]`}
             >
-              {isFa ? "برای ذخیره به‌عنوان کیس مهندسی وارد شوید" : "Sign in to save as an engineering case"}
+              {t("actions.signInToSave")}
             </Link>
             <Link
               href="/auth/register"
               className="shrink-0 text-[11px] font-mono text-slate-500 hover:text-slate-300 underline underline-offset-4 transition-colors"
             >
-              {isFa ? "درخواست دسترسی" : "Request access"}
+              {t("actions.requestAccess")}
             </Link>
           </>
         )}
@@ -1004,21 +1004,20 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
   );
 }
 
-function AnalysisDemoCTA({ isFa }: { isFa: boolean }) {
+function AnalysisDemoCTA() {
+  const t = useTranslations("industrialBrain");
   return (
     <Panel className="border-cyan-500/20">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-cyan-400 mb-1">
-            {isFa ? "هرمس OS · مغز صنعتی" : "HERMES OS · INDUSTRIAL BRAIN"}
+            {t("demoCta.eyebrow")}
           </p>
           <p className="text-base font-bold text-slate-100">
-            {isFa ? "درخواست دمو مغز صنعتی" : "Request Industrial Brain Demo"}
+            {t("demoCta.title")}
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            {isFa
-              ? "ببینید چطور هرمس OS عملیات صنعتی شما را با هوشمندی داده‌محور متحول می‌کند."
-              : "See how Hermes OS transforms industrial operations with data-driven intelligence."}
+            {t("demoCta.desc")}
           </p>
         </div>
         <Link
@@ -1030,7 +1029,7 @@ function AnalysisDemoCTA({ isFa }: { isFa: boolean }) {
             color: "#1EC8A4",
           }}
         >
-          {isFa ? "درخواست دمو" : "Request Demo"}
+          {t("demoCta.requestDemo")}
           <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4">
             <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -1047,6 +1046,7 @@ function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
   locale: string;
   canSaveCase: boolean;
 }) {
+  const t = useTranslations("industrialBrain");
   return (
     <div className="ib-report-print space-y-5 mt-8">
       <ReportHeader meta={meta} isFa={isFa} />
@@ -1054,13 +1054,13 @@ function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
 
       {/* Executive Summary + Classification */}
       <Panel>
-        <SectionHeader label="Executive Summary" labelFa="خلاصه اجرایی" accent="#1EC8A4" isFa={isFa} />
+        <SectionHeader title={t("sections.executiveSummary")} accent="#1EC8A4" />
         <p className="text-sm text-slate-300 leading-relaxed mb-4">{isFa ? analysis.summaryFa : analysis.summary}</p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-white/6">
           <div>
             <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
-              {isFa ? "حوزه اصلی" : "Primary Domain"}
+              {t("summary.primaryDomain")}
             </p>
             <p className="text-sm font-bold text-cyan-300 font-mono">
               {isFa ? analysis.classification.domainFa : analysis.classification.domain}
@@ -1068,7 +1068,7 @@ function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
           </div>
           <div>
             <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
-              {isFa ? "شدت" : "Severity"}
+              {t("summary.severity")}
             </p>
             <p className={`text-sm font-bold font-mono ${
               analysis.classification.severity === "CRITICAL" ? "text-rose-400" :
@@ -1078,36 +1078,32 @@ function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
           </div>
           <div>
             <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
-              {isFa ? "اطمینان تشخیصی" : "Diagnostic Confidence"}
+              {t("summary.diagnosticConfidence")}
             </p>
             <p className="text-sm font-bold text-violet-300 font-mono">{analysis.confidence}%</p>
           </div>
           <div>
             <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
-              {isFa ? "آنتروپی شواهد" : "Evidence Entropy"}
+              {t("summary.evidenceEntropy")}
             </p>
             <p className={`text-sm font-bold font-mono ${UNCERTAINTY_COLORS[analysis.uncertainty.level].text}`}>
-              {isFa
-                ? (analysis.uncertainty.level === "HIGH" ? "بالا" : analysis.uncertainty.level === "MEDIUM" ? "متوسط" : "پایین")
-                : analysis.uncertainty.level}
+              {t(`uncertaintyLevel.${analysis.uncertainty.level}`)}
             </p>
           </div>
         </div>
 
         <div className="mt-3">
           <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1.5">
-            {isFa ? "اطمینان تشخیصی کلی" : "Overall Diagnostic Confidence"}
+            {t("summary.overallConfidence")}
           </p>
           <ConfidenceBar value={analysis.confidence} color="linear-gradient(90deg, #1EC8A4, #60B4F0)" />
           <p className="text-[10px] text-slate-600 font-mono mt-1">
-            {isFa
-              ? `موتور هرمس برین V1 · ${analysis.processingMs}ms · فقط برای پشتیبانی تصمیم‌گیری`
-              : `Hermes Industrial Brain V1 · ${analysis.processingMs}ms · Decision support only`}
+            {t("summary.engineFootnote", { ms: String(analysis.processingMs) })}
           </p>
         </div>
       </Panel>
 
-      <AlarmPanel analysis={analysis} isFa={isFa} />
+      <AlarmPanel analysis={analysis} />
       <SignalMatrixPanel analysis={analysis} isFa={isFa} />
       <ReasoningMapPanel analysis={analysis} isFa={isFa} />
 
@@ -1120,7 +1116,7 @@ function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
 
       {analysis.evidenceGaps.length > 0 && (
         <Panel>
-          <SectionHeader label="Evidence Gaps" labelFa="کمبود شواهد" accent="#FB923C" isFa={isFa} />
+          <SectionHeader title={t("sections.evidenceGaps")} accent="#FB923C" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {analysis.evidenceGaps.map((gap, i) => (
               <div key={i} className="border border-orange-500/15 rounded-xl p-3 bg-orange-500/4">
@@ -1136,8 +1132,8 @@ function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
 
       <ChecklistPanel analysis={analysis} isFa={isFa} />
       <ActionsPanel analysis={analysis} isFa={isFa} />
-      <RelatedKnowledgePanel analysis={analysis} isFa={isFa} />
-      <AnalysisDemoCTA isFa={isFa} />
+      <RelatedKnowledgePanel analysis={analysis} />
+      <AnalysisDemoCTA />
     </div>
   );
 }
@@ -1147,6 +1143,7 @@ function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
 interface Props { locale: string; isFa: boolean; canSaveCase?: boolean }
 
 export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: Props) {
+  const t = useTranslations("industrialBrain");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<IndustrialBrainAnalysis | null>(null);
@@ -1156,17 +1153,18 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
 
   function loadSample(key: keyof typeof SAMPLE_SCENARIOS) {
     if (!formRef.current) return;
+    // Data lookup into the bilingual demo dataset, not display text.
     fillSampleForm(formRef.current, SAMPLE_SCENARIOS[key][isFa ? "fa" : "en"]);
     setError(null);
   }
 
   const impactOptions = [
-    { v: "", l: isFa ? "انتخاب کنید..." : "Select..." },
-    { v: "NONE",     l: isFa ? "بدون تأثیر" : "None" },
-    { v: "LOW",      l: isFa ? "کم" : "Low" },
-    { v: "MEDIUM",   l: isFa ? "متوسط" : "Medium" },
-    { v: "HIGH",     l: isFa ? "بالا" : "High" },
-    { v: "CRITICAL", l: isFa ? "بحرانی" : "Critical" },
+    { v: "", l: t("impact.select") },
+    { v: "NONE",     l: t("impact.none") },
+    { v: "LOW",      l: t("impact.low") },
+    { v: "MEDIUM",   l: t("impact.medium") },
+    { v: "HIGH",     l: t("impact.high") },
+    { v: "CRITICAL", l: t("impact.critical") },
   ];
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -1197,7 +1195,7 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
       });
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     } catch {
-      setError(isFa ? "خطا در ارتباط با سرور. دوباره تلاش کنید." : "Connection error. Please try again.");
+      setError(t("form.connectionError"));
     } finally {
       setBusy(false);
     }
@@ -1208,7 +1206,7 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
       {/* ── Demo-ready examples ────────────────────────────────────────────── */}
       <div className="print:hidden mb-5 rounded-xl border border-white/8 p-3.5" style={{ background: "rgba(7,16,26,0.6)" }}>
         <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 mb-2.5">
-          {isFa ? "نمونه‌های آماده دمو" : "Demo-Ready Examples"}
+          {t("form.demoExamples")}
         </p>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(SAMPLE_SCENARIOS) as Array<keyof typeof SAMPLE_SCENARIOS>).map(key => (
@@ -1218,6 +1216,7 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
               onClick={() => loadSample(key)}
               className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12] hover:border-cyan-400/35 transition-all"
             >
+              {/* Bilingual demo-dataset caption (locale content data). */}
               {isFa ? SAMPLE_SCENARIOS[key].labelFa : SAMPLE_SCENARIOS[key].labelEn}
             </button>
           ))}
@@ -1228,125 +1227,119 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
       <form ref={formRef} onSubmit={handleSubmit} className="print:hidden space-y-5">
 
         {/* Problem title + asset */}
-        <FormSection title="Fault Identification" titleFa="شناسایی خرابی" isFa={isFa}>
+        <FormSection title={t("form.faultIdentification")}>
           <div>
-            <FieldLabel>{isFa ? "عنوان مشکل *" : "Problem Title *"}</FieldLabel>
+            <FieldLabel>{t("form.problemTitle")}</FieldLabel>
             <input name="problemTitle" required minLength={3} maxLength={200} className={IC} style={{ colorScheme: "dark" }}
-              placeholder={isFa ? "مثال: موتور کانوایر پس از تعویض راه‌اندازی نمی‌شود" : "e.g. Conveyor motor does not start after replacement"}
+              placeholder={t("form.problemTitlePh")}
             />
           </div>
           <FormRow>
             <div>
-              <FieldLabel>{isFa ? "نوع دارایی / تجهیز" : "Asset / Equipment Type"}</FieldLabel>
+              <FieldLabel>{t("form.assetType")}</FieldLabel>
               <input name="assetType" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "مثال: موتور کانوایر 22kW" : "e.g. 22kW Conveyor Motor"}
+                placeholder={t("form.assetTypePh")}
               />
             </div>
             <div>
-              <FieldLabel>{isFa ? "ناحیه سیستم" : "System Area"}</FieldLabel>
+              <FieldLabel>{t("form.systemArea")}</FieldLabel>
               <input name="systemArea" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "مثال: خط تولید ۱، ناحیه بارگیری" : "e.g. Production Line 1, Loading Area"}
+                placeholder={t("form.systemAreaPh")}
               />
             </div>
           </FormRow>
           <FormRow>
             <div>
-              <FieldLabel>{isFa ? "پلتفرم PLC / SCADA / HMI" : "PLC / SCADA / HMI Platform"}</FieldLabel>
+              <FieldLabel>{t("form.plcPlatform")}</FieldLabel>
               <input name="plcPlatform" maxLength={100} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "مثال: Siemens S7-1500، Allen-Bradley" : "e.g. Siemens S7-1500, Allen-Bradley"}
+                placeholder={t("form.plcPlatformPh")}
               />
             </div>
             <div>
-              <FieldLabel>{isFa ? "تغییرات اخیر" : "Recent Changes"}</FieldLabel>
+              <FieldLabel>{t("form.recentChanges")}</FieldLabel>
               <input name="recentChanges" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "مثال: تعویض موتور، تراز مکانیکی" : "e.g. Motor replacement, mechanical alignment"}
+                placeholder={t("form.recentChangesPh")}
               />
             </div>
           </FormRow>
         </FormSection>
 
         {/* Symptoms + alarms */}
-        <FormSection title="Observed Symptoms & Alarms" titleFa="علائم مشاهده‌شده و آلارم‌ها" isFa={isFa}>
+        <FormSection title={t("form.symptomsSection")}>
           <div>
-            <FieldLabel>{isFa ? "علائم مشاهده‌شده *" : "Observed Symptoms *"}</FieldLabel>
+            <FieldLabel>{t("form.observedSymptoms")}</FieldLabel>
             <textarea name="observedSymptoms" required minLength={5} maxLength={3000} rows={4} className={TC} style={{ colorScheme: "dark" }}
-              placeholder={isFa
-                ? "مثال: فرمان اجرا از HMI فعال است. PLC خطای فعالی نشان نمی‌دهد. موتور نمی‌چرخد."
-                : "e.g. HMI run command is active. PLC shows no active fault. Motor does not rotate."}
+              placeholder={t("form.observedSymptomsPh")}
             />
           </div>
           <div>
-            <FieldLabel>{isFa ? "آلارم‌ها و کدهای خطا" : "Alarms and Fault Codes"}</FieldLabel>
+            <FieldLabel>{t("form.alarms")}</FieldLabel>
             <textarea name="activeAlarms" maxLength={1500} rows={3} className={TC} style={{ colorScheme: "dark" }}
-              placeholder={isFa
-                ? "مثال: آلارم PLC فعالی وجود ندارد، یا کد VFD: F0001، یا هر آلارم فعال دیگر"
-                : "e.g. No active PLC alarm, or VFD fault code F0001, or list any active alarms"}
+              placeholder={t("form.alarmsPh")}
             />
           </div>
         </FormSection>
 
         {/* Signal states */}
-        <FormSection title="Signal States" titleFa="وضعیت سیگنال‌ها" isFa={isFa}>
+        <FormSection title={t("form.signalStates")}>
           <p className="text-[10px] text-slate-600 font-mono -mt-1">
-            {isFa
-              ? "هر اطلاعاتی که دارید وارد کنید. اطلاعات مفقود به عنوان UNKNOWN تشخیص داده می‌شود."
-              : "Enter any known state. Missing information is automatically identified as UNKNOWN."}
+            {t("form.signalStatesNote")}
           </p>
           <FormRow>
             <div>
-              <FieldLabel>{isFa ? "وضعیت فرمان HMI" : "HMI Command State"}</FieldLabel>
+              <FieldLabel>{t("form.hmiCommand")}</FieldLabel>
               <input name="hmiCommandState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "مثال: فرمان اجرا فعال است" : "e.g. Run command active"}
+                placeholder={t("form.hmiCommandPh")}
               />
             </div>
             <div>
-              <FieldLabel>{isFa ? "وضعیت خروجی PLC" : "PLC Output State"}</FieldLabel>
+              <FieldLabel>{t("form.plcOutput")}</FieldLabel>
               <input name="plcOutputState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "مثال: نامشخص، یا خروجی Q0.0 فعال است" : "e.g. Unknown, or Q0.0 output active"}
+                placeholder={t("form.plcOutputPh")}
               />
             </div>
           </FormRow>
           <FormRow>
             <div>
-              <FieldLabel>{isFa ? "وضعیت VFD / MCC / کنتاکتور" : "VFD / MCC / Contactor Status"}</FieldLabel>
+              <FieldLabel>{t("form.vfdMcc")}</FieldLabel>
               <input name="vfdMccState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "مثال: نامشخص، یا VFD آماده، یا خطای VFD" : "e.g. Unknown, or VFD ready, or VFD fault"}
+                placeholder={t("form.vfdMccPh")}
               />
             </div>
             <div>
-              <FieldLabel>{isFa ? "وضعیت اینترلاک / مجوزها" : "Interlock / Permissive Status"}</FieldLabel>
+              <FieldLabel>{t("form.interlock")}</FieldLabel>
               <input name="interlockStatus" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "مثال: نامشخص، یا همه آزاد است" : "e.g. Unknown, or all permissives clear"}
+                placeholder={t("form.interlockPh")}
               />
             </div>
           </FormRow>
           <FormRow>
             <div>
-              <FieldLabel>{isFa ? "سیگنال سنسور / فیدبک" : "Sensor / Feedback Signal"}</FieldLabel>
+              <FieldLabel>{t("form.sensorFeedback")}</FieldLabel>
               <input name="sensorFeedback" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "مثال: انکودر فعال نیست، یا سنسور پروکسیمیتی کار می‌کند" : "e.g. Encoder not active, or proximity sensor working"}
+                placeholder={t("form.sensorFeedbackPh")}
               />
             </div>
             <div>
-              <FieldLabel>{isFa ? "سیگنال‌های مشاهده‌شده دیگر" : "Other Observed Signals"}</FieldLabel>
+              <FieldLabel>{t("form.otherSignals")}</FieldLabel>
               <input name="observedSignals" maxLength={1000} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={isFa ? "هر وضعیت سیگنال مرتبط دیگر" : "Any other relevant signal states"}
+                placeholder={t("form.otherSignalsPh")}
               />
             </div>
           </FormRow>
         </FormSection>
 
         {/* Impact */}
-        <FormSection title="Impact Assessment" titleFa="ارزیابی تأثیر" isFa={isFa}>
+        <FormSection title={t("form.impactAssessment")}>
           <FormRow>
             <div>
-              <FieldLabel>{isFa ? "تأثیر تولید" : "Production Impact"}</FieldLabel>
+              <FieldLabel>{t("form.productionImpact")}</FieldLabel>
               <select name="productionImpact" className={SC} style={{ colorScheme: "dark" }}>
                 {impactOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
               </select>
             </div>
             <div>
-              <FieldLabel>{isFa ? "تأثیر ایمنی" : "Safety Impact"}</FieldLabel>
+              <FieldLabel>{t("form.safetyImpact")}</FieldLabel>
               <select name="safetyImpact" className={SC} style={{ colorScheme: "dark" }}>
                 {impactOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
               </select>
@@ -1355,28 +1348,24 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
         </FormSection>
 
         {/* Already checked + additional */}
-        <FormSection title="What Has Already Been Checked" titleFa="آنچه قبلاً بررسی شده" isFa={isFa}>
+        <FormSection title={t("form.alreadyCheckedSection")}>
           <div>
-            <FieldLabel>{isFa ? "قبلاً بررسی شده" : "Already Checked"}</FieldLabel>
+            <FieldLabel>{t("form.alreadyChecked")}</FieldLabel>
             <textarea name="alreadyChecked" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
-              placeholder={isFa
-                ? "مثال: فرمان HMI، صفحه خطای PLC، چرخش آزاد مکانیکی اولیه"
-                : "e.g. HMI command, PLC fault page, basic mechanical free rotation"}
+              placeholder={t("form.alreadyCheckedPh")}
             />
           </div>
           <div>
-            <FieldLabel>{isFa ? "اطلاعات اضافی" : "Additional Information"}</FieldLabel>
+            <FieldLabel>{t("form.additionalInfo")}</FieldLabel>
             <textarea name="additionalInfo" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
-              placeholder={isFa ? "هر اطلاعات اضافی مرتبط..." : "Any additional relevant information..."}
+              placeholder={t("form.additionalInfoPh")}
             />
           </div>
         </FormSection>
 
         {/* Warning */}
         <p className="text-[10px] text-slate-600 font-mono text-center">
-          {isFa
-            ? "⚠ رمزها، اسرار فنی یا نقشه‌های محرمانه کارخانه را وارد نکنید. فقط برای پشتیبانی تصمیم‌گیری."
-            : "⚠ Do not enter passwords, secrets, or confidential plant drawings. Decision support only."}
+          {t("form.privacyWarning")}
         </p>
 
         {error && (
@@ -1403,9 +1392,7 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
               <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           )}
-          {busy
-            ? (isFa ? "در حال تحلیل..." : "Analyzing...")
-            : (isFa ? "تحلیل خرابی" : "Analyze Fault")}
+          {busy ? t("form.analyzing") : t("form.analyze")}
         </button>
       </form>
 
