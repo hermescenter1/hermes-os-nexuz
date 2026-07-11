@@ -103,17 +103,94 @@ describe("industrialBrain namespace — three-locale parity", () => {
     expect(empty).toEqual([]);
   });
 
-  it("de temporarily copies English verbatim (German not yet translated)", () => {
-    const e = flatten(enIB), d = flatten(deIB);
-    const divergent = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k);
-    expect(divergent).toEqual([]);
-  });
-
   it("fa is genuinely Persian, not an English carbon copy", () => {
     const e = flatten(enIB), f = flatten(faIB);
     const persian = [...f].filter(([, v]) => /[؀-ۿ]/.test(String(v)));
     // The vast majority of leaves carry Persian; only technical tokens match.
     expect(persian.length).toBeGreaterThan(e.size * 0.7);
+  });
+});
+
+describe("industrialBrain — German translation quality (Phase 86C4A)", () => {
+  const e = flatten(enIB);
+  const d = flatten(deIB);
+
+  // Values that legitimately stay identical to English: Hermes brand/product
+  // names and loanwords that are spelled the same in professional German.
+  const JUSTIFIED_IDENTICAL = new Set([
+    "ONLINE",
+    "Hermes Industrial Brain",
+    "HERMES OS · INDUSTRIAL BRAIN V1",
+    "HERMES OS · INDUSTRIAL BRAIN",
+    "HERMES INDUSTRIAL",
+    "Signal",
+    "Status",
+    "Problem: {title}",
+  ]);
+
+  const identical = [...e].filter(([k, v]) => d.get(k) === v);
+
+  it("translates the overwhelming majority of leaves to German", () => {
+    expect(identical.length).toBeLessThanOrEqual(12);
+    expect(e.size - identical.length).toBeGreaterThanOrEqual(182);
+  });
+
+  it("every identical-to-English value is a justified brand/technical term", () => {
+    const unjustified = identical
+      .filter(([, v]) => !JUSTIFIED_IDENTICAL.has(String(v)))
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(unjustified).toEqual([]);
+  });
+
+  it("uses no informal German direct-address pronouns (formal Sie only)", () => {
+    const informal = /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
+    const hits = [...d].filter(([, v]) => informal.test(String(v))).map(([k]) => k);
+    expect(hits).toEqual([]);
+  });
+
+  it("preserves protected tokens wherever the English source contains them", () => {
+    const TOKENS = [
+      // brand / product / feature names
+      "Hermes OS", "Hermes Industrial Brain", "Industrial Brain", "Case Studio",
+      // control-system platforms & protocols
+      "PLC", "SCADA", "HMI", "OPC UA", "OPC-UA", "PROFINET", "MQTT", "TIA Portal",
+      "VFD", "MCC", "Siemens", "ABB", "Schneider", "S7-1200", "S7-1500", "Allen-Bradley",
+      // maintenance / reliability
+      "CMMS", "EDMS", "LOTO", "OEM", "RUL", "MTBF", "MTTR",
+      // software / systems acronyms
+      "API", "JSON", "UUID", "AI", "OT", "IT/OT", "I/O", "DB", "CPU", "PID",
+      // fault / signal identifiers
+      "F0001", "Q0.0", "UNKNOWN",
+      // ICU placeholders
+      "{title}", "{confidence}", "{level}", "{urgency}", "{ms}",
+    ];
+    // Boundary-aware presence: a token counts only when flanked by non-alphanumeric
+    // chars or string edges, so "AI" inside "Explainable" or "OT" inside "LOTO" are
+    // not treated as the standalone token. Only require preservation when the
+    // English source value genuinely contains the token.
+    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const has = (str: string, tok: string) =>
+      new RegExp(`(^|[^A-Za-z0-9])${esc(tok)}([^A-Za-z0-9]|$)`).test(str);
+    const viol: string[] = [];
+    for (const [k, v] of e) {
+      for (const tok of TOKENS) {
+        if (has(String(v), tok) && !has(String(d.get(k)), tok)) viol.push(`${k}:${tok}`);
+      }
+    }
+    expect(viol).toEqual([]);
+  });
+
+  it("keeps Konfidenz (confidence) and Unsicherheit (uncertainty) distinct", () => {
+    expect(String(d.get("summary.diagnosticConfidence"))).toMatch(/Konfidenz/);
+    expect(String(d.get("summary.diagnosticConfidence"))).not.toMatch(/Unsicherheit/);
+    expect(String(d.get("uncertainty.recommendedEvidence"))).toMatch(/Unsicherheit/);
+    expect(String(d.get("uncertainty.recommendedEvidence"))).not.toMatch(/Konfidenz/);
+  });
+
+  it("preserves safety terminology", () => {
+    expect(String(d.get("safety.items.0"))).toMatch(/Sicherheitsverriegelungen/);
+    expect(String(d.get("checklist.warning"))).toMatch(/LOTO/);
+    expect(String(d.get("reportHeader.disclaimer"))).toMatch(/Sicherheitsbericht/);
   });
 });
 

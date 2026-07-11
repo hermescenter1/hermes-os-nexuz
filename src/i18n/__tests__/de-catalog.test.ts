@@ -193,12 +193,13 @@ describe("de.json — Phase 86C1 translation audit", () => {
     de: deFlat.get(path),
     fa: faFlat.get(path),
   }));
-  // Journal namespaces were translated in Phase 86C2 and the admin namespaces
-  // in Phase 86C3; they are no longer English carryover, so exclude them from
-  // the "still English" set.
+  // Journal namespaces were translated in Phase 86C2, the admin namespaces in
+  // Phase 86C3, and industrialBrain in Phase 86C4A; they are no longer English
+  // carryover, so exclude them from the "still English" set.
   const TRANSLATED_NS = new Set([
     "journal", "journalWriter", "journalEditorial",
     "adminOperations", "adminGovernance",
+    "industrialBrain",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
