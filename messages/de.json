@@ -1,0 +1,3221 @@
+{
+  "meta": {
+    "title": "Hermes OS — Industrielle KI-Plattform",
+    "description": "Enterprise-Plattform für industrielle Automatisierung: PLC, SCADA, HMI, KI-Copilot und intelligente Betriebsführung — entwickelt für persisch- und englischsprachige Produktionsumgebungen.",
+    "keywords": "industrielle KI, PLC-Programmierung, SCADA, HMI, industrielle Automatisierung, KI-Copilot, OPC-UA, Fabrikintelligenz, Hermes OS, industrielles IoT",
+    "pages": {
+      "academy": {
+        "title": "Hermes Academy — Industrielle Schulung & Zertifizierung",
+        "description": "Professionelle Kurse für industrielle Automatisierung: PLC, SCADA, HMI, Sicherheitssysteme und KI-gestützte Betriebsführung. Erwerben Sie Zertifikate und bringen Sie Ihre Karriere voran.",
+        "keywords": "industrielle Schulung, PLC-Kurse, SCADA-Zertifizierung, Automatisierungsschulung, HMI-Training, industrielle Sicherheit"
+      },
+      "careers": {
+        "title": "Karriere bei Hermes — Jobs in industrieller KI & Automatisierung",
+        "description": "Werden Sie Teil des Teams, das die Zukunft der industriellen Intelligenz gestaltet. Offene Stellen in PLC-Engineering, SCADA-Architektur, KI und Softwareentwicklung.",
+        "keywords": "Jobs industrielle Automatisierung, PLC-Ingenieur, SCADA-Architekt, KI-Ingenieur, Softwareentwickler Automatisierung"
+      },
+      "library": {
+        "title": "Industrielle Wissensbibliothek — PLC-, SCADA-, HMI-Referenz",
+        "description": "Umfassende technische Referenz zu PLC, SCADA, HMI, Elektrotechnik, Instrumentierung, Industrieprotokollen und Cybersicherheit.",
+        "keywords": "PLC-Dokumentation, SCADA-Referenz, HMI-Designleitfaden, Industrieprotokolle, OT-Cybersicherheit, Instrumentierung"
+      },
+      "compliance": {
+        "title": "Compliance- & Datenschutz-Center — DSGVO",
+        "description": "DSGVO-Compliance-Werkzeuge, Datenschutzmanagement, Cookie-Einwilligung und rechtliche Dokumentation für den Unternehmenseinsatz.",
+        "keywords": "DSGVO-Compliance, Datenschutz, Cookie-Einwilligung, Datenschutz-Center, Datensicherheit"
+      },
+      "services": {
+        "title": "Industrielle KI-Services — Automatisierung, SCADA, Cybersicherheit",
+        "description": "Durchgängige Automatisierungsdienstleistungen: PLC-Engineering, SCADA-Architektur, industrielle Cybersicherheit und KI-gestützte Betriebsintelligenz.",
+        "keywords": "PLC-Engineering, SCADA-Architektur, industrielle Cybersicherheit, Automatisierungsberatung, IIoT-Integration"
+      },
+      "contact": {
+        "title": "Kontakt Hermes OS — Partnerschaft für industrielle KI",
+        "description": "Kontaktieren Sie uns zu Enterprise-Automatisierungslösungen, Partnerschaften für industrielle KI und Systemintegrationsprojekten.",
+        "keywords": "Kontakt, industrielle Automatisierung, Enterprise-KI, Automatisierungsberatung"
+      },
+      "platform": {
+        "title": "Hermes OS Plattform — Architektur & Funktionsumfang",
+        "description": "Entdecken Sie die Plattformarchitektur von Hermes OS, die SCADA, HMI, PLC und KI zu einer einheitlichen industriellen Betriebsoberfläche vereint.",
+        "keywords": "Industrieplattform, SCADA-Architektur, PLC-Integration, KI-Betrieb, HMI-Design"
+      },
+      "seo": {
+        "title": "SEO-Dashboard",
+        "description": "Suchmaschinenoptimierung für Hermes OS überwachen und verwalten.",
+        "overview": "Übersicht",
+        "totalPages": "Indexierte Routen",
+        "locales": "Sprachen",
+        "publicRoutes": "Öffentliche Routen",
+        "previewSitemap": "Sitemap-Vorschau",
+        "previewRobots": "Robots.txt-Vorschau",
+        "schemaTypes": "Aktive Schema-Typen",
+        "hreflang": "hreflang",
+        "ogTags": "Open Graph",
+        "status": "Status",
+        "active": "Aktiv",
+        "configured": "Konfiguriert",
+        "verified": "Verifiziert",
+        "knowledgeArticles": "Wissensartikel",
+        "openJobs": "Offene Stellen",
+        "eyebrow": "Admin · SEO-Engine",
+        "lede": "Sichtbarkeit in Suchmaschinen, strukturierte Daten, Sitemap und Indexierungsstatus der Hermes OS Plattform."
+      },
+      "about": {
+        "title": "Über Hermes OS — Pionier industrieller KI",
+        "description": "Hermes OS entwickelt die Intelligenzschicht für industrielle Betriebe — mehrsprachig, modular und konzipiert für reale Produktionsumgebungen weltweit.",
+        "keywords": "über Hermes OS, Unternehmen für industrielle KI, Automatisierungsplattform, industrielle Intelligenz, zweisprachiges SCADA"
+      },
+      "architecture": {
+        "title": "Hermes OS Architektur — Design industrieller KI",
+        "description": "Entdecken Sie die mehrschichtige Architektur von Hermes OS: von der PLC-Signalerfassung über KI-Reasoning und SCADA-Integration bis zur zweisprachigen HMI-Ausgabe.",
+        "keywords": "Architektur industrieller KI, SCADA-Architektur, PLC-Integration, OPC-UA, IIoT-Design, KI-Pipeline"
+      },
+      "brain": {
+        "title": "Hermes Brain — Industrielle Wissens-Engine",
+        "description": "Hermes Brain ist eine domänenspezifische Wissens-Engine, trainiert auf industrieller Automatisierung: PLC-Logik, SCADA-Alarme, HMI-Design und OT-Cybersicherheit.",
+        "keywords": "industrielles KI-Brain, Wissens-Engine, PLC-KI, SCADA-Intelligenz, Wissensbasis Automatisierung, OT-KI"
+      },
+      "copilot": {
+        "title": "Engineering Copilot — KI für Industrieingenieure",
+        "description": "Ein KI-Copilot, der die Sprache der Automatisierung spricht: PLC-Logik entwerfen, Alarme erklären, SCADA debuggen und HMI verwalten — auf Persisch und Englisch.",
+        "keywords": "Engineering Copilot, KI für PLC, SCADA-KI-Assistent, industrieller KI-Copilot, Automatisierungs-KI, zweisprachige KI"
+      },
+      "serviceIndustrialAi": {
+        "title": "Services für industrielle KI-Integration — Hermes OS",
+        "description": "Bringen Sie KI-gestützte Intelligenz in Ihre industriellen Abläufe: vorausschauende Instandhaltung, Anomalieerkennung und Prozessoptimierung.",
+        "keywords": "Services industrielle KI, vorausschauende Instandhaltung, KI-Prozessoptimierung, IIoT-KI, Automatisierungsintelligenz"
+      },
+      "serviceCybersecurity": {
+        "title": "Industrielle Cybersicherheits-Services — OT-/ICS-Sicherheit",
+        "description": "Schützen Sie Ihr OT-Netzwerk, Ihre SCADA-Systeme und Ihre PLC-Infrastruktur mit industrieller Cybersicherheit auf Enterprise-Niveau.",
+        "keywords": "industrielle Cybersicherheit, OT-Sicherheit, ICS-Sicherheit, SCADA-Cybersicherheit, PLC-Netzwerksicherheit, OT/IT-Konvergenz"
+      },
+      "servicePlc": {
+        "title": "PLC-Engineering-Services — Siemens, Schneider, ABB",
+        "description": "Professionelle PLC-Programmierung, Inbetriebnahme und Optimierung für Siemens TIA Portal, Schneider Electric, ABB und weitere.",
+        "keywords": "PLC-Engineering-Services, Siemens TIA Portal, PLC-Programmierung, IEC 61131-3, Kontaktplan, Structured Text"
+      },
+      "serviceScadaHmi": {
+        "title": "SCADA- & HMI-Engineering-Services — Prozessvisualisierung",
+        "description": "Enterprise-SCADA-Systeme und HMI-Panels für Fertigung, Öl & Gas und Versorgungsunternehmen entwerfen, implementieren und optimieren.",
+        "keywords": "SCADA-Engineering, HMI-Design, Wonderware, FactoryTalk, SCADA-Architektur, Prozessvisualisierung, Bedienbilder"
+      },
+      "serviceKnowledgeCloud": {
+        "title": "Knowledge Cloud — Industrielle Datenintelligenz",
+        "description": "Verbinden Sie Ihre Anlagendaten mit einer strukturierten Wissensschicht: Tag-Bibliotheken, Alarmmanagement, Historian-Integration und KI-fähige Pipelines.",
+        "keywords": "industrielle Knowledge Cloud, Tag-Bibliothek, Historian-Integration, Alarmmanagement, Datenintelligenz, IIoT-Daten"
+      },
+      "libraryCases": {
+        "title": "Engineering-Fallbibliothek — Industrielle Störfälle & Lösungen",
+        "description": "Reale Fälle aus der industriellen Automatisierung: Fehlerdiagnosen, Ursachenanalysen und Engineering-Lösungen für PLC, SCADA, HMI und elektrische Systeme.",
+        "keywords": "industrielle Engineering-Fälle, Fehlerdiagnose, Ursachenanalyse, PLC-Fehlerbehebung, SCADA-Störfälle, Automatisierungsfälle"
+      },
+      "libraryVendor": {
+        "title": "Hersteller-Wissenscenter — Industrielle Automatisierung",
+        "description": "Technische Dokumentation, Engineering-Fälle und Fachwissen zu Herstellern industrieller Automatisierung: Siemens, Schneider Electric, ABB, Mitsubishi und weitere.",
+        "keywords": "Siemens-Wissen, Schneider Electric Dokumentation, ABB Industrie, Mitsubishi PLC, industrielle Herstellerbibliothek"
+      },
+      "privacy": {
+        "title": "Datenschutzerklärung — Hermes OS",
+        "description": "Wie Hermes OS Ihre personenbezogenen Daten im Einklang mit der DSGVO und internationalen Datenschutzstandards erhebt, verwendet und schützt.",
+        "keywords": "Datenschutzerklärung, Datenschutz, personenbezogene Daten, DSGVO, Hermes OS Datenschutz"
+      },
+      "terms": {
+        "title": "Nutzungsbedingungen — Hermes OS",
+        "description": "Bedingungen für die Nutzung der industriellen KI-Plattform Hermes OS und aller zugehörigen Dienste.",
+        "keywords": "Nutzungsbedingungen, AGB, Hermes OS Bedingungen, Dienstleistungsvereinbarung"
+      },
+      "cookies": {
+        "title": "Cookie-Richtlinie — Hermes OS",
+        "description": "Wie Hermes OS Cookies und ähnliche Technologien einsetzt. Verstehen Sie Ihre Optionen und verwalten Sie Ihre Cookie-Einstellungen.",
+        "keywords": "Cookie-Richtlinie, Cookies, Tracking, Browser-Cookies, Hermes OS Cookies"
+      },
+      "gdpr": {
+        "title": "DSGVO-Datenrechte — Hermes OS",
+        "description": "Ihre Rechte nach der DSGVO: Auskunft, Berichtigung, Löschung, Übertragbarkeit und Widerspruch. Stellen Sie Datenanfragen und verwalten Sie Ihre Privatsphäre.",
+        "keywords": "DSGVO, Datenrechte, Recht auf Löschung, Datenübertragbarkeit, Datenschutzrechte, DSGVO-Compliance"
+      },
+      "analyticsAdmin": {
+        "eyebrow": "Wachstumsanalyse",
+        "title": "Analytics-Dashboard",
+        "lede": "Konfigurations- und Einwilligungsstatus von Google Analytics 4 und Tag Manager für Hermes OS.",
+        "ga4Status": "GA4-Status",
+        "gtmStatus": "GTM-Status",
+        "measurementId": "GA4-Mess-ID",
+        "containerId": "GTM-Container-ID",
+        "eventsTracked": "Erfasste Ereignisse",
+        "privacyMode": "Datenschutzmodus",
+        "configured": "Konfiguriert",
+        "notConfigured": "Nicht konfiguriert",
+        "active": "Aktiv",
+        "inactive": "Inaktiv",
+        "anonymous": "Nur anonym",
+        "noPii": "Keine Erhebung personenbezogener Daten",
+        "cspUpdated": "CSP aktualisiert",
+        "consentGated": "Einwilligungspflichtig",
+        "gdprCompliant": "DSGVO-konform",
+        "complianceFeatures": "Compliance- & Datenschutzfunktionen",
+        "integrationConfig": "Integrationskonfiguration",
+        "consentApi": "Consent API",
+        "consentEvent": "Consent-Ereignis",
+        "eventCatalog": "Katalog erfasster Ereignisse",
+        "eventName": "Ereignis",
+        "eventDesc": "Beschreibung",
+        "setupGuide": "Umgebungsvariablen",
+        "setupNote": "Fügen Sie diese zu Ihrer .env.local oder Ihrer Deployment-Umgebung hinzu. Analytics wird automatisch aktiviert, sobald eine der Variablen gesetzt ist. Die vollständige Dokumentation finden Sie in docs/analytics.md."
+      },
+      "vendors": {
+        "title": "Anbieterverzeichnis — Hermes OS",
+        "description": "Durchsuchen Sie zertifizierte Anbieter industrieller Technologie, Systemintegratoren, Dienstleister und Hersteller im Hermes OS Ökosystem.",
+        "keywords": "Anbieterverzeichnis, Industrieanbieter, Systemintegratoren, Technologieanbieter, Hermes OS Partner",
+        "eyebrow": "Anbieter-Ökosystem",
+        "heading": "Anbieterverzeichnis",
+        "lede": "Entdecken Sie zertifizierte Partner für Industrietechnologie — von Automatisierungsspezialisten bis zu Integratoren von Unternehmenssoftware — alle vom Hermes OS Team geprüft.",
+        "applyBtn": "Jetzt bewerben →",
+        "noResults": "Keine Anbieter gefunden",
+        "noResultsFilter": "Passen Sie Ihre Filter an, um Anbieter zu finden.",
+        "noResultsEmpty": "Das Anbieter-Ökosystem wächst. Seien Sie der Erste, der sich bewirbt.",
+        "becomePartner": "Partner werden →",
+        "filters": {
+          "allTypes": "Alle Typen",
+          "allTiers": "Alle Stufen",
+          "search": "Anbieter suchen…",
+          "searchBtn": "Suchen"
+        },
+        "card": {
+          "featured": "Empfohlen",
+          "verified": "Verifiziert",
+          "services": "Leistungen",
+          "skills": "Kompetenzen",
+          "compliance": "Compliance"
+        }
+      },
+      "vendorsApply": {
+        "title": "Anbieterpartner werden — Hermes OS",
+        "description": "Bewerben Sie sich für das Hermes OS Anbieter-Ökosystem. Wir arbeiten mit Industrietechnologie-Unternehmen, Systemintegratoren und Dienstleistern zusammen.",
+        "keywords": "Anbieterbewerbung, Partnerprogramm, Partner für Industrietechnologie, Hermes OS Anbieter",
+        "eyebrow": "Partnerprogramm",
+        "heading": "Anbieterpartner werden",
+        "lede": "Treten Sie dem Hermes OS Anbieter-Ökosystem bei und erreichen Sie Unternehmenskunden im gesamten Industrietechnologiesektor. Unser Team prüft jede Bewerbung innerhalb von 5 Werktagen.",
+        "backLink": "← Anbieterverzeichnis",
+        "benefits": {
+          "badge": {
+            "title": "Verifizierungs-Badge",
+            "desc": "Erhalten Sie nach der Compliance-Prüfung ein verifiziertes Partner-Badge auf Ihrem Profil."
+          },
+          "reach": {
+            "title": "Enterprise-Reichweite",
+            "desc": "Erreichen Sie Unternehmenskunden, die aktiv Industrietechnologie beschaffen."
+          },
+          "panel": {
+            "title": "Admin-Bereich",
+            "desc": "Verwalten Sie Ihr Anbieterprofil, Ihren Leistungskatalog und Ihre Leistungskennzahlen."
+          }
+        },
+        "form": {
+          "company": "Unternehmensangaben",
+          "contact": "Ansprechpartner",
+          "expertise": "Industrielle Expertise & Leistungen",
+          "description": "Unternehmensbeschreibung",
+          "legal": "Recht & Compliance",
+          "submit": "Bewerbung absenden →",
+          "submitting": "Wird gesendet…",
+          "successTitle": "Bewerbung eingereicht!",
+          "successBody": "Vielen Dank für Ihre Bewerbung für das Hermes OS Anbieter-Ökosystem. Wir prüfen Ihre Bewerbung und kontaktieren Sie innerhalb von 5 Werktagen unter der angegebenen E-Mail-Adresse.",
+          "successCta": "Anbieterverzeichnis durchsuchen →"
+        }
+      },
+      "vendorPortal": {
+        "eyebrow": "Anbieterportal",
+        "heading": "Mein Anbieter-Dashboard",
+        "lede": "Verwalten Sie Ihr Anbieterprofil, Ihre Leistungen und Ihren Partnerschaftsstatus.",
+        "noProfile": "Kein Anbieterprofil gefunden",
+        "noProfileBody": "Ihre Bewerbung wird möglicherweise noch geprüft, oder Sie haben noch keine Bewerbung für das Hermes OS Anbieter-Ökosystem eingereicht.",
+        "applyLink": "Jetzt als Partner bewerben →"
+      },
+      "adminVendors": {
+        "eyebrow": "Admin — Anbieterverwaltung",
+        "heading": "Anbieter-Ökosystem",
+        "lede": "Anbieterbewerbungen prüfen, freigegebene Anbieterprofile verwalten und die Gesundheit des Ökosystems sicherstellen."
+      }
+    }
+  },
+  "nav": {
+    "home": "Startseite",
+    "platform": "Plattform",
+    "services": "Services",
+    "architecture": "Architektur",
+    "dashboard": "Dashboard",
+    "copilot": "Engineering Copilot",
+    "library": "Bibliothek",
+    "brain": "Brain",
+    "industrialBrain": "Industrial Brain",
+    "groups": {
+      "platform": "Plattform",
+      "intelligence": "Intelligenz",
+      "operations": "Betrieb",
+      "knowledge": "Wissen",
+      "journal": "Industrie-Journal",
+      "services": "Services"
+    },
+    "items": {
+      "overview": "Übersicht",
+      "architecture": "Architektur",
+      "servicesItem": "Services",
+      "brain": "Brain",
+      "copilot": "Engineering Copilot",
+      "unknownCenter": "Unknown Analysis Center",
+      "dashboard": "Dashboard",
+      "telemetry": "Werkstelemetrie",
+      "library": "Bibliothek",
+      "cases": "Engineering-Fälle",
+      "coverage": "Wissensabdeckung",
+      "contact": "Kontakt",
+      "about": "Über uns",
+      "caseStudio": "Case Studio",
+      "knowledgeStudio": "Knowledge Studio",
+      "admin": "Admin-Konsole",
+      "documents": "Dokumentenbibliothek",
+      "documentSearch": "Dokumentensuche",
+      "engGraph": "Engineering-Wissensgraph",
+      "opsCenter": "Operations-Leitstand",
+      "atsPortal": "ATS",
+      "csCenter": "Customer Success",
+      "careersBoard": "Karriere",
+      "candidatePortal": "Meine Bewerbungen",
+      "academy": "Academy",
+      "compliance": "Compliance",
+      "privacyCenter": "Datenschutz-Center",
+      "assetRegistry": "Anlagenregister",
+      "journalFeed": "Artikel-Feed",
+      "journalLatest": "Neueste Artikel",
+      "journalTrending": "Im Trend",
+      "journalAuthors": "Fachautoren",
+      "journalCategories": "Kategorien",
+      "industrialBrain": "Industrial Brain",
+      "discover": "Entdecken",
+      "demo": "Demo"
+    },
+    "menu": "Menü",
+    "close": "Schließen"
+  },
+  "industrialBrainReport": {
+    "evidencePack": "Evidence Pack",
+    "engineeringReport": "Engineering Report",
+    "copySummary": "Copy Summary",
+    "copyFullReport": "Copy Full Report",
+    "printReport": "Print Report",
+    "generated": "Generated",
+    "disclaimerDecisionSupport": "Decision-support report",
+    "disclaimerNotCertified": "Not a certified safety report",
+    "disclaimerVerify": "Verify with qualified personnel and site procedures"
+  },
+  "common": {
+    "switchLanguage": "English",
+    "comingSoon": "Demnächst verfügbar",
+    "explore": "Entdecken",
+    "backToServices": "Alle Services",
+    "viewArchitecture": "Architektur ansehen",
+    "viewPlatform": "Plattform entdecken"
+  },
+  "home": {
+    "eyebrow": "Industrielle KI-Plattform",
+    "title": "Die Steuerungsebene zwischen Ihrer Anlage und ihrer Intelligenz.",
+    "lede": "Hermes OS vereint PLC-Programmierung, SCADA, HMI und einen KI-Copiloten in einer zweisprachigen Betriebsoberfläche — gleichermaßen entwickelt für persisch- und englischsprachige Produktionsumgebungen.",
+    "primaryCta": "Plattform entdecken",
+    "secondaryCta": "Architektur ansehen",
+    "capabilitiesTitle": "Was auf Hermes läuft",
+    "capabilities": {
+      "plc": {
+        "name": "PLC-Programmierung",
+        "desc": "Kontaktplan- und Structured-Text-Logik erstellen, prüfen und versionieren."
+      },
+      "scada": {
+        "name": "SCADA",
+        "desc": "Übergeordnete Steuerung und Live-Prozessvisualisierung."
+      },
+      "hmi": {
+        "name": "HMI",
+        "desc": "Bedienbilder, die in beide Richtungen lesbar sind."
+      },
+      "copilot": {
+        "name": "KI-Copilot",
+        "desc": "Ein Assistent, der Automatisierung spricht — in zwei Sprachen."
+      },
+      "security": {
+        "name": "Industrielle Sicherheit",
+        "desc": "Sicherheitslage und Audit für OT-Netzwerke."
+      },
+      "library": {
+        "name": "Wissensbibliothek",
+        "desc": "Elektro- und Automatisierungsreferenz, durchsuchbar."
+      }
+    },
+    "status": {
+      "label": "V1 Enterprise-Demo",
+      "note": "Die Industrietelemetrie ist simuliert. Der Copilot ist live."
+    }
+  },
+  "modules": {
+    "sectionTitle": "Six modules, one platform",
+    "sectionLede": "Each module is a focused tool. Together they form the operations surface of the plant.",
+    "aiEngineer": {
+      "name": "Hermes AI Engineer",
+      "tagline": "The reasoning core",
+      "desc": "An automation-literate assistant that drafts logic, explains faults, and routes work to the specialist modules."
+    },
+    "plcCopilot": {
+      "name": "Hermes PLC Copilot",
+      "tagline": "Logic, authored",
+      "desc": "Write and review ladder and structured text with vendor-aware suggestions and version history."
+    },
+    "scadaStudio": {
+      "name": "Hermes SCADA Studio",
+      "tagline": "Supervise and visualize",
+      "desc": "Compose supervisory screens and process views that read correctly in Persian and English."
+    },
+    "knowledgeCloud": {
+      "name": "Hermes Knowledge Cloud",
+      "tagline": "Reference, searchable",
+      "desc": "An electrical and automation library your team can query in plain language."
+    },
+    "protectionCenter": {
+      "name": "Hermes Protection Center",
+      "tagline": "OT posture and audit",
+      "desc": "Track network posture, segmentation, and audit trails across operational technology."
+    },
+    "factoryDashboard": {
+      "name": "Hermes Factory Dashboard",
+      "tagline": "The plant at a glance",
+      "desc": "Live lines, alarms, and KPIs on one screen — simulated in this demo, wired to the historian in production."
+    }
+  },
+  "platform": {
+    "eyebrow": "The platform",
+    "title": "One surface for the people who run the plant.",
+    "lede": "Hermes OS sits between your engineers and your equipment. The modules below share one AI core, one knowledge base, and one bilingual interface.",
+    "principlesTitle": "What holds it together",
+    "principles": {
+      "bilingual": {
+        "name": "Bilingual by design",
+        "desc": "Persian and English are equal — RTL and LTR, not an afterthought."
+      },
+      "modular": {
+        "name": "Modular, not monolithic",
+        "desc": "Adopt one module or all six; each stands on its own."
+      },
+      "onprem": {
+        "name": "On-premise ready",
+        "desc": "Built to run inside the plant, including air-gapped installs."
+      },
+      "vendorNeutral": {
+        "name": "Vendor-neutral",
+        "desc": "Speaks the common industrial protocols rather than locking you in."
+      }
+    }
+  },
+  "services": {
+    "eyebrow": "Services",
+    "title": "Industrial Intelligence Services",
+    "lede": "Engineering services for the operational layer of the plant — from controller logic to supervisory systems to the security of the OT network.",
+    "items": {
+      "plc": {
+        "name": "PLC Programming",
+        "short": "Ladder and structured text, authored and reviewed.",
+        "title": "PLC Programming",
+        "lede": "Author, review, and version control logic for the controllers that run your lines.",
+        "points": {
+          "one": {
+            "name": "Ladder & structured text",
+            "desc": "Write in the languages your controllers already speak."
+          },
+          "two": {
+            "name": "Vendor-aware",
+            "desc": "Patterns aligned with Siemens S7, ABB, and Schneider conventions."
+          },
+          "three": {
+            "name": "Reviewed and versioned",
+            "desc": "Every change is explained and tracked, not pasted blind."
+          }
+        }
+      },
+      "scadaHmi": {
+        "name": "SCADA & HMI",
+        "short": "Supervisory control and operator screens.",
+        "title": "SCADA & HMI",
+        "lede": "Build the screens operators watch and the supervisory layer that drives them.",
+        "points": {
+          "one": {
+            "name": "Process visualization",
+            "desc": "Live mimic diagrams of lines, tanks, and flows."
+          },
+          "two": {
+            "name": "Operator screens",
+            "desc": "HMI layouts that read correctly in both directions."
+          },
+          "three": {
+            "name": "Alarm-aware",
+            "desc": "Surface what matters first, in the operator's language."
+          }
+        }
+      },
+      "industrialAi": {
+        "name": "Industrial AI",
+        "short": "An automation copilot for engineers.",
+        "title": "Industrial AI",
+        "lede": "An assistant that understands controllers, faults, and the vocabulary of the plant floor.",
+        "points": {
+          "one": {
+            "name": "Fault reasoning",
+            "desc": "Describe a symptom; get a structured path to the cause."
+          },
+          "two": {
+            "name": "Logic drafting",
+            "desc": "Turn intent into a reviewable first draft of control logic."
+          },
+          "three": {
+            "name": "Bilingual",
+            "desc": "Ask in Persian or English; get answers in kind."
+          }
+        }
+      },
+      "cybersecurity": {
+        "name": "Industrial Cybersecurity",
+        "short": "Posture and audit for OT networks.",
+        "title": "Industrial Cybersecurity",
+        "lede": "Understand and harden the operational-technology network that connects your equipment.",
+        "points": {
+          "one": {
+            "name": "Network posture",
+            "desc": "See segmentation, zones, and conduits at a glance."
+          },
+          "two": {
+            "name": "Audit trails",
+            "desc": "A record of who changed what, and when."
+          },
+          "three": {
+            "name": "OT-aware",
+            "desc": "Built around the realities of plant networks, not office IT."
+          }
+        }
+      },
+      "knowledgeCloud": {
+        "name": "Knowledge Cloud",
+        "short": "Your electrical and automation reference.",
+        "title": "Knowledge Cloud",
+        "lede": "A searchable library of electrical and automation knowledge your team can query in plain language.",
+        "points": {
+          "one": {
+            "name": "Plain-language search",
+            "desc": "Ask a question instead of guessing a keyword."
+          },
+          "two": {
+            "name": "Electrical reference",
+            "desc": "Standards, components, and practice in one place."
+          },
+          "three": {
+            "name": "Bilingual content",
+            "desc": "Persian and English, side by side."
+          }
+        }
+      }
+    },
+    "strap": "PLC • SCADA • HMI • AI • OT Security"
+  },
+  "architecture": {
+    "eyebrow": "Architecture",
+    "title": "From the engineer's intent to the factory floor.",
+    "lede": "Every request flows through one gateway, fans out to the specialist modules, and reaches equipment only through a defined protocol layer. The diagram below is the spine of Hermes OS.",
+    "note": "In this V1 demo the protocol layer and factory systems are represented, not connected. Live connectivity arrives with the Phase 2 gateways.",
+    "layers": {
+      "human": {
+        "name": "Human Engineer",
+        "desc": "Intent, in Persian or English"
+      },
+      "gateway": {
+        "name": "Hermes AI Gateway",
+        "desc": "Routes every request"
+      },
+      "modules": {
+        "name": "Specialist Modules",
+        "desc": "PLC Copilot · SCADA Studio · Knowledge Cloud · Protection Center"
+      },
+      "protocol": {
+        "name": "Industrial Protocol Layer",
+        "desc": "The defined boundary to equipment"
+      },
+      "buses": {
+        "name": "Field Protocols",
+        "desc": "OPC UA · Modbus TCP · MQTT · Siemens S7"
+      },
+      "factory": {
+        "name": "Factory Systems",
+        "desc": "Controllers, drives, and instruments"
+      }
+    },
+    "future": {
+      "title": "Future Platform Capabilities",
+      "badge": "Phase 2+",
+      "lede": "These services are designed into the architecture today and arrive as independently deployable gateways and engines.",
+      "items": {
+        "opcua": {
+          "name": "OPC UA Gateway",
+          "desc": "Standards-based access to controllers and servers across vendors."
+        },
+        "modbus": {
+          "name": "Modbus Gateway",
+          "desc": "TCP polling of field devices, drives, and meters."
+        },
+        "mqtt": {
+          "name": "MQTT Gateway",
+          "desc": "Broker-based telemetry for sensors and edge publishers."
+        },
+        "historian": {
+          "name": "Historian Service",
+          "desc": "Long-term time-series storage for process data and audits."
+        },
+        "twin": {
+          "name": "Digital Twin Engine",
+          "desc": "Live virtual models of lines and equipment for simulation."
+        },
+        "predictive": {
+          "name": "Predictive Maintenance Engine",
+          "desc": "Failure-pattern detection from vibration, thermal, and cycle data."
+        }
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Enterprise-Plattform für industrielle Intelligenz",
+    "description": "Hermes ist eine industrielle Intelligenzplattform für Automatisierung, Instandhaltung, Anlagenmanagement, Engineering-Dokumente und Expertenwissen.",
+    "copyright": "© 2026 Hermes Novin Mehr IRIC. Alle Rechte vorbehalten.",
+    "navAbout": "Über uns",
+    "navPlatform": "Plattform",
+    "navDocs": "Dokumentation",
+    "navContact": "Kontakt",
+    "navHome": "Startseite",
+    "navLogin": "Anmelden",
+    "navJournal": "Industrie-Journal",
+    "navFeed": "Artikel-Feed",
+    "navLatest": "Neueste Artikel",
+    "navTrending": "Im Trend",
+    "navAuthors": "Fachautoren",
+    "navCategories": "Kategorien",
+    "colPlatform": "Plattform",
+    "colJournal": "Industrie-Journal",
+    "colCompany": "Unternehmen",
+    "socialTitle": "Vernetzen"
+  },
+  "brand": {
+    "tagline": "Plattform für industrielle Intelligenz"
+  },
+  "dashboard": {
+    "title": "Factory Dashboard",
+    "eyebrow": "Operations",
+    "simulated": "Simulated telemetry",
+    "updated": "Updated",
+    "panels": {
+      "overview": "Factory Overview",
+      "lines": "Production Lines",
+      "plc": "PLC Status",
+      "scada": "SCADA Status",
+      "network": "OT Network Status",
+      "alarms": "Alarm Summary",
+      "temperature": "Temperature",
+      "pressure": "Pressure",
+      "flow": "Flow",
+      "energy": "Energy",
+      "ai": "AI Recommendations",
+      "maintenance": "Maintenance Priority",
+      "risk": "System Risk Score",
+      "thermal": "Thermal Sensors",
+      "process": "Process & Energy",
+      "control": "Control Systems"
+    },
+    "overview": {
+      "oee": "OEE",
+      "availability": "Availability",
+      "performance": "Performance",
+      "quality": "Quality",
+      "activeLines": "Active lines"
+    },
+    "status": {
+      "running": "Running",
+      "idle": "Idle",
+      "fault": "Fault",
+      "online": "Online",
+      "offline": "Offline",
+      "ok": "Normal",
+      "warning": "Warning",
+      "degraded": "Degraded"
+    },
+    "severity": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "lines": {
+      "throughput": "Throughput",
+      "target": "Target",
+      "unitsHr": "u/hr"
+    },
+    "plcP": {
+      "cycle": "Cycle",
+      "devices": "controllers"
+    },
+    "scadaP": {
+      "servers": "Servers",
+      "tags": "Tags polled",
+      "rate": "Update rate",
+      "latency": "Latency"
+    },
+    "networkP": {
+      "devices": "Devices",
+      "online": "Online",
+      "blocked": "Blocked events",
+      "ids": "Intrusion detection"
+    },
+    "alarmsP": {
+      "active": "Active alarms",
+      "last": "Most recent",
+      "msgs": {
+        "m1": "Line 2 conveyor motor over-temperature",
+        "m2": "Tank B pressure approaching upper limit",
+        "m3": "PLC-04 cycle time variance detected",
+        "m4": "Cooling loop flow below setpoint",
+        "m5": "Unauthorized device blocked on OT VLAN"
+      }
+    },
+    "metrics": {
+      "min": "min",
+      "max": "max",
+      "current": "now"
+    },
+    "energyP": {
+      "now": "Load now",
+      "today": "Today",
+      "peak": "Peak"
+    },
+    "aiP": {
+      "note": "Generated from simulated plant data — illustrative only.",
+      "confidence": "confidence",
+      "recs": {
+        "r1": {
+          "title": "Rebalance Line 2 takt time",
+          "desc": "Throughput variance suggests a 6% takt adjustment would relieve the conveyor over-temperature pattern."
+        },
+        "r2": {
+          "title": "Schedule PLC-04 inspection",
+          "desc": "Cycle-time drift over the last window matches early actuator wear signatures."
+        },
+        "r3": {
+          "title": "Shift compressor duty to off-peak",
+          "desc": "Energy peaks align with compressor staging; off-peak shifting cuts estimated 9% of peak load."
+        }
+      },
+      "topRec": "Top AI Insight"
+    },
+    "maintenanceP": {
+      "due": "days",
+      "assets": {
+        "a1": "Conveyor motor — Line 2",
+        "a2": "Actuator bank — PLC-04",
+        "a3": "Cooling pump P-7",
+        "a4": "Compressor C-2"
+      }
+    },
+    "riskP": {
+      "trend": {
+        "up": "Rising",
+        "down": "Falling",
+        "flat": "Stable"
+      },
+      "factors": {
+        "f1": "Thermal stress",
+        "f2": "Cycle variance",
+        "f3": "Network exposure",
+        "f4": "Maintenance backlog"
+      }
+    },
+    "exec": {
+      "sectionKpi": "Executive Overview",
+      "sectionIntel": "Brain Intelligence",
+      "sectionStatus": "Industrial Platform Status",
+      "kpi": {
+        "totalAnalyses": "Total Analyses",
+        "knownAnalyses": "Known Analyses",
+        "unknownAnalyses": "Unknown Analyses",
+        "engineeringCases": "Engineering Cases",
+        "knowledgeLibraries": "Knowledge Libraries",
+        "supportedVendors": "Supported Vendors",
+        "avgConfidence": "Average Confidence",
+        "systemHealth": "System Health"
+      },
+      "health": {
+        "nominal": "Nominal",
+        "watch": "Watch",
+        "degraded": "Degraded"
+      },
+      "intel": {
+        "topDomains": "Top Domains",
+        "topVendors": "Top Vendors",
+        "guardrailHits": "Guardrail Hits",
+        "recentAnalyses": "Recent Analyses",
+        "none": "No analyses yet this session",
+        "unknownTag": "Unknown"
+      },
+      "status": {
+        "brainEngine": "Brain Engine",
+        "knowledgeCloud": "Knowledge Cloud",
+        "caseEngine": "Case Engine",
+        "telemetry": "Dashboard Telemetry",
+        "plcConnectivity": "PLC Connectivity",
+        "online": "Online",
+        "simulated": "Simulated",
+        "phase2": "Phase 2"
+      },
+      "sessionNote": "Session-scoped intelligence — resets when the server restarts (no database in V1)."
+    },
+    "kpi": {
+      "oee": "OEE",
+      "lines": "Active Lines",
+      "linesNote": "production lines",
+      "alarms": "Active Alarms",
+      "critical": "critical",
+      "risk": "Risk Score",
+      "power": "Power Draw",
+      "totalAlarms": "Total Alarms"
+    },
+    "platformIntel": "Platform Intelligence"
+  },
+  "knowledge": {
+    "plcBasics": {
+      "name": "PLC Fundamentals",
+      "summary": "Scan cycle, I/O image, and program organization of programmable logic controllers.",
+      "p1": "A PLC executes a cyclic scan: read inputs, execute logic, write outputs — scan time sets the response latency.",
+      "p2": "I/O process images decouple physical terminals from logic; forcing bypasses logic and must be strictly controlled.",
+      "p3": "Organize programs into cyclic, startup, and interrupt blocks; keep safety logic separate from process logic.",
+      "c1": "Check the CPU diagnostic buffer for faults and scan-time overruns.",
+      "c2": "Verify I/O addressing against the hardware configuration.",
+      "overview": "A programmable logic controller is the deterministic execution core of a machine or process cell: it reads field inputs, solves user logic, and drives outputs on a fixed, repeatable cycle measured in milliseconds.",
+      "purpose": "Guarantees bounded reaction time and predictable behavior for discrete and hybrid control, where a PC operating system cannot.",
+      "how": "Each scan copies physical inputs into the process image, executes the program against that frozen image, then writes the output image back to the terminals. Interrupt blocks preempt the cycle for time-critical events; the watchdog supervises total scan time.",
+      "faults": "Scan-time overrun from unbounded loops or heavy communication; forced I/O left active after maintenance; logic acting on stale data when modules fail silently; battery/memory loss wiping retentive data on power cycle.",
+      "c3": "Confirm retentive memory and clock backup health before any planned power-down.",
+      "safetyNote": "Never treat standard PLC logic as a safety function — emergency stops and guard circuits belong in certified safety relays or F-CPUs, hardwired per the machine's risk assessment.",
+      "commissioning": "Force each I/O point once against the loop drawing before logic test; record scan-time baseline at full load and alarm at 80% of watchdog.",
+      "concepts": "Process image, scan cycle, organization blocks, retentive memory, watchdog, I/O addressing.",
+      "brainUse": "Hermes Brain cites this library when a question involves scan behavior, CPU diagnostics, I/O addressing, or general controller fundamentals across any vendor."
+    },
+    "ladder": {
+      "name": "Ladder Logic",
+      "summary": "Contact and coil patterns: interlocks, latching, and edge detection.",
+      "p1": "Seal-in circuits hold outputs after momentary commands; every stop condition must break the seal.",
+      "p2": "Use rising/falling edge instructions for one-shot actions to avoid re-triggering every scan.",
+      "p3": "Interlocks must be structured so no single rung can bypass a safety condition.",
+      "c1": "Trace rung power flow online to find the blocking contact.",
+      "c2": "Search cross-references for double coil assignments.",
+      "overview": "Ladder logic expresses control as power flow through contacts and coils — the lingua franca of discrete automation, readable by electricians and auditable rung by rung.",
+      "purpose": "Interlocks, sequences, and motor control where visual traceability during live troubleshooting matters more than computational elegance.",
+      "how": "Each rung evaluates left-to-right per scan; seal-in branches latch outputs past momentary commands; edge instructions convert level signals to one-shot events; cross-references track every address.",
+      "faults": "Double coil assignments producing flicker; seal-ins that a stop condition fails to break; edge instructions duplicated so events fire twice; interlock bypass hidden in a parallel branch.",
+      "c3": "Audit every safety-relevant rung for parallel paths that could bypass the interlock condition.",
+      "safetyNote": "A ladder interlock is an availability function, not a safety function — protective stops must remain hardwired or in certified safety logic regardless of program structure.",
+      "commissioning": "Walk each sequence step with the machine in manual, watching rung power flow online; archive a cross-reference listing with the as-commissioned program.",
+      "concepts": "Contacts and coils, seal-in/latch, edge detection, cross-reference, interlocking, scan order.",
+      "brainUse": "Cited when questions mention rungs, coils, latching behavior, outputs that stick or flicker, or interlock logic in any ladder-programmed PLC."
+    },
+    "scadaTags": {
+      "name": "SCADA Tag Architecture",
+      "summary": "Tag naming, polling groups, and data quality in supervisory systems.",
+      "p1": "Structured tag naming (Area_Equipment_Signal) makes alarms and trends scale cleanly.",
+      "p2": "Match polling groups to process dynamics — fast loops 250–500 ms, slow analogs 1–5 s.",
+      "p3": "Propagate data-quality flags to displays; never show stale values as live.",
+      "c1": "Verify tag address mapping against the PLC symbol table.",
+      "c2": "Check communication driver statistics for timeouts and retries.",
+      "overview": "The tag database is the supervisory system's model of the plant: every value displayed, trended, or alarmed traces back to a tag bound to a controller address through a polling group.",
+      "purpose": "Decouples HMI/SCADA applications from raw controller addressing and carries data-quality so operators never mistake stale values for live ones.",
+      "how": "Drivers poll controllers in groups whose rates match process dynamics; tags scale raw values to engineering units; quality flags (good/uncertain/bad) propagate from driver to display and historian.",
+      "faults": "Address mapping drift after PLC changes; one fast polling group starving the channel; quality flags ignored so frozen values look live; tag sprawl from copy-paste without a naming standard.",
+      "c3": "Cross-check a sample of tag addresses against the current PLC symbol table after every controller change.",
+      "safetyNote": "Operator displays are informational — never route a protective action through SCADA tag writes; the controller must protect itself if the supervisory layer dies.",
+      "commissioning": "Load-test polling at full tag count, verify failover behavior of redundant servers, and freeze the naming convention before bulk tag creation.",
+      "concepts": "Polling groups, data quality, engineering-unit scaling, tag naming standards, driver diagnostics.",
+      "brainUse": "Cited when questions involve stale or wrong SCADA values, tag mapping, polling load, or supervisory data quality."
+    },
+    "digitalInputs": {
+      "name": "Digital Inputs",
+      "summary": "Sinking/sourcing, debounce, and contact wiring behavior.",
+      "p1": "Match sensor output type (PNP/NPN) to the input card's sinking/sourcing configuration.",
+      "p2": "Debounce mechanical contacts in logic (10–50 ms) to avoid false transitions.",
+      "p3": "Chattering inputs — rapid repeated transitions — usually indicate wiring or mechanical faults.",
+      "c1": "Measure voltage at the input terminal against the module specification.",
+      "c2": "Compare the input status LED with the logic state to separate field from program issues.",
+      "overview": "Digital inputs carry binary field state into the controller; correctness depends on matching sensor output type, input wiring convention, and debounce handling.",
+      "purpose": "Deliver clean, debounced, correctly-referenced on/off signals so logic acts on real state changes rather than electrical noise.",
+      "how": "PNP (sourcing) sensors feed sinking inputs and vice versa; the input threshold defines on/off voltage bands; mechanical contacts bounce for milliseconds and need logic or hardware debounce; status LEDs reflect terminal state.",
+      "faults": "PNP/NPN mismatch reading permanently off; chatter from unshielded runs beside VFD cables; bounce double-triggering counters; dry contacts wetted with the wrong common reference.",
+      "c3": "Compare the input status LED against the logic state — disagreement isolates field wiring from program faults instantly.",
+      "safetyNote": "Protective stop signals must use safety-rated inputs with line monitoring, not standard DI channels, regardless of how clean the wiring looks.",
+      "commissioning": "Exercise every input from its field device (not jumpers at the terminal) and verify debounce times against the fastest legitimate signal.",
+      "concepts": "Sinking/sourcing, input thresholds, debounce, signal isolation, LED-versus-logic diagnosis.",
+      "brainUse": "Cited for inputs reading wrong or chattering, sensor-to-card mismatches, and noise-induced false transitions."
+    },
+    "analogInputs": {
+      "name": "Analog Inputs",
+      "summary": "4–20 mA loops, scaling, and signal integrity.",
+      "p1": "The 4–20 mA live-zero enables broken-wire detection: below 3.6 mA means fault, not a low reading.",
+      "p2": "Scale raw counts to engineering units in exactly one layer — PLC or SCADA, never both.",
+      "p3": "Use shielded twisted pair grounded at one end; route away from VFD output cables.",
+      "c1": "Inject a calibrated signal and verify the value through PLC and SCADA.",
+      "c2": "Suspect ground loops when readings drift or oscillate.",
+      "overview": "Analog inputs digitize continuous process signals; the 4–20 mA current loop dominates because its live zero exposes broken wires and its current mode resists voltage drops.",
+      "purpose": "Bring temperatures, pressures, levels, and flows into control with known accuracy, scaling, and fault detection.",
+      "how": "Transmitters regulate loop current proportional to the measured variable; the input card digitizes across its range; scaling to engineering units happens in exactly one defined layer; values below 3.6 mA signal faults, not low readings.",
+      "faults": "Double scaling in both PLC and SCADA; ground loops drifting readings; noise coupled from power cables; under-range fault currents displayed as plausible low values.",
+      "c3": "Inject a calibrated mA signal at the field end and verify the displayed value end-to-end through PLC and SCADA.",
+      "safetyNote": "Define and test the control response to bad-quality analog values — a loop frozen at last-good value can quietly drive a process into trouble.",
+      "commissioning": "Document loop power architecture (2/4-wire), verify shield grounding at one end only, and record as-left calibration for every loop.",
+      "concepts": "Live zero, loop powering, single-point scaling, shielding and ground loops, burnout detection.",
+      "brainUse": "Cited for readings stuck at zero or drifting, scaling discrepancies between layers, and loop fault diagnosis."
+    },
+    "sensors": {
+      "name": "Industrial Sensors",
+      "summary": "Proximity, temperature, pressure, and flow measurement behavior.",
+      "p1": "Inductive proximity sensors detect metals only; capacitive types detect non-metals but drift with humidity.",
+      "p2": "RTDs (PT100) suit precision below ~600 °C; thermocouples suit high temperature and fast response.",
+      "p3": "Pressure and flow readings depend on correct process connections — trapped air or sediment biases them.",
+      "c1": "Compare the sensor reading against a local gauge or portable reference.",
+      "c2": "Inspect sensing distance and target alignment after any mechanical work.",
+      "overview": "Industrial sensors translate physical reality into signals; each technology — inductive, capacitive, RTD, thermocouple, pressure, flow — has characteristic blind spots and drift behavior.",
+      "purpose": "Provide the measurements every control decision rests on, with accuracy and reliability matched to the process duty.",
+      "how": "Proximity sensors detect via field disturbance within a rated sensing distance; RTDs vary resistance nearly linearly with temperature; thermocouples generate junction EMF needing cold-junction compensation; pressure and flow devices depend on correct process connections.",
+      "faults": "Capacitive sensors drifting with humidity; misalignment after mechanical work; impulse-line plugging mimicking sensor failure; wrong-type extension cable corrupting thermocouple readings.",
+      "c3": "Compare the suspect reading against an independent local reference before condemning the instrument.",
+      "safetyNote": "Measurements feeding protective decisions need defined failure behavior — know whether each sensor fails high, low, or frozen, and design the response.",
+      "commissioning": "Verify sensing distance and alignment in final mechanical position; document each instrument's range, tag, and as-found calibration.",
+      "concepts": "Sensing technologies, cold-junction compensation, impulse lines, calibration references, failure modes.",
+      "brainUse": "Cited for implausible readings, sensor selection questions, drift, and field-device versus wiring fault isolation."
+    },
+    "vfd": {
+      "name": "VFD / Drives",
+      "summary": "Variable frequency drive parameters, faults, and motor protection.",
+      "p1": "Enter motor nameplate data (V/Hz, FLA) in drive parameters before first start.",
+      "p2": "Overcurrent during acceleration usually means the ramp is too short or the load is abnormal — not a failed drive.",
+      "p3": "Drive output cables emit high dv/dt noise — separate them from signal cabling and use screened cable.",
+      "c1": "Read the drive fault history before resetting — the codes are the diagnosis.",
+      "c2": "Verify cooling: heatsink temperature and fan operation under load.",
+      "overview": "A variable frequency drive synthesizes adjustable voltage and frequency from rectified DC, controlling motor speed and torque — and introducing its own electrical environment of harmonics and dv/dt.",
+      "purpose": "Match motor speed to process demand for energy savings and controllability, with built-in motor protection and diagnostics.",
+      "how": "Rectifier charges the DC bus; the inverter's PWM switching synthesizes the output; V/Hz or vector control governs torque; fault registers log every trip with operating context.",
+      "faults": "Overcurrent at acceleration from ramps shorter than load inertia allows; overheating from clogged heatsinks; output earth faults from cable insulation damage; nuisance trips from supply dips sagging the DC bus.",
+      "c3": "Read the complete fault history with timestamps before any reset — the sequence of codes is the diagnosis.",
+      "safetyNote": "DC bus capacitors hold lethal charge after power-off; respect the discharge time on the nameplate and prove dead before touching power terminals.",
+      "commissioning": "Enter motor nameplate data exactly, run motor identification where supported, set ramps from real load inertia, and verify cooling at full load.",
+      "concepts": "PWM and dv/dt, DC bus, V/Hz vs vector control, ramp tuning, screened motor cables, harmonics.",
+      "brainUse": "Cited for drive trips and fault codes, acceleration problems, drive-related noise on signals, and motor-drive matching."
+    },
+    "motors": {
+      "name": "Electric Motors",
+      "summary": "Induction motor faults, insulation, and thermal behavior.",
+      "p1": "Winding insulation life roughly halves for every 10 °C above rated temperature.",
+      "p2": "Phase current imbalance above ~5% indicates supply or winding asymmetry — investigate before failure.",
+      "p3": "Bearings cause most motor downtime; vibration signature changes precede seizure.",
+      "c1": "Measure insulation resistance to earth (≥1 MΩ minimum, temperature-corrected).",
+      "c2": "Measure and compare phase currents under steady load.",
+      "overview": "Three-phase induction motors are the workhorses of industry; their failures concentrate in bearings and winding insulation, both of which degrade measurably before they fail.",
+      "purpose": "Convert electrical power to mechanical work with predictable thermal and electrical behavior that protection and monitoring can supervise.",
+      "how": "Stator current creates a rotating field dragging the rotor at slip speed; losses heat the winding, and insulation life halves roughly per 10 °C above rated temperature; bearing condition shows in vibration signature.",
+      "faults": "Bearing wear from misalignment, contamination, or VFD shaft currents; phase imbalance heating one winding; insulation breakdown to earth; repeated starts overheating the rotor.",
+      "c3": "Trend insulation resistance (temperature-corrected) over time — the slope matters more than any single reading.",
+      "safetyNote": "Isolate and lock out before touching terminations; prove dead at the motor terminals, not just the starter — backfeeds and capacitors kill.",
+      "commissioning": "Record nameplate data, no-load and full-load current, vibration baseline, and insulation resistance as the reference fingerprint for all future diagnostics.",
+      "concepts": "Slip, thermal class, phase imbalance, bearing signatures, megger testing, VFD shaft currents.",
+      "brainUse": "Cited for hot motors, current imbalance, bearing noise/vibration, insulation testing, and repeated overload trips."
+    },
+    "alarms": {
+      "name": "Alarm Management",
+      "summary": "Alarm rationalization, priorities, and flood prevention.",
+      "p1": "Every alarm must require an operator action; status information belongs on displays, not alarm lists.",
+      "p2": "Apply deadband and on/off delays to suppress chattering alarms near thresholds.",
+      "p3": "Alarm floods (>10 per 10 min per operator) hide critical events — rationalize against ISA-18.2.",
+      "c1": "Review the most frequent alarms weekly; the top ten usually cause most of the load.",
+      "c2": "Verify alarm priorities map to defined response times.",
+      "overview": "Alarm management is the discipline of keeping the alarm list meaningful: every alarm demands an operator action, arrives at the right priority, and never drowns in a flood.",
+      "purpose": "Protect operator attention — the scarcest resource during an upset — per ISA-18.2 lifecycle practice.",
+      "how": "Rationalization assigns each alarm a cause, consequence, action, and priority tied to response time; deadbands and delays suppress chatter near thresholds; flood metrics (alarms per 10 minutes) gate acceptability.",
+      "faults": "Status points configured as alarms; chattering analog alarms at threshold boundaries; priority inflation making everything critical; standing alarms normalized and ignored.",
+      "c3": "Pull the weekly top-10 most frequent alarms — they typically carry most of the load and the fastest wins.",
+      "safetyNote": "Alarm suppression and shelving need authorization and automatic return; a suppressed safety-relevant alarm that stays suppressed is a latent incident.",
+      "commissioning": "Baseline alarm rates during normal operation before handover; an installation that floods on day one will be ignored by month one.",
+      "concepts": "ISA-18.2, rationalization, deadband and delay, alarm flood, shelving, priority/response mapping.",
+      "brainUse": "Cited when questions involve nuisance alarms, floods, chattering, prioritization, or operators ignoring the alarm list."
+    },
+    "protocols": {
+      "name": "Industrial Protocols",
+      "summary": "Fieldbus and industrial Ethernet selection and diagnostics.",
+      "p1": "Cyclic real-time I/O (PROFINET, EtherCAT) and acyclic data (OPC UA, MQTT) solve different problems — don't mix roles.",
+      "p2": "Determinism comes from network design: managed switches, VLANs, and bounded traffic.",
+      "p3": "Every protocol gateway adds latency and a failure point; document each conversion in the data path.",
+      "c1": "Capture traffic with a port mirror before blaming the protocol.",
+      "c2": "Check device and connection counts against the master's documented limits.",
+      "overview": "Industrial protocols divide into cyclic real-time I/O exchange (PROFINET, EtherCAT) and acyclic data movement (OPC UA, MQTT); choosing and diagnosing them is network engineering with process consequences.",
+      "purpose": "Move the right data at the right determinism level, with diagnosability, across controllers, I/O, drives, and supervisory systems.",
+      "how": "Cyclic protocols reserve bandwidth and schedule frames for bounded update times; acyclic protocols trade determinism for flexibility and reach; gateways convert between them at the cost of latency and a failure point.",
+      "faults": "Determinism destroyed by unmanaged switches in real-time paths; device or connection counts exceeding master limits; gateway conversions silently dropping data quality; duplicate IP/device identity collisions.",
+      "c3": "Capture traffic with a port mirror at the suspect segment before blaming any protocol stack.",
+      "safetyNote": "Network failure behavior must be designed: every consumer of cyclic data needs a defined safe reaction to loss of communication.",
+      "commissioning": "Document the full data path including every conversion, baseline cycle/update times, and load-test at full device count before production.",
+      "concepts": "Cyclic vs acyclic exchange, determinism, managed switching, gateways, network load budgeting.",
+      "brainUse": "Cited for protocol selection, intermittent communication faults, update-rate problems, and mixed-vendor network architecture."
+    },
+    "opcua": {
+      "name": "OPC UA",
+      "summary": "Information modeling, sessions, and security in OPC UA.",
+      "p1": "OPC UA models data as a typed address space — browse it rather than hardcoding node IDs.",
+      "p2": "Subscriptions with monitored items outperform polling at scale; tune sampling vs publishing intervals.",
+      "p3": "Security policies and certificates are mandatory in production — anonymous/no-security is for labs only.",
+      "c1": "Validate server certificate trust lists after any host change.",
+      "c2": "Check session and subscription limits on the server before scaling clients.",
+      "overview": "OPC UA is the vendor-neutral information backbone of modern automation: a typed, browsable address space with built-in security, sessions, and subscriptions.",
+      "purpose": "Expose controller and server data with semantics — not just registers — to SCADA, MES, and analytics, securely and across platforms.",
+      "how": "Servers model data as nodes with types and references; clients browse rather than hardcode; subscriptions deliver monitored-item changes at negotiated sampling and publishing intervals; certificates authenticate both ends.",
+      "faults": "Trust-list breakage after hostname or certificate changes; session/subscription limits exhausted by scaling clients; anonymous no-security endpoints left enabled in production; address-space changes orphaning hardcoded node IDs.",
+      "c3": "Browse the live address space to confirm node identity instead of trusting documentation that may have drifted.",
+      "safetyNote": "Treat OPC UA write access as a controlled capability: writable nodes exposed to broad networks are remote control of the plant.",
+      "commissioning": "Establish certificate management ownership, set security policy to Sign&Encrypt, and load-test subscription volume before connecting production clients.",
+      "concepts": "Address space and node model, subscriptions/monitored items, security policies, certificate trust, session limits.",
+      "brainUse": "Cited for OPC UA connectivity failures, certificate trust problems, subscription performance, and secure data exposure design."
+    },
+    "modbusTcp": {
+      "name": "Modbus TCP",
+      "summary": "Register model, function codes, and polling behavior.",
+      "p1": "Modbus is register-based (4xxxx holding, 3xxxx input); off-by-one offsets are the most common mapping error.",
+      "p2": "It has no built-in security or data typing — compensate with segmentation and documented register maps.",
+      "p3": "Poll rate × register count must respect device processing limits; aggressive polling causes timeouts.",
+      "c1": "Test reads with a Modbus client tool against the documented register map.",
+      "c2": "Check exception responses (illegal address/function) in the driver log.",
+      "overview": "Modbus TCP wraps the venerable register-based protocol in Ethernet: simple, universal, and entirely without built-in security or data semantics.",
+      "purpose": "Lowest-common-denominator integration with meters, drives, and legacy devices where simplicity beats sophistication.",
+      "how": "Clients read/write holding and input registers by address using function codes; data meaning lives only in the register map document; polling rate times register count consumes the device's processing budget.",
+      "faults": "Off-by-one addressing from 0-based versus 1-based conventions; timeouts from aggressive polling; 32-bit values assembled with wrong word order; undocumented register maps drifting from reality.",
+      "c3": "Reproduce reads with an independent Modbus test client against the documented map before debugging application code.",
+      "safetyNote": "Modbus has no authentication: anything on the network segment can write registers, so segmentation and write-filtering are the security model.",
+      "commissioning": "Validate the register map end-to-end including word order and scaling, and record per-device polling budgets in the integration documentation.",
+      "concepts": "Register model, function codes, addressing conventions, word order, polling budget, exception responses.",
+      "brainUse": "Cited for Modbus value mismatches, timeouts, register-map confusion, and integration of legacy field devices."
+    },
+    "mqtt": {
+      "name": "MQTT",
+      "summary": "Pub/sub topics, QoS, and edge telemetry patterns.",
+      "p1": "Topic hierarchies (site/area/device/signal) enable selective subscription — design them before deployment.",
+      "p2": "QoS 1 can duplicate and QoS 2 costs throughput — choose per signal criticality.",
+      "p3": "Retained messages and Last Will provide state recovery and device-loss detection.",
+      "c1": "Verify broker authentication and TLS — never run open brokers on OT networks.",
+      "c2": "Monitor client reconnect counts; flapping indicates network or keep-alive issues.",
+      "overview": "MQTT is publish/subscribe telemetry for the edge: lightweight clients push topic-organized data through a broker, decoupling producers from consumers.",
+      "purpose": "Move sensor and edge data to platforms and dashboards efficiently over unreliable links, with state recovery via retained messages and Last Will.",
+      "how": "Clients connect to the broker with keep-alive supervision; topic hierarchies (site/area/device/signal) enable selective subscription; QoS levels trade delivery guarantees against throughput; retained messages give late subscribers current state.",
+      "faults": "Keep-alive exceeding firewall NAT idle timeouts causing periodic drops; QoS 2 throttling throughput unnecessarily; topic sprawl without a designed hierarchy; open brokers on OT networks.",
+      "c3": "Monitor client reconnect counts at the broker — connection flapping localizes network and keep-alive problems.",
+      "safetyNote": "MQTT is telemetry, not control: never close protective loops over a broker, and never run unauthenticated brokers on OT segments.",
+      "commissioning": "Design the topic tree before deployment, enforce TLS and authentication, and verify Last Will behavior for every device class.",
+      "concepts": "Pub/sub decoupling, topic design, QoS levels, retained messages and Last Will, broker security.",
+      "brainUse": "Cited for edge telemetry architecture, broker disconnect patterns, QoS selection, and IIoT data movement."
+    },
+    "troubleshooting": {
+      "name": "Maintenance Troubleshooting",
+      "summary": "Systematic fault isolation: symptom, cause, verification.",
+      "p1": "Change one variable at a time and record the result; parallel changes destroy diagnostic information.",
+      "p2": "Half-split the signal chain (field device → wiring → I/O → logic → display) to isolate the failing layer.",
+      "p3": "Intermittent faults correlate with conditions — log time, temperature, vibration, and operating state.",
+      "c1": "Reproduce the fault under controlled conditions before replacing parts.",
+      "c2": "After repair, confirm the original symptom is gone and no new alarms appeared.",
+      "overview": "Systematic troubleshooting is a discipline of isolation: half-split the chain, change one variable, verify with evidence — the opposite of parts-swapping by intuition.",
+      "purpose": "Reach the failing layer in minimum steps while preserving the diagnostic information that hasty changes destroy.",
+      "how": "The signal chain (field device → wiring → I/O → logic → display) is bisected by tests at its midpoints; one-variable-at-a-time changes keep cause and effect attributable; intermittents are correlated with logged conditions.",
+      "faults": "Multiple simultaneous changes erasing causality; reproducible faults 'fixed' without identified cause and returning; intermittents chased without condition logging; the same failure recurring because nothing was recorded last time.",
+      "c3": "Before replacing any component, reproduce the fault once under controlled conditions and record exactly what produces it.",
+      "safetyNote": "Diagnostic interventions on live equipment follow the same isolation and permit discipline as repairs — troubleshooting urgency does not suspend LOTO.",
+      "commissioning": "Institutionalize the discipline: fault logs with conditions, post-repair verification of the original symptom, and a searchable history of what was concluded.",
+      "concepts": "Half-split isolation, one-variable discipline, condition correlation, evidence preservation, verification of repair.",
+      "brainUse": "Cited as the methodological backbone whenever a question describes a fault without a clear domain signature — and alongside domain libraries when it has one."
+    },
+    "hmiDesign": {
+      "name": "HMI Screen Design",
+      "summary": "Operator display hierarchy, alarm visibility, and bilingual layouts.",
+      "p1": "Follow the overview → unit → detail → diagnostic hierarchy (ISA-101) for predictable navigation.",
+      "p2": "Reserve saturated colors for abnormal states; grey normal operation makes alarms stand out.",
+      "p3": "For RTL languages, mirror navigation and reading order but keep trend time axes left-to-right.",
+      "c1": "Confirm every alarm shown is acknowledgeable from the screen where it appears.",
+      "c2": "Test screens at panel resolution and real viewing distance.",
+      "overview": "HMI design determines whether an operator perceives plant state in one glance or hunts through screens during an upset — display hierarchy, color discipline, and alarm presentation are operational safety factors.",
+      "purpose": "Give operators situation awareness and unambiguous abnormal-state cues, following ISA-101 display hierarchy practice.",
+      "how": "Level-1 overviews show health of everything; level-2 unit screens support operation; level-3/4 detail and diagnostics support intervention. Grey-scale normal operation reserves saturated color for abnormal states.",
+      "faults": "Rainbow screens where everything competes for attention; alarms visible on screens where they cannot be acknowledged; navigation depth hiding critical detail; RTL layouts with broken trend time axes.",
+      "c3": "Time a cold operator finding the cause of a simulated upset — more than two navigations means the hierarchy is wrong.",
+      "safetyNote": "Critical alarms and safety status must remain visible from every screen level; a maximized trend window must never hide an active critical alarm banner.",
+      "commissioning": "Validate screens at panel resolution and arm's-length viewing distance, in both languages, with operators who will actually run the plant.",
+      "concepts": "ISA-101 hierarchy, alarm salience, color discipline, faceplates, bilingual/RTL layout.",
+      "brainUse": "Cited for operator-display questions: confusing screens, alarm visibility, navigation structure, and bilingual HMI layout."
+    },
+    "s71200": {
+      "name": "Siemens S7-1200",
+      "summary": "Compact controller: onboard I/O, signal boards, and sizing limits.",
+      "p1": "The S7-1200 targets compact machines: onboard I/O plus up to 8 signal modules and 3 communication modules.",
+      "p2": "Work memory is the binding constraint (max ~150 KB on the 1217C) — check load before adding libraries.",
+      "p3": "Onboard PROFINET supports PUT/GET only if explicitly enabled under CPU protection settings.",
+      "c1": "Check memory utilization in TIA Portal online diagnostics before expanding the program.",
+      "c2": "Verify signal board/module count against the CPU's expansion limit.",
+      "overview": "The S7-1200 is Siemens' compact controller line for machine-level automation: onboard I/O, integrated PROFINET, signal-board expansion, engineered in TIA Portal.",
+      "purpose": "Cost-efficient control of small machines and skids where panel space and budget rule out modular CPUs.",
+      "how": "A 1200 CPU runs OB1 cyclically with optional cyclic-interrupt and hardware-interrupt OBs; up to 8 signal modules and 3 communication modules extend onboard I/O; optimized data blocks store symbolically.",
+      "faults": "Work-memory exhaustion as programs grow; BF LED after device-name/IP loss on CPU swap; disabled PUT/GET blocking legacy partners; signal-board limits exceeded in retrofit projects.",
+      "c3": "Verify firmware version compatibility between the CPU, signal boards, and TIA project before download.",
+      "safetyNote": "The standard 1200 line is not a safety controller; use 1200F variants with certified F-blocks for safety functions, validated with the safety signature.",
+      "commissioning": "Assign PROFINET device names from the topology view, archive the project with the hardware fingerprint, and record memory utilization as the acceptance baseline.",
+      "concepts": "TIA Portal, PROFINET device naming, optimized DB access, signal boards, OB structure.",
+      "brainUse": "Cited when questions name the S7-1200, compact Siemens CPUs, TIA configuration limits, or PROFINET device identity problems."
+    },
+    "s71500": {
+      "name": "Siemens S7-1500",
+      "summary": "Modular high-end controller: performance, diagnostics, and fail-safe options.",
+      "p1": "The S7-1500 adds display-based diagnostics, faster backplane, and far larger work memory than the 1200 line.",
+      "p2": "F-CPUs run safety and standard logic side by side; safety signature changes require revalidation.",
+      "p3": "Distributed I/O over ET 200MP/SP with PROFINET IRT gives deterministic cycle times for motion.",
+      "c1": "Read the CPU display or web server diagnostics for module-level fault detail.",
+      "c2": "After hardware changes, recompile and check the safety program signature if F-modules exist.",
+      "overview": "The S7-1500 is Siemens' high-end modular controller family: fast backplane, display-based diagnostics, large work memory, fail-safe variants, and deterministic distributed I/O via PROFINET IRT.",
+      "purpose": "Plant-level and high-performance machine control where cycle time, diagnostics depth, and safety integration drive the architecture.",
+      "how": "Program structure mirrors the 1200 (OBs/FBs/FCs/DBs) at higher performance; ET 200MP/SP racks distribute I/O; F-CPUs execute safety and standard logic side by side under a signed safety program.",
+      "faults": "Safety-signature mismatch after module replacement; IRT determinism lost through unmanaged switches; diagnostic interrupts flooding from a failing module; web-server left enabled with default access in production.",
+      "c3": "Read module-level fault detail from the CPU display or web diagnostics before swapping hardware.",
+      "safetyNote": "Any change touching F-modules or F-blocks requires recompiling the safety program and revalidating its signature with documented sign-off.",
+      "commissioning": "Verify IRT topology against plan, set diagnostics-interrupt policies per module, and harden the web server (HTTPS, user accounts) before handover.",
+      "concepts": "ET 200 distributed I/O, PROFINET IRT, fail-safe (F) program, diagnostic buffer, TIA Portal.",
+      "brainUse": "Cited for S7-1500 questions: fail-safe behavior, scan/cycle performance, distributed I/O, and deep Siemens diagnostics."
+    },
+    "structuredText": {
+      "name": "Structured Text (SCL)",
+      "summary": "High-level PLC language: control flow, data handling, and pitfalls.",
+      "p1": "SCL suits calculations, data handling, and state machines; ladder remains clearer for discrete interlocks.",
+      "p2": "CASE-based state machines with named constants are auditable; nested IF chains are not.",
+      "p3": "Loops run within one scan — an unbounded WHILE can exceed cycle time and trip the watchdog.",
+      "c1": "Check cycle-time load after adding loops or heavy string/array operations.",
+      "c2": "Review implicit type conversions — mixed INT/REAL math silently truncates.",
+      "overview": "Structured Text (SCL in Siemens dialect) is the IEC 61131-3 high-level language: typed variables, control flow, and arithmetic for the logic that ladder handles poorly.",
+      "purpose": "Recipe handling, calculations, data structures, and state machines — implemented compactly and reviewably as code.",
+      "how": "ST compiles into the same block model as ladder; CASE statements over named state constants build auditable state machines; loops execute fully within one scan, charging their cost to cycle time.",
+      "faults": "Unbounded WHILE loops tripping the watchdog; implicit INT/REAL conversions truncating silently; deeply nested IF chains hiding dead branches; array indices unchecked at runtime boundaries.",
+      "c3": "Step through CASE state transitions online and confirm every state has a defined exit path.",
+      "safetyNote": "Keep ST computation out of safety paths unless written in certified F-blocks; complex code in protective logic defeats validation.",
+      "commissioning": "Measure cycle-time impact of each heavy ST block under worst-case data; enable range checks during commissioning runs even if disabled later for performance.",
+      "concepts": "IEC 61131-3, state machines, CASE/IF control flow, data types and conversion, cycle-time budget.",
+      "brainUse": "Cited for SCL/ST questions: loops affecting scan time, type-conversion surprises, and state-machine design in code."
+    },
+    "historian": {
+      "name": "Historian Concepts",
+      "summary": "Time-series storage: compression, retention, and retrieval for process data.",
+      "p1": "Deadband (swinging-door) compression stores only significant changes — set it per signal dynamics, not globally.",
+      "p2": "Resolution and retention trade off: raw short-term, aggregated long-term tiers keep storage bounded.",
+      "p3": "Interpolated reads differ from raw reads — trending tools must state which they return.",
+      "c1": "Compare a raw value against the historian value to validate compression settings.",
+      "c2": "Check archive backlog/queue size — growth means the store can't keep up with ingest.",
+      "overview": "A historian is the plant's time-series memory: long-horizon storage of process values, tuned by compression and retention so years of data stay queryable.",
+      "purpose": "Trend analysis, incident reconstruction, regulatory evidence, and the raw material for predictive analytics.",
+      "how": "Swinging-door (deadband) compression stores only significant changes per signal; tiered retention keeps raw data short-term and aggregates long-term; interpolated reads reconstruct values between stored points.",
+      "faults": "Global compression settings flattening fast dynamics; archive queues backing up when ingest outruns storage; clock skew between sources corrupting event sequence; interpolated reads mistaken for raw evidence.",
+      "c3": "Compare a live value against its historian readback to confirm compression is not erasing the dynamics you care about.",
+      "safetyNote": "Incident investigations need raw, time-synchronized data — verify NTP discipline across sources before you ever need to reconstruct an event.",
+      "commissioning": "Set compression per signal class, size storage from measured ingest, and test a restore from archive before declaring the system production-ready.",
+      "concepts": "Time-series compression, retention tiers, interpolation vs raw reads, NTP synchronization, trend retrieval.",
+      "brainUse": "Cited for questions about trends, missing or flattened history, archive growth, and time-series evidence quality."
+    },
+    "contactors": {
+      "name": "Contactors",
+      "summary": "Coil control, contact wear, and switching behavior.",
+      "p1": "Coil voltage sag below ~85% of rated causes chatter — chatter welds main contacts.",
+      "p2": "Size by utilization category (AC-3 for motors); AC-1 ratings overstate motor-switching capacity.",
+      "p3": "Auxiliary contacts mirror state for logic — a welded main with open auxiliary misleads the PLC.",
+      "c1": "Measure coil voltage at pull-in under load, not just at rest.",
+      "c2": "Inspect main contacts for pitting/welding after any chatter event.",
+      "overview": "Contactors switch motor and load power under control-circuit command; their failure modes — chatter, contact welding, coil burnout — sit at the junction of electrical and control faults.",
+      "purpose": "Provide remote, rated, repeatable switching with mirror auxiliary contacts that let logic verify the real power state.",
+      "how": "Coil energization pulls the armature, closing main contacts sized by utilization category (AC-3 for motors); auxiliary contacts mirror state to the PLC; the coil drops out below the holding-voltage threshold.",
+      "faults": "Chatter from coil voltage sag (below ~85% rated) welding main contacts; welded mains with open auxiliaries deceiving the logic; undersized AC-1 selections failing on motor duty; coil burnout from sustained undervoltage.",
+      "c3": "Verify the mirror relationship: command off, then prove all three phases actually opened at the load terminals.",
+      "safetyNote": "A welded contactor means the load may be live with the control circuit off — always verify isolation at the load side before work.",
+      "commissioning": "Measure coil voltage at pull-in under real inrush conditions; confirm utilization category against the actual load, not the catalog default.",
+      "concepts": "Utilization categories (AC-1/AC-3), coil holding voltage, mirror contacts, contact welding, control-circuit design.",
+      "brainUse": "Cited for chattering or humming starters, loads that won't drop out, and discrepancies between commanded and actual power state."
+    },
+    "mcc": {
+      "name": "Motor Control Centers",
+      "summary": "MCC structure: buckets, busbars, coordination, and maintenance.",
+      "p1": "Each bucket combines disconnect, protection, and starter — interlocks must prevent racking under load.",
+      "p2": "Busbar joints are the thermal weak point; torque per schedule and thermo-scan under load.",
+      "p3": "Type 2 coordination keeps the starter serviceable after a short circuit; Type 1 only protects people.",
+      "c1": "Thermal-image bucket stabs and bus joints at representative load.",
+      "c2": "Verify protection settings against the motor list after any swap.",
+      "overview": "A motor control center concentrates starters, protection, and distribution in withdrawable buckets on a common busbar — the electrical room's interface to every driven load.",
+      "purpose": "Standardize motor power, protection, and isolation per load, with maintainability through bucket withdrawal and type-2 coordination.",
+      "how": "Vertical bus feeds bucket stabs; each bucket combines disconnect, short-circuit protection, contactor, and overload; interlocks prevent racking under load; bus joints carry the thermal budget of the lineup.",
+      "faults": "Hot bus joints from lost torque; stab contact erosion from repeated racking; coordination type 1 leaving starters destroyed after faults; moisture and dust tracking across insulation in harsh rooms.",
+      "c3": "Thermo-scan bus joints and bucket stabs at representative load — hotspots announce themselves long before failure.",
+      "safetyNote": "Racking buckets under load risks arc flash; follow the lineup's interlock discipline and the site's PPE category without exception.",
+      "commissioning": "Torque bus joints to schedule with witness marks, verify protection settings against the motor list, and record baseline thermography.",
+      "concepts": "Type-2 coordination, bucket/stab design, busbar thermal management, arc-flash categories, overload classes.",
+      "brainUse": "Cited for MCC heating, starter coordination after faults, racking issues, and lineup-level protection questions."
+    },
+    "protection": {
+      "name": "Electrical Protection",
+      "summary": "Overload, short-circuit, and earth-fault protection coordination.",
+      "p1": "Overload relays protect thermally (I²t); magnetic/instantaneous elements clear short circuits — both are needed.",
+      "p2": "Selectivity: downstream devices must clear faults before upstream ones — verify with coordination curves.",
+      "p3": "Repeated nuisance trips are data, not annoyance: log current at trip before raising any setting.",
+      "c1": "Compare relay settings against the motor FLA and the coordination study.",
+      "c2": "Test earth-fault function with primary or secondary injection, not just the test button.",
+      "overview": "Electrical protection layers thermal overload, short-circuit, and earth-fault functions so faults clear fast, selectively, and as close to their origin as possible.",
+      "purpose": "Protect conductors, machines, and people while keeping healthy circuits running — selectivity is the difference between tripping one feeder and blacking out the plant.",
+      "how": "Overload elements model heating (I²t) and trip on sustained overcurrent; magnetic/instantaneous elements clear short circuits in cycles; coordination studies stack time-current curves so downstream clears before upstream.",
+      "faults": "Settings raised to silence nuisance trips without diagnosis; selectivity broken by replacement devices with different curves; earth-fault elements never primary-injection tested; bypassed protection left bypassed.",
+      "c3": "Log actual current at every trip event before considering any settings change — trips are measurements.",
+      "safetyNote": "Protection settings changes require the coordination study, not field intuition; an upstream device set blind can turn a feeder fault into a plant outage or worse.",
+      "commissioning": "Primary or secondary injection-test each protective function, verify against the coordination study, and seal settings with documented values.",
+      "concepts": "Time-current curves, selectivity/coordination, I²t thermal modeling, earth-fault protection, injection testing.",
+      "brainUse": "Cited for repeated trips, nuisance overloads, coordination failures, and any question about why protection operated."
+    },
+    "transmitters": {
+      "name": "Transmitters",
+      "summary": "Process transmitters: calibration, ranging, and HART diagnostics.",
+      "p1": "Zero and span define the 4–20 mA mapping; re-ranging without recalibration shifts error across the range.",
+      "p2": "HART carries digital diagnostics over the same loop — device status flags precede visible drift.",
+      "p3": "Impulse-line problems (plugging, condensate, trapped gas) imitate sensor failure — check the line before the device.",
+      "c1": "Perform a 3- or 5-point calibration check against a reference standard.",
+      "c2": "Read HART device status for active diagnostic flags before replacing.",
+      "overview": "Process transmitters package sensor, conditioning, and communication into field devices whose calibration, ranging, and diagnostics determine measurement trust.",
+      "purpose": "Deliver accurate, rangeable, diagnosable measurements with digital status that warns before readings visibly fail.",
+      "how": "Zero and span map the measured range onto 4–20 mA; HART superimposes digital communication on the same loop, exposing device status and configuration; impulse lines couple the process to the sensing element.",
+      "faults": "Re-ranging without recalibration shifting error across the span; plugged or gas-locked impulse lines imitating sensor failure; ignored HART diagnostic flags; zero drift from installation orientation changes.",
+      "c3": "Read HART device status before replacing anything — the transmitter usually knows what is wrong with it.",
+      "safetyNote": "Isolate and depressurize impulse lines before opening connections; trapped process pressure at a manifold is a routine injury source.",
+      "commissioning": "Perform a documented 3- or 5-point calibration against a reference standard, and record range, damping, and fail-direction settings.",
+      "concepts": "Zero/span, HART diagnostics, impulse-line practice, calibration standards, damping and fail direction.",
+      "brainUse": "Cited for transmitter drift, suspicious readings after maintenance, calibration questions, and smart-device diagnostics."
+    },
+    "s7comm": {
+      "name": "Siemens S7 Communication",
+      "summary": "PUT/GET, ISO-on-TCP (port 102), and data exchange between Siemens CPUs.",
+      "p1": "S7 communication runs over ISO-on-TCP, port 102; firewalls between cells must pass it explicitly.",
+      "p2": "PUT/GET must be enabled in the partner CPU's protection settings — modern firmware disables it by default.",
+      "p3": "Absolute-address access requires non-optimized DBs on the served side; optimized blocks break legacy clients.",
+      "c1": "Test reachability of port 102 from the client segment before debugging program logic.",
+      "c2": "Confirm the target DB is non-optimized and PUT/GET is permitted on the partner CPU.",
+      "overview": "S7 communication is Siemens' native CPU-to-CPU and engineering protocol over ISO-on-TCP (port 102), powering PUT/GET data exchange and TIA connectivity.",
+      "purpose": "Direct data exchange between Siemens controllers and access for engineering and HMI systems without intermediate servers.",
+      "how": "PUT/GET reads and writes partner data blocks by absolute address over established connections; the served CPU must explicitly permit partner access; non-optimized DBs provide the stable absolute layout legacy clients require.",
+      "faults": "PUT/GET disabled by default on modern firmware blocking legacy partners; firewalls silently dropping port 102 between cells; optimized DBs breaking absolute-address clients; connection-resource exhaustion on busy CPUs.",
+      "c3": "Test TCP reachability of port 102 from the client segment before touching any program logic.",
+      "safetyNote": "Enabled PUT/GET is unauthenticated memory access to the CPU — pair it with strict network segmentation and treat it as a controlled interface.",
+      "commissioning": "Document every S7 connection (partners, DBs, direction), verify firewall rules pass port 102 where required and block it everywhere else.",
+      "concepts": "ISO-on-TCP, PUT/GET access control, optimized vs non-optimized DBs, connection resources, cell firewalls.",
+      "brainUse": "Cited for Siemens CPU-to-CPU data exchange failures, PUT/GET permission issues, and port-102 connectivity through firewalls."
+    },
+    "segmentation": {
+      "name": "Network Segmentation",
+      "summary": "Zones, conduits, and DMZ design per IEC 62443.",
+      "p1": "Group assets into zones by criticality; conduits between zones carry only documented, necessary flows.",
+      "p2": "An OT DMZ brokers all IT/OT exchange — no direct path from enterprise (or internet) to controllers.",
+      "p3": "Flat networks turn one compromised laptop into plant-wide reach; VLANs without ACLs are labels, not segmentation.",
+      "c1": "Review inter-zone firewall rules for any 'any-any' entries.",
+      "c2": "Trace one data flow end-to-end and confirm every hop is documented.",
+      "overview": "Network segmentation is the structural defense of OT: zones group assets by criticality, conduits carry only documented flows, and a DMZ brokers all exchange with IT.",
+      "purpose": "Contain compromise — a flat network turns one infected laptop into plant-wide reach; zones turn it into a contained event.",
+      "how": "IEC 62443 zones-and-conduits modeling assigns assets to security zones; firewalls enforce conduit policy between them; the industrial DMZ terminates all IT-originated sessions so nothing reaches controllers directly.",
+      "faults": "VLANs without enforced ACLs mistaken for segmentation; any-any firewall rules accumulated over years; vendor remote links bypassing the DMZ; undocumented flows breaking when policy finally tightens.",
+      "c3": "Trace one production data flow end-to-end and verify every hop appears in the conduit documentation.",
+      "safetyNote": "Segmentation changes can sever control traffic — stage and test conduit policy changes against an inventory of legitimate flows before enforcement.",
+      "commissioning": "Build the asset inventory first, model zones from it, implement deny-by-default conduits, and schedule periodic rule reviews as an operational duty.",
+      "concepts": "IEC 62443 zones/conduits, industrial DMZ, deny-by-default policy, flow documentation, VLAN vs true segmentation.",
+      "brainUse": "Cited for OT network architecture, firewall policy between cells, DMZ design, and containment of network-borne threats."
+    },
+    "accessControl": {
+      "name": "Access Control",
+      "summary": "Identity, remote access, and least privilege in OT.",
+      "p1": "Remote access goes through a jump host with MFA and session recording — vendor VPN boxes bypass all three.",
+      "p2": "Shared accounts destroy accountability; engineering and operator roles need separate identities and rights.",
+      "p3": "Default and vendor passwords on controllers and HMIs are the most common real-world entry point.",
+      "c1": "Audit who currently holds remote access and when each account was last used.",
+      "c2": "Verify default credentials are changed on every reachable device.",
+      "overview": "Access control in OT governs who can touch controllers, HMIs, and engineering tools — identity, least privilege, and supervised remote access.",
+      "purpose": "Make every privileged action attributable and every remote session supervised, because unattributed access is unauditable risk.",
+      "how": "Jump hosts concentrate remote access behind MFA and session recording; role separation distinguishes operator from engineering rights; credential hygiene eliminates the default passwords that remain the commonest entry point.",
+      "faults": "Vendor VPN appliances bypassing the jump-host path; shared engineering accounts destroying attribution; default credentials on controllers and panels; dormant accounts of departed staff retaining access.",
+      "c3": "Audit current remote-access holders and last-use dates — dormant privileged access is the easiest finding with the highest payoff.",
+      "safetyNote": "Emergency access procedures must be designed in advance; improvised break-glass during an incident becomes the permanent backdoor.",
+      "commissioning": "Enumerate every reachable device, change every default credential, and document the approved remote-access path before connecting anything to wider networks.",
+      "concepts": "Jump hosts and MFA, session recording, role separation, credential hygiene, break-glass procedures.",
+      "brainUse": "Cited for remote-access architecture, unauthorized-access concerns, account and credential policy in OT environments."
+    },
+    "monitoring": {
+      "name": "Security Monitoring",
+      "summary": "Detection of anomalies and intrusions on OT networks.",
+      "p1": "Passive monitoring via SPAN/TAP observes industrial protocols without touching fragile devices.",
+      "p2": "OT traffic is highly regular — new device, new connection, or new function code is a strong signal.",
+      "p3": "Detection without a response plan is noise: every alert class needs a defined owner and action.",
+      "c1": "Verify monitoring sees traffic from every zone, not just the IT boundary.",
+      "c2": "Review recent new-device and new-connection alerts against the asset inventory.",
+      "overview": "Security monitoring for OT observes the network's habits — and OT habits are so regular that novelty itself is a high-quality signal.",
+      "purpose": "Detect intrusions and anomalies early, from passive observation that cannot disturb fragile industrial devices.",
+      "how": "SPAN/TAP mirrors feed passive analyzers that parse industrial protocols; baselines of devices, connections, and function codes define normal; new device, new flow, or new command type raises events tied to response runbooks.",
+      "faults": "Monitoring only the IT boundary while intra-OT traffic goes unseen; alert classes without owners decaying into noise; baselines never updated after legitimate plant changes; active scanning crashing sensitive devices.",
+      "c3": "Verify sensor coverage actually includes every zone's traffic, not merely the convenient core switch.",
+      "safetyNote": "Use passive collection in OT — active scanning has bricked PLCs and instruments; anything active needs explicit engineering approval and a maintenance window.",
+      "commissioning": "Establish the traffic baseline during known-normal operation, assign an owner and action to every alert class, and rehearse the response path.",
+      "concepts": "Passive SPAN/TAP collection, behavioral baselining, industrial protocol parsing, alert ownership, anomaly types.",
+      "brainUse": "Cited for unknown devices on OT networks, intrusion detection design, anomaly triage, and monitoring coverage questions."
+    },
+    "audit": {
+      "name": "Audit & Logging",
+      "summary": "Audit trails, log collection, and compliance evidence in OT.",
+      "p1": "Controller and HMI events (downloads, forces, parameter changes) are the audit trail of record — collect them centrally.",
+      "p2": "Clock sync (NTP) across devices is a precondition: unsynchronized logs cannot reconstruct an incident.",
+      "p3": "Logs prove both compliance and innocence — retention must match regulatory and forensic needs.",
+      "c1": "Confirm program downloads and forces appear in the central log with correct timestamps.",
+      "c2": "Check time synchronization across PLCs, HMIs, and servers.",
+      "overview": "Audit and logging build the evidentiary record of OT: who downloaded what to which controller, when forces were set, and whether time across systems can support reconstruction.",
+      "purpose": "Prove compliance, enable forensics, and — equally — prove innocence when something breaks after a change window.",
+      "how": "Controller and HMI events (downloads, forces, parameter changes, logons) flow to central collection; NTP discipline makes timestamps comparable; retention policy balances forensic depth against storage.",
+      "faults": "Logs scattered on local devices and lost with them; clock drift making sequence reconstruction impossible; retention too short for slow-burn incidents; nobody assigned to actually review anything.",
+      "c3": "Perform a test download and force, then confirm both appear centrally with correct timestamps and attribution.",
+      "safetyNote": "Audit trails around safety-system changes are themselves safety records — protect their integrity and retention accordingly.",
+      "commissioning": "Stand up NTP first, then central collection, then verify the event chain end-to-end before declaring the audit capability operational.",
+      "concepts": "Central log collection, NTP discipline, change attribution, retention policy, review ownership.",
+      "brainUse": "Cited for change-tracking requirements, post-incident reconstruction, compliance evidence, and logging architecture."
+    },
+    "predictive": {
+      "name": "Predictive Maintenance",
+      "summary": "Condition monitoring: vibration, thermal, and trend-based intervention.",
+      "p1": "Predictive maintenance triggers on measured condition (vibration, temperature, current signature), not calendar time.",
+      "p2": "Vibration analysis localizes faults: bearing frequencies, imbalance (1×), misalignment (2×) each have signatures.",
+      "p3": "The value is lead time — alerts must arrive early enough to plan, order parts, and schedule.",
+      "c1": "Compare current vibration spectra against the machine's baseline, not absolute limits alone.",
+      "c2": "Verify alert thresholds produced actionable lead time in past events.",
+      "overview": "Predictive maintenance intervenes on measured condition — vibration spectra, thermal images, current signatures — instead of calendar guesswork or run-to-failure.",
+      "purpose": "Buy lead time: detect degradation early enough to plan, order parts, and schedule, converting breakdowns into planned work.",
+      "how": "Baselines per machine define normal; vibration analysis localizes faults by frequency signature (1× imbalance, 2× misalignment, bearing tones); trends against the machine's own baseline beat absolute limits; alerts map to planning horizons.",
+      "faults": "Absolute thresholds ignoring machine individuality; alerts arriving too late to plan; baselines never re-taken after overhauls; condition data collected and never reviewed.",
+      "c3": "Check whether past alerts actually delivered usable lead time — a predictive program is measured by planning horizon, not alarm count.",
+      "safetyNote": "Condition data collection on running machines follows guarding and access rules; permanently mounted sensors exist so people don't lean into rotating equipment with magnets.",
+      "commissioning": "Baseline every covered machine in known-good state, define alert-to-action workflows, and integrate findings into the planning system from day one.",
+      "concepts": "Vibration signatures, baselining, P-F interval, condition indicators, alert-to-work-order flow.",
+      "brainUse": "Cited for early-warning questions, vibration or thermal anomalies, and building condition-based strategies for critical assets."
+    },
+    "rca": {
+      "name": "Root Cause Analysis",
+      "summary": "Structured methods: 5 Whys, fishbone, and evidence preservation.",
+      "p1": "RCA targets the systemic cause; replacing the failed part treats a symptom and schedules a repeat.",
+      "p2": "5 Whys works when each answer is verified with evidence — unverified chains produce confident fiction.",
+      "p3": "Preserve evidence before cleanup: photos, parameter dumps, alarm history, and the failed component itself.",
+      "c1": "Check whether the same failure mode occurred before and what was concluded then.",
+      "c2": "Validate the proposed root cause by demonstrating it reproduces (or fully explains) the failure.",
+      "overview": "Root cause analysis pursues the systemic cause behind a failure — the conditions that made it possible — rather than the broken part that made it visible.",
+      "purpose": "Prevent recurrence: replacing the failed component without RCA simply schedules the same failure.",
+      "how": "Evidence is preserved before cleanup (photos, parameter dumps, alarm history, the component itself); 5-Whys chains advance only on verified answers; fishbone categories ensure systemic factors get examined; the proposed cause must reproduce or fully explain the event.",
+      "faults": "Unverified why-chains producing confident fiction; evidence destroyed by eager cleanup; analysis stopping at the first human error found; corrective actions never tracked to completion.",
+      "c3": "Search the failure history first — if this mode occurred before, the prior conclusion is your most important piece of evidence.",
+      "safetyNote": "Incident scenes involving injury or near-miss have preservation and reporting obligations that precede any engineering analysis — secure first, analyze second.",
+      "commissioning": "Make RCA a standing process: trigger criteria, evidence kit, template, and corrective-action tracking owned by someone with authority to close loops.",
+      "concepts": "Evidence preservation, verified 5-Whys, fishbone analysis, failure history, corrective-action tracking.",
+      "brainUse": "Cited for repeated failures, post-incident investigation structure, and converting a fixed symptom into a prevented recurrence."
+    }
+  },
+  "brain": {
+    "eyebrow": "Hermes Brain",
+    "title": "Industrial engineering analysis",
+    "lede": "Describe a problem from the plant floor. Hermes Brain classifies the domain, selects the relevant knowledge libraries, and returns a structured engineering analysis. It analyzes — it does not control equipment.",
+    "placeholder": "Describe the problem… e.g. \"S7-1200 digital input chatters when the conveyor starts\"",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing…",
+    "examplesTitle": "Try an example",
+    "examples": {
+      "e1": "VFD trips on overcurrent every time the mixer accelerates",
+      "e2": "4–20 mA level transmitter reads zero but the tank is half full",
+      "e3": "Unknown device appeared on the OT network — what should we check?"
+    },
+    "domainsTitle": "Domain classification",
+    "sourcesTitle": "Knowledge sources used",
+    "mode": {
+      "llm": "AI-generated analysis (via gateway)",
+      "library": "Structured library analysis (rule-based)",
+      "futureRag": "Retrieval-augmented analysis (RAG)"
+    },
+    "sections": {
+      "summary": "Problem summary",
+      "cause": "Likely cause",
+      "analysis": "Engineering analysis",
+      "checks": "Recommended checks",
+      "safety": "Safety",
+      "references": "Related library references",
+      "confidence": "Confidence",
+      "approval": "Human approval"
+    },
+    "confidenceLevels": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "safety": {
+      "electrical": "This topic involves electrical hazards. De-energize, lock out and tag out (LOTO), and verify zero voltage before touching panels, terminals, or motor connections. Work on live equipment is for qualified personnel only.",
+      "mechanical": "This topic involves rotating or moving machinery. Isolate energy sources and apply lockout/tagout before inspecting drives, couplings, or conveyors. Never bypass guards or safety interlocks.",
+      "general": "Follow your site's permit-to-work and lockout/tagout procedures before any physical intervention."
+    },
+    "approvalNote": "Hermes Brain provides analysis only. Every recommendation requires review and approval by a qualified engineer before any action is taken on real equipment. No command is sent to any machine.",
+    "fallback": {
+      "summary": "The question was classified under: {domains}. The analysis below is assembled from the structured engineering library.",
+      "causeIntro": "Based on the \"{lib}\" library, the most likely area to investigate:"
+    },
+    "domains": {
+      "plc": "PLC",
+      "scada": "SCADA",
+      "hmi": "HMI",
+      "electrical": "Electrical",
+      "otNetwork": "OT Network",
+      "cybersecurity": "Cybersecurity",
+      "maintenance": "Maintenance",
+      "sensors": "Sensors",
+      "digitalIo": "Digital I/O",
+      "analogIo": "Analog I/O",
+      "drives": "Drives",
+      "motors": "Motors"
+    },
+    "errors": {
+      "tooShort": "Please describe the problem in a bit more detail (at least a sentence).",
+      "generic": "Analysis failed — please try again."
+    },
+    "unknownSource": "Library reference unavailable",
+    "guardrails": {
+      "safetyBypass": "Hermes Brain will not provide guidance for bypassing, defeating, or disabling safety systems, interlocks, or guards. These protections exist to prevent injury and death. If a safety device is interfering with production, the correct path is diagnosing why it trips and involving your safety engineer — the structured references below cover the diagnostic side."
+    },
+    "intel": {
+      "vendorsTitle": "Detected vendors",
+      "riskTitle": "Risk level",
+      "evidenceTitle": "Evidence score",
+      "evidenceNote": "Knowledge and case support for this analysis — not certainty about your plant.",
+      "casesTitle": "Matched engineering cases",
+      "pipelineTitle": "Reasoning pipeline",
+      "memoryTitle": "Brain memory",
+      "memoryCount": "Analyses recorded",
+      "memoryAvgConfidence": "Average confidence",
+      "memoryTopDomains": "Top domains",
+      "memoryGuardrails": "Guardrail interceptions",
+      "memoryNote": "Held in server session memory — V1 keeps no database.",
+      "memoryEmpty": "No analyses recorded in this session yet.",
+      "memoryKnown": "Known analyses",
+      "memoryUnknown": "Unknown analyses"
+    },
+    "risk": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "unknown": "Unknown"
+    },
+    "vendors": {
+      "siemens": "Siemens",
+      "abb": "ABB",
+      "schneider": "Schneider Electric",
+      "phoenix": "Phoenix Contact",
+      "delta": "Delta",
+      "mitsubishi": "Mitsubishi",
+      "omron": "Omron"
+    },
+    "pipelineSteps": {
+      "domainDetection": "Domain detection",
+      "knowledgeRetrieval": "Knowledge retrieval",
+      "causeAnalysis": "Cause analysis",
+      "riskAnalysis": "Risk analysis",
+      "recommendation": "Recommendation",
+      "finalReport": "Final report",
+      "rootCauseAnalysis": "Root cause analysis"
+    },
+    "cases": {
+      "case-siemens-1200-bf": "S7-1200 BF after CPU swap",
+      "case-siemens-1500-scan": "S7-1500 cycle watchdog from SCL loop",
+      "case-abb-acs580-oc": "ACS580 overcurrent at acceleration",
+      "case-abb-motor-imbalance": "Motor phase imbalance from bus joint",
+      "case-schneider-atv-ocf": "ATV320 OCF from cable fault",
+      "case-schneider-m580-timeout": "M580 Modbus timeouts from over-polling",
+      "case-phoenix-mqtt-drop": "PLCnext MQTT drops behind firewall",
+      "case-phoenix-di-chatter": "DI chatter near VFD cable",
+      "case-delta-vfd-oh": "Delta VFD overheat from clogged heatsink",
+      "case-delta-hmi-rs485": "DOP HMI RS-485 termination loss",
+      "case-mitsubishi-fx5-coil": "FX5 output flicker from double coil",
+      "case-mitsubishi-mrj4-al16": "MR-J4 AL.16 encoder connection",
+      "case-omron-nx-estop-reset": "NX safe-state hold from EDM feedback",
+      "case-omron-e5cc-drift": "E5CC drift from copper TC extension"
+    },
+    "rootCause": {
+      "title": "Root Cause Analysis",
+      "primaryLabel": "Primary cause",
+      "secondaryLabel": "Secondary causes",
+      "verificationLabel": "Verification steps",
+      "correctiveLabel": "Corrective actions",
+      "alternativeLabel": "Alternative causes (lower evidence)",
+      "relatedCaseLow": "Related case found — confidence: low"
+    },
+    "unknown": {
+      "title": "⚠ Additional Information Required",
+      "message": "Hermes Brain cannot confidently classify this problem.",
+      "assessment": "Insufficient information available for reliable classification.",
+      "provide": "Please provide:",
+      "items": {
+        "equipment": "Equipment type",
+        "vendor": "Vendor / Manufacturer",
+        "alarms": "Alarm messages or fault codes",
+        "symptoms": "Observed symptoms",
+        "maintenance": "Recent maintenance or changes",
+        "impact": "Process impact",
+        "time": "Time of occurrence"
+      }
+    },
+    "evidence": {
+      "rankingTitle": "Evidence Ranking",
+      "sourcesTitle": "Top Evidence Sources",
+      "caseTag": "Case",
+      "knowledgeTag": "Knowledge",
+      "scoreLabel": "Evidence"
+    }
+  },
+  "library": {
+    "eyebrow": "Knowledge Cloud",
+    "title": "The engineering library behind Hermes",
+    "lede": "Structured, bilingual references for PLC, SCADA, electrical systems, instrumentation, protocols, OT security, maintenance — and vendor field cases.",
+    "brainNote": "Hermes Brain uses this Knowledge Cloud to support structured engineering analysis. Every analysis cites the libraries and cases you see here.",
+    "searchPlaceholder": "Search titles, summaries, keywords…",
+    "allFilter": "All",
+    "categoriesLabel": "Category",
+    "vendorsLabel": "Vendor",
+    "usedByBrain": "Used by Hermes Brain",
+    "resultsCount": "{count} items",
+    "empty": "Nothing matches these filters.",
+    "caseLabel": "Field case",
+    "categories": {
+      "plc": "PLC",
+      "scadaHmi": "SCADA & HMI",
+      "electrical": "Electrical Systems",
+      "instrumentation": "Instrumentation",
+      "protocols": "Industrial Protocols",
+      "cybersecurity": "OT Cybersecurity",
+      "maintenance": "Maintenance",
+      "vendorKnowledge": "Vendor Knowledge",
+      "scada": "SCADA",
+      "hmi": "HMI",
+      "sensors": "Sensors",
+      "digitalIo": "Digital I/O",
+      "analogIo": "Analog I/O",
+      "otNetwork": "OT Network",
+      "drives": "Drives",
+      "motors": "Motors",
+      "automation": "Automation",
+      "safety": "Safety",
+      "networking": "Networking",
+      "reports": "Reports",
+      "cases": "Engineering Cases",
+      "knowledge": "Knowledge"
+    },
+    "article": {
+      "pointsTitle": "Key points",
+      "checksTitle": "Verification checks",
+      "relatedTitle": "Related articles",
+      "casesTitle": "Related engineering cases",
+      "brainStatsTitle": "Hermes Brain references",
+      "referencedCount": "Referenced {count} times in this session",
+      "notReferenced": "Not referenced by the Brain in this session yet.",
+      "back": "Back to the library",
+      "vendorCenter": "Vendor knowledge center",
+      "overviewTitle": "Overview",
+      "purposeTitle": "Engineering purpose",
+      "howTitle": "How it works",
+      "faultsTitle": "Common faults",
+      "checksHeading": "Diagnostic checks",
+      "safetyTitle": "Safety notes",
+      "commissioningTitle": "Commissioning notes",
+      "conceptsTitle": "Related concepts",
+      "brainUseTitle": "When Hermes Brain uses this article"
+    },
+    "stats": {
+      "recentTitle": "Recently used by Hermes Brain",
+      "mostTitle": "Most referenced articles",
+      "sessionNote": "Session statistics — V1 keeps no database.",
+      "empty": "No Brain activity recorded in this session yet."
+    },
+    "vendorPage": {
+      "eyebrow": "Vendor Knowledge Center",
+      "librariesTitle": "Vendor libraries",
+      "casesTitle": "Field cases",
+      "noLibraries": "No vendor-specific libraries yet — general libraries cover this vendor's equipment.",
+      "descs": {
+        "siemens": "S7 controllers, TIA Portal, SINAMICS drives, and PROFINET ecosystems.",
+        "abb": "AC500 controllers, ACS drive families, and motor technologies.",
+        "schneider": "Modicon controllers, Altivar drives, and TeSys motor control.",
+        "phoenix": "PLCnext controllers, Axioline I/O, and industrial connectivity.",
+        "delta": "Compact drives, DOP HMIs, and machine automation.",
+        "mitsubishi": "MELSEC controllers, FX series, and MR servo systems.",
+        "omron": "Sysmac controllers, machine safety, and sensing & control."
+      }
+    }
+  },
+  "knowledgeCases": {
+    "case-siemens-1200-bf": "BF flashing and unreachable remote I/O after a CPU replacement — device name lives on the device.",
+    "case-siemens-1500-scan": "Intermittent cycle-time watchdog trips traced to an unbounded SCL loop over a growing recipe array.",
+    "case-abb-acs580-oc": "Fault 2310 at acceleration — ramp shorter than load inertia allows, not a failed drive.",
+    "case-abb-motor-imbalance": "8% phase-current imbalance caused upstream by a degraded MCC bus joint, not the winding.",
+    "case-schneider-atv-ocf": "OCF at run command from a phase-to-earth short in the motor cable gland.",
+    "case-schneider-m580-timeout": "Modbus TCP timeouts after SCADA expansion — poll rate × registers exceeded the CPU budget.",
+    "case-phoenix-mqtt-drop": "Periodic MQTT disconnects — keep-alive longer than the firewall's NAT idle timeout.",
+    "case-phoenix-di-chatter": "DI chatter above 30 Hz drive speed from an unshielded run sharing the VFD tray.",
+    "case-delta-vfd-oh": "Afternoon OH trips in summer — clogged heatsink and blocked cabinet fan filter.",
+    "case-delta-hmi-rs485": "Intermittent HMI comm loss on a long RS-485 run missing termination and bias.",
+    "case-mitsubishi-fx5-coil": "Output flicker in run mode from a double coil written in two program sections.",
+    "case-mitsubishi-mrj4-al16": "AL.16 encoder error after panel work — partially seated connector, unbonded shield.",
+    "case-omron-nx-estop-reset": "Safe state holds after e-stop release — EDM feedback from a welded contactor correctly refuses reset.",
+    "case-omron-e5cc-drift": "Temperature drift on door opening — thermocouple extended with copper wire."
+  },
+  "caseExplorer": {
+    "eyebrow": "Engineering Intelligence",
+    "title": "Engineering Case Explorer",
+    "lede": "Field-proven industrial failure cases — the corroborated intelligence Hermes Brain ranks against during root-cause analysis.",
+    "metrics": {
+      "total": "Total Cases",
+      "vendors": "Vendors Covered",
+      "domains": "Domains Covered"
+    },
+    "search": {
+      "label": "Search cases",
+      "placeholder": "Search title, vendor, domain, or root cause…"
+    },
+    "filters": {
+      "vendor": "Vendor",
+      "domain": "Domain",
+      "all": "All",
+      "clear": "Clear filters"
+    },
+    "card": {
+      "rootCause": "Root cause",
+      "corrective": "Corrective action",
+      "confidence": "Confidence"
+    },
+    "none": "No cases match the current filters.",
+    "detail": {
+      "back": "All cases",
+      "problem": "Problem",
+      "rootCause": "Root Cause Analysis",
+      "verification": "Verification Steps",
+      "corrective": "Corrective Actions",
+      "safety": "Safety Notes",
+      "relatedDomain": "Related Domain",
+      "relatedVendor": "Related Vendor",
+      "primaryLabel": "Primary cause",
+      "secondaryLabel": "Contributing causes"
+    },
+    "safetyGeneric": "Verify isolation and lockout/tagout before any intervention. Prove dead at the equipment, follow the vendor procedure, and never defeat a safety function. All corrective work requires qualified-personnel authorization."
+  },
+  "copilot": {
+    "eyebrow": "ENGINEERING COPILOT",
+    "title": "Industrial Copilot",
+    "lede": "Describe an industrial problem in your own words. Hermes Brain classifies the domain, detects the vendor, matches field-proven cases, and retrieves the relevant knowledge — deterministically, with no black box.",
+    "placeholder": "Describe the engineering problem — equipment, symptoms, vendor, alarms, recent changes…",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing…",
+    "emptyHint": "Enter a problem description to run the analysis.",
+    "sections": {
+      "domains": "Detected Domains",
+      "vendors": "Detected Vendors",
+      "cases": "Matched Cases",
+      "sources": "Knowledge Sources"
+    },
+    "none": {
+      "domains": "No domain classified — the description was too general.",
+      "vendors": "No specific vendor detected.",
+      "cases": "No field case matched this signature.",
+      "sources": "No knowledge sources retrieved."
+    },
+    "unknownNote": "Insufficient information for reliable classification. Add equipment type, vendor, alarm text, symptoms, or recent changes.",
+    "approvalNote": "Deterministic analysis from the Hermes knowledge base — no LLM. Engineering judgment and on-site verification remain required.",
+    "confidence": {
+      "HIGH": "High",
+      "MEDIUM": "Medium",
+      "LOW": "Low"
+    },
+    "report": {
+      "title": "Engineering Report",
+      "problemSummary": "Problem Summary",
+      "rootCause": "Most Likely Root Cause",
+      "evidence": "Supporting Evidence",
+      "verification": "Verification Steps",
+      "corrective": "Corrective Actions",
+      "safety": "Safety Notes",
+      "lowConfidenceNote": "Low-confidence match — treat as a lead, not a conclusion.",
+      "safetyGeneric": "Follow site LOTO and network change-control procedures. Verify isolation before any intervention; all corrective work requires qualified-personnel approval.",
+      "ev": {
+        "maintenance": "Maintenance event immediately before the fault",
+        "domain": "{domain} domain detected",
+        "vendor": "{vendor} vendor detected",
+        "cases": "{n} similar engineering case(s) found",
+        "relatedLow": "A related case was found (low confidence)",
+        "score": "Evidence score: {n}"
+      }
+    },
+    "subtitle": "Deterministic observe-and-analyze assistant — read-only, no control commands",
+    "queryTitle": "Query",
+    "queryDesc": "Ask natural-language questions about your assets, health, alarms, and KPIs",
+    "queryPlaceholder": "Ask about asset health, alarms, KPIs...",
+    "send": "Send",
+    "conversations": "Conversations",
+    "conversationsDesc": "Your query conversation history",
+    "insightsTitle": "Insights",
+    "insightsDesc": "Automatically detected issues across your asset fleet",
+    "recommendationsTitle": "Recommendations",
+    "recommendationsDesc": "Deterministic recommendations based on insight patterns",
+    "safetyTitle": "Safety Properties",
+    "safetyReadOnly": "Read-only — no control commands, no PLC writes",
+    "safetyDeterministic": "Deterministic — no LLM, no hallucination",
+    "safetyNoLLM": "Evidence-based — every recommendation links to real data",
+    "intentsTitle": "Supported Intents",
+    "noConversations": "No conversations yet. Start a query to begin.",
+    "noInsights": "No insights generated. Data may be limited.",
+    "noRecommendations": "No recommendations. All monitored assets appear stable.",
+    "insufficientData": "I do not have enough industrial data to answer this reliably.",
+    "blocked": "Control actions are not available in Hermes Copilot. This system is read-only and cannot execute commands."
+  },
+  "unknownCenter": {
+    "eyebrow": "Intelligence",
+    "title": "Unknown Analysis Center",
+    "lede": "Queries Hermes Brain could not confidently classify this session — triage them, and flag the ones worth teaching the system.",
+    "metrics": {
+      "total": "Total Unknown",
+      "avgConfidence": "Average Confidence",
+      "topDomain": "Most Suggested Domain",
+      "topVendor": "Most Suggested Vendor",
+      "none": "—"
+    },
+    "sections": {
+      "queue": "Unknown Queue",
+      "suggested": "Suggested Classification",
+      "training": "Training Candidates"
+    },
+    "queue": {
+      "query": "Query",
+      "time": "Time",
+      "confidence": "Confidence",
+      "empty": "No unknown analyses this session. Run a vague query in the Brain or Copilot to see it appear here."
+    },
+    "suggested": {
+      "domains": "Suggested domains",
+      "vendors": "Suggested vendors",
+      "none": "No near-miss signals — the query was too general for any suggestion."
+    },
+    "training": {
+      "lede": "Resolved items become candidates to teach the system in Phase 2.",
+      "empty": "Mark items as resolved to build training candidates.",
+      "count": "{n} candidate(s)"
+    },
+    "actions": {
+      "resolve": "Mark as Resolved",
+      "resolved": "Resolved",
+      "convert": "Convert to Case",
+      "addLibrary": "Add to Knowledge Library"
+    },
+    "actionNote": "Actions are session-scoped placeholders — Phase 2 wires them to persistent case authoring and library ingestion.",
+    "sessionNote": "Session-scoped — resets when the server restarts (no database in V1)."
+  },
+  "caseStudio": {
+    "eyebrow": "Knowledge",
+    "title": "Case Studio",
+    "lede": "Draft new engineering cases from a structured form, preview them as they would appear in the Case Explorer, and queue them for review.",
+    "sessionNote": "Drafts are session/local only in V1 — they are not saved to a database, written to disk, or published. They clear when the server restarts.",
+    "metrics": {
+      "drafts": "Total Drafts",
+      "ready": "Ready to Review",
+      "published": "Published (placeholder)",
+      "vendors": "Vendors Covered"
+    },
+    "form": {
+      "heading": "Create Case",
+      "title": "Title",
+      "vendor": "Vendor",
+      "domain": "Domain",
+      "problem": "Problem",
+      "primary": "Primary Root Cause",
+      "secondary": "Secondary Causes",
+      "verification": "Verification Steps",
+      "corrective": "Corrective Actions",
+      "safety": "Safety Notes",
+      "tags": "Tags",
+      "confidence": "Confidence",
+      "multiHint": "One per line",
+      "tagsHint": "Comma-separated",
+      "selectVendor": "Select vendor",
+      "selectDomain": "Select domain",
+      "reset": "Clear form"
+    },
+    "preview": {
+      "heading": "Draft Preview",
+      "explorerNote": "As it would appear in the Engineering Case Explorer",
+      "empty": "Fill in the title to preview the case.",
+      "rootCause": "Root Cause",
+      "corrective": "Corrective Action"
+    },
+    "queue": {
+      "heading": "Draft Queue",
+      "empty": "No drafts yet this session.",
+      "statusDraft": "Draft",
+      "statusReady": "Ready",
+      "statusPublished": "Published"
+    },
+    "actions": {
+      "save": "Save Draft",
+      "ready": "Mark Ready",
+      "publish": "Publish (placeholder)",
+      "remove": "Remove"
+    },
+    "validation": {
+      "titleRequired": "A title is required to save a draft."
+    }
+  },
+  "knowledgeStudio": {
+    "eyebrow": "Knowledge",
+    "title": "Knowledge Studio",
+    "lede": "Author engineering knowledge libraries that Hermes Brain can consume later — draft, preview, and queue them for review.",
+    "sessionNote": "Knowledge Studio V1 uses session/local state only — nothing is saved to a database, written to disk, or published. Drafts clear when the server restarts.",
+    "metrics": {
+      "total": "Total Libraries",
+      "drafts": "Draft Libraries",
+      "published": "Published Libraries",
+      "domains": "Domains Covered"
+    },
+    "form": {
+      "heading": "Create Knowledge Article",
+      "title": "Title",
+      "domain": "Domain",
+      "vendor": "Vendor (optional)",
+      "summary": "Summary",
+      "content": "Engineering Content",
+      "failureModes": "Failure Modes",
+      "diagnostics": "Diagnostic Guidance",
+      "verification": "Verification Steps",
+      "corrective": "Corrective Actions",
+      "safety": "Safety Notes",
+      "tags": "Tags",
+      "confidence": "Confidence",
+      "multiHint": "One per line",
+      "tagsHint": "Comma-separated",
+      "selectDomain": "Select domain",
+      "vendorNone": "None / vendor-agnostic",
+      "reset": "Clear form"
+    },
+    "preview": {
+      "heading": "Preview",
+      "note": "Live preview while typing",
+      "empty": "Fill in the title to preview the article.",
+      "summary": "Summary",
+      "content": "Engineering content",
+      "verification": "Verification",
+      "corrective": "Corrective actions",
+      "safety": "Safety"
+    },
+    "queue": {
+      "heading": "Knowledge Queue",
+      "empty": "No libraries yet this session.",
+      "statusDraft": "Draft",
+      "statusReview": "Review",
+      "statusPublished": "Published"
+    },
+    "filters": {
+      "heading": "Search & Filter",
+      "search": "Search title, tags, or summary…",
+      "domain": "Domain",
+      "vendor": "Vendor",
+      "status": "Status",
+      "all": "All",
+      "clear": "Clear filters",
+      "none": "No libraries match the current filters."
+    },
+    "actions": {
+      "save": "Save Draft",
+      "ready": "Mark Ready",
+      "publish": "Publish (placeholder)",
+      "delete": "Delete"
+    },
+    "validation": {
+      "titleRequired": "A title is required to save a library."
+    }
+  },
+  "storage": {
+    "label": "Storage",
+    "session": "Session",
+    "database": "Database"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "signedInAs": "Angemeldet als",
+    "loginTitle": "Bei Hermes OS anmelden",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "submit": "Anmelden",
+    "invalidCredentials": "Ungültige E-Mail-Adresse oder ungültiges Passwort.",
+    "loginLede": "Autorenbereiche erfordern ein Ingenieur- oder Admin-Konto.",
+    "setupRequiredTitle": "Authentifizierung nicht konfiguriert",
+    "setupRequired": "Dieser Bereich erfordert eine Anmeldung, die Authentifizierung wurde in dieser Umgebung jedoch nicht eingerichtet. Setzen Sie ADMIN_EMAIL und ADMIN_PASSWORD, um sie zu aktivieren. Öffentliche Seiten bleiben uneingeschränkt verfügbar.",
+    "loginRequiredTitle": "Anmeldung erforderlich",
+    "loginRequired": "Dieser Bereich ist Ingenieuren und Administratoren vorbehalten. Bitte melden Sie sich an, um fortzufahren.",
+    "deniedTitle": "Zugriff eingeschränkt",
+    "denied": "Ihr Konto hat keinen Zugriff auf diesen Bereich. Die Rolle Ingenieur oder Admin ist erforderlich.",
+    "roleAdmin": "Admin",
+    "roleEngineer": "Ingenieur",
+    "roleViewer": "Betrachter",
+    "register": "Konto erstellen",
+    "registerTitle": "Konto erstellen",
+    "registerLede": "Werden Sie Teil der industriellen Intelligenzplattform Hermes OS.",
+    "namePlaceholder": "Ada Lovelace",
+    "confirmPassword": "Passwort bestätigen",
+    "rememberMe": "Angemeldet bleiben",
+    "forgotPassword": "Passwort vergessen?",
+    "forgotPasswordTitle": "Passwort zurücksetzen",
+    "forgotPasswordLede": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen.",
+    "sendResetLink": "Link zum Zurücksetzen senden",
+    "resetPasswordTitle": "Neues Passwort festlegen",
+    "resetPasswordLede": "Wählen Sie ein starkes Passwort für Ihr Konto.",
+    "resetPassword": "Passwort zurücksetzen",
+    "verifyEmailTitle": "E-Mail-Adresse bestätigen",
+    "verifyEmailLede": "Ihre E-Mail-Adresse wird bestätigt.",
+    "passwordStrengthVeryWeak": "Sehr schwach",
+    "passwordStrengthFair": "Ausreichend",
+    "passwordStrengthStrong": "Stark",
+    "passwordStrengthVeryStrong": "Sehr stark",
+    "accountLocked": "Konto vorübergehend gesperrt. Bitte versuchen Sie es in 15 Minuten erneut.",
+    "tooManyAttempts": "Zu viele Versuche. Bitte versuchen Sie es später erneut.",
+    "emailNotVerified": "Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden.",
+    "verificationSent": "Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihren Posteingang.",
+    "passwordsDoNotMatch": "Die Passwörter stimmen nicht überein.",
+    "roleSuperAdmin": "Super-Admin",
+    "roleCustomer": "Kunde",
+    "alreadyHaveAccount": "Sie haben bereits ein Konto?",
+    "dontHaveAccount": "Sie haben noch kein Konto?",
+    "createOne": "Konto erstellen",
+    "backToLogin": "Zurück zur Anmeldung",
+    "trustLine": "Enterprise-Niveau · Ende-zu-Ende-verschlüsselt · SOC-2-orientiert",
+    "requestAccessLinkLabel": "Zugang anfordern",
+    "requestAccessTitle": "Zugang anfordern",
+    "requestAccessLede": "Hermes OS wird auf Einladung bereitgestellt. Erzählen Sie uns von Ihrem Team und wir melden uns per E-Mail bei Ihnen.",
+    "fullName": "Vollständiger Name",
+    "emailPlaceholder": "you@company.com",
+    "company": "Unternehmen",
+    "companyPlaceholder": "Acme Manufacturing",
+    "roleTitle": "Rolle / Position",
+    "roleTitlePlaceholder": "Werksleiter",
+    "requestAccessMessageLabel": "Was möchten Sie mit Hermes OS erreichen? (optional)",
+    "requestAccessMessagePlaceholder": "Erzählen Sie uns von Ihrem Standort, Ihrer Teamgröße oder Ihrem Anwendungsfall…",
+    "requestAccessSubmit": "Anfrage absenden",
+    "requestAccessSubmitting": "Anfrage wird gesendet…",
+    "requestAccessSuccessTitle": "Anfrage erhalten",
+    "requestAccessSuccessBody": "Anfrage übermittelt. Bei Annahme werden wir Sie kontaktieren.",
+    "requestAccessNote": "Zugänge für Industrieteams und Experten werden aus Sicherheitsgründen geprüft.",
+    "signingIn": "Anmeldung läuft…",
+    "connectionError": "Verbindung nicht möglich. Bitte prüfen Sie Ihre Internetverbindung.",
+    "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    "invalidInput": "Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut.",
+    "acceptInviteTitle": "Einladung annehmen",
+    "acceptInviteLede": "Sie wurden zu Hermes OS eingeladen. Legen Sie ein Passwort fest, um Ihr Konto zu aktivieren.",
+    "setPassword": "Passwort festlegen",
+    "acceptInviteConfirmPassword": "Passwort bestätigen",
+    "acceptInviteSubmitting": "Passwort wird festgelegt…",
+    "inviteInvalid": "Einladung abgelaufen oder ungültig.",
+    "inviteAccepted": "Konto erstellt. Sie können sich jetzt anmelden.",
+    "passwordPolicyHint": "Das Passwort muss mindestens 8 Zeichen lang sein und Großbuchstaben, Kleinbuchstaben, eine Zahl sowie ein Sonderzeichen enthalten."
+  },
+  "adminAccess": {
+    "accessRequests": "Access Requests",
+    "reviewTitle": "Reviewed access request",
+    "approve": "Approve",
+    "reject": "Reject",
+    "inviteRole": "Invite role",
+    "inviteCreated": "Invite created",
+    "copyInviteLink": "Copy invite link",
+    "inviteLinkCopied": "Invite link copied",
+    "rejectedNote": "Rejected — no invite can be created for this request.",
+    "actionFailed": "Action failed. Please try again."
+  },
+  "admin": {
+    "eyebrow": "Operations",
+    "title": "Admin Console",
+    "lede": "Audit trail and system status for production accountability.",
+    "metrics": {
+      "storage": "Storage Mode",
+      "total": "Total Audit Events",
+      "last": "Last Event",
+      "role": "Your Role",
+      "none": "—"
+    },
+    "table": {
+      "heading": "Audit Log",
+      "time": "Time",
+      "user": "User",
+      "action": "Action",
+      "entity": "Entity",
+      "entityId": "Entity ID",
+      "metadata": "Metadata",
+      "empty": "No audit events match the current filters."
+    },
+    "filters": {
+      "heading": "Filters",
+      "action": "Action",
+      "entityType": "Entity Type",
+      "from": "Date From",
+      "to": "Date To",
+      "limit": "Limit",
+      "all": "All",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "status": {
+      "heading": "System Status",
+      "authConfigured": "Auth configured",
+      "storageMode": "Storage",
+      "prisma": "Prisma available",
+      "protectedRoutes": "Protected routes",
+      "yes": "Yes",
+      "no": "No",
+      "enabled": "Enabled",
+      "session": "Session",
+      "database": "Database"
+    },
+    "security": {
+      "heading": "Security Notes",
+      "body": "Audit logs are required for production accountability. V1 records application-level events only."
+    },
+    "links": {
+      "heading": "Document Pipeline",
+      "documentLibrary": "Document Library",
+      "documentSearch": "Document Search"
+    }
+  },
+  "adminDocuments": {
+    "eyebrow": "Operations",
+    "title": "Document Library",
+    "lede": "Upload and manage industrial documents for semantic search. TXT and Markdown files are processed end-to-end — extracted, chunked, embedded, and indexed. PDF and DOCX can be uploaded but are not yet extracted.",
+    "metrics": {
+      "total": "Total Documents",
+      "indexed": "Indexed",
+      "failed": "Failed"
+    },
+    "upload": {
+      "heading": "Upload Document",
+      "title": "Title",
+      "sourceType": "Source Type",
+      "selectSourceType": "Select a type",
+      "vendor": "Vendor (optional)",
+      "domain": "Domain (optional)",
+      "tags": "Tags",
+      "tagsHint": "comma-separated",
+      "file": "File",
+      "fileHint": "TXT or Markdown (processed end-to-end) · PDF / DOCX upload accepted, extraction coming soon — up to 50 MB",
+      "submit": "Upload",
+      "uploading": "Uploading…"
+    },
+    "validation": {
+      "titleRequired": "Title is required.",
+      "sourceTypeRequired": "Source type is required.",
+      "fileRequired": "Choose a file to upload.",
+      "fileTooLarge": "File exceeds the 50 MB limit.",
+      "unsupportedType": "Unsupported file type — choose a PDF, TXT, Markdown, or DOCX file.",
+      "uploadFailed": "Upload failed — please try again."
+    },
+    "list": {
+      "heading": "Documents",
+      "empty": "No documents uploaded yet.",
+      "delete": "Delete",
+      "process": "Process",
+      "processing": "Processing…",
+      "chunkCount": "{count} chunks",
+      "lastProcessed": "last processed {time}",
+      "failureReason": "Failure reason: {reason}"
+    },
+    "status": {
+      "uploaded": "Uploaded",
+      "extracting": "Extracting",
+      "extracted": "Extracted",
+      "chunking": "Chunking",
+      "chunked": "Chunked",
+      "embedding": "Embedding",
+      "embedded": "Embedded",
+      "indexed": "Indexed",
+      "failed": "Failed",
+      "archived": "Archived"
+    },
+    "sourceTypes": {
+      "manual": "Manual",
+      "datasheet": "Datasheet",
+      "commissioning_report": "Commissioning Report",
+      "engineering_report": "Engineering Report",
+      "troubleshooting_note": "Troubleshooting Note",
+      "safety_procedure": "Safety Procedure",
+      "maintenance_procedure": "Maintenance Procedure",
+      "factory_knowledge": "Factory Knowledge"
+    }
+  },
+  "adminDocumentSearch": {
+    "eyebrow": "Operations",
+    "title": "Document Search (Test)",
+    "lede": "Semantic search over indexed document chunks. Uses text-embedding-3-small (1536-dim) when DOCUMENT_EMBEDDINGS_PROVIDER=openai and OPENAI_API_KEY are set; falls back to mock embeddings otherwise.",
+    "queryPlaceholder": "Search document chunks…",
+    "search": "Search",
+    "searching": "Searching…",
+    "validation": {
+      "queryRequired": "Enter a search query.",
+      "searchFailed": "Search failed — please try again."
+    },
+    "results": {
+      "heading": "Results",
+      "empty": "No matching chunks found.",
+      "notYetSearched": "Run a search to see matching chunks here.",
+      "position": "chunk {position}"
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "Live · KI-gestützte Plattform",
+      "subtitle": "Die Engineering-Intelligence-Plattform",
+      "desc": "Industrielle KI, Engineering-Gedächtnis, Wissensgraphen, Multi-Agenten-Intelligenz, Automatisierung und Entscheidungsunterstützung.",
+      "ctaPrimary": "Plattform entdecken",
+      "ctaSecondary": "Engineering-Dashboard",
+      "statAgents": "KI-Agenten",
+      "statDomains": "KG-Domänen",
+      "statMemory": "Engineering-Gedächtnis"
+    },
+    "stats": {
+      "projects": "Analysierte Projekte",
+      "domains": "Wissensdomänen",
+      "cases": "Engineering-Fälle",
+      "agents": "KI-Agenten"
+    },
+    "capabilities": {
+      "eyebrow": "Plattformfunktionen",
+      "title": "Entwickelt für Engineering-Intelligenz",
+      "lede": "Sechs integrierte Systeme wirken zusammen, um Ihrem Engineering-Team beispiellose Transparenz, Gedächtnis und Entscheidungsstärke zu geben.",
+      "agents": {
+        "title": "Multi-Agenten-Intelligenz",
+        "desc": "Koordinierte KI-Agenten — Memory, Projekt, Domäne und Synthese — analysieren kontinuierlich Ihren Engineering-Zustand und liefern umsetzbare Erkenntnisse."
+      },
+      "memory": {
+        "title": "Engineering-Gedächtnis",
+        "desc": "Jede Entscheidung, jeder Fehlschlag und jede Lösung wird mit Konfidenzbewertung, Ergebnisverfolgung und semantischer Suche gespeichert. Ihr institutionelles Wissen geht nie verloren."
+      },
+      "graph": {
+        "title": "Wissensgraph",
+        "desc": "Vernetzter Graph aus Erinnerungen, Projekten, Domänen und Lösungen mit Hub-Erkennung, Konnektivitätsbewertung und intelligenter Traversierung."
+      },
+      "domain": {
+        "title": "Domänenanalytik",
+        "desc": "Tiefgehende Zustandsanalysen über Engineering-Domänen hinweg — Abdeckungslücken, Expertise-Breite, Konfidenzverteilung und Erfolgsquoten auf Domänenebene."
+      },
+      "risk": {
+        "title": "Risikointelligenz",
+        "desc": "Risikobewertung in Echtzeit auf Projekt- und Portfolioebene. Frühwarnindikatoren, Verfolgung von Ausfallraten und Risikobewertung auf Systemebene."
+      },
+      "decision": {
+        "title": "Entscheidungsunterstützung",
+        "desc": "RAG-gestützter Entscheidungsassistent, der relevantes Engineering-Wissen abruft und kontextbezogene Empfehlungen für komplexe technische Probleme synthetisiert."
+      }
+    },
+    "ecosystem": {
+      "eyebrow": "Engineering-Ökosystem",
+      "title": "Vernetzte Intelligenz",
+      "lede": "Jedes Teilsystem kommuniziert kontinuierlich, teilt Wissen und verstärkt die Intelligenz der gesamten Plattform.",
+      "brain": "Hermes Brain",
+      "memory": "Memory-Engine",
+      "kg": "Wissensgraph",
+      "agents": "Agentensystem",
+      "risk": "Risiko-Engine",
+      "domain": "Domänenanalytik",
+      "project": "Projekt-Intelligenz"
+    },
+    "industries": {
+      "eyebrow": "Branchen",
+      "title": "Entwickelt für jeden Sektor",
+      "lede": "Von der Energieerzeugung bis zur Fertigungslinie bringt Hermes OS KI-gestützte Engineering-Intelligenz in die gesamte Industrie.",
+      "power": {
+        "title": "Energiesysteme",
+        "desc": "Netzschutz, Relaiskoordination, Umspannwerks-Engineering und Fehleranalyse in Energiesystemen mit KI-gestützter Diagnose."
+      },
+      "automation": {
+        "title": "Industrielle Automatisierung",
+        "desc": "Prozessoptimierung, maschinelles Lernen für vorausschauende Instandhaltung und automatisierte Entscheidungsfindung für Fertigungslinien."
+      },
+      "plcscada": {
+        "title": "PLC & SCADA",
+        "desc": "Unterstützung für Siemens-, ABB- und Schneider-PLC-Programmierung, SCADA-Fehlerbehebung und Kontaktplananalyse durch Engineering-Gedächtnis."
+      },
+      "oilgas": {
+        "title": "Öl & Gas",
+        "desc": "Engineering-Wissen für Upstream und Downstream, Pipelinesysteme, sicherheitsgerichtete Systeme (SIS) und Prozessgefahrenanalyse."
+      },
+      "manufacturing": {
+        "title": "Fertigung",
+        "desc": "Produktionseffizienzanalysen, Qualitätssicherungssysteme, OEE-Tracking und Lean-Manufacturing-Entscheidungsunterstützung auf Basis von Engineering-KI."
+      },
+      "infrastructure": {
+        "title": "Infrastruktur",
+        "desc": "Projekte für zivile und elektrische Infrastruktur, Übertragungssysteme, Gebäudemanagement und Intelligenz für großskalige Systemintegration."
+      }
+    },
+    "architecture": {
+      "eyebrow": "Architekturüberblick",
+      "title": "Vierschichtiger Intelligenz-Stack",
+      "lede": "Eine klare, modulare Architektur, entwickelt für Zuverlässigkeit, Erweiterbarkeit und produktionsreife Engineering-Workloads.",
+      "note": "Session-Modus verfügbar · PostgreSQL-Modus für die Produktion · Deployment ohne Abhängigkeiten",
+      "l4label": "Öffentliche Schnittstelle",
+      "l4desc": "Endnutzeroberfläche — Weboberfläche, API-Gateway und zweisprachiges Engineering-Dashboard.",
+      "l3label": "Intelligenz-Engine",
+      "l3desc": "Koordinierte KI-Agenten, die Engineering-Wissen kontinuierlich analysieren, bewerten und synthetisieren.",
+      "l2label": "Gedächtnis- & Wissenskern",
+      "l2desc": "Persistentes, vernetztes Gedächtnissystem mit graphbasierter Wissensrepräsentation.",
+      "l1label": "Daten & Persistenz",
+      "l1desc": "Robuste Speicherschicht mit flexiblem Session-Fallback für konfigurationsfreies Deployment."
+    },
+    "cta": {
+      "badge": "Jetzt starten",
+      "title": "Gestalten Sie die Zukunft der",
+      "titleAccent": "Engineering-Intelligenz",
+      "lede": "Werden Sie Teil der Plattform, die Engineering-Teams ein KI-gestütztes Gedächtnis, Multi-Agenten-Intelligenz und einen Wissensgraphen für den industriellen Maßstab bietet.",
+      "primary": "Engineering-Dashboard öffnen",
+      "secondary": "Brain Copilot testen",
+      "demo": "Demo anfordern",
+      "footnote": "Engineering-Intelligence-Plattform · Industrielle KI · Multi-Agenten-Systeme"
+    },
+    "about": {
+      "eyebrow": "Über Hermes OS",
+      "title": "Die Plattform, die sich erinnert",
+      "lede": "Hermes OS ist eine Engineering-Intelligence-Plattform, die industrielle KI, Engineering-Gedächtnis, Wissensgraphen und Multi-Agenten-Reasoning kombiniert, um Engineering-Entscheidungen zu unterstützen.",
+      "memTitle": "Nie vergessen",
+      "memDesc": "Erfassen Sie jede Engineering-Entscheidung, Lösung und jeden Fehlschlag mit strukturierten Metadaten, Konfidenzwerten und Ergebnisverfolgung.",
+      "learnTitle": "Ständig lernend",
+      "learnDesc": "Multi-Agenten-Intelligenz analysiert kontinuierlich Ihren Engineering-Zustand, erkennt Muster und liefert umsetzbare Empfehlungen.",
+      "connTitle": "Tief vernetzt",
+      "connDesc": "Der Wissensgraph verknüpft Erinnerungen, Projekte, Domänen und Fälle zu einem einheitlichen Intelligenznetzwerk mit Hub-Erkennung und Traversierung.",
+      "decideTitle": "Bessere Entscheidungen",
+      "decideDesc": "RAG-gestützte Entscheidungsunterstützung ruft relevantes Engineering-Wissen ab und synthetisiert kontextbezogene Empfehlungen für komplexe technische Probleme."
+    },
+    "projects": {
+      "eyebrow": "Projektportfolio",
+      "title": "Engineering-Expertise über Branchen hinweg",
+      "lede": "Ein wachsendes Portfolio an Engineering-Intelligenz über Industriesektoren hinweg, gestützt auf die Gedächtnis- und Wissenssysteme von Hermes OS.",
+      "automation": "Industrielle Automatisierung",
+      "electrical": "Elektrotechnik",
+      "control": "Steuerungstechnik",
+      "smart": "Intelligente Fertigung",
+      "comingSoon": "Portfolio folgt in Kürze",
+      "comingSoonDesc": "Das Projektportfolio füllt sich, sobald Engineering-Erinnerungen und Fälle im System erfasst werden."
+    },
+    "partners": {
+      "eyebrow": "Technologiepartner",
+      "title": "Entwickelt für das industrielle Ökosystem",
+      "lede": "Hermes OS integriert Wissen und Gedächtnis für die führenden Plattformen der industriellen Automatisierung und Leittechnik."
+    },
+    "pricing": {
+      "eyebrow": "Preise",
+      "title": "Pläne für jedes Engineering-Team",
+      "lede": "Vom einzelnen Ingenieur bis zum Enterprise-Betrieb — Hermes OS wächst mit Ihrem Team.",
+      "comingSoon": "Demnächst verfügbar",
+      "comingSoonDesc": "Die Preispläne werden derzeit finalisiert. Tragen Sie sich in die Warteliste für frühen Zugang ein.",
+      "community": "Community",
+      "professional": "Professional",
+      "team": "Team",
+      "enterprise": "Enterprise",
+      "free": "Kostenlos",
+      "notifyMe": "Benachrichtigen Sie mich",
+      "paymentTitle": "Unterstützte Zahlungswege für den kommerziellen Einsatz.",
+      "paymentStripe": "Stripe",
+      "paymentVisa": "Visa",
+      "paymentMastercard": "Mastercard",
+      "paymentZarinpal": "Zarinpal",
+      "ctaContact": "Vertrieb kontaktieren",
+      "ctaGetStarted": "Jetzt starten",
+      "plans": {
+        "community": {
+          "price": "Kostenlos",
+          "audience": "Für einzelne Ingenieure und die erste Evaluierung.",
+          "f0": "Basiszugang zu Industriewissen",
+          "f1": "Begrenzte Engineering-Anfragen",
+          "f2": "Zugriff auf öffentliche Dokumentation",
+          "f3": "Plattformzugang auf Community-Ebene",
+          "cta": "Jetzt starten"
+        },
+        "professional": {
+          "price": "Vertrieb kontaktieren",
+          "audience": "Für professionelle Automatisierungs- und Elektroingenieure.",
+          "f0": "Zugang zum Engineering Copilot",
+          "f1": "Arbeitsbereich für Fallanalysen",
+          "f2": "Zugang zur Knowledge Engine",
+          "f3": "Persönliches Engineering-Gedächtnis",
+          "f4": "Standard-Support",
+          "cta": "Vertrieb kontaktieren"
+        },
+        "team": {
+          "price": "Vertrieb kontaktieren",
+          "audience": "Für Engineering-Teams und kleinere Industriebetriebe.",
+          "f0": "Arbeitsbereich für mehrere Benutzer",
+          "f1": "Team-Wissensdatenbank",
+          "f2": "Standort- und Anlagenanalytik",
+          "f3": "Erkenntnisse zur vorausschauenden Instandhaltung",
+          "f4": "Audit- und Nutzungsverfolgung",
+          "cta": "Vertrieb kontaktieren"
+        },
+        "enterprise": {
+          "price": "Individuell",
+          "audience": "Für Fabriken, Industriegruppen, EPCs, Versorgungsunternehmen und Enterprise-Betriebe.",
+          "f0": "Industrielle Intelligenz über mehrere Standorte",
+          "f1": "Standortisolierung und Enterprise-RBAC",
+          "f2": "Digitaler Zwilling und Wissensgraph",
+          "f3": "Erweiterte Audits und Compliance",
+          "f4": "Dediziertes Deployment und Onboarding",
+          "cta": "Vertrieb kontaktieren"
+        }
+      }
+    },
+    "contact": {
+      "eyebrow": "Kontakt",
+      "title": "Lassen Sie uns gemeinsam bauen",
+      "lede": "Bereit, KI-gestützte Intelligenz in Ihr Engineering-Team zu bringen? Wir helfen Ihnen gerne.",
+      "demoTitle": "Demo anfordern",
+      "demoDesc": "Erleben Sie Hermes OS in Aktion — mit einer persönlichen Führung durch die Engineering-Intelligence-Plattform.",
+      "demoBtn": "Demo anfordern",
+      "salesTitle": "Vertrieb kontaktieren",
+      "salesDesc": "Besprechen Sie Enterprise-Pläne, individuelle Integrationen und Deployment-Optionen für Ihre Organisation.",
+      "salesBtn": "Vertrieb kontaktieren",
+      "partnerTitle": "Partnerschaftsanfrage",
+      "partnerDesc": "Erkunden Sie Technologiepartnerschaften, Programme für Systemintegratoren und Chancen im Ökosystem.",
+      "partnerBtn": "Partner werden"
+    }
+  },
+  "billing": {
+    "title": "Billing",
+    "eyebrow": "SaaS Billing",
+    "nav": {
+      "billing": "Billing",
+      "subscription": "Subscription",
+      "invoices": "Invoices",
+      "usage": "Usage"
+    },
+    "plan": {
+      "current": "Current Plan",
+      "noSubscription": "No active subscription",
+      "upgrade": "Upgrade",
+      "downgrade": "Downgrade",
+      "cancel": "Cancel Subscription",
+      "renew": "Renew",
+      "changePlan": "Change Plan",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlyDiscount": "Save with annual billing",
+      "features": "Features included",
+      "limits": "Plan limits",
+      "limitLabels": {
+        "unlimited": "Unlimited",
+        "aiRequests": "AI Requests / mo",
+        "projects": "Projects",
+        "members": "Team Members",
+        "storageGb": "Storage",
+        "industrialGateway": "Industrial Gateway",
+        "multiAgent": "Multi-Agent",
+        "apiAccess": "API Access",
+        "prioritySupport": "Priority Support"
+      },
+      "startTrial": "Start free trial",
+      "trialBadge": "Trial",
+      "activeBadge": "Active",
+      "pastDueBadge": "Past due",
+      "canceledBadge": "Canceled",
+      "expiredBadge": "Expired"
+    },
+    "plans": {
+      "community": {
+        "name": "Community",
+        "description": "Open-source engineers and solo automation professionals."
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Individual engineers and small automation teams."
+      },
+      "team": {
+        "name": "Team",
+        "description": "Growing engineering departments and integrators."
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Large plant operators and system integrators at scale."
+      }
+    },
+    "invoices": {
+      "title": "Invoices",
+      "empty": "No invoices yet.",
+      "number": "Invoice",
+      "date": "Date",
+      "amount": "Amount",
+      "status": "Status",
+      "draft": "Draft",
+      "issued": "Issued",
+      "paid": "Paid",
+      "void": "Void",
+      "overdue": "Overdue",
+      "download": "Download"
+    },
+    "usage": {
+      "title": "Usage",
+      "period": "Last 30 days",
+      "aiRequests": "AI Requests",
+      "projects": "Projects",
+      "members": "Members",
+      "storageGb": "Storage (GB)",
+      "noData": "No usage recorded yet."
+    },
+    "currency": {
+      "irr": "IRR",
+      "gbp": "GBP",
+      "usd": "USD",
+      "eur": "EUR",
+      "chooseCurrency": "Currency"
+    },
+    "errors": {
+      "loadFailed": "Could not load billing information.",
+      "changeFailed": "Plan change failed.",
+      "cancelFailed": "Could not cancel subscription."
+    }
+  },
+  "org": {
+    "eyebrow": "Organization",
+    "title": "Organization Management",
+    "noOrg": "No organization found. Create one to get started.",
+    "loading": "Loading...",
+    "edit": "Edit",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "sending": "Sending...",
+    "creating": "Creating...",
+    "dismiss": "Dismiss",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "website": "Website",
+      "email": "Email Address",
+      "role": "Role",
+      "created": "Created",
+      "updated": "Last Updated"
+    },
+    "notFound": "Organization not found.",
+    "members": {
+      "title": "Team Members",
+      "suspend": "Suspend",
+      "activate": "Activate",
+      "remove": "Remove",
+      "confirmRemove": "Are you sure you want to remove this member?"
+    },
+    "invitations": {
+      "title": "Invitations",
+      "invite": "Invite Member",
+      "send": "Send Invitation",
+      "resend": "Resend",
+      "revoke": "Revoke",
+      "confirmRevoke": "Revoke this invitation?",
+      "empty": "No invitations yet.",
+      "expires": "Expires",
+      "tokenNote": "Invitation token (shown once — share with the invitee):"
+    },
+    "departments": {
+      "title": "Departments",
+      "add": "Add Department",
+      "create": "Create",
+      "empty": "No departments yet.",
+      "type": "Department Type",
+      "types": {
+        "automation": "Automation",
+        "electrical": "Electrical",
+        "maintenance": "Maintenance",
+        "production": "Production",
+        "management": "Management",
+        "it_ot": "IT / OT"
+      }
+    },
+    "settings": {
+      "title": "Organization Settings"
+    }
+  },
+  "apiPlatform": {
+    "eyebrow": "API Platform",
+    "title": "API Key Management",
+    "subtitle": "Manage API keys, scopes, rate limits, and usage for your organization.",
+    "loading": "Loading...",
+    "creating": "Creating...",
+    "cancel": "Cancel",
+    "optional": "optional",
+    "rawKey": {
+      "title": "Save your API key now",
+      "warning": "This is the only time your secret key will be shown. Copy it and store it securely — it cannot be recovered.",
+      "copy": "Copy key",
+      "copied": "Copied!",
+      "done": "I have saved it"
+    },
+    "keys": {
+      "title": "API Keys",
+      "createTitle": "Create new API key",
+      "new": "New API Key",
+      "name": "Key name",
+      "scopes": "Scopes",
+      "expiresAt": "Expiry date",
+      "create": "Create key",
+      "empty": "No API keys yet. Create one to start integrating.",
+      "created": "Created",
+      "lastUsed": "Last used",
+      "expires": "Expires",
+      "rotate": "Rotate",
+      "revoke": "Revoke",
+      "confirmRevoke": "Revoke this API key? Active integrations using it will stop working immediately.",
+      "confirmRotate": "Rotate this key? A new key will be created and the old one revoked. Your active integrations will need to be updated."
+    },
+    "rateLimit": {
+      "title": "Rate Limits",
+      "perMinute": "Requests this minute",
+      "perDay": "Requests today",
+      "exceeded": "Rate limit exceeded. Requests are being rejected with HTTP 429.",
+      "store": "Redis (fixed window)"
+    },
+    "usage": {
+      "title": "API Usage",
+      "callsPerDay": "Calls per day",
+      "last30Days": "Last 30 days"
+    },
+    "scopes": {
+      "admin": "Admin (all scopes)",
+      "projectsRead": "Projects — Read",
+      "projectsWrite": "Projects — Write",
+      "billingRead": "Billing — Read",
+      "billingWrite": "Billing — Write",
+      "organizationsRead": "Organizations — Read",
+      "organizationsWrite": "Organizations — Write",
+      "telemetryRead": "Telemetry — Read",
+      "telemetryWrite": "Telemetry — Write",
+      "industrialRead": "Industrial Gateway — Read",
+      "industrialWrite": "Industrial Gateway — Write"
+    },
+    "errors": {
+      "authRequired": "Authentication required.",
+      "insufficientScope": "Insufficient API scope.",
+      "rateLimitExceeded": "Rate limit exceeded. Try again later.",
+      "keyNotFound": "API key not found.",
+      "keyRevoked": "This API key has been revoked."
+    }
+  },
+  "industrial": {
+    "eyebrow": "Phase 35",
+    "title": "Industrial Edge Gateway",
+    "subtitle": "Monitor industrial sites, gateways, assets, and telemetry streams.",
+    "safetyBanner": "Safety: Read / Observe only — no control commands to PLCs or actuators.",
+    "loading": "Loading…",
+    "loadError": "Failed to load data. Check your connection.",
+    "sites": {
+      "eyebrow": "Industrial",
+      "title": "Sites",
+      "description": "Physical plant locations and their status.",
+      "empty": "No sites configured."
+    },
+    "gateways": {
+      "eyebrow": "Industrial",
+      "title": "Gateways",
+      "description": "Edge gateway devices collecting field data.",
+      "empty": "No gateways registered."
+    },
+    "assets": {
+      "eyebrow": "Industrial",
+      "title": "Assets",
+      "description": "PLCs, drives, sensors, and other industrial equipment.",
+      "empty": "No assets defined."
+    },
+    "telemetry": {
+      "eyebrow": "Industrial",
+      "title": "Telemetry",
+      "description": "Recent sensor and process data from field gateways.",
+      "empty": "No telemetry records yet.",
+      "readOnlyNote": "Showing last 50 readings. Telemetry is read-only — Hermes does not send commands."
+    },
+    "connectors": {
+      "eyebrow": "Industrial",
+      "title": "Connectors",
+      "description": "Protocol connector configurations per gateway.",
+      "empty": "No connectors configured.",
+      "foundationNote": "Phase 35 foundation — connector definitions only. Real drivers ship in Phase 36+.",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    }
+  },
+  "digitalTwin": {
+    "eyebrow": "Digital Twin",
+    "title": "Digital Twin Engine",
+    "subtitle": "Factory structure, asset hierarchy, and relationship topology — observation only.",
+    "readOnlyBanner": "READ / OBSERVE ONLY — No write-back to PLCs or control systems.",
+    "selectSitePrompt": "Select a site from the Industrial Gateway dashboard to explore its digital twin.",
+    "noNodes": "No nodes found for this site.",
+    "noRelations": "No relations found.",
+    "nodes": "Nodes",
+    "relations": "Relations",
+    "displayName": "Display Name",
+    "nodeType": "Type",
+    "assetId": "Asset ID",
+    "created": "Created",
+    "source": "Source",
+    "relationType": "Relation",
+    "target": "Target",
+    "healthScore": "Asset Health",
+    "overallScore": "Overall Score",
+    "dataMayBeStale": "Data may be stale",
+    "freshness": "Freshness",
+    "quality": "Quality",
+    "status": "Status",
+    "lastTelemetry": "Last telemetry",
+    "graphView": "Graph View",
+    "children": "children",
+    "assets": {
+      "eyebrow": "Asset Nodes",
+      "title": "Digital Twin Assets",
+      "description": "All asset nodes in the factory hierarchy for this site."
+    },
+    "graph": {
+      "eyebrow": "Topology",
+      "title": "Factory Graph",
+      "description": "Visual representation of factory structure and asset relationships."
+    },
+    "layout": {
+      "eyebrow": "Canvas",
+      "title": "Layout Editor",
+      "description": "Arrange nodes on a custom canvas for your factory floor.",
+      "emptyState": "No layouts saved yet. Create one from the API to see it here."
+    }
+  },
+  "analytics": {
+    "title": "Time Series Analytics",
+    "subtitle": "Trends, KPIs, and anomaly detection across your industrial assets",
+    "kpiTitle": "KPIs",
+    "kpiDesc": "Key performance indicators calculated from telemetry",
+    "trendsTitle": "Trends",
+    "trendsDesc": "Historical telemetry trends over selected periods",
+    "anomaliesTitle": "Anomalies",
+    "anomaliesDesc": "Detected spikes, drops, and fault patterns",
+    "alarmsTitle": "Alarm Frequency",
+    "alarmsDesc": "Alarm rate and BAD/STALE record analysis",
+    "availabilityLabel": "Availability",
+    "runtimeLabel": "Runtime",
+    "downtimeLabel": "Downtime",
+    "efficiencyLabel": "Efficiency",
+    "noData": "No analytics data available"
+  },
+  "predictive": {
+    "title": "Predictive Maintenance",
+    "subtitle": "Observe, analyze, and estimate risk — no autonomous actions, no control commands.",
+    "safetyBanner": "READ / ANALYZE ONLY — No write-back to PLCs, no autonomous maintenance actions.",
+    "eyebrow": "Predictive Maintenance",
+    "risk": {
+      "title": "Asset Risk Scores",
+      "subtitle": "Composite risk 0–100 across health, alarms, KPIs, telemetry quality and freshness.",
+      "score": "Risk Score",
+      "confidence": "Confidence",
+      "criticalityFactor": "Criticality Factor",
+      "healthTrend": "Health Trend",
+      "alarmTrend": "Alarm Trend",
+      "kpiDegradation": "KPI Degradation",
+      "telQuality": "Telemetry Quality",
+      "telFreshness": "Telemetry Freshness",
+      "noData": "No risk scores calculated yet.",
+      "highRisk": "High Risk",
+      "mediumRisk": "Medium Risk",
+      "lowRisk": "Low Risk"
+    },
+    "failureProbability": {
+      "title": "Failure Probability",
+      "subtitle": "Deterministic classification: LOW / MEDIUM / HIGH",
+      "level": "Probability Level",
+      "alarmTrend": "Alarm Trend",
+      "healthTrend": "Health Trend",
+      "noData": "No failure probability assessment available."
+    },
+    "remainingUsefulLife": {
+      "title": "Remaining Useful Life (RUL)",
+      "subtitle": "Projected operating days before health reaches failure threshold.",
+      "range": "Estimated Range",
+      "minDays": "Minimum (days)",
+      "maxDays": "Maximum (days)",
+      "degradationRate": "Degradation Rate (score/day)",
+      "currentScore": "Current Health Score",
+      "noData": "Insufficient data to estimate RUL.",
+      "noDegradation": "No degradation detected — asset is stable or improving.",
+      "atThreshold": "At or below failure threshold — immediate inspection recommended.",
+      "estimated": "Estimated"
+    },
+    "recommendations": {
+      "title": "Maintenance Recommendations",
+      "subtitle": "Evidence-backed recommendations derived from telemetry, health, and KPI analysis.",
+      "priority": "Priority",
+      "type": "Type",
+      "confidence": "Confidence",
+      "evidence": "Supporting Evidence",
+      "noData": "No maintenance recommendations at this time.",
+      "types": {
+        "inspection": "Schedule Inspection",
+        "alarm_review": "Alarm Review",
+        "maintenance_review": "Maintenance Review",
+        "comms_inspection": "Communications Inspection"
+      },
+      "priorities": {
+        "HIGH": "High Priority",
+        "MEDIUM": "Medium Priority",
+        "LOW": "Low Priority"
+      }
+    },
+    "baselines": {
+      "title": "Asset Baselines",
+      "subtitle": "Historical average performance computed over configurable windows.",
+      "windowDays": "Window (days)",
+      "avgHealth": "Avg Health Score",
+      "stdDev": "Std Dev",
+      "avgEfficiency": "Avg Efficiency",
+      "avgAvailability": "Avg Availability",
+      "avgAlarmRate": "Avg Alarm Rate",
+      "sampleCount": "Sample Count",
+      "coverageDays": "Coverage (days)",
+      "noData": "No baseline computed yet for this asset.",
+      "notEnoughData": "Not enough data yet — run the baseline engine once sufficient history accumulates."
+    },
+    "degradation": {
+      "title": "Degradation Analysis",
+      "subtitle": "Theil-Sen slope estimate over health history; IQR-filtered for noise resistance.",
+      "slopePerDay": "Slope (score/day)",
+      "class": "Degradation Class",
+      "method": "Method",
+      "sampleCount": "Sample Count",
+      "coverageDays": "Coverage (days)",
+      "classes": {
+        "improving": "Improving",
+        "stable": "Stable",
+        "degrading": "Degrading",
+        "rapidly_degrading": "Rapidly Degrading",
+        "insufficientData": "Insufficient Data"
+      },
+      "noData": "Not enough health history to assess degradation."
+    },
+    "confidence": {
+      "LOW": "Low Confidence",
+      "MEDIUM": "Medium Confidence",
+      "HIGH": "High Confidence",
+      "explanation": "Derived from telemetry completeness, freshness, evidence count, and history span."
+    },
+    "criticality": {
+      "title": "Asset Criticality",
+      "subtitle": "Risk multiplier by asset type (PLC=1.2, SCADA=1.3, SENSOR=0.8, etc.)"
+    },
+    "maintenanceWindow": {
+      "title": "Maintenance Window",
+      "subtitle": "Suggested earliest intervention date based on RUL range lower bound."
+    },
+    "evidence": {
+      "title": "Supporting Evidence",
+      "type": "Evidence Type",
+      "recordId": "Record ID",
+      "assetId": "Asset",
+      "tag": "Tag",
+      "timeframe": "Timeframe",
+      "value": "Value",
+      "description": "Description",
+      "noEvidence": "No linked evidence records."
+    },
+    "insufficientData": {
+      "title": "Not Enough Data Yet",
+      "subtitle": "Predictions require a minimum history threshold. Continue collecting telemetry.",
+      "reason": "Reason",
+      "minPoints": "Minimum data points required",
+      "minDays": "Minimum history span (days)",
+      "banner": "Not enough data yet — this panel will populate once sufficient history accumulates."
+    },
+    "atThreshold": {
+      "title": "At / Over Failure Threshold",
+      "subtitle": "Asset health is at or below the failure threshold.",
+      "action": "Immediate inspection recommended. Do not wait for scheduled maintenance."
+    },
+    "assetRanking": {
+      "title": "Asset Risk Ranking",
+      "subtitle": "Assets ordered by risk score, highest first.",
+      "rank": "Rank",
+      "asset": "Asset",
+      "riskScore": "Risk Score",
+      "probability": "Failure Prob.",
+      "rulRange": "RUL Range"
+    },
+    "formulaVersion": "Formula Version",
+    "weightSetVersion": "Weight Set",
+    "noAssets": "No assets found for this organization.",
+    "loading": "Loading predictive analysis…"
+  },
+  "ke": {
+    "eyebrow": "Industrial Knowledge Engine",
+    "safetyBanner": "READ-ONLY: Knowledge Engine observes, organizes, and explains. It does not execute maintenance, control equipment, or act autonomously.",
+    "overview": {
+      "title": "Knowledge Engine Overview",
+      "subtitle": "Deterministic engineering knowledge from telemetry, analytics, and maintenance history.",
+      "description": "Organizes failure modes, root causes, maintenance procedures, and engineering cases into a structured, searchable knowledge base."
+    },
+    "search": {
+      "title": "Knowledge Search",
+      "subtitle": "Deterministic bilingual search across articles, failure modes, procedures, and cases.",
+      "placeholder": "Search in English or Persian…",
+      "noResults": "No matching knowledge found.",
+      "resultCount": "{count} result(s)"
+    },
+    "articles": {
+      "title": "Knowledge Articles",
+      "subtitle": "Engineering standards, vendor documentation, and internal guides.",
+      "create": "New Article",
+      "noData": "No articles yet.",
+      "version": "Version",
+      "status": {
+        "draft": "Draft",
+        "review": "Under Review",
+        "published": "Published"
+      }
+    },
+    "failures": {
+      "title": "Failure Mode Library",
+      "subtitle": "Known failure modes for industrial equipment, with root causes and symptoms.",
+      "create": "New Failure Mode",
+      "noData": "No failure modes registered.",
+      "severity": {
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High",
+        "CRITICAL": "Critical"
+      }
+    },
+    "rootCauses": {
+      "title": "Root Causes",
+      "subtitle": "Deterministic root cause candidates ranked by evidence and confidence.",
+      "confidence": "Confidence",
+      "noData": "No root causes available.",
+      "scoringFactors": "Scoring Factors"
+    },
+    "procedures": {
+      "title": "Maintenance Procedures",
+      "subtitle": "Safety-bearing maintenance procedures with versioned audit trail.",
+      "create": "New Procedure",
+      "noData": "No procedures available.",
+      "version": "Procedure Version",
+      "steps": "Steps",
+      "estimatedHours": "Estimated Hours",
+      "safetyNotes": "Safety Notes",
+      "approvalStatus": {
+        "draft": "Draft",
+        "review": "Under Review",
+        "approved": "Approved"
+      }
+    },
+    "engineeringCases": {
+      "title": "Engineering Case Library",
+      "subtitle": "Documented incidents with symptoms, diagnosis, resolution, and lessons learned.",
+      "create": "New Case",
+      "noData": "No engineering cases recorded.",
+      "status": {
+        "open": "Open",
+        "resolved": "Resolved",
+        "closed": "Closed"
+      },
+      "symptoms": "Symptoms",
+      "diagnosis": "Diagnosis",
+      "resolution": "Resolution",
+      "lessonsLearned": "Lessons Learned",
+      "relatedCases": "Related Cases"
+    },
+    "recommendations": {
+      "title": "Knowledge Recommendations",
+      "subtitle": "Procedures recommended based on failure modes and predictive context.",
+      "noData": "No recommendations available."
+    },
+    "evidence": {
+      "title": "Supporting Evidence",
+      "noEvidence": "No evidence records linked.",
+      "types": {
+        "article": "Article",
+        "failureMode": "Failure Mode",
+        "procedure": "Procedure",
+        "case": "Engineering Case",
+        "predictive": "Predictive (Phase 39)",
+        "telemetry": "Telemetry (Phase 35)",
+        "asset": "Asset (Phase 36)"
+      }
+    },
+    "confidence": {
+      "LOW": "Low Confidence",
+      "MEDIUM": "Medium Confidence",
+      "HIGH": "High Confidence"
+    },
+    "sourceType": {
+      "MANUAL": "Manual Entry",
+      "ENGINEERING_STANDARD": "Engineering Standard",
+      "MAINTENANCE_HISTORY": "Maintenance History",
+      "FAILURE_ANALYSIS": "Failure Analysis",
+      "VENDOR_DOCUMENTATION": "Vendor Documentation",
+      "INTERNAL_CASE": "Internal Case"
+    },
+    "assetLink": {
+      "title": "Asset Knowledge Links",
+      "subtitle": "Knowledge items linked to this asset. Exactly one item type per link.",
+      "noLinks": "No knowledge linked to this asset yet."
+    },
+    "engineVersion": "Engine Version"
+  },
+  "knowledgeGraph": {
+    "eyebrow": "Industrial Knowledge Graph",
+    "title": "Knowledge Graph",
+    "subtitle": "Deterministic graph connecting assets, failure modes, root causes, procedures, and predictive risk. No AI.",
+    "loading": "Loading…",
+    "search": "Search",
+    "nodes": "Nodes",
+    "edges": "Edges",
+    "nodesByType": "Nodes by Type",
+    "edgesByType": "Edges by Type",
+    "lastBuilt": "Last Built",
+    "rebuild": "Rebuild Graph",
+    "rebuildDesc": "Rebuilds the graph from source tables (Phases 35–40). Requires manage_knowledge_graph permission.",
+    "rebuildBtn": "Rebuild Now",
+    "rebuilding": "Rebuilding…",
+    "rebuildDone": "Done",
+    "noData": "No data.",
+    "subgraphNodes": "Subgraph Nodes",
+    "assetGraph": "Asset Subgraph",
+    "assetGraphDesc": "Knowledge graph rooted at an industrial asset — failure modes, risk, root causes, procedures.",
+    "failureGraph": "Failure Mode Subgraph",
+    "failureGraphDesc": "Graph rooted at a failure mode — root causes, mitigating procedures, affected assets.",
+    "procedureGraph": "Procedure Impact Graph",
+    "procedureGraphDesc": "Graph rooted at a procedure — what failure modes it mitigates and which assets apply.",
+    "paths": "Evidence Paths",
+    "pathsDesc": "Find the strongest-evidence path between any two graph nodes using Dijkstra.",
+    "pathAlgorithmNote": "Algorithm: Dijkstra over edge cost (1 − weight). Finds the path with highest cumulative evidence weight — not fewest hops. Directed edge types are enforced.",
+    "fromNode": "From Node ID",
+    "toNode": "To Node ID",
+    "nodeIdPlaceholder": "IndustrialKnowledgeGraphNode.id",
+    "assetIdPlaceholder": "IndustrialAsset.id",
+    "failureModeIdPlaceholder": "IndustrialFailureMode.id",
+    "procedureIdPlaceholder": "IndustrialMaintenanceProcedure.id",
+    "findPath": "Find Path",
+    "pathFound": "Path Found",
+    "noPathFound": "No path found between these nodes.",
+    "noPathFoundHint": "Nodes may be disconnected, or the graph may need rebuilding.",
+    "hops": "hops",
+    "totalCost": "Total Cost",
+    "evidencePath": "Evidence Path",
+    "evidence": "Evidence Summary",
+    "failureModes": "Failure Modes",
+    "rootCauses": "Root Causes",
+    "procedures": "Procedures",
+    "engineeringCases": "Engineering Cases",
+    "affectedAssets": "Affected Assets",
+    "applicableAssets": "Applicable Assets",
+    "mitigates": "Mitigates",
+    "graphHealth": {
+      "design": "Graph Engine Design",
+      "stale": "Graph is Stale",
+      "fresh": "Fresh",
+      "neverBuilt": "Never built",
+      "derived": "Derived View",
+      "derivedDesc": "Materialized from Phases 35–40 source tables. Rebuild on demand.",
+      "dijkstra": "Dijkstra Path",
+      "dijkstraDesc": "Cost = 1 − weight → strongest-evidence path, not fewest hops.",
+      "weights": "Weight Scale",
+      "weightsDesc": "0.0–1.0: confidenceWeight direct · severity÷4 · riskScore÷100 · default=0.50",
+      "orphans": "Orphan Removal",
+      "orphansDesc": "Nodes whose entityId no longer exists are removed on every rebuild.",
+      "idempotent": "Idempotent",
+      "idempotentDesc": "Rebuilding twice with unchanged data produces the same graph.",
+      "transaction": "Transactional",
+      "transactionDesc": "Full rebuild runs in one DB transaction. Failed rebuild leaves prior graph intact."
+    }
+  },
+  "siteSecurity": {
+    "siteRole": "Site Role",
+    "sitePermission": "Site Permission",
+    "siteMembership": "Site Membership",
+    "siteIsolation": "Site Isolation",
+    "accessDenied": "Access Denied",
+    "insufficientPermission": "Insufficient site permissions",
+    "noAccessibleSites": "You do not have access to any sites in this organization.",
+    "implicitAccess": "Full Access (Organization Admin)",
+    "siteAdmin": "Site Admin",
+    "siteManager": "Site Manager",
+    "siteEngineer": "Site Engineer",
+    "siteOperator": "Site Operator",
+    "siteViewer": "Site Viewer",
+    "grantAccess": "Grant Site Access",
+    "revokeAccess": "Revoke Site Access",
+    "updateRole": "Update Site Role",
+    "memberships": "Site Memberships",
+    "noMemberships": "No site memberships assigned.",
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended"
+    },
+    "permissions": {
+      "view_site": "View Site",
+      "manage_site": "Manage Site",
+      "view_assets": "View Assets",
+      "manage_assets": "Manage Assets",
+      "view_telemetry": "View Telemetry",
+      "view_kpis": "View KPIs",
+      "view_predictive": "View Predictive",
+      "view_knowledge": "View Knowledge",
+      "manage_knowledge": "Manage Knowledge",
+      "view_multi_site": "View Multi-Site",
+      "view_failures": "View Failures"
+    }
+  },
+  "multiSite": {
+    "enterpriseSummary": "Enterprise Industrial Summary",
+    "enterpriseSummaryDesc": "Cross-site performance overview for the entire organization.",
+    "benchmarks": "Site Benchmarks",
+    "benchmarksDesc": "Run and inspect the latest multi-site benchmark computation.",
+    "riskRanking": "Site Risk Ranking",
+    "riskRankingDesc": "Sites ordered by average asset risk score, highest risk first.",
+    "kpiComparison": "KPI Comparison",
+    "kpiComparisonDesc": "Cross-site availability, efficiency, and health score comparison.",
+    "failurePatterns": "Cross-Site Failure Patterns",
+    "failurePatternsDesc": "Failure modes appearing in engineering cases across 2+ distinct sites.",
+    "knowledgeCoverage": "Knowledge Coverage",
+    "knowledgeCoverageDesc": "Percentage of assets per site that have linked knowledge resources.",
+    "sites": "Sites",
+    "activeSites": "Active sites",
+    "site": "Site",
+    "avgOrgRisk": "Org. Avg. Risk",
+    "avgAvailability": "Avg. Availability",
+    "avgRisk": "Avg. Risk",
+    "maxRisk": "Max Risk",
+    "distribution": "Distribution",
+    "confidence": "Confidence",
+    "coverage": "Coverage",
+    "availability": "Availability",
+    "efficiency": "Efficiency",
+    "healthScore": "Health Score",
+    "period": "Period",
+    "periodLabel": "Period",
+    "dataFreshness": "Data freshness",
+    "crossSitePatterns": "Cross-Site Patterns",
+    "failurePatternsSub": "Cross-site failure modes detected",
+    "sitesRanked": "sites ranked",
+    "sitesCompared": "sites compared",
+    "cases": "cases",
+    "assetTypes": "Asset types",
+    "assetsLinked": "Assets linked",
+    "linksByType": "Links by type",
+    "assets": "Assets",
+    "status": "Status",
+    "latestBenchmark": "Latest Benchmark",
+    "runBenchmark": "Run Benchmark",
+    "computing": "Computing…",
+    "benchmarkFailed": "Benchmark failed. Please try again.",
+    "noBenchmark": "No benchmark computed yet.",
+    "noBenchmarkHint": "Click \"Run Benchmark\" to generate cross-site analytics.",
+    "noPatternsFound": "No cross-site failure patterns detected.",
+    "noPatternsFoundHint": "Patterns are detected when the same failure mode appears in cases across 2+ sites.",
+    "noKnowledgeData": "No knowledge coverage data available.",
+    "insufficientData": "Insufficient Data",
+    "notComparable": "Not comparable",
+    "na": "N/A",
+    "backToSummary": "Back to Summary",
+    "kpiNormalizationNote": "Availability, efficiency, and health score are 0–100 rate means, normalized per asset. Directly comparable across sites. Raw runtime/downtime counts are excluded.",
+    "kgStaleWarning": "Knowledge graph is stale. Rebuild via Industrial → Knowledge Graph to refresh.",
+    "loading": "Loading…",
+    "errorLoading": "Failed to load data."
+  },
+  "about": {
+    "eyebrow": "About Hermes Novin Mehr IRIC",
+    "title": "Engineering the Future of Industrial Intelligence",
+    "lede": "Born on the plant floor. Built for the engineers who run it.",
+    "companyEyebrow": "The Company",
+    "companyTitle": "Hermes Novin Mehr IRIC",
+    "companyDesc": "We build enterprise-grade industrial intelligence software for automation engineers, plant operators, and engineering leadership teams. Our platform combines AI-powered reasoning, engineering memory, and knowledge graphs to give industrial teams unprecedented clarity and decision support.",
+    "website": "www.hermesnovin.com",
+    "locationIran": "Isfahan, Iran",
+    "locationUK": "London, United Kingdom",
+    "founderEyebrow": "Founder & CEO",
+    "founderName": "Hamid Reza Forozandeh",
+    "founderRole": "Founder, CEO & Chief Industrial Systems Architect",
+    "founderBio1": "With over 18 years of hands-on industrial automation experience, Hamid Reza has designed, commissioned, and optimised complex control systems across steel production, petrochemical processing, and power generation.",
+    "founderBio2": "His deep expertise spans Siemens PLC S7-1200 and S7-1500, TIA Portal, SCADA systems, HMI design, and industrial network architecture — commissioning real systems in live production environments.",
+    "founderBio3": "Hermes OS is the platform he wished he had during those years: an AI-powered copilot that speaks automation, remembers every project, and helps engineering teams make better decisions faster.",
+    "founderExpertise": "Siemens S7-1200 · S7-1500 · TIA Portal · SCADA / HMI · Steel · Petrochemical · Digital Twin · Predictive Maintenance",
+    "missionEyebrow": "Mission",
+    "missionTitle": "Give engineering teams an intelligent memory",
+    "missionDesc": "Industrial knowledge lives in people's heads and scattered documents. Hermes OS captures it, connects it, and makes it available to every engineer on every shift — in Persian and English.",
+    "pillarsEyebrow": "Technology Foundation",
+    "pillarsTitle": "Built on Deep Industrial Expertise",
+    "pillar1Title": "Industrial Automation",
+    "pillar1Desc": "17+ years of PLC, SCADA, and HMI engineering across steel, petrochemical, and power generation. Not theoretical — production-proven.",
+    "pillar2Title": "AI-Powered Intelligence",
+    "pillar2Desc": "Multi-agent AI systems that reason about engineering problems, retrieve relevant memory, and surface contextual recommendations.",
+    "pillar3Title": "Knowledge Graph Architecture",
+    "pillar3Desc": "Interconnected engineering knowledge: memories, projects, domains, and cases linked into a traversable intelligence network.",
+    "pillar4Title": "Persian & English by Design",
+    "pillar4Desc": "Full RTL/LTR support at the platform level — not an afterthought. Built for Iran's industrial sector and the global automation community.",
+    "ctaContact": "Contact Us",
+    "ctaPlatform": "Explore Platform"
+  },
+  "contact": {
+    "eyebrow": "Kontakt aufnehmen",
+    "title": "Lassen Sie uns gemeinsam industrielle Intelligenz aufbauen",
+    "lede": "Bereit, KI-gestützte Engineering-Intelligenz in Ihr Team zu bringen? Wir beantworten alle Anfragen innerhalb eines Werktags.",
+    "salesTitle": "Vertriebsanfragen",
+    "salesDesc": "Enterprise-Pläne, individuelle Integrationen und Deployment-Optionen für Ihre Organisation.",
+    "salesEmail": "info@hermesnovin.com",
+    "supportTitle": "Technischer Support",
+    "supportDesc": "Technische Fragen, Plattform-Support und Engineering-Beratung.",
+    "supportEmail": "hamidreza.forozandeh1@gmail.com",
+    "generalTitle": "Allgemein",
+    "generalDesc": "Allgemeine Anfragen, Partnerschaftsgespräche und Kooperationsmöglichkeiten.",
+    "generalEmail": "hermesnovinmehriric@gmail.com",
+    "phoneTitle": "Telefon",
+    "phoneIran": "+98 913 411 6492",
+    "phoneUK": "+44 796 054 5833",
+    "locationTitle": "Standorte",
+    "locationIran": "Isfahan, Iran",
+    "locationUK": "London, Vereinigtes Königreich",
+    "socialTitle": "Vernetzen",
+    "linkedinLabel": "LinkedIn",
+    "githubLabel": "GitHub",
+    "websiteLabel": "Website",
+    "formTitle": "Nachricht senden",
+    "formName": "Vollständiger Name",
+    "formCompany": "Unternehmen / Organisation",
+    "formEmail": "E-Mail-Adresse",
+    "formPhone": "Telefonnummer",
+    "formType": "Art der Anfrage",
+    "formTypeDemo": "Demo anfordern",
+    "formTypeSales": "Vertriebsanfrage",
+    "formTypeSupport": "Technischer Support",
+    "formTypePartner": "Partnerschaft",
+    "formMessage": "Nachricht",
+    "formSubmit": "Nachricht senden",
+    "formNote": "Wir antworten innerhalb eines Werktags.",
+    "formSuccess": "Nachricht gesendet. Wir melden uns in Kürze.",
+    "linkedinUrl": "https://www.linkedin.com/in/hamid-reza-forozandeh",
+    "githubUrl": "https://github.com/hermescenter1",
+    "websiteUrl": "https://www.hermesnovin.com"
+  },
+  "automation": {
+    "dashboard": "Dashboard",
+    "workflows": "Workflows",
+    "templates": "Templates",
+    "executions": "Executions",
+    "webhooks": "Webhooks",
+    "settings": "Settings",
+    "newWorkflow": "New Workflow",
+    "editWorkflow": "Edit Workflow",
+    "noWorkflows": "No workflows yet.",
+    "noExecutions": "No executions yet.",
+    "noWebhooks": "No webhooks registered.",
+    "active": "Active",
+    "paused": "Paused",
+    "draft": "Draft",
+    "archived": "Archived",
+    "success": "Success",
+    "failed": "Failed",
+    "partial": "Partial",
+    "cancelled": "Cancelled"
+  },
+  "erp": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "projects": "Projects",
+      "tasks": "Tasks",
+      "teams": "Teams",
+      "resources": "Resources",
+      "inventory": "Inventory",
+      "workOrders": "Work Orders",
+      "approvals": "Approvals",
+      "kpis": "KPIs",
+      "settings": "Settings"
+    },
+    "dashboard": {
+      "title": "Operations Dashboard",
+      "activeProjects": "Active Projects",
+      "overdueTasks": "Overdue Tasks",
+      "openWorkOrders": "Open Work Orders",
+      "inventoryWarnings": "Inventory Warnings",
+      "pendingApprovals": "Pending Approvals",
+      "resourceUtilization": "Resource Utilization",
+      "budgetOverview": "Budget Overview",
+      "recentActivity": "Recent Activity"
+    },
+    "projects": {
+      "title": "Projects",
+      "newProject": "New Project"
+    },
+    "tasks": {
+      "title": "Task Board"
+    },
+    "teams": {
+      "title": "Teams"
+    },
+    "resources": {
+      "title": "Resources"
+    },
+    "inventory": {
+      "title": "Inventory",
+      "lowStock": "Low Stock",
+      "inStock": "In Stock"
+    },
+    "workOrders": {
+      "title": "Work Orders"
+    },
+    "approvals": {
+      "title": "Approval Requests",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "kpis": {
+      "title": "Operational KPIs"
+    },
+    "settings": {
+      "title": "ERP Settings"
+    }
+  },
+  "documents": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "explorer": "Explorer",
+      "search": "Search",
+      "approvals": "Approvals",
+      "revisions": "Revisions",
+      "comments": "Comments",
+      "audit": "Audit",
+      "folders": "Folders",
+      "categories": "Categories",
+      "templates": "Templates",
+      "retention": "Retention",
+      "settings": "Settings"
+    },
+    "dashboard": {
+      "title": "EDMS — Document Management",
+      "totalDocuments": "Total Documents",
+      "drafts": "Drafts",
+      "inReview": "In Review",
+      "approved": "Approved",
+      "pendingApprovals": "Pending Approvals",
+      "activeCheckouts": "Active Checkouts"
+    }
+  }
+}
