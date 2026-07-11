@@ -193,11 +193,15 @@ describe("de.json — Phase 86C1 translation audit", () => {
     de: deFlat.get(path),
     fa: faFlat.get(path),
   }));
+  // Journal namespaces were translated to German in Phase 86C2; they are no
+  // longer English carryover, so exclude them from the "still English" set.
+  const JOURNAL_NS = new Set(["journal", "journalWriter", "journalEditorial"]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
+  const stillEnglish = nonBatch.filter((r) => !JOURNAL_NS.has(r.ns));
   const translated = batch.filter((r) => r.de !== r.en);
   const preservedInBatch = batch.filter((r) => r.de === r.en);
-  const carryover = nonBatch.filter((r) => r.de === r.en);
+  const carryover = stillEnglish.filter((r) => r.de === r.en);
 
   it("batch namespaces cover 538 keys; 486 carry German, 52 preserved terms", () => {
     expect(batch.length).toBe(538);
@@ -216,11 +220,11 @@ describe("de.json — Phase 86C1 translation audit", () => {
     ).toEqual([]);
   });
 
-  it("all non-batch namespaces temporarily carry English verbatim", () => {
-    // Journal namespaces (86C2-PRE) are also English-verbatim in de for now,
-    // so every non-batch-1 key remains a carryover.
-    expect(carryover.length).toBe(nonBatch.length);
-    expect(nonBatch.length).toBeGreaterThanOrEqual(1929);
+  it("all non-batch, non-journal namespaces temporarily carry English verbatim", () => {
+    // Journal namespaces are now German (86C2); the remaining non-batch-1
+    // namespaces still carry English verbatim in de.
+    expect(carryover.length).toBe(stillEnglish.length);
+    expect(stillEnglish.length).toBeGreaterThanOrEqual(1929);
   });
 
   it("prints the audit report", () => {

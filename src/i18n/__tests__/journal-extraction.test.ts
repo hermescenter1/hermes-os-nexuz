@@ -110,10 +110,65 @@ describe("Journal messages: quality", () => {
     expect(enDeMismatch).toEqual([]);
   });
 
-  it("de Journal values are temporary English copies (not yet translated)", () => {
-    // Every de Journal value equals its en value verbatim in this phase.
+  it("de Journal values are now translated to German (Phase 86C2)", () => {
+    // The vast majority of Journal keys now differ from their English source.
     const translated = journalKeys.filter((k) => JSON.stringify(deFlat.get(k)) !== JSON.stringify(enFlat.get(k)));
-    expect(translated).toEqual([]);
+    // 445 leaf keys; only justified brand/acronym/markdown/numeric values stay identical.
+    expect(translated.length).toBeGreaterThanOrEqual(400);
+  });
+});
+
+describe("German Journal translation quality (Phase 86C2)", () => {
+  const enFlat = flatten(en);
+  const deFlat = flatten(de);
+  const journalKeys = [...enFlat.keys()].filter((k) =>
+    JOURNAL_NAMESPACES.some((ns) => k.startsWith(ns + "."))
+  );
+
+  // Justified identical-to-English values: brand tokens, acronyms, markdown
+  // markers, numeric/symbol-only values, and words German shares verbatim.
+  const JUSTIFIED_IDENTICAL: RegExp[] = [
+    /^[\d.,+MmKk%]+$/,                                    // numeric metrics (1,200+, 4.2M…)
+    /^[#`\-\s]+$/,                                        // markdown markers (#, ```, "- ")
+    /^(Moderation|Journal|JOURNAL|Feed|SEO|Meta|TOP)$/,  // German shares these verbatim
+    /HERMES INDUSTRIAL JOURNAL/,                          // brand (upper, incl. separator)
+    /^Hermes Industrial Journal$/,                        // brand (title)
+    /^(SCADA & HMI|PLC\/SCADA|Sicherheit & Compliance)$/,
+    /^\{name\} — /,                                       // placeholder + brand title
+  ];
+
+  it("has no informal German address (du/dein/dich/dir…)", () => {
+    const informal = journalKeys.filter((k) =>
+      /\b(du|dein|deine|deiner|deinen|deinem|dich|dir)\b/i.test(String(deFlat.get(k)))
+    );
+    expect(informal).toEqual([]);
+  });
+
+  it("has no unintended English-copy values (only justified terms stay identical)", () => {
+    const unjustified = journalKeys.filter((k) => {
+      const enV = String(enFlat.get(k));
+      const deV = String(deFlat.get(k));
+      if (enV !== deV) return false;
+      return !JUSTIFIED_IDENTICAL.some((re) => re.test(deV));
+    });
+    expect(unjustified).toEqual([]);
+  });
+
+  it("preserves protected brand/acronym/protocol tokens", () => {
+    const TOKENS = ["Hermes OS", "Hermes Brain", "Hermes Industrial Journal", "PLC", "SCADA",
+      "HMI", "OPC-UA", "PROFINET", "TIA Portal", "API", "SEO", "Siemens", "ABB", "Schneider",
+      "CMMS", "WebP", "JPG", "PNG"];
+    const lost: string[] = [];
+    for (const k of journalKeys) {
+      const enV = String(enFlat.get(k)), deV = String(deFlat.get(k));
+      for (const t of TOKENS) if (enV.includes(t) && !deV.includes(t)) lost.push(`${k}[${t}]`);
+    }
+    expect(lost).toEqual([]);
+  });
+
+  it("contains genuine German (umlauts/ß) across the Journal catalog", () => {
+    const withGermanChars = journalKeys.filter((k) => /[äöüÄÖÜß]/.test(String(deFlat.get(k))));
+    expect(withGermanChars.length).toBeGreaterThan(20);
   });
 });
 
