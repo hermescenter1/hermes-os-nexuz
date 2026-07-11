@@ -44,41 +44,101 @@ export function getRoleFromRequestSync(request: NextRequest): Role | null {
   }
 }
 
+// ── Segment-safe route matching (Phase 85) ────────────────────────────────────
+//
+// A protected route prefix may only match COMPLETE path segments: the route
+// must be followed by "/" or the end of the pathname. Bare prefix regexes
+// treated /fa/articles/editors-picks (public) as the admin-only
+// /fa/articles/editor because nothing terminated the segment.
+
+/** Boundary: the matched route must be followed by "/" or the end of the path. */
+const SEGMENT_END = "(?=/|$)";
+
+/**
+ * Build a locale-aware (`/fa/…`, `/en/…`) matcher for `route` that only
+ * matches complete path segments.
+ *
+ * @param route          Locale-less route without a leading slash, e.g.
+ *                       "admin" or "knowledge/case-studio". Trusted regex
+ *                       fragments such as "articles/(editor|reports)" are
+ *                       allowed; every alternative terminates at a segment
+ *                       boundary (backtracking tries the longer alternatives).
+ * @param publicChildren Direct child segments of `route` that stay public,
+ *                       e.g. ["register"] excludes "<route>/register" and its
+ *                       subtree — but only as a whole segment, so
+ *                       "<route>/registered" is still protected.
+ */
+export function localePathPattern(
+  route: string,
+  publicChildren: readonly string[] = []
+): RegExp {
+  const exclusions = publicChildren
+    .map((child) => `(?!/${child}(?:/|$))`)
+    .join("");
+  return new RegExp(`^/[a-z]{2}/(?:${route})${SEGMENT_END}${exclusions}`);
+}
+
+// Shared by isProtectedPath() and isAuthorizedForPath() so the protection
+// check and the role check can never drift apart.
+const ENGINEERING           = localePathPattern("engineering");
+const ADMIN                 = localePathPattern("admin");
+const KNOWLEDGE_CASE_STUDIO = localePathPattern("knowledge/case-studio");
+const KNOWLEDGE_STUDIO      = localePathPattern("knowledge/studio");
+const INTELLIGENCE_UNKNOWN  = localePathPattern("intelligence/unknown");
+// /candidate/register is a PUBLIC signup page — exclude it (and its subtree)
+// from protection. All other /candidate/* paths (dashboard, applications,
+// profile) are protected.
+const CANDIDATE             = localePathPattern("candidate", ["register"]);
+// Phase 60: Academy admin panel (admin only; main /academy remains public)
+const ACADEMY_ADMIN         = localePathPattern("academy/admin");
+// Phase 61: Compliance dashboard (admin only); privacy-center (any authenticated user)
+const COMPLIANCE            = localePathPattern("compliance");
+const PRIVACY_CENTER        = localePathPattern("privacy-center");
+// Phase 64: Vendor portal (singular /vendor) — protected. The public /vendors
+// directory is excluded by the segment boundary itself (no lookahead hack).
+const VENDOR                = localePathPattern("vendor");
+// Phase 65: Customer portal — all /customer/* paths require authentication
+const CUSTOMER              = localePathPattern("customer");
+// Phase 66: CRM — admin/engineer only
+const CRM                   = localePathPattern("crm");
+// Phase 67: Automation — admin/engineer only
+const AUTOMATION            = localePathPattern("automation");
+// Phase 68: ERP — admin/engineer only
+const ERP                   = localePathPattern("erp");
+// Phase 69: EDMS — admin/engineer only
+const DOCUMENTS             = localePathPattern("documents");
+// Phase 70: CMMS — admin/engineer only
+const CMMS                  = localePathPattern("cmms");
+// Phase 72: Asset Registry — admin/engineer only
+const ASSETS                = localePathPattern("assets");
+// Phase 72.5: Journal — authenticated-only sub-paths; public article routes
+// (feed, editors-picks, latest, [slug], …) match neither group.
+const ARTICLES_EDITORIAL     = localePathPattern("articles/(moderation|review-queue|reports|editorial-board|editor|submissions)");
+const ARTICLES_AUTHENTICATED = localePathPattern("articles/(write|drafts|saved|following|my-articles|settings)");
+
 // ── Middleware guard ──────────────────────────────────────────────────────────
 
 /** Paths that require authentication (locale-aware). */
 export const PROTECTED_PATHS = [
-  /^\/[a-z]{2}\/engineering/,
-  /^\/[a-z]{2}\/admin/,
-  /^\/[a-z]{2}\/knowledge\/case-studio/,
-  /^\/[a-z]{2}\/knowledge\/studio/,
-  /^\/[a-z]{2}\/intelligence\/unknown/,
-  // /candidate/register is a PUBLIC signup page — exclude it from protection.
-  // All other /candidate/* paths (dashboard, applications, profile) are protected.
-  /^\/[a-z]{2}\/candidate(?!\/register)/,
-  // Phase 60: Academy admin panel (admin only; main /academy remains public)
-  /^\/[a-z]{2}\/academy\/admin/,
-  // Phase 61: Compliance dashboard (admin only); privacy-center (any authenticated user)
-  /^\/[a-z]{2}\/compliance/,
-  /^\/[a-z]{2}\/privacy-center/,
-  // Phase 64: Vendor portal (singular /vendor) — protected; /vendors directory is public
-  /^\/[a-z]{2}\/vendor(?!s)/,
-  // Phase 65: Customer portal — all /customer/* paths require authentication
-  /^\/[a-z]{2}\/customer/,
-  // Phase 66: CRM — admin/engineer only
-  /^\/[a-z]{2}\/crm/,
-  // Phase 67: Automation — admin/engineer only
-  /^\/[a-z]{2}\/automation/,
-  // Phase 68: ERP — admin/engineer only
-  /^\/[a-z]{2}\/erp/,
-  // Phase 69: EDMS — admin/engineer only
-  /^\/[a-z]{2}\/documents/,
-  // Phase 70: CMMS — admin/engineer only
-  /^\/[a-z]{2}\/cmms/,
-  // Phase 72: Asset Registry — admin/engineer only
-  /^\/[a-z]{2}\/assets/,
-  // Phase 72.5: Journal — authenticated-only sub-paths (public paths remain open)
-  /^\/[a-z]{2}\/articles\/(write|drafts|saved|following|my-articles|editor|submissions|settings|moderation|review-queue|reports|editorial-board)/,
+  ENGINEERING,
+  ADMIN,
+  KNOWLEDGE_CASE_STUDIO,
+  KNOWLEDGE_STUDIO,
+  INTELLIGENCE_UNKNOWN,
+  CANDIDATE,
+  ACADEMY_ADMIN,
+  COMPLIANCE,
+  PRIVACY_CENTER,
+  VENDOR,
+  CUSTOMER,
+  CRM,
+  AUTOMATION,
+  ERP,
+  DOCUMENTS,
+  CMMS,
+  ASSETS,
+  ARTICLES_EDITORIAL,
+  ARTICLES_AUTHENTICATED,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -89,63 +149,63 @@ export function isAuthorizedForPath(
   role:     Role,
   pathname: string
 ): boolean {
-  if (/^\/[a-z]{2}\/engineering/.test(pathname)) {
+  if (ENGINEERING.test(pathname)) {
     return canAccessEngineering(role);
   }
-  if (/^\/[a-z]{2}\/admin/.test(pathname)) {
+  if (ADMIN.test(pathname)) {
     return role === "admin" || role === "superadmin";
   }
-  if (/^\/[a-z]{2}\/candidate(?!\/register)/.test(pathname)) {
+  if (CANDIDATE.test(pathname)) {
     return role === "candidate" || role === "admin" || role === "superadmin";
   }
-  if (/^\/[a-z]{2}\/academy\/admin/.test(pathname)) {
+  if (ACADEMY_ADMIN.test(pathname)) {
     return role === "admin" || role === "superadmin";
   }
-  if (/^\/[a-z]{2}\/compliance/.test(pathname)) {
+  if (COMPLIANCE.test(pathname)) {
     return role === "admin" || role === "superadmin";
   }
   // privacy-center: any authenticated user
-  if (/^\/[a-z]{2}\/privacy-center/.test(pathname)) {
+  if (PRIVACY_CENTER.test(pathname)) {
     return true; // all authenticated roles
   }
   // vendor portal: vendor role + admin/superadmin
-  if (/^\/[a-z]{2}\/vendor(?!s)/.test(pathname)) {
+  if (VENDOR.test(pathname)) {
     return role === "vendor" || role === "admin" || role === "superadmin";
   }
   // customer portal: customer role + admin/superadmin/engineer
-  if (/^\/[a-z]{2}\/customer/.test(pathname)) {
+  if (CUSTOMER.test(pathname)) {
     return role === "customer" || role === "admin" || role === "superadmin" || role === "engineer";
   }
   // CRM: admin/superadmin/engineer only
-  if (/^\/[a-z]{2}\/crm/.test(pathname)) {
+  if (CRM.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
   // Automation: admin/superadmin/engineer only
-  if (/^\/[a-z]{2}\/automation/.test(pathname)) {
+  if (AUTOMATION.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
   // ERP: admin/superadmin/engineer only
-  if (/^\/[a-z]{2}\/erp/.test(pathname)) {
+  if (ERP.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
   // EDMS: admin/superadmin/engineer only
-  if (/^\/[a-z]{2}\/documents/.test(pathname)) {
+  if (DOCUMENTS.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
   // CMMS: admin/superadmin/engineer only
-  if (/^\/[a-z]{2}\/cmms/.test(pathname)) {
+  if (CMMS.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
   // Asset Registry: admin/superadmin/engineer only
-  if (/^\/[a-z]{2}\/assets/.test(pathname)) {
+  if (ASSETS.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
   // Journal editorial (moderation/review-queue/reports/editorial-board/editor/submissions): admin only
-  if (/^\/[a-z]{2}\/articles\/(moderation|review-queue|reports|editorial-board|editor|submissions)/.test(pathname)) {
+  if (ARTICLES_EDITORIAL.test(pathname)) {
     return role === "admin" || role === "superadmin";
   }
   // Journal authenticated (write/drafts/saved/following/my-articles/settings): any logged-in user
-  if (/^\/[a-z]{2}\/articles\/(write|drafts|saved|following|my-articles|settings)/.test(pathname)) {
+  if (ARTICLES_AUTHENTICATED.test(pathname)) {
     return true;
   }
   return true;
