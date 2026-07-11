@@ -1,5 +1,19 @@
 import type { MetadataRoute } from "next";
 import { BASE_URL } from "@/lib/seo/config";
+import { ACTIVE_LOCALES } from "@/i18n/locales";
+
+// Locale-scoped path helpers — generated from ACTIVE_LOCALES so crawl rules
+// cover exactly the public locales (never inactive ones such as German) and
+// automatically extend when a locale is activated. Ordering is per-suffix then
+// per-locale, matching the previously hand-written fa/en rules.
+
+/** Root path of every active locale, e.g. ["/fa/", "/en/"]. */
+const localeRoots = ACTIVE_LOCALES.map((l) => `/${l}/`);
+
+/** Each suffix expanded across every active locale, in suffix→locale order. */
+function localized(...suffixes: string[]): string[] {
+  return suffixes.flatMap((s) => ACTIVE_LOCALES.map((l) => `/${l}${s}`));
+}
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -7,16 +21,9 @@ export default function robots(): MetadataRoute.Robots {
       /* ── Search engines ────────────────────────────────────────────────── */
       {
         userAgent: "Googlebot",
-        allow: ["/fa/", "/en/"],
+        allow: localeRoots,
         disallow: [
-          "/fa/dashboard/",
-          "/en/dashboard/",
-          "/fa/admin/",
-          "/en/admin/",
-          "/fa/auth/",
-          "/en/auth/",
-          "/fa/candidate/",
-          "/en/candidate/",
+          ...localized("/dashboard/", "/admin/", "/auth/", "/candidate/"),
           "/api/",
           "/_next/",
         ],
@@ -24,18 +31,13 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: "Googlebot-Image",
-        allow: ["/brand/", "/fa/", "/en/"],
+        allow: ["/brand/", ...localeRoots],
       },
       {
         userAgent: "Bingbot",
-        allow: ["/fa/", "/en/"],
+        allow: localeRoots,
         disallow: [
-          "/fa/dashboard/",
-          "/en/dashboard/",
-          "/fa/admin/",
-          "/en/admin/",
-          "/fa/auth/",
-          "/en/auth/",
+          ...localized("/dashboard/", "/admin/", "/auth/"),
           "/api/",
         ],
         crawlDelay: 2,
@@ -43,38 +45,38 @@ export default function robots(): MetadataRoute.Robots {
       /* ── AI / LLM crawlers ─────────────────────────────────────────────── */
       {
         userAgent: "GPTBot",
-        allow: ["/fa/library/", "/en/library/", "/fa/services/", "/en/services/", "/fa/academy/", "/en/academy/"],
-        disallow: ["/fa/dashboard/", "/en/dashboard/", "/fa/admin/", "/en/admin/", "/api/"],
+        allow: localized("/library/", "/services/", "/academy/"),
+        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
       },
       {
         userAgent: "ClaudeBot",
-        allow: ["/fa/library/", "/en/library/", "/fa/services/", "/en/services/", "/fa/academy/", "/en/academy/"],
-        disallow: ["/fa/dashboard/", "/en/dashboard/", "/fa/admin/", "/en/admin/", "/api/"],
+        allow: localized("/library/", "/services/", "/academy/"),
+        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
       },
       {
         userAgent: "PerplexityBot",
-        allow: ["/fa/", "/en/"],
-        disallow: ["/fa/dashboard/", "/en/dashboard/", "/fa/admin/", "/en/admin/", "/api/"],
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
       },
       {
         userAgent: "Applebot",
-        allow: ["/fa/", "/en/"],
-        disallow: ["/fa/dashboard/", "/en/dashboard/", "/fa/admin/", "/en/admin/", "/api/"],
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
       },
       {
         userAgent: "CCBot",
-        allow: ["/fa/library/", "/en/library/"],
-        disallow: ["/fa/dashboard/", "/en/dashboard/", "/fa/admin/", "/en/admin/", "/api/"],
+        allow: localized("/library/"),
+        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
       },
       {
         userAgent: "DuckDuckBot",
-        allow: ["/fa/", "/en/"],
-        disallow: ["/fa/dashboard/", "/en/dashboard/", "/fa/admin/", "/en/admin/", "/api/"],
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
       },
       {
         userAgent: "YandexBot",
-        allow: ["/fa/", "/en/"],
-        disallow: ["/fa/dashboard/", "/en/dashboard/", "/fa/admin/", "/en/admin/", "/api/"],
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
       },
       /* ── Aggressive / privacy-invasive bots — block all ───────────────── */
       {

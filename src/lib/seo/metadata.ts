@@ -53,7 +53,11 @@ export function buildMetadata(opts: BuildMetadataOptions): Metadata {
   }
   alternateLanguages["x-default"] = `${BASE_URL}/${DEFAULT_LOCALE}${path}`;
 
-  const altLocale = locale === "fa" ? "en_US" : "fa_IR";
+  // OG locale for this page + the OG locales of all OTHER active locales.
+  const ogLocale        = OG_LOCALE[locale as SeoLocale] ?? OG_LOCALE[DEFAULT_LOCALE];
+  const alternateLocales = LOCALES
+    .filter((loc) => loc !== locale)
+    .map((loc) => OG_LOCALE[loc]);
 
   const openGraphExtra =
     ogType === "article" && (publishedTime || modifiedTime)
@@ -81,8 +85,8 @@ export function buildMetadata(opts: BuildMetadataOptions): Metadata {
       description,
       url: canonicalUrl,
       siteName: SITE_NAME,
-      locale: OG_LOCALE[locale as SeoLocale] ?? "en_US",
-      alternateLocale: [altLocale],
+      locale: ogLocale,
+      alternateLocale: alternateLocales,
       images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
       ...openGraphExtra,
     },

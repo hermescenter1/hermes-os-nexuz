@@ -2,7 +2,10 @@
 // Rounded corners and subtle border are applied via CSS on the outer <span>,
 // which avoids SVG clipPath ID collisions when the same flag renders twice.
 
+import type { SupportedLocale } from "@/i18n/locales";
+
 type FlagProps = { size?: number; className?: string };
+export type FlagComponent = (props: FlagProps) => React.JSX.Element;
 
 export function IranFlag({ size = 20, className }: FlagProps) {
   const h = Math.round(size * 0.7);
@@ -46,3 +49,30 @@ export function UKFlag({ size = 20, className }: FlagProps) {
     </span>
   );
 }
+
+export function GermanFlag({ size = 20, className }: FlagProps) {
+  const h = Math.round(size * 0.7);
+  return (
+    <span
+      className={`relative inline-flex shrink-0 overflow-hidden rounded-sm ring-1 ring-inset ring-white/10${className ? ` ${className}` : ""}`}
+      style={{ width: size, height: h }}
+      aria-hidden="true"
+    >
+      <svg viewBox="0 0 20 14" width={size} height={h} fill="none">
+        <rect y="0"    width="20" height="4.67" fill="#000000" />
+        <rect y="4.67" width="20" height="4.67" fill="#dd0000" />
+        <rect y="9.34" width="20" height="4.67" fill="#ffce00" />
+      </svg>
+    </span>
+  );
+}
+
+/**
+ * Flag component per locale. Keyed by SupportedLocale so German's flag is
+ * modeled before it is public — the switchers only render ACTIVE locales.
+ */
+export const LOCALE_FLAG: Record<SupportedLocale, FlagComponent> = {
+  fa: IranFlag,
+  en: UKFlag,
+  de: GermanFlag,
+};

@@ -1,6 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
+import type { ActiveLocale } from "./i18n/locales";
 import {
   isProtectedPath,
   isAuthorizedForPath,
@@ -57,7 +58,7 @@ export function middleware(request: NextRequest): NextResponse {
     const role = getRoleFromRequestSync(request);
     if (!role || !isAuthorizedForPath(role, pathname)) {
       const segments = pathname.split("/").filter(Boolean);
-      const locale   = routing.locales.includes(segments[0] as "fa" | "en")
+      const locale   = routing.locales.includes(segments[0] as ActiveLocale)
         ? segments[0]
         : routing.defaultLocale;
       const loginUrl = new URL(`/${locale}/auth/login`, request.url);

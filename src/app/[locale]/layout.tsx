@@ -5,6 +5,7 @@ import { getMessages, setRequestLocale, getTranslations } from "next-intl/server
 import { headers }              from "next/headers";
 import localFont                from "next/font/local";
 import { routing, localeDirection, type Locale } from "@/i18n/routing";
+import { ACTIVE_LOCALES, DEFAULT_LOCALE as DEFAULT_ACTIVE_LOCALE, LOCALE_LANG_TAG } from "@/i18n/locales";
 import { CookieConsentBanner }  from "@/components/compliance/CookieConsentBanner";
 import { AnalyticsProvider }    from "@/components/analytics/AnalyticsProvider";
 import { JsonLd }               from "@/components/seo/JsonLd";
@@ -40,13 +41,17 @@ export async function generateMetadata({
   const description = t("description");
   const keywords    = t.raw("keywords") as string | undefined;
 
-  const altLocale     = locale === "fa" ? "en_US" : "fa_IR";
   const canonicalUrl  = `${BASE_URL}/${locale}`;
-  const languages: Record<string, string> = {
-    fa:          `${BASE_URL}/fa`,
-    en:          `${BASE_URL}/en`,
-    "x-default": `${BASE_URL}/fa`,
-  };
+  // hreflang alternates — one entry per ACTIVE locale plus x-default.
+  const languages: Record<string, string> = {};
+  for (const loc of ACTIVE_LOCALES) {
+    languages[loc] = `${BASE_URL}/${loc}`;
+  }
+  languages["x-default"] = `${BASE_URL}/${DEFAULT_ACTIVE_LOCALE}`;
+  // OG alternate locales — the OG codes of every OTHER active locale.
+  const alternateLocale = ACTIVE_LOCALES
+    .filter((loc) => loc !== locale)
+    .map((loc) => OG_LOCALE[loc as SeoLocale]);
 
   return {
     metadataBase: new URL(BASE_URL),
@@ -80,8 +85,8 @@ export async function generateMetadata({
       description,
       url:       canonicalUrl,
       siteName:  SITE_NAME,
-      locale:    OG_LOCALE[locale as SeoLocale] ?? "en_US",
-      alternateLocale: [altLocale],
+      locale:    OG_LOCALE[locale as SeoLocale] ?? OG_LOCALE[DEFAULT_ACTIVE_LOCALE],
+      alternateLocale,
       type:      "website",
       images: [
         {
@@ -142,7 +147,7 @@ export default async function LocaleLayout({
   const gaId = process.env.GA_MEASUREMENT_ID ?? process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
 
   return (
-    <html lang={locale} dir={dir} className={`${estedad.variable} ${vazir.variable}`}>
+    <html lang={LOCALE_LANG_TAG[locale as Locale]} dir={dir} className={`${estedad.variable} ${vazir.variable}`}>
       <head>
         {/* Structured data — global on every page */}
         <JsonLd data={[organizationSchema(), webSiteSchema()]} />
