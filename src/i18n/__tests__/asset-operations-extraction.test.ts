@@ -1,12 +1,19 @@
 /**
- * Phase 86C4B1-PRE — Asset Registry message-catalog extraction.
+ * Phase 86C4B1 — Asset Registry message catalog: extraction + German translation.
  *
  * The Asset Registry surface (src/components/assets/*) had its user-facing text
  * lifted out of inline `isFa ? … : …` ternaries / hardcoded English into the
- * `assetOperations` next-intl namespace. This is an ARCHITECTURAL extraction:
+ * `assetOperations` next-intl namespace:
  *   - bilingual strings  -> en = English, fa = Persian (verbatim)
- *   - English-only labels -> en = English, fa/de = temporary English copy
- * German is NOT translated in this phase (de temporarily copies English).
+ *   - English-only labels -> en = English, fa = temporary English copy
+ * Phase 86C4B1 then translated every German (`de`) value into professional
+ * native German for industrial asset management. German stays INACTIVE
+ * (ACTIVE_LOCALES = ["fa","en"]); only the de catalog values changed.
+ *
+ * A small set of `de` values legitimately stays identical to English —
+ * acronyms (PLC/HMI/VFD/IPC) and words that are already German (Motor, Sensor,
+ * Instrument, Name, Status, Details, Firmware, Tags, Dashboard). These are
+ * enumerated in GERMAN_IDENTICAL and any other de===en pair fails the audit.
  *
  * Retained locale logic (documented + allowlisted below): raw-enum display via
  * `.replace(/_/g," ")`, direct enum values, persisted asset data, and
@@ -66,6 +73,25 @@ const enAO = (en as Tree).assetOperations;
 const faAO = (fa as Tree).assetOperations;
 const deAO = (de as Tree).assetOperations;
 
+// German values that legitimately stay identical to English: acronyms and words
+// that are spelled the same in German. Every other de leaf must be translated.
+const GERMAN_IDENTICAL = new Set<string>([
+  "nav.items.dashboard", // Dashboard — established German enterprise loanword
+  ...["PLC", "HMI", "VFD", "MOTOR", "SENSOR", "INSTRUMENT", "INDUSTRIAL_PC"]
+    .flatMap((k) => [`enums.typeCompact.${k}`, `enums.typeFull.${k}`])
+    // INDUSTRIAL_PC compact label is "IPC"; full is "Industrie-PC" (translated).
+    .filter((p) => p !== "enums.typeFull.INDUSTRIAL_PC"),
+  "registry.colName",   // Name
+  "registry.colStatus", // Status
+  "registry.details",   // Details
+  "detail.firmware",    // Firmware
+  "detail.tags",        // Tags
+]);
+
+// Informal German second-person address is forbidden (enterprise formal "Sie").
+const INFORMAL_ADDRESS =
+  /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
+
 // English-only leaves temporarily copied to fa/de (nav eyebrow, enum labels,
 // unit words with no current Persian, page metadata title).
 const ENGLISH_ONLY = new Set<string>([
@@ -113,10 +139,53 @@ describe("assetOperations namespace — three-locale parity", () => {
     }
   });
 
-  it("de temporarily copies English verbatim (German not translated this phase)", () => {
-    const e = flatten(enAO), d = flatten(deAO);
-    const divergent = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k);
-    expect(divergent).toEqual([]);
+});
+
+describe("assetOperations — German translation (Phase 86C4B1)", () => {
+  const e = flatten(enAO), d = flatten(deAO);
+
+  it("every de leaf outside the allowlist is translated (de !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !GERMAN_IDENTICAL.has(k))
+      .filter(([k, v]) => d.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("every allowlisted identical value really is identical (justified only)", () => {
+    const wrong = [...GERMAN_IDENTICAL].filter((k) => d.get(k) !== e.get(k));
+    expect(wrong).toEqual([]);
+  });
+
+  it("uses no informal German address (enterprise formal Sie only)", () => {
+    const informal = [...d].filter(([, v]) => INFORMAL_ADDRESS.test(String(v))).map(([k]) => k);
+    expect(informal).toEqual([]);
+  });
+
+  it("carries genuine German (umlaut/ß present across the namespace)", () => {
+    expect([...d.values()].some((v) => /[äöüßÄÖÜ]/.test(String(v)))).toBe(true);
+  });
+
+  it("keeps protected acronyms verbatim in German", () => {
+    expect(d.get("enums.typeFull.PLC")).toBe("PLC");
+    expect(d.get("enums.typeFull.HMI")).toBe("HMI");
+    expect(d.get("enums.typeFull.SCADA_NODE")).toBe("SCADA-Knoten");
+    expect(d.get("enums.typeCompact.INDUSTRIAL_PC")).toBe("IPC");
+  });
+
+  it("uses expected professional asset terminology", () => {
+    expect(d.get("nav.items.registry")).toBe("Anlagenregister");
+    expect(d.get("meta.registry")).toBe("Anlagenregister");
+    expect(d.get("enums.status.UNDER_MAINTENANCE")).toBe("In Wartung");
+    expect(d.get("enums.criticality.CRITICAL")).toBe("Kritisch");
+    expect(d.get("detail.serialNumber")).toBe("Seriennummer");
+  });
+
+  it("has no empty German strings and matching ICU args", () => {
+    const bad = [...e]
+      .filter(([k, v]) => d.get(k) === "" || argNames(v) !== argNames(d.get(k)))
+      .map(([k]) => k);
+    expect(bad).toEqual([]);
   });
 });
 

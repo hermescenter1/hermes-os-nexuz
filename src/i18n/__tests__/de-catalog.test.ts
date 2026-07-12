@@ -194,12 +194,14 @@ describe("de.json — Phase 86C1 translation audit", () => {
     fa: faFlat.get(path),
   }));
   // Journal namespaces were translated in Phase 86C2, the admin namespaces in
-  // Phase 86C3, and industrialBrain in Phase 86C4A; they are no longer English
-  // carryover, so exclude them from the "still English" set.
+  // Phase 86C3, industrialBrain in Phase 86C4A, and assetOperations +
+  // maintenanceOperations in Phase 86C4B1; they are no longer English carryover,
+  // so exclude them from the "still English" set.
   const TRANSLATED_NS = new Set([
     "journal", "journalWriter", "journalEditorial",
     "adminOperations", "adminGovernance",
     "industrialBrain",
+    "assetOperations", "maintenanceOperations",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
@@ -226,8 +228,9 @@ describe("de.json — Phase 86C1 translation audit", () => {
   });
 
   it("all non-batch, non-translated namespaces temporarily carry English verbatim", () => {
-    // Journal (86C2) + admin (86C3) namespaces are now German; the remaining
-    // non-batch-1 namespaces still carry English verbatim in de.
+    // Journal (86C2), admin (86C3), industrialBrain (86C4A), and asset/CMMS
+    // (86C4B1) namespaces are now German; the remaining non-batch-1 namespaces
+    // still carry English verbatim in de.
     expect(carryover.length).toBe(stillEnglish.length);
     expect(stillEnglish.length).toBeGreaterThanOrEqual(1929);
   });

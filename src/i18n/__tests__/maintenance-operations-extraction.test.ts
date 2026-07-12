@@ -1,13 +1,19 @@
 /**
- * Phase 86C4B1-PRE Part 2 — CMMS / Maintenance message-catalog extraction.
+ * Phase 86C4B1 — CMMS / Maintenance message catalog: extraction + German.
  *
  * The CMMS surface (src/components/cmms/* + src/app/[locale]/cmms/* pages) had
  * its user-facing text lifted out of inline `isFa ? … : …` ternaries,
  * pathname-based locale detection, and hardcoded English into the
- * `maintenanceOperations` next-intl namespace. Architectural extraction only:
+ * `maintenanceOperations` next-intl namespace:
  *   - bilingual strings   -> en = English, fa = Persian (verbatim)
- *   - English-only UI     -> en = English, fa/de = temporary English copy
- * German is NOT translated in this phase.
+ *   - English-only UI     -> en = English, fa = temporary English copy
+ * Phase 86C4B1 then translated every German (`de`) value into professional
+ * native German for CMMS / preventive & corrective maintenance. German stays
+ * INACTIVE (ACTIVE_LOCALES = ["fa","en"]); only the de catalog values changed.
+ *
+ * A small set of `de` values legitimately stays identical to English — the CMMS
+ * acronym, "Dashboard", and words already German (Name, Status, Team, Min).
+ * They are enumerated in GERMAN_IDENTICAL; any other de===en pair fails audit.
  *
  * Retained locale logic (allowlisted below): raw enum/status display via
  * `.replace(/_/g," ")` and direct enum values, persisted maintenance data,
@@ -83,9 +89,30 @@ const enMO = (en as Tree).maintenanceOperations;
 const faMO = (fa as Tree).maintenanceOperations;
 const deMO = (de as Tree).maintenanceOperations;
 
-// English-only leaves temp-copied to fa/de: the "CMMS" nav eyebrow plus every
+// English-only leaves temp-copied to fa: the "CMMS" nav eyebrow plus every
 // `pages.*` leaf (all server-page headers/labels are currently English-only).
 const isEnglishOnly = (key: string) => key === "nav.eyebrow" || key.startsWith("pages.");
+
+// German values that legitimately stay identical to English: the CMMS acronym,
+// the "Dashboard" loanword, and words already spelled the same in German.
+const GERMAN_IDENTICAL = new Set<string>([
+  "nav.eyebrow",            // CMMS
+  "nav.items.dashboard",    // Dashboard
+  "dashboard.colStatus",    // Status
+  "tasks.colStatus",        // Status
+  "schedules.colName",      // Name
+  "schedules.colStatus",    // Status
+  "spares.colName",         // Name
+  "spares.colMin",          // Min
+  "settings.colName",       // Name
+  "settings.colTeam",       // Team
+  "settings.colStatus",     // Status
+  "pages.planDetail.status", // Status
+]);
+
+// Informal German second-person address is forbidden (enterprise formal "Sie").
+const INFORMAL_ADDRESS =
+  /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
 
 describe("maintenanceOperations namespace — three-locale parity", () => {
   it("exists in all three catalogs with exactly 233 leaves", () => {
@@ -123,10 +150,65 @@ describe("maintenanceOperations namespace — three-locale parity", () => {
     }
   });
 
-  it("de temporarily copies English verbatim (German not translated this phase)", () => {
-    const e = flatten(enMO), d = flatten(deMO);
-    const divergent = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k);
-    expect(divergent).toEqual([]);
+});
+
+describe("maintenanceOperations — German translation (Phase 86C4B1)", () => {
+  const e = flatten(enMO), d = flatten(deMO);
+
+  it("every de leaf outside the allowlist is translated (de !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !GERMAN_IDENTICAL.has(k))
+      .filter(([k, v]) => d.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("every allowlisted identical value really is identical (justified only)", () => {
+    const wrong = [...GERMAN_IDENTICAL].filter((k) => d.get(k) !== e.get(k));
+    expect(wrong).toEqual([]);
+  });
+
+  it("uses no informal German address (enterprise formal Sie only)", () => {
+    const informal = [...d].filter(([, v]) => INFORMAL_ADDRESS.test(String(v))).map(([k]) => k);
+    expect(informal).toEqual([]);
+  });
+
+  it("carries genuine German (umlaut/ß present across the namespace)", () => {
+    expect([...d.values()].some((v) => /[äöüßÄÖÜ]/.test(String(v)))).toBe(true);
+  });
+
+  it("preserves protected reliability acronyms untranslated where present", () => {
+    expect(d.get("nav.eyebrow")).toBe("CMMS");
+    // MTBF/MTTR remain as raw tokens in the reports subtitle.
+    expect(String(d.get("pages.reportsPage.subtitle"))).toMatch(/\bMTBF\b/);
+    expect(String(d.get("pages.reportsPage.subtitle"))).toMatch(/\bMTTR\b/);
+    // KPI acronym retained in the reliability heading.
+    expect(String(d.get("reports.reliabilityKpis"))).toMatch(/\bKPIs?\b/);
+  });
+
+  it("keeps maintenance safety wording explicit (monitor-only, no control)", () => {
+    expect(d.get("dashboard.monitorOnly")).toBe("Nur Überwachung — keine Steuerung");
+  });
+
+  it("uses consistent work-order and maintenance terminology", () => {
+    expect(d.get("tasks.defaultHeading")).toBe("Arbeitsaufträge");
+    expect(d.get("plans.workOrders")).toBe("Arbeitsaufträge");
+    expect(d.get("plans.heading")).toBe("Instandhaltungspläne");
+    expect(d.get("failures.resolved")).toBe("Behoben");
+    expect(d.get("reports.sumOverdue")).toBe("Überfällig");
+  });
+
+  it("translates the ICU plan strings while preserving {days}", () => {
+    expect(d.get("plans.frequencyEvery")).toBe("Alle {days} Tage");
+    expect(d.get("plans.overdueBy")).toBe("Überfällig seit {days} Tagen");
+    expect(d.get("plans.dueIn")).toBe("Fällig in {days} Tagen");
+  });
+
+  it("has no empty German strings and matching ICU args", () => {
+    const bad = [...e]
+      .filter(([k, v]) => d.get(k) === "" || argNames(v) !== argNames(d.get(k)))
+      .map(([k]) => k);
+    expect(bad).toEqual([]);
   });
 });
 
