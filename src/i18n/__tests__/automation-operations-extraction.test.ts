@@ -1,14 +1,18 @@
 /**
- * Phase 86C4B2A-PRE — Workflow Automation message-catalog extraction.
+ * Phase 86C4B2A-PRE / -FA — Workflow Automation message catalog: extraction + Persian.
  *
  * The Automation module (src/components/automation/* + src/app/[locale]/automation/*)
  * had its user-facing text lifted out of hardcoded English and
  * `pathname.startsWith("/fa")` locale detection into the `automationOperations`
- * next-intl namespace. ARCHITECTURAL extraction only — this surface is currently
- * English-only, so:
+ * next-intl namespace:
  *   - en = canonical English
- *   - fa = temporary English copy (no Persian existed here to preserve)
+ *   - fa = professional Persian (Phase 86C4B2A-FA translated all 188 leaves)
  *   - de = temporary English copy (German not translated in this phase)
+ *
+ * The Persian locale is ACTIVE, so fa is real user-visible UI. Exactly one fa
+ * value legitimately stays identical to English — the URL example placeholder
+ * `webhooks.urlPlaceholder` — enumerated in FA_ENGLISH_ALLOW; any other fa===en
+ * pair fails the audit.
  *
  * Retained locale logic (allowlisted below):
  *   - usePathname in AutomationNav — active-link detection only
@@ -127,15 +131,13 @@ describe("automationOperations namespace — three-locale parity", () => {
     }
   });
 
-  it("English-only surface: fa and de copy English verbatim (no Persian, no German yet)", () => {
-    const e = flatten(enAO), f = flatten(faAO), d = flatten(deAO);
-    const faDiverge = [...e].filter(([k, v]) => f.get(k) !== v).map(([k]) => k);
+  it("de still copies English verbatim (German deferred, not yet translated)", () => {
+    const e = flatten(enAO), d = flatten(deAO);
     const deDiverge = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k);
-    expect(faDiverge).toEqual([]);
     expect(deDiverge).toEqual([]);
   });
 
-  it("preserves the exact count-plural and placeholder strings", () => {
+  it("preserves the exact English count-plural and placeholder strings", () => {
     const e = flatten(enAO);
     expect(e.get("workflowList.heading")).toBe("{count, plural, one {# Workflow} other {# Workflows}}");
     expect(e.get("executionList.heading")).toBe("{count, plural, one {# Execution} other {# Executions}}");
@@ -144,6 +146,75 @@ describe("automationOperations namespace — three-locale parity", () => {
     expect(e.get("templateDetail.usageCount")).toBe("{count} workflows");
     expect(e.get("executionDetail.steps")).toBe("Execution Steps ({count})");
     expect(e.get("workflowDetail.tabConditions")).toBe("Conditions ({count})");
+  });
+});
+
+// Persian values that legitimately stay identical to English: only the URL
+// example placeholder. Every other fa leaf must be genuine Persian.
+const FA_ENGLISH_ALLOW = new Set<string>(["webhooks.urlPlaceholder"]);
+
+describe("automationOperations — Persian translation quality (Phase 86C4B2A-FA)", () => {
+  const e = flatten(enAO), f = flatten(faAO);
+
+  it("every fa leaf outside the allowlist is translated (fa !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !FA_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => f.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("the only English-identical fa value is the allowlisted URL placeholder", () => {
+    const identical = [...e].filter(([k, v]) => f.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...FA_ENGLISH_ALLOW].sort());
+  });
+
+  it("every translated fa leaf contains real Persian script", () => {
+    const bad = [...f]
+      .filter(([k]) => !FA_ENGLISH_ALLOW.has(k))
+      .filter(([, v]) => !/[؀-ۿ]/.test(String(v)))
+      .map(([k]) => k);
+    expect(bad).toEqual([]);
+  });
+
+  it("uses no Arabic ي (U+064A) or ك (U+0643) — Persian ی/ک only", () => {
+    const arabicYeh = [...f].filter(([, v]) => /ي/.test(String(v))).map(([k]) => k);
+    const arabicKaf = [...f].filter(([, v]) => /ك/.test(String(v))).map(([k]) => k);
+    expect(arabicYeh).toEqual([]);
+    expect(arabicKaf).toEqual([]);
+  });
+
+  it("ICU count-plural branches are translated while placeholders/structure survive", () => {
+    expect(f.get("workflowList.heading")).toBe("{count, plural, one {# گردش‌کار} other {# گردش‌کار}}");
+    expect(f.get("executionList.heading")).toBe("{count, plural, one {# اجرا} other {# اجرا}}");
+    expect(f.get("webhooks.heading")).toBe("{count, plural, one {# وب‌هوک} other {# وب‌هوک}}");
+    expect(f.get("dashboard.uses")).toBe("{count} بار استفاده");
+    expect(f.get("executionDetail.steps")).toBe("مراحل اجرا ({count})");
+  });
+
+  it("keeps required core terminology consistent across the namespace", () => {
+    const all = [...f.values()].map(String).join(" ");
+    for (const term of ["گردش‌کار", "اجرا", "الگو", "وب‌هوک", "محرک", "اقدام", "شرط"]) {
+      expect(all, `missing term ${term}`).toContain(term);
+    }
+  });
+
+  it("keeps protected technical tokens intact in Persian", () => {
+    expect(f.get("builder.triggerHint")).toContain("Hermes OS");
+    expect(f.get("settings.aboutEngine")).toContain("Hermes OS");
+    expect(f.get("settings.aboutStats")).toContain("Prisma");
+    expect(f.get("settings.aboutStats")).toContain("API");
+    expect(f.get("settings.rbacProtection")).toContain("RBAC");
+    // CRM/ATS acronym prefixes stay on the trigger labels.
+    expect(f.get("triggerLabels.CRM_LEAD_CREATED")).toMatch(/^CRM:/);
+    expect(f.get("triggerLabels.ATS_APPLICATION_SUBMITTED")).toMatch(/^ATS:/);
+    // Latin digits preserved (numeric-rendering behavior unchanged).
+    expect(f.get("settings.aboutEngine")).toContain("67");
+    expect(f.get("settings.aboutStats")).toMatch(/12 .*13 .*6 /);
+  });
+
+  it("keeps the URL example placeholder byte-exact (raw technical value)", () => {
+    expect(f.get("webhooks.urlPlaceholder")).toBe("https://hooks.example.com/...");
   });
 });
 
