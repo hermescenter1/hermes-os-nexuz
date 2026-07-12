@@ -1,4 +1,4 @@
-# Hermes OS â€” Claude Code Project Instructions
+# Hermes OS — Claude Code Project Instructions
 
 ## Project Identity
 
@@ -288,9 +288,9 @@ For every visible UI change:
 
 - Avoid hard-coded visible strings when translation infrastructure exists.
 
-- Use Persian `ÛŒ` rather than Arabic `ÙŠ`.
+- Use Persian `ی` rather than Arabic `ي`.
 
-- Use Persian `Ú©` rather than Arabic `Ùƒ`.
+- Use Persian `ک` rather than Arabic `ك`.
 
 - Preserve correct ZWNJ usage.
 
