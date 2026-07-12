@@ -2,23 +2,25 @@
 
 import Link             from "next/link";
 import { usePathname }  from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 const NAV_ITEMS = [
-  { href: "/erp",              label: "Dashboard"    },
-  { href: "/erp/projects",     label: "Projects"     },
-  { href: "/erp/tasks",        label: "Tasks"        },
-  { href: "/erp/teams",        label: "Teams"        },
-  { href: "/erp/resources",    label: "Resources"    },
-  { href: "/erp/inventory",    label: "Inventory"    },
-  { href: "/erp/work-orders",  label: "Work Orders"  },
-  { href: "/erp/approvals",    label: "Approvals"    },
-  { href: "/erp/kpis",         label: "KPIs"         },
-  { href: "/erp/settings",     label: "Settings"     },
+  { href: "/erp",              key: "dashboard"    },
+  { href: "/erp/projects",     key: "projects"     },
+  { href: "/erp/tasks",        key: "tasks"        },
+  { href: "/erp/teams",        key: "teams"        },
+  { href: "/erp/resources",    key: "resources"    },
+  { href: "/erp/inventory",    key: "inventory"    },
+  { href: "/erp/work-orders",  key: "workOrders"   },
+  { href: "/erp/approvals",    key: "approvals"    },
+  { href: "/erp/kpis",         key: "kpis"         },
+  { href: "/erp/settings",     key: "settings"     },
 ];
 
 export function ErpNav() {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const pathname = usePathname();       // active-link detection only
+  const locale   = useLocale();
+  const t        = useTranslations("enterpriseOperations");
 
   return (
     <nav className="flex flex-col gap-1">
@@ -35,7 +37,7 @@ export function ErpNav() {
                 : "text-muted-foreground hover:bg-accent hover:text-foreground"
             }`}
           >
-            {item.label}
+            {t(`nav.items.${item.key}`)}
           </Link>
         );
       })}

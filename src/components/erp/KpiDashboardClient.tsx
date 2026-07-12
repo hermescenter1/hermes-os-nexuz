@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ErpKpiReport } from "@/lib/erp/types";
 
 const PCT_BAR = (v: number) => Math.min(100, Math.max(0, v));
@@ -15,22 +16,23 @@ function Stat({ label, value, subtext }: { label: string; value: string | number
 }
 
 export function KpiDashboardClient({ report }: { report: ErpKpiReport }) {
+  const t = useTranslations("enterpriseOperations");
   return (
     <div className="space-y-6">
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat label="Project Completion"    value={`${report.projectCompletionRate}%`} />
-        <Stat label="Task Throughput"       value={report.taskThroughput}              subtext="tasks this week" />
-        <Stat label="WO Completion Rate"    value={`${report.workOrderCompletionRate}%`} />
-        <Stat label="Inventory Risk"        value={report.inventoryRisk}               subtext="low-stock items" />
-        <Stat label="Resource Utilization"  value={`${report.resourceUtilization}%`}  />
-        <Stat label="Budget Variance"       value={`${report.budgetVariance > 0 ? "+" : ""}${report.budgetVariance}%`} />
-        <Stat label="Schedule Variance"     value={`${report.scheduleVariance > 0 ? "+" : ""}${report.scheduleVariance}d`} subtext="days ahead/behind" />
-        <Stat label="Approval Cycle Time"   value={`${report.approvalCycleTime}h`}     subtext="avg time to decision" />
+        <Stat label={t("kpis.projectCompletion")}   value={`${report.projectCompletionRate}%`} />
+        <Stat label={t("kpis.taskThroughput")}      value={report.taskThroughput}              subtext={t("kpis.tasksThisWeek")} />
+        <Stat label={t("kpis.woCompletionRate")}    value={`${report.workOrderCompletionRate}%`} />
+        <Stat label={t("kpis.inventoryRisk")}       value={report.inventoryRisk}               subtext={t("kpis.lowStockItems")} />
+        <Stat label={t("kpis.resourceUtilization")} value={`${report.resourceUtilization}%`}  />
+        <Stat label={t("kpis.budgetVariance")}      value={`${report.budgetVariance > 0 ? "+" : ""}${report.budgetVariance}%`} />
+        <Stat label={t("kpis.scheduleVariance")}    value={`${report.scheduleVariance > 0 ? "+" : ""}${report.scheduleVariance}d`} subtext={t("kpis.daysAheadBehind")} />
+        <Stat label={t("kpis.approvalCycleTime")}   value={`${report.approvalCycleTime}h`}     subtext={t("kpis.avgTimeToDecision")} />
       </div>
 
       {report.kpis.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold mb-4">Operational KPIs</h3>
+          <h3 className="font-semibold mb-4">{t("kpis.heading")}</h3>
           <div className="space-y-4">
             {report.kpis.map(kpi => {
               const pct = kpi.target ? PCT_BAR(Math.round((kpi.value / kpi.target) * 100)) : null;

@@ -5093,5 +5093,67 @@
       "aboutStats": "12 Prisma models · 13 API routes · 6 built-in templates",
       "aboutWhitelist": "All workflow actions are whitelisted. No AI-generated uncontrolled actions."
     }
+  },
+  "enterpriseOperations": {
+    "nav": {
+      "eyebrow": "ERP Operations",
+      "items": {
+        "dashboard": "Dashboard",
+        "projects": "Projects",
+        "tasks": "Tasks",
+        "teams": "Teams",
+        "resources": "Resources",
+        "inventory": "Inventory",
+        "workOrders": "Work Orders",
+        "approvals": "Approvals",
+        "kpis": "KPIs",
+        "settings": "Settings"
+      }
+    },
+    "dashboard": {
+      "pageTitle": "Operations Dashboard",
+      "kpiActiveProjects": "Active Projects",
+      "kpiOverdueTasks": "Overdue Tasks",
+      "kpiOpenWorkOrders": "Open Work Orders",
+      "kpiInventoryWarnings": "Inventory Warnings",
+      "kpiPendingApprovals": "Pending Approvals",
+      "kpiResourceUtilization": "Resource Utilization",
+      "budgetOverview": "Budget Overview",
+      "totalBudget": "Total Budget",
+      "actualCost": "Actual Cost",
+      "variance": "Variance",
+      "projectsByStatus": "Projects by Status",
+      "workOrdersByStatus": "Work Orders by Status",
+      "taskPipeline": "Task Pipeline",
+      "recentActivity": "Recent Activity",
+      "noRecentActivity": "No recent activity.",
+      "operationalKpis": "Operational KPIs",
+      "viewAll": "View all",
+      "fullReport": "Full report",
+      "target": "Target:"
+    },
+    "kpis": {
+      "pageTitle": "Operational KPIs",
+      "heading": "Operational KPIs",
+      "projectCompletion": "Project Completion",
+      "taskThroughput": "Task Throughput",
+      "woCompletionRate": "WO Completion Rate",
+      "inventoryRisk": "Inventory Risk",
+      "resourceUtilization": "Resource Utilization",
+      "budgetVariance": "Budget Variance",
+      "scheduleVariance": "Schedule Variance",
+      "approvalCycleTime": "Approval Cycle Time",
+      "tasksThisWeek": "tasks this week",
+      "lowStockItems": "low-stock items",
+      "daysAheadBehind": "days ahead/behind",
+      "avgTimeToDecision": "avg time to decision"
+    },
+    "settings": {
+      "pageTitle": "ERP Settings",
+      "moduleStatus": "Module Status",
+      "moduleStatusDesc": "All ERP modules are active and operating normally.",
+      "workflowIntegration": "Workflow Integration",
+      "workflowIntegrationDesc": "ERP events automatically fire workflow triggers (Phase 67 engine). Manage workflow rules at"
+    }
   }
 }

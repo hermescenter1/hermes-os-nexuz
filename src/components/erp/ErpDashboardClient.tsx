@@ -1,23 +1,23 @@
 "use client";
 
 import Link            from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { ErpOverview } from "@/lib/erp/types";
 
 const KPI_COLOR = (v: number, warn: number, crit: number) =>
   v <= crit ? "text-red-500" : v <= warn ? "text-yellow-500" : "text-green-400";
 
 export function ErpDashboardClient({ overview }: { overview: ErpOverview }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("enterpriseOperations");
 
   const kpis = [
-    { label: "Active Projects",      value: overview.activeProjects,     link: `/${locale}/erp/projects`,    color: "" },
-    { label: "Overdue Tasks",        value: overview.overdueTasks,       link: `/${locale}/erp/tasks`,       color: overview.overdueTasks > 0 ? "text-red-500" : "text-green-400" },
-    { label: "Open Work Orders",     value: overview.openWorkOrders,     link: `/${locale}/erp/work-orders`, color: "" },
-    { label: "Inventory Warnings",   value: overview.inventoryWarnings,  link: `/${locale}/erp/inventory`,   color: overview.inventoryWarnings > 0 ? "text-yellow-500" : "text-green-400" },
-    { label: "Pending Approvals",    value: overview.pendingApprovals,   link: `/${locale}/erp/approvals`,   color: overview.pendingApprovals > 0 ? "text-yellow-500" : "" },
-    { label: "Resource Utilization", value: `${overview.resourceUtilization}%`, link: `/${locale}/erp/resources`, color: KPI_COLOR(overview.resourceUtilization, 50, 30) },
+    { label: t("dashboard.kpiActiveProjects"),      value: overview.activeProjects,     link: `/${locale}/erp/projects`,    color: "" },
+    { label: t("dashboard.kpiOverdueTasks"),        value: overview.overdueTasks,       link: `/${locale}/erp/tasks`,       color: overview.overdueTasks > 0 ? "text-red-500" : "text-green-400" },
+    { label: t("dashboard.kpiOpenWorkOrders"),      value: overview.openWorkOrders,     link: `/${locale}/erp/work-orders`, color: "" },
+    { label: t("dashboard.kpiInventoryWarnings"),   value: overview.inventoryWarnings,  link: `/${locale}/erp/inventory`,   color: overview.inventoryWarnings > 0 ? "text-yellow-500" : "text-green-400" },
+    { label: t("dashboard.kpiPendingApprovals"),    value: overview.pendingApprovals,   link: `/${locale}/erp/approvals`,   color: overview.pendingApprovals > 0 ? "text-yellow-500" : "" },
+    { label: t("dashboard.kpiResourceUtilization"), value: `${overview.resourceUtilization}%`, link: `/${locale}/erp/resources`, color: KPI_COLOR(overview.resourceUtilization, 50, 30) },
   ];
 
   const budgetVariance = overview.totalBudget > 0
@@ -38,18 +38,18 @@ export function ErpDashboardClient({ overview }: { overview: ErpOverview }) {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Budget Summary */}
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold mb-4">Budget Overview</h3>
+          <h3 className="font-semibold mb-4">{t("dashboard.budgetOverview")}</h3>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Budget</span>
+              <span className="text-muted-foreground">{t("dashboard.totalBudget")}</span>
               <span className="font-medium">${(overview.totalBudget / 1000).toFixed(0)}K</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Actual Cost</span>
+              <span className="text-muted-foreground">{t("dashboard.actualCost")}</span>
               <span className="font-medium">${(overview.totalActualCost / 1000).toFixed(0)}K</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Variance</span>
+              <span className="text-muted-foreground">{t("dashboard.variance")}</span>
               <span className={`font-medium ${budgetVariance > 10 ? "text-red-500" : budgetVariance > 0 ? "text-yellow-500" : "text-green-400"}`}>
                 {budgetVariance > 0 ? "+" : ""}{budgetVariance}%
               </span>
@@ -66,8 +66,8 @@ export function ErpDashboardClient({ overview }: { overview: ErpOverview }) {
         {/* Project Status */}
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Projects by Status</h3>
-            <Link href={`/${locale}/erp/projects`} className="text-xs text-primary hover:underline">View all</Link>
+            <h3 className="font-semibold">{t("dashboard.projectsByStatus")}</h3>
+            <Link href={`/${locale}/erp/projects`} className="text-xs text-primary hover:underline">{t("dashboard.viewAll")}</Link>
           </div>
           <div className="space-y-2">
             {(Object.entries(overview.projectsByStatus) as [string, number][]).map(([status, count]) => (
@@ -82,8 +82,8 @@ export function ErpDashboardClient({ overview }: { overview: ErpOverview }) {
         {/* Work Orders */}
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Work Orders by Status</h3>
-            <Link href={`/${locale}/erp/work-orders`} className="text-xs text-primary hover:underline">View all</Link>
+            <h3 className="font-semibold">{t("dashboard.workOrdersByStatus")}</h3>
+            <Link href={`/${locale}/erp/work-orders`} className="text-xs text-primary hover:underline">{t("dashboard.viewAll")}</Link>
           </div>
           <div className="space-y-2">
             {(Object.entries(overview.workOrdersByStatus) as [string, number][]).map(([status, count]) => (
@@ -100,8 +100,8 @@ export function ErpDashboardClient({ overview }: { overview: ErpOverview }) {
         {/* Task Status */}
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Task Pipeline</h3>
-            <Link href={`/${locale}/erp/tasks`} className="text-xs text-primary hover:underline">View all</Link>
+            <h3 className="font-semibold">{t("dashboard.taskPipeline")}</h3>
+            <Link href={`/${locale}/erp/tasks`} className="text-xs text-primary hover:underline">{t("dashboard.viewAll")}</Link>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {(Object.entries(overview.tasksByStatus) as [string, number][]).map(([status, count]) => (
@@ -115,10 +115,10 @@ export function ErpDashboardClient({ overview }: { overview: ErpOverview }) {
 
         {/* Recent Activity */}
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold mb-4">Recent Activity</h3>
+          <h3 className="font-semibold mb-4">{t("dashboard.recentActivity")}</h3>
           <div className="space-y-2">
             {overview.recentActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No recent activity.</p>
+              <p className="text-sm text-muted-foreground">{t("dashboard.noRecentActivity")}</p>
             ) : (
               overview.recentActivity.map((event, i) => (
                 <div key={i} className="flex items-start gap-3 text-sm py-1 border-b last:border-0">
@@ -138,8 +138,8 @@ export function ErpDashboardClient({ overview }: { overview: ErpOverview }) {
       {overview.kpiSummary.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Operational KPIs</h3>
-            <Link href={`/${locale}/erp/kpis`} className="text-xs text-primary hover:underline">Full report</Link>
+            <h3 className="font-semibold">{t("dashboard.operationalKpis")}</h3>
+            <Link href={`/${locale}/erp/kpis`} className="text-xs text-primary hover:underline">{t("dashboard.fullReport")}</Link>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {overview.kpiSummary.slice(0, 4).map(kpi => {
@@ -153,7 +153,7 @@ export function ErpDashboardClient({ overview }: { overview: ErpOverview }) {
                       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                         <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(100, pct ?? 0)}%` }} />
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">Target: {kpi.target}{kpi.unit}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{t("dashboard.target")} {kpi.target}{kpi.unit}</div>
                     </div>
                   )}
                 </div>
