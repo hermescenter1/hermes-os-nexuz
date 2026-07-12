@@ -1,5 +1,6 @@
 /**
- * Phase 86C4B2B1B-PRE — ERP Projects & Tasks message-catalog extraction.
+ * Phase 86C4B2B1B-PRE / -FA — ERP Projects & Tasks: extraction + Persian
+ * translation.
  *
  * Part B of four ERP extraction phases. The ERP Projects + Tasks surface
  *   Projects: src/app/[locale]/erp/projects/{page,new/page,[id]/page,
@@ -10,11 +11,15 @@
  * had its user-facing text lifted out of hardcoded English and
  * `pathname.startsWith("/fa")` locale detection into two NEW sub-objects of the
  * existing `enterpriseOperations` next-intl namespace: `projects` (21 leaves)
- * and `tasks` (14 leaves) — 35 new leaves, bringing the namespace to 85.
- *
- * EXTRACTION ONLY: en = canonical English; fa and de TEMPORARILY copy the exact
- * English text (Persian/German translation happens in later -FA / -DE phases).
+ * and `tasks` (14 leaves) — 35 new leaves, bringing the namespace to 85:
+ *   - en = canonical English
+ *   - fa = professional Persian (Phase 86C4B2B1B-FA translated all 35 leaves)
+ *   - de = temporary English copy (German translation happens in -DE)
  * German stays INACTIVE (ACTIVE_LOCALES = ["fa","en"]).
+ *
+ * The Persian locale is ACTIVE, so fa is real user-visible UI. Zero fa values
+ * remain identical to English (FA_ENGLISH_ALLOW is empty); any fa===en pair
+ * fails the audit.
  *
  * Retained locale logic (allowlisted below):
  *   - useLocale in the four client components — locale-prefixed `href`
@@ -193,23 +198,94 @@ describe("enterpriseOperations projects/tasks — catalog structure & parity", (
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("enterpriseOperations projects/tasks — temporary fa/de === English", () => {
+describe("enterpriseOperations projects/tasks — temporary de === English", () => {
   for (const sub of ["projects", "tasks"] as const) {
-    it(`every newly extracted fa ${sub} value equals English`, () => {
-      const e = flatten(enEO[sub]), f = flatten(faEO[sub]);
-      const diff = [...e].filter(([k, v]) => f.get(k) !== v).map(([k]) => `${sub}.${k}`);
-      expect(diff).toEqual([]);
-    });
     it(`every newly extracted de ${sub} value equals English`, () => {
       const e = flatten(enEO[sub]), d = flatten(deEO[sub]);
       const diff = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => `${sub}.${k}`);
       expect(diff).toEqual([]);
     });
-    it(`no Persian script leaks into temporary fa ${sub} values`, () => {
-      const bad = [...flatten(faEO[sub])].filter(([, v]) => PERSIAN.test(String(v))).map(([k]) => k);
-      expect(bad).toEqual([]);
-    });
   }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// No projects/tasks fa value legitimately stays identical to English — every
+// leaf (including both ICU plural branches) carries real Persian. The
+// allowlist is empty.
+const FA_ENGLISH_ALLOW = new Set<string>([]);
+
+const withPrefix = (m: Map<string, unknown>, p: string) =>
+  new Map([...m].map(([k, v]) => [`${p}.${k}`, v] as [string, unknown]));
+
+describe("enterpriseOperations projects/tasks — Persian translation quality (Phase 86C4B2B1B-FA)", () => {
+  const e = new Map([
+    ...withPrefix(flatten(enEO.projects), "projects"),
+    ...withPrefix(flatten(enEO.tasks), "tasks"),
+  ]);
+  const f = new Map([
+    ...withPrefix(flatten(faEO.projects), "projects"),
+    ...withPrefix(flatten(faEO.tasks), "tasks"),
+  ]);
+
+  it("every fa leaf outside the allowlist is translated (fa !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !FA_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => f.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("English-identical fa values are exactly the (empty) allowlist", () => {
+    const identical = [...e].filter(([k, v]) => f.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...FA_ENGLISH_ALLOW].sort());
+  });
+
+  it("every fa leaf contains real Persian script", () => {
+    const bad = [...f].filter(([, v]) => !PERSIAN.test(String(v))).map(([k]) => k);
+    expect(bad).toEqual([]);
+  });
+
+  it("uses no Arabic ي (U+064A) or ك (U+0643) — Persian ی/ک only", () => {
+    expect([...f].filter(([, v]) => /ي/.test(String(v))).map(([k]) => k)).toEqual([]);
+    expect([...f].filter(([, v]) => /ك/.test(String(v))).map(([k]) => k)).toEqual([]);
+  });
+
+  it("aligns terminology with the committed ERP Core Persian glossary", () => {
+    const faCore = flatten(faEO);
+    expect(f.get("projects.pageTitle")).toBe(faCore.get("nav.items.projects")); // پروژه‌ها
+    expect(f.get("projects.tasks")).toBe(faCore.get("nav.items.tasks"));        // وظایف
+    expect(f.get("projects.actualCost")).toBe(faCore.get("dashboard.actualCost")); // هزینه واقعی
+    expect(f.get("projects.pageTitle")).toBe("پروژه‌ها");
+    expect(f.get("projects.milestones")).toBe("نقاط عطف");
+    expect(f.get("projects.milestonesPageTitle")).toBe("نقاط عطف");
+    expect(f.get("tasks.pageTitle")).toBe("تابلوی وظایف");
+  });
+
+  it("task board column labels are the intended kanban terms", () => {
+    expect(f.get("tasks.columns.TODO")).toBe("برای انجام");
+    expect(f.get("tasks.columns.IN_PROGRESS")).toBe("در حال انجام");
+    expect(f.get("tasks.columns.BLOCKED")).toBe("مسدود");
+    expect(f.get("tasks.columns.REVIEW")).toBe("بازبینی");
+    expect(f.get("tasks.columns.DONE")).toBe("انجام‌شده");
+    // milestone completion badge uses the same term as the DONE column
+    expect(f.get("projects.milestoneDone")).toBe("انجام‌شده");
+  });
+
+  it("keeps ICU structure and Latin digits (no Persian digits)", () => {
+    expect(f.get("projects.count")).toBe("{count, plural, one {# پروژه} other {# پروژه}}");
+    expect(String(f.get("projects.due"))).toContain("{date}");
+    expect(String(f.get("projects.tasksCount"))).toContain("{count}");
+    expect(String(f.get("projects.viewAllTasks"))).toContain("{count}");
+    const persianDigits = [...f].filter(([, v]) => /[۰-۹]/.test(String(v))).map(([k]) => k);
+    expect(persianDigits).toEqual([]);
+  });
+
+  it("keeps protected Latin product tokens intact", () => {
+    expect(String(f.get("projects.newDescIntro"))).toContain("API");
+    expect(String(f.get("projects.newDescIntro"))).toContain("CRM");
+    expect(String(f.get("projects.newDescApi"))).toContain("ERP");
+    expect(String(f.get("projects.newDescApi"))).toContain("API");
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
