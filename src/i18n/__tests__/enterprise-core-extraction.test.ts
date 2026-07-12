@@ -1,15 +1,20 @@
 /**
- * Phase 86C4B2B1A-PRE — ERP Core (nav, dashboard, KPIs, settings) extraction.
+ * Phase 86C4B2B1A-PRE / -FA — ERP Core (nav, dashboard, KPIs, settings):
+ * extraction + Persian translation.
  *
  * Part A of four ERP extraction phases. The ERP Core surface
  * (src/components/erp/{ErpNav,ErpDashboardClient,KpiDashboardClient} +
  * src/app/[locale]/erp/{layout,page,kpis/page,settings/page}) had its
  * user-facing text lifted out of hardcoded English and
  * `pathname.startsWith("/fa")` locale detection into the `enterpriseOperations`
- * next-intl namespace. This is an ENGLISH-ONLY surface, so:
+ * next-intl namespace:
  *   - en = canonical English
- *   - fa = temporary English copy (no Persian existed here to preserve)
+ *   - fa = professional Persian (Phase 86C4B2B1A-FA translated all 50 leaves)
  *   - de = temporary English copy (German not translated in this phase)
+ *
+ * The Persian locale is ACTIVE, so fa is real user-visible UI. Zero fa values
+ * remain identical to English (FA_ENGLISH_ALLOW is empty); any fa===en pair
+ * fails the audit.
  *
  * This phase adds only the `nav`, `dashboard`, `kpis`, `settings` sub-objects.
  * ErpNav carries the full 10-item ERP navigation label set (later phases reuse
@@ -150,15 +155,9 @@ describe("enterpriseOperations (ERP Core) — three-locale parity", () => {
     }
   });
 
-  it("English-only surface: fa and de copy English verbatim (no Persian, no German yet)", () => {
-    const e = flatten(enEO), f = flatten(faEO), d = flatten(deEO);
-    expect([...e].filter(([k, v]) => f.get(k) !== v).map(([k]) => k)).toEqual([]);
+  it("de still copies English verbatim (German deferred, not yet translated)", () => {
+    const e = flatten(enEO), d = flatten(deEO);
     expect([...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k)).toEqual([]);
-  });
-
-  it("temporary fa ERP namespace contains no Persian script", () => {
-    const persian = [...flatten(faEO)].filter(([, v]) => /[؀-ۿ]/.test(String(v))).map(([k]) => k);
-    expect(persian).toEqual([]);
   });
 
   it("carries the exact navigation label set", () => {
@@ -168,6 +167,69 @@ describe("enterpriseOperations (ERP Core) — three-locale parity", () => {
     expect(nav.get("items.workOrders")).toBe("Work Orders");
     expect(nav.get("items.kpis")).toBe("KPIs");
     expect(nav.get("items.settings")).toBe("Settings");
+  });
+});
+
+// No enterpriseOperations fa value legitimately stays identical to English —
+// even "KPIs" is translated to شاخص‌های کلیدی عملکرد. The allowlist is empty.
+const FA_ENGLISH_ALLOW = new Set<string>([]);
+
+describe("enterpriseOperations — Persian translation quality (Phase 86C4B2B1A-FA)", () => {
+  const e = flatten(enEO), f = flatten(faEO);
+
+  it("every fa leaf outside the allowlist is translated (fa !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !FA_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => f.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("English-identical fa values are exactly the (empty) allowlist", () => {
+    const identical = [...e].filter(([k, v]) => f.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...FA_ENGLISH_ALLOW].sort());
+  });
+
+  it("every fa leaf contains real Persian script", () => {
+    const bad = [...f].filter(([, v]) => !/[؀-ۿ]/.test(String(v))).map(([k]) => k);
+    expect(bad).toEqual([]);
+  });
+
+  it("uses no Arabic ي (U+064A) or ك (U+0643) — Persian ی/ک only", () => {
+    expect([...f].filter(([, v]) => /ي/.test(String(v))).map(([k]) => k)).toEqual([]);
+    expect([...f].filter(([, v]) => /ك/.test(String(v))).map(([k]) => k)).toEqual([]);
+  });
+
+  it("uses the expected core ERP terminology consistently", () => {
+    expect(f.get("nav.eyebrow")).toBe("عملیات ERP");
+    expect(f.get("dashboard.pageTitle")).toBe("داشبورد عملیات");
+    expect(f.get("nav.items.projects")).toBe("پروژه‌ها");
+    expect(f.get("nav.items.tasks")).toBe("وظایف");
+    expect(f.get("nav.items.resources")).toBe("منابع");
+    expect(f.get("nav.items.inventory")).toBe("موجودی");
+    expect(f.get("nav.items.workOrders")).toBe("سفارش‌های کاری");
+    expect(f.get("nav.items.approvals")).toBe("تأییدها");
+    expect(f.get("nav.items.kpis")).toBe("شاخص‌های کلیدی عملکرد");
+    expect(f.get("dashboard.totalBudget")).toBe("کل بودجه");
+    expect(f.get("dashboard.actualCost")).toBe("هزینه واقعی");
+    expect(f.get("dashboard.variance")).toBe("انحراف");
+  });
+
+  it("KPI / budget / variance meanings are the intended ones", () => {
+    expect(f.get("kpis.taskThroughput")).toBe("نرخ انجام وظایف");        // completed-task rate, not network
+    expect(f.get("dashboard.kpiResourceUtilization")).toBe("بهره‌برداری از منابع"); // utilization, not ownership
+    expect(f.get("kpis.budgetVariance")).toBe("انحراف بودجه");           // deviation from budget
+    expect(f.get("kpis.scheduleVariance")).toBe("انحراف برنامه زمان‌بندی");
+    expect(f.get("kpis.approvalCycleTime")).toBe("زمان چرخه تأیید");     // elapsed approval duration
+  });
+
+  it("keeps protected ERP/KPI tokens and Latin digits intact", () => {
+    expect(f.get("nav.eyebrow")).toContain("ERP");
+    expect(f.get("settings.pageTitle")).toContain("ERP");
+    expect(f.get("settings.moduleStatusDesc")).toContain("ERP");
+    // Phase 67 engine reference keeps Latin "67" (no Persian digits hardcoded).
+    expect(f.get("settings.workflowIntegrationDesc")).toContain("67");
+    expect(f.get("settings.workflowIntegrationDesc")).not.toContain("۶۷");
   });
 });
 
@@ -294,9 +356,11 @@ describe("Phase 86C4B2B1A-PRE combined — prior work and German state intact", 
     expect(flatten((de as Tree).adminGovernance).get("compliance.title")).toBe("Compliance-Dashboard");
   });
 
-  it("enterpriseOperations is English carryover in fa and de (translation deferred)", () => {
+  it("enterpriseOperations fa is fully Persian; de stays English carryover (deferred)", () => {
     const e = flatten(enEO);
-    expect([...e].every(([k, v]) => flatten(faEO).get(k) === v)).toBe(true);
+    // fa fully translated — no leaf equals English.
+    expect([...e].filter(([k, v]) => flatten(faEO).get(k) === v).map(([k]) => k)).toEqual([]);
+    // de still English carryover.
     expect([...e].every(([k, v]) => flatten(deEO).get(k) === v)).toBe(true);
   });
 });
