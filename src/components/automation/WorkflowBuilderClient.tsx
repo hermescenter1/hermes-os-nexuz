@@ -1,41 +1,43 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter, usePathname }  from "next/navigation";
+import { useRouter }  from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowDefinitionFull } from "@/lib/automation/types";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
-const TRIGGER_OPTIONS = [
-  { value: "MANUAL",                          label: "Manual"                    },
-  { value: "SCHEDULED",                       label: "Scheduled"                 },
-  { value: "CRM_LEAD_CREATED",                label: "CRM: Lead Created"         },
-  { value: "CRM_OPPORTUNITY_WON",             label: "CRM: Opportunity Won"      },
-  { value: "CRM_CUSTOMER_AT_RISK",            label: "CRM: Customer At Risk"     },
-  { value: "ATS_APPLICATION_SUBMITTED",       label: "ATS: Application Submitted"},
-  { value: "ACADEMY_COURSE_COMPLETED",        label: "Academy: Course Completed" },
-  { value: "VENDOR_ONBOARDING_REQUESTED",     label: "Vendor: Onboarding"        },
-  { value: "CUSTOMER_SUPPORT_TICKET_CREATED", label: "Support: Ticket Created"   },
-  { value: "INDUSTRIAL_ASSET_RISK_HIGH",      label: "Industrial: Asset Risk"    },
-  { value: "KNOWLEDGE_ARTICLE_CREATED",       label: "Knowledge: Article Created"},
+// Raw trigger enum values; display labels live in builder.triggerOptions.*
+const TRIGGER_OPTION_VALUES = [
+  "MANUAL",
+  "SCHEDULED",
+  "CRM_LEAD_CREATED",
+  "CRM_OPPORTUNITY_WON",
+  "CRM_CUSTOMER_AT_RISK",
+  "ATS_APPLICATION_SUBMITTED",
+  "ACADEMY_COURSE_COMPLETED",
+  "VENDOR_ONBOARDING_REQUESTED",
+  "CUSTOMER_SUPPORT_TICKET_CREATED",
+  "INDUSTRIAL_ASSET_RISK_HIGH",
+  "KNOWLEDGE_ARTICLE_CREATED",
 ];
 
 const CONDITION_TYPES = ["ALWAYS","FIELD_EQUALS","FIELD_NOT_EQUALS","FIELD_GREATER_THAN","FIELD_LESS_THAN","STATUS_IS","ROLE_IS","HEALTH_SCORE_BELOW","PRIORITY_IS"];
 const ACTION_TYPES    = ["CREATE_NOTIFICATION","CREATE_TASK","CREATE_SUPPORT_TICKET","CREATE_CRM_ACTIVITY","UPDATE_RECORD_STATUS","ASSIGN_OWNER","CREATE_AUDIT_LOG","SEND_WEBHOOK","CREATE_KNOWLEDGE_NOTE","CREATE_MAINTENANCE_ALERT"];
 const STATUSES        = ["DRAFT","ACTIVE","PAUSED","ARCHIVED"] as const;
 
-const STEP_LABELS: Record<Step, string> = {
-  1: "Basics",
-  2: "Trigger",
-  3: "Conditions",
-  4: "Actions",
-  5: "Review",
+const STEP_KEYS: Record<Step, string> = {
+  1: "stepBasics",
+  2: "stepTrigger",
+  3: "stepConditions",
+  4: "stepActions",
+  5: "stepReview",
 };
 
 export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitionFull | null }) {
   const router    = useRouter();
-  const pathname  = usePathname();
-  const locale    = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale    = useLocale();
+  const t         = useTranslations("automationOperations");
   const [pending, startTransition] = useTransition();
 
   const [step,        setStep]        = useState<Step>(1);
@@ -67,7 +69,7 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
   };
 
   const handleSave = () => {
-    if (!name.trim()) { setError("Name is required"); return; }
+    if (!name.trim()) { setError(t("builder.errNameRequired")); return; }
     const url    = initial ? `/api/automation/workflows/${initial.id}` : "/api/automation/workflows";
     const method = initial ? "PATCH" : "POST";
     const payload = {
@@ -79,11 +81,11 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
     startTransition(async () => {
       try {
         const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        if (!res.ok) { setError("Save failed — try again"); return; }
+        if (!res.ok) { setError(t("builder.errSaveFailed")); return; }
         router.push(`/${locale}/automation/workflows`);
         router.refresh();
       } catch {
-        setError("Network error — try again");
+        setError(t("builder.errNetwork"));
       }
     });
   };
@@ -99,7 +101,7 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
               step === s ? "border-primary text-primary" : "border-transparent text-muted-foreground"
             }`}
           >
-            {STEP_LABELS[s]}
+            {t(`builder.${STEP_KEYS[s]}`)}
           </button>
         ))}
       </div>
@@ -107,17 +109,17 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
       {step === 1 && (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Name *</label>
+            <label className="block text-sm font-medium mb-1">{t("builder.nameLabel")}</label>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="My Workflow"
+              placeholder={t("builder.namePlaceholder")}
               maxLength={120}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1">{t("builder.descriptionLabel")}</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
@@ -128,7 +130,7 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
           </div>
           {initial && (
             <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
+              <label className="block text-sm font-medium mb-1">{t("builder.statusLabel")}</label>
               <select
                 value={status}
                 onChange={e => setStatus(e.target.value)}
@@ -143,16 +145,16 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
 
       {step === 2 && (
         <div className="space-y-4">
-          <label className="block text-sm font-medium mb-1">Trigger</label>
+          <label className="block text-sm font-medium mb-1">{t("builder.triggerLabel")}</label>
           <select
             value={triggerType}
             onChange={e => setTriggerType(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            {TRIGGER_OPTION_VALUES.map(v => <option key={v} value={v}>{t(`builder.triggerOptions.${v}`)}</option>)}
           </select>
           <p className="text-xs text-muted-foreground">
-            This workflow fires whenever the selected event occurs in Hermes OS.
+            {t("builder.triggerHint")}
           </p>
         </div>
       )}
@@ -160,11 +162,11 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
       {step === 3 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium">Conditions</h3>
-            <button onClick={addCondition} className="text-xs text-primary hover:underline">+ Add</button>
+            <h3 className="font-medium">{t("builder.conditions")}</h3>
+            <button onClick={addCondition} className="text-xs text-primary hover:underline">{t("builder.add")}</button>
           </div>
           {conditions.length === 0 && (
-            <p className="text-sm text-muted-foreground">No conditions — workflow always executes when triggered.</p>
+            <p className="text-sm text-muted-foreground">{t("builder.noConditions")}</p>
           )}
           {conditions.map((c, i) => (
             <div key={i} className="border rounded-lg p-3 space-y-2">
@@ -174,7 +176,7 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
                   onChange={e => updCondition(i, "type", e.target.value)}
                   className="flex-1 px-2 py-1.5 rounded border bg-background text-xs focus:outline-none"
                 >
-                  {CONDITION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {CONDITION_TYPES.map(ct => <option key={ct} value={ct}>{ct}</option>)}
                 </select>
                 <button onClick={() => rmCondition(i)} className="text-xs text-red-500 hover:text-red-700">✕</button>
               </div>
@@ -184,13 +186,13 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
                     value={c.field}
                     onChange={e => updCondition(i, "field", e.target.value)}
                     className="w-full px-2 py-1.5 rounded border bg-background text-xs focus:outline-none"
-                    placeholder="field (e.g. status)"
+                    placeholder={t("builder.fieldPlaceholder")}
                   />
                   <input
                     value={c.value}
                     onChange={e => updCondition(i, "value", e.target.value)}
                     className="w-full px-2 py-1.5 rounded border bg-background text-xs focus:outline-none"
-                    placeholder="value (e.g. ACTIVE)"
+                    placeholder={t("builder.valuePlaceholder")}
                   />
                 </>
               )}
@@ -202,11 +204,11 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
       {step === 4 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium">Actions</h3>
-            <button onClick={addAction} className="text-xs text-primary hover:underline">+ Add</button>
+            <h3 className="font-medium">{t("builder.actions")}</h3>
+            <button onClick={addAction} className="text-xs text-primary hover:underline">{t("builder.add")}</button>
           </div>
           {actions.length === 0 && (
-            <p className="text-sm text-muted-foreground">No actions configured.</p>
+            <p className="text-sm text-muted-foreground">{t("builder.noActions")}</p>
           )}
           {actions.map((a, i) => (
             <div key={i} className="border rounded-lg p-3 space-y-2">
@@ -217,7 +219,7 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
                   onChange={e => updAction(i, "type", e.target.value)}
                   className="flex-1 px-2 py-1.5 rounded border bg-background text-xs focus:outline-none"
                 >
-                  {ACTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {ACTION_TYPES.map(at => <option key={at} value={at}>{at}</option>)}
                 </select>
                 <button onClick={() => rmAction(i)} className="text-xs text-red-500 hover:text-red-700">✕</button>
               </div>
@@ -235,12 +237,12 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
 
       {step === 5 && (
         <div className="space-y-4">
-          <h3 className="font-medium">Review</h3>
+          <h3 className="font-medium">{t("builder.review")}</h3>
           <dl className="space-y-2 text-sm">
-            <div className="flex gap-4"><dt className="text-muted-foreground w-24">Name</dt><dd className="font-medium">{name || "—"}</dd></div>
-            <div className="flex gap-4"><dt className="text-muted-foreground w-24">Trigger</dt><dd className="font-mono text-xs">{triggerType}</dd></div>
-            <div className="flex gap-4"><dt className="text-muted-foreground w-24">Conditions</dt><dd>{conditions.length}</dd></div>
-            <div className="flex gap-4"><dt className="text-muted-foreground w-24">Actions</dt><dd>{actions.length}</dd></div>
+            <div className="flex gap-4"><dt className="text-muted-foreground w-24">{t("builder.reviewName")}</dt><dd className="font-medium">{name || "—"}</dd></div>
+            <div className="flex gap-4"><dt className="text-muted-foreground w-24">{t("builder.reviewTrigger")}</dt><dd className="font-mono text-xs">{triggerType}</dd></div>
+            <div className="flex gap-4"><dt className="text-muted-foreground w-24">{t("builder.reviewConditions")}</dt><dd>{conditions.length}</dd></div>
+            <div className="flex gap-4"><dt className="text-muted-foreground w-24">{t("builder.reviewActions")}</dt><dd>{actions.length}</dd></div>
           </dl>
           {error && <p className="text-sm text-red-500">{error}</p>}
         </div>
@@ -252,7 +254,7 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
           disabled={step === 1}
           className="px-4 py-2 rounded-lg border text-sm disabled:opacity-40"
         >
-          Back
+          {t("builder.back")}
         </button>
         {step < 5 ? (
           <button
@@ -260,7 +262,7 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
             disabled={!canNext()}
             className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm disabled:opacity-40"
           >
-            Next
+            {t("builder.next")}
           </button>
         ) : (
           <button
@@ -268,7 +270,7 @@ export function WorkflowBuilderClient({ initial }: { initial?: WorkflowDefinitio
             disabled={pending}
             className="px-6 py-2 rounded-lg bg-primary text-primary-foreground text-sm disabled:opacity-60"
           >
-            {pending ? "Saving…" : initial ? "Save Changes" : "Create Workflow"}
+            {pending ? t("builder.saving") : initial ? t("builder.saveChanges") : t("builder.createWorkflow")}
           </button>
         )}
       </div>

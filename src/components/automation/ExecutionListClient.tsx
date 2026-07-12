@@ -1,7 +1,7 @@
 "use client";
 
 import Link            from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowExecution } from "@/lib/automation/types";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -14,30 +14,30 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function ExecutionListClient({ executions }: { executions: WorkflowExecution[] }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("automationOperations");
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">{executions.length} Execution{executions.length !== 1 ? "s" : ""}</h2>
+      <h2 className="text-lg font-semibold">{t("executionList.heading", { count: executions.length })}</h2>
 
       <div className="rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Workflow</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Triggered By</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Duration</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Date</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("executionList.colStatus")}</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("executionList.colWorkflow")}</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("executionList.colTriggeredBy")}</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("executionList.colDuration")}</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("executionList.colType")}</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("executionList.colDate")}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {executions.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No executions yet.</td>
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">{t("executionList.empty")}</td>
               </tr>
             ) : (
               executions.map(e => (
@@ -55,14 +55,14 @@ export function ExecutionListClient({ executions }: { executions: WorkflowExecut
                   <td className="px-4 py-3 text-xs text-muted-foreground">{e.triggeredBy ?? "—"}</td>
                   <td className="px-4 py-3 text-xs">{e.durationMs != null ? `${e.durationMs}ms` : "—"}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {e.isSimulation ? "Simulation" : "Live"}
+                    {e.isSimulation ? t("executionList.typeSimulation") : t("executionList.typeLive")}
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
                     {new Date(e.createdAt).toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link href={`/${locale}/automation/executions/${e.id}`} className="text-xs text-primary hover:underline">
-                      View
+                      {t("executionList.view")}
                     </Link>
                   </td>
                 </tr>

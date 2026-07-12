@@ -1,7 +1,7 @@
 "use client";
 
 import Link            from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowDefinition } from "@/lib/automation/types";
 
 const STATUS_BADGE: Record<string, string> = {
@@ -11,34 +11,22 @@ const STATUS_BADGE: Record<string, string> = {
   ARCHIVED: "bg-red-500/15 text-red-400",
 };
 
-const TRIGGER_LABELS: Record<string, string> = {
-  MANUAL:                          "Manual",
-  SCHEDULED:                       "Scheduled",
-  CRM_LEAD_CREATED:                "CRM: Lead Created",
-  CRM_OPPORTUNITY_WON:             "CRM: Opportunity Won",
-  CRM_CUSTOMER_AT_RISK:            "CRM: Customer At Risk",
-  ATS_CANDIDATE_CREATED:           "ATS: Candidate Created",
-  ATS_APPLICATION_SUBMITTED:       "ATS: Application",
-  ACADEMY_COURSE_COMPLETED:        "Academy: Completion",
-  VENDOR_ONBOARDING_REQUESTED:     "Vendor: Onboarding",
-  CUSTOMER_SUPPORT_TICKET_CREATED: "Support: Ticket",
-  INDUSTRIAL_ASSET_RISK_HIGH:      "Industrial: Risk High",
-  KNOWLEDGE_ARTICLE_CREATED:       "Knowledge: Article",
-};
-
 export function WorkflowListClient({ workflows }: { workflows: WorkflowDefinition[] }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("automationOperations");
+  // Display label for the trigger enum; falls back to the raw enum value.
+  const triggerLabel = (type: string) =>
+    t.has(`triggerLabels.${type}`) ? t(`triggerLabels.${type}`) : type;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{workflows.length} Workflow{workflows.length !== 1 ? "s" : ""}</h2>
+        <h2 className="text-lg font-semibold">{t("workflowList.heading", { count: workflows.length })}</h2>
         <Link
           href={`/${locale}/automation/workflows/new`}
           className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
-          New Workflow
+          {t("workflowList.newWorkflow")}
         </Link>
       </div>
 
@@ -46,10 +34,10 @@ export function WorkflowListClient({ workflows }: { workflows: WorkflowDefinitio
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Trigger</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Updated</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("workflowList.colName")}</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("workflowList.colTrigger")}</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("workflowList.colStatus")}</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("workflowList.colUpdated")}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -57,9 +45,9 @@ export function WorkflowListClient({ workflows }: { workflows: WorkflowDefinitio
             {workflows.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                  No workflows yet.{" "}
+                  {t("workflowList.empty")}{" "}
                   <Link href={`/${locale}/automation/workflows/new`} className="text-primary hover:underline">
-                    Create one
+                    {t("workflowList.createOne")}
                   </Link>
                 </td>
               </tr>
@@ -75,7 +63,7 @@ export function WorkflowListClient({ workflows }: { workflows: WorkflowDefinitio
                     )}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {TRIGGER_LABELS[wf.triggerType] ?? wf.triggerType}
+                    {triggerLabel(wf.triggerType)}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_BADGE[wf.status] ?? ""}`}>
@@ -88,10 +76,10 @@ export function WorkflowListClient({ workflows }: { workflows: WorkflowDefinitio
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center gap-2 justify-end">
                       <Link href={`/${locale}/automation/workflows/${wf.id}/builder`} className="text-xs text-muted-foreground hover:text-primary">
-                        Edit
+                        {t("workflowList.edit")}
                       </Link>
                       <Link href={`/${locale}/automation/workflows/${wf.id}`} className="text-xs text-primary hover:underline">
-                        View
+                        {t("workflowList.view")}
                       </Link>
                     </div>
                   </td>

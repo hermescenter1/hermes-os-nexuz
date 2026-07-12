@@ -2,19 +2,21 @@
 
 import Link             from "next/link";
 import { usePathname }  from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 const NAV_ITEMS = [
-  { href: "/automation",            label: "Dashboard"   },
-  { href: "/automation/workflows",  label: "Workflows"   },
-  { href: "/automation/templates",  label: "Templates"   },
-  { href: "/automation/executions", label: "Executions"  },
-  { href: "/automation/webhooks",   label: "Webhooks"    },
-  { href: "/automation/settings",   label: "Settings"    },
+  { href: "/automation",            key: "dashboard"   },
+  { href: "/automation/workflows",  key: "workflows"   },
+  { href: "/automation/templates",  key: "templates"   },
+  { href: "/automation/executions", key: "executions"  },
+  { href: "/automation/webhooks",   key: "webhooks"    },
+  { href: "/automation/settings",   key: "settings"    },
 ];
 
 export function AutomationNav() {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const pathname = usePathname();       // active-link detection only
+  const locale   = useLocale();
+  const t        = useTranslations("automationOperations");
 
   return (
     <nav className="flex flex-col gap-1">
@@ -31,7 +33,7 @@ export function AutomationNav() {
                 : "text-muted-foreground hover:bg-accent hover:text-foreground"
             }`}
           >
-            {item.label}
+            {t(`nav.items.${item.key}`)}
           </Link>
         );
       })}

@@ -2,7 +2,7 @@
 
 import Link            from "next/link";
 import { useState }    from "react";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowTemplate } from "@/lib/automation/types";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -16,12 +16,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function TemplateGalleryClient({ templates }: { templates: WorkflowTemplate[] }) {
-  const pathname  = usePathname();
-  const locale    = pathname.startsWith("/fa") ? "fa" : "en";
-  const categories = ["All", ...Array.from(new Set(templates.map(t => t.category)))];
-  const [filter, setFilter] = useState("All");
+  const locale = useLocale();
+  const t      = useTranslations("automationOperations");
+  const ALL    = t("templateGallery.all");
+  const categories = [ALL, ...Array.from(new Set(templates.map(tpl => tpl.category)))];
+  const [filter, setFilter] = useState(ALL);
 
-  const filtered = filter === "All" ? templates : templates.filter(t => t.category === filter);
+  const filtered = filter === ALL ? templates : templates.filter(tpl => tpl.category === filter);
 
   return (
     <div className="space-y-6">
@@ -40,31 +41,31 @@ export function TemplateGalleryClient({ templates }: { templates: WorkflowTempla
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(t => (
-          <div key={t.id} className="rounded-xl border bg-card p-5 flex flex-col justify-between gap-4 hover:shadow-md transition-shadow">
+        {filtered.map(tpl => (
+          <div key={tpl.id} className="rounded-xl border bg-card p-5 flex flex-col justify-between gap-4 hover:shadow-md transition-shadow">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${CATEGORY_COLORS[t.category] ?? CATEGORY_COLORS.GENERAL}`}>
-                  {t.category}
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${CATEGORY_COLORS[tpl.category] ?? CATEGORY_COLORS.GENERAL}`}>
+                  {tpl.category}
                 </span>
-                {t.isBuiltIn && <span className="text-xs text-muted-foreground">Built-in</span>}
+                {tpl.isBuiltIn && <span className="text-xs text-muted-foreground">{t("templateGallery.builtIn")}</span>}
               </div>
-              <h3 className="font-semibold">{t.name}</h3>
-              {t.description && <p className="text-sm text-muted-foreground">{t.description}</p>}
-              <p className="text-xs text-muted-foreground">{t.usageCount} uses</p>
+              <h3 className="font-semibold">{tpl.name}</h3>
+              {tpl.description && <p className="text-sm text-muted-foreground">{tpl.description}</p>}
+              <p className="text-xs text-muted-foreground">{t("templateGallery.uses", { count: tpl.usageCount })}</p>
             </div>
             <div className="flex gap-2">
               <Link
-                href={`/${locale}/automation/templates/${t.id}`}
+                href={`/${locale}/automation/templates/${tpl.id}`}
                 className="flex-1 px-3 py-1.5 rounded-lg border text-xs text-center font-medium hover:bg-accent transition-colors"
               >
-                View
+                {t("templateGallery.view")}
               </Link>
               <Link
-                href={`/${locale}/automation/workflows/new?templateId=${t.id}`}
+                href={`/${locale}/automation/workflows/new?templateId=${tpl.id}`}
                 className="flex-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs text-center font-medium hover:bg-primary/90 transition-colors"
               >
-                Use Template
+                {t("templateGallery.useTemplate")}
               </Link>
             </div>
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { AutomationOverview, WorkflowExecution } from "@/lib/automation/types";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -14,6 +14,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function ExecRow({ exec, locale }: { exec: WorkflowExecution; locale: string }) {
+  const t = useTranslations("automationOperations");
   return (
     <div className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-accent/50 text-sm">
       <div className="flex items-center gap-3">
@@ -21,12 +22,12 @@ function ExecRow({ exec, locale }: { exec: WorkflowExecution; locale: string }) 
           {exec.status}
         </span>
         <span className="text-muted-foreground font-mono text-xs truncate max-w-[180px]">{exec.workflowId}</span>
-        {exec.isSimulation && <span className="text-xs text-purple-500">[sim]</span>}
+        {exec.isSimulation && <span className="text-xs text-purple-500">{t("dashboard.simBadge")}</span>}
       </div>
       <div className="flex items-center gap-4 text-muted-foreground">
         {exec.durationMs != null && <span className="text-xs">{exec.durationMs}ms</span>}
         <Link href={`/${locale}/automation/executions/${exec.id}`} className="text-xs text-primary hover:underline">
-          view
+          {t("dashboard.rowView")}
         </Link>
       </div>
     </div>
@@ -34,14 +35,14 @@ function ExecRow({ exec, locale }: { exec: WorkflowExecution; locale: string }) 
 }
 
 export function AutomationDashboardClient({ overview }: { overview: AutomationOverview }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("automationOperations");
 
   const kpis = [
-    { label: "Active Workflows",   value: overview.activeWorkflows  },
-    { label: "Executions Today",   value: overview.executionsToday  },
-    { label: "Success Rate",       value: `${overview.successRate}%` },
-    { label: "Failed Executions",  value: overview.failedExecutions },
+    { label: t("dashboard.kpiActiveWorkflows"),  value: overview.activeWorkflows  },
+    { label: t("dashboard.kpiExecutionsToday"),  value: overview.executionsToday  },
+    { label: t("dashboard.kpiSuccessRate"),      value: `${overview.successRate}%` },
+    { label: t("dashboard.kpiFailedExecutions"), value: overview.failedExecutions },
   ];
 
   return (
@@ -58,19 +59,19 @@ export function AutomationDashboardClient({ overview }: { overview: AutomationOv
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="rounded-xl border bg-card p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Recent Executions</h3>
-            <Link href={`/${locale}/automation/executions`} className="text-xs text-primary hover:underline">View all</Link>
+            <h3 className="font-semibold">{t("dashboard.recentExecutions")}</h3>
+            <Link href={`/${locale}/automation/executions`} className="text-xs text-primary hover:underline">{t("dashboard.viewAll")}</Link>
           </div>
           <div className="space-y-1">
             {overview.recentExecutions.length === 0
-              ? <p className="text-sm text-muted-foreground">No executions yet.</p>
+              ? <p className="text-sm text-muted-foreground">{t("dashboard.noExecutions")}</p>
               : overview.recentExecutions.map(e => <ExecRow key={e.id} exec={e} locale={locale} />)
             }
           </div>
         </div>
 
         <div className="rounded-xl border bg-card p-4">
-          <h3 className="font-semibold mb-4">Workflow Status Breakdown</h3>
+          <h3 className="font-semibold mb-4">{t("dashboard.statusBreakdown")}</h3>
           <div className="space-y-3">
             {(Object.entries(overview.workflowsByStatus) as [string, number][]).map(([status, count]) => (
               <div key={status} className="flex items-center justify-between text-sm">
@@ -88,14 +89,14 @@ export function AutomationDashboardClient({ overview }: { overview: AutomationOv
             ))}
           </div>
 
-          <h3 className="font-semibold mt-6 mb-4">Popular Templates</h3>
+          <h3 className="font-semibold mt-6 mb-4">{t("dashboard.popularTemplates")}</h3>
           <div className="space-y-2">
-            {overview.mostUsedTemplates.map(t => (
-              <div key={t.id} className="flex items-center justify-between text-sm">
-                <Link href={`/${locale}/automation/templates/${t.id}`} className="hover:text-primary truncate max-w-[200px]">
-                  {t.name}
+            {overview.mostUsedTemplates.map(tpl => (
+              <div key={tpl.id} className="flex items-center justify-between text-sm">
+                <Link href={`/${locale}/automation/templates/${tpl.id}`} className="hover:text-primary truncate max-w-[200px]">
+                  {tpl.name}
                 </Link>
-                <span className="text-muted-foreground">{t.usageCount} uses</span>
+                <span className="text-muted-foreground">{t("dashboard.uses", { count: tpl.usageCount })}</span>
               </div>
             ))}
           </div>

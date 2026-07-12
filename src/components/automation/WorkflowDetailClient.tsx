@@ -2,7 +2,7 @@
 
 import Link            from "next/link";
 import { useState }    from "react";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowDefinitionFull, WorkflowExecution } from "@/lib/automation/types";
 
 type Tab = "overview" | "conditions" | "actions" | "executions";
@@ -29,14 +29,14 @@ export function WorkflowDetailClient({
   executions: WorkflowExecution[];
 }) {
   const [tab, setTab]   = useState<Tab>("overview");
-  const pathname        = usePathname();
-  const locale          = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale          = useLocale();
+  const t               = useTranslations("automationOperations");
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: "overview",   label: "Overview" },
-    { id: "conditions", label: `Conditions (${workflow.conditions.length})` },
-    { id: "actions",    label: `Actions (${workflow.actions.length})` },
-    { id: "executions", label: `Executions (${executions.length})` },
+    { id: "overview",   label: t("workflowDetail.tabOverview") },
+    { id: "conditions", label: t("workflowDetail.tabConditions", { count: workflow.conditions.length }) },
+    { id: "actions",    label: t("workflowDetail.tabActions", { count: workflow.actions.length }) },
+    { id: "executions", label: t("workflowDetail.tabExecutions", { count: executions.length }) },
   ];
 
   return (
@@ -58,29 +58,29 @@ export function WorkflowDetailClient({
             href={`/${locale}/automation/workflows/${workflow.id}/builder`}
             className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-accent transition-colors"
           >
-            Edit
+            {t("workflowDetail.edit")}
           </Link>
           <Link
             href={`/${locale}/automation/workflows`}
             className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-accent transition-colors"
           >
-            Back
+            {t("workflowDetail.back")}
           </Link>
         </div>
       </div>
 
       <div className="flex gap-1 border-b">
-        {TABS.map(t => (
+        {TABS.map(tb => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+            key={tb.id}
+            onClick={() => setTab(tb.id)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t.id
+              tab === tb.id
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t.label}
+            {tb.label}
           </button>
         ))}
       </div>
@@ -88,23 +88,23 @@ export function WorkflowDetailClient({
       {tab === "overview" && (
         <div className="grid md:grid-cols-2 gap-4">
           <div className="rounded-xl border bg-card p-4 space-y-3">
-            <h3 className="font-semibold">Trigger</h3>
+            <h3 className="font-semibold">{t("workflowDetail.trigger")}</h3>
             <p className="text-sm font-mono text-muted-foreground">{workflow.triggerType}</p>
           </div>
           <div className="rounded-xl border bg-card p-4 space-y-3">
-            <h3 className="font-semibold">Meta</h3>
+            <h3 className="font-semibold">{t("workflowDetail.meta")}</h3>
             <dl className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Created</dt>
+                <dt className="text-muted-foreground">{t("workflowDetail.created")}</dt>
                 <dd>{new Date(workflow.createdAt).toLocaleDateString()}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Updated</dt>
+                <dt className="text-muted-foreground">{t("workflowDetail.updated")}</dt>
                 <dd>{new Date(workflow.updatedAt).toLocaleDateString()}</dd>
               </div>
               {workflow.templateId && (
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Template</dt>
+                  <dt className="text-muted-foreground">{t("workflowDetail.template")}</dt>
                   <dd>
                     <Link href={`/${locale}/automation/templates/${workflow.templateId}`} className="text-primary hover:underline text-xs">
                       {workflow.templateId}
@@ -120,13 +120,13 @@ export function WorkflowDetailClient({
       {tab === "conditions" && (
         <div className="space-y-3">
           {workflow.conditions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No conditions — workflow always executes.</p>
+            <p className="text-sm text-muted-foreground">{t("workflowDetail.noConditions")}</p>
           ) : (
             workflow.conditions.map(c => (
               <div key={c.id} className="rounded-xl border bg-card p-4 text-sm space-y-1">
                 <div className="font-medium font-mono">{c.type}</div>
-                {c.field && <div className="text-muted-foreground">Field: <span className="font-mono">{c.field}</span></div>}
-                {c.value && <div className="text-muted-foreground">Value: <span className="font-mono">{c.value}</span></div>}
+                {c.field && <div className="text-muted-foreground">{t("workflowDetail.fieldLabel")} <span className="font-mono">{c.field}</span></div>}
+                {c.value && <div className="text-muted-foreground">{t("workflowDetail.valueLabel")} <span className="font-mono">{c.value}</span></div>}
               </div>
             ))
           )}
@@ -136,7 +136,7 @@ export function WorkflowDetailClient({
       {tab === "actions" && (
         <div className="space-y-3">
           {workflow.actions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No actions configured.</p>
+            <p className="text-sm text-muted-foreground">{t("workflowDetail.noActions")}</p>
           ) : (
             workflow.actions.map(a => (
               <div key={a.id} className="rounded-xl border bg-card p-4 text-sm">
@@ -160,16 +160,16 @@ export function WorkflowDetailClient({
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Triggered By</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Duration</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Date</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("workflowDetail.colStatus")}</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("workflowDetail.colTriggeredBy")}</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("workflowDetail.colDuration")}</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("workflowDetail.colDate")}</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {executions.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No executions yet.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{t("workflowDetail.empty")}</td></tr>
               ) : (
                 executions.map(e => (
                   <tr key={e.id} className="hover:bg-accent/30">
@@ -178,7 +178,7 @@ export function WorkflowDetailClient({
                     <td className="px-4 py-3 text-xs">{e.durationMs != null ? `${e.durationMs}ms` : "—"}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(e.createdAt).toLocaleString()}</td>
                     <td className="px-4 py-3 text-right">
-                      <Link href={`/${locale}/automation/executions/${e.id}`} className="text-xs text-primary hover:underline">View</Link>
+                      <Link href={`/${locale}/automation/executions/${e.id}`} className="text-xs text-primary hover:underline">{t("workflowDetail.view")}</Link>
                     </td>
                   </tr>
                 ))
