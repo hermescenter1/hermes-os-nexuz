@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { MaintenanceSchedule } from "@/lib/cmms/types";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
@@ -20,13 +20,12 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 export function SchedulesClient({ schedules }: { schedules: MaintenanceSchedule[] }) {
-  const pathname = usePathname();
-  const isFa     = pathname.startsWith("/fa");
+  const t = useTranslations("maintenanceOperations");
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <h2 className="text-base font-semibold text-ink">{isFa ? "زمان‌بندی‌های نگهداشت" : "Maintenance Schedules"}</h2>
+        <h2 className="text-base font-semibold text-ink">{t("schedules.heading")}</h2>
         <span className="text-xs text-faint font-mono">({schedules.length})</span>
       </div>
 
@@ -34,20 +33,20 @@ export function SchedulesClient({ schedules }: { schedules: MaintenanceSchedule[
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line bg-surface2">
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "نام" : "Name"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "وضعیت" : "Status"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "اولویت" : "Priority"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "تاریخ" : "Date"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "ساعت" : "Hours"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "تکنیسین" : "Technician"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{isFa ? "دستگاه" : "Asset"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("schedules.colName")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("schedules.colStatus")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{t("schedules.colPriority")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("schedules.colDate")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("schedules.colHours")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("schedules.colTechnician")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{t("schedules.colAsset")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
             {schedules.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-10 text-muted text-sm">
-                  {isFa ? "زمان‌بندی‌ای یافت نشد" : "No schedules found"}
+                  {t("schedules.empty")}
                 </td>
               </tr>
             ) : (

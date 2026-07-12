@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { RegistryAssetRecord, AssetHealthSnapshot } from "@/lib/assets/types";
 
 function riskBadge(r: string) {
@@ -31,18 +31,17 @@ interface AssetWithHealth extends RegistryAssetRecord {
 interface Props { assets: AssetWithHealth[] }
 
 export function AssetHealthClient({ assets }: Props) {
-  const pathname = usePathname();
-  const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
+  const t      = useTranslations("assetOperations");
+  const locale = useLocale();
   const sorted = [...assets].sort((a, b) => a.healthScore - b.healthScore);
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow-mono text-ice mb-1">{isFa ? "سلامت دارایی" : "ASSET HEALTH"}</p>
-        <h1 className="text-xl font-semibold text-ink">{isFa ? "داشبورد سلامت دارایی‌ها" : "Asset Health Dashboard"}</h1>
+        <p className="eyebrow-mono text-ice mb-1">{t("health.eyebrow")}</p>
+        <h1 className="text-xl font-semibold text-ink">{t("health.title")}</h1>
         <p className="text-sm text-muted mt-1">
-          {isFa ? "امتیاز سلامت، حالت ریسک و آخرین اندازه‌گیری‌های حسگر" : "Health scores, risk states, and latest sensor readings"}
+          {t("health.subtitle")}
         </p>
       </div>
 
@@ -66,7 +65,7 @@ export function AssetHealthClient({ assets }: Props) {
               {/* Health score bar */}
               <div className="mb-4">
                 <div className="flex items-end justify-between mb-1.5">
-                  <span className="text-xs text-faint">{isFa ? "امتیاز سلامت" : "Health Score"}</span>
+                  <span className="text-xs text-faint">{t("common.healthScore")}</span>
                   <span className={`text-xl font-semibold tabular-nums ${healthText(a.healthScore)}`}>{a.healthScore}%</span>
                 </div>
                 <div className="h-2 bg-surface3 rounded-full overflow-hidden">
@@ -80,25 +79,25 @@ export function AssetHealthClient({ assets }: Props) {
                 <div className="grid grid-cols-2 gap-2">
                   {latestSnap.vibrationRms !== null && (
                     <div className="bg-surface2 rounded-lg p-2">
-                      <p className="text-xs text-faint">{isFa ? "ارتعاش (RMS)" : "Vibration RMS"}</p>
+                      <p className="text-xs text-faint">{t("health.vibrationRms")}</p>
                       <p className="text-sm font-medium text-ink">{latestSnap.vibrationRms?.toFixed(1)} <span className="text-faint text-xs">mm/s</span></p>
                     </div>
                   )}
                   {latestSnap.temperature !== null && (
                     <div className="bg-surface2 rounded-lg p-2">
-                      <p className="text-xs text-faint">{isFa ? "دما" : "Temperature"}</p>
+                      <p className="text-xs text-faint">{t("health.temperature")}</p>
                       <p className="text-sm font-medium text-ink">{latestSnap.temperature?.toFixed(0)} <span className="text-faint text-xs">°C</span></p>
                     </div>
                   )}
                   {latestSnap.pressure !== null && (
                     <div className="bg-surface2 rounded-lg p-2">
-                      <p className="text-xs text-faint">{isFa ? "فشار" : "Pressure"}</p>
+                      <p className="text-xs text-faint">{t("health.pressure")}</p>
                       <p className="text-sm font-medium text-ink">{latestSnap.pressure?.toFixed(1)} <span className="text-faint text-xs">bar</span></p>
                     </div>
                   )}
                   {latestSnap.currentDraw !== null && (
                     <div className="bg-surface2 rounded-lg p-2">
-                      <p className="text-xs text-faint">{isFa ? "جریان" : "Current Draw"}</p>
+                      <p className="text-xs text-faint">{t("health.currentDraw")}</p>
                       <p className="text-sm font-medium text-ink">{latestSnap.currentDraw?.toFixed(0)} <span className="text-faint text-xs">A</span></p>
                     </div>
                   )}
@@ -108,10 +107,10 @@ export function AssetHealthClient({ assets }: Props) {
                 <p className="text-xs text-faint mt-3 border-t border-line pt-3">{latestSnap.notes}</p>
               )}
               {latestSnap && (
-                <p className="text-xs text-faint/60 mt-2">{isFa ? "ثبت‌شده" : "Recorded"}: {new Date(latestSnap.takenAt).toLocaleDateString()}</p>
+                <p className="text-xs text-faint/60 mt-2">{t("health.recorded")}: {new Date(latestSnap.takenAt).toLocaleDateString()}</p>
               )}
               {!latestSnap && (
-                <p className="text-xs text-faint italic">{isFa ? "بدون داده سلامت" : "No health data recorded"}</p>
+                <p className="text-xs text-faint italic">{t("health.noHealthData")}</p>
               )}
             </div>
           );

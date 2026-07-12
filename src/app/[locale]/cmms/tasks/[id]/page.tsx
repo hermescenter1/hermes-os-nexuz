@@ -1,5 +1,6 @@
 import { notFound }                            from "next/navigation";
 import { getTaskById, getHistory, getComments } from "@/lib/cmms/db";
+import { getTranslations }  from "next-intl/server";
 import { noIndexMetadata }                      from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getTranslations("maintenanceOperations");
   const { id }               = await params;
   const [task, history, comments] = await Promise.all([
     getTaskById(id), getHistory(id), getComments(id),
@@ -39,14 +41,14 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Type",         value: task.maintenanceType },
-          { label: "Priority",     value: task.priority },
-          { label: "WO Type",      value: task.workOrderType },
-          { label: "Est. Hours",   value: task.estimatedHours != null ? `${task.estimatedHours}h` : "—" },
-          { label: "Actual Hours", value: task.actualHours    != null ? `${task.actualHours}h` : "—" },
-          { label: "Technician",   value: task.technicianId   ?? "—" },
-          { label: "Asset",        value: task.assetId        ?? "—" },
-          { label: "Work Center",  value: task.workCenterCode ?? task.workCenterId ?? "—" },
+          { label: t("pages.taskDetail.type"),        value: task.maintenanceType },
+          { label: t("pages.taskDetail.priority"),    value: task.priority },
+          { label: t("pages.taskDetail.woType"),      value: task.workOrderType },
+          { label: t("pages.taskDetail.estHours"),    value: task.estimatedHours != null ? `${task.estimatedHours}h` : "—" },
+          { label: t("pages.taskDetail.actualHours"), value: task.actualHours    != null ? `${task.actualHours}h` : "—" },
+          { label: t("pages.taskDetail.technician"),  value: task.technicianId   ?? "—" },
+          { label: t("pages.taskDetail.asset"),       value: task.assetId        ?? "—" },
+          { label: t("pages.taskDetail.workCenter"),  value: task.workCenterCode ?? task.workCenterId ?? "—" },
         ].map(({ label, value }) => (
           <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-4">
             <div className="text-xs text-muted-foreground mb-1">{label}</div>
@@ -57,26 +59,26 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 
       {task.scheduledDate && (
         <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex gap-8 text-sm">
-          <div><span className="text-muted-foreground">Scheduled: </span>{new Date(task.scheduledDate).toLocaleDateString()}</div>
-          {task.dueDate     && <div><span className="text-muted-foreground">Due: </span>{new Date(task.dueDate).toLocaleDateString()}</div>}
-          {task.startedAt   && <div><span className="text-muted-foreground">Started: </span>{new Date(task.startedAt).toLocaleDateString()}</div>}
-          {task.completedAt && <div><span className="text-muted-foreground">Completed: </span>{new Date(task.completedAt).toLocaleDateString()}</div>}
+          <div><span className="text-muted-foreground">{t("pages.taskDetail.scheduled")}</span>{new Date(task.scheduledDate).toLocaleDateString()}</div>
+          {task.dueDate     && <div><span className="text-muted-foreground">{t("pages.taskDetail.due")}</span>{new Date(task.dueDate).toLocaleDateString()}</div>}
+          {task.startedAt   && <div><span className="text-muted-foreground">{t("pages.taskDetail.started")}</span>{new Date(task.startedAt).toLocaleDateString()}</div>}
+          {task.completedAt && <div><span className="text-muted-foreground">{t("pages.taskDetail.completed")}</span>{new Date(task.completedAt).toLocaleDateString()}</div>}
         </div>
       )}
 
       {/* Comments */}
       {comments.length > 0 && (
         <section>
-          <h2 className="text-base font-semibold mb-3">Comments ({comments.length})</h2>
+          <h2 className="text-base font-semibold mb-3">{t("pages.taskDetail.comments")} ({comments.length})</h2>
           <div className="space-y-3">
             {comments.map(c => (
               <div key={c.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium">{c.userId ?? "Anonymous"}</span>
+                  <span className="text-xs font-medium">{c.userId ?? t("pages.taskDetail.anonymous")}</span>
                   <span className="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleDateString()}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">{c.content}</p>
-                {c.isInternal && <span className="text-xs text-yellow-400 mt-1 block">Internal note</span>}
+                {c.isInternal && <span className="text-xs text-yellow-400 mt-1 block">{t("pages.taskDetail.internalNote")}</span>}
               </div>
             ))}
           </div>
@@ -86,7 +88,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
       {/* History */}
       {history.length > 0 && (
         <section>
-          <h2 className="text-base font-semibold mb-3">Activity Log</h2>
+          <h2 className="text-base font-semibold mb-3">{t("pages.taskDetail.activityLog")}</h2>
           <div className="space-y-2">
             {history.map(h => (
               <div key={h.id} className="text-sm flex items-start gap-3 border-b border-white/5 pb-2">

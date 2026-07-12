@@ -1,5 +1,6 @@
 import { notFound }          from "next/navigation";
 import { getFailureById }   from "@/lib/cmms/db";
+import { getTranslations }  from "next-intl/server";
 import { noIndexMetadata }  from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export default async function FailureDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getTranslations("maintenanceOperations");
   const { id }  = await params;
   const failure = await getFailureById(id);
   if (!failure) return notFound();
@@ -31,13 +33,13 @@ export default async function FailureDetailPage({ params }: { params: Promise<{ 
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Category",    value: failure.category },
-          { label: "Asset",       value: failure.assetId       ?? "—" },
-          { label: "Occurred",    value: new Date(failure.occurredAt).toLocaleDateString() },
-          { label: "Downtime",    value: failure.downtimeMinutes != null ? `${Math.round(failure.downtimeMinutes / 60)}h` : "—" },
-          { label: "Detected",    value: failure.detectedAt  ? new Date(failure.detectedAt).toLocaleDateString() : "—" },
-          { label: "Resolved",    value: failure.resolvedAt  ? new Date(failure.resolvedAt).toLocaleDateString() : "Open" },
-          { label: "Reported By", value: failure.reportedBy ?? "—" },
+          { label: t("pages.failureDetail.category"), value: failure.category },
+          { label: t("pages.failureDetail.asset"),    value: failure.assetId       ?? "—" },
+          { label: t("pages.failureDetail.occurred"), value: new Date(failure.occurredAt).toLocaleDateString() },
+          { label: t("pages.failureDetail.downtime"), value: failure.downtimeMinutes != null ? `${Math.round(failure.downtimeMinutes / 60)}h` : "—" },
+          { label: t("pages.failureDetail.detected"), value: failure.detectedAt  ? new Date(failure.detectedAt).toLocaleDateString() : "—" },
+          { label: t("pages.failureDetail.resolved"), value: failure.resolvedAt  ? new Date(failure.resolvedAt).toLocaleDateString() : t("pages.failureDetail.open") },
+          { label: t("pages.failureDetail.reportedBy"), value: failure.reportedBy ?? "—" },
         ].map(({ label, value }) => (
           <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-3">
             <div className="text-xs text-muted-foreground">{label}</div>
@@ -48,7 +50,7 @@ export default async function FailureDetailPage({ params }: { params: Promise<{ 
 
       {failure.causes && failure.causes.length > 0 && (
         <section>
-          <h2 className="text-base font-semibold mb-3">Root Cause Analysis</h2>
+          <h2 className="text-base font-semibold mb-3">{t("pages.failureDetail.rootCauseAnalysis")}</h2>
           <div className="space-y-2">
             {failure.causes.map(c => (
               <div key={c.id} className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-start gap-3">
@@ -66,7 +68,7 @@ export default async function FailureDetailPage({ params }: { params: Promise<{ 
 
       {failure.correctiveActions && failure.correctiveActions.length > 0 && (
         <section>
-          <h2 className="text-base font-semibold mb-3">Corrective Actions</h2>
+          <h2 className="text-base font-semibold mb-3">{t("pages.failureDetail.correctiveActions")}</h2>
           <div className="space-y-2">
             {failure.correctiveActions.map(ca => (
               <div key={ca.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -79,8 +81,8 @@ export default async function FailureDetailPage({ params }: { params: Promise<{ 
                   }`}>{ca.status}</span>
                 </div>
                 <div className="flex gap-4 text-xs text-muted-foreground">
-                  {ca.assignedTo && <span>Assigned: {ca.assignedTo}</span>}
-                  {ca.dueDate    && <span>Due: {new Date(ca.dueDate).toLocaleDateString()}</span>}
+                  {ca.assignedTo && <span>{t("pages.failureDetail.assigned")} {ca.assignedTo}</span>}
+                  {ca.dueDate    && <span>{t("pages.failureDetail.due")} {new Date(ca.dueDate).toLocaleDateString()}</span>}
                 </div>
               </div>
             ))}

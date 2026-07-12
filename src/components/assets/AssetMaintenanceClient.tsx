@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { RegistryAssetRecord, AssetMaintenanceLink } from "@/lib/assets/types";
 
 function linkTypeBadge(t: string) {
@@ -18,24 +18,23 @@ interface AssetWithLinks extends RegistryAssetRecord {
 interface Props { assets: AssetWithLinks[] }
 
 export function AssetMaintenanceClient({ assets }: Props) {
-  const pathname = usePathname();
-  const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
+  const t      = useTranslations("assetOperations");
+  const locale = useLocale();
   const hasLinks = assets.filter(a => a.maintenanceLinks?.length > 0);
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow-mono text-ice mb-1">{isFa ? "نگهداشت دارایی" : "ASSET MAINTENANCE"}</p>
-        <h1 className="text-xl font-semibold text-ink">{isFa ? "پیوندهای نگهداشت دارایی" : "Maintenance Links"}</h1>
+        <p className="eyebrow-mono text-ice mb-1">{t("maintenanceLinks.eyebrow")}</p>
+        <h1 className="text-xl font-semibold text-ink">{t("maintenanceLinks.title")}</h1>
         <p className="text-sm text-muted mt-1">
-          {isFa ? "ارتباط دارایی‌ها با دستورکارها و برنامه‌های نگهداری" : "Asset links to work orders and maintenance plans"}
+          {t("maintenanceLinks.subtitle")}
         </p>
       </div>
 
       {hasLinks.length === 0 ? (
         <div className="card-surface rounded-xl p-12 text-center">
-          <p className="text-muted">{isFa ? "هیچ دستورکار مرتبطی ثبت نشده" : "No maintenance links recorded"}</p>
+          <p className="text-muted">{t("maintenanceLinks.noLinks")}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -48,7 +47,7 @@ export function AssetMaintenanceClient({ assets }: Props) {
                     {a.name}
                   </Link>
                 </div>
-                <span className="text-xs text-faint">{a.maintenanceLinks.length} {isFa ? "مورد" : "links"}</span>
+                <span className="text-xs text-faint">{a.maintenanceLinks.length} {t("maintenanceLinks.linksUnit")}</span>
               </div>
 
               <div className="space-y-2">

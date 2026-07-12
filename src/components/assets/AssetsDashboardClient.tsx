@@ -1,27 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type { AssetDashboard } from "@/lib/assets/types";
-import { usePathname } from "next/navigation";
-
-
-
-const STATUS_LABELS: Record<string, string> = {
-  IN_SERVICE: "In Service", DEGRADED: "Degraded", UNDER_MAINTENANCE: "Under Maintenance",
-  STANDBY: "Standby", PLANNED: "Planned", COMMISSIONED: "Commissioned",
-  RETIRED: "Retired", REPLACED: "Replaced", DECOMMISSIONED: "Decommissioned",
-};
-const CRITICALITY_LABELS: Record<string, string> = {
-  CRITICAL: "Critical", HIGH: "High", MEDIUM: "Medium", LOW: "Low", NON_CRITICAL: "Non-Critical",
-};
-const TYPE_LABELS: Record<string, string> = {
-  PRODUCTION_LINE: "Production Line", MACHINE: "Machine", PLC: "PLC", HMI: "HMI",
-  SCADA_NODE: "SCADA Node", ELECTRICAL_PANEL: "Electrical Panel", MCC_PANEL: "MCC Panel",
-  VFD: "VFD", MOTOR: "Motor", PUMP: "Pump", VALVE: "Valve", SENSOR: "Sensor",
-  INSTRUMENT: "Instrument", ROBOT: "Robot", CONVEYOR: "Conveyor", COMPRESSOR: "Compressor",
-  UTILITY_SYSTEM: "Utility System", SAFETY_SYSTEM: "Safety System",
-  NETWORK_DEVICE: "Network Device", INDUSTRIAL_PC: "Industrial PC",
-};
 
 function riskColor(state: string) {
   if (state === "HEALTHY")  return "text-signal bg-signal/[0.08]";
@@ -49,31 +30,32 @@ function healthColor(score: number) {
 interface Props { data: AssetDashboard }
 
 export function AssetsDashboardClient({ data }: Props) {
-  const pathname = usePathname();
-  const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
+  const t      = useTranslations("assetOperations");
+  const locale = useLocale();
+
+  // Raw enum -> display label; falls back to raw value when unmapped.
+  const typeLabel   = (ty: string) => (t.has(`enums.typeFull.${ty}`) ? t(`enums.typeFull.${ty}`) : ty);
+  const statusLabel = (s: string)  => (t.has(`enums.status.${s}`) ? t(`enums.status.${s}`) : s);
 
   const kpis = [
-    { label: isFa ? "کل دارایی‌ها" : "Total Assets",       value: data.totalAssets,       color: "border-ice/30",      sub: isFa ? "ثبت‌شده" : "registered" },
-    { label: isFa ? "دارایی‌های بحرانی" : "Critical Assets", value: data.criticalAssets,    color: "border-danger/30",   sub: isFa ? "بحرانی" : "criticality level" },
-    { label: isFa ? "تنزل‌یافته/در خطر" : "Degraded/At Risk",value: data.degradedAssets,   color: "border-warn/30",     sub: isFa ? "نیاز به توجه" : "needs attention" },
-    { label: isFa ? "در خطر" : "At Risk",                    value: data.atRiskAssets,      color: "border-warn/30",     sub: isFa ? "رصد فعال" : "active monitoring" },
-    { label: isFa ? "دستورکار باز" : "Open Work Orders",     value: data.assetsWithOpenWO,  color: "border-ice/30",      sub: isFa ? "دارایی مرتبط" : "assets linked" },
-    { label: isFa ? "بدون سند" : "Missing Docs",             value: data.assetsMissingDocs, color: "border-signal/20",   sub: isFa ? "دارایی" : "assets" },
+    { label: t("dashboard.kpiTotalLabel"),    value: data.totalAssets,       color: "border-ice/30",    sub: t("dashboard.kpiTotalSub") },
+    { label: t("dashboard.kpiCriticalLabel"), value: data.criticalAssets,    color: "border-danger/30", sub: t("dashboard.kpiCriticalSub") },
+    { label: t("dashboard.kpiDegradedLabel"), value: data.degradedAssets,    color: "border-warn/30",   sub: t("dashboard.kpiDegradedSub") },
+    { label: t("dashboard.kpiAtRiskLabel"),   value: data.atRiskAssets,      color: "border-warn/30",   sub: t("dashboard.kpiAtRiskSub") },
+    { label: t("dashboard.kpiOpenWoLabel"),   value: data.assetsWithOpenWO,  color: "border-ice/30",    sub: t("dashboard.kpiOpenWoSub") },
+    { label: t("dashboard.kpiMissingDocsLabel"), value: data.assetsMissingDocs, color: "border-signal/20", sub: t("dashboard.kpiMissingDocsSub") },
   ];
 
   return (
     <div className="space-y-8">
       {/* Module header */}
       <div className="card-enterprise rounded-xl p-6 border-s-4 border-ice/50">
-        <p className="eyebrow-mono text-ice mb-1">{isFa ? "مدیریت دارایی‌های صنعتی" : "ENTERPRISE ASSET REGISTRY"}</p>
+        <p className="eyebrow-mono text-ice mb-1">{t("dashboard.eyebrow")}</p>
         <h1 className="text-2xl font-semibold text-ink">
-          {isFa ? "داشبورد هوشمندی دارایی‌ها" : "Asset Intelligence Dashboard"}
+          {t("dashboard.title")}
         </h1>
         <p className="text-sm text-muted mt-1">
-          {isFa
-            ? "نمای جامع از وضعیت، سلامت، و چرخه عمر دارایی‌های صنعتی"
-            : "Comprehensive view of industrial asset status, health, and lifecycle intelligence"}
+          {t("dashboard.subtitle")}
         </p>
       </div>
 
@@ -92,14 +74,14 @@ export function AssetsDashboardClient({ data }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Health distribution */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{isFa ? "توزیع سلامت دارایی‌ها" : "Health Distribution"}</p>
+          <p className="eyebrow-label text-faint mb-4">{t("dashboard.healthDistribution")}</p>
           <div className="space-y-3">
             {[
-              { label: isFa ? "سالم" : "Healthy",  value: data.healthDistribution.healthy,  color: "bg-signal", textColor: "text-signal" },
-              { label: isFa ? "رصد" : "Monitor",   value: data.healthDistribution.monitor,  color: "bg-ice",    textColor: "text-ice"    },
-              { label: isFa ? "در خطر" : "At Risk", value: data.healthDistribution.atRisk,  color: "bg-warn",   textColor: "text-warn"   },
-              { label: isFa ? "بحرانی" : "Critical",value: data.healthDistribution.critical,color: "bg-danger", textColor: "text-danger" },
-              { label: isFa ? "نامشخص" : "Unknown", value: data.healthDistribution.unknown, color: "bg-line2",  textColor: "text-faint"  },
+              { label: t("dashboard.healthy"),  value: data.healthDistribution.healthy,  color: "bg-signal", textColor: "text-signal" },
+              { label: t("dashboard.monitor"),  value: data.healthDistribution.monitor,  color: "bg-ice",    textColor: "text-ice"    },
+              { label: t("dashboard.atRisk"),   value: data.healthDistribution.atRisk,   color: "bg-warn",   textColor: "text-warn"   },
+              { label: t("dashboard.critical"), value: data.healthDistribution.critical, color: "bg-danger", textColor: "text-danger" },
+              { label: t("dashboard.unknown"),  value: data.healthDistribution.unknown,  color: "bg-line2",  textColor: "text-faint"  },
             ].map(row => {
               const pct = data.totalAssets ? Math.round((row.value / data.totalAssets) * 100) : 0;
               return (
@@ -119,14 +101,14 @@ export function AssetsDashboardClient({ data }: Props) {
 
         {/* Assets by type */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{isFa ? "دارایی‌ها بر اساس نوع" : "Assets by Type"}</p>
+          <p className="eyebrow-label text-faint mb-4">{t("dashboard.assetsByType")}</p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(data.assetsByType)
               .sort((a, b) => b[1] - a[1])
               .map(([type, count]) => (
                 <div key={type} className="flex items-center gap-1.5 bg-ice/[0.06] border border-ice/15 rounded-lg px-3 py-1.5">
                   <span className="text-xs font-medium text-ice">{count}</span>
-                  <span className="text-xs text-muted">{TYPE_LABELS[type] ?? type}</span>
+                  <span className="text-xs text-muted">{typeLabel(type)}</span>
                 </div>
               ))}
           </div>
@@ -135,14 +117,14 @@ export function AssetsDashboardClient({ data }: Props) {
 
       {/* Criticality heatmap */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-4">{isFa ? "توزیع بحرانیت" : "Criticality Distribution"}</p>
+        <p className="eyebrow-label text-faint mb-4">{t("dashboard.criticalityDistribution")}</p>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {["CRITICAL", "HIGH", "MEDIUM", "LOW", "NON_CRITICAL"].map(c => {
             const count = data.assetsByCriticality[c] ?? 0;
             return (
               <div key={c} className={`rounded-xl p-4 text-center ${criticalityColor(c)}`}>
                 <p className="text-2xl font-semibold tabular-nums">{count}</p>
-                <p className="text-xs mt-1 font-medium">{CRITICALITY_LABELS[c]}</p>
+                <p className="text-xs mt-1 font-medium">{t(`enums.criticality.${c}`)}</p>
               </div>
             );
           })}
@@ -154,9 +136,9 @@ export function AssetsDashboardClient({ data }: Props) {
         {/* Top critical */}
         <div className="card-surface rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="eyebrow-label text-faint">{isFa ? "دارایی‌های بحرانی برتر" : "Top Critical Assets"}</p>
+            <p className="eyebrow-label text-faint">{t("dashboard.topCriticalAssets")}</p>
             <Link href={`/${locale}/assets/registry`} className="text-xs text-ice hover:underline">
-              {isFa ? "همه" : "View all"}
+              {t("common.viewAll")}
             </Link>
           </div>
           <div className="space-y-2.5">
@@ -187,9 +169,9 @@ export function AssetsDashboardClient({ data }: Props) {
         {/* Recent lifecycle events */}
         <div className="card-surface rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="eyebrow-label text-faint">{isFa ? "رویدادهای اخیر چرخه عمر" : "Recent Lifecycle Events"}</p>
+            <p className="eyebrow-label text-faint">{t("dashboard.recentLifecycleEvents")}</p>
             <Link href={`/${locale}/assets/lifecycle`} className="text-xs text-ice hover:underline">
-              {isFa ? "همه" : "View all"}
+              {t("common.viewAll")}
             </Link>
           </div>
           <div className="space-y-2.5">
@@ -210,12 +192,12 @@ export function AssetsDashboardClient({ data }: Props) {
 
       {/* Status distribution */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-4">{isFa ? "وضعیت دارایی‌ها" : "Asset Status Distribution"}</p>
+        <p className="eyebrow-label text-faint mb-4">{t("dashboard.statusDistribution")}</p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(data.assetsByStatus).sort((a, b) => b[1] - a[1]).map(([status, count]) => (
             <div key={status} className="flex items-center gap-2 bg-surface3 rounded-lg px-3 py-2 border border-line">
               <span className="text-sm font-semibold text-ink tabular-nums">{count}</span>
-              <span className="text-xs text-muted">{STATUS_LABELS[status] ?? status}</span>
+              <span className="text-xs text-muted">{statusLabel(status)}</span>
             </div>
           ))}
         </div>

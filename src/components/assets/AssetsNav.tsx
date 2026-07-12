@@ -1,6 +1,7 @@
 "use client";
 import Link            from "next/link";
 import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 const ICONS: Record<string, React.ReactNode> = {
   dashboard:   <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M2 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3Zm8 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3Zm0 6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V9ZM2 13a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-4Z"/></svg>,
@@ -16,36 +17,35 @@ const ICONS: Record<string, React.ReactNode> = {
 };
 
 const LINKS = [
-  { href: "/assets/dashboard",   key: "dashboard",   label: "Dashboard",       fa: "داشبورد"          },
-  { href: "/assets/registry",    key: "registry",    label: "Asset Registry",  fa: "فهرست دارایی‌ها" },
-  { href: "/assets/hierarchy",   key: "hierarchy",   label: "Hierarchy",       fa: "سلسله‌مراتب"      },
-  { href: "/assets/criticality", key: "criticality", label: "Criticality",     fa: "اهمیت بحرانی"    },
-  { href: "/assets/health",      key: "health",      label: "Health",          fa: "سلامت دارایی‌ها" },
-  { href: "/assets/lifecycle",   key: "lifecycle",   label: "Lifecycle",       fa: "چرخه عمر"        },
-  { href: "/assets/maintenance", key: "maintenance", label: "Maintenance",     fa: "نگهداشت"         },
-  { href: "/assets/documents",   key: "documents",   label: "Documents",       fa: "اسناد"           },
-  { href: "/assets/analytics",   key: "analytics",   label: "Analytics",       fa: "تحلیل‌ها"        },
-  { href: "/assets/settings",    key: "settings",    label: "Settings",        fa: "تنظیمات"         },
+  { href: "/assets/dashboard",   key: "dashboard"   },
+  { href: "/assets/registry",    key: "registry"    },
+  { href: "/assets/hierarchy",   key: "hierarchy"   },
+  { href: "/assets/criticality", key: "criticality" },
+  { href: "/assets/health",      key: "health"      },
+  { href: "/assets/lifecycle",   key: "lifecycle"   },
+  { href: "/assets/maintenance", key: "maintenance" },
+  { href: "/assets/documents",   key: "documents"   },
+  { href: "/assets/analytics",   key: "analytics"   },
+  { href: "/assets/settings",    key: "settings"    },
 ];
 
 export function AssetsNav() {
   const pathname = usePathname();
-  const isFa     = pathname.startsWith("/fa");
-  const locale   = isFa ? "fa" : "en";
+  const locale   = useLocale();
+  const t        = useTranslations("assetOperations");
 
   return (
     <nav className="flex flex-col py-5 px-3">
       {/* Module identity */}
       <div className="px-3 mb-5">
-        <p className="eyebrow-mono text-ice mb-0.5">ASSETS</p>
-        <p className="text-xs text-faint leading-none">{isFa ? "هوشمندی دارایی‌ها" : "Asset Intelligence"}</p>
+        <p className="eyebrow-mono text-ice mb-0.5">{t("nav.eyebrow")}</p>
+        <p className="text-xs text-faint leading-none">{t("nav.tagline")}</p>
       </div>
 
       <div className="flex flex-col gap-0.5">
         {LINKS.map(l => {
           const href   = `/${locale}${l.href}`;
           const active = pathname === href || (l.href !== "/assets" && pathname.startsWith(`/${locale}${l.href}`));
-          const label  = isFa ? l.fa : l.label;
 
           return (
             <Link
@@ -61,7 +61,7 @@ export function AssetsNav() {
               <span className={active ? "text-ice" : "text-faint"}>
                 {ICONS[l.key]}
               </span>
-              <span>{label}</span>
+              <span>{t(`nav.items.${l.key}`)}</span>
             </Link>
           );
         })}

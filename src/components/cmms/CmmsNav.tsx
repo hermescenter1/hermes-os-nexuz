@@ -1,6 +1,7 @@
 "use client";
 import Link            from "next/link";
 import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 const ICONS: Record<string, React.ReactNode> = {
   dashboard:   <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M2 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3Zm8 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3Zm0 6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V9ZM2 13a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-4Z"/></svg>,
@@ -20,40 +21,39 @@ const ICONS: Record<string, React.ReactNode> = {
 };
 
 const LINKS = [
-  { href: "/cmms/dashboard",   key: "dashboard",  label: "Dashboard",    fa: "داشبورد"         },
-  { href: "/cmms/plans",       key: "plans",      label: "PM Plans",     fa: "برنامه‌های PM"    },
-  { href: "/cmms/schedules",   key: "schedules",  label: "Schedules",    fa: "زمان‌بندی‌ها"    },
-  { href: "/cmms/work-orders", key: "workorders", label: "Work Orders",  fa: "دستورکارها"      },
-  { href: "/cmms/tasks",       key: "tasks",      label: "Tasks",        fa: "وظایف"           },
-  { href: "/cmms/failures",    key: "failures",   label: "Failures",     fa: "خرابی‌ها"        },
-  { href: "/cmms/downtime",    key: "downtime",   label: "Downtime",     fa: "توقف‌ها"         },
-  { href: "/cmms/checklists",  key: "checklists", label: "Checklists",   fa: "چک‌لیست‌ها"      },
-  { href: "/cmms/calendar",    key: "calendar",   label: "Calendar",     fa: "تقویم"           },
-  { href: "/cmms/spares",      key: "spares",     label: "Spare Parts",  fa: "قطعات یدکی"      },
-  { href: "/cmms/costs",       key: "costs",      label: "Costs",        fa: "هزینه‌ها"        },
-  { href: "/cmms/history",     key: "history",    label: "History",      fa: "تاریخچه"         },
-  { href: "/cmms/reports",     key: "reports",    label: "Reports",      fa: "گزارش‌ها"        },
-  { href: "/cmms/settings",    key: "settings",   label: "Settings",     fa: "تنظیمات"         },
+  { href: "/cmms/dashboard",   key: "dashboard"  },
+  { href: "/cmms/plans",       key: "plans"      },
+  { href: "/cmms/schedules",   key: "schedules"  },
+  { href: "/cmms/work-orders", key: "workorders" },
+  { href: "/cmms/tasks",       key: "tasks"      },
+  { href: "/cmms/failures",    key: "failures"   },
+  { href: "/cmms/downtime",    key: "downtime"   },
+  { href: "/cmms/checklists",  key: "checklists" },
+  { href: "/cmms/calendar",    key: "calendar"   },
+  { href: "/cmms/spares",      key: "spares"     },
+  { href: "/cmms/costs",       key: "costs"      },
+  { href: "/cmms/history",     key: "history"    },
+  { href: "/cmms/reports",     key: "reports"    },
+  { href: "/cmms/settings",    key: "settings"   },
 ];
 
 export function CmmsNav() {
   const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
-  const isFa     = locale === "fa";
+  const locale   = useLocale();
+  const t        = useTranslations("maintenanceOperations");
 
   return (
     <nav className="flex flex-col py-5 px-3">
       {/* Module identity */}
       <div className="px-3 mb-5">
-        <p className="eyebrow-mono text-warn mb-0.5">CMMS</p>
-        <p className="text-xs text-faint leading-none">{isFa ? "مدیریت نگهداشت" : "Maintenance Management"}</p>
+        <p className="eyebrow-mono text-warn mb-0.5">{t("nav.eyebrow")}</p>
+        <p className="text-xs text-faint leading-none">{t("nav.tagline")}</p>
       </div>
 
       <div className="flex flex-col gap-0.5">
         {LINKS.map(l => {
           const href   = `/${locale}${l.href}`;
           const active = pathname === href || (l.href !== "/cmms" && pathname.startsWith(`/${locale}${l.href}`));
-          const label  = isFa ? l.fa : l.label;
 
           return (
             <Link
@@ -69,7 +69,7 @@ export function CmmsNav() {
               <span className={active ? "text-warn" : "text-faint"}>
                 {ICONS[l.key]}
               </span>
-              <span>{label}</span>
+              <span>{t(`nav.items.${l.key}`)}</span>
             </Link>
           );
         })}

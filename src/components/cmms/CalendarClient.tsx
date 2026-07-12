@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { MaintenanceCalendarEvent } from "@/lib/cmms/types";
 
 const EVENT_STYLE: Record<string, { border: string; bg: string; text: string }> = {
@@ -49,8 +49,7 @@ function EventCard({ event: ev, dimmed = false }: { event: MaintenanceCalendarEv
 }
 
 export function CalendarClient({ events }: { events: MaintenanceCalendarEvent[] }) {
-  const pathname = usePathname();
-  const isFa     = pathname.startsWith("/fa");
+  const t        = useTranslations("maintenanceOperations");
   const now      = new Date();
   const sorted   = [...events].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
   const upcoming = sorted.filter(e => new Date(e.startDate) >= now);
@@ -61,7 +60,7 @@ export function CalendarClient({ events }: { events: MaintenanceCalendarEvent[] 
       {upcoming.length > 0 && (
         <section>
           <div className="flex items-center gap-3 mb-4">
-            <p className="eyebrow-label text-signal">{isFa ? "رویدادهای آتی" : "Upcoming Events"}</p>
+            <p className="eyebrow-label text-signal">{t("calendar.upcomingEvents")}</p>
             <span className="text-xs text-faint font-mono">({upcoming.length})</span>
           </div>
           <div className="space-y-3">
@@ -73,7 +72,7 @@ export function CalendarClient({ events }: { events: MaintenanceCalendarEvent[] 
       {past.length > 0 && (
         <section>
           <div className="flex items-center gap-3 mb-4">
-            <p className="eyebrow-label text-faint">{isFa ? "رویدادهای گذشته" : "Past Events"}</p>
+            <p className="eyebrow-label text-faint">{t("calendar.pastEvents")}</p>
             <span className="text-xs text-faint font-mono">({past.length})</span>
           </div>
           <div className="space-y-3">
@@ -84,7 +83,7 @@ export function CalendarClient({ events }: { events: MaintenanceCalendarEvent[] 
 
       {events.length === 0 && (
         <div className="card-enterprise rounded-xl px-5 py-12 text-center">
-          <p className="text-muted text-sm">{isFa ? "رویدادی یافت نشد" : "No calendar events found"}</p>
+          <p className="text-muted text-sm">{t("calendar.empty")}</p>
         </div>
       )}
     </div>

@@ -4323,5 +4323,555 @@
       "disclaimerNotCertified": "گزارش ایمنی تأییدشده نیست.",
       "disclaimerVerify": "با پرسنل متخصص و رویه‌های ایمنی سایت راستی‌آزمایی شود."
     }
+  },
+  "assetOperations": {
+    "nav": {
+      "eyebrow": "ASSETS",
+      "tagline": "هوشمندی دارایی‌ها",
+      "items": {
+        "dashboard": "داشبورد",
+        "registry": "فهرست دارایی‌ها",
+        "hierarchy": "سلسله‌مراتب",
+        "criticality": "اهمیت بحرانی",
+        "health": "سلامت دارایی‌ها",
+        "lifecycle": "چرخه عمر",
+        "maintenance": "نگهداشت",
+        "documents": "اسناد",
+        "analytics": "تحلیل‌ها",
+        "settings": "تنظیمات"
+      }
+    },
+    "enums": {
+      "typeCompact": {
+        "PRODUCTION_LINE": "Production Line",
+        "MACHINE": "Machine",
+        "PLC": "PLC",
+        "HMI": "HMI",
+        "SCADA_NODE": "SCADA Node",
+        "ELECTRICAL_PANEL": "Elec. Panel",
+        "MCC_PANEL": "MCC Panel",
+        "VFD": "VFD",
+        "MOTOR": "Motor",
+        "PUMP": "Pump",
+        "VALVE": "Valve",
+        "SENSOR": "Sensor",
+        "INSTRUMENT": "Instrument",
+        "ROBOT": "Robot",
+        "CONVEYOR": "Conveyor",
+        "COMPRESSOR": "Compressor",
+        "UTILITY_SYSTEM": "Utility",
+        "SAFETY_SYSTEM": "Safety",
+        "NETWORK_DEVICE": "Network",
+        "INDUSTRIAL_PC": "IPC"
+      },
+      "typeFull": {
+        "PRODUCTION_LINE": "Production Line",
+        "MACHINE": "Machine",
+        "PLC": "PLC",
+        "HMI": "HMI",
+        "SCADA_NODE": "SCADA Node",
+        "ELECTRICAL_PANEL": "Electrical Panel",
+        "MCC_PANEL": "MCC Panel",
+        "VFD": "VFD",
+        "MOTOR": "Motor",
+        "PUMP": "Pump",
+        "VALVE": "Valve",
+        "SENSOR": "Sensor",
+        "INSTRUMENT": "Instrument",
+        "ROBOT": "Robot",
+        "CONVEYOR": "Conveyor",
+        "COMPRESSOR": "Compressor",
+        "UTILITY_SYSTEM": "Utility System",
+        "SAFETY_SYSTEM": "Safety System",
+        "NETWORK_DEVICE": "Network Device",
+        "INDUSTRIAL_PC": "Industrial PC"
+      },
+      "status": {
+        "IN_SERVICE": "In Service",
+        "DEGRADED": "Degraded",
+        "UNDER_MAINTENANCE": "Under Maintenance",
+        "STANDBY": "Standby",
+        "PLANNED": "Planned",
+        "COMMISSIONED": "Commissioned",
+        "RETIRED": "Retired",
+        "REPLACED": "Replaced",
+        "DECOMMISSIONED": "Decommissioned"
+      },
+      "criticality": {
+        "CRITICAL": "Critical",
+        "HIGH": "High",
+        "MEDIUM": "Medium",
+        "LOW": "Low",
+        "NON_CRITICAL": "Non-Critical"
+      }
+    },
+    "common": {
+      "overallScore": "امتیاز کلی",
+      "healthScore": "امتیاز سلامت",
+      "viewAll": "همه",
+      "noAssetsFound": "دارایی‌ای یافت نشد",
+      "health": "سلامت"
+    },
+    "registry": {
+      "eyebrow": "فهرست دارایی‌ها",
+      "title": "فهرست دارایی‌های صنعتی",
+      "assetsUnit": "دارایی",
+      "searchPh": "جست‌وجو…",
+      "allTypes": "همه نوع‌ها",
+      "allStatus": "همه وضعیت‌ها",
+      "allCriticality": "همه سطوح",
+      "colNumber": "شماره",
+      "colName": "نام",
+      "colType": "نوع",
+      "colStatus": "وضعیت",
+      "colCriticality": "بحرانیت",
+      "colHealth": "سلامت",
+      "colLocation": "مکان",
+      "details": "جزئیات"
+    },
+    "dashboard": {
+      "eyebrow": "مدیریت دارایی‌های صنعتی",
+      "title": "داشبورد هوشمندی دارایی‌ها",
+      "subtitle": "نمای جامع از وضعیت، سلامت، و چرخه عمر دارایی‌های صنعتی",
+      "kpiTotalLabel": "کل دارایی‌ها",
+      "kpiTotalSub": "ثبت‌شده",
+      "kpiCriticalLabel": "دارایی‌های بحرانی",
+      "kpiCriticalSub": "بحرانی",
+      "kpiDegradedLabel": "تنزل‌یافته/در خطر",
+      "kpiDegradedSub": "نیاز به توجه",
+      "kpiAtRiskLabel": "در خطر",
+      "kpiAtRiskSub": "رصد فعال",
+      "kpiOpenWoLabel": "دستورکار باز",
+      "kpiOpenWoSub": "دارایی مرتبط",
+      "kpiMissingDocsLabel": "بدون سند",
+      "kpiMissingDocsSub": "دارایی",
+      "healthDistribution": "توزیع سلامت دارایی‌ها",
+      "healthy": "سالم",
+      "monitor": "رصد",
+      "atRisk": "در خطر",
+      "critical": "بحرانی",
+      "unknown": "نامشخص",
+      "assetsByType": "دارایی‌ها بر اساس نوع",
+      "criticalityDistribution": "توزیع بحرانیت",
+      "topCriticalAssets": "دارایی‌های بحرانی برتر",
+      "recentLifecycleEvents": "رویدادهای اخیر چرخه عمر",
+      "statusDistribution": "وضعیت دارایی‌ها"
+    },
+    "detail": {
+      "breadcrumbRegistry": "فهرست دارایی‌ها",
+      "technicalProfile": "مشخصات فنی",
+      "assetType": "نوع دارایی",
+      "manufacturer": "سازنده",
+      "model": "مدل",
+      "serialNumber": "شماره سریال",
+      "firmware": "نسخه میان‌افزار",
+      "location": "مکان",
+      "installationDate": "تاریخ نصب",
+      "commissionDate": "تاریخ راه‌اندازی",
+      "warrantyExpiry": "انقضای گارانتی",
+      "expectedLife": "عمر مورد انتظار",
+      "years": "years",
+      "lifecycleState": "حالت چرخه عمر",
+      "specifications": "مشخصات",
+      "latestHealthSnapshot": "آخرین داده سلامت",
+      "vibrationRms": "ارتعاش RMS",
+      "temperature": "دما",
+      "pressure": "فشار",
+      "currentDraw": "جریان",
+      "noHealthSnapshots": "بدون داده سلامت",
+      "criticalityAssessment": "ارزیابی بحرانیت",
+      "lifecycleHistory": "تاریخچه چرخه عمر",
+      "maintenance": "نگهداشت",
+      "noWorkOrders": "بدون دستورکار",
+      "documents": "اسناد",
+      "noDocuments": "بدون سند",
+      "telemetry": "تله‌متری",
+      "noTags": "بدون تگ",
+      "tags": "برچسب‌ها"
+    },
+    "criticalityPage": {
+      "eyebrow": "ارزیابی بحرانیت",
+      "title": "اهمیت بحرانی دارایی‌ها",
+      "subtitle": "ارزیابی چند بعدی بحرانیت بر اساس ایمنی، تولید و نگهداری",
+      "safetyImpact": "تاثیر ایمنی",
+      "productionImpact": "تاثیر تولید",
+      "maintenanceImpact": "تاثیر نگهداری",
+      "downtimeRisk": "ریسک توقف",
+      "replacementDifficulty": "سختی جایگزینی",
+      "noAssessment": "ارزیابی موجود نیست"
+    },
+    "health": {
+      "eyebrow": "سلامت دارایی",
+      "title": "داشبورد سلامت دارایی‌ها",
+      "subtitle": "امتیاز سلامت، حالت ریسک و آخرین اندازه‌گیری‌های حسگر",
+      "vibrationRms": "ارتعاش (RMS)",
+      "temperature": "دما",
+      "pressure": "فشار",
+      "currentDraw": "جریان",
+      "recorded": "ثبت‌شده",
+      "noHealthData": "بدون داده سلامت"
+    },
+    "hierarchy": {
+      "eyebrow": "سلسله‌مراتب دارایی",
+      "title": "درخت سلسله‌مراتب دارایی‌ها",
+      "subtitle": "ساختار تجمیعی دارایی‌های صنعتی — از خط تولید تا قطعه",
+      "assetName": "نام دارایی"
+    },
+    "lifecycle": {
+      "eyebrow": "چرخه عمر دارایی",
+      "title": "رویدادهای چرخه عمر",
+      "eventsUnit": "رویداد ثبت‌شده",
+      "stateDistribution": "توزیع حالت‌های چرخه عمر",
+      "eventTimeline": "جدول زمانی رویدادها",
+      "noEvents": "رویدادی ثبت نشده",
+      "by": "توسط"
+    },
+    "maintenanceLinks": {
+      "eyebrow": "نگهداشت دارایی",
+      "title": "پیوندهای نگهداشت دارایی",
+      "subtitle": "ارتباط دارایی‌ها با دستورکارها و برنامه‌های نگهداری",
+      "noLinks": "هیچ دستورکار مرتبطی ثبت نشده",
+      "linksUnit": "مورد"
+    },
+    "documents": {
+      "eyebrow": "اسناد دارایی",
+      "title": "اسناد مرتبط دارایی‌ها",
+      "subtitle": "دستورالعمل‌ها، نقشه‌ها، و گواهی‌نامه‌های دارایی‌ها",
+      "missingAlert": "دارایی بدون سند هستند",
+      "noLinks": "هیچ سندی پیوند داده نشده",
+      "docsUnit": "سند",
+      "view": "مشاهده"
+    },
+    "analytics": {
+      "eyebrow": "تحلیل دارایی",
+      "title": "تحلیل دارایی‌های صنعتی",
+      "subtitle": "آمار و توزیع کامل دارایی‌ها",
+      "avgHealth": "میانگین سلامت",
+      "critical": "بحرانی",
+      "highPriority": "اولویت بالا",
+      "inService": "در سرویس",
+      "byType": "بر اساس نوع",
+      "byCriticality": "بر اساس بحرانیت",
+      "byStatus": "بر اساس وضعیت",
+      "byLifecycle": "بر اساس حالت چرخه عمر"
+    },
+    "settings": {
+      "eyebrow": "تنظیمات",
+      "title": "تنظیمات مدیریت دارایی",
+      "subtitle": "مدیریت مکان‌ها و پیکربندی ماژول",
+      "plantLocations": "مکان‌های کارخانه",
+      "locationsUnit": "مکان",
+      "moduleConfig": "پیکربندی ماژول",
+      "showInactive": "نمایش دارایی‌های غیرفعال",
+      "critInterval": "فاصله ارزیابی بحرانیت",
+      "healthWarn": "آستانه هشدار سلامت",
+      "healthCrit": "آستانه هشدار بحرانی",
+      "defaultProtocol": "پروتکل تله‌متری پیش‌فرض",
+      "valueNo": "خیر",
+      "valueSixMonths": "۶ ماه",
+      "configNote": "پیکربندی پیشرفته از طریق فایل‌های محیطی سرور انجام می‌شود."
+    },
+    "meta": {
+      "registry": "Asset Registry"
+    }
+  },
+  "maintenanceOperations": {
+    "nav": {
+      "eyebrow": "CMMS",
+      "tagline": "مدیریت نگهداشت",
+      "items": {
+        "dashboard": "داشبورد",
+        "plans": "برنامه‌های PM",
+        "schedules": "زمان‌بندی‌ها",
+        "workorders": "دستورکارها",
+        "tasks": "وظایف",
+        "failures": "خرابی‌ها",
+        "downtime": "توقف‌ها",
+        "checklists": "چک‌لیست‌ها",
+        "calendar": "تقویم",
+        "spares": "قطعات یدکی",
+        "costs": "هزینه‌ها",
+        "history": "تاریخچه",
+        "reports": "گزارش‌ها",
+        "settings": "تنظیمات"
+      }
+    },
+    "dashboard": {
+      "eyebrow": "سیستم مدیریت نگهداشت",
+      "title": "داشبورد CMMS",
+      "subtitle": "نظارت بر KPIهای نگهداشت، دستورکارها و تاریخچه خرابی‌ها",
+      "monitorOnly": "فقط نظارت — بدون کنترل",
+      "kpiAvailability": "دسترس‌پذیری",
+      "kpiPmCompliance": "تطابق PM",
+      "kpiOverdue": "معوقه",
+      "kpiEmergencyPct": "اضطراری",
+      "kpiTechUtil": "بهره تکنیسین",
+      "kpiDowntimeH": "توقف (ساعت)",
+      "kpiFailures30d": "خرابی‌ها (30 روز)",
+      "kpiCompleted30d": "تکمیل‌شده (30 روز)",
+      "kpiScheduled30d": "زمان‌بندی‌شده (30 روز)",
+      "tasksByStatus": "وضعیت دستورکارها",
+      "tasksByPriority": "اولویت دستورکارها",
+      "upcomingScheduled": "زمان‌بندی‌های آتی",
+      "noUpcoming": "دستورکار آتی‌ای یافت نشد",
+      "recentWorkOrders": "آخرین دستورکارها",
+      "recentFailures": "آخرین خرابی‌ها",
+      "colTitle": "عنوان",
+      "colStatus": "وضعیت",
+      "colPri": "اولویت",
+      "colSeverity": "شدت",
+      "colDate": "تاریخ"
+    },
+    "plans": {
+      "heading": "برنامه‌های نگهداشت",
+      "type": "نوع",
+      "frequency": "دوره",
+      "frequencyEvery": "هر {days} روز",
+      "estDuration": "مدت تخمینی",
+      "workOrders": "دستورکارها",
+      "overdueBy": "معوقه {days} روز",
+      "dueIn": "در {days} روز",
+      "active": "فعال",
+      "inactive": "غیرفعال",
+      "last": "آخرین"
+    },
+    "tasks": {
+      "defaultHeading": "دستورکارها",
+      "colTitle": "عنوان",
+      "colType": "نوع",
+      "colStatus": "وضعیت",
+      "colPriority": "اولویت",
+      "colTechnician": "تکنیسین",
+      "colScheduled": "زمان‌بندی",
+      "colEstH": "ساعت تخمینی",
+      "empty": "دستورکاری یافت نشد"
+    },
+    "schedules": {
+      "heading": "زمان‌بندی‌های نگهداشت",
+      "colName": "نام",
+      "colStatus": "وضعیت",
+      "colPriority": "اولویت",
+      "colDate": "تاریخ",
+      "colHours": "ساعت",
+      "colTechnician": "تکنیسین",
+      "colAsset": "دستگاه",
+      "empty": "زمان‌بندی‌ای یافت نشد"
+    },
+    "calendar": {
+      "upcomingEvents": "رویدادهای آتی",
+      "pastEvents": "رویدادهای گذشته",
+      "empty": "رویدادی یافت نشد"
+    },
+    "downtime": {
+      "kpiTotal": "کل توقف",
+      "kpiUnplanned": "غیربرنامه‌ریزی",
+      "kpiEvents": "رویدادها",
+      "kpiLoss": "زیان تولید",
+      "colAsset": "دستگاه",
+      "colReason": "دلیل",
+      "colStarted": "شروع",
+      "colDuration": "مدت",
+      "colImpact": "تأثیر",
+      "colLoss": "زیان ($)",
+      "ongoing": "در حال اجرا"
+    },
+    "failures": {
+      "kpiTotal": "کل خرابی‌ها",
+      "kpiCritical": "بحرانی",
+      "kpiResolved": "حل‌شده",
+      "kpiDowntime": "توقف (ساعت)",
+      "resolved": "حل‌شده",
+      "open": "باز",
+      "category": "دسته",
+      "occurred": "وقوع",
+      "resolvedAt": "حل‌شده در",
+      "downtime": "توقف",
+      "rootCauses": "علل ریشه‌ای",
+      "correctiveActions": "اقدامات اصلاحی"
+    },
+    "history": {
+      "heading": "مسیر حسابرسی نگهداشت",
+      "eventsUnit": "رویداد",
+      "wo": "دستورکار",
+      "by": "توسط"
+    },
+    "costs": {
+      "totalCost": "کل هزینه",
+      "ledger": "جزئیات هزینه‌ها",
+      "entriesUnit": "ورودی",
+      "colTaskId": "دستورکار",
+      "colCategory": "دسته",
+      "colDescription": "شرح",
+      "colDate": "تاریخ",
+      "colInvoice": "فاکتور",
+      "colAmount": "مبلغ",
+      "total": "جمع کل"
+    },
+    "reports": {
+      "eyebrow": "گزارش مدیریت نگهداشت",
+      "title": "گزارش‌های CMMS",
+      "reliabilityKpis": "KPIهای قابلیت اطمینان تجهیزات",
+      "mtbfSub": "میانگین زمان بین خرابی‌ها",
+      "mttrSub": "میانگین زمان تعمیر",
+      "availability": "دسترس‌پذیری",
+      "availabilitySub": "زمان بدون توقف",
+      "pmCompliance": "تطابق PM",
+      "pmComplianceSub": "نگهداشت پیشگیرانه به‌موقع",
+      "failurePareto": "پارتو خرابی‌ها (بر اساس دسته)",
+      "failuresUnit": "خرابی",
+      "costBreakdown": "تفکیک هزینه‌ها",
+      "total": "جمع کل",
+      "woSummary": "خلاصه دستورکارها",
+      "sumTotal": "کل",
+      "sumCompleted": "تکمیل‌شده",
+      "sumInProgress": "در حال اجرا",
+      "sumPlanned": "برنامه‌ریزی",
+      "sumOverdue": "معوقه"
+    },
+    "spares": {
+      "kpiTotal": "کل قطعات",
+      "kpiOutOfStock": "موجودی صفر",
+      "kpiLowStock": "موجودی کم",
+      "kpiValue": "ارزش موجودی",
+      "lowStockAlerts": "هشدار موجودی کم",
+      "colPartNumber": "شماره قطعه",
+      "colName": "نام",
+      "colCategory": "دسته",
+      "colManufacturer": "سازنده",
+      "colStock": "موجودی",
+      "colMin": "حداقل",
+      "colUnitCost": "هزینه واحد",
+      "colLocation": "محل"
+    },
+    "settings": {
+      "workCenters": "مراکز کاری",
+      "active": "فعال",
+      "inactive": "غیرفعال",
+      "costCenter": "مرکز هزینه",
+      "teams": "تیم‌های نگهداشت",
+      "capacity": "ظرفیت",
+      "specialty": "تخصص",
+      "technicians": "تکنیسین‌ها",
+      "colName": "نام",
+      "colEmployeeId": "کد کارمندی",
+      "colSpecialty": "تخصص",
+      "colTeam": "تیم",
+      "colStatus": "وضعیت",
+      "colCertifications": "گواهینامه‌ها",
+      "available": "آماده",
+      "assigned": "مشغول"
+    },
+    "pages": {
+      "dashboard": {
+        "title": "Maintenance Dashboard",
+        "subtitle": "Enterprise CMMS — Real-time maintenance intelligence"
+      },
+      "plansList": {
+        "title": "Maintenance Plans",
+        "subtitle": "Preventive and predictive maintenance planning schedules"
+      },
+      "tasksList": {
+        "title": "Maintenance Tasks",
+        "subtitle": "All maintenance tasks and assignments",
+        "clientHeading": "All Tasks"
+      },
+      "schedulesList": {
+        "title": "Maintenance Schedules",
+        "subtitle": "Planned and upcoming maintenance occurrences"
+      },
+      "calendarPage": {
+        "title": "Maintenance Calendar",
+        "subtitle": "Scheduled maintenance events and planning view"
+      },
+      "downtimePage": {
+        "title": "Downtime Records",
+        "subtitle": "Equipment downtime tracking and production loss analysis"
+      },
+      "failuresList": {
+        "title": "Failure Reports",
+        "subtitle": "Equipment failures, root cause analysis, and corrective actions"
+      },
+      "historyPage": {
+        "title": "Maintenance History",
+        "subtitle": "Complete audit trail of all maintenance activities"
+      },
+      "costsPage": {
+        "title": "Maintenance Cost Tracking",
+        "subtitle": "Labor, parts, contractor, and overhead cost analysis"
+      },
+      "reportsPage": {
+        "title": "CMMS Reports & Analytics",
+        "subtitle": "MTBF, MTTR, availability, failure Pareto, and cost analysis"
+      },
+      "sparesPage": {
+        "title": "Spare Parts Inventory",
+        "subtitle": "Maintenance spare parts catalog, stock levels, and procurement"
+      },
+      "settingsPage": {
+        "title": "CMMS Settings",
+        "subtitle": "Work centers, teams, technicians, and system configuration"
+      },
+      "workOrdersList": {
+        "title": "Work Orders",
+        "subtitle": "Active and pending maintenance work orders",
+        "clientHeading": "Active Work Orders",
+        "kpiTotal": "Total",
+        "kpiActive": "Active",
+        "kpiOverdue": "Overdue",
+        "kpiPlanned": "Planned"
+      },
+      "checklistsPage": {
+        "title": "Maintenance Checklists",
+        "subtitle": "Checklist templates and task execution forms",
+        "templates": "Templates",
+        "taskChecklists": "Task Checklists",
+        "empty": "No checklists found. Create PM Plans to generate checklists.",
+        "badgeTemplate": "Template",
+        "badgeTaskChecklist": "Task Checklist",
+        "itemsUnit": "items"
+      },
+      "planDetail": {
+        "clientHeading": "Work Orders for this Plan",
+        "type": "Type",
+        "frequency": "Frequency",
+        "estHours": "Est. Hours",
+        "status": "Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "nextDue": "Next due:"
+      },
+      "taskDetail": {
+        "type": "Type",
+        "priority": "Priority",
+        "woType": "WO Type",
+        "estHours": "Est. Hours",
+        "actualHours": "Actual Hours",
+        "technician": "Technician",
+        "asset": "Asset",
+        "workCenter": "Work Center",
+        "scheduled": "Scheduled: ",
+        "due": "Due: ",
+        "started": "Started: ",
+        "completed": "Completed: ",
+        "comments": "Comments",
+        "anonymous": "Anonymous",
+        "internalNote": "Internal note",
+        "activityLog": "Activity Log"
+      },
+      "failureDetail": {
+        "category": "Category",
+        "asset": "Asset",
+        "occurred": "Occurred",
+        "downtime": "Downtime",
+        "detected": "Detected",
+        "resolved": "Resolved",
+        "open": "Open",
+        "reportedBy": "Reported By",
+        "rootCauseAnalysis": "Root Cause Analysis",
+        "correctiveActions": "Corrective Actions",
+        "assigned": "Assigned:",
+        "due": "Due:"
+      }
+    }
   }
 }

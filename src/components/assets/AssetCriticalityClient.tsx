@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { RegistryAssetRecord, AssetCriticalityAssessment } from "@/lib/assets/types";
 
 function critBadge(c: string) {
@@ -43,9 +43,8 @@ interface AssetWithCriticality extends RegistryAssetRecord {
 interface Props { assets: AssetWithCriticality[] }
 
 export function AssetCriticalityClient({ assets }: Props) {
-  const pathname = usePathname();
-  const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
+  const t      = useTranslations("assetOperations");
+  const locale = useLocale();
   const sorted = [...assets].sort((a, b) => {
     const order = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, NON_CRITICAL: 4 };
     return (order[a.criticality as keyof typeof order] ?? 9) - (order[b.criticality as keyof typeof order] ?? 9);
@@ -54,10 +53,10 @@ export function AssetCriticalityClient({ assets }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow-mono text-ice mb-1">{isFa ? "ارزیابی بحرانیت" : "CRITICALITY ASSESSMENT"}</p>
-        <h1 className="text-xl font-semibold text-ink">{isFa ? "اهمیت بحرانی دارایی‌ها" : "Asset Criticality Analysis"}</h1>
+        <p className="eyebrow-mono text-ice mb-1">{t("criticalityPage.eyebrow")}</p>
+        <h1 className="text-xl font-semibold text-ink">{t("criticalityPage.title")}</h1>
         <p className="text-sm text-muted mt-1">
-          {isFa ? "ارزیابی چند بعدی بحرانیت بر اساس ایمنی، تولید و نگهداری" : "Multi-dimensional criticality assessment: safety, production, and maintenance impact"}
+          {t("criticalityPage.subtitle")}
         </p>
       </div>
 
@@ -84,21 +83,21 @@ export function AssetCriticalityClient({ assets }: Props) {
                     <span className={`text-2xl font-semibold tabular-nums ${scoreColor(assessment.overallScore)}`}>
                       {assessment.overallScore.toFixed(1)}
                     </span>
-                    <span className="text-xs text-faint">{isFa ? "امتیاز کلی" : "overall score"}</span>
+                    <span className="text-xs text-faint">{t("common.overallScore")}</span>
                   </div>
                   <div className="space-y-2">
-                    <DimensionBar label={isFa ? "تاثیر ایمنی" : "Safety Impact"}         value={assessment.safetyImpact} />
-                    <DimensionBar label={isFa ? "تاثیر تولید" : "Production Impact"}       value={assessment.productionImpact} />
-                    <DimensionBar label={isFa ? "تاثیر نگهداری" : "Maintenance Impact"}   value={assessment.maintenanceImpact} />
-                    <DimensionBar label={isFa ? "ریسک توقف" : "Downtime Risk"}            value={assessment.downtimeRisk} />
-                    <DimensionBar label={isFa ? "سختی جایگزینی" : "Replacement Difficulty"} value={assessment.replacementDifficulty} />
+                    <DimensionBar label={t("criticalityPage.safetyImpact")}          value={assessment.safetyImpact} />
+                    <DimensionBar label={t("criticalityPage.productionImpact")}       value={assessment.productionImpact} />
+                    <DimensionBar label={t("criticalityPage.maintenanceImpact")}      value={assessment.maintenanceImpact} />
+                    <DimensionBar label={t("criticalityPage.downtimeRisk")}           value={assessment.downtimeRisk} />
+                    <DimensionBar label={t("criticalityPage.replacementDifficulty")}  value={assessment.replacementDifficulty} />
                   </div>
                   {assessment.notes && (
                     <p className="text-xs text-faint mt-3 border-t border-line pt-3">{assessment.notes}</p>
                   )}
                 </>
               ) : (
-                <p className="text-xs text-faint italic">{isFa ? "ارزیابی موجود نیست" : "No assessment recorded"}</p>
+                <p className="text-xs text-faint italic">{t("criticalityPage.noAssessment")}</p>
               )}
             </div>
           );

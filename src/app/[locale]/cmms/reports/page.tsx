@@ -1,12 +1,14 @@
 import { getTasks, getFailures, getDowntime, getCosts, getSpareParts } from "@/lib/cmms/db";
 import { computeKpis }   from "@/lib/cmms/kpi";
 import { ReportsClient } from "@/components/cmms/ReportsClient";
+import { getTranslations }  from "next-intl/server";
 import { noIndexMetadata } from "@/lib/seo/metadata";
 
 export const metadata = noIndexMetadata("CMMS Reports");
 export const dynamic  = "force-dynamic";
 
 export default async function ReportsPage() {
+  const t = await getTranslations("maintenanceOperations");
   const [tasks, failures, downtime, costs, spares] = await Promise.all([
     getTasks(), getFailures(), getDowntime(), getCosts(), getSpareParts(),
   ]);
@@ -47,10 +49,8 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">CMMS Reports & Analytics</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          MTBF, MTTR, availability, failure Pareto, and cost analysis
-        </p>
+        <h1 className="text-2xl font-bold">{t("pages.reportsPage.title")}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t("pages.reportsPage.subtitle")}</p>
       </div>
       <ReportsClient report={report} />
     </div>

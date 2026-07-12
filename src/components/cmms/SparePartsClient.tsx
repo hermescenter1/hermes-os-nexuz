@@ -1,10 +1,9 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { MaintenanceSparePart } from "@/lib/cmms/types";
 
 export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
-  const pathname   = usePathname();
-  const isFa       = pathname.startsWith("/fa");
+  const t          = useTranslations("maintenanceOperations");
   const lowStock   = parts.filter(p => p.stockQty <= p.minStockQty);
   const outOfStock = parts.filter(p => p.stockQty === 0);
   const totalValue = parts.reduce((s, p) => s + p.unitCost * p.stockQty, 0);
@@ -14,10 +13,10 @@ export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: isFa ? "کل قطعات"          : "Total Parts",      value: parts.length,                                   ac: "text-ink",    b: "border-line"      },
-          { label: isFa ? "موجودی صفر"         : "Out of Stock",     value: outOfStock.length,                              ac: outOfStock.length > 0 ? "text-danger" : "text-signal",  b: outOfStock.length > 0 ? "border-danger/30" : "border-signal/20" },
-          { label: isFa ? "موجودی کم"          : "Low Stock",        value: lowStock.length,                                ac: lowStock.length > 0 ? "text-warn" : "text-signal",      b: lowStock.length > 0 ? "border-warn/30" : "border-signal/20"   },
-          { label: isFa ? "ارزش موجودی"        : "Inventory Value",  value: `$${Math.round(totalValue).toLocaleString()}`,   ac: "text-signal", b: "border-signal/20" },
+          { label: t("spares.kpiTotal"),      value: parts.length,                                   ac: "text-ink",    b: "border-line"      },
+          { label: t("spares.kpiOutOfStock"), value: outOfStock.length,                              ac: outOfStock.length > 0 ? "text-danger" : "text-signal",  b: outOfStock.length > 0 ? "border-danger/30" : "border-signal/20" },
+          { label: t("spares.kpiLowStock"),   value: lowStock.length,                                ac: lowStock.length > 0 ? "text-warn" : "text-signal",      b: lowStock.length > 0 ? "border-warn/30" : "border-signal/20"   },
+          { label: t("spares.kpiValue"),      value: `$${Math.round(totalValue).toLocaleString()}`,   ac: "text-signal", b: "border-signal/20" },
         ].map(s => (
           <div key={s.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${s.b}`}>
             <div className={`text-2xl font-bold font-mono ${s.ac}`}>{s.value}</div>
@@ -33,7 +32,7 @@ export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-warn">
               <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd"/>
             </svg>
-            <h3 className="text-sm font-semibold text-warn">{isFa ? "هشدار موجودی کم" : "Low Stock Alerts"} ({lowStock.length})</h3>
+            <h3 className="text-sm font-semibold text-warn">{t("spares.lowStockAlerts")} ({lowStock.length})</h3>
           </div>
           <div className="space-y-1.5">
             {lowStock.map(p => (
@@ -54,14 +53,14 @@ export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line bg-surface2">
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "شماره قطعه" : "Part Number"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "نام" : "Name"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "دسته" : "Category"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "سازنده" : "Manufacturer"}</th>
-              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "موجودی" : "Stock"}</th>
-              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "حداقل" : "Min"}</th>
-              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "هزینه واحد" : "Unit Cost"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{isFa ? "محل" : "Location"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("spares.colPartNumber")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("spares.colName")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{t("spares.colCategory")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("spares.colManufacturer")}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("spares.colStock")}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{t("spares.colMin")}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("spares.colUnitCost")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{t("spares.colLocation")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">

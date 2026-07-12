@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { RegistryAssetRecord, AssetDocumentLink } from "@/lib/assets/types";
 
 function docTypeBadge(t: string) {
@@ -19,19 +19,18 @@ interface AssetWithDocs extends RegistryAssetRecord {
 interface Props { assets: AssetWithDocs[] }
 
 export function AssetDocumentsClient({ assets }: Props) {
-  const pathname = usePathname();
-  const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
+  const t      = useTranslations("assetOperations");
+  const locale = useLocale();
   const hasLinks = assets.filter(a => a.documentLinks?.length > 0);
   const missingDocs = assets.filter(a => !a.documentLinks?.length);
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow-mono text-ice mb-1">{isFa ? "اسناد دارایی" : "ASSET DOCUMENTS"}</p>
-        <h1 className="text-xl font-semibold text-ink">{isFa ? "اسناد مرتبط دارایی‌ها" : "Asset Document Links"}</h1>
+        <p className="eyebrow-mono text-ice mb-1">{t("documents.eyebrow")}</p>
+        <h1 className="text-xl font-semibold text-ink">{t("documents.title")}</h1>
         <p className="text-sm text-muted mt-1">
-          {isFa ? "دستورالعمل‌ها، نقشه‌ها، و گواهی‌نامه‌های دارایی‌ها" : "Manuals, drawings, and certificates linked to industrial assets"}
+          {t("documents.subtitle")}
         </p>
       </div>
 
@@ -39,7 +38,7 @@ export function AssetDocumentsClient({ assets }: Props) {
       {missingDocs.length > 0 && (
         <div className="bg-warn/[0.08] border border-warn/20 rounded-xl p-4">
           <p className="text-sm text-warn font-medium">
-            {missingDocs.length} {isFa ? "دارایی بدون سند هستند" : "assets have no linked documents"}
+            {missingDocs.length} {t("documents.missingAlert")}
           </p>
           <p className="text-xs text-warn/70 mt-1">
             {missingDocs.map(a => a.assetNumber).join(", ")}
@@ -49,7 +48,7 @@ export function AssetDocumentsClient({ assets }: Props) {
 
       {hasLinks.length === 0 ? (
         <div className="card-surface rounded-xl p-12 text-center">
-          <p className="text-muted">{isFa ? "هیچ سندی پیوند داده نشده" : "No document links found"}</p>
+          <p className="text-muted">{t("documents.noLinks")}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -62,7 +61,7 @@ export function AssetDocumentsClient({ assets }: Props) {
                     {a.name}
                   </Link>
                 </div>
-                <span className="text-xs text-faint">{a.documentLinks.length} {isFa ? "سند" : "docs"}</span>
+                <span className="text-xs text-faint">{a.documentLinks.length} {t("documents.docsUnit")}</span>
               </div>
 
               <div className="space-y-2">
@@ -79,7 +78,7 @@ export function AssetDocumentsClient({ assets }: Props) {
                       )}
                     </div>
                     {doc.fileRef && (
-                      <span className="text-xs text-ice shrink-0">{isFa ? "مشاهده" : "View"}</span>
+                      <span className="text-xs text-ice shrink-0">{t("documents.view")}</span>
                     )}
                   </div>
                 ))}

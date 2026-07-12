@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type {
   RegistryAssetRecord, AssetCriticalityAssessment, AssetHealthSnapshot,
   AssetLifecycleEvent, AssetMaintenanceLink, AssetDocumentLink,
@@ -64,9 +64,8 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 interface Props { asset: FullAsset }
 
 export function AssetDetailClient({ asset }: Props) {
-  const pathname = usePathname();
-  const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
+  const t      = useTranslations("assetOperations");
+  const locale = useLocale();
 
   const latestHealth = asset.healthSnapshots?.[0];
   const latestCrit   = asset.criticalities?.[0];
@@ -75,7 +74,7 @@ export function AssetDetailClient({ asset }: Props) {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs text-faint">
-        <Link href={`/${locale}/assets/registry`} className="hover:text-ice">{isFa ? "فهرست دارایی‌ها" : "Registry"}</Link>
+        <Link href={`/${locale}/assets/registry`} className="hover:text-ice">{t("detail.breadcrumbRegistry")}</Link>
         <span>/</span>
         <span className="text-muted">{asset.assetNumber}</span>
       </div>
@@ -104,7 +103,7 @@ export function AssetDetailClient({ asset }: Props) {
         {/* Health score */}
         <div className="mt-5">
           <div className="flex items-end justify-between mb-1.5">
-            <span className="text-xs text-faint">{isFa ? "امتیاز سلامت" : "Health Score"}</span>
+            <span className="text-xs text-faint">{t("common.healthScore")}</span>
             <span className={`text-3xl font-semibold ${healthText(asset.healthScore)}`}>{asset.healthScore}%</span>
           </div>
           <div className="h-2 bg-surface3 rounded-full overflow-hidden">
@@ -117,29 +116,29 @@ export function AssetDetailClient({ asset }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Technical profile */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{isFa ? "مشخصات فنی" : "Technical Profile"}</p>
+          <p className="eyebrow-label text-faint mb-4">{t("detail.technicalProfile")}</p>
           <div>
-            <InfoRow label={isFa ? "نوع دارایی" : "Asset Type"} value={asset.assetType.replace(/_/g, " ")} />
-            <InfoRow label={isFa ? "سازنده" : "Manufacturer"} value={asset.manufacturer} />
-            <InfoRow label={isFa ? "مدل" : "Model"} value={asset.model} />
-            <InfoRow label={isFa ? "شماره سریال" : "Serial Number"} value={asset.serialNumber} />
-            <InfoRow label={isFa ? "نسخه میان‌افزار" : "Firmware"} value={asset.firmwareVersion} />
-            <InfoRow label={isFa ? "مکان" : "Location"} value={asset.location?.name} />
-            <InfoRow label={isFa ? "تاریخ نصب" : "Installation Date"}
+            <InfoRow label={t("detail.assetType")} value={asset.assetType.replace(/_/g, " ")} />
+            <InfoRow label={t("detail.manufacturer")} value={asset.manufacturer} />
+            <InfoRow label={t("detail.model")} value={asset.model} />
+            <InfoRow label={t("detail.serialNumber")} value={asset.serialNumber} />
+            <InfoRow label={t("detail.firmware")} value={asset.firmwareVersion} />
+            <InfoRow label={t("detail.location")} value={asset.location?.name} />
+            <InfoRow label={t("detail.installationDate")}
               value={asset.installationDate ? new Date(asset.installationDate).toLocaleDateString() : null} />
-            <InfoRow label={isFa ? "تاریخ راه‌اندازی" : "Commission Date"}
+            <InfoRow label={t("detail.commissionDate")}
               value={asset.commissionDate ? new Date(asset.commissionDate).toLocaleDateString() : null} />
-            <InfoRow label={isFa ? "انقضای گارانتی" : "Warranty Expiry"}
+            <InfoRow label={t("detail.warrantyExpiry")}
               value={asset.warrantyExpiry ? new Date(asset.warrantyExpiry).toLocaleDateString() : null} />
-            <InfoRow label={isFa ? "عمر مورد انتظار" : "Expected Life"}
-              value={asset.expectedLifeYears ? `${asset.expectedLifeYears} years` : null} />
-            <InfoRow label={isFa ? "حالت چرخه عمر" : "Lifecycle State"} value={asset.lifecycleState.replace(/_/g, " ")} />
+            <InfoRow label={t("detail.expectedLife")}
+              value={asset.expectedLifeYears ? `${asset.expectedLifeYears} ${t("detail.years")}` : null} />
+            <InfoRow label={t("detail.lifecycleState")} value={asset.lifecycleState.replace(/_/g, " ")} />
           </div>
 
           {/* Technical specs */}
           {Object.keys(asset.technicalSpecs).length > 0 && (
             <div className="mt-4 border-t border-line pt-4">
-              <p className="text-xs text-faint mb-2">{isFa ? "مشخصات" : "Specifications"}</p>
+              <p className="text-xs text-faint mb-2">{t("detail.specifications")}</p>
               {Object.entries(asset.technicalSpecs).map(([k, v]) => (
                 <div key={k} className="grid grid-cols-[140px_1fr] gap-2 py-1 border-b border-line/30">
                   <span className="text-xs text-faint">{k}</span>
@@ -152,31 +151,31 @@ export function AssetDetailClient({ asset }: Props) {
 
         {/* Latest health snapshot */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{isFa ? "آخرین داده سلامت" : "Latest Health Snapshot"}</p>
+          <p className="eyebrow-label text-faint mb-4">{t("detail.latestHealthSnapshot")}</p>
           {latestHealth ? (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 {latestHealth.vibrationRms !== null && (
                   <div className="bg-surface2 rounded-lg p-3">
-                    <p className="text-xs text-faint">{isFa ? "ارتعاش RMS" : "Vibration RMS"}</p>
+                    <p className="text-xs text-faint">{t("detail.vibrationRms")}</p>
                     <p className="text-lg font-semibold text-ink">{latestHealth.vibrationRms?.toFixed(1)}<span className="text-xs text-faint ms-1">mm/s</span></p>
                   </div>
                 )}
                 {latestHealth.temperature !== null && (
                   <div className="bg-surface2 rounded-lg p-3">
-                    <p className="text-xs text-faint">{isFa ? "دما" : "Temperature"}</p>
+                    <p className="text-xs text-faint">{t("detail.temperature")}</p>
                     <p className="text-lg font-semibold text-ink">{latestHealth.temperature?.toFixed(0)}<span className="text-xs text-faint ms-1">°C</span></p>
                   </div>
                 )}
                 {latestHealth.pressure !== null && (
                   <div className="bg-surface2 rounded-lg p-3">
-                    <p className="text-xs text-faint">{isFa ? "فشار" : "Pressure"}</p>
+                    <p className="text-xs text-faint">{t("detail.pressure")}</p>
                     <p className="text-lg font-semibold text-ink">{latestHealth.pressure?.toFixed(1)}<span className="text-xs text-faint ms-1">bar</span></p>
                   </div>
                 )}
                 {latestHealth.currentDraw !== null && (
                   <div className="bg-surface2 rounded-lg p-3">
-                    <p className="text-xs text-faint">{isFa ? "جریان" : "Current Draw"}</p>
+                    <p className="text-xs text-faint">{t("detail.currentDraw")}</p>
                     <p className="text-lg font-semibold text-ink">{latestHealth.currentDraw?.toFixed(0)}<span className="text-xs text-faint ms-1">A</span></p>
                   </div>
                 )}
@@ -185,18 +184,18 @@ export function AssetDetailClient({ asset }: Props) {
               <p className="text-xs text-faint/60">{new Date(latestHealth.takenAt).toLocaleDateString()}</p>
             </div>
           ) : (
-            <p className="text-muted text-sm">{isFa ? "بدون داده سلامت" : "No health snapshots available"}</p>
+            <p className="text-muted text-sm">{t("detail.noHealthSnapshots")}</p>
           )}
 
           {/* Criticality assessment */}
           {latestCrit && (
             <div className="mt-5 border-t border-line pt-5">
-              <p className="eyebrow-label text-faint mb-3">{isFa ? "ارزیابی بحرانیت" : "Criticality Assessment"}</p>
+              <p className="eyebrow-label text-faint mb-3">{t("detail.criticalityAssessment")}</p>
               <div className="flex items-center gap-3 mb-3">
                 <span className={`text-lg font-semibold ${latestCrit.overallScore >= 80 ? "text-danger" : latestCrit.overallScore >= 60 ? "text-warn" : "text-ice"}`}>
                   {latestCrit.overallScore.toFixed(1)}
                 </span>
-                <span className="text-xs text-faint">{isFa ? "امتیاز کلی" : "overall score"}</span>
+                <span className="text-xs text-faint">{t("common.overallScore")}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${critBadge(latestCrit.criticality)}`}>
                   {latestCrit.criticality}
                 </span>
@@ -210,7 +209,7 @@ export function AssetDetailClient({ asset }: Props) {
       {/* Lifecycle events */}
       {asset.lifecycleEvents.length > 0 && (
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{isFa ? "تاریخچه چرخه عمر" : "Lifecycle History"}</p>
+          <p className="eyebrow-label text-faint mb-4">{t("detail.lifecycleHistory")}</p>
           <div className="space-y-3">
             {asset.lifecycleEvents.slice(0, 5).map(ev => (
               <div key={ev.id} className="flex items-start gap-3">
@@ -233,9 +232,9 @@ export function AssetDetailClient({ asset }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Maintenance */}
         <div className="card-surface rounded-xl p-4">
-          <p className="eyebrow-label text-faint mb-3">{isFa ? "نگهداشت" : "Maintenance"}</p>
+          <p className="eyebrow-label text-faint mb-3">{t("detail.maintenance")}</p>
           {asset.maintenanceLinks.length === 0 ? (
-            <p className="text-xs text-faint">{isFa ? "بدون دستورکار" : "No work orders"}</p>
+            <p className="text-xs text-faint">{t("detail.noWorkOrders")}</p>
           ) : (
             <div className="space-y-2">
               {asset.maintenanceLinks.map(lnk => (
@@ -250,9 +249,9 @@ export function AssetDetailClient({ asset }: Props) {
 
         {/* Documents */}
         <div className="card-surface rounded-xl p-4">
-          <p className="eyebrow-label text-faint mb-3">{isFa ? "اسناد" : "Documents"}</p>
+          <p className="eyebrow-label text-faint mb-3">{t("detail.documents")}</p>
           {asset.documentLinks.length === 0 ? (
-            <p className="text-xs text-faint">{isFa ? "بدون سند" : "No documents linked"}</p>
+            <p className="text-xs text-faint">{t("detail.noDocuments")}</p>
           ) : (
             <div className="space-y-2">
               {asset.documentLinks.map(doc => (
@@ -267,9 +266,9 @@ export function AssetDetailClient({ asset }: Props) {
 
         {/* Telemetry */}
         <div className="card-surface rounded-xl p-4">
-          <p className="eyebrow-label text-faint mb-3">{isFa ? "تله‌متری" : "Telemetry"}</p>
+          <p className="eyebrow-label text-faint mb-3">{t("detail.telemetry")}</p>
           {asset.telemetryLinks.length === 0 ? (
-            <p className="text-xs text-faint">{isFa ? "بدون تگ" : "No tags linked"}</p>
+            <p className="text-xs text-faint">{t("detail.noTags")}</p>
           ) : (
             <div className="space-y-2">
               {asset.telemetryLinks.map(tl => (
@@ -286,12 +285,12 @@ export function AssetDetailClient({ asset }: Props) {
       {/* Tags */}
       {asset.assetTags.length > 0 && (
         <div className="card-surface rounded-xl p-4">
-          <p className="eyebrow-label text-faint mb-3">{isFa ? "برچسب‌ها" : "Tags"}</p>
+          <p className="eyebrow-label text-faint mb-3">{t("detail.tags")}</p>
           <div className="flex flex-wrap gap-2">
-            {asset.assetTags.map(t => (
-              <div key={t.id} className="flex items-center gap-1 bg-surface2 border border-line/50 rounded px-2 py-1">
-                <span className="text-xs text-faint">{t.key}:</span>
-                <span className="text-xs text-ink">{t.value}</span>
+            {asset.assetTags.map(tag => (
+              <div key={tag.id} className="flex items-center gap-1 bg-surface2 border border-line/50 rounded px-2 py-1">
+                <span className="text-xs text-faint">{tag.key}:</span>
+                <span className="text-xs text-ink">{tag.value}</span>
               </div>
             ))}
           </div>

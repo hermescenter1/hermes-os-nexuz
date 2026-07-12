@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { MaintenanceDowntime } from "@/lib/cmms/types";
 
 const REASON_STYLE: Record<string, { bg: string; text: string }> = {
@@ -13,8 +13,7 @@ const REASON_STYLE: Record<string, { bg: string; text: string }> = {
 };
 
 export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }) {
-  const pathname       = usePathname();
-  const isFa           = pathname.startsWith("/fa");
+  const t              = useTranslations("maintenanceOperations");
   const totalMinutes   = downtime.reduce((s, d) => s + (d.durationMinutes ?? 0), 0);
   const unplannedMin   = downtime.filter(d => d.reason !== "PLANNED_MAINTENANCE").reduce((s, d) => s + (d.durationMinutes ?? 0), 0);
   const totalLoss      = downtime.reduce((s, d) => s + (d.productionLoss ?? 0), 0);
@@ -24,10 +23,10 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: isFa ? "کل توقف"        : "Total Downtime",  value: `${Math.round(totalMinutes / 60)}h`,  ac: "text-ink",    b: "border-line"     },
-          { label: isFa ? "غیربرنامه‌ریزی" : "Unplanned",       value: `${Math.round(unplannedMin / 60)}h`, ac: "text-danger", b: "border-danger/30" },
-          { label: isFa ? "رویدادها"        : "Events",          value: downtime.length,                      ac: "text-warn",   b: "border-warn/30"   },
-          { label: isFa ? "زیان تولید"      : "Production Loss", value: `$${Math.round(totalLoss).toLocaleString()}`, ac: "text-warn", b: "border-warn/20" },
+          { label: t("downtime.kpiTotal"),     value: `${Math.round(totalMinutes / 60)}h`,  ac: "text-ink",    b: "border-line"     },
+          { label: t("downtime.kpiUnplanned"), value: `${Math.round(unplannedMin / 60)}h`, ac: "text-danger", b: "border-danger/30" },
+          { label: t("downtime.kpiEvents"),    value: downtime.length,                      ac: "text-warn",   b: "border-warn/30"   },
+          { label: t("downtime.kpiLoss"),      value: `$${Math.round(totalLoss).toLocaleString()}`, ac: "text-warn", b: "border-warn/20" },
         ].map(s => (
           <div key={s.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${s.b}`}>
             <div className={`text-2xl font-bold font-mono ${s.ac}`}>{s.value}</div>
@@ -41,12 +40,12 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line bg-surface2">
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "دستگاه" : "Asset"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "دلیل" : "Reason"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "شروع" : "Started"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "مدت" : "Duration"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "تأثیر" : "Impact"}</th>
-              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "زیان ($)" : "Loss ($)"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("downtime.colAsset")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("downtime.colReason")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{t("downtime.colStarted")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("downtime.colDuration")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("downtime.colImpact")}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("downtime.colLoss")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -69,7 +68,7 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
                     <span className="text-xs font-mono font-medium text-warn">
                       {d.durationMinutes != null
                         ? `${Math.round(d.durationMinutes / 60)}h ${d.durationMinutes % 60}m`
-                        : (isFa ? "در حال اجرا" : "Ongoing")}
+                        : t("downtime.ongoing")}
                     </span>
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell max-w-[200px]">

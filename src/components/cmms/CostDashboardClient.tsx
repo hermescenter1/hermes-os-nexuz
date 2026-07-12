@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { MaintenanceCost } from "@/lib/cmms/types";
 
 const CAT_STYLE: Record<string, { color: string; border: string }> = {
@@ -10,8 +10,7 @@ const CAT_STYLE: Record<string, { color: string; border: string }> = {
 };
 
 export function CostDashboardClient({ costs, total }: { costs: MaintenanceCost[]; total: number }) {
-  const pathname = usePathname();
-  const isFa     = pathname.startsWith("/fa");
+  const t = useTranslations("maintenanceOperations");
 
   const byCategory: Record<string, number> = {};
   for (const c of costs) {
@@ -24,7 +23,7 @@ export function CostDashboardClient({ costs, total }: { costs: MaintenanceCost[]
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="card-enterprise rounded-xl p-4 border-s-2 border-signal/30">
           <div className="text-2xl font-bold font-mono text-signal">${Math.round(total).toLocaleString()}</div>
-          <div className="text-xs text-muted mt-1.5">{isFa ? "کل هزینه" : "Total Cost"}</div>
+          <div className="text-xs text-muted mt-1.5">{t("costs.totalCost")}</div>
         </div>
         {Object.entries(byCategory).map(([cat, amt]) => {
           const s = CAT_STYLE[cat] ?? { color: "text-muted", border: "border-line" };
@@ -40,18 +39,18 @@ export function CostDashboardClient({ costs, total }: { costs: MaintenanceCost[]
       {/* Cost ledger table */}
       <div className="card-enterprise rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-line flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-ink">{isFa ? "جزئیات هزینه‌ها" : "Cost Ledger"}</h3>
-          <span className="text-xs text-faint">{costs.length} {isFa ? "ورودی" : "entries"}</span>
+          <h3 className="text-sm font-semibold text-ink">{t("costs.ledger")}</h3>
+          <span className="text-xs text-faint">{costs.length} {t("costs.entriesUnit")}</span>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line bg-surface2">
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "دستورکار" : "Task ID"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "دسته" : "Category"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "شرح" : "Description"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "تاریخ" : "Date"}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{isFa ? "فاکتور" : "Invoice"}</th>
-              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "مبلغ" : "Amount"}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{t("costs.colTaskId")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("costs.colCategory")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("costs.colDescription")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("costs.colDate")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{t("costs.colInvoice")}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("costs.colAmount")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -80,7 +79,7 @@ export function CostDashboardClient({ costs, total }: { costs: MaintenanceCost[]
             })}
             <tr className="border-t-2 border-line bg-surface2">
               <td colSpan={5} className="px-4 py-3 text-xs font-semibold text-muted text-end">
-                {isFa ? "جمع کل" : "Total"}
+                {t("costs.total")}
               </td>
               <td className="px-4 py-3 text-end">
                 <span className="text-sm font-bold font-mono text-signal">${Math.round(total).toLocaleString()}</span>

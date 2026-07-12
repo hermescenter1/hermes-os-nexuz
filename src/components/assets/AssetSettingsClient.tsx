@@ -1,13 +1,12 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { AssetLocation } from "@/lib/assets/types";
 
 interface Props { locations: AssetLocation[] }
 
 export function AssetSettingsClient({ locations }: Props) {
-  const pathname = usePathname();
-  const isFa    = pathname.startsWith("/fa");
+  const t = useTranslations("assetOperations");
 
   const byType: Record<string, number> = {};
   for (const l of locations) {
@@ -17,16 +16,16 @@ export function AssetSettingsClient({ locations }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow-mono text-ice mb-1">{isFa ? "تنظیمات" : "SETTINGS"}</p>
-        <h1 className="text-xl font-semibold text-ink">{isFa ? "تنظیمات مدیریت دارایی" : "Asset Registry Settings"}</h1>
-        <p className="text-sm text-muted mt-1">{isFa ? "مدیریت مکان‌ها و پیکربندی ماژول" : "Manage locations and module configuration"}</p>
+        <p className="eyebrow-mono text-ice mb-1">{t("settings.eyebrow")}</p>
+        <h1 className="text-xl font-semibold text-ink">{t("settings.title")}</h1>
+        <p className="text-sm text-muted mt-1">{t("settings.subtitle")}</p>
       </div>
 
       {/* Locations */}
       <div className="card-surface rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <p className="eyebrow-label text-faint">{isFa ? "مکان‌های کارخانه" : "Plant Locations"}</p>
-          <span className="text-xs text-ice">{locations.length} {isFa ? "مکان" : "locations"}</span>
+          <p className="eyebrow-label text-faint">{t("settings.plantLocations")}</p>
+          <span className="text-xs text-ice">{locations.length} {t("settings.locationsUnit")}</span>
         </div>
 
         {/* Type summary */}
@@ -62,14 +61,14 @@ export function AssetSettingsClient({ locations }: Props) {
 
       {/* Module configuration */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-4">{isFa ? "پیکربندی ماژول" : "Module Configuration"}</p>
+        <p className="eyebrow-label text-faint mb-4">{t("settings.moduleConfig")}</p>
         <div className="space-y-3">
           {[
-            { label: isFa ? "نمایش دارایی‌های غیرفعال" : "Show inactive assets", value: isFa ? "خیر" : "No" },
-            { label: isFa ? "فاصله ارزیابی بحرانیت" : "Criticality assessment interval", value: isFa ? "۶ ماه" : "6 months" },
-            { label: isFa ? "آستانه هشدار سلامت" : "Health score warning threshold", value: "70%" },
-            { label: isFa ? "آستانه هشدار بحرانی" : "Health score critical threshold", value: "50%" },
-            { label: isFa ? "پروتکل تله‌متری پیش‌فرض" : "Default telemetry protocol", value: "OPC UA" },
+            { label: t("settings.showInactive"),    value: t("settings.valueNo") },
+            { label: t("settings.critInterval"),    value: t("settings.valueSixMonths") },
+            { label: t("settings.healthWarn"),      value: "70%" },
+            { label: t("settings.healthCrit"),      value: "50%" },
+            { label: t("settings.defaultProtocol"), value: "OPC UA" },
           ].map((row, i) => (
             <div key={i} className="flex items-center justify-between py-2 border-b border-line/30">
               <span className="text-sm text-muted">{row.label}</span>
@@ -78,9 +77,7 @@ export function AssetSettingsClient({ locations }: Props) {
           ))}
         </div>
         <p className="text-xs text-faint mt-4">
-          {isFa
-            ? "پیکربندی پیشرفته از طریق فایل‌های محیطی سرور انجام می‌شود."
-            : "Advanced configuration is managed via server environment files."}
+          {t("settings.configNote")}
         </p>
       </div>
     </div>

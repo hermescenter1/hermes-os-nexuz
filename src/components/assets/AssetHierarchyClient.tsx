@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { RegistryAssetRecord } from "@/lib/assets/types";
 
 function healthColor(s: number) {
@@ -75,28 +75,27 @@ function AssetNode({ asset, locale, depth = 0 }: { asset: RegistryAssetRecord; l
 interface Props { assets: RegistryAssetRecord[] }
 
 export function AssetHierarchyClient({ assets }: Props) {
-  const pathname = usePathname();
-  const isFa    = pathname.startsWith("/fa");
-  const locale  = isFa ? "fa" : "en";
+  const t      = useTranslations("assetOperations");
+  const locale = useLocale();
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow-mono text-ice mb-1">{isFa ? "سلسله‌مراتب دارایی" : "ASSET HIERARCHY"}</p>
-        <h1 className="text-xl font-semibold text-ink">{isFa ? "درخت سلسله‌مراتب دارایی‌ها" : "Asset Hierarchy Tree"}</h1>
-        <p className="text-sm text-muted mt-1">{isFa ? "ساختار تجمیعی دارایی‌های صنعتی — از خط تولید تا قطعه" : "Aggregated plant structure from production line to component"}</p>
+        <p className="eyebrow-mono text-ice mb-1">{t("hierarchy.eyebrow")}</p>
+        <h1 className="text-xl font-semibold text-ink">{t("hierarchy.title")}</h1>
+        <p className="text-sm text-muted mt-1">{t("hierarchy.subtitle")}</p>
       </div>
 
       <div className="card-surface rounded-xl p-4">
         {/* Column headers */}
         <div className="flex items-center gap-2 px-2 pb-3 border-b border-line mb-2">
           <div className="w-4 shrink-0" />
-          <div className="flex-1 text-xs font-medium text-faint ps-2">{isFa ? "نام دارایی" : "Asset Name"}</div>
-          <div className="w-24 text-xs font-medium text-faint text-end pe-2">{isFa ? "سلامت" : "Health"}</div>
+          <div className="flex-1 text-xs font-medium text-faint ps-2">{t("hierarchy.assetName")}</div>
+          <div className="w-24 text-xs font-medium text-faint text-end pe-2">{t("common.health")}</div>
         </div>
 
         {assets.length === 0 && (
-          <p className="text-center py-12 text-muted">{isFa ? "دارایی‌ای یافت نشد" : "No assets found"}</p>
+          <p className="text-center py-12 text-muted">{t("common.noAssetsFound")}</p>
         )}
 
         {assets.map(a => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { AssetLifecycleEvent } from "@/lib/assets/types";
 
 function evColor(type: string) {
@@ -24,8 +24,7 @@ function evDot(type: string) {
 interface Props { events: AssetLifecycleEvent[] }
 
 export function AssetLifecycleClient({ events }: Props) {
-  const pathname = usePathname();
-  const isFa    = pathname.startsWith("/fa");
+  const t = useTranslations("assetOperations");
   const sorted = [...events].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 
   const stateDistribution: Record<string, number> = {};
@@ -36,14 +35,14 @@ export function AssetLifecycleClient({ events }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow-mono text-ice mb-1">{isFa ? "چرخه عمر دارایی" : "ASSET LIFECYCLE"}</p>
-        <h1 className="text-xl font-semibold text-ink">{isFa ? "رویدادهای چرخه عمر" : "Lifecycle Events"}</h1>
-        <p className="text-sm text-muted mt-1">{events.length} {isFa ? "رویداد ثبت‌شده" : "recorded events"}</p>
+        <p className="eyebrow-mono text-ice mb-1">{t("lifecycle.eyebrow")}</p>
+        <h1 className="text-xl font-semibold text-ink">{t("lifecycle.title")}</h1>
+        <p className="text-sm text-muted mt-1">{events.length} {t("lifecycle.eventsUnit")}</p>
       </div>
 
       {/* State distribution */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-3">{isFa ? "توزیع حالت‌های چرخه عمر" : "Lifecycle State Distribution"}</p>
+        <p className="eyebrow-label text-faint mb-3">{t("lifecycle.stateDistribution")}</p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(stateDistribution).sort((a, b) => b[1] - a[1]).map(([state, count]) => (
             <div key={state} className="flex items-center gap-2 bg-surface2 rounded-lg px-3 py-1.5 border border-line">
@@ -56,9 +55,9 @@ export function AssetLifecycleClient({ events }: Props) {
 
       {/* Timeline */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-5">{isFa ? "جدول زمانی رویدادها" : "Event Timeline"}</p>
+        <p className="eyebrow-label text-faint mb-5">{t("lifecycle.eventTimeline")}</p>
         {sorted.length === 0 && (
-          <p className="text-center py-8 text-muted">{isFa ? "رویدادی ثبت نشده" : "No events recorded"}</p>
+          <p className="text-center py-8 text-muted">{t("lifecycle.noEvents")}</p>
         )}
         <div className="space-y-0">
           {sorted.map((ev, i) => (
@@ -77,7 +76,7 @@ export function AssetLifecycleClient({ events }: Props) {
                   </span>
                   <span className="text-xs text-faint">{new Date(ev.occurredAt).toLocaleDateString()}</span>
                   {ev.performedBy && (
-                    <span className="text-xs text-faint/70">{isFa ? "توسط" : "by"} {ev.performedBy}</span>
+                    <span className="text-xs text-faint/70">{t("lifecycle.by")} {ev.performedBy}</span>
                   )}
                 </div>
                 {ev.fromState && (

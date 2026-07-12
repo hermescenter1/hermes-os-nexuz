@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { MaintenanceFailure } from "@/lib/cmms/types";
 
 const SEV_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
@@ -28,8 +28,7 @@ const CA_STYLE: Record<string, { bg: string; text: string }> = {
 };
 
 export function FailureReportsClient({ failures }: { failures: MaintenanceFailure[] }) {
-  const pathname     = usePathname();
-  const isFa         = pathname.startsWith("/fa");
+  const t            = useTranslations("maintenanceOperations");
   const resolved     = failures.filter(f => f.resolvedAt).length;
   const critical     = failures.filter(f => f.severity === "CRITICAL").length;
   const totalDown    = failures.reduce((s, f) => s + (f.downtimeMinutes ?? 0), 0);
@@ -39,10 +38,10 @@ export function FailureReportsClient({ failures }: { failures: MaintenanceFailur
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: isFa ? "کل خرابی‌ها" : "Total Failures",  value: failures.length, ac: "text-ink",    b: "border-line"     },
-          { label: isFa ? "بحرانی"       : "Critical",         value: critical,        ac: "text-danger", b: "border-danger/30" },
-          { label: isFa ? "حل‌شده"        : "Resolved",         value: resolved,        ac: "text-signal", b: "border-signal/30" },
-          { label: isFa ? "توقف (ساعت)"  : "Total Downtime",  value: `${Math.round(totalDown / 60)}h`, ac: "text-warn", b: "border-warn/30" },
+          { label: t("failures.kpiTotal"),    value: failures.length, ac: "text-ink",    b: "border-line"     },
+          { label: t("failures.kpiCritical"), value: critical,        ac: "text-danger", b: "border-danger/30" },
+          { label: t("failures.kpiResolved"), value: resolved,        ac: "text-signal", b: "border-signal/30" },
+          { label: t("failures.kpiDowntime"), value: `${Math.round(totalDown / 60)}h`, ac: "text-warn", b: "border-warn/30" },
         ].map(s => (
           <div key={s.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${s.b}`}>
             <div className={`text-2xl font-bold font-mono ${s.ac}`}>{s.value}</div>
@@ -72,7 +71,7 @@ export function FailureReportsClient({ failures }: { failures: MaintenanceFailur
                     {f.severity}
                   </span>
                   <span className={`text-xs px-2.5 py-1 rounded-lg border border-white/[0.05] font-medium ${f.resolvedAt ? "bg-signal/[0.08] text-signal" : "bg-danger/[0.08] text-danger"}`}>
-                    {f.resolvedAt ? (isFa ? "حل‌شده" : "Resolved") : (isFa ? "باز" : "Open")}
+                    {f.resolvedAt ? t("failures.resolved") : t("failures.open")}
                   </span>
                 </div>
               </div>
@@ -82,20 +81,20 @@ export function FailureReportsClient({ failures }: { failures: MaintenanceFailur
 
               {/* Meta row */}
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-faint mb-4">
-                <span>{isFa ? "دسته" : "Category"}: <span className="text-muted">{f.category}</span></span>
-                <span>{isFa ? "وقوع" : "Occurred"}: <span className="font-mono text-muted">{new Date(f.occurredAt).toLocaleDateString()}</span></span>
+                <span>{t("failures.category")}: <span className="text-muted">{f.category}</span></span>
+                <span>{t("failures.occurred")}: <span className="font-mono text-muted">{new Date(f.occurredAt).toLocaleDateString()}</span></span>
                 {f.resolvedAt && (
-                  <span>{isFa ? "حل‌شده در" : "Resolved"}: <span className="font-mono text-muted">{new Date(f.resolvedAt).toLocaleDateString()}</span></span>
+                  <span>{t("failures.resolvedAt")}: <span className="font-mono text-muted">{new Date(f.resolvedAt).toLocaleDateString()}</span></span>
                 )}
                 {f.downtimeMinutes != null && (
-                  <span>{isFa ? "توقف" : "Downtime"}: <span className="font-mono text-warn">{Math.round(f.downtimeMinutes / 60)}h</span></span>
+                  <span>{t("failures.downtime")}: <span className="font-mono text-warn">{Math.round(f.downtimeMinutes / 60)}h</span></span>
                 )}
               </div>
 
               {/* Root Causes */}
               {f.causes && f.causes.length > 0 && (
                 <div className="mb-3">
-                  <p className="eyebrow-label text-faint mb-2">{isFa ? "علل ریشه‌ای" : "Root Causes"}</p>
+                  <p className="eyebrow-label text-faint mb-2">{t("failures.rootCauses")}</p>
                   <div className="space-y-1">
                     {f.causes.map(c => (
                       <div key={c.id} className="flex items-center gap-2.5 text-xs">
@@ -111,7 +110,7 @@ export function FailureReportsClient({ failures }: { failures: MaintenanceFailur
               {/* Corrective Actions */}
               {f.correctiveActions && f.correctiveActions.length > 0 && (
                 <div>
-                  <p className="eyebrow-label text-faint mb-2">{isFa ? "اقدامات اصلاحی" : "Corrective Actions"}</p>
+                  <p className="eyebrow-label text-faint mb-2">{t("failures.correctiveActions")}</p>
                   <div className="space-y-1">
                     {f.correctiveActions.map(ca => {
                       const cs = CA_STYLE[ca.status] ?? { bg: "bg-muted/[0.06]", text: "text-muted" };
