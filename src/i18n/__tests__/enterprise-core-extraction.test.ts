@@ -1,6 +1,6 @@
 /**
- * Phase 86C4B2B1A-PRE / -FA — ERP Core (nav, dashboard, KPIs, settings):
- * extraction + Persian translation.
+ * Phase 86C4B2B1A-PRE / -FA / -DE — ERP Core (nav, dashboard, KPIs, settings):
+ * extraction + Persian + German translation.
  *
  * Part A of four ERP extraction phases. The ERP Core surface
  * (src/components/erp/{ErpNav,ErpDashboardClient,KpiDashboardClient} +
@@ -10,11 +10,12 @@
  * next-intl namespace:
  *   - en = canonical English
  *   - fa = professional Persian (Phase 86C4B2B1A-FA translated all 50 leaves)
- *   - de = temporary English copy (German not translated in this phase)
+ *   - de = professional German (Phase 86C4B2B1A-DE translated all 50 leaves)
  *
- * The Persian locale is ACTIVE, so fa is real user-visible UI. Zero fa values
- * remain identical to English (FA_ENGLISH_ALLOW is empty); any fa===en pair
- * fails the audit.
+ * German stays INACTIVE (ACTIVE_LOCALES = ["fa","en"]); only the de values
+ * changed. Zero fa values equal English (FA_ENGLISH_ALLOW empty). A narrow set
+ * of de values stay identical — the German-identical terms Dashboard, Teams,
+ * KPIs (DE_ENGLISH_ALLOW). Any other fa===en or de===en pair fails the audit.
  *
  * This phase adds only the `nav`, `dashboard`, `kpis`, `settings` sub-objects.
  * ErpNav carries the full 10-item ERP navigation label set (later phases reuse
@@ -155,11 +156,6 @@ describe("enterpriseOperations (ERP Core) — three-locale parity", () => {
     }
   });
 
-  it("de still copies English verbatim (German deferred, not yet translated)", () => {
-    const e = flatten(enEO), d = flatten(deEO);
-    expect([...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k)).toEqual([]);
-  });
-
   it("carries the exact navigation label set", () => {
     const nav = flatten((enEO as Tree).nav);
     expect(nav.get("eyebrow")).toBe("ERP Operations");
@@ -230,6 +226,73 @@ describe("enterpriseOperations — Persian translation quality (Phase 86C4B2B1A-
     // Phase 67 engine reference keeps Latin "67" (no Persian digits hardcoded).
     expect(f.get("settings.workflowIntegrationDesc")).toContain("67");
     expect(f.get("settings.workflowIntegrationDesc")).not.toContain("۶۷");
+  });
+});
+
+// German values that legitimately stay identical to English: standard German
+// terms/acronyms already spelled the same — Dashboard, Teams, KPIs.
+const DE_ENGLISH_ALLOW = new Set<string>([
+  "nav.items.dashboard", "nav.items.teams", "nav.items.kpis",
+]);
+
+// Informal German second-person address is forbidden (enterprise formal "Sie").
+const INFORMAL_ADDRESS =
+  /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
+
+describe("enterpriseOperations — German translation quality (Phase 86C4B2B1A-DE)", () => {
+  const e = flatten(enEO), d = flatten(deEO);
+
+  it("every de leaf outside the allowlist is translated (de !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !DE_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => d.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("the English-identical de values are exactly the allowlist", () => {
+    const identical = [...e].filter(([k, v]) => d.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...DE_ENGLISH_ALLOW].sort());
+  });
+
+  it("uses no informal German address (enterprise formal Sie only)", () => {
+    const informal = [...d].filter(([, v]) => INFORMAL_ADDRESS.test(String(v))).map(([k]) => k);
+    expect(informal).toEqual([]);
+  });
+
+  it("carries genuine German (umlaut/ß present across the namespace)", () => {
+    expect([...d.values()].some((v) => /[äöüßÄÖÜ]/.test(String(v)))).toBe(true);
+  });
+
+  it("uses the expected core ERP terminology consistently", () => {
+    expect(d.get("nav.eyebrow")).toBe("ERP-Betrieb");
+    expect(d.get("dashboard.pageTitle")).toBe("Betriebsdashboard");
+    expect(d.get("nav.items.projects")).toBe("Projekte");
+    expect(d.get("nav.items.tasks")).toBe("Aufgaben");
+    expect(d.get("nav.items.resources")).toBe("Ressourcen");
+    expect(d.get("nav.items.inventory")).toBe("Bestand");
+    expect(d.get("nav.items.workOrders")).toBe("Arbeitsaufträge");
+    expect(d.get("nav.items.approvals")).toBe("Genehmigungen");
+    expect(d.get("kpis.heading")).toBe("Operative KPIs");
+    expect(d.get("dashboard.totalBudget")).toBe("Gesamtbudget");
+  });
+
+  it("KPI / budget / variance / schedule meanings are the intended ones", () => {
+    expect(d.get("dashboard.actualCost")).toBe("Istkosten");             // Istkosten, not tatsächliche Preise
+    expect(d.get("kpis.taskThroughput")).toBe("Aufgabendurchsatz");      // completed-task rate
+    expect(d.get("dashboard.kpiResourceUtilization")).toBe("Ressourcenauslastung");
+    expect(d.get("dashboard.variance")).toBe("Abweichung");             // deviation (Abweichung, not Differenz)
+    expect(d.get("kpis.budgetVariance")).toBe("Budgetabweichung");
+    expect(d.get("kpis.scheduleVariance")).toBe("Terminabweichung");    // schedule deviation, distinct
+    expect(d.get("kpis.approvalCycleTime")).toBe("Genehmigungsdurchlaufzeit");
+  });
+
+  it("keeps protected ERP/KPI tokens and Latin Phase 67 intact", () => {
+    expect(d.get("nav.eyebrow")).toContain("ERP");
+    expect(d.get("settings.pageTitle")).toContain("ERP");
+    expect(d.get("settings.moduleStatusDesc")).toContain("ERP");
+    expect(d.get("kpis.heading")).toContain("KPIs");
+    expect(d.get("settings.workflowIntegrationDesc")).toContain("Phase 67");
   });
 });
 
@@ -356,11 +419,11 @@ describe("Phase 86C4B2B1A-PRE combined — prior work and German state intact", 
     expect(flatten((de as Tree).adminGovernance).get("compliance.title")).toBe("Compliance-Dashboard");
   });
 
-  it("enterpriseOperations fa is fully Persian; de stays English carryover (deferred)", () => {
+  it("enterpriseOperations fa and de are both fully translated (narrow allowlists)", () => {
     const e = flatten(enEO);
     // fa fully translated — no leaf equals English.
     expect([...e].filter(([k, v]) => flatten(faEO).get(k) === v).map(([k]) => k)).toEqual([]);
-    // de still English carryover.
-    expect([...e].every(([k, v]) => flatten(deEO).get(k) === v)).toBe(true);
+    // de fully translated except the 3 German-identical terms (Dashboard/Teams/KPIs).
+    expect([...e].filter(([k, v]) => flatten(deEO).get(k) === v).length).toBe(3);
   });
 });
