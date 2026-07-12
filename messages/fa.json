@@ -5154,6 +5154,47 @@
       "moduleStatusDesc": "همه ماژول‌های ERP فعال هستند و به‌طور عادی کار می‌کنند.",
       "workflowIntegration": "یکپارچه‌سازی گردش‌کار",
       "workflowIntegrationDesc": "رویدادهای ERP به‌صورت خودکار محرک‌های گردش‌کار را فعال می‌کنند (موتور فاز 67). قوانین گردش‌کار را در این بخش مدیریت کنید:"
+    },
+    "projects": {
+      "pageTitle": "Projects",
+      "count": "{count, plural, one {# project} other {# projects}}",
+      "newProject": "New Project",
+      "due": "Due {date}",
+      "noProjectsFound": "No projects found.",
+      "newPageTitle": "New Project",
+      "newDescIntro": "Create a project via the API or import from CRM opportunities.",
+      "newDescApi": "The ERP project creation form is available through the API at",
+      "backToProjects": "Back to Projects",
+      "status": "Status",
+      "budget": "Budget",
+      "actualCost": "Actual Cost",
+      "progress": "Progress",
+      "completion": "Completion",
+      "milestones": "Milestones",
+      "tasks": "Tasks",
+      "tasksCount": "Tasks ({count})",
+      "viewAllTasks": "View all {count} tasks",
+      "milestonesPageTitle": "Milestones",
+      "milestoneDone": "Done",
+      "noMilestones": "No milestones yet."
+    },
+    "tasks": {
+      "pageTitle": "Task Board",
+      "detailPageTitle": "Task Detail",
+      "columns": {
+        "TODO": "To Do",
+        "IN_PROGRESS": "In Progress",
+        "BLOCKED": "Blocked",
+        "REVIEW": "Review",
+        "DONE": "Done"
+      },
+      "empty": "Empty",
+      "dueDate": "Due Date",
+      "estimatedHours": "Estimated Hours",
+      "actualHours": "Actual Hours",
+      "priority": "Priority",
+      "viewProject": "View project",
+      "backToTasks": "Back to Tasks"
     }
   }
 }

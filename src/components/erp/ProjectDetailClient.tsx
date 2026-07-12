@@ -1,15 +1,15 @@
 "use client";
 
-import Link            from "next/link";
-import { usePathname } from "next/navigation";
+import Link                          from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type { ErpProjectFull } from "@/lib/erp/types";
 
 export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("enterpriseOperations");
 
   const totalCost = project.costs?.reduce((s, c) => s + c.amount, 0) ?? 0;
-  const doneCount = project.tasks?.filter(t => t.status === "DONE").length ?? 0;
+  const doneCount = project.tasks?.filter(task => task.status === "DONE").length ?? 0;
   const taskCount = project.tasks?.length ?? 0;
   const progress  = taskCount > 0 ? Math.round((doneCount / taskCount) * 100) : 0;
 
@@ -21,17 +21,17 @@ export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
           {project.description && <p className="text-muted-foreground mt-1">{project.description}</p>}
         </div>
         <div className="flex gap-2">
-          <Link href={`/${locale}/erp/projects/${project.id}/milestones`} className="px-3 py-1.5 text-sm border rounded-md hover:bg-accent">Milestones</Link>
-          <Link href={`/${locale}/erp/tasks?projectId=${project.id}`} className="px-3 py-1.5 text-sm border rounded-md hover:bg-accent">Tasks</Link>
+          <Link href={`/${locale}/erp/projects/${project.id}/milestones`} className="px-3 py-1.5 text-sm border rounded-md hover:bg-accent">{t("projects.milestones")}</Link>
+          <Link href={`/${locale}/erp/tasks?projectId=${project.id}`} className="px-3 py-1.5 text-sm border rounded-md hover:bg-accent">{t("projects.tasks")}</Link>
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Status",    value: project.status.toLowerCase().replace("_"," ") },
-          { label: "Budget",    value: project.budget ? `$${(project.budget / 1000).toFixed(0)}K` : "—" },
-          { label: "Actual Cost", value: `$${(totalCost / 1000).toFixed(1)}K` },
-          { label: "Progress",  value: `${progress}%` },
+          { label: t("projects.status"),     value: project.status.toLowerCase().replace("_"," ") },
+          { label: t("projects.budget"),     value: project.budget ? `$${(project.budget / 1000).toFixed(0)}K` : "—" },
+          { label: t("projects.actualCost"), value: `$${(totalCost / 1000).toFixed(1)}K` },
+          { label: t("projects.progress"),   value: `${progress}%` },
         ].map(m => (
           <div key={m.label} className="rounded-xl border bg-card p-4">
             <div className="text-xs text-muted-foreground mb-1">{m.label}</div>
@@ -42,7 +42,7 @@ export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
 
       <div className="rounded-xl border bg-card p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Completion</span>
+          <span className="text-sm font-medium">{t("projects.completion")}</span>
           <span className="text-sm text-muted-foreground">{progress}%</span>
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -53,7 +53,7 @@ export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
       {/* Milestones */}
       {project.milestones && project.milestones.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold mb-4">Milestones</h3>
+          <h3 className="font-semibold mb-4">{t("projects.milestones")}</h3>
           <div className="space-y-2">
             {project.milestones.map(m => (
               <div key={m.id} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
@@ -68,17 +68,17 @@ export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
       {/* Tasks */}
       {project.tasks && project.tasks.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold mb-4">Tasks ({project.tasks.length})</h3>
+          <h3 className="font-semibold mb-4">{t("projects.tasksCount", { count: project.tasks.length })}</h3>
           <div className="space-y-1">
-            {project.tasks.slice(0, 10).map(t => (
-              <Link key={t.id} href={`/${locale}/erp/tasks/${t.id}`} className="flex items-center justify-between text-sm py-1 border-b last:border-0 hover:text-primary">
-                <span>{t.title}</span>
-                <span className="text-muted-foreground capitalize text-xs">{t.status.toLowerCase().replace("_"," ")}</span>
+            {project.tasks.slice(0, 10).map(task => (
+              <Link key={task.id} href={`/${locale}/erp/tasks/${task.id}`} className="flex items-center justify-between text-sm py-1 border-b last:border-0 hover:text-primary">
+                <span>{task.title}</span>
+                <span className="text-muted-foreground capitalize text-xs">{task.status.toLowerCase().replace("_"," ")}</span>
               </Link>
             ))}
             {project.tasks.length > 10 && (
               <Link href={`/${locale}/erp/tasks?projectId=${project.id}`} className="text-xs text-primary hover:underline pt-1 block">
-                View all {project.tasks.length} tasks
+                {t("projects.viewAllTasks", { count: project.tasks.length })}
               </Link>
             )}
           </div>

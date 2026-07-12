@@ -1,12 +1,12 @@
 "use client";
 
-import Link            from "next/link";
-import { usePathname } from "next/navigation";
+import Link                          from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type { ErpTask } from "@/lib/erp/types";
 
 export function TaskDetailClient({ task }: { task: ErpTask & { comments?: unknown[] } }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("enterpriseOperations");
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -21,10 +21,10 @@ export function TaskDetailClient({ task }: { task: ErpTask & { comments?: unknow
 
       <div className="grid grid-cols-2 gap-4">
         {[
-          { label: "Due Date",        value: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "—" },
-          { label: "Estimated Hours", value: task.estimatedHours ? `${task.estimatedHours}h` : "—" },
-          { label: "Actual Hours",    value: task.actualHours   ? `${task.actualHours}h`    : "—" },
-          { label: "Priority",        value: task.priority },
+          { label: t("tasks.dueDate"),        value: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "—" },
+          { label: t("tasks.estimatedHours"), value: task.estimatedHours ? `${task.estimatedHours}h` : "—" },
+          { label: t("tasks.actualHours"),    value: task.actualHours   ? `${task.actualHours}h`    : "—" },
+          { label: t("tasks.priority"),       value: task.priority },
         ].map(m => (
           <div key={m.label} className="rounded-xl border bg-card p-4">
             <div className="text-xs text-muted-foreground mb-1">{m.label}</div>
@@ -36,13 +36,13 @@ export function TaskDetailClient({ task }: { task: ErpTask & { comments?: unknow
       {task.projectId && (
         <div>
           <Link href={`/${locale}/erp/projects/${task.projectId}`} className="text-sm text-primary hover:underline">
-            View project
+            {t("tasks.viewProject")}
           </Link>
         </div>
       )}
 
       <div className="flex gap-2">
-        <Link href={`/${locale}/erp/tasks`} className="text-sm px-3 py-1.5 border rounded-md hover:bg-accent">Back to Tasks</Link>
+        <Link href={`/${locale}/erp/tasks`} className="text-sm px-3 py-1.5 border rounded-md hover:bg-accent">{t("tasks.backToTasks")}</Link>
       </div>
     </div>
   );

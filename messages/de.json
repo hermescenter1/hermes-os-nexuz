@@ -5154,6 +5154,47 @@
       "moduleStatusDesc": "Alle ERP-Module sind aktiv und arbeiten ordnungsgemäß.",
       "workflowIntegration": "Workflow-Integration",
       "workflowIntegrationDesc": "ERP-Ereignisse lösen automatisch Workflow-Auslöser aus (Engine aus Phase 67). Verwalten Sie die Workflow-Regeln unter:"
+    },
+    "projects": {
+      "pageTitle": "Projects",
+      "count": "{count, plural, one {# project} other {# projects}}",
+      "newProject": "New Project",
+      "due": "Due {date}",
+      "noProjectsFound": "No projects found.",
+      "newPageTitle": "New Project",
+      "newDescIntro": "Create a project via the API or import from CRM opportunities.",
+      "newDescApi": "The ERP project creation form is available through the API at",
+      "backToProjects": "Back to Projects",
+      "status": "Status",
+      "budget": "Budget",
+      "actualCost": "Actual Cost",
+      "progress": "Progress",
+      "completion": "Completion",
+      "milestones": "Milestones",
+      "tasks": "Tasks",
+      "tasksCount": "Tasks ({count})",
+      "viewAllTasks": "View all {count} tasks",
+      "milestonesPageTitle": "Milestones",
+      "milestoneDone": "Done",
+      "noMilestones": "No milestones yet."
+    },
+    "tasks": {
+      "pageTitle": "Task Board",
+      "detailPageTitle": "Task Detail",
+      "columns": {
+        "TODO": "To Do",
+        "IN_PROGRESS": "In Progress",
+        "BLOCKED": "Blocked",
+        "REVIEW": "Review",
+        "DONE": "Done"
+      },
+      "empty": "Empty",
+      "dueDate": "Due Date",
+      "estimatedHours": "Estimated Hours",
+      "actualHours": "Actual Hours",
+      "priority": "Priority",
+      "viewProject": "View project",
+      "backToTasks": "Back to Tasks"
     }
   }
 }

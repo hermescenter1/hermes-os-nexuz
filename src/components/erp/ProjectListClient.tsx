@@ -1,7 +1,7 @@
 "use client";
 
-import Link            from "next/link";
-import { usePathname } from "next/navigation";
+import Link                          from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type { ErpProject } from "@/lib/erp/types";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -13,15 +13,15 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function ProjectListClient({ projects }: { projects: ErpProject[] }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("enterpriseOperations");
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{projects.length} project{projects.length !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-muted-foreground">{t("projects.count", { count: projects.length })}</p>
         <Link href={`/${locale}/erp/projects/new`} className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90">
-          New Project
+          {t("projects.newProject")}
         </Link>
       </div>
       <div className="space-y-2">
@@ -36,7 +36,7 @@ export function ProjectListClient({ projects }: { projects: ErpProject[] }) {
               </div>
               <div className="flex items-center gap-3 shrink-0 text-xs">
                 {budgetK && <span className="text-muted-foreground">{budgetK}</span>}
-                {dueStr  && <span className="text-muted-foreground">Due {dueStr}</span>}
+                {dueStr  && <span className="text-muted-foreground">{t("projects.due", { date: dueStr })}</span>}
                 <span className={`px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[p.status] ?? ""}`}>
                   {p.status.toLowerCase().replace("_"," ")}
                 </span>
@@ -45,7 +45,7 @@ export function ProjectListClient({ projects }: { projects: ErpProject[] }) {
           );
         })}
         {projects.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground text-sm">No projects found.</div>
+          <div className="text-center py-12 text-muted-foreground text-sm">{t("projects.noProjectsFound")}</div>
         )}
       </div>
     </div>

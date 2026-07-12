@@ -55,10 +55,11 @@ const PAGES = [
 ];
 const SEVEN = [...CLIENTS, ...PAGES];
 
-// Later-phase ERP files that MUST remain untouched this phase — they still carry
-// their hardcoded `pathname.startsWith("/fa")` debt (proof of non-modification).
+// Later-phase ERP files that MUST remain untouched by the ERP *Core* phase —
+// they still carry their hardcoded `pathname.startsWith("/fa")` debt (proof of
+// non-modification). ProjectListClient graduated out of this list in Phase
+// 86C4B2B1B (Projects & Tasks extraction); Inventory/Approval/WorkOrder remain.
 const UNTOUCHED_ERP = [
-  "src/components/erp/ProjectListClient.tsx",
   "src/components/erp/InventoryListClient.tsx",
   "src/components/erp/ApprovalListClient.tsx",
   "src/components/erp/WorkOrderListClient.tsx",
@@ -108,12 +109,23 @@ const enEO = (en as Tree).enterpriseOperations;
 const faEO = (fa as Tree).enterpriseOperations;
 const deEO = (de as Tree).enterpriseOperations;
 
+// The ERP Core phase owns exactly these four sub-objects. Later ERP subphases
+// (Projects & Tasks, Teams/Resources/Work Orders, Inventory/Approvals) extend
+// the SAME enterpriseOperations namespace, adding their own initially-English
+// leaves. Core leaf-count and Core fa/de translation-quality assertions are
+// therefore scoped to these four sub-objects so they stay valid as the
+// namespace grows; whole-namespace parity/ICU/empty checks remain unscoped.
+const CORE_KEYS = ["nav", "dashboard", "kpis", "settings"] as const;
+const coreOnly = (o: unknown): Tree =>
+  Object.fromEntries(CORE_KEYS.map((k) => [k, (o as Tree)[k]]));
+const enCore = coreOnly(enEO), faCore = coreOnly(faEO), deCore = coreOnly(deEO);
+
 describe("enterpriseOperations (ERP Core) — three-locale parity", () => {
-  it("exists in all three catalogs with exactly 50 leaves this phase", () => {
+  it("exists in all three catalogs with the 50 ERP Core leaves intact", () => {
     expect(enEO).toBeTruthy();
     expect(faEO).toBeTruthy();
     expect(deEO).toBeTruthy();
-    expect(flatten(enEO).size).toBe(50);
+    expect(flatten(enCore).size).toBe(50);
   });
 
   it("sub-object leaf counts: nav 11, dashboard 20, kpis 14, settings 5", () => {
@@ -124,8 +136,8 @@ describe("enterpriseOperations (ERP Core) — three-locale parity", () => {
     expect(c((enEO as Tree).settings)).toBe(5);
   });
 
-  it("only nav/dashboard/kpis/settings top-level objects added this phase", () => {
-    expect(Object.keys(enEO as Tree).sort()).toEqual(["dashboard", "kpis", "nav", "settings"]);
+  it("nav/dashboard/kpis/settings remain the ERP Core top-level objects", () => {
+    for (const k of CORE_KEYS) expect(Object.keys(enEO as Tree)).toContain(k);
   });
 
   it("fa and de mirror en key paths and shapes exactly", () => {
@@ -171,7 +183,7 @@ describe("enterpriseOperations (ERP Core) — three-locale parity", () => {
 const FA_ENGLISH_ALLOW = new Set<string>([]);
 
 describe("enterpriseOperations — Persian translation quality (Phase 86C4B2B1A-FA)", () => {
-  const e = flatten(enEO), f = flatten(faEO);
+  const e = flatten(enCore), f = flatten(faCore);
 
   it("every fa leaf outside the allowlist is translated (fa !== en)", () => {
     const untranslated = [...e]
@@ -240,7 +252,7 @@ const INFORMAL_ADDRESS =
   /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
 
 describe("enterpriseOperations — German translation quality (Phase 86C4B2B1A-DE)", () => {
-  const e = flatten(enEO), d = flatten(deEO);
+  const e = flatten(enCore), d = flatten(deCore);
 
   it("every de leaf outside the allowlist is translated (de !== en)", () => {
     const untranslated = [...e]
@@ -419,11 +431,11 @@ describe("Phase 86C4B2B1A-PRE combined — prior work and German state intact", 
     expect(flatten((de as Tree).adminGovernance).get("compliance.title")).toBe("Compliance-Dashboard");
   });
 
-  it("enterpriseOperations fa and de are both fully translated (narrow allowlists)", () => {
-    const e = flatten(enEO);
-    // fa fully translated — no leaf equals English.
-    expect([...e].filter(([k, v]) => flatten(faEO).get(k) === v).map(([k]) => k)).toEqual([]);
+  it("ERP Core fa and de are both fully translated (narrow allowlists)", () => {
+    const e = flatten(enCore);
+    // fa fully translated — no Core leaf equals English.
+    expect([...e].filter(([k, v]) => flatten(faCore).get(k) === v).map(([k]) => k)).toEqual([]);
     // de fully translated except the 3 German-identical terms (Dashboard/Teams/KPIs).
-    expect([...e].filter(([k, v]) => flatten(deEO).get(k) === v).length).toBe(3);
+    expect([...e].filter(([k, v]) => flatten(deCore).get(k) === v).length).toBe(3);
   });
 });

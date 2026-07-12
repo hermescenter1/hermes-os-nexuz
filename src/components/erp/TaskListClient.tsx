@@ -1,18 +1,10 @@
 "use client";
 
-import Link            from "next/link";
-import { usePathname } from "next/navigation";
+import Link                          from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type { ErpTask } from "@/lib/erp/types";
 
 const COLUMNS = ["TODO","IN_PROGRESS","BLOCKED","REVIEW","DONE"] as const;
-
-const COL_LABEL: Record<string, string> = {
-  TODO:        "To Do",
-  IN_PROGRESS: "In Progress",
-  BLOCKED:     "Blocked",
-  REVIEW:      "Review",
-  DONE:        "Done",
-};
 
 const PRIORITY_COLOR: Record<string, string> = {
   LOW:      "text-muted-foreground",
@@ -22,11 +14,11 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 export function TaskListClient({ tasks }: { tasks: ErpTask[] }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("enterpriseOperations");
 
   const grouped = Object.fromEntries(
-    COLUMNS.map(col => [col, tasks.filter(t => t.status === col)])
+    COLUMNS.map(col => [col, tasks.filter(task => task.status === col)])
   ) as Record<string, ErpTask[]>;
 
   return (
@@ -35,7 +27,7 @@ export function TaskListClient({ tasks }: { tasks: ErpTask[] }) {
         {COLUMNS.map(col => (
           <div key={col} className="w-64 shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold">{COL_LABEL[col]}</span>
+              <span className="text-sm font-semibold">{t(`tasks.columns.${col}`)}</span>
               <span className="text-xs bg-muted rounded-full px-2 py-0.5">{grouped[col].length}</span>
             </div>
             <div className="space-y-2">
@@ -57,7 +49,7 @@ export function TaskListClient({ tasks }: { tasks: ErpTask[] }) {
                 </Link>
               ))}
               {grouped[col].length === 0 && (
-                <div className="text-center py-6 text-xs text-muted-foreground border border-dashed rounded-xl">Empty</div>
+                <div className="text-center py-6 text-xs text-muted-foreground border border-dashed rounded-xl">{t("tasks.empty")}</div>
               )}
             </div>
           </div>
