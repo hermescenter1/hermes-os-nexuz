@@ -1,20 +1,14 @@
-\# Hermes OS — Claude Code Project Instructions
+# Hermes OS â€” Claude Code Project Instructions
 
-
-
-\## Project Identity
-
-
+## Project Identity
 
 Project: Hermes OS / Hermes Novin Mehr IRIC  
 
 Repository: hermes-os-nexuz  
 
-Primary local path: E:\\hermes-os-nexuz  
+Primary local path: E:\hermes-os-nexuz  
 
 Production domain: https://www.hermesnovin.com
-
-
 
 Hermes OS is an enterprise industrial intelligence platform for PLC,
 
@@ -24,523 +18,389 @@ case management, predictive maintenance, digital twins, time-series
 
 analytics, multi-site intelligence and enterprise SaaS management.
 
+## Technology Stack
 
+- Next.js App Router
 
-\## Technology Stack
+- React
 
+- TypeScript
 
+- Tailwind CSS
 
-\- Next.js App Router
+- next-intl
 
-\- React
+- Prisma
 
-\- TypeScript
+- PostgreSQL
 
-\- Tailwind CSS
+- Redis
 
-\- next-intl
+- Docker Compose
 
-\- Prisma
+- Nginx
 
-\- PostgreSQL
+- Zod
 
-\- Redis
+- TanStack Query
 
-\- Docker Compose
-
-\- Nginx
-
-\- Zod
-
-\- TanStack Query
-
-\- Vitest or Jest where configured
-
-
+- Vitest or Jest where configured
 
 Do not introduce a new framework, database, ORM, authentication system,
 
 state-management library or UI framework unless explicitly requested.
 
+## Communication
 
+- Respond to the project owner in Persian.
 
-\## Communication
+- Write source code, identifiers, types, database fields, technical comments
 
+   and commit messages in English.
 
+- Explain important technical decisions clearly.
 
-\- Respond to the project owner in Persian.
+- Never claim that a command, test or build passed unless it was actually run.
 
-\- Write source code, identifiers, types, database fields, technical comments
+- Clearly report errors, incomplete work and remaining risks.
 
-&#x20; and commit messages in English.
-
-\- Explain important technical decisions clearly.
-
-\- Never claim that a command, test or build passed unless it was actually run.
-
-\- Clearly report errors, incomplete work and remaining risks.
-
-
-
-\## Required Working Process
-
-
+## Required Working Process
 
 Before modifying files:
 
+1. Inspect the relevant implementation and existing architecture.
 
+2. Run `git status` and inspect the current diff.
 
-1\. Inspect the relevant implementation and existing architecture.
+3. Identify dependencies, security boundaries and regression risks.
 
-2\. Run `git status` and inspect the current diff.
+4. Present a concise implementation plan.
 
-3\. Identify dependencies, security boundaries and regression risks.
-
-4\. Present a concise implementation plan.
-
-5\. Keep changes limited to the requested scope.
-
-
+5. Keep changes limited to the requested scope.
 
 During implementation:
 
+1. Follow existing repository patterns.
 
+2. Prefer small, reversible and reviewable changes.
 
-1\. Follow existing repository patterns.
+3. Preserve backward compatibility unless explicitly approved otherwise.
 
-2\. Prefer small, reversible and reviewable changes.
+4. Do not duplicate existing utilities, components or business logic.
 
-3\. Preserve backward compatibility unless explicitly approved otherwise.
+5. Do not replace working implementations with placeholders.
 
-4\. Do not duplicate existing utilities, components or business logic.
+6. Do not silently remove existing features.
 
-5\. Do not replace working implementations with placeholders.
+7. Do not weaken security checks to make tests pass.
 
-6\. Do not silently remove existing features.
+8. Avoid TypeScript `any` unless technically necessary and documented.
 
-7\. Do not weaken security checks to make tests pass.
+9. Do not suppress TypeScript or ESLint errors without justification.
 
-8\. Avoid TypeScript `any` unless technically necessary and documented.
-
-9\. Do not suppress TypeScript or ESLint errors without justification.
-
-10\. Do not add fake data to production paths.
-
-
+10. Do not add fake data to production paths.
 
 After implementation:
 
+1. Review the complete diff.
 
+2. Run relevant validation commands.
 
-1\. Review the complete diff.
+3. Report every modified file.
 
-2\. Run relevant validation commands.
+4. Report every validation command actually executed.
 
-3\. Report every modified file.
+5. Report passed and failed tests accurately.
 
-4\. Report every validation command actually executed.
+6. Report remaining risks and follow-up work.
 
-5\. Report passed and failed tests accurately.
+7. Do not commit or push unless explicitly instructed.
 
-6\. Report remaining risks and follow-up work.
-
-7\. Do not commit or push unless explicitly instructed.
-
-
-
-\## Validation
-
-
+## Validation
 
 Use only scripts that actually exist in package.json.
 
-
-
 Preferred validation sequence:
 
+- `npm run lint`
 
+- `npm run typecheck`
 
-\- `npm run lint`
+- `npm run test`
 
-\- `npm run typecheck`
-
-\- `npm run test`
-
-\- `npm run build`
-
-
+- `npm run build`
 
 When Prisma files change, also run:
 
+- `npx prisma format`
 
+- `npx prisma validate`
 
-\- `npx prisma format`
-
-\- `npx prisma validate`
-
-\- `npx prisma generate`
-
-
+- `npx prisma generate`
 
 Never perform a destructive database operation without explicit approval.
 
+## TypeScript and Next.js
 
+- Preserve strict TypeScript compatibility.
 
-\## TypeScript and Next.js
+- Prefer explicit domain types.
 
+- Validate external input with Zod or the existing validation system.
 
+- Avoid unsafe type assertions.
 
-\- Preserve strict TypeScript compatibility.
+- Handle nullable database values explicitly.
 
-\- Prefer explicit domain types.
+- Follow Next.js App Router conventions.
 
-\- Validate external input with Zod or the existing validation system.
+- Preserve server and client component boundaries.
 
-\- Avoid unsafe type assertions.
+- Add `"use client"` only when client-side functionality is required.
 
-\- Handle nullable database values explicitly.
+- Keep secrets and privileged operations on the server.
 
-\- Follow Next.js App Router conventions.
+- Preserve locale-prefixed routes under `/fa` and `/en`.
 
-\- Preserve server and client component boundaries.
+- Preserve Persian RTL and English LTR behavior.
 
-\- Add `"use client"` only when client-side functionality is required.
+- Avoid unnecessary client-side JavaScript.
 
-\- Keep secrets and privileged operations on the server.
-
-\- Preserve locale-prefixed routes under `/fa` and `/en`.
-
-\- Preserve Persian RTL and English LTR behavior.
-
-\- Avoid unnecessary client-side JavaScript.
-
-
-
-\## API Security
-
-
+## API Security
 
 Every API route must enforce, where applicable:
 
+- Authentication
 
+- Organization membership
 
-\- Authentication
+- Role and permission requirements
 
-\- Organization membership
+- Site-level access
 
-\- Role and permission requirements
+- Input validation
 
-\- Site-level access
+- Tenant isolation
 
-\- Input validation
+- Safe error responses
 
-\- Tenant isolation
-
-\- Safe error responses
-
-\- Published-only visibility for public content
-
-
+- Published-only visibility for public content
 
 Never trust `organizationId`, `userId`, `siteId` or role values supplied
 
 by clients.
 
-
-
 Do not expose stack traces, database errors, secrets, unpublished records
 
 or another organization's data.
-
-
 
 Use 404 where exposing the existence of an inaccessible resource would
 
 create an information leak.
 
-
-
-\## RBAC and Tenant Isolation
-
-
+## RBAC and Tenant Isolation
 
 Hermes OS is multi-tenant.
 
-
-
 Every data query and mutation must maintain:
 
+- Organization isolation
 
+- Site isolation
 
-\- Organization isolation
+- Role-based access control
 
-\- Site isolation
+- Explicit permission checks
 
-\- Role-based access control
+- Least-privilege access
 
-\- Explicit permission checks
-
-\- Least-privilege access
-
-\- Auditability
-
-
+- Auditability
 
 Tenant filtering should occur at the database query level whenever possible.
 
-
-
 Do not remove or bypass existing authorization helpers such as:
 
+- `requireActor`
 
+- `requirePermission`
 
-\- `requireActor`
+- `requireSiteActor`
 
-\- `requirePermission`
-
-\- `requireSiteActor`
-
-\- `requireSitePermission`
-
-
+- `requireSitePermission`
 
 Use the repository's current equivalents if these names have changed.
 
+## Prisma and Database
 
+- Inspect the current Prisma schema before changing models.
 
-\## Prisma and Database
+- Preserve existing relations and indexes.
 
+- Use transactions for atomic multi-step writes.
 
+- Avoid N+1 queries.
 
-\- Inspect the current Prisma schema before changing models.
+- Avoid unbounded list queries.
 
-\- Preserve existing relations and indexes.
+- Add pagination to potentially large datasets.
 
-\- Use transactions for atomic multi-step writes.
+- Never edit an already-applied production migration.
 
-\- Avoid N+1 queries.
+- Create a new migration for schema changes.
 
-\- Avoid unbounded list queries.
+- Explain migration and rollback implications.
 
-\- Add pagination to potentially large datasets.
+- Never delete production data without explicit approval.
 
-\- Never edit an already-applied production migration.
-
-\- Create a new migration for schema changes.
-
-\- Explain migration and rollback implications.
-
-\- Never delete production data without explicit approval.
-
-
-
-\## Industrial Analysis
-
-
+## Industrial Analysis
 
 Industrial reasoning must remain:
 
+- Deterministic where currently designed as deterministic
 
+- Explainable
 
-\- Deterministic where currently designed as deterministic
+- Traceable to evidence
 
-\- Explainable
+- Bilingual where required
 
-\- Traceable to evidence
+- Safe for industrial use
 
-\- Bilingual where required
-
-\- Safe for industrial use
-
-\- Explicit about uncertainty
-
-
+- Explicit about uncertainty
 
 Clearly distinguish observed data, derived calculations, engineering
 
 assumptions, risks, recommendations and unknowns.
 
-
-
 Never fabricate telemetry, measurements, evidence or plant conditions.
-
-
 
 Do not silently convert deterministic modules into probabilistic behavior.
 
-
-
-\## Localization
-
-
+## Localization
 
 For every visible UI change:
 
+- Update both Persian and English translations.
 
+- Preserve translation-key consistency.
 
-\- Update both Persian and English translations.
+- Preserve RTL and LTR layouts.
 
-\- Preserve translation-key consistency.
+- Avoid hard-coded visible strings when translation infrastructure exists.
 
-\- Preserve RTL and LTR layouts.
+- Use Persian `ÛŒ` rather than Arabic `ÙŠ`.
 
-\- Avoid hard-coded visible strings when translation infrastructure exists.
+- Use Persian `Ú©` rather than Arabic `Ùƒ`.
 
-\- Use Persian `ی` rather than Arabic `ي`.
+- Preserve correct ZWNJ usage.
 
-\- Use Persian `ک` rather than Arabic `ك`.
-
-\- Preserve correct ZWNJ usage.
-
-
-
-\## UI Design
-
-
+## UI Design
 
 Maintain the established Hermes visual language:
 
+- Premium industrial interface
 
+- Dark glassmorphism
 
-\- Premium industrial interface
+- Ice-blue and cyan accents
 
-\- Dark glassmorphism
+- Strong readability
 
-\- Ice-blue and cyan accents
+- Clear information hierarchy
 
-\- Strong readability
+- Responsive layouts
 
-\- Clear information hierarchy
+- Accessible controls
 
-\- Responsive layouts
-
-\- Accessible controls
-
-\- Professional enterprise appearance
-
-
+- Professional enterprise appearance
 
 Do not redesign unrelated pages during a scoped task.
 
-
-
-\## Testing
-
-
+## Testing
 
 Add or update tests when modifying:
 
+- Authentication or authorization
 
+- RBAC
 
-\- Authentication or authorization
+- Organization or site isolation
 
-\- RBAC
+- Public API exposure
 
-\- Organization or site isolation
+- Database writes
 
-\- Public API exposure
+- Billing
 
-\- Database writes
+- Usage metering
 
-\- Billing
+- API keys
 
-\- Usage metering
+- Cases
 
-\- API keys
+- Knowledge articles
 
-\- Cases
+- Industrial calculations
 
-\- Knowledge articles
-
-\- Industrial calculations
-
-\- Critical UI workflows
-
-
+- Critical UI workflows
 
 Tests must verify behavior rather than merely implementation details.
 
-
-
 Never weaken, skip or delete tests merely to produce a passing result.
 
-
-
-\## Git Safety
-
-
+## Git Safety
 
 Treat destructive Git actions as prohibited unless the project owner
 
 explicitly approves the exact action after receiving a clear impact explanation.
 
-
-
 Never automatically:
 
+- Discard working-tree changes
 
+- Delete untracked files
 
-\- Discard working-tree changes
+- Rewrite branch history
 
-\- Delete untracked files
+- Force-push
 
-\- Rewrite branch history
+- Delete branches
 
-\- Force-push
+- Commit changes
 
-\- Delete branches
-
-\- Commit changes
-
-\- Push changes
-
-
+- Push changes
 
 Always show `git status` and the relevant diff before proposing a Git write action.
 
-
-
-\## Environment and Secrets
-
-
+## Environment and Secrets
 
 Never read, print, modify or expose:
 
+- Environment files
 
+- API keys
 
-\- Environment files
+- OAuth tokens
 
-\- API keys
+- Database or Redis passwords
 
-\- OAuth tokens
+- SSH private keys
 
-\- Database or Redis passwords
+- TLS private keys
 
-\- SSH private keys
+- Cloud credentials
 
-\- TLS private keys
+- Payment credentials
 
-\- Cloud credentials
-
-\- Payment credentials
-
-\- Session secrets
-
-
+- Session secrets
 
 Use `.env.example` only to document required variable names.
-
-
 
 Never insert real credentials into source code, documentation, tests,
 
 logs, prompts or Git history.
 
-
-
-\## Docker and Production Safety
-
-
+## Docker and Production Safety
 
 Treat Docker volume deletion, system pruning and destructive container
 
@@ -548,85 +408,62 @@ shutdown operations as prohibited unless explicitly approved after an
 
 impact assessment.
 
-
-
 Before changing Docker or Nginx:
 
+- Inspect current services and ports.
 
+- Preserve PostgreSQL and Redis data.
 
-\- Inspect current services and ports.
+- Preserve named volumes.
 
-\- Preserve PostgreSQL and Redis data.
+- Preserve health checks.
 
-\- Preserve named volumes.
+- Preserve reverse-proxy behavior.
 
-\- Preserve health checks.
-
-\- Preserve reverse-proxy behavior.
-
-\- Document rollback steps.
-
-
+- Document rollback steps.
 
 Do not change ports, firewall rules, SSH settings, TLS, DNS or proxy routing
 
 unless explicitly included in the task.
 
-
-
-\## Scope Control
-
-
+## Scope Control
 
 Only modify files required for the requested task.
 
-
-
 Do not:
 
+- Perform unrelated refactors
 
+- Reformat the whole repository
 
-\- Perform unrelated refactors
+- Rename public APIs unnecessarily
 
-\- Reformat the whole repository
+- Upgrade all dependencies during a feature task
 
-\- Rename public APIs unnecessarily
+- Change infrastructure while fixing UI
 
-\- Upgrade all dependencies during a feature task
+- Change authentication while fixing styling
 
-\- Change infrastructure while fixing UI
-
-\- Change authentication while fixing styling
-
-\- Delete apparently unused code without verifying usage
-
-
+- Delete apparently unused code without verifying usage
 
 When uncertain, preserve existing behavior and report the uncertainty.
 
-
-
-\## Definition of Done
-
-
+## Definition of Done
 
 A task is complete only when:
 
+- The requested behavior is implemented.
 
+- Security boundaries remain intact.
 
-\- The requested behavior is implemented.
+- Type checking passes.
 
-\- Security boundaries remain intact.
+- Relevant tests pass.
 
-\- Type checking passes.
+- The production build passes when practical.
 
-\- Relevant tests pass.
+- No unrelated files are modified.
 
-\- The production build passes when practical.
+- The final diff is reviewed.
 
-\- No unrelated files are modified.
-
-\- The final diff is reviewed.
-
-\- Validation results are reported accurately.
-
+- Validation results are reported accurately.
