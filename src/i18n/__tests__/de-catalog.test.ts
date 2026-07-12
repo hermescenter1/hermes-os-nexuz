@@ -43,9 +43,21 @@ function leafPaths(node: unknown, prefix = ""): Map<string, string> {
   return out;
 }
 
-/** Sorted ICU placeholder signature of a message, e.g. "{count}|{name}". */
+/**
+ * Sorted ICU argument signature of a message, e.g. "count|name".
+ *
+ * Captures the argument NAME after each `{` (`{count}`, `{count, plural, …}`),
+ * not the literal branch text. This is the correct notion of "placeholders match":
+ * an ICU plural/select may translate its branch literals (e.g.
+ * `{count, plural, one {# Execution} …}` → `… {# Ausführung} …}`) while keeping
+ * the same argument reference. The old `/\{[^}]*\}/g` form treated the translated
+ * branch noun as part of the signature and false-flagged legitimate translations.
+ */
 function placeholders(value: unknown): string {
-  return (String(value).match(/\{[^}]*\}/g) ?? []).sort().join("|");
+  return [...String(value).matchAll(/\{\s*([a-zA-Z0-9_]+)/g)]
+    .map((m) => m[1])
+    .sort()
+    .join("|");
 }
 
 /** Braces are balanced and never close before opening. */
@@ -194,14 +206,16 @@ describe("de.json — Phase 86C1 translation audit", () => {
     fa: faFlat.get(path),
   }));
   // Journal namespaces were translated in Phase 86C2, the admin namespaces in
-  // Phase 86C3, industrialBrain in Phase 86C4A, and assetOperations +
-  // maintenanceOperations in Phase 86C4B1; they are no longer English carryover,
-  // so exclude them from the "still English" set.
+  // Phase 86C3, industrialBrain in Phase 86C4A, assetOperations +
+  // maintenanceOperations in Phase 86C4B1, and automationOperations in
+  // Phase 86C4B2A-DE; they are no longer English carryover, so exclude them from
+  // the "still English" set.
   const TRANSLATED_NS = new Set([
     "journal", "journalWriter", "journalEditorial",
     "adminOperations", "adminGovernance",
     "industrialBrain",
     "assetOperations", "maintenanceOperations",
+    "automationOperations",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
@@ -228,9 +242,9 @@ describe("de.json — Phase 86C1 translation audit", () => {
   });
 
   it("all non-batch, non-translated namespaces temporarily carry English verbatim", () => {
-    // Journal (86C2), admin (86C3), industrialBrain (86C4A), and asset/CMMS
-    // (86C4B1) namespaces are now German; the remaining non-batch-1 namespaces
-    // still carry English verbatim in de.
+    // Journal (86C2), admin (86C3), industrialBrain (86C4A), asset/CMMS (86C4B1),
+    // and automation (86C4B2A-DE) namespaces are now German; the remaining
+    // non-batch-1 namespaces still carry English verbatim in de.
     expect(carryover.length).toBe(stillEnglish.length);
     expect(stillEnglish.length).toBeGreaterThanOrEqual(1929);
   });

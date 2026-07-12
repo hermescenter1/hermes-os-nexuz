@@ -1,5 +1,6 @@
 /**
- * Phase 86C4B2A-PRE / -FA — Workflow Automation message catalog: extraction + Persian.
+ * Phase 86C4B2A-PRE / -FA / -DE — Workflow Automation message catalog:
+ * extraction + Persian + German.
  *
  * The Automation module (src/components/automation/* + src/app/[locale]/automation/*)
  * had its user-facing text lifted out of hardcoded English and
@@ -7,12 +8,15 @@
  * next-intl namespace:
  *   - en = canonical English
  *   - fa = professional Persian (Phase 86C4B2A-FA translated all 188 leaves)
- *   - de = temporary English copy (German not translated in this phase)
+ *   - de = professional German (Phase 86C4B2A-DE translated all 188 leaves)
  *
- * The Persian locale is ACTIVE, so fa is real user-visible UI. Exactly one fa
- * value legitimately stays identical to English — the URL example placeholder
- * `webhooks.urlPlaceholder` — enumerated in FA_ENGLISH_ALLOW; any other fa===en
- * pair fails the audit.
+ * German stays INACTIVE (ACTIVE_LOCALES = ["fa","en"]); only the de values changed.
+ * Exactly one fa value stays identical to English — the URL example placeholder
+ * `webhooks.urlPlaceholder` (FA_ENGLISH_ALLOW). A narrow set of de values stay
+ * identical to English — standard German terms/acronyms (Workflow, Webhook,
+ * Dashboard, Status, Name, URL, Simulation, Live), the two ICU plurals whose
+ * nouns are identical in German, the URL example, and "Support: Ticket"
+ * (DE_ENGLISH_ALLOW). Any other fa===en or de===en pair fails the audit.
  *
  * Retained locale logic (allowlisted below):
  *   - usePathname in AutomationNav — active-link detection only
@@ -131,12 +135,6 @@ describe("automationOperations namespace — three-locale parity", () => {
     }
   });
 
-  it("de still copies English verbatim (German deferred, not yet translated)", () => {
-    const e = flatten(enAO), d = flatten(deAO);
-    const deDiverge = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k);
-    expect(deDiverge).toEqual([]);
-  });
-
   it("preserves the exact English count-plural and placeholder strings", () => {
     const e = flatten(enAO);
     expect(e.get("workflowList.heading")).toBe("{count, plural, one {# Workflow} other {# Workflows}}");
@@ -215,6 +213,83 @@ describe("automationOperations — Persian translation quality (Phase 86C4B2A-FA
 
   it("keeps the URL example placeholder byte-exact (raw technical value)", () => {
     expect(f.get("webhooks.urlPlaceholder")).toBe("https://hooks.example.com/...");
+  });
+});
+
+// German values that legitimately stay identical to English: standard German
+// terms/acronyms already spelled the same, the two ICU plurals whose nouns are
+// identical in German, the URL example, and "Support: Ticket" (both loanwords).
+const DE_ENGLISH_ALLOW = new Set<string>([
+  "nav.items.dashboard", "nav.items.workflows", "nav.items.webhooks",
+  "workflowList.heading", "workflowList.colName", "workflowList.colStatus",
+  "triggerLabels.CUSTOMER_SUPPORT_TICKET_CREATED",
+  "executionList.colStatus", "executionList.colWorkflow",
+  "executionList.typeSimulation", "executionList.typeLive",
+  "executionDetail.simulation", "executionDetail.workflow",
+  "webhooks.heading", "webhooks.nameLabel", "webhooks.urlLabel",
+  "webhooks.urlPlaceholder", "webhooks.colName", "webhooks.colUrl", "webhooks.colStatus",
+  "workflowDetail.colStatus",
+  "builder.nameLabel", "builder.statusLabel", "builder.reviewName",
+]);
+
+// Informal German second-person address is forbidden (enterprise formal "Sie").
+const INFORMAL_ADDRESS =
+  /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
+
+describe("automationOperations — German translation quality (Phase 86C4B2A-DE)", () => {
+  const e = flatten(enAO), d = flatten(deAO);
+
+  it("every de leaf outside the allowlist is translated (de !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !DE_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => d.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("the English-identical de values are exactly the allowlist", () => {
+    const identical = [...e].filter(([k, v]) => d.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...DE_ENGLISH_ALLOW].sort());
+  });
+
+  it("uses no informal German address (enterprise formal Sie only)", () => {
+    const informal = [...d].filter(([, v]) => INFORMAL_ADDRESS.test(String(v))).map(([k]) => k);
+    expect(informal).toEqual([]);
+  });
+
+  it("carries genuine German (umlaut/ß present across the namespace)", () => {
+    expect([...d.values()].some((v) => /[äöüßÄÖÜ]/.test(String(v)))).toBe(true);
+  });
+
+  it("ICU count-plural branches are translated while placeholders/structure survive", () => {
+    expect(d.get("executionList.heading")).toBe("{count, plural, one {# Ausführung} other {# Ausführungen}}");
+    expect(d.get("dashboard.uses")).toBe("{count} Verwendungen");
+    expect(d.get("executionDetail.steps")).toBe("Ausführungsschritte ({count})");
+    expect(d.get("workflowDetail.tabExecutions")).toBe("Ausführungen ({count})");
+  });
+
+  it("keeps required core terminology consistent across the namespace", () => {
+    const all = [...d.values()].map(String).join(" ");
+    for (const term of ["Workflow", "Ausführung", "Vorlage", "Webhook", "Auslöser", "Aktion", "Bedingung"]) {
+      expect(all, `missing term ${term}`).toContain(term);
+    }
+  });
+
+  it("keeps protected technical tokens intact in German", () => {
+    expect(d.get("builder.triggerHint")).toContain("Hermes OS");
+    expect(d.get("settings.aboutEngine")).toContain("Hermes OS");
+    expect(d.get("settings.aboutStats")).toContain("Prisma");
+    expect(d.get("settings.aboutStats")).toContain("API");
+    expect(d.get("settings.rbacProtection")).toContain("RBAC");
+    expect(d.get("triggerLabels.CRM_LEAD_CREATED")).toMatch(/^CRM:/);
+    expect(d.get("triggerLabels.ATS_APPLICATION_SUBMITTED")).toMatch(/^ATS:/);
+    // Latin digits preserved (numeric-rendering behavior unchanged).
+    expect(d.get("settings.aboutEngine")).toContain("67");
+    expect(d.get("settings.aboutStats")).toMatch(/12 .*13 .*6 /);
+  });
+
+  it("keeps the URL example placeholder byte-exact (raw technical value)", () => {
+    expect(d.get("webhooks.urlPlaceholder")).toBe("https://hooks.example.com/...");
   });
 });
 
@@ -341,8 +416,11 @@ describe("Phase 86C4B2A-PRE combined — prior work and German state intact", ()
     expect([...j.values()].some((v) => /[äöüßÄÖÜ]/.test(String(v)))).toBe(true);
   });
 
-  it("automationOperations is English carryover in de (German deferred, not yet translated)", () => {
-    const e = flatten(enAO), d = flatten(deAO);
-    expect([...e].every(([k, v]) => d.get(k) === v)).toBe(true);
+  it("automationOperations fa and de are both fully translated (only allowlisted identicals)", () => {
+    const e = flatten(enAO), f = flatten(faAO), d = flatten(deAO);
+    const faIdentical = [...e].filter(([k, v]) => f.get(k) === v).map(([k]) => k);
+    const deIdentical = [...e].filter(([k, v]) => d.get(k) === v).map(([k]) => k);
+    expect(faIdentical).toEqual(["webhooks.urlPlaceholder"]);
+    expect(deIdentical.length).toBe(24);
   });
 });
