@@ -1,6 +1,6 @@
 /**
- * Phase 86C4B2B1B-PRE / -FA — ERP Projects & Tasks: extraction + Persian
- * translation.
+ * Phase 86C4B2B1B-PRE / -FA / -DE — ERP Projects & Tasks: extraction +
+ * Persian + German translation.
  *
  * Part B of four ERP extraction phases. The ERP Projects + Tasks surface
  *   Projects: src/app/[locale]/erp/projects/{page,new/page,[id]/page,
@@ -14,7 +14,8 @@
  * and `tasks` (14 leaves) — 35 new leaves, bringing the namespace to 85:
  *   - en = canonical English
  *   - fa = professional Persian (Phase 86C4B2B1B-FA translated all 35 leaves)
- *   - de = temporary English copy (German translation happens in -DE)
+ *   - de = professional German (Phase 86C4B2B1B-DE; 33 translated + 2
+ *     legitimate German-identical terms allowlisted: Status, Budget)
  * German stays INACTIVE (ACTIVE_LOCALES = ["fa","en"]).
  *
  * The Persian locale is ACTIVE, so fa is real user-visible UI. Zero fa values
@@ -198,14 +199,86 @@ describe("enterpriseOperations projects/tasks — catalog structure & parity", (
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("enterpriseOperations projects/tasks — temporary de === English", () => {
-  for (const sub of ["projects", "tasks"] as const) {
-    it(`every newly extracted de ${sub} value equals English`, () => {
-      const e = flatten(enEO[sub]), d = flatten(deEO[sub]);
-      const diff = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => `${sub}.${k}`);
-      expect(diff).toEqual([]);
-    });
-  }
+// German-identical projects/tasks values that are legitimate German nouns —
+// "Status" and "Budget" are the standard German terms. Everything else must
+// differ from English. The allowlist is explicit, never derived from output.
+const DE_ENGLISH_ALLOW = new Set<string>(["projects.status", "projects.budget"]);
+
+// Informal German second-person address is forbidden (enterprise formal "Sie").
+const INFORMAL_ADDRESS =
+  /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
+
+describe("enterpriseOperations projects/tasks — German translation quality (Phase 86C4B2B1B-DE)", () => {
+  const e = new Map([
+    ...withPrefix(flatten(enEO.projects), "projects"),
+    ...withPrefix(flatten(enEO.tasks), "tasks"),
+  ]);
+  const d = new Map([
+    ...withPrefix(flatten(deEO.projects), "projects"),
+    ...withPrefix(flatten(deEO.tasks), "tasks"),
+  ]);
+
+  it("every de leaf outside the allowlist is translated (de !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !DE_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => d.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("English-identical de values are exactly the 2-term allowlist", () => {
+    const identical = [...e].filter(([k, v]) => d.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...DE_ENGLISH_ALLOW].sort());
+  });
+
+  it("uses no informal German address (enterprise formal Sie only)", () => {
+    const informal = [...d].filter(([, v]) => INFORMAL_ADDRESS.test(String(v))).map(([k]) => k);
+    expect(informal).toEqual([]);
+  });
+
+  it("carries genuine German (umlaut/ß present across the sub-objects)", () => {
+    expect([...d.values()].some((v) => /[äöüßÄÖÜ]/.test(String(v)))).toBe(true);
+  });
+
+  it("aligns terminology with the committed ERP Core German glossary", () => {
+    const deAll = flatten(deEO);
+    expect(d.get("projects.pageTitle")).toBe(deAll.get("nav.items.projects")); // Projekte
+    expect(d.get("projects.tasks")).toBe(deAll.get("nav.items.tasks"));        // Aufgaben
+    expect(d.get("projects.actualCost")).toBe(deAll.get("dashboard.actualCost")); // Istkosten
+    expect(d.get("projects.milestones")).toBe("Meilensteine");
+    expect(d.get("projects.milestonesPageTitle")).toBe("Meilensteine");
+    expect(d.get("projects.progress")).toBe("Fortschritt");
+    expect(d.get("tasks.pageTitle")).toBe("Aufgabenboard");
+    expect(d.get("tasks.detailPageTitle")).toBe("Aufgabendetails");
+    expect(d.get("tasks.dueDate")).toBe("Fälligkeitsdatum");
+    expect(d.get("tasks.priority")).toBe("Priorität");
+  });
+
+  it("task board column labels are the intended kanban terms, all distinct", () => {
+    expect(d.get("tasks.columns.TODO")).toBe("Zu erledigen");
+    expect(d.get("tasks.columns.IN_PROGRESS")).toBe("In Bearbeitung");
+    expect(d.get("tasks.columns.BLOCKED")).toBe("Blockiert");
+    expect(d.get("tasks.columns.REVIEW")).toBe("In Prüfung");
+    expect(d.get("tasks.columns.DONE")).toBe("Erledigt");
+    // milestone completion badge uses the same term as the DONE column
+    expect(d.get("projects.milestoneDone")).toBe("Erledigt");
+    // no two workflow states collapse into one German label
+    const labels = ["TODO", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE"].map(
+      (c) => d.get(`tasks.columns.${c}`),
+    );
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("keeps ICU structure and protected Latin tokens intact", () => {
+    expect(d.get("projects.count")).toBe("{count, plural, one {# Projekt} other {# Projekte}}");
+    expect(String(d.get("projects.due"))).toContain("{date}");
+    expect(String(d.get("projects.tasksCount"))).toContain("{count}");
+    expect(String(d.get("projects.viewAllTasks"))).toContain("{count}");
+    expect(String(d.get("projects.newDescIntro"))).toContain("API");
+    expect(String(d.get("projects.newDescIntro"))).toContain("CRM");
+    expect(String(d.get("projects.newDescApi"))).toContain("ERP");
+    expect(String(d.get("projects.newDescApi"))).toContain("API");
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
