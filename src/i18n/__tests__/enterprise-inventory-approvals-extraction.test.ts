@@ -13,8 +13,8 @@
  * and `approvals` (9) — 27 new leaves, bringing the namespace to 144:
  *   - en = canonical English (exact former rendered text, including the
  *     lowercase enum-derived approval-status labels and the "Qty" abbreviation)
- *   - fa = temporary English copy (this is an EXTRACTION phase; Persian arrives
- *     in Phase 86C4B2B1D-FA)
+ *   - fa = professional Persian (Phase 86C4B2B1D-FA translated all 27 leaves;
+ *     FA_ENGLISH_ALLOW = {inventory.columns.sku} — the "SKU" Latin acronym only)
  *   - de = temporary English copy (German arrives in Phase 86C4B2B1D-DE)
  * German stays INACTIVE (ACTIVE_LOCALES = ["fa","en"]).
  *
@@ -248,7 +248,13 @@ describe("enterpriseOperations inventory/approvals — catalog structure & parit
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("inventory/approvals — temporary English state (extraction phase)", () => {
+// Only the "SKU" column header legitimately stays identical to English (a Latin
+// acronym with no useful Persian equivalent). Every other new leaf is translated.
+// The allowlist is explicit, never derived from output.
+const FA_ENGLISH_ALLOW = new Set<string>(["inventory.columns.sku"]);
+const STOCK_KEYS = ["low", "ok", "inStock"] as const;
+
+describe("inventory/approvals — Persian translation quality (Phase 86C4B2B1D-FA)", () => {
   const e = newLeaves(enEO);
   const f = newLeaves(faEO);
   const d = newLeaves(deEO);
@@ -259,19 +265,86 @@ describe("inventory/approvals — temporary English state (extraction phase)", (
     expect(d.size).toBe(27);
   });
 
-  it("every new fa value is a temporary exact English copy", () => {
-    const diverged = [...e].filter(([k, v]) => f.get(k) !== v).map(([k]) => k);
-    expect(diverged).toEqual([]);
-  });
-
-  it("every new de value is a temporary exact English copy", () => {
+  it("de remains a temporary exact English copy (German arrives in Phase -DE)", () => {
     const diverged = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k);
     expect(diverged).toEqual([]);
   });
 
-  it("no Persian script exists in the temporary fa inventory/approvals values", () => {
-    const persian = [...f].filter(([, v]) => PERSIAN.test(String(v))).map(([k]) => k);
-    expect(persian).toEqual([]);
+  it("every fa leaf outside the allowlist is translated (fa !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !FA_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => f.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("English-identical fa values are exactly the allowlist (SKU only)", () => {
+    const identical = [...e].filter(([k, v]) => f.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...FA_ENGLISH_ALLOW].sort());
+  });
+
+  it("every non-allowlisted fa leaf contains real Persian script", () => {
+    const bad = [...f]
+      .filter(([k]) => !FA_ENGLISH_ALLOW.has(k))
+      .filter(([, v]) => !PERSIAN.test(String(v)))
+      .map(([k]) => k);
+    expect(bad).toEqual([]);
+  });
+
+  it("SKU stays Latin/unchanged (the sole allowlisted header)", () => {
+    expect(f.get("inventory.columns.sku")).toBe("SKU");
+  });
+
+  it("uses no Arabic ي (U+064A) or ك (U+0643) — Persian ی/ک only", () => {
+    expect([...f].filter(([, v]) => /ي/.test(String(v))).map(([k]) => k)).toEqual([]);
+    expect([...f].filter(([, v]) => /ك/.test(String(v))).map(([k]) => k)).toEqual([]);
+  });
+
+  it("keeps the {order} ICU placeholder and Latin digits (no Persian digits)", () => {
+    expect(f.get("approvals.step")).toBe("مرحله {order}");
+    expect(String(f.get("approvals.step"))).toContain("{order}");
+    const persianDigits = [...f].filter(([, v]) => /[۰-۹]/.test(String(v))).map(([k]) => k);
+    expect(persianDigits).toEqual([]);
+  });
+
+  it("aligns Inventory terminology with the committed ERP Persian glossary", () => {
+    const faAll = flatten(faEO);
+    expect(f.get("inventory.pageTitle")).toBe(faAll.get("nav.items.inventory")); // موجودی
+    expect(f.get("inventory.columns.category")).toBe("دسته‌بندی");
+    expect(f.get("inventory.columns.quantity")).toBe("تعداد");
+    expect(f.get("inventory.metrics.quantity")).toBe("تعداد");
+    expect(f.get("inventory.metrics.reorderAt")).toBe("سطح سفارش مجدد");
+    expect(f.get("inventory.metrics.unitCost")).toBe("هزینه واحد");
+    expect(f.get("inventory.location")).toBe("محل");
+    expect(f.get("inventory.recentMovements")).toBe("جابه‌جایی‌های اخیر");
+    expect(f.get("inventory.backToInventory")).toBe("بازگشت به موجودی");
+    expect(String(f.get("inventory.empty"))).toContain("قلم موجودی");
+  });
+
+  it("stock labels carry the required Persian terms and stay distinct", () => {
+    expect(f.get("inventory.stock.low")).toBe("موجودی کم");
+    expect(f.get("inventory.stock.inStock")).toBe("موجود");
+    const labels = STOCK_KEYS.map((k) => f.get(`inventory.stock.${k}`));
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("aligns Approval terminology and keeps the action labels concise", () => {
+    const faAll = flatten(faEO);
+    expect(faAll.get("nav.items.approvals")).toBe("تأییدها"); // committed glossary anchor
+    expect(String(f.get("approvals.pageTitle"))).toContain("تأیید");
+    expect(f.get("approvals.approve")).toBe("تأیید");
+    expect(f.get("approvals.reject")).toBe("رد");
+    expect(f.get("approvals.status.PENDING")).toBe("در انتظار");
+    expect(f.get("approvals.status.APPROVED")).toBe("تأییدشده");
+    expect(f.get("approvals.status.REJECTED")).toBe("ردشده");
+    expect(f.get("approvals.status.CANCELLED")).toBe("لغوشده");
+  });
+
+  it("approval status labels are all distinct, and actions differ from states", () => {
+    const labels = APPROVAL_STATUSES.map((s) => f.get(`approvals.status.${s}`));
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(f.get("approvals.approve")).not.toBe(f.get("approvals.status.APPROVED"));
+    expect(f.get("approvals.reject")).not.toBe(f.get("approvals.status.REJECTED"));
   });
 });
 

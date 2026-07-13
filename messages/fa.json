@@ -5239,43 +5239,43 @@
       "backToWorkOrders": "بازگشت به سفارش‌های کاری"
     },
     "inventory": {
-      "pageTitle": "Inventory",
+      "pageTitle": "موجودی",
       "columns": {
         "sku": "SKU",
-        "name": "Name",
-        "category": "Category",
-        "quantity": "Qty",
-        "reorder": "Reorder",
-        "status": "Status"
+        "name": "نام",
+        "category": "دسته‌بندی",
+        "quantity": "تعداد",
+        "reorder": "سفارش مجدد",
+        "status": "وضعیت"
       },
       "stock": {
-        "low": "Low Stock",
-        "ok": "OK",
-        "inStock": "In Stock"
+        "low": "موجودی کم",
+        "ok": "موجودی کافی",
+        "inStock": "موجود"
       },
       "metrics": {
-        "quantity": "Quantity",
-        "reserved": "Reserved",
-        "reorderAt": "Reorder At",
-        "unitCost": "Unit Cost"
+        "quantity": "تعداد",
+        "reserved": "رزروشده",
+        "reorderAt": "سطح سفارش مجدد",
+        "unitCost": "هزینه واحد"
       },
-      "location": "Location",
-      "recentMovements": "Recent Movements",
-      "backToInventory": "Back to Inventory",
-      "empty": "No inventory items found."
+      "location": "محل",
+      "recentMovements": "جابه‌جایی‌های اخیر",
+      "backToInventory": "بازگشت به موجودی",
+      "empty": "هیچ قلم موجودی یافت نشد."
     },
     "approvals": {
-      "pageTitle": "Approval Requests",
+      "pageTitle": "درخواست‌های تأیید",
       "status": {
-        "PENDING": "pending",
-        "APPROVED": "approved",
-        "REJECTED": "rejected",
-        "CANCELLED": "cancelled"
+        "PENDING": "در انتظار",
+        "APPROVED": "تأییدشده",
+        "REJECTED": "ردشده",
+        "CANCELLED": "لغوشده"
       },
-      "approve": "Approve",
-      "reject": "Reject",
-      "step": "Step {order}",
-      "empty": "No approval requests found."
+      "approve": "تأیید",
+      "reject": "رد",
+      "step": "مرحله {order}",
+      "empty": "هیچ درخواست تأییدی یافت نشد."
     }
   }
 }
