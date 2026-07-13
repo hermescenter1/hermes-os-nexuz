@@ -1,12 +1,12 @@
 "use client";
 
-import Link            from "next/link";
-import { usePathname } from "next/navigation";
+import Link                          from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type { ErpTeamFull } from "@/lib/erp/types";
 
 export function TeamDetailClient({ team }: { team: ErpTeamFull }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("enterpriseOperations");
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -15,23 +15,23 @@ export function TeamDetailClient({ team }: { team: ErpTeamFull }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground mb-1">Members</div>
+          <div className="text-xs text-muted-foreground mb-1">{t("teams.members")}</div>
           <div className="font-bold text-2xl">{team.members?.length ?? 0}</div>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground mb-1">Capacity</div>
+          <div className="text-xs text-muted-foreground mb-1">{t("teams.capacity")}</div>
           <div className="font-bold text-2xl">{team.capacity ?? "—"}</div>
         </div>
       </div>
 
       {team.members && team.members.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold mb-4">Members</h3>
+          <h3 className="font-semibold mb-4">{t("teams.members")}</h3>
           <div className="space-y-2">
             {team.members.map((m, i) => (
               <div key={i} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
                 <span>{m.userId}</span>
-                <span className="text-muted-foreground capitalize">{m.role?.toLowerCase() ?? "member"}</span>
+                <span className="text-muted-foreground capitalize">{m.role?.toLowerCase() ?? t("teams.memberRoleFallback")}</span>
               </div>
             ))}
           </div>
@@ -39,7 +39,7 @@ export function TeamDetailClient({ team }: { team: ErpTeamFull }) {
       )}
 
       <Link href={`/${locale}/erp/teams`} className="text-sm px-3 py-1.5 border rounded-md hover:bg-accent inline-block">
-        Back to Teams
+        {t("teams.backToTeams")}
       </Link>
     </div>
   );

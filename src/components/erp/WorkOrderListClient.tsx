@@ -1,7 +1,7 @@
 "use client";
 
-import Link            from "next/link";
-import { usePathname } from "next/navigation";
+import Link                          from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type { ErpWorkOrder } from "@/lib/erp/types";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -21,8 +21,8 @@ const PRIORITY_DOT: Record<string, string> = {
 };
 
 export function WorkOrderListClient({ orders }: { orders: ErpWorkOrder[] }) {
-  const pathname = usePathname();
-  const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const locale = useLocale();
+  const t      = useTranslations("enterpriseOperations");
 
   return (
     <div className="space-y-2">
@@ -38,15 +38,15 @@ export function WorkOrderListClient({ orders }: { orders: ErpWorkOrder[] }) {
             {wo.description && <div className="text-xs text-muted-foreground truncate">{wo.description}</div>}
           </div>
           <div className="flex items-center gap-3 shrink-0 text-xs">
-            {wo.dueDate && <span className="text-muted-foreground">Due {new Date(wo.dueDate).toLocaleDateString()}</span>}
+            {wo.dueDate && <span className="text-muted-foreground">{t("workOrders.due", { date: new Date(wo.dueDate).toLocaleDateString() })}</span>}
             <span className={`px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[wo.status] ?? ""}`}>
-              {wo.status.toLowerCase().replace(/_/g," ")}
+              {t(`workOrders.status.${wo.status}`)}
             </span>
           </div>
         </Link>
       ))}
       {orders.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground text-sm">No work orders found.</div>
+        <div className="text-center py-12 text-muted-foreground text-sm">{t("workOrders.noWorkOrdersFound")}</div>
       )}
     </div>
   );

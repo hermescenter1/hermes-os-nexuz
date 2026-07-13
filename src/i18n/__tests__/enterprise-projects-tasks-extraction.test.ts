@@ -65,11 +65,11 @@ const CLIENTS = [
 const DELEGATING_PAGE = "src/app/[locale]/erp/projects/[id]/page.tsx";
 const TEN = [...SERVER_PAGES_WITH_T, ...CLIENTS, DELEGATING_PAGE];
 
-// Later-phase ERP files that MUST remain untouched this phase — they still carry
-// their hardcoded `pathname.startsWith("/fa")` debt (proof of non-modification).
+// Later-phase ERP files that MUST remain untouched — they still carry their
+// hardcoded `pathname.startsWith("/fa")` debt (proof of non-modification).
+// TeamListClient and WorkOrderListClient graduated out of this list in Phase
+// 86C4B2B1C (Teams/Resources/Work Orders extraction); Inventory/Approval remain.
 const LATER_ERP_UNTOUCHED = [
-  "src/components/erp/TeamListClient.tsx",
-  "src/components/erp/WorkOrderListClient.tsx",
   "src/components/erp/InventoryListClient.tsx",
   "src/components/erp/ApprovalListClient.tsx",
 ];
@@ -128,11 +128,18 @@ describe("enterpriseOperations projects/tasks — catalog structure & parity", (
     expect(deEO).toBeTruthy();
   });
 
-  it("top-level objects are exactly nav/dashboard/kpis/settings/projects/tasks", () => {
-    const expected = ["dashboard", "kpis", "nav", "projects", "settings", "tasks"];
-    expect(Object.keys(enEO).sort()).toEqual(expected);
-    expect(Object.keys(faEO).sort()).toEqual(expected);
-    expect(Object.keys(deEO).sort()).toEqual(expected);
+  // Scoped in Phase 86C4B2B1C: later ERP subphases intentionally extend the
+  // namespace (teams/resources/workOrders), so this asserts the Part A+B
+  // sub-objects remain present rather than an exact whole-namespace key list.
+  // The exact post-C top-level set is owned by
+  // enterprise-teams-resources-work-orders-extraction.test.ts.
+  it("nav/dashboard/kpis/settings/projects/tasks remain top-level objects", () => {
+    const owned = ["dashboard", "kpis", "nav", "projects", "settings", "tasks"];
+    for (const k of owned) {
+      expect(Object.keys(enEO), `en ${k}`).toContain(k);
+      expect(Object.keys(faEO), `fa ${k}`).toContain(k);
+      expect(Object.keys(deEO), `de ${k}`).toContain(k);
+    }
   });
 
   it("projects has exactly 21 leaves, tasks exactly 14 (35 combined new)", () => {
@@ -141,8 +148,13 @@ describe("enterpriseOperations projects/tasks — catalog structure & parity", (
     expect(flatten(enEO.projects).size + flatten(enEO.tasks).size).toBe(35);
   });
 
-  it("enterpriseOperations total is exactly 85 leaves (50 core + 35 new)", () => {
-    expect(flatten(enEO).size).toBe(85);
+  // Scoped in Phase 86C4B2B1C: the whole-namespace total grows as later ERP
+  // subphases extend it, so this asserts the six Part A+B sub-objects still
+  // total exactly 85. The post-C whole-namespace total is owned by
+  // enterprise-teams-resources-work-orders-extraction.test.ts.
+  it("the six Part A+B sub-objects still total exactly 85 leaves (50 core + 35 new)", () => {
+    const six = ["nav", "dashboard", "kpis", "settings", "projects", "tasks"] as const;
+    expect(six.reduce((s, k) => s + flatten(enEO[k]).size, 0)).toBe(85);
     // core sub-objects unchanged by this phase
     expect(flatten(enEO.nav).size).toBe(11);
     expect(flatten(enEO.dashboard).size).toBe(20);

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ErpResource } from "@/lib/erp/types";
 
 const TYPE_COLOR: Record<string, string> = {
@@ -12,6 +13,8 @@ const TYPE_COLOR: Record<string, string> = {
 };
 
 export function ResourceListClient({ resources }: { resources: ErpResource[] }) {
+  const t = useTranslations("enterpriseOperations");
+
   return (
     <div className="space-y-2">
       {resources.map(r => (
@@ -23,16 +26,16 @@ export function ResourceListClient({ resources }: { resources: ErpResource[] }) 
           <div className="flex items-center gap-3 shrink-0 text-xs">
             {r.costRate != null && <span className="text-muted-foreground">${r.costRate}/h</span>}
             <span className={`px-2 py-0.5 rounded-full font-medium ${TYPE_COLOR[r.type] ?? ""}`}>
-              {r.type.toLowerCase()}
+              {t(`resources.types.${r.type}`)}
             </span>
             <span className={`px-2 py-0.5 rounded-full font-medium ${r.isAvailable ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
-              {r.isAvailable ? "Available" : "In Use"}
+              {r.isAvailable ? t("resources.available") : t("resources.inUse")}
             </span>
           </div>
         </div>
       ))}
       {resources.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground text-sm">No resources found.</div>
+        <div className="text-center py-12 text-muted-foreground text-sm">{t("resources.noResourcesFound")}</div>
       )}
     </div>
   );

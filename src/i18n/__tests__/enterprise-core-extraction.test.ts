@@ -58,11 +58,12 @@ const SEVEN = [...CLIENTS, ...PAGES];
 // Later-phase ERP files that MUST remain untouched by the ERP *Core* phase —
 // they still carry their hardcoded `pathname.startsWith("/fa")` debt (proof of
 // non-modification). ProjectListClient graduated out of this list in Phase
-// 86C4B2B1B (Projects & Tasks extraction); Inventory/Approval/WorkOrder remain.
+// 86C4B2B1B (Projects & Tasks extraction); WorkOrderListClient graduated in
+// Phase 86C4B2B1C (Teams/Resources/Work Orders extraction); Inventory/Approval
+// remain.
 const UNTOUCHED_ERP = [
   "src/components/erp/InventoryListClient.tsx",
   "src/components/erp/ApprovalListClient.tsx",
-  "src/components/erp/WorkOrderListClient.tsx",
 ];
 
 function leafPaths(node: unknown, prefix = ""): Map<string, string> {

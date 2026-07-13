@@ -5195,6 +5195,48 @@
       "priority": "Priority",
       "viewProject": "View project",
       "backToTasks": "Back to Tasks"
+    },
+    "teams": {
+      "pageTitle": "Teams",
+      "capacity": "Capacity",
+      "capacityValue": "Capacity: {value}",
+      "members": "Members",
+      "memberRoleFallback": "member",
+      "noTeamsFound": "No teams found.",
+      "backToTeams": "Back to Teams"
+    },
+    "resources": {
+      "pageTitle": "Resources",
+      "available": "Available",
+      "inUse": "In Use",
+      "types": {
+        "HUMAN": "human",
+        "EQUIPMENT": "equipment",
+        "SOFTWARE": "software",
+        "VEHICLE": "vehicle",
+        "FACILITY": "facility",
+        "TOOL": "tool"
+      },
+      "noResourcesFound": "No resources found."
+    },
+    "workOrders": {
+      "pageTitle": "Work Orders",
+      "due": "Due {date}",
+      "status": {
+        "OPEN": "open",
+        "ASSIGNED": "assigned",
+        "IN_PROGRESS": "in progress",
+        "WAITING_APPROVAL": "waiting approval",
+        "COMPLETED": "completed",
+        "CANCELLED": "cancelled"
+      },
+      "requiresApproval": "Requires Approval",
+      "dueDate": "Due Date",
+      "team": "Team",
+      "activityLog": "Activity Log",
+      "completionNote": "Completion Note",
+      "noWorkOrdersFound": "No work orders found.",
+      "backToWorkOrders": "Back to Work Orders"
     }
   }
 }
