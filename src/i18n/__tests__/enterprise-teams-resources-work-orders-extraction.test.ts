@@ -1,6 +1,6 @@
 /**
- * Phase 86C4B2B1C-PRE — ERP Teams, Resources & Work Orders: message-catalog
- * EXTRACTION (no fa/de authoring yet).
+ * Phase 86C4B2B1C-PRE / -FA — ERP Teams, Resources & Work Orders:
+ * message-catalog extraction + Persian translation.
  *
  * Part C of four ERP extraction phases. The ERP Teams/Resources/Work Orders
  * surface
@@ -14,10 +14,11 @@
  * `pathname.startsWith("/fa")` locale detection into three NEW sub-objects of
  * the existing `enterpriseOperations` next-intl namespace: `teams` (7 leaves),
  * `resources` (10) and `workOrders` (15) — 32 new leaves, bringing the
- * namespace to 117. This phase is extraction ONLY:
+ * namespace to 117:
  *   - en = canonical English (exact former rendered text, including the
  *     lowercase enum-derived display labels)
- *   - fa = TEMPORARY verbatim English copies (translated in a later -FA phase)
+ *   - fa = professional Persian (Phase 86C4B2B1C-FA translated all 32 leaves;
+ *     FA_ENGLISH_ALLOW is empty — zero fa values equal English)
  *   - de = TEMPORARY verbatim English copies (translated in a later -DE phase)
  * German stays INACTIVE (ACTIVE_LOCALES = ["fa","en"]).
  *
@@ -241,30 +242,94 @@ describe("enterpriseOperations teams/resources/workOrders — catalog structure 
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("extraction-only state — fa/de temporarily carry English verbatim", () => {
+// No teams/resources/workOrders fa value legitimately stays identical to
+// English — every leaf carries real Persian. The allowlist is empty.
+const FA_ENGLISH_ALLOW = new Set<string>([]);
+
+const WO_STATUSES = [
+  "OPEN", "ASSIGNED", "IN_PROGRESS", "WAITING_APPROVAL", "COMPLETED", "CANCELLED",
+] as const;
+
+describe("enterpriseOperations teams/resources/workOrders — Persian translation quality (Phase 86C4B2B1C-FA)", () => {
   const e = newLeaves(enEO);
   const f = newLeaves(faEO);
+
+  it("covers all 32 new leaves (guards against vacuous passes)", () => {
+    expect(e.size).toBe(32);
+    expect(f.size).toBe(32);
+  });
+
+  it("every fa leaf outside the allowlist is translated (fa !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !FA_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => f.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("English-identical fa values are exactly the (empty) allowlist", () => {
+    const identical = [...e].filter(([k, v]) => f.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...FA_ENGLISH_ALLOW].sort());
+  });
+
+  it("every fa leaf contains real Persian script", () => {
+    const bad = [...f].filter(([, v]) => !PERSIAN.test(String(v))).map(([k]) => k);
+    expect(bad).toEqual([]);
+  });
+
+  it("uses no Arabic ي (U+064A) or ك (U+0643) — Persian ی/ک only", () => {
+    expect([...f].filter(([, v]) => /ي/.test(String(v))).map(([k]) => k)).toEqual([]);
+    expect([...f].filter(([, v]) => /ك/.test(String(v))).map(([k]) => k)).toEqual([]);
+  });
+
+  it("aligns terminology with the committed ERP Persian glossary", () => {
+    const faAll = flatten(faEO);
+    expect(f.get("teams.pageTitle")).toBe(faAll.get("nav.items.teams"));            // تیم‌ها
+    expect(f.get("resources.pageTitle")).toBe(faAll.get("nav.items.resources"));    // منابع
+    expect(f.get("workOrders.pageTitle")).toBe(faAll.get("nav.items.workOrders"));  // سفارش‌های کاری
+    expect(f.get("workOrders.dueDate")).toBe(faAll.get("tasks.dueDate"));           // تاریخ سررسید
+    // in-progress work orders use the same term as the kanban column
+    expect(f.get("workOrders.status.IN_PROGRESS")).toBe(faAll.get("tasks.columns.IN_PROGRESS"));
+    // due badge mirrors the committed projects.due shape «سررسید {date}»
+    expect(f.get("workOrders.due")).toBe("سررسید {date}");
+    // waiting-approval status uses the committed approval stem (تأیید)
+    expect(String(f.get("workOrders.status.WAITING_APPROVAL"))).toContain("تأیید");
+    expect(f.get("teams.pageTitle")).toBe("تیم‌ها");
+    expect(f.get("workOrders.pageTitle")).toBe("سفارش‌های کاری");
+  });
+
+  it("work-order status labels are all distinct (no two states collapse)", () => {
+    const labels = WO_STATUSES.map((s) => f.get(`workOrders.status.${s}`));
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("resource type labels are all distinct", () => {
+    const labels = ["HUMAN", "EQUIPMENT", "SOFTWARE", "VEHICLE", "FACILITY", "TOOL"]
+      .map((t) => f.get(`resources.types.${t}`));
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("keeps ICU structure and Latin digits (no Persian digits)", () => {
+    expect(String(f.get("teams.capacityValue"))).toContain("{value}");
+    expect(String(f.get("workOrders.due"))).toContain("{date}");
+    const persianDigits = [...f].filter(([, v]) => /[۰-۹]/.test(String(v))).map(([k]) => k);
+    expect(persianDigits).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe("extraction state — de temporarily carries English verbatim", () => {
+  const e = newLeaves(enEO);
   const d = newLeaves(deEO);
 
   it("compares all 32 new leaves (guards against vacuous passes)", () => {
     expect(e.size).toBe(32);
-    expect(f.size).toBe(32);
     expect(d.size).toBe(32);
-  });
-
-  it("every new fa leaf equals English verbatim (translated in a later -FA phase)", () => {
-    const diff = [...e].filter(([k, v]) => f.get(k) !== v).map(([k]) => k);
-    expect(diff).toEqual([]);
   });
 
   it("every new de leaf equals English verbatim (translated in a later -DE phase)", () => {
     const diff = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k);
     expect(diff).toEqual([]);
-  });
-
-  it("no Persian script exists in the temporary fa values of the new sub-objects", () => {
-    const bad = [...f].filter(([, v]) => PERSIAN.test(String(v))).map(([k]) => k);
-    expect(bad).toEqual([]);
   });
 });
 

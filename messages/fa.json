@@ -5197,46 +5197,46 @@
       "backToTasks": "بازگشت به وظایف"
     },
     "teams": {
-      "pageTitle": "Teams",
-      "capacity": "Capacity",
-      "capacityValue": "Capacity: {value}",
-      "members": "Members",
-      "memberRoleFallback": "member",
-      "noTeamsFound": "No teams found.",
-      "backToTeams": "Back to Teams"
+      "pageTitle": "تیم‌ها",
+      "capacity": "ظرفیت",
+      "capacityValue": "ظرفیت: {value}",
+      "members": "اعضا",
+      "memberRoleFallback": "عضو",
+      "noTeamsFound": "تیمی یافت نشد.",
+      "backToTeams": "بازگشت به تیم‌ها"
     },
     "resources": {
-      "pageTitle": "Resources",
-      "available": "Available",
-      "inUse": "In Use",
+      "pageTitle": "منابع",
+      "available": "در دسترس",
+      "inUse": "در حال استفاده",
       "types": {
-        "HUMAN": "human",
-        "EQUIPMENT": "equipment",
-        "SOFTWARE": "software",
-        "VEHICLE": "vehicle",
-        "FACILITY": "facility",
-        "TOOL": "tool"
+        "HUMAN": "نیروی انسانی",
+        "EQUIPMENT": "تجهیزات",
+        "SOFTWARE": "نرم‌افزار",
+        "VEHICLE": "وسیله نقلیه",
+        "FACILITY": "تأسیسات",
+        "TOOL": "ابزار"
       },
-      "noResourcesFound": "No resources found."
+      "noResourcesFound": "منبعی یافت نشد."
     },
     "workOrders": {
-      "pageTitle": "Work Orders",
-      "due": "Due {date}",
+      "pageTitle": "سفارش‌های کاری",
+      "due": "سررسید {date}",
       "status": {
-        "OPEN": "open",
-        "ASSIGNED": "assigned",
-        "IN_PROGRESS": "in progress",
-        "WAITING_APPROVAL": "waiting approval",
-        "COMPLETED": "completed",
-        "CANCELLED": "cancelled"
+        "OPEN": "باز",
+        "ASSIGNED": "واگذارشده",
+        "IN_PROGRESS": "در حال انجام",
+        "WAITING_APPROVAL": "در انتظار تأیید",
+        "COMPLETED": "تکمیل‌شده",
+        "CANCELLED": "لغوشده"
       },
-      "requiresApproval": "Requires Approval",
-      "dueDate": "Due Date",
-      "team": "Team",
-      "activityLog": "Activity Log",
-      "completionNote": "Completion Note",
-      "noWorkOrdersFound": "No work orders found.",
-      "backToWorkOrders": "Back to Work Orders"
+      "requiresApproval": "نیازمند تأیید",
+      "dueDate": "تاریخ سررسید",
+      "team": "تیم",
+      "activityLog": "تاریخچه فعالیت‌ها",
+      "completionNote": "یادداشت تکمیل",
+      "noWorkOrdersFound": "هیچ سفارش کاری یافت نشد.",
+      "backToWorkOrders": "بازگشت به سفارش‌های کاری"
     }
   }
 }
