@@ -208,12 +208,12 @@ describe("de.json — Phase 86C1 translation audit", () => {
   // Journal namespaces were translated in Phase 86C2, the admin namespaces in
   // Phase 86C3, industrialBrain in Phase 86C4A, assetOperations +
   // maintenanceOperations in Phase 86C4B1, automationOperations in
-  // Phase 86C4B2A-DE, and enterpriseOperations progressively (ERP Core in
-  // Phase 86C4B2B1A-DE, Projects/Tasks in Phase 86C4B2B1B-DE; later ERP
-  // sub-objects may temporarily carry English until their own -DE phases —
-  // the per-phase extraction tests assert their exact translation state);
-  // they are no longer English carryover, so exclude them from the "still
-  // English" set.
+  // Phase 86C4B2A-DE, and enterpriseOperations across Phases 86C4B2B1A-DE
+  // (Core), -B1B-DE (Projects/Tasks), -B1C-DE (Teams/Resources/Work Orders)
+  // and -B1D-DE (Inventory/Approvals) — the enterpriseOperations namespace is
+  // now FULLY German (all 144 leaves); each sub-object's exact translation
+  // state is asserted by its own per-phase extraction test. None of these are
+  // English carryover, so exclude them from the "still English" set.
   const TRANSLATED_NS = new Set([
     "journal", "journalWriter", "journalEditorial",
     "adminOperations", "adminGovernance",

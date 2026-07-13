@@ -15,7 +15,10 @@
  *     lowercase enum-derived approval-status labels and the "Qty" abbreviation)
  *   - fa = professional Persian (Phase 86C4B2B1D-FA translated all 27 leaves;
  *     FA_ENGLISH_ALLOW = {inventory.columns.sku} — the "SKU" Latin acronym only)
- *   - de = temporary English copy (German arrives in Phase 86C4B2B1D-DE)
+ *   - de = professional German (Phase 86C4B2B1D-DE translated all 27 leaves;
+ *     DE_ENGLISH_ALLOW = {inventory.columns.sku, .name, .status} — "SKU", "Name"
+ *     and "Status" are standard German-identical terms). This completes the
+ *     entire enterpriseOperations namespace (144 leaves) in German.
  * German stays INACTIVE (ACTIVE_LOCALES = ["fa","en"]).
  *
  * Retained locale/raw logic (allowlisted below):
@@ -265,11 +268,6 @@ describe("inventory/approvals — Persian translation quality (Phase 86C4B2B1D-F
     expect(d.size).toBe(27);
   });
 
-  it("de remains a temporary exact English copy (German arrives in Phase -DE)", () => {
-    const diverged = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k);
-    expect(diverged).toEqual([]);
-  });
-
   it("every fa leaf outside the allowlist is translated (fa !== en)", () => {
     const untranslated = [...e]
       .filter(([k]) => !FA_ENGLISH_ALLOW.has(k))
@@ -345,6 +343,103 @@ describe("inventory/approvals — Persian translation quality (Phase 86C4B2B1D-F
     expect(new Set(labels).size).toBe(labels.length);
     expect(f.get("approvals.approve")).not.toBe(f.get("approvals.status.APPROVED"));
     expect(f.get("approvals.reject")).not.toBe(f.get("approvals.status.REJECTED"));
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// German-identical values that are legitimate standard German terms: "SKU" (a
+// Latin acronym), "Name" and "Status" are spelled identically in German.
+// Everything else must differ from English. The allowlist is explicit, never
+// derived from output.
+const DE_ENGLISH_ALLOW = new Set<string>([
+  "inventory.columns.sku",
+  "inventory.columns.name",
+  "inventory.columns.status",
+]);
+
+// Informal German second-person address is forbidden (enterprise formal "Sie").
+const INFORMAL_ADDRESS =
+  /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
+
+describe("inventory/approvals — German translation quality (Phase 86C4B2B1D-DE)", () => {
+  const e = newLeaves(enEO);
+  const d = newLeaves(deEO);
+
+  it("covers all 27 new leaves (guards against vacuous passes)", () => {
+    expect(e.size).toBe(27);
+    expect(d.size).toBe(27);
+  });
+
+  it("every de leaf outside the allowlist is translated (de !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !DE_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => d.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("English-identical de values are exactly the 3-term allowlist (SKU/Name/Status)", () => {
+    const identical = [...e].filter(([k, v]) => d.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...DE_ENGLISH_ALLOW].sort());
+  });
+
+  it("uses no informal German address (enterprise formal Sie only)", () => {
+    const informal = [...d].filter(([, v]) => INFORMAL_ADDRESS.test(String(v))).map(([k]) => k);
+    expect(informal).toEqual([]);
+  });
+
+  it("carries genuine German (umlaut/ß present across the sub-objects)", () => {
+    expect([...d.values()].some((v) => /[äöüßÄÖÜ]/.test(String(v)))).toBe(true);
+  });
+
+  it("SKU stays Latin/unchanged (allowlisted header)", () => {
+    expect(d.get("inventory.columns.sku")).toBe("SKU");
+  });
+
+  it("keeps the {order} ICU placeholder in the approval-step label", () => {
+    expect(d.get("approvals.step")).toBe("Schritt {order}");
+    expect(String(d.get("approvals.step"))).toContain("{order}");
+  });
+
+  it("aligns Inventory terminology with the committed ERP German glossary", () => {
+    const deAll = flatten(deEO);
+    expect(d.get("inventory.pageTitle")).toBe(deAll.get("nav.items.inventory")); // Bestand
+    expect(d.get("inventory.columns.category")).toBe("Kategorie");
+    expect(d.get("inventory.columns.quantity")).toBe("Menge");
+    expect(d.get("inventory.metrics.quantity")).toBe("Menge");
+    expect(d.get("inventory.metrics.reorderAt")).toBe("Meldebestand");
+    expect(d.get("inventory.metrics.unitCost")).toBe("Stückkosten");
+    expect(d.get("inventory.location")).toBe("Standort");
+    expect(d.get("inventory.recentMovements")).toBe("Letzte Bestandsbewegungen");
+    expect(d.get("inventory.backToInventory")).toBe("Zurück zum Bestand");
+    expect(String(d.get("inventory.empty"))).toContain("Bestandsartikel");
+  });
+
+  it("stock labels carry the required German terms and stay distinct", () => {
+    expect(d.get("inventory.stock.low")).toBe("Niedriger Bestand");
+    expect(d.get("inventory.stock.ok")).toBe("Ausreichender Bestand");
+    expect(d.get("inventory.stock.inStock")).toBe("Auf Lager");
+    const labels = STOCK_KEYS.map((k) => d.get(`inventory.stock.${k}`));
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("aligns Approval terminology and keeps the action labels concise", () => {
+    const deAll = flatten(deEO);
+    expect(deAll.get("nav.items.approvals")).toBe("Genehmigungen"); // committed glossary anchor
+    expect(d.get("approvals.pageTitle")).toBe("Genehmigungsanträge");
+    expect(d.get("approvals.approve")).toBe("Genehmigen");
+    expect(d.get("approvals.reject")).toBe("Ablehnen");
+    expect(d.get("approvals.status.PENDING")).toBe("Ausstehend");
+    expect(d.get("approvals.status.APPROVED")).toBe("Genehmigt");
+    expect(d.get("approvals.status.REJECTED")).toBe("Abgelehnt");
+    expect(d.get("approvals.status.CANCELLED")).toBe("Abgebrochen");
+  });
+
+  it("approval status labels are all distinct, and actions differ from states", () => {
+    const labels = APPROVAL_STATUSES.map((s) => d.get(`approvals.status.${s}`));
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(d.get("approvals.approve")).not.toBe(d.get("approvals.status.APPROVED"));
+    expect(d.get("approvals.reject")).not.toBe(d.get("approvals.status.REJECTED"));
   });
 });
 

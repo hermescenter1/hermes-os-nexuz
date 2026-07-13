@@ -5239,43 +5239,43 @@
       "backToWorkOrders": "Zurück zu den Arbeitsaufträgen"
     },
     "inventory": {
-      "pageTitle": "Inventory",
+      "pageTitle": "Bestand",
       "columns": {
         "sku": "SKU",
         "name": "Name",
-        "category": "Category",
-        "quantity": "Qty",
-        "reorder": "Reorder",
+        "category": "Kategorie",
+        "quantity": "Menge",
+        "reorder": "Meldebestand",
         "status": "Status"
       },
       "stock": {
-        "low": "Low Stock",
-        "ok": "OK",
-        "inStock": "In Stock"
+        "low": "Niedriger Bestand",
+        "ok": "Ausreichender Bestand",
+        "inStock": "Auf Lager"
       },
       "metrics": {
-        "quantity": "Quantity",
-        "reserved": "Reserved",
-        "reorderAt": "Reorder At",
-        "unitCost": "Unit Cost"
+        "quantity": "Menge",
+        "reserved": "Reserviert",
+        "reorderAt": "Meldebestand",
+        "unitCost": "Stückkosten"
       },
-      "location": "Location",
-      "recentMovements": "Recent Movements",
-      "backToInventory": "Back to Inventory",
-      "empty": "No inventory items found."
+      "location": "Standort",
+      "recentMovements": "Letzte Bestandsbewegungen",
+      "backToInventory": "Zurück zum Bestand",
+      "empty": "Keine Bestandsartikel gefunden."
     },
     "approvals": {
-      "pageTitle": "Approval Requests",
+      "pageTitle": "Genehmigungsanträge",
       "status": {
-        "PENDING": "pending",
-        "APPROVED": "approved",
-        "REJECTED": "rejected",
-        "CANCELLED": "cancelled"
+        "PENDING": "Ausstehend",
+        "APPROVED": "Genehmigt",
+        "REJECTED": "Abgelehnt",
+        "CANCELLED": "Abgebrochen"
       },
-      "approve": "Approve",
-      "reject": "Reject",
-      "step": "Step {order}",
-      "empty": "No approval requests found."
+      "approve": "Genehmigen",
+      "reject": "Ablehnen",
+      "step": "Schritt {order}",
+      "empty": "Keine Genehmigungsanträge gefunden."
     }
   }
 }
