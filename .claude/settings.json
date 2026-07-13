@@ -1,14 +1,18 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "model": "fable",
+  "model": "sonnet",
   "fallbackModel": [
-    "opus",
-    "sonnet"
+    "haiku"
   ],
-  "effortLevel": "xhigh",
+  "effortLevel": "medium",
   "language": "persian",
   "fileCheckpointingEnabled": true,
   "showThinkingSummaries": true,
+  "skillListingMaxDescChars": 768,
+  "env": {
+    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1",
+    "BASH_MAX_OUTPUT_LENGTH": "30000"
+  },
   "permissions": {
     "defaultMode": "plan",
     "disableBypassPermissionsMode": "disable",
