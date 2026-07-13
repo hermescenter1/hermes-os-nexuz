@@ -1,6 +1,6 @@
 /**
- * Phase 86C4B2B1C-PRE / -FA — ERP Teams, Resources & Work Orders:
- * message-catalog extraction + Persian translation.
+ * Phase 86C4B2B1C-PRE / -FA / -DE — ERP Teams, Resources & Work Orders:
+ * message-catalog extraction + Persian + German translation.
  *
  * Part C of four ERP extraction phases. The ERP Teams/Resources/Work Orders
  * surface
@@ -19,7 +19,8 @@
  *     lowercase enum-derived display labels)
  *   - fa = professional Persian (Phase 86C4B2B1C-FA translated all 32 leaves;
  *     FA_ENGLISH_ALLOW is empty — zero fa values equal English)
- *   - de = TEMPORARY verbatim English copies (translated in a later -DE phase)
+ *   - de = professional German (Phase 86C4B2B1C-DE; 30 translated + 2
+ *     legitimate German-identical terms allowlisted: Teams, Team)
  * German stays INACTIVE (ACTIVE_LOCALES = ["fa","en"]).
  *
  * Retained locale/raw logic (allowlisted below):
@@ -318,18 +319,75 @@ describe("enterpriseOperations teams/resources/workOrders — Persian translatio
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("extraction state — de temporarily carries English verbatim", () => {
+// German-identical values that are legitimate German terms — "Teams" and
+// "Team" are the standard German words. Everything else must differ from
+// English. The allowlist is explicit, never derived from output.
+const DE_ENGLISH_ALLOW = new Set<string>(["teams.pageTitle", "workOrders.team"]);
+
+// Informal German second-person address is forbidden (enterprise formal "Sie").
+const INFORMAL_ADDRESS =
+  /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
+
+describe("enterpriseOperations teams/resources/workOrders — German translation quality (Phase 86C4B2B1C-DE)", () => {
   const e = newLeaves(enEO);
   const d = newLeaves(deEO);
 
-  it("compares all 32 new leaves (guards against vacuous passes)", () => {
+  it("covers all 32 new leaves (guards against vacuous passes)", () => {
     expect(e.size).toBe(32);
     expect(d.size).toBe(32);
   });
 
-  it("every new de leaf equals English verbatim (translated in a later -DE phase)", () => {
-    const diff = [...e].filter(([k, v]) => d.get(k) !== v).map(([k]) => k);
-    expect(diff).toEqual([]);
+  it("every de leaf outside the allowlist is translated (de !== en)", () => {
+    const untranslated = [...e]
+      .filter(([k]) => !DE_ENGLISH_ALLOW.has(k))
+      .filter(([k, v]) => d.get(k) === v)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    expect(untranslated).toEqual([]);
+  });
+
+  it("English-identical de values are exactly the 2-term allowlist", () => {
+    const identical = [...e].filter(([k, v]) => d.get(k) === v).map(([k]) => k);
+    expect(identical.sort()).toEqual([...DE_ENGLISH_ALLOW].sort());
+  });
+
+  it("uses no informal German address (enterprise formal Sie only)", () => {
+    const informal = [...d].filter(([, v]) => INFORMAL_ADDRESS.test(String(v))).map(([k]) => k);
+    expect(informal).toEqual([]);
+  });
+
+  it("carries genuine German (umlaut/ß present across the sub-objects)", () => {
+    expect([...d.values()].some((v) => /[äöüßÄÖÜ]/.test(String(v)))).toBe(true);
+  });
+
+  it("aligns terminology with the committed ERP German glossary", () => {
+    const deAll = flatten(deEO);
+    expect(d.get("teams.pageTitle")).toBe(deAll.get("nav.items.teams"));            // Teams
+    expect(d.get("resources.pageTitle")).toBe(deAll.get("nav.items.resources"));    // Ressourcen
+    expect(d.get("workOrders.pageTitle")).toBe(deAll.get("nav.items.workOrders"));  // Arbeitsaufträge
+    expect(d.get("workOrders.dueDate")).toBe(deAll.get("tasks.dueDate"));           // Fälligkeitsdatum
+    // in-progress work orders use the same term as the kanban column
+    expect(d.get("workOrders.status.IN_PROGRESS")).toBe(deAll.get("tasks.columns.IN_PROGRESS"));
+    // due badge mirrors the committed projects.due shape "Fällig: {date}"
+    expect(d.get("workOrders.due")).toBe("Fällig: {date}");
+    // waiting-approval status uses the committed approval stem (Genehmigung)
+    expect(String(d.get("workOrders.status.WAITING_APPROVAL"))).toContain("Genehmigung");
+    expect(d.get("workOrders.pageTitle")).toBe("Arbeitsaufträge");
+  });
+
+  it("work-order status labels are all distinct (no two states collapse)", () => {
+    const labels = WO_STATUSES.map((s) => d.get(`workOrders.status.${s}`));
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("resource type labels are all distinct", () => {
+    const labels = ["HUMAN", "EQUIPMENT", "SOFTWARE", "VEHICLE", "FACILITY", "TOOL"]
+      .map((t) => d.get(`resources.types.${t}`));
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("keeps ICU structure intact", () => {
+    expect(String(d.get("teams.capacityValue"))).toContain("{value}");
+    expect(String(d.get("workOrders.due"))).toContain("{date}");
   });
 });
 
