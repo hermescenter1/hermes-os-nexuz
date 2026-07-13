@@ -86,13 +86,10 @@ const DELEGATING_PAGES = [
 ];
 const TEN = [...SERVER_PAGES_WITH_T, ...CLIENTS, ...DELEGATING_PAGES];
 
-// Later-phase (Part D) ERP files that MUST remain untouched this phase — they
-// still carry their hardcoded `pathname.startsWith("/fa")` debt (proof of
-// non-modification).
-const LATER_ERP_UNTOUCHED = [
-  "src/components/erp/InventoryListClient.tsx",
-  "src/components/erp/ApprovalListClient.tsx",
-];
+// Part D (Inventory/Approvals) extraction is now performed and owned by
+// enterprise-inventory-approvals-extraction.test.ts, which asserts those files
+// ARE fully catalog-backed (useTranslations, no pathname debt). The prior
+// "still untouched" negative guard is therefore retired from this phase's test.
 
 // ── tree helpers (shared shape with the prior ERP extraction tests) ──────────
 function leafPaths(node: unknown, prefix = ""): Map<string, string> {
@@ -157,14 +154,20 @@ describe("enterpriseOperations teams/resources/workOrders — catalog structure 
     expect(deEO).toBeTruthy();
   });
 
-  it("top-level objects are exactly the nine post-C sub-objects", () => {
+  // The exact post-D top-level set (adds inventory/approvals) is owned by
+  // enterprise-inventory-approvals-extraction.test.ts. Here we assert only that
+  // the nine sub-objects this phase relies on remain present — forward-compatible
+  // as later phases extend enterpriseOperations.
+  it("the nine post-C sub-objects remain top-level objects", () => {
     const expected = [
       "dashboard", "kpis", "nav", "projects", "resources",
       "settings", "tasks", "teams", "workOrders",
     ];
-    expect(Object.keys(enEO).sort()).toEqual(expected);
-    expect(Object.keys(faEO).sort()).toEqual(expected);
-    expect(Object.keys(deEO).sort()).toEqual(expected);
+    for (const k of expected) {
+      expect(Object.keys(enEO), `en ${k}`).toContain(k);
+      expect(Object.keys(faEO), `fa ${k}`).toContain(k);
+      expect(Object.keys(deEO), `de ${k}`).toContain(k);
+    }
   });
 
   it("teams has exactly 7 leaves, resources 10, workOrders 15 (32 combined new)", () => {
@@ -174,8 +177,14 @@ describe("enterpriseOperations teams/resources/workOrders — catalog structure 
     expect(newLeaves(enEO).size).toBe(32);
   });
 
-  it("enterpriseOperations total is exactly 117 leaves (85 prior + 32 new)", () => {
-    expect(flatten(enEO).size).toBe(117);
+  it("the nine post-C sub-objects still sum to 117 leaves (85 prior + 32 new)", () => {
+    // Whole-namespace total is owned by the inventory/approvals phase; assert the
+    // sum of the nine sub-objects this phase knows about (forward-compatible).
+    const nine = [
+      "nav", "dashboard", "kpis", "settings",
+      "projects", "tasks", "teams", "resources", "workOrders",
+    ];
+    expect(nine.reduce((s, k) => s + flatten(enEO[k]).size, 0)).toBe(117);
     // Part A + B sub-objects unchanged by this phase
     expect(flatten(enEO.nav).size).toBe(11);
     expect(flatten(enEO.dashboard).size).toBe(20);
@@ -620,7 +629,7 @@ describe("Teams/Resources/Work Orders behavior & raw values preserved", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("locale configuration and later ERP modules unchanged", () => {
+describe("locale configuration unchanged", () => {
   it("ACTIVE_LOCALES is still exactly fa + en; de supported but inactive", () => {
     expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
     expect(isSupportedLocale("de")).toBe(true);
@@ -633,19 +642,10 @@ describe("locale configuration and later ERP modules unchanged", () => {
     expect(codes).toEqual(["fa", "en"]);
     expect(activeLocaleOptions().map((o) => o.nativeName)).not.toContain("Deutsch");
   });
-
-  it("Part D Inventory/Approvals files remain untouched (still carry pathname-locale debt)", () => {
-    for (const rel of LATER_ERP_UNTOUCHED) {
-      const src = read(rel);
-      expect(src, rel).toMatch(/pathname\.startsWith\("\/fa"\)/);
-      expect(src, `${rel} not extracted`).not.toMatch(/useTranslations\("enterpriseOperations"\)/);
-    }
-  });
-
-  it("no inventory/approvals sub-objects were added to the namespace", () => {
-    expect(Object.keys(enEO)).not.toContain("inventory");
-    expect(Object.keys(enEO)).not.toContain("approvals");
-  });
+  // The former "Part D Inventory/Approvals remain untouched" and "no
+  // inventory/approvals sub-objects added" guards are retired: Part D is now
+  // implemented and those positive assertions live in
+  // enterprise-inventory-approvals-extraction.test.ts.
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

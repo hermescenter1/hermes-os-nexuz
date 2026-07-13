@@ -55,16 +55,11 @@ const PAGES = [
 ];
 const SEVEN = [...CLIENTS, ...PAGES];
 
-// Later-phase ERP files that MUST remain untouched by the ERP *Core* phase —
-// they still carry their hardcoded `pathname.startsWith("/fa")` debt (proof of
-// non-modification). ProjectListClient graduated out of this list in Phase
-// 86C4B2B1B (Projects & Tasks extraction); WorkOrderListClient graduated in
-// Phase 86C4B2B1C (Teams/Resources/Work Orders extraction); Inventory/Approval
-// remain.
-const UNTOUCHED_ERP = [
-  "src/components/erp/InventoryListClient.tsx",
-  "src/components/erp/ApprovalListClient.tsx",
-];
+// All later-phase ERP surfaces (Projects/Tasks, Teams/Resources/Work Orders and
+// finally Inventory/Approvals in Phase 86C4B2B1D) have now been extracted, so
+// there are no remaining ERP files to guard as "still untouched" here. Each
+// phase's own extraction test now positively asserts that its files are fully
+// catalog-backed.
 
 function leafPaths(node: unknown, prefix = ""): Map<string, string> {
   const out = new Map<string, string>();
@@ -395,12 +390,9 @@ describe("ERP Core behavior and navigation preserved (allowlisted)", () => {
     const dash = read("src/components/erp/ErpDashboardClient.tsx");
     expect(dash).toMatch(/\.toLowerCase\(\)\.replace\(/);
   });
-
-  it("later ERP module files remain untouched (still carry pathname-locale debt)", () => {
-    for (const rel of UNTOUCHED_ERP) {
-      expect(read(rel), rel).toMatch(/pathname\.startsWith\("\/fa"\)/);
-    }
-  });
+  // The former "later ERP module files remain untouched" guard is retired: every
+  // later ERP surface (through Inventory/Approvals, Phase 86C4B2B1D) is now
+  // extracted, and each is positively covered by its own phase's extraction test.
 });
 
 describe("Phase 86C4B2B1A-PRE combined — prior work and German state intact", () => {

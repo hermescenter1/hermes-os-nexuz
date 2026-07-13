@@ -65,14 +65,10 @@ const CLIENTS = [
 const DELEGATING_PAGE = "src/app/[locale]/erp/projects/[id]/page.tsx";
 const TEN = [...SERVER_PAGES_WITH_T, ...CLIENTS, DELEGATING_PAGE];
 
-// Later-phase ERP files that MUST remain untouched — they still carry their
-// hardcoded `pathname.startsWith("/fa")` debt (proof of non-modification).
-// TeamListClient and WorkOrderListClient graduated out of this list in Phase
-// 86C4B2B1C (Teams/Resources/Work Orders extraction); Inventory/Approval remain.
-const LATER_ERP_UNTOUCHED = [
-  "src/components/erp/InventoryListClient.tsx",
-  "src/components/erp/ApprovalListClient.tsx",
-];
+// Every later-phase ERP surface has now been extracted (Teams/Resources/Work
+// Orders in Phase 86C4B2B1C; Inventory/Approvals in Phase 86C4B2B1D), so no ERP
+// files remain to guard as "still untouched" here. Each phase's own extraction
+// test positively asserts that its files are fully catalog-backed.
 
 // ── tree helpers (shared shape with the ERP Core extraction test) ────────────
 function leafPaths(node: unknown, prefix = ""): Map<string, string> {
@@ -549,12 +545,9 @@ describe("locale configuration and later ERP modules unchanged", () => {
   it("German stays out of routing (not routable / no active switcher exposure)", () => {
     expect([...routing.locales]).not.toContain("de");
   });
-
-  it("later ERP module files remain untouched (still carry pathname-locale debt)", () => {
-    for (const rel of LATER_ERP_UNTOUCHED) {
-      expect(read(rel), rel).toMatch(/pathname\.startsWith\("\/fa"\)/);
-    }
-  });
+  // The former "later ERP module files remain untouched" guard is retired: every
+  // later ERP surface (through Inventory/Approvals, Phase 86C4B2B1D) is now
+  // extracted, and each is positively covered by its own phase's extraction test.
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

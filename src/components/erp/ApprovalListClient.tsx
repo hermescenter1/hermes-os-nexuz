@@ -1,7 +1,7 @@
 "use client";
 
-import { useState }    from "react";
-import { usePathname } from "next/navigation";
+import { useState }        from "react";
+import { useTranslations } from "next-intl";
 import type { ErpApprovalRequestFull } from "@/lib/erp/types";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -12,9 +12,8 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function ApprovalListClient({ approvals: initial }: { approvals: ErpApprovalRequestFull[] }) {
-  const pathname  = usePathname();
+  const t = useTranslations("enterpriseOperations");
   const [approvals, setApprovals] = useState(initial);
-  const locale    = pathname.startsWith("/fa") ? "fa" : "en";
 
   async function decide(id: string, status: "APPROVED" | "REJECTED") {
     const res = await fetch(`/api/erp/approvals/${id}`, {
@@ -42,18 +41,18 @@ export function ApprovalListClient({ approvals: initial }: { approvals: ErpAppro
             </div>
             <div className="flex flex-col items-end gap-2 shrink-0">
               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[apr.status] ?? ""}`}>
-                {apr.status.toLowerCase()}
+                {t(`approvals.status.${apr.status}`)}
               </span>
               {apr.status === "PENDING" && (
                 <div className="flex gap-2">
                   <button
                     onClick={() => decide(apr.id, "APPROVED")}
                     className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded hover:bg-green-500/30"
-                  >Approve</button>
+                  >{t("approvals.approve")}</button>
                   <button
                     onClick={() => decide(apr.id, "REJECTED")}
                     className="px-2 py-1 text-xs bg-red-500/20 text-red-400 rounded hover:bg-red-500/30"
-                  >Reject</button>
+                  >{t("approvals.reject")}</button>
                 </div>
               )}
             </div>
@@ -64,8 +63,8 @@ export function ApprovalListClient({ approvals: initial }: { approvals: ErpAppro
               {apr.steps.map(step => (
                 <div key={step.id} className="text-xs flex items-center gap-1.5">
                   <div className={`w-1.5 h-1.5 rounded-full ${step.status === "APPROVED" ? "bg-green-400" : step.status === "REJECTED" ? "bg-red-400" : "bg-muted-foreground"}`} />
-                  <span className="text-muted-foreground">Step {step.order}</span>
-                  <span className="capitalize">{step.status.toLowerCase()}</span>
+                  <span className="text-muted-foreground">{t("approvals.step", { order: step.order })}</span>
+                  <span className="capitalize">{t(`approvals.status.${step.status}`)}</span>
                 </div>
               ))}
             </div>
@@ -73,7 +72,7 @@ export function ApprovalListClient({ approvals: initial }: { approvals: ErpAppro
         </div>
       ))}
       {approvals.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground text-sm">No approval requests found.</div>
+        <div className="text-center py-12 text-muted-foreground text-sm">{t("approvals.empty")}</div>
       )}
     </div>
   );

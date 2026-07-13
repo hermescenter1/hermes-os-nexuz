@@ -5237,6 +5237,45 @@
       "completionNote": "یادداشت تکمیل",
       "noWorkOrdersFound": "هیچ سفارش کاری یافت نشد.",
       "backToWorkOrders": "بازگشت به سفارش‌های کاری"
+    },
+    "inventory": {
+      "pageTitle": "Inventory",
+      "columns": {
+        "sku": "SKU",
+        "name": "Name",
+        "category": "Category",
+        "quantity": "Qty",
+        "reorder": "Reorder",
+        "status": "Status"
+      },
+      "stock": {
+        "low": "Low Stock",
+        "ok": "OK",
+        "inStock": "In Stock"
+      },
+      "metrics": {
+        "quantity": "Quantity",
+        "reserved": "Reserved",
+        "reorderAt": "Reorder At",
+        "unitCost": "Unit Cost"
+      },
+      "location": "Location",
+      "recentMovements": "Recent Movements",
+      "backToInventory": "Back to Inventory",
+      "empty": "No inventory items found."
+    },
+    "approvals": {
+      "pageTitle": "Approval Requests",
+      "status": {
+        "PENDING": "pending",
+        "APPROVED": "approved",
+        "REJECTED": "rejected",
+        "CANCELLED": "cancelled"
+      },
+      "approve": "Approve",
+      "reject": "Reject",
+      "step": "Step {order}",
+      "empty": "No approval requests found."
     }
   }
 }
