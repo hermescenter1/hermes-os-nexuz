@@ -560,9 +560,14 @@ describe("Inventory/Approvals behavior & raw values preserved", () => {
   });
 
   it("raw inventory movement enum tokens stay raw (color map + untransformed display)", () => {
+    // Phase 86C4B2B1D-HARDEN: MOVE_COLOR is now compile-time exhaustive over
+    // the canonical ErpInventoryMovementType union (legacy ADJUST/SCRAP keys
+    // removed) — see inventory-movement-enum-alignment.test.ts for the full
+    // alignment contract.
     const src = read("src/components/erp/InventoryDetailClient.tsx");
-    expect(src).toMatch(/const MOVE_COLOR: Record<string, string> = \{/);
-    for (const k of ["IN", "OUT", "ADJUST", "TRANSFER", "SCRAP"]) {
+    expect(src).toMatch(/const MOVE_COLOR = \{/);
+    expect(src).toMatch(/\} satisfies Record<ErpInventoryMovementType, string>;/);
+    for (const k of ["IN", "OUT", "TRANSFER", "ADJUSTMENT", "RESERVED", "RELEASED"]) {
       expect(src, `MOVE_COLOR ${k}`).toContain(`${k}:`);
     }
     expect(src).toContain("MOVE_COLOR[m.type]");

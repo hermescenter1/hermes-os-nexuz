@@ -2,15 +2,18 @@
 
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import type { ErpInventoryItemFull } from "@/lib/erp/types";
+import type { ErpInventoryItemFull, ErpInventoryMovementType } from "@/lib/erp/types";
 
-const MOVE_COLOR: Record<string, string> = {
-  IN:       "text-green-400",
-  OUT:      "text-red-400",
-  ADJUST:   "text-yellow-400",
-  TRANSFER: "text-blue-400",
-  SCRAP:    "text-muted-foreground",
-};
+// Compile-time exhaustive over ErpInventoryMovementType: adding a movement
+// type without a color entry (or keeping a non-canonical key) fails `tsc`.
+const MOVE_COLOR = {
+  IN:         "text-green-400",
+  OUT:        "text-red-400",
+  TRANSFER:   "text-blue-400",
+  ADJUSTMENT: "text-yellow-400",
+  RESERVED:   "text-orange-400",
+  RELEASED:   "text-cyan-400",
+} satisfies Record<ErpInventoryMovementType, string>;
 
 export function InventoryDetailClient({ item }: { item: ErpInventoryItemFull }) {
   const locale = useLocale();
@@ -57,7 +60,7 @@ export function InventoryDetailClient({ item }: { item: ErpInventoryItemFull }) 
           <div className="space-y-2 text-sm">
             {item.movements.map(m => (
               <div key={m.id} className="flex items-center justify-between py-1 border-b last:border-0">
-                <span className={`font-medium ${MOVE_COLOR[m.type] ?? ""}`}>{m.type}</span>
+                <span className={`font-medium ${MOVE_COLOR[m.type]}`}>{m.type}</span>
                 <span className="font-medium">{m.quantity > 0 ? "+" : ""}{m.quantity}</span>
                 <span className="text-muted-foreground text-xs">{new Date(m.createdAt).toLocaleDateString()}</span>
               </div>
