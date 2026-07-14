@@ -11,6 +11,11 @@ export const routing = defineRouting({
   locales: ACTIVE_LOCALES,
   defaultLocale: DEFAULT_LOCALE,
   localePrefix: "always",
+  // next-intl v4 dropped the one-year maxAge from the locale-cookie defaults
+  // (session cookie). The production behavior established under v3 is a
+  // persistent one-year NEXT_LOCALE cookie; keep that lifetime explicitly.
+  // Name and sameSite stay on the library defaults (NEXT_LOCALE / lax).
+  localeCookie: { maxAge: 31536000 },
 });
 
 // `Locale` is the app's public (active) locale. Kept as a named export for the

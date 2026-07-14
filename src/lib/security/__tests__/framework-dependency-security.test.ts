@@ -23,8 +23,11 @@
  *     off that version requires an approved compatibility stop-report. The
  *     per-line advisory floors (19.0.x -> 19.0.3, 19.1.x -> 19.1.4,
  *     19.2.x -> 19.2.3) are enforced as well.
- *   - next-intl must remain exactly 3.26.3 until the dedicated
- *     PHASE 86C4B2B1D-SECURITY-3 migration.
+ *   - next-intl must stay on the 4.x line at or above the 4.9.2 security
+ *     floor (PHASE 86C4B2B1D-SECURITY-3): the open-redirect advisory
+ *     GHSA-8f24-v5vv-gm5j is fixed in 4.9.1 and the prototype-pollution
+ *     advisory GHSA-4c35-wcg5-mm9h in 4.9.2, so no vulnerable 3.x (or
+ *     pre-4.9.2) declaration may return.
  *   - No react-server-dom-* package may be introduced as a direct
  *     dependency: the repository consumes the RSC runtime only through the
  *     copy bundled inside Next.js, so its patch level is governed by the
@@ -102,12 +105,22 @@ function atLeast(v: Semver, floor: Semver): boolean {
   return v.patch >= floor.patch;
 }
 
+/** >= floor within the same major line (minor may exceed the floor's). */
+function atLeastInMajor(v: Semver, floor: Semver): boolean {
+  if (v.major !== floor.major) return false;
+  if (v.minor !== floor.minor) return v.minor > floor.minor;
+  return v.patch >= floor.patch;
+}
+
 /** Security floors (minimums, never maximums). */
 const NEXT_FLOOR: Semver = { major: 15, minor: 5, patch: 16 };
 /** Approved React pin — changing it requires a compatibility stop-report. */
 const APPROVED_REACT_VERSION = "19.0.7";
-/** next-intl is frozen until PHASE 86C4B2B1D-SECURITY-3. */
-const APPROVED_NEXT_INTL_VERSION = "3.26.3";
+/**
+ * next-intl 4.x security floor: GHSA-8f24-v5vv-gm5j fixed in 4.9.1,
+ * GHSA-4c35-wcg5-mm9h fixed in 4.9.2 (audit evidence, SECURITY-3).
+ */
+const NEXT_INTL_FLOOR: Semver = { major: 4, minor: 9, patch: 2 };
 const REACT_LINE_FLOORS: Record<string, Semver> = {
   "19.0": { major: 19, minor: 0, patch: 3 },
   "19.1": { major: 19, minor: 1, patch: 4 },
@@ -221,13 +234,37 @@ describe("framework dependency security — React / React DOM", () => {
   });
 });
 
-describe("framework dependency security — next-intl freeze", () => {
-  it("keeps next-intl at its exact approved version until PHASE 86C4B2B1D-SECURITY-3", () => {
-    expect(declaredNextIntl).toBe(APPROVED_NEXT_INTL_VERSION);
-    expect(lockRoot?.dependencies?.["next-intl"]).toBe(
-      APPROVED_NEXT_INTL_VERSION,
-    );
-    expect(lockNextIntl?.version).toBe(APPROVED_NEXT_INTL_VERSION);
+describe("framework dependency security — next-intl", () => {
+  it("is not a known-vulnerable 3.x release", () => {
+    for (const vulnerable of ["3.26.3", "3.26.5"]) {
+      expect(declaredNextIntl).not.toBe(vulnerable);
+      expect(lockNextIntl?.version).not.toBe(vulnerable);
+    }
+    const v = parseExactStable(declaredNextIntl, "dependencies.next-intl");
+    expect(
+      v.major,
+      "next-intl must not fall back to the vulnerable 3.x line",
+    ).not.toBe(3);
+  });
+
+  it("declares an exact stable pin within the 4.x line at or above the 4.9.2 security floor", () => {
+    const v = parseExactStable(declaredNextIntl, "dependencies.next-intl");
+    expect(
+      v.major,
+      "next-intl must stay on major 4 (below 5) in this phase",
+    ).toBe(4);
+    expect(
+      atLeastInMajor(v, NEXT_INTL_FLOOR),
+      `next-intl ${declaredNextIntl} is below the 4.9.2 security floor`,
+    ).toBe(true);
+  });
+
+  it("resolves the lockfile entries to the declared version", () => {
+    expect(lockRoot?.dependencies?.["next-intl"]).toBe(declaredNextIntl);
+    expect(lockNextIntl?.version).toBe(declaredNextIntl);
+    const v = parseExactStable(lockNextIntl?.version, "locked next-intl");
+    expect(v.major).toBe(4);
+    expect(atLeastInMajor(v, NEXT_INTL_FLOOR)).toBe(true);
   });
 });
 
@@ -262,9 +299,11 @@ describe("framework dependency security — release channel and policy", () => {
       ["dependencies.next", declaredNext],
       ["dependencies.react", declaredReact],
       ["dependencies.react-dom", declaredReactDom],
+      ["dependencies.next-intl", declaredNextIntl],
       ["locked next", lockNext?.version],
       ["locked react", lockReact?.version],
       ["locked react-dom", lockReactDom?.version],
+      ["locked next-intl", lockNextIntl?.version],
     ] as const) {
       for (const marker of channelMarkers) {
         expect(
