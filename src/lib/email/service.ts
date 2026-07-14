@@ -1,6 +1,7 @@
 import { logger } from "@/lib/logger";
 import { ConsoleProvider } from "./providers/console";
 import { ResendProvider } from "./providers/resend";
+import { SmtpProvider } from "./providers/smtp";
 import type { EmailPayload, EmailProvider, EmailSendResult } from "./providers/types";
 
 export type { EmailPayload, EmailSendResult };
@@ -15,6 +16,23 @@ function sleep(ms: number): Promise<void> {
 function buildPrimaryProvider(): EmailProvider {
   const name = (process.env.EMAIL_PROVIDER ?? "console").toLowerCase().trim();
   logger.info("[email] Provider selected.", { provider: name });
+
+
+  if (name === "smtp") {
+    try {
+      return new SmtpProvider();
+    } catch (err) {
+      logger.warn(
+        "[email] SMTP initialisation failed — falling back to console.",
+        {
+          error:
+            err instanceof Error
+              ? err.message
+              : String(err),
+        },
+      );
+    }
+  }
 
   if (name === "resend") {
     try {
