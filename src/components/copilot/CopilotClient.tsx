@@ -285,7 +285,7 @@ export function CopilotClient() {
               ))}
             </ul>
             <div className="border-t border-line pt-4">
-              <p className="type-eyebrow mb-3">{t("confidence")}</p>
+              <p className="type-eyebrow mb-3">{t("confidenceTitle")}</p>
               <div className="space-y-2">
                 {[
                   { label: "HIGH",   range: "≥ 75%",  color: "text-signal" },
@@ -387,7 +387,7 @@ export function CopilotClient() {
           <div className="rounded-xl border border-line bg-surface p-6">
             <ConfidenceRing
               value={result.confidence}
-              label={t("confidence")}
+              label={t("confidenceTitle")}
               formatted={`${nf.format(Math.round(result.confidence * 100))}${pct}`}
             />
           </div>

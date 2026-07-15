@@ -1648,6 +1648,7 @@
       "MEDIUM": "متوسط",
       "LOW": "پایین"
     },
+    "confidenceTitle": "اطمینان",
     "report": {
       "title": "گزارش مهندسی",
       "problemSummary": "خلاصهٔ مسئله",

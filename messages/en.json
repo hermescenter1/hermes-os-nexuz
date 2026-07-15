@@ -1648,6 +1648,7 @@
       "MEDIUM": "Medium",
       "LOW": "Low"
     },
+    "confidenceTitle": "Confidence",
     "report": {
       "title": "Engineering Report",
       "problemSummary": "Problem Summary",
