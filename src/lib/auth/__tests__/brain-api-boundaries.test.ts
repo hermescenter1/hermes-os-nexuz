@@ -62,7 +62,10 @@ const KNOWN_QUESTION = "ABB ACS580 fault 2310 during acceleration";
 function postReq(path: string, body: unknown): Request {
   return new Request(`http://localhost${path}`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    // SECURITY-7: a valid same-origin header so authorized brain POSTs reach
+    // the pipeline; the demo POST ignores Origin. Origin rejection is proven
+    // in the SECURITY-7 boundary suite.
+    headers: { "content-type": "application/json", origin: "https://hermesnovin.com" },
     body: JSON.stringify(body),
   });
 }
@@ -226,7 +229,7 @@ describe("PUBLIC /api/copilot/demo — anonymous deterministic analysis", () => 
   it("GET succeeds anonymously with demo marker and no history", async () => {
     mockNoUser();
     const { GET } = await import(DEMO);
-    const res = await GET();
+    const res = await GET(getReq("/api/copilot/demo"));
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("no-store");
     const body = await res.json();
@@ -319,7 +322,7 @@ describe("PUBLIC /api/copilot/demo — anonymous deterministic analysis", () => 
       vi.resetModules();
       mockNoUser();
       const { GET, POST } = await import(DEMO);
-      const getText = JSON.stringify(await (await GET()).json());
+      const getText = JSON.stringify(await (await GET(getReq("/api/copilot/demo"))).json());
       expect(getText).not.toMatch(SENSITIVE_FIELD);
       expect(getText).not.toMatch(INTERNAL_LEAK);
       const postBody = await (

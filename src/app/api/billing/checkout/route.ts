@@ -13,6 +13,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { requireOrgContext }              from "@/lib/billing/context";
+import { requirePermission }              from "@/lib/org/rbac";
 import { getPlanBySlug }                 from "@/lib/billing/plans";
 import { createSubscription }            from "@/lib/billing/subscriptions";
 import {
@@ -29,6 +30,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   const { ctx } = result;
+  const perm = requirePermission(ctx.role, "manage_billing");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   let body: unknown;
   try { body = await req.json(); }

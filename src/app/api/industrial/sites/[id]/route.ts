@@ -52,8 +52,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
   }
 
-  const body = await req.json().catch(() => ({}));
-  const site = await updateSite(id, ctx.orgId, body);
+  // Phase SECURITY-8 amendment: explicit field allow-list (block injected
+  // organizationId/id/tenant fields reaching Prisma `data`).
+  const raw = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const patch = {
+    name:        raw.name,
+    location:    raw.location,
+    description: raw.description,
+    status:      raw.status,
+  } as Parameters<typeof updateSite>[2];
+  const site = await updateSite(id, ctx.orgId, patch);
   if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
 
   recordAuditEvent({

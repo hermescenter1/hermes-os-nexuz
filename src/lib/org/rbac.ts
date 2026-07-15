@@ -15,6 +15,10 @@ export type OrgPermission =
   | "transfer_ownership"
   | "manage_departments"
   | "view_billing"
+  // Phase 86C4B2B1D-SECURITY-8 AMENDMENT: financial-mutation privilege,
+  // separated from read-only "view_billing" (record payments, checkout,
+  // portal, subscription create/change/cancel, usage writes).
+  | "manage_billing"
   | "view_members"
   | "view_departments"
   | "revoke_invitation"
@@ -51,6 +55,9 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   transfer_ownership:   ["OWNER"],
   manage_departments:   ["OWNER", "ADMIN", "MANAGER"],
   view_billing:         ["OWNER", "ADMIN", "BILLING_ADMIN"],
+  // Financial mutations: the dedicated billing-admin role plus org admins.
+  // Default-deny for MANAGER / ENGINEER / VIEWER / MEMBER.
+  manage_billing:       ["OWNER", "ADMIN", "BILLING_ADMIN"],
   view_members:         ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   view_departments:     ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   revoke_invitation:    ["OWNER", "ADMIN", "MANAGER"],

@@ -39,8 +39,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const perm = requirePermission(member.ctx.role, "manage_digital_twin");
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
-  const body = await req.json().catch(() => ({}));
-  const node  = await updateNode(id, ctx.orgId, body);
+  // Phase SECURITY-8 amendment: explicit field allow-list (block injected
+  // organizationId/id/tenant fields reaching Prisma `data`).
+  const raw = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const patch = {
+    displayName:  raw.displayName,
+    nodeType:     raw.nodeType,
+    assetId:      raw.assetId,
+    parentNodeId: raw.parentNodeId,
+    metadata:     raw.metadata,
+  } as Parameters<typeof updateNode>[2];
+  const node  = await updateNode(id, ctx.orgId, patch);
   if (!node) return NextResponse.json({ error: "Node not found" }, { status: 404 });
 
   recordAuditEvent({

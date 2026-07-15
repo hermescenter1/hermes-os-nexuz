@@ -5,9 +5,13 @@
 
 import { NextRequest, NextResponse }   from "next/server";
 import { requireOrgActor }             from "@/lib/org/context";
-import { requirePermission }           from "@/lib/org/rbac";
+import { requirePermission, assignableRoles } from "@/lib/org/rbac";
 import { listInvitations, inviteMember } from "@/lib/org/invitations";
 import type { OrgRole }                from "@/lib/org/types";
+
+const VALID_ORG_ROLES = new Set<OrgRole>([
+  "OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN", "MEMBER",
+]);
 
 type Params = { params: Promise<{ orgId: string }> };
 
@@ -34,10 +38,29 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "email is required" }, { status: 400 });
   }
 
+  // Phase SECURITY-8 amendment: role-escalation clamp. Previously body.role was
+  // stored verbatim, so an ADMIN could mint an OWNER invitation. An explicit
+  // role must be a real OrgRole (400 otherwise) AND within the caller's
+  // assignable set (403 otherwise) — the same clamp the member role-change
+  // branch uses. This runs BEFORE inviteMember (no email / repository side
+  // effect on rejection). An omitted role defaults to the low-privilege
+  // ENGINEER, never a client-chosen elevated role.
+  let invitedRole: OrgRole = "ENGINEER";
+  if (body.role !== undefined) {
+    const requested = body.role as OrgRole;
+    if (typeof body.role !== "string" || !VALID_ORG_ROLES.has(requested)) {
+      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    }
+    if (!assignableRoles(ctx.role).includes(requested)) {
+      return NextResponse.json({ error: "You cannot assign this role" }, { status: 403 });
+    }
+    invitedRole = requested;
+  }
+
   const out = await inviteMember({
     organizationId: orgId,
     email:          body.email,
-    role:           (body.role as OrgRole) ?? "ENGINEER",
+    role:           invitedRole,
     invitedById:    ctx.userId,
   });
 

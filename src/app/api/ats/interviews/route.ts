@@ -7,6 +7,7 @@ import {
   getApplicationById,
 } from "@/lib/ats/db";
 import { getPrisma }             from "@/lib/db/prisma";
+import { requireOrgActor }       from "@/lib/org/context";
 
 export async function GET(req: NextRequest) {
   const role = await getAuthRole(req);
@@ -53,6 +54,12 @@ export async function POST(req: NextRequest) {
   if (!role) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
+  // Phase SECURITY-8: scheduling an interview is a recruiter operation — the
+  // previous handler accepted ANY authenticated role (customer/vendor/
+  // candidate included). Restrict to staff roles.
+  if (!["superadmin", "admin", "engineer"].includes(role)) {
+    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+  }
 
   const body = await req.json() as {
     applicationId:   string;
@@ -73,6 +80,15 @@ export async function POST(req: NextRequest) {
 
   const application = await getApplicationById(body.applicationId);
   if (!application) {
+    return NextResponse.json({ error: "Application not found" }, { status: 404 });
+  }
+
+  // Phase SECURITY-8: tenant isolation. getApplicationById is id-only, so
+  // verify the caller belongs to the application's organization before writing
+  // an interview into it — otherwise any authenticated staff user could
+  // schedule interviews against another org's applications (cross-tenant).
+  const actor = await requireOrgActor(req, application.organizationId);
+  if ("error" in actor) {
     return NextResponse.json({ error: "Application not found" }, { status: 404 });
   }
 

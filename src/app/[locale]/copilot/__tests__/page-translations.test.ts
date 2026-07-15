@@ -142,7 +142,7 @@ describe("SECURITY-6 boundary remains intact after the copilot fix", () => {
   it("GET /api/copilot/demo stays 200 for anonymous callers", async () => {
     mockNoUser();
     const { GET } = await import("../../../api/copilot/demo/route");
-    const res = GET();
+    const res = await GET(new Request("http://localhost/api/copilot/demo?n=5"));
     expect(res.status).toBe(200);
     expect(await res.json()).toHaveProperty("stats");
   });

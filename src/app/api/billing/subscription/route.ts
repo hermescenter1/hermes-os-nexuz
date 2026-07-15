@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireOrgContext }          from "@/lib/billing/context";
+import { requirePermission }          from "@/lib/org/rbac";
 import {
   getSubscription,
   createSubscription,
@@ -41,6 +42,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   const { ctx } = result;
+  const perm = requirePermission(ctx.role, "manage_billing");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   let body: unknown;
   try { body = await req.json(); } catch { body = {}; }
@@ -76,6 +79,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   const { ctx } = result;
+  const perm = requirePermission(ctx.role, "manage_billing");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   let body: unknown;
   try { body = await req.json(); } catch { body = {}; }
@@ -101,6 +106,8 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   const { ctx } = result;
+  const perm = requirePermission(ctx.role, "manage_billing");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   const out = await renewSubscription({
     organizationId: ctx.orgId,
@@ -119,6 +126,8 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   const { ctx } = result;
+  const perm = requirePermission(ctx.role, "manage_billing");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   const out = await cancelSubscription({
     organizationId: ctx.orgId,

@@ -6,6 +6,16 @@ import {
   createApplication,
 } from "@/lib/ats/db";
 import { JOBS }                   from "@/lib/ats/mock-data";
+import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
+import {
+  resolveClientIp,
+  isJsonContentType,
+  readBoundedTextBody,
+  securityError,
+} from "@/lib/security/request-guards";
+
+const APPLY_ACTION = "careers-apply";
+const MAX_BODY_BYTES = 32 * 1024;
 
 interface ApplyBody {
   jobId:             string;
@@ -23,7 +33,33 @@ interface ApplyBody {
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as ApplyBody;
+  // Phase 86C4B2B1D-SECURITY-8: this is a legitimately PUBLIC applicant flow
+  // that persists to the database, so it stays anonymous but gains abuse
+  // controls — IP rate limit, then Content-Type and a genuinely bounded body
+  // read — all BEFORE the JSON is parsed or any record is written.
+  const ip = resolveClientIp(req);
+  if (!(await checkRateLimit(APPLY_ACTION, ip))) {
+    return securityError({ error: "Too many applications. Please try again later." }, 429, {
+      "Retry-After": String(retryAfter(APPLY_ACTION, ip)),
+    });
+  }
+  if (!isJsonContentType(req)) {
+    return securityError({ error: "unsupported media type" }, 415);
+  }
+  const read = await readBoundedTextBody(req, MAX_BODY_BYTES);
+  if (read.status === "too_large") {
+    return securityError({ error: "payload too large" }, 413);
+  }
+  if (read.status === "error") {
+    return NextResponse.json({ error: "invalid JSON" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+  }
+
+  let body: ApplyBody;
+  try {
+    body = JSON.parse(read.text) as ApplyBody;
+  } catch {
+    return NextResponse.json({ error: "invalid JSON" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+  }
   const { jobId, name, email } = body;
 
   if (!jobId || !name || !email) {

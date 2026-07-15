@@ -59,8 +59,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
   }
 
-  const body = await req.json().catch(() => ({}));
-  const gateway = await updateGateway(id, ctx.orgId, body);
+  // Phase SECURITY-8 amendment: explicit field allow-list (block injected
+  // organizationId/siteId/id/revokedAt reaching Prisma `data`; apiKeyId/status
+  // stay — they are legitimate gateway-management fields).
+  const raw = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const patch = {
+    name:     raw.name,
+    version:  raw.version,
+    apiKeyId: raw.apiKeyId,
+    metadata: raw.metadata,
+    status:   raw.status,
+  } as Parameters<typeof updateGateway>[2];
+  const gateway = await updateGateway(id, ctx.orgId, patch);
   if (!gateway) return NextResponse.json({ error: "Gateway not found" }, { status: 404 });
 
   recordAuditEvent({

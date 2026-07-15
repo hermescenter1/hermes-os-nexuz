@@ -7,7 +7,9 @@
 
 import { NextRequest, NextResponse }    from "next/server";
 import { requireOrgContext }             from "@/lib/billing/context";
+import { requirePermission }             from "@/lib/org/rbac";
 import { recordManualPayment, listPayments } from "@/lib/billing/payments";
+import { getInvoiceById }                from "@/lib/billing/invoices";
 import type { Currency }                 from "@/lib/billing/types";
 
 export const runtime = "nodejs";
@@ -19,6 +21,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   const { ctx } = result;
+  // Financial mutation → requires the manage_billing privilege (OWNER / ADMIN /
+  // BILLING_ADMIN), not mere org membership (Phase SECURITY-8 amendment).
+  const perm = requirePermission(ctx.role, "manage_billing");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   let body: unknown;
   try { body = await req.json(); } catch { body = {}; }
@@ -33,6 +39,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "amount must be a positive number" }, { status: 400 });
   }
   if (!currency) return NextResponse.json({ error: "currency is required" }, { status: 400 });
+
+  // Phase 86C4B2B1D-SECURITY-8: tenant isolation. recordManualPayment marks the
+  // invoice SUCCEEDED/PAID with no ownership check, so ANY authenticated member
+  // of ANY org could mark ANY invoice paid by id (cross-tenant financial
+  // integrity break). Verify the invoice belongs to the caller's organization
+  // BEFORE recording the payment; a foreign or missing invoice gets 404.
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice || invoice.organizationId !== ctx.orgId) {
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  }
 
   const out = await recordManualPayment({
     invoiceId,

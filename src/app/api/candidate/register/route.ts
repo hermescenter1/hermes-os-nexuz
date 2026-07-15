@@ -3,6 +3,16 @@ import { getPrisma }       from "@/lib/db/prisma";
 import { hashArgon2 }      from "@/lib/auth/argon2-wrapper";
 import { setAuthCookies }  from "@/lib/auth/token-session";
 import { createCandidate } from "@/lib/ats/db";
+import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
+import {
+  resolveClientIp,
+  isJsonContentType,
+  readBoundedTextBody,
+  securityError,
+} from "@/lib/security/request-guards";
+
+const REGISTER_ACTION = "candidate-register";
+const MAX_BODY_BYTES = 16 * 1024;
 
 interface RegisterBody {
   name:               string;
@@ -15,7 +25,32 @@ interface RegisterBody {
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as RegisterBody;
+  // Phase 86C4B2B1D-SECURITY-8: public self-registration that creates a User
+  // and an ATS candidate. Add IP rate limiting + Content-Type + bounded body
+  // BEFORE any parse or write, to curb automated account/candidate spam.
+  const ip = resolveClientIp(req);
+  if (!(await checkRateLimit(REGISTER_ACTION, ip))) {
+    return securityError({ error: "Too many registration attempts. Please try again later." }, 429, {
+      "Retry-After": String(retryAfter(REGISTER_ACTION, ip)),
+    });
+  }
+  if (!isJsonContentType(req)) {
+    return securityError({ error: "unsupported media type" }, 415);
+  }
+  const read = await readBoundedTextBody(req, MAX_BODY_BYTES);
+  if (read.status === "too_large") {
+    return securityError({ error: "payload too large" }, 413);
+  }
+  if (read.status === "error") {
+    return NextResponse.json({ error: "invalid request body" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+  }
+
+  let body: RegisterBody;
+  try {
+    body = JSON.parse(read.text) as RegisterBody;
+  } catch {
+    return NextResponse.json({ error: "invalid request body" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+  }
   const { name, email, password } = body;
 
   if (!name || !email || !password) {

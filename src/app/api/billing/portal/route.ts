@@ -15,6 +15,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { requireOrgContext }              from "@/lib/billing/context";
+import { requirePermission }              from "@/lib/org/rbac";
 import {
   getStripeClient,
   getOrCreateStripeCustomer,
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   const { ctx } = result;
+  const perm = requirePermission(ctx.role, "manage_billing");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   if (!isStripeConfigured()) {
     return NextResponse.json(

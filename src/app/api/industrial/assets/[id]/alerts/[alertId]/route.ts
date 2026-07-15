@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePlatformAuth }      from "@/lib/api/auth";
 import { requireOrgActor }          from "@/lib/org/context";
+import { hasScope } from "@/lib/api/scopes";
 import { requirePermission }        from "@/lib/org/rbac";
 import { dismissAlert }             from "@/lib/industrial/alerts";
 
@@ -11,6 +12,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { ctx } = auth;
+  // Phase SECURITY-8 amendment: API-key function-level authorization.
+  if (!hasScope(ctx.scopes, "industrial.write")) {
+    return NextResponse.json({ error: "Missing required scope: industrial.write" }, { status: 403 });
+  }
 
   let userId: string | undefined;
   if (ctx.authMethod === "jwt") {

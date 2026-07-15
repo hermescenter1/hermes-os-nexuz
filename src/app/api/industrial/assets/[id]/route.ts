@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse }  from "next/server";
 import { requirePlatformAuth }        from "@/lib/api/auth";
 import { requireOrgActor }            from "@/lib/org/context";
+import { hasScope } from "@/lib/api/scopes";
 import { requirePermission }          from "@/lib/org/rbac";
 import { requireSiteActor }           from "@/lib/site/context";
 import { requireSitePermission }      from "@/lib/site/rbac";
@@ -41,6 +42,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { ctx } = auth;
+  // Phase SECURITY-8 amendment: API-key function-level authorization.
+  if (!hasScope(ctx.scopes, "industrial.write")) {
+    return NextResponse.json({ error: "Missing required scope: industrial.write" }, { status: 403 });
+  }
 
   if (ctx.authMethod === "jwt") {
     const member = await requireOrgActor(req, ctx.orgId);
@@ -57,8 +62,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
   }
 
-  const body = await req.json().catch(() => ({}));
-  const asset = await updateAsset(id, ctx.orgId, body);
+  // Phase SECURITY-8 amendment: explicit field allow-list — the raw body was
+  // spread into Prisma `data`, letting a client inject organizationId/siteId/id
+  // to reassign the asset across tenants. Only updatable business fields pass.
+  const raw = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const patch = {
+    name:         raw.name,
+    assetType:    raw.assetType,
+    manufacturer: raw.manufacturer,
+    model:        raw.model,
+    protocol:     raw.protocol,
+    tagPrefix:    raw.tagPrefix,
+    status:       raw.status,
+    gatewayId:    raw.gatewayId,
+    metadata:     raw.metadata,
+  } as Parameters<typeof updateAsset>[2];
+  const asset = await updateAsset(id, ctx.orgId, patch);
   if (!asset) return NextResponse.json({ error: "Asset not found" }, { status: 404 });
 
   recordAuditEvent({

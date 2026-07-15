@@ -184,6 +184,15 @@ export async function changeMemberStatus(
   const m = await model();
   if (!m) return { ok: false, error: "Database unavailable" };
 
+  // Phase SECURITY-8 amendment: tenant isolation. Unlike changeMemberRole, this
+  // branch went straight to update-by-id, so an admin of org A could suspend a
+  // member of org B by memberId. Verify the member belongs to the target org
+  // before any mutation (mirrors the changeMemberRole pre-check).
+  const prevRow = await m.findFirst({
+    where: { id: input.memberId, organizationId: input.organizationId },
+  });
+  if (!prevRow) return { ok: false, error: "Member not found" };
+
   if (input.newStatus === "SUSPENDED") {
     const guard = await guardLastOwner(m, input.organizationId, input.memberId);
     if (!guard.ok) return guard;

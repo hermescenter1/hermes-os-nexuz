@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getAuthRole }  from "@/lib/auth/rbac-server";
+import { can }          from "@/lib/auth/roles";
 import { JOBS }         from "@/lib/ats/mock-data";
 import type { Job }     from "@/lib/ats/types";
 
@@ -14,7 +17,18 @@ export async function GET(req: Request) {
   return NextResponse.json({ jobs, total: jobs.length });
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // Phase 86C4B2B1D-SECURITY-8: ATS job creation is an internal recruiter
+  // operation, not a public one (the public path is /api/careers/apply).
+  // Authorize (authoring capability) BEFORE reading the body.
+  const role = await getAuthRole(req);
+  if (!role) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401, headers: { "Cache-Control": "no-store" } });
+  }
+  if (!can(role, "authoring")) {
+    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403, headers: { "Cache-Control": "no-store" } });
+  }
+
   const body: Partial<Job> = await req.json();
   const created: Job = {
     id:                 `job-${Date.now()}`,

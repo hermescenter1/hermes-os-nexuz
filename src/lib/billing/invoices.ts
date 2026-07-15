@@ -35,6 +35,18 @@ function rowToInvoice(r: Record<string, unknown>): InvoiceRecord {
   };
 }
 
+/**
+ * Look up a single invoice by id (Phase SECURITY-8). Used to enforce that a
+ * payment is only recorded against an invoice the caller's organization owns —
+ * the caller must compare `organizationId` before mutating.
+ */
+export async function getInvoiceById(id: string): Promise<InvoiceRecord | null> {
+  const m = await model();
+  if (!m) return null;
+  const row = await m.findFirst({ where: { id } });
+  return row ? rowToInvoice(row) : null;
+}
+
 /** Generate HMS-YYYY-NNNNN invoice number (DB-backed per-year sequence). */
 async function generateInvoiceNumber(m: InvoiceModel): Promise<string> {
   const year   = new Date().getFullYear();
