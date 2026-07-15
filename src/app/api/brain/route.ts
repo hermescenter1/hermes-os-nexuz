@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAuthoring } from "@/lib/auth/api-guards";
 import { runPipeline } from "@/lib/industrial/pipeline";
 import { runReasoning, summarizeEvidence } from "@/lib/industrial/reasoning";
 import { computeConfidence, vendorCertainty } from "@/lib/industrial/confidence";
@@ -41,6 +42,42 @@ import type { StoredAnalysis } from "@/lib/storage/types";
 import en from "../../../../messages/en.json";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Phase 86C4B2B1D-SECURITY-6 (+ amendment): /api/brain is the PRIVATE
+ * engineering Brain.
+ *
+ * GET returns the GLOBAL analysis history — the AnalysisRecord model carries
+ * NO ownership field (no userId/organizationId/tenantId/siteId/projectId), so
+ * `analysisRepository.list()` cannot be filtered to the caller's scope without
+ * a Prisma migration (out of scope). The records include raw user questions,
+ * which are cross-user in database mode. POST executes the reasoning pipeline,
+ * may invoke the LLM/RAG layers, and persists analysis history + Unknown
+ * triage. Because the history is unscoped and the pipeline is a real
+ * (potentially paid) execution, both methods are restricted to the existing
+ * "authoring" capability (superadmin/admin/engineer) — the narrowest
+ * established engineering capability, matching /api/analysis and the
+ * SECURITY-5 brain APIs. This is Option C (engineering/authoring) of the
+ * amendment; user/organization scoping (Options A/B) is impossible on the
+ * current schema.
+ *
+ * requireAuthoring authenticates AND authorizes as the FIRST operation —
+ * before any body parse, repository read, pipeline execution, LLM/RAG call, or
+ * database/memory write. Anonymous -> 401, non-authoring -> 403. Broad-role
+ * dashboard consumers (customer/vendor via /dashboard/copilot and the
+ * executive overview) read the synthetic /api/copilot/demo instead, so real
+ * cross-user history is never exposed to them. The public /copilot, /brain and
+ * /library pages already use /api/copilot/demo.
+ *
+ * CSRF: session cookies are SameSite=strict (the sole cross-site write
+ * mitigation — the project has no Origin-validation guard to reuse), so a
+ * cross-site cookie-bearing POST is blocked at the cookie layer. This is not
+ * presented as complete CSRF coverage; see the phase report's residual risk.
+ */
+function denyNoStore(res: NextResponse): NextResponse {
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
 
 type KnowledgeNs = Record<
   string,
@@ -388,6 +425,11 @@ async function buildDocumentRagEvidence(question: string): Promise<DocumentRagEv
  * existing UI keeps working untouched. ANALYSIS ONLY, as before.
  */
 export async function POST(req: Request) {
+  // Authorize (authoring capability) BEFORE parsing the body or running any
+  // pipeline / LLM / RAG / repository read / write.
+  const gate = await requireAuthoring();
+  if (!gate.ok) return denyNoStore(gate.response);
+
   let body: { question?: string; locale?: string; projectId?: string };
   try {
     body = await req.json();
@@ -802,6 +844,11 @@ function recentLibrariesOf(records: AnalysisRecord[]): string[] {
  * back to the session-memory path below — never a hard error.
  */
 export async function GET(req: Request) {
+  // Authorize (authoring capability) BEFORE touching the analysis repository
+  // or memory ring — the global, unscoped history is engineering-internal.
+  const gate = await requireAuthoring();
+  if (!gate.ok) return denyNoStore(gate.response);
+
   const url = new URL(req.url);
   const n = Math.min(Number(url.searchParams.get("n") ?? 20) || 20, 50);
 

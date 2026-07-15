@@ -66,7 +66,9 @@ export function CopilotClient() {
   const [brainData, setBrainData] = useState<BrainResponse | null>(null);
 
   function refreshStats() {
-    fetch("/api/brain?n=5", { cache: "no-store" })
+    // SECURITY-6: public Copilot reads the anonymous-safe demo endpoint, not
+    // the now-authenticated /api/brain history.
+    fetch("/api/copilot/demo?n=5", { cache: "no-store" })
       .then((r) => r.json())
       .then((j: BrainResponse) => setBrainData(j))
       .catch(() => {});

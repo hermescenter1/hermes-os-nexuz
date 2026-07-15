@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 13 — /api/brain route tests.
@@ -10,6 +11,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
  * The route handlers (`POST`/`GET`) are plain async functions taking a Web
  * `Request` and returning a `NextResponse` (itself a `Response`), so they
  * can be called directly without a running server.
+ *
+ * Phase 86C4B2B1D-SECURITY-6: /api/brain now requires a valid session, so the
+ * global `beforeEach` establishes an authenticated engineer before importing
+ * the route; the anonymous 401 contract is proven in brain-api-boundaries.test.ts.
  */
 
 const ENV_KEYS = [
@@ -41,6 +46,8 @@ beforeEach(() => {
   saved = {};
   for (const k of ENV_KEYS) saved[k] = process.env[k];
   clearAllEnv();
+  vi.resetModules();
+  mockEngineer();
 });
 
 afterEach(() => {
@@ -48,6 +55,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
 });
 
 // Reused verbatim from the existing industrial/__tests__ suite — already

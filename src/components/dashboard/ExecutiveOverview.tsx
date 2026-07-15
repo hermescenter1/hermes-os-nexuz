@@ -123,7 +123,10 @@ export function ExecutiveOverview() {
     let live = true;
     async function tick() {
       try {
-        const r = await fetch("/api/brain?n=5", { cache: "no-store" });
+        // SECURITY-6 amendment: broad-role dashboard surface (incl.
+        // customer/vendor) — read the synthetic demo aggregate, not the
+        // authoring-only cross-user history behind /api/brain.
+        const r = await fetch("/api/copilot/demo?n=5", { cache: "no-store" });
         if (!r.ok || !live) return;
         const j = (await r.json()) as BrainStatsResponse;
         if (live) setData(j);

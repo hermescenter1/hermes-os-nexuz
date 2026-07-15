@@ -48,7 +48,11 @@ export default function CopilotPage() {
 
   useEffect(() => {
     let live = true;
-    fetch("/api/brain?n=8", { cache: "no-store" })
+    // SECURITY-6 amendment: this page is reachable by the broad dashboard
+    // capability (incl. customer/vendor), so it reads the synthetic
+    // /api/copilot/demo aggregate — never the real, unscoped cross-user
+    // history behind the authoring-gated /api/brain.
+    fetch("/api/copilot/demo?n=8", { cache: "no-store" })
       .then((r) => r.json())
       .then((j: BrainResponse) => { if (live) setData(j); })
       .catch(() => {/* best-effort */});
