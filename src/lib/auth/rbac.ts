@@ -10,7 +10,7 @@
 
 import { verifyAccessToken }       from "./jwt";
 import { ACCESS_TOKEN_COOKIE }     from "./config";
-import { canAccessEngineering, isRole, type Role } from "./roles";
+import { can, canAccessEngineering, isRole, type Role } from "./roles";
 import type { NextRequest }        from "next/server";
 
 // ── Edge-safe: decode JWT from request cookies ────────────────────────────────
@@ -115,6 +115,12 @@ const ASSETS                = localePathPattern("assets");
 // (feed, editors-picks, latest, [slug], …) match neither group.
 const ARTICLES_EDITORIAL     = localePathPattern("articles/(moderation|review-queue|reports|editorial-board|editor|submissions)");
 const ARTICLES_AUTHENTICATED = localePathPattern("articles/(write|drafts|saved|following|my-articles|settings)");
+// Phase 86C4B2B1D-SECURITY-4: Dashboard workspace — /dashboard was never
+// registered here, so anonymous requests rendered the whole dashboard shell.
+// Authorization follows the pre-existing "dashboard" capability in ROLE_CAPS
+// (roles.ts): superadmin/admin/engineer/customer/vendor; viewer and candidate
+// are denied.
+const DASHBOARD              = localePathPattern("dashboard");
 
 // ── Middleware guard ──────────────────────────────────────────────────────────
 
@@ -139,6 +145,7 @@ export const PROTECTED_PATHS = [
   ASSETS,
   ARTICLES_EDITORIAL,
   ARTICLES_AUTHENTICATED,
+  DASHBOARD,
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {
@@ -207,6 +214,11 @@ export function isAuthorizedForPath(
   // Journal authenticated (write/drafts/saved/following/my-articles/settings): any logged-in user
   if (ARTICLES_AUTHENTICATED.test(pathname)) {
     return true;
+  }
+  // Dashboard workspace: gated by the "dashboard" capability (ROLE_CAPS) —
+  // superadmin/admin/engineer/customer/vendor; viewer and candidate denied.
+  if (DASHBOARD.test(pathname)) {
+    return can(role, "dashboard");
   }
   return true;
 }
