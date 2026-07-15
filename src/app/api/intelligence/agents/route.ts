@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { runMultiAgentAnalysis } from "@/lib/services/multi-agent-service";
 import { getStorageMode }        from "@/lib/storage/storage-mode";
+import { requireAuthoring }      from "@/lib/auth/api-guards";
 
 const EMPTY_REPORT = {
   generatedAt:  new Date(0).toISOString(),
@@ -11,8 +12,18 @@ const EMPTY_REPORT = {
   synthesis: { agentId: "synthesis", status: "degraded", score: 0, findings: [], data: { systemCoherenceScore: 0, correlations: [], prioritizedActions: [], intelligenceGrade: "F" } },
 };
 
-/** GET /api/intelligence/agents — multi-agent engineering intelligence report. */
+/**
+ * GET /api/intelligence/agents — multi-agent engineering intelligence report.
+ *
+ * Phase 86C4B2B1D-SECURITY-5: aggregates the GLOBAL engineering brain
+ * (memory/project/domain agent analysis), platform-internal data. Gated with
+ * the canonical "authoring" guard; its only consumer is the `/engineering`
+ * hub whose audience already holds that capability.
+ */
 export async function GET() {
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   const storageMode = getStorageMode();
   try {
     const result = await runMultiAgentAnalysis();

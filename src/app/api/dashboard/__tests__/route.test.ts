@@ -7,8 +7,12 @@ import { mockEngineer, unmockAuth } from "@/test/mock-auth";
  *
  * Phase 82D.1A: the backward-compat block below invokes the now authoring-gated
  * /api/projects/analytics and /api/projects/benchmark handlers, so those tests
- * mock an authoring session before importing them. The dashboard route itself
- * is unchanged and needs no auth mock.
+ * mock an authoring session before importing them.
+ *
+ * Phase 86C4B2B1D-SECURITY-5: the dashboard route itself is now authoring-gated
+ * (it aggregates the global engineering brain), so the default `beforeEach`
+ * establishes an authoring engineer; the anonymous/non-authoring rejection is
+ * proven in dashboard-api-boundaries.test.ts.
  */
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
@@ -19,6 +23,7 @@ beforeEach(() => {
   for (const k of ENV_KEYS) saved[k] = process.env[k];
   for (const k of ENV_KEYS) delete process.env[k];
   vi.resetModules();
+  mockEngineer();
   (globalThis as Record<string, unknown>).__hermesProjects          = [];
   (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [];
   (globalThis as Record<string, unknown>).__hermesMemoryFeedback    = [];

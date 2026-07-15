@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 24 — GET /api/domains/[name] route tests.
@@ -23,6 +24,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -171,7 +173,11 @@ describe("GET /api/domains/[name] — backward compat", () => {
     expect(body).toHaveProperty("domains");
   });
 
-  it("dashboard route unaffected", async () => {
+  it("dashboard route unaffected (authoring caller)", async () => {
+    // Phase 86C4B2B1D-SECURITY-5: /api/dashboard is now authoring-gated, so
+    // this cross-route smoke check authenticates as an engineer before import.
+    vi.resetModules();
+    mockEngineer();
     const { GET } = await import("../../../dashboard/route");
     const body = await (await GET()).json();
     expect(body).toHaveProperty("systemSummary");

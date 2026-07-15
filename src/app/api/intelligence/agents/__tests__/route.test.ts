@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 27 — GET /api/intelligence/agents route tests.
  * All tests run in session mode (no DATABASE_URL).
+ *
+ * Phase 86C4B2B1D-SECURITY-5: the route is now authoring-gated (it aggregates
+ * the global engineering brain), so the default `beforeEach` establishes an
+ * authoring engineer; the anonymous and non-authoring rejection is proven in
+ * dashboard-api-boundaries.test.ts.
  */
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL"] as const;
@@ -13,6 +19,7 @@ beforeEach(() => {
   for (const k of ENV_KEYS) saved[k] = process.env[k];
   for (const k of ENV_KEYS) delete process.env[k];
   vi.resetModules();
+  mockEngineer();
   (globalThis as Record<string, unknown>).__hermesProjects          = [];
   (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [];
   (globalThis as Record<string, unknown>).__hermesMemoryFeedback    = [];
@@ -23,6 +30,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────

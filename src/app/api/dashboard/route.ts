@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDashboard } from "@/lib/services/dashboard-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
+import { requireAuthoring } from "@/lib/auth/api-guards";
 
 const EMPTY_DASHBOARD = {
   generatedAt: new Date(0).toISOString(),
@@ -12,8 +13,19 @@ const EMPTY_DASHBOARD = {
   insights:       [],
 };
 
-/** GET /api/dashboard — unified system intelligence dashboard. */
+/**
+ * GET /api/dashboard — unified system intelligence dashboard.
+ *
+ * Phase 86C4B2B1D-SECURITY-5: the response aggregates the GLOBAL engineering
+ * brain (project/memory/graph health), platform-internal data with no public
+ * use. Gated with the canonical "authoring" guard — the same capability that
+ * fronts its only consumer, the `/engineering` hub (canAccessEngineering =
+ * superadmin/admin/engineer), so no legitimate caller is affected.
+ */
 export async function GET() {
+  const gate = await requireAuthoring();
+  if (!gate.ok) return gate.response;
+
   const storageMode = getStorageMode();
   try {
     const result = await getDashboard();
