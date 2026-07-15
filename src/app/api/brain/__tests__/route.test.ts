@@ -66,10 +66,13 @@ const KNOWN_QUESTION_FA = "درایو ACS580 هنگام شتاب‌گیری خط
 // classify as Unknown (insufficient evidence).
 const UNKNOWN_QUESTION = "The machine behaves strangely";
 
+// SECURITY-7: POST /api/brain now enforces same-origin. These behavioural
+// tests send a valid production Origin so the request reaches the pipeline;
+// Origin rejection is proven in the SECURITY-7 boundary suite.
 function postRequest(body: Record<string, unknown>): Request {
   return new Request("http://localhost/api/brain", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", origin: "https://hermesnovin.com" },
     body: JSON.stringify(body),
   });
 }

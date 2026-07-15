@@ -31,6 +31,13 @@ import { runRetrieval } from "@/lib/retrieval/retrieval-engine";
 import { screenQuestion } from "@/lib/llm/guardrails";
 import { CASES } from "@/lib/industrial/cases";
 import { computeMemoryStats } from "@/lib/industrial/memory";
+import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
+import {
+  resolveClientIp,
+  isJsonContentType,
+  readBoundedTextBody,
+  securityError,
+} from "@/lib/security/request-guards";
 import type { BrainAnalysis } from "@/lib/services/types";
 import type { Citation } from "@/lib/services/rag-types";
 import en from "../../../../../messages/en.json";
@@ -41,6 +48,19 @@ const NO_STORE = { "Cache-Control": "no-store" } as const;
 
 const MAX_QUESTION = 2000;
 const MIN_QUESTION = 8;
+// A demo question caps at 2000 chars; 16 KB leaves generous room for JSON
+// overhead while rejecting oversized bodies before they are parsed.
+const MAX_BODY_BYTES = 16 * 1024;
+
+const GET_ACTION = "copilot-demo-get";
+const POST_ACTION = "copilot-demo-post";
+
+/** 429 with Retry-After + no-store; never leaks the IP or the limiter key. */
+function rateLimited(action: string, ip: string): NextResponse {
+  return securityError({ error: "rate limited" }, 429, {
+    "Retry-After": String(retryAfter(action, ip)),
+  });
+}
 
 type KnowledgeNs = Record<
   string,
@@ -66,8 +86,13 @@ function buildCitations(libraryIds: string[]): Citation[] {
 /**
  * GET /api/copilot/demo — deterministic, history-free demo statistics.
  * Anonymous-safe: no database, no analysis history, no cross-user data.
+ * IP-keyed rate limited (60/60s) — a rejected request returns 429 before any
+ * work.
  */
-export function GET(): NextResponse {
+export async function GET(req: Request): Promise<NextResponse> {
+  const ip = resolveClientIp(req);
+  if (!(await checkRateLimit(GET_ACTION, ip))) return rateLimited(GET_ACTION, ip);
+
   return NextResponse.json(
     {
       recent: [],
@@ -85,11 +110,35 @@ export function GET(): NextResponse {
 /**
  * POST /api/copilot/demo — deterministic analysis of the caller's question.
  * Anonymous-safe: no LLM/RAG, no persistence, no memory writes.
+ *
+ * Order: rate limit (so even malformed requests are bounded and never reach
+ * the pipeline) → Content-Type → body size → JSON parse → question bounds →
+ * deterministic pipeline. Every rejection is no-store with a stable shape.
  */
 export async function POST(req: Request): Promise<NextResponse> {
+  const ip = resolveClientIp(req);
+  if (!(await checkRateLimit(POST_ACTION, ip))) return rateLimited(POST_ACTION, ip);
+
+  if (!isJsonContentType(req)) {
+    return securityError({ error: "unsupported media type" }, 415);
+  }
+
+  // Genuinely bounded read: a valid oversized Content-Length is rejected
+  // before the stream is touched, and the stream is otherwise read chunk-by-
+  // chunk and cancelled the instant it crosses MAX_BODY_BYTES — so a request
+  // with an absent or falsified Content-Length can never force an unbounded
+  // parse/allocation. Only the bounded bytes are then parsed.
+  const read = await readBoundedTextBody(req, MAX_BODY_BYTES);
+  if (read.status === "too_large") {
+    return securityError({ error: "payload too large" }, 413);
+  }
+  if (read.status === "error") {
+    return NextResponse.json({ error: "invalid JSON" }, { status: 400, headers: NO_STORE });
+  }
+
   let body: { question?: string; locale?: string };
   try {
-    body = await req.json();
+    body = JSON.parse(read.text) as { question?: string; locale?: string };
   } catch {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400, headers: NO_STORE });
   }

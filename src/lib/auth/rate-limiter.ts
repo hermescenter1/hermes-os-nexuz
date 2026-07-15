@@ -26,6 +26,11 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   "forgot-password": { max: 3,  windowMs: 60 * 60 * 1000 },
   "reset-password":  { max: 5,  windowMs: 60 * 60 * 1000 },
   "verify-email":    { max: 10, windowMs: 60 * 60 * 1000 },
+  // Phase 86C4B2B1D-SECURITY-7 — public Copilot demo (anonymous, IP-keyed).
+  // GET is a cheap static read; POST runs the deterministic pipeline, so it
+  // is bounded more strictly. Conservative limits for a public industrial demo.
+  "copilot-demo-get":  { max: 60, windowMs: 60 * 1000 },
+  "copilot-demo-post": { max: 12, windowMs: 60 * 1000 },
 };
 
 // ── Degradation state ─────────────────────────────────────────────────────────

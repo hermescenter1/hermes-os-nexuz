@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthoring } from "@/lib/auth/api-guards";
+import { isAllowedOrigin, isJsonContentType, securityError } from "@/lib/security/request-guards";
 import { runPipeline } from "@/lib/industrial/pipeline";
 import { runReasoning, summarizeEvidence } from "@/lib/industrial/reasoning";
 import { computeConfidence, vendorCertainty } from "@/lib/industrial/confidence";
@@ -69,10 +70,10 @@ export const dynamic = "force-dynamic";
  * cross-user history is never exposed to them. The public /copilot, /brain and
  * /library pages already use /api/copilot/demo.
  *
- * CSRF: session cookies are SameSite=strict (the sole cross-site write
- * mitigation — the project has no Origin-validation guard to reuse), so a
- * cross-site cookie-bearing POST is blocked at the cookie layer. This is not
- * presented as complete CSRF coverage; see the phase report's residual risk.
+ * CSRF (SECURITY-7): the primary guard is the explicit same-origin check on
+ * POST below. Session cookies carry a SameSite attribute (the access token is
+ * strict, the legacy session cookie is lax) which is a complementary
+ * cookie-layer mitigation, NOT presented as complete CSRF coverage on its own.
  */
 function denyNoStore(res: NextResponse): NextResponse {
   res.headers.set("Cache-Control", "no-store");
@@ -425,16 +426,30 @@ async function buildDocumentRagEvidence(question: string): Promise<DocumentRagEv
  * existing UI keeps working untouched. ANALYSIS ONLY, as before.
  */
 export async function POST(req: Request) {
-  // Authorize (authoring capability) BEFORE parsing the body or running any
-  // pipeline / LLM / RAG / repository read / write.
+  // 1+2. Authenticate AND authorize (authoring capability) FIRST — anonymous
+  // -> 401, authenticated non-authoring -> 403 — before Origin/body/pipeline.
   const gate = await requireAuthoring();
   if (!gate.ok) return denyNoStore(gate.response);
 
+  // 3. Same-origin validation for this cookie-authenticated, state-changing
+  // write (SECURITY-7) — the primary application-layer CSRF guard (the cookie
+  // SameSite attribute is only a complement). A cross-origin, missing, or null
+  // Origin is rejected before any body parse, pipeline, LLM/RAG, or write.
+  if (!isAllowedOrigin(req.headers.get("origin"))) {
+    return securityError({ error: "invalid origin" }, 403);
+  }
+
+  // 4. Content-Type validation before parsing.
+  if (!isJsonContentType(req)) {
+    return securityError({ error: "unsupported media type" }, 415);
+  }
+
+  // 5. Body parsing.
   let body: { question?: string; locale?: string; projectId?: string };
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "invalid JSON" }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }
   const question = (body.question ?? "").trim().slice(0, 2000);
   const locale = body.locale === "fa" ? "fa" : "en";
@@ -444,7 +459,7 @@ export async function POST(req: Request) {
   const projectId =
     typeof body.projectId === "string" ? body.projectId.trim() || undefined : undefined;
   if (question.length < 8) {
-    return NextResponse.json({ error: "question too short" }, { status: 400 });
+    return NextResponse.json({ error: "question too short" }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }
 
   // Phase 11B-A: in database mode, merge PostgreSQL-published cases/knowledge
@@ -522,7 +537,7 @@ export async function POST(req: Request) {
         /* best-effort persistence */
       }
     }
-    return NextResponse.json(analysis);
+    return NextResponse.json(analysis, { headers: { "Cache-Control": "no-store" } });
   }
 
   const reasoning = runReasoning(
