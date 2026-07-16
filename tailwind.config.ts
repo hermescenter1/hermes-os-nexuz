@@ -5,6 +5,8 @@ export default {
   theme: {
     extend: {
       colors: {
+        /* ── Legacy tokens (Phase 51C–72.5F) — retained, DO NOT REMOVE.
+           Existing pages depend on these. New components use the ds tokens below. ── */
         bg:        "var(--bg)",
         surface:   "var(--surface)",
         surface2:  "var(--surface-2)",
@@ -23,6 +25,63 @@ export default {
         warn:       "var(--warn)",
         danger:     "var(--danger)",
         hermesGold: "var(--hermes-gold)",
+
+        /* ── PHASE 87B — Hermes Design System semantic tokens (additive) ──
+           Utilities: bg-background-base, bg-surface-primary, text-text-primary,
+           border-border-default, bg-brand-primary, text-status-success, … ── */
+        "background-base":       "var(--color-background-base)",
+        "background-deep":       "var(--color-background-deep)",
+        "surface-primary":       "var(--color-surface-primary)",
+        "surface-elevated":      "var(--color-surface-elevated)",
+        "surface-interactive":   "var(--color-surface-interactive)",
+        "surface-glass":         "var(--color-surface-glass)",
+        "surface-glass-border":  "var(--color-surface-glass-border)",
+
+        "brand-primary":         "var(--color-brand-primary)",
+        "brand-primary-hover":   "var(--color-brand-primary-hover)",
+        "brand-primary-pressed": "var(--color-brand-primary-pressed)",
+        "brand-ice":             "var(--color-brand-ice)",
+        "brand-deep":            "var(--color-brand-deep)",
+        "brand-on-brand":        "var(--color-brand-on-brand)",
+        "brand-subtle":          "var(--color-brand-subtle)",
+        "brand-border":          "var(--color-brand-border)",
+        "intelligence-azure":    "var(--color-intelligence-azure)",
+
+        "text-primary":   "var(--color-text-primary)",
+        "text-secondary": "var(--color-text-secondary)",
+        "text-muted":     "var(--color-text-muted)",
+        "text-disabled":  "var(--color-text-disabled)",
+        "text-inverse":   "var(--color-text-inverse)",
+
+        "border-default": "var(--color-border-default)",
+        "border-subtle":  "var(--color-border-subtle)",
+        "border-active":  "var(--color-border-active)",
+        "border-danger":  "var(--color-border-danger)",
+
+        "status-success":            "var(--color-status-success)",
+        "status-warning":            "var(--color-status-warning)",
+        "status-danger":             "var(--color-status-danger)",
+        "status-information":        "var(--color-status-information)",
+        "status-success-subtle":     "var(--color-status-success-subtle)",
+        "status-success-border":     "var(--color-status-success-border)",
+        "status-warning-subtle":     "var(--color-status-warning-subtle)",
+        "status-warning-border":     "var(--color-status-warning-border)",
+        "status-danger-subtle":      "var(--color-status-danger-subtle)",
+        "status-danger-border":      "var(--color-status-danger-border)",
+        "status-information-subtle": "var(--color-status-information-subtle)",
+        "status-information-border": "var(--color-status-information-border)",
+
+        "reasoning-violet":              "var(--color-reasoning-violet)",
+        "reasoning-hypothesis":          "var(--color-reasoning-hypothesis)",
+        "reasoning-hypothesis-subtle":   "var(--color-reasoning-hypothesis-subtle)",
+        "reasoning-hypothesis-border":   "var(--color-reasoning-hypothesis-border)",
+        "reasoning-evidence":            "var(--color-reasoning-evidence)",
+        "reasoning-contradiction":       "var(--color-reasoning-contradiction)",
+        "reasoning-missing":             "var(--color-reasoning-missing)",
+        "reasoning-decision":            "var(--color-reasoning-decision)",
+
+        "focus-ring": "var(--color-focus-ring)",
+        "focus-halo": "var(--color-focus-halo)",
       },
       fontFamily: {
         display: ["var(--font-display)", "system-ui", "sans-serif"],
@@ -31,9 +90,52 @@ export default {
       },
       fontSize: {
         "5xl-hero": ["var(--text-5xl)", { lineHeight: "1.05", letterSpacing: "-0.025em" }],
+        /* ── PHASE 87B typography roles (additive) ── */
+        "display":       ["3.5rem",    { lineHeight: "1.05", letterSpacing: "-0.025em" }],
+        "role-h1":       ["2.5rem",    { lineHeight: "1.1",  letterSpacing: "-0.02em" }],
+        "role-h2":       ["2rem",      { lineHeight: "1.15", letterSpacing: "-0.015em" }],
+        "role-h3":       ["1.5rem",    { lineHeight: "1.2",  letterSpacing: "-0.01em" }],
+        "role-h4":       ["1.25rem",   { lineHeight: "1.25" }],
+        "title-lg":      ["1.125rem",  { lineHeight: "1.3" }],
+        "title":         ["1rem",      { lineHeight: "1.35" }],
+        "subtitle":      ["0.875rem",  { lineHeight: "1.4" }],
+        "body-lg":       ["1rem",      { lineHeight: "1.65" }],
+        "body":          ["0.875rem",  { lineHeight: "1.6" }],
+        "body-compact":  ["0.8125rem", { lineHeight: "1.5" }],
+        "label":         ["0.8125rem", { lineHeight: "1.35" }],
+        "label-compact": ["0.75rem",   { lineHeight: "1.3" }],
+        "caption":       ["0.75rem",   { lineHeight: "1.4" }],
+        "technical":     ["0.8125rem", { lineHeight: "1.45" }],
+        "kpi-lg":        ["2.75rem",   { lineHeight: "1" }],
+        "kpi-md":        ["1.75rem",   { lineHeight: "1" }],
+        "code-address":  ["0.8125rem", { lineHeight: "1.45", letterSpacing: "0.01em" }],
+      },
+      borderRadius: {
+        "xs":  "var(--radius-xs)",
+        "sm":  "var(--radius-sm)",
+        "md":  "var(--radius-md)",
+        "lg":  "var(--radius-lg)",
+        "xl":  "var(--radius-xl)",
+        "2xl": "var(--radius-2xl)",
+        "full": "var(--radius-full)",
+      },
+      boxShadow: {
+        "e0": "var(--shadow-e0)",
+        "e1": "var(--shadow-e1)",
+        "e2": "var(--shadow-e2)",
+        "e3": "var(--shadow-e3)",
+        "e4": "var(--shadow-e4)",
+      },
+      transitionDuration: {
+        "instant":  "var(--motion-instant)",
+        "fast":     "var(--motion-fast)",
+        "standard": "var(--motion-standard)",
+        "slow":     "var(--motion-slow)",
       },
       transitionTimingFunction: {
-        "out-expo": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "out-expo":    "cubic-bezier(0.16, 1, 0.3, 1)",
+        "hermes":      "var(--motion-ease)",
+        "hermes-out":  "var(--motion-ease-out)",
       },
       spacing: {
         "18": "4.5rem",

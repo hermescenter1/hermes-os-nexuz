@@ -1132,3 +1132,175 @@ h6 { font-weight: 550; letter-spacing: 0; }
   }
   .ib-report-print { padding: 0 !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 87B — HERMES DESIGN SYSTEM FOUNDATION (additive)
+   ───────────────────────────────────────────────────────────────────────────
+   These `--color-*` / `--space-*` / `--radius-*` / `--shadow-e*` / `--motion-*`
+   tokens are the source of truth for the new canonical components in
+   `src/components/ds/`. They are ADDITIVE: the legacy tokens above
+   (--bg, --surface, --signal, --ink, --muted, …) are left untouched so every
+   existing page renders exactly as before. New components consume ONLY the
+   tokens in this block. Values mirror the approved Figma board
+   "03 — Variables and Tokens" (see docs/design/phase-87a/*).
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Background & surface (70% of every screen) ── */
+  --color-background-deep:      #040A0F;
+  --color-background-base:      #071018;
+  --color-surface-primary:      #0C1720;
+  --color-surface-elevated:     #11212C;
+  --color-surface-interactive:  #152A36;
+  --color-surface-glass:        rgba(12, 23, 32, 0.78);
+  --color-surface-glass-border: rgba(139, 244, 248, 0.10);
+
+  /* ── Brand (7% budget — Cyan/Azure) ── */
+  --color-brand-primary:         #16D9E3;
+  --color-brand-primary-hover:   #8BF4F8;   /* Hermes Ice — hover on brand fills */
+  --color-brand-primary-pressed: #0795A5;   /* Cyan Deep  — pressed */
+  --color-brand-ice:             #8BF4F8;
+  --color-brand-deep:            #0795A5;
+  --color-brand-on-brand:        #071018;   /* text/icon on cyan fills (11.0:1) */
+  --color-intelligence-azure:    #3B82F6;
+
+  /* ── Text ── */
+  --color-text-primary:   #EDF7FA;
+  --color-text-secondary: #A9BAC6;
+  --color-text-muted:     #708694;   /* metadata only — NOT body on elevated/interactive */
+  --color-text-disabled:  #495C68;
+  --color-text-inverse:   #071018;   /* dark text on light/brand surfaces */
+
+  /* ── Border ── */
+  --color-border-default: #203743;
+  --color-border-subtle:  rgba(237, 247, 250, 0.06);
+  --color-border-active:  #21C9D5;
+  --color-border-danger:  #F05D68;
+
+  /* ── Status (3% budget — semantic only, never decorative) ── */
+  --color-status-success:     #38D996;
+  --color-status-warning:     #F5B942;
+  --color-status-danger:      #F05D68;
+  --color-status-information:  #54A6FF;
+
+  /* Status subtle fills / borders for badges (9% fill · 24% border) */
+  --color-status-success-subtle:     rgba(56, 217, 150, 0.10);
+  --color-status-success-border:     rgba(56, 217, 150, 0.24);
+  --color-status-warning-subtle:     rgba(245, 185, 66, 0.10);
+  --color-status-warning-border:     rgba(245, 185, 66, 0.24);
+  --color-status-danger-subtle:      rgba(240, 93, 104, 0.10);
+  --color-status-danger-border:      rgba(240, 93, 104, 0.24);
+  --color-status-information-subtle: rgba(84, 166, 255, 0.10);
+  --color-status-information-border: rgba(84, 166, 255, 0.24);
+  --color-brand-subtle:              rgba(22, 217, 227, 0.10);
+  --color-brand-border:              rgba(22, 217, 227, 0.24);
+
+  /* ── Reasoning (Industrial Brain semantic layer) ── */
+  --color-reasoning-violet:        #8B7CFF;
+  --color-reasoning-hypothesis:    #8B7CFF;   /* Diagnostic Violet — model inference only */
+  --color-reasoning-evidence:      #3B82F6;   /* Intelligence Azure */
+  --color-reasoning-contradiction: #F05D68;
+  --color-reasoning-missing:       #F5B942;   /* pair with dashed treatment */
+  --color-reasoning-decision:      #16D9E3;
+  --color-reasoning-hypothesis-subtle: rgba(139, 124, 255, 0.10);
+  --color-reasoning-hypothesis-border: rgba(139, 124, 255, 0.24);
+
+  /* ── Focus & selection ── */
+  --color-focus-ring: #16D9E3;
+  --color-focus-halo: #8BF4F8;
+  --color-selection:  rgba(22, 217, 227, 0.28);
+
+  /* ── Spacing scale (2 4 6 8 12 16 20 24 32 40 48 64 80 96) ──
+     Tailwind's default 4px scale already covers every step; these semantic
+     aliases exist for components that prefer intent over magnitude. */
+  --space-control-x: 16px;
+  --space-control-y: 10px;
+  --space-card:      20px;
+  --space-panel:     24px;
+  --space-section:   64px;
+  --space-page:      96px;
+
+  /* ── Radius ── */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  20px;
+  --radius-full: 9999px;
+
+  /* ── Elevation E0–E4 (restrained, dark-appropriate — no neon shadows) ── */
+  --shadow-e0: none;
+  --shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-e2: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-e3: 0 8px 24px rgba(0, 0, 0, 0.40);
+  --shadow-e4: 0 12px 32px rgba(0, 0, 0, 0.50);
+
+  /* ── Motion ── */
+  --motion-instant:  60ms;
+  --motion-fast:     140ms;
+  --motion-standard: 200ms;
+  --motion-slow:     300ms;
+  --motion-ease:      cubic-bezier(0.4, 0, 0.2, 1);      /* continuous */
+  --motion-ease-out:  cubic-bezier(0.16, 1, 0.3, 1);      /* entrance (out-expo) */
+}
+
+/* ── Selection colour for the new system ── */
+::selection { background: var(--color-selection); }
+
+/* ── Controlled glass — overlays only (modal, toolbar, command, context) ── */
+.ds-glass {
+  background: var(--color-surface-glass);
+  border: 1px solid var(--color-surface-glass-border);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+}
+
+/* ── Focus foundation — one visible, high-contrast ring for every ds control.
+   Cyan ring + offset; the offset colour matches the surface behind the control.
+   Keyboard-only via :focus-visible. Components add `ds-focus`. ── */
+.ds-focus {
+  outline: none;
+}
+.ds-focus:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* ── Tabular numerals — KPIs, timestamps, measurements, technical data ── */
+.ds-tabular { font-variant-numeric: tabular-nums; }
+
+/* ── Technical / code value — mono, tabular, LTR-isolated even inside RTL.
+   Prefer the <TechnicalValue> component (renders <bdi dir="ltr">); this class
+   styles it. ── */
+.ds-code {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  unicode-bidi: isolate;
+  direction: ltr;
+}
+
+/* ── Intelligence Pulse — subtle active-analysis indicator. Never a spinner,
+   never a glow. One per view. Reduced-motion → static. ── */
+@keyframes dsPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+.ds-pulse { animation: dsPulse 2.4s var(--motion-ease) infinite; }
+
+/* ── Skeleton shimmer for the new system ── */
+@keyframes dsShimmer { from { background-position: -200% center; } to { background-position: 200% center; } }
+.ds-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(237, 247, 250, 0.04) 0%,
+    rgba(237, 247, 250, 0.09) 50%,
+    rgba(237, 247, 250, 0.04) 100%
+  );
+  background-size: 200% auto;
+  animation: dsShimmer 1.6s linear infinite;
+}
+
+/* ── Reduced motion — honour the user's OS setting for every ds animation ── */
+@media (prefers-reduced-motion: reduce) {
+  .ds-pulse    { animation: none; opacity: 0.85; }
+  .ds-skeleton { animation: none; }
+}
