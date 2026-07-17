@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }        from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { PageIntro }        from "@/components/PageIntro";
 import { ArchitectureFlow } from "@/components/ArchitectureFlow";
 import { buildMetadata }    from "@/lib/seo/metadata";
@@ -30,7 +30,7 @@ export default async function ArchitecturePage({
   const t = await getTranslations("architecture");
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("lede")} />
 
       <section className="mx-auto max-w-6xl px-6 py-16">
@@ -73,6 +73,6 @@ export default async function ArchitecturePage({
           </div>
         </div>
       </section>
-    </PageShell>
+    </PublicPageShell>
   );
 }

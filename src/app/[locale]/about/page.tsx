@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link }         from "@/i18n/navigation";
-import { PageShell }    from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { PageIntro }    from "@/components/PageIntro";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -29,7 +29,7 @@ export default async function AboutPage({
   ];
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <PageIntro
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -158,6 +158,6 @@ export default async function AboutPage({
           </div>
         </div>
       </section>
-    </PageShell>
+    </PublicPageShell>
   );
 }

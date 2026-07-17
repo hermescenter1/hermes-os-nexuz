@@ -1,6 +1,6 @@
 import { notFound }    from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }  from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { Link }       from "@/i18n/navigation";
 import { routing }    from "@/i18n/routing";
 import { VENDORS }    from "@/lib/industrial/vendors";
@@ -40,7 +40,7 @@ export default async function VendorPage({
   const { libraries, cases } = vendorContent(v.id);
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <div className="mx-auto max-w-3xl px-6 pb-20 pt-14">
         <Link href="/library" className="font-mono text-xs text-muted hover:text-ink">
           <span className="back-arrow" aria-hidden="true" />{t("article.back")}
@@ -105,6 +105,6 @@ export default async function VendorPage({
           ))}
         </ul>
       </div>
-    </PageShell>
+    </PublicPageShell>
   );
 }

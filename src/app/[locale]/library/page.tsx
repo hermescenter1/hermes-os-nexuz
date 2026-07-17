@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }     from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { PageIntro }     from "@/components/PageIntro";
 import { LibraryClient } from "@/components/library/LibraryClient";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -31,7 +31,7 @@ export default async function LibraryPage({
   const t = await getTranslations("library");
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("lede")} />
       {/* Brain connection — Knowledge Cloud is what the Brain cites */}
       <div className="mx-auto max-w-6xl px-6 pt-8">
@@ -41,6 +41,6 @@ export default async function LibraryPage({
         </p>
       </div>
       <LibraryClient />
-    </PageShell>
+    </PublicPageShell>
   );
 }

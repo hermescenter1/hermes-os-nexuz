@@ -1,6 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { LegalPageShell } from "@/components/compliance/LegalPageShell";
-import { PageShell }      from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { Link }           from "@/i18n/navigation";
 import { buildMetadata }  from "@/lib/seo/metadata";
 
@@ -16,7 +16,7 @@ export default async function GdprPage({ params }: { params: Promise<{ locale: s
   setRequestLocale(locale);
 
   return (
-    <PageShell ambient={1}>
+    <PublicPageShell ambient={1}>
       <LegalPageShell title="Your GDPR Rights" eyebrow="HERMES OS · PRIVACY" version="1.0" effective="June 2026">
         <p className="text-ink/80">Under the General Data Protection Regulation (GDPR), you have the following rights regarding your personal data processed by Hermes OS.</p>
 
@@ -89,6 +89,6 @@ export default async function GdprPage({ params }: { params: Promise<{ locale: s
           <p>You have the right to lodge a complaint with your local data protection supervisory authority if you believe your rights have been violated. In the EU, find your authority at <span className="text-ink">edpb.europa.eu</span>.</p>
         </section>
       </LegalPageShell>
-    </PageShell>
+    </PublicPageShell>
   );
 }

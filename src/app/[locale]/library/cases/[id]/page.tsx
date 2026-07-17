@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { CASES } from "@/lib/industrial/cases";
@@ -43,7 +43,7 @@ export default async function CaseDetailPage({
   const secondary = content.rootCauses.slice(1);
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <article className="mx-auto max-w-3xl px-6 pb-20 pt-14">
         <Link href="/library/cases" className="font-mono text-xs text-muted hover:text-ink">
           <span className="back-arrow" aria-hidden="true" />
@@ -157,7 +157,7 @@ export default async function CaseDetailPage({
           </div>
         </div>
       </article>
-    </PageShell>
+    </PublicPageShell>
   );
 }
 

@@ -1304,3 +1304,18 @@ h6 { font-weight: 550; letter-spacing: 0; }
   .ds-pulse    { animation: none; opacity: 0.85; }
   .ds-skeleton { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 87D — Per-locale Latin typeface assignment (87A brand system)
+   English surfaces render Inter (variable, self-hosted via next/font/local —
+   src/fonts/Inter.woff2, OFL-1.1, license at src/fonts/OFL-Inter.txt).
+   Persian keeps Estedad (display) + Vazirmatn (body) untouched: [lang^="en"]
+   never matches fa-IR. --font-inter is defined by the next/font variable
+   class on <html>; the literal "Inter" family is not registered anywhere, so
+   a missing variable class degrades to system-ui exactly like the existing
+   --font-display fallback behavior.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html[lang^="en"] {
+  --font-display: var(--font-inter, "Inter"), system-ui, sans-serif;
+  --font-body:    var(--font-inter, "Inter"), system-ui, sans-serif;
+}

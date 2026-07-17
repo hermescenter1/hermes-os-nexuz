@@ -1,6 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { ReactNode }   from "react";
-import { PageShell }        from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { buildMetadata }    from "@/lib/seo/metadata";
 
 export async function generateMetadata({
@@ -31,10 +31,10 @@ export default async function CareersLayout({
   setRequestLocale(locale);
 
   return (
-    <PageShell ambient={1}>
+    <PublicPageShell ambient={1}>
       <div className="mx-auto max-w-screen-xl px-6 sm:px-8 pb-20">
         {children}
       </div>
-    </PageShell>
+    </PublicPageShell>
   );
 }

@@ -1,6 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { LegalPageShell } from "@/components/compliance/LegalPageShell";
-import { PageShell }      from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { buildMetadata }  from "@/lib/seo/metadata";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -15,7 +15,7 @@ export default async function CookiesPage({ params }: { params: Promise<{ locale
   setRequestLocale(locale);
 
   return (
-    <PageShell ambient={1}>
+    <PublicPageShell ambient={1}>
       <LegalPageShell title="Cookie Policy" eyebrow="HERMES OS · LEGAL" version="1.0" effective="June 2026">
         <section>
           <h2 className="font-mono text-base font-semibold text-ink mb-2">What Are Cookies</h2>
@@ -47,6 +47,6 @@ export default async function CookiesPage({ params }: { params: Promise<{ locale
           <p>Session cookies expire when you close your browser. Persistent cookies (preferences, consent records) are stored for up to 12 months. Consent records are retained for audit purposes for 2 years.</p>
         </section>
       </LegalPageShell>
-    </PageShell>
+    </PublicPageShell>
   );
 }

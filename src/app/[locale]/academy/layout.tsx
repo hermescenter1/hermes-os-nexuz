@@ -1,6 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { ReactNode }   from "react";
-import { PageShell }        from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { AcademySubNav }    from "@/components/academy/AcademySubNav";
 import { getCurrentUser }   from "@/lib/auth/session";
 import { buildMetadata }    from "@/lib/seo/metadata";
@@ -36,7 +36,7 @@ export default async function AcademyLayout({
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
   return (
-    <PageShell ambient={2}>
+    <PublicPageShell ambient={2}>
       <div className="mx-auto max-w-screen-2xl px-6 sm:px-8 pb-20">
         <div className="page-header-premium">
           <p className="eyebrow-label mb-2">
@@ -51,6 +51,6 @@ export default async function AcademyLayout({
         <AcademySubNav isAdmin={isAdmin} />
         {children}
       </div>
-    </PageShell>
+    </PublicPageShell>
   );
 }

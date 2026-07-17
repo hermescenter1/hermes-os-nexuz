@@ -25,6 +25,16 @@ const vazir = localFont({
   display: "swap",
   weight: "100 900",
 });
+// PHASE 87D — Inter (variable, OFL-1.1, vendored from @fontsource-variable/inter;
+// license at src/fonts/OFL-Inter.txt). Applied per-locale: English surfaces
+// re-point --font-display/--font-body to this variable in globals.css
+// (html[lang^="en"]); Persian keeps Estedad/Vazirmatn untouched.
+const inter = localFont({
+  src: "../../fonts/Inter.woff2",
+  variable: "--font-inter",
+  display: "swap",
+  weight: "100 900",
+});
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -147,7 +157,7 @@ export default async function LocaleLayout({
   const gaId = process.env.GA_MEASUREMENT_ID ?? process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
 
   return (
-    <html lang={LOCALE_LANG_TAG[locale as Locale]} dir={dir} className={`${estedad.variable} ${vazir.variable}`}>
+    <html lang={LOCALE_LANG_TAG[locale as Locale]} dir={dir} className={`${estedad.variable} ${vazir.variable} ${inter.variable}`}>
       <head>
         {/* Structured data — global on every page */}
         <JsonLd data={[organizationSchema(), webSiteSchema()]} />

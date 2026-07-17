@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }    from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { PageIntro }    from "@/components/PageIntro";
 import { ContactForm }  from "./ContactForm";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -52,7 +52,7 @@ export default async function ContactPage({
   ];
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <PageIntro
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -171,6 +171,6 @@ export default async function ContactPage({
           <ContactForm />
         </div>
       </section>
-    </PageShell>
+    </PublicPageShell>
   );
 }

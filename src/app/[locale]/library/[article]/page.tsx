@@ -1,6 +1,6 @@
 import { notFound }            from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }          from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { Link }               from "@/i18n/navigation";
 import { routing }            from "@/i18n/routing";
 import { KNOWLEDGE }          from "@/lib/industrial/knowledge";
@@ -63,7 +63,7 @@ export default async function ArticlePage({
   const summary = k(`${lib.id}.summary` as Parameters<typeof k>[0]);
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <JsonLd
         data={[
           articleSchema({
@@ -244,6 +244,6 @@ export default async function ArticlePage({
           <ArticleBrainStats articleId={lib.id} />
         </div>
       </article>
-    </PageShell>
+    </PublicPageShell>
   );
 }

@@ -1,6 +1,6 @@
 import { setRequestLocale }  from "next-intl/server";
 import { DataRequestClient } from "@/components/compliance/DataRequestClient";
-import { PageShell }         from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 
 export const metadata = { title: "Data Request · Hermes OS", robots: { index: false, follow: false } };
 
@@ -8,8 +8,8 @@ export default async function DataRequestPage({ params }: { params: Promise<{ lo
   const { locale } = await params;
   setRequestLocale(locale);
   return (
-    <PageShell ambient={1}>
+    <PublicPageShell ambient={1}>
       <DataRequestClient />
-    </PageShell>
+    </PublicPageShell>
   );
 }

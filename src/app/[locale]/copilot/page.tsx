@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }     from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { PageIntro }     from "@/components/PageIntro";
 import { CopilotClient } from "@/components/copilot/CopilotClient";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -21,9 +21,9 @@ export default async function CopilotPage({
   const t = await getTranslations("copilot");
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("lede")} />
       <CopilotClient />
-    </PageShell>
+    </PublicPageShell>
   );
 }

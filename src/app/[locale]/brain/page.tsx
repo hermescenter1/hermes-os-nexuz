@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }    from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { PageIntro }    from "@/components/PageIntro";
 import { BrainClient }  from "@/components/brain/BrainClient";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -21,9 +21,9 @@ export default async function BrainPage({
   const t = await getTranslations("brain");
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("lede")} />
       <BrainClient />
-    </PageShell>
+    </PublicPageShell>
   );
 }

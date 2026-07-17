@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { PageShell } from "@/components/PageShell";
+import { PublicPageShell } from "@/components/public-site";
 import { PageIntro } from "@/components/PageIntro";
 
 const POINTS = ["one", "two", "three"] as const;
@@ -19,7 +19,7 @@ export async function ServiceDetail({
   const c = await getTranslations("common");
 
   return (
-    <PageShell>
+    <PublicPageShell>
       <PageIntro eyebrow={s("eyebrow")} title={t("title")} lede={t("lede")} />
 
       <section className="mx-auto max-w-6xl px-6 py-16">
@@ -48,6 +48,6 @@ export async function ServiceDetail({
           </Link>
         </div>
       </section>
-    </PageShell>
+    </PublicPageShell>
   );
 }
