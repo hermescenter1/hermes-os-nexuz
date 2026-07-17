@@ -1,5 +1,9 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }       from "@/components/PageShell";
+// PHASE 87C — reference integration: the Executive Dashboard is the first page
+// on the shared authenticated AppShell (replacing the per-page marketing
+// PageShell wrapper). The page BODY (PageHeader/CommandRibbon/DashboardClient)
+// is unchanged.
+import { AppShell }        from "@/components/app-shell";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { PageHeader, PageStatusBadge } from "@/components/ui/PageHeader";
 import { CommandRibbon }   from "@/components/hermes/CommandRibbon";
@@ -14,7 +18,7 @@ export default async function DashboardPage({
   const t = await getTranslations("dashboard");
 
   return (
-    <PageShell ambient={2}>
+    <AppShell>
       <div className="mx-auto max-w-7xl px-6 sm:px-8">
         <PageHeader
           eyebrow={t("eyebrow")}
@@ -27,6 +31,6 @@ export default async function DashboardPage({
       </div>
       <CommandRibbon />
       <DashboardClient />
-    </PageShell>
+    </AppShell>
   );
 }

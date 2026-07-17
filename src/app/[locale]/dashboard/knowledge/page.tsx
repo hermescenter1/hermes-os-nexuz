@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { AppShell }        from "@/components/app-shell";
 import { GlassCard }       from "@/components/ui/GlassCard";
 import Link                from "next/link";
 import { PLATFORM_FACTS }  from "@/lib/industrial/platform-facts";
@@ -44,11 +45,15 @@ const stateDot: Record<string, string> = {
   phase2:    "bg-muted/50",
 };
 
+// PHASE 87C — reference integration: this page previously rendered BARE (no
+// header, no navigation — audit "Cluster B"). Wrapping it in the shared
+// AppShell restores global navigation; the page body below is unchanged.
 export default function KnowledgePage() {
   const t = useTranslations("ke");
 
   return (
-    <div className="max-w-7xl mx-auto px-6 sm:px-8 pb-20">
+    <AppShell>
+    <div className="max-w-7xl mx-auto px-6 sm:px-8 pb-20 pt-8">
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <div className="page-header-premium">
@@ -208,5 +213,6 @@ export default function KnowledgePage() {
         </div>
       </div>
     </div>
+    </AppShell>
   );
 }
