@@ -1,6 +1,10 @@
 "use client";
 
+// PHASE 87G AMENDMENT 1 — localized opportunity detail. Same fetch/route;
+// stage values internal; labels/dates localized; money bidi-safe.
+
 import { useState, useEffect } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { CrmOpportunity, CrmAccount, CrmOpportunityStage } from "@/lib/crm/types";
 
 const STAGE_STYLES: Record<CrmOpportunityStage, string> = {
@@ -21,6 +25,8 @@ function fmt(v: number): string {
 }
 
 export function OpportunityDetailClient({ oppId }: { oppId: string }) {
+  const t = useTranslations("crm");
+  const locale = useLocale();
   const [opp,     setOpp]     = useState<(CrmOpportunity & { account: CrmAccount | null }) | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,39 +38,47 @@ export function OpportunityDetailClient({ oppId }: { oppId: string }) {
       .finally(() => setLoading(false));
   }, [oppId]);
 
-  if (loading) return <div className="h-64 rounded-xl border border-line bg-surface animate-pulse" />;
-  if (!opp)   return <div className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">Opportunity not found.</div>;
+  const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
+
+  if (loading) return (
+    <div className="h-64 rounded-xl border border-line bg-surface animate-pulse">
+      <span className="sr-only" role="status">{t("common.loading")}</span>
+    </div>
+  );
+  if (!opp) return <div className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">{t("oppDetail.notFound")}</div>;
+
+  const rows: [string, React.ReactNode][] = [
+    [t("common.probability"),     <span key="p" dir="ltr">{`${opp.probability}%`}</span>],
+    [t("oppDetail.expectedClose"), opp.expectedCloseDate ? df.format(new Date(opp.expectedCloseDate)) : "—"],
+    [t("oppDetail.account"),      opp.account?.name ?? "—"],
+    [t("oppDetail.weightedValue"), <bdi key="w" dir="ltr">{fmt(opp.value * (opp.probability / 100))}</bdi>],
+    [t("common.created"),         df.format(new Date(opp.createdAt))],
+    [t("common.updated"),         df.format(new Date(opp.updatedAt))],
+    ...(opp.lostReason ? [[t("oppDetail.lostReason"), opp.lostReason] as [string, React.ReactNode]] : []),
+  ];
 
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-line bg-surface p-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-ink">{opp.title}</h2>
-          {opp.account && <p className="text-sm text-muted">{opp.account.name}</p>}
+          <h2 className="text-xl font-bold text-ink" dir="auto">{opp.title}</h2>
+          {opp.account && <p className="text-sm text-muted" dir="auto">{opp.account.name}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold ${STAGE_STYLES[opp.stage]}`}>
-            {opp.stage.replace("_", " ")}
+            {t(`stage.${opp.stage}`)}
           </span>
-          <span className="font-mono text-xl font-bold text-cyan-400">{fmt(opp.value)}</span>
+          <span className="font-mono text-xl font-bold text-cyan-400"><bdi dir="ltr">{fmt(opp.value)}</bdi></span>
         </div>
       </div>
 
       <div className="rounded-xl border border-line bg-surface p-6">
-        <h3 className="mb-4 text-sm font-semibold text-ink">Opportunity Details</h3>
+        <h3 className="mb-4 text-sm font-semibold text-ink">{t("oppDetail.details")}</h3>
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {[
-            ["Probability",   `${opp.probability}%`],
-            ["Expected Close", opp.expectedCloseDate ? new Date(opp.expectedCloseDate).toLocaleDateString() : "—"],
-            ["Account",       opp.account?.name ?? "—"],
-            ["Weighted Value", fmt(opp.value * (opp.probability / 100))],
-            ["Created",       new Date(opp.createdAt).toLocaleDateString()],
-            ["Updated",       new Date(opp.updatedAt).toLocaleDateString()],
-            ...(opp.lostReason ? [["Lost Reason", opp.lostReason] as [string, string]] : []),
-          ].map(([k, v]) => (
+          {rows.map(([k, v]) => (
             <div key={k} className="rounded-lg bg-surface-2 px-4 py-3">
               <dt className="font-mono text-xs uppercase tracking-widest text-faint">{k}</dt>
-              <dd className="mt-0.5 text-sm font-medium text-ink">{v}</dd>
+              <dd className="mt-0.5 text-sm font-medium text-ink" dir="auto">{v}</dd>
             </div>
           ))}
         </dl>
@@ -72,22 +86,22 @@ export function OpportunityDetailClient({ oppId }: { oppId: string }) {
 
       {opp.notes && (
         <div className="rounded-xl border border-line bg-surface p-6">
-          <h3 className="mb-3 text-sm font-semibold text-ink">Notes</h3>
-          <p className="text-sm text-muted leading-relaxed">{opp.notes}</p>
+          <h3 className="mb-3 text-sm font-semibold text-ink">{t("common.notes")}</h3>
+          <p className="text-sm text-muted leading-relaxed" dir="auto">{opp.notes}</p>
         </div>
       )}
 
       {/* Probability bar */}
       <div className="rounded-xl border border-line bg-surface p-6">
-        <h3 className="mb-3 text-sm font-semibold text-ink">Win Probability</h3>
+        <h3 className="mb-3 text-sm font-semibold text-ink">{t("oppDetail.winProbability")}</h3>
         <div className="space-y-2">
-          <div className="flex justify-between text-xs">
+          <div className="flex justify-between text-xs" dir="ltr">
             <span className="text-muted">0%</span>
             <span className="font-mono font-bold text-cyan-400">{opp.probability}%</span>
             <span className="text-muted">100%</span>
           </div>
           <div className="h-2 w-full rounded-full bg-surface-2">
-            <div className="h-full rounded-full bg-cyan-500 transition-all" style={{ width: `${opp.probability}%` }} />
+            <div className="h-full rounded-full bg-cyan-500 transition-all" style={{ inlineSize: `${opp.probability}%` }} />
           </div>
         </div>
       </div>

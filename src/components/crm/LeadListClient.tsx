@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useEffect }  from "react";
-import Link                     from "next/link";
-import { usePathname }          from "next/navigation";
+// PHASE 87G AMENDMENT 1 — localized lead list. Behavior byte-preserved:
+// same /api/crm/leads calls, same status filter values (API enums), same
+// routing. Enum VALUES stay internal; only display labels are localized.
+
+import { useState, useEffect } from "react";
+import Link                    from "next/link";
+import { usePathname }         from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { CrmLead, CrmLeadStatus } from "@/lib/crm/types";
 
 const STATUS_STYLES: Record<CrmLeadStatus, string> = {
@@ -15,12 +20,9 @@ const STATUS_STYLES: Record<CrmLeadStatus, string> = {
   LOST:        "bg-red-500/10 text-red-400 border-red-500/20",
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-  WEBSITE: "Website", LINKEDIN: "LinkedIn", REFERRAL: "Referral",
-  VENDOR: "Vendor", ACADEMY: "Academy", ATS: "ATS", MANUAL: "Manual",
-};
-
 export function LeadListClient() {
+  const t = useTranslations("crm");
+  const locale = useLocale();
   const [leads,   setLeads]   = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter,  setFilter]  = useState<CrmLeadStatus | "">("");
@@ -36,16 +38,22 @@ export function LeadListClient() {
       .finally(() => setLoading(false));
   }, [filter]);
 
+  const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
   const statuses: (CrmLeadStatus | "")[] = ["","NEW","CONTACTED","QUALIFIED","PROPOSAL","NEGOTIATION","CONVERTED","LOST"];
+  const columns = [
+    t("leads.colName"), t("leads.colCompany"), t("leads.colStatus"),
+    t("leads.colSource"), t("leads.colScore"), t("leads.colCreated"),
+  ];
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
+      {/* Filters — button VALUES stay API enums; labels are localized */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t("leads.filterLabel")}>
         {statuses.map(s => (
           <button
             key={s || "all"}
             onClick={() => setFilter(s)}
+            aria-pressed={filter === s}
             className={[
               "rounded-lg border px-3 py-1 text-xs font-medium transition-colors",
               filter === s
@@ -53,16 +61,20 @@ export function LeadListClient() {
                 : "border-line bg-surface text-muted hover:text-ink",
             ].join(" ")}
           >
-            {s || "All"}
+            {s ? t(`status.${s}`) : t("leads.filterAll")}
           </button>
         ))}
       </div>
 
-      {loading && <div className="h-48 rounded-xl border border-line bg-surface animate-pulse" />}
+      {loading && (
+        <div className="h-48 rounded-xl border border-line bg-surface animate-pulse">
+          <span className="sr-only" role="status">{t("common.loading")}</span>
+        </div>
+      )}
 
       {!loading && leads.length === 0 && (
         <div className="rounded-xl border border-line bg-surface p-8 text-center text-sm text-muted">
-          No leads found.
+          {t("leads.empty")}
         </div>
       )}
 
@@ -71,8 +83,8 @@ export function LeadListClient() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line">
-                {["Name","Company","Status","Source","Score","Created"].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-widest text-faint">{h}</th>
+                {columns.map(h => (
+                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-faint">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -80,22 +92,22 @@ export function LeadListClient() {
               {leads.map(lead => (
                 <tr key={lead.id} className="hover:bg-surface-2 transition-colors">
                   <td className="px-4 py-3">
-                    <Link href={`${base}/crm/leads/${lead.id}`} className="font-medium text-ink hover:text-cyan-400 transition-colors">
+                    <Link href={`${base}/crm/leads/${lead.id}`} className="font-medium text-ink hover:text-cyan-400 transition-colors" dir="auto">
                       {lead.firstName} {lead.lastName}
                     </Link>
-                    <p className="text-xs text-muted truncate max-w-[160px]">{lead.email}</p>
+                    <p className="text-xs text-muted truncate max-w-[160px]"><bdi dir="ltr">{lead.email}</bdi></p>
                   </td>
-                  <td className="px-4 py-3 text-muted">{lead.company ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted" dir="auto">{lead.company ?? "—"}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[lead.status]}`}>
-                      {lead.status}
+                      {t(`status.${lead.status}`)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-muted">{SOURCE_LABELS[lead.source] ?? lead.source}</td>
+                  <td className="px-4 py-3 text-muted">{t(`source.${lead.source}`)}</td>
                   <td className="px-4 py-3">
-                    <span className="font-mono text-cyan-400">{lead.score}</span>
+                    <span className="font-mono text-cyan-400" dir="ltr">{lead.score}</span>
                   </td>
-                  <td className="px-4 py-3 text-muted text-xs">{new Date(lead.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-muted text-xs">{df.format(new Date(lead.createdAt))}</td>
                 </tr>
               ))}
             </tbody>

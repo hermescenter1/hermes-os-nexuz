@@ -1,19 +1,18 @@
 "use client";
 
+// PHASE 87G AMENDMENT 1 — localized pipeline (kanban + list views preserved).
+// Stage VALUES stay API enums; labels come from crm.stage. Money bidi-safe.
+
 import { useState, useEffect } from "react";
 import Link                    from "next/link";
 import { usePathname }         from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { CrmOpportunity, CrmOpportunityStage } from "@/lib/crm/types";
 
 const STAGES: CrmOpportunityStage[] = [
   "DISCOVERY","QUALIFICATION","PROPOSAL","TECHNICAL_REVIEW",
   "COMMERCIAL_REVIEW","NEGOTIATION","WON","LOST",
 ];
-const STAGE_LABELS: Record<CrmOpportunityStage, string> = {
-  DISCOVERY:"Discovery", QUALIFICATION:"Qualification", PROPOSAL:"Proposal",
-  TECHNICAL_REVIEW:"Tech Review", COMMERCIAL_REVIEW:"Commercial", NEGOTIATION:"Negotiation",
-  WON:"Won", LOST:"Lost",
-};
 const STAGE_COLORS: Record<CrmOpportunityStage, string> = {
   DISCOVERY:"border-slate-500/30 bg-slate-500/5", QUALIFICATION:"border-blue-500/30 bg-blue-500/5",
   PROPOSAL:"border-cyan-500/30 bg-cyan-500/5", TECHNICAL_REVIEW:"border-indigo-500/30 bg-indigo-500/5",
@@ -28,6 +27,8 @@ function fmt(v: number): string {
 }
 
 export function OpportunityPipelineClient() {
+  const t = useTranslations("crm");
+  const locale = useLocale();
   const [opps,    setOpps]    = useState<CrmOpportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [view,    setView]    = useState<"kanban" | "list">("kanban");
@@ -42,18 +43,28 @@ export function OpportunityPipelineClient() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="h-64 rounded-xl border border-line bg-surface animate-pulse" />;
+  const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
+
+  if (loading) return (
+    <div className="h-64 rounded-xl border border-line bg-surface animate-pulse">
+      <span className="sr-only" role="status">{t("common.loading")}</span>
+    </div>
+  );
 
   if (view === "list") {
+    const columns = [
+      t("opps.colTitle"), t("opps.colStage"), t("opps.colValue"),
+      t("opps.colProbability"), t("opps.colClose"),
+    ];
     return (
       <div className="space-y-4">
-        <button onClick={() => setView("kanban")} className="text-xs text-cyan-400 hover:underline">Switch to Kanban</button>
+        <button onClick={() => setView("kanban")} className="text-xs text-cyan-400 hover:underline">{t("opps.switchToKanban")}</button>
         <div className="overflow-x-auto rounded-xl border border-line bg-surface">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line">
-                {["Title","Stage","Value","Probability","Close Date"].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-widest text-faint">{h}</th>
+                {columns.map(h => (
+                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-faint">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -61,16 +72,16 @@ export function OpportunityPipelineClient() {
               {opps.map(o => (
                 <tr key={o.id} className="hover:bg-surface-2 transition-colors">
                   <td className="px-4 py-3">
-                    <Link href={`${base}/crm/opportunities/${o.id}`} className="font-medium text-ink hover:text-cyan-400 transition-colors truncate block max-w-[240px]">
+                    <Link href={`${base}/crm/opportunities/${o.id}`} className="font-medium text-ink hover:text-cyan-400 transition-colors truncate block max-w-[240px]" dir="auto">
                       {o.title}
                     </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs text-muted">{STAGE_LABELS[o.stage]}</span>
+                    <span className="text-xs text-muted">{t(`stage.${o.stage}`)}</span>
                   </td>
-                  <td className="px-4 py-3 font-mono text-cyan-400">{fmt(o.value)}</td>
-                  <td className="px-4 py-3 text-muted">{o.probability}%</td>
-                  <td className="px-4 py-3 text-muted text-xs">{o.expectedCloseDate ? new Date(o.expectedCloseDate).toLocaleDateString() : "—"}</td>
+                  <td className="px-4 py-3 font-mono text-cyan-400"><bdi dir="ltr">{fmt(o.value)}</bdi></td>
+                  <td className="px-4 py-3 text-muted" dir="ltr">{o.probability}%</td>
+                  <td className="px-4 py-3 text-muted text-xs">{o.expectedCloseDate ? df.format(new Date(o.expectedCloseDate)) : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -88,7 +99,7 @@ export function OpportunityPipelineClient() {
 
   return (
     <div className="space-y-4">
-      <button onClick={() => setView("list")} className="text-xs text-cyan-400 hover:underline">Switch to List</button>
+      <button onClick={() => setView("list")} className="text-xs text-cyan-400 hover:underline">{t("opps.switchToList")}</button>
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
           {STAGES.map(stage => {
@@ -97,18 +108,18 @@ export function OpportunityPipelineClient() {
             return (
               <div key={stage} className={`w-60 rounded-xl border p-4 space-y-3 ${STAGE_COLORS[stage]}`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-ink">{STAGE_LABELS[stage]}</span>
-                  <span className="text-xs text-muted">{cards.length}</span>
+                  <span className="text-xs font-semibold text-ink">{t(`stage.${stage}`)}</span>
+                  <span className="text-xs text-muted" dir="ltr">{cards.length}</span>
                 </div>
-                {total > 0 && <p className="font-mono text-xs text-cyan-400">{fmt(total)}</p>}
+                {total > 0 && <p className="font-mono text-xs text-cyan-400"><bdi dir="ltr">{fmt(total)}</bdi></p>}
                 <div className="space-y-2">
-                  {cards.length === 0 && <p className="text-xs text-faint italic">Empty</p>}
+                  {cards.length === 0 && <p className="text-xs text-faint italic">{t("opps.emptyColumn")}</p>}
                   {cards.map(o => (
                     <Link key={o.id} href={`${base}/crm/opportunities/${o.id}`}>
                       <div className="rounded-lg border border-line bg-bg p-3 hover:border-cyan-500/30 transition-colors cursor-pointer">
-                        <p className="text-xs font-medium text-ink line-clamp-2">{o.title}</p>
-                        <p className="mt-1 font-mono text-xs text-cyan-400">{fmt(o.value)}</p>
-                        <p className="text-xs text-faint">{o.probability}% probability</p>
+                        <p className="text-xs font-medium text-ink line-clamp-2" dir="auto">{o.title}</p>
+                        <p className="mt-1 font-mono text-xs text-cyan-400"><bdi dir="ltr">{fmt(o.value)}</bdi></p>
+                        <p className="text-xs text-faint">{t("common.probabilityOf", { n: o.probability })}</p>
                       </div>
                     </Link>
                   ))}
