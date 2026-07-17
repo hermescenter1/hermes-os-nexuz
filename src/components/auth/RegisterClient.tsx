@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useTranslations }  from "next-intl";
-import { inputStyle, labelStyle, primaryBtnStyle, errorStyle, successStyle } from "./AuthShell";
+import { Textarea } from "@/components/ds";
+import { AuthField, AuthStatus, AuthSubmit } from "@/components/auth-experience";
 
 interface Props { locale: string }
 
@@ -70,17 +71,15 @@ export function RegisterClient({ locale }: Props) {
 
   if (success) {
     return (
-      <div className="space-y-4 text-center">
-        <p className="font-display font-bold" style={{ fontSize: "1.05rem", color: "#F1F5F9" }}>
-          {t("requestAccessSuccessTitle")}
-        </p>
-        <p style={successStyle}>{success}</p>
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-title-lg font-bold text-text-primary">{t("requestAccessSuccessTitle")}</p>
+        <AuthStatus variant="success">{success}</AuthStatus>
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
       {/* Honeypot — hidden from real users, bots tend to fill every field */}
       <input
         type="text"
@@ -89,84 +88,66 @@ export function RegisterClient({ locale }: Props) {
         tabIndex={-1}
         autoComplete="off"
         aria-hidden="true"
-        className="absolute -left-[9999px] w-px h-px opacity-0"
+        className="absolute -left-[9999px] h-px w-px opacity-0"
       />
 
-      <label>
-        <span style={labelStyle}>{t("fullName")}</span>
-        <input
-          type="text"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder={t("namePlaceholder")}
-          autoComplete="name"
-          required
-          style={inputStyle}
-        />
-      </label>
+      <AuthField
+        label={t("fullName")}
+        type="text"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+        placeholder={t("namePlaceholder")}
+        autoComplete="name"
+        required
+      />
 
-      <label>
-        <span style={labelStyle}>{t("email")}</span>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t("emailPlaceholder")}
-          dir="ltr"
-          autoComplete="email"
-          required
-          style={inputStyle}
-        />
-      </label>
+      <AuthField
+        label={t("email")}
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder={t("emailPlaceholder")}
+        dir="ltr"
+        autoComplete="email"
+        required
+      />
 
-      <label>
-        <span style={labelStyle}>{t("company")}</span>
-        <input
-          type="text"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          placeholder={t("companyPlaceholder")}
-          autoComplete="organization"
-          style={inputStyle}
-        />
-      </label>
+      <AuthField
+        label={t("company")}
+        type="text"
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+        placeholder={t("companyPlaceholder")}
+        autoComplete="organization"
+      />
 
-      <label>
-        <span style={labelStyle}>{t("roleTitle")}</span>
-        <input
-          type="text"
-          value={roleTitle}
-          onChange={(e) => setRoleTitle(e.target.value)}
-          placeholder={t("roleTitlePlaceholder")}
-          autoComplete="organization-title"
-          style={inputStyle}
-        />
-      </label>
+      <AuthField
+        label={t("roleTitle")}
+        type="text"
+        value={roleTitle}
+        onChange={(e) => setRoleTitle(e.target.value)}
+        placeholder={t("roleTitlePlaceholder")}
+        autoComplete="organization-title"
+      />
 
-      <label>
-        <span style={labelStyle}>{t("requestAccessMessageLabel")}</span>
-        <textarea
+      <label className="flex flex-col gap-1.5">
+        <span className="text-label font-medium text-text-primary">{t("requestAccessMessageLabel")}</span>
+        <Textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder={t("requestAccessMessagePlaceholder")}
           rows={3}
-          style={{ ...inputStyle, resize: "vertical" as const }}
+          className="resize-y"
         />
       </label>
 
-      {error && <p style={errorStyle}>{error}</p>}
+      {error ? <AuthStatus variant="danger">{error}</AuthStatus> : null}
 
-      <button
-        type="submit"
-        disabled={busy || !fullName || !email}
-        style={{ ...primaryBtnStyle, opacity: (busy || !fullName || !email) ? 0.45 : 1 }}
-      >
+      <AuthSubmit loading={busy} disabled={!fullName || !email}>
         {busy ? t("requestAccessSubmitting") : t("requestAccessSubmit")}
-      </button>
+      </AuthSubmit>
 
-      <p className="text-center text-xs" style={{ color: "rgba(140,178,215,0.55)" }}>
-        {t("requestAccessNote")}
-      </p>
+      <p className="text-center text-caption text-text-muted">{t("requestAccessNote")}</p>
     </form>
   );
 }

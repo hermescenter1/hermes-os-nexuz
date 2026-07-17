@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link         from "next/link";
-import { inputStyle, labelStyle, primaryBtnStyle, errorStyle, successStyle } from "./AuthShell";
+import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { AuthField, AuthStatus, AuthSubmit } from "@/components/auth-experience";
 
 interface Props { locale: string }
 
 export function ForgotPasswordClient({ locale }: Props) {
+  const t = useTranslations("authExperience.forgot");
   const [email,   setEmail]   = useState("");
   const [error,   setError]   = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -20,56 +22,51 @@ export function ForgotPasswordClient({ locale }: Props) {
     setSuccess(null);
 
     try {
-      const res  = await fetch("/api/auth/forgot-password", {
+      const res = await fetch("/api/auth/forgot-password", {
         method:  "POST",
         headers: { "content-type": "application/json" },
         body:    JSON.stringify({ email }),
       });
-      const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+      // Never render the server payload — status-code driven, neutral copy that
+      // never reveals whether an account exists (account-enumeration safe) and
+      // stays fully localized on /fa.
       if (res.ok) {
-        setSuccess(String(data.message ?? "If an account exists, a reset link has been sent."));
+        setSuccess(t("genericSuccess"));
       } else if (res.status === 429) {
-        setError("Too many requests. Please try again later.");
+        setError(t("tooManyRequests"));
       } else {
-        setError(String(data.error ?? "Something went wrong. Please try again."));
+        setError(t("genericError"));
       }
     } catch {
-      setError("Unable to connect. Please check your connection.");
+      setError(t("connectionError"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <label>
-        <span style={labelStyle}>Email address</span>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@company.com"
-          dir="ltr"
-          autoComplete="email"
-          required
-          style={inputStyle}
-        />
-      </label>
+    <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+      <AuthField
+        label={t("emailLabel")}
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder={t("emailPlaceholder")}
+        dir="ltr"
+        autoComplete="email"
+        required
+      />
 
-      {error   && <p style={errorStyle}>{error}</p>}
-      {success && <p style={successStyle}>{success}</p>}
+      {error   ? <AuthStatus variant="danger">{error}</AuthStatus> : null}
+      {success ? <AuthStatus variant="success">{success}</AuthStatus> : null}
 
-      <button
-        type="submit"
-        disabled={busy || !email || !!success}
-        style={{ ...primaryBtnStyle, opacity: (busy || !email || !!success) ? 0.45 : 1 }}
-      >
-        {busy ? "Sending…" : "Send reset link"}
-      </button>
+      <AuthSubmit loading={busy} disabled={!email || Boolean(success)}>
+        {busy ? t("submitting") : t("submit")}
+      </AuthSubmit>
 
-      <div className="text-center text-sm">
-        <Link href={`/${locale}/auth/login`} style={{ color: "#2DD4BF" }} className="hover:underline">
-          ← Back to sign in
+      <div className="text-center">
+        <Link href={`/${locale}/auth/login`} className="ds-focus rounded-sm text-label text-brand-primary hover:underline">
+          {t("backToSignIn")}
         </Link>
       </div>
     </form>

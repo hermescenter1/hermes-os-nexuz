@@ -2,17 +2,21 @@
 
 import { useState }        from "react";
 import { useTranslations } from "next-intl";
-import Link                from "next/link";
+import Link from "next/link";
 import { scorePassword, passwordSchema } from "@/lib/auth/password-policy";
-import { inputStyle, labelStyle, primaryBtnStyle, errorStyle, successStyle } from "./AuthShell";
+import {
+  AuthField,
+  PasswordField,
+  PasswordStrengthMeter,
+  AuthStatus,
+  AuthSubmit,
+} from "@/components/auth-experience";
 
 interface Props {
   locale: string;
   token:  string;
   email:  string;
 }
-
-const STRENGTH_COLORS = ["#e85c5c", "#e87939", "#e8c639", "#38bdf8", "#2DD4BF"] as const;
 
 export function AcceptInviteClient({ locale, token, email }: Props) {
   const t = useTranslations("auth");
@@ -23,13 +27,6 @@ export function AcceptInviteClient({ locale, token, email }: Props) {
   const [busy,    setBusy]    = useState(false);
 
   const strength = scorePassword(pass);
-  const strengthLabels = [
-    t("passwordStrengthVeryWeak"),
-    t("passwordStrengthVeryWeak"),
-    t("passwordStrengthFair"),
-    t("passwordStrengthStrong"),
-    t("passwordStrengthVeryStrong"),
-  ];
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,12 +75,11 @@ export function AcceptInviteClient({ locale, token, email }: Props) {
 
   if (done) {
     return (
-      <div className="space-y-4 text-center">
-        <p style={successStyle}>{t("inviteAccepted")}</p>
+      <div className="flex flex-col gap-4 text-center">
+        <AuthStatus variant="success">{t("inviteAccepted")}</AuthStatus>
         <Link
           href={`/${locale}/auth/login`}
-          className="inline-block text-sm hover:underline"
-          style={{ color: "var(--signal)" }}
+          className="ds-focus rounded-sm text-label text-brand-primary hover:underline"
         >
           {t("login")}
         </Link>
@@ -92,72 +88,43 @@ export function AcceptInviteClient({ locale, token, email }: Props) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <label>
-        <span style={labelStyle}>{t("email")}</span>
-        <input
-          type="email"
-          value={email}
-          disabled
-          readOnly
-          dir="ltr"
-          style={{ ...inputStyle, opacity: 0.6, cursor: "not-allowed" }}
-        />
-      </label>
+    <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+      <AuthField
+        label={t("email")}
+        type="email"
+        value={email}
+        disabled
+        readOnly
+        dir="ltr"
+        autoComplete="email"
+      />
 
       <div>
-        <label>
-          <span style={labelStyle}>{t("setPassword")}</span>
-          <input
-            type="password"
-            value={pass}
-            onChange={(e) => setPass(e.target.value)}
-            placeholder="••••••••"
-            dir="ltr"
-            autoComplete="new-password"
-            required
-            style={inputStyle}
-          />
-        </label>
-        {pass.length > 0 && (
-          <div className="mt-2">
-            <div className="flex gap-1 mb-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-1 flex-1 rounded-full transition-all"
-                  style={{ background: i <= strength.score ? STRENGTH_COLORS[strength.score] : "rgba(255,255,255,0.08)" }}
-                />
-              ))}
-            </div>
-            <p className="text-xs" style={{ color: STRENGTH_COLORS[strength.score] }}>
-              {strengthLabels[strength.score]}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <label>
-        <span style={labelStyle}>{t("acceptInviteConfirmPassword")}</span>
-        <input
-          type="password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
+        <PasswordField
+          label={t("setPassword")}
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
           placeholder="••••••••"
-          dir="ltr"
           autoComplete="new-password"
           required
-          style={inputStyle}
         />
-      </label>
+        {pass.length > 0 ? <PasswordStrengthMeter score={strength.score} /> : null}
+      </div>
 
-      {error && <p style={errorStyle}>{error}</p>}
+      <PasswordField
+        label={t("acceptInviteConfirmPassword")}
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+        placeholder="••••••••"
+        autoComplete="new-password"
+        required
+      />
 
-      <button
-        type="submit"
-        disabled={busy || !pass || !confirm}
-        style={{ ...primaryBtnStyle, opacity: (busy || !pass || !confirm) ? 0.45 : 1 }}
-      >
+      {error ? <AuthStatus variant="danger">{error}</AuthStatus> : null}
+
+      <AuthSubmit loading={busy} disabled={!pass || !confirm}>
         {busy ? t("acceptInviteSubmitting") : t("setPassword")}
-      </button>
+      </AuthSubmit>
     </form>
   );
 }

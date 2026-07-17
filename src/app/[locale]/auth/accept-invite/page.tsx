@@ -2,10 +2,10 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Accept Invite · Hermes OS", robots: { index: false, follow: false } };
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import Link                 from "next/link";
-import { AuthShell }        from "@/components/auth/AuthShell";
-import { AcceptInviteClient } from "@/components/auth/AcceptInviteClient";
-import { previewAccessInvite } from "@/lib/auth/access-invite";
+import { Link }                  from "@/i18n/navigation";
+import { AuthExperienceShell, AuthStatus } from "@/components/auth-experience";
+import { AcceptInviteClient }    from "@/components/auth/AcceptInviteClient";
+import { previewAccessInvite }   from "@/lib/auth/access-invite";
 
 export default async function AcceptInvitePage({
   params,
@@ -19,21 +19,18 @@ export default async function AcceptInvitePage({
   setRequestLocale(locale);
 
   const t = await getTranslations("auth");
-  const b = await getTranslations("brand");
 
   // Preview never distinguishes missing/used/expired/revoked — one generic state
   const invite = token ? await previewAccessInvite(token) : null;
 
   return (
-    <AuthShell
+    <AuthExperienceShell
       title={t("acceptInviteTitle")}
       subtitle={invite ? t("acceptInviteLede") : undefined}
-      tagline={b("tagline")}
-      trustLine={t("trustLine")}
       footer={
         <span>
           {t("alreadyHaveAccount")}{" "}
-          <Link href={`/${locale}/auth/login`} style={{ color: "var(--signal)" }} className="hover:underline">
+          <Link href="/auth/login" className="text-brand-primary hover:underline">
             {t("login")}
           </Link>
         </span>
@@ -42,28 +39,13 @@ export default async function AcceptInvitePage({
       {invite && token ? (
         <AcceptInviteClient locale={locale} token={token} email={invite.email} />
       ) : (
-        <div className="text-center space-y-4">
-          <p
-            style={{
-              padding:      "0.6rem 0.8rem",
-              borderRadius: "8px",
-              background:   "rgba(239,68,68,0.08)",
-              border:       "1px solid rgba(239,68,68,0.22)",
-              color:        "#EF4444",
-              fontSize:     "0.82rem",
-            }}
-          >
-            {t("inviteInvalid")}
-          </p>
-          <Link
-            href={`/${locale}/auth/register`}
-            className="text-sm hover:underline"
-            style={{ color: "var(--signal)" }}
-          >
+        <div className="flex flex-col gap-4 text-center">
+          <AuthStatus variant="danger">{t("inviteInvalid")}</AuthStatus>
+          <Link href="/auth/register" className="ds-focus rounded-sm text-label text-brand-primary hover:underline">
             {t("requestAccessLinkLabel")}
           </Link>
         </div>
       )}
-    </AuthShell>
+    </AuthExperienceShell>
   );
 }

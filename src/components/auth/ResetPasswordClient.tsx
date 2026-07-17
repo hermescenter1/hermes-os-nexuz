@@ -1,19 +1,23 @@
 "use client";
 
 import { useState }       from "react";
-import Link               from "next/link";
-import { scorePassword }  from "@/lib/auth/password-policy";
-import { inputStyle, labelStyle, primaryBtnStyle, errorStyle, successStyle } from "./AuthShell";
+import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { scorePassword }   from "@/lib/auth/password-policy";
+import {
+  PasswordField,
+  PasswordStrengthMeter,
+  AuthStatus,
+  AuthSubmit,
+} from "@/components/auth-experience";
 
 interface Props {
   locale: string;
   token:  string;
 }
 
-const STRENGTH_COLORS = ["#e85c5c", "#e87939", "#e8c639", "#38bdf8", "#2DD4BF"] as const;
-const STRENGTH_LABELS = ["Very weak", "Weak", "Fair", "Strong", "Very strong"] as const;
-
 export function ResetPasswordClient({ locale, token }: Props) {
+  const t = useTranslations("authExperience.reset");
   const [pass,    setPass]    = useState("");
   const [confirm, setConfirm] = useState("");
   const [error,   setError]   = useState<string | null>(null);
@@ -30,23 +34,22 @@ export function ResetPasswordClient({ locale, token }: Props) {
     setSuccess(null);
 
     try {
-      const res  = await fetch("/api/auth/reset-password", {
+      const res = await fetch("/api/auth/reset-password", {
         method:  "POST",
         headers: { "content-type": "application/json" },
         body:    JSON.stringify({ token, password: pass, confirmPassword: confirm }),
       });
-      const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+      // Status-code driven, never the server's raw payload — no internal error
+      // strings, fully localized on /fa.
       if (res.ok) {
-        setSuccess(String(data.message ?? "Password reset! You may now sign in."));
+        setSuccess(t("successMessage"));
       } else if (res.status === 422) {
-        const issues = data.issues as Record<string, string[]> | undefined;
-        const first  = issues ? Object.values(issues).flat()[0] : undefined;
-        setError(first ?? String(data.error ?? "Validation failed."));
+        setError(t("validationFailed"));
       } else {
-        setError(String(data.error ?? "Reset failed. The link may have expired."));
+        setError(t("genericError"));
       }
     } catch {
-      setError("Unable to connect. Please check your connection.");
+      setError(t("connectionError"));
     } finally {
       setBusy(false);
     }
@@ -54,80 +57,56 @@ export function ResetPasswordClient({ locale, token }: Props) {
 
   if (!token) {
     return (
-      <div className="text-center space-y-4">
-        <p style={errorStyle}>Invalid or missing reset token. Please request a new password reset.</p>
-        <Link href={`/${locale}/auth/forgot-password`} style={{ color: "#2DD4BF" }} className="text-sm hover:underline">
-          Request new link →
+      <div className="flex flex-col gap-4 text-center">
+        <AuthStatus variant="danger">{t("invalidToken")}</AuthStatus>
+        <Link
+          href={`/${locale}/auth/forgot-password`}
+          className="ds-focus rounded-sm text-label text-brand-primary hover:underline"
+        >
+          {t("requestNewLink")}
         </Link>
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
       <div>
-        <label>
-          <span style={labelStyle}>New password</span>
-          <input
-            type="password"
-            value={pass}
-            onChange={(e) => setPass(e.target.value)}
-            placeholder="••••••••"
-            dir="ltr"
-            autoComplete="new-password"
-            required
-            style={inputStyle}
-          />
-        </label>
-        {pass.length > 0 && (
-          <div className="mt-2">
-            <div className="flex gap-1 mb-1">
-              {[0,1,2,3,4].map((i) => (
-                <div key={i} className="h-1 flex-1 rounded-full transition-all"
-                  style={{ background: i <= strength.score ? STRENGTH_COLORS[strength.score] : "rgba(255,255,255,0.08)" }}
-                />
-              ))}
-            </div>
-            <p className="text-xs" style={{ color: STRENGTH_COLORS[strength.score] }}>
-              {STRENGTH_LABELS[strength.score]}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <label>
-        <span style={labelStyle}>Confirm new password</span>
-        <input
-          type="password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
+        <PasswordField
+          label={t("newPassword")}
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
           placeholder="••••••••"
-          dir="ltr"
           autoComplete="new-password"
           required
-          style={inputStyle}
         />
-      </label>
+        {pass.length > 0 ? <PasswordStrengthMeter score={strength.score} /> : null}
+      </div>
 
-      {error   && <p style={errorStyle}>{error}</p>}
-      {success && (
-        <div style={successStyle}>
+      <PasswordField
+        label={t("confirmPassword")}
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+        placeholder="••••••••"
+        autoComplete="new-password"
+        required
+      />
+
+      {error ? <AuthStatus variant="danger">{error}</AuthStatus> : null}
+      {success ? (
+        <AuthStatus variant="success">
           <p>{success}</p>
-          <Link href={`/${locale}/auth/login`} className="block mt-2 underline text-xs">
-            Sign in now →
+          <Link href={`/${locale}/auth/login`} className="mt-1 inline-block text-caption underline">
+            {t("signInNow")}
           </Link>
-        </div>
-      )}
+        </AuthStatus>
+      ) : null}
 
-      {!success && (
-        <button
-          type="submit"
-          disabled={busy || !pass || !confirm}
-          style={{ ...primaryBtnStyle, opacity: (busy || !pass || !confirm) ? 0.45 : 1 }}
-        >
-          {busy ? "Resetting…" : "Reset password"}
-        </button>
-      )}
+      {!success ? (
+        <AuthSubmit loading={busy} disabled={!pass || !confirm}>
+          {busy ? t("submitting") : t("submit")}
+        </AuthSubmit>
+      ) : null}
     </form>
   );
 }

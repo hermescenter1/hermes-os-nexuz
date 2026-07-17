@@ -2,9 +2,9 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign In · Hermes OS", robots: { index: false, follow: false } };
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { AuthShell }        from "@/components/auth/AuthShell";
-import { NewLoginClient }   from "@/components/auth/NewLoginClient";
-import Link                 from "next/link";
+import { Link }                from "@/i18n/navigation";
+import { AuthExperienceShell } from "@/components/auth-experience";
+import { NewLoginClient }      from "@/components/auth/NewLoginClient";
 
 export default async function AuthLoginPage({
   params,
@@ -18,24 +18,21 @@ export default async function AuthLoginPage({
   setRequestLocale(locale);
 
   const t = await getTranslations("auth");
-  const b = await getTranslations("brand");
 
   return (
-    <AuthShell
+    <AuthExperienceShell
       title={t("loginTitle")}
-      subtitle={b("tagline")}
-      tagline={b("tagline")}
-      trustLine={t("trustLine")}
+      subtitle={t("loginLede")}
       footer={
         <span>
           {t("dontHaveAccount")}{" "}
-          <Link href={`/${locale}/auth/register`} style={{ color: "var(--signal)" }} className="hover:underline">
+          <Link href="/auth/register" className="text-brand-primary hover:underline">
             {t("requestAccessLinkLabel")}
           </Link>
         </span>
       }
     >
       <NewLoginClient locale={locale} from={from} />
-    </AuthShell>
+    </AuthExperienceShell>
   );
 }

@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Verify Email · Hermes OS", robots: { index: false, follow: false } };
 
-import { setRequestLocale } from "next-intl/server";
-import { AuthShell }        from "@/components/auth/AuthShell";
+import { setRequestLocale, getTranslations } from "next-intl/server";
+import { AuthExperienceShell } from "@/components/auth-experience";
 import { VerifyEmailClient }   from "@/components/auth/VerifyEmailClient";
 
 export default async function VerifyEmailPage({
@@ -16,12 +16,11 @@ export default async function VerifyEmailPage({
   const { token }  = await searchParams;
   setRequestLocale(locale);
 
+  const t = await getTranslations("authExperience.verify");
+
   return (
-    <AuthShell
-      title="Verify your email"
-      subtitle="Confirming your email address"
-    >
+    <AuthExperienceShell title={t("title")} subtitle={t("subtitle")} capabilityPanel={false}>
       <VerifyEmailClient locale={locale} token={token ?? ""} />
-    </AuthShell>
+    </AuthExperienceShell>
   );
 }

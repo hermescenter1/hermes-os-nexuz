@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Set New Password · Hermes OS", robots: { index: false, follow: false } };
 
-import { setRequestLocale } from "next-intl/server";
-import { AuthShell }        from "@/components/auth/AuthShell";
+import { setRequestLocale, getTranslations } from "next-intl/server";
+import { AuthExperienceShell }   from "@/components/auth-experience";
 import { ResetPasswordClient }   from "@/components/auth/ResetPasswordClient";
 
 export default async function ResetPasswordPage({
@@ -16,12 +16,11 @@ export default async function ResetPasswordPage({
   const { token }  = await searchParams;
   setRequestLocale(locale);
 
+  const t = await getTranslations("authExperience.reset");
+
   return (
-    <AuthShell
-      title="Set new password"
-      subtitle="Choose a strong password for your account"
-    >
+    <AuthExperienceShell title={t("title")} subtitle={t("subtitle")}>
       <ResetPasswordClient locale={locale} token={token ?? ""} />
-    </AuthShell>
+    </AuthExperienceShell>
   );
 }

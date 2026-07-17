@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import Link         from "next/link";
-import { inputStyle, labelStyle, primaryBtnStyle, errorStyle } from "./AuthShell";
+import Link from "next/link";
+import { cn, Checkbox } from "@/components/ds";
+import { AuthField, PasswordField, AuthStatus, AuthSubmit } from "@/components/auth-experience";
 
 interface Props {
   locale: string;
@@ -64,65 +65,45 @@ export function NewLoginClient({ locale, from }: Props) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <label>
-        <span style={labelStyle}>{t("email")}</span>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t("emailPlaceholder")}
-          dir="ltr"
-          autoComplete="email"
-          required
-          style={inputStyle}
-        />
-      </label>
+    <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+      <AuthField
+        label={t("email")}
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder={t("emailPlaceholder")}
+        dir="ltr"
+        autoComplete="email"
+        required
+      />
 
-      <label>
-        <span style={labelStyle}>{t("password")}</span>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          dir="ltr"
-          autoComplete="current-password"
-          required
-          style={inputStyle}
-        />
-      </label>
+      <PasswordField
+        label={t("password")}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="••••••••"
+        autoComplete="current-password"
+        required
+      />
 
-      {/* Remember me + forgot password row */}
-      <div className="flex items-center justify-between text-sm">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-3.5 h-3.5"
-            style={{ accentColor: "var(--signal)" }}
-          />
-          <span style={{ color: "rgba(180,210,240,0.70)" }}>{t("rememberMe")}</span>
+      <div className="flex items-center justify-between">
+        <label className="flex cursor-pointer select-none items-center gap-2 text-label text-text-secondary">
+          <Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+          {t("rememberMe")}
         </label>
         <Link
           href={`/${locale}/auth/forgot-password`}
-          className="text-sm hover:underline"
-          style={{ color: "var(--signal)" }}
+          className={cn("ds-focus rounded-sm text-label text-brand-primary hover:underline")}
         >
           {t("forgotPassword")}
         </Link>
       </div>
 
-      {error && <p style={errorStyle}>{error}</p>}
+      {error ? <AuthStatus variant="danger">{error}</AuthStatus> : null}
 
-      <button
-        type="submit"
-        disabled={busy || !email || !password}
-        style={{ ...primaryBtnStyle, opacity: (busy || !email || !password) ? 0.45 : 1 }}
-      >
+      <AuthSubmit loading={busy} disabled={!email || !password}>
         {busy ? t("signingIn") : t("submit")}
-      </button>
+      </AuthSubmit>
     </form>
   );
 }

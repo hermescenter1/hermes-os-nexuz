@@ -1907,7 +1907,7 @@
     "dontHaveAccount": "Sie haben noch kein Konto?",
     "createOne": "Konto erstellen",
     "backToLogin": "Zurück zur Anmeldung",
-    "trustLine": "Enterprise-Niveau · Ende-zu-Ende-verschlüsselt · SOC-2-orientiert",
+    "trustLine": "Mandantenbewusster Zugriff · Rollenbasierte Autorisierung · Audit-bewusster Betrieb",
     "requestAccessLinkLabel": "Zugang anfordern",
     "requestAccessTitle": "Zugang anfordern",
     "requestAccessLede": "Hermes OS wird auf Einladung bereitgestellt. Erzählen Sie uns von Ihrem Team und wir melden uns per E-Mail bei Ihnen.",
@@ -5732,6 +5732,70 @@
       },
       "ctaTitle": "Map Hermes onto your architecture",
       "requestDemo": "Request a Demo"
+    }
+  },
+  "authExperience": {
+    "backToSite": "Back to site",
+    "brandName": "Hermes OS",
+    "panelAriaLabel": "Why Hermes",
+    "positioningTitle": "Secure access to the Hermes industrial intelligence platform.",
+    "positioningLede": "One tenant-aware surface for the engineers who run the plant — bilingual, on-prem or private-cloud ready.",
+    "capabilities": {
+      "tenant": "Tenant-aware access controls",
+      "rbac": "Role-based authorization across every module",
+      "audit": "Audit-aware operations",
+      "deploy": "On-prem or private-cloud deployment"
+    },
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "errorSummaryTitle": "Please review the following",
+    "strength": {
+      "veryWeak": "Very weak",
+      "weak": "Weak",
+      "fair": "Fair",
+      "strong": "Strong",
+      "veryStrong": "Very strong"
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "subtitle": "Enter your account email and we'll send a reset link if it matches an account.",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@company.com",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "genericSuccess": "If an account matches that email, a reset link is on its way. Check your inbox and spam folder.",
+      "tooManyRequests": "Too many requests. Please wait a moment and try again.",
+      "genericError": "Something went wrong. Please try again.",
+      "connectionError": "Unable to connect. Please check your connection.",
+      "backToSignIn": "Back to sign in"
+    },
+    "reset": {
+      "title": "Set a new password",
+      "subtitle": "Choose a strong password for your account.",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Reset password",
+      "submitting": "Resetting…",
+      "successMessage": "Your password has been reset. You can now sign in.",
+      "signInNow": "Sign in now",
+      "invalidToken": "This reset link is invalid or has expired. Please request a new one.",
+      "requestNewLink": "Request a new link",
+      "validationFailed": "That password does not meet the requirements. Please choose a stronger one.",
+      "genericError": "Reset failed. The link may have expired — request a new one.",
+      "connectionError": "Unable to connect. Please check your connection."
+    },
+    "verify": {
+      "title": "Verify your email",
+      "subtitle": "Confirming your email address.",
+      "pending": "Verifying your email…",
+      "successTitle": "Email verified",
+      "successMessage": "Your email address is confirmed. You can now sign in.",
+      "signInToAccount": "Sign in to your account",
+      "errorTitle": "Verification failed",
+      "errorMessage": "We couldn't verify this link. It may have expired or already been used.",
+      "noToken": "No verification token was provided.",
+      "backToSignIn": "Back to sign in",
+      "resendHint": "Need a new link? Use password reset to receive a fresh email."
     }
   }
 }
