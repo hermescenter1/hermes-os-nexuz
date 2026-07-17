@@ -787,7 +787,88 @@
       "power": "Power Draw",
       "totalAlarms": "Total Alarms"
     },
-    "platformIntel": "Platform Intelligence"
+    "platformIntel": "Platform Intelligence",
+    "command": {
+      "posture": {
+        "operational": "Operational",
+        "elevated": "Elevated attention",
+        "critical": "Critical attention",
+        "operationalNote": "No critical events. Systems within expected range.",
+        "elevatedNote": "High-priority events are active. Review the attention list.",
+        "criticalNote": "Critical events are active and need attention now."
+      },
+      "summaryTitle": "Operational summary",
+      "lastUpdated": "Last updated",
+      "autoNote": "Simulated telemetry · refreshes automatically",
+      "reconnecting": "Reconnecting automatically…",
+      "attention": {
+        "title": "Requires attention",
+        "empty": "Nothing needs attention right now. Critical and high-priority queues are clear.",
+        "view": "View",
+        "reasonCriticalAlarm": "Critical alarm active",
+        "reasonHighAlarm": "High-priority alarm active",
+        "reasonAssetCritical": "Asset flagged critical",
+        "reasonAssetDue": "Maintenance due",
+        "reasonRiskElevated": "Operational risk elevated",
+        "dueIn": "due in",
+        "days": "d"
+      },
+      "riskEvidence": {
+        "title": "Risk & evidence",
+        "riskLabel": "Operational risk",
+        "posture": "Risk posture",
+        "factorsTitle": "Contributing factors",
+        "evidenceTitle": "Evidence posture",
+        "supported": "Supported signals",
+        "watch": "Signals to watch",
+        "missing": "Awaiting data",
+        "confidenceLabel": "Safe-action readiness",
+        "readinessReady": "Ready",
+        "readinessGuarded": "Guarded",
+        "readinessHold": "Hold"
+      },
+      "actions": {
+        "title": "Safe actions",
+        "openBrain": "Open Industrial Brain",
+        "openBrainDesc": "Run explainable diagnostics on plant evidence.",
+        "openOperations": "Operations center",
+        "openOperationsDesc": "Review live operational status across the site.",
+        "openPredictive": "Predictive maintenance",
+        "openPredictiveDesc": "Inspect asset risk and remaining-useful-life indicators.",
+        "openKnowledge": "Knowledge base",
+        "openKnowledgeDesc": "Reference engineering libraries and diagnostic cases."
+      },
+      "globalOps": {
+        "connectedAssets": "Connected Assets",
+        "knowledgeVolume": "Knowledge Libraries",
+        "engineeringCases": "Engineering Cases",
+        "supportedVendors": "Supported Vendors",
+        "platformPosture": "Risk-adjusted posture"
+      },
+      "assetHealth": {
+        "title": "Asset health",
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "tracked": "Tracked",
+        "criticalWarning": "{count} critical asset(s) require immediate attention"
+      },
+      "sections": {
+        "telemetryControl": "Telemetry · Process · Control Systems",
+        "intelligenceNetwork": "Intelligence Network"
+      },
+      "signal": {
+        "siteOperational": "Site Operational",
+        "highPriorityEvents": "High Priority Events",
+        "criticalEventsActive": "Critical Events Active",
+        "linesActive": "{active}/{total} Lines Active"
+      },
+      "unavailable": {
+        "title": "Operational data unavailable",
+        "body": "The telemetry summary could not be loaded. No cached operational data is available to display.",
+        "hint": "The dashboard reconnects automatically. If this persists, check the telemetry integration status."
+      }
+    }
   },
   "knowledge": {
     "plcBasics": {

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { telemetryService } from "@/lib/services/telemetry-service";
 import { ExecutiveOverview } from "./ExecutiveOverview";
+import { DashboardCommandSurface } from "./DashboardCommandSurface";
 import { ExecKpiStrip }     from "@/components/ui/ExecKpiStrip";
 import { HermesSignal }     from "@/components/hermes/HermesSignal";
 import { PLATFORM_FACTS }   from "@/lib/industrial/platform-facts";
 import { EcosystemStatus }  from "@/components/hermes/EcosystemStatus";
+import { DashboardSkeleton, DataUnavailableState } from "@/components/dashboard-experience";
 import type {
   DashboardSnapshot,
   MetricSeries,
@@ -147,15 +149,21 @@ export function DashboardClient() {
   const tf  = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const pct = locale === "fa" ? "٪" : "%";
 
+  // Distinct states: the raw `error` string is NEVER shown to the user — only a
+  // calm, localized "data unavailable" panel (the poll keeps auto-retrying).
   if (error) return (
     <div className="mx-auto max-w-7xl px-6 sm:px-8 py-12">
-      <p className="rounded-xl border border-danger/30 bg-surface px-5 py-4 font-mono text-sm text-danger">{error}</p>
+      <DataUnavailableState
+        title={t("command.unavailable.title")}
+        body={t("command.unavailable.body")}
+        hint={t("command.unavailable.hint")}
+      />
     </div>
   );
 
   if (!snap) return (
-    <div className="mx-auto max-w-7xl px-6 py-16">
-      <p className="animate-pulse font-mono text-sm text-muted">···</p>
+    <div className="mx-auto max-w-7xl px-6 sm:px-8 pt-6">
+      <DashboardSkeleton label={t("command.reconnecting")} />
     </div>
   );
 
@@ -164,6 +172,10 @@ export function DashboardClient() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 sm:px-8 pb-20 pt-6">
+
+      {/* ── 87F: Operational command surface (attention → risk/evidence → safe
+             actions), derived from the same snapshot. First, most-prioritized. ── */}
+      <DashboardCommandSurface snap={s} />
 
       {/* ── KPI Strip ─────────────────────────────────────────────────────── */}
       <ExecKpiStrip items={[
@@ -203,23 +215,23 @@ export function DashboardClient() {
       {/* ── Global Operations Center ──────────────────────────────────────── */}
       <div className="global-ops-strip">
         <div className="global-ops-cell">
-          <p className="kpi-label mb-1.5">Connected Assets</p>
+          <p className="kpi-label mb-1.5">{t("command.globalOps.connectedAssets")}</p>
           <p className="exec-kpi-value">{nf.format(s.network.devices)}</p>
         </div>
         <div className="global-ops-cell">
-          <p className="kpi-label mb-1.5">Knowledge Volume</p>
+          <p className="kpi-label mb-1.5">{t("command.globalOps.knowledgeVolume")}</p>
           <p className="exec-kpi-value">{nf.format(PLATFORM_FACTS.knowledgeLibraries)}</p>
         </div>
         <div className="global-ops-cell">
-          <p className="kpi-label mb-1.5">Engineering Cases</p>
+          <p className="kpi-label mb-1.5">{t("command.globalOps.engineeringCases")}</p>
           <p className="exec-kpi-value">{nf.format(PLATFORM_FACTS.engineeringCases)}</p>
         </div>
         <div className="global-ops-cell">
-          <p className="kpi-label mb-1.5">Supported Vendors</p>
+          <p className="kpi-label mb-1.5">{t("command.globalOps.supportedVendors")}</p>
           <p className="exec-kpi-value">{nf.format(PLATFORM_FACTS.supportedVendors)}</p>
         </div>
         <div className="global-ops-cell">
-          <p className="kpi-label mb-1.5">Platform Confidence</p>
+          <p className="kpi-label mb-1.5">{t("command.globalOps.platformPosture")}</p>
           <p className={`exec-kpi-value ${100 - s.risk.score >= 70 ? "text-signal" : 100 - s.risk.score >= 50 ? "text-ink" : "text-warn"}`}>
             {nf.format(Math.max(0, Math.round(100 - s.risk.score)))}<span className="font-mono text-base font-normal text-muted ms-1">{pct}</span>
           </p>
@@ -243,13 +255,13 @@ export function DashboardClient() {
                   : "system-online"
                 }
                 label={
-                  s.alarms.counts.critical > 0 ? "Critical Events Active"
-                  : s.alarms.counts.high > 0   ? "High Priority Events"
-                  : "Site Operational"
+                  s.alarms.counts.critical > 0 ? t("command.signal.criticalEventsActive")
+                  : s.alarms.counts.high > 0   ? t("command.signal.highPriorityEvents")
+                  : t("command.signal.siteOperational")
                 }
               />
-              <span className="kpi-label" dir="ltr">
-                {nf.format(s.overview.activeLines)}/{nf.format(s.overview.totalLines)} Lines Active
+              <span className="kpi-label">
+                {t("command.signal.linesActive", { active: nf.format(s.overview.activeLines), total: nf.format(s.overview.totalLines) })}
               </span>
             </div>
 
@@ -400,7 +412,7 @@ export function DashboardClient() {
           </Panel>
 
           {/* 2B: Asset Health Summary */}
-          <Panel title="Asset Health">
+          <Panel title={t("command.assetHealth.title")}>
             {(() => {
               const critical = s.maintenance.filter((m) => m.severity === "critical").length;
               const high     = s.maintenance.filter((m) => m.severity === "high").length;
@@ -410,10 +422,10 @@ export function DashboardClient() {
                 <>
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     {[
-                      { label: "Critical",  count: critical, color: "text-danger",  dot: "bg-danger"    },
-                      { label: "High",      count: high,     color: "text-danger/70",dot: "bg-danger/60" },
-                      { label: "Medium",    count: medium,   color: "text-warn",    dot: "bg-warn"      },
-                      { label: "Tracked",   count: total,    color: "text-muted",   dot: "bg-muted/50"  },
+                      { label: t("command.assetHealth.critical"), count: critical, color: "text-danger",  dot: "bg-danger"    },
+                      { label: t("command.assetHealth.high"),     count: high,     color: "text-danger/70",dot: "bg-danger/60" },
+                      { label: t("command.assetHealth.medium"),   count: medium,   color: "text-warn",    dot: "bg-warn"      },
+                      { label: t("command.assetHealth.tracked"),  count: total,    color: "text-muted",   dot: "bg-muted/50"  },
                     ].map((row) => (
                       <div key={row.label} className="rounded-lg border border-line/50 bg-surface2/40 px-3 py-2.5">
                         <div className="flex items-center gap-1.5 mb-1.5">
@@ -428,7 +440,7 @@ export function DashboardClient() {
                     <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/[0.04] px-3 py-2">
                       <span className="h-1.5 w-1.5 rounded-full bg-danger flex-shrink-0" />
                       <p className="font-body text-xs text-danger">
-                        {nf.format(critical)} critical asset{critical !== 1 ? "s" : ""} require immediate attention
+                        {t("command.assetHealth.criticalWarning", { count: nf.format(critical) })}
                       </p>
                     </div>
                   )}
@@ -482,7 +494,7 @@ export function DashboardClient() {
 
       {/* ── Telemetry + Systems row ───────────────────────────────────────── */}
       <div className="h-layer-sep">
-        <span className="kpi-label">Telemetry · Process · Control Systems</span>
+        <span className="kpi-label">{t("command.sections.telemetryControl")}</span>
       </div>
       <div className="grid gap-5 lg:grid-cols-3 mb-6">
 
@@ -602,7 +614,7 @@ export function DashboardClient() {
           <div className="lg:col-span-2">
             <ExecutiveOverview />
           </div>
-          <Panel title="Intelligence Network" executive>
+          <Panel title={t("command.sections.intelligenceNetwork")} executive>
             <EcosystemStatus />
           </Panel>
         </div>

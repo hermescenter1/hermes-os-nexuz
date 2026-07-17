@@ -787,7 +787,88 @@
       "power": "توان مصرفی",
       "totalAlarms": "مجموع هشدارها"
     },
-    "platformIntel": "هوش پلتفرم"
+    "platformIntel": "هوش پلتفرم",
+    "command": {
+      "posture": {
+        "operational": "عملیاتی",
+        "elevated": "توجه بالا",
+        "critical": "توجه بحرانی",
+        "operationalNote": "رویداد بحرانی وجود ندارد. سامانه‌ها در محدودهٔ مورد انتظارند.",
+        "elevatedNote": "رویدادهای با اولویت بالا فعال‌اند. فهرست موارد نیازمند توجه را مرور کنید.",
+        "criticalNote": "رویدادهای بحرانی فعال‌اند و هم‌اکنون نیازمند رسیدگی‌اند."
+      },
+      "summaryTitle": "خلاصهٔ عملیاتی",
+      "lastUpdated": "آخرین به‌روزرسانی",
+      "autoNote": "تله‌متری شبیه‌سازی‌شده · به‌صورت خودکار به‌روز می‌شود",
+      "reconnecting": "در حال اتصال مجدد خودکار…",
+      "attention": {
+        "title": "نیازمند توجه",
+        "empty": "در حال حاضر موردی نیازمند توجه نیست. صف‌های بحرانی و با اولویت بالا خالی‌اند.",
+        "view": "مشاهده",
+        "reasonCriticalAlarm": "آلارم بحرانی فعال",
+        "reasonHighAlarm": "آلارم با اولویت بالا فعال",
+        "reasonAssetCritical": "دارایی با وضعیت بحرانی",
+        "reasonAssetDue": "سررسید نگهداری",
+        "reasonRiskElevated": "ریسک عملیاتی افزایش‌یافته",
+        "dueIn": "سررسید تا",
+        "days": "روز"
+      },
+      "riskEvidence": {
+        "title": "ریسک و شواهد",
+        "riskLabel": "ریسک عملیاتی",
+        "posture": "وضعیت ریسک",
+        "factorsTitle": "عوامل مؤثر",
+        "evidenceTitle": "وضعیت شواهد",
+        "supported": "سیگنال‌های پشتیبان",
+        "watch": "سیگنال‌های نیازمند پایش",
+        "missing": "در انتظار داده",
+        "confidenceLabel": "آمادگی اقدام ایمن",
+        "readinessReady": "آماده",
+        "readinessGuarded": "محتاطانه",
+        "readinessHold": "توقف"
+      },
+      "actions": {
+        "title": "اقدام‌های ایمن",
+        "openBrain": "گشودن مغز صنعتی",
+        "openBrainDesc": "اجرای تشخیص قابل‌توضیح روی شواهد کارخانه.",
+        "openOperations": "مرکز عملیات",
+        "openOperationsDesc": "مرور وضعیت عملیاتی زندهٔ سراسر سایت.",
+        "openPredictive": "نگهداری پیش‌بینانه",
+        "openPredictiveDesc": "بررسی ریسک دارایی و شاخص‌های عمر مفید باقی‌مانده.",
+        "openKnowledge": "پایگاه دانش",
+        "openKnowledgeDesc": "مراجعه به کتابخانه‌های مهندسی و پرونده‌های تشخیصی."
+      },
+      "globalOps": {
+        "connectedAssets": "دارایی‌های متصل",
+        "knowledgeVolume": "کتابخانه‌های دانش",
+        "engineeringCases": "پرونده‌های مهندسی",
+        "supportedVendors": "سازندگان پشتیبانی‌شده",
+        "platformPosture": "وضعیت تعدیل‌شده با ریسک"
+      },
+      "assetHealth": {
+        "title": "سلامت دارایی",
+        "critical": "بحرانی",
+        "high": "بالا",
+        "medium": "متوسط",
+        "tracked": "تحت پایش",
+        "criticalWarning": "{count} دارایی بحرانی نیازمند رسیدگی فوری است"
+      },
+      "sections": {
+        "telemetryControl": "تله‌متری · فرایند · سامانه‌های کنترل",
+        "intelligenceNetwork": "شبکهٔ هوش"
+      },
+      "signal": {
+        "siteOperational": "سایت عملیاتی",
+        "highPriorityEvents": "رویدادهای با اولویت بالا",
+        "criticalEventsActive": "رویدادهای بحرانی فعال",
+        "linesActive": "{active}/{total} خط فعال"
+      },
+      "unavailable": {
+        "title": "دادهٔ عملیاتی در دسترس نیست",
+        "body": "خلاصهٔ تله‌متری بارگیری نشد. هیچ دادهٔ عملیاتی ذخیره‌شده‌ای برای نمایش موجود نیست.",
+        "hint": "داشبورد به‌صورت خودکار مجدداً متصل می‌شود. در صورت تداوم، وضعیت یکپارچه‌سازی تله‌متری را بررسی کنید."
+      }
+    }
   },
   "knowledge": {
     "plcBasics": {
