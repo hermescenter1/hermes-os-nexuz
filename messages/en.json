@@ -5878,5 +5878,240 @@
       "backToSignIn": "Back to sign in",
       "resendHint": "Need a new link? Use password reset to receive a fresh email."
     }
+  },
+  "crm": {
+    "header": {
+      "eyebrow": "Sales Operations",
+      "title": "CRM",
+      "purpose": "Leads, pipeline, accounts and customer success — one tenant-scoped sales surface.",
+      "demoBadge": "Demo data"
+    },
+    "nav": {
+      "label": "CRM sections",
+      "dashboard": "Overview",
+      "leads": "Leads",
+      "pipeline": "Pipeline",
+      "accounts": "Accounts",
+      "customerSuccess": "Customer Success"
+    },
+    "status": {
+      "NEW": "New",
+      "CONTACTED": "Contacted",
+      "QUALIFIED": "Qualified",
+      "PROPOSAL": "Proposal",
+      "NEGOTIATION": "Negotiation",
+      "CONVERTED": "Converted",
+      "LOST": "Lost"
+    },
+    "stage": {
+      "DISCOVERY": "Discovery",
+      "QUALIFICATION": "Qualification",
+      "PROPOSAL": "Proposal",
+      "TECHNICAL_REVIEW": "Technical Review",
+      "COMMERCIAL_REVIEW": "Commercial Review",
+      "NEGOTIATION": "Negotiation",
+      "WON": "Won",
+      "LOST": "Lost"
+    },
+    "attention": {
+      "title": "Requires attention",
+      "empty": "No sales items need attention right now. New and unassigned queues are clear.",
+      "view": "Open",
+      "newLead": "New lead awaiting first review",
+      "unassignedLead": "Qualified lead without an owner",
+      "atRiskAccounts": "{count} account(s) flagged at-risk",
+      "reviewCs": "Review customer success",
+      "severityInfo": "Review",
+      "severityAction": "Action needed"
+    },
+    "pipeline": {
+      "title": "Opportunity pipeline",
+      "open": "{count} open",
+      "weightedNote": "Weighted by stage probability — derived from current opportunity records.",
+      "empty": "No open opportunities in the pipeline yet."
+    },
+    "kpi": {
+      "totalLeads": "Total leads",
+      "newThisMonth": "{count} new this month",
+      "pipelineValue": "Pipeline value",
+      "openOpps": "{count} open opportunities",
+      "forecast": "Weighted forecast",
+      "conversion": "Lead conversion",
+      "renewals": "Renewals this quarter",
+      "accounts": "Accounts",
+      "healthySplit": "{healthy} healthy · {atRisk} at-risk"
+    },
+    "recent": {
+      "title": "Recent leads",
+      "empty": "No leads recorded yet. New website and demo-request leads appear here.",
+      "viewAll": "View all leads"
+    },
+    "actions": {
+      "title": "Next actions",
+      "reviewLeads": "Review leads",
+      "reviewLeadsDesc": "Triage new and contacted leads.",
+      "viewPipeline": "Open pipeline",
+      "viewPipelineDesc": "Inspect opportunities by stage.",
+      "openAccounts": "Open accounts",
+      "openAccountsDesc": "Account records and contacts.",
+      "openCs": "Customer success",
+      "openCsDesc": "Health, renewals and success plans."
+    },
+    "states": {
+      "loading": "Loading sales data…",
+      "unavailableTitle": "Sales data unavailable",
+      "unavailableBody": "The CRM summary could not be loaded. Check your access or try again from the leads list."
+    },
+    "common": {
+      "loading": "Loading…",
+      "notes": "Notes",
+      "created": "Created",
+      "updated": "Updated",
+      "probability": "Probability",
+      "probabilityOf": "{n}% probability",
+      "due": "Due {date}"
+    },
+    "source": {
+      "WEBSITE": "Website",
+      "LINKEDIN": "LinkedIn",
+      "REFERRAL": "Referral",
+      "VENDOR": "Vendor",
+      "ACADEMY": "Academy",
+      "ATS": "ATS",
+      "MANUAL": "Manual"
+    },
+    "tier": {
+      "ENTERPRISE": "Enterprise",
+      "PREMIUM": "Premium",
+      "STANDARD": "Standard"
+    },
+    "health": {
+      "HEALTHY": "Healthy",
+      "WATCH": "Watch",
+      "AT_RISK": "At Risk",
+      "CRITICAL": "Critical"
+    },
+    "renewalStatus": {
+      "CONFIRMED": "Confirmed",
+      "PENDING": "Pending",
+      "AT_RISK": "At Risk",
+      "CHURNED": "Churned"
+    },
+    "journeyEvent": {
+      "LEAD_CREATED": "Lead Created",
+      "LEAD_QUALIFIED": "Qualified",
+      "DEMO_REQUESTED": "Demo Requested",
+      "PROPOSAL_SENT": "Proposal Sent",
+      "CUSTOMER_WON": "Customer Won",
+      "PORTAL_ACTIVATED": "Portal Activated",
+      "ACADEMY_ENROLLED": "Academy Enrolled",
+      "SUPPORT_TICKET_CREATED": "Support Ticket",
+      "RENEWAL_STARTED": "Renewal Started",
+      "RENEWAL_COMPLETED": "Renewal Completed"
+    },
+    "leads": {
+      "eyebrow": "CRM · Leads",
+      "title": "Lead Management",
+      "desc": "Track, qualify, and convert inbound leads.",
+      "filterLabel": "Filter by status",
+      "filterAll": "All",
+      "colName": "Name",
+      "colCompany": "Company",
+      "colStatus": "Status",
+      "colSource": "Source",
+      "colScore": "Score",
+      "colCreated": "Created",
+      "empty": "No leads found."
+    },
+    "leadDetail": {
+      "eyebrow": "CRM · Leads",
+      "title": "Lead Profile",
+      "notFound": "Lead not found.",
+      "independent": "Independent",
+      "contactDetails": "Contact Details",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company",
+      "jobTitle": "Job Title",
+      "sourceLabel": "Source",
+      "score": "Score",
+      "convertedOn": "Converted on {date}"
+    },
+    "opps": {
+      "eyebrow": "CRM · Pipeline",
+      "title": "Opportunity Pipeline",
+      "desc": "Track opportunities across sales stages.",
+      "switchToKanban": "Switch to Kanban",
+      "switchToList": "Switch to List",
+      "colTitle": "Title",
+      "colStage": "Stage",
+      "colValue": "Value",
+      "colProbability": "Probability",
+      "colClose": "Close Date",
+      "emptyColumn": "Empty"
+    },
+    "oppDetail": {
+      "eyebrow": "CRM · Pipeline",
+      "title": "Opportunity Detail",
+      "notFound": "Opportunity not found.",
+      "details": "Opportunity Details",
+      "expectedClose": "Expected Close",
+      "account": "Account",
+      "weightedValue": "Weighted Value",
+      "lostReason": "Lost Reason",
+      "winProbability": "Win Probability"
+    },
+    "accounts": {
+      "eyebrow": "CRM · Accounts",
+      "title": "Account Management",
+      "desc": "Customer accounts, contacts, and account health.",
+      "searchLabel": "Search accounts",
+      "searchPlaceholder": "Search accounts…",
+      "empty": "No accounts found.",
+      "colAccount": "Account",
+      "colIndustry": "Industry",
+      "colTier": "Tier",
+      "colHealth": "Health",
+      "colOpenDeals": "Open Deals",
+      "colCountry": "Country"
+    },
+    "accountDetail": {
+      "eyebrow": "CRM · Accounts",
+      "title": "Account Profile",
+      "notFound": "Account not found.",
+      "annualRevenue": "Annual Revenue",
+      "employees": "Employees",
+      "openDeals": "Open Deals",
+      "tierLabel": "Tier",
+      "tabOverview": "Overview",
+      "tabJourney": "Journey ({count})",
+      "tabDeals": "Deals ({count})",
+      "tabRenewals": "Renewals ({count})",
+      "activeOpportunities": "Active Opportunities",
+      "noOpportunities": "No opportunities.",
+      "customerJourney": "Customer Journey",
+      "noJourney": "No journey events.",
+      "deals": "Deals",
+      "noDeals": "No deals.",
+      "closedOn": "Closed {date}",
+      "renewalForecast": "Renewal Forecast",
+      "noRenewals": "No renewals.",
+      "renewal": "Renewal"
+    },
+    "cs": {
+      "eyebrow": "CRM · Customer Success",
+      "title": "Customer Success Center",
+      "desc": "Health monitoring, churn risk, renewal forecasting, expansion opportunities, and CSM assignments.",
+      "unavailable": "Data unavailable.",
+      "tabHealth": "Health ({count})",
+      "tabRenewals": "Renewals ({count})",
+      "tabExpansions": "Expansion ({count})",
+      "tabManagers": "CSMs ({count})",
+      "colAccount": "Account",
+      "colTier": "Tier",
+      "colIndustry": "Industry",
+      "colHealthScore": "Health Score",
+      "ofAccounts": "of {capacity} accounts"
+    }
   }
 }

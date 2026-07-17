@@ -5878,5 +5878,240 @@
       "backToSignIn": "بازگشت به ورود",
       "resendHint": "به پیوند تازه نیاز دارید؟ از بازنشانی گذرواژه برای دریافت ایمیل جدید استفاده کنید."
     }
+  },
+  "crm": {
+    "header": {
+      "eyebrow": "عملیات فروش",
+      "title": "مدیریت ارتباط با مشتری",
+      "purpose": "سرنخ‌ها، خط لولهٔ فروش، حساب‌ها و موفقیت مشتری — یک سطح فروش واحد در محدودهٔ سازمان.",
+      "demoBadge": "دادهٔ نمایشی"
+    },
+    "nav": {
+      "label": "بخش‌های CRM",
+      "dashboard": "نمای کلی",
+      "leads": "سرنخ‌ها",
+      "pipeline": "خط لوله",
+      "accounts": "حساب‌ها",
+      "customerSuccess": "موفقیت مشتری"
+    },
+    "status": {
+      "NEW": "جدید",
+      "CONTACTED": "تماس گرفته‌شده",
+      "QUALIFIED": "واجد شرایط",
+      "PROPOSAL": "پیشنهاد",
+      "NEGOTIATION": "مذاکره",
+      "CONVERTED": "تبدیل‌شده",
+      "LOST": "ازدست‌رفته"
+    },
+    "stage": {
+      "DISCOVERY": "کشف",
+      "QUALIFICATION": "احراز صلاحیت",
+      "PROPOSAL": "پیشنهاد",
+      "TECHNICAL_REVIEW": "بررسی فنی",
+      "COMMERCIAL_REVIEW": "بررسی بازرگانی",
+      "NEGOTIATION": "مذاکره",
+      "WON": "برنده",
+      "LOST": "ازدست‌رفته"
+    },
+    "attention": {
+      "title": "نیازمند توجه",
+      "empty": "در حال حاضر هیچ مورد فروش نیازمند توجه نیست. صف‌های جدید و بدون مالک خالی‌اند.",
+      "view": "گشودن",
+      "newLead": "سرنخ جدید در انتظار نخستین بررسی",
+      "unassignedLead": "سرنخ واجد شرایط بدون مالک",
+      "atRiskAccounts": "{count} حساب در وضعیت در معرض ریسک",
+      "reviewCs": "مرور موفقیت مشتری",
+      "severityInfo": "بررسی",
+      "severityAction": "نیازمند اقدام"
+    },
+    "pipeline": {
+      "title": "خط لولهٔ فرصت‌ها",
+      "open": "{count} باز",
+      "weightedNote": "وزن‌دهی بر اساس احتمال هر مرحله — برگرفته از رکوردهای فعلی فرصت‌ها.",
+      "empty": "هنوز فرصت بازی در خط لوله ثبت نشده است."
+    },
+    "kpi": {
+      "totalLeads": "کل سرنخ‌ها",
+      "newThisMonth": "{count} مورد جدید در این ماه",
+      "pipelineValue": "ارزش خط لوله",
+      "openOpps": "{count} فرصت باز",
+      "forecast": "پیش‌بینی وزنی",
+      "conversion": "نرخ تبدیل سرنخ",
+      "renewals": "تمدیدهای این فصل",
+      "accounts": "حساب‌ها",
+      "healthySplit": "{healthy} سالم · {atRisk} در معرض ریسک"
+    },
+    "recent": {
+      "title": "سرنخ‌های اخیر",
+      "empty": "هنوز سرنخی ثبت نشده است. سرنخ‌های وب‌سایت و درخواست دمو اینجا نمایش داده می‌شوند.",
+      "viewAll": "مشاهدهٔ همهٔ سرنخ‌ها"
+    },
+    "actions": {
+      "title": "اقدام‌های بعدی",
+      "reviewLeads": "بررسی سرنخ‌ها",
+      "reviewLeadsDesc": "رسیدگی به سرنخ‌های جدید و تماس‌گرفته‌شده.",
+      "viewPipeline": "گشودن خط لوله",
+      "viewPipelineDesc": "بررسی فرصت‌ها به تفکیک مرحله.",
+      "openAccounts": "گشودن حساب‌ها",
+      "openAccountsDesc": "رکوردهای حساب و مخاطبان.",
+      "openCs": "موفقیت مشتری",
+      "openCsDesc": "سلامت، تمدیدها و برنامه‌های موفقیت."
+    },
+    "states": {
+      "loading": "در حال بارگذاری داده‌های فروش…",
+      "unavailableTitle": "دادهٔ فروش در دسترس نیست",
+      "unavailableBody": "خلاصهٔ CRM بارگیری نشد. دسترسی خود را بررسی کنید یا از فهرست سرنخ‌ها دوباره تلاش کنید."
+    },
+    "common": {
+      "loading": "در حال بارگذاری…",
+      "notes": "یادداشت‌ها",
+      "created": "تاریخ ایجاد",
+      "updated": "آخرین به‌روزرسانی",
+      "probability": "احتمال",
+      "probabilityOf": "احتمال {n}٪",
+      "due": "سررسید {date}"
+    },
+    "source": {
+      "WEBSITE": "وب‌سایت",
+      "LINKEDIN": "لینکدین",
+      "REFERRAL": "معرفی",
+      "VENDOR": "تأمین‌کننده",
+      "ACADEMY": "آکادمی",
+      "ATS": "جذب و استخدام",
+      "MANUAL": "دستی"
+    },
+    "tier": {
+      "ENTERPRISE": "سازمانی",
+      "PREMIUM": "ویژه",
+      "STANDARD": "استاندارد"
+    },
+    "health": {
+      "HEALTHY": "سالم",
+      "WATCH": "تحت پایش",
+      "AT_RISK": "در معرض ریسک",
+      "CRITICAL": "بحرانی"
+    },
+    "renewalStatus": {
+      "CONFIRMED": "تأییدشده",
+      "PENDING": "در انتظار",
+      "AT_RISK": "در معرض ریسک",
+      "CHURNED": "ازدست‌رفته"
+    },
+    "journeyEvent": {
+      "LEAD_CREATED": "ایجاد سرنخ",
+      "LEAD_QUALIFIED": "احراز صلاحیت",
+      "DEMO_REQUESTED": "درخواست دمو",
+      "PROPOSAL_SENT": "ارسال پیشنهاد",
+      "CUSTOMER_WON": "تبدیل به مشتری",
+      "PORTAL_ACTIVATED": "فعال‌سازی پرتال",
+      "ACADEMY_ENROLLED": "ثبت‌نام در آکادمی",
+      "SUPPORT_TICKET_CREATED": "تیکت پشتیبانی",
+      "RENEWAL_STARTED": "آغاز تمدید",
+      "RENEWAL_COMPLETED": "تکمیل تمدید"
+    },
+    "leads": {
+      "eyebrow": "CRM · سرنخ‌ها",
+      "title": "مدیریت سرنخ‌ها",
+      "desc": "رهگیری، احراز صلاحیت و تبدیل سرنخ‌های ورودی.",
+      "filterLabel": "فیلتر بر اساس وضعیت",
+      "filterAll": "همه",
+      "colName": "نام",
+      "colCompany": "شرکت",
+      "colStatus": "وضعیت",
+      "colSource": "منبع",
+      "colScore": "امتیاز",
+      "colCreated": "تاریخ ایجاد",
+      "empty": "سرنخی یافت نشد."
+    },
+    "leadDetail": {
+      "eyebrow": "CRM · سرنخ‌ها",
+      "title": "پروفایل سرنخ",
+      "notFound": "سرنخ یافت نشد.",
+      "independent": "مستقل",
+      "contactDetails": "اطلاعات تماس",
+      "email": "ایمیل",
+      "phone": "تلفن",
+      "company": "شرکت",
+      "jobTitle": "سمت",
+      "sourceLabel": "منبع",
+      "score": "امتیاز",
+      "convertedOn": "تبدیل‌شده در {date}"
+    },
+    "opps": {
+      "eyebrow": "CRM · خط لوله",
+      "title": "خط لولهٔ فرصت‌ها",
+      "desc": "رهگیری فرصت‌های فروش در مراحل مختلف.",
+      "switchToKanban": "نمایش کانبان",
+      "switchToList": "نمایش فهرستی",
+      "colTitle": "عنوان",
+      "colStage": "مرحله",
+      "colValue": "ارزش",
+      "colProbability": "احتمال",
+      "colClose": "تاریخ بسته‌شدن",
+      "emptyColumn": "خالی"
+    },
+    "oppDetail": {
+      "eyebrow": "CRM · خط لوله",
+      "title": "جزئیات فرصت فروش",
+      "notFound": "فرصت فروش یافت نشد.",
+      "details": "جزئیات فرصت",
+      "expectedClose": "بسته‌شدن مورد انتظار",
+      "account": "حساب مشتری",
+      "weightedValue": "ارزش وزنی",
+      "lostReason": "دلیل شکست",
+      "winProbability": "احتمال برد"
+    },
+    "accounts": {
+      "eyebrow": "CRM · حساب‌ها",
+      "title": "مدیریت حساب‌های مشتری",
+      "desc": "حساب‌های مشتریان، مخاطبان و سلامت حساب.",
+      "searchLabel": "جست‌وجوی حساب‌ها",
+      "searchPlaceholder": "جست‌وجوی حساب‌ها…",
+      "empty": "حسابی یافت نشد.",
+      "colAccount": "حساب مشتری",
+      "colIndustry": "صنعت",
+      "colTier": "سطح",
+      "colHealth": "سلامت",
+      "colOpenDeals": "معاملات باز",
+      "colCountry": "کشور"
+    },
+    "accountDetail": {
+      "eyebrow": "CRM · حساب‌ها",
+      "title": "پروفایل حساب مشتری",
+      "notFound": "حساب مشتری یافت نشد.",
+      "annualRevenue": "درآمد سالانه",
+      "employees": "کارکنان",
+      "openDeals": "معاملات باز",
+      "tierLabel": "سطح",
+      "tabOverview": "نمای کلی",
+      "tabJourney": "سفر مشتری ({count})",
+      "tabDeals": "معاملات ({count})",
+      "tabRenewals": "تمدیدها ({count})",
+      "activeOpportunities": "فرصت‌های فعال",
+      "noOpportunities": "فرصتی ثبت نشده است.",
+      "customerJourney": "سفر مشتری",
+      "noJourney": "رویدادی در سفر مشتری ثبت نشده است.",
+      "deals": "معاملات",
+      "noDeals": "معامله‌ای ثبت نشده است.",
+      "closedOn": "بسته‌شده {date}",
+      "renewalForecast": "پیش‌بینی تمدید",
+      "noRenewals": "تمدیدی ثبت نشده است.",
+      "renewal": "تمدید"
+    },
+    "cs": {
+      "eyebrow": "CRM · موفقیت مشتری",
+      "title": "مرکز موفقیت مشتری",
+      "desc": "پایش سلامت، ریسک ریزش، پیش‌بینی تمدید، فرصت‌های توسعه و تخصیص مدیران موفقیت مشتری.",
+      "unavailable": "داده در دسترس نیست.",
+      "tabHealth": "سلامت ({count})",
+      "tabRenewals": "تمدیدها ({count})",
+      "tabExpansions": "توسعه ({count})",
+      "tabManagers": "مدیران موفقیت ({count})",
+      "colAccount": "حساب مشتری",
+      "colTier": "سطح",
+      "colIndustry": "صنعت",
+      "colHealthScore": "امتیاز سلامت",
+      "ofAccounts": "از {capacity} حساب"
+    }
   }
 }
