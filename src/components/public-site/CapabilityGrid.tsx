@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/components/ds";
 
 // PHASE 87D — capability card grid: used for the four homepage pillars
 // (title + description, accent-colored per the Figma cyan/azure/violet/green
 // row) and the five operating-domain cards (title + module list).
+// 87D.1 — optional per-card `href`/`ctaLabel` turn a card into a doorway to
+// an existing public route (challenge/capability/ecosystem sections).
 
 export type CapabilityAccent = "brand" | "azure" | "violet" | "success";
 
@@ -23,16 +26,21 @@ export interface CapabilityGridItem {
   accent?: CapabilityAccent;
   /** Decorative glyph rendered before the title (aria-hidden). */
   glyph?: ReactNode;
+  /** Existing public route this card links to (87D.1). */
+  href?: string;
+  /** Accessible link text for the card's route (required when href is set). */
+  ctaLabel?: string;
 }
 
 export interface CapabilityGridProps {
   items: readonly CapabilityGridItem[];
-  columns?: 2 | 4 | 5;
+  columns?: 2 | 3 | 4 | 5;
   className?: string;
 }
 
 const COLUMNS: Record<NonNullable<CapabilityGridProps["columns"]>, string> = {
   2: "sm:grid-cols-2",
+  3: "sm:grid-cols-2 xl:grid-cols-3",
   4: "sm:grid-cols-2 xl:grid-cols-4",
   5: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
 };
@@ -65,6 +73,18 @@ export function CapabilityGrid({ items, columns = 4, className }: CapabilityGrid
                 </li>
               ))}
             </ul>
+          ) : null}
+          {item.href && item.ctaLabel ? (
+            <Link
+              href={item.href}
+              className={cn(
+                "ds-focus mt-3.5 inline-flex items-center gap-1.5 rounded-sm text-label font-semibold",
+                "text-brand-primary transition-colors duration-fast hover:text-brand-primary-hover",
+              )}
+            >
+              {item.ctaLabel}
+              <span aria-hidden="true" className="rtl:-scale-x-100">→</span>
+            </Link>
           ) : null}
         </li>
       ))}

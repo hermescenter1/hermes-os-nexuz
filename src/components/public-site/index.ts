@@ -12,6 +12,7 @@
  * authenticated/dashboard consumers and RequireCapability fallback states.
  */
 export { PublicHeader } from "./PublicHeader";
+export { PublicNavMenus } from "./PublicNavMenus";
 export { PublicMobileNav } from "./PublicMobileNav";
 export { PublicFooter } from "./PublicFooter";
 export { PublicHero } from "./PublicHero";
@@ -26,11 +27,12 @@ export { PublicPageContainer, type PublicPageContainerProps } from "./PublicPage
 export { PublicPageShell, type PublicPageShellProps } from "./PublicPageShell";
 export { PublicSection, type PublicSectionProps, type PublicSectionTone, type PublicSectionPadding } from "./PublicSection";
 export {
-  PUBLIC_NAV_ITEMS,
+  PUBLIC_NAV_GROUPS,
   PUBLIC_FOOTER_COLUMNS,
   allPublicShellHrefs,
+  type PublicNavGroup,
+  type PublicNavGroupKey,
   type PublicNavItem,
-  type PublicNavLabelKey,
   type PublicFooterColumn,
   type PublicFooterColumnKey,
   type PublicFooterLink,

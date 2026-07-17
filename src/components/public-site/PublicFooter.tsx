@@ -18,7 +18,8 @@ export function PublicFooter() {
   return (
     <footer className="border-t border-border-subtle bg-background-deep">
       <PublicPageContainer className="py-12">
-        <div className="grid gap-10 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
+        {/* 87D.1 — five link columns: the public site structure at a glance. */}
+        <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[minmax(0,1.3fr)_repeat(5,minmax(0,1fr))]">
           <div>
             <div className="flex items-center gap-2.5" dir="ltr">
               <HermesLogoMark />

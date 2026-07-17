@@ -76,8 +76,8 @@ afterEach(() => {
   h.pathname = "/";
 });
 
-describe("PublicHeader — English", () => {
-  it("renders the skip link, the five approved nav items, and the /demo conversion CTA", async () => {
+describe("PublicHeader — English (87D.1 grouped IA)", () => {
+  it("renders the skip link, five disclosure groups, and the /demo conversion CTA", async () => {
     stubPublicFetch();
     const { container, unmount } = await mount(withIntl("en", <PublicHeader />));
 
@@ -86,8 +86,20 @@ describe("PublicHeader — English", () => {
     expect(skip.textContent).toBe(en.publicSite.header.skipToContent);
 
     const nav = container.querySelector(`nav[aria-label="${en.publicSite.header.navLabel}"]`)!;
-    const hrefs = Array.from(nav.querySelectorAll("a")).map((a) => a.getAttribute("href"));
-    expect(hrefs).toEqual(["/platform", "/services", "/brain", "/library", "/about"]);
+    const buttons = Array.from(nav.querySelectorAll("button"));
+    expect(buttons.map((b) => b.textContent?.replace("▾", ""))).toEqual([
+      en.publicSite.header.groups.platform,
+      en.publicSite.header.groups.intelligence,
+      en.publicSite.header.groups.knowledge,
+      en.publicSite.header.groups.resources,
+      en.publicSite.header.groups.company,
+    ]);
+    // panels are conditional renders: nothing focusable before opening
+    expect(nav.querySelectorAll("a").length).toBe(0);
+    for (const b of buttons) {
+      expect(b.getAttribute("aria-expanded")).toBe("false");
+      expect(b.getAttribute("aria-controls")).toBeTruthy();
+    }
 
     const demoLinks = Array.from(container.querySelectorAll('a[href="/demo"]'));
     expect(demoLinks.some((a) => a.textContent === en.publicSite.header.requestDemo)).toBe(true);
@@ -98,14 +110,67 @@ describe("PublicHeader — English", () => {
     expect(home.getAttribute("href")).toBe("/");
     await unmount();
   });
+
+  it("opens a group on click (correct grouped links), closes on Escape and restores trigger focus", async () => {
+    stubPublicFetch();
+    const { container, unmount } = await mount(withIntl("en", <PublicHeader />));
+    const nav = container.querySelector(`nav[aria-label="${en.publicSite.header.navLabel}"]`)!;
+    const platformBtn = Array.from(nav.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes(en.publicSite.header.groups.platform),
+    )!;
+
+    await focus(platformBtn);
+    await click(platformBtn);
+    expect(platformBtn.getAttribute("aria-expanded")).toBe("true");
+    const hrefs = Array.from(nav.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual(["/platform", "/architecture", "/services"]);
+    expect(
+      Array.from(nav.querySelectorAll("a")).map((a) => a.textContent),
+    ).toEqual([
+      en.publicSite.header.nav.platformOverview,
+      en.publicSite.header.nav.architecture,
+      en.publicSite.header.nav.services,
+    ]);
+
+    await keyDown(nav, "Escape");
+    expect(nav.querySelectorAll("a").length).toBe(0); // panel unmounted
+    expect(platformBtn.getAttribute("aria-expanded")).toBe("false");
+    expect(active()).toBe(platformBtn); // focus restored to the trigger
+    await unmount();
+  });
+
+  it("only one group opens at a time and the intelligence group lists the three brains", async () => {
+    stubPublicFetch();
+    const { container, unmount } = await mount(withIntl("en", <PublicHeader />));
+    const nav = container.querySelector(`nav[aria-label="${en.publicSite.header.navLabel}"]`)!;
+    const byLabel = (label: string) =>
+      Array.from(nav.querySelectorAll("button")).find((b) => b.textContent?.includes(label))!;
+
+    await click(byLabel(en.publicSite.header.groups.platform));
+    await click(byLabel(en.publicSite.header.groups.intelligence));
+    expect(byLabel(en.publicSite.header.groups.platform).getAttribute("aria-expanded")).toBe("false");
+    expect(byLabel(en.publicSite.header.groups.intelligence).getAttribute("aria-expanded")).toBe("true");
+    const hrefs = Array.from(nav.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual(["/industrial-brain", "/brain", "/copilot"]);
+    await unmount();
+  });
 });
 
-describe("PublicHeader — Persian (RTL)", () => {
-  it("renders Persian nav labels and the Persian demo CTA", async () => {
+describe("PublicHeader — Persian (RTL, 87D.1)", () => {
+  it("renders Persian group labels and grouped Persian destinations", async () => {
     stubPublicFetch();
     const { container, unmount } = await mount(withIntl("fa", <PublicHeader />));
-    expect(container.textContent).toContain(fa.publicSite.header.nav.platform);       // «پلتفرم»
-    expect(container.textContent).toContain(fa.publicSite.header.nav.industrialBrain); // «مغز صنعتی»
+    const nav = container.querySelector(`nav[aria-label="${fa.publicSite.header.navLabel}"]`)!;
+    expect(nav.textContent).toContain(fa.publicSite.header.groups.platform);      // «پلتفرم»
+    expect(nav.textContent).toContain(fa.publicSite.header.groups.intelligence);  // «هوش»
+
+    const intelligenceBtn = Array.from(nav.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes(fa.publicSite.header.groups.intelligence),
+    )!;
+    await click(intelligenceBtn);
+    expect(nav.textContent).toContain(fa.publicSite.header.nav.industrialBrain); // «مغز صنعتی»
+    expect(nav.textContent).toContain(fa.publicSite.header.nav.hermesBrain);     // «مغز هرمس»
+
     expect(container.querySelector(`a[aria-label="${fa.publicSite.header.home}"]`)).toBeTruthy();
     const demo = Array.from(container.querySelectorAll('a[href="/demo"]'));
     expect(demo.some((a) => a.textContent === fa.publicSite.header.requestDemo)).toBe(true);
@@ -114,7 +179,7 @@ describe("PublicHeader — Persian (RTL)", () => {
 });
 
 describe("PublicMobileNav — focus behavior", () => {
-  it("opens a modal drawer with all five links (≥44px targets) and the /demo CTA", async () => {
+  it("opens a modal drawer exposing the SAME grouped destinations as the desktop IA (≥44px targets) plus the /demo CTA", async () => {
     const { container, unmount } = await mount(withIntl("en", <PublicMobileNav />));
     const trigger = container.querySelector(`[aria-label="${en.publicSite.header.menuOpen}"]`)!;
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
@@ -124,9 +189,17 @@ describe("PublicMobileNav — focus behavior", () => {
     expect(dialog).toBeTruthy();
     const links = Array.from(dialog.querySelectorAll("nav a"));
     expect(links.map((a) => a.getAttribute("href"))).toEqual([
-      "/platform", "/services", "/brain", "/library", "/about",
+      "/platform", "/architecture", "/services",
+      "/industrial-brain", "/brain", "/copilot",
+      "/library", "/academy", "/articles",
+      "/demo", "/vendors",
+      "/about", "/careers", "/contact",
     ]);
     for (const link of links) expect(link.className).toContain("min-h-11");
+    // grouped section labels are rendered for orientation
+    for (const groupKey of ["platform", "intelligence", "knowledge", "resources", "company"] as const) {
+      expect(dialog.textContent).toContain(en.publicSite.header.groups[groupKey]);
+    }
     expect(dialog.querySelector('a[href="/demo"]')).toBeTruthy();
     await unmount();
   });
@@ -313,15 +386,24 @@ describe("CapabilityGrid + PlatformArchitecture — heading discipline", () => {
 });
 
 describe("PublicFooter — link integrity", () => {
-  it("renders every registry link with its exact target — Platform goes to /platform, not /", async () => {
+  it("renders every registry link with its exact target across the five 87D.1 columns", async () => {
     const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
     const columns = container.querySelectorAll("footer nav");
-    expect(columns.length).toBe(3);
+    expect(columns.length).toBe(5);
     const platformLink = Array.from(container.querySelectorAll("footer nav a")).find(
-      (a) => a.textContent === en.publicSite.footer.links.platform,
+      (a) => a.textContent === en.publicSite.footer.links.platformOverview,
     )!;
     expect(platformLink.getAttribute("href")).toBe("/platform");
-    expect(container.querySelectorAll("footer nav a").length).toBe(11);
+    expect(container.querySelectorAll("footer nav a").length).toBe(17);
+    // the expanded structure exposes every required destination
+    const hrefs = Array.from(container.querySelectorAll("footer nav a")).map((a) => a.getAttribute("href"));
+    for (const required of [
+      "/services", "/architecture", "/industrial-brain", "/copilot", "/brain",
+      "/library", "/academy", "/articles", "/vendors", "/careers", "/about",
+      "/contact", "/privacy", "/terms", "/cookies",
+    ]) {
+      expect(hrefs, `footer must expose ${required}`).toContain(required);
+    }
     expect(container.textContent).toContain(en.publicSite.footer.copyright);
     // domain is LTR-isolated for RTL pages
     const domain = Array.from(container.querySelectorAll('bdi[dir="ltr"]')).find(
@@ -352,9 +434,10 @@ describe("PublicPageShell — drop-in adapter runtime (87D delta)", () => {
     expect(main.textContent).toContain("PAGE-BODY");
     // skip link (from PublicHeader) targets the adapter's main.
     expect(container.querySelector('a[href="#public-content"]')).toBeTruthy();
-    // the canonical public nav is present — this page now shares the 87D shell.
+    // the canonical public nav is present — this page now shares the 87D shell
+    // (87D.1: five disclosure-group buttons; links render on open only).
     const nav = container.querySelector(`nav[aria-label="${en.publicSite.header.navLabel}"]`)!;
-    expect(nav.querySelectorAll("a").length).toBe(5);
+    expect(nav.querySelectorAll("button").length).toBe(5);
     await unmount();
   });
 
@@ -363,7 +446,7 @@ describe("PublicPageShell — drop-in adapter runtime (87D delta)", () => {
     const { container, unmount } = await mount(
       withIntl("fa", <PublicPageShell ambient={2}><p>محتوای صفحه</p></PublicPageShell>),
     );
-    expect(container.textContent).toContain(fa.publicSite.header.nav.platform);
+    expect(container.textContent).toContain(fa.publicSite.header.groups.platform);
     expect(container.textContent).toContain("محتوای صفحه");
     expect(container.textContent).toContain(fa.publicSite.footer.copyright);
     await unmount();

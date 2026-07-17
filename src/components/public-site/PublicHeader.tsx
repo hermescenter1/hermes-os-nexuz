@@ -18,9 +18,9 @@ import { HermesLogoMark } from "@/components/HermesLogo";
 import { AuthIndicator } from "@/components/auth/AuthIndicator";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
-import { PUBLIC_NAV_ITEMS } from "./nav";
 import { PublicPageContainer } from "./PublicPageContainer";
 import { PublicMobileNav } from "./PublicMobileNav";
+import { PublicNavMenus } from "./PublicNavMenus";
 
 export function PublicHeader() {
   const t = useTranslations("publicSite.header");
@@ -51,23 +51,8 @@ export function PublicHeader() {
               Hermes <span className="text-brand-primary">OS</span>
             </span>
           </Link>
-          <nav aria-label={t("navLabel")} className="ms-6 hidden lg:block">
-            <ul className="flex items-center gap-6">
-              {PUBLIC_NAV_ITEMS.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "ds-focus rounded-sm text-label font-medium text-text-secondary",
-                      "transition-colors duration-standard ease-hermes hover:text-text-primary",
-                    )}
-                  >
-                    {t(`nav.${item.labelKey}`)}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          {/* 87D.1 — grouped enterprise IA (client island: disclosure menus). */}
+          <PublicNavMenus />
           <div className="ms-auto flex shrink-0 items-center gap-2.5">
             <AuthIndicator />
             <NotificationCenter />

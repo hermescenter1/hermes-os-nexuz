@@ -51,6 +51,34 @@ const PIPELINE_KEYS = [
   "confidence", "risk", "safeAction", "report",
 ] as const;
 
+// 87D.1 — homepage capability groups (all truthful, all existing routes).
+const CHALLENGE_KEYS = ["fragmented", "opaque", "risky", "lost"] as const;
+const OPERATIONS_CARDS = [
+  { key: "asset",      accent: "success", href: "/platform" },
+  { key: "predictive", accent: "brand",   href: "/platform" },
+  { key: "multisite",  accent: "azure",   href: "/platform" },
+] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
+const ENGINEERING_CARDS = [
+  { key: "knowledge", accent: "azure",   href: "/library" },
+  { key: "twin",      accent: "violet",  href: "/platform" },
+  { key: "edge",      accent: "success", href: "/architecture" },
+] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
+const LEARNING_CARDS = [
+  { key: "academy",  accent: "brand",  href: "/academy" },
+  { key: "library",  accent: "azure",  href: "/library" },
+  { key: "articles", accent: "violet", href: "/articles" },
+] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
+const ECOSYSTEM_CARDS = [
+  { key: "industrialBrain", href: "/industrial-brain", accent: "brand" },
+  { key: "copilot",         href: "/copilot",          accent: "brand" },
+  { key: "services",        href: "/services",         accent: "azure" },
+  { key: "academy",         href: "/academy",          accent: "success" },
+  { key: "library",         href: "/library",          accent: "azure" },
+  { key: "articles",        href: "/articles",         accent: "violet" },
+  { key: "vendors",         href: "/vendors",          accent: "success" },
+  { key: "careers",         href: "/careers",          accent: "violet" },
+] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
+
 const PILLARS = [
   { key: "reasoning", accent: "brand",   glyph: "◇" },
   { key: "evidence",  accent: "azure",   glyph: "◆" },
@@ -99,7 +127,28 @@ export default async function HomePage({
         <PublicHero />
         <TrustSection variant="strip" />
 
-        <PublicSection aria-labelledby="pillars-title">
+        <PublicSection aria-labelledby="challenge-title">
+          <PublicPageContainer>
+            <SectionHeader
+              id="challenge-title"
+              title={t("challenge.title")}
+              lede={t("challenge.lede")}
+              align="center"
+            />
+            <CapabilityGrid
+              className="mt-10"
+              columns={4}
+              items={CHALLENGE_KEYS.map((key) => ({
+                key,
+                accent: "violet",
+                title: t(`challenge.cards.${key}.name`),
+                body: t(`challenge.cards.${key}.desc`),
+              }))}
+            />
+          </PublicPageContainer>
+        </PublicSection>
+
+        <PublicSection tone="deep" aria-labelledby="pillars-title">
           <PublicPageContainer>
             <SectionHeader id="pillars-title" title={t("pillars.title")} align="center" />
             <CapabilityGrid
@@ -116,10 +165,66 @@ export default async function HomePage({
           </PublicPageContainer>
         </PublicSection>
 
-        <PublicSection tone="deep" aria-labelledby="flow-title">
+        <PublicSection aria-labelledby="flow-title">
           <PublicPageContainer>
             <SectionHeader id="flow-title" title={t("flow.title")} align="center" />
             <IntelligenceFlow className="mt-10 justify-center" stages={pipeline} />
+          </PublicPageContainer>
+        </PublicSection>
+
+        <PublicSection tone="deep" aria-labelledby="intelligence-title">
+          <PublicPageContainer>
+            <SectionHeader
+              id="intelligence-title"
+              title={t("intelligence.title")}
+              lede={t("intelligence.lede")}
+              align="center"
+            />
+            <CapabilityGrid
+              className="mt-10"
+              columns={2}
+              items={(["brain", "copilot"] as const).map((key) => ({
+                key,
+                accent: "brand",
+                title: t(`intelligence.${key}.name`),
+                body: t(`intelligence.${key}.desc`),
+                list: t(`intelligence.${key}.items`).split(" · "),
+                href: key === "brain" ? "/industrial-brain" : "/copilot",
+                ctaLabel: t(`intelligence.${key}.cta`),
+              }))}
+            />
+          </PublicPageContainer>
+        </PublicSection>
+
+        <PublicSection aria-labelledby="operations-title">
+          <PublicPageContainer>
+            <SectionHeader id="operations-title" title={t("operations.title")} align="center" />
+            <CapabilityGrid
+              className="mt-10"
+              columns={3}
+              items={OPERATIONS_CARDS.map(({ key, accent }) => ({
+                key,
+                accent,
+                title: t(`operations.cards.${key}.name`),
+                body: t(`operations.cards.${key}.desc`),
+              }))}
+            />
+          </PublicPageContainer>
+        </PublicSection>
+
+        <PublicSection tone="deep" aria-labelledby="engineering-title">
+          <PublicPageContainer>
+            <SectionHeader id="engineering-title" title={t("engineering.title")} align="center" />
+            <CapabilityGrid
+              className="mt-10"
+              columns={3}
+              items={ENGINEERING_CARDS.map(({ key, accent }) => ({
+                key,
+                accent,
+                title: t(`engineering.cards.${key}.name`),
+                body: t(`engineering.cards.${key}.desc`),
+              }))}
+            />
           </PublicPageContainer>
         </PublicSection>
 
@@ -139,7 +244,25 @@ export default async function HomePage({
           </PublicPageContainer>
         </PublicSection>
 
-        <PublicSection tone="deep" aria-labelledby="safe-action-title">
+        <PublicSection tone="deep" aria-labelledby="learning-title">
+          <PublicPageContainer>
+            <SectionHeader id="learning-title" title={t("learning.title")} align="center" />
+            <CapabilityGrid
+              className="mt-10"
+              columns={3}
+              items={LEARNING_CARDS.map(({ key, accent, href }) => ({
+                key,
+                accent,
+                href,
+                title: t(`learning.cards.${key}.name`),
+                body: t(`learning.cards.${key}.desc`),
+                ctaLabel: t(`learning.cards.${key}.cta`),
+              }))}
+            />
+          </PublicPageContainer>
+        </PublicSection>
+
+        <PublicSection aria-labelledby="safe-action-title">
           <PublicPageContainer className="flex flex-col items-center">
             <SectionHeader
               id="safe-action-title"
@@ -152,6 +275,30 @@ export default async function HomePage({
         </PublicSection>
 
         <TrustSection variant="features" />
+
+        <PublicSection aria-labelledby="ecosystem-title">
+          <PublicPageContainer>
+            <SectionHeader
+              id="ecosystem-title"
+              title={t("ecosystem.title")}
+              lede={t("ecosystem.lede")}
+              align="center"
+            />
+            <CapabilityGrid
+              className="mt-10"
+              columns={4}
+              items={ECOSYSTEM_CARDS.map(({ key, accent, href }) => ({
+                key,
+                accent,
+                href,
+                title: t(`ecosystem.cards.${key}.name`),
+                body: t(`ecosystem.cards.${key}.desc`),
+                ctaLabel: t(`ecosystem.cards.${key}.cta`),
+              }))}
+            />
+          </PublicPageContainer>
+        </PublicSection>
+
         <PublicCta title={t("demoCta.title")} ctaLabel={t("demoCta.requestDemo")} href="/demo" />
       </main>
       <PublicFooter />

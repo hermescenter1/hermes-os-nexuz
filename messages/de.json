@@ -5386,12 +5386,28 @@
       "menuClose": "Close navigation menu",
       "menuTitle": "Navigation",
       "navLabel": "Primary",
-      "nav": {
+      "groups": {
         "platform": "Platform",
-        "solutions": "Solutions",
-        "industrialBrain": "Industrial Brain",
+        "intelligence": "Intelligence",
         "knowledge": "Knowledge",
+        "resources": "Resources",
         "company": "Company"
+      },
+      "nav": {
+        "platformOverview": "Platform Overview",
+        "architecture": "Architecture",
+        "services": "Services",
+        "industrialBrain": "Industrial Brain",
+        "hermesBrain": "Hermes Brain",
+        "copilot": "Copilot",
+        "library": "Knowledge Library",
+        "academy": "Academy",
+        "articles": "Industrial Journal",
+        "demo": "Demo",
+        "vendors": "Vendor Directory",
+        "about": "About",
+        "careers": "Careers",
+        "contact": "Contact"
       },
       "requestDemo": "Request a Demo"
     },
@@ -5433,6 +5449,28 @@
       "protocols": "PLC · SCADA · OPC UA · MQTT",
       "deterministic": "Deterministic + explainable"
     },
+    "challenge": {
+      "title": "The industrial reality Hermes was built for",
+      "lede": "Plants generate more signals, documents and expert know-how than any team can hold together — and decisions still have to be safe.",
+      "cards": {
+        "fragmented": {
+          "name": "Fragmented evidence",
+          "desc": "Telemetry, documents, case history and tribal knowledge live in disconnected silos."
+        },
+        "opaque": {
+          "name": "Opaque suggestions",
+          "desc": "Black-box recommendations cannot be trusted with plant equipment."
+        },
+        "risky": {
+          "name": "Risky interventions",
+          "desc": "Actions taken without weighed evidence and validation gates put uptime and safety at risk."
+        },
+        "lost": {
+          "name": "Knowledge that walks away",
+          "desc": "Expert experience leaves with the people who hold it unless it is captured and structured."
+        }
+      }
+    },
     "pillars": {
       "title": "Four pillars of industrial intelligence",
       "reasoning": {
@@ -5466,6 +5504,56 @@
         "report": "Explainable Report"
       }
     },
+    "intelligence": {
+      "title": "The intelligence core",
+      "lede": "Two reasoning surfaces on one explainable pipeline.",
+      "brain": {
+        "name": "Industrial Brain",
+        "desc": "The diagnostic reasoning engine: it weighs evidence, ranks hypotheses with confidence, surfaces contradictions and missing data, and proposes a safe action path.",
+        "items": "Evidence rail · Ranked hypotheses · Confidence & risk · Safe action path",
+        "cta": "Explore Industrial Brain"
+      },
+      "copilot": {
+        "name": "Engineering Copilot",
+        "desc": "A bilingual engineering assistant grounded in the platform's industrial knowledge — explainable answers, with a deterministic public demo.",
+        "items": "Bilingual FA/EN · Grounded in platform knowledge · Explainable responses",
+        "cta": "Try the Copilot"
+      }
+    },
+    "operations": {
+      "title": "Operational intelligence, end to end",
+      "cards": {
+        "asset": {
+          "name": "Asset & operational intelligence",
+          "desc": "Asset registry, site structure, work orders and maintenance workflows — the operational spine that closes the loop."
+        },
+        "predictive": {
+          "name": "Predictive maintenance",
+          "desc": "Baselines, risk scoring and remaining-useful-life estimates — explainable indicators, never black-box guarantees."
+        },
+        "multisite": {
+          "name": "Multi-site intelligence",
+          "desc": "One organization, many plants: site-level isolation with cross-site visibility for the people who need it."
+        }
+      }
+    },
+    "engineering": {
+      "title": "The engineering foundation",
+      "cards": {
+        "knowledge": {
+          "name": "Knowledge Engine & Graph",
+          "desc": "Curated engineering libraries across PLC, SCADA/HMI, electrical, instrumentation, protocols, cybersecurity and maintenance — connected in a knowledge graph with real engineering cases."
+        },
+        "twin": {
+          "name": "Digital Twin & Time Series",
+          "desc": "Model asset hierarchies and tags, and analyze their time-series behavior on the same surface the Brain reasons over."
+        },
+        "edge": {
+          "name": "Edge gateway & connectivity",
+          "desc": "Gateway and connector management with a protocol-aware architecture — OPC UA, MQTT, PLC and SCADA domains, designed for on-prem and edge deployments."
+        }
+      }
+    },
     "modules": {
       "title": "One platform, five operating domains",
       "groups": {
@@ -5491,6 +5579,26 @@
         }
       }
     },
+    "learning": {
+      "title": "Learn, reference, publish",
+      "cards": {
+        "academy": {
+          "name": "Hermes Academy",
+          "desc": "Structured industrial courses and certificates for engineering teams.",
+          "cta": "Visit the Academy"
+        },
+        "library": {
+          "name": "Knowledge Library",
+          "desc": "Engineering knowledge libraries and real diagnostic cases, open to read.",
+          "cta": "Browse the Library"
+        },
+        "articles": {
+          "name": "Industrial Journal",
+          "desc": "Articles and engineering write-ups from the Hermes community.",
+          "cta": "Read the Journal"
+        }
+      }
+    },
     "safeAction": {
       "title": "Human-guided action, by design",
       "lede": "No recommendation reaches plant equipment without passing validation gates and explicit human approval.",
@@ -5508,6 +5616,52 @@
       "audit": "Audit trail on every write",
       "deployment": "On-prem or private cloud"
     },
+    "ecosystem": {
+      "title": "Explore the Hermes ecosystem",
+      "lede": "One platform, many doors — every surface below is live today.",
+      "cards": {
+        "industrialBrain": {
+          "name": "Industrial Brain",
+          "desc": "Diagnostic reasoning workspace.",
+          "cta": "Explore Industrial Brain"
+        },
+        "copilot": {
+          "name": "Engineering Copilot",
+          "desc": "Bilingual assistant with a public demo.",
+          "cta": "Try the Copilot"
+        },
+        "services": {
+          "name": "Engineering Services",
+          "desc": "PLC, SCADA/HMI, industrial AI, cybersecurity and knowledge-cloud services.",
+          "cta": "View services"
+        },
+        "academy": {
+          "name": "Hermes Academy",
+          "desc": "Courses and certificates for industrial teams.",
+          "cta": "Visit the Academy"
+        },
+        "library": {
+          "name": "Knowledge Library",
+          "desc": "Open engineering knowledge and cases.",
+          "cta": "Browse the Library"
+        },
+        "articles": {
+          "name": "Industrial Journal",
+          "desc": "Community articles and engineering stories.",
+          "cta": "Read the Journal"
+        },
+        "vendors": {
+          "name": "Vendor Directory",
+          "desc": "Vendor directory and collaboration applications.",
+          "cta": "Browse vendors"
+        },
+        "careers": {
+          "name": "Careers",
+          "desc": "Roles and applications at Hermes Novin Mehr.",
+          "cta": "See open roles"
+        }
+      }
+    },
     "demoCta": {
       "title": "See Hermes reason over your plant",
       "requestDemo": "Request a Demo"
@@ -5518,11 +5672,19 @@
       "domain": "hermesnovin.com",
       "columns": {
         "platform": "Platform",
+        "intelligence": "Industrial Intelligence",
+        "resources": "Knowledge & Resources",
         "company": "Company",
         "legal": "Legal"
       },
       "links": {
-        "platform": "Platform",
+        "platformOverview": "Platform Overview",
+        "architecture": "Architecture",
+        "services": "Services",
+        "hermesBrain": "Hermes Brain",
+        "academy": "Academy",
+        "articles": "Industrial Journal",
+        "vendors": "Vendor Directory",
         "industrialBrain": "Industrial Brain",
         "copilot": "Copilot",
         "knowledgeLibrary": "Knowledge Library",

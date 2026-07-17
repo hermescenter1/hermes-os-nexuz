@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn, Drawer, IconButton, buttonVariants } from "@/components/ds";
-import { PUBLIC_NAV_ITEMS } from "./nav";
+import { PUBLIC_NAV_GROUPS } from "./nav";
 
 export function PublicMobileNav() {
   const t = useTranslations("publicSite.header");
@@ -43,28 +43,36 @@ export function PublicMobileNav() {
             icon={<span aria-hidden="true">✕</span>}
           />
         </div>
-        <nav aria-label={t("navLabel")} className="mt-4">
-          <ul className="flex flex-col gap-0.5">
-            {PUBLIC_NAV_ITEMS.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "ds-focus flex min-h-11 items-center rounded-sm px-2.5 text-body transition-colors duration-fast",
-                      active
-                        ? "bg-surface-interactive font-semibold text-text-primary"
-                        : "text-text-secondary hover:bg-surface-interactive hover:text-text-primary",
-                    )}
-                  >
-                    {t(`nav.${item.labelKey}`)}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+        <nav aria-label={t("navLabel")} className="mt-2">
+          {/* 87D.1 — same grouped IA as the desktop disclosure menus. */}
+          {PUBLIC_NAV_GROUPS.map((group) => (
+            <div key={group.groupKey} className="mt-4">
+              <p className="mb-1 text-label-compact font-semibold uppercase tracking-wide text-text-muted">
+                {t(`groups.${group.groupKey}`)}
+              </p>
+              <ul className="flex flex-col gap-0.5">
+                {group.items.map((item) => {
+                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "ds-focus flex min-h-11 items-center rounded-sm px-2.5 text-body transition-colors duration-fast",
+                          active
+                            ? "bg-surface-interactive font-semibold text-text-primary"
+                            : "text-text-secondary hover:bg-surface-interactive hover:text-text-primary",
+                        )}
+                      >
+                        {t(`nav.${item.labelKey}`)}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </nav>
         <Link href="/demo" className={cn(buttonVariants("primary", "lg"), "mt-6 w-full")}>
           {t("requestDemo")}

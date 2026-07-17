@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  PUBLIC_NAV_ITEMS,
+  PUBLIC_NAV_GROUPS,
   PUBLIC_FOOTER_COLUMNS,
   allPublicShellHrefs,
 } from "@/components/public-site/nav";
@@ -51,14 +51,16 @@ function keyPaths(obj: Record<string, unknown>, prefix = ""): string[] {
   return out;
 }
 
-describe("public-site nav registry — structure", () => {
-  it("header exposes the five approved items in Figma order", () => {
-    expect(PUBLIC_NAV_ITEMS.map((i) => `${i.labelKey}:${i.href}`)).toEqual([
-      "platform:/platform",
-      "solutions:/services",
-      "industrialBrain:/brain",
-      "knowledge:/library",
-      "company:/about",
+describe("public-site nav registry — structure (87D.1 grouped IA)", () => {
+  it("header exposes the five approved groups with their grouped destinations", () => {
+    expect(
+      PUBLIC_NAV_GROUPS.map((g) => `${g.groupKey}:${g.items.map((i) => i.href).join(",")}`),
+    ).toEqual([
+      "platform:/platform,/architecture,/services",
+      "intelligence:/industrial-brain,/brain,/copilot",
+      "knowledge:/library,/academy,/articles",
+      "resources:/demo,/vendors",
+      "company:/about,/careers,/contact",
     ]);
   });
 
@@ -78,16 +80,16 @@ describe("public-site nav registry — structure", () => {
     }
   });
 
-  it("footer fixes the legacy misdirections: Platform → /platform (not /) and carries the /demo conversion link", () => {
+  it("footer fixes the legacy misdirections: Platform Overview → /platform (not /) and carries the /demo conversion link", () => {
     const platformCol = PUBLIC_FOOTER_COLUMNS.find((c) => c.columnKey === "platform")!;
-    expect(platformCol.links.find((l) => l.labelKey === "platform")?.href).toBe("/platform");
+    expect(platformCol.links.find((l) => l.labelKey === "platformOverview")?.href).toBe("/platform");
     expect(platformCol.links.map((l) => l.href)).not.toContain("/");
     const companyCol = PUBLIC_FOOTER_COLUMNS.find((c) => c.columnKey === "company")!;
     expect(companyCol.links.map((l) => l.href)).toContain("/demo");
   });
 
-  it("hrefs are unique within the header and within each footer column", () => {
-    const nav = PUBLIC_NAV_ITEMS.map((i) => i.href);
+  it("hrefs are unique across the whole header IA and within each footer column", () => {
+    const nav = PUBLIC_NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
     expect(new Set(nav).size).toBe(nav.length);
     for (const col of PUBLIC_FOOTER_COLUMNS) {
       const hrefs = col.links.map((l) => l.href);
@@ -95,23 +97,58 @@ describe("public-site nav registry — structure", () => {
     }
   });
 
-  it("every header and footer label key exists in en, fa and de catalogs", () => {
+  it("every group, item and footer label key exists in en, fa and de catalogs", () => {
     for (const [name, cat] of CATALOGS) {
       const ps = cat.publicSite;
-      for (const item of PUBLIC_NAV_ITEMS) {
+      for (const group of PUBLIC_NAV_GROUPS) {
         expect(
-          ps.header.nav[item.labelKey],
-          `${name}: missing header label ${item.labelKey}`,
+          (ps.header.groups as Record<string, string>)[group.groupKey],
+          `${name}: missing group label ${group.groupKey}`,
         ).toBeTruthy();
+        for (const item of group.items) {
+          expect(
+            (ps.header.nav as Record<string, string>)[item.labelKey],
+            `${name}: missing header label ${item.labelKey}`,
+          ).toBeTruthy();
+        }
       }
       for (const col of PUBLIC_FOOTER_COLUMNS) {
-        expect(ps.footer.columns[col.columnKey], `${name}: missing column ${col.columnKey}`).toBeTruthy();
+        expect(
+          (ps.footer.columns as Record<string, string>)[col.columnKey],
+          `${name}: missing column ${col.columnKey}`,
+        ).toBeTruthy();
         for (const link of col.links) {
           expect(
             (ps.footer.links as Record<string, string>)[link.labelKey],
             `${name}: missing footer label ${link.labelKey}`,
           ).toBeTruthy();
         }
+      }
+    }
+  });
+
+  it("no duplicate visible labels create accessibility ambiguity (per locale)", () => {
+    for (const [name, cat] of CATALOGS.slice(0, 2)) { // en + fa (de = en)
+      const ps = cat.publicSite;
+      const groups = ps.header.groups as Record<string, string>;
+      const nav = ps.header.nav as Record<string, string>;
+      // group labels unique
+      const groupLabels = PUBLIC_NAV_GROUPS.map((g) => groups[g.groupKey]);
+      expect(new Set(groupLabels).size, `${name}: duplicate group labels`).toBe(groupLabels.length);
+      // item labels unique across the entire header
+      const itemLabels = PUBLIC_NAV_GROUPS.flatMap((g) => g.items.map((i) => nav[i.labelKey]));
+      expect(new Set(itemLabels).size, `${name}: duplicate item labels`).toBe(itemLabels.length);
+      // no item shares its own group's visible label
+      for (const g of PUBLIC_NAV_GROUPS) {
+        for (const i of g.items) {
+          expect(nav[i.labelKey], `${name}: ${i.labelKey} duplicates group ${g.groupKey}`).not.toBe(groups[g.groupKey]);
+        }
+      }
+      // footer link labels unique within each column
+      const links = ps.footer.links as Record<string, string>;
+      for (const col of PUBLIC_FOOTER_COLUMNS) {
+        const labels = col.links.map((l) => links[l.labelKey]);
+        expect(new Set(labels).size, `${name}: duplicate labels in footer ${col.columnKey}`).toBe(labels.length);
       }
     }
   });
