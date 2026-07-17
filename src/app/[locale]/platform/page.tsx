@@ -1,9 +1,22 @@
+// PHASE 87D — premium /platform page on the public-site foundation.
+//
+// Figma: intro (page H1) → evidence-to-action pipeline → five-layer
+// architecture stack (Core Intelligence emphasized) → conversion band.
+// Fully server-rendered; metadata keeps the established meta.pages.platform
+// path through the shared buildMetadata helper.
+
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { Link }         from "@/i18n/navigation";
-import { PageShell }    from "@/components/PageShell";
-import { PageIntro }    from "@/components/PageIntro";
-import { ModuleGrid }   from "@/components/ModuleGrid";
 import { buildMetadata } from "@/lib/seo/metadata";
+import {
+  PublicHeader,
+  PublicFooter,
+  PublicSection,
+  PublicPageContainer,
+  SectionHeader,
+  IntelligenceFlow,
+  PlatformArchitecture,
+  PublicCta,
+} from "@/components/public-site";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -12,7 +25,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return buildMetadata({ locale, path: "/platform", title: p.platform.title, description: p.platform.description, keywords: p.platform.keywords });
 }
 
-const PRINCIPLES = ["bilingual", "modular", "onprem", "vendorNeutral"] as const;
+const PIPELINE_KEYS = [
+  "data", "context", "classification", "hypotheses", "evidence",
+  "confidence", "risk", "safeAction", "report",
+] as const;
 
 export default async function PlatformPage({
   params,
@@ -21,39 +37,44 @@ export default async function PlatformPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("platform");
-  const c = await getTranslations("common");
+  const t = await getTranslations("publicSite");
+
+  const pipeline = PIPELINE_KEYS.map((key) => ({
+    key,
+    label: t(`flow.stages.${key}`),
+    emphasis: key === "safeAction",
+  }));
 
   return (
-    <PageShell>
-      <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("lede")} />
+    <div className="flex min-h-screen flex-col bg-background-base">
+      <PublicHeader />
+      <main id="public-content" tabIndex={-1} className="flex-1 outline-none">
+        <PublicSection tone="deep">
+          <PublicPageContainer>
+            <SectionHeader
+              as="h1"
+              eyebrow={t("platform.eyebrow")}
+              title={t("platform.title")}
+              lede={t("platform.lede")}
+            />
+          </PublicPageContainer>
+        </PublicSection>
 
-      <ModuleGrid />
+        <PublicSection aria-labelledby="platform-pipeline-title">
+          <PublicPageContainer>
+            <SectionHeader id="platform-pipeline-title" title={t("platform.pipelineTitle")} />
+            <IntelligenceFlow className="mt-8" stages={pipeline} />
+            <PlatformArchitecture className="mt-12" />
+          </PublicPageContainer>
+        </PublicSection>
 
-      <section className="mx-auto max-w-6xl px-6 pb-20">
-        <h2 className="font-display text-2xl font-bold">{t("principlesTitle")}</h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
-          {PRINCIPLES.map((p) => (
-            <div key={p} className="rounded-xl border border-line bg-surface p-6">
-              <h3 className="font-display text-base font-semibold text-ink">
-                {t(`principles.${p}.name`)}
-              </h3>
-              <p className="mt-2 font-body text-sm leading-relaxed text-muted">
-                {t(`principles.${p}.desc`)}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-12">
-          <Link
-            href="/architecture"
-            className="inline-flex rounded-md border border-line px-5 py-2.5 font-body text-sm text-ink transition-colors hover:border-signal/50"
-          >
-            {c("viewArchitecture")}
-          </Link>
-        </div>
-      </section>
-    </PageShell>
+        <PublicCta
+          title={t("platform.ctaTitle")}
+          ctaLabel={t("platform.requestDemo")}
+          href="/demo"
+        />
+      </main>
+      <PublicFooter />
+    </div>
   );
 }

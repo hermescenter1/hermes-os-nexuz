@@ -1,0 +1,19 @@
+Inter.woff2 — asset provenance
+==============================
+
+Source package : @fontsource-variable/inter@5.2.8 (npm registry)
+Source file    : files/inter-latin-wght-normal.woff2
+Vendored as    : src/fonts/Inter.woff2 (byte-identical copy)
+SHA-256        : 3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62
+Size           : 48,256 bytes
+Font           : Inter (variable, weight axis 100-900, latin subset)
+Upstream       : The Inter Project Authors — https://github.com/rsms/inter
+License        : SIL Open Font License 1.1 — see OFL-Inter.txt (copied from the
+                 same package's LICENSE file)
+Vendored on    : 2026-07-17 (PHASE 87D)
+
+The npm package was used once to obtain the asset and is intentionally NOT a
+project dependency: the font is loaded exclusively from this directory via
+next/font/local in src/app/[locale]/layout.tsx (never from node_modules, never
+from a CDN). To upgrade, install the package again, copy the new WOFF2 +
+LICENSE over these files, and update this record.

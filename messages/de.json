@@ -5377,5 +5377,199 @@
       "connectionUnavailable": "Connection unavailable",
       "retry": "Retry"
     }
+  },
+  "publicSite": {
+    "header": {
+      "home": "Hermes OS — home",
+      "skipToContent": "Skip to main content",
+      "menuOpen": "Open navigation menu",
+      "menuClose": "Close navigation menu",
+      "menuTitle": "Navigation",
+      "navLabel": "Primary",
+      "nav": {
+        "platform": "Platform",
+        "solutions": "Solutions",
+        "industrialBrain": "Industrial Brain",
+        "knowledge": "Knowledge",
+        "company": "Company"
+      },
+      "requestDemo": "Request a Demo"
+    },
+    "hero": {
+      "eyebrow": "Enterprise Industrial Intelligence Platform",
+      "headlineA": "Industrial Intelligence.",
+      "headlineB": "Engineered for Action.",
+      "lede": "Transform industrial evidence, engineering knowledge, and operational data into explainable decisions and safe action paths.",
+      "requestDemo": "Request a Demo",
+      "explorePlatform": "Explore the Platform",
+      "trustLine": "Multi-tenant isolation · Audit trail on every write · On-prem or private cloud"
+    },
+    "evidence": {
+      "ariaLabel": "Illustrative diagnostic console",
+      "caption": "Illustrative product view — sample data, not live plant telemetry.",
+      "header": "Site B · Pump P-204",
+      "status": "Analyzing",
+      "railTitle": "Evidence rail",
+      "evidence1": "Evidence · Vibration RMS +18% / 14d",
+      "evidence2": "Contradiction · Oil analysis clean",
+      "evidence3": "Missing · Recent FFT spectrum",
+      "riskLabel": "Risk · Medium",
+      "riskNote": "Progressive failure ~3 weeks · redundant pump available",
+      "hypothesesTitle": "Ranked hypotheses",
+      "hyp1Title": "Bearing inner-race wear",
+      "hyp1Meta": "Confidence HIGH · 0.86",
+      "hyp2Title": "Misalignment",
+      "hyp2Meta": "Confidence MEDIUM · 0.41",
+      "sapTitle": "Safe action path",
+      "sapNote": "Human approval required",
+      "gateProposed": "Proposed",
+      "gateValidated": "Validated",
+      "gateApprove": "Approve"
+    },
+    "trustStrip": {
+      "srTitle": "Platform guarantees",
+      "isolation": "Multi-tenant · site-level isolation",
+      "rbac": "Organization & site RBAC",
+      "protocols": "PLC · SCADA · OPC UA · MQTT",
+      "deterministic": "Deterministic + explainable"
+    },
+    "pillars": {
+      "title": "Four pillars of industrial intelligence",
+      "reasoning": {
+        "name": "Explainable reasoning",
+        "desc": "Every conclusion traces to evidence, deterministic rules, and clearly labeled model inference."
+      },
+      "evidence": {
+        "name": "Evidence-based",
+        "desc": "Telemetry, engineering knowledge, and case history are weighed together — with contradictions surfaced."
+      },
+      "model": {
+        "name": "Model-assisted",
+        "desc": "Hypotheses and simulations are visually quarantined — never presented as observed fact."
+      },
+      "safety": {
+        "name": "Safe action",
+        "desc": "Every recommendation passes validation gates and human approval before it touches plant state."
+      }
+    },
+    "flow": {
+      "title": "From evidence to safe action — one explainable pipeline",
+      "stages": {
+        "data": "Industrial Data",
+        "context": "Context",
+        "classification": "Classification",
+        "hypotheses": "Hypotheses",
+        "evidence": "Evidence",
+        "confidence": "Confidence",
+        "risk": "Risk",
+        "safeAction": "Safe Action Path",
+        "report": "Explainable Report"
+      }
+    },
+    "modules": {
+      "title": "One platform, five operating domains",
+      "groups": {
+        "intelligence": {
+          "name": "Intelligence",
+          "items": "Industrial Brain · Hermes Copilot · Command Center"
+        },
+        "engineering": {
+          "name": "Engineering",
+          "items": "Knowledge Graph · Digital Twin · EDMS"
+        },
+        "operations": {
+          "name": "Operations",
+          "items": "Predictive Maintenance · Asset Intelligence · CMMS"
+        },
+        "business": {
+          "name": "Business",
+          "items": "ERP · CRM · ATS"
+        },
+        "administration": {
+          "name": "Administration",
+          "items": "Organizations · Billing & Usage · Compliance"
+        }
+      }
+    },
+    "safeAction": {
+      "title": "Human-guided action, by design",
+      "lede": "No recommendation reaches plant equipment without passing validation gates and explicit human approval.",
+      "gates": {
+        "proposed": "Proposed",
+        "validated": "Validated",
+        "approval": "Human Approval",
+        "executed": "Executed"
+      }
+    },
+    "enterprise": {
+      "title": "Enterprise-grade from day one",
+      "isolation": "Multi-tenant isolation",
+      "rbac": "RBAC & site-level access",
+      "audit": "Audit trail on every write",
+      "deployment": "On-prem or private cloud"
+    },
+    "demoCta": {
+      "title": "See Hermes reason over your plant",
+      "requestDemo": "Request a Demo"
+    },
+    "footer": {
+      "tagline": "Industrial Intelligence. Engineered for Action.",
+      "copyright": "© 2026 Hermes Novin Mehr IRIC. All Rights Reserved.",
+      "domain": "hermesnovin.com",
+      "columns": {
+        "platform": "Platform",
+        "company": "Company",
+        "legal": "Legal"
+      },
+      "links": {
+        "platform": "Platform",
+        "industrialBrain": "Industrial Brain",
+        "copilot": "Copilot",
+        "knowledgeLibrary": "Knowledge Library",
+        "about": "About",
+        "careers": "Careers",
+        "contact": "Contact",
+        "requestDemo": "Request a Demo",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "cookies": "Cookie Policy"
+      }
+    },
+    "platform": {
+      "eyebrow": "The Platform",
+      "title": "One architecture, from industrial data to safe action",
+      "lede": "Hermes layers industrial intelligence over your existing systems — every module feeds one explainable reasoning pipeline.",
+      "pipelineTitle": "The evidence-to-action pipeline",
+      "coreBadge": "Core layer",
+      "layers": {
+        "intelligence": {
+          "name": "Core Intelligence",
+          "modules": "Industrial Brain · Hermes Copilot · Command Center",
+          "desc": "The reasoning engine that drives every decision."
+        },
+        "engineering": {
+          "name": "Engineering",
+          "modules": "Knowledge Graph · Digital Twin · EDMS",
+          "desc": "Engineering knowledge and the asset model the Brain reasons over."
+        },
+        "operations": {
+          "name": "Operations",
+          "modules": "Predictive Maintenance · Asset Intelligence · CMMS",
+          "desc": "Operational signals and the maintenance work that closes the loop."
+        },
+        "business": {
+          "name": "Business",
+          "modules": "ERP · CRM · ATS",
+          "desc": "Enterprise workflows on the same tenancy and access model."
+        },
+        "security": {
+          "name": "Security · Integration & Edge",
+          "modules": "Org & site RBAC · Tenant isolation · Audit trail · PLC · SCADA · OPC UA · MQTT",
+          "desc": "The boundary layer every request and connection passes through."
+        }
+      },
+      "ctaTitle": "Map Hermes onto your architecture",
+      "requestDemo": "Request a Demo"
+    }
   }
 }
