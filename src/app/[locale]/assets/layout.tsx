@@ -18,7 +18,7 @@ export const metadata = noIndexMetadata("Asset Registry");
 export default async function AssetsLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations("assetMaintenance");
   return (
-    <RequireCapability capability="admin">
+    <RequireCapability capability="authoring">
       <AppShell>
         <AssetsSubNav ariaLabel={t("assets.eyebrow")} />
         <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

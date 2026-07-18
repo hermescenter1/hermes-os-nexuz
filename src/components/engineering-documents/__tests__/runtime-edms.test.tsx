@@ -102,10 +102,14 @@ describe("catalog + navigation + product-boundary invariants", () => {
       expect(hrefs).toContain("/cmms");
       expect(hrefs).toContain("/library"); // public knowledge stays separate
     }
-    for (const role of ["engineer", "customer", "candidate", "viewer"] as const) {
+    // PHASE 87L.4 AMENDMENT: EDMS is an engineering module — engineer sees it
+    // and middleware admits it; the commercial modules stay hidden.
+    const engineerHrefs = visibleAppNavGroups("engineer").flatMap((g) => g.items.map((i) => i.href));
+    expect(engineerHrefs).toContain("/documents");
+    expect(engineerHrefs).not.toContain("/crm");
+    for (const role of ["customer", "candidate", "viewer"] as const) {
       expect(visibleAppNavGroups(role).flatMap((g) => g.items.map((i) => i.href))).not.toContain("/documents");
     }
-    // middleware policy itself untouched (known 87C layout/middleware mismatch)
     expect(isAuthorizedForPath("engineer", "/en/documents")).toBe(true);
   });
 
@@ -113,7 +117,8 @@ describe("catalog + navigation + product-boundary invariants", () => {
     const layout = read("src/app/[locale]/documents/layout.tsx");
     expect(layout).toContain("AppShell");
     expect(layout).toContain("EdmsSubNav");
-    expect(layout).toContain('capability="admin"');
+    // 87L.4 amendment: EDMS gates on `authoring`, which admits engineer
+    expect(layout).toContain('capability="authoring"');
     expect(layout).not.toMatch(/<aside/);
     for (const rel of [
       "src/components/engineering-documents/EdmsCommandSurface.tsx",

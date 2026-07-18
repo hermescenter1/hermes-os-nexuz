@@ -150,11 +150,14 @@ describe("dashboard route protection — isAuthorizedForPath", () => {
     });
   }
 
-  it("ERP keeps its stricter admin/superadmin/engineer matrix", () => {
-    for (const role of ["admin", "superadmin", "engineer"] as Role[]) {
+  // PHASE 87L.4 AMENDMENT (owner-resolved): ERP is a commercial module, so it
+  // is now admin/superadmin only — engineer is denied here while keeping its
+  // access to the engineering modules.
+  it("ERP keeps its stricter admin/superadmin matrix — engineer is denied", () => {
+    for (const role of ["admin", "superadmin"] as Role[]) {
       expect(isAuthorizedForPath(role, "/fa/erp/inventory")).toBe(true);
     }
-    for (const role of ["customer", "vendor", "viewer", "candidate"] as Role[]) {
+    for (const role of ["engineer", "customer", "vendor", "viewer", "candidate"] as Role[]) {
       expect(isAuthorizedForPath(role, "/fa/erp/inventory")).toBe(false);
     }
   });

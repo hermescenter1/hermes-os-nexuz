@@ -97,8 +97,10 @@ describe("catalog + visibility invariants", () => {
     for (const role of ["engineer", "customer", "candidate", "viewer"] as const) {
       expect(visibleAppNavGroups(role).flatMap((g) => g.items.map((i) => i.href))).not.toContain("/crm");
     }
-    // middleware policy itself is untouched (engineer still middleware-authorized — known 87C mismatch)
-    expect(isAuthorizedForPath("engineer", "/en/crm")).toBe(true);
+    // PHASE 87L.4 AMENDMENT: CRM is a commercial module — middleware now denies
+    // engineer too, so navigation and enforcement finally agree.
+    expect(isAuthorizedForPath("engineer", "/en/crm")).toBe(false);
+    expect(isAuthorizedForPath("admin", "/en/crm")).toBe(true);
   });
 });
 

@@ -19,7 +19,7 @@ export const metadata = noIndexMetadata("CMMS");
 export default async function CmmsLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations("assetMaintenance");
   return (
-    <RequireCapability capability="admin">
+    <RequireCapability capability="authoring">
       <AppShell>
         <CmmsSubNav ariaLabel={t("cmms.eyebrow")} />
         <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

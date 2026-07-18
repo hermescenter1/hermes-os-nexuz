@@ -25,10 +25,16 @@ function stubNotificationFetch(notifications: unknown[] = []) {
       calls.push({ url: String(url), method: init?.method ?? "GET" });
       return {
         ok: true,
+        status: 200,
         json: async () =>
-          String(url).includes("unread-count")
-            ? { count: notifications.filter((n) => !(n as { isRead?: boolean }).isRead).length }
-            : { notifications },
+          // PHASE 87L.4: the widget confirms a session via /api/auth before it
+          // polls or opens SSE (anonymous public pages must issue neither), so
+          // this stub has to model a signed-in caller for the UI under test.
+          String(url).includes("/api/auth")
+            ? { authConfigured: true, user: { id: "u1", name: "Test", email: "t@example.com", role: "admin" } }
+            : String(url).includes("unread-count")
+              ? { count: notifications.filter((n) => !(n as { isRead?: boolean }).isRead).length }
+              : { notifications },
       };
     }),
   );

@@ -18,7 +18,7 @@ const UpdateOpportunitySchema = z.object({
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin") && !can(user.role, "authoring"))
+  if (!can(user.role, "admin"))
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const { id } = await params;
@@ -30,7 +30,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin") && !can(user.role, "authoring"))
+  if (!can(user.role, "admin"))
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const { id }  = await params;

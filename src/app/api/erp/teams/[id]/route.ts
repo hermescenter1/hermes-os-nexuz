@@ -12,7 +12,7 @@ export async function GET(
 ): Promise<NextResponse> {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin") && !can(user.role, "authoring"))
+  if (!can(user.role, "admin"))
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const { id } = await params;

@@ -68,12 +68,12 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
   {
     groupKey: "operations",
     items: [
-      { labelKey: "assets", href: "/assets", pageCapability: "admin" },
+      { labelKey: "assets", href: "/assets", pageCapability: "authoring" },
       { labelKey: "sites", href: "/dashboard/industrial/sites" },
       { labelKey: "operationsCenter", href: "/dashboard/operations" },
-      { labelKey: "automation", href: "/automation", pageCapability: "admin" },
+      { labelKey: "automation", href: "/automation", pageCapability: "authoring" },
       { labelKey: "multiSite", href: "/dashboard/multi-site" },
-      { labelKey: "maintenance", href: "/cmms", pageCapability: "admin" },
+      { labelKey: "maintenance", href: "/cmms", pageCapability: "authoring" },
     ],
   },
   {
@@ -93,7 +93,7 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
       { labelKey: "cases", href: "/dashboard/knowledge/cases" },
       { labelKey: "knowledgeGraph", href: "/dashboard/knowledge-graph" },
       { labelKey: "journal", href: "/articles" },
-      { labelKey: "edms", href: "/documents", pageCapability: "admin" },
+      { labelKey: "edms", href: "/documents", pageCapability: "authoring" },
     ],
   },
   {

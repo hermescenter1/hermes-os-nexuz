@@ -211,26 +211,59 @@ export function NotificationCenter({
   const [loading,        setLoading]         = useState(false);
   const dropdownRef  = useRef<HTMLDivElement>(null);
   const listLoadedRef = useRef(false); // true once the dropdown list has been fetched
+  // PHASE 87L.4: the public shell (PublicHeader) mounts this widget on every
+  // public page, so an anonymous visitor used to poll /unread-count every 60s
+  // forever and open a doomed SSE channel. That endpoint answers 200 {count:0}
+  // for anonymous callers (it does NOT 401), so the authentication signal has
+  // to come from /api/auth, which reports `user: null` explicitly.
+  const unauthenticatedRef = useRef(false);
+  const [signedIn, setSignedIn] = useState<boolean | null>(null); // null = unknown yet
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/auth");
+        if (!res.ok) return;                        // unknown → behave as before
+        const data = await res.json() as { user: unknown | null };
+        if (!cancelled) setSignedIn(Boolean(data.user));
+      } catch { /* best-effort: leave as unknown */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // ── Initial count + polling fallback ────────────────────────────────────
   const fetchUnreadCount = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications/unread-count");
-      if (!res.ok) return;
+      // secondary guard: a session that expires mid-visit stops the loop too
+      if (res.status === 401 || res.status === 403) {
+        unauthenticatedRef.current = true;
+        return;
+      }
+      if (!res.ok) return;                          // transient 5xx must NOT stop polling
       const data = await res.json() as { count: number };
       setUnreadCount(data.count);
     } catch { /* best-effort */ }
   }, []);
 
   useEffect(() => {
+    if (signedIn !== true) return;                  // start only once the session is confirmed
     void fetchUnreadCount();
-    const id = setInterval(() => void fetchUnreadCount(), POLL_INTERVAL_MS);
+    const id = setInterval(() => {
+      if (unauthenticatedRef.current) {
+        clearInterval(id);
+        return;
+      }
+      void fetchUnreadCount();
+    }, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [fetchUnreadCount]);
+  }, [fetchUnreadCount, signedIn]);
 
   // ── SSE real-time channel ─────────────────────────────────────────────────
   useEffect(() => {
     if (typeof EventSource === "undefined") return; // SSR guard
+    if (signedIn !== true) return;                  // no realtime channel until confirmed
 
     let es: EventSource | null = null;
     let errorCount = 0;
@@ -264,7 +297,7 @@ export function NotificationCenter({
 
     connect();
     return () => { es?.close(); };
-  }, []);
+  }, [signedIn]);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);

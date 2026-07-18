@@ -95,7 +95,10 @@ describe("catalog + nav invariants", () => {
     for (const role of ["engineer", "customer", "candidate", "viewer"] as const) {
       expect(visibleAppNavGroups(role).flatMap((g) => g.items.map((i) => i.href))).not.toContain("/erp");
     }
-    expect(isAuthorizedForPath("engineer", "/en/erp")).toBe(true); // known 87C middleware/layout mismatch, untouched
+    // PHASE 87L.4 AMENDMENT: ERP is a commercial module — engineer is denied at
+    // middleware as well, matching the admin-only layout guard.
+    expect(isAuthorizedForPath("engineer", "/en/erp")).toBe(false);
+    expect(isAuthorizedForPath("admin", "/en/erp")).toBe(true);
   });
 });
 

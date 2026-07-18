@@ -9,7 +9,7 @@ export const metadata = noIndexMetadata("Automation");
 export default async function AutomationLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations("automationOperations");
   return (
-    <RequireCapability capability="admin">
+    <RequireCapability capability="authoring">
       <div className="flex min-h-screen">
         <aside className="w-52 shrink-0 border-r bg-card/50 p-4 hidden md:block">
           <div className="mb-6">

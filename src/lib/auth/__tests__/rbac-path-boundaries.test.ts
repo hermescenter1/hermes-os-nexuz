@@ -244,14 +244,31 @@ describe("no regression — role policies are unchanged", () => {
     }
   });
 
-  it("ops sections (crm/automation/erp/documents/cmms/assets): admin/superadmin/engineer only", () => {
-    for (const section of ["/crm", "/automation", "/erp", "/documents", "/cmms", "/assets"]) {
+  // PHASE 87L.4 AMENDMENT (owner-resolved): the ops sections split in two. The
+  // engineering modules admit engineer; the commercial modules (CRM/ERP) do
+  // not. This supersedes the previous single "all six admit engineer" contract,
+  // which contradicted the admin-only layout guards those routes shipped with.
+  it("engineering sections (automation/documents/cmms/assets): admin/superadmin/engineer", () => {
+    for (const section of ["/automation", "/documents", "/cmms", "/assets"]) {
       for (const loc of LOCALES) {
         for (const role of ["admin", "superadmin", "engineer"] as Role[]) {
-          expect(isAuthorizedForPath(role, `/${loc}${section}`)).toBe(true);
+          expect(isAuthorizedForPath(role, `/${loc}${section}`), `${role} ${section}`).toBe(true);
         }
         for (const role of ["customer", "vendor", "viewer", "candidate"] as Role[]) {
-          expect(isAuthorizedForPath(role, `/${loc}${section}`)).toBe(false);
+          expect(isAuthorizedForPath(role, `/${loc}${section}`), `${role} ${section}`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("commercial sections (crm/erp): admin/superadmin only — engineer denied", () => {
+    for (const section of ["/crm", "/erp"]) {
+      for (const loc of LOCALES) {
+        for (const role of ["admin", "superadmin"] as Role[]) {
+          expect(isAuthorizedForPath(role, `/${loc}${section}`), `${role} ${section}`).toBe(true);
+        }
+        for (const role of ["engineer", "customer", "vendor", "viewer", "candidate"] as Role[]) {
+          expect(isAuthorizedForPath(role, `/${loc}${section}`), `${role} ${section}`).toBe(false);
         }
       }
     }

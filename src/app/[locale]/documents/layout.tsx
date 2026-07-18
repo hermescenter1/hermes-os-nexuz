@@ -15,7 +15,7 @@ import { EdmsSubNav }        from "@/components/engineering-documents";
 export default async function DocumentsLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations("engineeringDocuments");
   return (
-    <RequireCapability capability="admin">
+    <RequireCapability capability="authoring">
       <AppShell>
         <EdmsSubNav ariaLabel={t("header.eyebrow")} />
         <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

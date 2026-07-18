@@ -134,13 +134,20 @@ describe("catalog + navigation invariants", () => {
       expect(hrefs).toContain("/cmms");
       expect(hrefs).toContain("/erp"); // ERP stays a separate destination too
     }
-    for (const role of ["engineer", "customer", "candidate", "viewer"] as const) {
+    // PHASE 87L.4 AMENDMENT: engineer now sees BOTH engineering modules, and
+    // middleware agrees — but still not the commercial ERP destination.
+    const engineerHrefs = visibleAppNavGroups("engineer").flatMap((g) => g.items.map((i) => i.href));
+    expect(engineerHrefs).toContain("/assets");
+    expect(engineerHrefs).toContain("/cmms");
+    expect(engineerHrefs).not.toContain("/erp");
+    for (const role of ["customer", "candidate", "viewer"] as const) {
       const hrefs = visibleAppNavGroups(role).flatMap((g) => g.items.map((i) => i.href));
       expect(hrefs).not.toContain("/assets");
       expect(hrefs).not.toContain("/cmms");
     }
-    // middleware policy itself untouched (known 87C layout/middleware mismatch)
     expect(isAuthorizedForPath("engineer", "/en/cmms")).toBe(true);
+    expect(isAuthorizedForPath("engineer", "/en/assets")).toBe(true);
+    expect(isAuthorizedForPath("engineer", "/en/erp")).toBe(false);
   });
 
   it("preserves the /cmms/dashboard extraction contract and the ERP↔CMMS record separation", () => {
@@ -175,7 +182,8 @@ describe("catalog + navigation invariants", () => {
       const src = read(rel);
       expect(src).toContain("AppShell");
       expect(src).toContain(subNav);
-      expect(src).toContain('RequireCapability capability="admin"'.replace(" capability=", ' capability='));
+      // 87L.4 amendment: engineering modules now gate on `authoring` (admits engineer)
+      expect(src).toContain('RequireCapability capability="authoring"');
       expect(src).not.toMatch(/<aside/);
     }
   });

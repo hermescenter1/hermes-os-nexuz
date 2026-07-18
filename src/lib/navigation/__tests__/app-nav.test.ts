@@ -102,26 +102,35 @@ describe("app-nav — visibility never exceeds EFFECTIVE authorization (87C amen
     }
   });
 
-  it("engineer does NOT see destinations whose layouts end in RequireCapability(\"admin\") denial", () => {
-    // The six audited mismatches: middleware admits engineer, the module layout
-    // then denies with RequireCapability("admin"). Presentation hides them.
-    const MISMATCHED = ["/assets", "/automation", "/cmms", "/crm", "/documents", "/erp"];
+  // PHASE 87L.4 AMENDMENT (owner-resolved): the former six-way mismatch is gone.
+  // Engineering modules admit engineer at every layer; commercial modules
+  // (CRM/ERP) are admin-only at every layer.
+  it("engineer sees the engineering modules, and every layer agrees", () => {
+    const ENGINEERING = ["/assets", "/automation", "/cmms", "/documents"];
     const engineerHrefs = visibleAppNavGroups("engineer").flatMap((g) => g.items.map((i) => i.href));
-    for (const href of MISMATCHED) {
+    for (const href of ENGINEERING) {
+      expect(engineerHrefs, `engineer must see ${href}`).toContain(href);
+      expect(isAuthorizedForPath("engineer", `/en${href}`), `middleware ${href}`).toBe(true);
+      expect(ALL_ITEMS.find((i) => i.href === href)?.pageCapability).toBe("authoring");
+    }
+  });
+
+  it("engineer does NOT see the commercial modules, and middleware denies them too", () => {
+    const COMMERCIAL = ["/crm", "/erp"];
+    const engineerHrefs = visibleAppNavGroups("engineer").flatMap((g) => g.items.map((i) => i.href));
+    for (const href of COMMERCIAL) {
       expect(engineerHrefs, `engineer must not see ${href}`).not.toContain(href);
-      // …while the middleware itself still authorizes the route (the mismatch
-      // this amendment presents around, without changing either policy):
-      expect(isAuthorizedForPath("engineer", `/en${href}`)).toBe(true);
-      // …and the registry records the page guard it mirrors:
+      // presentation and enforcement now agree — no mismatch to present around
+      expect(isAuthorizedForPath("engineer", `/en${href}`), `middleware ${href}`).toBe(false);
       expect(ALL_ITEMS.find((i) => i.href === href)?.pageCapability).toBe("admin");
     }
   });
 
-  it("admin and superadmin retain all six admin-guarded module links", () => {
-    const MISMATCHED = ["/assets", "/automation", "/cmms", "/crm", "/documents", "/erp"];
+  it("admin and superadmin retain all six module links", () => {
+    const ALL_SIX = ["/assets", "/automation", "/cmms", "/crm", "/documents", "/erp"];
     for (const role of ["admin", "superadmin"] as Role[]) {
       const hrefs = visibleAppNavGroups(role).flatMap((g) => g.items.map((i) => i.href));
-      for (const href of MISMATCHED) expect(hrefs, `${role} must keep ${href}`).toContain(href);
+      for (const href of ALL_SIX) expect(hrefs, `${role} must keep ${href}`).toContain(href);
     }
   });
 

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request): Promise<NextResponse> {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin") && !can(user.role, "authoring"))
+  if (!can(user.role, "admin"))
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const url    = new URL(req.url);

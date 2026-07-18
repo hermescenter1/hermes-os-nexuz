@@ -21,7 +21,7 @@ const CreateLeadSchema = z.object({
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin") && !can(user.role, "authoring"))
+  if (!can(user.role, "admin"))
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const status = req.nextUrl.searchParams.get("status") ?? undefined;
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin") && !can(user.role, "authoring"))
+  if (!can(user.role, "admin"))
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const body   = await req.json().catch(() => ({}));

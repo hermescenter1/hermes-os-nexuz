@@ -183,27 +183,33 @@ export function isAuthorizedForPath(
   if (CUSTOMER.test(pathname)) {
     return role === "customer" || role === "admin" || role === "superadmin" || role === "engineer";
   }
-  // CRM: admin/superadmin/engineer only
+  // CRM: admin/superadmin only.
+  // PHASE 87L.4 AMENDMENT (owner-resolved): CRM holds customer pipeline and
+  // commercial data, so engineer is denied here even though it retains access
+  // to the engineering modules below. This supersedes the earlier
+  // "admin/engineer" contract, which contradicted the admin-only layout guard.
   if (CRM.test(pathname)) {
-    return role === "admin" || role === "superadmin" || role === "engineer";
+    return role === "admin" || role === "superadmin";
   }
-  // Automation: admin/superadmin/engineer only
+  // Automation: admin/superadmin/engineer (87L.4 amendment — engineering module)
   if (AUTOMATION.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
-  // ERP: admin/superadmin/engineer only
+  // ERP: admin/superadmin only.
+  // PHASE 87L.4 AMENDMENT (owner-resolved): ERP holds financial and business
+  // operations data — engineer is denied, matching CRM above.
   if (ERP.test(pathname)) {
-    return role === "admin" || role === "superadmin" || role === "engineer";
+    return role === "admin" || role === "superadmin";
   }
-  // EDMS: admin/superadmin/engineer only
+  // EDMS: admin/superadmin/engineer (87L.4 amendment — engineering module)
   if (DOCUMENTS.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
-  // CMMS: admin/superadmin/engineer only
+  // CMMS: admin/superadmin/engineer (87L.4 amendment — engineering module)
   if (CMMS.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
-  // Asset Registry: admin/superadmin/engineer only
+  // Asset Registry: admin/superadmin/engineer (87L.4 amendment — engineering module)
   if (ASSETS.test(pathname)) {
     return role === "admin" || role === "superadmin" || role === "engineer";
   }
