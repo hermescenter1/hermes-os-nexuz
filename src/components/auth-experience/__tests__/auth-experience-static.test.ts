@@ -27,8 +27,13 @@ describe("authExperience catalog — parity, carryover, orthography", () => {
     expect(keyPaths((de as unknown as typeof en).authExperience as unknown as Record<string, unknown>)).toEqual(enPaths);
   });
 
-  it("de.authExperience is byte-identical English carryover (German not activated)", () => {
-    expect(JSON.stringify((de as unknown as typeof en).authExperience)).toBe(JSON.stringify(en.authExperience));
+  // PHASE 87L.6 SUPERSEDES the carryover pin: the auth experience is German now.
+  it("de.authExperience is genuinely German — same shape, translated values", () => {
+    const deAx = (de as unknown as typeof en).authExperience;
+    expect(Object.keys(deAx)).toEqual(Object.keys(en.authExperience));
+    expect(JSON.stringify(deAx)).not.toBe(JSON.stringify(en.authExperience));
+    expect(deAx.forgot.title).toBe("Passwort zurücksetzen");
+    expect(deAx.showPassword).toBe("Passwort anzeigen");
   });
 
   it("no empty strings; fa uses Persian ی/ک (no Arabic ي/ك)", () => {

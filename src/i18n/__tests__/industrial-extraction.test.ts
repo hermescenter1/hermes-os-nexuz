@@ -281,10 +281,10 @@ describe("Sibling Industrial Intelligence clients — retained percent-symbol co
 
 describe("German stays inactive during this extraction", () => {
   it("ACTIVE_LOCALES is still exactly fa + en", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
   });
-  it("de is supported but not active", () => {
+  it("de is supported and ACTIVE (87L.6)", () => {
     expect(isSupportedLocale("de")).toBe(true);
-    expect(isActiveLocale("de")).toBe(false);
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
   });
 });

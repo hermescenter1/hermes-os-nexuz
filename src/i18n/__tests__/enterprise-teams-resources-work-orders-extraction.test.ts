@@ -630,17 +630,17 @@ describe("Teams/Resources/Work Orders behavior & raw values preserved", () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe("locale configuration unchanged", () => {
-  it("ACTIVE_LOCALES is still exactly fa + en; de supported but inactive", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+  it("ACTIVE_LOCALES is fa + en + de (87L.6 activation)", () => {
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
     expect(isSupportedLocale("de")).toBe(true);
-    expect(isActiveLocale("de")).toBe(false);
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
   });
 
-  it("German stays out of routing and the active locale switcher", () => {
-    expect([...routing.locales]).not.toContain("de");
+  it("German is routable and in the switcher (87L.6)", () => {
+    expect([...routing.locales]).toContain("de") // 87L.6: German ACTIVATED;
     const codes = activeLocaleOptions().map((o) => o.code);
-    expect(codes).toEqual(["fa", "en"]);
-    expect(activeLocaleOptions().map((o) => o.nativeName)).not.toContain("Deutsch");
+    expect(codes).toEqual(["fa", "en", "de"]);
+    expect(activeLocaleOptions().map((o) => o.nativeName)).toContain("Deutsch");
   });
   // The former "Part D Inventory/Approvals remain untouched" and "no
   // inventory/approvals sub-objects added" guards are retired: Part D is now

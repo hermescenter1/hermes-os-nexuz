@@ -132,8 +132,14 @@ describe("copy integrity — illustrative, truthful, third-party-free", () => {
     expect(en.publicSite.story.intelligence.body2).toContain("Decisions stay with your engineers");
   });
 
-  it("de carryover stays byte-identical for the whole publicSite namespace", () => {
-    expect(JSON.stringify((de as unknown as typeof en).publicSite)).toBe(JSON.stringify(en.publicSite));
+  // PHASE 87L.6 SUPERSEDES the carryover pin: the story sub-tree is German now.
+  it("de story values are real German with the same key shape and disclosures intact", () => {
+    const deStory = (de as unknown as typeof en).publicSite.story;
+    expect(Object.keys(deStory)).toEqual(Object.keys(en.publicSite.story));
+    expect(deStory.disclosure).toBe("Illustrative Industrieumgebung");
+    expect(deStory.factory.body1).not.toBe(en.publicSite.story.factory.body1);
+    // technical protocols stay verbatim inside the German sentence
+    expect(deStory.factory.body1).toContain("OPC UA");
   });
 
   it("fa story values are real translations (differ from en) with no Arabic yeh/kaf", () => {

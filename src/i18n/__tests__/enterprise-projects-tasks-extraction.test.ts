@@ -536,14 +536,14 @@ describe("Projects/Tasks behavior & raw values preserved", () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe("locale configuration and later ERP modules unchanged", () => {
-  it("ACTIVE_LOCALES is still exactly fa + en; de supported but inactive", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+  it("ACTIVE_LOCALES is fa + en + de (87L.6 activation)", () => {
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
     expect(isSupportedLocale("de")).toBe(true);
-    expect(isActiveLocale("de")).toBe(false);
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
   });
 
   it("German stays out of routing (not routable / no active switcher exposure)", () => {
-    expect([...routing.locales]).not.toContain("de");
+    expect([...routing.locales]).toContain("de") // 87L.6: German ACTIVATED;
   });
   // The former "later ERP module files remain untouched" guard is retired: every
   // later ERP surface (through Inventory/Approvals, Phase 86C4B2B1D) is now

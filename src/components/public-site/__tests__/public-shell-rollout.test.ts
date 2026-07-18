@@ -176,7 +176,7 @@ describe("homepage title — brand duplication removed", () => {
       const meta = buildMetadata({ locale, path: "", title: "t", description: "d" });
       expect(meta.alternates?.canonical).toBe(`${BASE_URL}/${locale}`);
       const langs = meta.alternates?.languages as Record<string, string>;
-      expect(Object.keys(langs).sort()).toEqual(["en", "fa", "x-default"]);
+      expect(Object.keys(langs).sort()).toEqual(["de", "en", "fa", "x-default"]);
       expect(langs["x-default"]).toBe(`${BASE_URL}/fa`);
     }
   });

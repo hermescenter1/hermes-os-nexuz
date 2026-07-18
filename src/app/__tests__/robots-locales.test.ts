@@ -11,28 +11,24 @@ function ruleFor(agent: string) {
   return rule;
 }
 
-describe("robots.ts — active locales only", () => {
+describe("robots.ts — active locales (87L.6: fa+en+de)", () => {
   it("references /fa/ and /en/", () => {
     expect(serialized).toContain("/fa/");
     expect(serialized).toContain("/en/");
   });
 
-  it("never references the inactive /de/ locale", () => {
-    expect(serialized).not.toContain("/de/");
+  it("references the newly activated /de/ locale (87L.6)", () => {
+    expect(serialized).toContain("/de/");
   });
 
   it("Googlebot rule is semantically unchanged (fa/en literals preserved)", () => {
     const g = ruleFor("Googlebot");
-    expect(g.allow).toEqual(["/fa/", "/en/"]);
+    expect(g.allow).toEqual(["/fa/", "/en/", "/de/"]);
     expect(g.disallow).toEqual([
-      "/fa/dashboard/",
-      "/en/dashboard/",
-      "/fa/admin/",
-      "/en/admin/",
-      "/fa/auth/",
-      "/en/auth/",
-      "/fa/candidate/",
-      "/en/candidate/",
+      "/fa/dashboard/", "/en/dashboard/", "/de/dashboard/",
+      "/fa/admin/", "/en/admin/", "/de/admin/",
+      "/fa/auth/", "/en/auth/", "/de/auth/",
+      "/fa/candidate/", "/en/candidate/", "/de/candidate/",
       "/api/",
       "/_next/",
     ]);
@@ -42,18 +38,15 @@ describe("robots.ts — active locales only", () => {
   it("GPTBot allow list preserves per-suffix fa/en ordering", () => {
     const gpt = ruleFor("GPTBot");
     expect(gpt.allow).toEqual([
-      "/fa/library/",
-      "/en/library/",
-      "/fa/services/",
-      "/en/services/",
-      "/fa/academy/",
-      "/en/academy/",
+      "/fa/library/", "/en/library/", "/de/library/",
+      "/fa/services/", "/en/services/", "/de/services/",
+      "/fa/academy/", "/en/academy/", "/de/academy/",
     ]);
   });
 
   it("Googlebot-Image keeps /brand/ ahead of locale roots", () => {
     const img = ruleFor("Googlebot-Image");
-    expect(img.allow).toEqual(["/brand/", "/fa/", "/en/"]);
+    expect(img.allow).toEqual(["/brand/", "/fa/", "/en/", "/de/"]);
   });
 
   it("aggressive bots still fully blocked", () => {

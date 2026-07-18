@@ -357,37 +357,37 @@
     }
   },
   "modules": {
-    "sectionTitle": "Six modules, one platform",
-    "sectionLede": "Each module is a focused tool. Together they form the operations surface of the plant.",
+    "sectionTitle": "Sechs Module, eine Plattform",
+    "sectionLede": "Jedes Modul ist ein fokussiertes Werkzeug. Zusammen bilden sie die Betriebsoberfläche des Werks.",
     "aiEngineer": {
       "name": "Hermes AI Engineer",
-      "tagline": "The reasoning core",
-      "desc": "An automation-literate assistant that drafts logic, explains faults, and routes work to the specialist modules."
+      "tagline": "Der Reasoning-Kern",
+      "desc": "Ein automatisierungskundiger Assistent, der Logik entwirft, Störungen erklärt und Arbeit an die Spezialmodule weiterleitet."
     },
     "plcCopilot": {
       "name": "Hermes PLC Copilot",
-      "tagline": "Logic, authored",
-      "desc": "Write and review ladder and structured text with vendor-aware suggestions and version history."
+      "tagline": "Logik, sauber erstellt",
+      "desc": "Kontaktplan und strukturierten Text schreiben und prüfen — mit herstellerbewussten Vorschlägen und Versionshistorie."
     },
     "scadaStudio": {
       "name": "Hermes SCADA Studio",
-      "tagline": "Supervise and visualize",
-      "desc": "Compose supervisory screens and process views that read correctly in Persian and English."
+      "tagline": "Überwachen und visualisieren",
+      "desc": "Leitbilder und Prozessansichten komponieren, die auf Persisch und Englisch korrekt lesbar sind."
     },
     "knowledgeCloud": {
       "name": "Hermes Knowledge Cloud",
-      "tagline": "Reference, searchable",
-      "desc": "An electrical and automation library your team can query in plain language."
+      "tagline": "Referenz, durchsuchbar",
+      "desc": "Eine Elektro- und Automatisierungsbibliothek, die Ihr Team in natürlicher Sprache abfragen kann."
     },
     "protectionCenter": {
       "name": "Hermes Protection Center",
-      "tagline": "OT posture and audit",
-      "desc": "Track network posture, segmentation, and audit trails across operational technology."
+      "tagline": "OT-Lagebild und Audit",
+      "desc": "Netzwerk-Lagebild, Segmentierung und Audit-Trails über die Operational Technology hinweg verfolgen."
     },
     "factoryDashboard": {
       "name": "Hermes Factory Dashboard",
-      "tagline": "The plant at a glance",
-      "desc": "Live lines, alarms, and KPIs on one screen — simulated in this demo, wired to the historian in production."
+      "tagline": "Das Werk auf einen Blick",
+      "desc": "Live-Linien, Alarme und KPIs auf einem Bildschirm — in dieser Demo simuliert, in Produktion an den Historian angebunden."
     }
   },
   "platform": {
@@ -415,172 +415,172 @@
     }
   },
   "services": {
-    "eyebrow": "Services",
-    "title": "Industrial Intelligence Services",
-    "lede": "Engineering services for the operational layer of the plant — from controller logic to supervisory systems to the security of the OT network.",
+    "eyebrow": "Leistungen",
+    "title": "Leistungen für industrielle Intelligenz",
+    "lede": "Engineering-Leistungen für die operative Ebene des Werks — von der Steuerungslogik über Leitsysteme bis zur Sicherheit des OT-Netzwerks.",
     "items": {
       "plc": {
-        "name": "PLC Programming",
-        "short": "Ladder and structured text, authored and reviewed.",
-        "title": "PLC Programming",
-        "lede": "Author, review, and version control logic for the controllers that run your lines.",
+        "name": "PLC-Programmierung",
+        "short": "Kontaktplan und strukturierter Text, erstellt und geprüft.",
+        "title": "PLC-Programmierung",
+        "lede": "Logik für die Steuerungen Ihrer Linien erstellen, prüfen und versionieren.",
         "points": {
           "one": {
-            "name": "Ladder & structured text",
-            "desc": "Write in the languages your controllers already speak."
+            "name": "Kontaktplan & strukturierter Text",
+            "desc": "Programmiert in den Sprachen, die Ihre Steuerungen bereits sprechen."
           },
           "two": {
-            "name": "Vendor-aware",
-            "desc": "Patterns aligned with Siemens S7, ABB, and Schneider conventions."
+            "name": "Herstellerbewusst",
+            "desc": "Muster nach den Konventionen von Siemens S7, ABB und Schneider."
           },
           "three": {
-            "name": "Reviewed and versioned",
-            "desc": "Every change is explained and tracked, not pasted blind."
+            "name": "Geprüft und versioniert",
+            "desc": "Jede Änderung wird erklärt und nachverfolgt — nichts wird blind eingefügt."
           }
         }
       },
       "scadaHmi": {
         "name": "SCADA & HMI",
-        "short": "Supervisory control and operator screens.",
+        "short": "Leittechnik und Bedienbilder.",
         "title": "SCADA & HMI",
-        "lede": "Build the screens operators watch and the supervisory layer that drives them.",
+        "lede": "Die Bilder, die Bediener beobachten, und die Leitebene dahinter — sauber aufgebaut.",
         "points": {
           "one": {
-            "name": "Process visualization",
-            "desc": "Live mimic diagrams of lines, tanks, and flows."
+            "name": "Prozessvisualisierung",
+            "desc": "Live-Fließbilder von Linien, Tanks und Strömen."
           },
           "two": {
-            "name": "Operator screens",
-            "desc": "HMI layouts that read correctly in both directions."
+            "name": "Bedienbilder",
+            "desc": "HMI-Layouts, die in beiden Schreibrichtungen korrekt lesbar sind."
           },
           "three": {
-            "name": "Alarm-aware",
-            "desc": "Surface what matters first, in the operator's language."
+            "name": "Alarmbewusst",
+            "desc": "Das Wichtigste zuerst, in der Sprache des Bedieners."
           }
         }
       },
       "industrialAi": {
-        "name": "Industrial AI",
-        "short": "An automation copilot for engineers.",
-        "title": "Industrial AI",
-        "lede": "An assistant that understands controllers, faults, and the vocabulary of the plant floor.",
+        "name": "Industrielle KI",
+        "short": "Ein Automatisierungs-Copilot für Ingenieure.",
+        "title": "Industrielle KI",
+        "lede": "Ein Assistent, der Steuerungen, Störungen und das Vokabular der Produktionsebene versteht.",
         "points": {
           "one": {
-            "name": "Fault reasoning",
-            "desc": "Describe a symptom; get a structured path to the cause."
+            "name": "Störungsanalyse",
+            "desc": "Symptom beschreiben — einen strukturierten Pfad zur Ursache erhalten."
           },
           "two": {
-            "name": "Logic drafting",
-            "desc": "Turn intent into a reviewable first draft of control logic."
+            "name": "Logikentwurf",
+            "desc": "Aus einer Absicht wird ein prüfbarer erster Entwurf der Steuerungslogik."
           },
           "three": {
-            "name": "Bilingual",
-            "desc": "Ask in Persian or English; get answers in kind."
+            "name": "Zweisprachig",
+            "desc": "Auf Persisch oder Englisch fragen; passende Antworten erhalten."
           }
         }
       },
       "cybersecurity": {
-        "name": "Industrial Cybersecurity",
-        "short": "Posture and audit for OT networks.",
-        "title": "Industrial Cybersecurity",
-        "lede": "Understand and harden the operational-technology network that connects your equipment.",
+        "name": "Industrielle Cybersicherheit",
+        "short": "Lagebild und Audit für OT-Netzwerke.",
+        "title": "Industrielle Cybersicherheit",
+        "lede": "Das Operational-Technology-Netzwerk verstehen und härten, das Ihre Anlagen verbindet.",
         "points": {
           "one": {
-            "name": "Network posture",
-            "desc": "See segmentation, zones, and conduits at a glance."
+            "name": "Netzwerk-Lagebild",
+            "desc": "Segmentierung, Zonen und Conduits auf einen Blick."
           },
           "two": {
-            "name": "Audit trails",
-            "desc": "A record of who changed what, and when."
+            "name": "Audit-Trails",
+            "desc": "Ein Protokoll, wer was wann geändert hat."
           },
           "three": {
-            "name": "OT-aware",
-            "desc": "Built around the realities of plant networks, not office IT."
+            "name": "OT-bewusst",
+            "desc": "Gebaut für die Realität von Anlagennetzen, nicht für Büro-IT."
           }
         }
       },
       "knowledgeCloud": {
         "name": "Knowledge Cloud",
-        "short": "Your electrical and automation reference.",
+        "short": "Ihre Elektro- und Automatisierungsreferenz.",
         "title": "Knowledge Cloud",
-        "lede": "A searchable library of electrical and automation knowledge your team can query in plain language.",
+        "lede": "Eine durchsuchbare Bibliothek für Elektro- und Automatisierungswissen, die Ihr Team in natürlicher Sprache abfragen kann.",
         "points": {
           "one": {
-            "name": "Plain-language search",
-            "desc": "Ask a question instead of guessing a keyword."
+            "name": "Suche in natürlicher Sprache",
+            "desc": "Eine Frage stellen, statt ein Stichwort zu raten."
           },
           "two": {
-            "name": "Electrical reference",
-            "desc": "Standards, components, and practice in one place."
+            "name": "Elektrotechnische Referenz",
+            "desc": "Normen, Komponenten und Praxis an einem Ort."
           },
           "three": {
-            "name": "Bilingual content",
-            "desc": "Persian and English, side by side."
+            "name": "Zweisprachige Inhalte",
+            "desc": "Persisch und Englisch, Seite an Seite."
           }
         }
       }
     },
-    "strap": "PLC • SCADA • HMI • AI • OT Security"
+    "strap": "PLC • SCADA • HMI • KI • OT-Sicherheit"
   },
   "architecture": {
-    "eyebrow": "Architecture",
-    "title": "From the engineer's intent to the factory floor.",
-    "lede": "Every request flows through one gateway, fans out to the specialist modules, and reaches equipment only through a defined protocol layer. The diagram below is the spine of Hermes OS.",
-    "note": "In this V1 demo the protocol layer and factory systems are represented, not connected. Live connectivity arrives with the Phase 2 gateways.",
+    "eyebrow": "Architektur",
+    "title": "Von der Absicht des Ingenieurs bis zur Produktionsebene.",
+    "lede": "Jede Anfrage läuft durch ein Gateway, verteilt sich auf die Spezialmodule und erreicht Anlagen nur über eine definierte Protokollschicht. Das Diagramm unten ist das Rückgrat von Hermes OS.",
+    "note": "In dieser V1-Demo sind Protokollschicht und Fabriksysteme dargestellt, nicht verbunden. Live-Konnektivität kommt mit den Phase-2-Gateways.",
     "layers": {
       "human": {
-        "name": "Human Engineer",
-        "desc": "Intent, in Persian or English"
+        "name": "Der Ingenieur",
+        "desc": "Absicht, auf Persisch oder Englisch"
       },
       "gateway": {
         "name": "Hermes AI Gateway",
-        "desc": "Routes every request"
+        "desc": "Routet jede Anfrage"
       },
       "modules": {
-        "name": "Specialist Modules",
+        "name": "Spezialmodule",
         "desc": "PLC Copilot · SCADA Studio · Knowledge Cloud · Protection Center"
       },
       "protocol": {
-        "name": "Industrial Protocol Layer",
-        "desc": "The defined boundary to equipment"
+        "name": "Industrielle Protokollschicht",
+        "desc": "Die definierte Grenze zu den Anlagen"
       },
       "buses": {
-        "name": "Field Protocols",
+        "name": "Feldprotokolle",
         "desc": "OPC UA · Modbus TCP · MQTT · Siemens S7"
       },
       "factory": {
-        "name": "Factory Systems",
-        "desc": "Controllers, drives, and instruments"
+        "name": "Fabriksysteme",
+        "desc": "Steuerungen, Antriebe und Instrumente"
       }
     },
     "future": {
-      "title": "Future Platform Capabilities",
+      "title": "Künftige Plattformfähigkeiten",
       "badge": "Phase 2+",
-      "lede": "These services are designed into the architecture today and arrive as independently deployable gateways and engines.",
+      "lede": "Diese Dienste sind heute in der Architektur angelegt und kommen als unabhängig deploybare Gateways und Engines.",
       "items": {
         "opcua": {
           "name": "OPC UA Gateway",
-          "desc": "Standards-based access to controllers and servers across vendors."
+          "desc": "Standardbasierter Zugriff auf Steuerungen und Server herstellerübergreifend."
         },
         "modbus": {
           "name": "Modbus Gateway",
-          "desc": "TCP polling of field devices, drives, and meters."
+          "desc": "TCP-Polling von Feldgeräten, Antrieben und Zählern."
         },
         "mqtt": {
           "name": "MQTT Gateway",
-          "desc": "Broker-based telemetry for sensors and edge publishers."
+          "desc": "Broker-basierte Telemetrie für Sensoren und Edge-Publisher."
         },
         "historian": {
-          "name": "Historian Service",
-          "desc": "Long-term time-series storage for process data and audits."
+          "name": "Historian-Dienst",
+          "desc": "Langzeit-Zeitreihenspeicher für Prozessdaten und Audits."
         },
         "twin": {
-          "name": "Digital Twin Engine",
-          "desc": "Live virtual models of lines and equipment for simulation."
+          "name": "Digitaler-Zwilling-Engine",
+          "desc": "Virtuelle Live-Modelle von Linien und Anlagen für Simulation."
         },
         "predictive": {
-          "name": "Predictive Maintenance Engine",
-          "desc": "Failure-pattern detection from vibration, thermal, and cycle data."
+          "name": "Engine für prädiktive Instandhaltung",
+          "desc": "Erkennung von Ausfallmustern aus Schwingungs-, Wärme- und Zyklusdaten."
         }
       }
     }
@@ -1570,137 +1570,137 @@
   },
   "library": {
     "eyebrow": "Knowledge Cloud",
-    "title": "The engineering library behind Hermes",
-    "lede": "Structured, bilingual references for PLC, SCADA, electrical systems, instrumentation, protocols, OT security, maintenance — and vendor field cases.",
-    "brainNote": "Hermes Brain uses this Knowledge Cloud to support structured engineering analysis. Every analysis cites the libraries and cases you see here.",
-    "searchPlaceholder": "Search titles, summaries, keywords…",
-    "allFilter": "All",
-    "categoriesLabel": "Category",
-    "vendorsLabel": "Vendor",
-    "usedByBrain": "Used by Hermes Brain",
-    "resultsCount": "{count} items",
-    "empty": "Nothing matches these filters.",
-    "caseLabel": "Field case",
+    "title": "Die Engineering-Bibliothek hinter Hermes",
+    "lede": "Strukturierte, zweisprachige Referenzen für PLC, SCADA, Elektrotechnik, Instrumentierung, Protokolle, OT-Sicherheit, Instandhaltung — und Herstellerfälle aus dem Feld.",
+    "brainNote": "Hermes Brain stützt strukturierte Engineering-Analysen auf diese Knowledge Cloud. Jede Analyse zitiert die Bibliotheken und Fälle, die Sie hier sehen.",
+    "searchPlaceholder": "Titel, Zusammenfassungen, Stichwörter durchsuchen…",
+    "allFilter": "Alle",
+    "categoriesLabel": "Kategorie",
+    "vendorsLabel": "Hersteller",
+    "usedByBrain": "Von Hermes Brain verwendet",
+    "resultsCount": "{count} Einträge",
+    "empty": "Nichts passt zu diesen Filtern.",
+    "caseLabel": "Feldfall",
     "categories": {
       "plc": "PLC",
       "scadaHmi": "SCADA & HMI",
-      "electrical": "Electrical Systems",
-      "instrumentation": "Instrumentation",
-      "protocols": "Industrial Protocols",
-      "cybersecurity": "OT Cybersecurity",
-      "maintenance": "Maintenance",
-      "vendorKnowledge": "Vendor Knowledge",
+      "electrical": "Elektrische Systeme",
+      "instrumentation": "Instrumentierung",
+      "protocols": "Industrielle Protokolle",
+      "cybersecurity": "OT-Cybersicherheit",
+      "maintenance": "Instandhaltung",
+      "vendorKnowledge": "Herstellerwissen",
       "scada": "SCADA",
       "hmi": "HMI",
-      "sensors": "Sensors",
-      "digitalIo": "Digital I/O",
-      "analogIo": "Analog I/O",
-      "otNetwork": "OT Network",
-      "drives": "Drives",
-      "motors": "Motors",
-      "automation": "Automation",
-      "safety": "Safety",
-      "networking": "Networking",
-      "reports": "Reports",
-      "cases": "Engineering Cases",
-      "knowledge": "Knowledge"
+      "sensors": "Sensoren",
+      "digitalIo": "Digitale E/A",
+      "analogIo": "Analoge E/A",
+      "otNetwork": "OT-Netzwerk",
+      "drives": "Antriebe",
+      "motors": "Motoren",
+      "automation": "Automatisierung",
+      "safety": "Sicherheit",
+      "networking": "Netzwerktechnik",
+      "reports": "Berichte",
+      "cases": "Engineering-Fälle",
+      "knowledge": "Wissen"
     },
     "article": {
-      "pointsTitle": "Key points",
-      "checksTitle": "Verification checks",
-      "relatedTitle": "Related articles",
-      "casesTitle": "Related engineering cases",
-      "brainStatsTitle": "Hermes Brain references",
-      "referencedCount": "Referenced {count} times in this session",
-      "notReferenced": "Not referenced by the Brain in this session yet.",
-      "back": "Back to the library",
-      "vendorCenter": "Vendor knowledge center",
-      "overviewTitle": "Overview",
-      "purposeTitle": "Engineering purpose",
-      "howTitle": "How it works",
-      "faultsTitle": "Common faults",
-      "checksHeading": "Diagnostic checks",
-      "safetyTitle": "Safety notes",
-      "commissioningTitle": "Commissioning notes",
-      "conceptsTitle": "Related concepts",
-      "brainUseTitle": "When Hermes Brain uses this article"
+      "pointsTitle": "Kernpunkte",
+      "checksTitle": "Prüfschritte",
+      "relatedTitle": "Verwandte Artikel",
+      "casesTitle": "Verwandte Engineering-Fälle",
+      "brainStatsTitle": "Hermes-Brain-Referenzen",
+      "referencedCount": "In dieser Sitzung {count}-mal referenziert",
+      "notReferenced": "In dieser Sitzung noch nicht vom Brain referenziert.",
+      "back": "Zurück zur Bibliothek",
+      "vendorCenter": "Hersteller-Wissenszentrum",
+      "overviewTitle": "Überblick",
+      "purposeTitle": "Technischer Zweck",
+      "howTitle": "Funktionsweise",
+      "faultsTitle": "Typische Störungen",
+      "checksHeading": "Diagnoseprüfungen",
+      "safetyTitle": "Sicherheitshinweise",
+      "commissioningTitle": "Hinweise zur Inbetriebnahme",
+      "conceptsTitle": "Verwandte Konzepte",
+      "brainUseTitle": "Wann Hermes Brain diesen Artikel nutzt"
     },
     "stats": {
-      "recentTitle": "Recently used by Hermes Brain",
-      "mostTitle": "Most referenced articles",
-      "sessionNote": "Session statistics — V1 keeps no database.",
-      "empty": "No Brain activity recorded in this session yet."
+      "recentTitle": "Zuletzt von Hermes Brain verwendet",
+      "mostTitle": "Meistreferenzierte Artikel",
+      "sessionNote": "Sitzungsstatistik — V1 hält keine Datenbank.",
+      "empty": "In dieser Sitzung noch keine Brain-Aktivität erfasst."
     },
     "vendorPage": {
-      "eyebrow": "Vendor Knowledge Center",
-      "librariesTitle": "Vendor libraries",
-      "casesTitle": "Field cases",
-      "noLibraries": "No vendor-specific libraries yet — general libraries cover this vendor's equipment.",
+      "eyebrow": "Hersteller-Wissenszentrum",
+      "librariesTitle": "Herstellerbibliotheken",
+      "casesTitle": "Feldfälle",
+      "noLibraries": "Noch keine herstellerspezifischen Bibliotheken — die allgemeinen Bibliotheken decken die Geräte dieses Herstellers ab.",
       "descs": {
-        "siemens": "S7 controllers, TIA Portal, SINAMICS drives, and PROFINET ecosystems.",
-        "abb": "AC500 controllers, ACS drive families, and motor technologies.",
-        "schneider": "Modicon controllers, Altivar drives, and TeSys motor control.",
-        "phoenix": "PLCnext controllers, Axioline I/O, and industrial connectivity.",
-        "delta": "Compact drives, DOP HMIs, and machine automation.",
-        "mitsubishi": "MELSEC controllers, FX series, and MR servo systems.",
-        "omron": "Sysmac controllers, machine safety, and sensing & control."
+        "siemens": "S7-Steuerungen, TIA Portal, SINAMICS-Antriebe und PROFINET-Ökosysteme.",
+        "abb": "AC500-Steuerungen, ACS-Antriebsfamilien und Motorentechnik.",
+        "schneider": "Modicon-Steuerungen, Altivar-Antriebe und TeSys-Motorsteuerung.",
+        "phoenix": "PLCnext-Steuerungen, Axioline-E/A und industrielle Konnektivität.",
+        "delta": "Kompaktantriebe, DOP-HMIs und Maschinenautomatisierung.",
+        "mitsubishi": "MELSEC-Steuerungen, FX-Serie und MR-Servosysteme.",
+        "omron": "Sysmac-Steuerungen, Maschinensicherheit sowie Sensorik & Steuerung."
       }
     }
   },
   "knowledgeCases": {
-    "case-siemens-1200-bf": "BF flashing and unreachable remote I/O after a CPU replacement — device name lives on the device.",
-    "case-siemens-1500-scan": "Intermittent cycle-time watchdog trips traced to an unbounded SCL loop over a growing recipe array.",
-    "case-abb-acs580-oc": "Fault 2310 at acceleration — ramp shorter than load inertia allows, not a failed drive.",
-    "case-abb-motor-imbalance": "8% phase-current imbalance caused upstream by a degraded MCC bus joint, not the winding.",
-    "case-schneider-atv-ocf": "OCF at run command from a phase-to-earth short in the motor cable gland.",
-    "case-schneider-m580-timeout": "Modbus TCP timeouts after SCADA expansion — poll rate × registers exceeded the CPU budget.",
-    "case-phoenix-mqtt-drop": "Periodic MQTT disconnects — keep-alive longer than the firewall's NAT idle timeout.",
-    "case-phoenix-di-chatter": "DI chatter above 30 Hz drive speed from an unshielded run sharing the VFD tray.",
-    "case-delta-vfd-oh": "Afternoon OH trips in summer — clogged heatsink and blocked cabinet fan filter.",
-    "case-delta-hmi-rs485": "Intermittent HMI comm loss on a long RS-485 run missing termination and bias.",
-    "case-mitsubishi-fx5-coil": "Output flicker in run mode from a double coil written in two program sections.",
-    "case-mitsubishi-mrj4-al16": "AL.16 encoder error after panel work — partially seated connector, unbonded shield.",
-    "case-omron-nx-estop-reset": "Safe state holds after e-stop release — EDM feedback from a welded contactor correctly refuses reset.",
-    "case-omron-e5cc-drift": "Temperature drift on door opening — thermocouple extended with copper wire."
+    "case-siemens-1200-bf": "BF blinkt und dezentrale Peripherie unerreichbar nach CPU-Tausch — der Gerätename liegt auf dem Gerät.",
+    "case-siemens-1500-scan": "Sporadische Zykluszeit-Watchdog-Auslösungen, zurückgeführt auf eine unbegrenzte SCL-Schleife über ein wachsendes Rezeptur-Array.",
+    "case-abb-acs580-oc": "Fehler 2310 beim Beschleunigen — Rampe kürzer, als die Lastträgheit erlaubt, kein defekter Antrieb.",
+    "case-abb-motor-imbalance": "8 % Phasenstrom-Unsymmetrie, verursacht vorgelagert durch eine degradierte MCC-Schienenverbindung, nicht durch die Wicklung.",
+    "case-schneider-atv-ocf": "OCF beim Startbefehl durch einen Phase-Erde-Schluss in der Kabelverschraubung des Motors.",
+    "case-schneider-m580-timeout": "Modbus-TCP-Timeouts nach SCADA-Erweiterung — Abfragerate × Register überschritt das CPU-Budget.",
+    "case-phoenix-mqtt-drop": "Periodische MQTT-Abbrüche — Keep-Alive länger als das NAT-Idle-Timeout der Firewall.",
+    "case-phoenix-di-chatter": "DI-Prellen oberhalb 30 Hz Antriebsdrehzahl durch eine ungeschirmte Leitung in derselben VFD-Trasse.",
+    "case-delta-vfd-oh": "Nachmittägliche OH-Auslösungen im Sommer — zugesetzter Kühlkörper und blockierter Schaltschrank-Lüfterfilter.",
+    "case-delta-hmi-rs485": "Sporadischer HMI-Kommunikationsverlust auf langer RS-485-Strecke ohne Terminierung und Bias.",
+    "case-mitsubishi-fx5-coil": "Ausgangsflackern im Run-Modus durch eine doppelt beschriebene Spule in zwei Programmteilen.",
+    "case-mitsubishi-mrj4-al16": "AL.16-Encoderfehler nach Schaltschrankarbeiten — teilweise gesteckter Stecker, nicht aufgelegter Schirm.",
+    "case-omron-nx-estop-reset": "Sicherer Zustand bleibt nach Not-Halt-Entriegelung — EDM-Rückführung eines verschweißten Schützes verweigert korrekt den Reset.",
+    "case-omron-e5cc-drift": "Temperaturdrift beim Türöffnen — Thermoelement mit Kupferleitung verlängert."
   },
   "caseExplorer": {
-    "eyebrow": "Engineering Intelligence",
-    "title": "Engineering Case Explorer",
-    "lede": "Field-proven industrial failure cases — the corroborated intelligence Hermes Brain ranks against during root-cause analysis.",
+    "eyebrow": "Engineering-Intelligenz",
+    "title": "Engineering-Fall-Explorer",
+    "lede": "Feldbewährte industrielle Ausfallfälle — die korroborierte Intelligenz, gegen die Hermes Brain bei der Grundursachenanalyse rankt.",
     "metrics": {
-      "total": "Total Cases",
-      "vendors": "Vendors Covered",
-      "domains": "Domains Covered"
+      "total": "Fälle gesamt",
+      "vendors": "Abgedeckte Hersteller",
+      "domains": "Abgedeckte Domänen"
     },
     "search": {
-      "label": "Search cases",
-      "placeholder": "Search title, vendor, domain, or root cause…"
+      "label": "Fälle durchsuchen",
+      "placeholder": "Titel, Hersteller, Domäne oder Grundursache durchsuchen…"
     },
     "filters": {
-      "vendor": "Vendor",
-      "domain": "Domain",
-      "all": "All",
-      "clear": "Clear filters"
+      "vendor": "Hersteller",
+      "domain": "Domäne",
+      "all": "Alle",
+      "clear": "Filter zurücksetzen"
     },
     "card": {
-      "rootCause": "Root cause",
-      "corrective": "Corrective action",
-      "confidence": "Confidence"
+      "rootCause": "Grundursache",
+      "corrective": "Korrekturmaßnahme",
+      "confidence": "Konfidenz"
     },
-    "none": "No cases match the current filters.",
+    "none": "Keine Fälle passen zu den aktuellen Filtern.",
     "detail": {
-      "back": "All cases",
+      "back": "Alle Fälle",
       "problem": "Problem",
-      "rootCause": "Root Cause Analysis",
-      "verification": "Verification Steps",
-      "corrective": "Corrective Actions",
-      "safety": "Safety Notes",
-      "relatedDomain": "Related Domain",
-      "relatedVendor": "Related Vendor",
-      "primaryLabel": "Primary cause",
-      "secondaryLabel": "Contributing causes"
+      "rootCause": "Grundursachenanalyse",
+      "verification": "Verifikationsschritte",
+      "corrective": "Korrekturmaßnahmen",
+      "safety": "Sicherheitshinweise",
+      "relatedDomain": "Zugehörige Domäne",
+      "relatedVendor": "Zugehöriger Hersteller",
+      "primaryLabel": "Primärursache",
+      "secondaryLabel": "Mitwirkende Ursachen"
     },
-    "safetyGeneric": "Verify isolation and lockout/tagout before any intervention. Prove dead at the equipment, follow the vendor procedure, and never defeat a safety function. All corrective work requires qualified-personnel authorization."
+    "safetyGeneric": "Vor jedem Eingriff Freischaltung und Lockout/Tagout verifizieren. Spannungsfreiheit am Betriebsmittel nachweisen, die Herstellerprozedur befolgen und niemals eine Sicherheitsfunktion außer Kraft setzen. Alle Korrekturarbeiten erfordern die Freigabe qualifizierten Personals."
   },
   "copilot": {
     "eyebrow": "ENGINEERING COPILOT",
@@ -3124,37 +3124,37 @@
     "errorLoading": "Failed to load data."
   },
   "about": {
-    "eyebrow": "About Hermes Novin Mehr IRIC",
-    "title": "Engineering the Future of Industrial Intelligence",
-    "lede": "Born on the plant floor. Built for the engineers who run it.",
-    "companyEyebrow": "The Company",
+    "eyebrow": "Über Hermes Novin Mehr IRIC",
+    "title": "Wir gestalten die Zukunft der industriellen Intelligenz",
+    "lede": "Auf der Produktionsebene entstanden. Gebaut für die Ingenieure, die sie betreiben.",
+    "companyEyebrow": "Das Unternehmen",
     "companyTitle": "Hermes Novin Mehr IRIC",
-    "companyDesc": "We build enterprise-grade industrial intelligence software for automation engineers, plant operators, and engineering leadership teams. Our platform combines AI-powered reasoning, engineering memory, and knowledge graphs to give industrial teams unprecedented clarity and decision support.",
+    "companyDesc": "Wir entwickeln industrielle Intelligenzsoftware auf Unternehmensniveau für Automatisierungsingenieure, Anlagenfahrer und technische Führungsteams. Unsere Plattform verbindet KI-gestütztes Schließen, Engineering-Gedächtnis und Wissensgraphen, um Industrieteams beispiellose Klarheit und Entscheidungsunterstützung zu geben.",
     "website": "www.hermesnovin.com",
     "locationIran": "Isfahan, Iran",
-    "locationUK": "London, United Kingdom",
-    "founderEyebrow": "Founder & CEO",
+    "locationUK": "London, Vereinigtes Königreich",
+    "founderEyebrow": "Gründer & CEO",
     "founderName": "Hamid Reza Forozandeh",
-    "founderRole": "Founder, CEO & Chief Industrial Systems Architect",
-    "founderBio1": "With over 18 years of hands-on industrial automation experience, Hamid Reza has designed, commissioned, and optimised complex control systems across steel production, petrochemical processing, and power generation.",
-    "founderBio2": "His deep expertise spans Siemens PLC S7-1200 and S7-1500, TIA Portal, SCADA systems, HMI design, and industrial network architecture — commissioning real systems in live production environments.",
-    "founderBio3": "Hermes OS is the platform he wished he had during those years: an AI-powered copilot that speaks automation, remembers every project, and helps engineering teams make better decisions faster.",
-    "founderExpertise": "Siemens S7-1200 · S7-1500 · TIA Portal · SCADA / HMI · Steel · Petrochemical · Digital Twin · Predictive Maintenance",
+    "founderRole": "Gründer, CEO & Chief Industrial Systems Architect",
+    "founderBio1": "Mit über 18 Jahren praktischer Erfahrung in der industriellen Automatisierung hat Hamid Reza komplexe Leitsysteme in Stahlproduktion, Petrochemie und Energieerzeugung entworfen, in Betrieb genommen und optimiert.",
+    "founderBio2": "Seine Expertise umfasst Siemens PLC S7-1200 und S7-1500, TIA Portal, SCADA-Systeme, HMI-Design und industrielle Netzwerkarchitektur — mit Inbetriebnahmen realer Systeme in laufender Produktion.",
+    "founderBio3": "Hermes OS ist die Plattform, die er sich in diesen Jahren gewünscht hätte: ein KI-gestützter Copilot, der Automatisierung spricht, jedes Projekt im Gedächtnis behält und Engineering-Teams hilft, schneller bessere Entscheidungen zu treffen.",
+    "founderExpertise": "Siemens S7-1200 · S7-1500 · TIA Portal · SCADA / HMI · Stahl · Petrochemie · Digitaler Zwilling · Prädiktive Instandhaltung",
     "missionEyebrow": "Mission",
-    "missionTitle": "Give engineering teams an intelligent memory",
-    "missionDesc": "Industrial knowledge lives in people's heads and scattered documents. Hermes OS captures it, connects it, and makes it available to every engineer on every shift — in Persian and English.",
-    "pillarsEyebrow": "Technology Foundation",
-    "pillarsTitle": "Built on Deep Industrial Expertise",
-    "pillar1Title": "Industrial Automation",
-    "pillar1Desc": "17+ years of PLC, SCADA, and HMI engineering across steel, petrochemical, and power generation. Not theoretical — production-proven.",
-    "pillar2Title": "AI-Powered Intelligence",
-    "pillar2Desc": "Multi-agent AI systems that reason about engineering problems, retrieve relevant memory, and surface contextual recommendations.",
-    "pillar3Title": "Knowledge Graph Architecture",
-    "pillar3Desc": "Interconnected engineering knowledge: memories, projects, domains, and cases linked into a traversable intelligence network.",
-    "pillar4Title": "Persian & English by Design",
-    "pillar4Desc": "Full RTL/LTR support at the platform level — not an afterthought. Built for Iran's industrial sector and the global automation community.",
-    "ctaContact": "Contact Us",
-    "ctaPlatform": "Explore Platform"
+    "missionTitle": "Engineering-Teams ein intelligentes Gedächtnis geben",
+    "missionDesc": "Industrielles Wissen lebt in Köpfen und verstreuten Dokumenten. Hermes OS erfasst es, verknüpft es und stellt es jedem Ingenieur in jeder Schicht zur Verfügung — auf Persisch und Englisch.",
+    "pillarsEyebrow": "Technologisches Fundament",
+    "pillarsTitle": "Auf tiefer Industrieexpertise gebaut",
+    "pillar1Title": "Industrielle Automatisierung",
+    "pillar1Desc": "Über 17 Jahre PLC-, SCADA- und HMI-Engineering in Stahl, Petrochemie und Energieerzeugung. Nicht theoretisch — produktionserprobt.",
+    "pillar2Title": "KI-gestützte Intelligenz",
+    "pillar2Desc": "Multi-Agenten-KI-Systeme, die über Engineering-Probleme schlussfolgern, relevantes Wissen abrufen und kontextbezogene Empfehlungen liefern.",
+    "pillar3Title": "Wissensgraph-Architektur",
+    "pillar3Desc": "Vernetztes Engineering-Wissen: Erinnerungen, Projekte, Domänen und Fälle, verbunden zu einem traversierbaren Intelligenznetz.",
+    "pillar4Title": "Persisch & Englisch per Design",
+    "pillar4Desc": "Volle RTL/LTR-Unterstützung auf Plattformebene — kein Nachgedanke. Gebaut für Irans Industriesektor und die globale Automatisierungs-Community.",
+    "ctaContact": "Kontakt aufnehmen",
+    "ctaPlatform": "Plattform entdecken"
   },
   "contact": {
     "eyebrow": "Kontakt aufnehmen",
@@ -5363,557 +5363,557 @@
   "appShell": {
     "nav": {
       "groups": {
-        "intelligence": "Intelligence",
-        "operations": "Operations",
+        "intelligence": "Intelligenz",
+        "operations": "Betrieb",
         "engineering": "Engineering",
-        "knowledge": "Knowledge",
-        "business": "Business",
+        "knowledge": "Wissen",
+        "business": "Geschäft",
         "administration": "Administration"
       },
       "items": {
         "dashboard": "Dashboard",
         "copilot": "Hermes Copilot",
         "industrialBrain": "Industrial Brain",
-        "predictive": "Predictive Intelligence",
-        "assets": "Assets",
-        "sites": "Sites",
-        "operationsCenter": "Operations Center",
-        "automation": "Automation",
-        "multiSite": "Multi-Site",
-        "maintenance": "Maintenance (CMMS)",
-        "engineeringTools": "Engineering Tools",
-        "digitalTwin": "Digital Twin",
-        "timeSeries": "Time Series",
-        "assetIntelligence": "Asset Intelligence",
-        "library": "Knowledge Library",
-        "knowledgeBase": "Knowledge Base",
-        "cases": "Engineering Cases",
-        "knowledgeGraph": "Knowledge Graph",
+        "predictive": "Prädiktive Intelligenz",
+        "assets": "Anlagen",
+        "sites": "Standorte",
+        "operationsCenter": "Betriebszentrale",
+        "automation": "Automatisierung",
+        "multiSite": "Standortübergreifend",
+        "maintenance": "Instandhaltung (CMMS)",
+        "engineeringTools": "Engineering-Werkzeuge",
+        "digitalTwin": "Digitaler Zwilling",
+        "timeSeries": "Zeitreihen",
+        "assetIntelligence": "Anlagenintelligenz",
+        "library": "Wissensbibliothek",
+        "knowledgeBase": "Wissensbasis",
+        "cases": "Engineering-Fälle",
+        "knowledgeGraph": "Wissensgraph",
         "journal": "Journal",
-        "edms": "Documents (EDMS)",
+        "edms": "Dokumente (EDMS)",
         "crm": "CRM",
         "ats": "Recruiting (ATS)",
         "erp": "ERP",
         "customerSuccess": "Customer Success",
-        "billing": "Billing",
-        "customerPortal": "Customer Portal",
-        "vendorPortal": "Vendor Portal",
-        "organization": "Organization",
-        "members": "Members",
-        "invitations": "Invitations",
-        "apiKeys": "API Keys",
-        "orgSettings": "Organization Settings",
-        "admin": "Admin Console"
+        "billing": "Abrechnung",
+        "customerPortal": "Kundenportal",
+        "vendorPortal": "Lieferantenportal",
+        "organization": "Organisation",
+        "members": "Mitglieder",
+        "invitations": "Einladungen",
+        "apiKeys": "API-Schlüssel",
+        "orgSettings": "Organisationseinstellungen",
+        "admin": "Admin-Konsole"
       }
     },
     "shell": {
-      "skipToContent": "Skip to main content",
-      "primaryNavLabel": "Primary navigation",
-      "breadcrumbsLabel": "Breadcrumbs",
-      "openMenu": "Open navigation menu",
-      "closeMenu": "Close",
+      "skipToContent": "Zum Hauptinhalt springen",
+      "primaryNavLabel": "Hauptnavigation",
+      "breadcrumbsLabel": "Brotkrumen",
+      "openMenu": "Navigationsmenü öffnen",
+      "closeMenu": "Schließen",
       "mobileNavTitle": "Navigation",
-      "collapseSidebar": "Collapse sidebar",
-      "expandSidebar": "Expand sidebar",
-      "search": "Search",
-      "searchHint": "Search…",
-      "commandPaletteTitle": "Go to module",
-      "commandPaletteInputLabel": "Search navigation destinations",
-      "commandPaletteNavHint": "Navigation only — type to filter modules",
-      "noResults": "No matching destinations",
-      "organizationLabel": "Organization",
-      "siteLabel": "Site",
-      "noOrganizationContext": "No organization context",
-      "noSiteContext": "No site selected",
-      "contextUnavailable": "Switching is not available yet",
-      "account": "Account",
-      "accountMenuLabel": "Account menu",
-      "signOut": "Sign out",
-      "settings": "Settings",
-      "roleLabel": "Role",
-      "exitEngineering": "Exit engineering mode",
-      "engineeringModeLabel": "Engineering mode",
-      "notificationsLabel": "Notifications",
-      "loading": "Loading…"
+      "collapseSidebar": "Seitenleiste einklappen",
+      "expandSidebar": "Seitenleiste ausklappen",
+      "search": "Suche",
+      "searchHint": "Suchen…",
+      "commandPaletteTitle": "Zu Modul wechseln",
+      "commandPaletteInputLabel": "Navigationsziele durchsuchen",
+      "commandPaletteNavHint": "Nur Navigation — tippen, um Module zu filtern",
+      "noResults": "Keine passenden Ziele",
+      "organizationLabel": "Organisation",
+      "siteLabel": "Standort",
+      "noOrganizationContext": "Kein Organisationskontext",
+      "noSiteContext": "Kein Standort ausgewählt",
+      "contextUnavailable": "Wechseln ist noch nicht verfügbar",
+      "account": "Konto",
+      "accountMenuLabel": "Kontomenü",
+      "signOut": "Abmelden",
+      "settings": "Einstellungen",
+      "roleLabel": "Rolle",
+      "exitEngineering": "Engineering-Modus verlassen",
+      "engineeringModeLabel": "Engineering-Modus",
+      "notificationsLabel": "Benachrichtigungen",
+      "loading": "Wird geladen…"
     },
     "notifications": {
-      "title": "Notifications",
-      "open": "Open notifications",
-      "close": "Close notifications",
-      "loading": "Loading notifications…",
-      "empty": "No notifications",
-      "markRead": "Mark as read",
-      "markAllRead": "Mark all as read",
-      "delete": "Delete",
-      "unreadCount": "{count} unread notifications",
-      "justNow": "just now",
-      "minutesAgo": "{n}m ago",
-      "hoursAgo": "{n}h ago",
-      "daysAgo": "{n}d ago",
+      "title": "Benachrichtigungen",
+      "open": "Benachrichtigungen öffnen",
+      "close": "Benachrichtigungen schließen",
+      "loading": "Benachrichtigungen werden geladen…",
+      "empty": "Keine Benachrichtigungen",
+      "markRead": "Als gelesen markieren",
+      "markAllRead": "Alle als gelesen markieren",
+      "delete": "Löschen",
+      "unreadCount": "{count} ungelesene Benachrichtigungen",
+      "justNow": "gerade eben",
+      "minutesAgo": "vor {n} Min.",
+      "hoursAgo": "vor {n} Std.",
+      "daysAgo": "vor {n} Tagen",
       "typeInfo": "Info",
-      "typeSuccess": "Success",
-      "typeWarning": "Warning",
-      "typeError": "Error",
-      "typeSecurity": "Security",
-      "connectionUnavailable": "Connection unavailable",
-      "retry": "Retry"
+      "typeSuccess": "Erfolg",
+      "typeWarning": "Warnung",
+      "typeError": "Fehler",
+      "typeSecurity": "Sicherheit",
+      "connectionUnavailable": "Verbindung nicht verfügbar",
+      "retry": "Erneut versuchen"
     }
   },
   "publicSite": {
     "header": {
-      "home": "Hermes OS — home",
-      "skipToContent": "Skip to main content",
-      "menuOpen": "Open navigation menu",
-      "menuClose": "Close navigation menu",
+      "home": "Hermes OS — Startseite",
+      "skipToContent": "Zum Hauptinhalt springen",
+      "menuOpen": "Navigationsmenü öffnen",
+      "menuClose": "Navigationsmenü schließen",
       "menuTitle": "Navigation",
-      "navLabel": "Primary",
+      "navLabel": "Hauptnavigation",
       "groups": {
-        "platform": "Platform",
-        "intelligence": "Intelligence",
-        "knowledge": "Knowledge",
-        "resources": "Resources",
-        "company": "Company"
+        "platform": "Plattform",
+        "intelligence": "Intelligenz",
+        "knowledge": "Wissen",
+        "resources": "Ressourcen",
+        "company": "Unternehmen"
       },
       "nav": {
-        "platformOverview": "Platform Overview",
-        "architecture": "Architecture",
-        "services": "Services",
+        "platformOverview": "Plattformüberblick",
+        "architecture": "Architektur",
+        "services": "Leistungen",
         "industrialBrain": "Industrial Brain",
         "hermesBrain": "Hermes Brain",
         "copilot": "Copilot",
-        "library": "Knowledge Library",
+        "library": "Wissensbibliothek",
         "academy": "Academy",
-        "articles": "Industrial Journal",
+        "articles": "Industriejournal",
         "demo": "Demo",
-        "vendors": "Vendor Directory",
-        "about": "About",
-        "careers": "Careers",
-        "contact": "Contact"
+        "vendors": "Lieferantenverzeichnis",
+        "about": "Über uns",
+        "careers": "Karriere",
+        "contact": "Kontakt"
       },
-      "requestDemo": "Request a Demo"
+      "requestDemo": "Demo anfragen"
     },
     "hero": {
-      "eyebrow": "Enterprise Industrial Intelligence Platform",
-      "headlineA": "Industrial Intelligence.",
-      "headlineB": "Engineered for Action.",
-      "lede": "Transform industrial evidence, engineering knowledge, and operational data into explainable decisions and safe action paths.",
-      "requestDemo": "Request a Demo",
-      "explorePlatform": "Explore the Platform",
-      "trustLine": "Multi-tenant isolation · Audit trail on every write · On-prem or private cloud"
+      "eyebrow": "Industrielle Intelligenzplattform für Unternehmen",
+      "headlineA": "Industrielle Intelligenz.",
+      "headlineB": "Entwickelt für sicheres Handeln.",
+      "lede": "Verwandeln Sie industrielle Evidenz, Engineering-Wissen und Betriebsdaten in nachvollziehbare Entscheidungen und sichere Maßnahmenpfade.",
+      "requestDemo": "Demo anfragen",
+      "explorePlatform": "Plattform entdecken",
+      "trustLine": "Mandantenfähige Isolation · Audit-Trail bei jedem Schreibvorgang · On-Premises oder Private Cloud"
     },
     "evidence": {
-      "ariaLabel": "Illustrative diagnostic console",
-      "caption": "Illustrative product view — sample data, not live plant telemetry.",
-      "header": "Site B · Pump P-204",
-      "status": "Analyzing",
-      "railTitle": "Evidence rail",
-      "evidence1": "Evidence · Vibration RMS +18% / 14d",
-      "evidence2": "Contradiction · Oil analysis clean",
-      "evidence3": "Missing · Recent FFT spectrum",
-      "riskLabel": "Risk · Medium",
-      "riskNote": "Progressive failure ~3 weeks · redundant pump available",
-      "hypothesesTitle": "Ranked hypotheses",
-      "hyp1Title": "Bearing inner-race wear",
-      "hyp1Meta": "Confidence HIGH · 0.86",
-      "hyp2Title": "Misalignment",
-      "hyp2Meta": "Confidence MEDIUM · 0.41",
-      "sapTitle": "Safe action path",
-      "sapNote": "Human approval required",
-      "gateProposed": "Proposed",
-      "gateValidated": "Validated",
-      "gateApprove": "Approve"
+      "ariaLabel": "Illustrative Diagnosekonsole",
+      "caption": "Illustrative Produktansicht — Beispieldaten, keine Live-Anlagentelemetrie.",
+      "header": "Standort B · Pumpe P-204",
+      "status": "Analyse läuft",
+      "railTitle": "Evidenzleiste",
+      "evidence1": "Evidenz · Schwingungs-RMS +18 % / 14 Tage",
+      "evidence2": "Widerspruch · Ölanalyse unauffällig",
+      "evidence3": "Fehlend · Aktuelles FFT-Spektrum",
+      "riskLabel": "Risiko · Mittel",
+      "riskNote": "Progressiver Ausfall in ca. 3 Wochen · redundante Pumpe verfügbar",
+      "hypothesesTitle": "Priorisierte Hypothesen",
+      "hyp1Title": "Verschleiß am Lagerinnenring",
+      "hyp1Meta": "Konfidenz HOCH · 0,86",
+      "hyp2Title": "Wellenversatz",
+      "hyp2Meta": "Konfidenz MITTEL · 0,41",
+      "sapTitle": "Sicherer Maßnahmenpfad",
+      "sapNote": "Menschliche Freigabe erforderlich",
+      "gateProposed": "Vorgeschlagen",
+      "gateValidated": "Validiert",
+      "gateApprove": "Freigeben"
     },
     "trustStrip": {
-      "srTitle": "Platform guarantees",
-      "isolation": "Multi-tenant · site-level isolation",
-      "rbac": "Organization & site RBAC",
+      "srTitle": "Plattformgarantien",
+      "isolation": "Mandantenfähig · Isolation auf Standortebene",
+      "rbac": "RBAC für Organisation und Standort",
       "protocols": "PLC · SCADA · OPC UA · MQTT",
-      "deterministic": "Deterministic + explainable"
+      "deterministic": "Deterministisch + nachvollziehbar"
     },
     "challenge": {
-      "title": "The industrial reality Hermes was built for",
-      "lede": "Plants generate more signals, documents and expert know-how than any team can hold together — and decisions still have to be safe.",
+      "title": "Die industrielle Realität, für die Hermes gebaut wurde",
+      "lede": "Anlagen erzeugen mehr Signale, Dokumente und Expertenwissen, als ein Team zusammenhalten kann — und Entscheidungen müssen trotzdem sicher bleiben.",
       "cards": {
         "fragmented": {
-          "name": "Fragmented evidence",
-          "desc": "Telemetry, documents, case history and tribal knowledge live in disconnected silos."
+          "name": "Fragmentierte Evidenz",
+          "desc": "Telemetrie, Dokumente, Fallhistorie und Erfahrungswissen liegen in getrennten Silos."
         },
         "opaque": {
-          "name": "Opaque suggestions",
-          "desc": "Black-box recommendations cannot be trusted with plant equipment."
+          "name": "Undurchsichtige Empfehlungen",
+          "desc": "Blackbox-Empfehlungen darf man an Anlagentechnik nicht heranlassen."
         },
         "risky": {
-          "name": "Risky interventions",
-          "desc": "Actions taken without weighed evidence and validation gates put uptime and safety at risk."
+          "name": "Riskante Eingriffe",
+          "desc": "Maßnahmen ohne gewichtete Evidenz und Validierungsstufen gefährden Verfügbarkeit und Sicherheit."
         },
         "lost": {
-          "name": "Knowledge that walks away",
-          "desc": "Expert experience leaves with the people who hold it unless it is captured and structured."
+          "name": "Wissen, das abwandert",
+          "desc": "Expertenerfahrung verlässt das Unternehmen mit den Menschen, die sie tragen — sofern sie nicht erfasst und strukturiert wird."
         }
       }
     },
     "pillars": {
-      "title": "Four pillars of industrial intelligence",
+      "title": "Vier Säulen industrieller Intelligenz",
       "reasoning": {
-        "name": "Explainable reasoning",
-        "desc": "Every conclusion traces to evidence, deterministic rules, and clearly labeled model inference."
+        "name": "Nachvollziehbares Schließen",
+        "desc": "Jede Schlussfolgerung ist auf Evidenz, deterministische Regeln und klar gekennzeichnete Modellinferenz rückführbar."
       },
       "evidence": {
-        "name": "Evidence-based",
-        "desc": "Telemetry, engineering knowledge, and case history are weighed together — with contradictions surfaced."
+        "name": "Evidenzbasiert",
+        "desc": "Telemetrie, Engineering-Wissen und Fallhistorie werden gemeinsam gewichtet — Widersprüche werden sichtbar gemacht."
       },
       "model": {
-        "name": "Model-assisted",
-        "desc": "Hypotheses and simulations are visually quarantined — never presented as observed fact."
+        "name": "Modellgestützt",
+        "desc": "Hypothesen und Simulationen sind visuell abgegrenzt — sie werden nie als beobachtete Tatsachen dargestellt."
       },
       "safety": {
-        "name": "Safe action",
-        "desc": "Every recommendation passes validation gates and human approval before it touches plant state."
+        "name": "Sicheres Handeln",
+        "desc": "Jede Empfehlung durchläuft Validierungsstufen und menschliche Freigabe, bevor sie den Anlagenzustand berührt."
       }
     },
     "flow": {
-      "title": "From evidence to safe action — one explainable pipeline",
+      "title": "Von der Evidenz zum sicheren Handeln — eine nachvollziehbare Pipeline",
       "stages": {
-        "data": "Industrial Data",
-        "context": "Context",
-        "classification": "Classification",
-        "hypotheses": "Hypotheses",
-        "evidence": "Evidence",
-        "confidence": "Confidence",
-        "risk": "Risk",
-        "safeAction": "Safe Action Path",
-        "report": "Explainable Report"
+        "data": "Industriedaten",
+        "context": "Kontext",
+        "classification": "Klassifikation",
+        "hypotheses": "Hypothesen",
+        "evidence": "Evidenz",
+        "confidence": "Konfidenz",
+        "risk": "Risiko",
+        "safeAction": "Sicherer Maßnahmenpfad",
+        "report": "Nachvollziehbarer Bericht"
       }
     },
     "intelligence": {
-      "title": "The intelligence core",
-      "lede": "Two reasoning surfaces on one explainable pipeline.",
+      "title": "Der Intelligenzkern",
+      "lede": "Zwei Reasoning-Oberflächen auf einer nachvollziehbaren Pipeline.",
       "brain": {
         "name": "Industrial Brain",
-        "desc": "The diagnostic reasoning engine: it weighs evidence, ranks hypotheses with confidence, surfaces contradictions and missing data, and proposes a safe action path.",
-        "items": "Evidence rail · Ranked hypotheses · Confidence & risk · Safe action path",
-        "cta": "Explore Industrial Brain"
+        "desc": "Die diagnostische Reasoning-Engine: Sie gewichtet Evidenz, priorisiert Hypothesen mit Konfidenz, macht Widersprüche und fehlende Daten sichtbar und schlägt einen sicheren Maßnahmenpfad vor.",
+        "items": "Evidenzleiste · Priorisierte Hypothesen · Konfidenz & Risiko · Sicherer Maßnahmenpfad",
+        "cta": "Industrial Brain entdecken"
       },
       "copilot": {
         "name": "Engineering Copilot",
-        "desc": "A bilingual engineering assistant grounded in the platform's industrial knowledge — explainable answers, with a deterministic public demo.",
-        "items": "Bilingual FA/EN · Grounded in platform knowledge · Explainable responses",
-        "cta": "Try the Copilot"
+        "desc": "Ein zweisprachiger Engineering-Assistent, verankert im industriellen Wissen der Plattform — nachvollziehbare Antworten, mit deterministischer öffentlicher Demo.",
+        "items": "Zweisprachig FA/EN · Verankert im Plattformwissen · Nachvollziehbare Antworten",
+        "cta": "Copilot ausprobieren"
       }
     },
     "operations": {
-      "title": "Operational intelligence, end to end",
+      "title": "Operative Intelligenz, durchgängig",
       "cards": {
         "asset": {
-          "name": "Asset & operational intelligence",
-          "desc": "Asset registry, site structure, work orders and maintenance workflows — the operational spine that closes the loop."
+          "name": "Anlagen- und Betriebsintelligenz",
+          "desc": "Anlagenregister, Standortstruktur, Arbeitsaufträge und Instandhaltungsabläufe — das operative Rückgrat, das den Kreislauf schließt."
         },
         "predictive": {
-          "name": "Predictive maintenance",
-          "desc": "Baselines, risk scoring and remaining-useful-life estimates — explainable indicators, never black-box guarantees."
+          "name": "Prädiktive Instandhaltung",
+          "desc": "Baselines, Risikobewertung und Restnutzungsdauer-Schätzungen — nachvollziehbare Indikatoren, nie Blackbox-Garantien."
         },
         "multisite": {
-          "name": "Multi-site intelligence",
-          "desc": "One organization, many plants: site-level isolation with cross-site visibility for the people who need it."
+          "name": "Standortübergreifende Intelligenz",
+          "desc": "Eine Organisation, viele Werke: Isolation auf Standortebene mit standortübergreifender Sicht für die, die sie brauchen."
         }
       }
     },
     "engineering": {
-      "title": "The engineering foundation",
+      "title": "Das Engineering-Fundament",
       "cards": {
         "knowledge": {
           "name": "Knowledge Engine & Graph",
-          "desc": "Curated engineering libraries across PLC, SCADA/HMI, electrical, instrumentation, protocols, cybersecurity and maintenance — connected in a knowledge graph with real engineering cases."
+          "desc": "Kuratierte Engineering-Bibliotheken zu PLC, SCADA/HMI, Elektrotechnik, Instrumentierung, Protokollen, Cybersicherheit und Instandhaltung — verknüpft in einem Wissensgraphen mit realen Engineering-Fällen."
         },
         "twin": {
-          "name": "Digital Twin & Time Series",
-          "desc": "Model asset hierarchies and tags, and analyze their time-series behavior on the same surface the Brain reasons over."
+          "name": "Digitaler Zwilling & Zeitreihen",
+          "desc": "Modellieren Sie Anlagenhierarchien und Tags und analysieren Sie deren Zeitreihenverhalten auf derselben Oberfläche, auf der das Brain schlussfolgert."
         },
         "edge": {
-          "name": "Edge gateway & connectivity",
-          "desc": "Gateway and connector management with a protocol-aware architecture — OPC UA, MQTT, PLC and SCADA domains, designed for on-prem and edge deployments."
+          "name": "Edge-Gateway & Konnektivität",
+          "desc": "Gateway- und Konnektorverwaltung mit protokollbewusster Architektur — OPC UA, MQTT, PLC- und SCADA-Domänen, ausgelegt für On-Premises- und Edge-Betrieb."
         }
       }
     },
     "modules": {
-      "title": "One platform, five operating domains",
+      "title": "Eine Plattform, fünf Betriebsdomänen",
       "groups": {
         "intelligence": {
-          "name": "Intelligence",
+          "name": "Intelligenz",
           "items": "Industrial Brain · Hermes Copilot · Command Center"
         },
         "engineering": {
           "name": "Engineering",
-          "items": "Knowledge Graph · Digital Twin · EDMS"
+          "items": "Wissensgraph · Digitaler Zwilling · EDMS"
         },
         "operations": {
-          "name": "Operations",
-          "items": "Predictive Maintenance · Asset Intelligence · CMMS"
+          "name": "Betrieb",
+          "items": "Prädiktive Instandhaltung · Anlagenintelligenz · CMMS"
         },
         "business": {
-          "name": "Business",
+          "name": "Geschäft",
           "items": "ERP · CRM · ATS"
         },
         "administration": {
           "name": "Administration",
-          "items": "Organizations · Billing & Usage · Compliance"
+          "items": "Organisationen · Abrechnung & Nutzung · Compliance"
         }
       }
     },
     "learning": {
-      "title": "Learn, reference, publish",
+      "title": "Lernen, nachschlagen, publizieren",
       "cards": {
         "academy": {
           "name": "Hermes Academy",
-          "desc": "Structured industrial courses and certificates for engineering teams.",
-          "cta": "Visit the Academy"
+          "desc": "Strukturierte Industriekurse und Zertifikate für Engineering-Teams.",
+          "cta": "Zur Academy"
         },
         "library": {
-          "name": "Knowledge Library",
-          "desc": "Engineering knowledge libraries and real diagnostic cases, open to read.",
-          "cta": "Browse the Library"
+          "name": "Wissensbibliothek",
+          "desc": "Engineering-Wissensbibliotheken und reale Diagnosefälle, frei lesbar.",
+          "cta": "Bibliothek durchstöbern"
         },
         "articles": {
-          "name": "Industrial Journal",
-          "desc": "Articles and engineering write-ups from the Hermes community.",
-          "cta": "Read the Journal"
+          "name": "Industriejournal",
+          "desc": "Artikel und Engineering-Beiträge aus der Hermes-Community.",
+          "cta": "Journal lesen"
         }
       }
     },
     "safeAction": {
-      "title": "Human-guided action, by design",
-      "lede": "No recommendation reaches plant equipment without passing validation gates and explicit human approval.",
+      "title": "Menschlich geführtes Handeln, per Design",
+      "lede": "Keine Empfehlung erreicht Anlagentechnik, ohne Validierungsstufen und ausdrückliche menschliche Freigabe zu durchlaufen.",
       "gates": {
-        "proposed": "Proposed",
-        "validated": "Validated",
-        "approval": "Human Approval",
-        "executed": "Executed"
+        "proposed": "Vorgeschlagen",
+        "validated": "Validiert",
+        "approval": "Menschliche Freigabe",
+        "executed": "Ausgeführt"
       }
     },
     "enterprise": {
-      "title": "Enterprise-grade from day one",
-      "isolation": "Multi-tenant isolation",
-      "rbac": "RBAC & site-level access",
-      "audit": "Audit trail on every write",
-      "deployment": "On-prem or private cloud"
+      "title": "Enterprise-tauglich vom ersten Tag an",
+      "isolation": "Mandantenfähige Isolation",
+      "rbac": "RBAC & Zugriff auf Standortebene",
+      "audit": "Audit-Trail bei jedem Schreibvorgang",
+      "deployment": "On-Premises oder Private Cloud"
     },
     "ecosystem": {
-      "title": "Explore the Hermes ecosystem",
-      "lede": "One platform, many doors — every surface below is live today.",
+      "title": "Das Hermes-Ökosystem entdecken",
+      "lede": "Eine Plattform, viele Türen — jede der folgenden Oberflächen ist heute live.",
       "cards": {
         "industrialBrain": {
           "name": "Industrial Brain",
-          "desc": "Diagnostic reasoning workspace.",
-          "cta": "Explore Industrial Brain"
+          "desc": "Arbeitsbereich für diagnostisches Schließen.",
+          "cta": "Industrial Brain entdecken"
         },
         "copilot": {
           "name": "Engineering Copilot",
-          "desc": "Bilingual assistant with a public demo.",
-          "cta": "Try the Copilot"
+          "desc": "Zweisprachiger Assistent mit öffentlicher Demo.",
+          "cta": "Copilot ausprobieren"
         },
         "services": {
-          "name": "Engineering Services",
-          "desc": "PLC, SCADA/HMI, industrial AI, cybersecurity and knowledge-cloud services.",
-          "cta": "View services"
+          "name": "Engineering-Leistungen",
+          "desc": "PLC, SCADA/HMI, industrielle KI, Cybersicherheit und Knowledge-Cloud-Leistungen.",
+          "cta": "Leistungen ansehen"
         },
         "academy": {
           "name": "Hermes Academy",
-          "desc": "Courses and certificates for industrial teams.",
-          "cta": "Visit the Academy"
+          "desc": "Kurse und Zertifikate für Industrieteams.",
+          "cta": "Zur Academy"
         },
         "library": {
-          "name": "Knowledge Library",
-          "desc": "Open engineering knowledge and cases.",
-          "cta": "Browse the Library"
+          "name": "Wissensbibliothek",
+          "desc": "Offenes Engineering-Wissen und Fälle.",
+          "cta": "Bibliothek durchstöbern"
         },
         "articles": {
-          "name": "Industrial Journal",
-          "desc": "Community articles and engineering stories.",
-          "cta": "Read the Journal"
+          "name": "Industriejournal",
+          "desc": "Community-Artikel und Engineering-Berichte.",
+          "cta": "Journal lesen"
         },
         "vendors": {
-          "name": "Vendor Directory",
-          "desc": "Vendor directory and collaboration applications.",
-          "cta": "Browse vendors"
+          "name": "Lieferantenverzeichnis",
+          "desc": "Lieferantenverzeichnis und Kooperationsanfragen.",
+          "cta": "Lieferanten durchsuchen"
         },
         "careers": {
-          "name": "Careers",
-          "desc": "Roles and applications at Hermes Novin Mehr.",
-          "cta": "See open roles"
+          "name": "Karriere",
+          "desc": "Stellen und Bewerbungen bei Hermes Novin Mehr.",
+          "cta": "Offene Stellen ansehen"
         }
       }
     },
     "demoCta": {
-      "title": "See Hermes reason over your plant",
-      "requestDemo": "Request a Demo"
+      "title": "Erleben Sie, wie Hermes über Ihre Anlage schlussfolgert",
+      "requestDemo": "Demo anfragen"
     },
     "footer": {
-      "tagline": "Industrial Intelligence. Engineered for Action.",
-      "copyright": "© 2026 Hermes Novin Mehr IRIC. All Rights Reserved.",
+      "tagline": "Industrielle Intelligenz. Entwickelt für sicheres Handeln.",
+      "copyright": "© 2026 Hermes Novin Mehr IRIC. Alle Rechte vorbehalten.",
       "domain": "hermesnovin.com",
       "columns": {
-        "platform": "Platform",
-        "intelligence": "Industrial Intelligence",
-        "resources": "Knowledge & Resources",
-        "company": "Company",
-        "legal": "Legal"
+        "platform": "Plattform",
+        "intelligence": "Industrielle Intelligenz",
+        "resources": "Wissen & Ressourcen",
+        "company": "Unternehmen",
+        "legal": "Rechtliches"
       },
       "links": {
-        "platformOverview": "Platform Overview",
-        "architecture": "Architecture",
-        "services": "Services",
+        "platformOverview": "Plattformüberblick",
+        "architecture": "Architektur",
+        "services": "Leistungen",
         "hermesBrain": "Hermes Brain",
         "academy": "Academy",
-        "articles": "Industrial Journal",
-        "vendors": "Vendor Directory",
+        "articles": "Industriejournal",
+        "vendors": "Lieferantenverzeichnis",
         "industrialBrain": "Industrial Brain",
         "copilot": "Copilot",
-        "knowledgeLibrary": "Knowledge Library",
-        "about": "About",
-        "careers": "Careers",
-        "contact": "Contact",
-        "requestDemo": "Request a Demo",
-        "privacy": "Privacy Policy",
-        "terms": "Terms of Service",
-        "cookies": "Cookie Policy"
+        "knowledgeLibrary": "Wissensbibliothek",
+        "about": "Über uns",
+        "careers": "Karriere",
+        "contact": "Kontakt",
+        "requestDemo": "Demo anfragen",
+        "privacy": "Datenschutzerklärung",
+        "terms": "Nutzungsbedingungen",
+        "cookies": "Cookie-Richtlinie"
       }
     },
     "platform": {
-      "eyebrow": "The Platform",
-      "title": "One architecture, from industrial data to safe action",
-      "lede": "Hermes layers industrial intelligence over your existing systems — every module feeds one explainable reasoning pipeline.",
-      "pipelineTitle": "The evidence-to-action pipeline",
-      "coreBadge": "Core layer",
+      "eyebrow": "Die Plattform",
+      "title": "Eine Architektur — von Industriedaten zu sicherem Handeln",
+      "lede": "Hermes legt industrielle Intelligenz über Ihre bestehenden Systeme — jedes Modul speist eine nachvollziehbare Reasoning-Pipeline.",
+      "pipelineTitle": "Die Pipeline von Evidenz zu Maßnahme",
+      "coreBadge": "Kernschicht",
       "layers": {
         "intelligence": {
-          "name": "Core Intelligence",
+          "name": "Kernintelligenz",
           "modules": "Industrial Brain · Hermes Copilot · Command Center",
-          "desc": "The reasoning engine that drives every decision."
+          "desc": "Die Reasoning-Engine hinter jeder Entscheidung."
         },
         "engineering": {
           "name": "Engineering",
-          "modules": "Knowledge Graph · Digital Twin · EDMS",
-          "desc": "Engineering knowledge and the asset model the Brain reasons over."
+          "modules": "Wissensgraph · Digitaler Zwilling · EDMS",
+          "desc": "Engineering-Wissen und das Anlagenmodell, über das das Brain schlussfolgert."
         },
         "operations": {
-          "name": "Operations",
-          "modules": "Predictive Maintenance · Asset Intelligence · CMMS",
-          "desc": "Operational signals and the maintenance work that closes the loop."
+          "name": "Betrieb",
+          "modules": "Prädiktive Instandhaltung · Anlagenintelligenz · CMMS",
+          "desc": "Betriebssignale und die Instandhaltungsarbeit, die den Kreislauf schließt."
         },
         "business": {
-          "name": "Business",
+          "name": "Geschäft",
           "modules": "ERP · CRM · ATS",
-          "desc": "Enterprise workflows on the same tenancy and access model."
+          "desc": "Unternehmensabläufe auf demselben Mandanten- und Zugriffsmodell."
         },
         "security": {
-          "name": "Security · Integration & Edge",
-          "modules": "Org & site RBAC · Tenant isolation · Audit trail · PLC · SCADA · OPC UA · MQTT",
-          "desc": "The boundary layer every request and connection passes through."
+          "name": "Sicherheit · Integration & Edge",
+          "modules": "RBAC für Organisation & Standort · Mandantenisolation · Audit-Trail · PLC · SCADA · OPC UA · MQTT",
+          "desc": "Die Grenzschicht, die jede Anfrage und jede Verbindung durchläuft."
         }
       },
-      "ctaTitle": "Map Hermes onto your architecture",
-      "requestDemo": "Request a Demo"
+      "ctaTitle": "Hermes auf Ihre Architektur abbilden",
+      "requestDemo": "Demo anfragen"
     },
     "story": {
-      "disclosure": "Illustrative industrial environment",
+      "disclosure": "Illustrative Industrieumgebung",
       "nav": {
-        "label": "Industrial story",
-        "command": "Command Center",
-        "factory": "Smart Factory",
-        "energy": "Energy & Infrastructure",
-        "intelligence": "Engineering Intelligence"
+        "label": "Industrie-Story",
+        "command": "Leitstand",
+        "factory": "Smarte Fabrik",
+        "energy": "Energie & Infrastruktur",
+        "intelligence": "Engineering-Intelligenz"
       },
       "hero": {
-        "alt": "Industrial operations team monitoring connected factory systems from a modern command center"
+        "alt": "Industrielles Betriebsteam überwacht vernetzte Fabriksysteme aus einem modernen Leitstand"
       },
       "factory": {
-        "label": "Smart Factory",
-        "title": "Connected production, engineered without black boxes",
-        "body1": "Hermes OS connects to the automation layer your plant already runs — PLC, SCADA, OPC UA and MQTT — and turns operational signals into a structured engineering picture.",
-        "body2": "The Asset Registry and CMMS keep equipment, maintenance work and site context in one governed model, so engineers reason about the same machine the operators run.",
-        "alt": "Engineers reviewing automated production systems on the floor of a connected smart factory",
-        "cta": "Explore the platform"
+        "label": "Smarte Fabrik",
+        "title": "Vernetzte Produktion, konstruiert ohne Blackboxen",
+        "body1": "Hermes OS verbindet sich mit der Automatisierungsebene, die Ihr Werk bereits betreibt — PLC, SCADA, OPC UA und MQTT — und verwandelt Betriebssignale in ein strukturiertes Engineering-Bild.",
+        "body2": "Anlagenregister und CMMS halten Equipment, Instandhaltungsarbeit und Standortkontext in einem gelenkten Modell zusammen — Ingenieure und Bediener sprechen über dieselbe Maschine.",
+        "alt": "Ingenieure prüfen automatisierte Produktionssysteme in einer vernetzten smarten Fabrik",
+        "cta": "Plattform entdecken"
       },
       "energy": {
-        "label": "Energy & Infrastructure",
-        "title": "Multi-site operations with secure boundaries",
-        "body1": "Industrial estates, energy systems and distributed facilities rarely fail in one place. Hermes OS keeps every site in scope while enforcing organization and site-level access boundaries on every query.",
-        "body2": "Industrial edge connectivity and enterprise-scale visibility bring distributed operations into one coordinated operational picture — without merging what must stay isolated.",
-        "alt": "Industrial campus with energy infrastructure and connected utility systems at dusk",
-        "cta": "See the architecture"
+        "label": "Energie & Infrastruktur",
+        "title": "Standortübergreifender Betrieb mit sicheren Grenzen",
+        "body1": "Industrieparks, Energiesysteme und verteilte Anlagen fallen selten an nur einer Stelle aus. Hermes OS behält jeden Standort im Blick und erzwingt zugleich Organisations- und Standortgrenzen bei jeder Abfrage.",
+        "body2": "Industrielle Edge-Konnektivität und unternehmensweite Sichtbarkeit fügen verteilten Betrieb zu einem koordinierten Lagebild zusammen — ohne zu vermischen, was getrennt bleiben muss.",
+        "alt": "Industriecampus mit Energieinfrastruktur und vernetzten Versorgungssystemen in der Abenddämmerung",
+        "cta": "Architektur ansehen"
       },
       "intelligence": {
-        "label": "Engineering Intelligence",
-        "title": "From evidence to a safe action path",
-        "body1": "The Industrial Brain evaluates engineering evidence against constraints and produces explainable, traceable analysis — distinguishing observed data from assumptions and unknowns.",
-        "body2": "Digital Twin context and controlled engineering documents keep every recommendation anchored to approved revisions and confirmed maintenance records. Decisions stay with your engineers.",
-        "alt": "Engineering team collaborating on evidence-based industrial analysis around a shared workstation",
-        "cta": "Meet the Industrial Brain"
+        "label": "Engineering-Intelligenz",
+        "title": "Von der Evidenz zum sicheren Maßnahmenpfad",
+        "body1": "Das Industrial Brain bewertet Engineering-Evidenz gegen Randbedingungen und liefert nachvollziehbare, rückverfolgbare Analysen — beobachtete Daten klar getrennt von Annahmen und Unbekanntem.",
+        "body2": "Kontext aus dem Digitalen Zwilling und gelenkte Engineering-Dokumente verankern jede Empfehlung in freigegebenen Revisionen und bestätigten Instandhaltungsdaten. Die Entscheidung bleibt bei Ihren Ingenieuren.",
+        "alt": "Engineering-Team arbeitet an evidenzbasierter Industrieanalyse an einem gemeinsamen Arbeitsplatz",
+        "cta": "Industrial Brain kennenlernen"
       }
     }
   },
   "authExperience": {
-    "backToSite": "Back to site",
+    "backToSite": "Zurück zur Website",
     "brandName": "Hermes OS",
-    "panelAriaLabel": "Why Hermes",
-    "positioningTitle": "Secure access to the Hermes industrial intelligence platform.",
-    "positioningLede": "One tenant-aware surface for the engineers who run the plant — bilingual, on-prem or private-cloud ready.",
+    "panelAriaLabel": "Warum Hermes",
+    "positioningTitle": "Sicherer Zugang zur industriellen Intelligenzplattform von Hermes.",
+    "positioningLede": "Eine mandantenbewusste Oberfläche für die Ingenieure, die die Anlage betreiben — zweisprachig, bereit für On-Premises oder Private Cloud.",
     "capabilities": {
-      "tenant": "Tenant-aware access controls",
-      "rbac": "Role-based authorization across every module",
-      "audit": "Audit-aware operations",
-      "deploy": "On-prem or private-cloud deployment"
+      "tenant": "Mandantenbewusste Zugriffskontrollen",
+      "rbac": "Rollenbasierte Autorisierung in jedem Modul",
+      "audit": "Audit-bewusster Betrieb",
+      "deploy": "Bereitstellung On-Premises oder in der Private Cloud"
     },
-    "showPassword": "Show password",
-    "hidePassword": "Hide password",
-    "errorSummaryTitle": "Please review the following",
+    "showPassword": "Passwort anzeigen",
+    "hidePassword": "Passwort verbergen",
+    "errorSummaryTitle": "Bitte prüfen Sie Folgendes",
     "strength": {
-      "veryWeak": "Very weak",
-      "weak": "Weak",
-      "fair": "Fair",
-      "strong": "Strong",
-      "veryStrong": "Very strong"
+      "veryWeak": "Sehr schwach",
+      "weak": "Schwach",
+      "fair": "Ausreichend",
+      "strong": "Stark",
+      "veryStrong": "Sehr stark"
     },
     "forgot": {
-      "title": "Reset your password",
-      "subtitle": "Enter your account email and we'll send a reset link if it matches an account.",
-      "emailLabel": "Email address",
-      "emailPlaceholder": "you@company.com",
-      "submit": "Send reset link",
-      "submitting": "Sending…",
-      "genericSuccess": "If an account matches that email, a reset link is on its way. Check your inbox and spam folder.",
-      "tooManyRequests": "Too many requests. Please wait a moment and try again.",
-      "genericError": "Something went wrong. Please try again.",
-      "connectionError": "Unable to connect. Please check your connection.",
-      "backToSignIn": "Back to sign in"
+      "title": "Passwort zurücksetzen",
+      "subtitle": "Geben Sie Ihre Konto-E-Mail ein — wir senden einen Zurücksetzlink, falls ein Konto übereinstimmt.",
+      "emailLabel": "E-Mail-Adresse",
+      "emailPlaceholder": "sie@unternehmen.com",
+      "submit": "Zurücksetzlink senden",
+      "submitting": "Wird gesendet…",
+      "genericSuccess": "Falls ein Konto zu dieser E-Mail passt, ist ein Zurücksetzlink unterwegs. Prüfen Sie Posteingang und Spam-Ordner.",
+      "tooManyRequests": "Zu viele Anfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+      "genericError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "connectionError": "Verbindung nicht möglich. Bitte prüfen Sie Ihre Netzwerkverbindung.",
+      "backToSignIn": "Zurück zur Anmeldung"
     },
     "reset": {
-      "title": "Set a new password",
-      "subtitle": "Choose a strong password for your account.",
-      "newPassword": "New password",
-      "confirmPassword": "Confirm new password",
-      "submit": "Reset password",
-      "submitting": "Resetting…",
-      "successMessage": "Your password has been reset. You can now sign in.",
-      "signInNow": "Sign in now",
-      "invalidToken": "This reset link is invalid or has expired. Please request a new one.",
-      "requestNewLink": "Request a new link",
-      "validationFailed": "That password does not meet the requirements. Please choose a stronger one.",
-      "genericError": "Reset failed. The link may have expired — request a new one.",
-      "connectionError": "Unable to connect. Please check your connection."
+      "title": "Neues Passwort festlegen",
+      "subtitle": "Wählen Sie ein starkes Passwort für Ihr Konto.",
+      "newPassword": "Neues Passwort",
+      "confirmPassword": "Neues Passwort bestätigen",
+      "submit": "Passwort zurücksetzen",
+      "submitting": "Wird zurückgesetzt…",
+      "successMessage": "Ihr Passwort wurde zurückgesetzt. Sie können sich jetzt anmelden.",
+      "signInNow": "Jetzt anmelden",
+      "invalidToken": "Dieser Zurücksetzlink ist ungültig oder abgelaufen. Bitte fordern Sie einen neuen an.",
+      "requestNewLink": "Neuen Link anfordern",
+      "validationFailed": "Dieses Passwort erfüllt die Anforderungen nicht. Bitte wählen Sie ein stärkeres.",
+      "genericError": "Zurücksetzen fehlgeschlagen. Der Link ist möglicherweise abgelaufen — fordern Sie einen neuen an.",
+      "connectionError": "Verbindung nicht möglich. Bitte prüfen Sie Ihre Netzwerkverbindung."
     },
     "verify": {
-      "title": "Verify your email",
-      "subtitle": "Confirming your email address.",
-      "pending": "Verifying your email…",
-      "successTitle": "Email verified",
-      "successMessage": "Your email address is confirmed. You can now sign in.",
-      "signInToAccount": "Sign in to your account",
-      "errorTitle": "Verification failed",
-      "errorMessage": "We couldn't verify this link. It may have expired or already been used.",
-      "noToken": "No verification token was provided.",
-      "backToSignIn": "Back to sign in",
-      "resendHint": "Need a new link? Use password reset to receive a fresh email."
+      "title": "E-Mail bestätigen",
+      "subtitle": "Ihre E-Mail-Adresse wird bestätigt.",
+      "pending": "E-Mail wird bestätigt…",
+      "successTitle": "E-Mail bestätigt",
+      "successMessage": "Ihre E-Mail-Adresse ist bestätigt. Sie können sich jetzt anmelden.",
+      "signInToAccount": "Bei Ihrem Konto anmelden",
+      "errorTitle": "Bestätigung fehlgeschlagen",
+      "errorMessage": "Dieser Link konnte nicht bestätigt werden. Er ist möglicherweise abgelaufen oder wurde bereits verwendet.",
+      "noToken": "Es wurde kein Bestätigungstoken übergeben.",
+      "backToSignIn": "Zurück zur Anmeldung",
+      "resendHint": "Neuen Link benötigt? Nutzen Sie die Passwort-Zurücksetzung, um eine frische E-Mail zu erhalten."
     }
   },
   "crm": {

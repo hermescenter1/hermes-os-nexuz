@@ -161,8 +161,14 @@ describe("publicSite catalogs — parity and orthography", () => {
     expect(keyPaths((de as unknown as Catalog).publicSite as unknown as Record<string, unknown>)).toEqual(enPaths);
   });
 
-  it("de.publicSite is byte-identical English carryover — German is NOT activated", () => {
-    expect(JSON.stringify((de as unknown as Catalog).publicSite)).toBe(JSON.stringify(en.publicSite));
+  // PHASE 87L.6: publicSite carries real German now. Activation of the /de
+  // routes stays a SEPARATE decision (ACTIVE_LOCALES) — this only pins that
+  // the catalog values are genuinely translated, not English carryover.
+  it("de.publicSite is genuinely German — no English sentence carryover", () => {
+    const dePub = (de as unknown as Catalog).publicSite as unknown as typeof en.publicSite;
+    expect(JSON.stringify(dePub)).not.toBe(JSON.stringify(en.publicSite));
+    expect(dePub.header.nav.about).toBe("Über uns");
+    expect(dePub.challenge.title).not.toBe(en.publicSite.challenge.title);
   });
 
   it("no publicSite value is an empty string in any catalog", () => {
@@ -215,9 +221,9 @@ describe("homepage + platform metadata — buildMetadata contract preserved", ()
     const meta = buildMetadata({ locale: "en", path: "", title: "t", description: "d" });
     expect(meta.alternates?.canonical).toBe(`${BASE_URL}/en`);
     const langs = meta.alternates?.languages as Record<string, string>;
-    expect(Object.keys(langs).sort()).toEqual(["en", "fa", "x-default"]);
+    expect(Object.keys(langs).sort()).toEqual(["de", "en", "fa", "x-default"]);
     expect(langs["x-default"]).toBe(`${BASE_URL}/fa`);
-    expect(Object.keys(langs)).not.toContain("de");
+    expect(Object.keys(langs)).toContain("de") // 87L.6: German ACTIVATED;
   });
 
   it("platform canonical carries the /platform path in both locales", () => {

@@ -147,26 +147,26 @@ describe("de.json — value quality", () => {
   });
 });
 
-describe("German remains inactive and hidden", () => {
+describe("German is ACTIVE (87L.6)", () => {
   it("ACTIVE_LOCALES is still exactly fa + en", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
   });
 
-  it("de is supported but not active", () => {
+  it("de is supported and ACTIVE (87L.6)", () => {
     expect(isSupportedLocale("de")).toBe(true);
-    expect(isActiveLocale("de")).toBe(false);
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
     expect([...SUPPORTED_LOCALES]).toContain("de");
   });
 
-  it("/de is not routable (routing.locales excludes de)", () => {
-    expect([...routing.locales]).not.toContain("de");
+  it("/de is routable (87L.6 activation)", () => {
+    expect([...routing.locales]).toContain("de") // 87L.6: German ACTIVATED;
   });
 
-  it("switcher options do not include German", () => {
+  it("switcher options include German (87L.6)", () => {
     const codes = activeLocaleOptions().map((o) => o.code);
-    expect(codes).toEqual(["fa", "en"]);
+    expect(codes).toEqual(["fa", "en", "de"]);
     const names = activeLocaleOptions().map((o) => o.nativeName);
-    expect(names).not.toContain("Deutsch");
+    expect(names).toContain("Deutsch") // 87L.6;
   });
 });
 
@@ -220,6 +220,14 @@ describe("de.json — Phase 86C1 translation audit", () => {
     "industrialBrain",
     "assetOperations", "maintenanceOperations",
     "automationOperations", "enterpriseOperations",
+    // PHASE 87L.6 — the public homepage/site shell and the auth experience are
+    // now genuinely German (docs/i18n/german-glossary.md holds the terminology)
+    "publicSite", "authExperience",
+    // PHASE 87L.6 FINAL AMENDMENT — every remaining PUBLIC-route namespace
+    "about", "services", "architecture", "library", "modules",
+    "knowledgeCases", "caseExplorer",
+    // PHASE 87L.6B — the authenticated shell (every /de workspace page)
+    "appShell",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

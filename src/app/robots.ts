@@ -42,7 +42,41 @@ export default function robots(): MetadataRoute.Robots {
         ],
         crawlDelay: 2,
       },
-      /* ── AI / LLM crawlers ─────────────────────────────────────────────── */
+      /* ── AI SEARCH / RETRIEVAL crawlers (PHASE 87L.6) ──────────────────────
+         These index public content so the product can be FOUND and CITED in
+         ChatGPT search, Claude search and Perplexity answers. They are a
+         different concern from the model-TRAINING crawlers below and get the
+         same growth-first policy as classic search engines: full public
+         access, private/API always denied. Names follow the vendors' current
+         official crawler documentation. */
+      {
+        userAgent: "OAI-SearchBot",
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/", "/auth/"), "/api/"],
+      },
+      {
+        userAgent: "Claude-SearchBot",
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/", "/auth/"), "/api/"],
+      },
+      {
+        // user-directed fetches from Claude on a user's explicit request
+        userAgent: "Claude-User",
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/", "/auth/"), "/api/"],
+      },
+      {
+        userAgent: "PerplexityBot",
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+      },
+      /* ── Model-TRAINING crawlers — explicit owner policy ───────────────────
+         Training access is NOT required for search visibility. The standing
+         owner decision (Phase 62) grants training bots the open knowledge
+         surfaces only (library/services/academy); proprietary product and
+         engineering content stays protected. Google-Extended and
+         Applebot-Extended are robots TOKENS controlling training use of
+         normally-crawled pages — same scoped policy. */
       {
         userAgent: "GPTBot",
         allow: localized("/library/", "/services/", "/academy/"),
@@ -54,8 +88,13 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
       },
       {
-        userAgent: "PerplexityBot",
-        allow: localeRoots,
+        userAgent: "Google-Extended",
+        allow: localized("/library/", "/services/", "/academy/"),
+        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+      },
+      {
+        userAgent: "Applebot-Extended",
+        allow: localized("/library/", "/services/", "/academy/"),
         disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
       },
       {

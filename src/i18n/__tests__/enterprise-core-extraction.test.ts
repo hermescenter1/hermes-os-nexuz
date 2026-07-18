@@ -410,14 +410,14 @@ describe("Phase 86C4B2B1A-PRE combined — prior work and German state intact", 
     expect(flatten((en as Tree).maintenanceOperations).size).toBe(233);
   });
 
-  it("ACTIVE_LOCALES is still exactly fa + en; de supported but inactive", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+  it("ACTIVE_LOCALES is fa + en + de (87L.6 activation)", () => {
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
     expect(isSupportedLocale("de")).toBe(true);
-    expect(isActiveLocale("de")).toBe(false);
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
   });
 
-  it("German stays out of routing (de not routable)", () => {
-    expect([...routing.locales]).not.toContain("de");
+  it("German is routable (87L.6 activation)", () => {
+    expect([...routing.locales]).toContain("de") // 87L.6: German ACTIVATED;
   });
 
   it("prior Persian/German translations remain intact", () => {

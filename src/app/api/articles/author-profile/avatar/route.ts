@@ -4,6 +4,7 @@ import { join }             from "path";
 import { randomBytes }      from "crypto";
 import { getCurrentUser }   from "@/lib/auth/session";
 import { getPrisma }        from "@/lib/db/prisma";
+import { notifyAuthorProfileLifecycle } from "@/lib/seo/indexnow-lifecycle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ function uploadsDir(): string {
   return join(process.cwd(), "public", "uploads", "authors");
 }
 
-type DbProfile = { id: string; userId: string; avatarUrl: string | null };
+type DbProfile = { id: string; userId: string; avatarUrl: string | null; handle?: string | null };
 
 export async function POST(req: Request): Promise<NextResponse> {
   const user = await getCurrentUser();
@@ -118,6 +119,10 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Failed to update profile." }, { status: 500 });
   }
 
+  // 87L.6B: the public author page changed — announce it (fire-and-forget,
+  // inert in tests/dev, never affects the response above this line).
+  if (profile.handle) notifyAuthorProfileLifecycle(profile.handle);
+
   return NextResponse.json({ ok: true, avatarUrl: publicUrl, message: "Profile photo updated." });
 }
 
@@ -170,6 +175,9 @@ export async function DELETE(_req: Request): Promise<NextResponse> {
       unlink(join(uploadsDir(), prevName)).catch(() => {});
     }
   }
+
+  // 87L.6B: the public author page changed — announce it (fire-and-forget)
+  if (profile.handle) notifyAuthorProfileLifecycle(profile.handle);
 
   return NextResponse.json({ ok: true, avatarUrl: null, message: "Profile photo removed." });
 }

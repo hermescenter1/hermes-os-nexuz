@@ -19,8 +19,10 @@
  * circular dependency back through here.
  */
 
-/** Publicly exposed locales — routing, sitemap, hreflang, switchers. */
-export const ACTIVE_LOCALES = ["fa", "en"] as const;
+/** Publicly exposed locales — routing, sitemap, hreflang, switchers.
+ *  PHASE 87L.6 FINAL AMENDMENT: German activated after every public-route
+ *  namespace reached genuinely German values (de-catalog TRANSLATED_NS). */
+export const ACTIVE_LOCALES = ["fa", "en", "de"] as const;
 
 /** Every modeled locale, including not-yet-public ones (German). */
 export const SUPPORTED_LOCALES = ["fa", "en", "de"] as const;

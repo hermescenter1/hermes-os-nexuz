@@ -2,6 +2,7 @@ import { NextResponse }    from "next/server";
 import { getCurrentUser }  from "@/lib/auth/session";
 import { can }             from "@/lib/auth/roles";
 import { getPrisma }       from "@/lib/db/prisma";
+import { notifyArticleLifecycle } from "@/lib/seo/indexnow-lifecycle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,6 +90,11 @@ export async function POST(
     console.error(`[review/approve] articleId=${id} userId=${user.id} error=${msg}`);
     return NextResponse.json({ error: "Internal error during approval." }, { status: 500 });
   }
+
+  // 87L.6: announce the new canonical URL to IndexNow. Fire-and-forget AFTER
+  // the transaction committed — a submission failure can never affect the
+  // publication, and the helper is a no-op in tests/development.
+  notifyArticleLifecycle(slug, String(article.language ?? "FA"));
 
   return NextResponse.json({
     ok:      true,
