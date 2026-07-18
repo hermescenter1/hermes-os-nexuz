@@ -6457,5 +6457,119 @@
     "distinction": {
       "controlled": "Controlled engineering document — distinct from public knowledge articles and diagnostic case evidence."
     }
+  },
+  "orgAdministration": {
+    "header": {
+      "eyebrow": "Administration",
+      "purpose": "Members, invitations, access and the platform subscription for this organization."
+    },
+    "attention": {
+      "title": "Requires attention",
+      "empty": "No administrative items need attention right now. Membership, invitation and subscription queues are clear.",
+      "view": "Open",
+      "severityAction": "Action needed",
+      "severityReview": "Review",
+      "pastDue": "Subscription is past due — billing action required",
+      "subscriptionEnded": "Subscription is no longer active",
+      "noSubscription": "No subscription record for this organization",
+      "expiredInvitations": "{count} invitation(s) expired",
+      "pendingInvitations": "{count} invitation(s) awaiting acceptance",
+      "suspendedMembers": "{count} member(s) suspended",
+      "invitedMembers": "{count} member(s) have not completed onboarding",
+      "limitReached": "{count} plan limit(s) reached"
+    },
+    "sections": {
+      "membership": "Membership and access",
+      "invitations": "Invitations",
+      "subscription": "Plan and subscription",
+      "usage": "Usage against plan limits",
+      "actions": "Next actions"
+    },
+    "memberStatus": {
+      "ACTIVE": "Active",
+      "INVITED": "Invited",
+      "SUSPENDED": "Suspended"
+    },
+    "invitationStatus": {
+      "PENDING": "Pending",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired"
+    },
+    "subscriptionStatus": {
+      "TRIALING": "Trialing",
+      "ACTIVE": "Active",
+      "PAST_DUE": "Past due",
+      "CANCELED": "Cancelled",
+      "EXPIRED": "Expired"
+    },
+    "role": {
+      "OWNER": "Owner",
+      "ADMIN": "Administrator",
+      "MANAGER": "Manager",
+      "ENGINEER": "Engineer",
+      "VIEWER": "Viewer",
+      "BILLING_ADMIN": "Billing administrator",
+      "MEMBER": "Member"
+    },
+    "billingCycle": {
+      "MONTHLY": "Monthly",
+      "YEARLY": "Yearly"
+    },
+    "fields": {
+      "organization": "Organization",
+      "members": "Members",
+      "totalMembers": "Members on the organization",
+      "plan": "Plan",
+      "noPlan": "No plan on record",
+      "cycle": "Billing interval",
+      "startsAt": "Started",
+      "expiresAt": "Renews or ends",
+      "autoRenewOn": "Auto-renew enabled",
+      "autoRenewOff": "Auto-renew disabled",
+      "invitedOn": "Invited",
+      "expiresOn": "Expires",
+      "used": "Used",
+      "limit": "Limit",
+      "unlimited": "Unlimited",
+      "unavailable": "Not measured",
+      "unavailableNote": "This metric has no usage record for the current period — it is not reported as zero."
+    },
+    "metric": {
+      "members": "Members",
+      "projects": "Projects",
+      "storage_gb": "Storage (GB)",
+      "api_calls": "API calls",
+      "ai_requests": "AI requests",
+      "emails_sent": "Emails sent",
+      "notifications_created": "Notifications created"
+    },
+    "actions": {
+      "members": "Manage members",
+      "membersDesc": "Roles, membership state and access.",
+      "invitations": "Invitations",
+      "invitationsDesc": "Pending, expired and accepted invitations.",
+      "apiKeys": "API keys",
+      "apiKeysDesc": "Programmatic access credentials for this organization.",
+      "billing": "Billing & subscription",
+      "billingDesc": "Plan, billing interval and subscription state.",
+      "settings": "Organization settings",
+      "settingsDesc": "Organization profile and configuration."
+    },
+    "states": {
+      "loading": "Loading administration data…",
+      "unavailableTitle": "Administration data unavailable",
+      "unavailableBody": "The organization summary could not be loaded. Check your access or open a section directly.",
+      "noOrganization": "No organization is associated with this account yet.",
+      "noMembers": "No members on this organization yet.",
+      "noInvitations": "No invitations have been sent.",
+      "noSubscription": "No subscription record exists for this organization.",
+      "noUsage": "No usage has been recorded for the current period.",
+      "billingUnavailable": "Billing information is not available for this organization."
+    },
+    "distinction": {
+      "platformBilling": "Platform subscription billing — separate from ERP project budgets and internal company finance.",
+      "memberScope": "Organization membership — separate from ERP teams and resources."
+    }
   }
 }

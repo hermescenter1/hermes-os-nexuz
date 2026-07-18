@@ -6457,5 +6457,119 @@
     "distinction": {
       "controlled": "سند مهندسی کنترل‌شده — متمایز از مقاله‌های دانش عمومی و شواهد پرونده‌های تشخیصی."
     }
+  },
+  "orgAdministration": {
+    "header": {
+      "eyebrow": "مدیریت سامانه",
+      "purpose": "اعضا، دعوت‌نامه‌ها، دسترسی و اشتراک پلتفرم برای این سازمان."
+    },
+    "attention": {
+      "title": "نیازمند توجه",
+      "empty": "در حال حاضر هیچ مورد مدیریتی نیازمند توجه نیست. صف‌های عضویت، دعوت‌نامه و اشتراک خالی‌اند.",
+      "view": "گشودن",
+      "severityAction": "نیازمند اقدام",
+      "severityReview": "بررسی",
+      "pastDue": "اشتراک سررسید گذشته است — اقدام صورتحساب لازم است",
+      "subscriptionEnded": "اشتراک دیگر فعال نیست",
+      "noSubscription": "برای این سازمان سابقهٔ اشتراکی وجود ندارد",
+      "expiredInvitations": "{count} دعوت‌نامه منقضی‌شده",
+      "pendingInvitations": "{count} دعوت‌نامه در انتظار پذیرش",
+      "suspendedMembers": "{count} عضو تعلیق‌شده",
+      "invitedMembers": "{count} عضو فرایند پیوستن را تکمیل نکرده‌اند",
+      "limitReached": "{count} سقف استفادهٔ طرح تکمیل شده"
+    },
+    "sections": {
+      "membership": "عضویت و دسترسی",
+      "invitations": "دعوت‌نامه‌ها",
+      "subscription": "طرح و اشتراک",
+      "usage": "میزان استفاده در برابر سقف طرح",
+      "actions": "اقدام‌های بعدی"
+    },
+    "memberStatus": {
+      "ACTIVE": "فعال",
+      "INVITED": "دعوت‌شده",
+      "SUSPENDED": "تعلیق‌شده"
+    },
+    "invitationStatus": {
+      "PENDING": "در انتظار",
+      "ACCEPTED": "پذیرفته‌شده",
+      "REJECTED": "ردشده",
+      "EXPIRED": "منقضی‌شده"
+    },
+    "subscriptionStatus": {
+      "TRIALING": "دورهٔ آزمایشی",
+      "ACTIVE": "فعال",
+      "PAST_DUE": "سررسید گذشته",
+      "CANCELED": "لغوشده",
+      "EXPIRED": "منقضی‌شده"
+    },
+    "role": {
+      "OWNER": "مالک",
+      "ADMIN": "مدیر",
+      "MANAGER": "سرپرست",
+      "ENGINEER": "مهندس",
+      "VIEWER": "بیننده",
+      "BILLING_ADMIN": "مدیر صورتحساب",
+      "MEMBER": "عضو"
+    },
+    "billingCycle": {
+      "MONTHLY": "ماهانه",
+      "YEARLY": "سالانه"
+    },
+    "fields": {
+      "organization": "سازمان",
+      "members": "اعضا",
+      "totalMembers": "اعضای سازمان",
+      "plan": "طرح",
+      "noPlan": "طرحی ثبت نشده",
+      "cycle": "دوره صورتحساب",
+      "startsAt": "شروع",
+      "expiresAt": "تمدید یا پایان",
+      "autoRenewOn": "تمدید خودکار فعال",
+      "autoRenewOff": "تمدید خودکار غیرفعال",
+      "invitedOn": "تاریخ دعوت",
+      "expiresOn": "انقضا",
+      "used": "مصرف‌شده",
+      "limit": "سقف",
+      "unlimited": "نامحدود",
+      "unavailable": "اندازه‌گیری نشده",
+      "unavailableNote": "برای این شاخص در دورهٔ جاری سابقهٔ مصرفی وجود ندارد — صفر گزارش نمی‌شود."
+    },
+    "metric": {
+      "members": "اعضا",
+      "projects": "پروژه‌ها",
+      "storage_gb": "فضای ذخیره‌سازی (گیگابایت)",
+      "api_calls": "فراخوانی API",
+      "ai_requests": "درخواست‌های هوش مصنوعی",
+      "emails_sent": "ایمیل‌های ارسالی",
+      "notifications_created": "اعلان‌های ایجادشده"
+    },
+    "actions": {
+      "members": "مدیریت اعضا",
+      "membersDesc": "نقش‌ها، وضعیت عضویت و دسترسی.",
+      "invitations": "دعوت‌نامه‌ها",
+      "invitationsDesc": "دعوت‌نامه‌های در انتظار، منقضی‌شده و پذیرفته‌شده.",
+      "apiKeys": "کلیدهای API",
+      "apiKeysDesc": "اعتبارنامه‌های دسترسی برنامه‌نویسی این سازمان.",
+      "billing": "صورتحساب و اشتراک",
+      "billingDesc": "طرح، دوره صورتحساب و وضعیت اشتراک.",
+      "settings": "تنظیمات سازمان",
+      "settingsDesc": "نمایه و پیکربندی سازمان."
+    },
+    "states": {
+      "loading": "در حال بارگذاری داده‌های مدیریت…",
+      "unavailableTitle": "دادهٔ مدیریت در دسترس نیست",
+      "unavailableBody": "خلاصهٔ سازمان بارگیری نشد. دسترسی خود را بررسی کنید یا یک بخش را مستقیماً باز کنید.",
+      "noOrganization": "هنوز سازمانی به این حساب مرتبط نشده است.",
+      "noMembers": "هنوز عضوی در این سازمان وجود ندارد.",
+      "noInvitations": "هیچ دعوت‌نامه‌ای ارسال نشده است.",
+      "noSubscription": "برای این سازمان سابقهٔ اشتراکی وجود ندارد.",
+      "noUsage": "برای دورهٔ جاری مصرفی ثبت نشده است.",
+      "billingUnavailable": "اطلاعات صورتحساب برای این سازمان در دسترس نیست."
+    },
+    "distinction": {
+      "platformBilling": "صورتحساب اشتراک پلتفرم — جدا از بودجهٔ پروژه‌های ERP و امور مالی داخلی شرکت.",
+      "memberScope": "عضویت سازمانی — جدا از تیم‌ها و منابع ERP."
+    }
   }
 }
