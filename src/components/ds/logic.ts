@@ -104,14 +104,19 @@ export function badgeVariants(variant: BadgeVariant = "neutral"): string {
 
 /* ────────────────────────────── Card ───────────────────────────── */
 
-export type CardVariant = "standard" | "elevated" | "interactive" | "glass" | "technical";
+// PHASE 87L.1 — filled-glass card system. The product variants map onto the
+// ds-glass-* utilities in globals.css (hierarchy: hero > elevated >
+// standard/interactive > soft); `glass` stays the OVERLAY glass (modal,
+// toolbar — backdrop-blurred) and `technical` stays the deep telemetry well.
+export type CardVariant =
+  | "standard" | "elevated" | "interactive" | "hero" | "soft" | "glass" | "technical";
 
 const CARD_VARIANTS: Record<CardVariant, string> = {
-  standard: "bg-surface-primary border border-border-default rounded-md",
-  elevated: "bg-surface-elevated border border-border-default rounded-md shadow-e2",
-  interactive:
-    "bg-surface-primary border border-border-default rounded-md transition-colors duration-standard ease-hermes " +
-    "hover:border-border-active hover:bg-surface-elevated cursor-pointer ds-focus",
+  standard: "ds-glass-card rounded-lg",
+  elevated: "ds-glass-elevated rounded-lg",
+  interactive: "ds-glass-interactive rounded-lg cursor-pointer ds-focus",
+  hero: "ds-glass-hero rounded-xl",
+  soft: "ds-glass-soft rounded-lg",
   glass: "ds-glass rounded-lg shadow-e3",
   technical: "bg-background-deep border border-border-default rounded-md",
 };

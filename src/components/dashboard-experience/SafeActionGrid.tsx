@@ -28,8 +28,7 @@ export function SafeActionGrid({
           <Link
             href={action.href}
             className={cn(
-              "ds-focus flex min-h-[3.25rem] flex-col gap-1 rounded-md border border-border-default bg-surface-primary p-4",
-              "transition-colors duration-fast hover:border-border-active hover:bg-surface-interactive",
+              "ds-focus flex min-h-[3.25rem] flex-col gap-1 ds-glass-interactive rounded-lg p-4",
             )}
           >
             <span className="flex items-center gap-2">

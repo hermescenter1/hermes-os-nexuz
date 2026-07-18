@@ -21,7 +21,7 @@ export function InsightCard({ eyebrow, title, children, confidence, source, clas
   return (
     <div
       className={cn(
-        "rounded-md bg-surface-primary border border-border-default border-s-2 border-s-reasoning-evidence p-5",
+        "ds-glass-card rounded-lg border-s-2 border-s-reasoning-evidence p-5",
         "flex flex-col gap-2",
         className,
       )}

@@ -51,8 +51,7 @@ export function AttentionPanel({
             <Link
               href={item.href}
               className={cn(
-                "ds-focus flex items-start gap-3 rounded-md border border-border-default bg-surface-primary p-3",
-                "transition-colors duration-fast hover:border-border-active hover:bg-surface-interactive",
+                "ds-focus flex items-start gap-3 ds-glass-interactive rounded-lg p-3",
               )}
             >
               <span className="mt-0.5 flex shrink-0 items-center gap-1.5">

@@ -84,7 +84,7 @@ export async function EdmsCommandSurface({
 
       <DashboardSection id="edms-workflow" title={t("sections.workflow")}>
         {registerEmpty ? (
-          <div className="rounded-md border border-border-default bg-surface-primary p-5">
+          <div className="ds-glass-card rounded-lg p-5">
             <p className="text-body-compact text-text-secondary">{t("states.emptyRegister")}</p>
           </div>
         ) : (
@@ -97,7 +97,7 @@ export async function EdmsCommandSurface({
               }))}
               nf={nf}
             />
-            <div className="rounded-md border border-border-default bg-surface-primary p-5">
+            <div className="ds-glass-card rounded-lg p-5">
               <h3 className="mb-3 text-title-lg font-semibold text-text-primary">{t("sections.byType")}</h3>
               <ul className="flex flex-col gap-2">
                 {typeRows.map((r) => (
@@ -126,7 +126,7 @@ export async function EdmsCommandSurface({
                 <li key={doc.id}>
                   <Link
                     href={`/documents/${doc.id}`}
-                    className="ds-focus flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border-default bg-surface-primary p-3 transition-colors duration-fast hover:border-border-active hover:bg-surface-interactive"
+                    className="ds-focus flex flex-wrap items-center gap-x-3 gap-y-1 ds-glass-interactive rounded-lg p-3"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-body-compact font-semibold text-text-primary" dir="auto">
@@ -164,7 +164,7 @@ export async function EdmsCommandSurface({
       ) : null}
 
       <DashboardSection id="edms-activity" title={t("sections.activity")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           {activity.length === 0 ? (
             <p className="text-body-compact text-text-secondary">{t("states.noActivity")}</p>
           ) : (

@@ -77,7 +77,7 @@ export async function AssetCommandSurface({
 
       <DashboardSection id="am-status" title={t("sections.assetStatus")}>
         {registryEmpty ? (
-          <div className="rounded-md border border-border-default bg-surface-primary p-5">
+          <div className="ds-glass-card rounded-lg p-5">
             <p className="text-body-compact text-text-secondary">{t("states.emptyRegistry")}</p>
           </div>
         ) : (
@@ -118,7 +118,7 @@ export async function AssetCommandSurface({
               <li key={a.id}>
                 <Link
                   href={`/assets/${a.id}`}
-                  className="ds-focus flex items-center gap-3 rounded-md border border-border-default bg-surface-primary p-3 transition-colors duration-fast hover:border-border-active hover:bg-surface-interactive"
+                  className="ds-focus flex items-center gap-3 ds-glass-interactive rounded-lg p-3"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-body-compact font-semibold text-text-primary" dir="auto">
@@ -141,7 +141,7 @@ export async function AssetCommandSurface({
       ) : null}
 
       <DashboardSection id="am-lifecycle" title={t("sections.lifecycle")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           {data.recentLifecycleEvents.length === 0 ? (
             <p className="text-body-compact text-text-secondary">{t("states.noLifecycle")}</p>
           ) : (

@@ -10,7 +10,7 @@ export function DistributionCard({
   nf: Intl.NumberFormat;
 }) {
   return (
-    <div className="rounded-md border border-border-default bg-surface-primary p-5">
+    <div className="ds-glass-card rounded-lg p-5">
       <h3 className="mb-3 text-title-lg font-semibold text-text-primary">{title}</h3>
       <ul className="flex flex-col gap-2">
         {rows.map((r) => (

@@ -88,7 +88,7 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
 
       {/* 3. Budget summary (real budget vs. recorded actual cost) */}
       <DashboardSection id="erp-budget" title={t("sections.budget")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           <dl className="grid gap-4 sm:grid-cols-3">
             <div>
               <dt className="text-caption text-text-muted">{t("budget.total")}</dt>
@@ -116,7 +116,7 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
             {overview.kpiSummary.slice(0, 4).map((kpi) => {
               const pct = kpi.target ? Math.min(100, Math.round((kpi.value / kpi.target) * 100)) : null;
               return (
-                <li key={kpi.id} className="rounded-md border border-border-default bg-surface-primary p-4">
+                <li key={kpi.id} className="ds-glass-card rounded-lg p-4">
                   <p className="text-caption text-text-muted" dir="auto">{kpi.name}</p>
                   <p className="mt-0.5 text-kpi-md font-bold text-text-primary" dir="ltr">
                     {nf.format(kpi.value)}{kpi.unit ? <span className="ms-0.5 text-caption font-normal text-text-muted">{kpi.unit}</span> : null}
@@ -138,7 +138,7 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
 
       {/* 5. Recent activity (localized by event type; real timestamps) */}
       <DashboardSection id="erp-activity" title={t("sections.activity")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           {recent.length === 0 ? (
             <p className="text-body-compact text-text-secondary">{t("activity.empty")}</p>
           ) : (
@@ -171,7 +171,7 @@ function StatusCard({
   nf: Intl.NumberFormat;
 }) {
   return (
-    <div className="rounded-md border border-border-default bg-surface-primary p-5">
+    <div className="ds-glass-card rounded-lg p-5">
       <h3 className="mb-3 text-title-lg font-semibold text-text-primary">{title}</h3>
       <ul className="flex flex-col gap-2">
         {rows.map((r) => (

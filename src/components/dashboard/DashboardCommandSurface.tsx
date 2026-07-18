@@ -97,7 +97,7 @@ export function DashboardCommandSurface({ snap }: { snap: DashboardSnapshot }) {
       </DashboardSection>
 
       <DashboardSection id="risk-evidence" title={t("riskEvidence.title")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           <RiskEvidence
             score={model.risk.score}
             trendLabel={tRiskTrend(model.risk.trend)}

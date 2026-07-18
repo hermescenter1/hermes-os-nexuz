@@ -68,7 +68,7 @@ export async function MaintenanceCommandSurface({
 
       <DashboardSection id="am-flow" title={t("sections.workFlow")}>
         {noWork ? (
-          <div className="rounded-md border border-border-default bg-surface-primary p-5">
+          <div className="ds-glass-card rounded-lg p-5">
             <p className="text-body-compact text-text-secondary">{t("states.noMaintenance")}</p>
           </div>
         ) : (
@@ -95,7 +95,7 @@ export async function MaintenanceCommandSurface({
 
       {/* Upcoming maintenance — real scheduled tasks; no invented recurrence. */}
       <DashboardSection id="am-upcoming" title={t("sections.upcoming")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           {data.upcomingTasks.length === 0 ? (
             <p className="text-body-compact text-text-secondary">{t("states.noUpcoming")}</p>
           ) : (
@@ -120,7 +120,7 @@ export async function MaintenanceCommandSurface({
 
       {/* Failure records — reported/recorded failures, NOT diagnostic hypotheses. */}
       <DashboardSection id="am-failures" title={t("sections.failures")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           {data.recentFailures.length === 0 ? (
             <p className="text-body-compact text-text-secondary">{t("states.noFailures")}</p>
           ) : (
@@ -144,7 +144,7 @@ export async function MaintenanceCommandSurface({
       {/* Reliability indicators — the EXISTING CmmsKpis calculation, with its
           assumptions stated. Not fabricated, not presented as predictive. */}
       <DashboardSection id="am-reliability" title={t("sections.reliability")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           <dl className="grid gap-4 sm:grid-cols-4">
             <div>
               <dt className="text-caption text-text-muted"><TechnicalValue mono={false}>{t("reliability.mtbf")}</TechnicalValue></dt>

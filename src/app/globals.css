@@ -1255,6 +1255,68 @@ h6 { font-weight: 550; letter-spacing: 0; }
   -webkit-backdrop-filter: blur(14px) saturate(1.3);
 }
 
+/* ── PHASE 87L.1 — filled glass card system ──────────────────────────────
+   Layered "filled glass": near-opaque charcoal fill + faint ice sheen +
+   inner top highlight + restrained ice-tinted border. Deliberately NO
+   backdrop-filter on the app variants — they sit on solid dark shells where
+   blur has nothing to sample and only costs compositing time on dense
+   dashboards. Only .ds-glass-hero blurs (surfaces over imagery/gradients).
+   Hierarchy: hero > elevated > card/interactive > soft. */
+.ds-glass-card,
+.ds-glass-interactive {
+  background:
+    linear-gradient(180deg, rgba(237, 247, 250, 0.05) 0%, rgba(237, 247, 250, 0.015) 30%, rgba(237, 247, 250, 0) 100%),
+    linear-gradient(180deg, rgba(17, 33, 44, 0.94) 0%, rgba(12, 23, 32, 0.90) 100%);
+  border: 1px solid rgba(139, 244, 248, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(237, 247, 250, 0.07),
+    0 2px 10px rgba(0, 0, 0, 0.28);
+}
+.ds-glass-soft {
+  background:
+    linear-gradient(180deg, rgba(237, 247, 250, 0.03) 0%, rgba(237, 247, 250, 0) 60%),
+    rgba(12, 23, 32, 0.72);
+  border: 1px solid rgba(139, 244, 248, 0.07);
+  box-shadow: inset 0 1px 0 rgba(237, 247, 250, 0.05);
+}
+.ds-glass-elevated {
+  background:
+    linear-gradient(180deg, rgba(237, 247, 250, 0.07) 0%, rgba(237, 247, 250, 0.02) 32%, rgba(237, 247, 250, 0) 100%),
+    linear-gradient(180deg, rgba(20, 38, 50, 0.96) 0%, rgba(12, 23, 32, 0.92) 100%);
+  border: 1px solid rgba(139, 244, 248, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(237, 247, 250, 0.09),
+    0 8px 24px rgba(0, 0, 0, 0.40);
+}
+.ds-glass-hero {
+  background:
+    linear-gradient(180deg, rgba(237, 247, 250, 0.08) 0%, rgba(237, 247, 250, 0.02) 38%, rgba(237, 247, 250, 0) 100%),
+    linear-gradient(165deg, rgba(20, 38, 50, 0.88) 0%, rgba(7, 16, 24, 0.82) 100%);
+  border: 1px solid rgba(139, 244, 248, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(237, 247, 250, 0.10),
+    0 16px 48px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+.ds-glass-interactive {
+  transition:
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+.ds-glass-interactive:hover {
+  border-color: rgba(139, 244, 248, 0.22);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(237, 247, 250, 0.09),
+    0 6px 18px rgba(0, 0, 0, 0.34);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-glass-interactive { transition: none; }
+  .ds-glass-interactive:hover { transform: none; }
+}
+
 /* ── Focus foundation — one visible, high-contrast ring for every ds control.
    Cyan ring + offset; the offset colour matches the surface behind the control.
    Keyboard-only via :focus-visible. Components add `ds-focus`. ── */

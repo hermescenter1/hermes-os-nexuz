@@ -42,7 +42,7 @@ export function DataUnavailableState({
     <div
       role="status"
       className={cn(
-        "flex flex-col items-center gap-2 rounded-md border border-border-default bg-surface-primary px-6 py-10 text-center",
+        "flex flex-col items-center gap-2 ds-glass-card rounded-lg px-6 py-10 text-center",
         className,
       )}
     >

@@ -59,7 +59,7 @@ export function TrustSection({ variant = "features" }: TrustSectionProps) {
           {FEATURE_KEYS.map((key) => (
             <li
               key={key}
-              className="flex items-center gap-3 rounded-md border border-border-default bg-surface-primary px-5 py-4"
+              className="flex items-center gap-3 ds-glass-soft rounded-lg px-5 py-4"
             >
               <span aria-hidden="true" className="text-status-success">◈</span>
               <p className="text-body-compact font-medium text-text-primary" dir="auto">

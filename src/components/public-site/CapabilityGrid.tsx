@@ -51,7 +51,7 @@ export function CapabilityGrid({ items, columns = 4, className }: CapabilityGrid
       {items.map((item) => (
         <li
           key={item.key}
-          className="rounded-md border border-border-default bg-surface-primary p-5 shadow-e1"
+          className="ds-glass-card rounded-lg p-5"
         >
           <h3
             className={cn(

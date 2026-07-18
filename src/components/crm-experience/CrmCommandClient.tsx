@@ -124,7 +124,7 @@ export function CrmCommandClient() {
           </span>
         }
       >
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           {openPipeline.length === 0 ? (
             <p className="text-body-compact text-text-secondary">{t("pipeline.empty")}</p>
           ) : (
@@ -165,7 +165,7 @@ export function CrmCommandClient() {
         }
       >
         {recent.length === 0 ? (
-          <div className="rounded-md border border-border-default bg-surface-primary p-5">
+          <div className="ds-glass-card rounded-lg p-5">
             <p className="text-body-compact text-text-secondary">{t("recent.empty")}</p>
           </div>
         ) : (
@@ -175,8 +175,7 @@ export function CrmCommandClient() {
                 <Link
                   href="/crm/leads"
                   className={cn(
-                    "ds-focus flex items-center gap-3 rounded-md border border-border-default bg-surface-primary p-3",
-                    "transition-colors duration-fast hover:border-border-active hover:bg-surface-interactive",
+                    "ds-focus flex items-center gap-3 ds-glass-interactive rounded-lg p-3",
                   )}
                 >
                   <span className="min-w-0 flex-1">

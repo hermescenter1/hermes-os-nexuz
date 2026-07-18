@@ -83,7 +83,7 @@ export async function AdministrationCommandSurface({
 
       <DashboardSection id="admin-membership" title={t("sections.membership")}>
         {members.length === 0 && invitations.length === 0 ? (
-          <div className="rounded-md border border-border-default bg-surface-primary p-5">
+          <div className="ds-glass-card rounded-lg p-5">
             <p className="text-body-compact text-text-secondary">{t("states.noMembers")}</p>
           </div>
         ) : (
@@ -98,7 +98,7 @@ export async function AdministrationCommandSurface({
                 nf={nf}
               />
             ) : (
-              <div className="rounded-md border border-border-default bg-surface-primary p-5">
+              <div className="ds-glass-card rounded-lg p-5">
                 <p className="text-body-compact text-text-secondary">{t("states.noMembers")}</p>
               </div>
             )}
@@ -112,7 +112,7 @@ export async function AdministrationCommandSurface({
                 nf={nf}
               />
             ) : (
-              <div className="rounded-md border border-border-default bg-surface-primary p-5">
+              <div className="ds-glass-card rounded-lg p-5">
                 <h3 className="mb-2 text-title-lg font-semibold text-text-primary">{t("sections.invitations")}</h3>
                 <p className="text-body-compact text-text-secondary">{t("states.noInvitations")}</p>
               </div>
@@ -123,7 +123,7 @@ export async function AdministrationCommandSurface({
       </DashboardSection>
 
       <DashboardSection id="admin-subscription" title={t("sections.subscription")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           {!subscription ? (
             <p className="text-body-compact text-text-secondary">{t("states.noSubscription")}</p>
           ) : (
@@ -167,7 +167,7 @@ export async function AdministrationCommandSurface({
       </DashboardSection>
 
       <DashboardSection id="admin-usage" title={t("sections.usage")}>
-        <div className="rounded-md border border-border-default bg-surface-primary p-5">
+        <div className="ds-glass-card rounded-lg p-5">
           {limitRows.length === 0 ? (
             <p className="text-body-compact text-text-secondary">{t("states.noUsage")}</p>
           ) : (

@@ -102,7 +102,7 @@ export function RiskEvidence(props: RiskEvidenceProps) {
           ))}
         </ul>
 
-        <div className="mt-4 rounded-md border border-border-default bg-surface-primary p-3">
+        <div className="mt-4 ds-glass-card rounded-lg p-3">
           <p className="text-caption text-text-muted">{props.confidenceLabel}</p>
           <p className={cn("mt-0.5 text-title font-semibold", READINESS_TONE[props.readiness.tone])} dir="auto">
             {props.readiness.label}
