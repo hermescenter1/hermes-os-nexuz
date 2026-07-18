@@ -311,10 +311,18 @@ describe("ERP Core components and pages are fully catalog-backed", () => {
     }
   });
 
-  it("server pages/layout use getTranslations(\"enterpriseOperations\")", () => {
-    for (const rel of PAGES) {
-      expect(read(rel), rel).toMatch(/getTranslations\("enterpriseOperations"\)/);
-    }
+  it("PHASE 87H: the ERP landing migrated to the AppShell + businessOps command surface; nav labels stay catalog-backed", () => {
+    // The landing page + layout were transformed in PHASE 87H (premium
+    // business-operations command surface). The page now renders from the
+    // additive `businessOps` namespace (enterpriseOperations is fully German
+    // and frozen); the layout composes the AppShell + the localized ErpSubNav,
+    // which REUSES the existing enterpriseOperations.nav labels — so the ERP
+    // landing surface remains fully catalog-backed with no hardcoded strings.
+    expect(read("src/app/[locale]/erp/page.tsx")).toMatch(/getTranslations\("businessOps"\)/);
+    expect(read("src/app/[locale]/erp/layout.tsx")).toContain("ErpSubNav");
+    expect(read("src/components/business-operations/ErpSubNav.tsx")).toMatch(
+      /useTranslations\("enterpriseOperations\.nav\.items"\)/,
+    );
   });
 
   it("no ERP Core file keeps isFa / pathname-locale / locale===fa detection", () => {
