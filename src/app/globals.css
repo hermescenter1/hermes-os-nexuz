@@ -1305,16 +1305,154 @@ h6 { font-weight: 550; letter-spacing: 0; }
     box-shadow var(--motion-fast) var(--motion-ease),
     transform var(--motion-fast) var(--motion-ease);
 }
-.ds-glass-interactive:hover {
-  border-color: rgba(139, 244, 248, 0.22);
-  transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgba(237, 247, 250, 0.09),
-    0 6px 18px rgba(0, 0, 0, 0.34);
+
+/* ── PHASE 87L.2 — buoyant card interaction ──────────────────────────────
+   Two stages without a transform conflict and without extra DOM wrappers:
+
+     Stage A (lift)  — the :hover rule sets the resting lifted transform and
+                       the transition eases into it.
+     Stage B (float) — a keyframe animation starts AFTER that transition has
+                       settled (animation-delay ≈ transition duration). Its
+                       `from` frame is byte-identical to the hover transform,
+                       so the handoff is seamless; `alternate` removes the
+                       loop boundary. Because the animation carries the FULL
+                       transform (lift + drift), it never fights the hover
+                       value it replaces.
+
+   Deliberately NO rotation anywhere: a sub-degree tilt is permitted by the
+   brief but measurably softens text rendering on large card faces, and
+   "no text becomes blurry" is a hard acceptance criterion. The buoyancy
+   reads from timing and depth instead.
+
+   All of this is gated on a real hovering pointer, so touch devices keep the
+   approved static filled-glass design and never get a sticky hover state. */
+@media (hover: hover) and (pointer: fine) {
+  /* default tier — quiet elevation, no scale, no cursor change */
+  .ds-glass-card {
+    transition:
+      border-color var(--motion-standard) var(--motion-ease),
+      box-shadow var(--motion-standard) var(--motion-ease),
+      transform var(--motion-standard) var(--motion-ease);
+  }
+  .ds-glass-card:hover {
+    transform: translate3d(0, -3px, 0);
+    border-color: rgba(139, 244, 248, 0.16);
+    box-shadow:
+      inset 0 1px 0 rgba(237, 247, 250, 0.09),
+      0 10px 26px rgba(0, 0, 0, 0.34);
+    animation: ds-buoy-quiet 3.8s var(--motion-ease) 200ms infinite alternate;
+    will-change: transform;
+  }
+
+  /* interactive tier — the complete effect */
+  .ds-glass-interactive:hover {
+    transform: translate3d(0, -6px, 0) scale(1.012);
+    border-color: rgba(139, 244, 248, 0.24);
+    box-shadow:
+      inset 0 1px 0 rgba(237, 247, 250, 0.11),
+      0 14px 34px rgba(0, 0, 0, 0.40);
+    animation: ds-buoy-interactive 3.2s var(--motion-ease) 180ms infinite alternate;
+    will-change: transform;
+  }
+
+  /* elevated tier — moderate lift, deeper shadow, slower drift */
+  .ds-glass-elevated {
+    transition:
+      border-color var(--motion-standard) var(--motion-ease),
+      box-shadow var(--motion-standard) var(--motion-ease),
+      transform var(--motion-standard) var(--motion-ease);
+  }
+  .ds-glass-elevated:hover {
+    transform: translate3d(0, -5px, 0);
+    border-color: rgba(139, 244, 248, 0.20);
+    box-shadow:
+      inset 0 1px 0 rgba(237, 247, 250, 0.12),
+      0 18px 44px rgba(0, 0, 0, 0.46);
+    animation: ds-buoy-elevated 4s var(--motion-ease) 220ms infinite alternate;
+    will-change: transform;
+  }
+
+  /* hero tier — one large, slow elevation. Never bobs. */
+  .ds-glass-hero {
+    transition:
+      border-color var(--motion-slow) var(--motion-ease),
+      box-shadow var(--motion-slow) var(--motion-ease),
+      transform var(--motion-slow) var(--motion-ease);
+  }
+  .ds-glass-hero:hover {
+    transform: translate3d(0, -8px, 0);
+    border-color: rgba(139, 244, 248, 0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(237, 247, 250, 0.13),
+      0 28px 64px rgba(0, 0, 0, 0.50);
+  }
+
+  /* soft tier — utility surfaces stay quietest; border-led, no buoyancy */
+  .ds-glass-soft {
+    transition:
+      border-color var(--motion-standard) var(--motion-ease),
+      box-shadow var(--motion-standard) var(--motion-ease),
+      transform var(--motion-standard) var(--motion-ease);
+  }
+  .ds-glass-soft:hover {
+    transform: translate3d(0, -2px, 0);
+    border-color: rgba(139, 244, 248, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(237, 247, 250, 0.07),
+      0 6px 16px rgba(0, 0, 0, 0.26);
+  }
 }
+
+/* Drift amplitudes stay at 1–2px; each `from` mirrors its hover transform. */
+@keyframes ds-buoy-quiet {
+  from { transform: translate3d(0, -3px, 0); }
+  to   { transform: translate3d(0, -4px, 0); }
+}
+@keyframes ds-buoy-interactive {
+  from { transform: translate3d(0, -6px, 0) scale(1.012); }
+  to   { transform: translate3d(0, -7.5px, 0) scale(1.012); }
+}
+@keyframes ds-buoy-elevated {
+  from { transform: translate3d(0, -5px, 0); }
+  to   { transform: translate3d(0, -6.5px, 0); }
+}
+
+/* Keyboard parity — a stable lift + brighter border, never a bobbing card.
+   Applies on any pointer type; `:focus-within` covers cards whose focusable
+   target is a nested link or button. */
+.ds-glass-card:focus-visible,
+.ds-glass-card:focus-within,
+.ds-glass-interactive:focus-visible,
+.ds-glass-interactive:focus-within,
+.ds-glass-elevated:focus-within,
+.ds-glass-soft:focus-within {
+  border-color: rgba(139, 244, 248, 0.26);
+  transform: translate3d(0, -2px, 0);
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ds-glass-interactive { transition: none; }
-  .ds-glass-interactive:hover { transform: none; }
+  .ds-glass-card,
+  .ds-glass-interactive,
+  .ds-glass-elevated,
+  .ds-glass-hero,
+  .ds-glass-soft { transition: none; }
+  /* no lift, no scale, no drift — a border/shadow change still signals hover */
+  .ds-glass-card:hover,
+  .ds-glass-interactive:hover,
+  .ds-glass-elevated:hover,
+  .ds-glass-hero:hover,
+  .ds-glass-soft:hover,
+  .ds-glass-card:focus-visible,
+  .ds-glass-card:focus-within,
+  .ds-glass-interactive:focus-visible,
+  .ds-glass-interactive:focus-within,
+  .ds-glass-elevated:focus-within,
+  .ds-glass-soft:focus-within {
+    transform: none;
+    animation: none;
+    will-change: auto;
+  }
 }
 
 /* ── Focus foundation — one visible, high-contrast ring for every ds control.

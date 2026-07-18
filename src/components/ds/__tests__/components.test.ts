@@ -116,10 +116,99 @@ describe("Card variants — 87L.1 filled glass system", () => {
     expect(heroBlock).toContain("backdrop-filter");
     const cardBlock = css.slice(css.indexOf(".ds-glass-card,"), css.indexOf(".ds-glass-hero {"));
     expect(cardBlock).not.toContain("backdrop-filter");
-    // hover lift is disabled under prefers-reduced-motion (globals.css has
-    // several reduced-motion blocks — assert the exact override rule exists)
-    expect(css).toContain(".ds-glass-interactive { transition: none; }");
-    expect(css).toContain(".ds-glass-interactive:hover { transform: none; }");
+  });
+});
+
+describe("Card motion — 87L.2 buoyant interaction", () => {
+  const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+  /** The 87L.2 section: from its banner to the focus-foundation comment. */
+  const section = css.slice(css.indexOf("PHASE 87L.2"), css.indexOf("Focus foundation"));
+  /** Everything inside `@media (hover: hover) and (pointer: fine)`. */
+  const hoverBlock = section.slice(
+    section.indexOf("@media (hover: hover) and (pointer: fine)"),
+    section.indexOf("@keyframes ds-buoy-quiet"),
+  );
+  const reducedBlock = section.slice(section.indexOf("@media (prefers-reduced-motion: reduce)"));
+
+  it("defines a buoyancy keyframe per animated tier, with 1–2px drift", () => {
+    for (const kf of ["ds-buoy-quiet", "ds-buoy-interactive", "ds-buoy-elevated"]) {
+      expect(section, kf).toContain(`@keyframes ${kf}`);
+    }
+    // each `from` mirrors its hover transform so the handoff cannot jump
+    expect(section).toContain("from { transform: translate3d(0, -6px, 0) scale(1.012); }");
+    expect(section).toContain("to   { transform: translate3d(0, -7.5px, 0) scale(1.012); }");
+  });
+
+  it("hero never bobs — large slow elevation only", () => {
+    const hero = hoverBlock.slice(hoverBlock.indexOf(".ds-glass-hero:hover"), hoverBlock.indexOf(".ds-glass-soft {"));
+    expect(hero).toContain("translate3d(0, -8px, 0)");
+    expect(hero).not.toContain("animation:");
+  });
+
+  it("soft utility surfaces stay quietest — small lift, no buoyancy", () => {
+    const soft = hoverBlock.slice(hoverBlock.indexOf(".ds-glass-soft:hover"));
+    expect(soft).toContain("translate3d(0, -2px, 0)");
+    expect(soft).not.toContain("animation:");
+  });
+
+  it("keeps the lift hierarchy distinct: soft < default < elevated < interactive < hero", () => {
+    const lift = (sel: string) => {
+      const rule = hoverBlock.slice(hoverBlock.indexOf(sel));
+      return Number(rule.match(/translate3d\(0, -([\d.]+)px, 0\)/)![1]);
+    };
+    expect(lift(".ds-glass-soft:hover")).toBeLessThan(lift(".ds-glass-card:hover"));
+    expect(lift(".ds-glass-card:hover")).toBeLessThan(lift(".ds-glass-elevated:hover"));
+    expect(lift(".ds-glass-elevated:hover")).toBeLessThan(lift(".ds-glass-interactive:hover"));
+    expect(lift(".ds-glass-interactive:hover")).toBeLessThan(lift(".ds-glass-hero:hover"));
+    // scale is reserved for the interactive tier and stays within 1.008–1.015
+    expect(hoverBlock.match(/scale\(([\d.]+)\)/g)).toEqual(["scale(1.012)"]);
+  });
+
+  it("all hover motion is gated on a fine hovering pointer (touch stays static)", () => {
+    for (const sel of [".ds-glass-card:hover", ".ds-glass-interactive:hover", ".ds-glass-elevated:hover", ".ds-glass-hero:hover", ".ds-glass-soft:hover"]) {
+      expect(hoverBlock, sel).toContain(sel);
+    }
+    // no :hover motion rule escapes the media query
+    const outsideHoverGate = section.replace(hoverBlock, "").replace(reducedBlock, "");
+    expect(outsideHoverGate).not.toMatch(/:hover\s*\{[^}]*(transform|animation)/);
+  });
+
+  it("reduced motion removes every lift, scale and drift but keeps hover legible", () => {
+    expect(reducedBlock).toContain("transform: none;");
+    expect(reducedBlock).toContain("animation: none;");
+    expect(reducedBlock).toContain("will-change: auto;");
+    for (const sel of [".ds-glass-card:hover", ".ds-glass-interactive:hover", ".ds-glass-elevated:hover", ".ds-glass-hero:hover", ".ds-glass-soft:hover"]) {
+      expect(reducedBlock, sel).toContain(sel);
+    }
+  });
+
+  it("keyboard parity is a stable lift — focus never bobs and is never hidden", () => {
+    const focus = section.slice(section.indexOf(".ds-glass-card:focus-visible"), section.indexOf("@media (prefers-reduced-motion"));
+    expect(focus).toContain(":focus-within");
+    expect(focus).toContain("animation: none;");
+    expect(section).not.toContain("outline: none");
+  });
+
+  it("no rotation, no expensive filters and no permanent will-change", () => {
+    expect(section).not.toMatch(/rotate|skew|perspective|blur\(|ripple|noise/);
+    // will-change appears only inside :hover rules, never on a base selector
+    for (const m of section.matchAll(/will-change:\s*transform/g)) {
+      const before = section.slice(0, m.index);
+      expect(before.slice(before.lastIndexOf("{") - 120)).toContain(":hover");
+    }
+  });
+
+  it("is CSS-only — no pointer tracking, no animation library in the card layer", () => {
+    // NOTE: framer-motion pre-exists in package.json for unrelated modules.
+    // The 87L.2 contract is that the CARD LAYER imports no animation library
+    // and tracks no pointer; the diff gate proves no dependency was added.
+    for (const rel of ["src/components/ds/Card.tsx", "src/components/ds/logic.ts"]) {
+      const src = readFileSync(join(process.cwd(), rel), "utf8");
+      expect(src, rel).not.toMatch(/framer-motion|gsap|three|lottie|popmotion/);
+      expect(src, rel).not.toMatch(/onMouseMove|onPointerMove|addEventListener|requestAnimationFrame/);
+    }
+    // the buoyancy lives entirely in CSS, not in the variant strings
+    expect(cardVariants("interactive")).not.toContain("ds-buoy");
   });
 });
 
