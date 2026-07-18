@@ -6204,5 +6204,158 @@
       "unavailableTitle": "Operations data unavailable",
       "unavailableBody": "The business-operations summary could not be loaded. Check your access or open a module directly."
     }
+  },
+  "assetMaintenance": {
+    "assets": {
+      "eyebrow": "Asset Registry",
+      "title": "Asset Registry",
+      "purpose": "Equipment identity, criticality, operational status and maintenance context — tenant-scoped.",
+      "demoBadge": "Demo data"
+    },
+    "cmms": {
+      "eyebrow": "Maintenance",
+      "purpose": "Work orders, plans, inspections and failure records for the maintenance team.",
+      "demoBadge": "Demo data"
+    },
+    "attention": {
+      "title": "Requires attention",
+      "emptyAssets": "No assets need attention right now. Criticality, degradation and documentation queues are clear.",
+      "emptyMaintenance": "No maintenance work needs attention right now. Overdue and blocked queues are clear.",
+      "view": "Open",
+      "severityAction": "Action needed",
+      "severityReview": "Review",
+      "criticalAssets": "{count} asset(s) at critical criticality",
+      "degradedAssets": "{count} asset(s) in a degraded state",
+      "atRiskAssets": "{count} asset(s) flagged at-risk",
+      "assetsWithOpenWO": "{count} asset(s) with open maintenance work",
+      "assetsMissingDocs": "{count} asset(s) missing linked documentation",
+      "overdueWork": "{count} maintenance task(s) overdue",
+      "blockedWork": "{count} maintenance task(s) on hold",
+      "openFailures": "{count} recent failure record(s) to review",
+      "upcomingWork": "{count} maintenance task(s) scheduled next"
+    },
+    "sections": {
+      "assetStatus": "Asset operational status",
+      "criticality": "Criticality distribution",
+      "health": "Health distribution",
+      "criticalWatch": "Critical asset watch",
+      "lifecycle": "Recent lifecycle events",
+      "workFlow": "Work-order flow",
+      "priority": "Work by priority",
+      "upcoming": "Upcoming maintenance",
+      "failures": "Recent failure records",
+      "reliability": "Reliability indicators",
+      "actions": "Next actions"
+    },
+    "assetStatus": {
+      "PLANNED": "Planned",
+      "COMMISSIONED": "Commissioned",
+      "IN_SERVICE": "In service",
+      "DEGRADED": "Degraded",
+      "UNDER_MAINTENANCE": "Under maintenance",
+      "STANDBY": "Standby",
+      "RETIRED": "Retired",
+      "REPLACED": "Replaced",
+      "DECOMMISSIONED": "Decommissioned"
+    },
+    "criticality": {
+      "NON_CRITICAL": "Non-critical",
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "CRITICAL": "Critical"
+    },
+    "risk": {
+      "HEALTHY": "Healthy",
+      "MONITOR": "Monitor",
+      "AT_RISK": "At risk",
+      "CRITICAL": "Critical",
+      "UNKNOWN": "Unknown"
+    },
+    "maintenanceStatus": {
+      "DRAFT": "Draft",
+      "PLANNED": "Planned",
+      "SCHEDULED": "Scheduled",
+      "IN_PROGRESS": "In progress",
+      "ON_HOLD": "On hold",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "OVERDUE": "Overdue"
+    },
+    "maintenancePriority": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "CRITICAL": "Critical",
+      "EMERGENCY": "Emergency"
+    },
+    "fields": {
+      "totalAssets": "Assets on register",
+      "site": "Site",
+      "location": "Location",
+      "manufacturer": "Manufacturer",
+      "model": "Model",
+      "serialNumber": "Serial number",
+      "criticalityLabel": "Criticality",
+      "statusLabel": "Operational status",
+      "dueDate": "Due date",
+      "assignee": "Assignee",
+      "noAssignee": "Unassigned",
+      "noDueDate": "No due date",
+      "noSite": "No site recorded"
+    },
+    "reliability": {
+      "mtbf": "MTBF",
+      "mttr": "MTTR",
+      "availability": "Availability",
+      "compliance": "Maintenance compliance",
+      "hours": "h",
+      "note": "Computed by the existing CMMS reliability calculation over recorded maintenance and failure history."
+    },
+    "crossLinks": {
+      "toCmms": "Open maintenance",
+      "toCmmsDesc": "Work orders and plans for these assets.",
+      "toAssets": "Open asset registry",
+      "toAssetsDesc": "Equipment identity, criticality and hierarchy."
+    },
+    "actions": {
+      "registry": "Asset registry",
+      "registryDesc": "Browse and search the equipment register.",
+      "hierarchy": "Asset hierarchy",
+      "hierarchyDesc": "Parent/child equipment structure.",
+      "health": "Asset health",
+      "healthDesc": "Health snapshots and at-risk equipment.",
+      "criticality": "Criticality review",
+      "criticalityDesc": "Criticality assessments per asset.",
+      "workOrders": "Work orders",
+      "workOrdersDesc": "Open, overdue and in-progress maintenance work.",
+      "plans": "Maintenance plans",
+      "plansDesc": "Preventive plans and recurring schedules.",
+      "schedules": "Maintenance schedule",
+      "schedulesDesc": "Scheduled and upcoming maintenance.",
+      "failures": "Failure records",
+      "failuresDesc": "Reported failures and corrective work."
+    },
+    "states": {
+      "loading": "Loading asset and maintenance data…",
+      "unavailableTitle": "Asset and maintenance data unavailable",
+      "unavailableBody": "The summary could not be loaded. Check your access or open a module directly.",
+      "emptyRegistry": "No assets are registered yet. Registered equipment appears here.",
+      "noMaintenance": "No maintenance records yet. Work orders and plans appear here.",
+      "noLifecycle": "No recent lifecycle events recorded.",
+      "noUpcoming": "No maintenance is currently scheduled.",
+      "noFailures": "No failure records reported."
+    },
+    "analysisNote": "Analytical signal — not a confirmed failure record.",
+    "lifecycle": {
+      "DESIGN": "Design",
+      "PROCUREMENT": "Procurement",
+      "INSTALLATION": "Installation",
+      "COMMISSIONING": "Commissioning",
+      "IN_SERVICE": "In service",
+      "DEGRADED": "Degraded",
+      "DECOMMISSIONING": "Decommissioning",
+      "RETIRED": "Retired"
+    }
   }
 }
