@@ -5813,6 +5813,43 @@
       },
       "ctaTitle": "Map Hermes onto your architecture",
       "requestDemo": "Request a Demo"
+    },
+    "story": {
+      "disclosure": "Illustrative industrial environment",
+      "nav": {
+        "label": "Industrial story",
+        "command": "Command Center",
+        "factory": "Smart Factory",
+        "energy": "Energy & Infrastructure",
+        "intelligence": "Engineering Intelligence"
+      },
+      "hero": {
+        "alt": "Industrial operations team monitoring connected factory systems from a modern command center"
+      },
+      "factory": {
+        "label": "Smart Factory",
+        "title": "Connected production, engineered without black boxes",
+        "body1": "Hermes OS connects to the automation layer your plant already runs — PLC, SCADA, OPC UA and MQTT — and turns operational signals into a structured engineering picture.",
+        "body2": "The Asset Registry and CMMS keep equipment, maintenance work and site context in one governed model, so engineers reason about the same machine the operators run.",
+        "alt": "Engineers reviewing automated production systems on the floor of a connected smart factory",
+        "cta": "Explore the platform"
+      },
+      "energy": {
+        "label": "Energy & Infrastructure",
+        "title": "Multi-site operations with secure boundaries",
+        "body1": "Industrial estates, energy systems and distributed facilities rarely fail in one place. Hermes OS keeps every site in scope while enforcing organization and site-level access boundaries on every query.",
+        "body2": "Industrial edge connectivity and enterprise-scale visibility bring distributed operations into one coordinated operational picture — without merging what must stay isolated.",
+        "alt": "Industrial campus with energy infrastructure and connected utility systems at dusk",
+        "cta": "See the architecture"
+      },
+      "intelligence": {
+        "label": "Engineering Intelligence",
+        "title": "From evidence to a safe action path",
+        "body1": "The Industrial Brain evaluates engineering evidence against constraints and produces explainable, traceable analysis — distinguishing observed data from assumptions and unknowns.",
+        "body2": "Digital Twin context and controlled engineering documents keep every recommendation anchored to approved revisions and confirmed maintenance records. Decisions stay with your engineers.",
+        "alt": "Engineering team collaborating on evidence-based industrial analysis around a shared workstation",
+        "cta": "Meet the Industrial Brain"
+      }
     }
   },
   "authExperience": {

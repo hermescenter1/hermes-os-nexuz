@@ -22,6 +22,7 @@ import {
   IntelligenceFlow,
   TrustSection,
   PublicCta,
+  HomeStorySection,
   type CapabilityAccent,
 } from "@/components/public-site";
 
@@ -196,6 +197,14 @@ export default async function HomePage({
           </PublicPageContainer>
         </PublicSection>
 
+        {/* 87D.2 story 2/4 — smart factory (image 02) leads into operations */}
+        <HomeStorySection
+          id="story-factory"
+          storyKey="factory"
+          imageSrc="/images/home-industrial/02-smart-factory-engineers.webp"
+          tone="raised"
+        />
+
         <PublicSection aria-labelledby="operations-title">
           <PublicPageContainer>
             <SectionHeader id="operations-title" title={t("operations.title")} align="center" />
@@ -227,6 +236,15 @@ export default async function HomePage({
             />
           </PublicPageContainer>
         </PublicSection>
+
+        {/* 87D.2 story 3/4 — energy & infrastructure (image 03), reversed */}
+        <HomeStorySection
+          id="story-energy"
+          storyKey="energy"
+          imageSrc="/images/home-industrial/03-energy-infrastructure-campus.webp"
+          tone="raised"
+          reverse
+        />
 
         <PublicSection aria-labelledby="modules-title">
           <PublicPageContainer>
@@ -261,6 +279,15 @@ export default async function HomePage({
             />
           </PublicPageContainer>
         </PublicSection>
+
+        {/* 87D.2 story 4/4 — engineering intelligence (image 04) leads into the
+            safe-action gates */}
+        <HomeStorySection
+          id="story-intelligence"
+          storyKey="intelligence"
+          imageSrc="/images/home-industrial/04-engineering-intelligence.webp"
+          tone="raised"
+        />
 
         <PublicSection aria-labelledby="safe-action-title">
           <PublicPageContainer className="flex flex-col items-center">

@@ -20,6 +20,7 @@ export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
 export { CapabilityGrid, type CapabilityGridProps, type CapabilityGridItem, type CapabilityAccent } from "./CapabilityGrid";
 export { IntelligenceFlow, type IntelligenceFlowProps, type IntelligenceFlowStage } from "./IntelligenceFlow";
 export { EvidencePanel } from "./EvidencePanel";
+export { HomeStorySection, type HomeStorySectionProps } from "./HomeStorySection";
 export { PlatformArchitecture } from "./PlatformArchitecture";
 export { TrustSection, type TrustSectionProps } from "./TrustSection";
 export { PublicCta, type PublicCtaProps } from "./PublicCta";
