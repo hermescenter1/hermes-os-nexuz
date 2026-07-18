@@ -6357,5 +6357,105 @@
       "DECOMMISSIONING": "Decommissioning",
       "RETIRED": "Retired"
     }
+  },
+  "engineeringDocuments": {
+    "header": {
+      "eyebrow": "Engineering Documents",
+      "purpose": "Controlled engineering documents, revisions, reviews and approvals — tenant-scoped.",
+      "demoBadge": "Demo data",
+      "demoNote": "The document dashboard currently serves the built-in demonstration dataset; no database source is wired for this summary."
+    },
+    "attention": {
+      "title": "Requires attention",
+      "empty": "No documents need attention right now. Review, approval and checkout queues are clear.",
+      "view": "Open",
+      "severityAction": "Action needed",
+      "severityReview": "Review",
+      "pendingApprovals": "{count} approval(s) awaiting a decision",
+      "inReview": "{count} document(s) in review",
+      "rejected": "{count} document(s) returned for correction",
+      "checkedOut": "{count} document(s) checked out",
+      "missingRevision": "{count} document(s) without a current revision"
+    },
+    "sections": {
+      "workflow": "Document workflow",
+      "byType": "Documents by type",
+      "register": "Recently updated documents",
+      "activity": "Recent controlled-document activity",
+      "actions": "Next actions"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "REVIEW": "In review",
+      "APPROVED": "Approved",
+      "REJECTED": "Returned for correction",
+      "ARCHIVED": "Archived",
+      "OBSOLETE": "Obsolete"
+    },
+    "approvalStatus": {
+      "PENDING": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "revisionType": {
+      "MAJOR": "Major",
+      "MINOR": "Minor",
+      "PATCH": "Patch"
+    },
+    "docType": {
+      "ENGINEERING_DRAWING": "Engineering drawing",
+      "PID": "P&ID",
+      "ELECTRICAL_DRAWING": "Electrical drawing",
+      "PLC_PROGRAM": "PLC program",
+      "SCADA_PROJECT": "SCADA project",
+      "COMMISSIONING_REPORT": "Commissioning report",
+      "INSPECTION_REPORT": "Inspection report",
+      "FAT": "FAT",
+      "SAT": "SAT",
+      "MANUAL": "Manual",
+      "PROCEDURE": "Procedure",
+      "WORK_INSTRUCTION": "Work instruction",
+      "CERTIFICATE": "Certificate",
+      "VENDOR_DATASHEET": "Vendor datasheet",
+      "CONTRACT": "Contract",
+      "QUOTATION": "Quotation",
+      "INVOICE": "Invoice",
+      "OTHER": "Other"
+    },
+    "fields": {
+      "documents": "Documents on register",
+      "currentRevision": "Current revision",
+      "noRevision": "No current revision",
+      "documentType": "Document type",
+      "owner": "Owner",
+      "noOwner": "No owner assigned",
+      "project": "Project",
+      "site": "Site",
+      "asset": "Linked asset",
+      "workOrder": "Work order",
+      "noLinkedContext": "No linked project, site or asset",
+      "updated": "Updated",
+      "linkedContext": "Linked engineering context"
+    },
+    "actions": {
+      "explorer": "Document register",
+      "explorerDesc": "Browse and filter the controlled document register.",
+      "approvals": "Review & approvals",
+      "approvalsDesc": "Documents awaiting a review or approval decision.",
+      "revisions": "Revision history",
+      "revisionsDesc": "Revision records across controlled documents.",
+      "search": "Search documents",
+      "searchDesc": "Find a document by number, title or keyword."
+    },
+    "states": {
+      "loading": "Loading document data…",
+      "unavailableTitle": "Document data unavailable",
+      "unavailableBody": "The document summary could not be loaded. Check your access or open the register directly.",
+      "emptyRegister": "No documents are registered yet. Registered documents appear here.",
+      "noActivity": "No recent controlled-document activity."
+    },
+    "distinction": {
+      "controlled": "Controlled engineering document — distinct from public knowledge articles and diagnostic case evidence."
+    }
   }
 }
