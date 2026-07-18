@@ -6113,5 +6113,96 @@
       "colHealthScore": "امتیاز سلامت",
       "ofAccounts": "از {capacity} حساب"
     }
+  },
+  "businessOps": {
+    "header": {
+      "eyebrow": "عملیات کسب‌وکار",
+      "title": "عملیات کسب‌وکار",
+      "purpose": "پروژه‌ها، دستورکارها، تأییدها و موجودی — یک سطح عملیاتی واحد در محدودهٔ سازمان.",
+      "demoBadge": "دادهٔ نمایشی"
+    },
+    "attention": {
+      "title": "نیازمند توجه",
+      "empty": "در حال حاضر هیچ مورد عملیاتی نیازمند توجه نیست. صف‌های تأیید، سررسیدگذشته و موجودی خالی‌اند.",
+      "view": "گشودن",
+      "severityAction": "نیازمند اقدام",
+      "severityReview": "بررسی",
+      "overdueTasks": "{count} وظیفه با سررسید گذشته",
+      "pendingApprovals": "{count} تأیید در انتظار بررسی",
+      "inventoryLow": "{count} قلم موجودی در سطح نقطهٔ سفارش یا کمتر",
+      "blockedTasks": "{count} وظیفهٔ مسدود",
+      "woWaitingApproval": "{count} دستورکار در انتظار تأیید"
+    },
+    "sections": {
+      "operationalStatus": "وضعیت عملیاتی",
+      "budget": "خلاصهٔ بودجه",
+      "activity": "فعالیت اخیر",
+      "kpis": "شاخص‌های عملیاتی",
+      "actions": "اقدام‌های بعدی"
+    },
+    "status": {
+      "project": {
+        "PLANNED": "برنامه‌ریزی‌شده",
+        "ACTIVE": "فعال",
+        "ON_HOLD": "متوقف‌شده",
+        "COMPLETED": "تکمیل‌شده",
+        "CANCELLED": "لغوشده"
+      },
+      "task": {
+        "TODO": "انجام‌نشده",
+        "IN_PROGRESS": "در حال انجام",
+        "BLOCKED": "مسدود",
+        "REVIEW": "بازبینی",
+        "DONE": "انجام‌شده",
+        "CANCELLED": "لغوشده"
+      },
+      "workOrder": {
+        "OPEN": "باز",
+        "ASSIGNED": "تخصیص‌یافته",
+        "IN_PROGRESS": "در حال انجام",
+        "WAITING_APPROVAL": "در انتظار تأیید",
+        "COMPLETED": "تکمیل‌شده",
+        "CANCELLED": "لغوشده"
+      },
+      "approval": {
+        "PENDING": "در انتظار",
+        "APPROVED": "تأییدشده",
+        "REJECTED": "ردشده",
+        "CANCELLED": "لغوشده"
+      }
+    },
+    "groups": {
+      "projects": "پروژه‌ها",
+      "tasks": "وظایف",
+      "workOrders": "دستورکارها"
+    },
+    "budget": {
+      "total": "بودجهٔ کل",
+      "actual": "هزینهٔ واقعی",
+      "variance": "انحراف",
+      "note": "برگرفته از بودجهٔ پروژه و هزینهٔ واقعی ثبت‌شده."
+    },
+    "activity": {
+      "task_completed": "وظیفه تکمیل شد",
+      "work_order_completed": "دستورکار تکمیل شد",
+      "approval_decided": "تأیید تعیین‌تکلیف شد",
+      "empty": "فعالیت عملیاتی اخیری وجود ندارد."
+    },
+    "kpiTarget": "هدف {value}",
+    "actions": {
+      "openProjects": "بررسی پروژه‌ها",
+      "openProjectsDesc": "پروژه‌های فعال، فازها و مسئولان.",
+      "openApprovals": "بررسی تأییدها",
+      "openApprovalsDesc": "درخواست‌های در انتظار تصمیم.",
+      "openTasks": "گشودن وظایف",
+      "openTasksDesc": "وظایف سررسیدگذشته و مسدود.",
+      "openWorkOrders": "دستورکارها",
+      "openWorkOrdersDesc": "دستورکارهای باز و در حال انجام."
+    },
+    "states": {
+      "loading": "در حال بارگذاری داده‌های عملیات…",
+      "unavailableTitle": "دادهٔ عملیات در دسترس نیست",
+      "unavailableBody": "خلاصهٔ عملیات کسب‌وکار بارگیری نشد. دسترسی خود را بررسی کنید یا یک ماژول را مستقیماً باز کنید."
+    }
   }
 }

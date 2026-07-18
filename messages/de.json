@@ -6113,5 +6113,96 @@
       "colHealthScore": "Health Score",
       "ofAccounts": "of {capacity} accounts"
     }
+  },
+  "businessOps": {
+    "header": {
+      "eyebrow": "Business Operations",
+      "title": "Business Operations",
+      "purpose": "Projects, work orders, approvals and inventory — one tenant-scoped operations surface.",
+      "demoBadge": "Demo data"
+    },
+    "attention": {
+      "title": "Requires attention",
+      "empty": "No operational items need attention right now. Approvals, overdue and inventory queues are clear.",
+      "view": "Open",
+      "severityAction": "Action needed",
+      "severityReview": "Review",
+      "overdueTasks": "{count} task(s) overdue",
+      "pendingApprovals": "{count} approval(s) awaiting review",
+      "inventoryLow": "{count} inventory item(s) at or below reorder level",
+      "blockedTasks": "{count} task(s) blocked",
+      "woWaitingApproval": "{count} work order(s) waiting on approval"
+    },
+    "sections": {
+      "operationalStatus": "Operational status",
+      "budget": "Budget summary",
+      "activity": "Recent activity",
+      "kpis": "Operational KPIs",
+      "actions": "Next actions"
+    },
+    "status": {
+      "project": {
+        "PLANNED": "Planned",
+        "ACTIVE": "Active",
+        "ON_HOLD": "On hold",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled"
+      },
+      "task": {
+        "TODO": "To do",
+        "IN_PROGRESS": "In progress",
+        "BLOCKED": "Blocked",
+        "REVIEW": "Review",
+        "DONE": "Done",
+        "CANCELLED": "Cancelled"
+      },
+      "workOrder": {
+        "OPEN": "Open",
+        "ASSIGNED": "Assigned",
+        "IN_PROGRESS": "In progress",
+        "WAITING_APPROVAL": "Waiting approval",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled"
+      },
+      "approval": {
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "CANCELLED": "Cancelled"
+      }
+    },
+    "groups": {
+      "projects": "Projects",
+      "tasks": "Tasks",
+      "workOrders": "Work orders"
+    },
+    "budget": {
+      "total": "Total budget",
+      "actual": "Actual cost",
+      "variance": "Variance",
+      "note": "Derived from project budget and recorded actual cost."
+    },
+    "activity": {
+      "task_completed": "Task completed",
+      "work_order_completed": "Work order completed",
+      "approval_decided": "Approval decided",
+      "empty": "No recent operational activity."
+    },
+    "kpiTarget": "Target {value}",
+    "actions": {
+      "openProjects": "Review projects",
+      "openProjectsDesc": "Active projects, phases and owners.",
+      "openApprovals": "Review approvals",
+      "openApprovalsDesc": "Requests awaiting a decision.",
+      "openTasks": "Open tasks",
+      "openTasksDesc": "Overdue and blocked work items.",
+      "openWorkOrders": "Work orders",
+      "openWorkOrdersDesc": "Open and in-progress work orders."
+    },
+    "states": {
+      "loading": "Loading operations data…",
+      "unavailableTitle": "Operations data unavailable",
+      "unavailableBody": "The business-operations summary could not be loaded. Check your access or open a module directly."
+    }
   }
 }
