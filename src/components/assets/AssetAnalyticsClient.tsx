@@ -1,12 +1,14 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { RegistryAssetRecord } from "@/lib/assets/types";
 
 interface Props { assets: RegistryAssetRecord[] }
 
 export function AssetAnalyticsClient({ assets }: Props) {
   const t = useTranslations("assetOperations");
+  const tAm = useTranslations("assetMaintenance"); // 87L.5: lifecycle labels
 
   // Raw enum -> display label; falls back to raw value when unmapped.
   const typeLabel = (ty: string) => (t.has(`enums.typeCompact.${ty}`) ? t(`enums.typeCompact.${ty}`) : ty);
@@ -94,7 +96,7 @@ export function AssetAnalyticsClient({ assets }: Props) {
           <p className="eyebrow-label text-faint mb-4">{t("analytics.byStatus")}</p>
           <div className="space-y-3">
             {Object.entries(byStatus).sort((a, b) => b[1] - a[1]).map(([s, c]) => (
-              <BarRow key={s} label={s.replace(/_/g, " ")} value={c} total={assets.length} color="bg-signal" />
+              <BarRow key={s} label={enumLabel(tAm, "assetStatus", s)} value={c} total={assets.length} color="bg-signal" />
             ))}
           </div>
         </div>
@@ -104,7 +106,7 @@ export function AssetAnalyticsClient({ assets }: Props) {
           <p className="eyebrow-label text-faint mb-4">{t("analytics.byLifecycle")}</p>
           <div className="space-y-3">
             {Object.entries(byLC).sort((a, b) => b[1] - a[1]).map(([s, c]) => (
-              <BarRow key={s} label={s.replace(/_/g, " ")} value={c} total={assets.length} color="bg-ice" />
+              <BarRow key={s} label={enumLabel(tAm, "lifecycle", s)} value={c} total={assets.length} color="bg-ice" />
             ))}
           </div>
         </div>

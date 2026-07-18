@@ -237,11 +237,21 @@ describe("Asset components are fully catalog-backed", () => {
     }
   });
 
-  it("retains raw-enum display formatting (documented allowlist) — not translated", () => {
-    // These raw-enum -> display transforms intentionally stay in code; they show
-    // persisted enum values, not localized UI text.
-    expect(read("src/components/assets/AssetsRegistryClient.tsx")).toMatch(/\.replace\(\/_\/g, " "\)/);
-    expect(read("src/components/assets/AssetDetailClient.tsx")).toMatch(/\.replace\(\/_\/g, " "\)/);
+  // PHASE 87L.5 SUPERSEDES the former allowlist. It previously asserted that
+  // `value.replace(/_/g, " ")` should STAY, on the rationale that these show
+  // "persisted enum values, not localized UI text". They are in fact
+  // user-visible labels: the transform rendered "IN SERVICE" inside the Persian
+  // UI. 87L.5 §9 names this exact pattern as a defect, so the enums now route
+  // through the shared `enumLabel` formatter and the catalog labels.
+  it("routes enum display through the localized formatter, not the underscore transform", () => {
+    for (const rel of [
+      "src/components/assets/AssetsRegistryClient.tsx",
+      "src/components/assets/AssetDetailClient.tsx",
+    ]) {
+      const src = read(rel);
+      expect(src, rel).not.toMatch(/\.replace\(\/_\/g, " "\)/);
+      expect(src, rel).toContain('from "@/lib/i18n/enum-label"');
+    }
   });
 });
 

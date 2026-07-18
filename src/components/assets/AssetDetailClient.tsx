@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type {
   RegistryAssetRecord, AssetCriticalityAssessment, AssetHealthSnapshot,
   AssetLifecycleEvent, AssetMaintenanceLink, AssetDocumentLink,
@@ -65,6 +66,13 @@ interface Props { asset: FullAsset }
 
 export function AssetDetailClient({ asset }: Props) {
   const t      = useTranslations("assetOperations");
+  // PHASE 87L.5: enum labels come from `assetMaintenance` (87I) because that is
+  // the namespace with real PERSIAN values. `assetOperations` was translated to
+  // German only — its `fa` entries are an English carryover, so routing status
+  // or criticality through it would still show English in the Persian UI.
+  // Asset TYPE is a closed 20-value code set; the amendment added an exhaustive
+  // fa/en `assetMaintenance.assetType` tree, so it resolves in Persian too.
+  const tAm    = useTranslations("assetMaintenance");
   const locale = useLocale();
 
   const latestHealth = asset.healthSnapshots?.[0];
@@ -89,13 +97,13 @@ export function AssetDetailClient({ asset }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusBadge(asset.status)}`}>
-              {asset.status.replace(/_/g, " ")}
+              {enumLabel(tAm, "assetStatus", asset.status)}
             </span>
             <span className={`text-xs px-3 py-1 rounded-full font-medium ${critBadge(asset.criticality)}`}>
-              {asset.criticality}
+              {enumLabel(tAm, "criticality", asset.criticality)}
             </span>
             <span className={`text-xs px-3 py-1 rounded-full font-medium ${riskBadge(asset.riskState)}`}>
-              {asset.riskState}
+              {enumLabel(tAm, "risk", asset.riskState)}
             </span>
           </div>
         </div>
@@ -118,7 +126,7 @@ export function AssetDetailClient({ asset }: Props) {
         <div className="card-surface rounded-xl p-5">
           <p className="eyebrow-label text-faint mb-4">{t("detail.technicalProfile")}</p>
           <div>
-            <InfoRow label={t("detail.assetType")} value={asset.assetType.replace(/_/g, " ")} />
+            <InfoRow label={t("detail.assetType")} value={enumLabel(tAm, "assetType", asset.assetType)} />
             <InfoRow label={t("detail.manufacturer")} value={asset.manufacturer} />
             <InfoRow label={t("detail.model")} value={asset.model} />
             <InfoRow label={t("detail.serialNumber")} value={asset.serialNumber} />
@@ -132,7 +140,7 @@ export function AssetDetailClient({ asset }: Props) {
               value={asset.warrantyExpiry ? new Date(asset.warrantyExpiry).toLocaleDateString() : null} />
             <InfoRow label={t("detail.expectedLife")}
               value={asset.expectedLifeYears ? `${asset.expectedLifeYears} ${t("detail.years")}` : null} />
-            <InfoRow label={t("detail.lifecycleState")} value={asset.lifecycleState.replace(/_/g, " ")} />
+            <InfoRow label={t("detail.lifecycleState")} value={enumLabel(tAm, "lifecycle", asset.lifecycleState)} />
           </div>
 
           {/* Technical specs */}
@@ -216,12 +224,12 @@ export function AssetDetailClient({ asset }: Props) {
                 <div className="w-1.5 h-1.5 rounded-full bg-ice mt-1.5 shrink-0" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-ink">{ev.eventType.replace(/_/g, " ")}</span>
+                    <span className="text-sm font-medium text-ink">{enumLabel(t, "enums.eventType", ev.eventType)}</span>
                     <span className="text-xs text-faint">{new Date(ev.occurredAt).toLocaleDateString()}</span>
                   </div>
                   {ev.notes && <p className="text-xs text-muted mt-0.5">{ev.notes}</p>}
                 </div>
-                <span className="text-xs text-ice shrink-0">{ev.toState.replace(/_/g, " ")}</span>
+                <span className="text-xs text-ice shrink-0">{enumLabel(tAm, "lifecycle", ev.toState)}</span>
               </div>
             ))}
           </div>

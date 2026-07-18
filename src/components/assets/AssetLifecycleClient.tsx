@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { AssetLifecycleEvent } from "@/lib/assets/types";
 
 function evColor(type: string) {
@@ -25,6 +26,7 @@ interface Props { events: AssetLifecycleEvent[] }
 
 export function AssetLifecycleClient({ events }: Props) {
   const t = useTranslations("assetOperations");
+  const tAm = useTranslations("assetMaintenance"); // 87L.5: lifecycle labels
   const sorted = [...events].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 
   const stateDistribution: Record<string, number> = {};
@@ -47,7 +49,7 @@ export function AssetLifecycleClient({ events }: Props) {
           {Object.entries(stateDistribution).sort((a, b) => b[1] - a[1]).map(([state, count]) => (
             <div key={state} className="flex items-center gap-2 bg-surface2 rounded-lg px-3 py-1.5 border border-line">
               <span className="text-sm font-semibold text-ink tabular-nums">{count}</span>
-              <span className="text-xs text-muted">{state.replace(/_/g, " ")}</span>
+              <span className="text-xs text-muted">{enumLabel(tAm, "lifecycle", state)}</span>
             </div>
           ))}
         </div>
@@ -72,7 +74,7 @@ export function AssetLifecycleClient({ events }: Props) {
               <div className="flex-1 pb-5">
                 <div className="flex flex-wrap items-start gap-2 mb-1">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${evColor(ev.eventType)}`}>
-                    {ev.eventType.replace(/_/g, " ")}
+                    {enumLabel(t, "enums.eventType", ev.eventType)}
                   </span>
                   <span className="text-xs text-faint">{new Date(ev.occurredAt).toLocaleDateString()}</span>
                   {ev.performedBy && (
@@ -81,7 +83,7 @@ export function AssetLifecycleClient({ events }: Props) {
                 </div>
                 {ev.fromState && (
                   <p className="text-xs text-faint mb-1">
-                    {ev.fromState.replace(/_/g, " ")} → <span className="text-muted">{ev.toState.replace(/_/g, " ")}</span>
+                    {enumLabel(tAm, "lifecycle", ev.fromState)} → <span className="text-muted">{enumLabel(tAm, "lifecycle", ev.toState)}</span>
                   </p>
                 )}
                 {ev.notes && <p className="text-sm text-muted">{ev.notes}</p>}

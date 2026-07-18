@@ -1,5 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { CmmsDashboard } from "@/lib/cmms/types";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
@@ -30,6 +31,7 @@ const SEV_STYLE: Record<string, string> = {
 
 export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
   const t = useTranslations("maintenanceOperations");
+  const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
   const { kpis, tasksByStatus, tasksByPriority, recentTasks, recentFailures, upcomingTasks } = data;
 
   const kpiCards = [
@@ -99,7 +101,7 @@ export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
               return (
                 <div key={status} className="flex items-center justify-between">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-white/[0.05] ${s.bg} ${s.text}`}>
-                    {status.replace(/_/g, " ")}
+                    {enumLabel(tAm, "maintenanceStatus", status)}
                   </span>
                   <span className="font-bold text-sm font-mono text-ink">{count}</span>
                 </div>
@@ -171,7 +173,7 @@ export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
                     </td>
                     <td className="px-4 py-2.5">
                       <span className={`text-xs font-medium px-1.5 py-0.5 rounded border border-white/[0.05] ${s.bg} ${s.text}`}>
-                        {task.status.replace(/_/g, " ")}
+                        {enumLabel(tAm, "maintenanceStatus", task.status)}
                       </span>
                     </td>
                     <td className={`px-4 py-2.5 text-xs font-bold ${PRIORITY_STYLE[task.priority] ?? "text-muted"}`}>

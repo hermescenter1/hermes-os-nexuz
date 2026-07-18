@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { AssetDashboard } from "@/lib/assets/types";
 
 function riskColor(state: string) {
@@ -31,6 +32,7 @@ interface Props { data: AssetDashboard }
 
 export function AssetsDashboardClient({ data }: Props) {
   const t      = useTranslations("assetOperations");
+  const tAm    = useTranslations("assetMaintenance"); // 87L.5: Persian enum labels
   const locale = useLocale();
 
   // Raw enum -> display label; falls back to raw value when unmapped.
@@ -179,11 +181,11 @@ export function AssetsDashboardClient({ data }: Props) {
               <div key={ev.id} className="flex gap-3 items-start">
                 <div className="w-1.5 h-1.5 rounded-full bg-ice mt-2 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-ink font-medium">{ev.eventType.replace(/_/g, " ")}</p>
+                  <p className="text-sm text-ink font-medium">{enumLabel(t, "enums.eventType", ev.eventType)}</p>
                   <p className="text-xs text-faint">{ev.notes ? ev.notes.slice(0, 60) + (ev.notes.length > 60 ? "…" : "") : ""}</p>
                   <p className="text-xs text-faint/70 mt-0.5">{new Date(ev.occurredAt).toLocaleDateString()}</p>
                 </div>
-                <span className="text-xs text-ice shrink-0">{ev.toState.replace(/_/g, " ")}</span>
+                <span className="text-xs text-ice shrink-0">{enumLabel(tAm, "lifecycle", ev.toState)}</span>
               </div>
             ))}
           </div>

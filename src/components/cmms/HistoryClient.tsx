@@ -1,5 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { MaintenanceHistory } from "@/lib/cmms/types";
 
 const ACTION_COLOR: Record<string, string> = {
@@ -28,6 +29,7 @@ const ACTION_DOT: Record<string, string> = {
 
 export function HistoryClient({ history }: { history: MaintenanceHistory[] }) {
   const t = useTranslations("maintenanceOperations");
+  const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
 
   return (
     <div className="space-y-5">
@@ -54,7 +56,7 @@ export function HistoryClient({ history }: { history: MaintenanceHistory[] }) {
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
                       <p className={`text-sm font-semibold ${color}`}>
-                        {h.action.replace(/_/g, " ")}
+                        {enumLabel(tAm, "historyAction", h.action)}
                       </p>
                       {h.description && (
                         <p className="text-xs text-muted mt-0.5">{h.description}</p>

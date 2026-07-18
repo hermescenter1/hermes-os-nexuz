@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import { usePathname } from "next/navigation";
 import type { EdmsSearchResult } from "@/lib/document/types";
 
@@ -17,6 +19,7 @@ interface Props { initial: EdmsSearchResult }
 export function SearchClient({ initial }: Props) {
   const pathname = usePathname();
   const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const ted = useTranslations("engineeringDocuments"); // 87L.5: localized enum labels
   const isFa     = locale === "fa";
   const [result, setResult]   = useState(initial);
   const [q, setQ]             = useState("");
@@ -93,7 +96,7 @@ export function SearchClient({ initial }: Props) {
                       </Link>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <span className="text-xs text-muted">{doc.documentType.replace(/_/g, " ")}</span>
+                      <span className="text-xs text-muted">{enumLabel(ted, "docType", doc.documentType)}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-white/[0.05] ${s.bg} ${s.text}`}>

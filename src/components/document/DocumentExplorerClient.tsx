@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import { usePathname } from "next/navigation";
 import type { EdmsDocument, EdmsFolder } from "@/lib/document/types";
 
@@ -19,6 +21,7 @@ interface Props {
 export function DocumentExplorerClient({ documents, folders }: Props) {
   const pathname = usePathname();
   const locale   = pathname.startsWith("/fa") ? "fa" : "en";
+  const ted = useTranslations("engineeringDocuments"); // 87L.5: localized enum labels
   const isFa     = locale === "fa";
 
   return (
@@ -89,7 +92,7 @@ export function DocumentExplorerClient({ documents, folders }: Props) {
                         </Link>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <span className="text-xs text-muted">{doc.documentType.replace(/_/g, " ")}</span>
+                        <span className="text-xs text-muted">{enumLabel(ted, "docType", doc.documentType)}</span>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
                         <span className="text-xs font-mono text-faint">{doc.currentRevision ?? "—"}</span>

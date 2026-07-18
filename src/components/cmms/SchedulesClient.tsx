@@ -1,5 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { MaintenanceSchedule } from "@/lib/cmms/types";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
@@ -21,6 +22,7 @@ const PRIORITY_COLOR: Record<string, string> = {
 
 export function SchedulesClient({ schedules }: { schedules: MaintenanceSchedule[] }) {
   const t = useTranslations("maintenanceOperations");
+  const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
 
   return (
     <div className="space-y-5">
@@ -59,7 +61,7 @@ export function SchedulesClient({ schedules }: { schedules: MaintenanceSchedule[
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-white/[0.05] ${st.bg} ${st.text}`}>
-                        {s.status.replace(/_/g, " ")}
+                        {enumLabel(tAm, "maintenanceStatus", s.status)}
                       </span>
                     </td>
                     <td className={`px-4 py-3 hidden md:table-cell text-xs font-bold ${PRIORITY_COLOR[s.priority] ?? "text-muted"}`}>

@@ -1,6 +1,7 @@
 import { notFound }                            from "next/navigation";
 import { getTaskById, getHistory, getComments } from "@/lib/cmms/db";
 import { getTranslations }  from "next-intl/server";
+import { enumLabel }                          from "@/lib/i18n/enum-label";
 import { noIndexMetadata }                      from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const t = await getTranslations("maintenanceOperations");
+  // 87L.5: status/action labels live in the Persian-bearing assetMaintenance ns
+  const tAm = await getTranslations("assetMaintenance");
   const { id }               = await params;
   const [task, history, comments] = await Promise.all([
     getTaskById(id), getHistory(id), getComments(id),
@@ -35,7 +38,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
           <p className="text-muted-foreground text-sm mt-1">{task.description}</p>
         </div>
         <span className={`text-sm font-bold shrink-0 ${STATUS_COLOR[task.status] ?? "text-foreground"}`}>
-          {task.status.replace(/_/g, " ")}
+          {enumLabel(tAm, "maintenanceStatus", task.status)}
         </span>
       </div>
 
@@ -95,7 +98,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                 <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
                   {new Date(h.createdAt).toLocaleDateString()}
                 </span>
-                <span className="text-xs font-medium">{h.action.replace(/_/g, " ")}</span>
+                <span className="text-xs font-medium">{enumLabel(tAm, "historyAction", h.action)}</span>
                 {h.description && <span className="text-xs text-muted-foreground">{h.description}</span>}
               </div>
             ))}

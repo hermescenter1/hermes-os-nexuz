@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { RegistryAssetRecord } from "@/lib/assets/types";
 
 const TYPE_OPTS = ["ALL","PRODUCTION_LINE","MACHINE","PLC","HMI","SCADA_NODE","ELECTRICAL_PANEL","MCC_PANEL","VFD","MOTOR","PUMP","VALVE","SENSOR","INSTRUMENT","ROBOT","CONVEYOR","COMPRESSOR","UTILITY_SYSTEM","SAFETY_SYSTEM","NETWORK_DEVICE","INDUSTRIAL_PC"];
@@ -41,6 +42,7 @@ interface Props { assets: RegistryAssetRecord[] }
 
 export function AssetsRegistryClient({ assets }: Props) {
   const t       = useTranslations("assetOperations");
+  const tAm     = useTranslations("assetMaintenance"); // 87L.5: Persian enum labels
   const locale  = useLocale();
   const [search, setSearch] = useState("");
   const [typeF,  setTypeF]  = useState("ALL");
@@ -87,7 +89,7 @@ export function AssetsRegistryClient({ assets }: Props) {
           {TYPE_OPTS.map(o => <option key={o} value={o}>{o === "ALL" ? t("registry.allTypes") : typeLabel(o)}</option>)}
         </select>
         <select value={statF} onChange={e => setStatF(e.target.value)} className={selectCls}>
-          {STATUS_OPTS.map(o => <option key={o} value={o}>{o === "ALL" ? t("registry.allStatus") : o.replace(/_/g, " ")}</option>)}
+          {STATUS_OPTS.map(o => <option key={o} value={o}>{o === "ALL" ? t("registry.allStatus") : enumLabel(tAm, "assetStatus", o)}</option>)}
         </select>
         <select value={critF} onChange={e => setCritF(e.target.value)} className={selectCls}>
           {CRIT_OPTS.map(o => <option key={o} value={o}>{o === "ALL" ? t("registry.allCriticality") : o}</option>)}
@@ -132,7 +134,7 @@ export function AssetsRegistryClient({ assets }: Props) {
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{typeLabel(a.assetType)}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge(a.status)}`}>
-                      {a.status.replace(/_/g, " ")}
+                      {enumLabel(tAm, "assetStatus", a.status)}
                     </span>
                   </td>
                   <td className="px-4 py-3">

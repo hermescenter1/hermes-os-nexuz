@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { RegistryAssetRecord, AssetMaintenanceLink } from "@/lib/assets/types";
 
 function linkTypeBadge(t: string) {
@@ -19,6 +20,7 @@ interface Props { assets: AssetWithLinks[] }
 
 export function AssetMaintenanceClient({ assets }: Props) {
   const t      = useTranslations("assetOperations");
+  const tAm    = useTranslations("assetMaintenance"); // 87L.5: Persian enum labels
   const locale = useLocale();
   const hasLinks = assets.filter(a => a.maintenanceLinks?.length > 0);
 
@@ -54,7 +56,7 @@ export function AssetMaintenanceClient({ assets }: Props) {
                 {a.maintenanceLinks.map(lnk => (
                   <div key={lnk.id} className="flex items-start gap-3 bg-surface2 rounded-lg px-3 py-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${linkTypeBadge(lnk.linkType)}`}>
-                      {lnk.linkType.replace(/_/g, " ")}
+                      {enumLabel(tAm, "linkType", lnk.linkType)}
                     </span>
                     <div className="flex-1 min-w-0">
                       {lnk.workOrderId && (

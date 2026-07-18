@@ -1,5 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { EdmsDocumentFull } from "@/lib/document/types";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
@@ -21,6 +23,7 @@ interface Props { document: EdmsDocumentFull }
 
 export function DocumentDetailClient({ document: doc }: Props) {
   const pathname = usePathname();
+  const ted = useTranslations("engineeringDocuments"); // 87L.5: localized enum labels
   const isFa     = pathname.startsWith("/fa");
 
   const status = STATUS_STYLE[doc.status] ?? { bg: "bg-muted/[0.06]", text: "text-muted", dot: "bg-muted" };
@@ -53,7 +56,7 @@ export function DocumentDetailClient({ document: doc }: Props) {
         {/* Info grid */}
         <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-line">
           {[
-            { label: isFa ? "نوع" : "Type",        value: doc.documentType.replace(/_/g, " ") },
+            { label: isFa ? "نوع" : "Type",        value: enumLabel(ted, "docType", doc.documentType) },
             { label: isFa ? "نسخه" : "Revision",   value: doc.currentRevision ?? "—", mono: true },
             { label: isFa ? "زبان" : "Language",   value: doc.language.toUpperCase() },
             { label: isFa ? "ویرایش" : "Updated",  value: new Date(doc.updatedAt).toLocaleDateString() },

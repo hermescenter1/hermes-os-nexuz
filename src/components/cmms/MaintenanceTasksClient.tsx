@@ -1,5 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { MaintenanceTask } from "@/lib/cmms/types";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
@@ -26,6 +27,7 @@ export function MaintenanceTasksClient({
   title,
 }: { tasks: MaintenanceTask[]; title?: string }) {
   const t = useTranslations("maintenanceOperations");
+  const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
   const heading = title ?? t("tasks.defaultHeading");
 
   return (
@@ -69,7 +71,7 @@ export function MaintenanceTasksClient({
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-white/[0.05] ${s.bg} ${s.text}`}>
-                        {task.status.replace(/_/g, " ")}
+                        {enumLabel(tAm, "maintenanceStatus", task.status)}
                       </span>
                     </td>
                     <td className={`px-4 py-3 text-xs font-bold ${PRIORITY_STYLE[task.priority] ?? "text-muted"}`}>

@@ -6393,6 +6393,28 @@
       "DEGRADED": "Degraded",
       "DECOMMISSIONING": "Decommissioning",
       "RETIRED": "Retired"
+    },
+    "assetType": {
+      "PRODUCTION_LINE": "Production line",
+      "MACHINE": "Machine",
+      "PLC": "PLC",
+      "HMI": "HMI",
+      "SCADA_NODE": "SCADA node",
+      "ELECTRICAL_PANEL": "Electrical panel",
+      "MCC_PANEL": "MCC panel",
+      "VFD": "VFD",
+      "MOTOR": "Motor",
+      "PUMP": "Pump",
+      "VALVE": "Valve",
+      "SENSOR": "Sensor",
+      "INSTRUMENT": "Instrument",
+      "ROBOT": "Robot",
+      "CONVEYOR": "Conveyor",
+      "COMPRESSOR": "Compressor",
+      "UTILITY_SYSTEM": "Utility system",
+      "SAFETY_SYSTEM": "Safety system",
+      "NETWORK_DEVICE": "Network device",
+      "INDUSTRIAL_PC": "Industrial PC"
     }
   },
   "engineeringDocuments": {

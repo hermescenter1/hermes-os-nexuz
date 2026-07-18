@@ -275,10 +275,18 @@ describe("CMMS components and pages are fully catalog-backed", () => {
     }
   });
 
-  it("keeps raw MTBF/MTTR acronym labels and raw enum display (allowlisted)", () => {
+  it("keeps raw MTBF/MTTR acronym labels (still allowlisted — they are acronyms)", () => {
     expect(read("src/components/cmms/CmmsDashboardClient.tsx")).toMatch(/label: "MTBF"/);
     expect(read("src/components/cmms/ReportsClient.tsx")).toMatch(/label: "MTBF"/);
-    expect(read("src/components/cmms/MaintenanceTasksClient.tsx")).toMatch(/\.replace\(\/_\/g, " "\)/);
+  });
+
+  // PHASE 87L.5 SUPERSEDES the raw-enum half of the former allowlist: task
+  // status is a user-visible label, not an acronym, and the underscore
+  // transform rendered "IN PROGRESS" inside the Persian UI.
+  it("routes task-status display through the localized formatter", () => {
+    const src = read("src/components/cmms/MaintenanceTasksClient.tsx");
+    expect(src).not.toMatch(/\.replace\(\/_\/g, " "\)/);
+    expect(src).toContain('from "@/lib/i18n/enum-label"');
   });
 
   it("work-order status filters and transitions remain unchanged", () => {

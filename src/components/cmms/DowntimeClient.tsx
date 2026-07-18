@@ -1,5 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { MaintenanceDowntime } from "@/lib/cmms/types";
 
 const REASON_STYLE: Record<string, { bg: string; text: string }> = {
@@ -14,6 +15,7 @@ const REASON_STYLE: Record<string, { bg: string; text: string }> = {
 
 export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }) {
   const t              = useTranslations("maintenanceOperations");
+  const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
   const totalMinutes   = downtime.reduce((s, d) => s + (d.durationMinutes ?? 0), 0);
   const unplannedMin   = downtime.filter(d => d.reason !== "PLANNED_MAINTENANCE").reduce((s, d) => s + (d.durationMinutes ?? 0), 0);
   const totalLoss      = downtime.reduce((s, d) => s + (d.productionLoss ?? 0), 0);
@@ -58,7 +60,7 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-white/[0.05] ${r.bg} ${r.text}`}>
-                      {d.reason.replace(/_/g, " ")}
+                      {enumLabel(tAm, "downtimeReason", d.reason)}
                     </span>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">

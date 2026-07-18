@@ -6393,6 +6393,28 @@
       "DEGRADED": "افت عملکرد",
       "DECOMMISSIONING": "خروج از سرویس",
       "RETIRED": "بازنشسته"
+    },
+    "assetType": {
+      "PRODUCTION_LINE": "خط تولید",
+      "MACHINE": "ماشین",
+      "PLC": "PLC",
+      "HMI": "HMI",
+      "SCADA_NODE": "گره اسکادا",
+      "ELECTRICAL_PANEL": "تابلو برق",
+      "MCC_PANEL": "تابلو MCC",
+      "VFD": "درایو دور متغیر",
+      "MOTOR": "الکتروموتور",
+      "PUMP": "پمپ",
+      "VALVE": "شیر",
+      "SENSOR": "حسگر",
+      "INSTRUMENT": "ابزار دقیق",
+      "ROBOT": "ربات",
+      "CONVEYOR": "نوار نقاله",
+      "COMPRESSOR": "کمپرسور",
+      "UTILITY_SYSTEM": "سامانه یوتیلیتی",
+      "SAFETY_SYSTEM": "سامانه ایمنی",
+      "NETWORK_DEVICE": "تجهیز شبکه",
+      "INDUSTRIAL_PC": "رایانه صنعتی"
     }
   },
   "engineeringDocuments": {

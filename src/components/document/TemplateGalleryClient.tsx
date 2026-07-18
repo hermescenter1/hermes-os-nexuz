@@ -1,11 +1,14 @@
 "use client";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { EdmsTemplate } from "@/lib/document/types";
 
 interface Props { templates: EdmsTemplate[] }
 
 export function TemplateGalleryClient({ templates }: Props) {
   const pathname = usePathname();
+  const ted = useTranslations("engineeringDocuments"); // 87L.5: localized enum labels
   const isFa     = pathname.startsWith("/fa");
 
   if (templates.length === 0) {
@@ -41,7 +44,7 @@ export function TemplateGalleryClient({ templates }: Props) {
           {/* Footer */}
           <div className="flex items-center justify-between mt-auto pt-2 border-t border-line">
             <span className="text-xs text-faint bg-surface3 px-2 py-0.5 rounded border border-line">
-              {tpl.documentType.replace(/_/g, " ")}
+              {enumLabel(ted, "docType", tpl.documentType)}
             </span>
             <span className={`text-xs font-medium ${tpl.isActive ? "text-signal" : "text-faint"}`}>
               {tpl.isActive ? (isFa ? "فعال" : "Active") : (isFa ? "غیرفعال" : "Inactive")}

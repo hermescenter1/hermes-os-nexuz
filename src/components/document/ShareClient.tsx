@@ -1,5 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import type { EdmsShare } from "@/lib/document/types";
 
 const ACCESS_STYLE: Record<string, { bg: string; text: string }> = {
@@ -14,6 +16,7 @@ interface Props { shares: EdmsShare[] }
 
 export function ShareClient({ shares }: Props) {
   const pathname = usePathname();
+  const ted = useTranslations("engineeringDocuments"); // 87L.5: localized enum labels
   const isFa     = pathname.startsWith("/fa");
 
   if (shares.length === 0) {
@@ -53,7 +56,7 @@ export function ShareClient({ shares }: Props) {
                 </td>
                 <td className="px-4 py-3 hidden md:table-cell">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-white/[0.05] ${a.bg} ${a.text}`}>
-                    {s.accessLevel.replace(/_/g, " ")}
+                    {enumLabel(ted, "accessLevel", s.accessLevel)}
                   </span>
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
