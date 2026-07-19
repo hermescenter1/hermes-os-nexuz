@@ -610,263 +610,263 @@
     "tagline": "Plattform für industrielle Intelligenz"
   },
   "dashboard": {
-    "title": "Factory Dashboard",
-    "eyebrow": "Operations",
-    "simulated": "Simulated telemetry",
-    "updated": "Updated",
+    "title": "Werksdashboard",
+    "eyebrow": "Betrieb",
+    "simulated": "Simulierte Telemetrie",
+    "updated": "Aktualisiert",
     "panels": {
-      "overview": "Factory Overview",
-      "lines": "Production Lines",
-      "plc": "PLC Status",
-      "scada": "SCADA Status",
-      "network": "OT Network Status",
-      "alarms": "Alarm Summary",
-      "temperature": "Temperature",
-      "pressure": "Pressure",
-      "flow": "Flow",
-      "energy": "Energy",
-      "ai": "AI Recommendations",
-      "maintenance": "Maintenance Priority",
-      "risk": "System Risk Score",
-      "thermal": "Thermal Sensors",
-      "process": "Process & Energy",
-      "control": "Control Systems"
+      "overview": "Werksüberblick",
+      "lines": "Produktionslinien",
+      "plc": "PLC-Status",
+      "scada": "SCADA-Status",
+      "network": "OT-Netzwerkstatus",
+      "alarms": "Alarmübersicht",
+      "temperature": "Temperatur",
+      "pressure": "Druck",
+      "flow": "Durchfluss",
+      "energy": "Energie",
+      "ai": "KI-Empfehlungen",
+      "maintenance": "Instandhaltungspriorität",
+      "risk": "Systemrisikowert",
+      "thermal": "Thermosensoren",
+      "process": "Prozess & Energie",
+      "control": "Leitsysteme"
     },
     "overview": {
       "oee": "OEE",
-      "availability": "Availability",
-      "performance": "Performance",
-      "quality": "Quality",
-      "activeLines": "Active lines"
+      "availability": "Verfügbarkeit",
+      "performance": "Leistung",
+      "quality": "Qualität",
+      "activeLines": "Aktive Linien"
     },
     "status": {
-      "running": "Running",
-      "idle": "Idle",
-      "fault": "Fault",
+      "running": "In Betrieb",
+      "idle": "Leerlauf",
+      "fault": "Störung",
       "online": "Online",
       "offline": "Offline",
       "ok": "Normal",
-      "warning": "Warning",
-      "degraded": "Degraded"
+      "warning": "Warnung",
+      "degraded": "Beeinträchtigt"
     },
     "severity": {
-      "critical": "Critical",
-      "high": "High",
-      "medium": "Medium",
-      "low": "Low"
+      "critical": "Kritisch",
+      "high": "Hoch",
+      "medium": "Mittel",
+      "low": "Niedrig"
     },
     "lines": {
-      "throughput": "Throughput",
-      "target": "Target",
-      "unitsHr": "u/hr"
+      "throughput": "Durchsatz",
+      "target": "Ziel",
+      "unitsHr": "St./h"
     },
     "plcP": {
-      "cycle": "Cycle",
-      "devices": "controllers"
+      "cycle": "Zyklus",
+      "devices": "Steuerungen"
     },
     "scadaP": {
-      "servers": "Servers",
-      "tags": "Tags polled",
-      "rate": "Update rate",
-      "latency": "Latency"
+      "servers": "Server",
+      "tags": "Abgefragte Tags",
+      "rate": "Aktualisierungsrate",
+      "latency": "Latenz"
     },
     "networkP": {
-      "devices": "Devices",
+      "devices": "Geräte",
       "online": "Online",
-      "blocked": "Blocked events",
-      "ids": "Intrusion detection"
+      "blocked": "Blockierte Ereignisse",
+      "ids": "Angriffserkennung"
     },
     "alarmsP": {
-      "active": "Active alarms",
-      "last": "Most recent",
+      "active": "Aktive Alarme",
+      "last": "Zuletzt",
       "msgs": {
-        "m1": "Line 2 conveyor motor over-temperature",
-        "m2": "Tank B pressure approaching upper limit",
-        "m3": "PLC-04 cycle time variance detected",
-        "m4": "Cooling loop flow below setpoint",
-        "m5": "Unauthorized device blocked on OT VLAN"
+        "m1": "Übertemperatur am Förderbandmotor Linie 2",
+        "m2": "Druck in Tank B nähert sich der Obergrenze",
+        "m3": "Zykluszeitabweichung an PLC-04 erkannt",
+        "m4": "Durchfluss im Kühlkreis unter Sollwert",
+        "m5": "Nicht autorisiertes Gerät im OT-VLAN blockiert"
       }
     },
     "metrics": {
-      "min": "min",
-      "max": "max",
-      "current": "now"
+      "min": "Min.",
+      "max": "Max.",
+      "current": "jetzt"
     },
     "energyP": {
-      "now": "Load now",
-      "today": "Today",
-      "peak": "Peak"
+      "now": "Last jetzt",
+      "today": "Heute",
+      "peak": "Spitze"
     },
     "aiP": {
-      "note": "Generated from simulated plant data — illustrative only.",
-      "confidence": "confidence",
+      "note": "Aus simulierten Anlagendaten erzeugt — nur illustrativ.",
+      "confidence": "Konfidenz",
       "recs": {
         "r1": {
-          "title": "Rebalance Line 2 takt time",
-          "desc": "Throughput variance suggests a 6% takt adjustment would relieve the conveyor over-temperature pattern."
+          "title": "Taktzeit von Linie 2 neu ausbalancieren",
+          "desc": "Die Durchsatzstreuung deutet darauf hin, dass eine Taktanpassung um 6 % das Übertemperaturmuster am Förderband entschärfen würde."
         },
         "r2": {
-          "title": "Schedule PLC-04 inspection",
-          "desc": "Cycle-time drift over the last window matches early actuator wear signatures."
+          "title": "Inspektion von PLC-04 einplanen",
+          "desc": "Die Zykluszeitdrift im letzten Zeitfenster entspricht frühen Verschleißsignaturen von Aktoren."
         },
         "r3": {
-          "title": "Shift compressor duty to off-peak",
-          "desc": "Energy peaks align with compressor staging; off-peak shifting cuts estimated 9% of peak load."
+          "title": "Kompressorbetrieb in die Nebenzeit verlagern",
+          "desc": "Die Energiespitzen fallen mit der Kompressorstaffelung zusammen; eine Verlagerung in die Nebenzeit senkt die Spitzenlast um geschätzt 9 %."
         }
       },
-      "topRec": "Top AI Insight"
+      "topRec": "Wichtigste KI-Erkenntnis"
     },
     "maintenanceP": {
-      "due": "days",
+      "due": "Tage",
       "assets": {
-        "a1": "Conveyor motor — Line 2",
-        "a2": "Actuator bank — PLC-04",
-        "a3": "Cooling pump P-7",
-        "a4": "Compressor C-2"
+        "a1": "Förderbandmotor — Linie 2",
+        "a2": "Aktorbaugruppe — PLC-04",
+        "a3": "Kühlpumpe P-7",
+        "a4": "Kompressor C-2"
       }
     },
     "riskP": {
       "trend": {
-        "up": "Rising",
-        "down": "Falling",
-        "flat": "Stable"
+        "up": "Steigend",
+        "down": "Fallend",
+        "flat": "Stabil"
       },
       "factors": {
-        "f1": "Thermal stress",
-        "f2": "Cycle variance",
-        "f3": "Network exposure",
-        "f4": "Maintenance backlog"
+        "f1": "Thermische Belastung",
+        "f2": "Zyklusabweichung",
+        "f3": "Netzwerkexposition",
+        "f4": "Instandhaltungsrückstand"
       }
     },
     "exec": {
-      "sectionKpi": "Executive Overview",
-      "sectionIntel": "Brain Intelligence",
-      "sectionStatus": "Industrial Platform Status",
+      "sectionKpi": "Management-Überblick",
+      "sectionIntel": "Brain-Intelligenz",
+      "sectionStatus": "Status der Industrieplattform",
       "kpi": {
-        "totalAnalyses": "Total Analyses",
-        "knownAnalyses": "Known Analyses",
-        "unknownAnalyses": "Unknown Analyses",
-        "engineeringCases": "Engineering Cases",
-        "knowledgeLibraries": "Knowledge Libraries",
-        "supportedVendors": "Supported Vendors",
-        "avgConfidence": "Average Confidence",
-        "systemHealth": "System Health"
+        "totalAnalyses": "Analysen gesamt",
+        "knownAnalyses": "Bekannte Analysen",
+        "unknownAnalyses": "Unbekannte Analysen",
+        "engineeringCases": "Engineering-Fälle",
+        "knowledgeLibraries": "Wissensbibliotheken",
+        "supportedVendors": "Unterstützte Hersteller",
+        "avgConfidence": "Durchschnittliche Konfidenz",
+        "systemHealth": "Systemzustand"
       },
       "health": {
-        "nominal": "Nominal",
-        "watch": "Watch",
-        "degraded": "Degraded"
+        "nominal": "Normal",
+        "watch": "Beobachten",
+        "degraded": "Beeinträchtigt"
       },
       "intel": {
-        "topDomains": "Top Domains",
-        "topVendors": "Top Vendors",
-        "guardrailHits": "Guardrail Hits",
-        "recentAnalyses": "Recent Analyses",
-        "none": "No analyses yet this session",
-        "unknownTag": "Unknown"
+        "topDomains": "Häufigste Domänen",
+        "topVendors": "Häufigste Hersteller",
+        "guardrailHits": "Schutzregel-Treffer",
+        "recentAnalyses": "Aktuelle Analysen",
+        "none": "In dieser Sitzung noch keine Analysen",
+        "unknownTag": "Unbekannt"
       },
       "status": {
-        "brainEngine": "Brain Engine",
+        "brainEngine": "Brain-Engine",
         "knowledgeCloud": "Knowledge Cloud",
-        "caseEngine": "Case Engine",
-        "telemetry": "Dashboard Telemetry",
-        "plcConnectivity": "PLC Connectivity",
+        "caseEngine": "Fall-Engine",
+        "telemetry": "Dashboard-Telemetrie",
+        "plcConnectivity": "PLC-Konnektivität",
         "online": "Online",
-        "simulated": "Simulated",
+        "simulated": "Simuliert",
         "phase2": "Phase 2"
       },
-      "sessionNote": "Session-scoped intelligence — resets when the server restarts (no database in V1)."
+      "sessionNote": "Sitzungsbezogene Intelligenz — wird beim Neustart des Servers zurückgesetzt (keine Datenbank in V1)."
     },
     "kpi": {
       "oee": "OEE",
-      "lines": "Active Lines",
-      "linesNote": "production lines",
-      "alarms": "Active Alarms",
-      "critical": "critical",
-      "risk": "Risk Score",
-      "power": "Power Draw",
-      "totalAlarms": "Total Alarms"
+      "lines": "Aktive Linien",
+      "linesNote": "Produktionslinien",
+      "alarms": "Aktive Alarme",
+      "critical": "kritisch",
+      "risk": "Risikowert",
+      "power": "Leistungsaufnahme",
+      "totalAlarms": "Alarme gesamt"
     },
-    "platformIntel": "Platform Intelligence",
+    "platformIntel": "Plattform-Intelligenz",
     "command": {
       "posture": {
-        "operational": "Operational",
-        "elevated": "Elevated attention",
-        "critical": "Critical attention",
-        "operationalNote": "No critical events. Systems within expected range.",
-        "elevatedNote": "High-priority events are active. Review the attention list.",
-        "criticalNote": "Critical events are active and need attention now."
+        "operational": "Betriebsbereit",
+        "elevated": "Erhöhte Aufmerksamkeit",
+        "critical": "Kritische Aufmerksamkeit",
+        "operationalNote": "Keine kritischen Ereignisse. Systeme im erwarteten Bereich.",
+        "elevatedNote": "Ereignisse mit hoher Priorität sind aktiv. Bitte die Aufmerksamkeitsliste prüfen.",
+        "criticalNote": "Kritische Ereignisse sind aktiv und erfordern sofortige Aufmerksamkeit."
       },
-      "summaryTitle": "Operational summary",
-      "lastUpdated": "Last updated",
-      "autoNote": "Simulated telemetry · refreshes automatically",
-      "reconnecting": "Reconnecting automatically…",
+      "summaryTitle": "Betriebsübersicht",
+      "lastUpdated": "Zuletzt aktualisiert",
+      "autoNote": "Simulierte Telemetrie · aktualisiert sich automatisch",
+      "reconnecting": "Verbindung wird automatisch wiederhergestellt…",
       "attention": {
-        "title": "Requires attention",
-        "empty": "Nothing needs attention right now. Critical and high-priority queues are clear.",
-        "view": "View",
-        "reasonCriticalAlarm": "Critical alarm active",
-        "reasonHighAlarm": "High-priority alarm active",
-        "reasonAssetCritical": "Asset flagged critical",
-        "reasonAssetDue": "Maintenance due",
-        "reasonRiskElevated": "Operational risk elevated",
-        "dueIn": "due in",
-        "days": "d"
+        "title": "Erfordert Aufmerksamkeit",
+        "empty": "Derzeit ist nichts zu beachten. Die Warteschlangen für kritische und hochpriorisierte Ereignisse sind leer.",
+        "view": "Ansehen",
+        "reasonCriticalAlarm": "Kritischer Alarm aktiv",
+        "reasonHighAlarm": "Alarm mit hoher Priorität aktiv",
+        "reasonAssetCritical": "Anlage als kritisch markiert",
+        "reasonAssetDue": "Instandhaltung fällig",
+        "reasonRiskElevated": "Betriebsrisiko erhöht",
+        "dueIn": "fällig in",
+        "days": "T"
       },
       "riskEvidence": {
-        "title": "Risk & evidence",
-        "riskLabel": "Operational risk",
-        "posture": "Risk posture",
-        "factorsTitle": "Contributing factors",
-        "evidenceTitle": "Evidence posture",
-        "supported": "Supported signals",
-        "watch": "Signals to watch",
-        "missing": "Awaiting data",
-        "confidenceLabel": "Safe-action readiness",
-        "readinessReady": "Ready",
-        "readinessGuarded": "Guarded",
-        "readinessHold": "Hold"
+        "title": "Risiko & Evidenz",
+        "riskLabel": "Betriebsrisiko",
+        "posture": "Risikolage",
+        "factorsTitle": "Beitragende Faktoren",
+        "evidenceTitle": "Evidenzlage",
+        "supported": "Gestützte Signale",
+        "watch": "Zu beobachtende Signale",
+        "missing": "Daten ausstehend",
+        "confidenceLabel": "Bereitschaft für sichere Maßnahmen",
+        "readinessReady": "Bereit",
+        "readinessGuarded": "Eingeschränkt",
+        "readinessHold": "Zurückhalten"
       },
       "actions": {
-        "title": "Safe actions",
-        "openBrain": "Open Industrial Brain",
-        "openBrainDesc": "Run explainable diagnostics on plant evidence.",
-        "openOperations": "Operations center",
-        "openOperationsDesc": "Review live operational status across the site.",
-        "openPredictive": "Predictive maintenance",
-        "openPredictiveDesc": "Inspect asset risk and remaining-useful-life indicators.",
-        "openKnowledge": "Knowledge base",
-        "openKnowledgeDesc": "Reference engineering libraries and diagnostic cases."
+        "title": "Sichere Maßnahmen",
+        "openBrain": "Industrial Brain öffnen",
+        "openBrainDesc": "Nachvollziehbare Diagnosen auf Anlagenevidenz ausführen.",
+        "openOperations": "Betriebszentrale",
+        "openOperationsDesc": "Aktuellen Betriebsstatus des Standorts prüfen.",
+        "openPredictive": "Prädiktive Instandhaltung",
+        "openPredictiveDesc": "Anlagenrisiko und Restnutzungsdauer-Indikatoren einsehen.",
+        "openKnowledge": "Wissensbasis",
+        "openKnowledgeDesc": "Engineering-Bibliotheken und Diagnosefälle nachschlagen."
       },
       "globalOps": {
-        "connectedAssets": "Connected Assets",
-        "knowledgeVolume": "Knowledge Libraries",
-        "engineeringCases": "Engineering Cases",
-        "supportedVendors": "Supported Vendors",
-        "platformPosture": "Risk-adjusted posture"
+        "connectedAssets": "Verbundene Anlagen",
+        "knowledgeVolume": "Wissensbibliotheken",
+        "engineeringCases": "Engineering-Fälle",
+        "supportedVendors": "Unterstützte Hersteller",
+        "platformPosture": "Risikobereinigte Lage"
       },
       "assetHealth": {
-        "title": "Asset health",
-        "critical": "Critical",
-        "high": "High",
-        "medium": "Medium",
-        "tracked": "Tracked",
-        "criticalWarning": "{count} critical asset(s) require immediate attention"
+        "title": "Anlagenzustand",
+        "critical": "Kritisch",
+        "high": "Hoch",
+        "medium": "Mittel",
+        "tracked": "Erfasst",
+        "criticalWarning": "{count} kritische Anlage(n) erfordern sofortige Aufmerksamkeit"
       },
       "sections": {
-        "telemetryControl": "Telemetry · Process · Control Systems",
-        "intelligenceNetwork": "Intelligence Network"
+        "telemetryControl": "Telemetrie · Prozess · Leitsysteme",
+        "intelligenceNetwork": "Intelligenznetz"
       },
       "signal": {
-        "siteOperational": "Site Operational",
-        "highPriorityEvents": "High Priority Events",
-        "criticalEventsActive": "Critical Events Active",
-        "linesActive": "{active}/{total} Lines Active"
+        "siteOperational": "Standort betriebsbereit",
+        "highPriorityEvents": "Ereignisse mit hoher Priorität",
+        "criticalEventsActive": "Kritische Ereignisse aktiv",
+        "linesActive": "{active}/{total} Linien aktiv"
       },
       "unavailable": {
-        "title": "Operational data unavailable",
-        "body": "The telemetry summary could not be loaded. No cached operational data is available to display.",
-        "hint": "The dashboard reconnects automatically. If this persists, check the telemetry integration status."
+        "title": "Betriebsdaten nicht verfügbar",
+        "body": "Die Telemetrieübersicht konnte nicht geladen werden. Es sind keine zwischengespeicherten Betriebsdaten zur Anzeige vorhanden.",
+        "hint": "Das Dashboard verbindet sich automatisch neu. Falls dies anhält, den Status der Telemetrie-Integration prüfen."
       }
     }
   },
@@ -6153,308 +6153,308 @@
   },
   "businessOps": {
     "header": {
-      "eyebrow": "Business Operations",
-      "title": "Business Operations",
-      "purpose": "Projects, work orders, approvals and inventory — one tenant-scoped operations surface.",
-      "demoBadge": "Demo data"
+      "eyebrow": "Geschäftsbetrieb",
+      "title": "Geschäftsbetrieb",
+      "purpose": "Projekte, Arbeitsaufträge, Freigaben und Bestand — eine mandantenbezogene Betriebsoberfläche.",
+      "demoBadge": "Demodaten"
     },
     "attention": {
-      "title": "Requires attention",
-      "empty": "No operational items need attention right now. Approvals, overdue and inventory queues are clear.",
-      "view": "Open",
-      "severityAction": "Action needed",
-      "severityReview": "Review",
-      "overdueTasks": "{count} task(s) overdue",
-      "pendingApprovals": "{count} approval(s) awaiting review",
-      "inventoryLow": "{count} inventory item(s) at or below reorder level",
-      "blockedTasks": "{count} task(s) blocked",
-      "woWaitingApproval": "{count} work order(s) waiting on approval"
+      "title": "Erfordert Aufmerksamkeit",
+      "empty": "Derzeit erfordert kein operativer Vorgang Aufmerksamkeit. Freigabe-, Überfälligkeits- und Bestandswarteschlangen sind leer.",
+      "view": "Öffnen",
+      "severityAction": "Maßnahme erforderlich",
+      "severityReview": "Prüfen",
+      "overdueTasks": "{count} Aufgabe(n) überfällig",
+      "pendingApprovals": "{count} Freigabe(n) warten auf Prüfung",
+      "inventoryLow": "{count} Bestandsposition(en) auf oder unter Meldebestand",
+      "blockedTasks": "{count} Aufgabe(n) blockiert",
+      "woWaitingApproval": "{count} Arbeitsauftrag/-aufträge warten auf Freigabe"
     },
     "sections": {
-      "operationalStatus": "Operational status",
-      "budget": "Budget summary",
-      "activity": "Recent activity",
-      "kpis": "Operational KPIs",
-      "actions": "Next actions"
+      "operationalStatus": "Betriebsstatus",
+      "budget": "Budgetübersicht",
+      "activity": "Aktuelle Aktivität",
+      "kpis": "Betriebskennzahlen",
+      "actions": "Nächste Schritte"
     },
     "status": {
       "project": {
-        "PLANNED": "Planned",
-        "ACTIVE": "Active",
-        "ON_HOLD": "On hold",
-        "COMPLETED": "Completed",
-        "CANCELLED": "Cancelled"
+        "PLANNED": "Geplant",
+        "ACTIVE": "Aktiv",
+        "ON_HOLD": "Angehalten",
+        "COMPLETED": "Abgeschlossen",
+        "CANCELLED": "Storniert"
       },
       "task": {
-        "TODO": "To do",
-        "IN_PROGRESS": "In progress",
-        "BLOCKED": "Blocked",
-        "REVIEW": "Review",
-        "DONE": "Done",
-        "CANCELLED": "Cancelled"
+        "TODO": "Offen",
+        "IN_PROGRESS": "In Bearbeitung",
+        "BLOCKED": "Blockiert",
+        "REVIEW": "In Prüfung",
+        "DONE": "Erledigt",
+        "CANCELLED": "Storniert"
       },
       "workOrder": {
-        "OPEN": "Open",
-        "ASSIGNED": "Assigned",
-        "IN_PROGRESS": "In progress",
-        "WAITING_APPROVAL": "Waiting approval",
-        "COMPLETED": "Completed",
-        "CANCELLED": "Cancelled"
+        "OPEN": "Offen",
+        "ASSIGNED": "Zugewiesen",
+        "IN_PROGRESS": "In Bearbeitung",
+        "WAITING_APPROVAL": "Wartet auf Freigabe",
+        "COMPLETED": "Abgeschlossen",
+        "CANCELLED": "Storniert"
       },
       "approval": {
-        "PENDING": "Pending",
-        "APPROVED": "Approved",
-        "REJECTED": "Rejected",
-        "CANCELLED": "Cancelled"
+        "PENDING": "Ausstehend",
+        "APPROVED": "Freigegeben",
+        "REJECTED": "Abgelehnt",
+        "CANCELLED": "Storniert"
       }
     },
     "groups": {
-      "projects": "Projects",
-      "tasks": "Tasks",
-      "workOrders": "Work orders"
+      "projects": "Projekte",
+      "tasks": "Aufgaben",
+      "workOrders": "Arbeitsaufträge"
     },
     "budget": {
-      "total": "Total budget",
-      "actual": "Actual cost",
-      "variance": "Variance",
-      "note": "Derived from project budget and recorded actual cost."
+      "total": "Gesamtbudget",
+      "actual": "Ist-Kosten",
+      "variance": "Abweichung",
+      "note": "Abgeleitet aus Projektbudget und erfassten Ist-Kosten."
     },
     "activity": {
-      "task_completed": "Task completed",
-      "work_order_completed": "Work order completed",
-      "approval_decided": "Approval decided",
-      "empty": "No recent operational activity."
+      "task_completed": "Aufgabe abgeschlossen",
+      "work_order_completed": "Arbeitsauftrag abgeschlossen",
+      "approval_decided": "Freigabe entschieden",
+      "empty": "Keine aktuelle operative Aktivität."
     },
-    "kpiTarget": "Target {value}",
+    "kpiTarget": "Ziel {value}",
     "actions": {
-      "openProjects": "Review projects",
-      "openProjectsDesc": "Active projects, phases and owners.",
-      "openApprovals": "Review approvals",
-      "openApprovalsDesc": "Requests awaiting a decision.",
-      "openTasks": "Open tasks",
-      "openTasksDesc": "Overdue and blocked work items.",
-      "openWorkOrders": "Work orders",
-      "openWorkOrdersDesc": "Open and in-progress work orders."
+      "openProjects": "Projekte prüfen",
+      "openProjectsDesc": "Aktive Projekte, Phasen und Verantwortliche.",
+      "openApprovals": "Freigaben prüfen",
+      "openApprovalsDesc": "Anfragen, die auf eine Entscheidung warten.",
+      "openTasks": "Aufgaben öffnen",
+      "openTasksDesc": "Überfällige und blockierte Vorgänge.",
+      "openWorkOrders": "Arbeitsaufträge",
+      "openWorkOrdersDesc": "Offene und laufende Arbeitsaufträge."
     },
     "states": {
-      "loading": "Loading operations data…",
-      "unavailableTitle": "Operations data unavailable",
-      "unavailableBody": "The business-operations summary could not be loaded. Check your access or open a module directly."
+      "loading": "Betriebsdaten werden geladen…",
+      "unavailableTitle": "Betriebsdaten nicht verfügbar",
+      "unavailableBody": "Die Übersicht zum Geschäftsbetrieb konnte nicht geladen werden. Prüfen Sie Ihre Zugriffsrechte oder öffnen Sie ein Modul direkt."
     }
   },
   "assetMaintenance": {
     "assets": {
-      "eyebrow": "Asset Registry",
-      "title": "Asset Registry",
-      "purpose": "Equipment identity, criticality, operational status and maintenance context — tenant-scoped.",
-      "demoBadge": "Demo data"
+      "eyebrow": "Anlagenregister",
+      "title": "Anlagenregister",
+      "purpose": "Identität, Kritikalität, Betriebsstatus und Instandhaltungskontext von Betriebsmitteln — mandantenbezogen.",
+      "demoBadge": "Demodaten"
     },
     "cmms": {
-      "eyebrow": "Maintenance",
-      "purpose": "Work orders, plans, inspections and failure records for the maintenance team.",
-      "demoBadge": "Demo data"
+      "eyebrow": "Instandhaltung",
+      "purpose": "Arbeitsaufträge, Pläne, Inspektionen und Ausfallmeldungen für das Instandhaltungsteam.",
+      "demoBadge": "Demodaten"
     },
     "attention": {
-      "title": "Requires attention",
-      "emptyAssets": "No assets need attention right now. Criticality, degradation and documentation queues are clear.",
-      "emptyMaintenance": "No maintenance work needs attention right now. Overdue and blocked queues are clear.",
-      "view": "Open",
-      "severityAction": "Action needed",
-      "severityReview": "Review",
-      "criticalAssets": "{count} asset(s) at critical criticality",
-      "degradedAssets": "{count} asset(s) in a degraded state",
-      "atRiskAssets": "{count} asset(s) flagged at-risk",
-      "assetsWithOpenWO": "{count} asset(s) with open maintenance work",
-      "assetsMissingDocs": "{count} asset(s) missing linked documentation",
-      "overdueWork": "{count} maintenance task(s) overdue",
-      "blockedWork": "{count} maintenance task(s) on hold",
-      "openFailures": "{count} recent failure record(s) to review",
-      "upcomingWork": "{count} maintenance task(s) scheduled next"
+      "title": "Erfordert Aufmerksamkeit",
+      "emptyAssets": "Derzeit erfordert keine Anlage Aufmerksamkeit. Die Warteschlangen für Kritikalität, Degradation und Dokumentation sind leer.",
+      "emptyMaintenance": "Derzeit erfordert keine Instandhaltungsarbeit Aufmerksamkeit. Überfällige und blockierte Warteschlangen sind leer.",
+      "view": "Öffnen",
+      "severityAction": "Maßnahme erforderlich",
+      "severityReview": "Prüfen",
+      "criticalAssets": "{count} Anlage(n) mit kritischer Kritikalität",
+      "degradedAssets": "{count} Anlage(n) in beeinträchtigtem Zustand",
+      "atRiskAssets": "{count} Anlage(n) als gefährdet markiert",
+      "assetsWithOpenWO": "{count} Anlage(n) mit offener Instandhaltungsarbeit",
+      "assetsMissingDocs": "{count} Anlage(n) ohne verknüpfte Dokumentation",
+      "overdueWork": "{count} Instandhaltungsauftrag/-aufträge überfällig",
+      "blockedWork": "{count} Instandhaltungsauftrag/-aufträge angehalten",
+      "openFailures": "{count} aktuelle Ausfallmeldung(en) zu prüfen",
+      "upcomingWork": "{count} Instandhaltungsauftrag/-aufträge als Nächstes geplant"
     },
     "sections": {
-      "assetStatus": "Asset operational status",
-      "criticality": "Criticality distribution",
-      "health": "Health distribution",
-      "criticalWatch": "Critical asset watch",
-      "lifecycle": "Recent lifecycle events",
-      "workFlow": "Work-order flow",
-      "priority": "Work by priority",
-      "upcoming": "Upcoming maintenance",
-      "failures": "Recent failure records",
-      "reliability": "Reliability indicators",
-      "actions": "Next actions"
+      "assetStatus": "Betriebsstatus der Anlagen",
+      "criticality": "Kritikalitätsverteilung",
+      "health": "Zustandsverteilung",
+      "criticalWatch": "Überwachung kritischer Anlagen",
+      "lifecycle": "Aktuelle Lebenszyklusereignisse",
+      "workFlow": "Arbeitsauftragsfluss",
+      "priority": "Arbeiten nach Priorität",
+      "upcoming": "Anstehende Instandhaltung",
+      "failures": "Aktuelle Ausfallmeldungen",
+      "reliability": "Zuverlässigkeitskennzahlen",
+      "actions": "Nächste Schritte"
     },
     "assetStatus": {
-      "PLANNED": "Planned",
-      "COMMISSIONED": "Commissioned",
-      "IN_SERVICE": "In service",
-      "DEGRADED": "Degraded",
-      "UNDER_MAINTENANCE": "Under maintenance",
-      "STANDBY": "Standby",
-      "RETIRED": "Retired",
-      "REPLACED": "Replaced",
-      "DECOMMISSIONED": "Decommissioned"
+      "PLANNED": "Geplant",
+      "COMMISSIONED": "In Betrieb genommen",
+      "IN_SERVICE": "In Betrieb",
+      "DEGRADED": "Beeinträchtigt",
+      "UNDER_MAINTENANCE": "In Instandhaltung",
+      "STANDBY": "Bereitschaft",
+      "RETIRED": "Ausgemustert",
+      "REPLACED": "Ersetzt",
+      "DECOMMISSIONED": "Außer Betrieb genommen"
     },
     "criticality": {
-      "NON_CRITICAL": "Non-critical",
-      "LOW": "Low",
-      "MEDIUM": "Medium",
-      "HIGH": "High",
-      "CRITICAL": "Critical"
+      "NON_CRITICAL": "Nicht kritisch",
+      "LOW": "Niedrig",
+      "MEDIUM": "Mittel",
+      "HIGH": "Hoch",
+      "CRITICAL": "Kritisch"
     },
     "risk": {
-      "HEALTHY": "Healthy",
-      "MONITOR": "Monitor",
-      "AT_RISK": "At risk",
-      "CRITICAL": "Critical",
-      "UNKNOWN": "Unknown"
+      "HEALTHY": "Gesund",
+      "MONITOR": "Beobachten",
+      "AT_RISK": "Gefährdet",
+      "CRITICAL": "Kritisch",
+      "UNKNOWN": "Unbekannt"
     },
     "maintenanceStatus": {
-      "DRAFT": "Draft",
-      "PLANNED": "Planned",
-      "SCHEDULED": "Scheduled",
-      "IN_PROGRESS": "In progress",
-      "ON_HOLD": "On hold",
-      "COMPLETED": "Completed",
-      "CANCELLED": "Cancelled",
-      "OVERDUE": "Overdue"
+      "DRAFT": "Entwurf",
+      "PLANNED": "Geplant",
+      "SCHEDULED": "Terminiert",
+      "IN_PROGRESS": "In Bearbeitung",
+      "ON_HOLD": "Angehalten",
+      "COMPLETED": "Abgeschlossen",
+      "CANCELLED": "Storniert",
+      "OVERDUE": "Überfällig"
     },
     "maintenancePriority": {
-      "LOW": "Low",
-      "MEDIUM": "Medium",
-      "HIGH": "High",
-      "CRITICAL": "Critical",
-      "EMERGENCY": "Emergency"
+      "LOW": "Niedrig",
+      "MEDIUM": "Mittel",
+      "HIGH": "Hoch",
+      "CRITICAL": "Kritisch",
+      "EMERGENCY": "Notfall"
     },
     "fields": {
-      "totalAssets": "Assets on register",
-      "site": "Site",
-      "location": "Location",
-      "manufacturer": "Manufacturer",
-      "model": "Model",
-      "serialNumber": "Serial number",
-      "criticalityLabel": "Criticality",
-      "statusLabel": "Operational status",
-      "dueDate": "Due date",
-      "assignee": "Assignee",
-      "noAssignee": "Unassigned",
-      "noDueDate": "No due date",
-      "noSite": "No site recorded"
+      "totalAssets": "Anlagen im Register",
+      "site": "Standort",
+      "location": "Einbauort",
+      "manufacturer": "Hersteller",
+      "model": "Modell",
+      "serialNumber": "Seriennummer",
+      "criticalityLabel": "Kritikalität",
+      "statusLabel": "Betriebsstatus",
+      "dueDate": "Fälligkeitsdatum",
+      "assignee": "Zuständig",
+      "noAssignee": "Nicht zugewiesen",
+      "noDueDate": "Kein Fälligkeitsdatum",
+      "noSite": "Kein Standort erfasst"
     },
     "reliability": {
       "mtbf": "MTBF",
       "mttr": "MTTR",
-      "availability": "Availability",
-      "compliance": "Maintenance compliance",
+      "availability": "Verfügbarkeit",
+      "compliance": "Instandhaltungstreue",
       "hours": "h",
-      "note": "Computed by the existing CMMS reliability calculation over recorded maintenance and failure history."
+      "note": "Berechnet durch die bestehende CMMS-Zuverlässigkeitsrechnung über erfasste Instandhaltungs- und Ausfallhistorie."
     },
     "crossLinks": {
-      "toCmms": "Open maintenance",
-      "toCmmsDesc": "Work orders and plans for these assets.",
-      "toAssets": "Open asset registry",
-      "toAssetsDesc": "Equipment identity, criticality and hierarchy."
+      "toCmms": "Instandhaltung öffnen",
+      "toCmmsDesc": "Arbeitsaufträge und Pläne zu diesen Anlagen.",
+      "toAssets": "Anlagenregister öffnen",
+      "toAssetsDesc": "Identität, Kritikalität und Hierarchie der Betriebsmittel."
     },
     "actions": {
-      "registry": "Asset registry",
-      "registryDesc": "Browse and search the equipment register.",
-      "hierarchy": "Asset hierarchy",
-      "hierarchyDesc": "Parent/child equipment structure.",
-      "health": "Asset health",
-      "healthDesc": "Health snapshots and at-risk equipment.",
-      "criticality": "Criticality review",
-      "criticalityDesc": "Criticality assessments per asset.",
-      "workOrders": "Work orders",
-      "workOrdersDesc": "Open, overdue and in-progress maintenance work.",
-      "plans": "Maintenance plans",
-      "plansDesc": "Preventive plans and recurring schedules.",
-      "schedules": "Maintenance schedule",
-      "schedulesDesc": "Scheduled and upcoming maintenance.",
-      "failures": "Failure records",
-      "failuresDesc": "Reported failures and corrective work."
+      "registry": "Anlagenregister",
+      "registryDesc": "Das Betriebsmittelregister durchsuchen und filtern.",
+      "hierarchy": "Anlagenhierarchie",
+      "hierarchyDesc": "Über-/untergeordnete Struktur der Betriebsmittel.",
+      "health": "Anlagenzustand",
+      "healthDesc": "Zustandsaufnahmen und gefährdete Betriebsmittel.",
+      "criticality": "Kritikalitätsprüfung",
+      "criticalityDesc": "Kritikalitätsbewertungen je Anlage.",
+      "workOrders": "Arbeitsaufträge",
+      "workOrdersDesc": "Offene, überfällige und laufende Instandhaltungsarbeiten.",
+      "plans": "Instandhaltungspläne",
+      "plansDesc": "Vorbeugende Pläne und wiederkehrende Termine.",
+      "schedules": "Instandhaltungsplan",
+      "schedulesDesc": "Terminierte und anstehende Instandhaltung.",
+      "failures": "Ausfallmeldungen",
+      "failuresDesc": "Gemeldete Ausfälle und korrektive Arbeiten."
     },
     "states": {
-      "loading": "Loading asset and maintenance data…",
-      "unavailableTitle": "Asset and maintenance data unavailable",
-      "unavailableBody": "The summary could not be loaded. Check your access or open a module directly.",
-      "emptyRegistry": "No assets are registered yet. Registered equipment appears here.",
-      "noMaintenance": "No maintenance records yet. Work orders and plans appear here.",
-      "noLifecycle": "No recent lifecycle events recorded.",
-      "noUpcoming": "No maintenance is currently scheduled.",
-      "noFailures": "No failure records reported."
+      "loading": "Anlagen- und Instandhaltungsdaten werden geladen…",
+      "unavailableTitle": "Anlagen- und Instandhaltungsdaten nicht verfügbar",
+      "unavailableBody": "Die Übersicht konnte nicht geladen werden. Prüfen Sie Ihre Zugriffsrechte oder öffnen Sie ein Modul direkt.",
+      "emptyRegistry": "Es sind noch keine Anlagen registriert. Registrierte Betriebsmittel erscheinen hier.",
+      "noMaintenance": "Noch keine Instandhaltungsdaten. Arbeitsaufträge und Pläne erscheinen hier.",
+      "noLifecycle": "Keine aktuellen Lebenszyklusereignisse erfasst.",
+      "noUpcoming": "Derzeit ist keine Instandhaltung terminiert.",
+      "noFailures": "Keine Ausfälle gemeldet."
     },
-    "analysisNote": "Analytical signal — not a confirmed failure record.",
+    "analysisNote": "Analytisches Signal — keine bestätigte Ausfallmeldung.",
     "lifecycle": {
-      "DESIGN": "Design",
-      "PROCUREMENT": "Procurement",
-      "INSTALLATION": "Installation",
-      "COMMISSIONING": "Commissioning",
-      "IN_SERVICE": "In service",
-      "DEGRADED": "Degraded",
-      "DECOMMISSIONING": "Decommissioning",
-      "RETIRED": "Retired"
+      "DESIGN": "Planung",
+      "PROCUREMENT": "Beschaffung",
+      "INSTALLATION": "Montage",
+      "COMMISSIONING": "Inbetriebnahme",
+      "IN_SERVICE": "In Betrieb",
+      "DEGRADED": "Beeinträchtigt",
+      "DECOMMISSIONING": "Außerbetriebnahme",
+      "RETIRED": "Ausgemustert"
     },
     "assetType": {
-      "PRODUCTION_LINE": "Production line",
-      "MACHINE": "Machine",
+      "PRODUCTION_LINE": "Produktionslinie",
+      "MACHINE": "Maschine",
       "PLC": "PLC",
       "HMI": "HMI",
-      "SCADA_NODE": "SCADA node",
-      "ELECTRICAL_PANEL": "Electrical panel",
-      "MCC_PANEL": "MCC panel",
+      "SCADA_NODE": "SCADA-Knoten",
+      "ELECTRICAL_PANEL": "Schaltschrank",
+      "MCC_PANEL": "MCC-Schaltanlage",
       "VFD": "VFD",
       "MOTOR": "Motor",
-      "PUMP": "Pump",
-      "VALVE": "Valve",
+      "PUMP": "Pumpe",
+      "VALVE": "Ventil",
       "SENSOR": "Sensor",
-      "INSTRUMENT": "Instrument",
-      "ROBOT": "Robot",
-      "CONVEYOR": "Conveyor",
-      "COMPRESSOR": "Compressor",
-      "UTILITY_SYSTEM": "Utility system",
-      "SAFETY_SYSTEM": "Safety system",
-      "NETWORK_DEVICE": "Network device",
-      "INDUSTRIAL_PC": "Industrial PC"
+      "INSTRUMENT": "Messgerät",
+      "ROBOT": "Roboter",
+      "CONVEYOR": "Förderband",
+      "COMPRESSOR": "Kompressor",
+      "UTILITY_SYSTEM": "Versorgungssystem",
+      "SAFETY_SYSTEM": "Sicherheitssystem",
+      "NETWORK_DEVICE": "Netzwerkgerät",
+      "INDUSTRIAL_PC": "Industrie-PC"
     }
   },
   "engineeringDocuments": {
     "header": {
-      "eyebrow": "Engineering Documents",
-      "purpose": "Controlled engineering documents, revisions, reviews and approvals — tenant-scoped.",
-      "demoBadge": "Demo data",
-      "demoNote": "The document dashboard currently serves the built-in demonstration dataset; no database source is wired for this summary."
+      "eyebrow": "Engineering-Dokumente",
+      "purpose": "Gelenkte Engineering-Dokumente, Revisionen, Prüfungen und Freigaben — mandantenbezogen.",
+      "demoBadge": "Demodaten",
+      "demoNote": "Das Dokumenten-Dashboard nutzt derzeit den integrierten Demonstrationsdatensatz; für diese Übersicht ist keine Datenbankquelle angebunden."
     },
     "attention": {
-      "title": "Requires attention",
-      "empty": "No documents need attention right now. Review, approval and checkout queues are clear.",
-      "view": "Open",
-      "severityAction": "Action needed",
-      "severityReview": "Review",
-      "pendingApprovals": "{count} approval(s) awaiting a decision",
-      "inReview": "{count} document(s) in review",
-      "rejected": "{count} document(s) returned for correction",
-      "checkedOut": "{count} document(s) checked out",
-      "missingRevision": "{count} document(s) without a current revision"
+      "title": "Erfordert Aufmerksamkeit",
+      "empty": "Derzeit erfordert kein Dokument Aufmerksamkeit. Prüf-, Freigabe- und Auscheck-Warteschlangen sind leer.",
+      "view": "Öffnen",
+      "severityAction": "Maßnahme erforderlich",
+      "severityReview": "Prüfen",
+      "pendingApprovals": "{count} Freigabe(n) warten auf Entscheidung",
+      "inReview": "{count} Dokument(e) in Prüfung",
+      "rejected": "{count} Dokument(e) zur Korrektur zurückgegeben",
+      "checkedOut": "{count} Dokument(e) ausgecheckt",
+      "missingRevision": "{count} Dokument(e) ohne gültige Revision"
     },
     "sections": {
-      "workflow": "Document workflow",
-      "byType": "Documents by type",
-      "register": "Recently updated documents",
-      "activity": "Recent controlled-document activity",
-      "actions": "Next actions"
+      "workflow": "Dokumenten-Workflow",
+      "byType": "Dokumente nach Typ",
+      "register": "Zuletzt aktualisierte Dokumente",
+      "activity": "Aktuelle Aktivität gelenkter Dokumente",
+      "actions": "Nächste Schritte"
     },
     "status": {
-      "DRAFT": "Draft",
-      "REVIEW": "In review",
-      "APPROVED": "Approved",
-      "REJECTED": "Returned for correction",
-      "ARCHIVED": "Archived",
-      "OBSOLETE": "Obsolete"
+      "DRAFT": "Entwurf",
+      "REVIEW": "In Prüfung",
+      "APPROVED": "Freigegeben",
+      "REJECTED": "Zur Korrektur zurückgegeben",
+      "ARCHIVED": "Archiviert",
+      "OBSOLETE": "Ungültig"
     },
     "approvalStatus": {
-      "PENDING": "Pending",
-      "APPROVED": "Approved",
-      "REJECTED": "Rejected"
+      "PENDING": "Ausstehend",
+      "APPROVED": "Freigegeben",
+      "REJECTED": "Abgelehnt"
     },
     "revisionType": {
       "MAJOR": "Major",
@@ -6462,173 +6462,173 @@
       "PATCH": "Patch"
     },
     "docType": {
-      "ENGINEERING_DRAWING": "Engineering drawing",
+      "ENGINEERING_DRAWING": "Technische Zeichnung",
       "PID": "P&ID",
-      "ELECTRICAL_DRAWING": "Electrical drawing",
-      "PLC_PROGRAM": "PLC program",
-      "SCADA_PROJECT": "SCADA project",
-      "COMMISSIONING_REPORT": "Commissioning report",
-      "INSPECTION_REPORT": "Inspection report",
+      "ELECTRICAL_DRAWING": "Elektrozeichnung",
+      "PLC_PROGRAM": "PLC-Programm",
+      "SCADA_PROJECT": "SCADA-Projekt",
+      "COMMISSIONING_REPORT": "Inbetriebnahmebericht",
+      "INSPECTION_REPORT": "Prüfbericht",
       "FAT": "FAT",
       "SAT": "SAT",
-      "MANUAL": "Manual",
-      "PROCEDURE": "Procedure",
-      "WORK_INSTRUCTION": "Work instruction",
-      "CERTIFICATE": "Certificate",
-      "VENDOR_DATASHEET": "Vendor datasheet",
-      "CONTRACT": "Contract",
-      "QUOTATION": "Quotation",
-      "INVOICE": "Invoice",
-      "OTHER": "Other"
+      "MANUAL": "Handbuch",
+      "PROCEDURE": "Verfahrensanweisung",
+      "WORK_INSTRUCTION": "Arbeitsanweisung",
+      "CERTIFICATE": "Zertifikat",
+      "VENDOR_DATASHEET": "Herstellerdatenblatt",
+      "CONTRACT": "Vertrag",
+      "QUOTATION": "Angebot",
+      "INVOICE": "Rechnung",
+      "OTHER": "Sonstiges"
     },
     "fields": {
-      "documents": "Documents on register",
-      "currentRevision": "Current revision",
-      "noRevision": "No current revision",
-      "documentType": "Document type",
-      "owner": "Owner",
-      "noOwner": "No owner assigned",
-      "project": "Project",
-      "site": "Site",
-      "asset": "Linked asset",
-      "workOrder": "Work order",
-      "noLinkedContext": "No linked project, site or asset",
-      "updated": "Updated",
-      "linkedContext": "Linked engineering context"
+      "documents": "Dokumente im Register",
+      "currentRevision": "Gültige Revision",
+      "noRevision": "Keine gültige Revision",
+      "documentType": "Dokumententyp",
+      "owner": "Verantwortlich",
+      "noOwner": "Kein Verantwortlicher zugewiesen",
+      "project": "Projekt",
+      "site": "Standort",
+      "asset": "Verknüpfte Anlage",
+      "workOrder": "Arbeitsauftrag",
+      "noLinkedContext": "Kein verknüpftes Projekt, kein Standort, keine Anlage",
+      "updated": "Aktualisiert",
+      "linkedContext": "Verknüpfter Engineering-Kontext"
     },
     "actions": {
-      "explorer": "Document register",
-      "explorerDesc": "Browse and filter the controlled document register.",
-      "approvals": "Review & approvals",
-      "approvalsDesc": "Documents awaiting a review or approval decision.",
-      "revisions": "Revision history",
-      "revisionsDesc": "Revision records across controlled documents.",
-      "search": "Search documents",
-      "searchDesc": "Find a document by number, title or keyword."
+      "explorer": "Dokumentenregister",
+      "explorerDesc": "Das Register gelenkter Dokumente durchsuchen und filtern.",
+      "approvals": "Prüfung & Freigaben",
+      "approvalsDesc": "Dokumente, die auf eine Prüf- oder Freigabeentscheidung warten.",
+      "revisions": "Revisionshistorie",
+      "revisionsDesc": "Revisionseinträge über gelenkte Dokumente hinweg.",
+      "search": "Dokumente suchen",
+      "searchDesc": "Ein Dokument über Nummer, Titel oder Stichwort finden."
     },
     "states": {
-      "loading": "Loading document data…",
-      "unavailableTitle": "Document data unavailable",
-      "unavailableBody": "The document summary could not be loaded. Check your access or open the register directly.",
-      "emptyRegister": "No documents are registered yet. Registered documents appear here.",
-      "noActivity": "No recent controlled-document activity."
+      "loading": "Dokumentendaten werden geladen…",
+      "unavailableTitle": "Dokumentendaten nicht verfügbar",
+      "unavailableBody": "Die Dokumentenübersicht konnte nicht geladen werden. Prüfen Sie Ihre Zugriffsrechte oder öffnen Sie das Register direkt.",
+      "emptyRegister": "Es sind noch keine Dokumente registriert. Registrierte Dokumente erscheinen hier.",
+      "noActivity": "Keine aktuelle Aktivität gelenkter Dokumente."
     },
     "distinction": {
-      "controlled": "Controlled engineering document — distinct from public knowledge articles and diagnostic case evidence."
+      "controlled": "Gelenktes Engineering-Dokument — zu unterscheiden von öffentlichen Wissensartikeln und diagnostischen Fallnachweisen."
     }
   },
   "orgAdministration": {
     "header": {
       "eyebrow": "Administration",
-      "purpose": "Members, invitations, access and the platform subscription for this organization."
+      "purpose": "Mitglieder, Einladungen, Zugriff und das Plattformabonnement dieser Organisation."
     },
     "attention": {
-      "title": "Requires attention",
-      "empty": "No administrative items need attention right now. Membership, invitation and subscription queues are clear.",
-      "view": "Open",
-      "severityAction": "Action needed",
-      "severityReview": "Review",
-      "pastDue": "Subscription is past due — billing action required",
-      "subscriptionEnded": "Subscription is no longer active",
-      "noSubscription": "No subscription record for this organization",
-      "expiredInvitations": "{count} invitation(s) expired",
-      "pendingInvitations": "{count} invitation(s) awaiting acceptance",
-      "suspendedMembers": "{count} member(s) suspended",
-      "invitedMembers": "{count} member(s) have not completed onboarding",
-      "limitReached": "{count} plan limit(s) reached"
+      "title": "Erfordert Aufmerksamkeit",
+      "empty": "Derzeit erfordert kein administrativer Vorgang Aufmerksamkeit. Mitglieds-, Einladungs- und Abonnementwarteschlangen sind leer.",
+      "view": "Öffnen",
+      "severityAction": "Maßnahme erforderlich",
+      "severityReview": "Prüfen",
+      "pastDue": "Abonnement ist überfällig — Abrechnungsmaßnahme erforderlich",
+      "subscriptionEnded": "Abonnement ist nicht mehr aktiv",
+      "noSubscription": "Kein Abonnementeintrag für diese Organisation",
+      "expiredInvitations": "{count} Einladung(en) abgelaufen",
+      "pendingInvitations": "{count} Einladung(en) warten auf Annahme",
+      "suspendedMembers": "{count} Mitglied(er) gesperrt",
+      "invitedMembers": "{count} Mitglied(er) haben die Aufnahme nicht abgeschlossen",
+      "limitReached": "{count} Tariflimit(s) erreicht"
     },
     "sections": {
-      "membership": "Membership and access",
-      "invitations": "Invitations",
-      "subscription": "Plan and subscription",
-      "usage": "Usage against plan limits",
-      "actions": "Next actions"
+      "membership": "Mitgliedschaft und Zugriff",
+      "invitations": "Einladungen",
+      "subscription": "Tarif und Abonnement",
+      "usage": "Nutzung gegenüber Tariflimits",
+      "actions": "Nächste Schritte"
     },
     "memberStatus": {
-      "ACTIVE": "Active",
-      "INVITED": "Invited",
-      "SUSPENDED": "Suspended"
+      "ACTIVE": "Aktiv",
+      "INVITED": "Eingeladen",
+      "SUSPENDED": "Gesperrt"
     },
     "invitationStatus": {
-      "PENDING": "Pending",
-      "ACCEPTED": "Accepted",
-      "REJECTED": "Rejected",
-      "EXPIRED": "Expired"
+      "PENDING": "Ausstehend",
+      "ACCEPTED": "Angenommen",
+      "REJECTED": "Abgelehnt",
+      "EXPIRED": "Abgelaufen"
     },
     "subscriptionStatus": {
-      "TRIALING": "Trialing",
-      "ACTIVE": "Active",
-      "PAST_DUE": "Past due",
-      "CANCELED": "Cancelled",
-      "EXPIRED": "Expired"
+      "TRIALING": "Testphase",
+      "ACTIVE": "Aktiv",
+      "PAST_DUE": "Überfällig",
+      "CANCELED": "Gekündigt",
+      "EXPIRED": "Abgelaufen"
     },
     "role": {
-      "OWNER": "Owner",
+      "OWNER": "Inhaber",
       "ADMIN": "Administrator",
       "MANAGER": "Manager",
-      "ENGINEER": "Engineer",
-      "VIEWER": "Viewer",
-      "BILLING_ADMIN": "Billing administrator",
-      "MEMBER": "Member"
+      "ENGINEER": "Ingenieur",
+      "VIEWER": "Betrachter",
+      "BILLING_ADMIN": "Abrechnungsadministrator",
+      "MEMBER": "Mitglied"
     },
     "billingCycle": {
-      "MONTHLY": "Monthly",
-      "YEARLY": "Yearly"
+      "MONTHLY": "Monatlich",
+      "YEARLY": "Jährlich"
     },
     "fields": {
-      "organization": "Organization",
-      "members": "Members",
-      "totalMembers": "Members on the organization",
-      "plan": "Plan",
-      "noPlan": "No plan on record",
-      "cycle": "Billing interval",
-      "startsAt": "Started",
-      "expiresAt": "Renews or ends",
-      "autoRenewOn": "Auto-renew enabled",
-      "autoRenewOff": "Auto-renew disabled",
-      "invitedOn": "Invited",
-      "expiresOn": "Expires",
-      "used": "Used",
+      "organization": "Organisation",
+      "members": "Mitglieder",
+      "totalMembers": "Mitglieder der Organisation",
+      "plan": "Tarif",
+      "noPlan": "Kein Tarif hinterlegt",
+      "cycle": "Abrechnungszeitraum",
+      "startsAt": "Beginn",
+      "expiresAt": "Verlängert sich oder endet",
+      "autoRenewOn": "Automatische Verlängerung aktiv",
+      "autoRenewOff": "Automatische Verlängerung deaktiviert",
+      "invitedOn": "Eingeladen am",
+      "expiresOn": "Läuft ab",
+      "used": "Verbraucht",
       "limit": "Limit",
-      "unlimited": "Unlimited",
-      "unavailable": "Not measured",
-      "unavailableNote": "This metric has no usage record for the current period — it is not reported as zero."
+      "unlimited": "Unbegrenzt",
+      "unavailable": "Nicht erfasst",
+      "unavailableNote": "Für diese Kennzahl liegt im aktuellen Zeitraum kein Nutzungseintrag vor — sie wird nicht als null ausgewiesen."
     },
     "metric": {
-      "members": "Members",
-      "projects": "Projects",
-      "storage_gb": "Storage (GB)",
-      "api_calls": "API calls",
-      "ai_requests": "AI requests",
-      "emails_sent": "Emails sent",
-      "notifications_created": "Notifications created"
+      "members": "Mitglieder",
+      "projects": "Projekte",
+      "storage_gb": "Speicher (GB)",
+      "api_calls": "API-Aufrufe",
+      "ai_requests": "KI-Anfragen",
+      "emails_sent": "Gesendete E-Mails",
+      "notifications_created": "Erzeugte Benachrichtigungen"
     },
     "actions": {
-      "members": "Manage members",
-      "membersDesc": "Roles, membership state and access.",
-      "invitations": "Invitations",
-      "invitationsDesc": "Pending, expired and accepted invitations.",
-      "apiKeys": "API keys",
-      "apiKeysDesc": "Programmatic access credentials for this organization.",
-      "billing": "Billing & subscription",
-      "billingDesc": "Plan, billing interval and subscription state.",
-      "settings": "Organization settings",
-      "settingsDesc": "Organization profile and configuration."
+      "members": "Mitglieder verwalten",
+      "membersDesc": "Rollen, Mitgliedsstatus und Zugriff.",
+      "invitations": "Einladungen",
+      "invitationsDesc": "Ausstehende, abgelaufene und angenommene Einladungen.",
+      "apiKeys": "API-Schlüssel",
+      "apiKeysDesc": "Zugangsdaten für den programmatischen Zugriff dieser Organisation.",
+      "billing": "Abrechnung & Abonnement",
+      "billingDesc": "Tarif, Abrechnungszeitraum und Abonnementstatus.",
+      "settings": "Organisationseinstellungen",
+      "settingsDesc": "Profil und Konfiguration der Organisation."
     },
     "states": {
-      "loading": "Loading administration data…",
-      "unavailableTitle": "Administration data unavailable",
-      "unavailableBody": "The organization summary could not be loaded. Check your access or open a section directly.",
-      "noOrganization": "No organization is associated with this account yet.",
-      "noMembers": "No members on this organization yet.",
-      "noInvitations": "No invitations have been sent.",
-      "noSubscription": "No subscription record exists for this organization.",
-      "noUsage": "No usage has been recorded for the current period.",
-      "billingUnavailable": "Billing information is not available for this organization."
+      "loading": "Administrationsdaten werden geladen…",
+      "unavailableTitle": "Administrationsdaten nicht verfügbar",
+      "unavailableBody": "Die Organisationsübersicht konnte nicht geladen werden. Prüfen Sie Ihre Zugriffsrechte oder öffnen Sie einen Bereich direkt.",
+      "noOrganization": "Diesem Konto ist noch keine Organisation zugeordnet.",
+      "noMembers": "Diese Organisation hat noch keine Mitglieder.",
+      "noInvitations": "Es wurden noch keine Einladungen versendet.",
+      "noSubscription": "Für diese Organisation existiert kein Abonnementeintrag.",
+      "noUsage": "Für den aktuellen Zeitraum wurde keine Nutzung erfasst.",
+      "billingUnavailable": "Abrechnungsinformationen sind für diese Organisation nicht verfügbar."
     },
     "distinction": {
-      "platformBilling": "Platform subscription billing — separate from ERP project budgets and internal company finance.",
-      "memberScope": "Organization membership — separate from ERP teams and resources."
+      "platformBilling": "Abrechnung des Plattformabonnements — getrennt von ERP-Projektbudgets und der internen Unternehmensfinanzierung.",
+      "memberScope": "Organisationsmitgliedschaft — getrennt von ERP-Teams und -Ressourcen."
     }
   }
 }

@@ -228,6 +228,9 @@ describe("de.json — Phase 86C1 translation audit", () => {
     "knowledgeCases", "caseExplorer",
     // PHASE 87L.6B — the authenticated shell (every /de workspace page)
     "appShell",
+    // PHASE 87L.6C — command + industrial operations surfaces
+    "dashboard", "assetMaintenance", "engineeringDocuments",
+    "businessOps", "orgAdministration",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
@@ -254,11 +257,21 @@ describe("de.json — Phase 86C1 translation audit", () => {
   });
 
   it("all non-batch, non-translated namespaces temporarily carry English verbatim", () => {
-    // Journal (86C2), admin (86C3), industrialBrain (86C4A), asset/CMMS (86C4B1),
-    // and automation (86C4B2A-DE) namespaces are now German; the remaining
-    // non-batch-1 namespaces still carry English verbatim in de.
+    // Every namespace outside BATCH_86C1 is either listed in TRANSLATED_NS
+    // (genuinely German) or still carries English verbatim — nothing in
+    // between. This equality is the real invariant.
     expect(carryover.length).toBe(stillEnglish.length);
-    expect(stillEnglish.length).toBeGreaterThanOrEqual(1929);
+  });
+
+  it("the untranslated remainder only ever SHRINKS as waves land", () => {
+    // A fixed floor goes stale on every translation wave (it did: the old
+    // >= 1929 broke when 87L.6C translated 549 leaves). The meaningful
+    // contract is a CEILING that each wave must lower deliberately.
+    //
+    // 87L.6C: dashboard, assetMaintenance, engineeringDocuments, businessOps
+    // and orgAdministration moved to TRANSLATED_NS → 2300 - 549 = 1751.
+    const CEILING_AFTER_87L6C = 1751;
+    expect(stillEnglish.length).toBeLessThanOrEqual(CEILING_AFTER_87L6C);
   });
 
   it("prints the audit report", () => {

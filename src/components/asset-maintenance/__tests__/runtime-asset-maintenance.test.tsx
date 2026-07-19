@@ -113,12 +113,14 @@ async function mountCmms(locale: "en" | "fa", data: CmmsDashboard) {
 }
 
 describe("catalog + navigation invariants", () => {
-  it("assetMaintenance: en/fa/de parity, de = en verbatim, no Arabic yeh/kaf, ICU parity", () => {
+  it("assetMaintenance: en/fa/de parity, de is genuinely German, no Arabic yeh/kaf, ICU parity", () => {
     const paths = (o: Record<string, unknown>, p = ""): string[] =>
       Object.entries(o).flatMap(([k, v]) => (v && typeof v === "object" ? paths(v as Record<string, unknown>, `${p}.${k}`) : [`${p}.${k}`]));
     const e = paths(en.assetMaintenance as unknown as Record<string, unknown>);
     expect(paths((fa as unknown as typeof en).assetMaintenance as unknown as Record<string, unknown>)).toEqual(e);
-    expect(JSON.stringify((de as unknown as typeof en).assetMaintenance)).toBe(JSON.stringify(en.assetMaintenance));
+    // PHASE 87L.6C SUPERSEDES the "de = en verbatim" pin: assetMaintenance is
+    // genuinely German now. Key shape stays identical (asserted above).
+    expect(JSON.stringify((de as unknown as typeof en).assetMaintenance)).not.toBe(JSON.stringify(en.assetMaintenance));
     expect(JSON.stringify((fa as unknown as typeof en).assetMaintenance)).not.toMatch(/[يك]/);
     for (const p of e) {
       const get = (o: unknown) => p.split(".").slice(1).reduce((x: unknown, k) => (x as Record<string, unknown>)[k], o);
