@@ -23,7 +23,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "Googlebot",
         allow: localeRoots,
         disallow: [
-          ...localized("/dashboard/", "/admin/", "/auth/", "/candidate/"),
+          ...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/", "/candidate/"),
           "/api/",
           "/_next/",
         ],
@@ -37,7 +37,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "Bingbot",
         allow: localeRoots,
         disallow: [
-          ...localized("/dashboard/", "/admin/", "/auth/"),
+          ...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/"),
           "/api/",
         ],
         crawlDelay: 2,
@@ -52,23 +52,23 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "OAI-SearchBot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/", "/auth/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/"), "/api/"],
       },
       {
         userAgent: "Claude-SearchBot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/", "/auth/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/"), "/api/"],
       },
       {
         // user-directed fetches from Claude on a user's explicit request
         userAgent: "Claude-User",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/", "/auth/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/"), "/api/"],
       },
       {
         userAgent: "PerplexityBot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       /* ── Model-TRAINING crawlers — explicit owner policy ───────────────────
          Training access is NOT required for search visibility. The standing
@@ -80,42 +80,42 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "GPTBot",
         allow: localized("/library/", "/services/", "/academy/"),
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "ClaudeBot",
         allow: localized("/library/", "/services/", "/academy/"),
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "Google-Extended",
         allow: localized("/library/", "/services/", "/academy/"),
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "Applebot-Extended",
         allow: localized("/library/", "/services/", "/academy/"),
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "Applebot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "CCBot",
         allow: localized("/library/"),
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "DuckDuckBot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "YandexBot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       /* ── Aggressive / privacy-invasive bots — block all ───────────────── */
       {

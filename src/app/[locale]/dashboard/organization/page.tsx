@@ -16,6 +16,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { cookies }     from "next/headers";
 import { PageShell }   from "@/components/PageShell";
+import { RequireCapability } from "@/components/auth/RequireCapability";
 import { OrgOverview } from "@/components/organization/OrgOverview";
 import { PageHeader }  from "@/components/ui/PageHeader";
 import { verifyAccessToken }   from "@/lib/auth/jwt";
@@ -26,6 +27,15 @@ import { listInvitations }     from "@/lib/org/invitations";
 import { getSubscription }     from "@/lib/billing/subscriptions";
 import { getUsageSummary }     from "@/lib/billing/usage";
 import { AdministrationCommandSurface, buildLimitRows } from "@/components/organization-administration";
+
+/**
+ * PHASE 87L.6G — explicit noindex. The route is already unreachable to
+ * anonymous crawlers (middleware redirects to login) and robots disallows
+ * /{locale}/dashboard/, but the page-level directive is a third,
+ * transport-independent declaration so a future routing change cannot make
+ * an administration surface indexable by accident.
+ */
+export const metadata = { robots: { index: false, follow: false } };
 
 type MemberModel = { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
 
@@ -71,31 +81,36 @@ export default async function OrgPage({ params }: { params: Promise<{ locale: st
     USAGE_METRICS,
   );
 
+  // PHASE 87L.6G — organization ADMINISTRATION surface: admin/superadmin
+  // only, matching the "org_admin" middleware gate. Engineer keeps its
+  // ordinary organization/site CONTEXT elsewhere; only this surface is denied.
   return (
-    <PageShell>
-      <div className="mx-auto max-w-7xl px-6 sm:px-8">
-        <PageHeader
-          eyebrow={oa("header.eyebrow")}
-          title={t("title")}
-          subtitle={oa("header.purpose")}
-          level="page"
-        />
-        {orgId ? (
-          <div className="mt-6 flex flex-col gap-8">
-            <AdministrationCommandSurface
-              members={members}
-              invitations={invitations}
-              subscription={subscription}
-              limitRows={limitRows}
-              now={Date.now()}
-              locale={locale}
-            />
-            <OrgOverview orgId={orgId} />
-          </div>
-        ) : (
-          <p className="mt-6 text-muted">{oa("states.noOrganization")}</p>
-        )}
-      </div>
-    </PageShell>
+    <RequireCapability capability="org_admin">
+      <PageShell>
+        <div className="mx-auto max-w-7xl px-6 sm:px-8">
+          <PageHeader
+            eyebrow={oa("header.eyebrow")}
+            title={t("title")}
+            subtitle={oa("header.purpose")}
+            level="page"
+          />
+          {orgId ? (
+            <div className="mt-6 flex flex-col gap-8">
+              <AdministrationCommandSurface
+                members={members}
+                invitations={invitations}
+                subscription={subscription}
+                limitRows={limitRows}
+                now={Date.now()}
+                locale={locale}
+              />
+              <OrgOverview orgId={orgId} />
+            </div>
+          ) : (
+            <p className="mt-6 text-muted">{oa("states.noOrganization")}</p>
+          )}
+        </div>
+      </PageShell>
+    </RequireCapability>
   );
 }

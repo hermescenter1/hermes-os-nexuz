@@ -122,6 +122,16 @@ const ARTICLES_AUTHENTICATED = localePathPattern("articles/(write|drafts|saved|f
 // are denied.
 const DASHBOARD              = localePathPattern("dashboard");
 
+// PHASE 87L.6G: three administration surfaces that live UNDER /dashboard but
+// are NOT ordinary workspace pages. They previously inherited the generic
+// "dashboard" capability, which engineer holds — so engineers could reach
+// billing, organization administration and API-key management. The accepted
+// PHASE 87L.4 contract denies all three. These patterns are matched BEFORE the
+// generic DASHBOARD branch in isAuthorizedForPath (order is load-bearing).
+const BILLING_ADMIN          = localePathPattern("dashboard/billing");
+const ORGANIZATION_ADMIN     = localePathPattern("dashboard/organization");
+const API_PLATFORM_ADMIN     = localePathPattern("dashboard/api");
+
 // ── Middleware guard ──────────────────────────────────────────────────────────
 
 /** Paths that require authentication (locale-aware). */
@@ -145,6 +155,9 @@ export const PROTECTED_PATHS = [
   ASSETS,
   ARTICLES_EDITORIAL,
   ARTICLES_AUTHENTICATED,
+  BILLING_ADMIN,
+  ORGANIZATION_ADMIN,
+  API_PLATFORM_ADMIN,
   DASHBOARD,
 ] as const;
 
@@ -220,6 +233,18 @@ export function isAuthorizedForPath(
   // Journal authenticated (write/drafts/saved/following/my-articles/settings): any logged-in user
   if (ARTICLES_AUTHENTICATED.test(pathname)) {
     return true;
+  }
+  // PHASE 87L.6G — the three administration surfaces under /dashboard.
+  // These MUST be tested before the generic DASHBOARD branch below, otherwise
+  // the broader pattern would match first and grant engineer access again.
+  if (BILLING_ADMIN.test(pathname)) {
+    return can(role, "billing_admin");
+  }
+  if (ORGANIZATION_ADMIN.test(pathname)) {
+    return can(role, "org_admin");
+  }
+  if (API_PLATFORM_ADMIN.test(pathname)) {
+    return can(role, "api_admin");
   }
   // Dashboard workspace: gated by the "dashboard" capability (ROLE_CAPS) —
   // superadmin/admin/engineer/customer/vendor; viewer and candidate denied.

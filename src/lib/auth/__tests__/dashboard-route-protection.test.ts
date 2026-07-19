@@ -67,11 +67,28 @@ const DASHBOARD_ROLES: Role[] = [
 /** Roles without the "dashboard" capability. */
 const NON_DASHBOARD_ROLES: Role[] = ["viewer", "candidate"];
 
+/**
+ * Ordinary workspace routes: the generic "dashboard" capability applies.
+ *
+ * PHASE 87L.6G moved "/dashboard/organization/members" OUT of this list — the
+ * three administration surfaces under /dashboard (billing, organization, api)
+ * now carry their own domain capabilities and are asserted separately below.
+ * They remain PROTECTED paths, so the isProtectedPath coverage is unchanged.
+ */
 const NESTED_DASHBOARD_ROUTES = [
   "/dashboard/operations",
   "/dashboard/predictive/risk",
-  "/dashboard/organization/members",
   "/dashboard/industrial/assets",
+] as const;
+
+/** The 87L.6G administration surfaces — admin/superadmin only. */
+const ADMIN_SURFACE_ROUTES = [
+  "/dashboard/billing",
+  "/dashboard/organization",
+  "/dashboard/organization/members",
+  "/dashboard/organization/invitations",
+  "/dashboard/organization/settings",
+  "/dashboard/api",
 ] as const;
 
 // The sync middleware decoder parses (but does not signature-verify) the JWT,
@@ -100,7 +117,7 @@ describe("dashboard route protection — isProtectedPath", () => {
     it(`/${loc}/dashboard is protected, including trailing slash and nested children`, () => {
       expect(isProtectedPath(`/${loc}/dashboard`)).toBe(true);
       expect(isProtectedPath(`/${loc}/dashboard/`)).toBe(true);
-      for (const route of NESTED_DASHBOARD_ROUTES) {
+      for (const route of [...NESTED_DASHBOARD_ROUTES, ...ADMIN_SURFACE_ROUTES]) {
         expect(isProtectedPath(`/${loc}${route}`)).toBe(true);
         expect(isProtectedPath(`/${loc}${route}/`)).toBe(true);
       }
@@ -149,6 +166,53 @@ describe("dashboard route protection — isAuthorizedForPath", () => {
       }
     });
   }
+
+  /**
+   * PHASE 87L.6G — the accepted final access contract.
+   *
+   * This REPLACES the temporary "PINS THE ACTUAL CONTRACT" assertion that
+   * merely recorded the observed gap (engineer could reach billing,
+   * organization administration and API-key management through the generic
+   * "dashboard" capability). That gap is now closed; these assertions describe
+   * the intended policy, not the old behaviour.
+   */
+  for (const loc of LOCALES) {
+    it(`/${loc}: engineer is DENIED billing, organization admin and API platform`, () => {
+      for (const route of ADMIN_SURFACE_ROUTES) {
+        const path = `/${loc}${route}`;
+        expect(isAuthorizedForPath("engineer", path), `engineer on ${path}`).toBe(false);
+        // every other non-administrative role is denied too
+        for (const role of ["customer", "vendor", "viewer", "candidate"] as Role[]) {
+          expect(isAuthorizedForPath(role, path), `${role} on ${path}`).toBe(false);
+        }
+        // admin and superadmin keep their existing access
+        for (const role of ["admin", "superadmin"] as Role[]) {
+          expect(isAuthorizedForPath(role, path), `${role} on ${path}`).toBe(true);
+        }
+      }
+    });
+  }
+
+  it("engineer KEEPS every allowed workspace route (no collateral denial)", () => {
+    const allowed = [
+      "/fa/dashboard", "/en/dashboard", "/de/dashboard",
+      "/de/dashboard/operations", "/de/dashboard/predictive/risk",
+      "/de/dashboard/industrial/assets", "/de/dashboard/copilot",
+      "/de/assets", "/de/cmms", "/de/automation", "/de/documents",
+      "/de/industrial-brain",
+    ];
+    for (const path of allowed) {
+      expect(isAuthorizedForPath("engineer", path), `engineer on ${path}`).toBe(true);
+    }
+  });
+
+  it("the administration surfaces do not over-match sibling dashboard routes", () => {
+    // "dashboard/api" must not swallow e.g. "dashboard/apiary" — SEGMENT_END
+    // anchors the pattern at a path boundary.
+    for (const path of ["/de/dashboard/apikeys", "/de/dashboard/organizations"]) {
+      expect(isAuthorizedForPath("engineer", path), `engineer on ${path}`).toBe(true);
+    }
+  });
 
   // PHASE 87L.4 AMENDMENT (owner-resolved): ERP is a commercial module, so it
   // is now admin/superadmin only — engineer is denied here while keeping its

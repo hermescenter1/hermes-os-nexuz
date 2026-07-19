@@ -461,24 +461,43 @@ describe("87L.6E — access policy is preserved exactly (§13)", () => {
   });
 
   /**
-   * HONEST SCOPE PIN — reported to the owner in the PHASE 87L.6E report.
+   * PHASE 87L.6G — GAP CLOSED.
    *
-   * §13 of the brief also lists Billing and Organization administration as
-   * engineer-denied. That is NOT the policy this repository implements:
-   * /dashboard/billing, /dashboard/organization and /dashboard/api are gated by
-   * the "dashboard" capability, which engineer HOLDS. Making the brief's
-   * sentence true would require an RBAC/capability change, which §0 and §13
-   * both forbid ("do not modify RBAC or capabilities", "Preserve PHASE 87L.4
-   * exactly"). This test therefore pins the ACTUAL contract so the gap stays
-   * visible and cannot regress silently in either direction.
+   * 87L.6E reported (and pinned) an honest gap: /dashboard/billing,
+   * /dashboard/organization and /dashboard/api were gated only by the generic
+   * "dashboard" capability, which engineer HOLDS, so engineers could reach
+   * them. That temporary pin described the observed behaviour, NOT the desired
+   * contract, and is now replaced by the accepted final policy: each surface
+   * carries its own domain capability (billing_admin / org_admin / api_admin)
+   * granted to admin and superadmin only.
    */
-  it("PINS THE ACTUAL CONTRACT: engineer currently CAN reach billing/org/api", () => {
+  it("engineer is DENIED billing, organization admin and API platform in the nav", () => {
     const items = APP_NAV_GROUPS.flatMap((g) => g.items);
-    for (const href of ["/dashboard/billing", "/dashboard/organization"]) {
+    const EXPECTED: Record<string, string> = {
+      "/dashboard/billing": "billing_admin",
+      "/dashboard/organization": "org_admin",
+      "/dashboard/organization/members": "org_admin",
+      "/dashboard/organization/invitations": "org_admin",
+      "/dashboard/organization/settings": "org_admin",
+      "/dashboard/api": "api_admin",
+    };
+    for (const [href, capability] of Object.entries(EXPECTED)) {
       const item = items.find((i) => i.href === href);
-      if (!item) continue;
-      expect(item.pageCapability, `${href} gained a capability gate`).toBeUndefined();
-      expect(isAppNavItemVisible("engineer", item)).toBe(true);
+      expect(item, `${href} missing from the nav registry`).toBeDefined();
+      expect(item!.pageCapability, `${href} lost its capability gate`).toBe(capability);
+      expect(isAppNavItemVisible("engineer", item!), `${href} visible to engineer`).toBe(false);
+      for (const role of ["admin", "superadmin"] as const) {
+        expect(isAppNavItemVisible(role, item!), `${href} hidden from ${role}`).toBe(true);
+      }
+    }
+  });
+
+  it("engineer still sees every allowed workspace nav item", () => {
+    const items = APP_NAV_GROUPS.flatMap((g) => g.items);
+    for (const href of ["/dashboard", "/assets", "/cmms", "/automation", "/documents"]) {
+      const item = items.find((i) => i.href === href);
+      expect(item, `${href} missing from the nav registry`).toBeDefined();
+      expect(isAppNavItemVisible("engineer", item!), `${href} hidden from engineer`).toBe(true);
     }
   });
 });
