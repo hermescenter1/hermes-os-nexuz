@@ -236,6 +236,10 @@ describe("de.json — Phase 86C1 translation audit", () => {
     "predictive", "knowledgeStudio", "industrialBrainReport",
     // PHASE 87L.6D.1 — the 30-article engineering knowledge library
     "knowledge",
+    // PHASE 87L.6E — enterprise, commercial, financial, security and
+    // administrative surfaces
+    "crm", "billing", "apiPlatform", "adminDocuments", "org", "admin",
+    "erp", "siteSecurity", "adminDocumentSearch", "adminAccess",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
@@ -275,8 +279,10 @@ describe("de.json — Phase 86C1 translation audit", () => {
     //
     // 87L.6D.1: the knowledge library (480 leaves)
     // moved to TRANSLATED_NS → 1262 - 480 = 782.
-    const CEILING_AFTER_87L6D1 = 782;
-    expect(stillEnglish.length).toBeLessThanOrEqual(CEILING_AFTER_87L6D1);
+    // 87L.6E: the 10 enterprise/commercial/administrative namespaces
+    // (527 leaves) moved to TRANSLATED_NS → 782 - 527 = 255.
+    const CEILING_AFTER_87L6E = 255;
+    expect(stillEnglish.length).toBeLessThanOrEqual(CEILING_AFTER_87L6E);
   });
 
   it("prints the audit report", () => {

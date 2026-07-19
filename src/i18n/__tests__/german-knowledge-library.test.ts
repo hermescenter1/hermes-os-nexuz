@@ -86,7 +86,7 @@ describe("87L.6D.1 — structure and exact arithmetic", () => {
     }
   });
 
-  it("global carryover fell from 1262 to exactly 782", () => {
+  it("global carryover fell from 1262 to 782 here, and to 255 after 87L.6E", () => {
     const flat = (o: unknown): string[] =>
       o !== null && typeof o === "object" ? Object.values(o as Tree).flatMap(flat) : [String(o)];
     let carry = 0;
@@ -95,8 +95,11 @@ describe("87L.6D.1 — structure and exact arithmetic", () => {
         carry += flat((en as Tree)[k]).length;
       }
     }
-    expect(carry).toBe(782);
-    expect(1262 - carry).toBe(480);
+    // SUPERSEDED BY PHASE 87L.6E: this wave took the catalog to 782, then
+    // 87L.6E translated the 527 enterprise/commercial/administrative leaves.
+    // The 480 this wave contributed is still proven, against the new total.
+    expect(carry).toBe(255);
+    expect(1262 - 480 - 527).toBe(carry);
   });
 });
 

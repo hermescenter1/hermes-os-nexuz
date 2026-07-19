@@ -69,12 +69,15 @@ function withIntl(locale: "en" | "fa", ui: React.ReactNode) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("catalog — subpage sub-trees parity + carryover", () => {
-  it("crm subpage keys: en/fa/de identical paths, de=en verbatim, no Arabic yeh/kaf, ICU parity", () => {
+  it("crm subpage keys: en/fa/de identical paths, de now German, no Arabic yeh/kaf, ICU parity", () => {
     const paths = (o: Record<string, unknown>, p = ""): string[] =>
       Object.entries(o).flatMap(([k, v]) => (v && typeof v === "object" ? paths(v as Record<string, unknown>, `${p}.${k}`) : [`${p}.${k}`]));
     const e = paths(en.crm as unknown as Record<string, unknown>);
     expect(paths((fa as unknown as typeof en).crm as unknown as Record<string, unknown>)).toEqual(e);
-    expect(JSON.stringify((de as unknown as typeof en).crm)).toBe(JSON.stringify(en.crm));
+    // SUPERSEDED BY PHASE 87L.6E — see runtime-crm-command.test.tsx. German is
+    // no longer an English carryover; the parity and ICU guards below stand.
+    expect(JSON.stringify((de as unknown as typeof en).crm)).not.toBe(JSON.stringify(en.crm));
+    expect(paths((de as unknown as typeof en).crm as unknown as Record<string, unknown>)).toEqual(e);
     expect(JSON.stringify((fa as unknown as typeof en).crm)).not.toMatch(/[يك]/);
     // ICU parity en↔fa on the new sub-trees
     for (const p of e) {

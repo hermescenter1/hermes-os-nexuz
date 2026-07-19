@@ -80,13 +80,18 @@ function withIntl(locale: "en" | "fa", ui: React.ReactNode) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("catalog + visibility invariants", () => {
-  it("crm namespace: en/fa/de key-path parity, de = en verbatim, no Arabic yeh/kaf", () => {
+  it("crm namespace: en/fa/de key-path parity, de now genuinely German, no Arabic yeh/kaf", () => {
     const paths = (o: Record<string, unknown>, p = ""): string[] =>
       Object.entries(o).flatMap(([k, v]) => (v && typeof v === "object" ? paths(v as Record<string, unknown>, `${p}.${k}`) : [`${p}.${k}`]));
     const e = paths(en.crm as unknown as Record<string, unknown>);
     expect(paths((fa as unknown as typeof en).crm as unknown as Record<string, unknown>)).toEqual(e);
     expect(paths((de as unknown as typeof en).crm as unknown as Record<string, unknown>)).toEqual(e);
-    expect(JSON.stringify((de as unknown as typeof en).crm)).toBe(JSON.stringify(en.crm));
+    // SUPERSEDED BY PHASE 87L.6E. Phase 87G pinned `de.crm === en.crm` to
+    // document that German was a deliberate English carryover. 87L.6E
+    // translated all 187 leaves, so the assertion is INVERTED rather than
+    // deleted — the key-path parity it also guarded still matters.
+    expect(JSON.stringify((de as unknown as typeof en).crm)).not.toBe(JSON.stringify(en.crm));
+    expect((de as unknown as typeof en).crm.stage.NEGOTIATION).toBe("Verhandlung");
     expect(JSON.stringify((fa as unknown as typeof en).crm)).not.toMatch(/[يك]/);
   });
 

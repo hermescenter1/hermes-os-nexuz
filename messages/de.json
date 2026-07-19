@@ -2019,151 +2019,151 @@
     "passwordPolicyHint": "Das Passwort muss mindestens 8 Zeichen lang sein und Großbuchstaben, Kleinbuchstaben, eine Zahl sowie ein Sonderzeichen enthalten."
   },
   "adminAccess": {
-    "accessRequests": "Access Requests",
-    "reviewTitle": "Reviewed access request",
-    "approve": "Approve",
-    "reject": "Reject",
-    "inviteRole": "Invite role",
-    "inviteCreated": "Invite created",
-    "copyInviteLink": "Copy invite link",
-    "inviteLinkCopied": "Invite link copied",
-    "rejectedNote": "Rejected — no invite can be created for this request.",
-    "actionFailed": "Action failed. Please try again."
+    "accessRequests": "Zugriffsanfragen",
+    "reviewTitle": "Geprüfte Zugriffsanfrage",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "inviteRole": "Einladungsrolle",
+    "inviteCreated": "Einladung erstellt",
+    "copyInviteLink": "Einladungslink kopieren",
+    "inviteLinkCopied": "Einladungslink kopiert",
+    "rejectedNote": "Abgelehnt — für diese Anfrage kann keine Einladung erstellt werden.",
+    "actionFailed": "Aktion fehlgeschlagen. Bitte erneut versuchen."
   },
   "admin": {
-    "eyebrow": "Operations",
-    "title": "Admin Console",
-    "lede": "Audit trail and system status for production accountability.",
+    "eyebrow": "Betrieb",
+    "title": "Verwaltungskonsole",
+    "lede": "Auditprotokoll und Systemstatus für die Nachvollziehbarkeit im Produktivbetrieb.",
     "metrics": {
-      "storage": "Storage Mode",
-      "total": "Total Audit Events",
-      "last": "Last Event",
-      "role": "Your Role",
+      "storage": "Speichermodus",
+      "total": "Auditereignisse gesamt",
+      "last": "Letztes Ereignis",
+      "role": "Ihre Rolle",
       "none": "—"
     },
     "table": {
-      "heading": "Audit Log",
-      "time": "Time",
-      "user": "User",
-      "action": "Action",
-      "entity": "Entity",
-      "entityId": "Entity ID",
-      "metadata": "Metadata",
-      "empty": "No audit events match the current filters."
+      "heading": "Auditprotokoll",
+      "time": "Zeit",
+      "user": "Benutzer",
+      "action": "Aktion",
+      "entity": "Entität",
+      "entityId": "Entitäts-ID",
+      "metadata": "Metadaten",
+      "empty": "Keine Auditereignisse entsprechen den aktuellen Filtern."
     },
     "filters": {
-      "heading": "Filters",
-      "action": "Action",
-      "entityType": "Entity Type",
-      "from": "Date From",
-      "to": "Date To",
+      "heading": "Filter",
+      "action": "Aktion",
+      "entityType": "Entitätstyp",
+      "from": "Datum von",
+      "to": "Datum bis",
       "limit": "Limit",
-      "all": "All",
-      "apply": "Apply",
-      "reset": "Reset"
+      "all": "Alle",
+      "apply": "Anwenden",
+      "reset": "Zurücksetzen"
     },
     "status": {
-      "heading": "System Status",
-      "authConfigured": "Auth configured",
-      "storageMode": "Storage",
-      "prisma": "Prisma available",
-      "protectedRoutes": "Protected routes",
-      "yes": "Yes",
-      "no": "No",
-      "enabled": "Enabled",
-      "session": "Session",
-      "database": "Database"
+      "heading": "Systemstatus",
+      "authConfigured": "Authentifizierung konfiguriert",
+      "storageMode": "Speicher",
+      "prisma": "Prisma verfügbar",
+      "protectedRoutes": "Geschützte Routen",
+      "yes": "Ja",
+      "no": "Nein",
+      "enabled": "Aktiviert",
+      "session": "Sitzung",
+      "database": "Datenbank"
     },
     "security": {
-      "heading": "Security Notes",
-      "body": "Audit logs are required for production accountability. V1 records application-level events only."
+      "heading": "Sicherheitshinweise",
+      "body": "Auditprotokolle sind für die Nachvollziehbarkeit im Produktivbetrieb erforderlich. V1 erfasst ausschließlich Ereignisse auf Anwendungsebene."
     },
     "links": {
-      "heading": "Document Pipeline",
-      "documentLibrary": "Document Library",
-      "documentSearch": "Document Search"
+      "heading": "Dokumenten-Pipeline",
+      "documentLibrary": "Dokumentenbibliothek",
+      "documentSearch": "Dokumentensuche"
     }
   },
   "adminDocuments": {
-    "eyebrow": "Operations",
-    "title": "Document Library",
-    "lede": "Upload and manage industrial documents for semantic search. TXT and Markdown files are processed end-to-end — extracted, chunked, embedded, and indexed. PDF and DOCX can be uploaded but are not yet extracted.",
+    "eyebrow": "Betrieb",
+    "title": "Dokumentenbibliothek",
+    "lede": "Industrielle Dokumente für die semantische Suche hochladen und verwalten. TXT- und Markdown-Dateien werden durchgängig verarbeitet — extrahiert, in Abschnitte zerlegt, eingebettet und indiziert. PDF und DOCX können hochgeladen, aber noch nicht extrahiert werden.",
     "metrics": {
-      "total": "Total Documents",
-      "indexed": "Indexed",
-      "failed": "Failed"
+      "total": "Dokumente gesamt",
+      "indexed": "Indiziert",
+      "failed": "Fehlgeschlagen"
     },
     "upload": {
-      "heading": "Upload Document",
-      "title": "Title",
-      "sourceType": "Source Type",
-      "selectSourceType": "Select a type",
-      "vendor": "Vendor (optional)",
-      "domain": "Domain (optional)",
-      "tags": "Tags",
-      "tagsHint": "comma-separated",
-      "file": "File",
-      "fileHint": "TXT or Markdown (processed end-to-end) · PDF / DOCX upload accepted, extraction coming soon — up to 50 MB",
-      "submit": "Upload",
-      "uploading": "Uploading…"
+      "heading": "Dokument hochladen",
+      "title": "Titel",
+      "sourceType": "Quellentyp",
+      "selectSourceType": "Typ auswählen",
+      "vendor": "Hersteller (optional)",
+      "domain": "Fachgebiet (optional)",
+      "tags": "Schlagwörter",
+      "tagsHint": "kommagetrennt",
+      "file": "Datei",
+      "fileHint": "TXT oder Markdown (durchgängig verarbeitet) · PDF-/DOCX-Upload wird akzeptiert, Extraktion folgt in Kürze — bis zu 50 MB",
+      "submit": "Hochladen",
+      "uploading": "Wird hochgeladen…"
     },
     "validation": {
-      "titleRequired": "Title is required.",
-      "sourceTypeRequired": "Source type is required.",
-      "fileRequired": "Choose a file to upload.",
-      "fileTooLarge": "File exceeds the 50 MB limit.",
-      "unsupportedType": "Unsupported file type — choose a PDF, TXT, Markdown, or DOCX file.",
-      "uploadFailed": "Upload failed — please try again."
+      "titleRequired": "Titel ist erforderlich.",
+      "sourceTypeRequired": "Quellentyp ist erforderlich.",
+      "fileRequired": "Bitte eine Datei zum Hochladen auswählen.",
+      "fileTooLarge": "Die Datei überschreitet das Limit von 50 MB.",
+      "unsupportedType": "Nicht unterstützter Dateityp — bitte eine PDF-, TXT-, Markdown- oder DOCX-Datei wählen.",
+      "uploadFailed": "Upload fehlgeschlagen — bitte erneut versuchen."
     },
     "list": {
-      "heading": "Documents",
-      "empty": "No documents uploaded yet.",
-      "delete": "Delete",
-      "process": "Process",
-      "processing": "Processing…",
-      "chunkCount": "{count} chunks",
-      "lastProcessed": "last processed {time}",
-      "failureReason": "Failure reason: {reason}"
+      "heading": "Dokumente",
+      "empty": "Noch keine Dokumente hochgeladen.",
+      "delete": "Löschen",
+      "process": "Verarbeiten",
+      "processing": "Wird verarbeitet…",
+      "chunkCount": "{count} Abschnitte",
+      "lastProcessed": "zuletzt verarbeitet {time}",
+      "failureReason": "Fehlerursache: {reason}"
     },
     "status": {
-      "uploaded": "Uploaded",
-      "extracting": "Extracting",
-      "extracted": "Extracted",
-      "chunking": "Chunking",
-      "chunked": "Chunked",
-      "embedding": "Embedding",
-      "embedded": "Embedded",
-      "indexed": "Indexed",
-      "failed": "Failed",
-      "archived": "Archived"
+      "uploaded": "Hochgeladen",
+      "extracting": "Extraktion läuft",
+      "extracted": "Extrahiert",
+      "chunking": "Zerlegung läuft",
+      "chunked": "Zerlegt",
+      "embedding": "Einbettung läuft",
+      "embedded": "Eingebettet",
+      "indexed": "Indiziert",
+      "failed": "Fehlgeschlagen",
+      "archived": "Archiviert"
     },
     "sourceTypes": {
-      "manual": "Manual",
-      "datasheet": "Datasheet",
-      "commissioning_report": "Commissioning Report",
-      "engineering_report": "Engineering Report",
-      "troubleshooting_note": "Troubleshooting Note",
-      "safety_procedure": "Safety Procedure",
-      "maintenance_procedure": "Maintenance Procedure",
-      "factory_knowledge": "Factory Knowledge"
+      "manual": "Handbuch",
+      "datasheet": "Datenblatt",
+      "commissioning_report": "Inbetriebnahmebericht",
+      "engineering_report": "Engineering-Bericht",
+      "troubleshooting_note": "Notiz zur Fehlersuche",
+      "safety_procedure": "Sicherheitsanweisung",
+      "maintenance_procedure": "Instandhaltungsanweisung",
+      "factory_knowledge": "Werkswissen"
     }
   },
   "adminDocumentSearch": {
-    "eyebrow": "Operations",
-    "title": "Document Search (Test)",
-    "lede": "Semantic search over indexed document chunks. Uses text-embedding-3-small (1536-dim) when DOCUMENT_EMBEDDINGS_PROVIDER=openai and OPENAI_API_KEY are set; falls back to mock embeddings otherwise.",
-    "queryPlaceholder": "Search document chunks…",
-    "search": "Search",
-    "searching": "Searching…",
+    "eyebrow": "Betrieb",
+    "title": "Dokumentensuche (Test)",
+    "lede": "Semantische Suche über indizierte Dokumentabschnitte. Verwendet text-embedding-3-small (1536 Dimensionen), wenn DOCUMENT_EMBEDDINGS_PROVIDER=openai und OPENAI_API_KEY gesetzt sind; andernfalls werden Mock-Embeddings verwendet.",
+    "queryPlaceholder": "Dokumentabschnitte durchsuchen…",
+    "search": "Suchen",
+    "searching": "Suche läuft…",
     "validation": {
-      "queryRequired": "Enter a search query.",
-      "searchFailed": "Search failed — please try again."
+      "queryRequired": "Bitte eine Suchanfrage eingeben.",
+      "searchFailed": "Suche fehlgeschlagen — bitte erneut versuchen."
     },
     "results": {
-      "heading": "Results",
-      "empty": "No matching chunks found.",
-      "notYetSearched": "Run a search to see matching chunks here.",
-      "position": "chunk {position}"
+      "heading": "Ergebnisse",
+      "empty": "Keine passenden Abschnitte gefunden.",
+      "notYetSearched": "Führen Sie eine Suche aus, um hier passende Abschnitte zu sehen.",
+      "position": "Abschnitt {position}"
     }
   },
   "landing": {
@@ -2383,221 +2383,221 @@
     }
   },
   "billing": {
-    "title": "Billing",
-    "eyebrow": "SaaS Billing",
+    "title": "Abrechnung",
+    "eyebrow": "SaaS-Abrechnung",
     "nav": {
-      "billing": "Billing",
-      "subscription": "Subscription",
-      "invoices": "Invoices",
-      "usage": "Usage"
+      "billing": "Abrechnung",
+      "subscription": "Abonnement",
+      "invoices": "Rechnungen",
+      "usage": "Nutzung"
     },
     "plan": {
-      "current": "Current Plan",
-      "noSubscription": "No active subscription",
-      "upgrade": "Upgrade",
-      "downgrade": "Downgrade",
-      "cancel": "Cancel Subscription",
-      "renew": "Renew",
-      "changePlan": "Change Plan",
-      "monthly": "Monthly",
-      "yearly": "Yearly",
-      "yearlyDiscount": "Save with annual billing",
-      "features": "Features included",
-      "limits": "Plan limits",
+      "current": "Aktueller Tarif",
+      "noSubscription": "Kein aktives Abonnement",
+      "upgrade": "Tarif hochstufen",
+      "downgrade": "Tarif herabstufen",
+      "cancel": "Abonnement kündigen",
+      "renew": "Verlängern",
+      "changePlan": "Tarif wechseln",
+      "monthly": "Monatlich",
+      "yearly": "Jährlich",
+      "yearlyDiscount": "Mit jährlicher Abrechnung sparen",
+      "features": "Enthaltene Funktionen",
+      "limits": "Tarifgrenzen",
       "limitLabels": {
-        "unlimited": "Unlimited",
-        "aiRequests": "AI Requests / mo",
-        "projects": "Projects",
-        "members": "Team Members",
-        "storageGb": "Storage",
+        "unlimited": "Unbegrenzt",
+        "aiRequests": "KI-Anfragen / Monat",
+        "projects": "Projekte",
+        "members": "Teammitglieder",
+        "storageGb": "Speicher",
         "industrialGateway": "Industrial Gateway",
         "multiAgent": "Multi-Agent",
-        "apiAccess": "API Access",
-        "prioritySupport": "Priority Support"
+        "apiAccess": "API-Zugriff",
+        "prioritySupport": "Priorisierter Support"
       },
-      "startTrial": "Start free trial",
-      "trialBadge": "Trial",
-      "activeBadge": "Active",
-      "pastDueBadge": "Past due",
-      "canceledBadge": "Canceled",
-      "expiredBadge": "Expired"
+      "startTrial": "Kostenlosen Testzeitraum starten",
+      "trialBadge": "Testzeitraum",
+      "activeBadge": "Aktiv",
+      "pastDueBadge": "Überfällig",
+      "canceledBadge": "Gekündigt",
+      "expiredBadge": "Abgelaufen"
     },
     "plans": {
       "community": {
         "name": "Community",
-        "description": "Open-source engineers and solo automation professionals."
+        "description": "Open-Source-Ingenieure und einzelne Automatisierungsfachleute."
       },
       "professional": {
         "name": "Professional",
-        "description": "Individual engineers and small automation teams."
+        "description": "Einzelne Ingenieure und kleine Automatisierungsteams."
       },
       "team": {
         "name": "Team",
-        "description": "Growing engineering departments and integrators."
+        "description": "Wachsende Engineering-Abteilungen und Systemintegratoren."
       },
       "enterprise": {
         "name": "Enterprise",
-        "description": "Large plant operators and system integrators at scale."
+        "description": "Große Anlagenbetreiber und Systemintegratoren im großen Maßstab."
       }
     },
     "invoices": {
-      "title": "Invoices",
-      "empty": "No invoices yet.",
-      "number": "Invoice",
-      "date": "Date",
-      "amount": "Amount",
+      "title": "Rechnungen",
+      "empty": "Noch keine Rechnungen.",
+      "number": "Rechnung",
+      "date": "Datum",
+      "amount": "Betrag",
       "status": "Status",
-      "draft": "Draft",
-      "issued": "Issued",
-      "paid": "Paid",
-      "void": "Void",
-      "overdue": "Overdue",
-      "download": "Download"
+      "draft": "Entwurf",
+      "issued": "Ausgestellt",
+      "paid": "Bezahlt",
+      "void": "Storniert",
+      "overdue": "Überfällig",
+      "download": "Herunterladen"
     },
     "usage": {
-      "title": "Usage",
-      "period": "Last 30 days",
-      "aiRequests": "AI Requests",
-      "projects": "Projects",
-      "members": "Members",
-      "storageGb": "Storage (GB)",
-      "noData": "No usage recorded yet."
+      "title": "Nutzung",
+      "period": "Letzte 30 Tage",
+      "aiRequests": "KI-Anfragen",
+      "projects": "Projekte",
+      "members": "Mitglieder",
+      "storageGb": "Speicher (GB)",
+      "noData": "Noch keine Nutzung erfasst."
     },
     "currency": {
       "irr": "IRR",
       "gbp": "GBP",
       "usd": "USD",
       "eur": "EUR",
-      "chooseCurrency": "Currency"
+      "chooseCurrency": "Währung"
     },
     "errors": {
-      "loadFailed": "Could not load billing information.",
-      "changeFailed": "Plan change failed.",
-      "cancelFailed": "Could not cancel subscription."
+      "loadFailed": "Abrechnungsinformationen konnten nicht geladen werden.",
+      "changeFailed": "Tarifwechsel fehlgeschlagen.",
+      "cancelFailed": "Abonnement konnte nicht gekündigt werden."
     }
   },
   "org": {
-    "eyebrow": "Organization",
-    "title": "Organization Management",
-    "noOrg": "No organization found. Create one to get started.",
-    "loading": "Loading...",
-    "edit": "Edit",
-    "save": "Save",
-    "saving": "Saving...",
-    "cancel": "Cancel",
-    "sending": "Sending...",
-    "creating": "Creating...",
-    "dismiss": "Dismiss",
+    "eyebrow": "Organisation",
+    "title": "Organisationsverwaltung",
+    "noOrg": "Keine Organisation gefunden. Erstellen Sie eine, um zu beginnen.",
+    "loading": "Wird geladen...",
+    "edit": "Bearbeiten",
+    "save": "Speichern",
+    "saving": "Wird gespeichert...",
+    "cancel": "Abbrechen",
+    "sending": "Wird gesendet...",
+    "creating": "Wird erstellt...",
+    "dismiss": "Schließen",
     "fields": {
       "name": "Name",
-      "description": "Description",
+      "description": "Beschreibung",
       "website": "Website",
-      "email": "Email Address",
-      "role": "Role",
-      "created": "Created",
-      "updated": "Last Updated"
+      "email": "E-Mail-Adresse",
+      "role": "Rolle",
+      "created": "Erstellt",
+      "updated": "Zuletzt aktualisiert"
     },
-    "notFound": "Organization not found.",
+    "notFound": "Organisation nicht gefunden.",
     "members": {
-      "title": "Team Members",
-      "suspend": "Suspend",
-      "activate": "Activate",
-      "remove": "Remove",
-      "confirmRemove": "Are you sure you want to remove this member?"
+      "title": "Teammitglieder",
+      "suspend": "Sperren",
+      "activate": "Aktivieren",
+      "remove": "Entfernen",
+      "confirmRemove": "Möchten Sie dieses Mitglied wirklich entfernen?"
     },
     "invitations": {
-      "title": "Invitations",
-      "invite": "Invite Member",
-      "send": "Send Invitation",
-      "resend": "Resend",
-      "revoke": "Revoke",
-      "confirmRevoke": "Revoke this invitation?",
-      "empty": "No invitations yet.",
-      "expires": "Expires",
-      "tokenNote": "Invitation token (shown once — share with the invitee):"
+      "title": "Einladungen",
+      "invite": "Mitglied einladen",
+      "send": "Einladung senden",
+      "resend": "Erneut senden",
+      "revoke": "Widerrufen",
+      "confirmRevoke": "Diese Einladung widerrufen?",
+      "empty": "Noch keine Einladungen.",
+      "expires": "Läuft ab",
+      "tokenNote": "Einladungstoken (wird nur einmal angezeigt — an die eingeladene Person weitergeben):"
     },
     "departments": {
-      "title": "Departments",
-      "add": "Add Department",
-      "create": "Create",
-      "empty": "No departments yet.",
-      "type": "Department Type",
+      "title": "Abteilungen",
+      "add": "Abteilung hinzufügen",
+      "create": "Erstellen",
+      "empty": "Noch keine Abteilungen.",
+      "type": "Abteilungstyp",
       "types": {
-        "automation": "Automation",
-        "electrical": "Electrical",
-        "maintenance": "Maintenance",
-        "production": "Production",
+        "automation": "Automatisierung",
+        "electrical": "Elektrotechnik",
+        "maintenance": "Instandhaltung",
+        "production": "Produktion",
         "management": "Management",
         "it_ot": "IT / OT"
       }
     },
     "settings": {
-      "title": "Organization Settings"
+      "title": "Organisationseinstellungen"
     }
   },
   "apiPlatform": {
-    "eyebrow": "API Platform",
-    "title": "API Key Management",
-    "subtitle": "Manage API keys, scopes, rate limits, and usage for your organization.",
-    "loading": "Loading...",
-    "creating": "Creating...",
-    "cancel": "Cancel",
+    "eyebrow": "API-Plattform",
+    "title": "Verwaltung von API-Schlüsseln",
+    "subtitle": "API-Schlüssel, Geltungsbereiche, Ratenbegrenzungen und Nutzung für Ihre Organisation verwalten.",
+    "loading": "Wird geladen...",
+    "creating": "Wird erstellt...",
+    "cancel": "Abbrechen",
     "optional": "optional",
     "rawKey": {
-      "title": "Save your API key now",
-      "warning": "This is the only time your secret key will be shown. Copy it and store it securely — it cannot be recovered.",
-      "copy": "Copy key",
-      "copied": "Copied!",
-      "done": "I have saved it"
+      "title": "Speichern Sie Ihren API-Schlüssel jetzt",
+      "warning": "Dies ist das einzige Mal, dass Ihr geheimer Schlüssel angezeigt wird. Kopieren Sie ihn und bewahren Sie ihn sicher auf — er kann nicht wiederhergestellt werden.",
+      "copy": "Schlüssel kopieren",
+      "copied": "Kopiert!",
+      "done": "Ich habe ihn gespeichert"
     },
     "keys": {
-      "title": "API Keys",
-      "createTitle": "Create new API key",
-      "new": "New API Key",
-      "name": "Key name",
-      "scopes": "Scopes",
-      "expiresAt": "Expiry date",
-      "create": "Create key",
-      "empty": "No API keys yet. Create one to start integrating.",
-      "created": "Created",
-      "lastUsed": "Last used",
-      "expires": "Expires",
-      "rotate": "Rotate",
-      "revoke": "Revoke",
-      "confirmRevoke": "Revoke this API key? Active integrations using it will stop working immediately.",
-      "confirmRotate": "Rotate this key? A new key will be created and the old one revoked. Your active integrations will need to be updated."
+      "title": "API-Schlüssel",
+      "createTitle": "Neuen API-Schlüssel erstellen",
+      "new": "Neuer API-Schlüssel",
+      "name": "Schlüsselname",
+      "scopes": "Geltungsbereiche",
+      "expiresAt": "Ablaufdatum",
+      "create": "Schlüssel erstellen",
+      "empty": "Noch keine API-Schlüssel. Erstellen Sie einen, um mit der Integration zu beginnen.",
+      "created": "Erstellt",
+      "lastUsed": "Zuletzt verwendet",
+      "expires": "Läuft ab",
+      "rotate": "Rotieren",
+      "revoke": "Widerrufen",
+      "confirmRevoke": "Diesen API-Schlüssel widerrufen? Aktive Integrationen, die ihn verwenden, funktionieren sofort nicht mehr.",
+      "confirmRotate": "Diesen Schlüssel rotieren? Es wird ein neuer Schlüssel erstellt und der alte widerrufen. Ihre aktiven Integrationen müssen aktualisiert werden."
     },
     "rateLimit": {
-      "title": "Rate Limits",
-      "perMinute": "Requests this minute",
-      "perDay": "Requests today",
-      "exceeded": "Rate limit exceeded. Requests are being rejected with HTTP 429.",
-      "store": "Redis (fixed window)"
+      "title": "Ratenbegrenzungen",
+      "perMinute": "Anfragen in dieser Minute",
+      "perDay": "Anfragen heute",
+      "exceeded": "Ratenbegrenzung überschritten. Anfragen werden mit HTTP 429 abgewiesen.",
+      "store": "Redis (festes Zeitfenster)"
     },
     "usage": {
-      "title": "API Usage",
-      "callsPerDay": "Calls per day",
-      "last30Days": "Last 30 days"
+      "title": "API-Nutzung",
+      "callsPerDay": "Aufrufe pro Tag",
+      "last30Days": "Letzte 30 Tage"
     },
     "scopes": {
-      "admin": "Admin (all scopes)",
-      "projectsRead": "Projects — Read",
-      "projectsWrite": "Projects — Write",
-      "billingRead": "Billing — Read",
-      "billingWrite": "Billing — Write",
-      "organizationsRead": "Organizations — Read",
-      "organizationsWrite": "Organizations — Write",
-      "telemetryRead": "Telemetry — Read",
-      "telemetryWrite": "Telemetry — Write",
-      "industrialRead": "Industrial Gateway — Read",
-      "industrialWrite": "Industrial Gateway — Write"
+      "admin": "Admin (alle Geltungsbereiche)",
+      "projectsRead": "Projekte — Lesen",
+      "projectsWrite": "Projekte — Schreiben",
+      "billingRead": "Abrechnung — Lesen",
+      "billingWrite": "Abrechnung — Schreiben",
+      "organizationsRead": "Organisationen — Lesen",
+      "organizationsWrite": "Organisationen — Schreiben",
+      "telemetryRead": "Telemetrie — Lesen",
+      "telemetryWrite": "Telemetrie — Schreiben",
+      "industrialRead": "Industrial Gateway — Lesen",
+      "industrialWrite": "Industrial Gateway — Schreiben"
     },
     "errors": {
-      "authRequired": "Authentication required.",
-      "insufficientScope": "Insufficient API scope.",
-      "rateLimitExceeded": "Rate limit exceeded. Try again later.",
-      "keyNotFound": "API key not found.",
-      "keyRevoked": "This API key has been revoked."
+      "authRequired": "Authentifizierung erforderlich.",
+      "insufficientScope": "Unzureichender API-Geltungsbereich.",
+      "rateLimitExceeded": "Ratenbegrenzung überschritten. Bitte später erneut versuchen.",
+      "keyNotFound": "API-Schlüssel nicht gefunden.",
+      "keyRevoked": "Dieser API-Schlüssel wurde widerrufen."
     }
   },
   "industrial": {
@@ -3030,40 +3030,40 @@
     }
   },
   "siteSecurity": {
-    "siteRole": "Site Role",
-    "sitePermission": "Site Permission",
-    "siteMembership": "Site Membership",
-    "siteIsolation": "Site Isolation",
-    "accessDenied": "Access Denied",
-    "insufficientPermission": "Insufficient site permissions",
-    "noAccessibleSites": "You do not have access to any sites in this organization.",
-    "implicitAccess": "Full Access (Organization Admin)",
-    "siteAdmin": "Site Admin",
-    "siteManager": "Site Manager",
-    "siteEngineer": "Site Engineer",
-    "siteOperator": "Site Operator",
-    "siteViewer": "Site Viewer",
-    "grantAccess": "Grant Site Access",
-    "revokeAccess": "Revoke Site Access",
-    "updateRole": "Update Site Role",
-    "memberships": "Site Memberships",
-    "noMemberships": "No site memberships assigned.",
+    "siteRole": "Standortrolle",
+    "sitePermission": "Standortberechtigung",
+    "siteMembership": "Standortmitgliedschaft",
+    "siteIsolation": "Standortisolation",
+    "accessDenied": "Zugriff verweigert",
+    "insufficientPermission": "Unzureichende Standortberechtigungen",
+    "noAccessibleSites": "Sie haben auf keinen Standort in dieser Organisation Zugriff.",
+    "implicitAccess": "Vollzugriff (Organisationsadministrator)",
+    "siteAdmin": "Standortadministrator",
+    "siteManager": "Standortleiter",
+    "siteEngineer": "Standortingenieur",
+    "siteOperator": "Standortbediener",
+    "siteViewer": "Standortbetrachter",
+    "grantAccess": "Standortzugriff gewähren",
+    "revokeAccess": "Standortzugriff entziehen",
+    "updateRole": "Standortrolle aktualisieren",
+    "memberships": "Standortmitgliedschaften",
+    "noMemberships": "Keine Standortmitgliedschaften zugewiesen.",
     "status": {
-      "active": "Active",
-      "suspended": "Suspended"
+      "active": "Aktiv",
+      "suspended": "Gesperrt"
     },
     "permissions": {
-      "view_site": "View Site",
-      "manage_site": "Manage Site",
-      "view_assets": "View Assets",
-      "manage_assets": "Manage Assets",
-      "view_telemetry": "View Telemetry",
-      "view_kpis": "View KPIs",
-      "view_predictive": "View Predictive",
-      "view_knowledge": "View Knowledge",
-      "manage_knowledge": "Manage Knowledge",
-      "view_multi_site": "View Multi-Site",
-      "view_failures": "View Failures"
+      "view_site": "Standort anzeigen",
+      "manage_site": "Standort verwalten",
+      "view_assets": "Anlagen anzeigen",
+      "manage_assets": "Anlagen verwalten",
+      "view_telemetry": "Telemetrie anzeigen",
+      "view_kpis": "KPIs anzeigen",
+      "view_predictive": "Prädiktive Instandhaltung anzeigen",
+      "view_knowledge": "Wissen anzeigen",
+      "manage_knowledge": "Wissen verwalten",
+      "view_multi_site": "Multi-Standort anzeigen",
+      "view_failures": "Ausfälle anzeigen"
     }
   },
   "multiSite": {
@@ -3221,58 +3221,58 @@
   "erp": {
     "nav": {
       "dashboard": "Dashboard",
-      "projects": "Projects",
-      "tasks": "Tasks",
+      "projects": "Projekte",
+      "tasks": "Aufgaben",
       "teams": "Teams",
-      "resources": "Resources",
-      "inventory": "Inventory",
-      "workOrders": "Work Orders",
-      "approvals": "Approvals",
+      "resources": "Ressourcen",
+      "inventory": "Bestand",
+      "workOrders": "Arbeitsaufträge",
+      "approvals": "Freigaben",
       "kpis": "KPIs",
-      "settings": "Settings"
+      "settings": "Einstellungen"
     },
     "dashboard": {
-      "title": "Operations Dashboard",
-      "activeProjects": "Active Projects",
-      "overdueTasks": "Overdue Tasks",
-      "openWorkOrders": "Open Work Orders",
-      "inventoryWarnings": "Inventory Warnings",
-      "pendingApprovals": "Pending Approvals",
-      "resourceUtilization": "Resource Utilization",
-      "budgetOverview": "Budget Overview",
-      "recentActivity": "Recent Activity"
+      "title": "Betriebs-Dashboard",
+      "activeProjects": "Aktive Projekte",
+      "overdueTasks": "Überfällige Aufgaben",
+      "openWorkOrders": "Offene Arbeitsaufträge",
+      "inventoryWarnings": "Bestandswarnungen",
+      "pendingApprovals": "Ausstehende Freigaben",
+      "resourceUtilization": "Ressourcenauslastung",
+      "budgetOverview": "Budgetübersicht",
+      "recentActivity": "Letzte Aktivitäten"
     },
     "projects": {
-      "title": "Projects",
-      "newProject": "New Project"
+      "title": "Projekte",
+      "newProject": "Neues Projekt"
     },
     "tasks": {
-      "title": "Task Board"
+      "title": "Aufgabenboard"
     },
     "teams": {
       "title": "Teams"
     },
     "resources": {
-      "title": "Resources"
+      "title": "Ressourcen"
     },
     "inventory": {
-      "title": "Inventory",
-      "lowStock": "Low Stock",
-      "inStock": "In Stock"
+      "title": "Bestand",
+      "lowStock": "Geringer Bestand",
+      "inStock": "Auf Lager"
     },
     "workOrders": {
-      "title": "Work Orders"
+      "title": "Arbeitsaufträge"
     },
     "approvals": {
-      "title": "Approval Requests",
-      "approve": "Approve",
-      "reject": "Reject"
+      "title": "Freigabeanfragen",
+      "approve": "Freigeben",
+      "reject": "Ablehnen"
     },
     "kpis": {
-      "title": "Operational KPIs"
+      "title": "Betriebliche KPIs"
     },
     "settings": {
-      "title": "ERP Settings"
+      "title": "ERP-Einstellungen"
     }
   },
   "documents": {
@@ -5918,104 +5918,104 @@
   },
   "crm": {
     "header": {
-      "eyebrow": "Sales Operations",
+      "eyebrow": "Vertriebsoperationen",
       "title": "CRM",
-      "purpose": "Leads, pipeline, accounts and customer success — one tenant-scoped sales surface.",
-      "demoBadge": "Demo data"
+      "purpose": "Leads, Pipeline, Kundenkonten und Customer Success — eine mandantenbezogene Vertriebsoberfläche.",
+      "demoBadge": "Demodaten"
     },
     "nav": {
-      "label": "CRM sections",
-      "dashboard": "Overview",
+      "label": "CRM-Bereiche",
+      "dashboard": "Übersicht",
       "leads": "Leads",
       "pipeline": "Pipeline",
-      "accounts": "Accounts",
+      "accounts": "Kundenkonten",
       "customerSuccess": "Customer Success"
     },
     "status": {
-      "NEW": "New",
-      "CONTACTED": "Contacted",
-      "QUALIFIED": "Qualified",
-      "PROPOSAL": "Proposal",
-      "NEGOTIATION": "Negotiation",
-      "CONVERTED": "Converted",
-      "LOST": "Lost"
+      "NEW": "Neu",
+      "CONTACTED": "Kontaktiert",
+      "QUALIFIED": "Qualifiziert",
+      "PROPOSAL": "Angebot",
+      "NEGOTIATION": "Verhandlung",
+      "CONVERTED": "Konvertiert",
+      "LOST": "Verloren"
     },
     "stage": {
-      "DISCOVERY": "Discovery",
-      "QUALIFICATION": "Qualification",
-      "PROPOSAL": "Proposal",
-      "TECHNICAL_REVIEW": "Technical Review",
-      "COMMERCIAL_REVIEW": "Commercial Review",
-      "NEGOTIATION": "Negotiation",
-      "WON": "Won",
-      "LOST": "Lost"
+      "DISCOVERY": "Bedarfsanalyse",
+      "QUALIFICATION": "Qualifizierung",
+      "PROPOSAL": "Angebot",
+      "TECHNICAL_REVIEW": "Technische Prüfung",
+      "COMMERCIAL_REVIEW": "Kaufmännische Prüfung",
+      "NEGOTIATION": "Verhandlung",
+      "WON": "Gewonnen",
+      "LOST": "Verloren"
     },
     "attention": {
-      "title": "Requires attention",
-      "empty": "No sales items need attention right now. New and unassigned queues are clear.",
-      "view": "Open",
-      "newLead": "New lead awaiting first review",
-      "unassignedLead": "Qualified lead without an owner",
-      "atRiskAccounts": "{count} account(s) flagged at-risk",
-      "reviewCs": "Review customer success",
-      "severityInfo": "Review",
-      "severityAction": "Action needed"
+      "title": "Erfordert Aufmerksamkeit",
+      "empty": "Derzeit erfordert kein Vertriebsvorgang Aufmerksamkeit. Die Warteschlangen für neue und nicht zugewiesene Leads sind leer.",
+      "view": "Öffnen",
+      "newLead": "Neuer Lead wartet auf Erstprüfung",
+      "unassignedLead": "Qualifizierter Lead ohne Zuständigen",
+      "atRiskAccounts": "{count} Kundenkonto/-konten als gefährdet markiert",
+      "reviewCs": "Customer Success prüfen",
+      "severityInfo": "Prüfen",
+      "severityAction": "Handlungsbedarf"
     },
     "pipeline": {
-      "title": "Opportunity pipeline",
-      "open": "{count} open",
-      "weightedNote": "Weighted by stage probability — derived from current opportunity records.",
-      "empty": "No open opportunities in the pipeline yet."
+      "title": "Verkaufschancen-Pipeline",
+      "open": "{count} offen",
+      "weightedNote": "Gewichtet nach der Abschlusswahrscheinlichkeit der Phase — abgeleitet aus den aktuellen Verkaufschancen.",
+      "empty": "Noch keine offenen Verkaufschancen in der Pipeline."
     },
     "kpi": {
-      "totalLeads": "Total leads",
-      "newThisMonth": "{count} new this month",
-      "pipelineValue": "Pipeline value",
-      "openOpps": "{count} open opportunities",
-      "forecast": "Weighted forecast",
-      "conversion": "Lead conversion",
-      "renewals": "Renewals this quarter",
-      "accounts": "Accounts",
-      "healthySplit": "{healthy} healthy · {atRisk} at-risk"
+      "totalLeads": "Leads gesamt",
+      "newThisMonth": "{count} neu in diesem Monat",
+      "pipelineValue": "Pipeline-Wert",
+      "openOpps": "{count} offene Verkaufschancen",
+      "forecast": "Gewichtete Prognose",
+      "conversion": "Lead-Konversion",
+      "renewals": "Verlängerungen in diesem Quartal",
+      "accounts": "Kundenkonten",
+      "healthySplit": "{healthy} gesund · {atRisk} gefährdet"
     },
     "recent": {
-      "title": "Recent leads",
-      "empty": "No leads recorded yet. New website and demo-request leads appear here.",
-      "viewAll": "View all leads"
+      "title": "Aktuelle Leads",
+      "empty": "Noch keine Leads erfasst. Neue Website- und Demo-Anfragen erscheinen hier.",
+      "viewAll": "Alle Leads anzeigen"
     },
     "actions": {
-      "title": "Next actions",
-      "reviewLeads": "Review leads",
-      "reviewLeadsDesc": "Triage new and contacted leads.",
-      "viewPipeline": "Open pipeline",
-      "viewPipelineDesc": "Inspect opportunities by stage.",
-      "openAccounts": "Open accounts",
-      "openAccountsDesc": "Account records and contacts.",
-      "openCs": "Customer success",
-      "openCsDesc": "Health, renewals and success plans."
+      "title": "Nächste Schritte",
+      "reviewLeads": "Leads prüfen",
+      "reviewLeadsDesc": "Neue und kontaktierte Leads sichten.",
+      "viewPipeline": "Pipeline öffnen",
+      "viewPipelineDesc": "Verkaufschancen nach Phase prüfen.",
+      "openAccounts": "Kundenkonten öffnen",
+      "openAccountsDesc": "Kontodatensätze und Kontakte.",
+      "openCs": "Customer Success",
+      "openCsDesc": "Gesundheit, Verlängerungen und Erfolgspläne."
     },
     "states": {
-      "loading": "Loading sales data…",
-      "unavailableTitle": "Sales data unavailable",
-      "unavailableBody": "The CRM summary could not be loaded. Check your access or try again from the leads list."
+      "loading": "Vertriebsdaten werden geladen…",
+      "unavailableTitle": "Vertriebsdaten nicht verfügbar",
+      "unavailableBody": "Die CRM-Zusammenfassung konnte nicht geladen werden. Prüfen Sie Ihre Zugriffsrechte oder versuchen Sie es erneut über die Lead-Liste."
     },
     "common": {
-      "loading": "Loading…",
-      "notes": "Notes",
-      "created": "Created",
-      "updated": "Updated",
-      "probability": "Probability",
-      "probabilityOf": "{n}% probability",
-      "due": "Due {date}"
+      "loading": "Wird geladen…",
+      "notes": "Notizen",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "probability": "Wahrscheinlichkeit",
+      "probabilityOf": "{n} % Wahrscheinlichkeit",
+      "due": "Fällig {date}"
     },
     "source": {
       "WEBSITE": "Website",
       "LINKEDIN": "LinkedIn",
-      "REFERRAL": "Referral",
-      "VENDOR": "Vendor",
+      "REFERRAL": "Empfehlung",
+      "VENDOR": "Lieferant",
       "ACADEMY": "Academy",
       "ATS": "ATS",
-      "MANUAL": "Manual"
+      "MANUAL": "Manuell"
     },
     "tier": {
       "ENTERPRISE": "Enterprise",
@@ -6023,132 +6023,132 @@
       "STANDARD": "Standard"
     },
     "health": {
-      "HEALTHY": "Healthy",
-      "WATCH": "Watch",
-      "AT_RISK": "At Risk",
-      "CRITICAL": "Critical"
+      "HEALTHY": "Gesund",
+      "WATCH": "Beobachten",
+      "AT_RISK": "Gefährdet",
+      "CRITICAL": "Kritisch"
     },
     "renewalStatus": {
-      "CONFIRMED": "Confirmed",
-      "PENDING": "Pending",
-      "AT_RISK": "At Risk",
-      "CHURNED": "Churned"
+      "CONFIRMED": "Bestätigt",
+      "PENDING": "Ausstehend",
+      "AT_RISK": "Gefährdet",
+      "CHURNED": "Abgewandert"
     },
     "journeyEvent": {
-      "LEAD_CREATED": "Lead Created",
-      "LEAD_QUALIFIED": "Qualified",
-      "DEMO_REQUESTED": "Demo Requested",
-      "PROPOSAL_SENT": "Proposal Sent",
-      "CUSTOMER_WON": "Customer Won",
-      "PORTAL_ACTIVATED": "Portal Activated",
-      "ACADEMY_ENROLLED": "Academy Enrolled",
-      "SUPPORT_TICKET_CREATED": "Support Ticket",
-      "RENEWAL_STARTED": "Renewal Started",
-      "RENEWAL_COMPLETED": "Renewal Completed"
+      "LEAD_CREATED": "Lead erstellt",
+      "LEAD_QUALIFIED": "Qualifiziert",
+      "DEMO_REQUESTED": "Demo angefragt",
+      "PROPOSAL_SENT": "Angebot gesendet",
+      "CUSTOMER_WON": "Kunde gewonnen",
+      "PORTAL_ACTIVATED": "Portal aktiviert",
+      "ACADEMY_ENROLLED": "Für Academy angemeldet",
+      "SUPPORT_TICKET_CREATED": "Support-Ticket",
+      "RENEWAL_STARTED": "Verlängerung gestartet",
+      "RENEWAL_COMPLETED": "Verlängerung abgeschlossen"
     },
     "leads": {
       "eyebrow": "CRM · Leads",
-      "title": "Lead Management",
-      "desc": "Track, qualify, and convert inbound leads.",
-      "filterLabel": "Filter by status",
-      "filterAll": "All",
+      "title": "Lead-Verwaltung",
+      "desc": "Eingehende Leads verfolgen, qualifizieren und konvertieren.",
+      "filterLabel": "Nach Status filtern",
+      "filterAll": "Alle",
       "colName": "Name",
-      "colCompany": "Company",
+      "colCompany": "Unternehmen",
       "colStatus": "Status",
-      "colSource": "Source",
+      "colSource": "Quelle",
       "colScore": "Score",
-      "colCreated": "Created",
-      "empty": "No leads found."
+      "colCreated": "Erstellt",
+      "empty": "Keine Leads gefunden."
     },
     "leadDetail": {
       "eyebrow": "CRM · Leads",
-      "title": "Lead Profile",
-      "notFound": "Lead not found.",
-      "independent": "Independent",
-      "contactDetails": "Contact Details",
-      "email": "Email",
-      "phone": "Phone",
-      "company": "Company",
-      "jobTitle": "Job Title",
-      "sourceLabel": "Source",
+      "title": "Lead-Profil",
+      "notFound": "Lead nicht gefunden.",
+      "independent": "Unabhängig",
+      "contactDetails": "Kontaktdaten",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "company": "Unternehmen",
+      "jobTitle": "Position",
+      "sourceLabel": "Quelle",
       "score": "Score",
-      "convertedOn": "Converted on {date}"
+      "convertedOn": "Konvertiert am {date}"
     },
     "opps": {
       "eyebrow": "CRM · Pipeline",
-      "title": "Opportunity Pipeline",
-      "desc": "Track opportunities across sales stages.",
-      "switchToKanban": "Switch to Kanban",
-      "switchToList": "Switch to List",
-      "colTitle": "Title",
-      "colStage": "Stage",
-      "colValue": "Value",
-      "colProbability": "Probability",
-      "colClose": "Close Date",
-      "emptyColumn": "Empty"
+      "title": "Verkaufschancen-Pipeline",
+      "desc": "Verkaufschancen über die Vertriebsphasen hinweg verfolgen.",
+      "switchToKanban": "Zu Kanban wechseln",
+      "switchToList": "Zur Liste wechseln",
+      "colTitle": "Titel",
+      "colStage": "Phase",
+      "colValue": "Wert",
+      "colProbability": "Wahrscheinlichkeit",
+      "colClose": "Abschlussdatum",
+      "emptyColumn": "Leer"
     },
     "oppDetail": {
       "eyebrow": "CRM · Pipeline",
-      "title": "Opportunity Detail",
-      "notFound": "Opportunity not found.",
-      "details": "Opportunity Details",
-      "expectedClose": "Expected Close",
-      "account": "Account",
-      "weightedValue": "Weighted Value",
-      "lostReason": "Lost Reason",
-      "winProbability": "Win Probability"
+      "title": "Verkaufschance im Detail",
+      "notFound": "Verkaufschance nicht gefunden.",
+      "details": "Details der Verkaufschance",
+      "expectedClose": "Erwarteter Abschluss",
+      "account": "Kundenkonto",
+      "weightedValue": "Gewichteter Wert",
+      "lostReason": "Verlustgrund",
+      "winProbability": "Gewinnwahrscheinlichkeit"
     },
     "accounts": {
-      "eyebrow": "CRM · Accounts",
-      "title": "Account Management",
-      "desc": "Customer accounts, contacts, and account health.",
-      "searchLabel": "Search accounts",
-      "searchPlaceholder": "Search accounts…",
-      "empty": "No accounts found.",
-      "colAccount": "Account",
-      "colIndustry": "Industry",
-      "colTier": "Tier",
-      "colHealth": "Health",
-      "colOpenDeals": "Open Deals",
-      "colCountry": "Country"
+      "eyebrow": "CRM · Kundenkonten",
+      "title": "Kundenkontenverwaltung",
+      "desc": "Kundenkonten, Kontakte und Kontogesundheit.",
+      "searchLabel": "Kundenkonten durchsuchen",
+      "searchPlaceholder": "Kundenkonten durchsuchen…",
+      "empty": "Keine Kundenkonten gefunden.",
+      "colAccount": "Kundenkonto",
+      "colIndustry": "Branche",
+      "colTier": "Stufe",
+      "colHealth": "Gesundheit",
+      "colOpenDeals": "Offene Geschäfte",
+      "colCountry": "Land"
     },
     "accountDetail": {
-      "eyebrow": "CRM · Accounts",
-      "title": "Account Profile",
-      "notFound": "Account not found.",
-      "annualRevenue": "Annual Revenue",
-      "employees": "Employees",
-      "openDeals": "Open Deals",
-      "tierLabel": "Tier",
-      "tabOverview": "Overview",
-      "tabJourney": "Journey ({count})",
-      "tabDeals": "Deals ({count})",
-      "tabRenewals": "Renewals ({count})",
-      "activeOpportunities": "Active Opportunities",
-      "noOpportunities": "No opportunities.",
-      "customerJourney": "Customer Journey",
-      "noJourney": "No journey events.",
-      "deals": "Deals",
-      "noDeals": "No deals.",
-      "closedOn": "Closed {date}",
-      "renewalForecast": "Renewal Forecast",
-      "noRenewals": "No renewals.",
-      "renewal": "Renewal"
+      "eyebrow": "CRM · Kundenkonten",
+      "title": "Kundenkontoprofil",
+      "notFound": "Kundenkonto nicht gefunden.",
+      "annualRevenue": "Jahresumsatz",
+      "employees": "Mitarbeitende",
+      "openDeals": "Offene Geschäfte",
+      "tierLabel": "Stufe",
+      "tabOverview": "Übersicht",
+      "tabJourney": "Verlauf ({count})",
+      "tabDeals": "Geschäfte ({count})",
+      "tabRenewals": "Verlängerungen ({count})",
+      "activeOpportunities": "Aktive Verkaufschancen",
+      "noOpportunities": "Keine Verkaufschancen.",
+      "customerJourney": "Kundenverlauf",
+      "noJourney": "Keine Verlaufsereignisse.",
+      "deals": "Geschäfte",
+      "noDeals": "Keine Geschäfte.",
+      "closedOn": "Abgeschlossen {date}",
+      "renewalForecast": "Verlängerungsprognose",
+      "noRenewals": "Keine Verlängerungen.",
+      "renewal": "Verlängerung"
     },
     "cs": {
       "eyebrow": "CRM · Customer Success",
-      "title": "Customer Success Center",
-      "desc": "Health monitoring, churn risk, renewal forecasting, expansion opportunities, and CSM assignments.",
-      "unavailable": "Data unavailable.",
-      "tabHealth": "Health ({count})",
-      "tabRenewals": "Renewals ({count})",
+      "title": "Customer-Success-Center",
+      "desc": "Gesundheitsüberwachung, Abwanderungsrisiko, Verlängerungsprognose, Expansionschancen und CSM-Zuweisungen.",
+      "unavailable": "Daten nicht verfügbar.",
+      "tabHealth": "Gesundheit ({count})",
+      "tabRenewals": "Verlängerungen ({count})",
       "tabExpansions": "Expansion ({count})",
       "tabManagers": "CSMs ({count})",
-      "colAccount": "Account",
-      "colTier": "Tier",
-      "colIndustry": "Industry",
-      "colHealthScore": "Health Score",
-      "ofAccounts": "of {capacity} accounts"
+      "colAccount": "Kundenkonto",
+      "colTier": "Stufe",
+      "colIndustry": "Branche",
+      "colHealthScore": "Gesundheitsscore",
+      "ofAccounts": "von {capacity} Kundenkonten"
     }
   },
   "businessOps": {

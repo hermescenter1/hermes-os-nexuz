@@ -121,7 +121,7 @@ describe("87L.6D — exact wave arithmetic", () => {
     }
   });
 
-  it("global carryover dropped from 1751 to 1262 after this wave, then to 782", () => {
+  it("global carryover dropped from 1751 to 1262 after this wave, then to 255", () => {
     const flat = (o: unknown): string[] =>
       o !== null && typeof o === "object"
         ? Object.values(o as Tree).flatMap(flat)
@@ -133,9 +133,12 @@ describe("87L.6D — exact wave arithmetic", () => {
       }
     }
     // 87L.6D removed 489 leaves (1751 → 1262); 87L.6D.1 then removed the
-    // knowledge library's 480 (1262 → 782).
-    expect(carry).toBe(782);
-    expect(1751 - 489 - 480).toBe(carry);
+    // knowledge library's 480 (1262 → 782); PHASE 87L.6E then removed the
+    // 527 enterprise/commercial/administrative leaves (782 → 255).
+    // The running total is re-pinned by each wave rather than deleted, so the
+    // chain of deliberate reductions stays auditable.
+    expect(carry).toBe(255);
+    expect(1751 - 489 - 480 - 527).toBe(carry);
   });
 });
 
