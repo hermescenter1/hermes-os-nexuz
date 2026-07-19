@@ -32,13 +32,25 @@ const GA_SCRIPT_DOMAINS  = HAS_ANALYTICS ? " https://www.googletagmanager.com ht
 const GA_CONNECT_DOMAINS = HAS_ANALYTICS ? " https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com" : "";
 const GA_IMG_DOMAINS     = HAS_ANALYTICS ? " https://www.google-analytics.com https://www.googletagmanager.com" : "";
 
+/**
+ * eNAMAD trust seal (public footer). The badge is served from the registrar's
+ * own endpoint and must be requested directly, so it needs an explicit img-src
+ * entry — `img-src 'self' data:` alone blocks it.
+ *
+ * Deliberately narrow: exact host, https only, no wildcard, and img-src ONLY.
+ * The seal needs no script, frame, style or connect access, so no other
+ * directive is relaxed. Unconditional (not env-gated) because the seal is
+ * always rendered in the public footer.
+ */
+const ENAMAD_IMG_DOMAIN  = " https://trustseal.enamad.ir";
+
 function buildCSP(nonce: string): string {
   const dev = process.env.NODE_ENV !== "production";
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'${GA_SCRIPT_DOMAINS}${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data:${GA_IMG_DOMAINS}`,
+    `img-src 'self' data:${GA_IMG_DOMAINS}${ENAMAD_IMG_DOMAIN}`,
     "font-src 'self'",
     // ws: is needed for webpack HMR WebSocket in development
     `connect-src 'self'${GA_CONNECT_DOMAINS}${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
