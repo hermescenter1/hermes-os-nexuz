@@ -34,6 +34,12 @@ type Card = {
   category: string; // browse category (vendorKnowledge for cases)
   domains: string[];
   keywords: string[];
+  /**
+   * 87L.6F — German matching terms, kept apart from `keywords` so they never
+   * widen an English or Persian substring match, and never appear in the
+   * visible keyword chips below (which continue to render `keywords`).
+   */
+  keywordsDe?: string[];
   vendor?: string;
   title: string;
   summary: string;
@@ -135,6 +141,7 @@ export function LibraryClient() {
       category: l.category,
       domains: l.domains,
       keywords: l.keywords,
+      keywordsDe: l.keywordsDe,
       vendor: l.vendor,
       // Published DB articles carry their own title/summary; static
       // libraries fall back to the message catalog as before.
@@ -168,7 +175,15 @@ export function LibraryClient() {
       .map((c) => {
         if (tokens.length === 0) return { c, score: 0, hit: true };
         const title = norm(c.title);
-        const kw = norm(c.keywords.join(" "));
+        // 87L.6F: German terms join the match set ONLY on /de. On every other
+        // locale this is the pre-existing keyword string, so English and
+        // Persian result sets and ranking are unchanged.
+        const kw = norm(
+          (locale === "de" && c.keywordsDe?.length
+            ? [...c.keywords, ...c.keywordsDe]
+            : c.keywords
+          ).join(" ")
+        );
         const sum = norm(c.summary);
         let score = 0;
         let hit = true;
@@ -187,7 +202,9 @@ export function LibraryClient() {
       .filter((x) => x.hit);
     if (tokens.length > 0) scored.sort((a, b) => b.score - a.score);
     return scored.map((x) => x.c);
-  }, [cards, query, category, vendor]);
+    // `locale` is a dependency since 87L.6F: the match set includes the German
+    // terms only on /de, so switching locale must recompute the filter.
+  }, [cards, query, category, vendor, locale]);
 
   const countByCategory = useMemo(() => {
     const m: Record<string, number> = {};

@@ -16,6 +16,18 @@
         "پروفینت",
         "فیلدباس",
         "شبکه صنعتی"
+      ],
+      "keywordsDe": [
+        "feldbus",
+        "echtzeit",
+        "determinismus",
+        "netzwerkdesign",
+        "zyklische übertragung",
+        "azyklisch",
+        "aktualisierungszeit",
+        "netzlast",
+        "kommunikationsverlust",
+        "protokollumsetzer"
       ]
     },
     {
@@ -30,6 +42,18 @@
         "subscription",
         "certificate",
         "او پی سی"
+      ],
+      "keywordsDe": [
+        "informationsmodell",
+        "adressraum",
+        "zertifikat",
+        "vertrauensstellung",
+        "abonnement",
+        "schreibzugriff",
+        "sitzungsaufbau",
+        "namensraum",
+        "sicherheitsrichtlinie",
+        "verschlüsselung"
       ]
     },
     {
@@ -44,6 +68,18 @@
         "function code",
         "مدباس",
         "رجیستر"
+      ],
+      "keywordsDe": [
+        "registerbereich",
+        "funktionscode",
+        "wortreihenfolge",
+        "byte-reihenfolge",
+        "haltebereich",
+        "abfragezyklus",
+        "zeitüberschreitung",
+        "geräteadresse",
+        "spulenzugriff",
+        "rohwert"
       ]
     },
     {
@@ -60,6 +96,18 @@
         "qos",
         "بروکر",
         "ام‌کیوتی‌تی"
+      ],
+      "keywordsDe": [
+        "broker",
+        "veröffentlichen",
+        "abonnieren",
+        "themenstruktur",
+        "dienstgüte",
+        "beibehaltene nachricht",
+        "letzter wille",
+        "verbindungsabbruch",
+        "durchsatz",
+        "nutzlast"
       ]
     },
     {
@@ -76,7 +124,18 @@
         "port 102",
         "ارتباط اس‌هفت"
       ],
-      "vendor": "siemens"
+      "vendor": "siemens",
+      "keywordsDe": [
+        "verbindungsressource",
+        "datenbausteinzugriff",
+        "optimierter baustein",
+        "absolutadressierung",
+        "kommunikationslast",
+        "verbindungsabbruch",
+        "zugriffsschutz",
+        "hantierungsbaustein",
+        "quittungsverzug"
+      ]
     }
   ]
 }

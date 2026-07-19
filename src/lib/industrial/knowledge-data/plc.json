@@ -16,6 +16,20 @@
         "اسکن",
         "سیکل",
         "کنترلر منطقی"
+      ],
+      "keywordsDe": [
+        "sps",
+        "steuerung",
+        "zykluszeit",
+        "prozessabbild",
+        "organisationsbaustein",
+        "diagnosepuffer",
+        "remanent",
+        "adressierung",
+        "forcen",
+        "watchdog",
+        "stromlaufplan",
+        "sicherheitsrelais"
       ]
     },
     {
@@ -31,7 +45,19 @@
         "زیمنس ۱۲۰۰",
         "اس‌هفت ۱۲۰۰"
       ],
-      "vendor": "siemens"
+      "vendor": "siemens",
+      "keywordsDe": [
+        "kompaktsteuerung",
+        "signalbaugruppe",
+        "signalboard",
+        "kommunikationsbaugruppe",
+        "arbeitsspeicher",
+        "ausbaugrenze",
+        "gerätename",
+        "datenbaustein",
+        "firmware",
+        "schaltschrank"
+      ]
     },
     {
       "id": "s71500",
@@ -47,7 +73,19 @@
         "زیمنس ۱۵۰۰",
         "اس‌هفت ۱۵۰۰"
       ],
-      "vendor": "siemens"
+      "vendor": "siemens",
+      "keywordsDe": [
+        "fehlersicher",
+        "sicherheitsprogramm",
+        "sicherheitssignatur",
+        "peripherie",
+        "rückwandbus",
+        "diagnosealarm",
+        "baugruppentausch",
+        "webserver",
+        "determinismus",
+        "displaybasiert"
+      ]
     },
     {
       "id": "ladder",
@@ -67,6 +105,20 @@
         "کنتاکت",
         "کویل",
         "اینترلاک"
+      ],
+      "keywordsDe": [
+        "kontaktplan",
+        "strompfad",
+        "selbsthaltung",
+        "flankenerkennung",
+        "flankenbefehl",
+        "verriegelung",
+        "doppelspule",
+        "querverweis",
+        "ablaufsteuerung",
+        "motorsteuerung",
+        "bearbeitungsreihenfolge",
+        "sicherheitsrelais"
       ]
     },
     {
@@ -81,6 +133,18 @@
         "case statement",
         "متن ساختاریافته",
         "اس‌سی‌ال"
+      ],
+      "keywordsDe": [
+        "strukturierter text",
+        "hochsprache",
+        "zustandsautomat",
+        "typumwandlung",
+        "datentyp",
+        "schleife",
+        "rezeptverwaltung",
+        "bereichsprüfung",
+        "berechnung",
+        "zykluszeitbudget"
       ]
     }
   ]

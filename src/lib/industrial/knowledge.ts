@@ -25,6 +25,18 @@ export interface KnowledgeLib {
   category: string;
   domains: BrainDomainId[];
   keywords: string[];
+  /**
+   * PHASE 87L.6F — German matching terms, kept in a SEPARATE array on purpose.
+   *
+   * `keywords` is consumed by substring matchers (`keyword.includes(query)`)
+   * and by `overlapRatio`, whose denominator is `keywords.length`. Appending
+   * German compounds to the shared array regressed English: "rung" is a
+   * substring of "steuerung", so search("rung") went from 1 article to 15, and
+   * the larger denominator demoted every knowledge candidate's evidence score.
+   * Holding German separately keeps EN/FA behaviour byte-identical while the
+   * German locale opts in explicitly.
+   */
+  keywordsDe: string[];
   /** optional vendor association (e.g. Siemens-specific libraries) */
   vendor?: string;
   /** RAG-readiness marker: this record is chunk-shaped for Phase 2 embedding */
@@ -33,7 +45,13 @@ export interface KnowledgeLib {
 
 interface CategoryFile {
   category: string;
-  libraries: { id: string; domains: string[]; keywords: string[]; vendor?: string }[];
+  libraries: {
+    id: string;
+    domains: string[];
+    keywords: string[];
+    keywordsDe?: string[];
+    vendor?: string;
+  }[];
 }
 
 const FILES: CategoryFile[] = [
@@ -54,6 +72,7 @@ export const KNOWLEDGE: KnowledgeLib[] = FILES.flatMap((f) =>
     category: f.category,
     domains: l.domains as BrainDomainId[],
     keywords: l.keywords,
+    keywordsDe: l.keywordsDe ?? [],
     ...(l.vendor ? { vendor: l.vendor } : {}),
     futureEmbeddingReady: true,
   }))
@@ -84,18 +103,18 @@ export const DOMAIN_LIBS: Record<BrainDomainId, string[]> = {
 
 /** Domain classification keywords — bilingual, lowercase. */
 export const DOMAIN_KEYWORDS: Record<BrainDomainId, string[]> = {
-  plc: ["plc", "s7", "1200", "1500", "ladder", "rung", "ob1", "tia", "cpu", "scl", "structured text", "پی‌ال‌سی", "لدر", "زیمنس", "منطق"],
-  scada: ["scada", "tag", "historian", "trend", "wincc", "supervisory", "alarm", "اسکادا", "تگ", "ترند", "هیستورین", "آلارم", "هشدار"],
-  hmi: ["hmi", "screen", "panel", "display", "operator", "touch", "اچ‌ام‌آی", "اپراتور", "نمایشگر", "صفحه", "پنل"],
-  electrical: ["voltage", "current", "phase", "breaker", "cable", "panel", "230", "400", "fuse", "contactor", "mcc", "overload", "ولتاژ", "جریان", "فاز", "کابل", "تابلو", "فیوز", "برق", "کنتاکتور", "حفاظت"],
-  sensors: ["sensor", "proximity", "pt100", "rtd", "thermocouple", "transmitter", "سنسور", "پراکسیمیتی", "ترموکوپل", "ترانسمیتر"],
-  digitalIo: ["digital input", "digital output", "di", "dq", "pnp", "npn", "dry contact", "chatter", "ورودی دیجیتال", "خروجی دیجیتال", "کنتاکت"],
-  analogIo: ["analog", "4-20", "4–20", "0-10v", "ma loop", "scaling", "آنالوگ", "میلیامپر", "میلیآمپر", "مقیاس"],
-  drives: ["vfd", "drive", "inverter", "frequency", "ramp", "درایو", "اینورتر", "فرکانس", "رمپ"],
-  motors: ["motor", "winding", "bearing", "rpm", "torque", "insulation", "موتور", "سیمپیچ", "بلبرینگ", "یاتاقان", "گشتاور"],
-  otNetwork: ["network", "opc", "modbus", "mqtt", "profinet", "switch", "ethernet", "put/get", "شبکه", "مدباس", "سوییچ", "اترنت"],
-  cybersecurity: ["security", "firewall", "attack", "vpn", "dmz", "malware", "unauthorized", "62443", "audit", "segmentation", "امنیت", "نفوذ", "حمله", "فایروال", "بدافزار", "غیرمجاز", "ممیزی", "تفکیک"],
-  maintenance: ["fault", "fails", "broken", "intermittent", "maintenance", "vibration", "noise", "stopped", "trip", "root cause", "predictive", "خرابی", "عیب", "نگهداشت", "ارتعاش", "صدا", "تریپ", "متوقف", "کار نمیکند", "علت ریشه‌ای", "پیش‌بینانه"],
+  plc: ["plc", "s7", "1200", "1500", "ladder", "rung", "ob1", "tia", "cpu", "scl", "structured text", "پی‌ال‌سی", "لدر", "زیمنس", "منطق", "sps", "steuerung", "zykluszeit", "prozessabbild", "baustein", "kontaktplan", "strompfad"],
+  scada: ["scada", "tag", "historian", "trend", "wincc", "supervisory", "alarm", "اسکادا", "تگ", "ترند", "هیستورین", "آلارم", "هشدار", "leitsystem", "archivierung", "störmeldung", "messwert", "abfragegruppe"],
+  hmi: ["hmi", "screen", "panel", "display", "operator", "touch", "اچ‌ام‌آی", "اپراتور", "نمایشگر", "صفحه", "پنل", "bedienbild", "bedienoberfläche", "bediener", "bedienpersonal", "nachrichtenzeile"],
+  electrical: ["voltage", "current", "phase", "breaker", "cable", "panel", "230", "400", "fuse", "contactor", "mcc", "overload", "ولتاژ", "جریان", "فاز", "کابل", "تابلو", "فیوز", "برق", "کنتاکتور", "حفاظت", "spannung", "strom", "schaltschrank", "sicherung", "erdschluss", "kurzschluss", "überlast", "schütz", "leistungsschalter", "spannungsfreiheit", "störlichtbogen"],
+  sensors: ["sensor", "proximity", "pt100", "rtd", "thermocouple", "transmitter", "سنسور", "پراکسیمیتی", "ترموکوپل", "ترانسمیتر", "näherungsschalter", "widerstandsthermometer", "thermoelement", "messumformer", "kalibrierung"],
+  digitalIo: ["digital input", "digital output", "di", "dq", "pnp", "npn", "dry contact", "chatter", "ورودی دیجیتال", "خروجی دیجیتال", "کنتاکت", "digitaleingang", "digitalausgang", "prellen", "schließer", "öffner", "potentialfrei"],
+  analogIo: ["analog", "4-20", "4–20", "0-10v", "ma loop", "scaling", "آنالوگ", "میلیامپر", "میلیآمپر", "مقیاس", "analogeingang", "stromschleife", "messbereich", "skalierung", "milliampere"],
+  drives: ["vfd", "drive", "inverter", "frequency", "ramp", "درایو", "اینورتر", "فرکانس", "رمپ", "frequenzumrichter", "umrichter", "antrieb", "drehzahl", "zwischenkreis", "rampe"],
+  motors: ["motor", "winding", "bearing", "rpm", "torque", "insulation", "موتور", "سیمپیچ", "بلبرینگ", "یاتاقان", "گشتاور", "wicklung", "lagerschaden", "drehmoment", "isolationswiderstand", "asynchronmotor", "schlupf"],
+  otNetwork: ["network", "opc", "modbus", "mqtt", "profinet", "switch", "ethernet", "put/get", "شبکه", "مدباس", "سوییچ", "اترنت", "netzwerk", "feldbus", "telegramm", "netzlast", "protokollumsetzer", "adressraum"],
+  cybersecurity: ["security", "firewall", "attack", "vpn", "dmz", "malware", "unauthorized", "62443", "audit", "segmentation", "امنیت", "نفوذ", "حمله", "فایروال", "بدافزار", "غیرمجاز", "ممیزی", "تفکیک", "cybersicherheit", "netzsegmentierung", "zugriffskontrolle", "angriff", "schadsoftware", "unbefugt", "auditprotokoll"],
+  maintenance: ["fault", "fails", "broken", "intermittent", "maintenance", "vibration", "noise", "stopped", "trip", "root cause", "predictive", "خرابی", "عیب", "نگهداشت", "ارتعاش", "صدا", "تریپ", "متوقف", "کار نمیکند", "علت ریشه‌ای", "پیش‌بینانه", "instandhaltung", "störung", "ausfall", "fehlersuche", "grundursache", "schwingung", "prädiktiv", "abschaltung", "defekt"],
 };
 
 export const ALL_DOMAINS = Object.keys(DOMAIN_KEYWORDS) as BrainDomainId[];

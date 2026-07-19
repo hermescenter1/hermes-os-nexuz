@@ -121,7 +121,7 @@ describe("87L.6D — exact wave arithmetic", () => {
     }
   });
 
-  it("global carryover dropped from 1751 to 1262 after this wave, then to 255", () => {
+  it("global carryover dropped from 1751 to 1262 after this wave, then to 0", () => {
     const flat = (o: unknown): string[] =>
       o !== null && typeof o === "object"
         ? Object.values(o as Tree).flatMap(flat)
@@ -137,8 +137,9 @@ describe("87L.6D — exact wave arithmetic", () => {
     // 527 enterprise/commercial/administrative leaves (782 → 255).
     // The running total is re-pinned by each wave rather than deleted, so the
     // chain of deliberate reductions stays auditable.
-    expect(carry).toBe(255);
-    expect(1751 - 489 - 480 - 527).toBe(carry);
+    // 87L.6F then removed the final 255 (255 → 0), closing the catalog.
+    expect(carry).toBe(0);
+    expect(1751 - 489 - 480 - 527 - 255).toBe(carry);
   });
 });
 

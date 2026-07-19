@@ -529,7 +529,7 @@ describe("87L.6E — regression", () => {
     }
   });
 
-  it("global carryover is exactly 255 after this wave", () => {
+  it("global carryover fell to 255 here, and to 0 after 87L.6F", () => {
     const flat = (o: unknown): string[] =>
       o !== null && typeof o === "object" ? Object.values(o as Tree).flatMap(flat) : [String(o)];
     let carry = 0;
@@ -538,7 +538,10 @@ describe("87L.6E — regression", () => {
         carry += flat((en as Tree)[k]).length;
       }
     }
-    expect(carry).toBe(255);
-    expect(782 - 527).toBe(carry);
+    // SUPERSEDED BY PHASE 87L.6F: this wave took the catalog to 255, then
+    // 87L.6F translated the final 255. The 527 this wave contributed is still
+    // proven, against the new total.
+    expect(carry).toBe(0);
+    expect(782 - 527 - 255).toBe(carry);
   });
 });

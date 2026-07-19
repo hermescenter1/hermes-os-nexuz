@@ -240,6 +240,10 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // administrative surfaces
     "crm", "billing", "apiPlatform", "adminDocuments", "org", "admin",
     "erp", "siteSecurity", "adminDocumentSearch", "adminAccess",
+    // PHASE 87L.6F — the final namespaces. With these the catalog is CLOSED:
+    // every namespace is translated and the carryover ceiling below is zero.
+    "multiSite", "caseStudio", "digitalTwin", "industrial", "unknownCenter",
+    "automation", "documents", "analytics", "platform", "storage",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
@@ -281,8 +285,11 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // moved to TRANSLATED_NS → 1262 - 480 = 782.
     // 87L.6E: the 10 enterprise/commercial/administrative namespaces
     // (527 leaves) moved to TRANSLATED_NS → 782 - 527 = 255.
-    const CEILING_AFTER_87L6E = 255;
-    expect(stillEnglish.length).toBeLessThanOrEqual(CEILING_AFTER_87L6E);
+    // 87L.6F: the final 10 namespaces (255 leaves) → 255 - 255 = 0.
+    // The ceiling is now ZERO: every namespace is translated, so any future
+    // regression that reintroduces English carryover fails here immediately.
+    const CEILING_AFTER_87L6F = 0;
+    expect(stillEnglish.length).toBeLessThanOrEqual(CEILING_AFTER_87L6F);
   });
 
   it("prints the audit report", () => {

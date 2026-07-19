@@ -1,13 +1,123 @@
 {
   "category": "scadaHmi",
   "libraries": [
-    { "id": "scadaTags", "domains": ["scada"],
-      "keywords": ["scada", "tag", "polling", "wincc", "supervisory", "اسکادا", "تگ", "پایش"] },
-    { "id": "hmiDesign", "domains": ["hmi"],
-      "keywords": ["hmi", "screen", "display", "operator panel", "touch", "faceplate", "اچ‌ام‌آی", "صفحه اپراتوری", "نمایشگر", "پنل لمسی"] },
-    { "id": "alarms", "domains": ["scada", "hmi", "maintenance"],
-      "keywords": ["alarm", "alert", "flood", "chattering", "priority", "هشدار", "آلارم", "اولویت"] },
-    { "id": "historian", "domains": ["scada"],
-      "keywords": ["historian", "time series", "trend", "archive", "compression", "هیستورین", "سری زمانی", "ترند", "آرشیو"] }
+    {
+      "id": "scadaTags",
+      "domains": [
+        "scada"
+      ],
+      "keywords": [
+        "scada",
+        "tag",
+        "polling",
+        "wincc",
+        "supervisory",
+        "اسکادا",
+        "تگ",
+        "پایش"
+      ],
+      "keywordsDe": [
+        "abfragegruppe",
+        "tag-benennung",
+        "datenqualität",
+        "qualitätskennzeichen",
+        "symboltabelle",
+        "leitsystem",
+        "kommunikationstreiber",
+        "treiberdiagnose",
+        "veraltete werte",
+        "namenskonvention",
+        "skalierung"
+      ]
+    },
+    {
+      "id": "hmiDesign",
+      "domains": [
+        "hmi"
+      ],
+      "keywords": [
+        "hmi",
+        "screen",
+        "display",
+        "operator panel",
+        "touch",
+        "faceplate",
+        "اچ‌ام‌آی",
+        "صفحه اپراتوری",
+        "نمایشگر",
+        "پنل لمسی"
+      ],
+      "keywordsDe": [
+        "bedienbild",
+        "bedienoberfläche",
+        "bedienpersonal",
+        "prozessführung",
+        "farbkodierung",
+        "quittierung",
+        "navigationstiefe",
+        "grenzwertanzeige",
+        "lesbarkeit",
+        "bildhierarchie"
+      ]
+    },
+    {
+      "id": "alarms",
+      "domains": [
+        "scada",
+        "hmi",
+        "maintenance"
+      ],
+      "keywords": [
+        "alarm",
+        "alert",
+        "flood",
+        "chattering",
+        "priority",
+        "هشدار",
+        "آلارم",
+        "اولویت"
+      ],
+      "keywordsDe": [
+        "alarmflut",
+        "störmeldung",
+        "quittieren",
+        "alarmpriorität",
+        "grenzwert",
+        "totband",
+        "verzögerungszeit",
+        "alarmphilosophie",
+        "unterdrückung",
+        "anstehende meldung"
+      ]
+    },
+    {
+      "id": "historian",
+      "domains": [
+        "scada"
+      ],
+      "keywords": [
+        "historian",
+        "time series",
+        "trend",
+        "archive",
+        "compression",
+        "هیستورین",
+        "سری زمانی",
+        "ترند",
+        "آرشیو"
+      ],
+      "keywordsDe": [
+        "archivierung",
+        "langzeitarchiv",
+        "verdichtung",
+        "abtastrate",
+        "aufbewahrungsfrist",
+        "speicherbedarf",
+        "datenlücke",
+        "zeitstempel",
+        "trendauswertung",
+        "messwertarchiv"
+      ]
+    }
   ]
 }

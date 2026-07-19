@@ -1,11 +1,101 @@
 {
   "category": "maintenance",
   "libraries": [
-    { "id": "troubleshooting", "domains": ["maintenance"],
-      "keywords": ["troubleshoot", "fault", "intermittent", "fails", "broken", "not working", "stopped", "عیب‌یابی", "خرابی", "خطا", "کار نمیکند", "متوقف", "قطعی"] },
-    { "id": "predictive", "domains": ["maintenance"],
-      "keywords": ["predictive", "vibration analysis", "condition monitoring", "oil analysis", "thermography", "پیش‌بینانه", "پایش وضعیت", "آنالیز ارتعاش", "ترموگرافی"] },
-    { "id": "rca", "domains": ["maintenance"],
-      "keywords": ["root cause", "5 why", "five whys", "fishbone", "ishikawa", "علت ریشه‌ای", "پنج چرا", "استخوان ماهی"] }
+    {
+      "id": "troubleshooting",
+      "domains": [
+        "maintenance"
+      ],
+      "keywords": [
+        "troubleshoot",
+        "fault",
+        "intermittent",
+        "fails",
+        "broken",
+        "not working",
+        "stopped",
+        "عیب‌یابی",
+        "خرابی",
+        "خطا",
+        "کار نمیکند",
+        "متوقف",
+        "قطعی"
+      ],
+      "keywordsDe": [
+        "fehlersuche",
+        "fehlereingrenzung",
+        "eingrenzung",
+        "signalkette",
+        "verdrahtung",
+        "feldgerät",
+        "sporadisch",
+        "teiletausch",
+        "bedingungsprotokoll",
+        "erlaubnisdisziplin",
+        "verifizierung"
+      ]
+    },
+    {
+      "id": "predictive",
+      "domains": [
+        "maintenance"
+      ],
+      "keywords": [
+        "predictive",
+        "vibration analysis",
+        "condition monitoring",
+        "oil analysis",
+        "thermography",
+        "پیش‌بینانه",
+        "پایش وضعیت",
+        "آنالیز ارتعاش",
+        "ترموگرافی"
+      ],
+      "keywordsDe": [
+        "prädiktiv",
+        "instandhaltung",
+        "zustandsüberwachung",
+        "zustandsbasiert",
+        "schwingungsanalyse",
+        "thermografie",
+        "wärmebild",
+        "stromsignatur",
+        "lagerfrequenz",
+        "unwucht",
+        "fluchtungsfehler",
+        "vorlaufzeit",
+        "meldeschwelle"
+      ]
+    },
+    {
+      "id": "rca",
+      "domains": [
+        "maintenance"
+      ],
+      "keywords": [
+        "root cause",
+        "5 why",
+        "five whys",
+        "fishbone",
+        "ishikawa",
+        "علت ریشه‌ای",
+        "پنج چرا",
+        "استخوان ماهی"
+      ],
+      "keywordsDe": [
+        "grundursache",
+        "ursachenanalyse",
+        "grundursachenanalyse",
+        "5-warum",
+        "fünf warum",
+        "ishikawa-diagramm",
+        "evidenzsicherung",
+        "ausfallhistorie",
+        "ausfallart",
+        "korrekturmaßnahme",
+        "wiederholter ausfall",
+        "beinaheunfall"
+      ]
+    }
   ]
 }

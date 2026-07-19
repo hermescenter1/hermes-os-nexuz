@@ -391,26 +391,26 @@
     }
   },
   "platform": {
-    "eyebrow": "The platform",
-    "title": "One surface for the people who run the plant.",
-    "lede": "Hermes OS sits between your engineers and your equipment. The modules below share one AI core, one knowledge base, and one bilingual interface.",
-    "principlesTitle": "What holds it together",
+    "eyebrow": "Die Plattform",
+    "title": "Eine Oberfläche für die Menschen, die die Anlage betreiben.",
+    "lede": "Hermes OS sitzt zwischen Ihren Ingenieuren und Ihren Anlagen. Die folgenden Module teilen sich einen KI-Kern, eine Wissensbasis und eine zweisprachige Oberfläche.",
+    "principlesTitle": "Was alles zusammenhält",
     "principles": {
       "bilingual": {
-        "name": "Bilingual by design",
-        "desc": "Persian and English are equal — RTL and LTR, not an afterthought."
+        "name": "Zweisprachig von Grund auf",
+        "desc": "Persisch und Englisch sind gleichrangig — RTL und LTR, nicht nachträglich angebaut."
       },
       "modular": {
-        "name": "Modular, not monolithic",
-        "desc": "Adopt one module or all six; each stands on its own."
+        "name": "Modular statt monolithisch",
+        "desc": "Setzen Sie ein Modul oder alle sechs ein; jedes steht für sich."
       },
       "onprem": {
-        "name": "On-premise ready",
-        "desc": "Built to run inside the plant, including air-gapped installs."
+        "name": "Bereit für den Betrieb vor Ort",
+        "desc": "Für den Betrieb innerhalb der Anlage gebaut, einschließlich Air-Gap-Installationen."
       },
       "vendorNeutral": {
-        "name": "Vendor-neutral",
-        "desc": "Speaks the common industrial protocols rather than locking you in."
+        "name": "Herstellerneutral",
+        "desc": "Spricht die gängigen Industrieprotokolle, statt Sie zu binden."
       }
     }
   },
@@ -1773,97 +1773,97 @@
   },
   "unknownCenter": {
     "eyebrow": "Intelligence",
-    "title": "Unknown Analysis Center",
-    "lede": "Queries Hermes Brain could not confidently classify this session — triage them, and flag the ones worth teaching the system.",
+    "title": "Analysezentrum für Unbekanntes",
+    "lede": "Anfragen, die Hermes Brain in dieser Sitzung nicht sicher einordnen konnte — sichten Sie sie und markieren Sie jene, die es lohnt, dem System beizubringen.",
     "metrics": {
-      "total": "Total Unknown",
-      "avgConfidence": "Average Confidence",
-      "topDomain": "Most Suggested Domain",
-      "topVendor": "Most Suggested Vendor",
+      "total": "Unbekannte gesamt",
+      "avgConfidence": "Durchschnittliche Konfidenz",
+      "topDomain": "Am häufigsten vorgeschlagene Domäne",
+      "topVendor": "Am häufigsten vorgeschlagener Hersteller",
       "none": "—"
     },
     "sections": {
-      "queue": "Unknown Queue",
-      "suggested": "Suggested Classification",
-      "training": "Training Candidates"
+      "queue": "Warteschlange Unbekanntes",
+      "suggested": "Vorgeschlagene Klassifizierung",
+      "training": "Trainingskandidaten"
     },
     "queue": {
-      "query": "Query",
-      "time": "Time",
-      "confidence": "Confidence",
-      "empty": "No unknown analyses this session. Run a vague query in the Brain or Copilot to see it appear here."
+      "query": "Anfrage",
+      "time": "Zeit",
+      "confidence": "Konfidenz",
+      "empty": "Keine unbekannten Analysen in dieser Sitzung. Stellen Sie eine vage Anfrage im Brain oder Copilot, damit sie hier erscheint."
     },
     "suggested": {
-      "domains": "Suggested domains",
-      "vendors": "Suggested vendors",
-      "none": "No near-miss signals — the query was too general for any suggestion."
+      "domains": "Vorgeschlagene Domänen",
+      "vendors": "Vorgeschlagene Hersteller",
+      "none": "Keine Beinahe-Treffer — die Anfrage war für jeden Vorschlag zu allgemein."
     },
     "training": {
-      "lede": "Resolved items become candidates to teach the system in Phase 2.",
-      "empty": "Mark items as resolved to build training candidates.",
-      "count": "{n} candidate(s)"
+      "lede": "Erledigte Einträge werden zu Kandidaten, um dem System in Phase 2 etwas beizubringen.",
+      "empty": "Markieren Sie Einträge als erledigt, um Trainingskandidaten aufzubauen.",
+      "count": "{n} Kandidat(en)"
     },
     "actions": {
-      "resolve": "Mark as Resolved",
-      "resolved": "Resolved",
-      "convert": "Convert to Case",
-      "addLibrary": "Add to Knowledge Library"
+      "resolve": "Als erledigt markieren",
+      "resolved": "Erledigt",
+      "convert": "In Fall umwandeln",
+      "addLibrary": "Zur Wissensbibliothek hinzufügen"
     },
-    "actionNote": "Actions are session-scoped placeholders — Phase 2 wires them to persistent case authoring and library ingestion.",
-    "sessionNote": "Session-scoped — resets when the server restarts (no database in V1)."
+    "actionNote": "Die Aktionen sind sitzungsbezogene Platzhalter — Phase 2 verbindet sie mit dauerhafter Fallerstellung und Bibliotheksaufnahme.",
+    "sessionNote": "Sitzungsbezogen — wird beim Neustart des Servers zurückgesetzt (keine Datenbank in V1)."
   },
   "caseStudio": {
-    "eyebrow": "Knowledge",
-    "title": "Case Studio",
-    "lede": "Draft new engineering cases from a structured form, preview them as they would appear in the Case Explorer, and queue them for review.",
-    "sessionNote": "Drafts are session/local only in V1 — they are not saved to a database, written to disk, or published. They clear when the server restarts.",
+    "eyebrow": "Wissen",
+    "title": "Fallstudio",
+    "lede": "Neue Engineering-Fälle über ein strukturiertes Formular entwerfen, sie in der Vorschau so ansehen, wie sie im Fall-Explorer erscheinen würden, und zur Prüfung einreihen.",
+    "sessionNote": "Entwürfe bestehen in V1 nur sitzungs- bzw. lokal — sie werden weder in einer Datenbank gespeichert noch auf die Festplatte geschrieben oder veröffentlicht. Beim Neustart des Servers werden sie gelöscht.",
     "metrics": {
-      "drafts": "Total Drafts",
-      "ready": "Ready to Review",
-      "published": "Published (placeholder)",
-      "vendors": "Vendors Covered"
+      "drafts": "Entwürfe gesamt",
+      "ready": "Bereit zur Prüfung",
+      "published": "Veröffentlicht (Platzhalter)",
+      "vendors": "Abgedeckte Hersteller"
     },
     "form": {
-      "heading": "Create Case",
-      "title": "Title",
-      "vendor": "Vendor",
-      "domain": "Domain",
-      "problem": "Problem",
-      "primary": "Primary Root Cause",
-      "secondary": "Secondary Causes",
-      "verification": "Verification Steps",
-      "corrective": "Corrective Actions",
-      "safety": "Safety Notes",
-      "tags": "Tags",
-      "confidence": "Confidence",
-      "multiHint": "One per line",
-      "tagsHint": "Comma-separated",
-      "selectVendor": "Select vendor",
-      "selectDomain": "Select domain",
-      "reset": "Clear form"
+      "heading": "Fall anlegen",
+      "title": "Titel",
+      "vendor": "Hersteller",
+      "domain": "Domäne",
+      "problem": "Problembeschreibung",
+      "primary": "Primäre Grundursache",
+      "secondary": "Sekundäre Ursachen",
+      "verification": "Verifizierungsschritte",
+      "corrective": "Korrekturmaßnahmen",
+      "safety": "Sicherheitshinweise",
+      "tags": "Schlagwörter",
+      "confidence": "Konfidenz",
+      "multiHint": "Eine pro Zeile",
+      "tagsHint": "Kommagetrennt",
+      "selectVendor": "Hersteller auswählen",
+      "selectDomain": "Domäne auswählen",
+      "reset": "Formular leeren"
     },
     "preview": {
-      "heading": "Draft Preview",
-      "explorerNote": "As it would appear in the Engineering Case Explorer",
-      "empty": "Fill in the title to preview the case.",
-      "rootCause": "Root Cause",
-      "corrective": "Corrective Action"
+      "heading": "Entwurfsvorschau",
+      "explorerNote": "So, wie er im Engineering-Fall-Explorer erscheinen würde",
+      "empty": "Geben Sie den Titel ein, um den Fall in der Vorschau zu sehen.",
+      "rootCause": "Grundursache",
+      "corrective": "Korrekturmaßnahme"
     },
     "queue": {
-      "heading": "Draft Queue",
-      "empty": "No drafts yet this session.",
-      "statusDraft": "Draft",
-      "statusReady": "Ready",
-      "statusPublished": "Published"
+      "heading": "Entwurfswarteschlange",
+      "empty": "Noch keine Entwürfe in dieser Sitzung.",
+      "statusDraft": "Entwurf",
+      "statusReady": "Bereit",
+      "statusPublished": "Veröffentlicht"
     },
     "actions": {
-      "save": "Save Draft",
-      "ready": "Mark Ready",
-      "publish": "Publish (placeholder)",
-      "remove": "Remove"
+      "save": "Entwurf speichern",
+      "ready": "Als bereit markieren",
+      "publish": "Veröffentlichen (Platzhalter)",
+      "remove": "Entfernen"
     },
     "validation": {
-      "titleRequired": "A title is required to save a draft."
+      "titleRequired": "Zum Speichern eines Entwurfs ist ein Titel erforderlich."
     }
   },
   "knowledgeStudio": {
@@ -1935,9 +1935,9 @@
     }
   },
   "storage": {
-    "label": "Storage",
-    "session": "Session",
-    "database": "Database"
+    "label": "Speicher",
+    "session": "Sitzung",
+    "database": "Datenbank"
   },
   "auth": {
     "login": "Anmelden",
@@ -2602,105 +2602,105 @@
   },
   "industrial": {
     "eyebrow": "Phase 35",
-    "title": "Industrial Edge Gateway",
-    "subtitle": "Monitor industrial sites, gateways, assets, and telemetry streams.",
-    "safetyBanner": "Safety: Read / Observe only — no control commands to PLCs or actuators.",
-    "loading": "Loading…",
-    "loadError": "Failed to load data. Check your connection.",
+    "title": "Industrielles Edge-Gateway",
+    "subtitle": "Industriestandorte, Gateways, Anlagen und Telemetrieströme überwachen.",
+    "safetyBanner": "Sicherheit: Nur Lesen / Beobachten — keine Steuerbefehle an PLCs oder Aktoren.",
+    "loading": "Wird geladen…",
+    "loadError": "Daten konnten nicht geladen werden. Prüfen Sie Ihre Verbindung.",
     "sites": {
-      "eyebrow": "Industrial",
-      "title": "Sites",
-      "description": "Physical plant locations and their status.",
-      "empty": "No sites configured."
+      "eyebrow": "Industrie",
+      "title": "Standorte",
+      "description": "Physische Anlagenstandorte und ihr Status.",
+      "empty": "Keine Standorte konfiguriert."
     },
     "gateways": {
-      "eyebrow": "Industrial",
+      "eyebrow": "Industrie",
       "title": "Gateways",
-      "description": "Edge gateway devices collecting field data.",
-      "empty": "No gateways registered."
+      "description": "Edge-Gateway-Geräte, die Felddaten erfassen.",
+      "empty": "Keine Gateways registriert."
     },
     "assets": {
-      "eyebrow": "Industrial",
-      "title": "Assets",
-      "description": "PLCs, drives, sensors, and other industrial equipment.",
-      "empty": "No assets defined."
+      "eyebrow": "Industrie",
+      "title": "Anlagen",
+      "description": "PLCs, Antriebe, Sensoren und weitere Industrieausrüstung.",
+      "empty": "Keine Anlagen definiert."
     },
     "telemetry": {
-      "eyebrow": "Industrial",
-      "title": "Telemetry",
-      "description": "Recent sensor and process data from field gateways.",
-      "empty": "No telemetry records yet.",
-      "readOnlyNote": "Showing last 50 readings. Telemetry is read-only — Hermes does not send commands."
+      "eyebrow": "Industrie",
+      "title": "Telemetrie",
+      "description": "Aktuelle Sensor- und Prozessdaten von Feld-Gateways.",
+      "empty": "Noch keine Telemetriedatensätze.",
+      "readOnlyNote": "Es werden die letzten 50 Messwerte angezeigt. Die Telemetrie ist schreibgeschützt — Hermes sendet keine Befehle."
     },
     "connectors": {
-      "eyebrow": "Industrial",
-      "title": "Connectors",
-      "description": "Protocol connector configurations per gateway.",
-      "empty": "No connectors configured.",
-      "foundationNote": "Phase 35 foundation — connector definitions only. Real drivers ship in Phase 36+.",
-      "enabled": "Enabled",
-      "disabled": "Disabled"
+      "eyebrow": "Industrie",
+      "title": "Konnektoren",
+      "description": "Protokoll-Konnektorkonfigurationen je Gateway.",
+      "empty": "Keine Konnektoren konfiguriert.",
+      "foundationNote": "Grundlage aus Phase 35 — nur Konnektordefinitionen. Echte Treiber folgen ab Phase 36.",
+      "enabled": "Aktiviert",
+      "disabled": "Deaktiviert"
     }
   },
   "digitalTwin": {
-    "eyebrow": "Digital Twin",
-    "title": "Digital Twin Engine",
-    "subtitle": "Factory structure, asset hierarchy, and relationship topology — observation only.",
-    "readOnlyBanner": "READ / OBSERVE ONLY — No write-back to PLCs or control systems.",
-    "selectSitePrompt": "Select a site from the Industrial Gateway dashboard to explore its digital twin.",
-    "noNodes": "No nodes found for this site.",
-    "noRelations": "No relations found.",
-    "nodes": "Nodes",
-    "relations": "Relations",
-    "displayName": "Display Name",
-    "nodeType": "Type",
-    "assetId": "Asset ID",
-    "created": "Created",
-    "source": "Source",
-    "relationType": "Relation",
-    "target": "Target",
-    "healthScore": "Asset Health",
-    "overallScore": "Overall Score",
-    "dataMayBeStale": "Data may be stale",
-    "freshness": "Freshness",
-    "quality": "Quality",
+    "eyebrow": "Digitaler Zwilling",
+    "title": "Digital-Twin-Engine",
+    "subtitle": "Werksstruktur, Anlagenhierarchie und Beziehungstopologie — ausschließlich Beobachtung.",
+    "readOnlyBanner": "NUR LESEN / BEOBACHTEN — Keine Rückschreibung an PLCs oder Steuerungssysteme.",
+    "selectSitePrompt": "Wählen Sie im Dashboard des Industrial Gateway einen Standort, um seinen digitalen Zwilling zu erkunden.",
+    "noNodes": "Keine Knoten für diesen Standort gefunden.",
+    "noRelations": "Keine Beziehungen gefunden.",
+    "nodes": "Knoten",
+    "relations": "Beziehungen",
+    "displayName": "Anzeigename",
+    "nodeType": "Typ",
+    "assetId": "Anlagen-ID",
+    "created": "Erstellt",
+    "source": "Quelle",
+    "relationType": "Beziehung",
+    "target": "Ziel",
+    "healthScore": "Anlagenzustand",
+    "overallScore": "Gesamtwert",
+    "dataMayBeStale": "Daten können veraltet sein",
+    "freshness": "Aktualität",
+    "quality": "Qualität",
     "status": "Status",
-    "lastTelemetry": "Last telemetry",
-    "graphView": "Graph View",
-    "children": "children",
+    "lastTelemetry": "Letzte Telemetrie",
+    "graphView": "Graphansicht",
+    "children": "Unterknoten",
     "assets": {
-      "eyebrow": "Asset Nodes",
-      "title": "Digital Twin Assets",
-      "description": "All asset nodes in the factory hierarchy for this site."
+      "eyebrow": "Anlagenknoten",
+      "title": "Anlagen des digitalen Zwillings",
+      "description": "Alle Anlagenknoten in der Werkshierarchie dieses Standorts."
     },
     "graph": {
-      "eyebrow": "Topology",
-      "title": "Factory Graph",
-      "description": "Visual representation of factory structure and asset relationships."
+      "eyebrow": "Topologie",
+      "title": "Werksgraph",
+      "description": "Visuelle Darstellung der Werksstruktur und der Anlagenbeziehungen."
     },
     "layout": {
-      "eyebrow": "Canvas",
-      "title": "Layout Editor",
-      "description": "Arrange nodes on a custom canvas for your factory floor.",
-      "emptyState": "No layouts saved yet. Create one from the API to see it here."
+      "eyebrow": "Arbeitsfläche",
+      "title": "Layout-Editor",
+      "description": "Ordnen Sie Knoten auf einer eigenen Arbeitsfläche für Ihre Fertigungshalle an.",
+      "emptyState": "Noch keine Layouts gespeichert. Erstellen Sie eines über die API, um es hier zu sehen."
     }
   },
   "analytics": {
-    "title": "Time Series Analytics",
-    "subtitle": "Trends, KPIs, and anomaly detection across your industrial assets",
+    "title": "Zeitreihenanalytik",
+    "subtitle": "Trends, KPIs und Anomalieerkennung über Ihre Industrieanlagen hinweg",
     "kpiTitle": "KPIs",
-    "kpiDesc": "Key performance indicators calculated from telemetry",
+    "kpiDesc": "Aus Telemetriedaten berechnete Leistungskennzahlen",
     "trendsTitle": "Trends",
-    "trendsDesc": "Historical telemetry trends over selected periods",
-    "anomaliesTitle": "Anomalies",
-    "anomaliesDesc": "Detected spikes, drops, and fault patterns",
-    "alarmsTitle": "Alarm Frequency",
-    "alarmsDesc": "Alarm rate and BAD/STALE record analysis",
-    "availabilityLabel": "Availability",
-    "runtimeLabel": "Runtime",
-    "downtimeLabel": "Downtime",
-    "efficiencyLabel": "Efficiency",
-    "noData": "No analytics data available"
+    "trendsDesc": "Historische Telemetrietrends über ausgewählte Zeiträume",
+    "anomaliesTitle": "Anomalien",
+    "anomaliesDesc": "Erkannte Ausschläge, Einbrüche und Fehlermuster",
+    "alarmsTitle": "Alarmhäufigkeit",
+    "alarmsDesc": "Alarmrate und Analyse von BAD-/STALE-Datensätzen",
+    "availabilityLabel": "Verfügbarkeit",
+    "runtimeLabel": "Laufzeit",
+    "downtimeLabel": "Stillstandszeit",
+    "efficiencyLabel": "Effizienz",
+    "noData": "Keine Analysedaten verfügbar"
   },
   "predictive": {
     "title": "Prädiktive Instandhaltung",
@@ -3067,61 +3067,61 @@
     }
   },
   "multiSite": {
-    "enterpriseSummary": "Enterprise Industrial Summary",
-    "enterpriseSummaryDesc": "Cross-site performance overview for the entire organization.",
-    "benchmarks": "Site Benchmarks",
-    "benchmarksDesc": "Run and inspect the latest multi-site benchmark computation.",
-    "riskRanking": "Site Risk Ranking",
-    "riskRankingDesc": "Sites ordered by average asset risk score, highest risk first.",
-    "kpiComparison": "KPI Comparison",
-    "kpiComparisonDesc": "Cross-site availability, efficiency, and health score comparison.",
-    "failurePatterns": "Cross-Site Failure Patterns",
-    "failurePatternsDesc": "Failure modes appearing in engineering cases across 2+ distinct sites.",
-    "knowledgeCoverage": "Knowledge Coverage",
-    "knowledgeCoverageDesc": "Percentage of assets per site that have linked knowledge resources.",
-    "sites": "Sites",
-    "activeSites": "Active sites",
-    "site": "Site",
-    "avgOrgRisk": "Org. Avg. Risk",
-    "avgAvailability": "Avg. Availability",
-    "avgRisk": "Avg. Risk",
-    "maxRisk": "Max Risk",
-    "distribution": "Distribution",
-    "confidence": "Confidence",
-    "coverage": "Coverage",
-    "availability": "Availability",
-    "efficiency": "Efficiency",
-    "healthScore": "Health Score",
-    "period": "Period",
-    "periodLabel": "Period",
-    "dataFreshness": "Data freshness",
-    "crossSitePatterns": "Cross-Site Patterns",
-    "failurePatternsSub": "Cross-site failure modes detected",
-    "sitesRanked": "sites ranked",
-    "sitesCompared": "sites compared",
-    "cases": "cases",
-    "assetTypes": "Asset types",
-    "assetsLinked": "Assets linked",
-    "linksByType": "Links by type",
-    "assets": "Assets",
+    "enterpriseSummary": "Industrielle Unternehmensübersicht",
+    "enterpriseSummaryDesc": "Standortübergreifende Leistungsübersicht für die gesamte Organisation.",
+    "benchmarks": "Standort-Benchmarks",
+    "benchmarksDesc": "Die jüngste standortübergreifende Benchmark-Berechnung ausführen und prüfen.",
+    "riskRanking": "Standort-Risikorangliste",
+    "riskRankingDesc": "Standorte nach durchschnittlichem Anlagenrisiko geordnet, höchstes Risiko zuerst.",
+    "kpiComparison": "KPI-Vergleich",
+    "kpiComparisonDesc": "Standortübergreifender Vergleich von Verfügbarkeit, Effizienz und Zustandswert.",
+    "failurePatterns": "Standortübergreifende Ausfallmuster",
+    "failurePatternsDesc": "Ausfallarten, die in Engineering-Fällen an mindestens 2 verschiedenen Standorten auftreten.",
+    "knowledgeCoverage": "Wissensabdeckung",
+    "knowledgeCoverageDesc": "Prozentsatz der Anlagen je Standort mit verknüpften Wissensressourcen.",
+    "sites": "Standorte",
+    "activeSites": "Aktive Standorte",
+    "site": "Standort",
+    "avgOrgRisk": "Durchschn. Risiko (Org.)",
+    "avgAvailability": "Durchschn. Verfügbarkeit",
+    "avgRisk": "Durchschn. Risiko",
+    "maxRisk": "Maximales Risiko",
+    "distribution": "Verteilung",
+    "confidence": "Konfidenz",
+    "coverage": "Abdeckung",
+    "availability": "Verfügbarkeit",
+    "efficiency": "Effizienz",
+    "healthScore": "Zustandswert",
+    "period": "Zeitraum",
+    "periodLabel": "Zeitraum",
+    "dataFreshness": "Datenaktualität",
+    "crossSitePatterns": "Standortübergreifende Muster",
+    "failurePatternsSub": "Standortübergreifend erkannte Ausfallarten",
+    "sitesRanked": "Standorte eingestuft",
+    "sitesCompared": "Standorte verglichen",
+    "cases": "Fälle",
+    "assetTypes": "Anlagentypen",
+    "assetsLinked": "Verknüpfte Anlagen",
+    "linksByType": "Verknüpfungen nach Typ",
+    "assets": "Anlagen",
     "status": "Status",
-    "latestBenchmark": "Latest Benchmark",
-    "runBenchmark": "Run Benchmark",
-    "computing": "Computing…",
-    "benchmarkFailed": "Benchmark failed. Please try again.",
-    "noBenchmark": "No benchmark computed yet.",
-    "noBenchmarkHint": "Click \"Run Benchmark\" to generate cross-site analytics.",
-    "noPatternsFound": "No cross-site failure patterns detected.",
-    "noPatternsFoundHint": "Patterns are detected when the same failure mode appears in cases across 2+ sites.",
-    "noKnowledgeData": "No knowledge coverage data available.",
-    "insufficientData": "Insufficient Data",
-    "notComparable": "Not comparable",
-    "na": "N/A",
-    "backToSummary": "Back to Summary",
-    "kpiNormalizationNote": "Availability, efficiency, and health score are 0–100 rate means, normalized per asset. Directly comparable across sites. Raw runtime/downtime counts are excluded.",
-    "kgStaleWarning": "Knowledge graph is stale. Rebuild via Industrial → Knowledge Graph to refresh.",
-    "loading": "Loading…",
-    "errorLoading": "Failed to load data."
+    "latestBenchmark": "Jüngster Benchmark",
+    "runBenchmark": "Benchmark ausführen",
+    "computing": "Wird berechnet…",
+    "benchmarkFailed": "Benchmark fehlgeschlagen. Bitte erneut versuchen.",
+    "noBenchmark": "Noch kein Benchmark berechnet.",
+    "noBenchmarkHint": "Klicken Sie auf „Benchmark ausführen“, um standortübergreifende Analysen zu erzeugen.",
+    "noPatternsFound": "Keine standortübergreifenden Ausfallmuster erkannt.",
+    "noPatternsFoundHint": "Muster werden erkannt, wenn dieselbe Ausfallart in Fällen an mindestens 2 Standorten auftritt.",
+    "noKnowledgeData": "Keine Daten zur Wissensabdeckung verfügbar.",
+    "insufficientData": "Unzureichende Daten",
+    "notComparable": "Nicht vergleichbar",
+    "na": "k. A.",
+    "backToSummary": "Zurück zur Übersicht",
+    "kpiNormalizationNote": "Verfügbarkeit, Effizienz und Zustandswert sind Mittelwerte von Raten im Bereich 0–100, je Anlage normalisiert. Direkt standortübergreifend vergleichbar. Rohe Laufzeit-/Stillstandszählwerte sind ausgenommen.",
+    "kgStaleWarning": "Der Wissensgraph ist veraltet. Bauen Sie ihn über Industrie → Wissensgraph neu auf, um ihn zu aktualisieren.",
+    "loading": "Wird geladen…",
+    "errorLoading": "Daten konnten nicht geladen werden."
   },
   "about": {
     "eyebrow": "Über Hermes Novin Mehr IRIC",
@@ -3200,23 +3200,23 @@
   "automation": {
     "dashboard": "Dashboard",
     "workflows": "Workflows",
-    "templates": "Templates",
-    "executions": "Executions",
+    "templates": "Vorlagen",
+    "executions": "Ausführungen",
     "webhooks": "Webhooks",
-    "settings": "Settings",
-    "newWorkflow": "New Workflow",
-    "editWorkflow": "Edit Workflow",
-    "noWorkflows": "No workflows yet.",
-    "noExecutions": "No executions yet.",
-    "noWebhooks": "No webhooks registered.",
-    "active": "Active",
-    "paused": "Paused",
-    "draft": "Draft",
-    "archived": "Archived",
-    "success": "Success",
-    "failed": "Failed",
-    "partial": "Partial",
-    "cancelled": "Cancelled"
+    "settings": "Einstellungen",
+    "newWorkflow": "Neuer Workflow",
+    "editWorkflow": "Workflow bearbeiten",
+    "noWorkflows": "Noch keine Workflows.",
+    "noExecutions": "Noch keine Ausführungen.",
+    "noWebhooks": "Keine Webhooks registriert.",
+    "active": "Aktiv",
+    "paused": "Pausiert",
+    "draft": "Entwurf",
+    "archived": "Archiviert",
+    "success": "Erfolgreich",
+    "failed": "Fehlgeschlagen",
+    "partial": "Teilweise",
+    "cancelled": "Abgebrochen"
   },
   "erp": {
     "nav": {
@@ -3279,25 +3279,25 @@
     "nav": {
       "dashboard": "Dashboard",
       "explorer": "Explorer",
-      "search": "Search",
-      "approvals": "Approvals",
-      "revisions": "Revisions",
-      "comments": "Comments",
+      "search": "Suche",
+      "approvals": "Freigaben",
+      "revisions": "Revisionen",
+      "comments": "Kommentare",
       "audit": "Audit",
-      "folders": "Folders",
-      "categories": "Categories",
-      "templates": "Templates",
-      "retention": "Retention",
-      "settings": "Settings"
+      "folders": "Ordner",
+      "categories": "Kategorien",
+      "templates": "Vorlagen",
+      "retention": "Aufbewahrung",
+      "settings": "Einstellungen"
     },
     "dashboard": {
-      "title": "EDMS — Document Management",
-      "totalDocuments": "Total Documents",
-      "drafts": "Drafts",
-      "inReview": "In Review",
-      "approved": "Approved",
-      "pendingApprovals": "Pending Approvals",
-      "activeCheckouts": "Active Checkouts"
+      "title": "EDMS — Dokumentenverwaltung",
+      "totalDocuments": "Dokumente gesamt",
+      "drafts": "Entwürfe",
+      "inReview": "In Prüfung",
+      "approved": "Freigegeben",
+      "pendingApprovals": "Ausstehende Freigaben",
+      "activeCheckouts": "Aktive Auschecks"
     }
   },
   "journal": {
