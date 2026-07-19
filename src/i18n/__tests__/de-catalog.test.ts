@@ -231,6 +231,9 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // PHASE 87L.6C — command + industrial operations surfaces
     "dashboard", "assetMaintenance", "engineeringDocuments",
     "businessOps", "orgAdministration",
+    // PHASE 87L.6D — intelligence surfaces (knowledge stays outstanding)
+    "brain", "copilot", "ke", "knowledgeGraph",
+    "predictive", "knowledgeStudio", "industrialBrainReport",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
@@ -268,10 +271,10 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // >= 1929 broke when 87L.6C translated 549 leaves). The meaningful
     // contract is a CEILING that each wave must lower deliberately.
     //
-    // 87L.6C: dashboard, assetMaintenance, engineeringDocuments, businessOps
-    // and orgAdministration moved to TRANSLATED_NS → 2300 - 549 = 1751.
-    const CEILING_AFTER_87L6C = 1751;
-    expect(stillEnglish.length).toBeLessThanOrEqual(CEILING_AFTER_87L6C);
+    // 87L.6D: brain/copilot/ke/knowledgeGraph/predictive/knowledgeStudio/report
+    // moved to TRANSLATED_NS → 1751 - 489 = 1262.
+    const CEILING_AFTER_87L6D = 1262;
+    expect(stillEnglish.length).toBeLessThanOrEqual(CEILING_AFTER_87L6D);
   });
 
   it("prints the audit report", () => {
