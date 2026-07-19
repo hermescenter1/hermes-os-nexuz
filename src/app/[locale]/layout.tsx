@@ -130,6 +130,11 @@ export async function generateMetadata({
       "apple-mobile-web-app-status-bar-style": "black-translucent",
       "theme-color": "#050816",
       "msapplication-TileColor": "#050816",
+      // eNAMAD (Iranian e-commerce trust seal) domain-ownership verification.
+      // Declared here rather than in a page so it is inherited by every public
+      // route: page-level metadata is built by buildMetadata(), which never
+      // sets `other`, so this entry is not overridden anywhere.
+      enamad: "43315120",
     },
   };
 }
