@@ -26,25 +26,39 @@ three locales as one shape.
 
 ---
 
-## 2. Known org-level API observation (NOT changed in this phase)
+## 2. Org-level API permission split — RESOLVED (PHASE 87L.6H.1)
 
-Distinct from the app-level Role axis closed in 87L.6G, the **organization**
-RBAC matrix in `src/lib/org/rbac.ts` grants:
+The owner resolved the `view_api_keys` question. The single broad permission was
+split into three, so an engineer can monitor consumption without being able to
+enumerate the organization's key inventory.
 
+```ts
+view_api_usage    // aggregate consumption only — never key identity
+view_api_keys     // key inventory: names, prefixes, last4, scopes
+manage_api_keys   // create / rotate / revoke
 ```
-view_api_keys: ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "BILLING_ADMIN"]
-```
 
-So an org member whose **organization role** is `ENGINEER` may still LIST API
-keys and their scopes through `/api/platform/keys` (never the secret — that is
-one-time display at creation). This is a deliberate Phase-33 decision, on a
-different axis from the app-level `engineer` Role, and changing it would alter
-behaviour for every organization. **Owner decision required** — it is reported,
-not silently flipped.
+| Role | Usage | Key metadata | Manage keys |
+|---|:--:|:--:|:--:|
+| Engineer | ✅ | ❌ | ❌ |
+| Admin | ✅ | ✅ | ✅ |
+| Owner | ✅ | ✅ | ✅ |
+| Manager | ✅ | ✅ | ✅ |
+| Billing admin | ✅ | ✅ | ❌ |
+| Viewer | ❌ | ❌ | ❌ |
+| Unmapped Prisma role | ❌ | ❌ | ❌ |
 
-`manage_api_keys` (create / revoke / rotate) correctly excludes `ENGINEER`.
+Enforcement: `/api/platform/usage` and `/api/platform/rate-limits` require
+`view_api_usage`; `/api/platform/keys` GET requires `view_api_keys`; create,
+rotate and revoke require `manage_api_keys`. Secret material is returned only by
+the existing one-time create/rotate response and never appears in any list or
+detail response.
 
----
+**UI note (§8):** `/dashboard/api` mixes usage and key management in one
+surface, so it is NOT opened to engineers — the application-level `api_admin`
+denial from 87L.6G stands. A separate usage-only surface would be required
+before an engineer could see consumption in the UI. Engineers currently have
+the usage permission at the API layer only.
 
 ## 3. Human German review checklist (§14)
 
@@ -200,7 +214,7 @@ walk all 14 routes above and record:
 |---|---|---|---|
 | 1 | Native German review of all surfaces in §3 | German reviewer | **Yes, for publishing German** |
 | 2 | Authenticated browser matrix in §4 executed | QA / owner | **Yes** |
-| 3 | Org-level `view_api_keys` includes `ENGINEER` (§2 above) | Product owner | Decision required |
+| 3 | ~~Org-level `view_api_keys` includes `ENGINEER`~~ — **RESOLVED in 87L.6H.1** (§2 above) | Product owner | ✅ Closed |
 | 4 | Orphan namespace cleanup (§1) | Engineering | No — documented, deferred |
 
 Nothing in this phase has been committed, pushed, merged or deployed.

@@ -23,8 +23,13 @@ export type OrgPermission =
   | "view_departments"
   | "revoke_invitation"
   // Phase 33: API Platform
-  | "manage_api_keys"    // create / revoke / rotate keys
-  | "view_api_keys"      // list keys and usage stats
+  // PHASE 87L.6H.1 — the API platform is split into THREE permissions so an
+  // engineer can monitor consumption without seeing the key inventory.
+  // Previously one `view_api_keys` covered both, which forced a choice between
+  // "no operational visibility" and "sees every key's name, prefix and scopes".
+  | "manage_api_keys"    // create / rotate / revoke keys
+  | "view_api_keys"      // key INVENTORY: names, prefixes, last4, scopes
+  | "view_api_usage"     // AGGREGATE consumption only — never key identity
   // Phase 35: Industrial
   | "manage_industrial"   // create/update sites, gateways, assets, connectors
   | "view_industrial"     // read industrial resources and telemetry
@@ -62,8 +67,14 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_departments:     ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   revoke_invitation:    ["OWNER", "ADMIN", "MANAGER"],
   // Phase 33 — VIEWER and ENGINEER cannot touch API keys
+  // PHASE 87L.6H.1 (owner decision). ENGINEER was removed from view_api_keys:
+  // an engineer must not be able to enumerate the organization's key inventory
+  // (names, prefixes, last4, scopes). It gains view_api_usage instead, which
+  // carries aggregate consumption only. MANAGER and BILLING_ADMIN keep exactly
+  // the access they already had — no role gains anything here.
   manage_api_keys:      ["OWNER", "ADMIN", "MANAGER"],
-  view_api_keys:        ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "BILLING_ADMIN"],
+  view_api_keys:        ["OWNER", "ADMIN", "MANAGER", "BILLING_ADMIN"],
+  view_api_usage:       ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "BILLING_ADMIN"],
   // Phase 35 — Industrial Edge Gateway
   manage_industrial:    ["OWNER", "ADMIN", "MANAGER"],
   view_industrial:      ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],

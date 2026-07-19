@@ -143,7 +143,7 @@ Carried from the knowledge review sheet — each needs a house-style ruling:
 
 | # | Decision | Owner | Status |
 |---|---|---|---|
-| 1 | Org-level `view_api_keys` includes `ENGINEER` — see analysis in [`german-release-gate.md`](./german-release-gate.md) §2 and PHASE 87L.6H report | Product owner | **OPEN** |
+| 1 | Org-level API permissions — split into `view_api_usage` / `view_api_keys` / `manage_api_keys` | Product owner | ✅ **RESOLVED (87L.6H.1)** |
 | 2 | Orphan namespaces `platform`/`analytics`/`automation` (46 leaves) — cleanup phase | Engineering | Deferred, non-blocking |
 | 3 | German library keyword index vs. public search terms | Engineering | Deferred, non-blocking |
 

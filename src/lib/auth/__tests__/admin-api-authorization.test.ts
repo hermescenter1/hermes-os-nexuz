@@ -64,14 +64,19 @@ describe("87L.6H — org permission matrix is discriminating, not degenerate", (
   });
 
   /**
-   * DOCUMENTED, NOT ASSERTED AS DESIRABLE. `view_api_keys` currently includes
-   * ENGINEER by the Phase-33 decision. This test pins the CURRENT behaviour so
-   * the owner's pending decision (docs/release/german-release-gate.md §2)
-   * cannot be changed silently in either direction.
+   * SUPERSEDED BY PHASE 87L.6H.1 — the owner resolved this. The temporary pin
+   * recorded that ENGINEER held `view_api_keys`; that is no longer the policy.
+   * ENGINEER now holds `view_api_usage` (aggregate consumption) and is denied
+   * the key inventory. The full contract lives in
+   * src/lib/auth/__tests__/api-platform-permissions.test.ts.
    */
-  it("PINS CURRENT POLICY: view_api_keys still includes ENGINEER (owner decision pending)", () => {
-    expect(can("ENGINEER", "view_api_keys")).toBe(true);
+  it("owner decision applied: ENGINEER has usage, NOT key inventory", () => {
+    expect(can("ENGINEER", "view_api_usage" as OrgPermission)).toBe(true);
+    expect(can("ENGINEER", "view_api_keys")).toBe(false);
+    expect(can("ENGINEER", "manage_api_keys")).toBe(false);
     expect(can("VIEWER", "view_api_keys")).toBe(false);
+    // positive control
+    expect(can("ADMIN", "view_api_keys")).toBe(true);
   });
 
   it("requirePermission returns a 403 shape on denial and ok on grant", () => {
@@ -200,15 +205,24 @@ describe("87L.6H — API-key secret material is never listable", () => {
       "src/app/api/platform/keys/[id]/rotate/route.ts",
     ]) {
       const src = await fs.readFile(p, "utf8");
-      expect(src, `${p} missing manage_api_keys`).toContain('requirePermission(member.ctx.role, "manage_api_keys")');
+      // 87L.6H.1A: the inline call moved into the fail-closed helper, which
+      // receives the permission as its policy argument.
+      expect(src, `${p} does not delegate`).toContain("authorizePlatformActor(req, ctx,");
+      expect(src, `${p} lost manage_api_keys`).toContain('permission:  "manage_api_keys"');
     }
   });
 
-  it("the rate-limit session path is permission-gated (87L.6G)", async () => {
+  it("the rate-limit session path is permission-gated (87L.6G, narrowed in 87L.6H.1)", async () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("src/app/api/platform/rate-limits/route.ts", "utf8");
-    expect(src).toContain('requirePermission(member.ctx.role, "view_api_keys")');
-    expect(src).toContain('hasScope(ctx.scopes, "billing.read")');
+    // 87L.6H.1: narrowed from view_api_keys to the aggregate-only permission,
+    // so an engineer can monitor consumption without seeing the key inventory.
+    // 87L.6H.1A: enforcement moved into the fail-closed helper.
+    expect(src).toContain("authorizePlatformActor(req, ctx,");
+    expect(src).toContain('permission:  "view_api_usage"');
+    expect(src).not.toContain('"view_api_keys"');
+    // the API-key scope requirement is now the helper's apiKeyScope policy
+    expect(src).toContain('apiKeyScope: "billing.read"');
   });
 });
 
