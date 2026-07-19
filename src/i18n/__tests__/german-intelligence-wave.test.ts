@@ -107,20 +107,21 @@ describe("87L.6D — exact wave arithmetic", () => {
     }
   });
 
-  it("`knowledge` is explicitly OUTSTANDING — 480 leaves still English", () => {
-    // Pinned so the remaining gap is a documented decision, not a silent miss.
-    // It is a 30-article engineering reference library, not UI labels.
-    expect(JSON.stringify((de as Tree).knowledge)).toBe(JSON.stringify((en as Tree).knowledge));
+  // PHASE 87L.6D.1 CLOSED this gap: the 30-article library is now German.
+  // Its own arithmetic, safety-modality and token tests live in
+  // german-knowledge-library.test.ts.
+  it("`knowledge` is no longer outstanding — the library was translated in 87L.6D.1", () => {
+    expect(JSON.stringify((de as Tree).knowledge)).not.toBe(JSON.stringify((en as Tree).knowledge));
     expect(flatten((en as Tree).knowledge).size).toBe(480);
     const articles = Object.keys((en as Tree).knowledge as Tree);
     expect(articles.length).toBe(30);
-    // every article carries a safety note — the reason this needs native review
+    // every article still carries a safety note — the reason it needs native review
     for (const a of articles) {
-      expect(((en as Tree).knowledge as Tree)[a], a).toHaveProperty("safetyNote");
+      expect(((de as Tree).knowledge as Tree)[a], a).toHaveProperty("safetyNote");
     }
   });
 
-  it("global carryover dropped from 1751 to exactly 1262", () => {
+  it("global carryover dropped from 1751 to 1262 after this wave, then to 782", () => {
     const flat = (o: unknown): string[] =>
       o !== null && typeof o === "object"
         ? Object.values(o as Tree).flatMap(flat)
@@ -131,8 +132,10 @@ describe("87L.6D — exact wave arithmetic", () => {
         carry += flat((en as Tree)[k]).length;
       }
     }
-    expect(carry).toBe(1262);
-    expect(1751 - carry).toBe(489);
+    // 87L.6D removed 489 leaves (1751 → 1262); 87L.6D.1 then removed the
+    // knowledge library's 480 (1262 → 782).
+    expect(carry).toBe(782);
+    expect(1751 - 489 - 480).toBe(carry);
   });
 });
 
