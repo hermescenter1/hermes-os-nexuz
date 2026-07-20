@@ -1,13 +1,127 @@
 {
   "category": "cybersecurity",
   "libraries": [
-    { "id": "segmentation", "domains": ["cybersecurity", "otNetwork"],
-      "keywords": ["segmentation", "dmz", "zone", "conduit", "vlan", "62443", "firewall", "تفکیک", "ناحیه", "فایروال", "دی‌ام‌زد"] },
-    { "id": "accessControl", "domains": ["cybersecurity"],
-      "keywords": ["access control", "mfa", "password", "remote access", "jump host", "vpn", "unauthorized", "احراز هویت", "دسترسی", "رمز", "غیرمجاز"] },
-    { "id": "monitoring", "domains": ["cybersecurity", "otNetwork"],
-      "keywords": ["monitoring", "ids", "intrusion", "detection", "anomaly", "unknown device", "پایش امنیتی", "تشخیص نفوذ", "ناهنجاری", "ناشناس"] },
-    { "id": "audit", "domains": ["cybersecurity"],
-      "keywords": ["audit", "logging", "compliance", "syslog", "review", "ممیزی", "لاگ", "انطباق"] }
+    {
+      "id": "segmentation",
+      "domains": [
+        "cybersecurity",
+        "otNetwork"
+      ],
+      "keywords": [
+        "segmentation",
+        "dmz",
+        "zone",
+        "conduit",
+        "vlan",
+        "62443",
+        "firewall",
+        "تفکیک",
+        "ناحیه",
+        "فایروال",
+        "دی‌ام‌زد"
+      ],
+      "keywordsDe": [
+        "netzsegmentierung",
+        "sicherheitszone",
+        "firewallregel",
+        "datenfluss",
+        "netzarchitektur",
+        "unternehmensnetz",
+        "bestandsaufnahme",
+        "eindämmung",
+        "kritikalität",
+        "übergabepunkt"
+      ]
+    },
+    {
+      "id": "accessControl",
+      "domains": [
+        "cybersecurity"
+      ],
+      "keywords": [
+        "access control",
+        "mfa",
+        "password",
+        "remote access",
+        "jump host",
+        "vpn",
+        "unauthorized",
+        "احراز هویت",
+        "دسترسی",
+        "رمز",
+        "غیرمجاز"
+      ],
+      "keywordsDe": [
+        "zugriffskontrolle",
+        "berechtigungskonzept",
+        "rollenzuweisung",
+        "sammelkonto",
+        "mehrfaktor",
+        "fernzugriff",
+        "rechteentzug",
+        "kontoverwaltung",
+        "wartungszugang",
+        "nachvollziehbarkeit"
+      ]
+    },
+    {
+      "id": "monitoring",
+      "domains": [
+        "cybersecurity",
+        "otNetwork"
+      ],
+      "keywords": [
+        "monitoring",
+        "ids",
+        "intrusion",
+        "detection",
+        "anomaly",
+        "unknown device",
+        "پایش امنیتی",
+        "تشخیص نفوذ",
+        "ناهنجاری",
+        "ناشناس"
+      ],
+      "keywordsDe": [
+        "netzüberwachung",
+        "passive erfassung",
+        "unbekannte",
+        "abweichung",
+        "verkehrsanalyse",
+        "spiegelport",
+        "grundlinie",
+        "meldekette",
+        "sichtbarkeit",
+        "auffälligkeit"
+      ]
+    },
+    {
+      "id": "audit",
+      "domains": [
+        "cybersecurity"
+      ],
+      "keywords": [
+        "audit",
+        "logging",
+        "compliance",
+        "syslog",
+        "review",
+        "ممیزی",
+        "لاگ",
+        "انطباق"
+      ],
+      "keywordsDe": [
+        "auditprotokoll",
+        "prüfpfad",
+        "durchsicht",
+        "logsammlung",
+        "zentrale sammlung",
+        "aufbewahrung",
+        "manipulationssicher",
+        "zeitsynchronisation",
+        "nachweisführung",
+        "protokollierung"
+      ]
+    }
   ]
 }

@@ -228,13 +228,13 @@ describe("no user-facing fa/en string ternaries remain in the Journal surface", 
 
 // ── German inactive + Journal RBAC unchanged ──────────────────────────────────
 
-describe("German remains inactive after extraction", () => {
+describe("German activation state (87L.6: active)", () => {
   it("ACTIVE_LOCALES is still exactly fa + en", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
   });
-  it("de is supported but not active", () => {
+  it("de is supported and ACTIVE (87L.6)", () => {
     expect([...SUPPORTED_LOCALES]).toContain("de");
-    expect(isActiveLocale("de")).toBe(false);
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
   });
 });
 

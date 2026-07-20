@@ -147,26 +147,26 @@ describe("de.json — value quality", () => {
   });
 });
 
-describe("German remains inactive and hidden", () => {
+describe("German is ACTIVE (87L.6)", () => {
   it("ACTIVE_LOCALES is still exactly fa + en", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
   });
 
-  it("de is supported but not active", () => {
+  it("de is supported and ACTIVE (87L.6)", () => {
     expect(isSupportedLocale("de")).toBe(true);
-    expect(isActiveLocale("de")).toBe(false);
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
     expect([...SUPPORTED_LOCALES]).toContain("de");
   });
 
-  it("/de is not routable (routing.locales excludes de)", () => {
-    expect([...routing.locales]).not.toContain("de");
+  it("/de is routable (87L.6 activation)", () => {
+    expect([...routing.locales]).toContain("de") // 87L.6: German ACTIVATED;
   });
 
-  it("switcher options do not include German", () => {
+  it("switcher options include German (87L.6)", () => {
     const codes = activeLocaleOptions().map((o) => o.code);
-    expect(codes).toEqual(["fa", "en"]);
+    expect(codes).toEqual(["fa", "en", "de"]);
     const names = activeLocaleOptions().map((o) => o.nativeName);
-    expect(names).not.toContain("Deutsch");
+    expect(names).toContain("Deutsch") // 87L.6;
   });
 });
 
@@ -220,6 +220,30 @@ describe("de.json — Phase 86C1 translation audit", () => {
     "industrialBrain",
     "assetOperations", "maintenanceOperations",
     "automationOperations", "enterpriseOperations",
+    // PHASE 87L.6 — the public homepage/site shell and the auth experience are
+    // now genuinely German (docs/i18n/german-glossary.md holds the terminology)
+    "publicSite", "authExperience",
+    // PHASE 87L.6 FINAL AMENDMENT — every remaining PUBLIC-route namespace
+    "about", "services", "architecture", "library", "modules",
+    "knowledgeCases", "caseExplorer",
+    // PHASE 87L.6B — the authenticated shell (every /de workspace page)
+    "appShell",
+    // PHASE 87L.6C — command + industrial operations surfaces
+    "dashboard", "assetMaintenance", "engineeringDocuments",
+    "businessOps", "orgAdministration",
+    // PHASE 87L.6D — intelligence surfaces (knowledge stays outstanding)
+    "brain", "copilot", "ke", "knowledgeGraph",
+    "predictive", "knowledgeStudio", "industrialBrainReport",
+    // PHASE 87L.6D.1 — the 30-article engineering knowledge library
+    "knowledge",
+    // PHASE 87L.6E — enterprise, commercial, financial, security and
+    // administrative surfaces
+    "crm", "billing", "apiPlatform", "adminDocuments", "org", "admin",
+    "erp", "siteSecurity", "adminDocumentSearch", "adminAccess",
+    // PHASE 87L.6F — the final namespaces. With these the catalog is CLOSED:
+    // every namespace is translated and the carryover ceiling below is zero.
+    "multiSite", "caseStudio", "digitalTwin", "industrial", "unknownCenter",
+    "automation", "documents", "analytics", "platform", "storage",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
@@ -246,11 +270,26 @@ describe("de.json — Phase 86C1 translation audit", () => {
   });
 
   it("all non-batch, non-translated namespaces temporarily carry English verbatim", () => {
-    // Journal (86C2), admin (86C3), industrialBrain (86C4A), asset/CMMS (86C4B1),
-    // and automation (86C4B2A-DE) namespaces are now German; the remaining
-    // non-batch-1 namespaces still carry English verbatim in de.
+    // Every namespace outside BATCH_86C1 is either listed in TRANSLATED_NS
+    // (genuinely German) or still carries English verbatim — nothing in
+    // between. This equality is the real invariant.
     expect(carryover.length).toBe(stillEnglish.length);
-    expect(stillEnglish.length).toBeGreaterThanOrEqual(1929);
+  });
+
+  it("the untranslated remainder only ever SHRINKS as waves land", () => {
+    // A fixed floor goes stale on every translation wave (it did: the old
+    // >= 1929 broke when 87L.6C translated 549 leaves). The meaningful
+    // contract is a CEILING that each wave must lower deliberately.
+    //
+    // 87L.6D.1: the knowledge library (480 leaves)
+    // moved to TRANSLATED_NS → 1262 - 480 = 782.
+    // 87L.6E: the 10 enterprise/commercial/administrative namespaces
+    // (527 leaves) moved to TRANSLATED_NS → 782 - 527 = 255.
+    // 87L.6F: the final 10 namespaces (255 leaves) → 255 - 255 = 0.
+    // The ceiling is now ZERO: every namespace is translated, so any future
+    // regression that reintroduces English carryover fails here immediately.
+    const CEILING_AFTER_87L6F = 0;
+    expect(stillEnglish.length).toBeLessThanOrEqual(CEILING_AFTER_87L6F);
   });
 
   it("prints the audit report", () => {

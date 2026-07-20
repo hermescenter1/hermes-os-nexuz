@@ -103,20 +103,24 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
       { labelKey: "ats", href: "/dashboard/ats" },
       { labelKey: "erp", href: "/erp", pageCapability: "admin" },
       { labelKey: "customerSuccess", href: "/dashboard/customers" },
-      { labelKey: "billing", href: "/dashboard/billing" },
+      { labelKey: "billing", href: "/dashboard/billing", pageCapability: "billing_admin" },
       { labelKey: "customerPortal", href: "/customer", pageCapability: "dashboard" },
       { labelKey: "vendorPortal", href: "/vendor", pageCapability: "dashboard" },
     ],
   },
   {
     groupKey: "administration",
+    // PHASE 87L.6G — each item declares the SAME domain capability its page and
+    // its middleware branch enforce, so navigation can never advertise a link
+    // the server would refuse. Hiding is presentation only; the route policy in
+    // rbac.ts and the page-level RequireCapability remain authoritative.
     items: [
-      { labelKey: "organization", href: "/dashboard/organization", match: "exact" },
-      { labelKey: "members", href: "/dashboard/organization/members" },
-      { labelKey: "invitations", href: "/dashboard/organization/invitations" },
-      { labelKey: "apiKeys", href: "/dashboard/api" },
-      { labelKey: "orgSettings", href: "/dashboard/organization/settings" },
-      { labelKey: "admin", href: "/admin" },
+      { labelKey: "organization", href: "/dashboard/organization", match: "exact", pageCapability: "org_admin" },
+      { labelKey: "members", href: "/dashboard/organization/members", pageCapability: "org_admin" },
+      { labelKey: "invitations", href: "/dashboard/organization/invitations", pageCapability: "org_admin" },
+      { labelKey: "apiKeys", href: "/dashboard/api", pageCapability: "api_admin" },
+      { labelKey: "orgSettings", href: "/dashboard/organization/settings", pageCapability: "org_admin" },
+      { labelKey: "admin", href: "/admin", pageCapability: "admin" },
     ],
   },
 ];

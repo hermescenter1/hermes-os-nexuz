@@ -303,10 +303,10 @@ describe("Phase 86C4B1-PRE combined — prior extractions and German state intac
     expect(flatten((en as Tree).assetOperations).size).toBe(209);
   });
 
-  it("ACTIVE_LOCALES is still exactly fa + en; de supported but inactive", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+  it("ACTIVE_LOCALES is fa + en + de (87L.6 activation)", () => {
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
     expect(isSupportedLocale("de")).toBe(true);
-    expect(isActiveLocale("de")).toBe(false);
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
   });
 
   it("prior German translations remain intact", () => {

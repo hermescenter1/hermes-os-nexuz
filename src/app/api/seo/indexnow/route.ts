@@ -117,7 +117,7 @@ export async function POST(request: Request) {
   const payload = {
     host:        new URL(BASE_URL).hostname,
     key:         INDEXNOW_KEY,
-    keyLocation: `${BASE_URL}/${INDEXNOW_KEY}.txt`,
+    keyLocation: `${BASE_URL}/indexnow-key.txt`,
     urlList:     urls,
   };
   const res = await fetch("https://api.indexnow.org/indexnow", {

@@ -1,15 +1,162 @@
 {
   "category": "electrical",
   "libraries": [
-    { "id": "motors", "domains": ["motors", "electrical"],
-      "keywords": ["motor", "winding", "bearing", "insulation", "phase", "موتور", "سیمپیچ", "بلبرینگ", "یاتاقان", "عایق", "فاز"] },
-    { "id": "contactors", "domains": ["electrical"],
-      "keywords": ["contactor", "coil voltage", "auxiliary contact", "chatter", "welding", "کنتاکتور", "بوبین", "کنتاکت کمکی"] },
-    { "id": "mcc", "domains": ["electrical", "motors"],
-      "keywords": ["mcc", "motor control center", "bucket", "starter", "busbar", "مرکز کنترل موتور", "ام‌سی‌سی", "استارتر", "شینه"] },
-    { "id": "protection", "domains": ["electrical"],
-      "keywords": ["protection", "overload", "relay", "breaker", "short circuit", "earth fault", "trip", "حفاظت", "بیمتال", "رله", "اتصال کوتاه", "کلید", "تریپ"] },
-    { "id": "vfd", "domains": ["drives", "electrical"],
-      "keywords": ["vfd", "drive", "inverter", "frequency", "ramp", "overcurrent", "درایو", "اینورتر", "فرکانس", "اضافه جریان", "رمپ"] }
+    {
+      "id": "motors",
+      "domains": [
+        "motors",
+        "electrical"
+      ],
+      "keywords": [
+        "motor",
+        "winding",
+        "bearing",
+        "insulation",
+        "phase",
+        "موتور",
+        "سیمپیچ",
+        "بلبرینگ",
+        "یاتاقان",
+        "عایق",
+        "فاز"
+      ],
+      "keywordsDe": [
+        "asynchronmotor",
+        "wicklung",
+        "wicklungsisolation",
+        "isolationswiderstand",
+        "phasenunsymmetrie",
+        "lagerverschleiß",
+        "schwingungssignatur",
+        "schlupf",
+        "wärmeklasse",
+        "wellenstrom",
+        "spannungsfreiheit"
+      ]
+    },
+    {
+      "id": "contactors",
+      "domains": [
+        "electrical"
+      ],
+      "keywords": [
+        "contactor",
+        "coil voltage",
+        "auxiliary contact",
+        "chatter",
+        "welding",
+        "کنتاکتور",
+        "بوبین",
+        "کنتاکت کمکی"
+      ],
+      "keywordsDe": [
+        "schütz",
+        "hilfskontakt",
+        "spulenspannung",
+        "kontaktabbrand",
+        "verschweißen",
+        "rückfallzeit",
+        "gebrauchskategorie",
+        "schaltspiel",
+        "motorstarter",
+        "freischalten"
+      ]
+    },
+    {
+      "id": "mcc",
+      "domains": [
+        "electrical",
+        "motors"
+      ],
+      "keywords": [
+        "mcc",
+        "motor control center",
+        "bucket",
+        "starter",
+        "busbar",
+        "مرکز کنترل موتور",
+        "ام‌سی‌سی",
+        "استارتر",
+        "شینه"
+      ],
+      "keywordsDe": [
+        "motorsteuerzentrum",
+        "einschub",
+        "sammelschiene",
+        "störlichtbogen",
+        "abgangsfeld",
+        "leistungsschalter",
+        "schaltanlage",
+        "persönliche schutzausrüstung",
+        "verriegelungsschema",
+        "spannungsfreiheit"
+      ]
+    },
+    {
+      "id": "protection",
+      "domains": [
+        "electrical"
+      ],
+      "keywords": [
+        "protection",
+        "overload",
+        "relay",
+        "breaker",
+        "short circuit",
+        "earth fault",
+        "trip",
+        "حفاظت",
+        "بیمتال",
+        "رله",
+        "اتصال کوتاه",
+        "کلید",
+        "تریپ"
+      ],
+      "keywordsDe": [
+        "leitungsschutz",
+        "überlastrelais",
+        "kurzschluss",
+        "erdschluss",
+        "selektivität",
+        "auslösekennlinie",
+        "bemessungsstrom",
+        "schutzorgan",
+        "abschaltzeit",
+        "überstrom"
+      ]
+    },
+    {
+      "id": "vfd",
+      "domains": [
+        "drives",
+        "electrical"
+      ],
+      "keywords": [
+        "vfd",
+        "drive",
+        "inverter",
+        "frequency",
+        "ramp",
+        "overcurrent",
+        "درایو",
+        "اینورتر",
+        "فرکانس",
+        "اضافه جریان",
+        "رمپ"
+      ],
+      "keywordsDe": [
+        "frequenzumrichter",
+        "zwischenkreis",
+        "entladezeit",
+        "gespeicherte energie",
+        "rampe",
+        "drehmoment",
+        "oberschwingung",
+        "motorleitung",
+        "schirmung",
+        "parametersatz",
+        "drehzahlregelung"
+      ]
+    }
   ]
 }

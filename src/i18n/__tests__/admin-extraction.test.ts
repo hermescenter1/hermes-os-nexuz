@@ -281,11 +281,11 @@ describe("test hygiene", () => {
 
 // ── German inactive + admin RBAC unchanged ────────────────────────────────────
 
-describe("German remains inactive after extraction", () => {
-  it("ACTIVE_LOCALES is still exactly fa + en; de supported but inactive", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+describe("German activation state (87L.6: active)", () => {
+  it("ACTIVE_LOCALES is fa + en + de (87L.6 activation)", () => {
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
     expect([...SUPPORTED_LOCALES]).toContain("de");
-    expect(isActiveLocale("de")).toBe(false);
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
   });
 });
 

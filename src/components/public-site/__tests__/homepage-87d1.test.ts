@@ -120,8 +120,18 @@ describe("87D.1 restored copy — truthful and bilingual", () => {
     }
   });
 
-  it("de remains byte-identical English carryover for the whole namespace", () => {
-    expect(JSON.stringify((de as unknown as typeof en).publicSite)).toBe(JSON.stringify(en.publicSite));
+  // PHASE 87L.6 SUPERSEDES the carryover pin: publicSite is now genuinely
+  // German. Structure stays identical; VALUES must be real German (long-form
+  // copy differs from en), with product names/protocol lists kept verbatim.
+  it("de is genuinely German for the whole namespace — same shape, translated values", () => {
+    const dePub = (de as unknown as typeof en).publicSite;
+    const paths = (o: Record<string, unknown>, p = ""): string[] =>
+      Object.entries(o).flatMap(([k, v]) => (v && typeof v === "object" ? paths(v as Record<string, unknown>, `${p}.${k}`) : [`${p}.${k}`]));
+    expect(paths(dePub as unknown as Record<string, unknown>)).toEqual(paths(en.publicSite as unknown as Record<string, unknown>));
+    expect(JSON.stringify(dePub)).not.toBe(JSON.stringify(en.publicSite));
+    expect(dePub.hero.lede).not.toBe(en.publicSite.hero.lede);
+    expect(dePub.hero.lede).toMatch(/[äöüßÄÖÜ]|Evidenz|sichere/);
+    expect(dePub.footer.links.privacy).toBe("Datenschutzerklärung");
   });
 
   it("predictive-maintenance copy stays explainable-indicator framing (no black-box promise)", () => {

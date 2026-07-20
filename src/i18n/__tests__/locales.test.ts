@@ -18,7 +18,7 @@ import { LOCALES as SEO_LOCALES, OG_LOCALE as SEO_OG_LOCALE } from "@/lib/seo/co
 
 describe("central locale source of truth", () => {
   it("exposes exactly fa + en as ACTIVE_LOCALES", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
   });
 
   it("models fa + en + de as SUPPORTED_LOCALES", () => {
@@ -39,15 +39,15 @@ describe("central locale source of truth", () => {
   });
 });
 
-describe("German: supported but inactive", () => {
+describe("German: supported and ACTIVE (87L.6)", () => {
   it("is a supported locale", () => {
     expect(isSupportedLocale("de")).toBe(true);
     expect(SUPPORTED_LOCALES).toContain("de");
   });
 
-  it("is NOT an active locale", () => {
-    expect(isActiveLocale("de")).toBe(false);
-    expect([...ACTIVE_LOCALES]).not.toContain("de");
+  it("is an active locale after the 87L.6 activation", () => {
+    expect(isActiveLocale("de")).toBe(true);
+    expect([...ACTIVE_LOCALES]).toContain("de");
   });
 });
 
@@ -102,26 +102,27 @@ describe("routing and SEO locale lists cannot drift", () => {
 });
 
 describe("language switcher data (renders active locales only)", () => {
-  it("activeLocaleOptions lists exactly fa + en", () => {
+  it("activeLocaleOptions lists exactly fa + en + de (87L.6)", () => {
     const codes = activeLocaleOptions().map((o) => o.code);
-    expect(codes).toEqual(["fa", "en"]);
+    expect(codes).toEqual(["fa", "en", "de"]);
   });
 
-  it("uses native endonyms فارسی / English and never Deutsch", () => {
+  it("uses native endonyms فارسی / English / Deutsch (87L.6)", () => {
     const names = activeLocaleOptions().map((o) => o.nativeName);
-    expect(names).toEqual(["فارسی", "English"]);
-    expect(names).not.toContain("Deutsch");
+    expect(names).toEqual(["فارسی", "English", "Deutsch"]);
   });
 
-  it("carries each option's direction", () => {
-    const [fa, en] = activeLocaleOptions();
+  it("carries each option's direction — German is LTR", () => {
+    const [fa, en, de] = activeLocaleOptions();
     expect(fa.dir).toBe("rtl");
     expect(en.dir).toBe("ltr");
+    expect(de.dir).toBe("ltr");
   });
 
-  it("nextActiveLocale toggles fa <-> en", () => {
+  it("nextActiveLocale cycles fa → en → de → fa (87L.6)", () => {
     expect(nextActiveLocale("fa")).toBe("en");
-    expect(nextActiveLocale("en")).toBe("fa");
+    expect(nextActiveLocale("en")).toBe("de");
+    expect(nextActiveLocale("de")).toBe("fa");
   });
 
   it("nextActiveLocale never targets an inactive locale", () => {
@@ -147,10 +148,9 @@ describe("accessible names (switcher aria-labels)", () => {
     }
   });
 
-  it("activeLocaleOptions carries accessible names for exactly fa/en", () => {
+  it("activeLocaleOptions carries accessible names for exactly fa/en/de (87L.6)", () => {
     const names = activeLocaleOptions().map((o) => o.accessibleName);
-    expect(names).toEqual(["Persian", "English"]);
-    expect(names).not.toContain("German");
+    expect(names).toEqual(["Persian", "English", "German"]);
   });
 
   it("switch labels render as 'Switch language to <Name>'", () => {
@@ -160,6 +160,7 @@ describe("accessible names (switcher aria-labels)", () => {
     expect(labels).toEqual([
       "Switch language to Persian",
       "Switch language to English",
+      "Switch language to German",
     ]);
   });
 });

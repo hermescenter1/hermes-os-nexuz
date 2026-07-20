@@ -175,9 +175,16 @@ export default async function ArticlePage({
         <p className="mt-3 font-body text-base leading-relaxed text-ink">
           {k(`${lib.id}.concepts` as Parameters<typeof k>[0])}
         </p>
-        <p className="mt-4 font-mono text-xs text-muted/70" dir="ltr">
-          {lib.keywords.join(" · ")}
-        </p>
+        {/*
+          PHASE 87L.6F — the raw `lib.keywords` line was removed from the body.
+          It is SEARCH METADATA, not article content: knowledge.ts documents the
+          array as "bilingual MATCHING keywords only; all VISIBLE text lives in
+          messages/*.json", it had no heading and was styled as debug text, and
+          it rendered the same EN+FA (now +DE) token soup on every locale with a
+          hard-coded dir="ltr" even on the RTL page. It already has a proper
+          home: generateMetadata() above emits it as <meta name="keywords">.
+          Search behaviour is unchanged — the array is untouched.
+        */}
 
         {/* Engineering case links */}
         {cases.length > 0 && (

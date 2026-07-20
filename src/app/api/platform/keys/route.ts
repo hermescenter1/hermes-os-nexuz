@@ -9,8 +9,7 @@
 
 import { NextRequest, NextResponse }       from "next/server";
 import { requirePlatformAuth }             from "@/lib/api/auth";
-import { requireOrgActor }                 from "@/lib/org/context";
-import { requirePermission }               from "@/lib/org/rbac";
+import { authorizePlatformActor }  from "@/lib/api/authorize";
 import { listApiKeys, createApiKey }       from "@/lib/api/keys";
 import { validateScopes }                  from "@/lib/api/scopes";
 
@@ -19,12 +18,12 @@ export async function GET(req: NextRequest) {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { ctx } = auth;
 
-  // Verify org-level RBAC
-  const member = await requireOrgActor(req, ctx.orgId);
-  if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
-
-  const perm = requirePermission(member.ctx.role, "view_api_keys");
-  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  // Key INVENTORY is session-only: an API key is not an organization member and
+  // must never be able to enumerate the organization's keys. No apiKeyScope is
+  // granted here, so API-key actors are refused explicitly rather than by
+  // accident of the membership lookup failing.
+  const authz = await authorizePlatformActor(req, ctx, { permission: "view_api_keys" });
+  if (!authz.ok) return NextResponse.json({ error: authz.error }, { status: authz.status });
 
   const keys = await listApiKeys(ctx.orgId);
   return NextResponse.json({ keys });
@@ -35,20 +34,16 @@ export async function POST(req: NextRequest) {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { ctx } = auth;
 
-  // For API-key auth: require admin scope to create more keys
-  if (ctx.authMethod === "apikey") {
-    const { requireScope } = await import("@/lib/api/scopes");
-    const sc = requireScope(ctx.scopes, "admin");
-    if (!sc.ok) return NextResponse.json({ error: sc.error }, { status: sc.status });
-  }
-
-  // Verify org-level RBAC (JWT session)
-  if (ctx.authMethod === "jwt" && ctx.userId) {
-    const member = await requireOrgActor(req, ctx.orgId);
-    if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
-    const perm = requirePermission(member.ctx.role, "manage_api_keys");
-    if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
-  }
+  // PHASE 87L.6H.1A — exhaustive fail-closed authorization. The previous
+  // positive branching (`if apikey {...}` + `if jwt && userId {...}`) let an
+  // unrecognized authMethod fall through BOTH checks into key creation.
+  // API-key actors still authorize by the "admin" scope; session actors still
+  // authorize by the manage_api_keys organization permission.
+  const authz = await authorizePlatformActor(req, ctx, {
+    permission:  "manage_api_keys",
+    apiKeyScope: "admin",
+  });
+  if (!authz.ok) return NextResponse.json({ error: authz.error }, { status: authz.status });
 
   const body = await req.json().catch(() => ({})) as Record<string, unknown>;
   if (!body.name || typeof body.name !== "string") {

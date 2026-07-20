@@ -18,19 +18,14 @@ describe("buildMetadata — hreflang uses active locales only", () => {
     );
   });
 
-  it("never emits a /de hreflang alternate", () => {
-    for (const url of Object.values(languages)) {
-      expect(url).not.toContain("/de/");
-      expect(url.endsWith("/de")).toBe(false);
-    }
-    expect(languages.de).toBeUndefined();
+  it("emits a /de hreflang alternate (87L.6 activation)", () => {
+    expect(languages.de).toMatch(/\/de\/platform$/);
   });
 
   it("OG locale is the current locale, alternates are the other active locales", () => {
     const og = meta.openGraph as { locale?: string; alternateLocale?: string[] };
     expect(og.locale).toBe("fa_IR");
-    expect(og.alternateLocale).toEqual(["en_GB"]);
-    expect(og.alternateLocale).not.toContain("de_DE");
+    expect(og.alternateLocale).toEqual(["en_GB", "de_DE"]);
   });
 
   it("x-default points at the default locale", () => {

@@ -55,7 +55,13 @@ export interface KnowledgeArticle {
   summaryKey: string;
 }
 export interface KnowledgeService {
-  search(query: string): Promise<ServiceResult<KnowledgeArticle[]>>;
+  /**
+   * PHASE 87L.6F — `locale` is OPTIONAL and defaults to the pre-existing
+   * behaviour. German matching terms live in a separate `keywordsDe` array and
+   * are only consulted when `locale === "de"`, so English and Persian results
+   * are byte-identical to before this parameter existed.
+   */
+  search(query: string, locale?: string): Promise<ServiceResult<KnowledgeArticle[]>>;
 }
 
 // --- Auth -----------------------------------------------------------------
@@ -338,6 +344,8 @@ export interface KnowledgeBrowseData {
     category: string;
     domains: BrainDomainId[];
     keywords: string[];
+    /** 87L.6F — German matching terms; absent for PostgreSQL-published records */
+    keywordsDe?: string[];
     vendor?: string;
     futureEmbeddingReady: boolean;
     /** message-catalog keys — present for the static JSON corpus only */

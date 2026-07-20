@@ -79,12 +79,14 @@ async function mountSurface(locale: "en" | "fa", dashboard: EdmsDashboard) {
 }
 
 describe("catalog + navigation + product-boundary invariants", () => {
-  it("engineeringDocuments: en/fa/de parity, de = en verbatim, no Arabic yeh/kaf, ICU parity", () => {
+  it("engineeringDocuments: en/fa/de parity, de is genuinely German, no Arabic yeh/kaf, ICU parity", () => {
     const paths = (o: Record<string, unknown>, p = ""): string[] =>
       Object.entries(o).flatMap(([k, v]) => (v && typeof v === "object" ? paths(v as Record<string, unknown>, `${p}.${k}`) : [`${p}.${k}`]));
     const e = paths(en.engineeringDocuments as unknown as Record<string, unknown>);
     expect(paths((fa as unknown as typeof en).engineeringDocuments as unknown as Record<string, unknown>)).toEqual(e);
-    expect(JSON.stringify((de as unknown as typeof en).engineeringDocuments)).toBe(JSON.stringify(en.engineeringDocuments));
+    // PHASE 87L.6C SUPERSEDES the "de = en verbatim" pin: engineeringDocuments is
+    // genuinely German now. Key shape stays identical (asserted above).
+    expect(JSON.stringify((de as unknown as typeof en).engineeringDocuments)).not.toBe(JSON.stringify(en.engineeringDocuments));
     expect(JSON.stringify((fa as unknown as typeof en).engineeringDocuments)).not.toMatch(/[يك]/);
     for (const p of e) {
       const get = (o: unknown) => p.split(".").slice(1).reduce((x: unknown, k) => (x as Record<string, unknown>)[k], o);

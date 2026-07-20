@@ -23,7 +23,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "Googlebot",
         allow: localeRoots,
         disallow: [
-          ...localized("/dashboard/", "/admin/", "/auth/", "/candidate/"),
+          ...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/", "/candidate/"),
           "/api/",
           "/_next/",
         ],
@@ -37,46 +37,85 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "Bingbot",
         allow: localeRoots,
         disallow: [
-          ...localized("/dashboard/", "/admin/", "/auth/"),
+          ...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/"),
           "/api/",
         ],
         crawlDelay: 2,
       },
-      /* ── AI / LLM crawlers ─────────────────────────────────────────────── */
+      /* ── AI SEARCH / RETRIEVAL crawlers (PHASE 87L.6) ──────────────────────
+         These index public content so the product can be FOUND and CITED in
+         ChatGPT search, Claude search and Perplexity answers. They are a
+         different concern from the model-TRAINING crawlers below and get the
+         same growth-first policy as classic search engines: full public
+         access, private/API always denied. Names follow the vendors' current
+         official crawler documentation. */
       {
-        userAgent: "GPTBot",
-        allow: localized("/library/", "/services/", "/academy/"),
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        userAgent: "OAI-SearchBot",
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/"), "/api/"],
       },
       {
-        userAgent: "ClaudeBot",
-        allow: localized("/library/", "/services/", "/academy/"),
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        userAgent: "Claude-SearchBot",
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/"), "/api/"],
+      },
+      {
+        // user-directed fetches from Claude on a user's explicit request
+        userAgent: "Claude-User",
+        allow: localeRoots,
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/", "/auth/"), "/api/"],
       },
       {
         userAgent: "PerplexityBot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
+      },
+      /* ── Model-TRAINING crawlers — explicit owner policy ───────────────────
+         Training access is NOT required for search visibility. The standing
+         owner decision (Phase 62) grants training bots the open knowledge
+         surfaces only (library/services/academy); proprietary product and
+         engineering content stays protected. Google-Extended and
+         Applebot-Extended are robots TOKENS controlling training use of
+         normally-crawled pages — same scoped policy. */
+      {
+        userAgent: "GPTBot",
+        allow: localized("/library/", "/services/", "/academy/"),
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
+      },
+      {
+        userAgent: "ClaudeBot",
+        allow: localized("/library/", "/services/", "/academy/"),
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
+      },
+      {
+        userAgent: "Google-Extended",
+        allow: localized("/library/", "/services/", "/academy/"),
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
+      },
+      {
+        userAgent: "Applebot-Extended",
+        allow: localized("/library/", "/services/", "/academy/"),
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "Applebot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "CCBot",
         allow: localized("/library/"),
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "DuckDuckBot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       {
         userAgent: "YandexBot",
         allow: localeRoots,
-        disallow: [...localized("/dashboard/", "/admin/"), "/api/"],
+        disallow: [...localized("/dashboard/", "/admin/", "/crm/", "/erp/"), "/api/"],
       },
       /* ── Aggressive / privacy-invasive bots — block all ───────────────── */
       {

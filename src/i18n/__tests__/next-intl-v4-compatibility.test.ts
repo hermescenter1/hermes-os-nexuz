@@ -67,7 +67,7 @@ async function resolveConfig(requested: string | undefined) {
 
 describe("next-intl v4 compatibility — locale model", () => {
   it("keeps the active/supported locale sets unchanged", () => {
-    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en"]);
+    expect([...ACTIVE_LOCALES]).toEqual(["fa", "en", "de"]);
     expect([...SUPPORTED_LOCALES]).toEqual(["fa", "en", "de"]);
     expect(DEFAULT_LOCALE).toBe("fa");
   });
@@ -79,8 +79,8 @@ describe("next-intl v4 compatibility — locale model", () => {
   });
 
   it("keeps German inactive", () => {
-    expect(isActiveLocale("de")).toBe(false);
-    expect([...routing.locales]).not.toContain("de");
+    expect(isActiveLocale("de")).toBe(true) // 87L.6: German ACTIVATED;
+    expect([...routing.locales]).toContain("de") // 87L.6: German ACTIVATED;
   });
 });
 
@@ -131,9 +131,9 @@ describe("next-intl v4 compatibility — request configuration", () => {
     }
   });
 
-  it("does not serve German through the public request config", async () => {
+  it("serves German through the public request config (87L.6 activation)", async () => {
     const { locale } = await resolveConfig("de");
-    expect(locale).toBe(DEFAULT_LOCALE);
+    expect(locale).toBe("de");
   });
 });
 

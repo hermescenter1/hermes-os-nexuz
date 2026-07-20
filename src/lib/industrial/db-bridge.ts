@@ -71,6 +71,11 @@ export function toKnowledgeLib(a: StoredArticle): KnowledgeLib | null {
     category: a.domain,
     domains: [a.domain],
     keywords: a.tags,
+    // 87L.6F: PostgreSQL-published articles carry author-supplied tags only.
+    // No German terms are synthesised for them — §13 forbids fabricated
+    // dynamic database translation — so German search covers the 30 static
+    // articles, and published records keep their existing tag-based matching.
+    keywordsDe: [],
     ...(a.vendor ? { vendor: a.vendor } : {}),
     futureEmbeddingReady: true,
   };

@@ -131,6 +131,7 @@ export const knowledgeService: KnowledgeService & {
       category: l.category,
       domains: l.domains,
       keywords: l.keywords,
+      keywordsDe: l.keywordsDe,
       vendor: l.vendor,
       futureEmbeddingReady: l.futureEmbeddingReady,
       titleKey: `knowledge.${l.id}.name`,
@@ -162,12 +163,17 @@ export const knowledgeService: KnowledgeService & {
     };
   },
 
-  async search(query) {
+  async search(query, locale) {
     const q = query.toLowerCase().replace(/\u200C/g, "");
+    // 87L.6F: German terms are additive and locale-scoped. For any other
+    // locale (including the default) this is exactly the pre-existing filter,
+    // so EN/FA result sets and ordering are unchanged.
+    const de = locale === "de";
     const matches = KNOWLEDGE.filter(
       (lib) =>
         lib.id.toLowerCase().includes(q) ||
-        lib.keywords.some((k) => k.toLowerCase().replace(/\u200C/g, "").includes(q))
+        lib.keywords.some((k) => k.toLowerCase().replace(/\u200C/g, "").includes(q)) ||
+        (de && lib.keywordsDe.some((k) => k.toLowerCase().replace(/\u200C/g, "").includes(q)))
     ).map((l) => toArticle(l.id));
     return { ok: true, data: matches };
   },
