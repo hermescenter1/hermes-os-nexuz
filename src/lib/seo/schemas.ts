@@ -4,6 +4,32 @@
  */
 
 import { BASE_URL, SITE_NAME, ORG_NAME, CONTACT_EMAIL, ORG_LOGO_URL, OG_IMAGE_URL } from "./config";
+import {
+  ACTIVE_LOCALES,
+  DEFAULT_LOCALE,
+  LOCALE_ACCESSIBLE_NAME,
+  isActiveLocale,
+  type ActiveLocale,
+} from "@/i18n/locales";
+
+/* ── Locale → BCP-47 for JSON-LD (Phase 89B.1) ──────────────────────────── */
+
+/**
+ * The single locale→BCP-47 mapping used by every schema builder. `en` stays
+ * `en-US` deliberately: that is the value published in production JSON-LD
+ * since Phase 62 (the html-lang tag uses en-GB; JSON-LD keeps its own
+ * established value so existing fa/en output is byte-stable).
+ */
+const SCHEMA_LOCALE_TAG: Record<ActiveLocale, string> = {
+  fa: "fa-IR",
+  en: "en-US",
+  de: "de-DE",
+};
+
+/** BCP-47 tag for a page locale; unknown values fall back to DEFAULT_LOCALE. */
+function schemaLanguageTag(locale: string): string {
+  return SCHEMA_LOCALE_TAG[isActiveLocale(locale) ? locale : DEFAULT_LOCALE];
+}
 
 /* ── Organisation ────────────────────────────────────────────────────────── */
 
@@ -22,7 +48,7 @@ export function organizationSchema() {
       "@type": "ContactPoint",
       email: CONTACT_EMAIL,
       contactType: "customer support",
-      availableLanguage: ["Persian", "English"],
+      availableLanguage: ACTIVE_LOCALES.map((locale) => LOCALE_ACCESSIBLE_NAME[locale]),
     },
     sameAs: [],
   };
@@ -109,7 +135,7 @@ export function articleSchema(opts: ArticleSchemaOptions) {
     url: opts.url,
     datePublished: opts.datePublished ?? "2026-01-01",
     dateModified:  opts.dateModified  ?? "2026-06-25",
-    inLanguage: opts.locale === "fa" ? "fa-IR" : "en-US",
+    inLanguage: schemaLanguageTag(opts.locale),
     author: {
       "@type": "Organization",
       name: ORG_NAME,
@@ -214,7 +240,7 @@ export function courseSchema(opts: CourseSchemaOptions) {
     },
     ...(opts.level ? { educationalLevel: opts.level } : {}),
     courseMode: "online",
-    inLanguage: ["fa-IR", "en-US"],
+    inLanguage: ACTIVE_LOCALES.map((locale) => SCHEMA_LOCALE_TAG[locale]),
   };
 }
 
