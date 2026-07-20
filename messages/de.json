@@ -6630,5 +6630,20 @@
       "platformBilling": "Abrechnung des Plattformabonnements — getrennt von ERP-Projektbudgets und der internen Unternehmensfinanzierung.",
       "memberScope": "Organisationsmitgliedschaft — getrennt von ERP-Teams und -Ressourcen."
     }
+  },
+  "errors": {
+    "notFound": {
+      "eyebrow": "Fehler 404",
+      "title": "Seite nicht gefunden",
+      "body": "Die gesuchte Seite existiert nicht oder wurde möglicherweise verschoben.",
+      "home": "Zurück zur Startseite"
+    },
+    "error": {
+      "eyebrow": "Fehler",
+      "title": "Etwas ist schiefgelaufen",
+      "body": "Ein unerwarteter Fehler ist aufgetreten. Sie können es erneut versuchen oder zur Startseite zurückkehren.",
+      "retry": "Erneut versuchen",
+      "home": "Zurück zur Startseite"
+    }
   }
 }

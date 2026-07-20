@@ -255,8 +255,8 @@
       "intelligence": "Intelligence",
       "operations": "Operations",
       "knowledge": "Knowledge",
-      "journal":   "Industrial Journal",
-      "services":  "Services"
+      "journal": "Industrial Journal",
+      "services": "Services"
     },
     "items": {
       "overview": "Overview",
@@ -287,14 +287,14 @@
       "compliance": "Compliance",
       "privacyCenter": "Privacy Center",
       "assetRegistry": "Asset Registry",
-      "journalFeed":       "Article Feed",
-      "journalLatest":     "Latest Articles",
-      "journalTrending":   "Trending",
-      "journalAuthors":    "Expert Authors",
+      "journalFeed": "Article Feed",
+      "journalLatest": "Latest Articles",
+      "journalTrending": "Trending",
+      "journalAuthors": "Expert Authors",
       "journalCategories": "Categories",
-      "industrialBrain":   "Industrial Brain",
-      "discover":          "Discovery",
-      "demo":              "Demo"
+      "industrialBrain": "Industrial Brain",
+      "discover": "Discovery",
+      "demo": "Demo"
     },
     "menu": "Menu",
     "close": "Close"
@@ -586,25 +586,25 @@
     }
   },
   "footer": {
-    "tagline":      "Enterprise Industrial Intelligence Platform",
-    "description":  "Hermes is an industrial intelligence platform for automation, maintenance, asset management, engineering documents, and expert knowledge.",
-    "copyright":    "© 2026 Hermes Novin Mehr IRIC. All Rights Reserved.",
-    "navAbout":     "About",
-    "navPlatform":  "Platform",
-    "navDocs":      "Documentation",
-    "navContact":   "Contact",
-    "navHome":      "Home",
-    "navLogin":     "Login",
-    "navJournal":   "Industrial Journal",
-    "navFeed":      "Article Feed",
-    "navLatest":    "Latest Articles",
-    "navTrending":  "Trending",
-    "navAuthors":   "Expert Authors",
-    "navCategories":"Categories",
-    "colPlatform":  "Platform",
-    "colJournal":   "Industrial Journal",
-    "colCompany":   "Company",
-    "socialTitle":  "Connect"
+    "tagline": "Enterprise Industrial Intelligence Platform",
+    "description": "Hermes is an industrial intelligence platform for automation, maintenance, asset management, engineering documents, and expert knowledge.",
+    "copyright": "© 2026 Hermes Novin Mehr IRIC. All Rights Reserved.",
+    "navAbout": "About",
+    "navPlatform": "Platform",
+    "navDocs": "Documentation",
+    "navContact": "Contact",
+    "navHome": "Home",
+    "navLogin": "Login",
+    "navJournal": "Industrial Journal",
+    "navFeed": "Article Feed",
+    "navLatest": "Latest Articles",
+    "navTrending": "Trending",
+    "navAuthors": "Expert Authors",
+    "navCategories": "Categories",
+    "colPlatform": "Platform",
+    "colJournal": "Industrial Journal",
+    "colCompany": "Company",
+    "socialTitle": "Connect"
   },
   "brand": {
     "tagline": "Industrial Intelligence Platform"
@@ -3277,26 +3277,26 @@
   },
   "documents": {
     "nav": {
-      "dashboard":  "Dashboard",
-      "explorer":   "Explorer",
-      "search":     "Search",
-      "approvals":  "Approvals",
-      "revisions":  "Revisions",
-      "comments":   "Comments",
-      "audit":      "Audit",
-      "folders":    "Folders",
+      "dashboard": "Dashboard",
+      "explorer": "Explorer",
+      "search": "Search",
+      "approvals": "Approvals",
+      "revisions": "Revisions",
+      "comments": "Comments",
+      "audit": "Audit",
+      "folders": "Folders",
       "categories": "Categories",
-      "templates":  "Templates",
-      "retention":  "Retention",
-      "settings":   "Settings"
+      "templates": "Templates",
+      "retention": "Retention",
+      "settings": "Settings"
     },
     "dashboard": {
-      "title":           "EDMS — Document Management",
-      "totalDocuments":  "Total Documents",
-      "drafts":          "Drafts",
-      "inReview":        "In Review",
-      "approved":        "Approved",
-      "pendingApprovals":"Pending Approvals",
+      "title": "EDMS — Document Management",
+      "totalDocuments": "Total Documents",
+      "drafts": "Drafts",
+      "inReview": "In Review",
+      "approved": "Approved",
+      "pendingApprovals": "Pending Approvals",
       "activeCheckouts": "Active Checkouts"
     }
   },
@@ -6629,6 +6629,21 @@
     "distinction": {
       "platformBilling": "Platform subscription billing — separate from ERP project budgets and internal company finance.",
       "memberScope": "Organization membership — separate from ERP teams and resources."
+    }
+  },
+  "errors": {
+    "notFound": {
+      "eyebrow": "Error 404",
+      "title": "Page not found",
+      "body": "The page you're looking for doesn't exist or may have moved.",
+      "home": "Back to home"
+    },
+    "error": {
+      "eyebrow": "Error",
+      "title": "Something went wrong",
+      "body": "An unexpected error occurred. You can try again or return to the homepage.",
+      "retry": "Try again",
+      "home": "Back to home"
     }
   }
 }

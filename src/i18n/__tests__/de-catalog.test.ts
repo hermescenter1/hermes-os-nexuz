@@ -244,6 +244,10 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // every namespace is translated and the carryover ceiling below is zero.
     "multiSite", "caseStudio", "digitalTwin", "industrial", "unknownCenter",
     "automation", "documents", "analytics", "platform", "storage",
+    // PHASE 89A — localized runtime boundaries (not-found / error / global-error).
+    // Genuinely translated in fa/en/de, so it must be registered here to keep
+    // the zero-carryover ceiling invariant.
+    "errors",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
