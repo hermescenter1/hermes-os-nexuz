@@ -121,7 +121,7 @@ export function JobListClient() {
               {/* Expanded detail */}
               {expanded === job.id && (
                 <div className="border-t border-line px-5 py-4 bg-bg">
-                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-4">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-4">
                     <div>
                       <p className="kpi-label mb-2">Required Skills</p>
                       <div className="flex flex-wrap gap-1">

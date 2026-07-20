@@ -1,5 +1,11 @@
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Accept Invite · Hermes OS", robots: { index: false, follow: false } };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  // 89C: localized tab title (was a static English literal on every locale);
+  // the locale layout's title template appends the site suffix.
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth" });
+  return { title: t("acceptInviteTitle"), robots: { index: false, follow: false } };
+}
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link }                  from "@/i18n/navigation";

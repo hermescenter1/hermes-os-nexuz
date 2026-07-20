@@ -152,7 +152,7 @@ export function UsageAnalyticsClient() {
 
       {/* Top users per feature */}
       {view === "top" && (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {(["copilot", "knowledge", "industrial", "ats"] as const).map(feat => {
             const entries = topByFeature[feat];
             const labels: Record<typeof feat, string> = {

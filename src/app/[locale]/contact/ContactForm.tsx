@@ -55,7 +55,7 @@ export function ContactForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block font-body text-xs text-muted">
                 {t("formName")} *
@@ -81,7 +81,7 @@ export function ContactForm() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block font-body text-xs text-muted">
                 {t("formEmail")} *

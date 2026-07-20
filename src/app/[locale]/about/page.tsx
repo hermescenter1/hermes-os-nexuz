@@ -38,7 +38,7 @@ export default async function AboutPage({
 
       {/* Company overview */}
       <section className="mx-auto max-w-6xl px-6 py-16">
-        <div className="grid gap-10 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
           {/* Company card */}
           <div className="rounded-2xl border border-line bg-surface p-8">
             <p className="font-mono text-xs uppercase tracking-widest text-signal mb-4">
@@ -88,7 +88,7 @@ export default async function AboutPage({
           <p className="font-mono text-xs uppercase tracking-widest text-signal mb-10">
             {t("founderEyebrow")}
           </p>
-          <div className="grid gap-10 lg:grid-cols-[auto_1fr]">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[auto_1fr]">
             {/* Avatar */}
             <div className="flex flex-col items-center gap-3 lg:items-start">
               <Image

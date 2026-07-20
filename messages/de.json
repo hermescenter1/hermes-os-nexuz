@@ -237,7 +237,38 @@
         "eyebrow": "Admin — Anbieterverwaltung",
         "heading": "Anbieter-Ökosystem",
         "lede": "Anbieterbewerbungen prüfen, freigegebene Anbieterprofile verwalten und die Gesundheit des Ökosystems sicherstellen."
+      },
+      "demo": {
+        "title": "Industrial-Brain-Demo anfordern — Hermes OS",
+        "description": "Fordern Sie eine persönliche Demo des Hermes Industrial Brain an und erleben Sie industrielle KI-Fähigkeiten in Aktion."
+      },
+      "vendorProfile": {
+        "titleTemplate": "{name} — Anbieterprofil | Hermes OS",
+        "descriptionFallback": "{name} ist ein verifizierter Anbieterpartner im Hermes-OS-Ökosystem.",
+        "keywords": "Industrieanbieter, Hermes-OS-Partner"
+      },
+      "academyCourse": {
+        "titleTemplate": "{name} — Hermes Akademie",
+        "descriptionFallback": "Kurs für industrielle Automatisierung auf der Hermes-Akademie-Plattform.",
+        "keywords": "Industrieschulung, Automatisierungskurs, PLC, SCADA, Hermes Akademie",
+        "fallbackTitle": "Industriekurs — Hermes Akademie"
+      },
+      "libraryArticle": {
+        "titleTemplate": "{name} — Industrielle Wissensbibliothek",
+        "notFoundTitle": "Artikel nicht gefunden"
+      },
+      "careersJob": {
+        "titleTemplate": "{name} — Karriere bei Hermes OS",
+        "keywordsSuffix": "Industriejobs, Automatisierungstechnik",
+        "notFoundTitle": "Stelle nicht gefunden"
       }
+    },
+    "breadcrumbs": {
+      "home": "Startseite",
+      "careers": "Karriere",
+      "academy": "Akademie",
+      "library": "Bibliothek",
+      "vendors": "Anbieter"
     }
   },
   "nav": {

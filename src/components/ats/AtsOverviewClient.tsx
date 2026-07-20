@@ -42,7 +42,7 @@ export function AtsOverviewClient() {
         <div className="global-ops-strip animate-pulse">
           {[1,2,3,4,5,6,7].map(i => <div key={i} className="global-ops-cell h-16" />)}
         </div>
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <div className="lg:col-span-2 rounded-xl border border-line bg-surface h-64 animate-pulse" />
           <div className="rounded-xl border border-line bg-surface h-64 animate-pulse" />
         </div>
@@ -80,7 +80,7 @@ export function AtsOverviewClient() {
       </div>
 
       {/* Stage funnel + Recent Activity */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 
         {/* Stage funnel */}
         <div className="lg:col-span-2 rounded-xl border border-line bg-surface px-5 py-5">

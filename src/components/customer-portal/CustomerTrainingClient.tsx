@@ -74,7 +74,7 @@ export function CustomerTrainingClient() {
       {certificates.length > 0 && (
         <div className="rounded-xl border border-signal/20 bg-signal/5 p-6">
           <p className="font-mono text-xs uppercase tracking-widest text-signal mb-4">Certificates Earned</p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {certificates.map((cert) => (
               <div key={cert.id} className="rounded-lg border border-signal/20 bg-surface p-4 flex items-center gap-3">
                 <span className="text-xl text-signal">◆</span>

@@ -212,7 +212,7 @@ export function RelationshipExplorer({ nodes, edges, onNodeClick }: Relationship
 
       <div className="flex-1 overflow-auto p-4">
         {mode === "alarm" ? (
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {/* Selector */}
             <div>
               <p className="kpi-label mb-2">Select Alarm</p>
@@ -246,7 +246,7 @@ export function RelationshipExplorer({ nodes, edges, onNodeClick }: Relationship
             </div>
           </div>
         ) : (
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {/* Selector */}
             <div>
               <p className="kpi-label mb-2">Select Vendor</p>

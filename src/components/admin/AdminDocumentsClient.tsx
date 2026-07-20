@@ -207,7 +207,7 @@ export function AdminDocumentsClient() {
         <Metric label={t("metrics.failed")} value={nf.format(metrics.failed)} />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* upload form */}
         <section className="rounded-xl border border-line bg-surface p-5">
           <h2 className="font-display text-lg font-bold text-ink">{t("upload.heading")}</h2>

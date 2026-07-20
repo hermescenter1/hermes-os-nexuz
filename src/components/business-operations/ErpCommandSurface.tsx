@@ -67,7 +67,7 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
 
       {/* 2. Operational status distributions (real counts) */}
       <DashboardSection id="erp-status" title={t("sections.operationalStatus")}>
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <StatusCard
             title={t("groups.projects")}
             rows={PROJECT_ORDER.map((s) => ({ key: s, count: overview.projectsByStatus[s] ?? 0, badge: <ProjectStatusBadge status={s} label={tStatus(`project.${s}`)} /> }))}
@@ -89,7 +89,7 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
       {/* 3. Budget summary (real budget vs. recorded actual cost) */}
       <DashboardSection id="erp-budget" title={t("sections.budget")}>
         <div className="ds-glass-card rounded-lg p-5">
-          <dl className="grid gap-4 sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <dt className="text-caption text-text-muted">{t("budget.total")}</dt>
               <dd className="mt-0.5 text-title font-semibold text-text-primary"><TechnicalValue mono={false}>{formatErpMoney(overview.totalBudget)}</TechnicalValue></dd>
@@ -112,7 +112,7 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
       {/* 4. Operational KPIs (only when real records exist) */}
       {overview.kpiSummary.length > 0 ? (
         <DashboardSection id="erp-kpis" title={t("sections.kpis")}>
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {overview.kpiSummary.slice(0, 4).map((kpi) => {
               const pct = kpi.target ? Math.min(100, Math.round((kpi.value / kpi.target) * 100)) : null;
               return (

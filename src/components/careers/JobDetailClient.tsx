@@ -65,7 +65,7 @@ export function JobDetailClient({ jobId }: { jobId: string }) {
         </Link>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
           <div className="page-header-premium">

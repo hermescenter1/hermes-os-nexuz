@@ -155,7 +155,7 @@ export function SitesMonitorClient() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[1,2,3,4,5,6,7].map(i => (
           <div key={i} className="rounded-xl border border-line bg-surface px-4 py-4 h-52 animate-pulse" />
         ))}
@@ -235,7 +235,7 @@ export function SitesMonitorClient() {
       {visibleZones.length === 0
         ? <p className="kpi-label text-faint">No zones match this filter.</p>
         : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {visibleZones.map(zone => <ZoneCard key={zone.id} zone={zone} />)}
           </div>
         )

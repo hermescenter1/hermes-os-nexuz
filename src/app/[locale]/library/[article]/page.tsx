@@ -24,16 +24,22 @@ export async function generateMetadata({
 }) {
   const { locale, article } = await params;
   const lib = KNOWLEDGE.find((l) => l.id === article);
-  if (!lib) return { title: "Article Not Found" };
+  if (!lib) {
+    const tnf = await getTranslations({ locale, namespace: "meta" });
+    return { title: (tnf.raw("pages") as Record<string, Record<string, string>>).libraryArticle.notFoundTitle };
+  }
 
   const k = await getTranslations({ locale, namespace: "knowledge" });
   const name    = k(`${lib.id}.name`    as Parameters<typeof k>[0]);
   const summary = k(`${lib.id}.summary` as Parameters<typeof k>[0]);
+  // 89C: localized title template (suffix was hardcoded English on fa/de).
+  const tMeta = await getTranslations({ locale, namespace: "meta" });
+  const pMeta = tMeta.raw("pages") as Record<string, Record<string, string>>;
 
   return buildMetadata({
     locale,
     path:        `/library/${article}`,
-    title:       `${name} — Industrial Knowledge Library`,
+    title:       pMeta.libraryArticle.titleTemplate.replace("{name}", name),
     description: summary,
     keywords:    lib.keywords.join(", "),
     ogType:      "article",
@@ -221,7 +227,7 @@ export default async function ArticlePage({
             <h2 className="mt-12 border-t border-line pt-8 font-display text-xl font-bold">
               {t("article.relatedTitle")}
             </h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {related.map((r) => (
                 <Link
                   key={r.id}

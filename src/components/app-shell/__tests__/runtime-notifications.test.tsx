@@ -177,4 +177,26 @@ describe("NotificationCenter — backward compatibility (public SiteHeader consu
     expect(calls.some((c) => c.url === "/api/notifications/read-all" && c.method === "PATCH")).toBe(true);
     await unmount();
   });
+
+  // 89C — keyboard operability: Escape closes the panel and focus returns to the bell.
+  it("Escape closes the open panel and restores focus to the bell trigger", async () => {
+    stubNotificationFetch([]);
+    const { container, unmount } = await mount(
+      <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
+        <NotificationCenter />
+      </NextIntlClientProvider>,
+    );
+    const bell = container.querySelector('[aria-label="Open notifications"]') as HTMLButtonElement;
+    await click(bell);
+    await settle();
+    expect(container.textContent).toContain("Notifications"); // panel open
+
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    expect(container.textContent).not.toContain("No notifications"); // panel closed
+    expect(bell.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(bell); // focus restored to trigger
+    await unmount();
+  });
 });

@@ -256,9 +256,10 @@ describe("de.json — Phase 86C1 translation audit", () => {
   const preservedInBatch = batch.filter((r) => r.de === r.en);
   const carryover = stillEnglish.filter((r) => r.de === r.en);
 
-  it("batch namespaces cover 538 keys; 486 carry German, 52 preserved terms", () => {
-    expect(batch.length).toBe(538);
-    expect(translated.length).toBe(486);
+  it("batch namespaces cover 557 keys; 505 carry German, 52 preserved terms", () => {
+    // 89C: +18 meta leaves (breadcrumbs + page metadata templates), all genuinely German.
+    expect(batch.length).toBe(557);
+    expect(translated.length).toBe(505);
     expect(preservedInBatch.length).toBe(52);
   });
 

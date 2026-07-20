@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return buildMetadata({
     locale,
     path: "/privacy-center",
-    title:       `${p.compliance.title} | Privacy Center`,
+    title:       p.compliance.title,
     description: p.compliance.description,
     keywords:    p.compliance.keywords,
   });

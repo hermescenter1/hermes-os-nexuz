@@ -72,7 +72,7 @@ export async function MaintenanceCommandSurface({
             <p className="text-body-compact text-text-secondary">{t("states.noMaintenance")}</p>
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <DistributionCard
               title={t("sections.workFlow")}
               rows={statusRows.map((r) => ({
@@ -145,7 +145,7 @@ export async function MaintenanceCommandSurface({
           assumptions stated. Not fabricated, not presented as predictive. */}
       <DashboardSection id="am-reliability" title={t("sections.reliability")}>
         <div className="ds-glass-card rounded-lg p-5">
-          <dl className="grid gap-4 sm:grid-cols-4">
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <div>
               <dt className="text-caption text-text-muted"><TechnicalValue mono={false}>{t("reliability.mtbf")}</TechnicalValue></dt>
               <dd className="mt-0.5 text-title font-semibold text-text-primary" dir="ltr">

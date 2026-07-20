@@ -146,7 +146,7 @@ export function KnowledgeGraphClient() {
       </div>
 
       {/* ── Main Grid: Canvas + Inspector ───────────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-4" style={{ minHeight: "520px" }}>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4" style={{ minHeight: "520px" }}>
 
         {/* Canvas — 3/4 */}
         <div
@@ -198,7 +198,7 @@ export function KnowledgeGraphClient() {
         <span className="kpi-label">Graph Statistics</span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Total Nodes",      value: snap.stats.totalNodes    },
           { label: "Total Edges",      value: snap.stats.totalEdges    },

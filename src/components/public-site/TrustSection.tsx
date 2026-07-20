@@ -55,7 +55,7 @@ export function TrustSection({ variant = "features" }: TrustSectionProps) {
     <PublicSection tone="raised">
       <PublicPageContainer>
         <SectionHeader title={features("title")} align="center" />
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <ul className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {FEATURE_KEYS.map((key) => (
             <li
               key={key}

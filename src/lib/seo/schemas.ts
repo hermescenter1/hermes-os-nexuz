@@ -279,12 +279,13 @@ interface VendorForSchema {
   headquartersCountry?: string | null;
 }
 
-export function buildVendorSchema(vendor: VendorForSchema) {
+export function buildVendorSchema(vendor: VendorForSchema, locale = "fa") {
+  // 89C: entity URL follows the page locale (was hardcoded /fa on every locale).
   return {
     "@context": "https://schema.org",
     "@type":    "Organization",
     name:       vendor.nameEn,
-    url:        `${BASE_URL}/fa/vendors/${vendor.slug}`,
+    url:        `${BASE_URL}/${isActiveLocale(locale) ? locale : DEFAULT_LOCALE}/vendors/${vendor.slug}`,
     ...(vendor.websiteUrl   ? { sameAs: [vendor.websiteUrl] } : {}),
     ...(vendor.descriptionEn ? { description: vendor.descriptionEn } : {}),
     ...(vendor.contactEmail  ? { email: vendor.contactEmail } : {}),

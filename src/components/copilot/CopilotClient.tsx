@@ -143,7 +143,7 @@ export function CopilotClient() {
       </div>
 
       {/* ── Intelligence Context (2/3 + 1/3) ────────────────────────────── */}
-      <div className="grid gap-5 lg:grid-cols-3 mb-8">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 mb-8">
 
         {/* PRIMARY (2/3) */}
         <div className="lg:col-span-2 flex flex-col gap-5">
@@ -468,7 +468,7 @@ export function CopilotClient() {
             empty={t("none.sources")}
             isEmpty={sources.length === 0}
           >
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {sources.map((id) => (
                 <a
                   key={id}

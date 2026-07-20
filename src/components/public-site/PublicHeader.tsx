@@ -53,7 +53,7 @@ export function PublicHeader() {
           </Link>
           {/* 87D.1 — grouped enterprise IA (client island: disclosure menus). */}
           <PublicNavMenus />
-          <div className="ms-auto flex shrink-0 items-center gap-2.5">
+          <div className="ms-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             <AuthIndicator />
             <NotificationCenter />
             <LanguageSwitch />

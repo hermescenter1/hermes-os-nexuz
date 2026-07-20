@@ -186,7 +186,7 @@ export function CaseStudioClient() {
         <Metric label={t("metrics.vendors")} value={nf.format(metrics.vendors)} />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 2 — create form */}
         <section className="rounded-xl border border-line bg-surface p-5">
           <h2 className="font-display text-lg font-bold text-ink">{t("form.heading")}</h2>

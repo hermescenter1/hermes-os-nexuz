@@ -160,7 +160,9 @@ describe("raw-enum inventory — occurrence-exact, reconciled arithmetic", () =>
     "src/components/operations/IntelligenceWallClient.tsx":     { count: 2, kind: "deferred-ui: operations wall" },
     "src/components/vendors/VendorApplicationForm.tsx":         { count: 1, kind: "deferred-ui: public vendor form" },
     "src/lib/eng-graph/builder.ts":                             { count: 1, kind: "deferred-ui: graph edge labels via eng-graph API" },
-    "src/app/[locale]/vendors/[vendorId]/page.tsx":             { count: 1, kind: "non-visible: SEO meta keywords, not rendered UI" },
+    // 89C: vendors/[vendorId]/page.tsx dropped out — its single occurrence
+    // (vendorType.replace in SEO keywords) was ELIMINATED when the profile
+    // metadata was localized; see ELIMINATED_89C below.
     "src/components/erp/ErpDashboardClient.tsx":                { count: 1, kind: "non-visible: test-only component, zero route consumers (87L.3)" },
     "src/components/industrial/AssetCard.tsx":                  { count: 1, kind: "technical: OPC_UA→OPC-UA hyphenation" },
     "src/components/industrial/AssetDetailClient.tsx":          { count: 2, kind: "technical: protocol hyphenation" },
@@ -174,13 +176,14 @@ describe("raw-enum inventory — occurrence-exact, reconciled arithmetic", () =>
     expect(liveMap).toEqual(Object.fromEntries(Object.entries(REMAINING).map(([k, v]) => [k, v.count])));
   });
 
-  it("arithmetic reconciles: 52 baseline = 28 corrected + 24 remaining", () => {
+  it("arithmetic reconciles: 52 baseline = 28 corrected + 23 remaining + 1 eliminated", () => {
     const remaining = Object.values(REMAINING).reduce((s, v) => s + v.count, 0);
-    expect(remaining).toBe(24);
-    expect(Object.keys(REMAINING)).toHaveLength(17);
-    // corrected = the 17 journey-reachable files migrated to enumLabel
-    const CORRECTED_FILES = 17, CORRECTED_OCCURRENCES = 28, BASELINE = 52;
-    expect(CORRECTED_OCCURRENCES + remaining).toBe(BASELINE);
+    expect(remaining).toBe(23);
+    expect(Object.keys(REMAINING)).toHaveLength(16);
+    // corrected = the 17 journey-reachable files migrated to enumLabel;
+    // eliminated = vendors/[vendorId] keywords replace removed by 89C metadata localization.
+    const CORRECTED_FILES = 17, CORRECTED_OCCURRENCES = 28, ELIMINATED_89C = 1, BASELINE = 52;
+    expect(CORRECTED_OCCURRENCES + remaining + ELIMINATED_89C).toBe(BASELINE);
     void CORRECTED_FILES;
   });
 

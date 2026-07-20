@@ -267,7 +267,7 @@ export function LibraryClient() {
       {/* Step 9 — Brain reference statistics (session-scoped) */}
       {brainMem && brainMem.stats.count > 0 && (
         <div className="mt-6 rounded-xl border border-line bg-surface p-5">
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
                 {t("stats.recentTitle")}
@@ -319,7 +319,7 @@ export function LibraryClient() {
       {filtered.length === 0 ? (
         <p className="mt-6 font-body text-sm text-muted">{t("empty")}</p>
       ) : (
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
             <article
               key={c.id}

@@ -61,7 +61,7 @@ export default async function ContactPage({
 
       {/* Contact cards */}
       <section className="mx-auto max-w-6xl px-6 py-12">
-        <div className="grid gap-5 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           {contactCards.map((card) => (
             <div
               key={card.title}

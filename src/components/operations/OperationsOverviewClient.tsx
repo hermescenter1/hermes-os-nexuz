@@ -96,7 +96,7 @@ export function OperationsOverviewClient() {
       </div>
 
       {/* ── Main grid ─────────────────────────────────────────────────────── */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 
         {/* Left 2/3: Status Matrix + Feed */}
         <div className="lg:col-span-2 flex flex-col gap-5">

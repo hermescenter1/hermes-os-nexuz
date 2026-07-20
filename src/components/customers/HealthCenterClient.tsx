@@ -91,7 +91,7 @@ export function HealthCenterClient() {
       </div>
 
       {/* Tier filter + dimension breakdown */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 
         {/* Tier filters + breakdown */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">

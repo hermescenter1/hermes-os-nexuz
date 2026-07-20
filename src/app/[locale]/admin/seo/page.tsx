@@ -3,6 +3,7 @@ import { PageShell }          from "@/components/PageShell";
 import { RequireCapability }  from "@/components/auth/RequireCapability";
 import { SeoAdminClient }     from "@/components/admin/SeoAdminClient";
 import { noIndexMetadata }    from "@/lib/seo/metadata";
+import { ACTIVE_LOCALES }     from "@/i18n/locales";
 import { KNOWLEDGE }          from "@/lib/industrial/knowledge";
 import { JOBS }               from "@/lib/ats/mock-data";
 import { BASE_URL }           from "@/lib/seo/config";
@@ -11,30 +12,20 @@ export function generateMetadata() {
   return noIndexMetadata("SEO Dashboard · Hermes OS");
 }
 
-const STATIC_PUBLIC_ROUTES = [
-  "/fa", "/en",
-  "/fa/platform", "/en/platform",
-  "/fa/services", "/en/services",
-  "/fa/services/industrial-ai", "/en/services/industrial-ai",
-  "/fa/services/knowledge-cloud", "/en/services/knowledge-cloud",
-  "/fa/services/cybersecurity", "/en/services/cybersecurity",
-  "/fa/services/plc", "/en/services/plc",
-  "/fa/services/scada-hmi", "/en/services/scada-hmi",
-  "/fa/architecture", "/en/architecture",
-  "/fa/brain", "/en/brain",
-  "/fa/copilot", "/en/copilot",
-  "/fa/library", "/en/library",
-  "/fa/library/cases", "/en/library/cases",
-  "/fa/academy", "/en/academy",
-  "/fa/careers", "/en/careers",
-  "/fa/contact", "/en/contact",
-  "/fa/about", "/en/about",
-  "/fa/privacy", "/en/privacy",
-  "/fa/terms", "/en/terms",
-  "/fa/cookies", "/en/cookies",
-  "/fa/privacy-center", "/en/privacy-center",
-  "/fa/gdpr", "/en/gdpr",
+// 89C: derived from ACTIVE_LOCALES so newly activated locales (German) are
+// automatically observed — the list previously enumerated only fa/en.
+const STATIC_PUBLIC_PATHS = [
+  "", "/platform", "/services",
+  "/services/industrial-ai", "/services/knowledge-cloud", "/services/cybersecurity",
+  "/services/plc", "/services/scada-hmi",
+  "/architecture", "/brain", "/copilot",
+  "/library", "/library/cases",
+  "/academy", "/careers", "/contact", "/about",
+  "/privacy", "/terms", "/cookies", "/privacy-center", "/gdpr",
 ];
+const STATIC_PUBLIC_ROUTES = STATIC_PUBLIC_PATHS.flatMap((path) =>
+  ACTIVE_LOCALES.map((locale) => `/${locale}${path}`),
+);
 
 const SCHEMA_TYPES_ACTIVE = [
   "Organization",

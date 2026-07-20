@@ -128,7 +128,7 @@ export function PipelineBoardClient() {
 
       {/* Selected candidate detail */}
       {selected && (
-        <div className="rounded-xl border border-signal/20 bg-surface px-5 py-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="rounded-xl border border-signal/20 bg-surface px-5 py-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <div className="h-layer-sep mb-3">
               <span className="kpi-label">Candidate Profile</span>

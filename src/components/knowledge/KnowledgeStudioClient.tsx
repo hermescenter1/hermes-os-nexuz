@@ -206,7 +206,7 @@ export function KnowledgeStudioClient() {
       </div>
 
       {/* ── Operations Overview ───────────────────────────────────────────── */}
-      <div className="grid gap-5 lg:grid-cols-3 mb-8">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 mb-8">
 
         {/* Library Health (2/3) */}
         <div className="lg:col-span-2 flex flex-col gap-5">
@@ -376,7 +376,7 @@ export function KnowledgeStudioClient() {
       <div className="border-t border-line pt-8">
         <p className="type-eyebrow mb-6">Article Management</p>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Create form */}
           <section className="rounded-xl border border-line bg-surface p-5">
             <h2 className="type-panel-title mb-4">{t("form.heading")}</h2>

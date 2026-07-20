@@ -1,18 +1,17 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { buildMetadata }    from "@/lib/seo/metadata";
 import { DemoRequestForm }  from "@/components/sales/DemoRequestForm";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  // 89C: catalog-backed metadata for all three locales (was a fa-else-en ternary).
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
   return buildMetadata({
     locale,
-    path:  "/demo",
-    title: locale === "fa"
-      ? "درخواست دمو مغز صنعتی — هرمس OS"
-      : "Request Industrial Brain Demo — Hermes OS",
-    description: locale === "fa"
-      ? "یک دمو اختصاصی از مغز صنعتی هرمس درخواست دهید و قابلیت‌های هوش مصنوعی صنعتی را از نزدیک ببینید."
-      : "Request a personalized demo of Hermes Industrial Brain and see industrial AI capabilities in action.",
+    path:        "/demo",
+    title:       p.demo.title,
+    description: p.demo.description,
   });
 }
 

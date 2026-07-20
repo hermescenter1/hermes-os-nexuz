@@ -165,7 +165,7 @@ export function ComplianceDashboardClient({ view = "overview" }: { view?: "overv
 
           {creating && (
             <div className="rounded-xl border border-signal/30 bg-surface p-5 space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="kpi-label mb-1 block">{t("formType")}</label>
                   <select value={form.documentType} onChange={(e) => f("documentType", e.target.value)}

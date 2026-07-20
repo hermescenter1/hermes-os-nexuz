@@ -81,7 +81,7 @@ export async function AssetCommandSurface({
             <p className="text-body-compact text-text-secondary">{t("states.emptyRegistry")}</p>
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <DistributionCard
               title={t("sections.assetStatus")}
               rows={statusRows.map((r) => ({

@@ -1,4 +1,5 @@
 import type { Metadata }           from "next";
+import { getTranslations }         from "next-intl/server";
 import { buildMetadata }           from "@/lib/seo/metadata";
 import { buildVendorListSchema }   from "@/lib/seo/schemas";
 import { JsonLd }                  from "@/components/seo/JsonLd";
@@ -12,12 +13,16 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  // 89C: localized metadata — the meta.pages.vendors leaves already exist in
+  // all three catalogs; read them like the sibling /services page.
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const p = t.raw("pages") as Record<string, Record<string, string>>;
   return buildMetadata({
     locale,
-    title:       "Vendor Directory — Hermes OS",
-    description: "Browse certified industrial technology vendors, system integrators, service providers and manufacturers in the Hermes OS ecosystem.",
     path:        "/vendors",
-    keywords:    ["vendor directory", "industrial vendors", "system integrators", "technology providers", "Hermes OS partners"],
+    title:       p.vendors.title,
+    description: p.vendors.description,
+    keywords:    p.vendors.keywords,
   });
 }
 

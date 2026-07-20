@@ -12,13 +12,13 @@ export function DashboardSkeleton({ label }: { label: string }) {
       {/* Announce a single polite loading label; hide the shimmer bars from AT. */}
       <p className="sr-only" role="status" aria-live="polite">{label}</p>
       <div aria-hidden="true" className="flex flex-col gap-4">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="ds-skeleton h-20 rounded-md" />
           ))}
         </div>
         <div className="ds-skeleton h-40 rounded-md" />
-        <div className="grid gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           <div className="ds-skeleton h-28 rounded-md lg:col-span-2" />
           <div className="ds-skeleton h-28 rounded-md" />
         </div>

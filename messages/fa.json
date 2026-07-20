@@ -237,7 +237,38 @@
         "eyebrow": "مدیریت — فروشندگان",
         "heading": "اکوسیستم فروشندگان",
         "lede": "درخواست‌های فروشندگان را بررسی کنید، پروفایل‌های تأییدشده را مدیریت کنید و سلامت اکوسیستم را حفظ کنید."
+      },
+      "demo": {
+        "title": "درخواست دمو مغز صنعتی — هرمس OS",
+        "description": "یک دمو اختصاصی از مغز صنعتی هرمس درخواست دهید و قابلیت‌های هوش مصنوعی صنعتی را از نزدیک ببینید."
+      },
+      "vendorProfile": {
+        "titleTemplate": "{name} — پروفایل فروشنده | هرمس OS",
+        "descriptionFallback": "{name} یک شریک فروشندهٔ تأییدشده در اکوسیستم هرمس OS است.",
+        "keywords": "فروشنده صنعتی, شریک هرمس OS"
+      },
+      "academyCourse": {
+        "titleTemplate": "{name} — آکادمی هرمس",
+        "descriptionFallback": "دورهٔ اتوماسیون صنعتی در پلتفرم آکادمی هرمس.",
+        "keywords": "آموزش صنعتی, دوره اتوماسیون, PLC, SCADA, آکادمی هرمس",
+        "fallbackTitle": "دورهٔ صنعتی — آکادمی هرمس"
+      },
+      "libraryArticle": {
+        "titleTemplate": "{name} — کتابخانهٔ دانش صنعتی",
+        "notFoundTitle": "مقاله یافت نشد"
+      },
+      "careersJob": {
+        "titleTemplate": "{name} — فرصت‌های شغلی هرمس OS",
+        "keywordsSuffix": "مشاغل صنعتی, مهندسی اتوماسیون",
+        "notFoundTitle": "موقعیت شغلی یافت نشد"
       }
+    },
+    "breadcrumbs": {
+      "home": "خانه",
+      "careers": "فرصت‌های شغلی",
+      "academy": "آکادمی",
+      "library": "کتابخانه",
+      "vendors": "فروشندگان"
     }
   },
   "nav": {

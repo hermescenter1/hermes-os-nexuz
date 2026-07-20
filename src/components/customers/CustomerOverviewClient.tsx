@@ -46,7 +46,7 @@ export function CustomerOverviewClient() {
         <div className="global-ops-strip animate-pulse">
           {[1,2,3,4,5,6,7].map(i => <div key={i} className="global-ops-cell h-16" />)}
         </div>
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {[1,2,3].map(i => <div key={i} className="rounded-xl border border-line bg-surface h-48 animate-pulse" />)}
         </div>
       </div>
@@ -85,7 +85,7 @@ export function CustomerOverviewClient() {
       </div>
 
       {/* Top row: Health + Industry */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 
         {/* Health distribution */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
@@ -145,7 +145,7 @@ export function CustomerOverviewClient() {
       </div>
 
       {/* Top + Bottom health accounts */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
           <div className="h-layer-sep mb-4"><span className="kpi-label">Highest Health Accounts</span></div>

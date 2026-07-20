@@ -138,7 +138,7 @@ export function AcademyAdminClient() {
         <div className="rounded-xl border border-signal/30 bg-surface p-6 space-y-4">
           <h3 className="font-mono text-sm font-semibold text-ink">{t("createTitle")}</h3>
           {error && <p className="rounded-lg bg-danger/10 p-3 text-xs text-danger">{error}</p>}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="kpi-label mb-1 block">{t("formTitle")}</label>
               <input

@@ -90,7 +90,7 @@ export function CourseDetailClient({ courseId }: { courseId: string }) {
         <Link href="/academy" className="text-xs text-muted hover:text-ink font-mono transition-colors">← All Courses</Link>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Left: Lesson viewer or course info */}
         <div className="lg:col-span-2 space-y-5">
           {activeLesson ? (

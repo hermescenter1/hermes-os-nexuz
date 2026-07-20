@@ -44,7 +44,7 @@ export function RiskEvidence(props: RiskEvidenceProps) {
   const scoreTone = score >= 75 ? "text-status-danger" : score >= 50 ? "text-status-warning" : "text-status-success";
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
       {/* Risk */}
       <div>
         <p className="text-label-compact font-semibold uppercase tracking-wide text-text-muted">{props.riskLabel}</p>

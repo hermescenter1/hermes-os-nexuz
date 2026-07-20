@@ -103,7 +103,7 @@ export function AdminConsoleClient({
         <Metric label={t("metrics.role")} value={tAuth(roleLabel)} />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
         <div>
           {/* 3 — filters */}
           <section className="rounded-xl border border-line bg-surface p-4">

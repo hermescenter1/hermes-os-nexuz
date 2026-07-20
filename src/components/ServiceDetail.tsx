@@ -23,7 +23,7 @@ export async function ServiceDetail({
       <PageIntro eyebrow={s("eyebrow")} title={t("title")} lede={t("lede")} />
 
       <section className="mx-auto max-w-6xl px-6 py-16">
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {POINTS.map((p, i) => (
             <div key={p} className="rounded-xl border border-line bg-surface p-6">
               <span className="font-mono text-sm text-signal">

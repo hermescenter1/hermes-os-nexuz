@@ -128,7 +128,7 @@ export function CoursesBrowserClient() {
           {enrolled.length > 0 && (
             <section>
               <h2 className="font-mono text-xs uppercase tracking-widest text-muted/70 mb-4">Continue Learning</h2>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {enrolled.map((c) => <CourseCard key={c.id} course={c} />)}
               </div>
             </section>
@@ -138,7 +138,7 @@ export function CoursesBrowserClient() {
               <h2 className="font-mono text-xs uppercase tracking-widest text-muted/70 mb-4">
                 {enrolled.length > 0 ? "Browse More Courses" : "All Courses"}
               </h2>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {unenrolled.map((c) => <CourseCard key={c.id} course={c} />)}
               </div>
             </section>

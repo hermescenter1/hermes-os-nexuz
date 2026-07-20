@@ -121,7 +121,7 @@ export function BrainClient() {
 
           {/* Step 7 — pipeline intelligence strip: vendors, risk, evidence */}
           {(result.vendors?.length || result.riskLevel || result.evidence) && (
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-line bg-surface p-4">
                 <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
                   {t("intel.vendorsTitle")}
@@ -212,7 +212,7 @@ export function BrainClient() {
               <p className="mt-4 font-mono text-xs uppercase tracking-widest text-muted">
                 {t("unknown.provide")}
               </p>
-              <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+              <ul className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                 {(["equipment", "vendor", "alarms", "symptoms", "maintenance", "impact", "time"] as const).map((it) => (
                   <li key={it} className="flex gap-2.5 font-body text-sm leading-relaxed text-ink">
                     <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[var(--warn)]" />
@@ -284,7 +284,7 @@ export function BrainClient() {
                 <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
                   {t("evidence.sourcesTitle")}
                 </h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {result.retrieval.topCases.map((c) => (
                     <a
                       key={c.id}
@@ -372,7 +372,7 @@ export function BrainClient() {
             <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
               {t("sourcesTitle")}
             </h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {(result.citations?.length
                 ? result.citations
                 : result.libraries.map((id, i) => ({
@@ -571,7 +571,7 @@ export function BrainClient() {
           {t("intel.memoryTitle")}
         </h2>
         {memStats && memStats.count > 0 ? (
-          <div className="mt-4 grid gap-4 sm:grid-cols-5">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-5">
             <p className="font-body text-xs text-muted">
               {t("intel.memoryKnown")}
               <span className="metric mt-0.5 block text-xl text-ink">

@@ -88,7 +88,7 @@ export async function EdmsCommandSurface({
             <p className="text-body-compact text-text-secondary">{t("states.emptyRegister")}</p>
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <DistributionCard
               title={t("sections.workflow")}
               rows={statusRows.map((r) => ({

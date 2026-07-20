@@ -21,14 +21,17 @@ export function LanguageSwitch() {
     <button
       type="button"
       onClick={() => router.replace(pathname, { locale: next })}
-      className="flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 font-mono text-sm text-muted transition-colors hover:text-ink"
+      className="flex items-center gap-1.5 rounded-md border border-line px-2 py-1.5 font-mono text-sm text-muted transition-colors hover:text-ink sm:px-3"
       aria-label={`Switch language to ${LOCALE_ACCESSIBLE_NAME[next]}`}
       lang={next}
     >
       {/* dir="ltr" keeps flag always visually left of label regardless of page direction */}
       <span className="flex items-center gap-1.5" dir="ltr">
         <NextFlag size={18} />
-        {t("switchLanguage")}
+        {/* 89C: label collapses below sm so the German header row ("Anmelden" +
+            switch) cannot push past a 375px viewport; the aria-label above keeps
+            the control's accessible name intact. */}
+        <span className="hidden sm:inline">{t("switchLanguage")}</span>
       </span>
     </button>
   );

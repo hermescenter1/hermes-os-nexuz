@@ -349,7 +349,7 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   it("classifies every leaf exactly once, with no duplicates", () => {
     const total = Object.values(buckets).reduce((n, b) => n + b.length, 0);
     expect(total).toBe(allEn.length);
-    expect(allEn.length).toBe(5145);  // 89A: +9 errors-namespace leaves (5136 -> 5145)
+    expect(allEn.length).toBe(5164);  // 89A: +9 errors leaves; 89C: +18 meta breadcrumb/page leaves (5145 -> 5164)
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -362,12 +362,12 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     expect(buckets.persianContamination.slice(0, 40)).toEqual([]);
   });
 
-  it("satisfies 5145 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 5164 = translations + identicals + tokens + numeric/unit", () => {
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
-    ).toBe(5145);
+    ).toBe(5164);
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);
   });

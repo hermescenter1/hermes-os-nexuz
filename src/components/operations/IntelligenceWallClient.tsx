@@ -111,7 +111,7 @@ export function IntelligenceWallClient() {
 
       {/* Tab: Knowledge Graph */}
       {tab === "graph" && (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {/* Node distribution */}
           <div className="rounded-xl border border-line bg-surface px-5 py-5">
             <div className="h-layer-sep mb-4">
@@ -215,7 +215,7 @@ export function IntelligenceWallClient() {
 
       {/* Tab: Alarm Analysis */}
       {tab === "alarms" && (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <div className="rounded-xl border border-line bg-surface px-5 py-5">
             <div className="h-layer-sep mb-4">
               <span className="kpi-label">Alarm Categories by Severity</span>
@@ -269,7 +269,7 @@ export function IntelligenceWallClient() {
 
       {/* Tab: Platform Status */}
       {tab === "platform" && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.componentStates.map(comp => (
             <div
               key={comp.key}

@@ -237,7 +237,38 @@
         "eyebrow": "Admin — Vendor Management",
         "heading": "Vendor Ecosystem",
         "lede": "Review vendor applications, manage approved vendor profiles, and maintain ecosystem health."
+      },
+      "demo": {
+        "title": "Request Industrial Brain Demo — Hermes OS",
+        "description": "Request a personalized demo of Hermes Industrial Brain and see industrial AI capabilities in action."
+      },
+      "vendorProfile": {
+        "titleTemplate": "{name} — Vendor Profile | Hermes OS",
+        "descriptionFallback": "{name} is a verified vendor partner in the Hermes OS ecosystem.",
+        "keywords": "industrial vendor, Hermes OS partner"
+      },
+      "academyCourse": {
+        "titleTemplate": "{name} — Hermes Academy",
+        "descriptionFallback": "Industrial automation course on the Hermes Academy platform.",
+        "keywords": "industrial training, automation course, PLC, SCADA, Hermes Academy",
+        "fallbackTitle": "Industrial Course — Hermes Academy"
+      },
+      "libraryArticle": {
+        "titleTemplate": "{name} — Industrial Knowledge Library",
+        "notFoundTitle": "Article Not Found"
+      },
+      "careersJob": {
+        "titleTemplate": "{name} — Hermes OS Careers",
+        "keywordsSuffix": "industrial jobs, automation engineering",
+        "notFoundTitle": "Job Not Found"
       }
+    },
+    "breadcrumbs": {
+      "home": "Home",
+      "careers": "Careers",
+      "academy": "Academy",
+      "library": "Library",
+      "vendors": "Vendors"
     }
   },
   "nav": {

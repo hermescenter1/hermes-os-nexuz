@@ -899,6 +899,9 @@ h6 { font-weight: 550; letter-spacing: 0; }
    ──────────────────────────────────────────────────────────────────────── */
 .global-ops-strip {
   display:     flex;
+  /* 89C: cells (min-width 130px) wrap on narrow viewports instead of forcing
+     horizontal page overflow — 22 KPI-strip consumers inherit this fix. */
+  flex-wrap:   wrap;
   align-items: stretch;
   border:      1px solid rgba(var(--signal-rgb), 0.10);
   border-radius: 0.75rem;

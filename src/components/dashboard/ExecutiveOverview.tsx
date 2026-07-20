@@ -186,10 +186,10 @@ export function ExecutiveOverview() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* 2 — Brain Intelligence Summary */}
         <ExecPanel title={t("sectionIntel")} className="lg:col-span-2">
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {/* Top Domains */}
             <div>
               <p className="font-body text-xs text-muted">{t("intel.topDomains")}</p>

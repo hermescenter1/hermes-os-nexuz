@@ -82,7 +82,7 @@ export function AccountListClient() {
         <span className="kpi-label text-faint ml-auto">{accounts.length} accounts</span>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
         {/* Account list */}
         <div className="flex flex-col gap-2">

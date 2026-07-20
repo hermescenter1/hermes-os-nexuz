@@ -125,7 +125,7 @@ export function DsShowcase() {
         </Section>
 
         <Section title="Cards">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card variant="standard">
               <p className="text-label font-semibold">Standard (E1)</p>
               <p className="text-body text-text-secondary">Resting surface.</p>
@@ -159,7 +159,7 @@ export function DsShowcase() {
         </Section>
 
         <Section title="Loading, empty & error states">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card aria-busy>
               <div className="flex flex-col gap-2">
                 <Skeleton shape="text" width="60%" />
@@ -198,7 +198,7 @@ export function DsShowcase() {
         </Section>
 
         <Section title="RTL / LTR & technical isolation">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Card>
               <p className="mb-2 text-label-compact uppercase text-text-muted">English · LTR</p>
               <p className="text-body">

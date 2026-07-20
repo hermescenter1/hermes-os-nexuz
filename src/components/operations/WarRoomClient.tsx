@@ -151,7 +151,7 @@ export function WarRoomClient() {
         <div className="global-ops-strip animate-pulse">
           {[1,2,3,4].map(i => <div key={i} className="global-ops-cell h-16" />)}
         </div>
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <div className="rounded-xl border border-line bg-surface h-80 animate-pulse" />
           <div className="rounded-xl border border-line bg-surface h-80 animate-pulse" />
         </div>
@@ -205,7 +205,7 @@ export function WarRoomClient() {
       )}
 
       {/* Main grid */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
         {/* Left: Incident queue */}
         <div className="flex flex-col gap-3">
@@ -283,7 +283,7 @@ export function WarRoomClient() {
         <p className="kpi-label text-faint mb-3">
           Vendor zone exposure across all documented alarm types · {data.incidents.length} total incidents
         </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {data.systemState && Object.entries(data.systemState).map(([state, count]) => (
             <div
               key={state}

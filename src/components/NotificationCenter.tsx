@@ -172,7 +172,8 @@ function NotificationItem({
         </p>
       </div>
 
-      <div className="flex shrink-0 flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      {/* 89C: focus-within keeps the actions visible for keyboard users too */}
+      <div className="flex shrink-0 flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         {!notification.isRead && (
           <button
             onClick={() => onMarkRead(notification.id)}
@@ -214,6 +215,7 @@ export function NotificationCenter({
   const [unreadCount,    setUnreadCount]     = useState(0);
   const [loading,        setLoading]         = useState(false);
   const dropdownRef  = useRef<HTMLDivElement>(null);
+  const triggerRef   = useRef<HTMLButtonElement>(null);
   const listLoadedRef = useRef(false); // true once the dropdown list has been fetched
   // PHASE 87L.4: the public shell (PublicHeader) mounts this widget on every
   // public page, so an anonymous visitor used to poll /unread-count every 60s
@@ -361,10 +363,25 @@ export function NotificationCenter({
     return () => document.removeEventListener("mousedown", handler);
   }, [isOpen]);
 
+  // 89C — keyboard operability: Escape closes the open panel and returns focus
+  // to the bell trigger, so keyboard users are never stranded in a closed panel.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setIsOpen(false);
+      triggerRef.current?.focus();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isOpen]);
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell trigger */}
       <button
+        ref={triggerRef}
+        type="button"
         onClick={handleToggle}
         aria-label={isOpen ? labels.close : labels.open}
         aria-expanded={isOpen}

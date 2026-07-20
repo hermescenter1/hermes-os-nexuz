@@ -20,7 +20,7 @@ export function AtsAnalyticsClient() {
         <div className="global-ops-strip animate-pulse">
           {[1,2,3,4,5,6,7].map(i => <div key={i} className="global-ops-cell h-16" />)}
         </div>
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {[1,2,3].map(i => (
             <div key={i} className="rounded-xl border border-line bg-surface h-48 animate-pulse" />
           ))}
@@ -65,7 +65,7 @@ export function AtsAnalyticsClient() {
       </div>
 
       {/* Row 1: Funnel + Score distribution */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
         {/* Pipeline funnel */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
@@ -118,7 +118,7 @@ export function AtsAnalyticsClient() {
       </div>
 
       {/* Row 2: Top skills + Source breakdown */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
         {/* Top skills */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
@@ -167,7 +167,7 @@ export function AtsAnalyticsClient() {
       </div>
 
       {/* Row 3: Department + Rejection reasons */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
         {/* Department breakdown */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">

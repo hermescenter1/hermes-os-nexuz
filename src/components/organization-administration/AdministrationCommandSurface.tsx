@@ -87,7 +87,7 @@ export async function AdministrationCommandSurface({
             <p className="text-body-compact text-text-secondary">{t("states.noMembers")}</p>
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {memberRows.length > 0 ? (
               <DistributionCard
                 title={t("fields.totalMembers")}
@@ -140,7 +140,7 @@ export async function AdministrationCommandSurface({
                   {t("fields.cycle")}: {t(`billingCycle.${subscription.billingCycle}`)}
                 </span>
               </div>
-              <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+              <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <dt className="text-caption text-text-muted">{t("fields.startsAt")}</dt>
                   <dd className="mt-0.5 text-body-compact text-text-primary" dir="ltr">
