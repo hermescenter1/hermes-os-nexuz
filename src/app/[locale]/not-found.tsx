@@ -1,30 +1,49 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { DEFAULT_LOCALE } from "@/i18n/locales";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_DIRECTION,
+  isActiveLocale,
+  type ActiveLocale,
+} from "@/i18n/locales";
 
 /**
  * PHASE 89A — general localized 404 boundary (H1).
+ * PHASE 89A.1 — explicit content-level lang/dir.
  *
- * Renders WITHIN src/app/[locale]/layout.tsx, so it inherits that layout's
- * <html lang dir> and NextIntlClientProvider — Persian keeps RTL, English and
- * German render LTR, all with the premium design system. Replaces the Next.js
- * built-in English 404 for every notFound() call site that lacks a nearer
- * boundary. Exposes no route internals and no error details.
+ * Renders WITHIN src/app/[locale]/layout.tsx for route-level notFound() calls,
+ * and via the [...unmatched] catch-all for completely unmatched localized URLs.
+ * In production Next.js serves 404s inside its internal
+ * `<html id="__next_error__">` document shell, so the locale layout's
+ * <html lang dir> is NOT reliably inherited — therefore the outermost content
+ * container below carries its own lang/dir, resolved server-side from the
+ * request locale and validated against ACTIVE_LOCALES (unknown values fail
+ * safely to the default locale). No client effect, no document mutation, no
+ * suppressHydrationWarning. Exposes no route internals and no error details.
  */
 export default async function LocalizedNotFound() {
   // getLocale reads the request locale set by the middleware; fall back to the
   // default active locale if the header is unavailable (never throws).
-  let locale: string = DEFAULT_LOCALE;
+  let requestLocale: string = DEFAULT_LOCALE;
   try {
-    locale = await getLocale();
+    requestLocale = await getLocale();
   } catch {
     /* middleware header not set — keep the default locale */
   }
 
+  // Deterministic, allowlist-validated semantics: fa→rtl, en/de→ltr,
+  // anything unknown → DEFAULT_LOCALE.
+  const locale: ActiveLocale = isActiveLocale(requestLocale) ? requestLocale : DEFAULT_LOCALE;
+  const dir = LOCALE_DIRECTION[locale];
+
   const t = await getTranslations({ locale, namespace: "errors" });
 
   return (
-    <div className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+    <div
+      lang={locale}
+      dir={dir}
+      className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 text-center"
+    >
       {/* Dot-grid accent — decorative only */}
       <div
         aria-hidden="true"
