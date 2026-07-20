@@ -5,6 +5,8 @@ export interface UserRegisteredEvent {
   name:              string;
   verificationToken: string;
   baseUrl:           string;
+  /** Initiating request locale; optional for backward compatibility (89B-FINAL). */
+  locale?:           string;
 }
 
 export interface PasswordResetRequestedEvent {
@@ -14,6 +16,7 @@ export interface PasswordResetRequestedEvent {
   name:       string;
   resetToken: string;
   baseUrl:    string;
+  locale?:    string;
 }
 
 export interface EmailVerifiedEvent {
@@ -21,6 +24,7 @@ export interface EmailVerifiedEvent {
   userId: string;
   email:  string;
   name:   string;
+  locale?: string;
 }
 
 export type AuthEvent =

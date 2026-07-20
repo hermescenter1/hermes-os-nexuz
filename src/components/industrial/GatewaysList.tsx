@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { GlassCard }           from "@/components/ui/GlassCard";
 import { DashboardPanel }      from "@/components/ui/DashboardPanel";
-import { useTranslations }     from "next-intl";
+import { useTranslations, useLocale }     from "next-intl";
 import type { GatewayRecord, IndustrialGatewayStatus } from "@/lib/industrial/types";
+import { formatDateTime } from "@/lib/i18n/format";
 
 const STATUS_COLORS: Record<IndustrialGatewayStatus, string> = {
   ONLINE:   "text-signal",
@@ -21,6 +22,7 @@ const STATUS_DOT: Record<IndustrialGatewayStatus, string> = {
 };
 
 export function GatewaysList() {
+  const locale = useLocale();
   const t = useTranslations("industrial");
   const [gateways, setGateways] = useState<GatewayRecord[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -67,7 +69,7 @@ export function GatewaysList() {
                     </p>
                     {gw.lastSeenAt && (
                       <p className="text-muted text-xs">
-                        Last seen: {new Date(gw.lastSeenAt).toLocaleString()}
+                        Last seen: {formatDateTime(gw.lastSeenAt, locale)}
                       </p>
                     )}
                   </div>

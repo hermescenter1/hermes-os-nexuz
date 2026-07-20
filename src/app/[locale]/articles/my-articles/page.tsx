@@ -5,19 +5,13 @@ import { getUserArticles }   from "@/lib/articles/db";
 import { noIndexMetadata }   from "@/lib/seo/metadata";
 import Link                   from "next/link";
 import type { ArticleListItem } from "@/lib/articles/types";
+import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = noIndexMetadata("My Articles — Hermes Industrial Journal");
 export const dynamic  = "force-dynamic";
 
-function fmtDate(d: string, isFa: boolean) {
-  const date = new Date(d);
-  try {
-    return date.toLocaleDateString(isFa ? "fa-IR" : "en-US", {
-      year: "numeric", month: "short", day: "numeric",
-    });
-  } catch {
-    return date.toLocaleDateString();
-  }
+function fmtDate(d: string, locale = "en") {
+  return formatDate(d, locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
 // Status → badge CSS (label comes from journalEditorial.status.*)
@@ -61,7 +55,7 @@ async function ArticleRow({ article, isFa, locale }: { article: ArticleListItem;
           </p>
         )}
         <p className="mt-2 text-[10px] text-faint font-mono">
-          {t("updatedLabel")} {fmtDate(article.updatedAt, isFa)}
+          {t("updatedLabel")} {fmtDate(article.updatedAt, locale)}
         </p>
       </div>
       {article.status === "PUBLISHED" && article.visibility === "PUBLIC" && (

@@ -3,6 +3,7 @@
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ErpProject } from "@/lib/erp/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_COLOR: Record<string, string> = {
   ACTIVE:    "bg-green-500/15 text-green-400",
@@ -26,7 +27,7 @@ export function ProjectListClient({ projects }: { projects: ErpProject[] }) {
       </div>
       <div className="space-y-2">
         {projects.map(p => {
-          const dueStr = p.endDate ? new Date(p.endDate).toLocaleDateString() : null;
+          const dueStr = p.endDate ? formatDate(p.endDate, locale) : null;
           const budgetK = p.budget ? `$${(p.budget / 1000).toFixed(0)}K` : null;
           return (
             <Link key={p.id} href={`/${locale}/erp/projects/${p.id}`} className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3 hover:bg-accent/30 transition-colors">

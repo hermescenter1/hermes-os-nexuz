@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useEffect, useState } from "react";
 import type { CustomerDocument, DocCategory } from "@/lib/customer-portal/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const CATEGORIES: DocCategory[] = ["CONTRACT", "PROPOSAL", "REPORT", "INVOICE", "TECHNICAL", "COMPLIANCE", "OTHER"];
 
@@ -23,6 +25,7 @@ function formatBytes(bytes: number | null | undefined): string {
 }
 
 export function CustomerDocumentsClient() {
+  const locale = useLocale();
   const [documents, setDocuments] = useState<CustomerDocument[]>([]);
   const [loading, setLoading]     = useState(true);
   const [noAccount, setNoAccount] = useState(false);
@@ -103,7 +106,7 @@ export function CustomerDocumentsClient() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-ink truncate">{doc.title}</p>
                   <p className="text-xs text-faint">
-                    v{doc.version} · {formatBytes(doc.fileSizeBytes)} · {new Date(doc.createdAt).toLocaleDateString()}
+                    v{doc.version} · {formatBytes(doc.fileSizeBytes)} · {formatDate(doc.createdAt, locale)}
                   </p>
                 </div>
               </div>

@@ -1,8 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect }          from "react";
 import type { PipelineColumn, Candidate, PipelineStage } from "@/lib/ats/types";
 import { AtsScoreCard }                 from "./AtsScoreCard";
+import { formatNumber } from "@/lib/i18n/format";
 
 interface PipelineResponse { columns: PipelineColumn[]; total: number }
 
@@ -54,6 +56,7 @@ function CandidateCard({
 }
 
 export function PipelineBoardClient() {
+  const locale = useLocale();
   const [data,       setData]       = useState<PipelineResponse | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -135,7 +138,7 @@ export function PipelineBoardClient() {
             <div className="space-y-1">
               {[
                 { label: "Work Auth", value: selected.workAuthorization.replace(/-/g, " ") },
-                { label: "Salary Exp.", value: `${selected.salaryExpectation.toLocaleString()}` },
+                { label: "Salary Exp.", value: `${formatNumber(selected.salaryExpectation, locale)}` },
                 { label: "Applied",    value: selected.appliedAt },
               ].map(row => (
                 <div key={row.label} className="flex justify-between gap-2">

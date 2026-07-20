@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { AssetDashboard } from "@/lib/assets/types";
+import { formatDate } from "@/lib/i18n/format";
 
 function riskColor(state: string) {
   if (state === "HEALTHY")  return "text-signal bg-signal/[0.08]";
@@ -183,7 +184,7 @@ export function AssetsDashboardClient({ data }: Props) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-ink font-medium">{enumLabel(t, "enums.eventType", ev.eventType)}</p>
                   <p className="text-xs text-faint">{ev.notes ? ev.notes.slice(0, 60) + (ev.notes.length > 60 ? "…" : "") : ""}</p>
-                  <p className="text-xs text-faint/70 mt-0.5">{new Date(ev.occurredAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-faint/70 mt-0.5">{formatDate(ev.occurredAt, locale)}</p>
                 </div>
                 <span className="text-xs text-ice shrink-0">{enumLabel(tAm, "lifecycle", ev.toState)}</span>
               </div>

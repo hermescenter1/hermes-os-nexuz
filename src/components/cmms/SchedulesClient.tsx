@@ -1,7 +1,8 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { MaintenanceSchedule } from "@/lib/cmms/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
   PLANNED:     { bg: "bg-ice/[0.08]",    text: "text-ice"    },
@@ -21,6 +22,7 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 export function SchedulesClient({ schedules }: { schedules: MaintenanceSchedule[] }) {
+  const locale = useLocale();
   const t = useTranslations("maintenanceOperations");
   const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
 
@@ -69,7 +71,7 @@ export function SchedulesClient({ schedules }: { schedules: MaintenanceSchedule[
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-faint font-mono">
-                        {new Date(s.scheduledDate).toLocaleDateString()}
+                        {formatDate(s.scheduledDate, locale)}
                       </span>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">

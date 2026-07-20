@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect } from "react";
 import type { AssetRecord }    from "@/lib/industrial/types";
 import type { AssetIntelligence, HealthPoint } from "@/lib/industrial/intelligence";
@@ -10,6 +11,7 @@ import { AssetHealthBadge }    from "./AssetHealthBadge";
 import { AssetAlertCenter }    from "./AssetAlertCenter";
 import { AssetTrendDashboard } from "./AssetTrendDashboard";
 import { AssetMaintenanceBoard } from "./AssetMaintenanceBoard";
+import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 type Tab = "overview" | "alerts" | "trends" | "maintenance";
 
@@ -136,6 +138,7 @@ interface AssetDetailClientProps {
 }
 
 export function AssetDetailClient({ assetId }: AssetDetailClientProps) {
+  const locale = useLocale();
   const [asset,       setAsset]       = useState<AssetRecord | null>(null);
   const [intelligence, setIntelligence] = useState<AssetIntelligence | null>(null);
   const [loading,     setLoading]     = useState(true);
@@ -344,7 +347,7 @@ export function AssetDetailClient({ assetId }: AssetDetailClientProps) {
             {intel.recentHealth.slice(0, 5).map((h, i) => (
               <div key={i} className="flex items-center gap-3 text-xs">
                 <span className="text-muted font-mono w-36 flex-shrink-0">
-                  {new Date(h.date).toLocaleString()}
+                  {formatDateTime(h.date, locale)}
                 </span>
                 <AssetHealthBadge status={h.status} score={h.score} size="sm" />
               </div>
@@ -375,8 +378,8 @@ export function AssetDetailClient({ assetId }: AssetDetailClientProps) {
             { label: "Tag Prefix",   value: asset.tagPrefix  ?? "—", mono: true },
             { label: "Protocol",     value: asset.protocol.replace(/_/g, "-"), mono: true },
             { label: "Type",         value: label,                mono: false },
-            { label: "Created",      value: new Date(asset.createdAt).toLocaleDateString(), mono: false },
-            { label: "Updated",      value: new Date(asset.updatedAt).toLocaleDateString(), mono: false },
+            { label: "Created",      value: formatDate(asset.createdAt, locale), mono: false },
+            { label: "Updated",      value: formatDate(asset.updatedAt, locale), mono: false },
             ...(intel?.twinNodeId
               ? [{ label: "Twin Node", value: intel.twinNodeId, mono: true }]
               : []),

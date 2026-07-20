@@ -1,10 +1,13 @@
 "use client";
-import { usePathname } from "next/navigation";
+
+import { useLocale } from "next-intl";import { usePathname } from "next/navigation";
 import type { EdmsComment } from "@/lib/document/types";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface Props { comments: EdmsComment[] }
 
 export function CommentClient({ comments }: Props) {
+  const locale = useLocale();
   const pathname = usePathname();
   const isFa     = pathname.startsWith("/fa");
 
@@ -39,7 +42,7 @@ export function CommentClient({ comments }: Props) {
           </div>
           <div className="mt-2 flex flex-wrap gap-3 text-xs text-faint">
             <span className="font-mono">{c.documentId.slice(0, 8)}…</span>
-            <span>{new Date(c.createdAt).toLocaleString()}</span>
+            <span>{formatDateTime(c.createdAt, locale)}</span>
           </div>
         </div>
       ))}

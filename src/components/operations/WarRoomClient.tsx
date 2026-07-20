@@ -1,7 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
+
 import { useState, useEffect } from "react";
 import type { WarRoomData, WarRoomIncident, AlertSeverity } from "@/lib/operations/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const SEV_BADGE: Record<AlertSeverity, string> = {
   critical: "hs-badge hs--risk",
@@ -116,6 +119,7 @@ function IncidentDetail({ incident }: { incident: WarRoomIncident | null }) {
 }
 
 export function WarRoomClient() {
+  const locale = useLocale();
   const [data,      setData]      = useState<WarRoomData | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
@@ -303,7 +307,7 @@ export function WarRoomClient() {
       </div>
 
       <p className="kpi-label text-faint">
-        Source: Hermes Engineering Knowledge Base · Built {new Date(data.builtAt).toLocaleTimeString()} · All incidents traceable
+        Source: Hermes Engineering Knowledge Base · Built {formatDate(data.builtAt, locale, { timeStyle: "medium" })} · All incidents traceable
       </p>
     </div>
   );

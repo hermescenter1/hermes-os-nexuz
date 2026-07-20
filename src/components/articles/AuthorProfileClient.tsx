@@ -4,6 +4,7 @@ import { useState }   from "react";
 import Link            from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ArticleAuthorProfile, ArticleListItem } from "@/lib/articles/types";
+import { formatDate } from "@/lib/i18n/format";
 
 function fmtNum(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -11,13 +12,8 @@ function fmtNum(n: number) {
   return String(n);
 }
 
-function fmtDate(d: string, isFa = false) {
-  const date = new Date(d);
-  if (isFa) {
-    try { return date.toLocaleDateString("fa-IR", { year: "numeric", month: "short", day: "numeric" }); }
-    catch { return date.toLocaleDateString(); }
-  }
-  return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+function fmtDate(d: string, locale = "en") {
+  return formatDate(d, locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
 function contentTypeBadgeColor(t: string) {
@@ -32,6 +28,7 @@ function contentTypeBadgeColor(t: string) {
 // No fake scores, no stale counters, no AI labels.
 
 function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProfile; articles: ArticleListItem[]; isFa: boolean }) {
+  const locale = useLocale();
   const t = useTranslations("journal");
   const publishedCount = articles.length;
   if (publishedCount === 0) return null;
@@ -119,7 +116,7 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
               <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
                 {t("authorProfile.latestPub")}
               </p>
-              <p className="text-xs font-semibold text-ink">{fmtDate(latestPublishedAt, isFa)}</p>
+              <p className="text-xs font-semibold text-ink">{fmtDate(latestPublishedAt, locale)}</p>
             </div>
           )}
         </div>
@@ -406,7 +403,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
                       <p className="text-xs text-muted line-clamp-1 mb-2">{a.excerpt}</p>
                     )}
                     <div className="flex items-center gap-3 text-[10px] text-faint font-mono">
-                      <span>{fmtDate(a.publishedAt ?? a.createdAt, isFa)}</span>
+                      <span>{fmtDate(a.publishedAt ?? a.createdAt, locale)}</span>
                       <span className="text-line">·</span>
                       <span>{a.readingTimeMinutes} {t("authorProfile.minUnit")}</span>
                       <span className="text-line">·</span>

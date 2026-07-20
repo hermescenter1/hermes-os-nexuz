@@ -1,4 +1,5 @@
 import { notFound }          from "next/navigation";
+import { formatDate } from "@/lib/i18n/format";
 import { getFailureById }   from "@/lib/cmms/db";
 import { getTranslations }  from "next-intl/server";
 import { noIndexMetadata }  from "@/lib/seo/metadata";
@@ -11,9 +12,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return noIndexMetadata(failure?.title ?? "Failure Detail");
 }
 
-export default async function FailureDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function FailureDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const t = await getTranslations("maintenanceOperations");
-  const { id }  = await params;
+  const { locale, id }  = await params;
   const failure = await getFailureById(id);
   if (!failure) return notFound();
 
@@ -35,10 +36,10 @@ export default async function FailureDetailPage({ params }: { params: Promise<{ 
         {[
           { label: t("pages.failureDetail.category"), value: failure.category },
           { label: t("pages.failureDetail.asset"),    value: failure.assetId       ?? "—" },
-          { label: t("pages.failureDetail.occurred"), value: new Date(failure.occurredAt).toLocaleDateString() },
+          { label: t("pages.failureDetail.occurred"), value: formatDate(failure.occurredAt, locale) },
           { label: t("pages.failureDetail.downtime"), value: failure.downtimeMinutes != null ? `${Math.round(failure.downtimeMinutes / 60)}h` : "—" },
-          { label: t("pages.failureDetail.detected"), value: failure.detectedAt  ? new Date(failure.detectedAt).toLocaleDateString() : "—" },
-          { label: t("pages.failureDetail.resolved"), value: failure.resolvedAt  ? new Date(failure.resolvedAt).toLocaleDateString() : t("pages.failureDetail.open") },
+          { label: t("pages.failureDetail.detected"), value: failure.detectedAt  ? formatDate(failure.detectedAt, locale) : "—" },
+          { label: t("pages.failureDetail.resolved"), value: failure.resolvedAt  ? formatDate(failure.resolvedAt, locale) : t("pages.failureDetail.open") },
           { label: t("pages.failureDetail.reportedBy"), value: failure.reportedBy ?? "—" },
         ].map(({ label, value }) => (
           <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -82,7 +83,7 @@ export default async function FailureDetailPage({ params }: { params: Promise<{ 
                 </div>
                 <div className="flex gap-4 text-xs text-muted-foreground">
                   {ca.assignedTo && <span>{t("pages.failureDetail.assigned")} {ca.assignedTo}</span>}
-                  {ca.dueDate    && <span>{t("pages.failureDetail.due")} {new Date(ca.dueDate).toLocaleDateString()}</span>}
+                  {ca.dueDate    && <span>{t("pages.failureDetail.due")} {formatDate(ca.dueDate, locale)}</span>}
                 </div>
               </div>
             ))}

@@ -4,6 +4,7 @@ import { useState }  from "react";
 import Link            from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ArticleDetail, ArticleListItem } from "@/lib/articles/types";
+import { formatDate } from "@/lib/i18n/format";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -59,14 +60,9 @@ const FA_ARTICLE_MAP: Record<string, { title: string; subtitle?: string; excerpt
   },
 };
 
-function fmtDate(d?: string | null, isFa = false) {
+function fmtDate(d?: string | null, locale = "en") {
   if (!d) return "";
-  const date = new Date(d);
-  if (isFa) {
-    try { return date.toLocaleDateString("fa-IR", { year: "numeric", month: "long", day: "numeric" }); }
-    catch { return date.toLocaleDateString(); }
-  }
-  return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  return formatDate(d, locale, { year: "numeric", month: "long", day: "numeric" });
 }
 
 function fmtNum(n: number) {
@@ -148,6 +144,7 @@ function ArticleContent({ content, isFa }: { content: string; isFa: boolean }) {
 // Displays editorial trust badges and key metrics from real DB fields only.
 
 function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }) {
+  const locale = useLocale();
   const t = useTranslations("journal");
   const showUpdated = article.updatedAt &&
     article.publishedAt &&
@@ -184,13 +181,13 @@ function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }
         {article.publishedAt && (
           <>
             <span className="text-line">·</span>
-            <span>{t("detail.publishedLabel")} {fmtDate(article.publishedAt, isFa)}</span>
+            <span>{t("detail.publishedLabel")} {fmtDate(article.publishedAt, locale)}</span>
           </>
         )}
         {showUpdated && (
           <>
             <span className="text-line">·</span>
-            <span>{t("detail.updatedLabel")} {fmtDate(article.updatedAt, isFa)}</span>
+            <span>{t("detail.updatedLabel")} {fmtDate(article.updatedAt, locale)}</span>
           </>
         )}
       </div>
@@ -664,7 +661,7 @@ export function ArticleDetailClient({ article, related }: Props) {
 
             {/* Meta */}
             <div className="flex flex-wrap items-center gap-3 text-xs text-faint font-mono">
-              <span>{fmtDate(article.publishedAt, isFa)}</span>
+              <span>{fmtDate(article.publishedAt, locale)}</span>
               <span className="text-line">·</span>
               <span>{article.readingTimeMinutes} {t("minRead")}</span>
               {article.knowledgeMetadata?.articleQualityScore && (

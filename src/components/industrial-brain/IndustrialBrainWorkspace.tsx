@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateTime } from "@/lib/i18n/format";
+
 import { useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -184,13 +186,8 @@ interface ReportMeta {
   generatedAt: Date;
 }
 
-function fmtDateTime(date: Date, isFa: boolean): string {
-  try {
-    // Locale-specific date formatting (non-display-string conditional).
-    return new Intl.DateTimeFormat(isFa ? "fa-IR" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(date);
-  } catch {
-    return date.toISOString();
-  }
+function fmtDateTime(date: Date, locale: string): string {
+  return formatDateTime(date, locale);
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -240,7 +237,7 @@ function buildSummaryText(analysis: IndustrialBrainAnalysis, meta: ReportMeta, i
   return lines.join("\n");
 }
 
-function buildFullReportText(analysis: IndustrialBrainAnalysis, meta: ReportMeta, isFa: boolean, t: Translator): string {
+function buildFullReportText(analysis: IndustrialBrainAnalysis, meta: ReportMeta, isFa: boolean, locale: string, t: Translator): string {
   const sec = (title: string) => `\n── ${title} ──\n`;
   const lines: string[] = [];
 
@@ -249,7 +246,7 @@ function buildFullReportText(analysis: IndustrialBrainAnalysis, meta: ReportMeta
   lines.push(`${t("report.fieldAssetType")}: ${meta.assetType || t("report.notReported")}`);
   lines.push(`${t("report.fieldSystemArea")}: ${meta.systemArea || t("report.notReported")}`);
   lines.push(`${t("report.fieldPlcPlatform")}: ${meta.plcPlatform || t("report.notReported")}`);
-  lines.push(`${t("report.fieldGenerated")}: ${fmtDateTime(meta.generatedAt, isFa)}`);
+  lines.push(`${t("report.fieldGenerated")}: ${fmtDateTime(meta.generatedAt, locale)}`);
 
   lines.push(sec(t("report.secExecutiveSummary")));
   lines.push(isFa ? analysis.summaryFa : analysis.summary);
@@ -834,7 +831,7 @@ function RelatedKnowledgePanel({ analysis }: { analysis: IndustrialBrainAnalysis
   );
 }
 
-function ReportHeader({ meta, isFa }: { meta: ReportMeta; isFa: boolean }) {
+function ReportHeader({ meta, isFa, locale }: { meta: ReportMeta; isFa: boolean; locale: string }) {
   const t = useTranslations("industrialBrain");
   const notReported = t("reportHeader.notReported");
   const fields = [
@@ -856,7 +853,7 @@ function ReportHeader({ meta, isFa }: { meta: ReportMeta; isFa: boolean }) {
           <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600">
             {t("reportHeader.generated")}
           </p>
-          <p className="text-xs font-mono text-slate-400">{fmtDateTime(meta.generatedAt, isFa)}</p>
+          <p className="text-xs font-mono text-slate-400">{fmtDateTime(meta.generatedAt, locale)}</p>
         </div>
       </div>
 
@@ -892,7 +889,7 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   async function handleCopy(kind: "summary" | "full") {
-    const text = kind === "summary" ? buildSummaryText(analysis, meta, isFa, t) : buildFullReportText(analysis, meta, isFa, t);
+    const text = kind === "summary" ? buildSummaryText(analysis, meta, isFa, t) : buildFullReportText(analysis, meta, isFa, locale, t);
     const ok = await copyToClipboard(text);
     if (ok) {
       setCopied(kind);
@@ -1049,7 +1046,7 @@ function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
   const t = useTranslations("industrialBrain");
   return (
     <div className="ib-report-print space-y-5 mt-8">
-      <ReportHeader meta={meta} isFa={isFa} />
+      <ReportHeader meta={meta} isFa={isFa} locale={locale} />
       <ReportActions analysis={analysis} meta={meta} isFa={isFa} locale={locale} canSaveCase={canSaveCase} />
 
       {/* Executive Summary + Classification */}

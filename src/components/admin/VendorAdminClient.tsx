@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTranslations }                  from "next-intl";
+import { useTranslations, useLocale }       from "next-intl";
+import { resolveIntlLocale }                from "@/lib/i18n/format";
 import { track }                            from "@/lib/analytics/events";
 import type { VendorListItem, VendorOnboardingRequestItem } from "@/lib/vendors/types";
 
 type Tab = "pending" | "approved" | "rejected";
 
 export function VendorAdminClient() {
+  const locale = useLocale();
   // Named tv (not t): load()'s callback parameter is already `t: Tab`.
   const tv = useTranslations("adminOperations.vendors");
   const [tab,      setTab]      = useState<Tab>("pending");
@@ -76,7 +78,7 @@ export function VendorAdminClient() {
     } finally { setActing(null); }
   }
 
-  const df = new Intl.DateTimeFormat("en", { month: "short", day: "2-digit", year: "numeric" });
+  const df = new Intl.DateTimeFormat(resolveIntlLocale(locale), { month: "short", day: "2-digit", year: "numeric" });
 
   return (
     <div className="space-y-6">

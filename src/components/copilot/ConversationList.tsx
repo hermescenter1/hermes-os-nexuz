@@ -1,12 +1,14 @@
 "use client";
 
-import { useTranslations }   from "next-intl";
+import { useTranslations, useLocale }   from "next-intl";
 import { GlassCard }         from "@/components/ui/GlassCard";
 import type { ConversationRecord } from "@/lib/copilot/types";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface Props { conversations: ConversationRecord[] }
 
 export default function ConversationList({ conversations }: Props) {
+  const locale = useLocale();
   const t = useTranslations("copilot");
   if (conversations.length === 0) {
     return (
@@ -21,7 +23,7 @@ export default function ConversationList({ conversations }: Props) {
         {conversations.map((c) => (
           <div key={c.id} className="px-4 py-3 hover:bg-white/5">
             <p className="text-ink text-sm font-medium">{c.title}</p>
-            <p className="text-ink/30 text-xs mt-0.5">{new Date(c.updatedAt).toLocaleString()}</p>
+            <p className="text-ink/30 text-xs mt-0.5">{formatDateTime(c.updatedAt, locale)}</p>
           </div>
         ))}
       </div>

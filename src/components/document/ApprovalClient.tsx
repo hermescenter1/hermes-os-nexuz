@@ -1,7 +1,9 @@
 "use client";
-import { useState } from "react";
+
+import { useLocale } from "next-intl";import { useState } from "react";
 import { usePathname } from "next/navigation";
 import type { EdmsApproval } from "@/lib/document/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
   PENDING:  { bg: "bg-warn/[0.08]",   text: "text-warn",   dot: "bg-warn"   },
@@ -12,6 +14,7 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = 
 interface Props { approvals: EdmsApproval[] }
 
 export function ApprovalClient({ approvals }: Props) {
+  const locale = useLocale();
   const [list, setList]         = useState(approvals);
   const [loading, setLoading]   = useState<string | null>(null);
   const pathname = usePathname();
@@ -86,7 +89,7 @@ export function ApprovalClient({ approvals }: Props) {
                   <div className="flex flex-wrap gap-3 text-xs text-faint">
                     <span>{isFa ? "سند" : "Document"}: <span className="font-mono text-muted">{apr.documentId.slice(0, 8)}…</span></span>
                     {apr.dueDate && (
-                      <span>{isFa ? "موعد" : "Due"}: <span className="text-muted">{new Date(apr.dueDate).toLocaleDateString()}</span></span>
+                      <span>{isFa ? "موعد" : "Due"}: <span className="text-muted">{formatDate(apr.dueDate, locale)}</span></span>
                     )}
                   </div>
                   {apr.comment && (

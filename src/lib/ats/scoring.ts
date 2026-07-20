@@ -1,4 +1,5 @@
 import type { Job, AtsScore, ScoreRequest } from "./types";
+import { formatNumber } from "@/lib/i18n/format";
 
 const INDUSTRIAL_KEYWORDS = [
   "plc", "scada", "hmi", "automation", "dcs", "rtu", "iec 61131",
@@ -95,7 +96,7 @@ export function scoreCandidate(job: Job, candidate: ScoreRequest): AtsScore {
   } else if (candidate.salaryExpectation <= job.salaryMax) {
     salaryScore = candidate.salaryExpectation >= job.salaryMin ? 100 : 90;
     explanations.push(
-      `Salary expectation (${candidate.salaryExpectation.toLocaleString()} ${job.currency}) is within budget`
+      `Salary expectation (${formatNumber(candidate.salaryExpectation, "en")} ${job.currency}) is within budget`
     );
   } else {
     const over    = candidate.salaryExpectation - job.salaryMax;
@@ -105,7 +106,7 @@ export function scoreCandidate(job: Job, candidate: ScoreRequest): AtsScore {
       riskFlags.push(`Salary expectation ${Math.round(overPct * 100)}% above budget ceiling`);
     }
     explanations.push(
-      `Salary expectation exceeds budget by ${over.toLocaleString()} ${job.currency}`
+      `Salary expectation exceeds budget by ${formatNumber(over, "en")} ${job.currency}`
     );
   }
 

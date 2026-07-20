@@ -1,8 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { AssetLifecycleEvent } from "@/lib/assets/types";
+import { formatDate } from "@/lib/i18n/format";
 
 function evColor(type: string) {
   if (type === "COMMISSIONED")      return "bg-signal text-bg";
@@ -25,6 +26,7 @@ function evDot(type: string) {
 interface Props { events: AssetLifecycleEvent[] }
 
 export function AssetLifecycleClient({ events }: Props) {
+  const locale = useLocale();
   const t = useTranslations("assetOperations");
   const tAm = useTranslations("assetMaintenance"); // 87L.5: lifecycle labels
   const sorted = [...events].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
@@ -76,7 +78,7 @@ export function AssetLifecycleClient({ events }: Props) {
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${evColor(ev.eventType)}`}>
                     {enumLabel(t, "enums.eventType", ev.eventType)}
                   </span>
-                  <span className="text-xs text-faint">{new Date(ev.occurredAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-faint">{formatDate(ev.occurredAt, locale)}</span>
                   {ev.performedBy && (
                     <span className="text-xs text-faint/70">{t("lifecycle.by")} {ev.performedBy}</span>
                   )}

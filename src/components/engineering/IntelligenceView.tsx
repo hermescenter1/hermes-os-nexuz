@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useQuery }         from "@tanstack/react-query";
 import { AnimatedSection }  from "@/components/ui/AnimatedSection";
 import { DashboardPanel }   from "@/components/ui/DashboardPanel";
@@ -7,6 +8,7 @@ import { GlassCard }        from "@/components/ui/GlassCard";
 import { LoadingState }     from "@/components/ui/LoadingState";
 import { ErrorState }       from "@/components/ui/ErrorState";
 import { EmptyState }       from "@/components/ui/EmptyState";
+import { formatDateTime } from "@/lib/i18n/format";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -160,6 +162,7 @@ function AgentCard({ agent }: { agent: AgentData }) {
 // ── Main view ──────────────────────────────────────────────────────────────
 
 export function IntelligenceView() {
+  const locale = useLocale();
   const { data, isPending, isError, refetch } = useQuery<IntelligenceResponse>({
     queryKey: ["intelligence-agents"],
     queryFn:  async () => {
@@ -194,7 +197,7 @@ export function IntelligenceView() {
               </span>
             </div>
             <p className="text-xs text-muted" suppressHydrationWarning>
-              Generated {new Date(data.generatedAt).toLocaleString()} ·{" "}
+              Generated {formatDateTime(data.generatedAt, locale)} ·{" "}
               Coherence {synthData.systemCoherenceScore}/100
             </p>
           </div>

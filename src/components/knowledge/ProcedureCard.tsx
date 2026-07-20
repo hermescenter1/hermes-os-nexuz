@@ -1,4 +1,7 @@
 import { GlassCard }        from "@/components/ui/GlassCard";
+import { getLocale } from "next-intl/server";
+import { formatDate } from "@/lib/i18n/format";
+import { DEFAULT_LOCALE } from "@/i18n/locales";
 import type { ProcedureRecord } from "@/lib/knowledge/types";
 
 interface Props { procedure: ProcedureRecord }
@@ -9,7 +12,10 @@ const APPROVAL_COLORS: Record<string, string> = {
   approved: "text-cyan-300  border-cyan-500/20",
 };
 
-export function ProcedureCard({ procedure: p }: Props) {
+export async function ProcedureCard({ procedure: p }: Props) {
+  let requestLocale: string = DEFAULT_LOCALE;
+  try { requestLocale = await getLocale(); } catch { /* header unavailable */ }
+  const locale = requestLocale;
   const approvalCls = APPROVAL_COLORS[p.status] ?? APPROVAL_COLORS.draft;
 
   return (
@@ -37,7 +43,7 @@ export function ProcedureCard({ procedure: p }: Props) {
         {p.estimatedHours != null && <span>{p.estimatedHours}h</span>}
         {p.assetTypes?.[0] && <span>{p.assetTypes[0]}</span>}
         {p.updatedAt && (
-          <span className="ml-auto">{new Date(p.updatedAt).toLocaleDateString()}</span>
+          <span className="ml-auto">{formatDate(p.updatedAt, locale)}</span>
         )}
       </div>
     </GlassCard>

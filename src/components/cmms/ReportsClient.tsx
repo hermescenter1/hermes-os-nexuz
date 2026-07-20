@@ -1,6 +1,7 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { CmmsKpis } from "@/lib/cmms/types";
+import { formatNumber } from "@/lib/i18n/format";
 
 interface ReportData {
   kpis:           CmmsKpis;
@@ -13,6 +14,7 @@ interface ReportData {
 }
 
 export function ReportsClient({ report }: { report: ReportData }) {
+  const locale = useLocale();
   const t = useTranslations("maintenanceOperations");
   const { kpis, failurePareto, costByCategory, totalCost, taskSummary } = report;
 
@@ -88,7 +90,7 @@ export function ReportsClient({ report }: { report: ReportData }) {
                 <div key={cat}>
                   <div className="flex justify-between text-xs mb-1.5">
                     <span className="font-medium text-ink">{cat}</span>
-                    <span className="text-faint font-mono">${Math.round(amt).toLocaleString()} ({pct}%)</span>
+                    <span className="text-faint font-mono">${formatNumber(Math.round(amt), locale)} ({pct}%)</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-surface3">
                     <div className="h-1.5 rounded-full bg-warn/70" style={{ width: `${pct}%` }} />
@@ -98,7 +100,7 @@ export function ReportsClient({ report }: { report: ReportData }) {
             })}
             <div className="pt-3 border-t border-line flex justify-between text-sm font-bold">
               <span className="text-muted">{t("reports.total")}</span>
-              <span className="text-signal font-mono">${Math.round(totalCost).toLocaleString()}</span>
+              <span className="text-signal font-mono">${formatNumber(Math.round(totalCost), locale)}</span>
             </div>
           </div>
         </section>

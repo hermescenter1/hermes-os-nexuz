@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useEffect, useState } from "react";
 import { Link }                from "@/i18n/navigation";
+import { formatDate } from "@/lib/i18n/format";
 
 interface Course {
   id:             string;
@@ -41,6 +43,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function CustomerTrainingClient() {
+  const locale = useLocale();
   const [data, setData]       = useState<TrainingData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -77,7 +80,7 @@ export function CustomerTrainingClient() {
                 <span className="text-xl text-signal">◆</span>
                 <div>
                   <p className="text-sm font-medium text-ink">{cert.course.titleEn}</p>
-                  <p className="text-xs text-faint">Issued {new Date(cert.issuedAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-faint">Issued {formatDate(cert.issuedAt, locale)}</p>
                 </div>
               </div>
             ))}

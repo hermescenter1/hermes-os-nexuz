@@ -27,7 +27,10 @@ export async function POST(req: Request) {
   const baseUrl = `${origin}/${locale}`;
 
   // Always returns void — no email enumeration
-  await initiatePasswordReset(parsed.data.email, baseUrl);
+  // 89B-FINAL: thread the initiating request locale (next-intl cookie) so the
+  // reset email renders in the user's language; absent/unknown stays English.
+  const localeMatch = /(?:^|;\s*)NEXT_LOCALE=(fa|en|de)(?:;|$)/.exec(req.headers.get("cookie") ?? "");
+  await initiatePasswordReset(parsed.data.email, baseUrl, localeMatch?.[1]);
 
   return NextResponse.json({
     ok:      true,

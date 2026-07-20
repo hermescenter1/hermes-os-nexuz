@@ -1,6 +1,7 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { MaintenanceCalendarEvent } from "@/lib/cmms/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const EVENT_STYLE: Record<string, { border: string; bg: string; text: string }> = {
   preventive:  { border: "border-s-2 border-ice/50",    bg: "bg-ice/[0.04]",    text: "text-ice"    },
@@ -21,6 +22,7 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 function EventCard({ event: ev, dimmed = false }: { event: MaintenanceCalendarEvent; dimmed?: boolean }) {
+  const locale = useLocale();
   const s = EVENT_STYLE[ev.eventType] ?? EVENT_STYLE.maintenance;
   return (
     <div className={`card-enterprise rounded-xl p-4 ${s.border} ${s.bg} ${dimmed ? "opacity-55" : ""}`}>
@@ -34,9 +36,9 @@ function EventCard({ event: ev, dimmed = false }: { event: MaintenanceCalendarEv
           {ev.description && <p className="text-xs text-muted mt-0.5 line-clamp-1">{ev.description}</p>}
         </div>
         <div className="text-end shrink-0">
-          <p className="text-xs font-mono font-medium text-ink">{new Date(ev.startDate).toLocaleDateString()}</p>
+          <p className="text-xs font-mono font-medium text-ink">{formatDate(ev.startDate, locale)}</p>
           {ev.endDate && (
-            <p className="text-xs text-faint font-mono">→ {new Date(ev.endDate).toLocaleDateString()}</p>
+            <p className="text-xs text-faint font-mono">→ {formatDate(ev.endDate, locale)}</p>
           )}
         </div>
       </div>
@@ -49,6 +51,7 @@ function EventCard({ event: ev, dimmed = false }: { event: MaintenanceCalendarEv
 }
 
 export function CalendarClient({ events }: { events: MaintenanceCalendarEvent[] }) {
+  const locale = useLocale();
   const t        = useTranslations("maintenanceOperations");
   const now      = new Date();
   const sorted   = [...events].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());

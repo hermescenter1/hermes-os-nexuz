@@ -3,6 +3,7 @@
 import Link            from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ErpOverview } from "@/lib/erp/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const KPI_COLOR = (v: number, warn: number, crit: number) =>
   v <= crit ? "text-red-500" : v <= warn ? "text-yellow-500" : "text-green-400";
@@ -125,7 +126,7 @@ export function ErpDashboardClient({ overview }: { overview: ErpOverview }) {
                   <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
                   <div>
                     <p className="leading-tight">{event.description}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{new Date(event.createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatDate(event.createdAt, locale)}</p>
                   </div>
                 </div>
               ))

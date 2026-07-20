@@ -20,6 +20,7 @@ import { authEmitter } from "@/lib/events/auth/emitter";
 export async function initiatePasswordReset(
   email:   string,
   baseUrl: string,
+  locale?: string,
 ): Promise<void> {
   const db = await getPrisma();
   if (!db) return;
@@ -51,6 +52,7 @@ export async function initiatePasswordReset(
       name:       String(user.name),
       resetToken: plainToken,
       baseUrl,
+      locale,
     });
 
     await recordAuditEvent({

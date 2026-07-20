@@ -3,6 +3,7 @@
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ErpInventoryItemFull, ErpInventoryMovementType } from "@/lib/erp/types";
+import { formatDate } from "@/lib/i18n/format";
 
 // Compile-time exhaustive over ErpInventoryMovementType: adding a movement
 // type without a color entry (or keeping a non-canonical key) fails `tsc`.
@@ -62,7 +63,7 @@ export function InventoryDetailClient({ item }: { item: ErpInventoryItemFull }) 
               <div key={m.id} className="flex items-center justify-between py-1 border-b last:border-0">
                 <span className={`font-medium ${MOVE_COLOR[m.type]}`}>{m.type}</span>
                 <span className="font-medium">{m.quantity > 0 ? "+" : ""}{m.quantity}</span>
-                <span className="text-muted-foreground text-xs">{new Date(m.createdAt).toLocaleDateString()}</span>
+                <span className="text-muted-foreground text-xs">{formatDate(m.createdAt, locale)}</span>
               </div>
             ))}
           </div>

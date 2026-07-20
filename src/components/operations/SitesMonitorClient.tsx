@@ -1,7 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
+
 import { useState, useEffect, useMemo } from "react";
 import type { VendorZone, OperationalStatus } from "@/lib/operations/types";
+import { formatDate } from "@/lib/i18n/format";
 
 interface SitesResponse {
   zones:   VendorZone[];
@@ -119,6 +122,7 @@ function ZoneCard({ zone }: { zone: VendorZone }) {
 }
 
 export function SitesMonitorClient() {
+  const locale = useLocale();
   const [data,    setData]    = useState<SitesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -238,7 +242,7 @@ export function SitesMonitorClient() {
       }
 
       <p className="kpi-label text-faint">
-        Built · {new Date(data.builtAt).toLocaleTimeString()} · Deterministic · No AI
+        Built · {formatDate(data.builtAt, locale, { timeStyle: "medium" })} · Deterministic · No AI
       </p>
     </div>
   );

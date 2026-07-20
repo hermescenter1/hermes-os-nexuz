@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { GlassCard }           from "@/components/ui/GlassCard";
 import { DashboardPanel }      from "@/components/ui/DashboardPanel";
-import { useTranslations }     from "next-intl";
+import { useTranslations, useLocale }     from "next-intl";
 import type { TelemetryRecord, TelemetryQuality } from "@/lib/industrial/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const QUALITY_COLORS: Record<TelemetryQuality, string> = {
   GOOD:      "text-signal",
@@ -14,6 +15,7 @@ const QUALITY_COLORS: Record<TelemetryQuality, string> = {
 };
 
 export function TelemetryViewer() {
+  const locale = useLocale();
   const t = useTranslations("industrial");
   const [records, setRecords] = useState<TelemetryRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export function TelemetryViewer() {
                   </td>
                   <td className={`py-1.5 pr-4 uppercase ${QUALITY_COLORS[rec.quality]}`}>{rec.quality}</td>
                   <td className="py-1.5 pr-4 text-muted">{rec.unit ?? "—"}</td>
-                  <td className="py-1.5 text-muted">{new Date(rec.receivedAt).toLocaleTimeString()}</td>
+                  <td className="py-1.5 text-muted">{formatDate(rec.receivedAt, locale, { timeStyle: "medium" })}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,8 +1,9 @@
 "use client";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { EdmsDocumentFull } from "@/lib/document/types";
+import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
   DRAFT:    { bg: "bg-ice/[0.08]",    text: "text-ice",    dot: "bg-ice"    },
@@ -22,6 +23,7 @@ const APPROVAL_STYLE: Record<string, { bg: string; text: string }> = {
 interface Props { document: EdmsDocumentFull }
 
 export function DocumentDetailClient({ document: doc }: Props) {
+  const locale = useLocale();
   const pathname = usePathname();
   const ted = useTranslations("engineeringDocuments"); // 87L.5: localized enum labels
   const isFa     = pathname.startsWith("/fa");
@@ -59,7 +61,7 @@ export function DocumentDetailClient({ document: doc }: Props) {
             { label: isFa ? "نوع" : "Type",        value: enumLabel(ted, "docType", doc.documentType) },
             { label: isFa ? "نسخه" : "Revision",   value: doc.currentRevision ?? "—", mono: true },
             { label: isFa ? "زبان" : "Language",   value: doc.language.toUpperCase() },
-            { label: isFa ? "ویرایش" : "Updated",  value: new Date(doc.updatedAt).toLocaleDateString() },
+            { label: isFa ? "ویرایش" : "Updated",  value: formatDate(doc.updatedAt, locale) },
           ].map(d => (
             <div key={d.label}>
               <dt className="text-xs text-faint mb-1">{d.label}</dt>
@@ -100,7 +102,7 @@ export function DocumentDetailClient({ document: doc }: Props) {
                     </div>
                     {rev.summary && <p className="text-xs text-muted mt-0.5 truncate max-w-[200px]">{rev.summary}</p>}
                   </div>
-                  <span className="text-xs text-faint font-mono">{new Date(rev.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-faint font-mono">{formatDate(rev.createdAt, locale)}</span>
                 </div>
               ))
             )}
@@ -150,7 +152,7 @@ export function DocumentDetailClient({ document: doc }: Props) {
               doc.comments.slice(0, 5).map(cmt => (
                 <div key={cmt.id} className="px-5 py-3 hover:bg-surface2 transition-colors">
                   <p className="text-xs text-ink leading-relaxed">{cmt.content}</p>
-                  <p className="text-xs text-faint mt-1 font-mono">{new Date(cmt.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-faint mt-1 font-mono">{formatDateTime(cmt.createdAt, locale)}</p>
                 </div>
               ))
             )}
@@ -193,7 +195,7 @@ export function DocumentDetailClient({ document: doc }: Props) {
                 </span>
                 <span className="text-xs text-muted truncate flex-1">{a.details ?? a.action}</span>
                 <span className="text-xs text-faint font-mono shrink-0 whitespace-nowrap">
-                  {new Date(a.createdAt).toLocaleString()}
+                  {formatDateTime(a.createdAt, locale)}
                 </span>
               </div>
             ))}

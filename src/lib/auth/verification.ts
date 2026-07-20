@@ -12,7 +12,7 @@ export type VerifyResult =
   | { ok: true }
   | { ok: false; error: "invalid-token" | "expired" | "already-used" | "db-unavailable" };
 
-export async function verifyEmail(token: string): Promise<VerifyResult> {
+export async function verifyEmail(token: string, locale?: string): Promise<VerifyResult> {
   const db = await getPrisma();
   if (!db) return { ok: false, error: "db-unavailable" };
 
@@ -53,6 +53,7 @@ export async function verifyEmail(token: string): Promise<VerifyResult> {
       userId: String(vt.userId),
       email:  String(user.email),
       name:   String(user.name),
+      locale,
     });
 
     return { ok: true };

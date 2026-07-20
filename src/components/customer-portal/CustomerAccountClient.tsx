@@ -1,9 +1,12 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useEffect, useState } from "react";
 import type { CustomerAccount, CustomerContact } from "@/lib/customer-portal/types";
+import { formatDate } from "@/lib/i18n/format";
 
 export function CustomerAccountClient() {
+  const locale = useLocale();
   const [account, setAccount]   = useState<CustomerAccount | null>(null);
   const [contacts, setContacts] = useState<CustomerContact[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -60,12 +63,12 @@ export function CustomerAccountClient() {
           <Field label="Region"     value={account.region} />
           <Field label="Tier"       value={account.tier} />
           <Field label="Health"     value={account.healthScore ? `${Math.round(account.healthScore)}%` : null} />
-          <Field label="Member Since" value={account.onboardedAt ? new Date(account.onboardedAt).toLocaleDateString() : null} />
+          <Field label="Member Since" value={account.onboardedAt ? formatDate(account.onboardedAt, locale) : null} />
         </div>
         {account.contractStart && (
           <div className="pt-4 border-t border-line grid grid-cols-2 gap-6">
-            <Field label="Contract Start" value={new Date(account.contractStart).toLocaleDateString()} />
-            <Field label="Contract End"   value={account.contractEnd ? new Date(account.contractEnd).toLocaleDateString() : "Ongoing"} />
+            <Field label="Contract Start" value={formatDate(account.contractStart, locale)} />
+            <Field label="Contract End"   value={account.contractEnd ? formatDate(account.contractEnd, locale) : "Ongoing"} />
           </div>
         )}
       </div>

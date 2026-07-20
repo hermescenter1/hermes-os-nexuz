@@ -1,6 +1,7 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { MaintenanceFailure } from "@/lib/cmms/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const SEV_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
   MINOR:    { bg: "bg-signal/[0.08]", text: "text-signal", dot: "bg-signal" },
@@ -28,6 +29,7 @@ const CA_STYLE: Record<string, { bg: string; text: string }> = {
 };
 
 export function FailureReportsClient({ failures }: { failures: MaintenanceFailure[] }) {
+  const locale = useLocale();
   const t            = useTranslations("maintenanceOperations");
   const resolved     = failures.filter(f => f.resolvedAt).length;
   const critical     = failures.filter(f => f.severity === "CRITICAL").length;
@@ -82,9 +84,9 @@ export function FailureReportsClient({ failures }: { failures: MaintenanceFailur
               {/* Meta row */}
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-faint mb-4">
                 <span>{t("failures.category")}: <span className="text-muted">{f.category}</span></span>
-                <span>{t("failures.occurred")}: <span className="font-mono text-muted">{new Date(f.occurredAt).toLocaleDateString()}</span></span>
+                <span>{t("failures.occurred")}: <span className="font-mono text-muted">{formatDate(f.occurredAt, locale)}</span></span>
                 {f.resolvedAt && (
-                  <span>{t("failures.resolvedAt")}: <span className="font-mono text-muted">{new Date(f.resolvedAt).toLocaleDateString()}</span></span>
+                  <span>{t("failures.resolvedAt")}: <span className="font-mono text-muted">{formatDate(f.resolvedAt, locale)}</span></span>
                 )}
                 {f.downtimeMinutes != null && (
                   <span>{t("failures.downtime")}: <span className="font-mono text-warn">{Math.round(f.downtimeMinutes / 60)}h</span></span>

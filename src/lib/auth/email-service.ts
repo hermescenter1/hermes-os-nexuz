@@ -12,6 +12,7 @@ export type { EmailSendResult } from "@/lib/email/service";
 import { getEmailService } from "@/lib/email/service";
 import { verificationEmailHtml, verificationEmailText } from "@/lib/email/templates/verification";
 import { passwordResetEmailHtml, passwordResetEmailText } from "@/lib/email/templates/password-reset";
+import { verificationEmailSubject, passwordResetEmailSubject } from "@/lib/email/templates/email-locale";
 import { VERIFICATION_TOKEN_TTL, PASSWORD_RESET_TTL } from "./config";
 
 const VERIFICATION_HOURS = VERIFICATION_TOKEN_TTL / 3600;
@@ -22,13 +23,14 @@ export async function sendVerificationEmail(
   name:    string,
   token:   string,
   baseUrl: string,
+  locale?: string,
 ) {
   const link = `${baseUrl}/auth/verify-email?token=${encodeURIComponent(token)}`;
   return getEmailService().send({
     to,
-    subject: "Verify your Hermes OS email address",
-    html: verificationEmailHtml({ name, verificationLink: link, expiresInHours: VERIFICATION_HOURS }),
-    text: verificationEmailText({ name, verificationLink: link, expiresInHours: VERIFICATION_HOURS }),
+    subject: verificationEmailSubject(locale),
+    html: verificationEmailHtml({ name, verificationLink: link, expiresInHours: VERIFICATION_HOURS, locale }),
+    text: verificationEmailText({ name, verificationLink: link, expiresInHours: VERIFICATION_HOURS, locale }),
   });
 }
 
@@ -37,12 +39,13 @@ export async function sendPasswordResetEmail(
   name:    string,
   token:   string,
   baseUrl: string,
+  locale?: string,
 ) {
   const link = `${baseUrl}/auth/reset-password?token=${encodeURIComponent(token)}`;
   return getEmailService().send({
     to,
-    subject: "Reset your Hermes OS password",
-    html: passwordResetEmailHtml({ name, resetLink: link, expiresInHours: RESET_HOURS }),
-    text: passwordResetEmailText({ name, resetLink: link, expiresInHours: RESET_HOURS }),
+    subject: passwordResetEmailSubject(locale),
+    html: passwordResetEmailHtml({ name, resetLink: link, expiresInHours: RESET_HOURS, locale }),
+    text: passwordResetEmailText({ name, resetLink: link, expiresInHours: RESET_HOURS, locale }),
   });
 }

@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useTranslations }                   from "next-intl";
+import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
 import { DashboardPanel }                    from "@/components/ui/DashboardPanel";
 import type { OrgRecord }                    from "@/lib/org/types";
+import { formatDate } from "@/lib/i18n/format";
 
 interface Props { orgId: string }
 
 export function OrgOverview({ orgId }: Props) {
+  const locale = useLocale();
   const t = useTranslations("org");
   const [org, setOrg]       = useState<OrgRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -149,9 +151,9 @@ export function OrgOverview({ orgId }: Props) {
           <GlassCard className="mt-4 p-4">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <dt className="text-muted">{(t as unknown as (k: string) => string)("fields.created")}</dt>
-              <dd className="text-ink">{new Date(org.createdAt).toLocaleDateString()}</dd>
+              <dd className="text-ink">{formatDate(org.createdAt, locale)}</dd>
               <dt className="text-muted">{(t as unknown as (k: string) => string)("fields.updated")}</dt>
-              <dd className="text-ink">{new Date(org.updatedAt).toLocaleDateString()}</dd>
+              <dd className="text-ink">{formatDate(org.updatedAt, locale)}</dd>
             </dl>
           </GlassCard>
         </div>

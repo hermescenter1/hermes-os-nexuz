@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useTranslations }                   from "next-intl";
+import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
 import { DashboardPanel }                    from "@/components/ui/DashboardPanel";
 import { StatCard }                          from "@/components/ui/StatCard";
 import { formatCurrency }                    from "@/lib/billing/currency";
 import type { PlanRecord, PlanLimits, SubscriptionRecord, InvoiceRecord, Currency } from "@/lib/billing/types";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 
 // ── Local types ──────────────────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ interface PlanCardProps {
 }
 
 function PlanCard({ plan, cycle, isCurrent, onSelect }: PlanCardProps) {
+  const locale = useLocale();
   const t     = useTranslations("billing");
   const price = cycle === "MONTHLY" ? plan.monthlyPrice : plan.yearlyPrice;
   const formatted = formatCurrency(price, plan.currency as Currency);
@@ -78,7 +80,7 @@ function PlanCard({ plan, cycle, isCurrent, onSelect }: PlanCardProps) {
 
   function formatNumericLimit(val: number): string {
     if (val === -1) return t("plan.limitLabels.unlimited");
-    if (val >= 1000) return val.toLocaleString();
+    if (val >= 1000) return formatNumber(val, locale);
     if (val < 1 && val > 0) return `${val} GB`;
     return String(val);
   }
@@ -166,6 +168,7 @@ function PlanCard({ plan, cycle, isCurrent, onSelect }: PlanCardProps) {
 // ── Invoice row ───────────────────────────────────────────────────────────────
 
 function InvoiceRow({ invoice }: { invoice: InvoiceRecord }) {
+  const locale = useLocale();
   const t           = useTranslations("billing.invoices");
   const STATUS_LABEL: Record<string, string> = {
     DRAFT:   t("draft"),
@@ -187,7 +190,7 @@ function InvoiceRow({ invoice }: { invoice: InvoiceRecord }) {
     <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 border-b border-line/50 py-3 last:border-0">
       <span className="font-mono text-xs text-muted">{invoice.invoiceNumber}</span>
       <span className="font-mono text-xs text-ink">
-        {new Date(invoice.issuedAt).toLocaleDateString()}
+        {formatDate(invoice.issuedAt, locale)}
       </span>
       <span className="font-mono text-xs font-semibold text-ink">{formatted}</span>
       <span className={`font-mono text-xs font-semibold ${STATUS_C[invoice.status] ?? "text-muted"}`}>
@@ -200,6 +203,7 @@ function InvoiceRow({ invoice }: { invoice: InvoiceRecord }) {
 // ── Usage progress bar ────────────────────────────────────────────────────────
 
 function UsageBar({ status, label }: { status: LimitStatus; label: string }) {
+  const locale = useLocale();
   const barColor = status.exceeded
     ? "bg-[--danger]"
     : status.pct >= 80
@@ -212,8 +216,8 @@ function UsageBar({ status, label }: { status: LimitStatus; label: string }) {
         <span className="text-xs text-muted">{label}</span>
         <span className={`font-mono text-xs ${status.exceeded ? "text-[--danger]" : "text-ink"}`}>
           {status.unlimited
-            ? `${status.used.toLocaleString()} / ∞`
-            : `${status.used.toLocaleString()} / ${status.limit.toLocaleString()}`}
+            ? `${formatNumber(status.used, locale)} / ∞`
+            : `${formatNumber(status.used, locale)} / ${formatNumber(status.limit, locale)}`}
         </span>
       </div>
       {!status.unlimited && (
@@ -231,6 +235,7 @@ function UsageBar({ status, label }: { status: LimitStatus; label: string }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function BillingDashboard() {
+  const locale = useLocale();
   const t = useTranslations("billing");
 
   const [plans,        setPlans]        = useState<PlanRecord[]>([]);
@@ -373,7 +378,7 @@ export function BillingDashboard() {
                 <p className="mt-0.5 font-mono text-xs text-muted">
                   {subscription.billingCycle === "MONTHLY" ? t("plan.monthly") : t("plan.yearly")}
                   {" · "}
-                  Expires {new Date(subscription.expiresAt).toLocaleDateString()}
+                  Expires {formatDate(subscription.expiresAt, locale)}
                 </p>
               </div>
             </div>

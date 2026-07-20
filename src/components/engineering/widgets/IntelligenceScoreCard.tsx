@@ -1,10 +1,13 @@
 "use client";
 
+import { useLocale } from "next-intl";
+
 import { useQuery }        from "@tanstack/react-query";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { GlassCard }       from "@/components/ui/GlassCard";
 import { LoadingState }    from "@/components/ui/LoadingState";
 import { ErrorState }      from "@/components/ui/ErrorState";
+import { formatDate } from "@/lib/i18n/format";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -74,6 +77,7 @@ function ScoreRing({ score }: { score: number }) {
 // ── Content ───────────────────────────────────────────────────────────────
 
 function Content({ data }: { data: IntelligenceResponse }) {
+  const locale = useLocale();
   const synthData = data.synthesis.data;
   const agents    = [data.memory, data.project, data.domain, data.synthesis];
 
@@ -90,7 +94,7 @@ function Content({ data }: { data: IntelligenceResponse }) {
         <p className="text-xs text-muted mb-3" suppressHydrationWarning>
           Coherence {synthData.systemCoherenceScore}/100
           {" · "}
-          {new Date(data.generatedAt).toLocaleTimeString()}
+          {formatDate(data.generatedAt, locale, { timeStyle: "medium" })}
         </p>
         <div className="flex gap-4 flex-wrap">
           {agents.map(a => (

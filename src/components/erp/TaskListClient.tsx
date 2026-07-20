@@ -3,6 +3,7 @@
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ErpTask } from "@/lib/erp/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const COLUMNS = ["TODO","IN_PROGRESS","BLOCKED","REVIEW","DONE"] as const;
 
@@ -42,7 +43,7 @@ export function TaskListClient({ tasks }: { tasks: ErpTask[] }) {
                     <span className={PRIORITY_COLOR[task.priority] ?? ""}>{task.priority}</span>
                     {task.dueDate && (
                       <span className="text-muted-foreground ml-auto">
-                        {new Date(task.dueDate).toLocaleDateString()}
+                        {formatDate(task.dueDate, locale)}
                       </span>
                     )}
                   </div>

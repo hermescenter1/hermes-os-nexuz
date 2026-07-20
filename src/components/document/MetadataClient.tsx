@@ -1,11 +1,14 @@
 "use client";
-import { usePathname } from "next/navigation";
+
+import { useLocale } from "next-intl";import { usePathname } from "next/navigation";
 import type { EdmsMetadata } from "@/lib/document/types";
 import { getMetadataDisplayLabel } from "@/lib/document/metadata";
+import { formatDate } from "@/lib/i18n/format";
 
 interface Props { metadata: EdmsMetadata[] }
 
 export function MetadataClient({ metadata }: Props) {
+  const locale = useLocale();
   const pathname = usePathname();
   const isFa     = pathname.startsWith("/fa");
 
@@ -45,7 +48,7 @@ export function MetadataClient({ metadata }: Props) {
                 <span className="text-xs font-mono text-faint">{m.documentId.slice(0, 8)}…</span>
               </td>
               <td className="px-4 py-3 hidden lg:table-cell">
-                <span className="text-xs text-faint font-mono">{new Date(m.updatedAt).toLocaleDateString()}</span>
+                <span className="text-xs text-faint font-mono">{formatDate(m.updatedAt, locale)}</span>
               </td>
             </tr>
           ))}

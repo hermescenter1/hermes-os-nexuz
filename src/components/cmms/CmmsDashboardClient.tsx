@@ -1,7 +1,8 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { CmmsDashboard } from "@/lib/cmms/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
   DRAFT:       { bg: "bg-faint/[0.08]",   text: "text-faint"  },
@@ -30,6 +31,7 @@ const SEV_STYLE: Record<string, string> = {
 };
 
 export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
+  const locale = useLocale();
   const t = useTranslations("maintenanceOperations");
   const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
   const { kpis, tasksByStatus, tasksByPriority, recentTasks, recentFailures, upcomingTasks } = data;
@@ -138,7 +140,7 @@ export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
                 <div key={task.id} className="px-5 py-3 border-s-2 border-warn/40 ms-5 hover:bg-surface2 transition-colors">
                   <p className="text-sm font-medium text-ink truncate">{task.title}</p>
                   <p className="text-xs text-faint mt-0.5">
-                    {task.scheduledDate ? new Date(task.scheduledDate).toLocaleDateString() : "—"} · {task.maintenanceType}
+                    {task.scheduledDate ? formatDate(task.scheduledDate, locale) : "—"} · {task.maintenanceType}
                   </p>
                 </div>
               ))
@@ -210,7 +212,7 @@ export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
                     {f.severity}
                   </td>
                   <td className="px-4 py-2.5 text-xs text-faint font-mono">
-                    {new Date(f.occurredAt).toLocaleDateString()}
+                    {formatDate(f.occurredAt, locale)}
                   </td>
                 </tr>
               ))}

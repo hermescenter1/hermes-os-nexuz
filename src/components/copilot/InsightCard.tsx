@@ -1,8 +1,9 @@
 "use client";
 
-import { useTranslations }  from "next-intl";
+import { useTranslations, useLocale }  from "next-intl";
 import { GlassCard }        from "@/components/ui/GlassCard";
 import type { CopilotInsightRecord, CopilotInsightSeverity } from "@/lib/copilot/types";
+import { formatDate } from "@/lib/i18n/format";
 
 interface Props { insight: CopilotInsightRecord }
 
@@ -13,6 +14,7 @@ const SEVERITY_STYLES: Record<CopilotInsightSeverity, string> = {
 };
 
 export default function InsightCard({ insight }: Props) {
+  const locale = useLocale();
   const t = useTranslations("copilot");
   const style = SEVERITY_STYLES[insight.severity];
   return (
@@ -24,7 +26,7 @@ export default function InsightCard({ insight }: Props) {
           <p className="mt-1 text-ink/60 text-xs">{insight.description}</p>
         </div>
         <p className="text-ink/30 text-xs whitespace-nowrap">
-          {new Date(insight.createdAt).toLocaleTimeString()}
+          {formatDate(insight.createdAt, locale, { timeStyle: "medium" })}
         </p>
       </div>
       {insight.assetId && (

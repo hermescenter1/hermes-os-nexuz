@@ -12,6 +12,7 @@ import { logger } from "@/lib/logger";
 import { authEmitter } from "./emitter";
 import { getEmailService } from "@/lib/email/service";
 import { verificationEmailHtml, verificationEmailText } from "@/lib/email/templates/verification";
+import { verificationEmailSubject, passwordResetEmailSubject, welcomeEmailSubject } from "@/lib/email/templates/email-locale";
 import { passwordResetEmailHtml, passwordResetEmailText } from "@/lib/email/templates/password-reset";
 import { welcomeEmailHtml, welcomeEmailText } from "@/lib/email/templates/welcome";
 import { VERIFICATION_TOKEN_TTL, PASSWORD_RESET_TTL } from "@/lib/auth/config";
@@ -40,16 +41,18 @@ if (g.__hermesAuthHandlersInit) {
         const link = `${event.baseUrl}/auth/verify-email?token=${encodeURIComponent(event.verificationToken)}`;
         await getEmailService().send({
           to:      event.email,
-          subject: "Verify your Hermes OS email address",
+          subject: verificationEmailSubject(event.locale),
           html: verificationEmailHtml({
             name:             event.name,
             verificationLink: link,
             expiresInHours:   VERIFICATION_HOURS,
+            locale:           event.locale,
           }),
           text: verificationEmailText({
             name:             event.name,
             verificationLink: link,
             expiresInHours:   VERIFICATION_HOURS,
+            locale:           event.locale,
           }),
         });
         logger.info("[auth.event] Verification email dispatched.", { userId: event.userId });
@@ -70,16 +73,18 @@ if (g.__hermesAuthHandlersInit) {
         const link = `${event.baseUrl}/auth/reset-password?token=${encodeURIComponent(event.resetToken)}`;
         await getEmailService().send({
           to:      event.email,
-          subject: "Reset your Hermes OS password",
+          subject: passwordResetEmailSubject(event.locale),
           html: passwordResetEmailHtml({
             name:           event.name,
             resetLink:      link,
             expiresInHours: RESET_HOURS,
+            locale:         event.locale,
           }),
           text: passwordResetEmailText({
             name:           event.name,
             resetLink:      link,
             expiresInHours: RESET_HOURS,
+            locale:         event.locale,
           }),
         });
         logger.info("[auth.event] Password reset email dispatched.", { userId: event.userId });
@@ -99,9 +104,9 @@ if (g.__hermesAuthHandlersInit) {
       try {
         await getEmailService().send({
           to:      event.email,
-          subject: "Welcome to Hermes OS",
-          html:    welcomeEmailHtml({ name: event.name }),
-          text:    welcomeEmailText({ name: event.name }),
+          subject: welcomeEmailSubject(event.locale),
+          html:    welcomeEmailHtml({ name: event.name, locale: event.locale }),
+          text:    welcomeEmailText({ name: event.name, locale: event.locale }),
         });
         logger.info("[auth.event] Welcome email dispatched.", { userId: event.userId });
       } catch (err) {

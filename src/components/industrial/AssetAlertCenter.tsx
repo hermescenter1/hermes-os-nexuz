@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect, useCallback } from "react";
 import type { AssetAlertRecord }            from "@/lib/industrial/alerts";
+import { formatDateTime } from "@/lib/i18n/format";
 
 const SEVERITY_COLOR: Record<string, string> = {
   CRITICAL: "var(--danger)",
@@ -24,6 +26,7 @@ function AlertRow({
   alert: AssetAlertRecord;
   onDismiss: (id: string) => void;
 }) {
+  const locale = useLocale();
   const color = SEVERITY_COLOR[alert.severity] ?? "var(--signal)";
   return (
     <div
@@ -49,7 +52,7 @@ function AlertRow({
         <p className="mt-0.5 text-sm font-semibold text-ink">{alert.title}</p>
         <p className="mt-0.5 text-xs text-muted">{alert.description}</p>
         <p className="mt-1 font-mono text-[0.6rem] text-muted/50">
-          {new Date(alert.createdAt).toLocaleString()}
+          {formatDateTime(alert.createdAt, locale)}
         </p>
       </div>
       {!alert.dismissed && (
@@ -69,6 +72,7 @@ interface AssetAlertCenterProps {
 }
 
 export function AssetAlertCenter({ assetId }: AssetAlertCenterProps) {
+  const locale = useLocale();
   const [alerts,   setAlerts]   = useState<AssetAlertRecord[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [showAll,  setShowAll]  = useState(false);

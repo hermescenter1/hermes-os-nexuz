@@ -3,6 +3,7 @@
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ErpWorkOrderFull } from "@/lib/erp/types";
+import { formatDate } from "@/lib/i18n/format";
 
 export function WorkOrderDetailClient({ wo }: { wo: ErpWorkOrderFull }) {
   const locale = useLocale();
@@ -22,7 +23,7 @@ export function WorkOrderDetailClient({ wo }: { wo: ErpWorkOrderFull }) {
 
       <div className="grid grid-cols-2 gap-4">
         {[
-          { label: t("workOrders.dueDate"), value: wo.dueDate ? new Date(wo.dueDate).toLocaleDateString() : "—" },
+          { label: t("workOrders.dueDate"), value: wo.dueDate ? formatDate(wo.dueDate, locale) : "—" },
           { label: t("workOrders.team"),    value: wo.teamId ?? "—" },
         ].map(m => (
           <div key={m.label} className="rounded-xl border bg-card p-4">
@@ -42,7 +43,7 @@ export function WorkOrderDetailClient({ wo }: { wo: ErpWorkOrderFull }) {
                 <div>
                   <p>{a.notes ?? a.action}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {new Date(a.createdAt).toLocaleDateString()}
+                    {formatDate(a.createdAt, locale)}
                   </p>
                 </div>
               </div>

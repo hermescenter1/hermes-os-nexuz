@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getAllAuthors }    from "@/lib/articles/db";
 import { buildMetadata }   from "@/lib/seo/metadata";
 import Link                 from "next/link";
+import { formatDate } from "@/lib/i18n/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -34,9 +35,7 @@ export default async function AuthorsPage({
 
   function fmtDate(d: string | null | undefined) {
     if (!d) return null;
-    try {
-      return new Date(d).toLocaleDateString(isFa ? "fa-IR" : "en-US", { year: "numeric", month: "short" });
-    } catch { return null; }
+    return formatDate(d, locale, { year: "numeric", month: "short" });
   }
 
   return (

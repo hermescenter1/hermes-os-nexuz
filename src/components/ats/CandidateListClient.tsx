@@ -1,9 +1,11 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect, useMemo } from "react";
 import type { Candidate, PipelineStage } from "@/lib/ats/types";
 import { STAGE_LABELS, STAGE_ORDER }     from "@/lib/ats/types";
 import { AtsScoreCard }                  from "./AtsScoreCard";
+import { formatNumber } from "@/lib/i18n/format";
 
 interface CandidatesResponse { candidates: Candidate[]; total: number }
 
@@ -26,6 +28,7 @@ const SOURCE_LABEL: Record<string, string> = {
 };
 
 export function CandidateListClient() {
+  const locale = useLocale();
   const [data,       setData]       = useState<CandidatesResponse | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [stageFilter,setStageFilter]= useState<PipelineStage | "all">("all");
@@ -171,7 +174,7 @@ export function CandidateListClient() {
                   { label: "Email",        value: selected.email           },
                   { label: "Phone",        value: selected.phone           },
                   { label: "Auth",         value: selected.workAuthorization.replace(/-/g, " ") },
-                  { label: "Salary",       value: `${selected.salaryExpectation.toLocaleString()} — expectation` },
+                  { label: "Salary",       value: `${formatNumber(selected.salaryExpectation, locale)} — expectation` },
                   { label: "Source",       value: SOURCE_LABEL[selected.source] },
                   { label: "Applied",      value: selected.appliedAt       },
                 ].map(row => (

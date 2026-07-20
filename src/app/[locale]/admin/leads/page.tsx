@@ -1,8 +1,10 @@
-import { setRequestLocale, getTranslations } from "next-intl/server";
+import { setRequestLocale, getTranslations, getLocale } from "next-intl/server";
+import { DEFAULT_LOCALE }       from "@/i18n/locales";
 import { RequireCapability }    from "@/components/auth/RequireCapability";
 import { noIndexMetadata }      from "@/lib/seo/metadata";
 import { getPrisma }            from "@/lib/db/prisma";
 import { AccessRequestActions } from "@/components/admin/AccessRequestActions";
+import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = noIndexMetadata("Sales Leads — Hermes Admin");
 export const dynamic  = "force-dynamic";
@@ -78,9 +80,8 @@ async function getLeads(): Promise<SalesLeadRow[]> {
   }
 }
 
-function fmtDate(s: string) {
-  try { return new Date(s).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }); }
-  catch { return s.slice(0, 10); }
+function fmtDate(s: string, locale = "en") {
+  return formatDate(s, locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
 const STATUS_CLS: Record<string, string> = {
@@ -95,6 +96,9 @@ const STATUS_CLS: Record<string, string> = {
 // ── Lead card (shared by both sections) ───────────────────────────────────────
 
 async function LeadCard({ lead, actions }: { lead: SalesLeadRow; actions?: boolean }) {
+  let requestLocale: string = DEFAULT_LOCALE;
+  try { requestLocale = await getLocale(); } catch { /* header unavailable */ }
+  const locale = requestLocale;
   const t = await getTranslations("adminOperations.leads");
   return (
     <details
@@ -123,7 +127,7 @@ async function LeadCard({ lead, actions }: { lead: SalesLeadRow; actions?: boole
                     <span className={`text-[9px] px-2 py-0.5 rounded border font-mono uppercase ${STATUS_CLS[lead.status] ?? STATUS_CLS.NEW}`}>
                       {lead.status}
                     </span>
-                    <span className="text-[9px] text-[#4A5A6E] font-mono">{fmtDate(lead.createdAt)}</span>
+                    <span className="text-[9px] text-[#4A5A6E] font-mono">{fmtDate(lead.createdAt, locale)}</span>
                     <svg viewBox="0 0 20 20" fill="currentColor"
                       className="w-3.5 h-3.5 text-[#4A5A6E] group-open:rotate-180 transition-transform">
                       <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"/>

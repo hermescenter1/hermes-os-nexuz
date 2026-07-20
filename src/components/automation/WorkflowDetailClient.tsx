@@ -4,6 +4,7 @@ import Link            from "next/link";
 import { useState }    from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowDefinitionFull, WorkflowExecution } from "@/lib/automation/types";
+import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 type Tab = "overview" | "conditions" | "actions" | "executions";
 
@@ -96,11 +97,11 @@ export function WorkflowDetailClient({
             <dl className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">{t("workflowDetail.created")}</dt>
-                <dd>{new Date(workflow.createdAt).toLocaleDateString()}</dd>
+                <dd>{formatDate(workflow.createdAt, locale)}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">{t("workflowDetail.updated")}</dt>
-                <dd>{new Date(workflow.updatedAt).toLocaleDateString()}</dd>
+                <dd>{formatDate(workflow.updatedAt, locale)}</dd>
               </div>
               {workflow.templateId && (
                 <div className="flex justify-between">
@@ -176,7 +177,7 @@ export function WorkflowDetailClient({
                     <td className={`px-4 py-3 font-medium text-xs ${EXEC_STATUS_COLORS[e.status] ?? ""}`}>{e.status}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{e.triggeredBy ?? "—"}</td>
                     <td className="px-4 py-3 text-xs">{e.durationMs != null ? `${e.durationMs}ms` : "—"}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(e.createdAt).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{formatDateTime(e.createdAt, locale)}</td>
                     <td className="px-4 py-3 text-right">
                       <Link href={`/${locale}/automation/executions/${e.id}`} className="text-xs text-primary hover:underline">{t("workflowDetail.view")}</Link>
                     </td>

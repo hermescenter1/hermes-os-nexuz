@@ -1,6 +1,8 @@
 "use client";
-import { usePathname } from "next/navigation";
+
+import { useLocale } from "next-intl";import { usePathname } from "next/navigation";
 import type { EdmsRevision } from "@/lib/document/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const TYPE_STYLE: Record<string, { bg: string; text: string }> = {
   MAJOR: { bg: "bg-danger/[0.08]",  text: "text-danger"  },
@@ -11,6 +13,7 @@ const TYPE_STYLE: Record<string, { bg: string; text: string }> = {
 interface Props { revisions: EdmsRevision[] }
 
 export function RevisionHistoryClient({ revisions }: Props) {
+  const locale = useLocale();
   const pathname = usePathname();
   const isFa     = pathname.startsWith("/fa");
 
@@ -59,7 +62,7 @@ export function RevisionHistoryClient({ revisions }: Props) {
                   <span className="text-xs text-muted truncate block max-w-[240px]">{rev.summary ?? "—"}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-xs text-faint font-mono">{new Date(rev.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-faint font-mono">{formatDate(rev.createdAt, locale)}</span>
                 </td>
               </tr>
             );

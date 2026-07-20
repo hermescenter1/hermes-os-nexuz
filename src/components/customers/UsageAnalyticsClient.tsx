@@ -1,6 +1,8 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect } from "react";
+import { formatNumber } from "@/lib/i18n/format";
 
 interface UsageTotals {
   copilotQueries:            number;
@@ -48,6 +50,7 @@ const FEATURE_COLORS: Record<string, string> = {
 };
 
 export function UsageAnalyticsClient() {
+  const locale = useLocale();
   const [data,    setData]    = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [view,    setView]    = useState<"adoption" | "top" | "perCustomer">("adoption");
@@ -93,7 +96,7 @@ export function UsageAnalyticsClient() {
         ].map(kpi => (
           <div key={kpi.label} className="global-ops-cell">
             <p className="kpi-label mb-1.5">{kpi.label}</p>
-            <p className={`intel-kpi-value ${kpi.color}`}>{kpi.v.toLocaleString()}</p>
+            <p className={`intel-kpi-value ${kpi.color}`}>{formatNumber(kpi.v, locale)}</p>
           </div>
         ))}
       </div>

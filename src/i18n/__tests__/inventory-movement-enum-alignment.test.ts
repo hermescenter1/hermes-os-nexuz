@@ -152,7 +152,7 @@ describe("surrounding behavior is unchanged (rendering, ordering, routes, catalo
   });
 
   it("date and quantity rendering are unchanged", () => {
-    expect(clientSrc).toContain("new Date(m.createdAt).toLocaleDateString()");
+    expect(clientSrc).toContain("formatDate(m.createdAt, locale)");
     expect(clientSrc).toContain('{m.quantity > 0 ? "+" : ""}{m.quantity}');
   });
 

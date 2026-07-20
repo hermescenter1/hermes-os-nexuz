@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView }            from "framer-motion";
-import { useTranslations }              from "next-intl";
+import { useTranslations, useLocale }              from "next-intl";
+import { formatNumber } from "@/lib/i18n/format";
 
 interface CounterProps { to: number; suffix?: string; prefix?: string }
 
 function Counter({ to, suffix = "", prefix = "" }: CounterProps) {
+  const locale = useLocale();
   const [count, setCount] = useState(0);
   const ref               = useRef<HTMLSpanElement>(null);
   const isInView          = useInView(ref, { once: true, margin: "-80px" });
@@ -25,7 +27,7 @@ function Counter({ to, suffix = "", prefix = "" }: CounterProps) {
     return () => clearInterval(timer);
   }, [isInView, to]);
 
-  return <span ref={ref} suppressHydrationWarning>{prefix}{count.toLocaleString()}{suffix}</span>;
+  return <span ref={ref} suppressHydrationWarning>{prefix}{formatNumber(count, locale)}{suffix}</span>;
 }
 
 const STATS_META = [
@@ -45,6 +47,7 @@ const itemVariants = {
 };
 
 export function StatsSection() {
+  const locale = useLocale();
   const t           = useTranslations("landing.stats");
   const sectionRef  = useRef<HTMLElement>(null);
   const isInView    = useInView(sectionRef, { once: true, margin: "-100px" });

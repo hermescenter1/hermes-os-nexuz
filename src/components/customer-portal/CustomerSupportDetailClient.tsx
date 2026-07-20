@@ -1,8 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useEffect, useState, useRef } from "react";
 import { Link }                        from "@/i18n/navigation";
 import type { CustomerSupportTicket, CustomerSupportMessage } from "@/lib/customer-portal/types";
+import { formatDateTime } from "@/lib/i18n/format";
 
 const PRIORITY_COLORS: Record<string, string> = {
   LOW:      "border-line text-faint",
@@ -12,6 +14,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export function CustomerSupportDetailClient({ ticketId }: { ticketId: string }) {
+  const locale = useLocale();
   const [ticket, setTicket]     = useState<CustomerSupportTicket | null>(null);
   const [messages, setMessages] = useState<CustomerSupportMessage[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -71,7 +74,7 @@ export function CustomerSupportDetailClient({ ticketId }: { ticketId: string }) 
           <div>
             <h2 className="text-lg font-bold text-ink">{ticket.title}</h2>
             <p className="text-xs text-faint mt-1">
-              {ticket.category} · Created {new Date(ticket.createdAt).toLocaleString()}
+              {ticket.category} · Created {formatDateTime(ticket.createdAt, locale)}
             </p>
           </div>
           <span className={`shrink-0 rounded border px-2 py-0.5 text-xs font-mono font-semibold ${PRIORITY_COLORS[ticket.priority] ?? "border-line text-muted"}`}>
@@ -82,7 +85,7 @@ export function CustomerSupportDetailClient({ ticketId }: { ticketId: string }) 
           {ticket.descriptionEn}
         </div>
         {ticket.slaDeadline && !isClosed && (
-          <p className="mt-3 text-xs text-amber-400">SLA Deadline: {new Date(ticket.slaDeadline).toLocaleString()}</p>
+          <p className="mt-3 text-xs text-amber-400">SLA Deadline: {formatDateTime(ticket.slaDeadline, locale)}</p>
         )}
       </div>
 
@@ -105,7 +108,7 @@ export function CustomerSupportDetailClient({ ticketId }: { ticketId: string }) 
                       <span className="rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-mono text-amber-400">Internal</span>
                     )}
                   </div>
-                  <span className="shrink-0 text-xs text-faint">{new Date(msg.createdAt).toLocaleString()}</span>
+                  <span className="shrink-0 text-xs text-faint">{formatDateTime(msg.createdAt, locale)}</span>
                 </div>
                 <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">{msg.body}</p>
               </li>

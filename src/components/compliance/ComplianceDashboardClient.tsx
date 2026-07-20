@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations }      from "next-intl";
+import { useTranslations, useLocale }      from "next-intl";
 import { Link }                 from "@/i18n/navigation";
+import { formatDate } from "@/lib/i18n/format";
 
 interface Stats {
   totalPrivacyRequests: number; pendingRequests: number; completedRequests: number;
@@ -16,6 +17,7 @@ interface Form { documentType: string; version: string; title: string; content: 
 const BLANK: Form = { documentType: "PRIVACY_POLICY", version: "1.0", title: "", content: "", locale: "en" };
 
 export function ComplianceDashboardClient({ view = "overview" }: { view?: "overview" | "requests" | "documents" | "consents" }) {
+  const locale = useLocale();
   const t = useTranslations("adminGovernance.compliance");
   const [stats,    setStats]    = useState<Stats | null>(null);
   const [requests, setRequests] = useState<Request[]>([]);
@@ -131,7 +133,7 @@ export function ComplianceDashboardClient({ view = "overview" }: { view?: "overv
                         {r.status.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-muted">{new Date(r.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-muted">{formatDate(r.createdAt, locale)}</td>
                     <td className="px-4 py-3">
                       {r.status === "PENDING" && (
                         <div className="flex gap-1">
@@ -220,7 +222,7 @@ export function ComplianceDashboardClient({ view = "overview" }: { view?: "overv
                           {d.isPublished ? t("published") : t("draft")}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted">{new Date(d.updatedAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-muted">{formatDate(d.updatedAt, locale)}</td>
                     </tr>
                   ))}
                 </tbody>

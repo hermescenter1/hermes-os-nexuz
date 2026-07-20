@@ -1,10 +1,13 @@
 "use client";
 
+import { useLocale } from "next-intl";
+import { formatNumber } from "@/lib/i18n/format";
+
 import { useState, useEffect } from "react";
 import type { OperationsOverview } from "@/lib/operations/types";
 import { PLATFORM_COMPONENTS }    from "@/lib/industrial/platform-facts";
 
-const nf = new Intl.NumberFormat("en-US");
+
 
 const COMPONENT_LABEL: Record<string, string> = {
   brainEngine:     "Hermes Reasoning Engine",
@@ -48,6 +51,7 @@ function LoadingCell() {
 }
 
 export function OperationsOverviewClient() {
+  const locale = useLocale();
   const [data,    setData]    = useState<OperationsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -233,7 +237,7 @@ export function OperationsOverviewClient() {
                   <div className="rounded border border-signal/15 bg-signal/[0.03] px-3 py-2.5">
                     <p className="kpi-label text-signal mb-1">KNOWLEDGE COVERAGE</p>
                     <p className="font-body text-xs text-ink">
-                      {nf.format(data?.cases ?? 0)} engineering cases · {nf.format(data?.knowledgeLinks ?? 0)} documented resolutions available.
+                      {formatNumber(data?.cases ?? 0, locale)} engineering cases · {formatNumber(data?.knowledgeLinks ?? 0, locale)} documented resolutions available.
                     </p>
                   </div>
                   <div className="rounded border border-line bg-bg px-3 py-2.5">

@@ -1,8 +1,9 @@
 "use client";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { EdmsShare } from "@/lib/document/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const ACCESS_STYLE: Record<string, { bg: string; text: string }> = {
   VIEW:        { bg: "bg-faint/[0.08]",  text: "text-faint"  },
@@ -15,6 +16,7 @@ const ACCESS_STYLE: Record<string, { bg: string; text: string }> = {
 interface Props { shares: EdmsShare[] }
 
 export function ShareClient({ shares }: Props) {
+  const locale = useLocale();
   const pathname = usePathname();
   const ted = useTranslations("engineeringDocuments"); // 87L.5: localized enum labels
   const isFa     = pathname.startsWith("/fa");
@@ -61,11 +63,11 @@ export function ShareClient({ shares }: Props) {
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
                   <span className="text-xs text-faint">
-                    {s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : (isFa ? "هرگز" : "Never")}
+                    {s.expiresAt ? formatDate(s.expiresAt, locale) : (isFa ? "هرگز" : "Never")}
                   </span>
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
-                  <span className="text-xs text-faint font-mono">{new Date(s.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-faint font-mono">{formatDate(s.createdAt, locale)}</span>
                 </td>
               </tr>
             );

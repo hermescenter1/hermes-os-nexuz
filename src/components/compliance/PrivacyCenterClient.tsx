@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations }      from "next-intl";
+import { useTranslations, useLocale }      from "next-intl";
 import { Link }                 from "@/i18n/navigation";
+import { formatDate } from "@/lib/i18n/format";
 
 interface ConsentRow { id: string; consentType: string; granted: boolean; createdAt: string; consentVersion: string; }
 
 export function PrivacyCenterClient() {
+  const locale = useLocale();
   const t = useTranslations("adminGovernance.privacyCenter");
   const [records, setRecords] = useState<ConsentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ export function PrivacyCenterClient() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted">{r.consentVersion}</td>
-                    <td className="px-4 py-3 text-muted">{new Date(r.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-muted">{formatDate(r.createdAt, locale)}</td>
                   </tr>
                 ))}
               </tbody>

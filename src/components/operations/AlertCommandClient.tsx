@@ -1,11 +1,14 @@
 "use client";
 
+import { useLocale } from "next-intl";
+
 import { useState, useEffect, useMemo } from "react";
 import type {
   OperationsAlert,
   AlertSeverity,
   CategoryCount,
 } from "@/lib/operations/types";
+import { formatDate } from "@/lib/i18n/format";
 
 interface AlertsResponse {
   alerts:      OperationsAlert[];
@@ -44,6 +47,7 @@ const HEAT_BG: Record<AlertSeverity, string> = {
 };
 
 export function AlertCommandClient() {
+  const locale = useLocale();
   const [data,      setData]      = useState<AlertsResponse | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
@@ -233,7 +237,7 @@ export function AlertCommandClient() {
       </div>
 
       <p className="kpi-label text-faint">
-        Source: Engineering Knowledge Graph · Built {new Date(data.builtAt).toLocaleTimeString()} · Deterministic
+        Source: Engineering Knowledge Graph · Built {formatDate(data.builtAt, locale, { timeStyle: "medium" })} · Deterministic
       </p>
     </div>
   );

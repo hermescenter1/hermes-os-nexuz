@@ -23,7 +23,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Token is required" }, { status: 422 });
   }
 
-  const result = await verifyEmail(parsed.data.token);
+  const localeMatch = /(?:^|;\s*)NEXT_LOCALE=(fa|en|de)(?:;|$)/.exec(req.headers.get("cookie") ?? "");
+  const result = await verifyEmail(parsed.data.token, localeMatch?.[1]);
 
   if (!result.ok) {
     const messages: Record<string, string> = {

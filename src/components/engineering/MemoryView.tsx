@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState }         from "react";
 import { useQuery }         from "@tanstack/react-query";
 import { AnimatedSection }  from "@/components/ui/AnimatedSection";
@@ -9,6 +10,7 @@ import { GlassCard }        from "@/components/ui/GlassCard";
 import { LoadingState }     from "@/components/ui/LoadingState";
 import { ErrorState }       from "@/components/ui/ErrorState";
 import { EmptyState }       from "@/components/ui/EmptyState";
+import { formatDate } from "@/lib/i18n/format";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -47,6 +49,7 @@ function ConfidenceBar({ value }: { value: number }) {
 // ── Main view ──────────────────────────────────────────────────────────────
 
 export function MemoryView() {
+  const locale = useLocale();
   const [search, setSearch] = useState("");
 
   const { data, isPending, isError, refetch } = useQuery<{ memories: Memory[] }>({
@@ -145,7 +148,7 @@ export function MemoryView() {
                         <ConfidenceBar value={m.confidence} />
                       </div>
                       <span className="text-[10px] font-mono text-muted flex-none" suppressHydrationWarning>
-                        {new Date(m.createdAt).toLocaleDateString()}
+                        {formatDate(m.createdAt, locale)}
                       </span>
                     </div>
                   </GlassCard>

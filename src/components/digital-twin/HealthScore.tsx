@@ -1,8 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { GlassCard }      from "@/components/ui/GlassCard";
 import type { AssetHealthScore } from "@/lib/digital-twin/types";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface Props {
   health: AssetHealthScore;
@@ -19,6 +20,7 @@ function scoreBarWidth(score: number): string {
 }
 
 export default function HealthScore({ health }: Props) {
+  const locale = useLocale();
   const t = useTranslations("digitalTwin");
 
   return (
@@ -58,7 +60,7 @@ export default function HealthScore({ health }: Props) {
 
         {health.lastTelemetryAt && (
           <p className="text-ink/30 text-xs">
-            {t("lastTelemetry")}: {new Date(health.lastTelemetryAt).toLocaleString()}
+            {t("lastTelemetry")}: {formatDateTime(health.lastTelemetryAt, locale)}
           </p>
         )}
       </div>

@@ -7,8 +7,9 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useTranslations }                   from "next-intl";
+import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface BenchmarkRecord {
   id:            string;
@@ -31,6 +32,7 @@ interface BenchmarkResponse {
 }
 
 export default function BenchmarksPage() {
+  const locale = useLocale();
   const t = useTranslations("multiSite");
   const [data,      setData]      = useState<BenchmarkResponse | null>(null);
   const [loading,   setLoading]   = useState(true);
@@ -134,7 +136,7 @@ export default function BenchmarksPage() {
               </div>
               <div>
                 <p className="text-white/40 text-xs uppercase">{t("dataFreshness")}</p>
-                <p className="text-white/70 text-xs">{new Date(data.benchmark.computedAt).toLocaleString()}</p>
+                <p className="text-white/70 text-xs">{formatDateTime(data.benchmark.computedAt, locale)}</p>
               </div>
             </div>
           </GlassCard>

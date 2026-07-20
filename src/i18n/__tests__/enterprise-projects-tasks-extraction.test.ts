@@ -514,7 +514,7 @@ describe("Projects/Tasks behavior & raw values preserved", () => {
     const ms = read("src/app/[locale]/erp/projects/[id]/milestones/page.tsx");
     expect(ms).toContain("(project.milestones ?? []).map");
     expect(ms).toContain("m.completedAt");
-    expect(ms).toContain("new Date(m.dueDate).toLocaleDateString()");
+    expect(ms).toContain("formatDate(m.dueDate, locale)");
   });
 
   it("persisted project/task content is still rendered as runtime data", () => {

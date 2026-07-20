@@ -1,6 +1,7 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { MaintenancePlan } from "@/lib/cmms/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const TYPE_STYLE: Record<string, { bg: string; text: string }> = {
   PREVENTIVE:  { bg: "bg-ice/[0.08]",    text: "text-ice"    },
@@ -22,6 +23,7 @@ const PRIORITY_DOT: Record<string, string> = {
 };
 
 export function MaintenancePlansClient({ plans }: { plans: MaintenancePlan[] }) {
+  const locale = useLocale();
   const t = useTranslations("maintenanceOperations");
 
   return (
@@ -87,7 +89,7 @@ export function MaintenancePlansClient({ plans }: { plans: MaintenancePlan[] }) 
                     ? t("plans.overdueBy", { days: Math.abs(daysUntil ?? 0) })
                     : daysUntil !== null
                     ? t("plans.dueIn", { days: daysUntil })
-                    : new Date(plan.nextDueAt).toLocaleDateString()}
+                    : formatDate(plan.nextDueAt, locale)}
                 </div>
               )}
 
@@ -98,7 +100,7 @@ export function MaintenancePlansClient({ plans }: { plans: MaintenancePlan[] }) 
                 </span>
                 {plan.lastExecutedAt && (
                   <span className="text-xs text-faint font-mono">
-                    {t("plans.last")}: {new Date(plan.lastExecutedAt).toLocaleDateString()}
+                    {t("plans.last")}: {formatDate(plan.lastExecutedAt, locale)}
                   </span>
                 )}
               </div>

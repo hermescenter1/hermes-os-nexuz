@@ -3,6 +3,7 @@
 import Link            from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowExecutionFull } from "@/lib/automation/types";
+import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 const STATUS_COLORS: Record<string, string> = {
   SUCCESS:   "bg-green-500/15 text-green-700 dark:text-green-400",
@@ -69,7 +70,7 @@ export function ExecutionDetailClient({ execution }: { execution: WorkflowExecut
         </div>
         <div className="rounded-xl border bg-card p-4">
           <div className="text-xs text-muted-foreground mb-1">{t("executionDetail.started")}</div>
-          <div className="font-medium">{execution.startedAt ? new Date(execution.startedAt).toLocaleString() : "—"}</div>
+          <div className="font-medium">{execution.startedAt ? formatDateTime(execution.startedAt, locale) : "—"}</div>
         </div>
       </div>
 
@@ -107,7 +108,7 @@ export function ExecutionDetailClient({ execution }: { execution: WorkflowExecut
             {execution.logs.map(log => (
               <div key={log.id} className="flex gap-3">
                 <span className="text-muted-foreground shrink-0">
-                  {new Date(log.createdAt).toLocaleTimeString()}
+                  {formatDate(log.createdAt, locale, { timeStyle: "medium" })}
                 </span>
                 <span className={`${LOG_LEVEL_COLORS[log.level] ?? ""} shrink-0 w-12`}>[{log.level}]</span>
                 <span>{log.message}</span>

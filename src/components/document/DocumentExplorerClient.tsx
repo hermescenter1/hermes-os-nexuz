@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import { usePathname } from "next/navigation";
 import type { EdmsDocument, EdmsFolder } from "@/lib/document/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
   DRAFT:    { bg: "bg-ice/[0.08]",    text: "text-ice"    },
@@ -103,7 +104,7 @@ export function DocumentExplorerClient({ documents, folders }: Props) {
                         </span>
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="text-xs text-faint">{new Date(doc.updatedAt).toLocaleDateString()}</span>
+                        <span className="text-xs text-faint">{formatDate(doc.updatedAt, locale)}</span>
                       </td>
                     </tr>
                   );

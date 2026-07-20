@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect } from "react";
 import { Link }                 from "@/i18n/navigation";
+import { formatDate } from "@/lib/i18n/format";
 
 interface CandidateProfile {
   id: string;
@@ -40,6 +42,7 @@ const STATUS_LABEL: Record<string, string> = {
 const STAGE_ORDER = ["APPLIED","SCREENING","TECHNICAL_REVIEW","INTERVIEW","OFFER","HIRED","REJECTED"];
 
 export function CandidateDashboardClient() {
+  const locale = useLocale();
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [apps, setApps]       = useState<ApplicationSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,6 +159,7 @@ export function CandidateDashboardClient() {
 }
 
 function ApplicationRow({ app }: { app: ApplicationSummary }) {
+  const locale = useLocale();
   const cls = STATUS_COLORS[app.status] ?? "bg-surface text-muted border-line";
   const stageIdx = STAGE_ORDER.indexOf(app.status);
 
@@ -184,7 +188,7 @@ function ApplicationRow({ app }: { app: ApplicationSummary }) {
       )}
 
       <p className="mt-3 text-[10px] text-muted font-mono">
-        Applied {new Date(app.createdAt).toLocaleDateString()}
+        Applied {formatDate(app.createdAt, locale)}
       </p>
     </div>
   );

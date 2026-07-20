@@ -8,9 +8,10 @@
  */
 
 import { useState, useEffect } from "react";
-import { useTranslations }     from "next-intl";
+import { useTranslations, useLocale }     from "next-intl";
 import { GlassCard }           from "@/components/ui/GlassCard";
 import Link                    from "next/link";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface FailurePattern {
   id:                 string;
@@ -52,6 +53,7 @@ function SeverityBadge({ severity }: { severity: string | null }) {
 }
 
 export default function CrossSiteFailuresPage() {
+  const locale = useLocale();
   const t = useTranslations("multiSite");
   const [data,    setData]    = useState<PatternResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,7 +156,7 @@ export default function CrossSiteFailuresPage() {
 
           {data.patterns.length > 0 && (
             <p className="text-xs text-white/30 text-right">
-              {t("dataFreshness")}: {new Date(data.computedAt).toLocaleString()}
+              {t("dataFreshness")}: {formatDateTime(data.computedAt, locale)}
             </p>
           )}
         </>

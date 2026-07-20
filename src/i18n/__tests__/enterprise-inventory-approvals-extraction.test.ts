@@ -477,8 +477,10 @@ describe("Inventory/Approvals source is fully catalog-backed via next-intl", () 
       expect(src, `${rel} href pattern`).toMatch(/`\/\$\{locale\}\/erp\/inventory/);
       expect(src, `${rel} no locale ternary`).not.toMatch(/locale\s*[=!]==?\s*"/);
     }
-    // ApprovalListClient renders no locale-prefixed links: no useLocale at all
-    expect(read(CLIENT_NO_LOCALE)).not.toMatch(/\buseLocale\b/);
+    // 89B-FINAL: ApprovalListClient still renders no locale-prefixed links, but
+    // now needs useLocale for shared date formatting (formatDate(apr.createdAt, locale)).
+    expect(read(CLIENT_NO_LOCALE)).toMatch(/const locale = useLocale\(\)/);
+    expect(read(CLIENT_NO_LOCALE)).toContain("formatDate(apr.createdAt, locale)");
   });
 
   it("no hardcoded Persian UI strings exist in any of the 6 files", () => {
@@ -604,12 +606,12 @@ describe("Inventory/Approvals behavior & raw values preserved", () => {
     expect(apr).toContain("{apr.description}");
   });
 
-  it("date formatting is retained (toLocaleDateString, unchanged behavior)", () => {
+  it("date formatting is locale-aware via the shared formatter (89B-FINAL)", () => {
     expect(read("src/components/erp/InventoryDetailClient.tsx")).toContain(
-      "new Date(m.createdAt).toLocaleDateString()",
+      "formatDate(m.createdAt, locale)",
     );
     expect(read("src/components/erp/ApprovalListClient.tsx")).toContain(
-      "new Date(apr.createdAt).toLocaleDateString()",
+      "formatDate(apr.createdAt, locale)",
     );
   });
 

@@ -1,8 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useEffect, useState, useRef } from "react";
 import { Link }                        from "@/i18n/navigation";
 import type { CustomerSupportTicket }  from "@/lib/customer-portal/types";
+import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 const PRIORITY_COLORS: Record<string, string> = {
   LOW:      "border-line text-faint",
@@ -22,6 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
 const TICKET_CATEGORIES = ["GENERAL", "TECHNICAL", "BILLING", "ONBOARDING", "FEATURE_REQUEST", "BUG_REPORT", "TRAINING"];
 
 export function CustomerSupportClient() {
+  const locale = useLocale();
   const [tickets, setTickets]   = useState<CustomerSupportTicket[]>([]);
   const [loading, setLoading]   = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -133,7 +136,7 @@ export function CustomerSupportClient() {
                 <div className="flex items-start justify-between gap-4 mb-2">
                   <div>
                     <p className="font-medium text-ink">{t.title}</p>
-                    <p className="text-xs text-faint mt-0.5">{t.category} · {new Date(t.createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-faint mt-0.5">{t.category} · {formatDate(t.createdAt, locale)}</p>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <span className={`rounded border px-2 py-0.5 text-[10px] font-mono font-semibold ${PRIORITY_COLORS[t.priority] ?? "border-line text-muted"}`}>{t.priority}</span>
@@ -141,7 +144,7 @@ export function CustomerSupportClient() {
                   </div>
                 </div>
                 {t.slaDeadline && t.status !== "RESOLVED" && t.status !== "CLOSED" && (
-                  <p className="text-xs text-amber-400">SLA: {new Date(t.slaDeadline).toLocaleString()}</p>
+                  <p className="text-xs text-amber-400">SLA: {formatDateTime(t.slaDeadline, locale)}</p>
                 )}
               </div>
             </Link>

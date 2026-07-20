@@ -1,6 +1,21 @@
-export function baseTemplate(content: string, previewText = ""): string {
+export interface BaseTemplateOptions {
+  /** BCP-47-ish document language; defaults to English (89B-FINAL). */
+  lang?: string;
+  /** Document direction; Persian emails render rtl. */
+  dir?: "ltr" | "rtl";
+  /** Localized footer lines; defaults preserve the original English footer. */
+  footerTagline?: string;
+  footerNote?: string;
+}
+
+export function baseTemplate(content: string, previewText = "", options: BaseTemplateOptions = {}): string {
+  const lang = options.lang ?? "en";
+  const dir = options.dir ?? "ltr";
+  const footerTagline = options.footerTagline ?? "Hermes OS &mdash; AI-Powered Industrial Intelligence";
+  const footerNote =
+    options.footerNote ?? "If you did not request this email, no action is required — you can safely ignore it.";
   return `<!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="${lang}" dir="${dir}" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -51,10 +66,10 @@ ${previewText ? `  <div style="display:none;max-height:0;overflow:hidden;mso-hid
           <tr>
             <td style="padding-top:28px;text-align:center;">
               <p style="color:#3a3a5c;font-size:12px;line-height:1.6;margin:0 0 6px;">
-                Hermes OS &mdash; AI-Powered Industrial Intelligence
+                ${footerTagline}
               </p>
               <p style="color:#2e2e48;font-size:11px;margin:0;">
-                If you did not request this email, no action is required — you can safely ignore it.
+                ${footerNote}
               </p>
             </td>
           </tr>

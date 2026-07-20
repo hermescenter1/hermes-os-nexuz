@@ -1,8 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useEffect, useState } from "react";
 import { Link }                from "@/i18n/navigation";
 import type { CustomerProject } from "@/lib/customer-portal/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE:    "border-signal/30 bg-signal/10 text-signal",
@@ -12,6 +14,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function CustomerProjectsClient() {
+  const locale = useLocale();
   const [projects, setProjects] = useState<CustomerProject[]>([]);
   const [loading, setLoading]   = useState(true);
   const [noAccount, setNoAccount] = useState(false);
@@ -89,7 +92,7 @@ export function CustomerProjectsClient() {
 
             <div className="flex items-center gap-6 text-xs text-faint">
               {p.managerName && <span>Manager: <span className="text-muted">{p.managerName}</span></span>}
-              {p.startDate && <span>Started: <span className="text-muted">{new Date(p.startDate).toLocaleDateString()}</span></span>}
+              {p.startDate && <span>Started: <span className="text-muted">{formatDate(p.startDate, locale)}</span></span>}
               {p._count && <span>{p._count.tickets} tickets · {p._count.documents} docs</span>}
             </div>
           </div>

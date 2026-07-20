@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "next-intl";
+
 /**
  * Phase 56D/E/F — Knowledge Graph Client.
  *
@@ -17,6 +19,7 @@ import type {
   GraphNodeType,
 } from "@/lib/eng-graph/types";
 import { GRAPH_NODE_TYPES } from "@/lib/eng-graph/types";
+import { formatDate } from "@/lib/i18n/format";
 
 // ── Node type filter legend ───────────────────────────────────────────────────
 
@@ -32,6 +35,7 @@ const TYPE_GROUPS: { label: string; types: GraphNodeType[] }[] = [
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function KnowledgeGraphClient() {
+  const locale = useLocale();
   const [snap,     setSnap]     = useState<EngGraphSnapshot | null>(null);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState<string | null>(null);
@@ -230,7 +234,7 @@ export function KnowledgeGraphClient() {
       </div>
 
       <p className="kpi-label text-faint" dir="ltr">
-        Built · {new Date(snap.builtAt).toLocaleTimeString()} · v{snap.version}
+        Built · {formatDate(snap.builtAt, locale, { timeStyle: "medium" })} · v{snap.version}
       </p>
     </div>
   );

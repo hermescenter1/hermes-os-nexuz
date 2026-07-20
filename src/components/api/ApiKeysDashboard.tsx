@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useTranslations }                   from "next-intl";
+import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
 import { DashboardPanel }                    from "@/components/ui/DashboardPanel";
 import { ALL_SCOPES, SCOPE_LABELS }          from "@/lib/api/scopes";
 import type { ApiKeyRecord, RateLimitState } from "@/lib/api/types";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -209,6 +210,7 @@ function CreateKeyForm({ onCreated, onCancel }: CreateFormProps) {
 // ── Rate limit bar ────────────────────────────────────────────────────────────
 
 function RateLimitBar({ label, used, limit }: { label: string; used: number; limit: number }) {
+  const locale = useLocale();
   const pct     = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
   const color   = pct >= 100 ? "bg-red-400" : pct >= 80 ? "bg-amber-400" : "bg-signal";
   return (
@@ -216,7 +218,7 @@ function RateLimitBar({ label, used, limit }: { label: string; used: number; lim
       <div className="flex justify-between text-xs text-muted mb-1">
         <span>{label}</span>
         <span className={pct >= 100 ? "text-red-400" : ""}>
-          {used.toLocaleString()} / {limit.toLocaleString()}
+          {formatNumber(used, locale)} / {formatNumber(limit, locale)}
         </span>
       </div>
       <div className="h-1.5 bg-line/30 rounded-full overflow-hidden">
@@ -229,6 +231,7 @@ function RateLimitBar({ label, used, limit }: { label: string; used: number; lim
 // ── Main dashboard ────────────────────────────────────────────────────────────
 
 export function ApiKeysDashboard() {
+  const locale = useLocale();
   const t = useTranslations("apiPlatform");
   const [keys, setKeys]           = useState<ApiKeyRecord[]>([]);
   const [rl, setRl]               = useState<RateLimitState | null>(null);
@@ -379,18 +382,18 @@ export function ApiKeysDashboard() {
                       <div className="flex gap-4 text-xs text-muted">
                         <span>
                           {(t as unknown as (k: string) => string)("keys.created")}{" "}
-                          {new Date(k.createdAt).toLocaleDateString()}
+                          {formatDate(k.createdAt, locale)}
                         </span>
                         {k.lastUsedAt && (
                           <span>
                             {(t as unknown as (k: string) => string)("keys.lastUsed")}{" "}
-                            {new Date(k.lastUsedAt).toLocaleDateString()}
+                            {formatDate(k.lastUsedAt, locale)}
                           </span>
                         )}
                         {k.expiresAt && (
                           <span>
                             {(t as unknown as (k: string) => string)("keys.expires")}{" "}
-                            {new Date(k.expiresAt).toLocaleDateString()}
+                            {formatDate(k.expiresAt, locale)}
                           </span>
                         )}
                       </div>

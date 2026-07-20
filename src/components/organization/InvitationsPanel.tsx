@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useTranslations }                   from "next-intl";
+import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
 import { DashboardPanel }                    from "@/components/ui/DashboardPanel";
 import type { InvitationRecord, OrgRole }    from "@/lib/org/types";
 import { ALL_ORG_ROLES }                     from "@/lib/org/types";
+import { formatDate } from "@/lib/i18n/format";
 
 interface Props { orgId: string; canInvite: boolean }
 
@@ -17,6 +18,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function InvitationsPanel({ orgId, canInvite }: Props) {
+  const locale = useLocale();
   const t = useTranslations("org");
   const [invitations, setInvitations] = useState<InvitationRecord[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -177,7 +179,7 @@ export function InvitationsPanel({ orgId, canInvite }: Props) {
               </div>
               <p className="text-xs text-muted mt-0.5">
                 {(t as unknown as (k: string) => string)("invitations.expires")}:{" "}
-                {new Date(inv.expiresAt).toLocaleDateString()}
+                {formatDate(inv.expiresAt, locale)}
               </p>
             </div>
             {canInvite && inv.status === "PENDING" && (

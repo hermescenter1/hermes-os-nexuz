@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect } from "react";
 import { Link }                 from "@/i18n/navigation";
+import { formatDate } from "@/lib/i18n/format";
 
 interface CertRow {
   id: string;
@@ -13,6 +15,7 @@ interface CertRow {
 }
 
 export function MyCertificatesClient() {
+  const locale = useLocale();
   const [certs,   setCerts]   = useState<CertRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
@@ -71,7 +74,7 @@ export function MyCertificatesClient() {
         <div className="global-ops-cell">
           <span className="kpi-label">LATEST</span>
           <span className="intel-kpi-value text-sm">
-            {certs[0] ? new Date(certs[0].issuedAt).toLocaleDateString() : "—"}
+            {certs[0] ? formatDate(certs[0].issuedAt, locale) : "—"}
           </span>
         </div>
       </div>
@@ -93,7 +96,7 @@ export function MyCertificatesClient() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[10px] font-mono text-muted">
                 <span>Issued</span>
-                <span dir="ltr">{new Date(cert.issuedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                <span dir="ltr">{formatDate(cert.issuedAt, locale, { day: "2-digit", month: "short", year: "numeric" })}</span>
               </div>
               {cert.score !== null && (
                 <div className="flex items-center justify-between text-[10px] font-mono text-muted">

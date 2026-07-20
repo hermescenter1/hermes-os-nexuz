@@ -1,4 +1,7 @@
 import { GlassCard }         from "@/components/ui/GlassCard";
+import { getLocale } from "next-intl/server";
+import { formatDate } from "@/lib/i18n/format";
+import { DEFAULT_LOCALE } from "@/i18n/locales";
 import type { FailureModeRecord } from "@/lib/knowledge/types";
 
 interface Props { failureMode: FailureModeRecord }
@@ -10,7 +13,10 @@ const SEVERITY_COLORS: Record<string, string> = {
   CRITICAL: "text-red-300     border-red-500/20",
 };
 
-export function FailureModeCard({ failureMode: fm }: Props) {
+export async function FailureModeCard({ failureMode: fm }: Props) {
+  let requestLocale: string = DEFAULT_LOCALE;
+  try { requestLocale = await getLocale(); } catch { /* header unavailable */ }
+  const locale = requestLocale;
   const severityCls = SEVERITY_COLORS[fm.severity] ?? SEVERITY_COLORS.LOW;
 
   return (
@@ -42,7 +48,7 @@ export function FailureModeCard({ failureMode: fm }: Props) {
       <div className="flex items-center gap-3 pt-1 text-xs text-ink/25">
         {fm.assetTypes?.[0] && <span>{fm.assetTypes[0]}</span>}
         {fm.updatedAt && (
-          <span className="ml-auto">{new Date(fm.updatedAt).toLocaleDateString()}</span>
+          <span className="ml-auto">{formatDate(fm.updatedAt, locale)}</span>
         )}
       </div>
     </GlassCard>

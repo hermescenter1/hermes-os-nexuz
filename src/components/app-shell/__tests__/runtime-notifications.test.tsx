@@ -137,7 +137,14 @@ describe("AppNotificationCenter — Persian (RTL)", () => {
 describe("NotificationCenter — backward compatibility (public SiteHeader consumer)", () => {
   it("renders its original English defaults when no labels prop is given", async () => {
     stubNotificationFetch([]);
-    const { container, unmount } = await mount(<NotificationCenter />);
+    // 89B-FINAL: NotificationCenter now reads useLocale() for shared date
+    // formatting, so mounts need the intl provider its production consumers
+    // (locale layouts) always supply. The labels-default contract is unchanged.
+    const { container, unmount } = await mount(
+      <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
+        <NotificationCenter />
+      </NextIntlClientProvider>,
+    );
     expect(container.querySelector('[aria-label="Open notifications"]')).toBeTruthy();
     await click(container.querySelector("button"));
     await settle();
@@ -150,7 +157,14 @@ describe("NotificationCenter — backward compatibility (public SiteHeader consu
     const calls = stubNotificationFetch([
       { id: "a", type: "info", title: "T", message: "M", isRead: false, createdAt: new Date().toISOString() },
     ]);
-    const { container, unmount } = await mount(<NotificationCenter />);
+    // 89B-FINAL: NotificationCenter now reads useLocale() for shared date
+    // formatting, so mounts need the intl provider its production consumers
+    // (locale layouts) always supply. The labels-default contract is unchanged.
+    const { container, unmount } = await mount(
+      <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
+        <NotificationCenter />
+      </NextIntlClientProvider>,
+    );
     await settle();
     await click(container.querySelector("button")); // open
     await settle();

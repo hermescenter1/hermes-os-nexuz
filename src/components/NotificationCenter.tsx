@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Notification, NotificationType } from "@/lib/notifications/types";
+import { formatDate } from "@/lib/i18n/format";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -124,7 +126,7 @@ function TypeDot({ type, labels }: { type: NotificationType; labels: Notificatio
 
 // ─── Time formatting ─────────────────────────────────────────────────────────
 
-function timeAgo(isoDate: string, labels: NotificationCenterLabels): string {
+function timeAgo(isoDate: string, labels: NotificationCenterLabels, locale: string): string {
   const diff = Date.now() - new Date(isoDate).getTime();
   const mins  = Math.floor(diff / 60_000);
   const hours = Math.floor(diff / 3_600_000);
@@ -133,7 +135,7 @@ function timeAgo(isoDate: string, labels: NotificationCenterLabels): string {
   if (mins  < 60) return labels.minutesAgo.replace("{n}", String(mins));
   if (hours < 24) return labels.hoursAgo.replace("{n}", String(hours));
   if (days  < 7)  return labels.daysAgo.replace("{n}", String(days));
-  return new Date(isoDate).toLocaleDateString();
+  return formatDate(isoDate, locale);
 }
 
 // ─── Notification item ───────────────────────────────────────────────────────
@@ -149,6 +151,7 @@ function NotificationItem({
   onMarkRead:   (id: string) => void;
   onDelete:     (id: string) => void;
 }) {
+  const locale = useLocale();
   return (
     <li
       className={`group relative flex gap-3 border-b border-line/50 px-4 py-3 last:border-0 transition-colors hover:bg-muted/5 ${
@@ -165,7 +168,7 @@ function NotificationItem({
           {notification.message}
         </p>
         <p className="mt-1 text-[0.6rem] text-muted/60">
-          {timeAgo(notification.createdAt, labels)}
+          {timeAgo(notification.createdAt, labels, locale)}
         </p>
       </div>
 
@@ -204,6 +207,7 @@ export function NotificationCenter({
   /** Localized presentation labels; unspecified keys keep the English defaults. */
   labels?: Partial<NotificationCenterLabels>;
 } = {}) {
+  const locale = useLocale();
   const labels: NotificationCenterLabels = { ...NOTIFICATION_CENTER_DEFAULT_LABELS, ...labelOverrides };
   const [isOpen,         setIsOpen]         = useState(false);
   const [notifications,  setNotifications]  = useState<Notification[]>([]);

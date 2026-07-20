@@ -1,7 +1,8 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { MaintenanceDowntime } from "@/lib/cmms/types";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 
 const REASON_STYLE: Record<string, { bg: string; text: string }> = {
   PLANNED_MAINTENANCE: { bg: "bg-ice/[0.08]",    text: "text-ice"    },
@@ -14,6 +15,7 @@ const REASON_STYLE: Record<string, { bg: string; text: string }> = {
 };
 
 export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }) {
+  const locale = useLocale();
   const t              = useTranslations("maintenanceOperations");
   const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
   const totalMinutes   = downtime.reduce((s, d) => s + (d.durationMinutes ?? 0), 0);
@@ -28,7 +30,7 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
           { label: t("downtime.kpiTotal"),     value: `${Math.round(totalMinutes / 60)}h`,  ac: "text-ink",    b: "border-line"     },
           { label: t("downtime.kpiUnplanned"), value: `${Math.round(unplannedMin / 60)}h`, ac: "text-danger", b: "border-danger/30" },
           { label: t("downtime.kpiEvents"),    value: downtime.length,                      ac: "text-warn",   b: "border-warn/30"   },
-          { label: t("downtime.kpiLoss"),      value: `$${Math.round(totalLoss).toLocaleString()}`, ac: "text-warn", b: "border-warn/20" },
+          { label: t("downtime.kpiLoss"),      value: `$${formatNumber(Math.round(totalLoss), locale)}`, ac: "text-warn", b: "border-warn/20" },
         ].map(s => (
           <div key={s.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${s.b}`}>
             <div className={`text-2xl font-bold font-mono ${s.ac}`}>{s.value}</div>
@@ -64,7 +66,7 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
                     </span>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
-                    <span className="text-xs text-faint font-mono">{new Date(d.startedAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-faint font-mono">{formatDate(d.startedAt, locale)}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-xs font-mono font-medium text-warn">
@@ -78,7 +80,7 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell text-end">
                     <span className={`text-xs font-mono font-medium ${d.productionLoss ? "text-warn" : "text-faint"}`}>
-                      {d.productionLoss ? `$${d.productionLoss.toLocaleString()}` : "—"}
+                      {d.productionLoss ? `$${formatNumber(d.productionLoss, locale)}` : "—"}
                     </span>
                   </td>
                 </tr>

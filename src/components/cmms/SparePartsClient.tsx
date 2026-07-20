@@ -1,8 +1,10 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { MaintenanceSparePart } from "@/lib/cmms/types";
+import { formatNumber } from "@/lib/i18n/format";
 
 export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
+  const locale = useLocale();
   const t          = useTranslations("maintenanceOperations");
   const lowStock   = parts.filter(p => p.stockQty <= p.minStockQty);
   const outOfStock = parts.filter(p => p.stockQty === 0);
@@ -16,7 +18,7 @@ export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
           { label: t("spares.kpiTotal"),      value: parts.length,                                   ac: "text-ink",    b: "border-line"      },
           { label: t("spares.kpiOutOfStock"), value: outOfStock.length,                              ac: outOfStock.length > 0 ? "text-danger" : "text-signal",  b: outOfStock.length > 0 ? "border-danger/30" : "border-signal/20" },
           { label: t("spares.kpiLowStock"),   value: lowStock.length,                                ac: lowStock.length > 0 ? "text-warn" : "text-signal",      b: lowStock.length > 0 ? "border-warn/30" : "border-signal/20"   },
-          { label: t("spares.kpiValue"),      value: `$${Math.round(totalValue).toLocaleString()}`,   ac: "text-signal", b: "border-signal/20" },
+          { label: t("spares.kpiValue"),      value: `$${formatNumber(Math.round(totalValue), locale)}`,   ac: "text-signal", b: "border-signal/20" },
         ].map(s => (
           <div key={s.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${s.b}`}>
             <div className={`text-2xl font-bold font-mono ${s.ac}`}>{s.value}</div>

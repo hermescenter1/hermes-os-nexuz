@@ -1,4 +1,7 @@
 import { GlassCard }      from "@/components/ui/GlassCard";
+import { getLocale } from "next-intl/server";
+import { formatDate } from "@/lib/i18n/format";
+import { DEFAULT_LOCALE } from "@/i18n/locales";
 import type { ArticleRecord } from "@/lib/knowledge/types";
 
 interface Props { article: ArticleRecord }
@@ -9,7 +12,10 @@ const STATUS_COLORS: Record<string, string> = {
   published: "text-cyan-300  border-cyan-500/20",
 };
 
-export function ArticleCard({ article }: Props) {
+export async function ArticleCard({ article }: Props) {
+  let requestLocale: string = DEFAULT_LOCALE;
+  try { requestLocale = await getLocale(); } catch { /* header unavailable */ }
+  const locale = requestLocale;
   const statusCls = STATUS_COLORS[article.status] ?? STATUS_COLORS.draft;
 
   return (
@@ -34,7 +40,7 @@ export function ArticleCard({ article }: Props) {
         )}
         {article.updatedAt && (
           <span className="text-xs text-ink/20 ml-auto">
-            {new Date(article.updatedAt).toLocaleDateString()}
+            {formatDate(article.updatedAt, locale)}
           </span>
         )}
       </div>

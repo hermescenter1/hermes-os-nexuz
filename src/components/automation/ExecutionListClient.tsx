@@ -3,6 +3,7 @@
 import Link            from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowExecution } from "@/lib/automation/types";
+import { formatDateTime } from "@/lib/i18n/format";
 
 const STATUS_COLORS: Record<string, string> = {
   SUCCESS:   "bg-green-500/15 text-green-700 dark:text-green-400",
@@ -58,7 +59,7 @@ export function ExecutionListClient({ executions }: { executions: WorkflowExecut
                     {e.isSimulation ? t("executionList.typeSimulation") : t("executionList.typeLive")}
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {new Date(e.createdAt).toLocaleString()}
+                    {formatDateTime(e.createdAt, locale)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link href={`/${locale}/automation/executions/${e.id}`} className="text-xs text-primary hover:underline">

@@ -1,8 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useEffect, useState } from "react";
 import { Link }                from "@/i18n/navigation";
 import type { CustomerProject, Milestone } from "@/lib/customer-portal/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE:    "border-signal/30 bg-signal/10 text-signal",
@@ -12,6 +14,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function CustomerProjectDetailClient({ projectId }: { projectId: string }) {
+  const locale = useLocale();
   const [project, setProject] = useState<CustomerProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -66,8 +69,8 @@ export function CustomerProjectDetailClient({ projectId }: { projectId: string }
         <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
           <div><p className="text-xs text-faint">Manager</p><p className="text-ink">{project.managerName ?? "—"}</p></div>
           <div><p className="text-xs text-faint">Priority</p><p className="text-ink">{project.priority}</p></div>
-          <div><p className="text-xs text-faint">Start Date</p><p className="text-ink">{project.startDate ? new Date(project.startDate).toLocaleDateString() : "—"}</p></div>
-          <div><p className="text-xs text-faint">End Date</p><p className="text-ink">{project.endDate ? new Date(project.endDate).toLocaleDateString() : "—"}</p></div>
+          <div><p className="text-xs text-faint">Start Date</p><p className="text-ink">{project.startDate ? formatDate(project.startDate, locale) : "—"}</p></div>
+          <div><p className="text-xs text-faint">End Date</p><p className="text-ink">{project.endDate ? formatDate(project.endDate, locale) : "—"}</p></div>
         </div>
       </div>
 
@@ -102,7 +105,7 @@ export function CustomerProjectDetailClient({ projectId }: { projectId: string }
                   </div>
                 </div>
                 {ms.dueDate && (
-                  <span className="shrink-0 text-xs text-faint">{new Date(ms.dueDate).toLocaleDateString()}</span>
+                  <span className="shrink-0 text-xs text-faint">{formatDate(ms.dueDate, locale)}</span>
                 )}
               </li>
             ))}

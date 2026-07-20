@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { RegistryAssetRecord, AssetMaintenanceLink } from "@/lib/assets/types";
+import { formatDate } from "@/lib/i18n/format";
 
 function linkTypeBadge(t: string) {
   if (t === "CORRECTIVE_WORK_ORDER") return "bg-danger/[0.10] text-danger";
@@ -67,7 +68,7 @@ export function AssetMaintenanceClient({ assets }: Props) {
                       )}
                       {lnk.notes && <p className="text-xs text-muted mt-0.5">{lnk.notes}</p>}
                     </div>
-                    <p className="text-xs text-faint shrink-0">{new Date(lnk.linkedAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-faint shrink-0">{formatDate(lnk.linkedAt, locale)}</p>
                   </div>
                 ))}
               </div>

@@ -1,7 +1,8 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { MaintenanceTask } from "@/lib/cmms/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
   DRAFT:       { bg: "bg-faint/[0.08]",  text: "text-faint"  },
@@ -26,6 +27,7 @@ export function MaintenanceTasksClient({
   tasks,
   title,
 }: { tasks: MaintenanceTask[]; title?: string }) {
+  const locale = useLocale();
   const t = useTranslations("maintenanceOperations");
   const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
   const heading = title ?? t("tasks.defaultHeading");
@@ -82,7 +84,7 @@ export function MaintenanceTasksClient({
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <span className="text-xs text-faint font-mono">
-                        {task.scheduledDate ? new Date(task.scheduledDate).toLocaleDateString() : "—"}
+                        {task.scheduledDate ? formatDate(task.scheduledDate, locale) : "—"}
                       </span>
                     </td>
                     <td className="px-4 py-3 hidden xl:table-cell text-end">

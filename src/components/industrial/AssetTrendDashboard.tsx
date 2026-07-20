@@ -1,6 +1,8 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect } from "react";
+import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 interface Snapshot {
   id:             string;
@@ -86,6 +88,7 @@ interface AssetTrendDashboardProps {
 }
 
 export function AssetTrendDashboard({ assetId }: AssetTrendDashboardProps) {
+  const locale = useLocale();
   const [data,    setData]    = useState<TrendData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -179,8 +182,8 @@ export function AssetTrendDashboard({ assetId }: AssetTrendDashboardProps) {
           <p className="font-mono text-xs uppercase tracking-widest text-muted mb-3">Risk Score Trend</p>
           <MiniLine data={riskPts} color={riskColor} />
           <div className="mt-2 flex justify-between font-mono text-[0.6rem] text-muted/50">
-            <span>{new Date(data.riskHistory[data.riskHistory.length - 1]?.createdAt).toLocaleDateString()}</span>
-            <span>{new Date(data.riskHistory[0]?.createdAt).toLocaleDateString()}</span>
+            <span>{formatDate(data.riskHistory[data.riskHistory.length - 1]?.createdAt, locale)}</span>
+            <span>{formatDate(data.riskHistory[0]?.createdAt, locale)}</span>
           </div>
         </div>
       )}
@@ -191,8 +194,8 @@ export function AssetTrendDashboard({ assetId }: AssetTrendDashboardProps) {
           <p className="font-mono text-xs uppercase tracking-widest text-muted mb-3">Health Score Trend</p>
           <MiniLine data={healthPts} color={healthColor} />
           <div className="mt-2 flex justify-between font-mono text-[0.6rem] text-muted/50">
-            <span>{new Date(data.healthHistory[data.healthHistory.length - 1]?.createdAt).toLocaleDateString()}</span>
-            <span>{new Date(data.healthHistory[0]?.createdAt).toLocaleDateString()}</span>
+            <span>{formatDate(data.healthHistory[data.healthHistory.length - 1]?.createdAt, locale)}</span>
+            <span>{formatDate(data.healthHistory[0]?.createdAt, locale)}</span>
           </div>
         </div>
       )}
@@ -225,7 +228,7 @@ export function AssetTrendDashboard({ assetId }: AssetTrendDashboardProps) {
                 return (
                   <tr key={s.id} className="border-b border-line/40 hover:bg-white/[0.02]">
                     <td className="px-4 py-2 font-mono text-muted/70 whitespace-nowrap">
-                      {new Date(s.createdAt).toLocaleString()}
+                      {formatDateTime(s.createdAt, locale)}
                     </td>
                     <td className="px-4 py-2 font-mono font-bold" style={{ color: rc }}>
                       {s.riskScore !== null ? Math.round(s.riskScore) : "—"}

@@ -1,4 +1,5 @@
 import { notFound }        from "next/navigation";
+import { formatDate } from "@/lib/i18n/format";
 import Link                from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getProjectById }  from "@/lib/erp/db";
@@ -7,9 +8,9 @@ import { noIndexMetadata } from "@/lib/seo/metadata";
 export const metadata = noIndexMetadata("Milestones");
 export const dynamic  = "force-dynamic";
 
-export default async function MilestonesPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MilestonesPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const t       = await getTranslations("enterpriseOperations");
-  const { id }  = await params;
+  const { locale, id }  = await params;
   const project = await getProjectById(id);
   if (!project) notFound();
 
@@ -28,7 +29,7 @@ export default async function MilestonesPage({ params }: { params: Promise<{ id:
               {m.description && <div className="text-xs text-muted-foreground mt-0.5">{m.description}</div>}
             </div>
             <div className="text-xs text-muted-foreground shrink-0 ml-4">
-              {m.dueDate ? new Date(m.dueDate).toLocaleDateString() : "—"}
+              {m.dueDate ? formatDate(m.dueDate, locale) : "—"}
               {m.completedAt && <span className="ml-2 text-green-400">{t("projects.milestoneDone")}</span>}
             </div>
           </div>

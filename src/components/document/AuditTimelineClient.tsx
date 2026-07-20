@@ -1,6 +1,8 @@
 "use client";
-import { usePathname } from "next/navigation";
+
+import { useLocale } from "next-intl";import { usePathname } from "next/navigation";
 import type { EdmsAudit } from "@/lib/document/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const ACTION_CONFIG: Record<string, { dot: string; label_color: string; bg: string }> = {
   CREATE:   { dot: "bg-signal",  label_color: "text-signal",  bg: "bg-signal/[0.08]"  },
@@ -16,6 +18,7 @@ const ACTION_CONFIG: Record<string, { dot: string; label_color: string; bg: stri
 interface Props { entries: EdmsAudit[] }
 
 export function AuditTimelineClient({ entries }: Props) {
+  const locale = useLocale();
   const pathname = usePathname();
   const isFa     = pathname.startsWith("/fa");
 
@@ -61,7 +64,7 @@ export function AuditTimelineClient({ entries }: Props) {
                         )}
                       </div>
                       <span className="text-xs text-faint shrink-0 font-mono">
-                        {new Date(entry.createdAt).toLocaleDateString()}
+                        {formatDate(entry.createdAt, locale)}
                       </span>
                     </div>
                     <p className="text-xs text-faint mt-1.5 font-mono">

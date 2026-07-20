@@ -3,6 +3,7 @@
 import Link            from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowDefinition } from "@/lib/automation/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_BADGE: Record<string, string> = {
   ACTIVE:   "bg-green-500/15 text-green-700 dark:text-green-400",
@@ -71,7 +72,7 @@ export function WorkflowListClient({ workflows }: { workflows: WorkflowDefinitio
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {new Date(wf.updatedAt).toLocaleDateString()}
+                    {formatDate(wf.updatedAt, locale)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center gap-2 justify-end">

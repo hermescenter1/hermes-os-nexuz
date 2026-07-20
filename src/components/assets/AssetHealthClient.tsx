@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { RegistryAssetRecord, AssetHealthSnapshot } from "@/lib/assets/types";
+import { formatDate } from "@/lib/i18n/format";
 
 function riskBadge(r: string) {
   if (r === "HEALTHY")  return "bg-signal/[0.08] text-signal";
@@ -107,7 +108,7 @@ export function AssetHealthClient({ assets }: Props) {
                 <p className="text-xs text-faint mt-3 border-t border-line pt-3">{latestSnap.notes}</p>
               )}
               {latestSnap && (
-                <p className="text-xs text-faint/60 mt-2">{t("health.recorded")}: {new Date(latestSnap.takenAt).toLocaleDateString()}</p>
+                <p className="text-xs text-faint/60 mt-2">{t("health.recorded")}: {formatDate(latestSnap.takenAt, locale)}</p>
               )}
               {!latestSnap && (
                 <p className="text-xs text-faint italic">{t("health.noHealthData")}</p>

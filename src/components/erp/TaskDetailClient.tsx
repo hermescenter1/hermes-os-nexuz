@@ -3,6 +3,7 @@
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ErpTask } from "@/lib/erp/types";
+import { formatDate } from "@/lib/i18n/format";
 
 export function TaskDetailClient({ task }: { task: ErpTask & { comments?: unknown[] } }) {
   const locale = useLocale();
@@ -21,7 +22,7 @@ export function TaskDetailClient({ task }: { task: ErpTask & { comments?: unknow
 
       <div className="grid grid-cols-2 gap-4">
         {[
-          { label: t("tasks.dueDate"),        value: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "—" },
+          { label: t("tasks.dueDate"),        value: task.dueDate ? formatDate(task.dueDate, locale) : "—" },
           { label: t("tasks.estimatedHours"), value: task.estimatedHours ? `${task.estimatedHours}h` : "—" },
           { label: t("tasks.actualHours"),    value: task.actualHours   ? `${task.actualHours}h`    : "—" },
           { label: t("tasks.priority"),       value: task.priority },

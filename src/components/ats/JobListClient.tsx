@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect } from "react";
 import type { Job, JobStatus }  from "@/lib/ats/types";
+import { formatNumber } from "@/lib/i18n/format";
 
 interface JobsResponse { jobs: Job[]; total: number }
 
@@ -20,6 +22,7 @@ const CONTRACT_LABEL: Record<string, string> = {
 };
 
 export function JobListClient() {
+  const locale = useLocale();
   const [data,     setData]     = useState<JobsResponse | null>(null);
   const [loading,  setLoading]  = useState(true);
   const [filter,   setFilter]   = useState<JobStatus | "all">("all");
@@ -97,7 +100,7 @@ export function JobListClient() {
                     </div>
                     <div>
                       <p className="intel-kpi-value text-ink">
-                        {job.salaryMin.toLocaleString()}–{job.salaryMax.toLocaleString()}
+                        {formatNumber(job.salaryMin, locale)}–{formatNumber(job.salaryMax, locale)}
                       </p>
                       <p className="kpi-label">{job.currency}</p>
                     </div>

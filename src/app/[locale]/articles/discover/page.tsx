@@ -1,5 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { formatDate } from "@/lib/i18n/format";
 import {
   getAllCategories,
   getAllTags,
@@ -45,13 +46,9 @@ function fmtNum(n: number) {
   return String(n);
 }
 
-function fmtDate(d: string | null | undefined, isFa = false) {
+function fmtDate(d: string | null | undefined, locale = "en") {
   if (!d) return "—";
-  try {
-    return new Date(d).toLocaleDateString(isFa ? "fa-IR" : "en-US", {
-      year: "numeric", month: "short", day: "numeric",
-    });
-  } catch { return d.slice(0, 10); }
+  return formatDate(d, locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
 // Enum values for the content-type filter; labels come from journal.discover.type.*
@@ -125,7 +122,7 @@ async function ArticleCard({ article, isFa, locale }: {
           </Link>
         </div>
         <span className="text-[10px] text-faint font-mono">
-          {article.publishedAt ? fmtDate(article.publishedAt, isFa) : ""}
+          {article.publishedAt ? fmtDate(article.publishedAt, locale) : ""}
         </span>
       </div>
     </article>
@@ -185,7 +182,7 @@ async function ExpertCard({ expert, isFa, locale }: {
           {expert.latestPublishedAt && (
             <>
               <span className="text-line">·</span>
-              <span>{fmtDate(expert.latestPublishedAt, isFa)}</span>
+              <span>{fmtDate(expert.latestPublishedAt, locale)}</span>
             </>
           )}
         </div>

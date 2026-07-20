@@ -1,6 +1,7 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { MaintenanceCost } from "@/lib/cmms/types";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 
 const CAT_STYLE: Record<string, { color: string; border: string }> = {
   LABOR:      { color: "text-ice",    border: "border-ice/20"    },
@@ -10,6 +11,7 @@ const CAT_STYLE: Record<string, { color: string; border: string }> = {
 };
 
 export function CostDashboardClient({ costs, total }: { costs: MaintenanceCost[]; total: number }) {
+  const locale = useLocale();
   const t = useTranslations("maintenanceOperations");
 
   const byCategory: Record<string, number> = {};
@@ -22,14 +24,14 @@ export function CostDashboardClient({ costs, total }: { costs: MaintenanceCost[]
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="card-enterprise rounded-xl p-4 border-s-2 border-signal/30">
-          <div className="text-2xl font-bold font-mono text-signal">${Math.round(total).toLocaleString()}</div>
+          <div className="text-2xl font-bold font-mono text-signal">${formatNumber(Math.round(total), locale)}</div>
           <div className="text-xs text-muted mt-1.5">{t("costs.totalCost")}</div>
         </div>
         {Object.entries(byCategory).map(([cat, amt]) => {
           const s = CAT_STYLE[cat] ?? { color: "text-muted", border: "border-line" };
           return (
             <div key={cat} className={`card-enterprise rounded-xl p-4 border-s-2 ${s.border}`}>
-              <div className={`text-2xl font-bold font-mono ${s.color}`}>${Math.round(amt).toLocaleString()}</div>
+              <div className={`text-2xl font-bold font-mono ${s.color}`}>${formatNumber(Math.round(amt), locale)}</div>
               <div className="text-xs text-muted mt-1.5">{cat}</div>
             </div>
           );
@@ -66,13 +68,13 @@ export function CostDashboardClient({ costs, total }: { costs: MaintenanceCost[]
                     <span className="text-xs text-muted truncate block">{c.description}</span>
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell">
-                    <span className="text-xs text-faint font-mono">{new Date(c.date).toLocaleDateString()}</span>
+                    <span className="text-xs text-faint font-mono">{formatDate(c.date, locale)}</span>
                   </td>
                   <td className="px-4 py-3 hidden xl:table-cell">
                     <span className="text-xs text-faint">{c.invoiceRef ?? "—"}</span>
                   </td>
                   <td className="px-4 py-3 text-end">
-                    <span className="text-xs font-mono font-semibold text-ink">${c.amount.toLocaleString()}</span>
+                    <span className="text-xs font-mono font-semibold text-ink">${formatNumber(c.amount, locale)}</span>
                   </td>
                 </tr>
               );
@@ -82,7 +84,7 @@ export function CostDashboardClient({ costs, total }: { costs: MaintenanceCost[]
                 {t("costs.total")}
               </td>
               <td className="px-4 py-3 text-end">
-                <span className="text-sm font-bold font-mono text-signal">${Math.round(total).toLocaleString()}</span>
+                <span className="text-sm font-bold font-mono text-signal">${formatNumber(Math.round(total), locale)}</span>
               </td>
             </tr>
           </tbody>

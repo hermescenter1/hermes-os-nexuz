@@ -8,6 +8,7 @@ import type {
   AssetLifecycleEvent, AssetMaintenanceLink, AssetDocumentLink,
   AssetTelemetryLink, AssetTag,
 } from "@/lib/assets/types";
+import { formatDate } from "@/lib/i18n/format";
 
 type FullAsset = RegistryAssetRecord & {
   criticalities:   AssetCriticalityAssessment[];
@@ -133,11 +134,11 @@ export function AssetDetailClient({ asset }: Props) {
             <InfoRow label={t("detail.firmware")} value={asset.firmwareVersion} />
             <InfoRow label={t("detail.location")} value={asset.location?.name} />
             <InfoRow label={t("detail.installationDate")}
-              value={asset.installationDate ? new Date(asset.installationDate).toLocaleDateString() : null} />
+              value={asset.installationDate ? formatDate(asset.installationDate, locale) : null} />
             <InfoRow label={t("detail.commissionDate")}
-              value={asset.commissionDate ? new Date(asset.commissionDate).toLocaleDateString() : null} />
+              value={asset.commissionDate ? formatDate(asset.commissionDate, locale) : null} />
             <InfoRow label={t("detail.warrantyExpiry")}
-              value={asset.warrantyExpiry ? new Date(asset.warrantyExpiry).toLocaleDateString() : null} />
+              value={asset.warrantyExpiry ? formatDate(asset.warrantyExpiry, locale) : null} />
             <InfoRow label={t("detail.expectedLife")}
               value={asset.expectedLifeYears ? `${asset.expectedLifeYears} ${t("detail.years")}` : null} />
             <InfoRow label={t("detail.lifecycleState")} value={enumLabel(tAm, "lifecycle", asset.lifecycleState)} />
@@ -189,7 +190,7 @@ export function AssetDetailClient({ asset }: Props) {
                 )}
               </div>
               {latestHealth.notes && <p className="text-xs text-faint border-t border-line pt-3">{latestHealth.notes}</p>}
-              <p className="text-xs text-faint/60">{new Date(latestHealth.takenAt).toLocaleDateString()}</p>
+              <p className="text-xs text-faint/60">{formatDate(latestHealth.takenAt, locale)}</p>
             </div>
           ) : (
             <p className="text-muted text-sm">{t("detail.noHealthSnapshots")}</p>
@@ -225,7 +226,7 @@ export function AssetDetailClient({ asset }: Props) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-ink">{enumLabel(t, "enums.eventType", ev.eventType)}</span>
-                    <span className="text-xs text-faint">{new Date(ev.occurredAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-faint">{formatDate(ev.occurredAt, locale)}</span>
                   </div>
                   {ev.notes && <p className="text-xs text-muted mt-0.5">{ev.notes}</p>}
                 </div>

@@ -1,8 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useEffect, useState } from "react";
 import { Link }                from "@/i18n/navigation";
 import type { CustomerOverview } from "@/lib/customer-portal/types";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 
 function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -15,6 +17,7 @@ function KpiCard({ label, value, sub }: { label: string; value: string | number;
 }
 
 export function CustomerOverviewClient() {
+  const locale = useLocale();
   const [data, setData]       = useState<CustomerOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [noAccount, setNoAccount] = useState(false);
@@ -115,7 +118,7 @@ export function CustomerOverviewClient() {
             </div>
             <div>
               <p className="text-faint text-xs">API Calls</p>
-              <p className="text-ink font-medium">{subscription.apiCallsMonth.toLocaleString()} / {subscription.apiCallsLimit.toLocaleString()}</p>
+              <p className="text-ink font-medium">{formatNumber(subscription.apiCallsMonth, locale)} / {formatNumber(subscription.apiCallsLimit, locale)}</p>
             </div>
           </div>
           <Link href="/customer/subscription" className="mt-4 inline-block text-sm text-signal hover:underline">
@@ -158,7 +161,7 @@ export function CustomerOverviewClient() {
               <li key={log.id} className="px-6 py-3 flex items-center justify-between gap-4">
                 <span className="text-sm text-ink">{log.description}</span>
                 <span className="shrink-0 text-xs text-faint">
-                  {new Date(log.createdAt).toLocaleDateString()}
+                  {formatDate(log.createdAt, locale)}
                 </span>
               </li>
             ))}

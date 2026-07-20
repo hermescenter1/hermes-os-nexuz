@@ -6,8 +6,9 @@
  */
 
 import { useState }        from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { GlassCard }       from "@/components/ui/GlassCard";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface PathResult {
   fromId:    string;
@@ -35,6 +36,7 @@ const EDGE_COLORS: Record<string, string> = {
 };
 
 export default function PathsPage() {
+  const locale = useLocale();
   const t = useTranslations("knowledgeGraph");
   const [fromId,  setFromId]  = useState("");
   const [toId,    setToId]    = useState("");
@@ -127,7 +129,7 @@ export default function PathsPage() {
                     <p className="text-white font-semibold">{t("pathFound")}</p>
                     <p className="text-white/40 text-xs mt-0.5">{data.path.length - 1} {t("hops")} · {t("totalCost")}: {data.totalCost.toFixed(3)}</p>
                   </div>
-                  <span className="ml-auto text-xs text-white/30 font-mono">{t("lastBuilt")}: {data.staleness.lastBuiltAt ? new Date(data.staleness.lastBuiltAt).toLocaleString() : "—"}</span>
+                  <span className="ml-auto text-xs text-white/30 font-mono">{t("lastBuilt")}: {data.staleness.lastBuiltAt ? formatDateTime(data.staleness.lastBuiltAt, locale) : "—"}</span>
                 </div>
               </GlassCard>
 

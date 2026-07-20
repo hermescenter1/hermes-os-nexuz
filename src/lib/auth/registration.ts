@@ -23,6 +23,7 @@ export async function registerUser(
   email:    string,
   password: string,
   baseUrl:  string,
+  locale?:  string,
 ): Promise<RegisterResult> {
   const db = await getPrisma();
   if (!db) return { ok: false, error: "db-unavailable" };
@@ -65,6 +66,7 @@ export async function registerUser(
       name,
       verificationToken: token,
       baseUrl,
+      locale,
     });
 
     await recordAuditEvent({

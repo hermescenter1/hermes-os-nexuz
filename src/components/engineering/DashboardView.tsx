@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useQuery }              from "@tanstack/react-query";
 import { AnimatedSection }       from "@/components/ui/AnimatedSection";
 import { MetricGrid }            from "./widgets/MetricGrid";
@@ -9,6 +10,7 @@ import { DomainHealthPanel }     from "./widgets/DomainHealthPanel";
 import { BenchmarkPanel }        from "./widgets/BenchmarkPanel";
 import { GraphHealthPanel }      from "./widgets/GraphHealthPanel";
 import { AgentSummaryPanel }     from "./widgets/AgentSummaryPanel";
+import { formatDateTime } from "@/lib/i18n/format";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -20,6 +22,7 @@ interface DashboardMeta {
 // ── View ──────────────────────────────────────────────────────────────────
 
 export function DashboardView() {
+  const locale = useLocale();
   const { data } = useQuery<DashboardMeta>({
     queryKey: ["dashboard"],
     queryFn:  async () => {
@@ -39,7 +42,7 @@ export function DashboardView() {
           <h1 className="text-xl font-bold text-ink font-display">Executive Dashboard</h1>
           <p className="text-xs text-muted mt-0.5" suppressHydrationWarning>
             {data?.generatedAt
-              ? `Last updated ${new Date(data.generatedAt).toLocaleString()}`
+              ? `Last updated ${formatDateTime(data.generatedAt, locale)}`
               : "Loading system metrics…"}
             {data?.storageMode && (
               <span className="ms-2 text-[10px] font-mono uppercase tracking-widest text-signal/60">

@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect } from "react";
 import { Link }                 from "@/i18n/navigation";
+import { formatDate } from "@/lib/i18n/format";
 
 interface CertData {
   certificate: {
@@ -24,6 +26,7 @@ interface CertData {
 }
 
 export function CertificateViewClient({ token }: { token: string }) {
+  const locale = useLocale();
   const [data, setData]     = useState<CertData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState("");
@@ -56,9 +59,7 @@ export function CertificateViewClient({ token }: { token: string }) {
 
   const cert   = data.certificate;
   const course = data.course;
-  const issued = new Date(cert.issuedAt).toLocaleDateString("en-US", {
-    year: "numeric", month: "long", day: "numeric",
-  });
+  const issued = formatDate(cert.issuedAt, locale, { year: "numeric", month: "long", day: "numeric" });
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12">
@@ -127,7 +128,7 @@ export function CertificateViewClient({ token }: { token: string }) {
           {cert.expiresAt && (
             <div className="text-right">
               <p className="text-[10px] text-muted font-mono">Expires</p>
-              <p className="text-[10px] text-ink">{new Date(cert.expiresAt).toLocaleDateString()}</p>
+              <p className="text-[10px] text-ink">{formatDate(cert.expiresAt, locale)}</p>
             </div>
           )}
         </div>

@@ -1,6 +1,8 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect, useCallback } from "react";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface MaintenanceRec {
   id:                 string;
@@ -37,6 +39,7 @@ function RecCard({
   rec: MaintenanceRec;
   onDismiss: (id: string) => void;
 }) {
+  const locale = useLocale();
   const color = PRIORITY_COLOR[rec.priority] ?? "var(--signal)";
   return (
     <div
@@ -62,7 +65,7 @@ function RecCard({
           <p className="text-sm font-semibold text-ink">{rec.title}</p>
           <p className="mt-1 text-xs text-muted leading-relaxed">{rec.description}</p>
           <p className="mt-2 font-mono text-[0.6rem] text-muted/40">
-            Generated {new Date(rec.createdAt).toLocaleString()}
+            Generated {formatDateTime(rec.createdAt, locale)}
           </p>
         </div>
         {!rec.dismissed && (
@@ -83,6 +86,7 @@ interface AssetMaintenanceBoardProps {
 }
 
 export function AssetMaintenanceBoard({ assetId }: AssetMaintenanceBoardProps) {
+  const locale = useLocale();
   const [recs,    setRecs]    = useState<MaintenanceRec[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);

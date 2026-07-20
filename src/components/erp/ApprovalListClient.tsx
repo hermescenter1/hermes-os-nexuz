@@ -1,8 +1,9 @@
 "use client";
 
 import { useState }        from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { ErpApprovalRequestFull } from "@/lib/erp/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_COLOR: Record<string, string> = {
   PENDING:   "bg-yellow-500/15 text-yellow-400",
@@ -12,6 +13,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function ApprovalListClient({ approvals: initial }: { approvals: ErpApprovalRequestFull[] }) {
+  const locale = useLocale();
   const t = useTranslations("enterpriseOperations");
   const [approvals, setApprovals] = useState(initial);
 
@@ -36,7 +38,7 @@ export function ApprovalListClient({ approvals: initial }: { approvals: ErpAppro
               <div className="font-medium">{apr.title}</div>
               {apr.description && <div className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{apr.description}</div>}
               <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                <span>{new Date(apr.createdAt).toLocaleDateString()}</span>
+                <span>{formatDate(apr.createdAt, locale)}</span>
               </div>
             </div>
             <div className="flex flex-col items-end gap-2 shrink-0">

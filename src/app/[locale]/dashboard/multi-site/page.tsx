@@ -7,9 +7,10 @@
  */
 
 import { useState, useEffect } from "react";
-import { useTranslations }     from "next-intl";
+import { useTranslations, useLocale }     from "next-intl";
 import { GlassCard }           from "@/components/ui/GlassCard";
 import Link                    from "next/link";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface EnterpriseSummary {
   organizationId:     string;
@@ -46,6 +47,7 @@ function StatCard({ label, value, sub, accent }: {
 }
 
 export default function MultiSiteSummaryPage() {
+  const locale = useLocale();
   const t = useTranslations("multiSite");
   const [data,    setData]    = useState<EnterpriseSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,7 +154,7 @@ export default function MultiSiteSummaryPage() {
 
           {data.latestBenchmarkAt && (
             <p className="text-xs text-white/30 text-right">
-              {t("dataFreshness")}: {new Date(data.latestBenchmarkAt).toLocaleString()}
+              {t("dataFreshness")}: {formatDateTime(data.latestBenchmarkAt, locale)}
             </p>
           )}
         </>

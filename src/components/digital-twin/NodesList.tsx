@@ -1,8 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { GlassCard }      from "@/components/ui/GlassCard";
 import type { TwinNodeRecord } from "@/lib/digital-twin/types";
+import { formatDate } from "@/lib/i18n/format";
 
 interface Props {
   nodes: TwinNodeRecord[];
@@ -18,6 +19,7 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export default function NodesList({ nodes }: Props) {
+  const locale = useLocale();
   const t = useTranslations("digitalTwin");
 
   if (nodes.length === 0) {
@@ -49,7 +51,7 @@ export default function NodesList({ nodes }: Props) {
                 </td>
                 <td className="py-2 pr-4 text-ink/50 font-mono text-xs">{n.assetId ?? "—"}</td>
                 <td className="py-2 text-ink/40 text-xs">
-                  {new Date(n.createdAt).toLocaleDateString()}
+                  {formatDate(n.createdAt, locale)}
                 </td>
               </tr>
             ))}

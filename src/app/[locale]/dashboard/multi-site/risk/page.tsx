@@ -7,9 +7,10 @@
  */
 
 import { useState, useEffect } from "react";
-import { useTranslations }     from "next-intl";
+import { useTranslations, useLocale }     from "next-intl";
 import { GlassCard }           from "@/components/ui/GlassCard";
 import Link                    from "next/link";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface SiteRisk {
   id:               string;
@@ -43,6 +44,7 @@ function riskColor(score: number | null): string {
 }
 
 export default function SiteRiskPage() {
+  const locale = useLocale();
   const t = useTranslations("multiSite");
   const [data,    setData]    = useState<RiskResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,7 +165,7 @@ export default function SiteRiskPage() {
           </GlassCard>
 
           <p className="text-xs text-white/30 text-right">
-            {t("dataFreshness")}: {new Date(data.computedAt).toLocaleString()}
+            {t("dataFreshness")}: {formatDateTime(data.computedAt, locale)}
           </p>
         </>
       )}

@@ -589,13 +589,13 @@ describe("Teams/Resources/Work Orders behavior & raw values preserved", () => {
     }
   });
 
-  it("date formatting is retained (toLocaleDateString, unchanged behavior)", () => {
+  it("date formatting is locale-aware via the shared formatter (89B-FINAL)", () => {
     expect(read("src/components/erp/WorkOrderListClient.tsx")).toContain(
-      "new Date(wo.dueDate).toLocaleDateString()",
+      "formatDate(wo.dueDate, locale)",
     );
     const detail = read("src/components/erp/WorkOrderDetailClient.tsx");
-    expect(detail).toContain("new Date(wo.dueDate).toLocaleDateString()");
-    expect(detail).toContain("new Date(a.createdAt).toLocaleDateString()");
+    expect(detail).toContain("formatDate(wo.dueDate, locale)");
+    expect(detail).toContain("formatDate(a.createdAt, locale)");
   });
 
   it("persisted runtime content is still rendered as raw data", () => {

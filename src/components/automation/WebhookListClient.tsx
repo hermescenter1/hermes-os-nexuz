@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter }  from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { WorkflowWebhookEndpoint } from "@/lib/automation/types";
+import { formatDateTime } from "@/lib/i18n/format";
 
 export function WebhookListClient({ webhooks }: { webhooks: WorkflowWebhookEndpoint[] }) {
+  const locale = useLocale();
   const router   = useRouter();
   const t        = useTranslations("automationOperations");
   const [pending, startTransition] = useTransition();
@@ -103,7 +105,7 @@ export function WebhookListClient({ webhooks }: { webhooks: WorkflowWebhookEndpo
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{wh.failureCount}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {wh.lastDeliveredAt ? new Date(wh.lastDeliveredAt).toLocaleString() : t("webhooks.never")}
+                    {wh.lastDeliveredAt ? formatDateTime(wh.lastDeliveredAt, locale) : t("webhooks.never")}
                   </td>
                 </tr>
               ))

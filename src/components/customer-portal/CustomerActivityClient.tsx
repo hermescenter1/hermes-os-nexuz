@@ -1,7 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
+
 import { useEffect, useState } from "react";
 import type { CustomerActivityLog } from "@/lib/customer-portal/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const EVENT_ICONS: Record<string, string> = {
   customer_portal_view:             "⬡",
@@ -15,6 +18,7 @@ const EVENT_ICONS: Record<string, string> = {
 };
 
 export function CustomerActivityClient() {
+  const locale = useLocale();
   const [activity, setActivity] = useState<CustomerActivityLog[]>([]);
   const [loading, setLoading]   = useState(true);
   const [noAccount, setNoAccount] = useState(false);
@@ -59,7 +63,7 @@ export function CustomerActivityClient() {
 
   // Group by date
   const groups = activity.reduce<Record<string, CustomerActivityLog[]>>((acc, log) => {
-    const date = new Date(log.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    const date = formatDate(log.createdAt, locale, { year: "numeric", month: "long", day: "numeric" });
     (acc[date] ??= []).push(log);
     return acc;
   }, {});
@@ -80,7 +84,7 @@ export function CustomerActivityClient() {
                   <p className="text-xs text-faint font-mono">{log.eventType}</p>
                 </div>
                 <span className="shrink-0 text-xs text-faint">
-                  {new Date(log.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                  {formatDate(log.createdAt, locale, { hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
             ))}

@@ -3,6 +3,7 @@
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ErpProjectFull } from "@/lib/erp/types";
+import { formatDate } from "@/lib/i18n/format";
 
 export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
   const locale = useLocale();
@@ -58,7 +59,7 @@ export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
             {project.milestones.map(m => (
               <div key={m.id} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
                 <span className={m.completedAt ? "line-through text-muted-foreground" : ""}>{m.name}</span>
-                <span className="text-muted-foreground">{m.dueDate ? new Date(m.dueDate).toLocaleDateString() : "—"}</span>
+                <span className="text-muted-foreground">{m.dueDate ? formatDate(m.dueDate, locale) : "—"}</span>
               </div>
             ))}
           </div>

@@ -1,4 +1,5 @@
 import { notFound }              from "next/navigation";
+import { formatDate } from "@/lib/i18n/format";
 import { getPlanById, getTasks } from "@/lib/cmms/db";
 import { MaintenanceTasksClient } from "@/components/cmms/MaintenanceTasksClient";
 import { getTranslations }  from "next-intl/server";
@@ -12,9 +13,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return noIndexMetadata(plan?.name ?? "Plan Detail");
 }
 
-export default async function PlanDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PlanDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const t = await getTranslations("maintenanceOperations");
-  const { id } = await params;
+  const { locale, id } = await params;
   const [plan, tasks] = await Promise.all([getPlanById(id), getTasks(undefined, undefined, undefined, undefined)]);
   if (!plan) return notFound();
 
@@ -44,7 +45,7 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
       {plan.nextDueAt && (
         <div className={`rounded-xl border p-4 ${new Date(plan.nextDueAt) < new Date() ? "border-red-500/30 bg-red-500/5" : "border-green-500/30 bg-green-500/5"}`}>
           <span className="text-sm">
-            {t("pages.planDetail.nextDue")} <strong>{new Date(plan.nextDueAt).toLocaleDateString()}</strong>
+            {t("pages.planDetail.nextDue")} <strong>{formatDate(plan.nextDueAt, locale)}</strong>
           </span>
         </div>
       )}

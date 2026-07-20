@@ -1,7 +1,8 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { enumLabel } from "@/lib/i18n/enum-label";
 import type { MaintenanceHistory } from "@/lib/cmms/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const ACTION_COLOR: Record<string, string> = {
   TASK_CREATED:     "text-signal",
@@ -28,6 +29,7 @@ const ACTION_DOT: Record<string, string> = {
 };
 
 export function HistoryClient({ history }: { history: MaintenanceHistory[] }) {
+  const locale = useLocale();
   const t = useTranslations("maintenanceOperations");
   const tAm = useTranslations("assetMaintenance"); // 87L.5: localized status labels
 
@@ -63,8 +65,8 @@ export function HistoryClient({ history }: { history: MaintenanceHistory[] }) {
                       )}
                     </div>
                     <div className="text-end shrink-0">
-                      <p className="text-xs font-mono text-faint">{new Date(h.createdAt).toLocaleDateString()}</p>
-                      <p className="text-xs font-mono text-faint">{new Date(h.createdAt).toLocaleTimeString()}</p>
+                      <p className="text-xs font-mono text-faint">{formatDate(h.createdAt, locale)}</p>
+                      <p className="text-xs font-mono text-faint">{formatDate(h.createdAt, locale, { timeStyle: "medium" })}</p>
                     </div>
                   </div>
                   <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-faint">

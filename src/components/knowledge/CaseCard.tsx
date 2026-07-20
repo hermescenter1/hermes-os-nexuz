@@ -1,4 +1,7 @@
 import { GlassCard }     from "@/components/ui/GlassCard";
+import { getLocale } from "next-intl/server";
+import { formatDate } from "@/lib/i18n/format";
+import { DEFAULT_LOCALE } from "@/i18n/locales";
 import type { CaseRecord } from "@/lib/knowledge/types";
 
 interface Props { engineeringCase: CaseRecord }
@@ -9,7 +12,10 @@ const STATUS_COLORS: Record<string, string> = {
   closed:   "text-ink/30  border-white/10",
 };
 
-export function CaseCard({ engineeringCase: c }: Props) {
+export async function CaseCard({ engineeringCase: c }: Props) {
+  let requestLocale: string = DEFAULT_LOCALE;
+  try { requestLocale = await getLocale(); } catch { /* header unavailable */ }
+  const locale = requestLocale;
   const statusCls = STATUS_COLORS[c.status] ?? STATUS_COLORS.open;
 
   return (
@@ -47,7 +53,7 @@ export function CaseCard({ engineeringCase: c }: Props) {
       <div className="flex items-center gap-3 pt-1 text-xs text-ink/25">
         {c.assetTypes?.[0] && <span>{c.assetTypes[0]}</span>}
         {c.updatedAt && (
-          <span className="ml-auto">{new Date(c.updatedAt).toLocaleDateString()}</span>
+          <span className="ml-auto">{formatDate(c.updatedAt, locale)}</span>
         )}
       </div>
     </GlassCard>

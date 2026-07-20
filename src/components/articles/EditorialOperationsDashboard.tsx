@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { formatDate } from "@/lib/i18n/format";
 import type {
   EditorialOperationsDashboard,
   OpsTopArticle,
@@ -7,7 +8,7 @@ import type {
   OpsEditorialEvent,
 } from "@/lib/articles/db";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ââ Helpers âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function fmtNum(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -15,15 +16,12 @@ function fmtNum(n: number) {
   return String(n);
 }
 
-function fmtDate(d: string | null | undefined, isFa = false) {
+function fmtDate(d: string | null | undefined, locale = "en") {
   if (!d) return "—";
-  try {
-    const opts: Intl.DateTimeFormatOptions = { year: "numeric", month: "short", day: "numeric" };
-    return new Date(d).toLocaleDateString(isFa ? "fa-IR" : "en-US", opts);
-  } catch { return d.slice(0, 10); }
+  return formatDate(d, locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
-// ── KPI Card ─────────────────────────────────────────────────────────────────
+// ââ KPI Card âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function KpiCard({ label, value, accent = false, sub }: {
   label: string; value: string | number; accent?: boolean; sub?: string;
@@ -43,7 +41,7 @@ function KpiCard({ label, value, accent = false, sub }: {
   );
 }
 
-// ── Status Badge ─────────────────────────────────────────────────────────────
+// ââ Status Badge âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Renders the raw ArtStatus enum value (technical, not a translated label).
 
 const STATUS_STYLE: Record<string, string> = {
@@ -64,7 +62,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ── Section Header ───────────────────────────────────────────────────────────
+// ââ Section Header âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
@@ -78,7 +76,7 @@ function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   );
 }
 
-// ── Top Articles Table ────────────────────────────────────────────────────────
+// ââ Top Articles Table ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 async function TopArticlesSection({ articles, isFa, locale }: {
   articles: OpsTopArticle[]; isFa: boolean; locale: string;
@@ -124,7 +122,7 @@ async function TopArticlesSection({ articles, isFa, locale }: {
                   {fmtNum(a.reactionCount)}
                 </td>
                 <td className="px-4 py-2.5 text-end text-faint font-mono whitespace-nowrap hidden md:table-cell">
-                  {fmtDate(a.publishedAt, isFa)}
+                  {fmtDate(a.publishedAt, locale)}
                 </td>
               </tr>
             ))}
@@ -135,7 +133,7 @@ async function TopArticlesSection({ articles, isFa, locale }: {
   );
 }
 
-// ── Top Authors ───────────────────────────────────────────────────────────────
+// ââ Top Authors âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 async function TopAuthorsSection({ authors, locale }: {
   authors: OpsTopAuthor[]; locale: string;
@@ -165,7 +163,7 @@ async function TopAuthorsSection({ authors, locale }: {
               <p className="text-[10px] text-faint font-mono truncate">@{a.handle}</p>
               <div className="flex items-center gap-2 mt-0.5 text-[9px] text-faint font-mono">
                 <span>{a.publishedCount} {t("ops.pubUnit")}</span>
-                <span className="text-line">·</span>
+                <span className="text-line">Â·</span>
                 <span>{fmtNum(a.totalViews)} {tj("viewsUnit")}</span>
               </div>
             </div>
@@ -176,7 +174,7 @@ async function TopAuthorsSection({ authors, locale }: {
   );
 }
 
-// ── Status Distribution ───────────────────────────────────────────────────────
+// ââ Status Distribution âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 async function StatusDistributionSection({ lifecycleCounts, visibilityCounts }: {
   lifecycleCounts: Array<{ status: string; count: number }>;
@@ -232,10 +230,10 @@ async function StatusDistributionSection({ lifecycleCounts, visibilityCounts }: 
   );
 }
 
-// ── Recent Editorial Activity ─────────────────────────────────────────────────
+// ââ Recent Editorial Activity âââââââââââââââââââââââââââââââââââââââââââââââââ
 
-async function RecentActivitySection({ events, isFa }: {
-  events: OpsEditorialEvent[]; isFa: boolean;
+async function RecentActivitySection({ events, isFa, locale }: {
+  events: OpsEditorialEvent[]; isFa: boolean; locale: string;
 }) {
   const t = await getTranslations("journalEditorial");
   if (events.length === 0) return (
@@ -268,7 +266,7 @@ async function RecentActivitySection({ events, isFa }: {
             </div>
             <div className="shrink-0 flex flex-col items-end gap-1">
               <StatusBadge status={e.action.toUpperCase()} />
-              <span className="text-[9px] text-faint font-mono">{fmtDate(e.createdAt, isFa)}</span>
+              <span className="text-[9px] text-faint font-mono">{fmtDate(e.createdAt, locale)}</span>
             </div>
           </div>
         ))}
@@ -277,7 +275,7 @@ async function RecentActivitySection({ events, isFa }: {
   );
 }
 
-// ── Main Dashboard ────────────────────────────────────────────────────────────
+// ââ Main Dashboard ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 interface Props {
   data:   EditorialOperationsDashboard;
@@ -296,7 +294,7 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
 
   return (
     <div className="space-y-8">
-      {/* ── Page Header ───────────────────────────────────────────────── */}
+      {/* ââ Page Header âââââââââââââââââââââââââââââââââââââââââââââââââ */}
       <div className="relative border-b border-line/30 overflow-hidden -mx-6 px-6 py-10"
         style={{ background: "linear-gradient(180deg, rgba(30,200,164,0.06) 0%, rgba(6,8,13,0.98) 100%)" }}>
         <div className="absolute inset-0 pointer-events-none"
@@ -313,7 +311,7 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
           <p className="text-xs text-muted">
             {t("ops.editorialIntelligence")}
             <span className="ms-3 text-[9px] text-faint font-mono">
-              {t("ops.lastUpdated")} {fmtDate(data.generatedAt, isFa)}
+              {t("ops.lastUpdated")} {fmtDate(data.generatedAt, locale)}
             </span>
           </p>
           {!data.dbAvailable && (
@@ -324,7 +322,7 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
         </div>
       </div>
 
-      {/* ── KPI Grid ──────────────────────────────────────────────────── */}
+      {/* ââ KPI Grid ââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
       <section>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <KpiCard label={t("ops.kpiPendingReview")}  value={pendingReview.count}            accent />
@@ -336,7 +334,7 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
         </div>
       </section>
 
-      {/* ── Review Queue Health ───────────────────────────────────────── */}
+      {/* ââ Review Queue Health âââââââââââââââââââââââââââââââââââââââââ */}
       {pendingReview.count > 0 && (
         <section>
           <SectionHeader eyebrow={t("ops.queueControl")} title={t("ops.queueHealth")} />
@@ -349,7 +347,7 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
             </div>
             {pendingReview.oldestAt && (
               <div>
-                <p className="text-xs font-semibold text-ink">{fmtDate(pendingReview.oldestAt, isFa)}</p>
+                <p className="text-xs font-semibold text-ink">{fmtDate(pendingReview.oldestAt, locale)}</p>
                 <p className="text-[10px] text-faint font-mono uppercase tracking-wider">
                   {t("ops.oldestSubmission")}
                 </p>
@@ -357,7 +355,7 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
             )}
             {pendingReview.latestAt && (
               <div>
-                <p className="text-xs font-semibold text-ink">{fmtDate(pendingReview.latestAt, isFa)}</p>
+                <p className="text-xs font-semibold text-ink">{fmtDate(pendingReview.latestAt, locale)}</p>
                 <p className="text-[10px] text-faint font-mono uppercase tracking-wider">
                   {t("ops.latestSubmission")}
                 </p>
@@ -376,7 +374,7 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
         </section>
       )}
 
-      {/* ── Public Performance ────────────────────────────────────────── */}
+      {/* ââ Public Performance ââââââââââââââââââââââââââââââââââââââââââ */}
       <section>
         <SectionHeader eyebrow={t("ops.publicPerformance")} title={t("ops.publicContentPerf")} />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -387,20 +385,20 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
         </div>
       </section>
 
-      {/* ── Top Articles ──────────────────────────────────────────────── */}
+      {/* ââ Top Articles ââââââââââââââââââââââââââââââââââââââââââââââââ */}
       <TopArticlesSection articles={data.topArticles} isFa={isFa} locale={locale} />
 
-      {/* ── Top Authors ───────────────────────────────────────────────── */}
+      {/* ââ Top Authors âââââââââââââââââââââââââââââââââââââââââââââââââ */}
       <TopAuthorsSection authors={data.topAuthors} locale={locale} />
 
-      {/* ── Status Distribution ───────────────────────────────────────── */}
+      {/* ââ Status Distribution âââââââââââââââââââââââââââââââââââââââââ */}
       <StatusDistributionSection
         lifecycleCounts={data.lifecycleCounts}
         visibilityCounts={data.visibilityCounts}
       />
 
-      {/* ── Recent Editorial Activity ─────────────────────────────────── */}
-      <RecentActivitySection events={data.recentEditorialActivity} isFa={isFa} />
+      {/* ââ Recent Editorial Activity âââââââââââââââââââââââââââââââââââ */}
+      <RecentActivitySection events={data.recentEditorialActivity} isFa={isFa} locale={locale} />
     </div>
   );
 }

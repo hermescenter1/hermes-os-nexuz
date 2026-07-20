@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { EdmsFavorite } from "@/lib/document/types";
+import { formatDate } from "@/lib/i18n/format";
 
 interface Props { favorites: EdmsFavorite[] }
 
@@ -42,7 +43,7 @@ export function FavoriteClient({ favorites }: Props) {
                 <span className="font-mono text-muted">{fav.documentId.slice(0, 12)}…</span>
               </Link>
               <p className="text-xs text-faint mt-0.5 font-mono">
-                {new Date(fav.createdAt).toLocaleDateString()}
+                {formatDate(fav.createdAt, locale)}
               </p>
             </div>
           </div>

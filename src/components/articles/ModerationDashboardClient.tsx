@@ -4,14 +4,10 @@ import { useState }    from "react";
 import Link             from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ArticleListItem } from "@/lib/articles/types";
+import { formatDate } from "@/lib/i18n/format";
 
-function fmtDate(d: string, isFa = false) {
-  const date = new Date(d);
-  if (isFa) {
-    try { return date.toLocaleDateString("fa-IR", { year: "numeric", month: "short", day: "numeric" }); }
-    catch { return date.toLocaleDateString(); }
-  }
-  return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+function fmtDate(d: string, locale = "en") {
+  return formatDate(d, locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
 function fmtNum(n: number) {
@@ -272,7 +268,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                         </>
                       )}
                       <span className="text-line">·</span>
-                      <span>{fmtDate(a.updatedAt, isFa)}</span>
+                      <span>{fmtDate(a.updatedAt, locale)}</span>
                       <span className="text-line">·</span>
                       <span>{fmtNum(a.viewCount)} {tj("viewsUnit")}</span>
                     </div>

@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useState, useEffect } from "react";
 import { Link }                 from "@/i18n/navigation";
+import { formatDate } from "@/lib/i18n/format";
 
 interface ApplicationRow {
   id: string;
@@ -32,6 +34,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function CandidateApplicationsClient() {
+  const locale = useLocale();
   const [apps, setApps]       = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ApplicationRow | null>(null);
@@ -86,7 +89,7 @@ export function CandidateApplicationsClient() {
                     </span>
                   </div>
                   <p className="mt-1 text-[10px] text-muted font-mono">{app.jobDepartment}</p>
-                  <p className="mt-0.5 text-[10px] text-muted/60">{new Date(app.createdAt).toLocaleDateString()}</p>
+                  <p className="mt-0.5 text-[10px] text-muted/60">{formatDate(app.createdAt, locale)}</p>
                 </button>
               );
             })}
@@ -109,11 +112,11 @@ export function CandidateApplicationsClient() {
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="rounded-lg bg-bg p-3">
                     <p className="text-muted font-mono uppercase text-[9px] tracking-widest mb-1">Applied</p>
-                    <p className="text-ink">{new Date(selected.createdAt).toLocaleDateString()}</p>
+                    <p className="text-ink">{formatDate(selected.createdAt, locale)}</p>
                   </div>
                   <div className="rounded-lg bg-bg p-3">
                     <p className="text-muted font-mono uppercase text-[9px] tracking-widest mb-1">Last Updated</p>
-                    <p className="text-ink">{new Date(selected.updatedAt).toLocaleDateString()}</p>
+                    <p className="text-ink">{formatDate(selected.updatedAt, locale)}</p>
                   </div>
                   {selected.totalYearsExp !== null && (
                     <div className="rounded-lg bg-bg p-3">

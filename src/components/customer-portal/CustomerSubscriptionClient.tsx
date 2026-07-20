@@ -1,9 +1,12 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useEffect, useState } from "react";
 import type { CustomerSubscriptionView } from "@/lib/customer-portal/types";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 
 function UsageBar({ used, limit, label }: { used: number; limit: number; label: string }) {
+  const locale = useLocale();
   const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
   const color = pct > 90 ? "bg-red-500" : pct > 70 ? "bg-amber-400" : "bg-signal";
   return (
@@ -15,12 +18,13 @@ function UsageBar({ used, limit, label }: { used: number; limit: number; label: 
       <div className="h-1.5 rounded-full bg-line">
         <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <p className="text-xs text-muted mt-1">{used.toLocaleString()} / {limit.toLocaleString()}</p>
+      <p className="text-xs text-muted mt-1">{formatNumber(used, locale)} / {formatNumber(limit, locale)}</p>
     </div>
   );
 }
 
 export function CustomerSubscriptionClient() {
+  const locale = useLocale();
   const [sub, setSub]         = useState<CustomerSubscriptionView | null>(null);
   const [loading, setLoading] = useState(true);
   const [noAccount, setNoAccount] = useState(false);
@@ -81,9 +85,9 @@ export function CustomerSubscriptionClient() {
         </div>
         {sub.currentPeriodEnd && (
           <p className="text-sm text-muted">
-            Current period: {sub.currentPeriodStart ? new Date(sub.currentPeriodStart).toLocaleDateString() : "—"}
+            Current period: {sub.currentPeriodStart ? formatDate(sub.currentPeriodStart, locale) : "—"}
             {" → "}
-            {new Date(sub.currentPeriodEnd).toLocaleDateString()}
+            {formatDate(sub.currentPeriodEnd, locale)}
           </p>
         )}
       </div>

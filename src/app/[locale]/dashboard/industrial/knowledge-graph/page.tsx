@@ -7,9 +7,10 @@
  */
 
 import { useState, useEffect } from "react";
-import { useTranslations }     from "next-intl";
+import { useTranslations, useLocale }     from "next-intl";
 import { GlassCard }           from "@/components/ui/GlassCard";
 import Link                    from "next/link";
+import { formatDateTime } from "@/lib/i18n/format";
 
 interface GraphOverview {
   nodeCount:   number;
@@ -47,6 +48,7 @@ const EDGE_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function KnowledgeGraphPage() {
+  const locale = useLocale();
   const t = useTranslations("knowledgeGraph");
   const [data,    setData]    = useState<GraphOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,7 +96,7 @@ export default function KnowledgeGraphPage() {
         <span className="font-mono uppercase tracking-widest">{t("lastBuilt")}:</span>
         <span className={data?.staleness.lastBuiltAt ? "text-white/50" : "text-amber-400"}>
           {data?.staleness.lastBuiltAt
-            ? new Date(data.staleness.lastBuiltAt).toLocaleString()
+            ? formatDateTime(data.staleness.lastBuiltAt, locale)
             : t("graphHealth.neverBuilt")}
         </span>
         {!data?.staleness.stale && (

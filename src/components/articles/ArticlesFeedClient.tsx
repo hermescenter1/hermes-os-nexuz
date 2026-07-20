@@ -5,6 +5,7 @@ import Link                  from "next/link";
 import { usePathname }       from "next/navigation";
 import { useTranslations }   from "next-intl";
 import type { ArticleListItem, ArticleAuthorProfile, ArticleCategory, ArticleFeed } from "@/lib/articles/types";
+import { formatDate } from "@/lib/i18n/format";
 
 // ── Persian content overlay map (slug → FA title/subtitle/excerpt) ───────────
 // NOTE: This is localized ARTICLE CONTENT for seed/mock articles (not UI chrome),
@@ -120,14 +121,9 @@ function QualityBadge({ score }: { score?: number | null }) {
   return null;
 }
 
-function fmtDate(d?: string | null, isFa = false) {
+function fmtDate(d?: string | null, locale = "en") {
   if (!d) return "";
-  const date = new Date(d);
-  if (isFa) {
-    try { return date.toLocaleDateString("fa-IR", { year: "numeric", month: "short", day: "numeric" }); }
-    catch { return date.toLocaleDateString(); }
-  }
-  return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  return formatDate(d, locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
 function fmtNum(n: number) {
@@ -284,7 +280,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
             </div>
           </Link>
           <div className="flex items-center gap-3 text-xs text-faint">
-            <span>{fmtDate(article.publishedAt, isFa)}</span>
+            <span>{fmtDate(article.publishedAt, locale)}</span>
             <span className="text-line">·</span>
             <span>{article.readingTimeMinutes} {t("minRead")}</span>
             <span className="text-line">·</span>

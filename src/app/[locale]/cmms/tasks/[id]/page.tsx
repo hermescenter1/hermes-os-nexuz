@@ -1,4 +1,5 @@
 import { notFound }                            from "next/navigation";
+import { formatDate } from "@/lib/i18n/format";
 import { getTaskById, getHistory, getComments } from "@/lib/cmms/db";
 import { getTranslations }  from "next-intl/server";
 import { enumLabel }                          from "@/lib/i18n/enum-label";
@@ -12,11 +13,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return noIndexMetadata(task?.title ?? "Task Detail");
 }
 
-export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TaskDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const t = await getTranslations("maintenanceOperations");
   // 87L.5: status/action labels live in the Persian-bearing assetMaintenance ns
   const tAm = await getTranslations("assetMaintenance");
-  const { id }               = await params;
+  const { locale, id }       = await params;
   const [task, history, comments] = await Promise.all([
     getTaskById(id), getHistory(id), getComments(id),
   ]);
@@ -62,10 +63,10 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 
       {task.scheduledDate && (
         <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex gap-8 text-sm">
-          <div><span className="text-muted-foreground">{t("pages.taskDetail.scheduled")}</span>{new Date(task.scheduledDate).toLocaleDateString()}</div>
-          {task.dueDate     && <div><span className="text-muted-foreground">{t("pages.taskDetail.due")}</span>{new Date(task.dueDate).toLocaleDateString()}</div>}
-          {task.startedAt   && <div><span className="text-muted-foreground">{t("pages.taskDetail.started")}</span>{new Date(task.startedAt).toLocaleDateString()}</div>}
-          {task.completedAt && <div><span className="text-muted-foreground">{t("pages.taskDetail.completed")}</span>{new Date(task.completedAt).toLocaleDateString()}</div>}
+          <div><span className="text-muted-foreground">{t("pages.taskDetail.scheduled")}</span>{formatDate(task.scheduledDate, locale)}</div>
+          {task.dueDate     && <div><span className="text-muted-foreground">{t("pages.taskDetail.due")}</span>{formatDate(task.dueDate, locale)}</div>}
+          {task.startedAt   && <div><span className="text-muted-foreground">{t("pages.taskDetail.started")}</span>{formatDate(task.startedAt, locale)}</div>}
+          {task.completedAt && <div><span className="text-muted-foreground">{t("pages.taskDetail.completed")}</span>{formatDate(task.completedAt, locale)}</div>}
         </div>
       )}
 
@@ -78,7 +79,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
               <div key={c.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium">{c.userId ?? t("pages.taskDetail.anonymous")}</span>
-                  <span className="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-muted-foreground">{formatDate(c.createdAt, locale)}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">{c.content}</p>
                 {c.isInternal && <span className="text-xs text-yellow-400 mt-1 block">{t("pages.taskDetail.internalNote")}</span>}
@@ -96,7 +97,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
             {history.map(h => (
               <div key={h.id} className="text-sm flex items-start gap-3 border-b border-white/5 pb-2">
                 <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
-                  {new Date(h.createdAt).toLocaleDateString()}
+                  {formatDate(h.createdAt, locale)}
                 </span>
                 <span className="text-xs font-medium">{enumLabel(tAm, "historyAction", h.action)}</span>
                 {h.description && <span className="text-xs text-muted-foreground">{h.description}</span>}

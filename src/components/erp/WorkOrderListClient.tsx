@@ -3,6 +3,7 @@
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ErpWorkOrder } from "@/lib/erp/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_COLOR: Record<string, string> = {
   OPEN:              "bg-blue-500/15 text-blue-400",
@@ -38,7 +39,7 @@ export function WorkOrderListClient({ orders }: { orders: ErpWorkOrder[] }) {
             {wo.description && <div className="text-xs text-muted-foreground truncate">{wo.description}</div>}
           </div>
           <div className="flex items-center gap-3 shrink-0 text-xs">
-            {wo.dueDate && <span className="text-muted-foreground">{t("workOrders.due", { date: new Date(wo.dueDate).toLocaleDateString() })}</span>}
+            {wo.dueDate && <span className="text-muted-foreground">{t("workOrders.due", { date: formatDate(wo.dueDate, locale) })}</span>}
             <span className={`px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[wo.status] ?? ""}`}>
               {t(`workOrders.status.${wo.status}`)}
             </span>

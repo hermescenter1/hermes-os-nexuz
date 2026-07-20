@@ -1,7 +1,10 @@
 "use client";
 
+import { useLocale } from "next-intl";
+
 import { useState, useEffect } from "react";
 import type { Interview, InterviewStatus, InterviewType } from "@/lib/ats/types";
+import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_BADGE: Record<InterviewStatus, string> = {
   scheduled: "hs-badge hs--warning",
@@ -21,6 +24,7 @@ const TYPE_BADGE: Record<InterviewType, string> = {
 const STATUS_ORDER: InterviewStatus[] = ["scheduled", "pending", "completed", "cancelled"];
 
 export function InterviewPlannerClient() {
+  const locale = useLocale();
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [filter,     setFilter]     = useState<InterviewStatus | "all">("all");
@@ -181,10 +185,10 @@ export function InterviewPlannerClient() {
                   {interview.scheduledAt ? (
                     <>
                       <p className="font-mono text-xs text-ink">
-                        {new Date(interview.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        {formatDate(interview.scheduledAt, locale, { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                       <p className="kpi-label text-faint">
-                        {new Date(interview.scheduledAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} UTC
+                        {formatDate(interview.scheduledAt, locale, { hour: "2-digit", minute: "2-digit" })} UTC
                       </p>
                     </>
                   ) : (
