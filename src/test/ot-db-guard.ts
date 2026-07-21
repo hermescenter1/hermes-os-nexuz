@@ -136,3 +136,38 @@ export function otIntegrationEnabled(env: NodeJS.ProcessEnv = process.env): bool
   const url = env.OT_TEST_DATABASE_URL;
   return checkTestDatabaseUrl(url, env.NODE_ENV === "test").ok;
 }
+
+/**
+ * Whether the caller has DEMANDED real-database coverage.
+ *
+ * A skipped integration suite is indistinguishable from a passing one in a CI
+ * summary, which is how "we have database tests" quietly becomes false. With
+ * OT_DB_REQUIRED=1 the suite must run: an absent or rejected database is a
+ * FAILURE, never a skip.
+ */
+export function otIntegrationRequired(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.OT_DB_REQUIRED === "1";
+}
+
+/**
+ * Resolve the run mode, failing loudly when coverage was required but the
+ * database is unusable.
+ *
+ * Throwing here (in module scope of the suite) is deliberate: it turns a silent
+ * skip into a red test file.
+ */
+export function resolveOtIntegrationMode(
+  env: NodeJS.ProcessEnv = process.env,
+): { mode: "RUN" } | { mode: "SKIP" } {
+  const enabled = otIntegrationEnabled(env);
+  if (enabled) return { mode: "RUN" };
+  if (otIntegrationRequired(env)) {
+    const verdict = checkTestDatabaseUrl(env.OT_TEST_DATABASE_URL, env.NODE_ENV === "test");
+    const reason = verdict.ok ? "UNKNOWN" : verdict.rejection;
+    throw new Error(
+      `OT_DB_REQUIRED=1 but the integration database is unusable: ${reason}. ` +
+        "Refusing to skip a required database test.",
+    );
+  }
+  return { mode: "SKIP" };
+}
