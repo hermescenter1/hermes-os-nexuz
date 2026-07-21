@@ -191,9 +191,10 @@ for L in fa en de; do
   echo -n "/$L meta: "
   curl -s https://www.hermesnovin.com/$L | grep -c '<meta name="enamad" content="43315120"'
 done
-# exactly one footer trust seal, exact official host
-curl -s https://www.hermesnovin.com/fa | grep -c 'trustseal.enamad.ir/?id=760552'
-curl -s https://www.hermesnovin.com/fa | grep -o 'rel="noopener external"' | head -1
+# exactly one footer trust seal, exact official host (Phase 93D seal: id=761266)
+curl -s https://www.hermesnovin.com/fa | grep -c 'trustseal.enamad.ir/?id=761266'
+# eNAMAD requires that the seal anchor carry NO rel attribute — expect NO output
+curl -s https://www.hermesnovin.com/fa | grep -o 'trustseal[^>]*rel=' | head -1
 ```
 
 Then **in a browser** (the server never fetches this image — the client does):

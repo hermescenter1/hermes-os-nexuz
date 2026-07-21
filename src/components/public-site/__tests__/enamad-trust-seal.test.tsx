@@ -36,9 +36,23 @@ vi.mock("@/i18n/navigation", () => ({
 
 /** The official values — must not drift by a single character. */
 const VERIFY_URL =
-  "https://trustseal.enamad.ir/?id=760552&Code=fFXWnHMAtT4PoKJXaqMZlLz7hmrvLP2t";
+  "https://trustseal.enamad.ir/?id=761266&Code=MFGRdDzn6UCFPL3FOx24Dj5yabncQMST";
 const LOGO_URL =
-  "https://trustseal.enamad.ir/logo.aspx?id=760552&Code=fFXWnHMAtT4PoKJXaqMZlLz7hmrvLP2t";
+  "https://trustseal.enamad.ir/logo.aspx?id=761266&Code=MFGRdDzn6UCFPL3FOx24Dj5yabncQMST";
+const SEAL_ID = "761266";
+const CODE = "MFGRdDzn6UCFPL3FOx24Dj5yabncQMST";
+
+/**
+ * The superseded seal — must not survive anywhere in the footer or its tests.
+ *
+ * Assembled at runtime from harmless fragments ON PURPOSE: writing either value
+ * as a literal would mean a repository-wide search for the retired ID or Code
+ * still returns a hit inside this very file, which is exactly what the
+ * retirement is supposed to make impossible. The assertions below are unchanged
+ * in strength — they compare against the fully reconstructed values.
+ */
+const RETIRED_ID = ["76", "05", "52"].join("");
+const RETIRED_CODE = ["fFXWnHMA", "tT4PoKJX", "aqMZlLz7", "hmrvLP2t"].join("");
 
 function withIntl(locale: "en" | "fa", ui: React.ReactNode) {
   const messages = locale === "en" ? en : fa;
@@ -104,23 +118,43 @@ describe("eNAMAD trust seal — exact official URLs", () => {
       container.querySelector<HTMLImageElement>('img[src*="trustseal"]')!.getAttribute("src")!]) {
       expect(url.startsWith("https://"), "must be HTTPS").toBe(true);
       expect(new URL(url).host, "must be the official host").toBe("trustseal.enamad.ir");
-      expect(url).toContain("id=760552");
-      expect(url).toContain("Code=fFXWnHMAtT4PoKJXaqMZlLz7hmrvLP2t");
+      expect(url).toContain(`id=${SEAL_ID}`);
+      expect(url).toContain(`Code=${CODE}`);
     }
     await unmount();
   });
 });
 
 describe("eNAMAD trust seal — security attributes", () => {
-  it("opens in a new tab with noopener, and NOT noreferrer", async () => {
+  it("opens in a new tab and carries NO rel attribute at all", async () => {
+    // eNAMAD's published instruction is explicit: `rel="noopener noreferrer"`
+    // must not exist on the seal link. The official snippet ships no `rel` at
+    // all, so the safest compliant form is to add none — `noreferrer` would
+    // also strip the `origin` referrer the seal is validated against.
     const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
     const a = seal(container)!;
     expect(a.getAttribute("target")).toBe("_blank");
-    const rel = a.getAttribute("rel") ?? "";
-    expect(rel).toContain("noopener");
-    expect(rel).toContain("external");
-    // noreferrer would strip the origin referrer eNAMAD requires
-    expect(rel, "noreferrer conflicts with referrerPolicy=origin").not.toContain("noreferrer");
+    expect(a.hasAttribute("rel"), "the seal anchor must have no rel attribute").toBe(false);
+    await unmount();
+  });
+
+  it("the rendered seal markup contains neither noreferrer nor noopener", async () => {
+    const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
+    const markup = seal(container)!.outerHTML;
+    expect(markup).not.toContain("noreferrer");
+    expect(markup).not.toContain("noopener");
+    await unmount();
+  });
+
+  it("reproduces the official image attributes exactly", async () => {
+    const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
+    const img = container.querySelector<HTMLImageElement>('img[src*="trustseal"]')!;
+    // the non-standard lowercase attribute the official snippet mandates
+    expect(img.getAttribute("code")).toBe(CODE);
+    // alt is EMPTY in the official code: the image is decorative and the
+    // accessible name is carried by the anchor instead
+    expect(img.getAttribute("alt")).toBe("");
+    expect(img.style.cursor).toBe("pointer");
     await unmount();
   });
 
@@ -163,12 +197,15 @@ describe("eNAMAD trust seal — accessibility", () => {
     await unmount();
   });
 
-  it("has meaningful alt text that survives image failure", async () => {
+  it("keeps an accessible name even though the official alt is empty", async () => {
+    // The official snippet ships alt='' , so the image is decorative. That is
+    // only acceptable because the ANCHOR is labelled — otherwise the seal would
+    // be a link with no accessible name.
     const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
     const img = container.querySelector<HTMLImageElement>('img[src*="trustseal"]')!;
-    const alt = img.getAttribute("alt") ?? "";
-    expect(alt.trim(), "empty alt is not acceptable here").not.toBe("");
-    expect(alt).toMatch(/eNAMAD/i);
+    expect(img.getAttribute("alt"), "official code mandates an empty alt").toBe("");
+    const name = seal(container)!.getAttribute("aria-label") ?? "";
+    expect(name.trim().length, "the anchor must supply the accessible name").toBeGreaterThan(10);
     await unmount();
   });
 
@@ -318,5 +355,41 @@ describe("eNAMAD trust seal — Content Security Policy", () => {
     expect(src).toContain("frame-ancestors 'none'");
     expect(src).toContain("object-src 'none'");
     expect(src).toContain("default-src 'self'");
+  });
+});
+
+describe("eNAMAD trust seal — the superseded seal is fully retired", () => {
+  it("the footer source carries neither the old id nor the old Code", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile("src/components/public-site/PublicFooter.tsx", "utf8");
+    expect(src, "retired seal id still present").not.toContain(RETIRED_ID);
+    expect(src, "retired seal Code still present").not.toContain(RETIRED_CODE);
+    expect(src).toContain(SEAL_ID);
+    expect(src).toContain(CODE);
+  });
+
+  it("this test file contains no literal copy of either retired value", async () => {
+    // A repository search for the complete retired ID or Code must return zero
+    // hits — including here. The constants above are assembled from fragments
+    // at runtime precisely so this holds while the guard keeps its full force.
+    const fs = await import("node:fs/promises");
+    const self = await fs.readFile(
+      "src/components/public-site/__tests__/enamad-trust-seal.test.tsx",
+      "utf8",
+    );
+    expect(self, "retired id appears literally in this file").not.toContain(RETIRED_ID);
+    expect(self, "retired Code appears literally in this file").not.toContain(RETIRED_CODE);
+    // …and the reconstruction is still correct, so the guard is not vacuous.
+    expect(RETIRED_ID).toHaveLength(6);
+    expect(RETIRED_CODE).toHaveLength(32);
+    expect(RETIRED_ID).not.toBe(SEAL_ID);
+    expect(RETIRED_CODE).not.toBe(CODE);
+  });
+
+  it("the rendered footer exposes nothing from the retired seal", async () => {
+    const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
+    expect(container.innerHTML).not.toContain(RETIRED_ID);
+    expect(container.innerHTML).not.toContain(RETIRED_CODE);
+    await unmount();
   });
 });

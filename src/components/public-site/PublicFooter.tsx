@@ -70,11 +70,28 @@ export function PublicFooter() {
           and English LTR alike, and correct for German automatically.
         */}
         <div className="mt-10 flex border-t border-border-subtle pt-6">
+          {/*
+            PHASE 93D — official eNAMAD seal (id=761266). eNAMAD requires the
+            code to be placed WITHOUT altering its verification parameters, and
+            explicitly requires that `rel="noopener noreferrer"` NOT be present,
+            so this anchor deliberately carries NO `rel` attribute at all.
+
+            Everything eNAMAD verifies is reproduced verbatim: both URLs, an
+            origin referrer policy on the anchor and the image, `target=_blank`,
+            the empty `alt`, `cursor:pointer`, and the non-standard lowercase
+            `code` attribute. The remaining attributes (aria-label, intrinsic
+            width/height, lazy/async decoding, layout classes) are additive —
+            they touch no verification parameter and preserve the accessibility
+            and layout-stability guarantees the footer already had.
+
+            Because `alt` must be empty per the official code, the image is
+            DECORATIVE and the accessible name comes from the anchor's
+            aria-label — otherwise this would be a link with no accessible name.
+          */}
           <a
-            href="https://trustseal.enamad.ir/?id=760552&Code=fFXWnHMAtT4PoKJXaqMZlLz7hmrvLP2t"
-            target="_blank"
-            rel="noopener external"
             referrerPolicy="origin"
+            target="_blank"
+            href="https://trustseal.enamad.ir/?id=761266&Code=MFGRdDzn6UCFPL3FOx24Dj5yabncQMST"
             aria-label="eNAMAD Electronic Trust Seal — Hermes Novin"
             className="ds-focus inline-flex rounded-md border border-border-subtle bg-surface-elevated p-2 transition-opacity duration-fast hover:opacity-90"
           >
@@ -87,13 +104,18 @@ export function PublicFooter() {
             */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://trustseal.enamad.ir/logo.aspx?id=760552&Code=fFXWnHMAtT4PoKJXaqMZlLz7hmrvLP2t"
-              alt="eNAMAD Electronic Trust Seal for Hermes Novin"
+              referrerPolicy="origin"
+              src="https://trustseal.enamad.ir/logo.aspx?id=761266&Code=MFGRdDzn6UCFPL3FOx24Dj5yabncQMST"
+              alt=""
+              style={{ cursor: "pointer" }}
+              // `code` is a non-standard lowercase attribute mandated by the
+              // official snippet; a narrow spread keeps it type-safe in TSX
+              // while rendering the attribute exactly as eNAMAD published it.
+              {...{ code: "MFGRdDzn6UCFPL3FOx24Dj5yabncQMST" }}
               width={88}
               height={88}
               loading="lazy"
               decoding="async"
-              referrerPolicy="origin"
               className="h-[76px] w-[76px] sm:h-[88px] sm:w-[88px]"
             />
           </a>
