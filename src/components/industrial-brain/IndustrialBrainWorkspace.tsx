@@ -6,6 +6,7 @@ import { useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { IndustrialBrainAnalysis, UncertaintyLevel } from "@/lib/industrial-brain/types";
+import { buildAnalyzeRequest, findBlockingField } from "@/lib/industrial-brain/request-contract";
 
 /** Loosely-typed next-intl translator for the report-text builders below. */
 type Translator = ReturnType<typeof useTranslations>;
@@ -1167,11 +1168,22 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const fd = new FormData(e.currentTarget);
-    const body = Object.fromEntries(
-      Array.from(fd.entries()).map(([k, v]) => [k, typeof v === "string" ? v.trim() : v])
-    );
-    body.locale = locale;
+
+    // Guard against a double submit: an in-flight request must not be duplicated.
+    if (busy) return;
+
+    // PHASE 93B — the body is built by the SHARED contract helper, so the
+    // client can no longer drift from what the route accepts: every value is a
+    // trimmed string and `locale` is a supported tag.
+    const body = buildAnalyzeRequest(new FormData(e.currentTarget).entries(), locale);
+
+    // Pre-flight the two hard minimums so the button cannot fire a request the
+    // backend is guaranteed to reject.
+    const blocking = findBlockingField(body);
+    if (blocking) {
+      setError(t(blocking === "problemTitle" ? "form.titleTooShort" : "form.symptomsTooShort"));
+      return;
+    }
 
     setBusy(true);
     try {
@@ -1180,22 +1192,48 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json() as { ok: boolean; analysis?: IndustrialBrainAnalysis; error?: string };
-      if (!data.ok) { setError(data.error ?? "Analysis failed"); return; }
+
+      // The body may not be JSON (proxy error page, gateway timeout), so parse
+      // defensively and keep each failure class distinguishable.
+      const data = (await res.json().catch(() => null)) as
+        | { ok: boolean; analysis?: IndustrialBrainAnalysis; error?: string; field?: string }
+        | null;
+
+      if (!res.ok || !data?.ok) {
+        setError(errorMessageFor(res.status, data?.field));
+        return;
+      }
+
       setAnalysis(data.analysis ?? null);
       setReportMeta({
-        problemTitle: String(body.problemTitle ?? ""),
-        assetType: String(body.assetType ?? ""),
-        systemArea: String(body.systemArea ?? ""),
-        plcPlatform: String(body.plcPlatform ?? ""),
+        problemTitle: body.problemTitle ?? "",
+        assetType: body.assetType ?? "",
+        systemArea: body.systemArea ?? "",
+        plcPlatform: body.plcPlatform ?? "",
         generatedAt: new Date(),
       });
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     } catch {
+      // Network/abort only — a non-2xx response is handled above.
       setError(t("form.connectionError"));
     } finally {
       setBusy(false);
     }
+  }
+
+  /**
+   * A localized message per failure class. The server's own validation text is
+   * deliberately NOT rendered: it is English-only and can echo schema wording,
+   * so the safe `field` name is mapped to a catalog message instead. Nothing
+   * from the response body is ever rendered verbatim.
+   */
+  function errorMessageFor(status: number, field?: string): string {
+    if (status === 401 || status === 403) return t("form.authError");
+    if (status === 429) return t("form.rateLimited");
+    if (status >= 500) return t("form.serverError");
+    if (field === "problemTitle") return t("form.titleTooShort");
+    if (field === "observedSymptoms") return t("form.symptomsTooShort");
+    return t("form.validationError");
   }
 
   return (
@@ -1366,7 +1404,10 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
         </p>
 
         {error && (
-          <div className="rounded-xl border border-rose-500/30 bg-rose-500/6 px-4 py-3 text-sm text-rose-400 font-mono">
+          <div
+            role="alert"
+            className="rounded-xl border border-rose-500/30 bg-rose-500/6 px-4 py-3 text-sm text-rose-400 font-mono"
+          >
             {error}
           </div>
         )}

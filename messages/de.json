@@ -4386,7 +4386,13 @@
       "privacyWarning": "⚠ Geben Sie keine Passwörter, Geheimnisse oder vertraulichen Anlagenzeichnungen ein. Nur zur Entscheidungsunterstützung.",
       "analyze": "Fehler analysieren",
       "analyzing": "Analyse läuft...",
-      "connectionError": "Verbindungsfehler. Bitte versuchen Sie es erneut."
+      "connectionError": "Verbindungsfehler. Bitte versuchen Sie es erneut.",
+      "validationError": "Bitte prüfen Sie das markierte Feld und versuchen Sie es erneut.",
+      "titleTooShort": "Geben Sie einen Problemtitel mit mindestens 3 Zeichen ein.",
+      "symptomsTooShort": "Beschreiben Sie die beobachteten Symptome mit mindestens 5 Zeichen.",
+      "authError": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+      "rateLimited": "Zu viele Anfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+      "serverError": "Die Analyse-Engine ist vorübergehend nicht verfügbar. Bitte versuchen Sie es erneut."
     },
     "impact": {
       "select": "Auswählen...",

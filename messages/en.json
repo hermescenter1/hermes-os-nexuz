@@ -4386,7 +4386,13 @@
       "privacyWarning": "⚠ Do not enter passwords, secrets, or confidential plant drawings. Decision support only.",
       "analyze": "Analyze Fault",
       "analyzing": "Analyzing...",
-      "connectionError": "Connection error. Please try again."
+      "connectionError": "Connection error. Please try again.",
+      "validationError": "Please check the highlighted field and try again.",
+      "titleTooShort": "Enter a problem title of at least 3 characters.",
+      "symptomsTooShort": "Describe the observed symptoms in at least 5 characters.",
+      "authError": "Your session has expired. Please sign in again.",
+      "rateLimited": "Too many requests. Please wait a moment and try again.",
+      "serverError": "The analysis engine is temporarily unavailable. Please try again."
     },
     "impact": {
       "select": "Select...",
