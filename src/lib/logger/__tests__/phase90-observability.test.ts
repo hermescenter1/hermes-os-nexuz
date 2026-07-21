@@ -30,6 +30,11 @@ function captureLogs(fn: () => void): Record<string, unknown>[] {
     .map((l) => JSON.parse(l) as Record<string, unknown>);
 }
 
+/** Strip block and line comments so assertions describe code, not prose. */
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
+}
+
 const headers = (v: string | null) => ({ headers: { get: () => v } });
 
 describe("90C — correlation IDs", () => {
@@ -138,6 +143,65 @@ describe("90C — security events are structured and correlated", () => {
     expect("cookie" in entry).toBe(false);
     // the legitimate fields still made it
     expect(entry.operation).toBe("auth.login");
+  });
+});
+
+describe("90-93A — a hostile request id cannot forge a log line", () => {
+  const originalLevel = process.env.LOG_LEVEL;
+  beforeEach(() => { (process.env as Record<string, string | undefined>).LOG_LEVEL = "DEBUG"; });
+  afterEach(() => { (process.env as Record<string, string | undefined>).LOG_LEVEL = originalLevel; });
+
+  it("an injected header cannot inject fields or extra lines into the stream", () => {
+    // A raw echo would let a caller close the JSON object and append their own
+    // entry, or inject a newline and forge a whole second log line.
+    const hostile = 'aaaaaaaa","level":"ERROR","forged":"yes';
+    const id = resolveRequestId(headers(hostile));
+    expect(id).not.toBe(hostile);
+
+    const entries = captureLogs(() =>
+      logAuthzDenial({ reqId: id, operation: "org.invitations.list", reason: "insufficient_permission" }),
+    );
+    expect(entries, "exactly one line, not two").toHaveLength(1);
+    expect(entries[0].forged).toBeUndefined();
+    expect(entries[0].level).toBe("WARN");
+    expect(String(entries[0].reqId)).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
+
+  it("a newline-bearing header cannot split the stream", () => {
+    // A literal newline in the header would let a caller append a whole
+    // second, attacker-authored log entry to the stream.
+    const id = resolveRequestId(headers("good\n" + JSON.stringify({ level: "FATAL", msg: "forged" })));
+    const entries = captureLogs(() => logAuthFailure({ reqId: id, operation: "auth", reason: "no_session" }));
+    expect(entries).toHaveLength(1);
+    expect(entries[0].msg).toBe("auth.failure");
+  });
+});
+
+describe("90-93A — security-critical infrastructure failures are visible", () => {
+  it("the database client no longer swallows an init failure silently", () => {
+    const code = readFileSync(resolve(process.cwd(), "src/lib/db/prisma.ts"), "utf8");
+    // The failure is cached for the life of the process, so a silent catch
+    // means a misconfigured deploy degrades every DB feature with no signal.
+    expect(code).toMatch(/logInfraFailure\("database"/);
+    // A bare `catch {` cannot log anything actionable — the handler must
+    // bind the error so its class and message reach the stream.
+    expect(code).toMatch(/catch \(err\)/);
+  });
+
+  it("no security-critical module falls back to console.*", () => {
+    for (const p of [
+      "src/lib/auth/api-guards.ts",
+      "src/lib/auth/crypto.ts",
+      "src/lib/auth/session.ts",
+      "src/lib/org/context.ts",
+      "src/lib/org/invitations.ts",
+      "src/lib/db/prisma.ts",
+      "src/lib/email/providers/console.ts",
+    ]) {
+      // Comments legitimately discuss console logging; assert about CODE.
+      const code = stripComments(readFileSync(resolve(process.cwd(), p), "utf8"));
+      expect(code, `${p} must use the structured logger`).not.toMatch(/console\.(log|error|warn|info|debug)/);
+    }
   });
 });
 

@@ -8,6 +8,7 @@ import { requireOrgActor }             from "@/lib/org/context";
 import { requirePermission, assignableRoles } from "@/lib/org/rbac";
 import { listInvitations, inviteMember } from "@/lib/org/invitations";
 import type { OrgRole }                from "@/lib/org/types";
+import { logAuthzDenial }              from "@/lib/logger/security-events";
 
 const VALID_ORG_ROLES = new Set<OrgRole>([
   "OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN", "MEMBER",
@@ -19,6 +20,27 @@ export async function GET(req: NextRequest, { params }: Params) {
   const { orgId } = await params;
   const result = await requireOrgActor(req, orgId);
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
+  const { ctx } = result;
+
+  // PHASE 90-93A: the invitation list exposes invitee email addresses and the
+  // role each was offered — a roster of pending hires and privilege intent.
+  // Membership alone is not enough: this now requires the SAME existing
+  // permission that governs creating an invitation (invite_member =
+  // OWNER/ADMIN/MANAGER), so a VIEWER or ENGINEER can no longer enumerate it.
+  const perm = requirePermission(ctx.role, "invite_member");
+  if (!perm.ok) {
+    // The denial names the operation and the caller's role only — never an
+    // invitee address, a token, or how many invitations exist.
+    logAuthzDenial({
+      operation: "org.invitations.list",
+      reason: "insufficient_permission",
+      userId: ctx.userId,
+      orgId,
+      role: ctx.role,
+      resourceType: "OrganizationInvitation",
+    });
+    return NextResponse.json({ error: perm.error }, { status: perm.status });
+  }
 
   const invitations = await listInvitations(orgId);
   return NextResponse.json({ invitations });

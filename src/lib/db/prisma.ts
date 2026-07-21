@@ -13,6 +13,7 @@
  */
 
 import { isDatabaseMode } from "@/lib/storage/storage-mode";
+import { logInfraFailure } from "@/lib/logger/security-events";
 
 // Loose type: we avoid a static import of @prisma/client so the build never
 // requires the generated client. Repositories cast to the methods they use.
@@ -44,8 +45,14 @@ export async function getPrisma(): Promise<PrismaLike | null> {
     // Prisma 7 driver-adapter pattern: pass a pg adapter to the client.
     const adapter = new PrismaPg({ connectionString: url });
     g.__hermesPrisma = new PrismaClient({ adapter });
-  } catch {
-    // Generation/adapter/connection unavailable — degrade gracefully.
+  } catch (err) {
+    // Generation/adapter/connection unavailable — degrade gracefully, but do
+    // NOT do it silently. PHASE 90-93A: this failure is cached for the life of
+    // the process, so a misconfigured deploy degrades every database-backed
+    // feature permanently with no signal; the structured event is the only way
+    // an operator learns why. The error CLASS and message are recorded — never
+    // the connection string or any credential.
+    logInfraFailure("database", "prisma.init", err);
     g.__hermesPrisma = null;
   }
   return g.__hermesPrisma;

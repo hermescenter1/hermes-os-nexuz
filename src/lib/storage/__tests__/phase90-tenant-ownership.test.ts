@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { ownerWhere, ownerCanRead, ownerAttribution, MAX_OWNED_ROWS } from "../owner-scope";
+import {
+  ownerWhere,
+  ownerCanRead,
+  ownerAttribution,
+  isLegacyQuarantined,
+  legacyQuarantineWhere,
+  MAX_OWNED_ROWS,
+} from "../owner-scope";
 import { verifySession, signSession, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/crypto";
 import type { BrainOwner } from "../types";
 
@@ -23,23 +30,23 @@ const SOLO: BrainOwner = { userId: "u-solo", orgId: null };
 describe("90A — owner predicate", () => {
   it("builds a query clause, never a post-fetch filter", () => {
     const w = ownerWhere(ALICE);
-    expect(w.OR).toEqual([
-      { userId: null, organizationId: null },
-      { userId: "u-alice" },
-      { organizationId: "org-a" },
-    ]);
+    expect(w.OR).toEqual([{ userId: "u-alice" }, { organizationId: "org-a" }]);
+    // 90-93A: the quarantined legacy pool is NOT part of an ordinary read.
+    expect(JSON.stringify(w)).not.toContain("null");
   });
 
   it("a user with no org contributes no organization clause", () => {
-    expect(ownerWhere(SOLO).OR).toEqual([
-      { userId: null, organizationId: null },
-      { userId: "u-solo" },
-    ]);
+    expect(ownerWhere(SOLO).OR).toEqual([{ userId: "u-solo" }]);
   });
 
-  it("a null owner sees ONLY the legacy pool — never everything", () => {
-    expect(ownerWhere(null).OR).toEqual([{ userId: null, organizationId: null }]);
+  it("a null owner matches NOTHING — never the legacy pool, never everything", () => {
+    const w = ownerWhere(null);
+    // An impossible sentinel, not `{}` (which would match every row) and not
+    // the legacy predicate (which would expose unattributable data).
+    expect(w.OR).toHaveLength(1);
+    expect(w.OR[0].userId).toMatch(/no_owner/);
     expect(ownerCanRead({ userId: "u-alice", organizationId: "org-a" }, null)).toBe(false);
+    expect(ownerCanRead({ userId: null, organizationId: null }, null)).toBe(false);
   });
 
   it("same-tenant reads succeed; cross-tenant reads fail", () => {
@@ -50,9 +57,24 @@ describe("90A — owner predicate", () => {
     expect(ownerCanRead(aliceRow, SOLO), "no-org user must not read").toBe(false);
   });
 
-  it("legacy NULL-owner rows stay readable (non-destructive migration)", () => {
+  it("legacy NULL-owner rows are QUARANTINED from every ordinary caller", () => {
+    // Pre-Phase-90 rows cannot be attributed to a tenant, so serving them to
+    // "every authoring user" would be the cross-tenant exposure this module
+    // exists to prevent. Deny by default; recovery is an audited admin action.
     const legacy = { userId: null, organizationId: null };
-    for (const who of [ALICE, BOB, SOLO]) expect(ownerCanRead(legacy, who)).toBe(true);
+    for (const who of [ALICE, BOB, ANNA, SOLO, null]) {
+      expect(ownerCanRead(legacy, who), "legacy row must be invisible").toBe(false);
+    }
+    expect(isLegacyQuarantined(legacy)).toBe(true);
+    expect(isLegacyQuarantined({ userId: "u-alice", organizationId: null })).toBe(false);
+    expect(isLegacyQuarantined({ userId: null, organizationId: "org-a" })).toBe(false);
+  });
+
+  it("the quarantine predicate exists for administrative recovery only", () => {
+    // It must select exactly the unattributable rows — and it must not be
+    // reachable from `ownerWhere`, which is what ordinary reads use.
+    expect(legacyQuarantineWhere()).toEqual({ userId: null, organizationId: null });
+    expect(JSON.stringify(ownerWhere(ALICE))).not.toContain("null");
   });
 
   it("attribution derives from the owner and is never blank for a real session", () => {
@@ -124,6 +146,31 @@ describe("90A — analysis repository is tenant-scoped end to end", () => {
     expect(patched?.organizationId).toBe("org-a");
   });
 
+  it("a QUARANTINED legacy analysis is invisible to every operation", async () => {
+    // Simulate a pre-Phase-90 row: written before ownership columns existed.
+    const buf = (globalThis as unknown as { __hermesAnalysisRows: Record<string, unknown>[] })
+      .__hermesAnalysisRows;
+    buf.unshift({ ...draft, id: "legacy-1", createdAt: new Date().toISOString(), userId: null, organizationId: null });
+
+    for (const [label, owner] of [["owner A", ALICE], ["owner B", BOB], ["no-org user", SOLO]] as const) {
+      const repo = await repoFor(owner);
+      expect((await repo.list()).some((r) => r.id === "legacy-1"), `${label}: list`).toBe(false);
+      expect(await repo.get("legacy-1"), `${label}: read`).toBeNull();
+      expect(await repo.update("legacy-1", { query: "x" }), `${label}: update`).toBeNull();
+      expect(await repo.delete("legacy-1"), `${label}: delete`).toBe(false);
+    }
+    // …and the row still exists — quarantined, not destroyed.
+    expect(buf.some((r) => r.id === "legacy-1")).toBe(true);
+  });
+
+  it("a quarantined row is indistinguishable from a missing one (no existence leak)", async () => {
+    const buf = (globalThis as unknown as { __hermesAnalysisRows: Record<string, unknown>[] })
+      .__hermesAnalysisRows;
+    buf.unshift({ ...draft, id: "legacy-2", createdAt: new Date().toISOString(), userId: null, organizationId: null });
+    const repo = await repoFor(ALICE);
+    expect(await repo.get("legacy-2")).toEqual(await repo.get("never-existed"));
+  });
+
   it("list is bounded", async () => {
     const repo = await repoFor(ALICE);
     for (let i = 0; i < MAX_OWNED_ROWS + 25; i += 1) await repo.create(draft);
@@ -170,6 +217,34 @@ describe("90A — case repository ownership and published corpus", () => {
     // The save-case flow updates whatever findByTitle returns — it must not
     // return the published row, or curated public content gets overwritten.
     expect(await repo.findByTitle!(caseDraft.title)).toBeNull();
+  });
+
+  it("a QUARANTINED legacy case is invisible to authoring users", async () => {
+    const buf = (globalThis as unknown as { __hermesCaseDrafts: Record<string, unknown>[] })
+      .__hermesCaseDrafts;
+    const now = new Date().toISOString();
+    buf.unshift({ ...caseDraft, id: "legacy-case", createdAt: now, updatedAt: now, userId: null, organizationId: null });
+
+    for (const owner of [ALICE, BOB, SOLO]) {
+      const repo = await repoFor(owner);
+      expect((await repo.list()).some((c) => c.id === "legacy-case")).toBe(false);
+      expect(await repo.get("legacy-case")).toBeNull();
+      expect(await repo.update("legacy-case", { title: "x" })).toBeNull();
+      expect(await repo.delete("legacy-case")).toBe(false);
+      expect(await repo.findByTitle!(caseDraft.title)).toBeNull();
+    }
+  });
+
+  it("a legacy PUBLISHED case stays publicly readable (published-only policy)", async () => {
+    const buf = (globalThis as unknown as { __hermesCaseDrafts: Record<string, unknown>[] })
+      .__hermesCaseDrafts;
+    const now = new Date().toISOString();
+    // Public knowledge does not depend on tenant attribution — quarantine must
+    // not silently remove already-published content from the public corpus.
+    buf.unshift({ ...caseDraft, id: "legacy-pub", status: "published", createdAt: now, updatedAt: now, userId: null, organizationId: null });
+
+    const { listPublishedCases } = await import("../case-repository");
+    expect((await listPublishedCases()).some((c) => c.id === "legacy-pub")).toBe(true);
   });
 
   it("published corpus stays public across tenants (intended public knowledge)", async () => {

@@ -1,6 +1,9 @@
 -- PHASE 90 — Industrial Brain tenant ownership (additive, non-destructive).
--- Existing rows keep NULL owner columns and are treated as the legacy shared
--- pool; no data is modified or removed.
+-- Existing rows keep NULL owner columns. No data is modified or removed.
+-- The application QUARANTINES NULL-owner rows: they are unreachable through
+-- every ordinary read, write, delete and export, because a row that cannot be
+-- attributed to a tenant must not be shown to an arbitrary one. Recovery is a
+-- separate, permission-gated and audited administrative action.
 
 -- AlterTable
 ALTER TABLE "AnalysisRecord" ADD COLUMN "userId" TEXT;

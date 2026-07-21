@@ -34,23 +34,55 @@ export type OwnerWhere = {
 /**
  * Prisma `where` clause matching exactly the rows this owner may see:
  *   - rows they created themselves,
- *   - rows owned by their organization (when they belong to one),
- *   - the legacy NULL-owner pool.
+ *   - rows owned by their organization (when they belong to one).
+ *
+ * LEGACY ROWS ARE NOT INCLUDED. A NULL-owner row cannot be attributed to any
+ * tenant, so serving it to "every authoring user" would be exactly the
+ * cross-tenant exposure this module exists to prevent. Such rows are
+ * QUARANTINED: invisible to every ordinary read, write, delete and export.
+ * Recovering them is an explicit, permission-gated, audited administrative
+ * action (see `legacyQuarantineWhere`), never an ordinary API read.
  *
  * Passing `null` (an unauthenticated context) is a programming error — callers
  * must gate on authentication first — so it yields a predicate that matches
- * only the legacy pool rather than everything.
+ * NOTHING rather than something.
  */
 export function ownerWhere(owner: BrainOwner | null): OwnerWhere {
-  const clauses: Array<Record<string, string | null>> = [
-    // Legacy pre-Phase-90 rows: no owner recorded.
-    { userId: null, organizationId: null },
-  ];
-  if (owner) {
-    clauses.push({ userId: owner.userId });
-    if (owner.orgId) clauses.push({ organizationId: owner.orgId });
+  if (!owner) {
+    // Impossible predicate: an unauthenticated context sees no private row.
+    // (`userId` is a String? column, so it can never equal this sentinel.)
+    return { OR: [{ userId: IMPOSSIBLE_OWNER }] };
   }
+  const clauses: Array<Record<string, string | null>> = [{ userId: owner.userId }];
+  if (owner.orgId) clauses.push({ organizationId: owner.orgId });
   return { OR: clauses };
+}
+
+/**
+ * Sentinel that no real row can carry, used to build a predicate matching
+ * nothing. Safer than returning `{}` (which would match EVERYTHING) if a caller
+ * ever forgets to gate on authentication first.
+ */
+const IMPOSSIBLE_OWNER = "__hermes_no_owner_sentinel__";
+
+/**
+ * ADMINISTRATIVE ONLY — the quarantined legacy pool.
+ *
+ * Rows that predate Phase 90 and carry no owner. This predicate is deliberately
+ * NOT used by any ordinary repository read; it exists so a separately reviewed,
+ * permission-gated and audited recovery tool can enumerate what needs
+ * attribution. Ordinary callers must never reach it.
+ */
+export function legacyQuarantineWhere(): { userId: null; organizationId: null } {
+  return { userId: null, organizationId: null };
+}
+
+/** True when a row is quarantined legacy data (no owner recorded). */
+export function isLegacyQuarantined(row: {
+  userId?: string | null;
+  organizationId?: string | null;
+}): boolean {
+  return (row.userId ?? null) === null && (row.organizationId ?? null) === null;
 }
 
 /**
@@ -61,10 +93,11 @@ export function ownerCanRead(
   row: { userId?: string | null; organizationId?: string | null },
   owner: BrainOwner | null,
 ): boolean {
+  // Quarantined legacy rows are readable by NO ONE through ordinary paths.
+  if (isLegacyQuarantined(row)) return false;
+  if (!owner) return false;
   const rowUser = row.userId ?? null;
   const rowOrg = row.organizationId ?? null;
-  if (rowUser === null && rowOrg === null) return true; // legacy pool
-  if (!owner) return false;
   if (rowUser !== null && rowUser === owner.userId) return true;
   return rowOrg !== null && owner.orgId !== null && rowOrg === owner.orgId;
 }

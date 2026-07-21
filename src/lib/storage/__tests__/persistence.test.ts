@@ -4,6 +4,15 @@ import { knowledgeRepository } from "@/lib/storage/knowledge-repository";
 import { unknownRepository } from "@/lib/storage/unknown-repository";
 import { analysisRepository } from "@/lib/storage/analysis-repository";
 import { recordAuditEvent, filterAuditEvents, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
+import type { BrainOwner } from "@/lib/storage/types";
+
+/**
+ * PHASE 90: the Brain repositories are tenant-scoped. This suite exercises the
+ * PERSISTENCE contract, so it acts as one concrete owner throughout — the same
+ * way a real request does, where the owner comes from the session. (The
+ * ownership boundary itself is proven in phase90-tenant-ownership.test.ts.)
+ */
+const OWNER: BrainOwner = { userId: "u-persistence", orgId: "org-persistence" };
 
 /**
  * Persistent Knowledge Core — repository/service contract.
@@ -15,7 +24,7 @@ import { recordAuditEvent, filterAuditEvents, AUDIT_ACTIONS } from "@/lib/audit/
  */
 describe("Persistent Knowledge Core", () => {
   it("cases: full CRUD", async () => {
-    const r = caseRepository();
+    const r = caseRepository(OWNER);
     const c = await r.create({ title: "RT Case", vendor: "abb", domain: "drives", problem: "p", rootCause: "rc", secondaryCauses: [], verificationSteps: [], correctiveActions: [], safetyNotes: "", tags: [], confidence: 75, status: "draft" });
     expect((await r.list()).some((x) => x.id === c.id)).toBe(true);
     expect((await r.update(c.id, { status: "ready" }))?.status).toBe("ready");
@@ -23,7 +32,7 @@ describe("Persistent Knowledge Core", () => {
     expect(await r.get(c.id)).toBeNull();
   });
   it("cases: dedup by title", async () => {
-    const r = caseRepository();
+    const r = caseRepository(OWNER);
     const a = await r.create({ title: "DupT", vendor: "abb", domain: "drives", problem: "", rootCause: "v1", secondaryCauses: [], verificationSteps: [], correctiveActions: [], safetyNotes: "", tags: [], confidence: 70, status: "draft" });
     expect((await r.findByTitle?.("DupT"))?.id).toBe(a.id);
   });
@@ -38,7 +47,7 @@ describe("Persistent Knowledge Core", () => {
     expect((await r.update(u.id, { status: "resolved" }))?.status).toBe("resolved");
   });
   it("analysis: create -> list", async () => {
-    const r = analysisRepository();
+    const r = analysisRepository(OWNER);
     const a = await r.create({ query: "q", locale: "en", mode: "library", domains: ["drives"], vendors: ["abb"], cases: [], knowledge: [], confidence: 0.7, riskLevel: "low", isUnknown: false });
     expect((await r.list()).some((x) => x.id === a.id)).toBe(true);
   });
