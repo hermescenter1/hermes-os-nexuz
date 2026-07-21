@@ -103,9 +103,19 @@ describe("90 — schema and migration stay semantically aligned", () => {
     }
   });
 
-  it("is the newest migration, so it applies last", () => {
-    const dirs = readdirSync(join(REPO, "prisma/migrations")).filter((d) => /^\d{14}_/.test(d));
-    expect(dirs.sort().at(-1)).toBe("20260812000000_phase90_brain_tenant_ownership");
+  it("applies after every migration that predates it", () => {
+    // The original assertion was "this is the newest migration" — true when it
+    // was written, but it necessarily breaks the moment a later phase lands
+    // (Phase 94 did). The invariant it actually protects is ORDERING: Phase 90
+    // must still sort after the migrations already applied before it.
+    const MINE = "20260812000000_phase90_brain_tenant_ownership";
+    const dirs = readdirSync(join(REPO, "prisma/migrations"))
+      .filter((d) => /^\d{14}_/.test(d))
+      .sort();
+    const idx = dirs.indexOf(MINE);
+    expect(idx, "Phase 90 migration is missing").toBeGreaterThan(-1);
+    expect(idx, "Phase 90 must not sort before the pre-existing migrations").toBeGreaterThan(0);
+    for (const earlier of dirs.slice(0, idx)) expect(earlier < MINE).toBe(true);
   });
 });
 

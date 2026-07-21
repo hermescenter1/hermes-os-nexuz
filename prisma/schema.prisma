@@ -335,6 +335,9 @@ model User {
   legalAcceptances     LegalAcceptance[]
   dataExportRequests   DataExportRequest[]
   dataDeletionRequests DataDeletionRequest[]
+  // Phase 94: OT Edge & automation engineering (uploader / reviewer attribution)
+  engineeringImports  EngineeringImport[]
+  engineeringFindings EngineeringFinding[] @relation("FindingReviewer")
 }
 
 model AuthSession {
@@ -532,6 +535,16 @@ model Organization {
   apiKeys              ApiKey[]
   industrialSites      IndustrialSite[]
   industrialGateways   IndustrialGateway[]
+  // Phase 94: OT Edge & automation engineering
+  engineeringProjects  EngineeringProject[]
+  engineeringImports   EngineeringImport[]
+  engineeringFindings  EngineeringFinding[]
+  otDeviceProfiles     OtDeviceProfile[]
+  gatewayProfiles      EdgeGatewayProfile[]
+  gatewayNonces        GatewayEnvelopeNonce[]
+  automationTags       AutomationTag[]
+  alarmDefinitions     AlarmDefinition[]
+  otNetworkNodes       IndustrialNetworkNode[]
   industrialAssets     IndustrialAsset[]
   telemetryRecords     TelemetryRecord[]
   connectorConfigs     IndustrialConnectorConfig[]
@@ -879,6 +892,9 @@ model IndustrialSite {
   twinLayouts    DigitalTwinLayout[]
   // Phase 43: Site Isolation
   userSites      UserSite[]
+  // Phase 94: OT Edge & automation engineering
+  engineeringProjects EngineeringProject[]
+  engineeringImports  EngineeringImport[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -909,6 +925,10 @@ model IndustrialGateway {
   assets         IndustrialAsset[]
   connectors     IndustrialConnectorConfig[]
   telemetry      TelemetryRecord[]
+  // Phase 94: additive OT capability profile (1:1, optional)
+  otProfile      EdgeGatewayProfile?
+  otNonces       GatewayEnvelopeNonce[]
+  otImports      EngineeringImport[]
 
   @@index([organizationId])
   @@index([siteId])
@@ -939,6 +959,11 @@ model IndustrialAsset {
   // Phase 36: Digital Twin
   twinNodes      DigitalTwinNode[]
   assetTags      AssetTag[]
+  // Phase 94: additive OT engineering profile (1:1, optional)
+  otProfile      OtDeviceProfile?
+  otTags         AutomationTag[]
+  otAlarms       AlarmDefinition[]
+  otNetworkNodes IndustrialNetworkNode[]
 
   @@index([organizationId])
   @@index([siteId])
@@ -5890,4 +5915,435 @@ model SalesLead {
   @@index([email])
   @@index([status])
   @@index([createdAt])
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 94 — OT Edge & Automation Asset Intelligence Foundation
+// ════════════════════════════════════════════════════════════════════════════
+//
+// SCOPE AND SAFETY
+// This domain is READ-ONLY with respect to plant equipment. It models EXPORTED
+// engineering metadata and gateway registration only. Nothing here can express
+// a write to a PLC, a setpoint change, an alarm acknowledgement or any control
+// action — there is deliberately no "command", "value", "writeRequest" or
+// "setpoint" entity, and AutomationTag carries an access-mode DECLARATION
+// (what the engineering export said) rather than an executable capability.
+//
+// REUSE, NOT DUPLICATION
+// Tenancy, sites, gateways and the asset registry already exist and are reused:
+//   Organization / IndustrialSite / IndustrialGateway / IndustrialAsset.
+// Phase 94 adds two optional 1:1 PROFILE tables (EdgeGatewayProfile,
+// OtDeviceProfile) that extend those records with OT-specific engineering
+// attributes without touching their columns, plus the genuinely new
+// engineering-import domain. No second gateway, asset, site or tenant model.
+//
+// EVIDENCE IMMUTABILITY
+// EngineeringImport rows are append-only facts about one bounded import; the
+// artifacts they produced (project, tags, alarms, nodes) reference the import
+// via importId so a finding can always be traced back to its evidence.
+
+enum EdgeGatewayLifecycle {
+  REGISTERED
+  ACTIVE
+  STALE
+  DISABLED
+  REVOKED
+  SIMULATOR
+}
+
+enum EdgeGatewayEnvironment {
+  PRODUCTION
+  STAGING
+  TEST
+  LAB
+}
+
+enum EdgeGatewayCapability {
+  PROJECT_METADATA_IMPORT
+  TAG_METADATA_IMPORT
+  ALARM_METADATA_IMPORT
+  NETWORK_METADATA_IMPORT
+  READ_ONLY_TELEMETRY
+  SIMULATION
+}
+
+enum OtDeviceCategory {
+  PLC
+  HMI
+  SCADA_SERVER
+  VFD
+  MCC
+  REMOTE_IO
+  INDUSTRIAL_PC
+  SAFETY_CONTROLLER
+  NETWORK_SWITCH
+  GATEWAY
+  SENSOR_AGGREGATOR
+  OTHER
+}
+
+enum OtLifecycleState {
+  PLANNED
+  COMMISSIONING
+  OPERATIONAL
+  MAINTENANCE
+  DECOMMISSIONED
+  UNKNOWN
+}
+
+enum OtNetworkZone {
+  ENTERPRISE
+  DMZ
+  SUPERVISORY
+  CONTROL
+  FIELD
+  SAFETY
+  UNKNOWN
+}
+
+enum OtSafetyClass {
+  NON_SAFETY
+  SAFETY_RELATED
+  SAFETY_CRITICAL
+  UNKNOWN
+}
+
+enum EngineeringSourceType {
+  TIA_EXPORT
+  PLC_EXPORT
+  HMI_EXPORT
+  SCADA_EXPORT
+  GENERIC
+  SIMULATOR
+}
+
+enum EngineeringImportStatus {
+  PENDING
+  VALIDATING
+  APPLIED
+  REJECTED
+  FAILED
+}
+
+enum EngineeringImportFailure {
+  NONE
+  UNSUPPORTED_FORMAT
+  SCHEMA_INVALID
+  TOO_LARGE
+  TOO_MANY_RECORDS
+  DUPLICATE_IMPORT
+  CHECKSUM_MISMATCH
+  TENANT_MISMATCH
+  PARSE_ERROR
+  INTERNAL_ERROR
+}
+
+enum EngineeringAnalysisState {
+  NOT_ANALYSED
+  ANALYSING
+  ANALYSED
+  FAILED
+}
+
+enum EngineeringValidationState {
+  VALID
+  WARNING
+  INVALID
+}
+
+enum EngineeringFindingSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum EngineeringFindingStatus {
+  OPEN
+  ACKNOWLEDGED
+  ACCEPTED
+  REJECTED
+  RESOLVED
+  SUPERSEDED
+}
+
+enum EngineeringArtifactType {
+  PROJECT
+  DEVICE
+  TAG
+  ALARM
+  NETWORK_NODE
+}
+
+enum AutomationTagAccessMode {
+  READ
+  READ_WRITE
+  WRITE
+  UNKNOWN
+}
+
+/// Optional OT capability profile for an EXISTING IndustrialGateway (1:1).
+/// Extends the gateway with Phase 94 lifecycle/mode declarations without
+/// altering the Phase 35 model that production already writes to.
+model EdgeGatewayProfile {
+  id             String                 @id @default(cuid())
+  organizationId String
+  gatewayId      String                 @unique
+  lifecycle      EdgeGatewayLifecycle   @default(REGISTERED)
+  environment    EdgeGatewayEnvironment @default(PRODUCTION)
+  /// Declared capabilities. Absent capability = operation refused.
+  capabilities   EdgeGatewayCapability[]
+  softwareVersion String?               @db.VarChar(64)
+  /// readOnlyMode is an invariant of this phase: no control path exists at all.
+  readOnlyMode   Boolean                @default(true)
+  simulatorMode  Boolean                @default(false)
+  disabled       Boolean                @default(false)
+  /// Opaque REFERENCE to a signing secret held elsewhere — never the secret.
+  signingKeyRef  String?                @db.VarChar(191)
+  lastEnvelopeAt DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  gateway        IndustrialGateway      @relation(fields: [gatewayId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, lifecycle])
+}
+
+/// Replay protection for signed gateway envelopes. One row per accepted nonce.
+model GatewayEnvelopeNonce {
+  id             String            @id @default(cuid())
+  organizationId String
+  gatewayId      String
+  nonce          String            @db.VarChar(128)
+  seenAt         DateTime          @default(now())
+  expiresAt      DateTime
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  gateway        IndustrialGateway @relation(fields: [gatewayId], references: [id], onDelete: Cascade)
+
+  /// A nonce may be used at most once per gateway — the replay guard.
+  @@unique([gatewayId, nonce])
+  @@index([organizationId, expiresAt])
+}
+
+/// Optional OT engineering profile for an EXISTING IndustrialAsset (1:1).
+model OtDeviceProfile {
+  id               String           @id @default(cuid())
+  organizationId   String
+  assetId          String           @unique
+  category         OtDeviceCategory @default(OTHER)
+  lifecycleState   OtLifecycleState @default(UNKNOWN)
+  networkZone      OtNetworkZone    @default(UNKNOWN)
+  safetyClass      OtSafetyClass    @default(UNKNOWN)
+  productFamily    String?          @db.VarChar(120)
+  firmwareVersion  String?          @db.VarChar(64)
+  /// Engineering identifier from the export (e.g. the TIA device name).
+  engineeringId    String?          @db.VarChar(191)
+  lastImportId     String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset            IndustrialAsset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, engineeringId])
+  @@index([organizationId, category])
+  @@index([organizationId, safetyClass])
+}
+
+/// One bounded import operation. Append-only evidence record.
+model EngineeringImport {
+  id             String                   @id @default(cuid())
+  organizationId String
+  siteId         String?
+  gatewayId      String?
+  uploadedById   String?
+  sourceType     EngineeringSourceType
+  /// Normalised filename only — never a client-supplied path.
+  sourceFilename String                   @db.VarChar(255)
+  contentType    String                   @db.VarChar(120)
+  /// SHA-256 of the canonicalised payload. Immutable evidence identifier.
+  checksum       String                   @db.VarChar(64)
+  /// Caller-supplied idempotency key, scoped to the organization.
+  idempotencyKey String?                  @db.VarChar(128)
+  byteSize       Int
+  status         EngineeringImportStatus  @default(PENDING)
+  failureReason  EngineeringImportFailure @default(NONE)
+  deviceCount    Int                      @default(0)
+  tagCount       Int                      @default(0)
+  alarmCount     Int                      @default(0)
+  networkCount   Int                      @default(0)
+  warningCount   Int                      @default(0)
+  errorCount     Int                      @default(0)
+  startedAt      DateTime                 @default(now())
+  completedAt    DateTime?
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site           IndustrialSite?          @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  gateway        IndustrialGateway?       @relation(fields: [gatewayId], references: [id], onDelete: SetNull)
+  uploadedBy     User?                    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  projects       EngineeringProject[]
+
+  /// Same payload twice in one tenant = duplicate import, detected at the DB.
+  @@unique([organizationId, checksum])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, status, startedAt])
+  @@index([organizationId, siteId])
+}
+
+/// Imported engineering-project metadata (never the proprietary binary itself).
+model EngineeringProject {
+  id                String                     @id @default(cuid())
+  organizationId    String
+  siteId            String?
+  importId          String
+  name              String                     @db.VarChar(191)
+  /// Locale-independent identity key, unique per tenant + revision.
+  normalizedName    String                     @db.VarChar(191)
+  projectVersion    String?                    @db.VarChar(64)
+  revision          Int                        @default(1)
+  supersededById    String?                    @unique
+  vendor            String?                    @db.VarChar(120)
+  platform          String?                    @db.VarChar(120)
+  sourceType        EngineeringSourceType
+  schemaVersion     String                     @db.VarChar(16)
+  checksum          String                     @db.VarChar(64)
+  analysisState     EngineeringAnalysisState   @default(NOT_ANALYSED)
+  validationState   EngineeringValidationState @default(VALID)
+  lastAnalysedAt    DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  organization      Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site              IndustrialSite?            @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  import            EngineeringImport          @relation(fields: [importId], references: [id], onDelete: Cascade)
+  supersededBy      EngineeringProject?        @relation("ProjectRevision", fields: [supersededById], references: [id], onDelete: SetNull)
+  supersedes        EngineeringProject?        @relation("ProjectRevision")
+  tags              AutomationTag[]
+  alarms            AlarmDefinition[]
+  networkNodes      IndustrialNetworkNode[]
+  findings          EngineeringFinding[]
+
+  @@unique([organizationId, normalizedName, revision])
+  @@index([organizationId, siteId])
+  @@index([organizationId, analysisState])
+  @@index([importId])
+}
+
+/// Imported TAG METADATA. Carries no value and cannot write to a device.
+model AutomationTag {
+  id              String                     @id @default(cuid())
+  organizationId  String
+  projectId       String
+  assetId         String?
+  name            String                     @db.VarChar(191)
+  normalizedName  String                     @db.VarChar(191)
+  dataType        String                     @db.VarChar(48)
+  /// Logical address as DECLARED by the export (e.g. "DB10.DBX0.1").
+  address         String?                    @db.VarChar(120)
+  symbolicPath    String?                    @db.VarChar(255)
+  unit            String?                    @db.VarChar(32)
+  description     String?                    @db.VarChar(500)
+  /// What the export DECLARED. Not an executable permission.
+  accessMode      AutomationTagAccessMode    @default(UNKNOWN)
+  safetyClass     OtSafetyClass              @default(UNKNOWN)
+  sourceReference String?                    @db.VarChar(255)
+  revision        Int                        @default(1)
+  validationState EngineeringValidationState @default(VALID)
+  createdAt       DateTime                   @default(now())
+  organization    Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project         EngineeringProject         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  asset           IndustrialAsset?           @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, normalizedName])
+  @@index([organizationId, projectId])
+  @@index([projectId, address])
+  @@index([organizationId, safetyClass])
+}
+
+/// Imported ALARM CONFIGURATION metadata. Cannot acknowledge or clear alarms.
+model AlarmDefinition {
+  id                 String                     @id @default(cuid())
+  organizationId     String
+  projectId          String
+  assetId            String?
+  code               String                     @db.VarChar(64)
+  normalizedCode     String                     @db.VarChar(64)
+  severity           EngineeringFindingSeverity @default(MEDIUM)
+  message            String?                    @db.VarChar(500)
+  /// Reference to the condition expression in the export — not an evaluator.
+  conditionReference String?                    @db.VarChar(255)
+  requiresAck        Boolean                    @default(false)
+  safetyClass        OtSafetyClass              @default(UNKNOWN)
+  productionRelevant Boolean                    @default(false)
+  sourceReference    String?                    @db.VarChar(255)
+  validationState    EngineeringValidationState @default(VALID)
+  createdAt          DateTime                   @default(now())
+  organization       Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project            EngineeringProject         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  asset              IndustrialAsset?           @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, normalizedCode])
+  @@index([organizationId, projectId])
+  @@index([organizationId, severity])
+}
+
+/// Engineering NETWORK METADATA. No scanning, no probing, no connection.
+model IndustrialNetworkNode {
+  id              String                     @id @default(cuid())
+  organizationId  String
+  projectId       String
+  assetId         String?
+  nodeName        String                     @db.VarChar(191)
+  normalizedName  String                     @db.VarChar(191)
+  zone            OtNetworkZone              @default(UNKNOWN)
+  protocol        IndustrialProtocol         @default(OTHER)
+  /// Address as declared in the export. Never used to open a connection.
+  address         String?                    @db.VarChar(120)
+  subnet          String?                    @db.VarChar(64)
+  stationId       String?                    @db.VarChar(64)
+  conflictState   EngineeringValidationState @default(VALID)
+  sourceReference String?                    @db.VarChar(255)
+  createdAt       DateTime                   @default(now())
+  organization    Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project         EngineeringProject         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  asset           IndustrialAsset?           @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, normalizedName])
+  @@index([organizationId, projectId])
+  @@index([projectId, address])
+}
+
+/// Deterministic analysis output. Advisory only — never a remediation command.
+model EngineeringFinding {
+  id                    String                     @id @default(cuid())
+  organizationId        String
+  projectId             String
+  /// Stable rule identity, e.g. "OT-TAG-DUPLICATE-NAME".
+  ruleId                String                     @db.VarChar(64)
+  ruleVersion           String                     @db.VarChar(16)
+  category              String                     @db.VarChar(48)
+  severity              EngineeringFindingSeverity @default(MEDIUM)
+  title                 String                     @db.VarChar(191)
+  /// Safe, non-evidence-bearing description.
+  description           String                     @db.VarChar(1000)
+  artifactType          EngineeringArtifactType
+  /// Identifier of the offending artifact — an id or normalized name, not a value.
+  artifactRef           String                     @db.VarChar(255)
+  evidenceRefs          String[]
+  recommendation        String                     @db.VarChar(1000)
+  /// TRUE whenever acting on this finding could affect safety or production.
+  humanApprovalRequired Boolean                    @default(true)
+  status                EngineeringFindingStatus   @default(OPEN)
+  reviewedById          String?
+  reviewedAt            DateTime?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  organization          Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project               EngineeringProject         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reviewedBy            User?                      @relation("FindingReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  /// One finding per rule per artifact per project — re-analysis is idempotent.
+  @@unique([projectId, ruleId, artifactRef])
+  @@index([organizationId, projectId, severity])
+  @@index([organizationId, status])
+  @@index([projectId, humanApprovalRequired])
 }
