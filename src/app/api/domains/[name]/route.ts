@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hasAuthoring } from "@/lib/auth/api-guards";
 import { getDomainByName } from "@/lib/services/domain-intelligence-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 
@@ -9,6 +10,11 @@ export async function GET(
 ) {
   const { name } = await params;
   const storageMode = getStorageMode();
+  // PHASE 90: authoring-only (see the list route). A non-authoring caller gets
+  // the same 404 as an unknown domain, disclosing nothing.
+  if (!(await hasAuthoring())) {
+    return NextResponse.json({ error: "domain_not_found" }, { status: 404 });
+  }
   try {
     const result = await getDomainByName(name);
     if (!result) {

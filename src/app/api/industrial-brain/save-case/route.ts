@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveBrainOwner } from "@/lib/storage/brain-owner";
 import { z }            from "zod";
 import { getCurrentUser } from "@/lib/auth/session";
 import { can }            from "@/lib/auth/roles";
@@ -236,7 +237,7 @@ export async function POST(req: Request) {
 
   const input = mapAnalysisToCase(parsed.data.analysis, parsed.data.meta);
 
-  const repo = caseRepository();
+  const repo = caseRepository(await resolveBrainOwner());
   try {
     // Same title-dedupe semantics as the existing case API: re-saving the
     // same analysis title updates the draft instead of duplicating it.

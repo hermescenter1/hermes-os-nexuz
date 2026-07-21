@@ -9,6 +9,9 @@ import { requirePermission, assignableRoles }  from "@/lib/org/rbac";
 import { changeMemberRole, changeMemberStatus, removeMember } from "@/lib/org/members";
 import type { OrgRole, MemberStatus }           from "@/lib/org/types";
 
+/** PHASE 90 — closed set of persistable membership statuses. */
+const VALID_MEMBER_STATUSES = new Set(["ACTIVE", "INVITED", "SUSPENDED"]);
+
 type Params = { params: Promise<{ orgId: string; memberId: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -41,6 +44,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (body.status !== undefined) {
     const perm = requirePermission(ctx.role, "change_status");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+
+    // PHASE 90: validate against the closed set before the cast (mirrors the
+    // VALID_ORG_ROLES clamp on the role branch). The value was previously cast
+    // straight from the request body, so an arbitrary string could be persisted
+    // as a membership status.
+    if (!VALID_MEMBER_STATUSES.has(String(body.status))) {
+      return NextResponse.json({ error: "Invalid membership status" }, { status: 400 });
+    }
 
     const out = await changeMemberStatus({
       organizationId: orgId,

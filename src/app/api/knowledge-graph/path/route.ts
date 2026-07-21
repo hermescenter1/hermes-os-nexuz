@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hasAuthoring } from "@/lib/auth/api-guards";
 import { getPath } from "@/lib/services/graph-navigation-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 
@@ -17,6 +18,11 @@ export async function GET(req: Request) {
 
   if (!fromId || !toId) {
     return NextResponse.json({ error: "missing_params" }, { status: 400 });
+  }
+
+  // PHASE 90: private memory projection — authoring only (82C).
+  if (!(await hasAuthoring())) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
   const storageMode = getStorageMode();

@@ -70,6 +70,17 @@ export async function GET(req: NextRequest) {
   const invoiceId = req.nextUrl.searchParams.get("invoiceId");
   if (!invoiceId) return NextResponse.json({ error: "invoiceId query param is required" }, { status: 400 });
 
+  // PHASE 90: same tenant-isolation guard the POST above already applies.
+  // listPayments resolves by invoice id alone, so without this check any
+  // member of any organization could read another tenant's payment history
+  // (amounts, currencies, timestamps) by guessing or harvesting an invoice id.
+  // A foreign or missing invoice yields 404 — the existence of another
+  // tenant's invoice is never disclosed.
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice || invoice.organizationId !== result.ctx.orgId) {
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  }
+
   const payments = await listPayments(invoiceId);
   return NextResponse.json({ payments });
 }

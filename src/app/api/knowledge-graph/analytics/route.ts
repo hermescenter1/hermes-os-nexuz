@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hasAuthoring } from "@/lib/auth/api-guards";
 import { getGraphAnalytics } from "@/lib/services/graph-analytics-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { recordAuditEvent, ANALYTICS_AUDIT } from "@/lib/audit/audit-service";
@@ -17,6 +18,10 @@ const EMPTY_ANALYTICS = {
 /** GET /api/knowledge-graph/analytics — graph-level intelligence report. */
 export async function GET() {
   const storageMode = getStorageMode();
+  // PHASE 90: derived from the private memory store — authoring only (82C).
+  if (!(await hasAuthoring())) {
+    return NextResponse.json({ storageMode, ...EMPTY_ANALYTICS });
+  }
   try {
     const result = await getGraphAnalytics();
     recordAuditEvent({

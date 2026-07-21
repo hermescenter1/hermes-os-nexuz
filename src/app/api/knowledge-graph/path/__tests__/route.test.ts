@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockEngineer, mockNoUser, unmockAuth } from "@/test/mock-auth";
 
 /**
  * Phase 21B — GET /api/knowledge-graph/path route tests.
@@ -16,6 +17,12 @@ beforeEach(() => {
   (globalThis as Record<string, unknown>).__hermesProjects          = [];
   (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [];
   (globalThis as Record<string, unknown>).__hermesMemoryFeedback    = [];
+  // PHASE 90: these routes project the PRIVATE engineering memory store, so
+  // they are now authoring-gated (same policy as /api/memory and /api/projects
+  // since 82C). The existing behavioural assertions below describe the
+  // AUTHORISED view, so the suite authenticates as an authoring user; the gate
+  // itself is asserted separately at the end of the file.
+  mockEngineer();
 });
 
 afterEach(() => {
@@ -23,6 +30,7 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+  unmockAuth();
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────

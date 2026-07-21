@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hasAuthoring } from "@/lib/auth/api-guards";
 import { getNodeById } from "@/lib/services/graph-navigation-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 
@@ -8,6 +9,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  // PHASE 90: private memory projection — authoring only (82C). A non-authoring
+  // caller gets the same 404 as a missing node, disclosing no existence.
+  if (!(await hasAuthoring())) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
   try {
     const result = await getNodeById(id);
     if (!result) {

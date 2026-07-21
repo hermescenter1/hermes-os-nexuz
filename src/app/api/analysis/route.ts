@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { analysisRepository, type AnalysisCreate } from "@/lib/storage/analysis-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { requireAuthoring, hasAuthoring } from "@/lib/auth/api-guards";
+import { resolveBrainOwner } from "@/lib/storage/brain-owner";
 
 /**
  * /api/analysis — durable analysis history (Phase 11B).
@@ -16,11 +17,12 @@ function asArray(v: unknown): string[] {
 }
 
 export async function GET() {
-  const repo = analysisRepository();
   try {
     if (!await hasAuthoring()) {
       return NextResponse.json({ storageMode: getStorageMode(), records: [] });
     }
+    // PHASE 90: history is scoped to the caller's tenant, never global.
+    const repo = analysisRepository(await resolveBrainOwner());
     return NextResponse.json({ storageMode: getStorageMode(), records: await repo.list() });
   } catch {
     return NextResponse.json({ storageMode: getStorageMode(), records: [] });
@@ -53,7 +55,8 @@ export async function POST(req: Request) {
     isUnknown: Boolean(body.isUnknown),
   };
 
-  const repo = analysisRepository();
+  // PHASE 90: the new row is attributed to the authenticated caller/org.
+  const repo = analysisRepository(await resolveBrainOwner());
   try {
     return NextResponse.json({ storageMode: getStorageMode(), record: await repo.create(input) });
   } catch {

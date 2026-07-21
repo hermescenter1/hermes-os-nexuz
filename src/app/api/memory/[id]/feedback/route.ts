@@ -41,7 +41,11 @@ export async function POST(
     memoryId: id,
     outcome: rawOutcome,
     ...(body.notes != null ? { notes: String(body.notes).trim() } : {}),
-    ...(body.submittedBy != null ? { submittedBy: String(body.submittedBy).trim() } : {}),
+    // PHASE 90: attribution comes from the authenticated session, never from
+    // the request body. MemoryFeedback is the append-only trail behind memory
+    // outcome changes, so a client-supplied submittedBy let any authoring user
+    // record feedback under someone else's name.
+    submittedBy: gate.user.id,
   };
 
   try {

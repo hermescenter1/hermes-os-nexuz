@@ -72,7 +72,17 @@ export async function getSiteActorContext(
     return { userId, orgId, siteId, role: "SITE_ADMIN", implicit: true };
   }
 
-  // Step 3 — explicit UserSite row required
+  // Step 3 — explicit UserSite row required.
+  // PHASE 90: the site must ALSO belong to the organization the caller is
+  // acting in. Without this, a UserSite grant for a site in org B satisfied a
+  // request scoped to org A, because the row was matched on (userId, siteId)
+  // alone and IndustrialSite was only consulted on the implicit-role path.
+  const siteInOrg = await (d.industrialSite as unknown as SiteModel).findMany({
+    where:  { id: siteId, organizationId: orgId, status: "ACTIVE" },
+    select: { id: true },
+  });
+  if (siteInOrg.length === 0) return null;
+
   const us = await (d.userSite as unknown as UserSiteModel).findFirst({
     where:  { userId, siteId, status: "ACTIVE" },
     select: { role: true },

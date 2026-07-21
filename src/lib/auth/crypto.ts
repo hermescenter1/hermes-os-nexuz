@@ -46,6 +46,19 @@ export function signSession(payload: SessionPayload): string {
   return `${body}.${sig}`;
 }
 
+/**
+ * PHASE 90 — absolute server-side lifetime for the legacy HMAC session cookie.
+ *
+ * The cookie carries a browser-side `maxAge` (8h, or 30d with remember-me), but
+ * that only makes the BROWSER forget it. Before this phase `verifySession`
+ * never looked at `iat`, so a token string captured from a log, a backup, a
+ * shared machine or an XSS exfiltration stayed valid forever. This ceiling is
+ * the longest lifetime the login route ever issues (remember-me = 30 days), so
+ * no legitimate session is cut short, while a replayed ancient token now fails
+ * closed.
+ */
+export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+
 export function verifySession(token: string | undefined | null): SessionPayload | null {
   if (!token) return null;
   const [body, sig] = token.split(".");
@@ -55,7 +68,14 @@ export function verifySession(token: string | undefined | null): SessionPayload 
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
   try {
-    return JSON.parse(Buffer.from(body, "base64url").toString()) as SessionPayload;
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString()) as SessionPayload;
+    // Signature proved integrity; now enforce freshness. A malformed, missing
+    // or future-dated `iat` is treated as untrustworthy rather than eternal.
+    const iat = Number(payload?.iat);
+    if (!Number.isFinite(iat) || iat <= 0) return null;
+    const ageSeconds = (Date.now() - iat) / 1000;
+    if (ageSeconds < 0 || ageSeconds > SESSION_MAX_AGE_SECONDS) return null;
+    return payload;
   } catch {
     return null;
   }

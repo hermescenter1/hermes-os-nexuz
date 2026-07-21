@@ -315,7 +315,10 @@ describe("POST /api/memory/[id]/feedback — success", () => {
     expect(body.feedback.memoryId).toBe(mem.id);
     expect(body.feedback.outcome).toBe("success");
     expect(body.feedback.notes).toBe("Re-greased bearings, issue resolved");
-    expect(body.feedback.submittedBy).toBe("technician@plant.io");
+    // PHASE 90: attribution is taken from the authenticated session, NOT from
+    // the request body — a client could otherwise file feedback under someone
+    // else's name on the append-only memory trail. mockEngineer() -> "u-test".
+    expect(body.feedback.submittedBy).toBe("u-test");
   });
 
   it("updates the parent memory outcome after feedback", async () => {

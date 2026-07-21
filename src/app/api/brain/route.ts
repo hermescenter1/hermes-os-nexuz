@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthoring } from "@/lib/auth/api-guards";
+import { resolveBrainOwner } from "@/lib/storage/brain-owner";
 import { isAllowedOrigin, isJsonContentType, securityError } from "@/lib/security/request-guards";
 import { runPipeline } from "@/lib/industrial/pipeline";
 import { runReasoning, summarizeEvidence } from "@/lib/industrial/reasoning";
@@ -513,7 +514,7 @@ export async function POST(req: Request) {
     // triage row to PostgreSQL. Session mode keeps the in-process behavior.
     if (isDatabaseMode()) {
       try {
-        await analysisRepository().create({
+        await analysisRepository(await resolveBrainOwner()).create({
           query: question,
           locale,
           mode: "library",
@@ -797,7 +798,7 @@ export async function POST(req: Request) {
   // so we skip the repo write to avoid double-storing the same record.
   if (isDatabaseMode()) {
     try {
-      await analysisRepository().create({
+      await analysisRepository(await resolveBrainOwner()).create({
         query: question,
         locale,
         mode: analysis.mode,
@@ -860,7 +861,8 @@ function recentLibrariesOf(records: AnalysisRecord[]): string[] {
  */
 export async function GET(req: Request) {
   // Authorize (authoring capability) BEFORE touching the analysis repository
-  // or memory ring — the global, unscoped history is engineering-internal.
+  // or memory ring. PHASE 90: the repository is additionally tenant-scoped, so
+  // a caller only ever sees their own / their organization's history.
   const gate = await requireAuthoring();
   if (!gate.ok) return denyNoStore(gate.response);
 
@@ -869,7 +871,8 @@ export async function GET(req: Request) {
 
   if (isDatabaseMode()) {
     try {
-      const rows = await analysisRepository().list();
+      // PHASE 90: history is scoped to the caller's tenant, not global.
+      const rows = await analysisRepository(await resolveBrainOwner()).list();
       const all = rows.map(rowToAnalysisRecord);
       const recent = all.slice(0, n);
       return NextResponse.json(

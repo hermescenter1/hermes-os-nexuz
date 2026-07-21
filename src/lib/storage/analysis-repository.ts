@@ -6,27 +6,32 @@
 
 import { getStorageMode } from "./storage-mode";
 import { getPrisma } from "@/lib/db/prisma";
-import type { Repository, StoredAnalysis } from "./types";
+import type { BrainOwner, Repository, StoredAnalysis } from "./types";
+import { ownerWhere, ownerCanRead, ownerAttribution, MAX_OWNED_ROWS } from "./owner-scope";
 
 export type AnalysisCreate = Omit<StoredAnalysis, "id" | "createdAt">;
 
 const now = () => new Date().toISOString();
 
-function createSessionAnalysisRepo(): Repository<StoredAnalysis, AnalysisCreate> {
+function createSessionAnalysisRepo(owner: BrainOwner | null): Repository<StoredAnalysis, AnalysisCreate> {
   const g = globalThis as unknown as { __hermesAnalysisRows?: StoredAnalysis[] };
   g.__hermesAnalysisRows ??= [];
   const buf = g.__hermesAnalysisRows;
 
   return {
+    // PHASE 90: the session ring is shared process state, so the same owner
+    // predicate that scopes the SQL query is applied here in memory.
     async list() {
-      return [...buf];
+      return buf.filter((a) => ownerCanRead(a, owner)).slice(0, MAX_OWNED_ROWS);
     },
     async get(id) {
-      return buf.find((a) => a.id === id) ?? null;
+      const row = buf.find((a) => a.id === id);
+      return row && ownerCanRead(row, owner) ? row : null;
     },
     async create(input) {
       const rec: StoredAnalysis = {
         ...input,
+        ...ownerAttribution(owner),
         id: `analysis-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         createdAt: now(),
       };
@@ -35,13 +40,16 @@ function createSessionAnalysisRepo(): Repository<StoredAnalysis, AnalysisCreate>
       return rec;
     },
     async update(id, patch) {
-      const i = buf.findIndex((a) => a.id === id);
+      const i = buf.findIndex((a) => a.id === id && ownerCanRead(a, owner));
       if (i < 0) return null;
-      buf[i] = { ...buf[i], ...patch };
+      // Owner attribution is never patchable.
+      const { userId: _u, organizationId: _o, ...safe } = patch as Partial<StoredAnalysis>;
+      void _u; void _o;
+      buf[i] = { ...buf[i], ...safe };
       return buf[i];
     },
     async delete(id) {
-      const i = buf.findIndex((a) => a.id === id);
+      const i = buf.findIndex((a) => a.id === id && ownerCanRead(a, owner));
       if (i < 0) return false;
       buf.splice(i, 1);
       return true;
@@ -51,7 +59,7 @@ function createSessionAnalysisRepo(): Repository<StoredAnalysis, AnalysisCreate>
 
 type AnalysisModel = {
   findMany: (a?: unknown) => Promise<Record<string, unknown>[]>;
-  findUnique: (a: unknown) => Promise<Record<string, unknown> | null>;
+  findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
   create: (a: unknown) => Promise<Record<string, unknown>>;
 };
 
@@ -69,11 +77,14 @@ function rowToAnalysis(r: Record<string, unknown>): StoredAnalysis {
     riskLevel: String(r.riskLevel ?? ""),
     isUnknown: Boolean(r.isUnknown),
     createdAt: r.createdAt ? new Date(r.createdAt as string).toISOString() : now(),
+    userId: r.userId === undefined || r.userId === null ? null : String(r.userId),
+    organizationId:
+      r.organizationId === undefined || r.organizationId === null ? null : String(r.organizationId),
   };
 }
 
-function createDatabaseAnalysisRepo(): Repository<StoredAnalysis, AnalysisCreate> {
-  const fallback = createSessionAnalysisRepo();
+function createDatabaseAnalysisRepo(owner: BrainOwner | null): Repository<StoredAnalysis, AnalysisCreate> {
+  const fallback = createSessionAnalysisRepo(owner);
   async function model(): Promise<AnalysisModel | null> {
     const db = await getPrisma();
     return db ? ((db as Record<string, unknown>).analysisRecord as AnalysisModel) : null;
@@ -83,7 +94,15 @@ function createDatabaseAnalysisRepo(): Repository<StoredAnalysis, AnalysisCreate
       const m = await model();
       if (!m) return fallback.list();
       try {
-        return (await m.findMany({ orderBy: { createdAt: "desc" }, take: 200 })).map(rowToAnalysis);
+        // PHASE 90: ownership is enforced IN the query — never fetched
+        // globally and filtered afterwards.
+        return (
+          await m.findMany({
+            where: ownerWhere(owner),
+            orderBy: { createdAt: "desc" },
+            take: MAX_OWNED_ROWS,
+          })
+        ).map(rowToAnalysis);
       } catch {
         return fallback.list();
       }
@@ -92,7 +111,10 @@ function createDatabaseAnalysisRepo(): Repository<StoredAnalysis, AnalysisCreate
       const m = await model();
       if (!m) return fallback.get(id);
       try {
-        const r = await m.findUnique({ where: { id } });
+        // findFirst (not findUnique) so the owner predicate is part of the
+        // lookup: a foreign id simply does not match, yielding the same
+        // "not found" as a non-existent id — no existence disclosure.
+        const r = await m.findFirst({ where: { id, ...ownerWhere(owner) } });
         return r ? rowToAnalysis(r) : null;
       } catch {
         return fallback.get(id);
@@ -102,7 +124,9 @@ function createDatabaseAnalysisRepo(): Repository<StoredAnalysis, AnalysisCreate
       const m = await model();
       if (!m) return fallback.create(input);
       try {
-        return rowToAnalysis(await m.create({ data: input }));
+        // Attribution is applied AFTER the caller's data, so a caller cannot
+        // override the owner by spreading request input into `input`.
+        return rowToAnalysis(await m.create({ data: { ...input, ...ownerAttribution(owner) } }));
       } catch {
         return fallback.create(input);
       }
@@ -117,8 +141,13 @@ function createDatabaseAnalysisRepo(): Repository<StoredAnalysis, AnalysisCreate
   };
 }
 
-export function analysisRepository(): Repository<StoredAnalysis, AnalysisCreate> {
+/**
+ * PHASE 90 — the repository is now owner-scoped. `owner` MUST come from
+ * `resolveBrainOwner()` (session-derived); passing null yields a repository
+ * that can only see the legacy NULL-owner pool, never another tenant's rows.
+ */
+export function analysisRepository(owner: BrainOwner | null = null): Repository<StoredAnalysis, AnalysisCreate> {
   return getStorageMode() === "database"
-    ? createDatabaseAnalysisRepo()
-    : createSessionAnalysisRepo();
+    ? createDatabaseAnalysisRepo(owner)
+    : createSessionAnalysisRepo(owner);
 }

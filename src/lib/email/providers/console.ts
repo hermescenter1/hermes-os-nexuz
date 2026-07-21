@@ -27,10 +27,18 @@ export class ConsoleProvider implements EmailProvider {
     });
     if (buf.length > 100) buf.length = 100;
 
-    logger.info("[email:console] Development mode — email NOT delivered. Copy the link below.", {
-      to:      payload.to,
-      subject: payload.subject,
-      body:    payload.text,
+    // PHASE 90: the body is NEVER logged. Verification and password-reset
+    // mails carry single-use tokens in their links, and this provider is the
+    // fallback whenever no real provider is configured — including production
+    // misconfiguration — so logging the body would write live credentials to
+    // stdout and any log aggregator. The buffered copy above still holds the
+    // full text for local development; read it via listMockEmails() (exposed
+    // through the dev-only mock-mailbox surface), not from the log stream.
+    logger.info("[email:console] Development mode — email NOT delivered.", {
+      to:        payload.to,
+      subject:   payload.subject,
+      bodyChars: payload.text.length,
+      hint:      "Body withheld from logs; use the mock mailbox to read it.",
     });
 
     return Promise.resolve({ sent: false, provider: "console" });

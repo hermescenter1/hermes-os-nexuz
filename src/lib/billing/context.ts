@@ -39,7 +39,10 @@ export async function getOrgContext(req: NextRequest): Promise<OrgContext | null
   try {
     const memberModel = (db as Record<string, unknown>).organizationMember as MemberModel;
     const member = await memberModel.findFirst({
-      where:   { userId },
+      // PHASE 90: only an ACTIVE membership grants organization context.
+      // Previously any row matched, so a SUSPENDED member kept full billing
+      // and org-scoped access until their row was deleted.
+      where:   { userId, status: "ACTIVE" },
       orderBy: { createdAt: "asc" }, // prefer earliest membership (owner)
       select:  { organizationId: true, role: true },
     });

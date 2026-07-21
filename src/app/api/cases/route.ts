@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { caseRepository, type CaseCreate } from "@/lib/storage/case-repository";
+import { resolveBrainOwner } from "@/lib/storage/brain-owner";
+import { caseRepository, listPublishedCases, type CaseCreate } from "@/lib/storage/case-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
 import { getCurrentUser, type CurrentUser } from "@/lib/auth/session";
@@ -44,15 +45,22 @@ function asArray(v: unknown): string[] {
 }
 
 export async function GET() {
-  const repo = caseRepository();
   try {
     const user = await getCurrentUser();
     const authoring = can(user?.role, "authoring");
-    const cases = await repo.list();
-    return NextResponse.json({
-      storageMode: getStorageMode(),
-      cases: authoring ? cases : cases.filter((c) => c.status === "published"),
-    });
+
+    // PHASE 90: two genuinely different reads.
+    //  - Anonymous / non-authoring callers get the PUBLISHED corpus, which is
+    //    public knowledge by definition and therefore deliberately not
+    //    tenant-scoped (unchanged public behavior).
+    //  - Authoring callers get their own tenant's rows — drafts included —
+    //    scoped by the session-derived owner, so one tenant's unpublished work
+    //    is never visible to another.
+    const cases = authoring
+      ? await caseRepository(await resolveBrainOwner()).list()
+      : await listPublishedCases();
+
+    return NextResponse.json({ storageMode: getStorageMode(), cases });
   } catch {
     return NextResponse.json({ storageMode: getStorageMode(), cases: [] });
   }
@@ -86,7 +94,7 @@ export async function POST(req: Request) {
     status: (body.status as CaseCreate["status"]) ?? "draft",
   };
 
-  const repo = caseRepository();
+  const repo = caseRepository(await resolveBrainOwner());
   try {
     // Prevent duplicate titles: update the existing record instead.
     const existing = repo.findByTitle ? await repo.findByTitle(title) : null;
@@ -118,7 +126,7 @@ export async function PATCH(req: Request) {
   }
   const id = String(body.id ?? "");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const repo = caseRepository();
+  const repo = caseRepository(await resolveBrainOwner());
   try {
     const rec = await repo.update(id, body as Partial<CaseCreate>);
     if (!rec) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -148,16 +156,22 @@ export async function DELETE(req: Request) {
 
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const repo = caseRepository();
+  const repo = caseRepository(await resolveBrainOwner());
   try {
     const ok = await repo.delete(id);
-    await recordAuditEvent({
-      userId: gate.user.id,
-      action: AUDIT_ACTIONS.CASE_DELETED,
-      entityType: "case",
-      entityId: id,
-      metadata: {},
-    });
+    // PHASE 90: only record the audit event when the delete actually happened.
+    // repo.delete returns false for a missing row and — since Phase 90 — for a
+    // row owned by another tenant, so the unconditional write was manufacturing
+    // CASE_DELETED entries for deletions that never occurred.
+    if (ok) {
+      await recordAuditEvent({
+        userId: gate.user.id,
+        action: AUDIT_ACTIONS.CASE_DELETED,
+        entityType: "case",
+        entityId: id,
+        metadata: {},
+      });
+    }
     return NextResponse.json({ storageMode: getStorageMode(), deleted: ok });
   } catch {
     return NextResponse.json({ error: "delete failed" }, { status: 500 });

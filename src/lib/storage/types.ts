@@ -27,6 +27,10 @@ export interface StoredCase {
   status: CaseStatus;
   createdAt: string;
   updatedAt: string;
+  /** PHASE 90 — tenant ownership; null on legacy pre-phase rows. Derived from
+   *  the authenticated server context, never from client input. */
+  userId?: string | null;
+  organizationId?: string | null;
 }
 
 export interface StoredArticle {
@@ -61,6 +65,25 @@ export interface StoredAnalysis {
   riskLevel: string;
   isUnknown: boolean;
   createdAt: string;
+  /**
+   * PHASE 90 — tenant ownership. Null on rows written before this phase
+   * (the legacy shared pool). Never accepted from client input: both values
+   * are derived from the authenticated server-side context at write time.
+   */
+  userId?: string | null;
+  organizationId?: string | null;
+}
+
+/**
+ * PHASE 90 — the trusted server-side owner of a Brain resource.
+ *
+ * Always built from the authenticated session (never from a request body or
+ * query string). `orgId` is null for users with no organization membership;
+ * such a user is scoped to their own `userId` alone.
+ */
+export interface BrainOwner {
+  userId: string;
+  orgId: string | null;
 }
 
 export interface StoredUnknown {
