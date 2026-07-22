@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { assertTestDatabase, resolveOtIntegrationMode } from "@/test/ot-db-guard";
 import { buildOtServiceContext, type OtServiceContext } from "../../service-context";
 import {
+  createGatewayAuthLookup,
   createOtRepositories,
   createTransactionManager,
   type OtPrismaClient,
@@ -15,6 +16,12 @@ import { createAnalysisService } from "../analysis-service";
 import { createFindingService } from "../finding-service";
 import { createGatewayEnvelopeService } from "../gateway-service";
 import { computeSignature, type SecretProvider } from "../../envelope-signature";
+import {
+  authenticateGateway,
+  INGESTION_ID_PATTERN,
+  type GatewayMachineContext,
+  type MachineAuthRejection,
+} from "../../machine-context";
 import { sanitizeAuditMetadata, type AuditPort, type OtAuditAction } from "../core";
 import { RULE_IDS } from "../../analysis-rules";
 import type { MetricSink, OtMetric, OtMetricLabels } from "../../metrics";
@@ -42,6 +49,10 @@ const GW_A1 = `${RUN}-gwA1`;
 const GW_B1 = `${RUN}-gwB1`;
 const USER_A = `${RUN}-userA`;
 const KEY_REF = "env:OT_GATEWAY_HMAC_PRIMARY";
+// Minted by the database during seeding, never hard-coded: the whole point of
+// the handle is that the server chooses it.
+let INGEST_A1 = "";
+let INGEST_B1 = "";
 const SECRET = "integration-only-secret-0123456789abcdef";
 
 let pool: Pool;
@@ -49,13 +60,15 @@ let prisma: OtTransactionalPrismaClient;
 let repos: OtRepositories;
 
 /** Captured audit events — the real port, so payloads are the real ones. */
-let audited: Array<{ action: OtAuditAction; entityId: string | null; metadata: Record<string, unknown> }>;
+let audited: Array<{ action: OtAuditAction; actorId: string | null; entityId: string | null; metadata: Record<string, unknown> }>;
 let metered: Array<[OtMetric, number, OtMetricLabels]>;
 
 const auditPort = (): AuditPort => ({
   async record(input) {
     audited.push({
       action: input.action,
+      // Captured so a machine action can be proven NOT to borrow a human actor.
+      actorId: input.actorId,
       entityId: input.entityId,
       metadata: sanitizeAuditMetadata(input.metadata),
     });
@@ -124,9 +137,7 @@ function services(onCheckpoint?: (cp: ImportCheckpoint) => void) {
     }),
     analysis: createAnalysisService({ projects: repos.projects, findings: repos.findings, audit, metrics }),
     findings: createFindingService({ findings: repos.findings, audit, metrics }),
-    gateway: createGatewayEnvelopeService({
-      gateways: repos.gateways, nonces: repos.nonces, secrets, audit, metrics,
-    }),
+    gateway: createGatewayEnvelopeService({ nonces: repos.nonces, audit, metrics }),
   };
 }
 
@@ -150,9 +161,19 @@ beforeAll(async () => {
   prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: URL }) }) as OtTransactionalPrismaClient;
   repos = createOtRepositories(prisma as OtPrismaClient);
 
-  await repos.gateways.createProfile(ctxA(), {
+  // PHASE 94B4.1 — the ingestion handle is minted by the repository, revealed
+  // exactly once here, and is what a machine presents instead of a session.
+  const profA = await repos.gateways.createProfile(ctxA(), {
     gatewayId: GW_A1, capabilities: ["PROJECT_METADATA_IMPORT"], signingKeyRef: KEY_REF,
   });
+  INGEST_A1 = profA.ok ? (profA.value.ingestionId ?? "") : "";
+  // A second tenant's gateway, provisioned identically, so "another
+  // organization" is tested as a real authenticated device rather than as a
+  // missing row.
+  const profB = await repos.gateways.createProfile(ctxB(), {
+    gatewayId: GW_B1, capabilities: ["PROJECT_METADATA_IMPORT"], signingKeyRef: KEY_REF,
+  });
+  INGEST_B1 = profB.ok ? (profB.value.ingestionId ?? "") : "";
 }, 120_000);
 
 beforeEach(() => { audited = []; metered = []; });
@@ -449,7 +470,7 @@ describe.skipIf(!ENABLED)("94B3.3 — finding service", () => {
   }, 60_000);
 });
 
-describe.skipIf(!ENABLED)("94B3.3 — gateway envelope service", () => {
+describe.skipIf(!ENABLED)("94B4.1 — gateway machine authentication and ingestion", () => {
   const PAYLOAD = JSON.stringify({ kind: "PROJECT_METADATA" });
   const CHECKSUM = createHash("sha256").update(Buffer.from(PAYLOAD, "utf8")).digest("hex");
 
@@ -474,6 +495,28 @@ describe.skipIf(!ENABLED)("94B3.3 — gateway envelope service", () => {
     return { ...base, signature: forged ?? computeSignature(base as never, SECRET) };
   }
 
+  /**
+   * Authenticate exactly as the HTTP route does — through the real global lookup,
+   * against real rows. No test double stands in for the credential check, so
+   * these assertions describe production behaviour.
+   */
+  async function authenticate(
+    env: Record<string, unknown>,
+    opts: { ingestionId?: string | null; payload?: string; simulatorAllowed?: boolean } = {},
+  ) {
+    return authenticateGateway({
+      ingestionId: opts.ingestionId === undefined ? INGEST_A1 : opts.ingestionId,
+      envelope: env,
+      payload: opts.payload ?? PAYLOAD,
+      pathGatewayId: String(env.gatewayId),
+      lookup: createGatewayAuthLookup(prisma as OtPrismaClient),
+      secrets,
+      now: new Date(),
+      simulatorAllowed: opts.simulatorAllowed ?? false,
+      requestId: null,
+    });
+  }
+
   const nonceCount = async (nonce: string) => {
     const [{ n }] = await sql<{ n: string }>(
       `SELECT count(*)::text AS n FROM "GatewayEnvelopeNonce" WHERE nonce=$1`, [nonce],
@@ -481,66 +524,173 @@ describe.skipIf(!ENABLED)("94B3.3 — gateway envelope service", () => {
     return Number(n);
   };
 
-  it("accepts a correctly signed envelope and invokes the handler exactly once", async () => {
+  it("mints an opaque handle that is neither the gateway id nor guessable", () => {
+    expect(INGEST_A1).toMatch(INGESTION_ID_PATTERN);
+    expect(INGEST_B1).toMatch(INGESTION_ID_PATTERN);
+    // If the handle were the operator-supplied serial number it would be
+    // enumerable, which is why a dedicated column was necessary.
+    expect(INGEST_A1).not.toBe(GW_A1);
+    expect(INGEST_A1).not.toBe(INGEST_B1);
+  });
+
+  it("a gateway ingests with NO human session, and carries no user identity", async () => {
     let invoked = 0;
     const svc = createGatewayEnvelopeService({
-      gateways: repos.gateways, nonces: repos.nonces, secrets,
-      audit: auditPort(), metrics: metricSink(), onAccepted: async () => { invoked += 1; },
+      nonces: repos.nonces, audit: auditPort(), metrics: metricSink(),
+      onAccepted: async () => { invoked += 1; },
     });
-    const res = await svc.process(ctxA(), envelope(), PAYLOAD);
+    const auth = await authenticate(envelope());
+    expect(auth.ok, JSON.stringify(auth)).toBe(true);
+    if (!auth.ok) return;
+
+    // The context is derived wholly from the server's own record.
+    expect(auth.ctx.organizationId).toBe(ORG_A);
+    expect(auth.ctx.siteId).toBe(SITE_A1);
+    // A machine is never a user: no identity field exists to be misread as one.
+    const asRecord = auth.ctx as unknown as Record<string, unknown>;
+    expect(asRecord.userId).toBeUndefined();
+    expect(asRecord.role).toBeUndefined();
+
+    const res = await svc.ingest(auth.ctx, auth.envelope);
     expect(res.ok, JSON.stringify(res)).toBe(true);
     expect(invoked).toBe(1);
-    expect(audited.some((a) => a.action === "OT_GATEWAY_ENVELOPE_ACCEPTED")).toBe(true);
+    const accepted = audited.find((a) => a.action === "OT_GATEWAY_ENVELOPE_ACCEPTED");
+    expect(accepted).toBeTruthy();
+    // The audit trail must not borrow a human actor for a machine's action.
+    expect(accepted?.actorId ?? null).toBeNull();
   });
 
   it.each([
-    ["invalid signature", () => ({ signature: "A".repeat(43) }), "SIGNATURE_INVALID"],
-    ["client-chosen key reference", () => ({ signingKeyRef: "env:OT_GATEWAY_HMAC_SECONDARY" }), "SIGNATURE_INVALID"],
-    ["checksum mismatch", () => ({ payloadChecksum: "b".repeat(64) }), "VALIDATION_FAILED"],
-    ["stale timestamp", () => ({ timestamp: new Date(Date.now() - 3_600_000).toISOString() }), "STALE_TIMESTAMP"],
-    ["future timestamp", () => ({ timestamp: new Date(Date.now() + 3_600_000).toISOString() }), "STALE_TIMESTAMP"],
-  ])("%s is rejected and reserves NO nonce", async (_label, patch, expected) => {
-    const svc = services().gateway;
+    ["invalid signature", () => ({ signature: "A".repeat(43) }), "INVALID_AUTH"],
+    ["client-chosen key reference", () => ({ signingKeyRef: "env:OT_GATEWAY_HMAC_SECONDARY" }), "INVALID_AUTH"],
+    ["checksum mismatch", () => ({ payloadChecksum: "b".repeat(64) }), "INVALID_AUTH"],
+    ["stale timestamp", () => ({ timestamp: new Date(Date.now() - 3_600_000).toISOString() }), "STALE"],
+    ["future timestamp", () => ({ timestamp: new Date(Date.now() + 3_600_000).toISOString() }), "STALE"],
+  ])("%s fails authentication and reserves NO nonce", async (_label, patch, expected) => {
     const env = envelope(patch());
-    const res = await svc.process(ctxA(), env, PAYLOAD);
-    expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.code).toBe(expected);
-    // The critical guarantee: a rejected envelope must not burn a nonce.
-    expect(await nonceCount(env.nonce), "no nonce may be reserved").toBe(0);
+    const auth = await authenticate(env);
+    expect(auth.ok).toBe(false);
+    if (!auth.ok) expect(auth.rejection).toBe(expected as MachineAuthRejection);
+    // The critical guarantee: a request that fails authentication performs no
+    // write, so it can neither flood the nonce table nor pre-consume the nonce
+    // a legitimate gateway is about to present.
+    expect(await nonceCount(String(env.nonce)), "no nonce may be reserved").toBe(0);
   });
 
-  it("an unknown and a foreign gateway give the same hidden answer", async () => {
-    const svc = services().gateway;
-    const unknown = await svc.process(ctxA(), envelope({ gatewayId: `${RUN}-nope` }), PAYLOAD);
-    const foreign = await svc.process(ctxA(), envelope({ gatewayId: GW_B1 }), PAYLOAD);
-    expect(unknown.ok).toBe(false);
-    expect(foreign.ok).toBe(false);
-    expect(JSON.stringify(unknown)).toBe(JSON.stringify(foreign));
+  it("a valid signature from another organization is still refused", async () => {
+    // Gateway B is real, enabled, capable, and signs with a key the server
+    // accepts. The only thing wrong is the tenant it claims — and the record,
+    // not the envelope, decides that.
+    const env = envelope({ gatewayId: GW_B1, organizationId: ORG_A });
+    const auth = await authenticate(env, { ingestionId: INGEST_B1 });
+    expect(auth.ok).toBe(false);
+    if (!auth.ok) expect(auth.rejection).toBe("INVALID_AUTH");
+    expect(await nonceCount(String(env.nonce))).toBe(0);
+  });
+
+  it("a handle belonging to a different gateway cannot sign for this one", async () => {
+    const env = envelope();
+    const auth = await authenticate(env, { ingestionId: INGEST_B1 });
+    expect(auth.ok).toBe(false);
+    if (!auth.ok) expect(auth.rejection).toBe("INVALID_AUTH");
+    expect(await nonceCount(String(env.nonce))).toBe(0);
+  });
+
+  it.each([
+    ["absent", null],
+    ["empty", ""],
+    ["malformed", "../../etc/passwd"],
+    ["unknown but well formed", "z".repeat(43)],
+  ])("a %s handle is refused identically, without disclosing existence", async (_l, handle) => {
+    const env = envelope();
+    const auth = await authenticate(env, { ingestionId: handle });
+    expect(auth.ok).toBe(false);
+    // Same rejection AND the same absent gateway id, so nothing distinguishes
+    // "no such gateway" from "wrong shape".
+    if (!auth.ok) {
+      expect(auth.rejection).toBe("INVALID_AUTH");
+      expect(auth.gatewayId).toBeNull();
+    }
+    expect(await nonceCount(String(env.nonce))).toBe(0);
+  });
+
+  it("an envelope naming a gateway other than the path is refused", async () => {
+    const env = envelope();
+    const auth = await authenticateGateway({
+      ingestionId: INGEST_A1,
+      envelope: env,
+      payload: PAYLOAD,
+      pathGatewayId: `${GW_A1}-other`,
+      lookup: createGatewayAuthLookup(prisma as OtPrismaClient),
+      secrets,
+      now: new Date(),
+      simulatorAllowed: false,
+      requestId: null,
+    });
+    expect(auth.ok).toBe(false);
+    if (!auth.ok) expect(auth.rejection).toBe("MALFORMED");
+    expect(await nonceCount(String(env.nonce))).toBe(0);
+  });
+
+  it("a payload type outside the gateway's capabilities is refused", async () => {
+    const env = envelope({ payloadType: "TAG_METADATA" });
+    const auth = await authenticate(env);
+    expect(auth.ok).toBe(false);
+    if (!auth.ok) expect(auth.rejection).toBe("CAPABILITY");
+    expect(await nonceCount(String(env.nonce))).toBe(0);
   });
 
   it("a duplicate valid nonce is REPLAY_DETECTED, and 20 concurrent yield one winner", async () => {
     const svc = services().gateway;
     const env = envelope();
-    const first = await svc.process(ctxA(), env, PAYLOAD);
+    const auth = await authenticate(env);
+    expect(auth.ok).toBe(true);
+    if (!auth.ok) return;
+
+    const first = await svc.ingest(auth.ctx, auth.envelope);
     expect(first.ok).toBe(true);
-    const replay = await svc.process(ctxA(), env, PAYLOAD);
+    const replay = await svc.ingest(auth.ctx, auth.envelope);
     expect(replay.ok).toBe(false);
     if (!replay.ok) expect(replay.code).toBe("REPLAY_DETECTED");
 
     const racy = envelope();
-    const results = await Promise.all(Array.from({ length: 20 }, () => svc.process(ctxA(), racy, PAYLOAD)));
+    const racyAuth = await authenticate(racy);
+    expect(racyAuth.ok).toBe(true);
+    if (!racyAuth.ok) return;
+    const results = await Promise.all(
+      Array.from({ length: 20 }, () => svc.ingest(racyAuth.ctx, racyAuth.envelope)),
+    );
     expect(results.filter((r) => r.ok)).toHaveLength(1);
-    expect(await nonceCount(racy.nonce)).toBe(1);
+    expect(await nonceCount(String(racy.nonce))).toBe(1);
   }, 120_000);
 
-  it("no secret, signature, nonce or payload reaches audit or metrics", async () => {
+  it("no secret, signature, nonce, handle or payload reaches audit or metrics", async () => {
     const svc = services().gateway;
     const env = envelope({ signature: "FORGEDSIGNATUREVALUE1234567890" });
-    await svc.process(ctxA(), env, PAYLOAD);
+    const auth = await authenticate(env);
+    expect(auth.ok).toBe(false);
+    if (!auth.ok) await svc.rejected(auth.rejection, auth.gatewayId);
+
+    const good = await authenticate(envelope());
+    if (good.ok) await svc.ingest(good.ctx, good.envelope);
+
     const raw = JSON.stringify({ audited, metered });
-    for (const secret of [SECRET, env.signature, env.nonce, env.idempotencyKey, CHECKSUM, KEY_REF, PAYLOAD]) {
+    for (const secret of [
+      SECRET, String(env.signature), String(env.nonce), String(env.idempotencyKey),
+      CHECKSUM, KEY_REF, PAYLOAD, INGEST_A1,
+    ]) {
       expect(raw, "a sensitive value reached audit/metrics").not.toContain(secret);
     }
+  });
+
+  it("a machine context carries nothing a human-authorized service would accept", () => {
+    const machine = { organizationId: ORG_A, gatewayId: GW_A1 } as unknown as GatewayMachineContext;
+    expect((machine as unknown as Record<string, unknown>).userId).toBeUndefined();
+    // And the human builder still refuses to manufacture an actor from nothing,
+    // so there is no back door that turns a machine into a user.
+    expect(() =>
+      buildOtServiceContext({ userId: "", organizationId: ORG_A, role: "ADMIN", allowedSiteIds: null }),
+    ).toThrow();
   });
 
   it("metric labels stay low-cardinality across every service", async () => {

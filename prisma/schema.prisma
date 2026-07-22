@@ -6102,6 +6102,18 @@ model EdgeGatewayProfile {
   disabled       Boolean                @default(false)
   /// Opaque REFERENCE to a signing secret held elsewhere — never the secret.
   signingKeyRef  String?                @db.VarChar(191)
+  // PHASE 94B4.1 — the machine-facing ingestion identifier.
+  //
+  // A gateway authenticating itself does not yet know its organization, so the
+  // lookup that resolves it MUST be global. `IndustrialGateway.gatewayId` is
+  // globally unique but operator-supplied (a serial number), which makes it
+  // enumerable — unsuitable as the handle for an unauthenticated endpoint.
+  // This is server-generated, high-entropy and opaque.
+  //
+  // It is an IDENTIFIER, not a credential: knowing it proves nothing. The HMAC
+  // signature is the credential. Nullable so the migration stays additive —
+  // a profile without one simply cannot ingest (deny by default).
+  ingestionId    String?                @unique @db.VarChar(64)
   lastEnvelopeAt DateTime?
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt

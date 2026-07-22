@@ -13,6 +13,7 @@
 // guarantee that writes inside a transaction cannot escape it.
 
 import type { OtServiceContext } from "../service-context";
+import { generateIngestionId, type GatewayAuthLookup, type GatewayAuthRecord } from "../machine-context";
 import { boundedPage } from "../service-context";
 import {
   guarded,
@@ -195,6 +196,8 @@ export function createGatewayRepository(db: OtPrismaClient): GatewayProfileRepos
       if (!parent.value) return fail("VALIDATION_FAILED", "unknown gateway");
       if (!siteAllowed(ctx, ns(parent.value.siteId))) return fail("FORBIDDEN");
 
+      const ingestionId = generateIngestionId();
+
       const created = await guarded(() =>
         db.edgeGatewayProfile.create({
           data: {
@@ -206,11 +209,19 @@ export function createGatewayRepository(db: OtPrismaClient): GatewayProfileRepos
             ...(input.readOnlyMode === undefined ? {} : { readOnlyMode: input.readOnlyMode }),
             ...(input.simulatorMode === undefined ? {} : { simulatorMode: input.simulatorMode }),
             signingKeyRef: input.signingKeyRef ?? null,
+            // PHASE 94B4.1 — every profile is born with a machine handle, so a
+            // gateway is ingestion-capable the moment it exists and nobody has
+            // to remember a second provisioning step. Server-generated: a
+            // client-chosen value would let a caller pick another tenant's.
+            ingestionId,
           },
           include: GATEWAY_INCLUDE,
         }),
       );
-      return created.ok ? succeed(gatewayRecord(created.value)) : created;
+      // The handle is echoed exactly once, here, because the operator must
+      // configure the device with it. It is deliberately absent from every
+      // other mapping.
+      return created.ok ? succeed({ ...gatewayRecord(created.value), ingestionId }) : created;
     },
 
     async updateProfile(ctx, id, input) {
@@ -946,6 +957,28 @@ export function createNonceRepository(db: OtPrismaClient): GatewayNonceRepositor
       }
     },
 
+    async reserveForMachine(ctx, input) {
+      try {
+        // Identical insert-decides semantics; the ONLY difference is where the
+        // tenant comes from — an authenticated gateway record rather than a
+        // human session.
+        await db.gatewayEnvelopeNonce.create({
+          data: {
+            organizationId: ctx.organizationId,
+            gatewayId: input.gatewayId,
+            nonce: input.nonce,
+            expiresAt: input.expiresAt,
+          },
+        });
+        return succeed("RESERVED" as const);
+      } catch (err) {
+        const mapped = (await guarded(async () => {
+          throw err;
+        })) as ReturnType<typeof fail>;
+        return mapped.code === "CONFLICT" ? succeed("DUPLICATE" as const) : mapped;
+      }
+    },
+
     async identifyConflict(ctx, gatewayId, nonce) {
       const res = await guarded(() =>
         db.gatewayEnvelopeNonce.findFirst({
@@ -977,6 +1010,62 @@ export function createNonceRepository(db: OtPrismaClient): GatewayNonceRepositor
       );
       return res.ok ? succeed({ pruned: res.value.count }) : res;
     },
+  };
+}
+
+
+/* ── Machine authentication lookup ──────────────────────────────────────── */
+
+/**
+ * Resolve a gateway by its opaque ingestion identifier — GLOBALLY.
+ *
+ * THIS IS THE ONE DELIBERATELY UNSCOPED QUERY IN THIS LAYER, and it is correct:
+ * a machine authenticating itself does not yet know its organization, so the
+ * organization must be an OUTPUT of the lookup rather than an input to it. The
+ * caller then treats the returned `organizationId` as the authenticated tenant.
+ *
+ * Safety comes from the PROJECTION, not from a tenant filter: only the fields
+ * required to check a signature are selected. No organization name, no user, no
+ * metadata, no tenant configuration — so guessing identifiers cannot become a
+ * way to read tenant data. A row without an `ingestionId` is unreachable here,
+ * which is why the column is nullable and deny-by-default.
+ */
+export function createGatewayAuthLookup(db: OtPrismaClient): GatewayAuthLookup {
+  return async (ingestionId: string): Promise<GatewayAuthRecord | null> => {
+    if (!ingestionId) return null;
+    try {
+      const row = await db.edgeGatewayProfile.findFirst({
+        where: { ingestionId },
+        select: {
+          gatewayId: true,
+          ingestionId: true,
+          organizationId: true,
+          lifecycle: true,
+          disabled: true,
+          simulatorMode: true,
+          capabilities: true,
+          signingKeyRef: true,
+          gateway: { select: { siteId: true } },
+        },
+      });
+      if (!row) return null;
+      const gw = (row.gateway ?? {}) as Row;
+      return {
+        gatewayId: s(row.gatewayId),
+        ingestionId: s(row.ingestionId),
+        organizationId: s(row.organizationId),
+        siteId: ns(gw.siteId),
+        lifecycle: s(row.lifecycle),
+        disabled: b(row.disabled),
+        simulatorMode: b(row.simulatorMode),
+        capabilities: arr(row.capabilities),
+        signingKeyRef: ns(row.signingKeyRef),
+      };
+    } catch {
+      // A lookup failure is indistinguishable from "no such gateway": the
+      // caller answers both with the same generic authentication failure.
+      return null;
+    }
   };
 }
 

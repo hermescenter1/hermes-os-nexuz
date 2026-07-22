@@ -11,6 +11,7 @@
 // id lifted from a request body.
 
 import type { OtServiceContext } from "../service-context";
+import type { GatewayMachineContext } from "../machine-context";
 import type { RepoResult } from "./core";
 
 /* ── Shared shapes ──────────────────────────────────────────────────────── */
@@ -35,6 +36,14 @@ export interface Page<T> {
 export interface GatewayProfileRecord {
   id: string;
   gatewayId: string;
+  /**
+   * PHASE 94B4.1 — present ONLY on the record returned by `createProfile`.
+   *
+   * Revealed once, at provisioning time, because an operator has to configure
+   * the physical device with it. Every other read maps the row without this
+   * field, so it can never appear in a list or a detail response.
+   */
+  ingestionId?: string;
   displayName: string;
   siteId: string | null;
   lifecycle: string;
@@ -340,6 +349,15 @@ export interface EngineeringFindingRepository {
 
 export interface GatewayNonceRepository {
   reserve(ctx: OtServiceContext, input: { gatewayId: string; nonce: string; expiresAt: Date }): Promise<RepoResult<"RESERVED" | "DUPLICATE">>;
+  /**
+   * PHASE 94B4.1 — the same reservation for an authenticated MACHINE.
+   *
+   * A separate method rather than a widened parameter, so the tenant a gateway
+   * writes under can only come from a context the HMAC produced. There is no
+   * overload taking a bare organizationId, and a human context cannot be passed
+   * here by accident: the two context types share no fields a cast would hide.
+   */
+  reserveForMachine(ctx: GatewayMachineContext, input: { gatewayId: string; nonce: string; expiresAt: Date }): Promise<RepoResult<"RESERVED" | "DUPLICATE">>;
   identifyConflict(ctx: OtServiceContext, gatewayId: string, nonce: string): Promise<RepoResult<boolean>>;
   /** Bounded: never an unqualified delete. */
   pruneExpired(ctx: OtServiceContext, before: Date, limit?: number): Promise<RepoResult<{ pruned: number }>>;

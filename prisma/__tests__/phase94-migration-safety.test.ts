@@ -11,6 +11,8 @@ import { resolve, join } from "node:path";
 
 const REPO = process.cwd();
 const MIGRATION = "20260813000000_phase94_ot_edge_foundation";
+/** PHASE 94B4.1 — the machine-authentication handle, added on top. */
+const MIGRATION_941 = "20260814000000_phase94b41_gateway_ingestion_id";
 const sql = readFileSync(join(REPO, "prisma/migrations", MIGRATION, "migration.sql"), "utf8");
 const schema = readFileSync(resolve(REPO, "prisma/schema.prisma"), "utf8");
 
@@ -213,8 +215,50 @@ describe("94 — the schema cannot express a control action", () => {
 });
 
 describe("94 — migration ordering", () => {
-  it("is the newest migration, so it applies last", () => {
-    const dirs = readdirSync(join(REPO, "prisma/migrations")).filter((d) => /^\d{14}_/.test(d));
-    expect(dirs.sort().at(-1)).toBe(MIGRATION);
+  const dirs = () => readdirSync(join(REPO, "prisma/migrations")).filter((d) => /^\d{14}_/.test(d)).sort();
+
+  it("the Phase 94 foundation precedes everything added after it", () => {
+    const all = dirs();
+    // The foundation creates the tables 94B4.1 alters, so ordering is a
+    // correctness requirement, not a convention.
+    expect(all.indexOf(MIGRATION)).toBeGreaterThan(-1);
+    expect(all.indexOf(MIGRATION)).toBeLessThan(all.indexOf(MIGRATION_941));
+  });
+
+  it("the machine-authentication migration is the newest, so it applies last", () => {
+    expect(dirs().at(-1)).toBe(MIGRATION_941);
+  });
+});
+
+describe("94B4.1 — the ingestion handle migration is additive only", () => {
+  const sql941 = readFileSync(join(REPO, "prisma/migrations", MIGRATION_941, "migration.sql"), "utf8");
+  const stmts941 = sql941
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("--"))
+    .join("\n")
+    .split(";")
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  it("adds one nullable column and its unique index, and nothing else", () => {
+    expect(stmts941).toHaveLength(2);
+    expect(stmts941[0]).toMatch(/^ALTER TABLE "EdgeGatewayProfile" ADD COLUMN "ingestionId" VARCHAR\(64\)$/);
+    // Nullable on purpose: an existing profile keeps working and simply cannot
+    // ingest until an operator provisions a handle — deny by default.
+    expect(stmts941[0]).not.toMatch(/NOT NULL/);
+    expect(stmts941[1]).toMatch(/^CREATE UNIQUE INDEX "EdgeGatewayProfile_ingestionId_key"/);
+  });
+
+  it("destroys nothing", () => {
+    for (const st of stmts941) {
+      expect(st, `destructive statement: ${st}`).not.toMatch(/^(DROP|TRUNCATE|DELETE|ALTER TABLE .* DROP)/i);
+    }
+  });
+
+  it("the handle is a globally unique identifier, never secret material", () => {
+    const block = new RegExp(`model EdgeGatewayProfile \\{([\\s\\S]*?)\\n\\}`).exec(schema)![1];
+    expect(block).toMatch(/ingestionId\s+String\?\s+@unique/);
+    // The credential is the HMAC; this column must never hold one.
+    expect(block).not.toMatch(/ingestionSecret|ingestionKey|sharedSecret/i);
   });
 });

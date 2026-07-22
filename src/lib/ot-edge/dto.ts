@@ -52,6 +52,13 @@ export interface GatewayProfileDto {
    * Operators need to know a gateway is provisioned; nobody needs the pointer.
    */
   signingConfigured: boolean;
+  /**
+   * PHASE 94B4.1 — the machine ingestion handle, present ONLY in the response
+   * to creating a profile. It is an identifier, not a credential (the HMAC is
+   * the credential), but it is still revealed once rather than on every read,
+   * so a broad list response never becomes a directory of ingestion endpoints.
+   */
+  ingestionId?: string;
   lastSeenAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -71,6 +78,12 @@ export function toGatewayProfileDto(row: Row): GatewayProfileDto {
     simulatorMode: bool(row.simulatorMode),
     disabled: bool(row.disabled),
     signingConfigured: typeof row.signingKeyRef === "string" && row.signingKeyRef.length > 0,
+    // Included only when the caller passed a record that carries it — which is
+    // exclusively the record returned by `createProfile`. List and detail
+    // mappings never populate the field, so this cannot leak by default.
+    ...(typeof row.ingestionId === "string" && row.ingestionId.length > 0
+      ? { ingestionId: row.ingestionId }
+      : {}),
     lastSeenAt: iso(row.lastSeenAt),
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt),

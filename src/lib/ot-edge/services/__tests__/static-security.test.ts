@@ -56,27 +56,50 @@ describe("94B3.3 — services depend on interfaces, never a Prisma singleton", (
   });
 });
 
-describe("94B3.3 — the nonce is reserved only AFTER the signature verifies", () => {
-  const code = strip(read("src/lib/ot-edge/services/gateway-service.ts"));
+describe("94B4.1 — the nonce is reserved only AFTER the signature verifies", () => {
+  /**
+   * The invariant is unchanged; it simply spans two modules now.
+   *
+   * Verification moved to `machine-context.ts`, which performs no writes at
+   * all, and the only code that reserves a nonce requires the branded context
+   * that verification produces. So "reserve after verify" is no longer a matter
+   * of statement order inside one function — it is structural, and these
+   * assertions pin both halves of it.
+   */
+  const svc = strip(read("src/lib/ot-edge/services/gateway-service.ts"));
+  const auth = strip(read("src/lib/ot-edge/machine-context.ts"));
 
-  it("the reserve call appears after the verification call", () => {
-    const verifyAt = code.indexOf("verifyEnvelopeSignature");
-    const reserveAt = code.indexOf("nonces.reserve");
-    expect(verifyAt, "signature verification must exist").toBeGreaterThan(-1);
-    expect(reserveAt, "nonce reservation must exist").toBeGreaterThan(-1);
-    // Reserving first would let an unauthenticated caller burn nonces and
-    // pre-consume one a real gateway is about to use.
-    expect(reserveAt, "nonce reserved before signature verification").toBeGreaterThan(verifyAt);
+  it("authentication verifies a signature and reserves nothing", () => {
+    expect(auth).toMatch(/verifyEnvelopeSignature/);
+    expect(auth, "authentication must not write").not.toMatch(/reserve/);
+  });
+
+  it("the service reserves, and can only be entered with a verified context", () => {
+    expect(svc).toMatch(/nonces\.reserveForMachine/);
+    // The single entry point takes the branded machine context. A caller
+    // holding only request data cannot construct one, so there is no path to
+    // the reservation that skips verification.
+    expect(svc).toMatch(/ingest\(\s*\n?\s*ctx:\s*GatewayMachineContext/);
+    expect(svc, "the service must not re-implement verification").not.toMatch(/verifyEnvelopeSignature/);
   });
 
   it("the secret is dereferenced from the gateway record, not the envelope", () => {
     // The envelope may ASSERT a reference; only the server's copy selects one.
-    expect(code).toMatch(/gw\.signingKeyRef/);
-    expect(code).not.toMatch(/secrets\.resolve\(\s*env\.signingKeyRef/);
+    expect(auth).toMatch(/gw\.signingKeyRef/);
+    expect(auth).not.toMatch(/secrets\.resolve\(\s*env\.signingKeyRef/);
   });
 
   it("only one reserve site exists, so no path bypasses the ordering", () => {
-    expect((code.match(/nonces\.reserve/g) ?? []).length).toBe(1);
+    expect((svc.match(/nonces\.reserveForMachine/g) ?? []).length).toBe(1);
+    expect((svc.match(/nonces\.reserve\b/g) ?? []).length).toBe(0);
+  });
+
+  it("no human identity is fabricated for a machine", () => {
+    // A gateway must never be recorded as, or granted the authority of, a user.
+    expect(svc).toMatch(/actorId:\s*null/);
+    expect(svc).not.toMatch(/ctx\.userId/);
+    expect(svc).not.toMatch(/OtServiceContext/);
+    expect(auth).not.toMatch(/userId/);
   });
 });
 
