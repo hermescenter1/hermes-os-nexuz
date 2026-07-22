@@ -77,14 +77,33 @@ export function toGatewayProfileDto(row: Row): GatewayProfileDto {
     readOnlyMode: bool(row.readOnlyMode),
     simulatorMode: bool(row.simulatorMode),
     disabled: bool(row.disabled),
-    signingConfigured: typeof row.signingKeyRef === "string" && row.signingKeyRef.length > 0,
+    // PHASE 94B.1 — prefer the value the record already derived.
+    //
+    // `GatewayProfileRecord` carries `signingConfigured` as a boolean and
+    // deliberately does NOT carry `signingKeyRef` (the reference must not cross
+    // that boundary). Deriving it here from `row.signingKeyRef` alone therefore
+    // reported `false` for every gateway on every route. The raw-row derivation
+    // is kept as a fallback so a mapper fed a database row still answers
+    // correctly, and the reference itself is still never emitted.
+    signingConfigured:
+      row.signingConfigured === true ||
+      (typeof row.signingKeyRef === "string" && row.signingKeyRef.length > 0),
     // Included only when the caller passed a record that carries it — which is
     // exclusively the record returned by `createProfile`. List and detail
     // mappings never populate the field, so this cannot leak by default.
     ...(typeof row.ingestionId === "string" && row.ingestionId.length > 0
       ? { ingestionId: row.ingestionId }
       : {}),
-    lastSeenAt: iso(row.lastSeenAt),
+    // PHASE 94B.1 — read the field the record actually carries.
+    //
+    // This previously read `row.lastSeenAt`, a key no `GatewayProfileRecord`
+    // has: the persistence field is `lastEnvelopeAt` (ports.ts). Every route
+    // therefore reported `null` for every gateway, including gateways that had
+    // successfully submitted signed envelopes. The PUBLIC field name is
+    // unchanged — only the source is corrected — and it stays null when no
+    // envelope has ever been accepted. It is never synthesised from createdAt
+    // or updatedAt: "never seen" and "seen" must remain distinguishable.
+    lastSeenAt: iso(row.lastEnvelopeAt),
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt),
   };
@@ -120,7 +139,12 @@ export function toOtDeviceProfileDto(row: Row): OtDeviceProfileDto {
     model: nstr(row.model),
     firmwareVersion: nstr(row.firmwareVersion),
     protocols: list(row.protocols),
-    lifecycle: str(row.lifecycle),
+    // PHASE 94B.1 — the record's field is `lifecycleState`; the public DTO
+    // field stays `lifecycle`. Reading `row.lifecycle` alone returned "" on
+    // every device response, which this phase would have made visible: the new
+    // `?lifecycle=` filter narrows correctly on the column, so the list would
+    // have been filtered by a value the API reported as empty.
+    lifecycle: str(row.lifecycleState ?? row.lifecycle),
     engineeringId: nstr(row.engineeringId),
     networkZone: str(row.networkZone),
     safetyClass: str(row.safetyClass),

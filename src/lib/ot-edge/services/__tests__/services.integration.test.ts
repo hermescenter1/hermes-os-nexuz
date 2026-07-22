@@ -24,6 +24,7 @@ import {
 } from "../../machine-context";
 import { sanitizeAuditMetadata, type AuditPort, type OtAuditAction } from "../core";
 import { RULE_IDS } from "../../analysis-rules";
+import { toGatewayProfileDto, toOtDeviceProfileDto } from "../../dto";
 import type { MetricSink, OtMetric, OtMetricLabels } from "../../metrics";
 
 /**
@@ -702,4 +703,302 @@ describe.skipIf(!ENABLED)("94B4.1 — gateway machine authentication and ingesti
       }
     }
   }, 60_000);
+});
+
+describe.skipIf(!ENABLED)("94B.1 — list filters against real PostgreSQL", () => {
+  /**
+   * These run through the REAL adapters against real rows, because the property
+   * under test is a database property: a filter must narrow inside the same
+   * tenant-scoped query that paginates, and must never widen it.
+   *
+   * The seeded fixture is self-contained (its own sites, gateways and assets)
+   * so it cannot be perturbed by, or perturb, the other suites in this file.
+   */
+  const P = `${RUN}-f`;                      // fixture prefix
+  const SITE_1 = `${P}-site1`;
+  const SITE_2 = `${P}-site2`;
+  const SITE_B = `${P}-siteB`;
+  const SITE_3 = `${P}-site3`;
+
+  /** [gatewayId, site, name, lifecycle, capabilities] */
+  const GATEWAYS: Array<[string, string, string, string, string[]]> = [
+    [`${P}-gw1`, SITE_1, "Packing line north", "ACTIVE", ["PROJECT_METADATA_IMPORT", "TAG_METADATA_IMPORT"]],
+    [`${P}-gw2`, SITE_1, "Packing line south", "DISABLED", ["PROJECT_METADATA_IMPORT"]],
+    [`${P}-gw3`, SITE_2, "Utilities block", "ACTIVE", ["READ_ONLY_TELEMETRY"]],
+    [`${P}-gw4`, SITE_2, "Boiler house", "REVOKED", ["ALARM_METADATA_IMPORT"]],
+    // A matched PAIR for the LIKE-metacharacter tests: the names differ only by
+    // the wildcard characters, so an unescaped search term would match both and
+    // an escaped one matches exactly the intended row.
+    [`${P}-gw5`, SITE_3, "Zone_9%Alpha", "STALE", ["PROJECT_METADATA_IMPORT"]],
+    [`${P}-gw6`, SITE_3, "Zone9XAlpha", "STALE", ["PROJECT_METADATA_IMPORT"]],
+  ];
+
+  /** [assetId, site, name, category, lifecycleState, engineeringId] */
+  const DEVICES: Array<[string, string, string, string, string, string]> = [
+    [`${P}-a1`, SITE_1, "Filler PLC", "PLC", "OPERATIONAL", `${P}-ENG-1`],
+    [`${P}-a2`, SITE_1, "Filler panel", "HMI", "MAINTENANCE", `${P}-ENG-2`],
+    [`${P}-a3`, SITE_2, "Chiller drive", "VFD", "OPERATIONAL", `${P}-ENG-3`],
+    [`${P}-a4`, SITE_2, "Safety relay", "SAFETY_CONTROLLER", "DECOMMISSIONED", `${P}-ENG-4`],
+  ];
+
+  beforeAll(async () => {
+    if (!ENABLED) return;
+    for (const [site, org] of [[SITE_1, ORG_A], [SITE_2, ORG_A], [SITE_3, ORG_A], [SITE_B, ORG_B]] as const) {
+      await sql(
+        `INSERT INTO "IndustrialSite" (id,"organizationId",name,slug,"updatedAt") VALUES ($1,$2,$3,$4,now()) ON CONFLICT DO NOTHING`,
+        [site, org, `Site ${site}`, site],
+      );
+    }
+
+    for (const [gw, site, name, lifecycle, caps] of GATEWAYS) {
+      await sql(
+        `INSERT INTO "IndustrialGateway" (id,"organizationId","siteId",name,"gatewayId","updatedAt") VALUES ($1,$2,$3,$4,$5,now()) ON CONFLICT DO NOTHING`,
+        [gw, ORG_A, site, name, `${gw}-serial`],
+      );
+      await sql(
+        `INSERT INTO "EdgeGatewayProfile" (id,"organizationId","gatewayId",lifecycle,capabilities,"updatedAt")
+         VALUES ($1,$2,$3,$4::"EdgeGatewayLifecycle",$5::"EdgeGatewayCapability"[],now()) ON CONFLICT DO NOTHING`,
+        [`${gw}-p`, ORG_A, gw, lifecycle, caps],
+      );
+    }
+
+    // A second tenant holding a gateway that matches every filter below, so a
+    // leak would be visible rather than silent.
+    await sql(
+      `INSERT INTO "IndustrialGateway" (id,"organizationId","siteId",name,"gatewayId","updatedAt") VALUES ($1,$2,$3,$4,$5,now()) ON CONFLICT DO NOTHING`,
+      [`${P}-gwB`, ORG_B, SITE_B, "Packing line north", `${P}-gwB-serial`],
+    );
+    await sql(
+      `INSERT INTO "EdgeGatewayProfile" (id,"organizationId","gatewayId",lifecycle,capabilities,"updatedAt")
+       VALUES ($1,$2,$3,'ACTIVE'::"EdgeGatewayLifecycle",$4::"EdgeGatewayCapability"[],now()) ON CONFLICT DO NOTHING`,
+      [`${P}-gwB-p`, ORG_B, `${P}-gwB`, ["PROJECT_METADATA_IMPORT"]],
+    );
+
+    for (const [asset, site, name, category, lifecycleState, engineeringId] of DEVICES) {
+      await sql(
+        `INSERT INTO "IndustrialAsset" (id,"organizationId","siteId",name,"updatedAt") VALUES ($1,$2,$3,$4,now()) ON CONFLICT DO NOTHING`,
+        [asset, ORG_A, site, name],
+      );
+      await sql(
+        `INSERT INTO "OtDeviceProfile" (id,"organizationId","assetId",category,"lifecycleState","engineeringId","updatedAt")
+         VALUES ($1,$2,$3,$4::"OtDeviceCategory",$5::"OtLifecycleState",$6,now()) ON CONFLICT DO NOTHING`,
+        [`${asset}-p`, ORG_A, asset, category, lifecycleState, engineeringId],
+      );
+    }
+
+    await sql(
+      `INSERT INTO "IndustrialAsset" (id,"organizationId","siteId",name,"updatedAt") VALUES ($1,$2,$3,$4,now()) ON CONFLICT DO NOTHING`,
+      [`${P}-aB`, ORG_B, SITE_B, "Filler PLC"],
+    );
+    await sql(
+      `INSERT INTO "OtDeviceProfile" (id,"organizationId","assetId",category,"lifecycleState","updatedAt")
+       VALUES ($1,$2,$3,'PLC'::"OtDeviceCategory",'OPERATIONAL'::"OtLifecycleState",now()) ON CONFLICT DO NOTHING`,
+      [`${P}-aB-p`, ORG_B, `${P}-aB`],
+    );
+  }, 120_000);
+
+  /** Only the ids this fixture created, so unrelated suites cannot skew a count. */
+  const mine = (ids: string[]) => ids.filter((id) => id.startsWith(P));
+
+  async function gwList(ctx: ReturnType<typeof ctxA>, filters?: Record<string, string>, page?: Record<string, number | string>) {
+    const res = await repos.gateways.listVisible(ctx, page as never, filters as never);
+    expect(res.ok, JSON.stringify(res)).toBe(true);
+    if (!res.ok) throw new Error("unreachable");
+    return res.value;
+  }
+
+  async function devList(ctx: ReturnType<typeof ctxA>, filters?: Record<string, string>, page?: Record<string, number | string>) {
+    const res = await repos.devices.listVisible(ctx, page as never, filters as never);
+    expect(res.ok, JSON.stringify(res)).toBe(true);
+    if (!res.ok) throw new Error("unreachable");
+    return res.value;
+  }
+
+  it("filters gateways by lifecycle", async () => {
+    const { items } = await gwList(ctxA(), { lifecycle: "ACTIVE" }, { take: 200 });
+    const ids = mine(items.map((g) => g.id));
+    expect(ids.sort()).toEqual([`${P}-gw1-p`, `${P}-gw3-p`].sort());
+  });
+
+  it("filters gateways by site", async () => {
+    const { items } = await gwList(ctxA(), { siteId: SITE_2 }, { take: 200 });
+    expect(mine(items.map((g) => g.id)).sort()).toEqual([`${P}-gw3-p`, `${P}-gw4-p`].sort());
+  });
+
+  it("filters gateways by a declared capability", async () => {
+    const { items } = await gwList(ctxA(), { capability: "TAG_METADATA_IMPORT" }, { take: 200 });
+    expect(mine(items.map((g) => g.id))).toEqual([`${P}-gw1-p`]);
+  });
+
+  it("searches gateways by name and by hardware identifier", async () => {
+    const byName = await gwList(ctxA(), { search: "packing line" }, { take: 200 });
+    expect(mine(byName.items.map((g) => g.id)).sort()).toEqual([`${P}-gw1-p`, `${P}-gw2-p`].sort());
+
+    const bySerial = await gwList(ctxA(), { search: `${P}-gw4-serial` }, { take: 200 });
+    expect(mine(bySerial.items.map((g) => g.id))).toEqual([`${P}-gw4-p`]);
+    // The identifier is searchable but still never returned.
+    expect(JSON.stringify(bySerial.items)).not.toContain(`${P}-gw4-serial`);
+  });
+
+  it("a search term matches literally, not as a LIKE pattern", async () => {
+    // Prisma compiles `contains` to ILIKE with no ESCAPE clause, so an
+    // unescaped `_` matches ANY character and `%` matches anything at all.
+
+    // `_` must be a literal underscore: "Zone_9%Alpha" only, never "Zone9XAlpha".
+    const underscore = await gwList(ctxA(), { search: "Zone_9" }, { take: 200 });
+    expect(mine(underscore.items.map((g) => g.id))).toEqual([`${P}-gw5-p`]);
+
+    // `%` must be a literal percent sign, not "match everything".
+    const percent = await gwList(ctxA(), { search: "%" }, { take: 200 });
+    expect(mine(percent.items.map((g) => g.id))).toEqual([`${P}-gw5-p`]);
+
+    // And a backslash must not smuggle an escape into the pattern.
+    const backslash = await gwList(ctxA(), { search: "\\" }, { take: 200 });
+    expect(mine(backslash.items.map((g) => g.id))).toEqual([]);
+
+    // The ordinary case still works.
+    const plain = await gwList(ctxA(), { search: "Alpha" }, { take: 200 });
+    expect(mine(plain.items.map((g) => g.id)).sort()).toEqual([`${P}-gw5-p`, `${P}-gw6-p`].sort());
+  });
+
+  it("composes several gateway filters as a conjunction", async () => {
+    const { items } = await gwList(
+      ctxA(),
+      { lifecycle: "ACTIVE", siteId: SITE_1, capability: "PROJECT_METADATA_IMPORT", search: "packing" },
+      { take: 200 },
+    );
+    expect(mine(items.map((g) => g.id))).toEqual([`${P}-gw1-p`]);
+  });
+
+  it("applies gateway filters BEFORE pagination", async () => {
+    // Two ACTIVE gateways exist in this fixture. Asking for one row must give
+    // the FIRST of the filtered set with total 2 — not the first of the
+    // unfiltered set narrowed afterwards.
+    const all = await gwList(ctxA(), { lifecycle: "ACTIVE", search: `${P}-` }, { take: 200, sortBy: "createdAt", sortDir: "asc" });
+    expect(all.total).toBe(2);
+
+    const first = await gwList(ctxA(), { lifecycle: "ACTIVE", search: `${P}-` }, { take: 1, skip: 0, sortBy: "createdAt", sortDir: "asc" });
+    expect(first.items).toHaveLength(1);
+    expect(first.total, "total must count the FILTERED set").toBe(2);
+    expect(first.items[0].lifecycle).toBe("ACTIVE");
+
+    const second = await gwList(ctxA(), { lifecycle: "ACTIVE", search: `${P}-` }, { take: 1, skip: 1, sortBy: "createdAt", sortDir: "asc" });
+    expect(second.items[0].id).not.toBe(first.items[0].id);
+    expect(second.items[0].lifecycle).toBe("ACTIVE");
+  });
+
+  it("composes gateway filters with sorting", async () => {
+    const asc = await gwList(ctxA(), { search: `${P}-` }, { take: 200, sortBy: "createdAt", sortDir: "asc" });
+    const desc = await gwList(ctxA(), { search: `${P}-` }, { take: 200, sortBy: "createdAt", sortDir: "desc" });
+    const a = mine(asc.items.map((g) => g.id));
+    const d = mine(desc.items.map((g) => g.id));
+    expect(a.length).toBeGreaterThan(1);
+    expect(d).toEqual([...a].reverse());
+  });
+
+  it("a site filter cannot widen a site-restricted actor", async () => {
+    // THE CRITICAL PROPERTY. ctxA1 may see SITE_A1 only — not SITE_1/SITE_2 —
+    // so every request below must be empty. If the filter were spread over the
+    // scope instead of composed with AND, the requested site would REPLACE the
+    // allow-list and hand this actor gateways it may not see.
+    for (const siteId of [SITE_1, SITE_2]) {
+      const { items, total } = await gwList(ctxA1(), { siteId }, { take: 200 });
+      expect(mine(items.map((g) => g.id)), `leaked ${siteId}`).toEqual([]);
+      expect(total).toBe(0);
+    }
+    const devices = await devList(ctxA1(), { siteId: SITE_2 }, { take: 200 });
+    expect(mine(devices.items.map((d) => d.id))).toEqual([]);
+  });
+
+  it("filters never cross a tenant boundary", async () => {
+    // Organization B holds a gateway and a device that match these filters.
+    const gw = await gwList(ctxA(), { lifecycle: "ACTIVE", search: "packing line north" }, { take: 200 });
+    expect(gw.items.map((g) => g.id)).not.toContain(`${P}-gwB-p`);
+
+    const dev = await devList(ctxA(), { category: "PLC", search: "filler plc" }, { take: 200 });
+    expect(dev.items.map((d) => d.id)).not.toContain(`${P}-aB-p`);
+
+    // And the mirror image: B sees only its own.
+    const fromB = await gwList(ctxB(), { lifecycle: "ACTIVE" }, { take: 200 });
+    expect(mine(fromB.items.map((g) => g.id))).toEqual([`${P}-gwB-p`]);
+  });
+
+  it("the device DTO reports the lifecycle the filter narrowed on", async () => {
+    // End to end against real rows: filter by lifecycle, then confirm the
+    // mapped DTO actually carries that value rather than an empty string.
+    const { items } = await devList(ctxA(), { lifecycle: "MAINTENANCE" }, { take: 200 });
+    const own = items.filter((d) => d.id.startsWith(P));
+    expect(own.map((d) => d.id)).toEqual([`${P}-a2-p`]);
+    expect(toOtDeviceProfileDto(own[0] as never).lifecycle).toBe("MAINTENANCE");
+  });
+
+  it("an unmatched gateway filter returns an empty page, not an error", async () => {
+    const { items, total, take, skip } = await gwList(ctxA(), { lifecycle: "STALE", siteId: SITE_1 }, { take: 200 });
+    expect(mine(items.map((g) => g.id))).toEqual([]);
+    expect(total).toBe(0);
+    expect(take).toBe(200);
+    expect(skip).toBe(0);
+  });
+
+  it("filters devices by lifecycle, site and category", async () => {
+    const byLifecycle = await devList(ctxA(), { lifecycle: "OPERATIONAL" }, { take: 200 });
+    expect(mine(byLifecycle.items.map((d) => d.id)).sort()).toEqual([`${P}-a1-p`, `${P}-a3-p`].sort());
+
+    const bySite = await devList(ctxA(), { siteId: SITE_1 }, { take: 200 });
+    expect(mine(bySite.items.map((d) => d.id)).sort()).toEqual([`${P}-a1-p`, `${P}-a2-p`].sort());
+
+    const byCategory = await devList(ctxA(), { category: "SAFETY_CONTROLLER" }, { take: 200 });
+    expect(mine(byCategory.items.map((d) => d.id))).toEqual([`${P}-a4-p`]);
+  });
+
+  it("searches devices by asset name and by engineering identifier", async () => {
+    const byName = await devList(ctxA(), { search: "chiller" }, { take: 200 });
+    expect(mine(byName.items.map((d) => d.id))).toEqual([`${P}-a3-p`]);
+
+    const byEngineering = await devList(ctxA(), { search: `${P}-ENG-2` }, { take: 200 });
+    expect(mine(byEngineering.items.map((d) => d.id))).toEqual([`${P}-a2-p`]);
+  });
+
+  it("composes several device filters and paginates the filtered set", async () => {
+    const combined = await devList(ctxA(), { lifecycle: "OPERATIONAL", siteId: SITE_1, category: "PLC" }, { take: 200 });
+    expect(mine(combined.items.map((d) => d.id))).toEqual([`${P}-a1-p`]);
+
+    const all = await devList(ctxA(), { search: `${P}-ENG-` }, { take: 200 });
+    expect(all.total).toBe(4);
+    const firstPage = await devList(ctxA(), { search: `${P}-ENG-` }, { take: 2, skip: 0, sortBy: "createdAt", sortDir: "asc" });
+    expect(firstPage.items).toHaveLength(2);
+    expect(firstPage.total, "total must count the FILTERED set").toBe(4);
+  });
+
+  it("an unfiltered call behaves exactly as before this phase", async () => {
+    // The additive-contract guarantee: omitting filters entirely must not
+    // change what the pre-94B.1 signature returned.
+    const withoutArg = await repos.gateways.listVisible(ctxA(), { take: 200 } as never);
+    const withUndefined = await repos.gateways.listVisible(ctxA(), { take: 200 } as never, undefined);
+    const withEmpty = await repos.gateways.listVisible(ctxA(), { take: 200 } as never, {} as never);
+    expect(withoutArg.ok && withUndefined.ok && withEmpty.ok).toBe(true);
+    if (!withoutArg.ok || !withUndefined.ok || !withEmpty.ok) return;
+    expect(withUndefined.value.total).toBe(withoutArg.value.total);
+    expect(withEmpty.value.total).toBe(withoutArg.value.total);
+  });
+
+  it("the corrected lastSeenAt reaches the DTO from real data", async () => {
+    const stamped = new Date("2026-05-06T07:08:09.000Z");
+    // The column is `timestamp` without a zone. Handing the raw pg driver a JS
+    // Date makes IT choose the zone (local), while Prisma reads the column back
+    // as UTC — a one-hour disagreement that says nothing about the code under
+    // test. Casting through timestamptz pins the stored wall-clock to UTC, so
+    // this asserts the mapper rather than the harness.
+    await sql(
+      `UPDATE "EdgeGatewayProfile" SET "lastEnvelopeAt" = $1::timestamptz AT TIME ZONE 'UTC' WHERE id=$2`,
+      [stamped.toISOString(), `${P}-gw1-p`],
+    );
+    const { items } = await gwList(ctxA(), { search: "packing line north" }, { take: 200 });
+    const seen = items.find((g) => g.id === `${P}-gw1-p`);
+    expect(seen?.lastEnvelopeAt?.toISOString()).toBe(stamped.toISOString());
+    expect(toGatewayProfileDto(seen as never).lastSeenAt).toBe(stamped.toISOString());
+
+    const never = items.find((g) => g.id !== `${P}-gw1-p`) ?? null;
+    if (never) expect(toGatewayProfileDto(never as never).lastSeenAt).toBeNull();
+  });
 });

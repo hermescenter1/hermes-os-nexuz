@@ -64,7 +64,12 @@ vi.mock("@/lib/ot-edge/http/composition", () => ({
   resolveOtServices: async () => ({
     repos: {
       gateways: {
-        listVisible: async () => page([{ id: "g-1", gatewayId: "GW1", signingKeyRef: "env:OT_GATEWAY_HMAC_PRIMARY" }]),
+        // PHASE 94B.1 — the call is recorded so "the filter reached the
+        // repository" and "an invalid filter never did" are both provable.
+        listVisible: async (...args: unknown[]) => {
+          h.calls.push({ service: "gateways.listVisible", args });
+          return page([{ id: "g-1", gatewayId: "GW1", signingKeyRef: "env:OT_GATEWAY_HMAC_PRIMARY" }]);
+        },
         findVisibleById: async (_c: unknown, id: string) =>
           id === "g-1"
             ? { ok: true, value: { id: "g-1", gatewayId: "GW1", signingKeyRef: "env:OT_GATEWAY_HMAC_PRIMARY" } }
@@ -74,7 +79,10 @@ vi.mock("@/lib/ot-edge/http/composition", () => ({
         updateLifecycle: async () => ({ ok: true, value: { id: "g-1", gatewayId: "GW1", lifecycle: "DISABLED" } }),
       },
       devices: {
-        listVisible: async () => page([{ id: "d-1", assetId: "a-1" }]),
+        listVisible: async (...args: unknown[]) => {
+          h.calls.push({ service: "devices.listVisible", args });
+          return page([{ id: "d-1", assetId: "a-1" }]);
+        },
         findVisibleById: async (_c: unknown, id: string) =>
           id === "d-1" ? { ok: true, value: { id: "d-1", assetId: "a-1" } } : { ok: false, code: "NOT_FOUND" },
         createProfile: async () => ({ ok: true, value: { id: "d-2", assetId: "a-2" } }),
@@ -549,5 +557,107 @@ describe("94B4 — hidden resources and pagination", () => {
     const res = await POST(new NextRequest(url("/engineering/projects/p-1/analyze"), { method: "POST" }), params("p-1"));
     expect(res.status).toBe(200);
     expect(h.calls.filter((c) => c.service === "analysis.run")).toHaveLength(1);
+  });
+});
+
+describe("94B.1 — list filters reach the repository, or the request is refused", () => {
+  /**
+   * The defect this closes: before 94B.1 the routes read only page/pageSize/
+   * sortBy/sortDir and `parseQuery` ignored everything else, so `?lifecycle=X`
+   * returned the UNFILTERED page — which a dashboard would then have presented
+   * as filtered. These tests pin both halves of the fix: a supported key is
+   * honoured, and an unsupported VALUE is refused before any repository call.
+   */
+  const listArgs = (service: string) =>
+    h.calls.find((c) => c.service === service)?.args as unknown[] | undefined;
+
+  it("passes every supported gateway filter through to the query", async () => {
+    const { GET } = await import("../gateways/route");
+    const res = await GET(
+      get("/ot/gateways?lifecycle=ACTIVE&siteId=site-1&capability=READ_ONLY_TELEMETRY&search=Line"),
+    );
+    expect(res.status).toBe(200);
+    expect(listArgs("gateways.listVisible")?.[2]).toEqual({
+      lifecycle: "ACTIVE",
+      siteId: "site-1",
+      capability: "READ_ONLY_TELEMETRY",
+      search: "Line",
+    });
+  });
+
+  it("passes every supported device filter through to the query", async () => {
+    const { GET } = await import("../devices/route");
+    const res = await GET(get("/ot/devices?lifecycle=OPERATIONAL&siteId=site-1&category=PLC&search=P-101"));
+    expect(res.status).toBe(200);
+    expect(listArgs("devices.listVisible")?.[2]).toEqual({
+      lifecycle: "OPERATIONAL",
+      siteId: "site-1",
+      category: "PLC",
+      search: "P-101",
+    });
+  });
+
+  it("keeps pagination and sorting intact alongside a filter", async () => {
+    const { GET } = await import("../gateways/route");
+    await GET(get("/ot/gateways?lifecycle=ACTIVE&page=3&pageSize=10&sortBy=updatedAt&sortDir=asc"));
+    const args = listArgs("gateways.listVisible");
+    // The page argument is unchanged by filtering: skip is still (3-1)*10.
+    expect(args?.[1]).toEqual({ take: 10, skip: 20, sortBy: "updatedAt", sortDir: "asc" });
+    expect(args?.[2]).toEqual({ lifecycle: "ACTIVE" });
+  });
+
+  it.each([
+    ["gateway lifecycle", "../gateways/route", "/ot/gateways?lifecycle=RETIRED"],
+    ["gateway capability", "../gateways/route", "/ot/gateways?capability=CONTROL_WRITE"],
+    ["gateway site id", "../gateways/route", "/ot/gateways?siteId=site%20one"],
+    ["device lifecycle", "../devices/route", "/ot/devices?lifecycle=REVOKED"],
+    ["device category", "../devices/route", "/ot/devices?category=ROBOT"],
+    ["device site id", "../devices/route", "/ot/devices?siteId=%25"],
+  ])("refuses an invalid %s with 400 and never queries", async (_label, mod, path) => {
+    const { GET } = (await import(mod)) as { GET: (r: NextRequest) => Promise<Response> };
+    const res = await GET(get(path));
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe("INVALID_QUERY_PARAMETER");
+    // The decisive assertion: a refused filter must not reach the database.
+    expect(h.calls.filter((c) => c.service.endsWith("listVisible"))).toEqual([]);
+  });
+
+  it("a supported filter key is never silently ignored", async () => {
+    const { GET } = await import("../gateways/route");
+    await GET(get("/ot/gateways?lifecycle=STALE"));
+    const filters = listArgs("gateways.listVisible")?.[2] as Record<string, unknown>;
+    // If this ever comes back undefined or empty, the route has gone back to
+    // answering with an unfiltered page while the caller believes otherwise.
+    expect(filters).toBeDefined();
+    expect(filters.lifecycle).toBe("STALE");
+  });
+
+  it("an unsupported key is ignored rather than refused, and filters nothing", async () => {
+    const { GET } = await import("../gateways/route");
+    // `category` and `vendor` have no backing column; accepting them would
+    // advertise filters that can never do anything.
+    const res = await GET(get("/ot/gateways?category=PLC&vendor=Siemens"));
+    expect(res.status).toBe(200);
+    expect(listArgs("gateways.listVisible")?.[2]).toEqual({});
+  });
+
+  it("filtering does not change authorization or caching guarantees", async () => {
+    h.org = null;
+    const { GET } = await import("../gateways/route");
+    const res = await GET(get("/ot/gateways?lifecycle=ACTIVE"));
+    expect(res.status).toBe(401);
+    expect((await res.json()).code).toBe("UNAUTHENTICATED");
+    // An anonymous request must not reach the query even with a valid filter.
+    expect(h.calls.filter((c) => c.service.endsWith("listVisible"))).toEqual([]);
+
+    h.org = { ...ORG };
+    const ok = await GET(get("/ot/gateways?lifecycle=ACTIVE"));
+    expect(ok.headers.get("Cache-Control")).toBe("no-store, max-age=0");
+  });
+
+  it("the filtered response still exposes no signing reference", async () => {
+    const { GET } = await import("../gateways/route");
+    const res = await GET(get("/ot/gateways?lifecycle=ACTIVE"));
+    expect(await res.text()).not.toContain("OT_GATEWAY_HMAC");
   });
 });

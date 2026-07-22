@@ -11,6 +11,7 @@ import { resolveOtServices } from "@/lib/ot-edge/http/composition";
 import { toGatewayProfileDto } from "@/lib/ot-edge/dto";
 import { svcFail } from "@/lib/ot-edge/services/core";
 import { readJsonBody } from "@/lib/ot-edge/http/body";
+import { parseGatewayListFilters } from "@/lib/ot-edge/http/list-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +30,20 @@ const CreateGateway = z
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   return withOtRoute(req, { permission: "view_ot_gateway", bucket: "ot-read" }, async (ctx) => {
+    // PHASE 94B.1 — filters are validated before any repository call, so an
+    // unaccepted value never reaches a query. (The authorization chain above
+    // has already run, by design — this is not a pre-auth fast path.) A
+    // supported key is never silently ignored: it is honoured or refused.
+    const url = new URL(req.url);
+    const filters = parseGatewayListFilters(url);
+    if (!filters.ok) return filters.response;
+
     const svc = await resolveOtServices();
     if (!svc) return errorResponse(svcFail("TRANSIENT_FAILURE"));
-    const page = parseQuery(new URL(req.url));
-    const res = await svc.repos.gateways.listVisible(ctx, page);
+    const page = parseQuery(url);
+    // Filtering happens inside the tenant-scoped query, before pagination —
+    // the route never receives a wider page and narrows it afterwards.
+    const res = await svc.repos.gateways.listVisible(ctx, page, filters.value);
     if (!res.ok) return errorResponse(svcFail(res.code === "NOT_FOUND" ? "NOT_FOUND" : "INTERNAL_FAILURE"));
     return privateJson({
       ok: true,

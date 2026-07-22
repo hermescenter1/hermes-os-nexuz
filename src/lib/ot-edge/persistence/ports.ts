@@ -23,6 +23,40 @@ export interface PageRequest {
   sortDir?: string;
 }
 
+/**
+ * PHASE 94B.1 — narrowing predicates for a list query.
+ *
+ * A filter can only ever REDUCE what the trusted scope already permits: the
+ * adapter composes it with AND underneath `orgScope`/`siteScope`, so no value
+ * here can widen a result set or reach another tenant. `siteId` in particular
+ * is intersected with the actor's site allow-list rather than replacing it — a
+ * site the actor cannot see yields no rows, and therefore discloses nothing.
+ *
+ * Values arrive already allow-listed by `http/list-filters.ts`; an
+ * unrecognised value is refused at the route and never reaches this layer.
+ */
+export interface GatewayListFilters {
+  /** `EdgeGatewayLifecycle` member. */
+  lifecycle?: string;
+  /** Site of the related IndustrialGateway. */
+  siteId?: string;
+  /** A single `EdgeGatewayCapability` the profile must declare. */
+  capability?: string;
+  /** Case-insensitive substring of the gateway name or hardware identifier. */
+  search?: string;
+}
+
+export interface DeviceListFilters {
+  /** `OtLifecycleState` member. Named for the column: `lifecycleState`. */
+  lifecycle?: string;
+  /** Site of the related IndustrialAsset. */
+  siteId?: string;
+  /** `OtDeviceCategory` member. */
+  category?: string;
+  /** Case-insensitive substring of the asset name or engineering identifier. */
+  search?: string;
+}
+
 export interface Page<T> {
   items: T[];
   /** Rows visible to THIS actor — never an organization-wide total. */
@@ -89,7 +123,10 @@ export interface CreateGatewayProfileInput {
 export type UpdateGatewayProfileInput = Omit<CreateGatewayProfileInput, "gatewayId">;
 
 export interface GatewayProfileRepository {
-  listVisible(ctx: OtServiceContext, page?: PageRequest): Promise<RepoResult<Page<GatewayProfileRecord>>>;
+  /** `filters` is optional and additive: omitting it preserves the pre-94B.1
+   *  behaviour exactly. Filtering happens inside the same tenant-scoped query
+   *  as pagination, never afterwards in memory. */
+  listVisible(ctx: OtServiceContext, page?: PageRequest, filters?: GatewayListFilters): Promise<RepoResult<Page<GatewayProfileRecord>>>;
   findVisibleById(ctx: OtServiceContext, id: string): Promise<RepoResult<GatewayProfileRecord>>;
   createProfile(ctx: OtServiceContext, input: CreateGatewayProfileInput): Promise<RepoResult<GatewayProfileRecord>>;
   updateProfile(ctx: OtServiceContext, id: string, input: UpdateGatewayProfileInput): Promise<RepoResult<GatewayProfileRecord>>;
@@ -130,7 +167,8 @@ export interface CreateOtDeviceProfileInput {
 export type UpdateOtDeviceProfileInput = Omit<CreateOtDeviceProfileInput, "assetId">;
 
 export interface OtDeviceProfileRepository {
-  listVisible(ctx: OtServiceContext, page?: PageRequest): Promise<RepoResult<Page<OtDeviceProfileRecord>>>;
+  /** See `GatewayProfileRepository.listVisible` — same additive contract. */
+  listVisible(ctx: OtServiceContext, page?: PageRequest, filters?: DeviceListFilters): Promise<RepoResult<Page<OtDeviceProfileRecord>>>;
   findVisibleById(ctx: OtServiceContext, id: string): Promise<RepoResult<OtDeviceProfileRecord>>;
   createProfile(ctx: OtServiceContext, input: CreateOtDeviceProfileInput): Promise<RepoResult<OtDeviceProfileRecord>>;
   updateProfile(ctx: OtServiceContext, id: string, input: UpdateOtDeviceProfileInput): Promise<RepoResult<OtDeviceProfileRecord>>;

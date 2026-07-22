@@ -49,8 +49,13 @@ describe("94B3.2 — adapters cannot drift into an unscoped query", () => {
   it("every `where` variable is itself built from a scope helper", () => {
     // This is what makes accepting the `{ where }` shorthand safe: a future
     // `const where = { id }` with no tenant predicate fails here.
-    const assignments = [...code.matchAll(/const where\s*=\s*([^;]+);/g)];
-    expect(assignments.length).toBeGreaterThan(3);
+    // PHASE 94B.1 — tolerate a type annotation. `const where: Row = ...` did
+    // not match the original pattern, so two of the six queries silently left
+    // this guard while the suite stayed green (the `> 3` floor was still met).
+    const assignments = [...code.matchAll(/const where\s*(?::[^=;]+)?=\s*([^;]+);/g)];
+    // An exact count, not a floor: a floor lets a query drop out of the guard
+    // without failing anything, which is precisely how the annotation escaped.
+    expect(assignments.length, "a `where` variable left this guard").toBe(6);
     for (const a of assignments) {
       const rhs = a[1];
       expect(

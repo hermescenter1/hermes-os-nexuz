@@ -11,6 +11,7 @@ import { resolveOtServices } from "@/lib/ot-edge/http/composition";
 import { toOtDeviceProfileDto } from "@/lib/ot-edge/dto";
 import { svcFail } from "@/lib/ot-edge/services/core";
 import { readJsonBody } from "@/lib/ot-edge/http/body";
+import { parseDeviceListFilters } from "@/lib/ot-edge/http/list-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +30,15 @@ const CreateDevice = z
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   return withOtRoute(req, { permission: "view_ot_device", bucket: "ot-read" }, async (ctx) => {
+    // PHASE 94B.1 — see the gateway route: validate, then delegate. A
+    // supported filter key is honoured or refused, never ignored.
+    const url = new URL(req.url);
+    const filters = parseDeviceListFilters(url);
+    if (!filters.ok) return filters.response;
+
     const svc = await resolveOtServices();
     if (!svc) return errorResponse(svcFail("TRANSIENT_FAILURE"));
-    const res = await svc.repos.devices.listVisible(ctx, parseQuery(new URL(req.url)));
+    const res = await svc.repos.devices.listVisible(ctx, parseQuery(url), filters.value);
     if (!res.ok) return errorResponse(svcFail("INTERNAL_FAILURE"));
     return privateJson({
       ok: true,

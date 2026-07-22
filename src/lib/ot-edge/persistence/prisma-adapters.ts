@@ -31,6 +31,8 @@ import type {
   AnalysisInput,
   AutomationTagRecord,
   CreateGatewayProfileInput,
+  DeviceListFilters,
+  GatewayListFilters,
   CreateImportInput,
   CreateOtDeviceProfileInput,
   CreateProjectWithArtifactsInput,
@@ -145,6 +147,84 @@ function gatewayRecord(row: Row): GatewayProfileRecord {
 
 const GATEWAY_INCLUDE = { gateway: { select: { name: true, siteId: true, organizationId: true } } };
 
+/**
+ * PHASE 94B.1 — make a search term match itself, not a pattern.
+ *
+ * Prisma compiles `contains` to `col ILIKE '%' || $1 || '%'` and emits no
+ * ESCAPE clause, so `%` and `_` inside the bound parameter are still LIKE
+ * wildcards. The value is parameterised — this is not an injection — but the
+ * contract promises a SUBSTRING match, and without this a lone `%` would match
+ * every row while `_` would match any character. Underscores are pervasive in
+ * automation identifiers (`Motor_Run`), so this is an everyday case, not an
+ * exotic one.
+ *
+ * PostgreSQL treats backslash as the default LIKE escape character when no
+ * ESCAPE clause is given, which is exactly the situation here.
+ */
+function literalContains(term: string): Row {
+  return { contains: term.replace(/[\\%_]/g, (ch) => `\\${ch}`), mode: "insensitive" };
+}
+
+/**
+ * PHASE 94B.1 — narrowing predicates for the gateway list.
+ *
+ * Each entry becomes one member of an `AND` array beside the trusted scope, so
+ * a filter intersects with tenancy rather than replacing any part of it. Every
+ * value is passed as a Prisma argument, never concatenated into a query
+ * fragment, and every value has already been checked against a closed
+ * allow-list at the route boundary.
+ *
+ * There is no `category` predicate: `EdgeGatewayProfile` has no such column.
+ */
+function gatewayFilterPredicates(filters?: GatewayListFilters): Row[] {
+  const out: Row[] = [];
+  if (!filters) return out;
+  if (filters.lifecycle) out.push({ lifecycle: filters.lifecycle });
+  // The site lives on the related registry row, which is also where the scope
+  // reads it from — so scope and filter constrain the same relation.
+  if (filters.siteId) out.push({ gateway: { is: { siteId: filters.siteId } } });
+  // `has` on the enum array: the profile must DECLARE this capability.
+  if (filters.capability) out.push({ capabilities: { has: filters.capability } });
+  if (filters.search) {
+    const contains = literalContains(filters.search);
+    // Both targets are required, always-populated columns on the registry row.
+    // The hardware identifier is searchABLE but is still never RETURNED — this
+    // adds no field to the DTO.
+    out.push({
+      OR: [
+        { gateway: { is: { name: contains } } },
+        { gateway: { is: { gatewayId: contains } } },
+      ],
+    });
+  }
+  return out;
+}
+
+/**
+ * PHASE 94B.1 — narrowing predicates for the device list.
+ *
+ * There is no `vendor` predicate: `OtDeviceProfile` stores no manufacturer,
+ * model or protocol column, so such a filter could only ever match nothing.
+ */
+function deviceFilterPredicates(filters?: DeviceListFilters): Row[] {
+  const out: Row[] = [];
+  if (!filters) return out;
+  // The public filter is called `lifecycle`; the column is `lifecycleState`.
+  if (filters.lifecycle) out.push({ lifecycleState: filters.lifecycle });
+  if (filters.siteId) out.push({ asset: { is: { siteId: filters.siteId } } });
+  if (filters.category) out.push({ category: filters.category });
+  if (filters.search) {
+    const contains = literalContains(filters.search);
+    // `asset.name` is required by the registry; `engineeringId` is optional but
+    // genuinely written by imports and by the create route — neither is one of
+    // the always-null columns.
+    out.push({
+      OR: [{ asset: { is: { name: contains } } }, { engineeringId: contains }],
+    });
+  }
+  return out;
+}
+
 export function createGatewayRepository(db: OtPrismaClient): GatewayProfileRepository {
   /** Tenant + site predicate. Site lives on the related IndustrialGateway. */
   const scope = (ctx: OtServiceContext): Row => {
@@ -155,9 +235,13 @@ export function createGatewayRepository(db: OtPrismaClient): GatewayProfileRepos
   };
 
   return {
-    async listVisible(ctx, page) {
+    async listVisible(ctx, page, filters) {
       const { take, skip } = pageArgs(page);
-      const where = scope(ctx);
+      // AND, never a spread. Spreading a `siteId` filter over `scope(ctx)`
+      // would REPLACE the actor's site allow-list with the requested site and
+      // hand a site-restricted actor another site's gateways. Composing with
+      // AND makes the filter an intersection, so it can only ever narrow.
+      const where = { AND: [scope(ctx), ...gatewayFilterPredicates(filters)] };
       return guarded(async () => {
         const [rows, total] = await Promise.all([
           db.edgeGatewayProfile.findMany({
@@ -319,9 +403,11 @@ export function createDeviceRepository(db: OtPrismaClient): OtDeviceProfileRepos
   };
 
   return {
-    async listVisible(ctx, page) {
+    async listVisible(ctx, page, filters) {
       const { take, skip } = pageArgs(page);
-      const where = scope(ctx);
+      // See the gateway repository: AND-composition keeps a filter subordinate
+      // to the tenant and site scope instead of overwriting it.
+      const where = { AND: [scope(ctx), ...deviceFilterPredicates(filters)] };
       return guarded(async () => {
         const [rows, total] = await Promise.all([
           db.otDeviceProfile.findMany({
