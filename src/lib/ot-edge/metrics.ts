@@ -26,6 +26,8 @@ export const OT_METRICS = [
   "ot_envelope_checksum_mismatch",
   "ot_envelope_replay_conflict",
   "ot_idempotency_collision",
+  // PHASE 94B3.3 — outcome of a human finding-review transition.
+  "ot_finding_transition",
 ] as const;
 export type OtMetric = (typeof OT_METRICS)[number];
 

@@ -329,7 +329,10 @@ export function toEngineeringFindingDto(row: Row): EngineeringFindingDto {
     evidenceRefs: list(row.evidenceRefs),
     recommendation: nstr(row.recommendation),
     humanApprovalRequired: bool(row.humanApprovalRequired),
-    state: str(row.state),
+    // The persisted column is `status`; the DTO exposes it as `state` to match
+    // the workflow vocabulary. Reading only `row.state` silently produced an
+    // empty string for every finding.
+    state: str(row.status ?? row.state),
     reviewedById: nstr(row.reviewedById),
     reviewedAt: iso(row.reviewedAt),
     reviewNote: nstr(row.reviewNote),
