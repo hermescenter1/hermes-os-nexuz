@@ -5440,7 +5440,8 @@
         "invitations": "Einladungen",
         "apiKeys": "API-Schlüssel",
         "orgSettings": "Organisationseinstellungen",
-        "admin": "Admin-Konsole"
+        "admin": "Admin-Konsole",
+        "otEdge": "OT-Edge"
       }
     },
     "shell": {
@@ -6681,6 +6682,256 @@
       "body": "Ein unerwarteter Fehler ist aufgetreten. Sie können es erneut versuchen oder zur Startseite zurückkehren.",
       "retry": "Erneut versuchen",
       "home": "Zurück zur Startseite"
+    }
+  },
+  "otEdge": {
+    "meta": {
+      "title": "OT-Edge",
+      "description": "Konfigurationsdatensätze für Edge-Gateways und OT-Geräte."
+    },
+    "nav": {
+      "overview": "Übersicht",
+      "gateways": "Gateways",
+      "devices": "Geräte",
+      "sectionLabel": "OT-Edge-Bereiche"
+    },
+    "overview": {
+      "title": "OT-Edge",
+      "subtitle": "Konfigurations- und Registrierungsdatensätze für Edge-Gateways und Automatisierungsgeräte. Diese Ansicht zeigt gespeicherte Konfiguration; sie überwacht oder steuert keine Anlagen.",
+      "gatewaysHeading": "Gateways",
+      "devicesHeading": "Geräte",
+      "gatewaysLink": "Gateway-Liste öffnen",
+      "devicesLink": "Geräteliste öffnen",
+      "scopeNote": "Sie sehen ausschließlich die Mandanten und Standorte, für die Ihr Konto berechtigt ist. Jede Liste wird serverseitig gefiltert."
+    },
+    "advisory": {
+      "title": "Was diese Ansicht zeigt",
+      "body": "Diese Seiten stellen technische Metadaten und Konfigurationsdaten dar, die Hermes OS vorhält. Sie bauen keine Verbindung zu einer Steuerung auf, lesen keine laufenden Prozesswerte und senden keinen Befehl an industrielle Anlagen."
+    },
+    "summary": {
+      "onThisPage": "Auf dieser Seite",
+      "totalMatching": "Übereinstimmende Datensätze",
+      "inService": "Im Betrieb",
+      "notInService": "Außer Betrieb",
+      "awaitingActivation": "Wartet auf Aktivierung",
+      "neverObserved": "Keine Beobachtung erfasst",
+      "signingIncomplete": "Signatur nicht eingerichtet",
+      "operational": "In Betrieb",
+      "inCommissioning": "In Inbetriebnahme",
+      "lifecycleUnknown": "Lebenszyklus nicht erfasst",
+      "sitesOnPage": "Vertretene Standorte",
+      "pageScopeNote": "Die Zählungen beschreiben die Datensätze der aktuellen Seite. Die Gesamtzahl der Treffer stammt vom Server."
+    },
+    "attention": {
+      "title": "Prüfung erforderlich",
+      "empty": "Kein Datensatz auf dieser Seite erfordert eine Prüfung.",
+      "moreCount": "{count, plural, one {# weiterer Datensatz erfordert eine Prüfung.} other {# weitere Datensätze erfordern eine Prüfung.}}",
+      "note": "Jeder Eintrag unten wird aus gespeicherter Konfiguration abgeleitet. Keiner meldet eine Störung, einen Ausfall oder ein Sicherheitsereignis.",
+      "reasons": {
+        "GATEWAY_AWAITING_ACTIVATION": "Registriert, aber noch nicht aktiviert",
+        "GATEWAY_NOT_IN_SERVICE": "Außer Betrieb",
+        "GATEWAY_MARKED_STALE": "Von der Plattform als veraltet markiert",
+        "GATEWAY_SIGNING_INCOMPLETE": "Signatur nicht eingerichtet",
+        "GATEWAY_NO_CAPABILITY": "Keine Fähigkeit deklariert",
+        "GATEWAY_NEVER_OBSERVED": "Keine Beobachtung erfasst",
+        "GATEWAY_NO_SITE": "Kein Standort zugeordnet",
+        "DEVICE_LIFECYCLE_UNKNOWN": "Lebenszyklus nicht erfasst",
+        "DEVICE_NOT_COMMISSIONED": "Noch nicht in Betrieb genommen",
+        "DEVICE_DECOMMISSIONED": "Außer Dienst gestellt",
+        "DEVICE_NO_SITE": "Kein Standort zugeordnet"
+      }
+    },
+    "gateways": {
+      "title": "Gateways",
+      "subtitle": "Registrierungsdatensätze der Edge-Gateways, ihr Lebenszyklusstatus und der Zeitpunkt der letzten angenommenen Sendung.",
+      "tableCaption": "Registrierte Edge-Gateways passend zu den aktuellen Filtern",
+      "columns": {
+        "name": "Gateway",
+        "systemIdentifier": "Systemkennung",
+        "lifecycle": "Lebenszyklus",
+        "site": "Standort",
+        "capabilities": "Fähigkeiten",
+        "lastSeen": "Zuletzt gesehen",
+        "signing": "Signatur",
+        "actions": "Details"
+      },
+      "openDetail": "Gateway öffnen",
+      "detailTitle": "Gateway",
+      "noCapabilities": "Keine deklariert",
+      "environment": "Umgebung",
+      "softwareVersion": "Softwareversion",
+      "readOnlyMode": "Nur-Lese-Modus",
+      "simulatorMode": "Simulatormodus",
+      "createdAt": "Registriert",
+      "updatedAt": "Zuletzt aktualisiert"
+    },
+    "devices": {
+      "title": "Geräte",
+      "subtitle": "Profile der Automatisierungsgeräte, ihre Kategorie und ihr technischer Lebenszyklusstatus.",
+      "tableCaption": "OT-Geräteprofile passend zu den aktuellen Filtern",
+      "columns": {
+        "engineeringId": "Technische Kennung",
+        "systemIdentifier": "Systemkennung",
+        "category": "Kategorie",
+        "lifecycle": "Lebenszyklus",
+        "site": "Standort",
+        "networkZone": "Netzwerkzone",
+        "actions": "Details"
+      },
+      "openDetail": "Gerät öffnen",
+      "detailTitle": "Gerät",
+      "safetyClass": "Sicherheitsklasse",
+      "firmwareVersion": "Firmware-Version",
+      "productFamily": "Produktfamilie",
+      "assetId": "Verknüpfte Anlage",
+      "createdAt": "Erstellt",
+      "updatedAt": "Zuletzt aktualisiert",
+      "noEngineeringId": "Nicht erfasst"
+    },
+    "filters": {
+      "legend": "Datensätze filtern",
+      "lifecycle": "Lebenszyklus",
+      "site": "Standort",
+      "capability": "Fähigkeit",
+      "category": "Kategorie",
+      "searchGateways": "Gateways suchen",
+      "searchDevices": "Geräte suchen",
+      "searchGatewaysHint": "Sucht im Gateway-Namen und in der hinterlegten Hardwarekennung — ein separater Wert, der in dieser Tabelle nicht angezeigt wird.",
+      "searchDevicesHint": "Sucht im Namen der verknüpften Anlage oder in der technischen Kennung.",
+      "apply": "Filter anwenden",
+      "clear": "Filter zurücksetzen",
+      "any": "Alle",
+      "anySite": "Alle Standorte",
+      "activeTitle": "Angewendete Filter",
+      "none": "Keine Filter angewendet.",
+      "pendingNote": "Filter gelten erst als angewendet, wenn der Server die übereinstimmenden Datensätze zurückgibt."
+    },
+    "pagination": {
+      "label": "Seitennavigation",
+      "previous": "Vorherige Seite",
+      "next": "Nächste Seite",
+      "status": "Seite {page} von {pages}",
+      "resultCount": "{count, plural, one {# übereinstimmender Datensatz} other {# übereinstimmende Datensätze}}",
+      "pageSize": "Datensätze pro Seite"
+    },
+    "sorting": {
+      "label": "Sortieren nach",
+      "direction": "Sortierrichtung",
+      "ascending": "Aufsteigend",
+      "descending": "Absteigend",
+      "createdAt": "Registrierungsdatum",
+      "updatedAt": "Zuletzt aktualisiert",
+      "lifecycle": "Lebenszyklus",
+      "category": "Kategorie"
+    },
+    "observation": {
+      "never": "Nie gesehen",
+      "neverHint": "Von diesem Gateway wurde bisher keine signierte Sendung angenommen.",
+      "seenHint": "Zeitpunkt der Annahme der letzten signierten Sendung. Das bedeutet nicht, dass das Gateway derzeit verbunden ist."
+    },
+    "signing": {
+      "configured": "Eingerichtet",
+      "notConfigured": "Nicht eingerichtet",
+      "hint": "Ob eine Signaturreferenz hinterlegt ist. Die Referenz selbst wird nie angezeigt."
+    },
+    "identifiers": {
+      "systemIdentifier": "Systemkennung",
+      "systemIdentifierHint": "Eine interne Datensatzkennung. Sie ist keine Hardware-Seriennummer.",
+      "copy": "Kennung kopieren",
+      "copied": "Kennung kopiert",
+      "noSite": "Kein Standort zugeordnet",
+      "unknownSite": "Standort nicht verfügbar"
+    },
+    "states": {
+      "loadingTitle": "Datensätze werden geladen",
+      "loadingFiltered": "Filter werden angewendet",
+      "emptyGatewaysTitle": "Keine Gateways registriert",
+      "emptyGatewaysBody": "Für die Standorte, die Sie einsehen dürfen, ist kein Edge-Gateway registriert.",
+      "emptyDevicesTitle": "Keine Geräte registriert",
+      "emptyDevicesBody": "Für die Standorte, die Sie einsehen dürfen, existiert kein Profil eines Automatisierungsgeräts.",
+      "noMatchTitle": "Keine passenden Datensätze",
+      "noMatchBody": "Kein Datensatz passt zu den angewendeten Filtern. Passen Sie die Filter an oder setzen Sie sie zurück.",
+      "unauthenticatedTitle": "Anmeldung erforderlich",
+      "unauthenticatedBody": "Ihre Sitzung ist nicht mehr gültig. Melden Sie sich erneut an, um diese Datensätze zu sehen.",
+      "forbiddenTitle": "Nicht berechtigt",
+      "forbiddenBody": "Ihr Konto hat in diesem Mandanten keine Berechtigung, diese Datensätze einzusehen.",
+      "notFoundTitle": "Datensatz nicht verfügbar",
+      "notFoundBody": "Dieser Datensatz existiert nicht oder liegt außerhalb der Standorte, die Sie einsehen dürfen.",
+      "invalidQueryTitle": "Filter nicht akzeptiert",
+      "invalidQueryBody": "Der Server hat einen der angewendeten Filter nicht akzeptiert. Setzen Sie die Filter zurück und versuchen Sie es erneut.",
+      "rateLimitedTitle": "Zu viele Anfragen",
+      "rateLimitedBody": "In kurzer Zeit wurden zu viele Anfragen gestellt. Warten Sie einen Moment und versuchen Sie es erneut.",
+      "unavailableTitle": "Datensätze nicht verfügbar",
+      "unavailableBody": "Die Datensätze können derzeit nicht gelesen werden. Dies ist ein vorübergehender Zustand auf dem Server.",
+      "failedTitle": "Anfrage fehlgeschlagen",
+      "failedBody": "Die Datensätze konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
+      "retry": "Erneut versuchen"
+    },
+    "enums": {
+      "gatewayLifecycle": {
+        "REGISTERED": "Registriert",
+        "ACTIVE": "Aktiv",
+        "STALE": "Veraltet",
+        "DISABLED": "Deaktiviert",
+        "REVOKED": "Widerrufen",
+        "SIMULATOR": "Simulator"
+      },
+      "gatewayCapability": {
+        "PROJECT_METADATA_IMPORT": "Import von Projektmetadaten",
+        "TAG_METADATA_IMPORT": "Import von Tag-Metadaten",
+        "ALARM_METADATA_IMPORT": "Import von Alarmmetadaten",
+        "NETWORK_METADATA_IMPORT": "Import von Netzwerkmetadaten",
+        "READ_ONLY_TELEMETRY": "Nur-Lese-Telemetrie",
+        "SIMULATION": "Simulation"
+      },
+      "deviceLifecycle": {
+        "PLANNED": "Geplant",
+        "COMMISSIONING": "Inbetriebnahme",
+        "OPERATIONAL": "In Betrieb",
+        "MAINTENANCE": "Instandhaltung",
+        "DECOMMISSIONED": "Außer Dienst gestellt",
+        "UNKNOWN": "Nicht erfasst"
+      },
+      "deviceCategory": {
+        "PLC": "Speicherprogrammierbare Steuerung",
+        "HMI": "Bedienpanel",
+        "SCADA_SERVER": "SCADA-Server",
+        "VFD": "Frequenzumrichter",
+        "MCC": "Motorsteuerungszentrum",
+        "REMOTE_IO": "Dezentrale Ein- und Ausgabe",
+        "INDUSTRIAL_PC": "Industrie-PC",
+        "SAFETY_CONTROLLER": "Sicherheitssteuerung",
+        "NETWORK_SWITCH": "Netzwerk-Switch",
+        "GATEWAY": "Gateway",
+        "SENSOR_AGGREGATOR": "Sensor-Sammelknoten",
+        "OTHER": "Sonstige"
+      },
+      "networkZone": {
+        "ENTERPRISE": "Unternehmensebene",
+        "DMZ": "Demilitarisierte Zone",
+        "SUPERVISORY": "Leitebene",
+        "CONTROL": "Steuerungsebene",
+        "FIELD": "Feldebene",
+        "SAFETY": "Sicherheitsebene",
+        "UNKNOWN": "Nicht erfasst"
+      },
+      "safetyClass": {
+        "NON_SAFETY": "Ohne Sicherheitsbezug",
+        "SAFETY_RELATED": "Sicherheitsbezogen",
+        "SAFETY_CRITICAL": "Sicherheitskritisch",
+        "UNKNOWN": "Nicht erfasst"
+      },
+      "environment": {
+        "PRODUCTION": "Produktion",
+        "STAGING": "Vorproduktion",
+        "TEST": "Test",
+        "LAB": "Labor",
+        "SIMULATION": "Simulation"
+      }
+    },
+    "boolean": {
+      "yes": "Ja",
+      "no": "Nein"
     }
   }
 }

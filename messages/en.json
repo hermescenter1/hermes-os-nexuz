@@ -5440,7 +5440,8 @@
         "invitations": "Invitations",
         "apiKeys": "API Keys",
         "orgSettings": "Organization Settings",
-        "admin": "Admin Console"
+        "admin": "Admin Console",
+        "otEdge": "OT Edge"
       }
     },
     "shell": {
@@ -6681,6 +6682,256 @@
       "body": "An unexpected error occurred. You can try again or return to the homepage.",
       "retry": "Try again",
       "home": "Back to home"
+    }
+  },
+  "otEdge": {
+    "meta": {
+      "title": "OT Edge",
+      "description": "Configuration records for edge gateways and OT devices."
+    },
+    "nav": {
+      "overview": "Overview",
+      "gateways": "Gateways",
+      "devices": "Devices",
+      "sectionLabel": "OT Edge sections"
+    },
+    "overview": {
+      "title": "OT Edge",
+      "subtitle": "Configuration and registration records for edge gateways and automation devices. This surface reports stored configuration; it does not monitor or control equipment.",
+      "gatewaysHeading": "Gateways",
+      "devicesHeading": "Devices",
+      "gatewaysLink": "Open the gateway list",
+      "devicesLink": "Open the device list",
+      "scopeNote": "You see only the organizations and sites your account is authorized for. Every list is filtered by the server."
+    },
+    "advisory": {
+      "title": "What this surface shows",
+      "body": "These pages present engineering and configuration metadata held by Hermes OS. They do not open a connection to any controller, do not read live process values, and issue no command to industrial equipment."
+    },
+    "summary": {
+      "onThisPage": "On this page",
+      "totalMatching": "Matching records",
+      "inService": "In service",
+      "notInService": "Not in service",
+      "awaitingActivation": "Awaiting activation",
+      "neverObserved": "No observation recorded",
+      "signingIncomplete": "Signing not configured",
+      "operational": "Operational",
+      "inCommissioning": "In commissioning",
+      "lifecycleUnknown": "Lifecycle not recorded",
+      "sitesOnPage": "Sites represented",
+      "pageScopeNote": "Counts describe the records on the current page. The matching total comes from the server."
+    },
+    "attention": {
+      "title": "Requires review",
+      "empty": "No record on this page requires review.",
+      "moreCount": "{count, plural, one {# more record requires review.} other {# more records require review.}}",
+      "note": "Every item below is derived from stored configuration. None of them reports a fault, an outage or a security event.",
+      "reasons": {
+        "GATEWAY_AWAITING_ACTIVATION": "Registered but not yet activated",
+        "GATEWAY_NOT_IN_SERVICE": "Not in service",
+        "GATEWAY_MARKED_STALE": "Marked stale by the platform",
+        "GATEWAY_SIGNING_INCOMPLETE": "Signing not configured",
+        "GATEWAY_NO_CAPABILITY": "No capability declared",
+        "GATEWAY_NEVER_OBSERVED": "No observation recorded",
+        "GATEWAY_NO_SITE": "No site assigned",
+        "DEVICE_LIFECYCLE_UNKNOWN": "Lifecycle not recorded",
+        "DEVICE_NOT_COMMISSIONED": "Not yet commissioned",
+        "DEVICE_DECOMMISSIONED": "Decommissioned",
+        "DEVICE_NO_SITE": "No site assigned"
+      }
+    },
+    "gateways": {
+      "title": "Gateways",
+      "subtitle": "Edge gateway registration records, their lifecycle state and the last time an envelope was accepted.",
+      "tableCaption": "Registered edge gateways matching the current filters",
+      "columns": {
+        "name": "Gateway",
+        "systemIdentifier": "System identifier",
+        "lifecycle": "Lifecycle",
+        "site": "Site",
+        "capabilities": "Capabilities",
+        "lastSeen": "Last seen",
+        "signing": "Signing",
+        "actions": "Details"
+      },
+      "openDetail": "Open gateway",
+      "detailTitle": "Gateway",
+      "noCapabilities": "None declared",
+      "environment": "Environment",
+      "softwareVersion": "Software version",
+      "readOnlyMode": "Read-only mode",
+      "simulatorMode": "Simulator mode",
+      "createdAt": "Registered",
+      "updatedAt": "Last updated"
+    },
+    "devices": {
+      "title": "Devices",
+      "subtitle": "Automation device profiles, their category and their engineering lifecycle state.",
+      "tableCaption": "OT device profiles matching the current filters",
+      "columns": {
+        "engineeringId": "Engineering identifier",
+        "systemIdentifier": "System identifier",
+        "category": "Category",
+        "lifecycle": "Lifecycle",
+        "site": "Site",
+        "networkZone": "Network zone",
+        "actions": "Details"
+      },
+      "openDetail": "Open device",
+      "detailTitle": "Device",
+      "safetyClass": "Safety class",
+      "firmwareVersion": "Firmware version",
+      "productFamily": "Product family",
+      "assetId": "Linked asset",
+      "createdAt": "Created",
+      "updatedAt": "Last updated",
+      "noEngineeringId": "Not recorded"
+    },
+    "filters": {
+      "legend": "Filter records",
+      "lifecycle": "Lifecycle",
+      "site": "Site",
+      "capability": "Capability",
+      "category": "Category",
+      "searchGateways": "Search gateways",
+      "searchDevices": "Search devices",
+      "searchGatewaysHint": "Matches the gateway name, and the registered hardware identifier — a separate value that is not shown in this table.",
+      "searchDevicesHint": "Matches the linked asset name or the engineering identifier.",
+      "apply": "Apply filters",
+      "clear": "Clear filters",
+      "any": "Any",
+      "anySite": "Any site",
+      "activeTitle": "Applied filters",
+      "none": "No filters applied.",
+      "pendingNote": "Filters are applied when the server returns the matching records."
+    },
+    "pagination": {
+      "label": "Pagination",
+      "previous": "Previous page",
+      "next": "Next page",
+      "status": "Page {page} of {pages}",
+      "resultCount": "{count, plural, one {# matching record} other {# matching records}}",
+      "pageSize": "Records per page"
+    },
+    "sorting": {
+      "label": "Sort by",
+      "direction": "Sort direction",
+      "ascending": "Ascending",
+      "descending": "Descending",
+      "createdAt": "Registration date",
+      "updatedAt": "Last updated",
+      "lifecycle": "Lifecycle",
+      "category": "Category"
+    },
+    "observation": {
+      "never": "Never seen",
+      "neverHint": "No signed envelope has been accepted from this gateway.",
+      "seenHint": "When the most recent signed envelope was accepted. It does not indicate that the gateway is connected now."
+    },
+    "signing": {
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "hint": "Whether a signing reference is registered. The reference itself is never shown."
+    },
+    "identifiers": {
+      "systemIdentifier": "System identifier",
+      "systemIdentifierHint": "An internal record identifier. It is not a hardware serial number.",
+      "copy": "Copy identifier",
+      "copied": "Identifier copied",
+      "noSite": "No site assigned",
+      "unknownSite": "Site not available"
+    },
+    "states": {
+      "loadingTitle": "Loading records",
+      "loadingFiltered": "Applying filters",
+      "emptyGatewaysTitle": "No gateways registered",
+      "emptyGatewaysBody": "No edge gateway has been registered for the sites you are authorized to see.",
+      "emptyDevicesTitle": "No devices registered",
+      "emptyDevicesBody": "No automation device profile exists for the sites you are authorized to see.",
+      "noMatchTitle": "No matching records",
+      "noMatchBody": "No record matches the applied filters. Adjust or clear them to see more.",
+      "unauthenticatedTitle": "Sign-in required",
+      "unauthenticatedBody": "Your session is no longer valid. Sign in again to view these records.",
+      "forbiddenTitle": "Not authorized",
+      "forbiddenBody": "Your account does not have permission to view these records in this organization.",
+      "notFoundTitle": "Record not available",
+      "notFoundBody": "This record does not exist, or it is outside the sites you are authorized to see.",
+      "invalidQueryTitle": "Filter not accepted",
+      "invalidQueryBody": "The server did not accept one of the applied filters. Clear the filters and try again.",
+      "rateLimitedTitle": "Too many requests",
+      "rateLimitedBody": "Too many requests were made in a short period. Please wait a moment and try again.",
+      "unavailableTitle": "Records unavailable",
+      "unavailableBody": "The records cannot be read at the moment. This is a temporary condition on the server.",
+      "failedTitle": "Request failed",
+      "failedBody": "The records could not be loaded. Please try again.",
+      "retry": "Try again"
+    },
+    "enums": {
+      "gatewayLifecycle": {
+        "REGISTERED": "Registered",
+        "ACTIVE": "Active",
+        "STALE": "Stale",
+        "DISABLED": "Disabled",
+        "REVOKED": "Revoked",
+        "SIMULATOR": "Simulator"
+      },
+      "gatewayCapability": {
+        "PROJECT_METADATA_IMPORT": "Project metadata import",
+        "TAG_METADATA_IMPORT": "Tag metadata import",
+        "ALARM_METADATA_IMPORT": "Alarm metadata import",
+        "NETWORK_METADATA_IMPORT": "Network metadata import",
+        "READ_ONLY_TELEMETRY": "Read-only telemetry",
+        "SIMULATION": "Simulation"
+      },
+      "deviceLifecycle": {
+        "PLANNED": "Planned",
+        "COMMISSIONING": "Commissioning",
+        "OPERATIONAL": "Operational",
+        "MAINTENANCE": "Maintenance",
+        "DECOMMISSIONED": "Decommissioned",
+        "UNKNOWN": "Not recorded"
+      },
+      "deviceCategory": {
+        "PLC": "Programmable controller",
+        "HMI": "Operator panel",
+        "SCADA_SERVER": "SCADA server",
+        "VFD": "Variable frequency drive",
+        "MCC": "Motor control centre",
+        "REMOTE_IO": "Remote I/O",
+        "INDUSTRIAL_PC": "Industrial PC",
+        "SAFETY_CONTROLLER": "Safety controller",
+        "NETWORK_SWITCH": "Network switch",
+        "GATEWAY": "Gateway",
+        "SENSOR_AGGREGATOR": "Sensor aggregator",
+        "OTHER": "Other"
+      },
+      "networkZone": {
+        "ENTERPRISE": "Enterprise",
+        "DMZ": "Demilitarized zone",
+        "SUPERVISORY": "Supervisory",
+        "CONTROL": "Control",
+        "FIELD": "Field",
+        "SAFETY": "Safety",
+        "UNKNOWN": "Not recorded"
+      },
+      "safetyClass": {
+        "NON_SAFETY": "Non-safety",
+        "SAFETY_RELATED": "Safety related",
+        "SAFETY_CRITICAL": "Safety critical",
+        "UNKNOWN": "Not recorded"
+      },
+      "environment": {
+        "PRODUCTION": "Production",
+        "STAGING": "Staging",
+        "TEST": "Test",
+        "LAB": "Laboratory",
+        "SIMULATION": "Simulation"
+      }
+    },
+    "boolean": {
+      "yes": "Yes",
+      "no": "No"
     }
   }
 }

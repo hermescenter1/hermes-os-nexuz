@@ -19,6 +19,28 @@ import { recordAuditEvent, INFRA_AUDIT } from "@/lib/audit/audit-service";
 // ── Limits ────────────────────────────────────────────────────────────────────
 
 const LIMITS: Record<string, { max: number; windowMs: number }> = {
+  // PHASE 94B4 — OT / engineering private API buckets.
+  //
+  // Reads are cheap and interactive. Writes that persist tenant data, run the
+  // rule engine, or perform HMAC verification are far more expensive and are
+  // deliberately an order of magnitude tighter, so a compromised session cannot
+  // use them to burn CPU or flood the import tables.
+  "ot-read":            { max: 120, windowMs: 60 * 1000 },
+  "ot-mutate":          { max: 30,  windowMs: 60 * 1000 },
+  "engineering-read":   { max: 120, windowMs: 60 * 1000 },
+  "engineering-import": { max: 10,  windowMs: 60 * 1000 },
+  "engineering-analyze":{ max: 12,  windowMs: 60 * 1000 },
+  "engineering-review": { max: 40,  windowMs: 60 * 1000 },
+  // PHASE 94B4.1 — machine gateway ingestion, limited in two stages.
+  //
+  // PRE-AUTH is keyed by client IP and is deliberately tight: it is the only
+  // brake on someone probing ingestion identifiers, and it applies before any
+  // database lookup or HMAC work happens.
+  //
+  // POST-AUTH is keyed by the authenticated gateway, so one noisy device
+  // cannot consume the budget of every other gateway behind the same NAT.
+  "ot-envelope-preauth":  { max: 30,  windowMs: 60 * 1000 },
+  "ot-envelope-gateway":  { max: 120, windowMs: 60 * 1000 },
   login:             { max: 10, windowMs: 15 * 60 * 1000 },
   register:          { max: 5,  windowMs: 60 * 60 * 1000 },
   "access-request":  { max: 5,  windowMs: 60 * 60 * 1000 },
@@ -166,6 +188,12 @@ function memRetryAfter(action: string, identifier: string): number {
  * Check and record a rate-limit hit.
  * @returns true = allowed, false = blocked.
  */
+/** The configured window for an action, in seconds. Used for Retry-After. */
+export function limitWindowSeconds(action: string): number {
+  const limit = LIMITS[action];
+  return limit ? Math.ceil(limit.windowMs / 1000) : 60;
+}
+
 export async function checkRateLimit(
   action:     string,
   identifier: string,

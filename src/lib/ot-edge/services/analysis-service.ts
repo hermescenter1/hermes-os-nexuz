@@ -1,0 +1,190 @@
+// PHASE 94B3.3 — persisted deterministic analysis.
+//
+// The rule engine consumes an ImportEnvelope. Re-analysing a STORED project
+// therefore means rebuilding that envelope shape from persisted artifacts —
+// which is exactly why `loadAnalysisInput` returns rows in a fixed order: the
+// engine is deterministic only if its input sequence is.
+//
+// Findings are keyed by (project, rule, artifact), so a re-run over unchanged
+// data updates in place and creates nothing. Findings the engine no longer
+// produces are SUPERSEDED rather than deleted, so the audit trail of a human
+// decision survives. Nothing here emits a device instruction.
+
+import { authorize, type OtServiceContext } from "../service-context";
+import { analyzeEnvelope, summarizeFindings, RULE_IDS, RULE_VERSION, type Finding } from "../analysis-rules";
+import type { ImportEnvelope } from "../import-envelope";
+import { record as recordMetric, durationMs, type MetricSink } from "../metrics";
+import { toEngineeringFindingDto } from "../dto";
+import type {
+  AnalysisInput,
+  EngineeringFindingRepository,
+  EngineeringProjectRepository,
+} from "../persistence/ports";
+import { fromRepo, svcFail, svcOk, OT_AUDIT, type AuditPort, type ServiceResult } from "./core";
+
+export interface AnalysisOutcome {
+  projectId: string;
+  ruleVersion: string;
+  ruleCount: number;
+  created: number;
+  updated: number;
+  superseded: number;
+  severity: Record<string, number>;
+  findings: ReturnType<typeof toEngineeringFindingDto>[];
+}
+
+export interface AnalysisServiceDeps {
+  projects: EngineeringProjectRepository;
+  findings: EngineeringFindingRepository;
+  audit: AuditPort;
+  metrics: MetricSink;
+  now?: () => number;
+}
+
+/**
+ * Rebuild the engine's input from persisted rows.
+ *
+ * `deviceRef` is intentionally omitted: the link between a tag and its device
+ * is resolved at import time, and re-deriving it here from stored rows would
+ * let a later schema change silently alter historic analysis results.
+ */
+export function analysisInputToEnvelope(input: AnalysisInput): ImportEnvelope {
+  return {
+    schemaVersion: "1.0",
+    sourceType: input.project.sourceType,
+    project: {
+      name: input.project.name,
+      version: undefined,
+      vendor: input.project.vendor ?? undefined,
+      platform: input.project.platform ?? undefined,
+      revision: input.project.revision,
+    },
+    devices: [],
+    tags: input.tags.map((t) => ({
+      name: t.name,
+      dataType: t.dataType,
+      address: t.address ?? undefined,
+      symbolicPath: t.symbolicPath ?? undefined,
+      unit: t.unit ?? undefined,
+      description: t.description ?? undefined,
+      accessMode: t.accessMode,
+      safetyClass: t.safetyClass,
+    })),
+    alarms: input.alarms.map((a) => ({
+      code: a.code,
+      severity: a.severity,
+      message: a.message ?? undefined,
+      conditionReference: a.conditionReference ?? undefined,
+      requiresAck: a.requiresAck,
+      safetyClass: a.safetyClass,
+      productionRelevant: a.productionRelevant,
+    })),
+    networkNodes: input.networkNodes.map((nn) => ({
+      nodeName: nn.nodeName,
+      zone: nn.zone,
+      protocol: nn.protocol,
+      address: nn.address ?? undefined,
+      subnet: nn.subnet ?? undefined,
+      stationId: nn.stationId ?? undefined,
+    })),
+  } as unknown as ImportEnvelope;
+}
+
+/** Stable ordering so two runs return an identical sequence. */
+export function sortFindings(findings: Finding[]): Finding[] {
+  return [...findings].sort((a, b) => {
+    const k = `${a.ruleId}|${a.artifactRef}`;
+    const l = `${b.ruleId}|${b.artifactRef}`;
+    return k < l ? -1 : k > l ? 1 : 0;
+  });
+}
+
+export function createAnalysisService(deps: AnalysisServiceDeps) {
+  const now = deps.now ?? (() => Date.now());
+
+  return {
+    async run(ctx: OtServiceContext, projectId: string): Promise<ServiceResult<AnalysisOutcome>> {
+      const startedAt = now();
+
+      const denied = authorize(ctx, "run_engineering_analysis");
+      if (denied) return svcFail("FORBIDDEN");
+
+      // Visibility is a scoped query: a foreign project is NOT_FOUND, never
+      // "exists but forbidden", so existence is not disclosed.
+      const input = await deps.projects.loadAnalysisInput(ctx, projectId);
+      if (!input.ok) return fromRepo(input);
+
+      const findings = sortFindings(analyzeEnvelope(analysisInputToEnvelope(input.value), {
+        readOnlyProfile: true,
+      }));
+
+      const persisted = await deps.findings.upsertDeterministicFindings(
+        ctx,
+        projectId,
+        findings.map((f) => ({
+          ruleId: f.ruleId,
+          ruleVersion: f.ruleVersion,
+          category: f.category,
+          severity: f.severity,
+          title: f.title,
+          description: f.description,
+          artifactType: f.artifactType,
+          artifactRef: f.artifactRef,
+          evidenceRefs: f.evidenceRefs,
+          recommendation: f.recommendation,
+          humanApprovalRequired: f.humanApprovalRequired,
+        })),
+      );
+      if (!persisted.ok) return fromRepo(persisted);
+
+      // Anything the engine no longer produces is superseded, not deleted.
+      const keep = findings.map((f) => `${f.ruleId}\u0000${f.artifactRef}`);
+      const superseded = await deps.findings.supersedeObsolete(ctx, projectId, keep);
+      if (!superseded.ok) return fromRepo(superseded);
+
+      const listed = await deps.findings.listVisible(ctx, projectId, { take: 200 });
+      if (!listed.ok) return fromRepo(listed);
+
+      const severity = summarizeFindings(findings);
+      recordMetric(deps.metrics, "ot_analysis_duration_ms", durationMs(startedAt, now()));
+      for (const [level, count] of Object.entries(severity)) {
+        if (count > 0) {
+          recordMetric(deps.metrics, "ot_findings_total", count, {
+            severity: level as "INFO" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+          });
+        }
+      }
+
+      await deps.audit.record({
+        action: OT_AUDIT.ANALYSIS_EXECUTED,
+        actorId: ctx.userId,
+        entityType: "EngineeringProject",
+        entityId: projectId,
+        metadata: {
+          organizationId: ctx.organizationId,
+          projectId,
+          ruleCount: RULE_IDS.length,
+          ruleVersion: RULE_VERSION,
+          findingCount: findings.length,
+          createdCount: persisted.value.created,
+          updatedCount: persisted.value.updated,
+          supersededCount: superseded.value.superseded,
+          durationMs: durationMs(startedAt, now()),
+        },
+      });
+
+      return svcOk({
+        projectId,
+        ruleVersion: RULE_VERSION,
+        ruleCount: RULE_IDS.length,
+        created: persisted.value.created,
+        updated: persisted.value.updated,
+        superseded: superseded.value.superseded,
+        severity,
+        findings: listed.value.items.map((f) => toEngineeringFindingDto(f as never)),
+      });
+    },
+  };
+}
+
+export type EngineeringAnalysisService = ReturnType<typeof createAnalysisService>;

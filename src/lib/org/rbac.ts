@@ -48,7 +48,26 @@ export type OrgPermission =
   | "view_knowledge_graph"    // read graph queries, paths, reasoning
   | "manage_knowledge_graph"  // rebuild graph (expensive, org-wide)
   // Phase 42: Multi-Site Industrial Intelligence
-  | "view_multi_site";        // read cross-site benchmarks, risk rankings, KPI comparisons
+  | "view_multi_site"         // read cross-site benchmarks, risk rankings, KPI comparisons
+  // PHASE 94 — OT Edge & automation engineering.
+  //
+  // Deliberately SEPARATE from `view_industrial` / `manage_industrial`, which
+  // govern the existing site/gateway/asset registry. These cover the imported
+  // ENGINEERING record — project metadata, tags, alarms, network nodes and the
+  // deterministic findings derived from them — which is a different sensitivity
+  // class: a tag/alarm export describes how a plant is controlled.
+  //
+  // Import and analysis are separated from read because both are expensive and
+  // both create durable, audited records; finding review is separated again
+  // because accepting a safety-related finding is an engineering judgement.
+  | "view_ot_gateway"          // read edge-gateway profiles and their state
+  | "manage_ot_gateway"        // register / update / change gateway lifecycle
+  | "view_ot_device"           // read OT device profiles
+  | "manage_ot_device"         // create / update OT device profiles
+  | "view_engineering_project" // read projects, tags, alarms, network nodes, findings
+  | "create_engineering_import"// submit a canonical engineering manifest
+  | "run_engineering_analysis" // execute the deterministic rule engine
+  | "review_engineering_finding"; // transition a finding's workflow state
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -94,6 +113,23 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   manage_knowledge_graph: ["OWNER", "ADMIN", "MANAGER"],  // rebuild is expensive + org-wide
   // Phase 42 — Multi-Site Industrial Intelligence (same role matrix as view_industrial)
   view_multi_site:        ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  // PHASE 94 — OT Edge & automation engineering.
+  //
+  // READ mirrors `view_industrial` so an existing viewer keeps parity with the
+  // rest of the industrial surface. WRITE is narrower than the industrial
+  // registry: an ENGINEER may import and analyse (their day job) but may NOT
+  // administer gateway or device lifecycle, and BILLING_ADMIN — a finance role
+  // — gets no engineering write capability at all.
+  view_ot_gateway:            ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  manage_ot_gateway:          ["OWNER", "ADMIN", "MANAGER"],
+  view_ot_device:             ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  manage_ot_device:           ["OWNER", "ADMIN", "MANAGER"],
+  view_engineering_project:   ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  create_engineering_import:  ["OWNER", "ADMIN", "MANAGER", "ENGINEER"],
+  run_engineering_analysis:   ["OWNER", "ADMIN", "MANAGER", "ENGINEER"],
+  // Reviewing a finding records an engineering judgement about a safety- or
+  // production-relevant condition, so it stays with the accountable roles.
+  review_engineering_finding: ["OWNER", "ADMIN", "MANAGER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

@@ -349,7 +349,8 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   it("classifies every leaf exactly once, with no duplicates", () => {
     const total = Object.values(buckets).reduce((n, b) => n + b.length, 0);
     expect(total).toBe(allEn.length);
-    expect(allEn.length).toBe(5170);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot error messages (5164 -> 5170)
+    // 94C1: +195 otEdge leaves (194 namespace + 1 appShell nav label) -> 5365
+    expect(allEn.length).toBe(5365);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot error messages
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -362,12 +363,12 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     expect(buckets.persianContamination.slice(0, 40)).toEqual([]);
   });
 
-  it("satisfies 5170 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 5365 = translations + identicals + tokens + numeric/unit", () => {
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
-    ).toBe(5170);
+    ).toBe(5365);
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);
   });
