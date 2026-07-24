@@ -408,4 +408,3 @@ ALTER TABLE "EngineeringFinding" ADD CONSTRAINT "EngineeringFinding_projectId_fk
 
 -- AddForeignKey
 ALTER TABLE "EngineeringFinding" ADD CONSTRAINT "EngineeringFinding_reviewedById_fkey" FOREIGN KEY ("reviewedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
