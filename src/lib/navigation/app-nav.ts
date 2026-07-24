@@ -74,6 +74,12 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
       { labelKey: "automation", href: "/automation", pageCapability: "authoring" },
       { labelKey: "multiSite", href: "/dashboard/multi-site" },
       { labelKey: "maintenance", href: "/cmms", pageCapability: "authoring" },
+      // PHASE 94C1 — the OT Edge surface had no entry at all, so an authorized
+      // engineer had no way to discover it. `authoring` mirrors the layout's
+      // own RequireCapability guard, which is what keeps visibility from
+      // exceeding the page guard. It is discoverability only: the records
+      // themselves are gated server-side by the OT org permissions.
+      { labelKey: "otEdge", href: "/dashboard/ot", pageCapability: "authoring" },
     ],
   },
   {
