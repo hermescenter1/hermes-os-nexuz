@@ -6932,6 +6932,115 @@
     "boolean": {
       "yes": "Ja",
       "no": "Nein"
+    },
+    "onboarding": {
+      "gateway": {
+        "createTitle": "Gateway registrieren",
+        "createSubtitle": "Legen Sie ein Edge-Gateway-Profil für einen bereits vorhandenen Registrierungsdatensatz an. Die Registrierung erzeugt einen Konfigurationsdatensatz; sie verbindet sich mit keiner Anlage.",
+        "editTitle": "Gateway-Profil bearbeiten",
+        "editSubtitle": "Ändern Sie die unterstützten Profilfelder dieses Gateways. Der zugehörige Registrierungsdatensatz und dessen Standort sind hier nicht änderbar.",
+        "parentLabel": "Registrierungsdatensatz",
+        "parentHint": "Der Gateway-Datensatz, zu dem dieses Profil gehört. Der Standort wird von ihm übernommen und ist danach nicht änderbar.",
+        "parentPlaceholder": "Gateway auswählen",
+        "parentReference": "Hardwarekennung",
+        "environmentLabel": "Umgebung",
+        "capabilitiesLabel": "Fähigkeiten",
+        "capabilitiesHint": "Was dieses Gateway übermitteln darf. Ein Gateway ohne Fähigkeit kann nichts übermitteln.",
+        "softwareVersionLabel": "Softwareversion",
+        "readOnlyModeLabel": "Nur-Lese-Modus",
+        "readOnlyModeHint": "Diese Version bietet in keinem der beiden Modi einen Steuerungspfad.",
+        "simulatorModeLabel": "Simulatormodus",
+        "lifecycleLabel": "Lebenszyklus",
+        "lifecycleHint": "Der erfasste Lebenszyklusstatus. Eine Änderung nimmt keinen Kontakt zum Gateway auf.",
+        "lifecycleCreateNote": "Ein neues Profil beginnt als registriert. Der Lebenszyklus lässt sich nach der Registrierung ändern.",
+        "submitCreate": "Gateway registrieren",
+        "submitEdit": "Profil speichern"
+      },
+      "device": {
+        "createTitle": "Gerät registrieren",
+        "createSubtitle": "Legen Sie ein OT-Geräteprofil für eine bereits vorhandene Anlage an. Die Registrierung erzeugt einen Konfigurationsdatensatz; sie verbindet sich mit keiner Anlage.",
+        "editTitle": "Geräteprofil bearbeiten",
+        "editSubtitle": "Ändern Sie die unterstützten Profilfelder dieses Geräts. Die zugehörige Anlage und deren Standort sind hier nicht änderbar.",
+        "parentLabel": "Industrieanlage",
+        "parentHint": "Die Anlage, die dieses Geräteprofil beschreibt. Der Standort wird von ihr übernommen und ist danach nicht änderbar.",
+        "parentPlaceholder": "Anlage auswählen",
+        "categoryLabel": "Kategorie",
+        "lifecycleLabel": "Lebenszyklus",
+        "networkZoneLabel": "Netzwerkzone",
+        "safetyClassLabel": "Sicherheitsklasse",
+        "engineeringIdLabel": "Technische Kennung",
+        "engineeringIdHint": "Die im Engineering-Projekt verwendete Kennung, etwa der Steuerungsname im Export.",
+        "productFamilyLabel": "Produktfamilie",
+        "firmwareVersionLabel": "Firmware-Version",
+        "submitCreate": "Gerät registrieren",
+        "submitEdit": "Profil speichern"
+      },
+      "site": {
+        "label": "Standort",
+        "filterLabel": "Nach Standort filtern",
+        "inherited": "Wird vom gewählten Datensatz übernommen",
+        "notSelected": "Wählen Sie einen Datensatz, um dessen Standort zu sehen",
+        "anySite": "Alle Standorte",
+        "unavailableTitle": "Standortnamen nicht verfügbar",
+        "unavailableBody": "Die Standortnamen konnten nicht gelesen werden. Datensätze werden weiterhin über ihre Kennung aufgeführt; die Registrierung bleibt davon unberührt."
+      },
+      "actions": {
+        "cancel": "Abbrechen",
+        "backToList": "Zurück zur Liste",
+        "backToDetail": "Zurück zum Datensatz",
+        "edit": "Profil bearbeiten",
+        "registerGateway": "Gateway registrieren",
+        "registerDevice": "Gerät registrieren",
+        "copyIdentifier": "Kennung kopieren",
+        "copied": "Kopiert"
+      },
+      "status": {
+        "submitting": "Wird übermittelt…",
+        "loadingParents": "Verfügbare Datensätze werden geladen",
+        "unchanged": "Keine Änderung zu speichern.",
+        "requiredHint": "Pflichtfeld"
+      },
+      "success": {
+        "gatewayTitle": "Registrierung abgeschlossen",
+        "gatewayBody": "Der Gateway-Profildatensatz wurde angelegt. Das bedeutet nicht, dass das Gateway verbunden, authentifiziert ist oder Daten übermittelt.",
+        "gatewayUpdated": "Profil gespeichert",
+        "gatewayUpdatedBody": "Der Gateway-Profildatensatz wurde aktualisiert.",
+        "deviceTitle": "Registrierung abgeschlossen",
+        "deviceBody": "Der Geräteprofildatensatz wurde angelegt. Das bedeutet nicht, dass das Gerät online oder in Betrieb genommen ist.",
+        "deviceUpdated": "Profil gespeichert",
+        "deviceUpdatedBody": "Der Geräteprofildatensatz wurde aktualisiert.",
+        "identifierLabel": "Datensatzkennung",
+        "openGateway": "Gateway öffnen",
+        "openDevice": "Gerät öffnen"
+      },
+      "errors": {
+        "title": "Die Anfrage wurde nicht akzeptiert",
+        "required": "Dieses Feld ist erforderlich.",
+        "malformedIdentifier": "Diese Kennung hat ein unerwartetes Format.",
+        "tooLong": "Dieser Wert ist länger, als der Server akzeptiert.",
+        "tooManyCapabilities": "Es wurden zu viele Fähigkeiten ausgewählt.",
+        "INVALID_INPUT": "Der Server hat diesen Datensatz nicht akzeptiert. Prüfen Sie die gewählten Werte und versuchen Sie es erneut.",
+        "CONFLICT": "Für den gewählten Datensatz existiert bereits ein Profil.",
+        "DUPLICATE_IDENTIFIER": "Diese Kennung ist bereits registriert.",
+        "UNAUTHENTICATED": "Ihre Sitzung ist nicht mehr gültig. Melden Sie sich erneut an und versuchen Sie es noch einmal.",
+        "FORBIDDEN": "Ihr Konto darf diesen Vorgang in diesem Mandanten oder für diesen Standort nicht ausführen.",
+        "NOT_FOUND": "Dieser Datensatz existiert nicht oder liegt außerhalb der Standorte, die Sie einsehen dürfen.",
+        "RATE_LIMITED": "In kurzer Zeit wurden zu viele Anfragen gestellt. Warten Sie einen Moment und versuchen Sie es erneut.",
+        "UNAVAILABLE": "Die Datensätze können derzeit nicht geschrieben werden. Dies ist ein vorübergehender Zustand auf dem Server.",
+        "UNSUPPORTED_MEDIA": "Die Anfrage konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.",
+        "PAYLOAD_TOO_LARGE": "Die übermittelten Werte sind zu groß.",
+        "INVALID_QUERY": "Der Server hat einen Teil dieser Anfrage nicht akzeptiert.",
+        "FAILED": "Die Anfrage konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
+        "parentsTitle": "Verfügbare Datensätze konnten nicht geladen werden",
+        "parentsBody": "Die Liste der Datensätze, für die ein Profil angelegt werden kann, konnte nicht gelesen werden; die Registrierung kann daher nicht fortgesetzt werden. Bitte versuchen Sie es erneut.",
+        "parentsEmptyTitle": "Keine Datensätze verfügbar",
+        "parentsEmptyBody": "In den Standorten, für die Sie berechtigt sind, existiert kein Datensatz, für den ein Profil angelegt werden kann.",
+        "retry": "Erneut versuchen"
+      },
+      "permission": {
+        "deniedTitle": "Nicht berechtigt",
+        "deniedBody": "Ihr Konto hat keine Berechtigung, diese Datensätze in diesem Mandanten anzulegen oder zu ändern."
+      }
     }
   }
 }

@@ -23,7 +23,15 @@ import type { OrgRole } from "@/lib/org/types";
 const ROOT = process.cwd();
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
 const strip = (source: string) =>
-  source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
+  source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*/g, "")
+    // PHASE 94C2 — `FORBIDDEN_WRITE_FIELDS` is a DENY-LIST: it names the
+    // credential-adjacent fields precisely so a payload builder can never
+    // include one, and scanning it would flag the guard for doing its job. The
+    // declaration is removed rather than the pattern loosened, so every other
+    // occurrence in every file is still caught.
+    .replace(/FORBIDDEN_WRITE_FIELDS[\s\S]*?\] as const\);/g, "");
 
 function filesUnder(dir: string, extensions: string[]): string[] {
   const out: string[] = [];
@@ -49,12 +57,19 @@ const ALL = [...COMPONENTS, ...LIB, ...PAGES];
 /* ── Routes and shell ───────────────────────────────────────────────────── */
 
 describe("94C1 — the route tree is exactly what was designed", () => {
-  it("creates the six canonical OT Edge route files and no others", () => {
+  // 94C1 built the six read routes; 94C2 added the four onboarding routes.
+  // The list is exhaustive on purpose: a route appearing without a decision
+  // is exactly what this assertion exists to catch.
+  it("creates exactly the canonical OT Edge route files and no others", () => {
     expect(PAGES).toEqual(
       [
+        "src/app/[locale]/dashboard/ot/devices/[id]/edit/page.tsx",
         "src/app/[locale]/dashboard/ot/devices/[id]/page.tsx",
+        "src/app/[locale]/dashboard/ot/devices/new/page.tsx",
         "src/app/[locale]/dashboard/ot/devices/page.tsx",
+        "src/app/[locale]/dashboard/ot/gateways/[id]/edit/page.tsx",
         "src/app/[locale]/dashboard/ot/gateways/[id]/page.tsx",
+        "src/app/[locale]/dashboard/ot/gateways/new/page.tsx",
         "src/app/[locale]/dashboard/ot/gateways/page.tsx",
         "src/app/[locale]/dashboard/ot/layout.tsx",
         "src/app/[locale]/dashboard/ot/page.tsx",

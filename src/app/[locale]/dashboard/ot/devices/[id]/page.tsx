@@ -5,6 +5,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DeviceDetailClient } from "@/components/ot-edge-operations";
+import { OtDetailActions } from "@/components/ot-edge-onboarding";
 import { noIndexMetadata } from "@/lib/seo/metadata";
 
 export const metadata = noIndexMetadata("OT Edge — Device");
@@ -18,10 +19,23 @@ export default async function OtDeviceDetailPage({
   const { locale, id } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("otEdge");
+  const onboarding = await getTranslations("otEdge.onboarding");
 
   return (
     <>
-      <PageHeader level="page" title={t("devices.detailTitle")} subtitle={t("devices.subtitle")} />
+      <PageHeader
+        level="page"
+        title={t("devices.detailTitle")}
+        subtitle={t("devices.subtitle")}
+        actions={
+          <OtDetailActions
+            editHref={`/dashboard/ot/devices/${encodeURIComponent(id)}/edit`}
+            editLabel={onboarding("actions.edit")}
+            listHref="/dashboard/ot/devices"
+            listLabel={onboarding("actions.backToList")}
+          />
+        }
+      />
       <div className="mt-6">
         <DeviceDetailClient id={id} locale={locale} />
       </div>

@@ -6932,6 +6932,115 @@
     "boolean": {
       "yes": "Yes",
       "no": "No"
+    },
+    "onboarding": {
+      "gateway": {
+        "createTitle": "Register gateway",
+        "createSubtitle": "Create an edge gateway profile for a registry record that already exists. Registration creates a configuration record; it does not connect to any equipment.",
+        "editTitle": "Edit gateway profile",
+        "editSubtitle": "Change the supported profile fields of this gateway. The registry record it belongs to, and its site, cannot be changed here.",
+        "parentLabel": "Registry gateway",
+        "parentHint": "The gateway record this profile belongs to. Its industrial site is inherited and cannot be changed afterwards.",
+        "parentPlaceholder": "Select a gateway",
+        "parentReference": "Hardware identifier",
+        "environmentLabel": "Environment",
+        "capabilitiesLabel": "Capabilities",
+        "capabilitiesHint": "What this gateway is permitted to submit. A gateway with no capability cannot submit anything.",
+        "softwareVersionLabel": "Software version",
+        "readOnlyModeLabel": "Read-only mode",
+        "readOnlyModeHint": "This release provides no control path in either mode.",
+        "simulatorModeLabel": "Simulator mode",
+        "lifecycleLabel": "Lifecycle",
+        "lifecycleHint": "The recorded lifecycle state. Changing it does not contact the gateway.",
+        "lifecycleCreateNote": "A new profile starts as registered. The lifecycle can be changed after registration.",
+        "submitCreate": "Register gateway",
+        "submitEdit": "Save profile"
+      },
+      "device": {
+        "createTitle": "Register device",
+        "createSubtitle": "Create an OT device profile for an industrial asset that already exists. Registration creates a configuration record; it does not connect to any equipment.",
+        "editTitle": "Edit device profile",
+        "editSubtitle": "Change the supported profile fields of this device. The asset it belongs to, and its site, cannot be changed here.",
+        "parentLabel": "Industrial asset",
+        "parentHint": "The asset this device profile describes. Its industrial site is inherited and cannot be changed afterwards.",
+        "parentPlaceholder": "Select an asset",
+        "categoryLabel": "Category",
+        "lifecycleLabel": "Lifecycle",
+        "networkZoneLabel": "Network zone",
+        "safetyClassLabel": "Safety class",
+        "engineeringIdLabel": "Engineering identifier",
+        "engineeringIdHint": "The identifier used in the engineering project, for example the controller name in the export.",
+        "productFamilyLabel": "Product family",
+        "firmwareVersionLabel": "Firmware version",
+        "submitCreate": "Register device",
+        "submitEdit": "Save profile"
+      },
+      "site": {
+        "label": "Industrial site",
+        "filterLabel": "Filter by site",
+        "inherited": "Inherited from the selected record",
+        "notSelected": "Select a record to see its site",
+        "anySite": "All sites",
+        "unavailableTitle": "Site names unavailable",
+        "unavailableBody": "Site names could not be read. Records are still listed by their identifier, and registration is unaffected."
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "backToList": "Back to the list",
+        "backToDetail": "Back to the record",
+        "edit": "Edit profile",
+        "registerGateway": "Register gateway",
+        "registerDevice": "Register device",
+        "copyIdentifier": "Copy identifier",
+        "copied": "Copied"
+      },
+      "status": {
+        "submitting": "Submitting…",
+        "loadingParents": "Loading available records",
+        "unchanged": "No change to save.",
+        "requiredHint": "Required"
+      },
+      "success": {
+        "gatewayTitle": "Registration completed",
+        "gatewayBody": "The gateway profile record was created. This does not mean the gateway is connected, authenticated or reporting.",
+        "gatewayUpdated": "Profile saved",
+        "gatewayUpdatedBody": "The gateway profile record was updated.",
+        "deviceTitle": "Registration completed",
+        "deviceBody": "The device profile record was created. This does not mean the device is online or commissioned.",
+        "deviceUpdated": "Profile saved",
+        "deviceUpdatedBody": "The device profile record was updated.",
+        "identifierLabel": "Record identifier",
+        "openGateway": "Open the gateway",
+        "openDevice": "Open the device"
+      },
+      "errors": {
+        "title": "The request was not accepted",
+        "required": "This field is required.",
+        "malformedIdentifier": "This identifier has an unexpected format.",
+        "tooLong": "This value is longer than the server accepts.",
+        "tooManyCapabilities": "Too many capabilities were selected.",
+        "INVALID_INPUT": "The server did not accept this record. Check the selected values and try again.",
+        "CONFLICT": "A profile already exists for the selected record.",
+        "DUPLICATE_IDENTIFIER": "This identifier is already registered.",
+        "UNAUTHENTICATED": "Your session is no longer valid. Sign in again and retry.",
+        "FORBIDDEN": "Your account is not permitted to perform this operation in this organization, or for this site.",
+        "NOT_FOUND": "This record does not exist, or it is outside the sites you are authorized to see.",
+        "RATE_LIMITED": "Too many requests were made in a short period. Please wait a moment and retry.",
+        "UNAVAILABLE": "The records cannot be written at the moment. This is a temporary condition on the server.",
+        "UNSUPPORTED_MEDIA": "The request could not be processed. Please retry.",
+        "PAYLOAD_TOO_LARGE": "The submitted values are too large.",
+        "INVALID_QUERY": "The server did not accept part of this request.",
+        "FAILED": "The request could not be completed. Please retry.",
+        "parentsTitle": "Available records could not be loaded",
+        "parentsBody": "The list of records to register against could not be read, so registration cannot continue. Please retry.",
+        "parentsEmptyTitle": "No records available",
+        "parentsEmptyBody": "There is no record in the sites you are authorized for that a profile can be created against.",
+        "retry": "Retry"
+      },
+      "permission": {
+        "deniedTitle": "Not authorized",
+        "deniedBody": "Your account does not have permission to create or change these records in this organization."
+      }
     }
   }
 }
