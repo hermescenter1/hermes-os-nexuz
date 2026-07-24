@@ -132,7 +132,7 @@ describe("94 — tag rules", () => {
   });
 
   it("OT-NAME-MALFORMED fires on unsupported characters and over-length names", () => {
-    expect(ids(run({ tags: [{ name: "BadName", dataType: "BOOL" }] }))).toContain("OT-NAME-MALFORMED");
+    expect(ids(run({ tags: [{ name: "Bad\u0000Name", dataType: "BOOL" }] }))).toContain("OT-NAME-MALFORMED");
     expect(ids(run({ tags: [{ name: "x".repeat(129), dataType: "BOOL" }] }))).toContain("OT-NAME-MALFORMED");
     expect(ids(run({ tags: [{ name: "Line3/Filler.Motor_Run-1", dataType: "BOOL" }] })))
       .not.toContain("OT-NAME-MALFORMED");

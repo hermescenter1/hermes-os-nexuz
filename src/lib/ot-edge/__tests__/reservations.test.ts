@@ -27,7 +27,7 @@ class UniqueViolation extends Error {
 function fakeTable<T extends Record<string, unknown>>(uniqueKeys: string[][]) {
   const rows: T[] = [];
   const keyOf = (row: Record<string, unknown>, cols: string[]) =>
-    cols.map((c) => String(row[c])).join("");
+    cols.map((c) => String(row[c])).join("\u0000");
 
   return {
     rows,
