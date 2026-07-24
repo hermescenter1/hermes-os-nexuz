@@ -8,6 +8,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GatewayDetailClient } from "@/components/ot-edge-operations";
+import { OtDetailActions } from "@/components/ot-edge-onboarding";
 import { noIndexMetadata } from "@/lib/seo/metadata";
 
 export const metadata = noIndexMetadata("OT Edge — Gateway");
@@ -21,10 +22,23 @@ export default async function OtGatewayDetailPage({
   const { locale, id } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("otEdge");
+  const onboarding = await getTranslations("otEdge.onboarding");
 
   return (
     <>
-      <PageHeader level="page" title={t("gateways.detailTitle")} subtitle={t("gateways.subtitle")} />
+      <PageHeader
+        level="page"
+        title={t("gateways.detailTitle")}
+        subtitle={t("gateways.subtitle")}
+        actions={
+          <OtDetailActions
+            editHref={`/dashboard/ot/gateways/${encodeURIComponent(id)}/edit`}
+            editLabel={onboarding("actions.edit")}
+            listHref="/dashboard/ot/gateways"
+            listLabel={onboarding("actions.backToList")}
+          />
+        }
+      />
       <div className="mt-6">
         <GatewayDetailClient id={id} locale={locale} />
       </div>
