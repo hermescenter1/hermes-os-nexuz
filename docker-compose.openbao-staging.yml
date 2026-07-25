@@ -1,0 +1,121 @@
+# Hermes OS — OpenBao STAGING stack (PHASE 94D0G). Staging / canary ONLY.
+# Not production, no `server -dev`, no application services, never joined to
+# hermes_internal, never combined with docker-compose.yml / docker-compose.prod.yml.
+#
+# Dedicated project name (documented in ops/openbao/staging/RUNBOOK.md):
+#   hermes-openbao-staging
+#
+# Bring up (operator provides TLS and audit dirs OUTSIDE the repo; the audit
+# dir must already exist — Compose fails closed rather than creating it):
+#   OPENBAO_STAGING_TLS_DIR=/etc/hermes-openbao/tls \
+#   OPENBAO_STAGING_AUDIT_DIR=/var/log/hermes-openbao-audit \
+#   docker compose -p hermes-openbao-staging -f docker-compose.openbao-staging.yml up -d
+#
+# The container starts SEALED and UNINITIALIZED (fail-closed). Init + unseal are
+# manual — see the RUNBOOK. No credential appears anywhere in this file.
+
+services:
+  openbao:
+    image: openbao/openbao:2.5.4
+    # Run DIRECTLY as the image's verified non-root identity (openbao/openbao:2.5.4
+    # → UID 100, GID 1000). The image's default root entrypoint is bypassed — it
+    # would need a root→openbao privilege drop that cap_drop:ALL rightly forbids;
+    # no root process is needed at all. See the staging RUNBOOK, §1.
+    user: "100:1000"
+    entrypoint:
+      - bao
+    command:
+      - server
+      - -config=/openbao/config
+    restart: unless-stopped
+    init: true
+    read_only: true
+    stop_grace_period: 30s
+
+    # Non-sensitive environment ONLY — no tokens, no keys, no env_file.
+    environment:
+      BAO_ADDR: https://127.0.0.1:8200
+      BAO_CACERT: /openbao/tls/ca.crt
+
+    # Loopback-only API port; the cluster port 8201 is never published — it is
+    # only reachable inside the isolated network.
+    ports:
+      - "127.0.0.1:${OPENBAO_STAGING_PORT:-8200}:8200"
+    expose:
+      - "8201"
+
+    volumes:
+      # Committed, read-only server configuration.
+      - ./ops/openbao/staging/openbao.hcl:/openbao/config/openbao.hcl:ro
+      # Operator-provided TLS material (outside the repo); fail-closed if unset.
+      - ${OPENBAO_STAGING_TLS_DIR:?OPENBAO_STAGING_TLS_DIR is required}:/openbao/tls:ro
+      # Persistent integrated storage on a Compose-scoped named volume, mounted at
+      # the image's 100:1000-owned data directory (/openbao/file).
+      - openbao_data:/openbao/file
+      # Audit log on an operator-created HOST directory (outside the repo) so
+      # host-side logrotate can reach it. Writable (OpenBao writes audit.log);
+      # the directory must already exist — Compose fails rather than creating it.
+      - type: bind
+        source: ${OPENBAO_STAGING_AUDIT_DIR:?OPENBAO_STAGING_AUDIT_DIR is required}
+        target: /openbao/audit
+        bind:
+          create_host_path: false
+
+    # Writable scratch only in memory; the root filesystem stays read-only.
+    tmpfs:
+      - /tmp
+
+    security_opt:
+      - no-new-privileges:true
+    # OpenBao 2.5.4 has no mlock support — no capability is granted at all.
+    cap_drop:
+      - ALL
+
+    # Service-level resource controls (honoured by `docker compose` v2 without
+    # swarm) — NOT relying on deploy.resources.
+    cpus: "1.0"
+    mem_limit: 768M
+    mem_reservation: 256M
+    # memswap_limit == mem_limit → zero swap beyond the memory limit, and
+    # mem_swappiness 0 → the kernel never prefers swapping this container.
+    memswap_limit: 768M
+    mem_swappiness: 0
+    pids_limit: 256
+
+    healthcheck:
+      # Credential-free: `bao status` uses BAO_ADDR + BAO_CACERT and exits
+      # non-zero while SEALED or UNINITIALIZED, so those states stay UNHEALTHY.
+      # It prints seal status only — never a credential.
+      test: ["CMD", "bao", "status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+    networks:
+      - openbao_staging
+
+networks:
+  # Dedicated staging-only bridge, separate from every Hermes application
+  # network. NOT `internal: true`: on the verified Docker host an internal
+  # network suppresses the host-loopback port publication that PHASE 94D0F
+  # bootstrap and operator access require. The bridge binds published ports to
+  # 127.0.0.1 only (host_binding_ipv4), and the service publishes exactly one
+  # loopback port above.
+  openbao_staging:
+    driver: bridge
+    attachable: false
+    driver_opts:
+      com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
+
+volumes:
+  # Compose-scoped named volume (no explicit global name:) — becomes
+  # hermes-openbao-staging_openbao_data under the project. The audit log lives on
+  # an operator host directory (bind mount above), NOT a named volume.
+  openbao_data:
