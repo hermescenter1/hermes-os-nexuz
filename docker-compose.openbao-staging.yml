@@ -62,8 +62,12 @@ services:
           create_host_path: false
 
     # Writable scratch only in memory; the root filesystem stays read-only.
+    # /openbao/logs is declared as a VOLUME by the pinned image — without an
+    # explicit override it would become an ANONYMOUS persistent Docker volume.
+    # A bounded tmpfs (16 MiB, 100:1000, 0700) keeps it ephemeral and in memory.
     tmpfs:
       - /tmp
+      - /openbao/logs:mode=0700,uid=100,gid=1000,size=16m
 
     security_opt:
       - no-new-privileges:true
