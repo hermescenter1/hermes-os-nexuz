@@ -14,7 +14,8 @@
 - One service: `openbao`. No application services; never joined to `hermes_internal`; never combined with `docker-compose.yml` / `docker-compose.prod.yml`.
 - One **dedicated staging bridge network with loopback-only host publication** (`openbao_staging`): `driver: bridge`, `attachable: false`, bridge option `com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"`. It is logically isolated from every Hermes application network but is **not** an `internal: true` network (that suppressed the required host-loopback listener on the verified Docker host) and must not be called air-gapped — see §5.
 - API published on **loopback only**: `127.0.0.1:${OPENBAO_STAGING_PORT:-8200}:8200`. Cluster port `8201` is only `expose`d inside the network (never published).
-- Persistence: **one** Compose-scoped named volume, `openbao_data` (Raft). The audit log lives on an **operator host directory** (bind mount, below) so host-side logrotate can reach it.
+- Persistence: **exactly one** Compose-managed persistent volume, `openbao_data` (Raft). The audit log lives on an **operator host directory** (bind mount, below) so host-side logrotate can reach it.
+- `/openbao/logs`: the pinned image **declares this path as a `VOLUME`**, so without an override Docker would silently create an **anonymous persistent volume** for it. Compose explicitly overrides it with an **ephemeral, bounded 16 MiB tmpfs**, owned `100:1000`, mode `0700` — nothing under `/openbao/logs` persists, and the corrected service creates no anonymous volume for `/openbao/logs`.
 - Read-only server config bind-mounted from [`openbao.hcl`](openbao.hcl); operator TLS dir bind-mounted read-only at `/openbao/tls`; audit dir bind-mounted **writable** at `/openbao/audit`.
 
 ### Non-root runtime model
@@ -228,5 +229,16 @@ running container as above, not from the rendered config.
 6. Encrypted snapshot backup + checksum verify + **restore-test into a throwaway target** PASS.
 7. **No public port** (`ss`/`nmap` show loopback/private only); host firewall verified.
 8. Resource limits enforced (`docker stats` within `cpus`/`mem_limit`); **swap protection verified per §20** (equal memory/memory+swap limits, swappiness 0, host swap encrypted or cgroup-denied) — unverified swap protection blocks 94D0H.
-9. Rollback removes only staging containers/network; guarded volume purge removes only the two staging volumes.
+9. Rollback removes only staging containers/network; normal teardown **preserves the Raft volume and the host audit data**; guarded volume purge removes only the single `openbao_data` staging volume.
 10. No secret tracked in Git (`git ls-files` review) and none in image layers; verify the declarative-audit / rekey-endpoint / request-limit options against `openbao/openbao:2.5.4` (see `openbao.hcl` note).
+11. The **running corrected container** must show mount type **tmpfs** at `/openbao/logs` (ephemeral, 16 MiB, `100:1000`, mode `0700`), must have **no volume mount** at `/openbao/logs`, and **exactly one** Compose-managed persistent volume must remain: `openbao_data`. Verify (read-only):
+
+```bash
+docker inspect -f '{{range .Mounts}}{{.Type}} {{.Destination}}{{"\n"}}{{end}}' \
+  $(docker compose -p hermes-openbao-staging -f docker-compose.openbao-staging.yml ps -q openbao)
+# expect: "tmpfs /openbao/logs" — and NO "volume /openbao/logs" entry
+docker volume ls --filter label=com.docker.compose.project=hermes-openbao-staging
+# expect: only hermes-openbao-staging_openbao_data
+```
+
+**Operational note — pre-fix residue.** A container started before this correction may have left an **anonymous volume** behind as historical host residue. It must be identified by its **exact volume name** (from `docker volume ls` / the old container's `Mounts`), verified as **unused after the corrected container is recreated**, and removed only through an **explicit, guarded, one-volume cleanup** of that exact name. Never use `prune`, `down -v`, wildcard deletion — and never delete the Raft volume (`hermes-openbao-staging_openbao_data`).
