@@ -231,14 +231,34 @@ running container as above, not from the rendered config.
 8. Resource limits enforced (`docker stats` within `cpus`/`mem_limit`); **swap protection verified per §20** (equal memory/memory+swap limits, swappiness 0, host swap encrypted or cgroup-denied) — unverified swap protection blocks 94D0H.
 9. Rollback removes only staging containers/network; normal teardown **preserves the Raft volume and the host audit data**; guarded volume purge removes only the single `openbao_data` staging volume.
 10. No secret tracked in Git (`git ls-files` review) and none in image layers; verify the declarative-audit / rekey-endpoint / request-limit options against `openbao/openbao:2.5.4` (see `openbao.hcl` note).
-11. The **running corrected container** must show mount type **tmpfs** at `/openbao/logs` (ephemeral, 16 MiB, `100:1000`, mode `0700`), must have **no volume mount** at `/openbao/logs`, and **exactly one** Compose-managed persistent volume must remain: `openbao_data`. Verify (read-only):
+11. `/openbao/logs` runs on a bounded tmpfs and **exactly one** Compose-managed persistent volume exists: `openbao_data`. Note: on the verified Linux host, Docker lists Compose tmpfs mounts under **`.HostConfig.Tmpfs`** — they do **not** appear in `.Mounts`, so a `.Mounts` entry of type `tmpfs` must **not** be required. The authoritative acceptance checks are:
+
+   a. `.HostConfig.Tmpfs["/openbao/logs"]` exists and contains `mode=0700`, `uid=100`, `gid=1000`, `size=16m`.
+   b. `.Mounts` contains **no** mount of type `volume` whose destination is `/openbao/logs`.
+   c. Inside the running container, the filesystem itself confirms the tmpfs.
 
 ```bash
-docker inspect -f '{{range .Mounts}}{{.Type}} {{.Destination}}{{"\n"}}{{end}}' \
-  $(docker compose -p hermes-openbao-staging -f docker-compose.openbao-staging.yml ps -q openbao)
-# expect: "tmpfs /openbao/logs" — and NO "volume /openbao/logs" entry
+CID=$(docker compose -p hermes-openbao-staging -f docker-compose.openbao-staging.yml ps -q openbao)
+
+# (a) The tmpfs is declared on the container config with the exact options:
+docker inspect -f '{{index .HostConfig.Tmpfs "/openbao/logs"}}' "$CID"
+# expect: mode=0700,uid=100,gid=1000,size=16m
+
+# (b) No volume mount at /openbao/logs:
+docker inspect -f '{{range .Mounts}}{{.Type}} {{.Destination}}{{"\n"}}{{end}}' "$CID"
+# expect: NO line "volume /openbao/logs"
+
+# (c) In-container filesystem verification:
+docker exec "$CID" stat -f -c %T /openbao/logs          # expect: tmpfs
+docker exec "$CID" stat -c '%a %u:%g' /openbao/logs     # expect: 700 100:1000
+docker exec "$CID" df -Pk /openbao/logs                 # expect: size > 0 and <= 16384 KiB
+docker exec "$CID" grep ' /openbao/logs ' /proc/self/mountinfo   # expect: tmpfs entry
+# Harmless write probe (removes its own file — the only non-read-only step):
+docker exec "$CID" sh -c 'touch /openbao/logs/.probe && rm /openbao/logs/.probe && echo writable'
+
+# Exactly one Compose-managed persistent volume:
 docker volume ls --filter label=com.docker.compose.project=hermes-openbao-staging
 # expect: only hermes-openbao-staging_openbao_data
 ```
 
-**Operational note — pre-fix residue.** A container started before this correction may have left an **anonymous volume** behind as historical host residue. It must be identified by its **exact volume name** (from `docker volume ls` / the old container's `Mounts`), verified as **unused after the corrected container is recreated**, and removed only through an **explicit, guarded, one-volume cleanup** of that exact name. Never use `prune`, `down -v`, wildcard deletion — and never delete the Raft volume (`hermes-openbao-staging_openbao_data`).
+**Operational note — pre-fix residue (resolved).** A container started before this correction left an **anonymous volume** behind as historical host residue. After the corrected container was recreated, that volume was verified **unused** and removed through an **explicit, guarded, exact-name, one-volume cleanup**: the historical anonymous volume is now **absent**, the Raft volume (`hermes-openbao-staging_openbao_data`) remains **present and attached**, and **no `prune`, `down -v` or wildcard deletion was used**. Any future residue must follow the same exact-name guarded procedure — never `prune`, `down -v`, wildcard deletion, and never the Raft volume.
