@@ -393,7 +393,7 @@ try:
 
     print("BOOTSTRAP_BACKUP_SECRET_ID_DESTROY_GATE=PASS")
 
-    request(
+    destroyed_status, destroyed_login = request(
         "POST",
         f"auth/{APPROLE_MOUNT}/login",
         body={
@@ -402,6 +402,21 @@ try:
         },
         expected_error={400, 403},
     )
+
+    if destroyed_status not in {400, 403}:
+        unexpected_token = None
+
+        if isinstance(destroyed_login, dict):
+            unexpected_auth = destroyed_login.get("auth")
+
+            if isinstance(unexpected_auth, dict):
+                candidate_token = unexpected_auth.get("client_token")
+
+                if isinstance(candidate_token, str) and candidate_token:
+                    unexpected_token = candidate_token
+
+        revoke_self(unexpected_token)
+        fail("DESTROYED_BACKUP_SECRET_ID_LOGIN_DENY_GATE=FAIL")
 
     print("DESTROYED_BACKUP_SECRET_ID_LOGIN_DENY_GATE=PASS")
 

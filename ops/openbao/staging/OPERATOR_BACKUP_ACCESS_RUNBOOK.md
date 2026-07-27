@@ -73,6 +73,12 @@ Run only on the OpenBao staging host through:
 https://127.0.0.1:8200
 ```
 
+No fixed client CIDR is configured in this phase. The API is reached through a
+Docker-published loopback port using NAT, so the source address observed by
+OpenBao must be measured on the live staging topology before any later CIDR
+binding is introduced. Access remains bounded by loopback-only publication,
+TLS, short token TTLs, SecretID TTLs and SecretID usage limits.
+
 The bootstrap requires the still-valid initial root token through the
 environment and writes credentials only to an existing, empty, root-owned mode
 `0700` directory outside the repository.
@@ -103,7 +109,9 @@ The validator uses no root token. It:
 7. takes a temporary Raft snapshot under `/run`, verifies size and SHA-256, then
    removes it;
 8. destroys the bootstrap-issued backup SecretID by accessor;
-9. proves the destroyed SecretID cannot log in;
+9. requires the destroyed SecretID login to return HTTP `400` or `403`; an
+   unexpected successful login has its issued token self-revoked before the
+   validator fails;
 10. self-revokes both temporary tokens.
 
 ## Credential export gate

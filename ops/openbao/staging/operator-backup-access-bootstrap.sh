@@ -202,6 +202,9 @@ BACKUP_POLICY_CREATED=1
 bao_ auth enable -path="${USERPASS_MOUNT}" userpass >/dev/null
 USERPASS_CREATED=1
 
+# No client-CIDR binding is hard-coded here. Requests reach OpenBao through
+# Docker's loopback-published NAT path, so the address observed by OpenBao
+# must be measured and validated before a later phase adds any CIDR binding.
 bao_ write "auth/${APPROLE_MOUNT}/role/${BACKUP_ROLE}" \
   bind_secret_id=true \
   token_type=service \
@@ -210,10 +213,8 @@ bao_ write "auth/${APPROLE_MOUNT}/role/${BACKUP_ROLE}" \
   token_ttl=10m \
   token_max_ttl=30m \
   token_num_uses=0 \
-  token_bound_cidrs=127.0.0.1/32 \
   secret_id_ttl=1h \
   secret_id_num_uses=5 \
-  secret_id_bound_cidrs=127.0.0.1/32 \
   >/dev/null
 BACKUP_ROLE_CREATED=1
 
@@ -233,7 +234,6 @@ bao_ write "auth/${USERPASS_MOUNT}/users/${OPERATOR_USER}" \
   token_max_ttl=1h \
   token_num_uses=0 \
   token_type=service \
-  token_bound_cidrs=127.0.0.1/32 \
   >/dev/null
 
 write_atomic() {

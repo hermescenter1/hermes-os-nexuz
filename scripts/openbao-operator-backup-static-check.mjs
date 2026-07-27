@@ -79,6 +79,25 @@ for (const asset of [bootstrap, validation, runbook]) {
   gate(!asset.includes("docker volume rm"), "VOLUME_REMOVE");
 }
 
+for (const forbiddenCidr of [
+  "token_bound_cidrs=127.0.0.1/32",
+  "secret_id_bound_cidrs=127.0.0.1/32",
+]) {
+  gate(!bootstrap.includes(forbiddenCidr), "UNVERIFIED_HARDCODED_CIDR");
+}
+
+gate(
+  validation.includes(
+    "if destroyed_status not in {400, 403}:",
+  ),
+  "DESTROYED_SECRET_ID_STATUS_REQUIRED",
+);
+
+gate(
+  validation.includes("revoke_self(unexpected_token)"),
+  "UNEXPECTED_LOGIN_TOKEN_REVOKED",
+);
+
 gate(
   bootstrap.includes(
     '[[ "${BAO_ADDR:-}" == "https://127.0.0.1:8200" ]]',
