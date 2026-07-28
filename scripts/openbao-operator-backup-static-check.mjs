@@ -7,8 +7,18 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const read = (path) =>
-  readFileSync(resolve(root, path), "utf8").replace(/\r/g, "");
+const read = (path) => {
+  const content = readFileSync(resolve(root, path), "utf8");
+
+  if (content.includes("\r")) {
+    console.error(
+      `[openbao-operator-static] FAILED CRLF_NOT_ALLOWED:${path}`,
+    );
+    process.exit(1);
+  }
+
+  return content;
+};
 
 const operator = read(
   "ops/openbao/policy/hermes-staging-operator.hcl",
