@@ -6,29 +6,151 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    env:
+      SERVER_IP: ${{ secrets.SERVER_IP }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
 
     steps:
+      - name: Validate deployment secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SERVER_IP:-}" ]; then
+            echo "::error::SERVER_IP secret is missing."
+            exit 1
+          fi
+
+          if [ -z "${SERVER_USER:-}" ]; then
+            echo "::error::SERVER_USER secret is missing."
+            exit 1
+          fi
+
+          if [ -z "${SSH_KEY:-}" ]; then
+            echo "::error::SSH_KEY secret is missing."
+            exit 1
+          fi
+
+          PORT="${SSH_PORT:-22}"
+
+          if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+            echo "::error::SSH_PORT must be a valid port number."
+            exit 1
+          fi
+
+          echo "Deployment secrets are present."
+          echo "SSH port: $PORT"
+
       - name: Setup SSH
+        shell: bash
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+          set -euo pipefail
 
-      - name: Deploy to Server
+          PORT="${SSH_PORT:-22}"
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+
+          printf '%s\n' "$SSH_KEY" |
+            sed 's/\r$//' > "$HOME/.ssh/id_rsa"
+
+          chmod 600 "$HOME/.ssh/id_rsa"
+
+          if ! ssh-keygen -y -f "$HOME/.ssh/id_rsa" >/dev/null 2>&1; then
+            echo "::error::SSH_KEY is not a valid unencrypted private key."
+            exit 1
+          fi
+
+          rm -f "$HOME/.ssh/known_hosts"
+
+          success=false
+
+          for attempt in 1 2 3 4 5; do
+            echo "Scanning SSH host key — attempt $attempt of 5..."
+
+            if ssh-keyscan \
+              -T 15 \
+              -p "$PORT" \
+              -H "$SERVER_IP" \
+              > /tmp/hermes-known-host 2>/dev/null &&
+              [ -s /tmp/hermes-known-host ]; then
+
+              cat /tmp/hermes-known-host >> "$HOME/.ssh/known_hosts"
+              success=true
+              break
+            fi
+
+            sleep 5
+          done
+
+          if [ "$success" != "true" ]; then
+            echo "::error::Cannot reach the SSH service on the configured server and port."
+            echo "::error::Check SERVER_IP, SSH_PORT and the server firewall."
+            exit 1
+          fi
+
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          echo "SSH host key successfully registered."
+
+      - name: Test SSH connection
+        shell: bash
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            set -e
-            unset DOCKER_HOST
+          set -euo pipefail
 
-            cd /opt/hermes-os-nexuz
+          PORT="${SSH_PORT:-22}"
 
-            git pull origin main
+          ssh \
+            -p "$PORT" \
+            -i "$HOME/.ssh/id_rsa" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            -o StrictHostKeyChecking=yes \
+            "$SERVER_USER@$SERVER_IP" \
+            "echo 'SSH connection successful.'"
 
-            docker compose -f docker-compose.prod.yml up -d --build
+      - name: Deploy to server
+        shell: bash
+        run: |
+          set -euo pipefail
 
-            docker system prune -f
+          PORT="${SSH_PORT:-22}"
+
+          ssh \
+            -p "$PORT" \
+            -i "$HOME/.ssh/id_rsa" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            -o StrictHostKeyChecking=yes \
+            "$SERVER_USER@$SERVER_IP" << 'EOF'
+              set -euo pipefail
+
+              unset DOCKER_HOST
+
+              cd /opt/hermes-os-nexuz
+
+              git checkout main
+              git pull --ff-only origin main
+
+              docker compose \
+                -f docker-compose.prod.yml \
+                up -d \
+                --build \
+                --remove-orphans
+
+              docker compose \
+                -f docker-compose.prod.yml \
+                ps
+
+              docker system prune -f
           EOF
