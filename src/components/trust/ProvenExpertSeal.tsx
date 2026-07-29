@@ -1,60 +1,132 @@
-"use client";
+﻿"use client";
 
-import Script from "next/script";
-import { useCallback } from "react";
+import { useEffect } from "react";
+
+type ProSealOptions = {
+  widgetId: string;
+  language: string;
+  usePageLanguage: boolean;
+  bannerColor: string;
+  textColor: string;
+  showBackPage: boolean;
+  showReviews: boolean;
+  hideDate: boolean;
+  hideName: boolean;
+  googleStars: boolean;
+  displayReviewerLastName: boolean;
+  embeddedSelector: string;
+};
 
 declare global {
   interface Window {
     provenExpert?: {
-      proSeal: (options: {
-        widgetId: string;
-        language: string;
-        usePageLanguage: boolean;
-        bannerColor: string;
-        textColor: string;
-        showBackPage: boolean;
-        showReviews: boolean;
-        hideDate: boolean;
-        hideName: boolean;
-        googleStars: boolean;
-        displayReviewerLastName: boolean;
-        embeddedSelector: string;
-      }) => void;
+      proSeal: (options: ProSealOptions) => void;
     };
+    loadProSeal?: () => void;
   }
 }
 
-const PROVEN_EXPERT_WIDGET_ID =
-  "556c8c4c-1239-4292-a2fb-24c03d7c8443";
+const SCRIPT_URL = "https://s.provenexpert.net/seals/proseal-v2.js";
 
-const PROVEN_EXPERT_PROFILE_URL =
+const PROFILE_URL =
   "https://www.provenexpert.com/hermes-os/?utm_source=seals&utm_campaign=embedded-proseal&utm_medium=profile&utm_content=556c8c4c-1239-4292-a2fb-24c03d7c8443";
 
 export default function ProvenExpertSeal() {
-  const initialiseSeal = useCallback(() => {
-    const container = document.getElementById("proSealWidget");
+  useEffect(() => {
+    let cancelled = false;
+    let attempts = 0;
+    let retryTimer: number | undefined;
 
-    if (!container || !window.provenExpert?.proSeal) {
-      return;
+    const initialiseSeal = () => {
+      if (cancelled) return;
+
+      const container = document.getElementById("proSealWidget");
+      const proSeal = window.provenExpert?.proSeal;
+
+      if (container && typeof proSeal === "function") {
+        container.replaceChildren();
+
+        proSeal({
+          widgetId: "556c8c4c-1239-4292-a2fb-24c03d7c8443",
+          language: "en-GB",
+          usePageLanguage: false,
+          bannerColor: "#097E92",
+          textColor: "#FFFFFF",
+          showBackPage: false,
+          showReviews: true,
+          hideDate: true,
+          hideName: false,
+          googleStars: false,
+          displayReviewerLastName: false,
+          embeddedSelector: "#proSealWidget",
+        });
+
+        return;
+      }
+
+      attempts += 1;
+
+      if (attempts <= 40) {
+        retryTimer = window.setTimeout(initialiseSeal, 250);
+      } else {
+        console.error(
+          "ProvenExpert PRO Seal API did not become available."
+        );
+      }
+    };
+
+    // Callback expected by the official ProvenExpert integration.
+    window.loadProSeal = initialiseSeal;
+
+    const existingScript =
+      document.querySelector<HTMLScriptElement>(
+        `script[src="${SCRIPT_URL}"]`
+      );
+
+    if (existingScript) {
+      existingScript.addEventListener("load", initialiseSeal, {
+        once: true,
+      });
+    } else {
+      const script = document.createElement("script");
+
+      script.id = "provenexpert-proseal-script";
+      script.src = SCRIPT_URL;
+      script.async = true;
+      script.defer = true;
+
+      // Prevent script-delay systems from altering the official widget.
+      script.setAttribute("data-cfasync", "false");
+      script.setAttribute("nowprocket", "");
+
+      script.addEventListener("load", initialiseSeal, {
+        once: true,
+      });
+
+      script.addEventListener(
+        "error",
+        () => {
+          console.error("ProvenExpert PRO Seal script failed to load.");
+        },
+        { once: true }
+      );
+
+      document.body.appendChild(script);
     }
 
-    // جلوگیری از نمایش چندباره ویجت هنگام جابه‌جایی بین صفحات
-    container.replaceChildren();
+    initialiseSeal();
 
-    window.provenExpert.proSeal({
-      widgetId: PROVEN_EXPERT_WIDGET_ID,
-      language: "en-GB",
-      usePageLanguage: false,
-      bannerColor: "#097E92",
-      textColor: "#FFFFFF",
-      showBackPage: false,
-      showReviews: true,
-      hideDate: true,
-      hideName: false,
-      googleStars: false,
-      displayReviewerLastName: false,
-      embeddedSelector: "#proSealWidget",
-    });
+    return () => {
+      cancelled = true;
+
+      if (retryTimer !== undefined) {
+        window.clearTimeout(retryTimer);
+      }
+
+      if (window.loadProSeal === initialiseSeal) {
+        delete window.loadProSeal;
+      }
+    };
   }, []);
 
   return (
@@ -64,7 +136,7 @@ export default function ProvenExpertSeal() {
     >
       <noscript>
         <a
-          href={PROVEN_EXPERT_PROFILE_URL}
+          href={PROFILE_URL}
           target="_blank"
           rel="nofollow noopener noreferrer"
           title="Customer reviews and experiences for Hermes OS"
@@ -75,17 +147,6 @@ export default function ProvenExpertSeal() {
       </noscript>
 
       <div id="proSealWidget" />
-
-      <Script
-        id="provenexpert-proseal-script"
-        src="https://s.provenexpert.net/seals/proseal-v2.js"
-        strategy="afterInteractive"
-        onLoad={initialiseSeal}
-        onReady={initialiseSeal}
-        onError={() => {
-          console.error("ProvenExpert PRO Seal failed to load.");
-        }}
-      />
     </div>
   );
 }
