@@ -69,16 +69,27 @@ describe("getDocumentObjectStorage — local provider (real, no SDK)", () => {
   });
 
   it("sanitizes path-traversal attempts rather than escaping the storage root", async () => {
+    // Point the store at a root nested two levels below tempDir. The probe for
+    // an escaped write then resolves INSIDE tempDir rather than at a real
+    // system path (e.g. Linux /etc/passwd), so the test is portable and the
+    // afterEach cleanup stays complete even if the implementation regressed.
+    const storageRoot = path.join(tempDir, "storage", "nested");
+    process.env.HERMES_LOCAL_DOCUMENT_STORAGE_DIR = storageRoot;
+
     const store = getDocumentObjectStorage();
     await store.put({ key: "../../etc/passwd", body: "should not escape" });
-    // the traversal segments are stripped, so this lands INSIDE tempDir,
-    // never above it
-    const escaped = path.join(tempDir, "..", "..", "etc", "passwd");
+
+    // Had the traversal segments been honoured, the file would land here —
+    // above storageRoot but still under tempDir.
+    const escaped = path.join(storageRoot, "..", "..", "etc", "passwd");
     const escapedExists = await fs
       .access(escaped)
       .then(() => true)
       .catch(() => false);
     expect(escapedExists).toBe(false);
+
+    // Sanitization stripped the "../" segments, so the file lives INSIDE
+    // storageRoot under the collapsed key.
     expect(await store.exists("etc/passwd")).toBe(true);
   });
 
