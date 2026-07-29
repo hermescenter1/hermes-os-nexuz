@@ -44,6 +44,10 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
+        env:
+          # prisma.config.ts resolves env("DATABASE_URL") when the CLI loads it,
+          # so generate needs the placeholder too (localhost, never dialed).
+          DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
         run: npx --no-install prisma generate
 
       - name: Validate Prisma schema
