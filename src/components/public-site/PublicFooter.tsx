@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { TechnicalValue } from "@/components/ds";
 import { HermesLogoMark } from "@/components/HermesLogo";
 import { FooterLangSwitch } from "@/components/FooterLangSwitch";
+import ProvenExpertSeal from "@/components/trust/ProvenExpertSeal";
 import { PUBLIC_FOOTER_COLUMNS } from "./nav";
 import { PublicPageContainer } from "./PublicPageContainer";
 
@@ -69,7 +70,7 @@ export function PublicFooter() {
           so it follows the document direction: start-aligned in Persian RTL
           and English LTR alike, and correct for German automatically.
         */}
-        <div className="mt-10 flex border-t border-border-subtle pt-6">
+        <div className="mt-10 flex flex-col items-start gap-6 border-t border-border-subtle pt-6 sm:flex-row sm:items-center">
           {/*
             PHASE 93D — official eNAMAD seal (id=761266). eNAMAD requires the
             code to be placed WITHOUT altering its verification parameters, and
@@ -119,6 +120,9 @@ export function PublicFooter() {
               className="h-[76px] w-[76px] sm:h-[88px] sm:w-[88px]"
             />
           </a>
+          <div className="w-full max-w-md">
+            <ProvenExpertSeal />
+          </div>
         </div>
         <div className="mt-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <p className="text-caption text-text-muted">{t("copyright")}</p>
