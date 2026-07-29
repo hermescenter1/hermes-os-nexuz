@@ -44,7 +44,7 @@ const GA_IMG_DOMAINS     = HAS_ANALYTICS ? " https://www.google-analytics.com ht
  */
 const ENAMAD_IMG_DOMAIN  = " https://trustseal.enamad.ir";
 const PROVENEXPERT_SCRIPT_DOMAIN = " https://s.provenexpert.net";
-const PROVENEXPERT_CONNECT_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com";
+const PROVENEXPERT_CONNECT_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com https://d.provenexpert.net";
 const PROVENEXPERT_IMG_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com";
 const PROVENEXPERT_FRAME_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com";
 
@@ -55,7 +55,9 @@ function buildCSP(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}'${GA_SCRIPT_DOMAINS}${PROVENEXPERT_SCRIPT_DOMAIN}${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data:${GA_IMG_DOMAINS}${ENAMAD_IMG_DOMAIN}${PROVENEXPERT_IMG_DOMAINS}`,
-    "font-src 'self'",
+    // data: is required because the official ProvenExpert widget embeds its
+    // WOFF2 fonts as data: URLs inside its stylesheet.
+    "font-src 'self' data:",
     // ws: is needed for webpack HMR WebSocket in development
     `connect-src 'self'${GA_CONNECT_DOMAINS}${PROVENEXPERT_CONNECT_DOMAINS}${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
     `frame-src 'self'${PROVENEXPERT_FRAME_DOMAINS}`,
@@ -98,9 +100,13 @@ export function middleware(request: NextRequest): NextResponse {
   const csp   = buildCSP(nonce);
 
   // Propagate nonce in request headers so Server Components can read it via
-  // headers() and so Next.js can inject it into RSC streaming script tags
+  // headers() and so Next.js can inject it into RSC streaming script tags.
+  // Next.js only auto-applies the nonce to framework/RSC inline scripts when
+  // it can parse it from a content-security-policy REQUEST header, so the
+  // full CSP is set on the request headers as well as on the response below.
   const reqHeaders = new Headers(request.headers);
   reqHeaders.set("x-nonce", nonce);
+  reqHeaders.set("content-security-policy", csp);
 
   // NextResponse.next with modified request headers ensures the nonce reaches
   // the rendering context for RSC inline script nonce injection
