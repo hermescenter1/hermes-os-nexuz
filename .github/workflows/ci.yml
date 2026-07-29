@@ -1,0 +1,79 @@
+# Validation CI for pull requests to main (Gate 0A safety contract).
+#
+# Deliberately separated from production deployment: this workflow has no
+# secrets, no SSH material, no environment access and read-only repository
+# permissions. It can never reach production.
+#
+# The build-time environment values below are NON-SECRET, CI-safe placeholders
+# copied from the repository's own Dockerfile build stage. They point only at
+# localhost / a non-routable placeholder host, so the build cannot contact any
+# external system. They are NOT production credentials.
+
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate (prisma, types, lint, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          # prisma.config.ts resolves env("DATABASE_URL") when the CLI loads it,
+          # so generate needs the placeholder too (localhost, never dialed).
+          DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+        run: npx --no-install prisma generate
+
+      - name: Validate Prisma schema
+        env:
+          # Placeholder connection string (localhost, never dialed by validate).
+          DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+        run: npm run db:validate
+
+      - name: Type-check (no emit)
+        run: npx --no-install tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        env:
+          # Non-secret CI-safe build placeholders mirroring the Dockerfile build
+          # stage. All hosts are localhost / non-routable — no external contact.
+          NODE_ENV: production
+          DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+          JWT_ACCESS_SECRET: build-time-placeholder-64-chars-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          JWT_REFRESH_SECRET: build-time-placeholder-64-chars-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+          NEXT_PUBLIC_APP_URL: https://placeholder.build
+          APP_URL: https://placeholder.build
+          HERMES_STORAGE_MODE: session
+        run: npm run build

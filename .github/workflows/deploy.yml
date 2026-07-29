@@ -1,156 +1,179 @@
-name: Deploy Hermes OS
+# Production deployment — MANUAL ONLY (Gate 0A safety contract).
+#
+# - No push trigger: merging to main never deploys by itself.
+# - workflow_dispatch requires an exact 40-hex commit SHA plus the literal
+#   confirmation phrase, and runs in the protected "production" environment
+#   (required reviewers are configured in repository settings, not here).
+# - The selected commit must already be part of approved main history,
+#   verified both on the runner and again on the server.
+# - SSH trusts only the pinned host key from the SSH_KNOWN_HOSTS secret;
+#   runtime ssh-keyscan is forbidden. SSH_PORT is optional (default 22) and
+#   validated before use; for a non-default port the pinned known_hosts line
+#   must use the matching "[host]:port" form.
+# - The remote operator must be the documented non-root deploy user.
+# - The server checks out the exact SHA (no unbounded git pull) and rebuilds
+#   only the hermes-web service: postgres, redis, nginx, named volumes and the
+#   host itself are never stopped, recreated, pruned or restarted.
+
+name: Production Deploy
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Exact 40-character commit SHA on main to deploy"
+        required: true
+        type: string
+      confirm:
+        description: 'Type "deploy-to-production" to confirm'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    name: Deploy pinned commit to production
     runs-on: ubuntu-latest
-    timeout-minutes: 40
-
+    timeout-minutes: 30
+    environment: production
     env:
-      SERVER_IP: ${{ secrets.SERVER_IP }}
-      SERVER_USER: ${{ secrets.SERVER_USER }}
-      SSH_KEY: ${{ secrets.SSH_KEY }}
-      SSH_PORT: ${{ secrets.SSH_PORT }}
-
+      TARGET_SHA: ${{ inputs.commit_sha }}
     steps:
-      - name: Validate deployment secrets
-        shell: bash
+      - name: Require explicit confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
         run: |
-          set -euo pipefail
-
-          if [ -z "${SERVER_IP:-}" ]; then
-            echo "::error::SERVER_IP secret is missing."
+          if [ "$CONFIRM" != "deploy-to-production" ]; then
+            echo "Confirmation phrase mismatch — refusing to deploy." >&2
             exit 1
           fi
 
-          if [ -z "${SERVER_USER:-}" ]; then
-            echo "::error::SERVER_USER secret is missing."
-            exit 1
-          fi
-
-          if [ -z "${SSH_KEY:-}" ]; then
-            echo "::error::SSH_KEY secret is missing."
-            exit 1
-          fi
-
-          PORT="${SSH_PORT:-22}"
-
-          if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
-            echo "::error::SSH_PORT must be a valid port number."
-            exit 1
-          fi
-
-          echo "Deployment secrets are present."
-          echo "SSH port: $PORT"
-
-      - name: Setup SSH
-        shell: bash
+      - name: Validate commit SHA format
         run: |
-          set -euo pipefail
-
-          PORT="${SSH_PORT:-22}"
-
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-
-          printf '%s\n' "$SSH_KEY" |
-            sed 's/\r$//' > "$HOME/.ssh/id_rsa"
-
-          chmod 600 "$HOME/.ssh/id_rsa"
-
-          if ! ssh-keygen -y -f "$HOME/.ssh/id_rsa" >/dev/null 2>&1; then
-            echo "::error::SSH_KEY is not a valid unencrypted private key."
+          # Whole-string check (not line-based): rejects any non-hex byte,
+          # including whitespace and newlines, and enforces exact length 40.
+          case "$TARGET_SHA" in
+            *[!0-9a-f]*|'')
+              echo "commit_sha must be an exact 40-character lowercase hex SHA." >&2
+              exit 1
+              ;;
+          esac
+          if [ "${#TARGET_SHA}" -ne 40 ]; then
+            echo "commit_sha must be an exact 40-character lowercase hex SHA." >&2
             exit 1
           fi
 
-          rm -f "$HOME/.ssh/known_hosts"
+      - name: Check out main history (read-only)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
 
-          success=false
+      - name: Verify the commit belongs to approved main history
+        run: |
+          if ! git cat-file -e "${TARGET_SHA}^{commit}"; then
+            echo "Refusing: ${TARGET_SHA} is not a commit reachable from main." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$TARGET_SHA" HEAD; then
+            echo "Refusing: ${TARGET_SHA} is not an ancestor of main." >&2
+            exit 1
+          fi
 
-          for attempt in 1 2 3 4 5; do
-            echo "Scanning SSH host key — attempt $attempt of 5..."
+      - name: Validate connection configuration
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          if [ -z "$SERVER_IP" ]; then
+            echo "SERVER_IP secret is required (fail closed)." >&2
+            exit 1
+          fi
+          if [ -z "$SERVER_USER" ] || [ "$SERVER_USER" = "root" ]; then
+            echo "SERVER_USER must be the documented non-root production operator." >&2
+            exit 1
+          fi
+          # SSH_PORT is optional; default 22. Whole-string integer check, then
+          # range check (length guard first so the numeric test cannot overflow).
+          PORT="${SSH_PORT:-22}"
+          case "$PORT" in
+            *[!0-9]*|'')
+              echo "SSH_PORT must be an integer between 1 and 65535." >&2
+              exit 1
+              ;;
+          esac
+          if [ "${#PORT}" -gt 5 ] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+            echo "SSH_PORT must be an integer between 1 and 65535." >&2
+            exit 1
+          fi
 
-            if ssh-keyscan \
-              -T 15 \
+      - name: Install SSH key and pinned host trust
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$SSH_KEY" ] || [ -z "$SSH_KNOWN_HOSTS" ]; then
+            echo "SSH_KEY and SSH_KNOWN_HOSTS secrets are required (fail closed)." >&2
+            exit 1
+          fi
+          umask 077
+          mkdir -p ~/.ssh
+          # Normalize CRLF line endings that UI copy/paste can introduce, then
+          # prove the key is a usable unencrypted private key before any use.
+          printf '%s\n' "$SSH_KEY" | sed 's/\r$//' > ~/.ssh/id_deploy
+          if ! ssh-keygen -y -f ~/.ssh/id_deploy >/dev/null 2>&1; then
+            echo "SSH_KEY is not a valid unencrypted private key." >&2
+            exit 1
+          fi
+          # Host trust comes exclusively from this pinned secret — never from
+          # runtime scanning. Use "[host]:port" entries for a non-default port.
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy the pinned commit (targeted hermes-web rebuild)
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          PORT="${SSH_PORT:-22}"
+          ssh -i ~/.ssh/id_deploy \
               -p "$PORT" \
-              -H "$SERVER_IP" \
-              > /tmp/hermes-known-host 2>/dev/null &&
-              [ -s /tmp/hermes-known-host ]; then
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              -o StrictHostKeyChecking=yes \
+              "${SERVER_USER}@${SERVER_IP}" \
+              "TARGET_SHA=${TARGET_SHA} bash -s" <<'REMOTE'
+          set -euo pipefail
+          unset DOCKER_HOST
 
-              cat /tmp/hermes-known-host >> "$HOME/.ssh/known_hosts"
-              success=true
-              break
-            fi
-
-            sleep 5
-          done
-
-          if [ "$success" != "true" ]; then
-            echo "::error::Cannot reach the SSH service on the configured server and port."
-            echo "::error::Check SERVER_IP, SSH_PORT and the server firewall."
+          if [ "$(id -u)" -eq 0 ]; then
+            echo "Refusing to deploy as root on the production host." >&2
             exit 1
           fi
 
-          chmod 600 "$HOME/.ssh/known_hosts"
+          cd /opt/hermes-os-nexuz
 
-          echo "SSH host key successfully registered."
+          git fetch --prune origin
+          if ! git cat-file -e "${TARGET_SHA}^{commit}"; then
+            echo "Refusing: ${TARGET_SHA} is unknown on the server after fetch." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$TARGET_SHA" origin/main; then
+            echo "Refusing: ${TARGET_SHA} is not on origin/main." >&2
+            exit 1
+          fi
 
-      - name: Test SSH connection
-        shell: bash
-        run: |
-          set -euo pipefail
+          git checkout --detach "$TARGET_SHA"
 
-          PORT="${SSH_PORT:-22}"
-
-          ssh \
-            -p "$PORT" \
-            -i "$HOME/.ssh/id_rsa" \
-            -o BatchMode=yes \
-            -o ConnectTimeout=20 \
-            -o StrictHostKeyChecking=yes \
-            "$SERVER_USER@$SERVER_IP" \
-            "echo 'SSH connection successful.'"
-
-      - name: Deploy to server
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          PORT="${SSH_PORT:-22}"
-
-          ssh \
-            -p "$PORT" \
-            -i "$HOME/.ssh/id_rsa" \
-            -o BatchMode=yes \
-            -o ConnectTimeout=20 \
-            -o StrictHostKeyChecking=yes \
-            "$SERVER_USER@$SERVER_IP" << 'EOF'
-              set -euo pipefail
-
-              unset DOCKER_HOST
-
-              cd /opt/hermes-os-nexuz
-
-              git checkout main
-              git pull --ff-only origin main
-
-              docker compose \
-                -f docker-compose.prod.yml \
-                up -d \
-                --build \
-                --remove-orphans
-
-              docker compose \
-                -f docker-compose.prod.yml \
-                ps
-
-              docker system prune -f
-          EOF
+          docker compose -f docker-compose.prod.yml up -d --build --no-deps hermes-web
+          docker compose -f docker-compose.prod.yml ps hermes-web
+          REMOTE
