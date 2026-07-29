@@ -1,0 +1,7 @@
+# OpenBao operational assets are executed on Linux and must remain LF-normalized.
+.gitattributes text eol=lf
+ops/openbao/policy/*.hcl text eol=lf
+ops/openbao/staging/*.sh text eol=lf
+ops/openbao/staging/*.py text eol=lf
+ops/openbao/staging/*.md text eol=lf
+scripts/openbao-operator-backup-static-check.mjs text eol=lf
