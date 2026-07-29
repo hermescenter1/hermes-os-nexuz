@@ -7,7 +7,9 @@
 # - The selected commit must already be part of approved main history,
 #   verified both on the runner and again on the server.
 # - SSH trusts only the pinned host key from the SSH_KNOWN_HOSTS secret;
-#   runtime ssh-keyscan is forbidden.
+#   runtime ssh-keyscan is forbidden. SSH_PORT is optional (default 22) and
+#   validated before use; for a non-default port the pinned known_hosts line
+#   must use the matching "[host]:port" form.
 # - The remote operator must be the documented non-root deploy user.
 # - The server checks out the exact SHA (no unbounded git pull) and rebuilds
 #   only the hermes-web service: postgres, redis, nginx, named volumes and the
@@ -85,12 +87,31 @@ jobs:
             exit 1
           fi
 
-      - name: Refuse a root or missing operator
+      - name: Validate connection configuration
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
+          if [ -z "$SERVER_IP" ]; then
+            echo "SERVER_IP secret is required (fail closed)." >&2
+            exit 1
+          fi
           if [ -z "$SERVER_USER" ] || [ "$SERVER_USER" = "root" ]; then
             echo "SERVER_USER must be the documented non-root production operator." >&2
+            exit 1
+          fi
+          # SSH_PORT is optional; default 22. Whole-string integer check, then
+          # range check (length guard first so the numeric test cannot overflow).
+          PORT="${SSH_PORT:-22}"
+          case "$PORT" in
+            *[!0-9]*|'')
+              echo "SSH_PORT must be an integer between 1 and 65535." >&2
+              exit 1
+              ;;
+          esac
+          if [ "${#PORT}" -gt 5 ] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+            echo "SSH_PORT must be an integer between 1 and 65535." >&2
             exit 1
           fi
 
@@ -105,17 +126,29 @@ jobs:
           fi
           umask 077
           mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          # Normalize CRLF line endings that UI copy/paste can introduce, then
+          # prove the key is a usable unencrypted private key before any use.
+          printf '%s\n' "$SSH_KEY" | sed 's/\r$//' > ~/.ssh/id_deploy
+          if ! ssh-keygen -y -f ~/.ssh/id_deploy >/dev/null 2>&1; then
+            echo "SSH_KEY is not a valid unencrypted private key." >&2
+            exit 1
+          fi
+          # Host trust comes exclusively from this pinned secret — never from
+          # runtime scanning. Use "[host]:port" entries for a non-default port.
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
       - name: Deploy the pinned commit (targeted hermes-web rebuild)
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
+          PORT="${SSH_PORT:-22}"
           ssh -i ~/.ssh/id_deploy \
+              -p "$PORT" \
               -o IdentitiesOnly=yes \
               -o BatchMode=yes \
+              -o ConnectTimeout=20 \
               -o StrictHostKeyChecking=yes \
               "${SERVER_USER}@${SERVER_IP}" \
               "TARGET_SHA=${TARGET_SHA} bash -s" <<'REMOTE'

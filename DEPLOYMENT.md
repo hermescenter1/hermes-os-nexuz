@@ -242,9 +242,13 @@ To release:
 1. Open Actions → Production Deploy → Run workflow.
 2. Provide the **exact 40-character commit SHA** on `main` to deploy.
 3. Type the confirmation phrase `deploy-to-production`.
-4. Approve the run in the protected `production` environment (required
-   reviewers are configured under Settings → Environments → production —
-   this protection **must** exist before the workflow is used).
+4. Approve the run in the protected `production` environment.
+
+The `production` environment protection is **configured** (Settings →
+Environments → production): required reviewer `hermescenter1`; prevent
+self-review is disabled because this is currently a single-reviewer setup;
+administrator bypass is disabled; deployments are restricted to the `main`
+branch.
 
 The workflow operates in `/opt/hermes-os-nexuz` on the production host — the
 canonical checkout of this repository. (Example paths such as `/opt/hermes-os`
@@ -269,8 +273,13 @@ workflow or to any other job. The deploy job reads them accordingly.
 |--------|---------|
 | `SERVER_IP` | Production host address |
 | `SERVER_USER` | The documented **non-root** deploy operator (docker group member, §1); the workflow refuses `root` |
-| `SSH_KEY` | Private key for the deploy operator |
+| `SSH_KEY` | Private key for the deploy operator (CRLF endings are normalized and the key is validated with `ssh-keygen` before use) |
 | `SSH_KNOWN_HOSTS` | Pinned `known_hosts` line(s) for the production host, collected **out of band** by the operator; runtime `ssh-keyscan` is not used |
+| `SSH_PORT` | **Optional.** SSH port of the production host; defaults to `22` when unset. Validated as an integer in the range 1–65535 before use |
+
+When `SSH_PORT` is set to a non-default port, the pinned `SSH_KNOWN_HOSTS`
+entry must use the matching `[host]:port` form (e.g. `[203.0.113.10]:2222 ssh-ed25519 AAAA…`),
+because OpenSSH looks up non-default ports under that key format.
 
 Set actual values only in the GitHub UI. Never commit secret values to the
 repository, and never place them in the `CI` workflow.
