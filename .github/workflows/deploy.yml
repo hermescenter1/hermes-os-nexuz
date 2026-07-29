@@ -1,34 +1,146 @@
-name: Deploy Hermes OS
+# Production deployment — MANUAL ONLY (Gate 0A safety contract).
+#
+# - No push trigger: merging to main never deploys by itself.
+# - workflow_dispatch requires an exact 40-hex commit SHA plus the literal
+#   confirmation phrase, and runs in the protected "production" environment
+#   (required reviewers are configured in repository settings, not here).
+# - The selected commit must already be part of approved main history,
+#   verified both on the runner and again on the server.
+# - SSH trusts only the pinned host key from the SSH_KNOWN_HOSTS secret;
+#   runtime ssh-keyscan is forbidden.
+# - The remote operator must be the documented non-root deploy user.
+# - The server checks out the exact SHA (no unbounded git pull) and rebuilds
+#   only the hermes-web service: postgres, redis, nginx, named volumes and the
+#   host itself are never stopped, recreated, pruned or restarted.
+
+name: Production Deploy
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Exact 40-character commit SHA on main to deploy"
+        required: true
+        type: string
+      confirm:
+        description: 'Type "deploy-to-production" to confirm'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    name: Deploy pinned commit to production
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
+    environment: production
+    env:
+      TARGET_SHA: ${{ inputs.commit_sha }}
     steps:
-      - name: Setup SSH
+      - name: Require explicit confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
         run: |
+          if [ "$CONFIRM" != "deploy-to-production" ]; then
+            echo "Confirmation phrase mismatch — refusing to deploy." >&2
+            exit 1
+          fi
+
+      - name: Validate commit SHA format
+        run: |
+          # Whole-string check (not line-based): rejects any non-hex byte,
+          # including whitespace and newlines, and enforces exact length 40.
+          case "$TARGET_SHA" in
+            *[!0-9a-f]*|'')
+              echo "commit_sha must be an exact 40-character lowercase hex SHA." >&2
+              exit 1
+              ;;
+          esac
+          if [ "${#TARGET_SHA}" -ne 40 ]; then
+            echo "commit_sha must be an exact 40-character lowercase hex SHA." >&2
+            exit 1
+          fi
+
+      - name: Check out main history (read-only)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify the commit belongs to approved main history
+        run: |
+          if ! git cat-file -e "${TARGET_SHA}^{commit}"; then
+            echo "Refusing: ${TARGET_SHA} is not a commit reachable from main." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$TARGET_SHA" HEAD; then
+            echo "Refusing: ${TARGET_SHA} is not an ancestor of main." >&2
+            exit 1
+          fi
+
+      - name: Refuse a root or missing operator
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          if [ -z "$SERVER_USER" ] || [ "$SERVER_USER" = "root" ]; then
+            echo "SERVER_USER must be the documented non-root production operator." >&2
+            exit 1
+          fi
+
+      - name: Install SSH key and pinned host trust
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$SSH_KEY" ] || [ -z "$SSH_KNOWN_HOSTS" ]; then
+            echo "SSH_KEY and SSH_KNOWN_HOSTS secrets are required (fail closed)." >&2
+            exit 1
+          fi
+          umask 077
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
-      - name: Deploy to Server
+      - name: Deploy the pinned commit (targeted hermes-web rebuild)
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            set -e
-            unset DOCKER_HOST
+          ssh -i ~/.ssh/id_deploy \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes \
+              "${SERVER_USER}@${SERVER_IP}" \
+              "TARGET_SHA=${TARGET_SHA} bash -s" <<'REMOTE'
+          set -euo pipefail
+          unset DOCKER_HOST
 
-            cd /opt/hermes-os-nexuz
+          if [ "$(id -u)" -eq 0 ]; then
+            echo "Refusing to deploy as root on the production host." >&2
+            exit 1
+          fi
 
-            git pull origin main
+          cd /opt/hermes-os-nexuz
 
-            docker compose -f docker-compose.prod.yml up -d --build
+          git fetch --prune origin
+          if ! git cat-file -e "${TARGET_SHA}^{commit}"; then
+            echo "Refusing: ${TARGET_SHA} is unknown on the server after fetch." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$TARGET_SHA" origin/main; then
+            echo "Refusing: ${TARGET_SHA} is not on origin/main." >&2
+            exit 1
+          fi
 
-            docker system prune -f
-          EOF
+          git checkout --detach "$TARGET_SHA"
+
+          docker compose -f docker-compose.prod.yml up -d --build --no-deps hermes-web
+          docker compose -f docker-compose.prod.yml ps hermes-web
+          REMOTE

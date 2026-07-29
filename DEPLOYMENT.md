@@ -220,3 +220,41 @@ docker-compose -f docker-compose.prod.yml exec postgres psql -U hermes hermes_db
 # Rebuild and redeploy without downtime
 docker-compose -f docker-compose.prod.yml up -d --build --no-deps hermes-web
 ```
+
+---
+
+## 13. Production Release Workflow (manual only)
+
+Production is released exclusively through the **Production Deploy** GitHub
+Actions workflow (`.github/workflows/deploy.yml`), triggered by
+`workflow_dispatch`. **Merging or pushing to `main` never deploys anything.**
+Pull-request validation runs in the separate `CI` workflow
+(`.github/workflows/ci.yml`), which has no secrets and no production access.
+
+To release:
+
+1. Open Actions → Production Deploy → Run workflow.
+2. Provide the **exact 40-character commit SHA** on `main` to deploy.
+3. Type the confirmation phrase `deploy-to-production`.
+4. Approve the run in the protected `production` environment (required
+   reviewers are configured under Settings → Environments → production —
+   this protection **must** exist before the workflow is used).
+
+The workflow operates in `/opt/hermes-os-nexuz` on the production host — the
+canonical checkout of this repository. (Example paths such as `/opt/hermes-os`
+in earlier sections are historical and refer to the same checkout.)
+
+The workflow refuses to run unless the commit is part of `main` history
+(verified on the runner and re-verified on the server), then checks out that
+exact SHA on the server and rebuilds **only** the `hermes-web` service
+(`up -d --build --no-deps hermes-web`). It never touches `postgres`, `redis`,
+`nginx`, any named volume, and never prunes images or restarts the host.
+
+Required repository secrets:
+
+| Secret | Meaning |
+|--------|---------|
+| `SERVER_IP` | Production host address |
+| `SERVER_USER` | The documented **non-root** deploy operator (docker group member, §1); the workflow refuses `root` |
+| `SSH_KEY` | Private key for the deploy operator |
+| `SSH_KNOWN_HOSTS` | Pinned `known_hosts` line(s) for the production host, collected **out of band** by the operator; runtime `ssh-keyscan` is not used |
