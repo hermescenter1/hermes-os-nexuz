@@ -3,6 +3,7 @@ import { Link }            from "@/i18n/navigation";
 import { HermesLogoMark }  from "./HermesLogo";
 import { FooterLangSwitch } from "./FooterLangSwitch";
 import { SOCIAL_LINKS }    from "@/lib/site/social-links";
+import ProvenExpertSeal from "./trust/ProvenExpertSeal";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
 
@@ -124,6 +125,26 @@ export function SiteFooter() {
           </div>
 
         </div>
+
+        {/* ProvenExpert Trust & Verification */}
+        <section
+          className="mt-10 border-t border-line/30 pt-8"
+          aria-labelledby="footer-trust-title"
+        >
+          <div
+            className="mx-auto flex max-w-md flex-col items-center"
+            dir="ltr"
+          >
+            <h2
+              id="footer-trust-title"
+              className="mb-4 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-signal/70"
+            >
+              Trust &amp; Verification
+            </h2>
+
+            <ProvenExpertSeal />
+          </div>
+        </section>
       </div>
 
       {/* Bottom bar */}

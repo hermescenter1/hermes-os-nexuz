@@ -43,17 +43,22 @@ const GA_IMG_DOMAINS     = HAS_ANALYTICS ? " https://www.google-analytics.com ht
  * always rendered in the public footer.
  */
 const ENAMAD_IMG_DOMAIN  = " https://trustseal.enamad.ir";
+const PROVENEXPERT_SCRIPT_DOMAIN = " https://s.provenexpert.net";
+const PROVENEXPERT_CONNECT_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com";
+const PROVENEXPERT_IMG_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com";
+const PROVENEXPERT_FRAME_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com";
 
 function buildCSP(nonce: string): string {
   const dev = process.env.NODE_ENV !== "production";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'${GA_SCRIPT_DOMAINS}${dev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}'${GA_SCRIPT_DOMAINS}${PROVENEXPERT_SCRIPT_DOMAIN}${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data:${GA_IMG_DOMAINS}${ENAMAD_IMG_DOMAIN}`,
+    `img-src 'self' data:${GA_IMG_DOMAINS}${ENAMAD_IMG_DOMAIN}${PROVENEXPERT_IMG_DOMAINS}`,
     "font-src 'self'",
     // ws: is needed for webpack HMR WebSocket in development
-    `connect-src 'self'${GA_CONNECT_DOMAINS}${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
+    `connect-src 'self'${GA_CONNECT_DOMAINS}${PROVENEXPERT_CONNECT_DOMAINS}${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
+    `frame-src 'self'${PROVENEXPERT_FRAME_DOMAINS}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
