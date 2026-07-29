@@ -1,34 +1,24 @@
-name: Deploy Hermes OS
+# Legacy master deployment is permanently disabled.
+#
+# The canonical, protected manual Production Deploy workflow lives on main.
+# This stub intentionally retains workflow_dispatch so selecting the legacy
+# master ref cannot execute any SSH, Docker or deployment operation.
+
+name: Legacy Production Deploy Disabled
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  deploy:
+  blocked:
+    name: Refuse deployment from legacy master
     runs-on: ubuntu-latest
-
+    timeout-minutes: 1
     steps:
-      - name: Setup SSH
+      - name: Block legacy deployment
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-
-      - name: Deploy to Server
-        run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            set -e
-            unset DOCKER_HOST
-
-            cd /opt/hermes-os-nexuz
-
-            git pull origin main
-
-            docker compose -f docker-compose.prod.yml up -d --build
-
-            docker system prune -f
-          EOF
+          echo "::error::Deployment from legacy master is disabled. Use the protected Production Deploy workflow on canonical main."
+          exit 1
