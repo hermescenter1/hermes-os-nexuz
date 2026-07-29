@@ -231,6 +231,12 @@ Actions workflow (`.github/workflows/deploy.yml`), triggered by
 Pull-request validation runs in the separate `CI` workflow
 (`.github/workflows/ci.yml`), which has no secrets and no production access.
 
+> **Availability:** GitHub only offers `workflow_dispatch` ("Run workflow") for
+> workflows that exist on the repository's **default branch**. The default
+> branch is still `master`, so the Production Deploy workflow is **not yet
+> manually runnable**. It becomes available only after **Gate 0C** changes the
+> GitHub default branch to `main`. Do not attempt a manual run before then.
+
 To release:
 
 1. Open Actions → Production Deploy → Run workflow.
@@ -250,7 +256,14 @@ exact SHA on the server and rebuilds **only** the `hermes-web` service
 (`up -d --build --no-deps hermes-web`). It never touches `postgres`, `redis`,
 `nginx`, any named volume, and never prunes images or restarts the host.
 
-Required repository secrets:
+### Required production environment secrets
+
+These must be scoped to the protected `production` **environment** (Settings →
+Environments → production → Environment secrets), **not** as repository-wide
+secrets. Scoping them to the environment means they are only exposed to a job
+that declares `environment: production` — i.e. only to Production Deploy, after
+the required reviewer approves the run — and are never available to the `CI`
+workflow or to any other job. The deploy job reads them accordingly.
 
 | Secret | Meaning |
 |--------|---------|
@@ -258,3 +271,6 @@ Required repository secrets:
 | `SERVER_USER` | The documented **non-root** deploy operator (docker group member, §1); the workflow refuses `root` |
 | `SSH_KEY` | Private key for the deploy operator |
 | `SSH_KNOWN_HOSTS` | Pinned `known_hosts` line(s) for the production host, collected **out of band** by the operator; runtime `ssh-keyscan` is not used |
+
+Set actual values only in the GitHub UI. Never commit secret values to the
+repository, and never place them in the `CI` workflow.
