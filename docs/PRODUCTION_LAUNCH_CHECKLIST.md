@@ -51,12 +51,12 @@ Use this checklist for every production deployment. Check off each item. Do not 
 ## Database Setup (First Deploy Only)
 
 - [ ] Create postgres volume: `docker volume create hermes_postgres_data`
-- [ ] Start only postgres: `docker-compose -f docker-compose.prod.yml up -d postgres`
-- [ ] Wait for postgres to be healthy: `docker-compose -f docker-compose.prod.yml ps`
+- [ ] Start only postgres: `docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d postgres`
+- [ ] Wait for postgres to be healthy: `docker compose -p hermes -f docker-compose.prod.yml ps`
 - [ ] Run pgvector extension: `docker exec <postgres_container> psql -U hermes -d hermes_db -c "CREATE EXTENSION IF NOT EXISTS vector;"`
 - [ ] Run migrations:
   ```bash
-  docker-compose -f docker-compose.prod.yml run --rm hermes-web \
+  docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production run --rm hermes-web \
     npx prisma migrate deploy
   ```
 - [ ] Confirm migrations applied: `npx prisma migrate status`
@@ -64,7 +64,8 @@ Use this checklist for every production deployment. Check off each item. Do not 
 ### Rollback Plan (Schema)
 
 If a migration causes issues:
-1. `docker-compose -f docker-compose.prod.yml down hermes-web`
+1. Stop only the app (keeps postgres/redis/nginx and all volumes running):
+   `docker compose -p hermes -f docker-compose.prod.yml stop hermes-web`
 2. Restore the postgres volume from last backup:
    ```bash
    docker exec <postgres> pg_restore -U hermes -d hermes_db /backups/postgres/latest.dump
@@ -76,10 +77,21 @@ If a migration causes issues:
 
 ## Build & Deploy
 
-- [ ] Pull latest code: `git pull origin master`
-- [ ] Build production image: `docker-compose -f docker-compose.prod.yml build --no-cache`
-- [ ] Start all services: `docker-compose -f docker-compose.prod.yml up -d`
-- [ ] Watch logs: `docker-compose -f docker-compose.prod.yml logs -f hermes-web`
+> **Preferred path:** release through the protected **Production Deploy** GitHub
+> Actions workflow (see `DEPLOYMENT.md` §13). It checks out an exact, validated
+> SHA reachable from `origin/main` and rebuilds only `hermes-web`.
+
+- [ ] Get the exact code to deploy. Do **not** `git pull origin master` (master
+  is fail-closed) and do **not** use an unbounded pull. Fetch and check out a
+  validated SHA reachable from `origin/main`:
+  ```bash
+  git fetch --prune origin
+  git merge-base --is-ancestor <SHA> origin/main   # must succeed
+  git checkout --detach <SHA>
+  ```
+- [ ] Build production image: `docker compose -p hermes -f docker-compose.prod.yml build --no-cache hermes-web`
+- [ ] Start all services: `docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d`
+- [ ] Watch logs: `docker compose -p hermes -f docker-compose.prod.yml logs -f hermes-web`
 - [ ] Verify startup checks pass in logs:
   ```
   {"level":"INFO","msg":"[startup] Startup validation complete.","fatal":0,"warnings":0,"ok":9}
@@ -150,7 +162,7 @@ Run: `curl -I https://yourdomain.com/` and verify:
 
 ## Monitoring (Optional but Recommended)
 
-- [ ] Start monitoring profile: `docker-compose -f docker-compose.prod.yml --profile monitoring up -d uptime-kuma`
+- [ ] Start monitoring profile: `docker compose -p hermes -f docker-compose.prod.yml --profile monitoring up -d uptime-kuma`
 - [ ] Configure Uptime Kuma to monitor `https://yourdomain.com/api/health`
 - [ ] **Note:** If using a single VPS, port 3001 is publicly exposed when monitoring is active. For production, run Uptime Kuma on a separate host.
 - [ ] Set up Uptime Kuma alert notifications (email, Slack, etc.)
@@ -173,14 +185,15 @@ Run: `curl -I https://yourdomain.com/` and verify:
 ## Rollback Procedure
 
 If deployment fails:
-1. `docker-compose -f docker-compose.prod.yml down hermes-web nginx`
+1. Stop only the app and reverse proxy (keeps postgres/redis and all volumes):
+   `docker compose -p hermes -f docker-compose.prod.yml stop hermes-web nginx`
 2. Restore previous image: `docker tag hermes-os:previous hermes-os:latest`
-3. Restart: `docker-compose -f docker-compose.prod.yml up -d hermes-web nginx`
+3. Restart: `docker compose -p hermes -f docker-compose.prod.yml up -d hermes-web nginx`
 4. Restore DB from backup if migration was applied:
    ```bash
    docker exec <postgres_container> pg_restore -U hermes -d hermes_db /backups/postgres/<timestamp>.dump
    ```
-5. Monitor logs: `docker-compose -f docker-compose.prod.yml logs -f hermes-web`
+5. Monitor logs: `docker compose -p hermes -f docker-compose.prod.yml logs -f hermes-web`
 
 ---
 

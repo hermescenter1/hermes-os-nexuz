@@ -92,8 +92,8 @@ All five must pass on the merged result, not just on the branch.
 # on the VPS
 ./scripts/backup-postgres.sh
 ./scripts/verify-backup.sh
-docker compose -f docker-compose.prod.yml ps          # record current state
-docker compose -f docker-compose.prod.yml images      # record current image IDs
+docker compose -p hermes -f docker-compose.prod.yml ps          # record current state
+docker compose -p hermes -f docker-compose.prod.yml images      # record current image IDs
 git -C /srv/hermes rev-parse HEAD                     # record rollback commit
 ```
 
@@ -112,13 +112,13 @@ If this is not a fast-forward, stop and investigate. Do not force.
 ## 8. Validate Docker configuration
 
 ```bash
-docker compose -f docker-compose.prod.yml config    # parse + interpolate check
+docker compose -p hermes -f docker-compose.prod.yml config    # parse + interpolate check
 ```
 
 ## 9. Build only the web service
 
 ```bash
-docker compose -f docker-compose.prod.yml build hermes-web
+docker compose -p hermes -f docker-compose.prod.yml build hermes-web
 ```
 
 Postgres, Redis, Nginx and uptime-kuma are untouched.
@@ -126,7 +126,7 @@ Postgres, Redis, Nginx and uptime-kuma are untouched.
 ## 10. Recreate only the web service
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --no-deps hermes-web
+docker compose -p hermes -f docker-compose.prod.yml up -d --no-deps hermes-web
 ```
 
 `--no-deps` keeps the database and cache running.
@@ -138,10 +138,10 @@ The real health check is
 
 ```bash
 for i in $(seq 1 30); do
-  s=$(docker inspect --format '{{.State.Health.Status}}' hermes-web 2>/dev/null)
+  s=$(docker inspect --format '{{.State.Health.Status}}' hermes-hermes-web-1 2>/dev/null)
   echo "$i: $s"; [ "$s" = "healthy" ] && break; sleep 5
 done
-docker compose -f docker-compose.prod.yml logs --tail=80 hermes-web
+docker compose -p hermes -f docker-compose.prod.yml logs --tail=80 hermes-web
 ```
 
 **Do not proceed until the status is `healthy`.**
@@ -149,8 +149,8 @@ docker compose -f docker-compose.prod.yml logs --tail=80 hermes-web
 ## 12. Restart Nginx — only after healthy
 
 ```bash
-docker compose -f docker-compose.prod.yml restart nginx
-docker inspect --format '{{.State.Health.Status}}' hermes-nginx
+docker compose -p hermes -f docker-compose.prod.yml restart nginx
+docker inspect --format '{{.State.Health.Status}}' hermes-nginx-1
 ```
 
 ## 13. Public smoke tests — FA / EN / DE
@@ -208,13 +208,13 @@ Two independent routes — prefer the image rollback (faster, no rebuild):
 
 ```bash
 # A) roll back to the previously recorded image
-docker compose -f docker-compose.prod.yml up -d --no-deps <PREVIOUS_HERMES_WEB_IMAGE_ID>
+docker compose -p hermes -f docker-compose.prod.yml up -d --no-deps <PREVIOUS_HERMES_WEB_IMAGE_ID>
 
 # B) roll back the code and rebuild
 cd /srv/hermes
 git reset --hard <PREVIOUS_COMMIT_SHA_FROM_STEP_6>
-docker compose -f docker-compose.prod.yml build hermes-web
-docker compose -f docker-compose.prod.yml up -d --no-deps hermes-web
+docker compose -p hermes -f docker-compose.prod.yml build hermes-web
+docker compose -p hermes -f docker-compose.prod.yml up -d --no-deps hermes-web
 ```
 
 Then repeat steps 11–13.

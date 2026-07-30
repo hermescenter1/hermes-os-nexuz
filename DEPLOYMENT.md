@@ -93,11 +93,15 @@ See `deploy/ssl/README.md` for Cloudflare and alternative SSL strategies.
 ## 5. First Deploy
 
 ```bash
-# Build and start all services
-docker-compose -f docker-compose.prod.yml up -d --build
+# Build and start all services.
+# --env-file .env.production is REQUIRED: it feeds ${VAR} interpolation such as
+# ${REDIS_PASSWORD} in the compose file. Without it, redis is (re)created with
+# the 'changeme' default while hermes-web uses the real password → Redis auth
+# failures.
+docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d --build
 
 # Verify services are running
-docker-compose -f docker-compose.prod.yml ps
+docker compose -p hermes -f docker-compose.prod.yml ps
 ```
 
 ---
@@ -107,16 +111,27 @@ docker-compose -f docker-compose.prod.yml ps
 Run migrations against the live PostgreSQL container:
 
 ```bash
-docker-compose -f docker-compose.prod.yml exec hermes-web \
+docker compose -p hermes -f docker-compose.prod.yml exec hermes-web \
   node -e "const {execSync}=require('child_process'); execSync('npx prisma migrate deploy --schema=./prisma/schema.prisma', {stdio:'inherit', cwd:'/app'})"
 ```
 
-Or run the migration from your host with the production DATABASE_URL:
+**Warning:** never run migrations against an unidentified stack or database.
+Before any migration, confirm you are attached to the canonical `hermes`
+project (`docker compose -p hermes -f docker-compose.prod.yml ps`) and that the
+target database is the canonical one (see §14).
 
-```bash
-DATABASE_URL="postgresql://hermes:PASS@your-vps-ip:5432/hermes_db" \
-  npx prisma migrate deploy
-```
+The in-container command above is the canonical path: it runs inside the
+identified `hermes` project against the internal `postgres` service, so there is
+no ambiguity about which database is targeted.
+
+> **Do not** run migrations from your host against `your-vps-ip:5432`. The
+> `postgres` service publishes **no host port** (`docker-compose.prod.yml`:
+> "No public port — internal network only"), so that address is never the
+> canonical `hermes_db`; anything answering on it is an unidentified database —
+> exactly what the warning above forbids. If a host-side run is unavoidable,
+> open a deliberate SSH tunnel to the internal `postgres`, verify you are on
+> `hermes_db`, and avoid putting the password on the command line (shell
+> history). Prefer the in-container command.
 
 ---
 
@@ -130,7 +145,7 @@ curl https://yourdomain.com/api/health
 # {"status":"ok","timestamp":"...","environment":"production","database":{"status":"ok","latencyMs":3}}
 
 # Check logs
-docker-compose -f docker-compose.prod.yml logs -f hermes-web
+docker compose -p hermes -f docker-compose.prod.yml logs -f hermes-web
 ```
 
 ---
@@ -140,7 +155,7 @@ docker-compose -f docker-compose.prod.yml logs -f hermes-web
 For single-server setups (see `deploy/monitoring/README.md` for the recommended separate-host approach):
 
 ```bash
-docker-compose -f docker-compose.prod.yml --profile monitoring up -d uptime-kuma
+docker compose -p hermes -f docker-compose.prod.yml --profile monitoring up -d uptime-kuma
 ```
 
 Access Uptime Kuma at `http://your-server-ip:3001` and add a monitor for `https://yourdomain.com/api/health`.
@@ -178,10 +193,10 @@ bash /opt/hermes-os/scripts/restore-postgres.sh /opt/hermes-os/backups/hermes_20
 ## 10. Rollback
 
 ```bash
-# Roll back to the previous image
-docker-compose -f docker-compose.prod.yml down
+# Roll back the app only: check out the previous commit and rebuild hermes-web.
+# Do NOT use `docker compose down` — postgres, redis and nginx must keep running.
 git checkout <previous-commit-hash>
-docker-compose -f docker-compose.prod.yml up -d --build
+docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web
 ```
 
 If the schema changed, restore from a pre-migration backup rather than attempting a schema rollback.
@@ -195,8 +210,10 @@ Certbot auto-renews certificates. Verify the cron is active:
 ```bash
 sudo certbot renew --dry-run
 
-# Add reload hook so Nginx picks up renewed certs automatically
-echo "0 0,12 * * * root certbot renew --quiet --deploy-hook 'docker exec hermes-nginx nginx -s reload'" \
+# Add reload hook so Nginx picks up renewed certs automatically.
+# Under the canonical project the container is `hermes-nginx-1`
+# (<project>-<service>-<index>, Compose v2), matching `hermes-postgres-1` in §9.
+echo "0 0,12 * * * root certbot renew --quiet --deploy-hook 'docker exec hermes-nginx-1 nginx -s reload'" \
   | sudo tee /etc/cron.d/certbot-renew
 ```
 
@@ -206,19 +223,19 @@ echo "0 0,12 * * * root certbot renew --quiet --deploy-hook 'docker exec hermes-
 
 ```bash
 # View all logs
-docker-compose -f docker-compose.prod.yml logs -f
+docker compose -p hermes -f docker-compose.prod.yml logs -f
 
 # Restart app only
-docker-compose -f docker-compose.prod.yml restart hermes-web
+docker compose -p hermes -f docker-compose.prod.yml restart hermes-web
 
 # Open a shell in the app container
-docker-compose -f docker-compose.prod.yml exec hermes-web sh
+docker compose -p hermes -f docker-compose.prod.yml exec hermes-web sh
 
 # Connect to PostgreSQL
-docker-compose -f docker-compose.prod.yml exec postgres psql -U hermes hermes_db
+docker compose -p hermes -f docker-compose.prod.yml exec postgres psql -U hermes hermes_db
 
 # Rebuild and redeploy without downtime
-docker-compose -f docker-compose.prod.yml up -d --build --no-deps hermes-web
+docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web
 ```
 
 ---
@@ -232,10 +249,9 @@ Pull-request validation runs in the separate `CI` workflow
 (`.github/workflows/ci.yml`), which has no secrets and no production access.
 
 > **Availability:** GitHub only offers `workflow_dispatch` ("Run workflow") for
-> workflows that exist on the repository's **default branch**. The default
-> branch is still `master`, so the Production Deploy workflow is **not yet
-> manually runnable**. It becomes available only after **Gate 0C** changes the
-> GitHub default branch to `main`. Do not attempt a manual run before then.
+> workflows that exist on the repository's **default branch**. Since **Gate 0C**
+> the default branch is `main`, so the Production Deploy workflow is manually
+> runnable from the Actions tab.
 
 To release:
 
@@ -257,8 +273,10 @@ in earlier sections are historical and refer to the same checkout.)
 The workflow refuses to run unless the commit is part of `main` history
 (verified on the runner and re-verified on the server), then checks out that
 exact SHA on the server and rebuilds **only** the `hermes-web` service
-(`up -d --build --no-deps hermes-web`). It never touches `postgres`, `redis`,
-`nginx`, any named volume, and never prunes images or restarts the host.
+(`docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web`).
+It never touches `postgres`, `redis`, `nginx`, any named volume, and never
+prunes images or restarts the host. Every Compose command it runs pins the
+canonical project with `-p hermes` (see §14).
 
 ### Required production environment secrets
 
@@ -283,3 +301,73 @@ because OpenSSH looks up non-default ports under that key format.
 
 Set actual values only in the GitHub UI. Never commit secret values to the
 repository, and never place them in the `CI` workflow.
+
+---
+
+## 14. Canonical Production Compose Project (Gate 0D-A)
+
+The Production stack has exactly one canonical identity:
+
+| Resource | Canonical name |
+|----------|----------------|
+| Compose project | `hermes` |
+| PostgreSQL volume | `hermes_postgres_data` |
+| Internal network | `hermes_hermes_internal` |
+| Working directory | `/opt/hermes-os-nexuz` |
+
+Rules — these are mandatory, not stylistic:
+
+- **Every** Production Compose command must contain `-p hermes`:
+
+  ```bash
+  docker compose -p hermes -f docker-compose.prod.yml <command>
+  ```
+
+- `docker-compose.prod.yml` also declares top-level `name: hermes`. That is
+  **defense in depth only** — it does not replace the explicit `-p hermes`,
+  which remains mandatory in every command, script and document.
+- **Never infer the Production project name from the checkout directory.**
+  Without pinning, Docker Compose derives the project name from the directory
+  name, which silently creates a second isolated project.
+- Before any maintenance, verify you are attached to the canonical stack:
+
+  ```bash
+  docker compose -p hermes -f docker-compose.prod.yml ps
+  ```
+
+Explicit warnings:
+
+- ❌ Never run Production Compose without `-p hermes`.
+- ❌ Never run `docker compose down -v` — it destroys the named data volumes.
+- ❌ Never delete named volumes (`docker volume rm`, `docker system prune --volumes`).
+- ❌ Never run migrations against an unidentified stack or database — identify
+  the project (`-p hermes`) and the database (`hermes_db`) first.
+
+**Incident note (2026-07):** an unpinned `docker compose` invocation from
+`/opt/hermes-os-nexuz` derived the project name `hermes-os-nexuz` and created a
+second, empty stack (new network and empty `hermes-os-nexuz_postgres_data`
+volume). Login and password reset failed while Nginx pointed at the empty
+stack. Production was restored to the canonical `hermes` project; the
+accidental `hermes-os-nexuz` project and its volumes are intentionally left
+untouched. Their cleanup is deferred to **Gate 0D-B** and must not be attempted
+outside that gate.
+
+**Enforcement scope.** CI runs `scripts/production-compose-project-static-check.mjs`
+on every pull request. It enforces these invariants in two tiers:
+
+- **Tier 1 — the deploy pipeline:** `docker-compose.prod.yml` (top-level
+  `name: hermes`) and `.github/workflows/deploy.yml` (only the exact targeted
+  `up`/`ps` commands, pinned, plus the full Gate 0A contract).
+- **Tier 2 — the operator surface:** every runbook, checklist and shell script
+  under `docs/`, `deploy/` and `scripts/` (plus this file). Any executable or
+  copy-paste **production** Compose command (one referencing
+  `docker-compose.prod.yml`) must be pinned with `-p hermes` and use the v2
+  `docker compose` form. As executable operator commands the checker also
+  forbids an obsolete master-branch pull and any volume-destroying cleanup (the
+  ❌ items listed above). Explicit prohibition lines (marked ❌, or containing
+  "Never", "Do not", "must not", "forbidden") are recognized as prose, so a
+  runbook can still name a dangerous command in order to forbid it. The separate
+  OpenBao staging Compose project is excluded by an `openbao` deny-list.
+
+If you add a new runbook or script with an unpinned production Compose command,
+CI fails until you pin it.
