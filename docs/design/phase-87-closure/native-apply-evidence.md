@@ -81,6 +81,78 @@ for native productionization but are **not** production-ready components, so
 runtime surface implementation (Phase 87 continuation §C) remains **gated** and
 is not started.
 
+## 4″. Apply run `run-ms7vkx9n-1` — "Applied with issues" + repair (assembly rev 2)
+
+**Owner-run execution evidence (the FINAL revision's first Apply):**
+
+- Reported: **38 created · 51 updated · 84 skipped**, status **"Applied with issues"**.
+- Repeated error on the reference assemblies:
+  `set_characters: Property "characters" failed validation: Required value missing`.
+
+**ROOT CAUSE.** The tri-lingual rewrite made each assembly heading a
+**pre-localized string** (`locale-strings.js`), but the executor still read a
+locale off it — `t.characters = asm.locale === 'fa' ? item.heading.fa :
+item.heading.en` (old `figma-exec.js`). `("…string…").fa` is `undefined`, and
+Figma rejects `TextNode.characters = undefined`. The throw happened INSIDE
+`upsertAssembly`, AFTER `figma.createFrame()`/`appendChild` but BEFORE `tag()`,
+and was caught per-assembly in `run()` — so each of the 36 assemblies left an
+**un-tagged, partial, unmanaged** frame in the managed section. (The reported
+"38 created / 51 updated" are the *planned* counts; in reality only the 2
+non-assembly creates — the assemblies section + the Icon family — and the 51
+component/text-style updates were actually tagged. Components were unaffected:
+their text path always passed real strings.)
+
+**CURRENT PARTIAL-STATE IMPLICATIONS.**
+
+- Managed + correct: 43 component sets (updated, origin run preserved), 8 text
+  styles (updated), Icon family + assemblies section (created under
+  `run-ms7vkx9n-1`), all foundation (untouched). The 34 original reference
+  frames are untouched.
+- NOT managed: the 36 assemblies — physical partial frames exist in the
+  assemblies section but carry **no `hermesDSB` marker**, so they are invisible
+  to the plan/verify/rollback (they look like user content).
+- `run-ms7vkx9n-1` is recorded as a **partial historical run** owning exactly 2
+  managed assets (assemblies section + Icon family).
+
+**REPAIR STRATEGY (no rollback, no re-apply of the defective bundle).**
+
+1. **Fix the executor**: headings now assign the pre-localized string directly
+   through a defensive `setChars()` that throws a structured error on any
+   non-string / empty / whitespace value (never stringifies `undefined`, never
+   substitutes placeholder text). Instance text props get the same contract.
+2. **Fail-closed preflight** (`validate.js` → `validateAssemblyText`): runs
+   during Dry Run AND at the start of Apply **before a runId is generated or any
+   Figma API is called**. It re-derives every string for all 36 assemblies and
+   rejects undefined/null/non-string/empty/whitespace/missing-key, identifying
+   *assembly key · experience · locale · viewport · text role · source catalog
+   key*. Proven by a stubbed-Figma test: on invalid text, **zero** create/
+   update/set/load calls occur and no runId is produced.
+3. **Repair in place via orphan adoption**: `assembly` revision bumped 1→2, so
+   the 36 assemblies re-plan; because they were never tagged they plan as
+   **create**, and the executor adopts the single exact-name unmanaged frame in
+   the section (clearing its partial children and rebuilding into the SAME node
+   — **id preserved**), then tags it. Two same-name matches ⇒ fail closed. No
+   duplicate frames are produced.
+
+**EXPECTED REPAIR DRY RUN (vs the current partial state):**
+**`create 36 · update 0 · skip 137 · prune 0`** (total 173). It is *create*, not
+*update*, precisely because the failed run never tagged the assemblies — the
+marker index does not contain them — yet the executor materialises those 36
+"creates" as **in-place adoptions** of the existing partial frames, so nothing
+duplicates. The 137 skips are every already-correct managed asset (foundation +
+43 components + 8 text styles + Icon + both sections).
+
+**Rollback isolation of the repair run**: the 36 repaired assemblies are tagged
+with the repair runId; `rollback(repairRun)` removes only those 36 and can never
+touch earlier runs' assets (components/text/foundation stay under
+`run-ms7q88mf-1`; section+Icon stay under `run-ms7vkx9n-1`). No transactional
+restore of pre-update content is claimed — recovery is forward (rerun) only.
+
+**⛔ DO NOT roll back or re-apply the defective bundle** (dist sha
+`18ef2107e762e0ff`). Apply only the repaired bundle (this build). Rolling back
+would delete good managed assets; re-applying the old bundle would re-throw and
+create more orphan frames.
+
 ## 4′. FINAL production-fidelity revision (supersedes §4 below — built + validated, NOT yet applied)
 
 Per the owner's decision, the intermediate revision 2 was **not** committed or

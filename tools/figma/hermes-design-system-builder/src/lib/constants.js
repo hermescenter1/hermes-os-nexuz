@@ -72,7 +72,7 @@ const COLLECTIONS = Object.freeze({
 const REVISIONS = Object.freeze({
   component: 3, // component-set builder revision (FINAL)
   textStyle: 2, // text-style / font-resolution revision
-  assembly: 1, // native reference assemblies revision
+  assembly: 2, // assemblies: rev 2 = repaired text pipeline (run-ms7vkx9n-1 fix)
 })
 
 /** Asset kinds (mirrors KEYS.ASSET_KIND values). */

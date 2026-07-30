@@ -16,6 +16,7 @@ const { PRESETS, STATE_PRESETS, collectRoles, collectTokens, collectTextStyles, 
 const { buildAssemblies, ORIGINAL_REFS, EXPERIENCES, LOCALES } = require('../src/lib/assemblies.js')
 const { STRINGS } = require('../src/lib/locale-strings.js')
 const starter = require('../src/lib/starter.js')
+const { validateAssemblyText, textProblem, pickAdoptable } = require('../src/lib/validate.js')
 const { hashAsset, slug } = require('../src/lib/util.js')
 const { REVISIONS } = require('../src/lib/constants.js')
 
@@ -483,5 +484,215 @@ describe('pure utils', () => {
         for (const k of Object.keys(o.set)) expect(['fill', 'stroke', 'strokeW', 'textFill', 'opacity', 'hidden', 'text', 'w', 'minW'], st + '.' + k).toContain(k)
       }
     }
+  })
+})
+
+// ── run-ms7vkx9n-1 REPAIR: text pipeline fail-closed ────────────────────────
+describe('text resolution matrix (regression for run-ms7vkx9n-1)', () => {
+  const asms = buildAssemblies()
+  it('every heading and every instance text prop of ALL 36 assemblies resolves to a non-empty, non-whitespace string', () => {
+    let headings = 0
+    let props = 0
+    for (const a of asms) {
+      const walk = (item) => {
+        if (item.row) { item.row.forEach(walk); return }
+        if ('heading' in item) {
+          headings++
+          expect(textProblem(item.heading), a.key + ' heading').toBeNull()
+          return
+        }
+        for (const pn of Object.keys(item.props || {})) {
+          props++
+          expect(textProblem(item.props[pn]), a.key + ' ' + item.family + '.' + pn).toBeNull()
+        }
+      }
+      a.items.forEach(walk)
+    }
+    // the matrix is real: 6 experiences × 3 locales × 2 viewports all carry text
+    expect(headings).toBeGreaterThanOrEqual(36)
+    expect(props).toBeGreaterThanOrEqual(36)
+  })
+
+  it('validateAssemblyText passes on the real spec (0 issues)', () => {
+    const v = validateAssemblyText(buildSpec())
+    expect(v.issues).toEqual([])
+    expect(v.ok).toBe(true)
+  })
+
+  it('mutation: undefined / null / empty / whitespace / non-string are each rejected with FULL context', () => {
+    for (const bad of [undefined, null, '', '   ', 42]) {
+      const spec = buildSpec()
+      // corrupt one heading and one instance prop on a known assembly
+      const asm = spec.assemblies.find((a) => a.key === 'assembly:homepage:desktop:de')
+      const headingItem = asm.items.find((i) => 'heading' in i)
+      headingItem.heading = bad
+      const login = spec.assemblies.find((a) => a.key === 'assembly:login:mobile:fa')
+      const instItem = login.items.find((i) => i.family === 'input')
+      instItem.props.Label = bad
+      const v = validateAssemblyText(spec)
+      expect(v.ok).toBe(false)
+      const h = v.issues.find((i) => i.assemblyKey === 'assembly:homepage:desktop:de')
+      expect(h, 'heading issue for ' + String(bad)).toBeTruthy()
+      expect(h.experience).toBe('homepage')
+      expect(h.locale).toBe('de')
+      expect(h.viewport).toBe('desktop')
+      expect(h.role).toMatch(/^Heading\(/)
+      expect(h.catalogKey).toBeTruthy()
+      expect(h.problem.length).toBeGreaterThan(0)
+      const p2 = v.issues.find((i) => i.assemblyKey === 'assembly:login:mobile:fa')
+      expect(p2, 'prop issue for ' + String(bad)).toBeTruthy()
+      expect(p2.role).toBe('input.Label')
+    }
+  })
+
+  it('resolved catalog keys are reported for catalog-derived strings', () => {
+    const spec = buildSpec()
+    const asm = spec.assemblies.find((a) => a.key === 'assembly:login:desktop:de')
+    const item = asm.items.find((i) => i.family === 'input')
+    item.props.Label = '' // corrupt a value whose ORIGINAL came from auth.email
+    const v = validateAssemblyText(spec)
+    const issue = v.issues.find((i) => i.assemblyKey === 'assembly:login:desktop:de')
+    expect(issue.problem).toBe('empty string')
+    // empty string cannot be reverse-mapped; role identifies the target precisely
+    expect(issue.role).toBe('input.Label')
+  })
+})
+
+describe('no mutation before validation (stubbed Figma proof)', () => {
+  const exec = require('../src/lib/figma-exec.js')
+  let calls
+  const spy = (name) => (..._a) => { calls.push(name); throw new Error('mutation ' + name + ' must not run') }
+  const makeFigmaStub = () => ({
+    currentPage: { children: [] },
+    root: { children: [] },
+    variables: {
+      getLocalVariableCollectionsAsync: async () => [],
+      getLocalVariablesAsync: async () => [],
+      createVariableCollection: spy('createVariableCollection'),
+      createVariable: spy('createVariable'),
+      setBoundVariableForPaint: spy('setBoundVariableForPaint'),
+    },
+    getLocalPaintStylesAsync: async () => [],
+    getLocalTextStylesAsync: async () => [],
+    getLocalEffectStylesAsync: async () => [],
+    listAvailableFontsAsync: async () => [],
+    loadFontAsync: spy('loadFontAsync'),
+    createFrame: spy('createFrame'),
+    createText: spy('createText'),
+    createComponent: spy('createComponent'),
+    createEllipse: spy('createEllipse'),
+    createRectangle: spy('createRectangle'),
+    createSection: spy('createSection'),
+    createPaintStyle: spy('createPaintStyle'),
+    createTextStyle: spy('createTextStyle'),
+    createEffectStyle: spy('createEffectStyle'),
+    combineAsVariants: spy('combineAsVariants'),
+  })
+  const corruptSpec = () => {
+    const spec = buildSpec()
+    spec.assemblies.find((a) => a.key === 'assembly:homepage:desktop:de').items.find((i) => 'heading' in i).heading = undefined
+    return spec
+  }
+
+  it('APPLY with invalid text is blocked BEFORE any create/update/set/load call and before a runId exists', async () => {
+    calls = []
+    globalThis.figma = makeFigmaStub()
+    try {
+      const res = await exec.run({ dryRun: false, _specForTest: corruptSpec() })
+      expect(res.ok).toBe(false)
+      expect(res.blocked).toBe('TEXT_VALIDATION_FAILED')
+      expect(res.runId).toBeUndefined()
+      expect(res.issues.length).toBeGreaterThan(0)
+      expect(calls).toEqual([]) // ZERO mutation calls — nothing partial can begin
+    } finally { delete globalThis.figma }
+  })
+
+  it('DRY RUN reports the same failure without any mutation call', async () => {
+    calls = []
+    globalThis.figma = makeFigmaStub()
+    try {
+      const res = await exec.run({ dryRun: true, _specForTest: corruptSpec() })
+      expect(res.ok).toBe(false)
+      expect(res.mode).toBe('dry-run')
+      expect(res.textValidation.ok).toBe(false)
+      expect(calls).toEqual([])
+    } finally { delete globalThis.figma }
+  })
+
+  it('DRY RUN on the real spec is clean and still mutation-free', async () => {
+    calls = []
+    globalThis.figma = makeFigmaStub()
+    try {
+      const res = await exec.run({ dryRun: true })
+      expect(res.textValidation.ok).toBe(true)
+      expect(calls).toEqual([])
+    } finally { delete globalThis.figma }
+  })
+})
+
+describe('orphan adoption (repairs partial frames in place)', () => {
+  it('adopts exactly one unmanaged FRAME with the exact assembly name', () => {
+    const kids = [
+      { id: '9:1', name: 'Ref/homepage/Desktop/EN', type: 'FRAME', managed: false },
+      { id: '9:2', name: 'Ref/homepage/Desktop/FA', type: 'FRAME', managed: false },
+      { id: '9:3', name: 'Other', type: 'FRAME', managed: false },
+    ]
+    expect(pickAdoptable(kids, 'Ref/homepage/Desktop/EN')).toEqual({ id: '9:1', ambiguous: [] })
+    expect(pickAdoptable(kids, 'Ref/missing/Desktop/EN')).toEqual({ id: null, ambiguous: [] })
+  })
+  it('never adopts managed frames or non-frames; duplicates fail closed', () => {
+    const kids = [
+      { id: '9:1', name: 'Ref/login/Mobile/DE · generated', type: 'FRAME', managed: true },
+      { id: '9:2', name: 'Ref/login/Mobile/DE · generated', type: 'TEXT', managed: false },
+    ]
+    expect(pickAdoptable(kids, 'Ref/login/Mobile/DE · generated')).toEqual({ id: null, ambiguous: [] })
+    const dup = [
+      { id: '9:5', name: 'X', type: 'FRAME', managed: false },
+      { id: '9:4', name: 'X', type: 'FRAME', managed: false },
+    ]
+    expect(pickAdoptable(dup, 'X')).toEqual({ id: null, ambiguous: ['9:4', '9:5'] })
+  })
+})
+
+describe('repair-run reconciliation and rollback isolation', () => {
+  it('EXPECTED REPAIR DRY RUN vs the partial run-ms7vkx9n-1 state: 36 create · 0 update · 137 skip · 0 prune', () => {
+    const spec = buildSpec()
+    // Live state after the failed run: EVERYTHING except assemblies is tagged
+    // with CURRENT hashes (the 51 updates + section2 + icon all succeeded);
+    // the 36 assemblies threw BEFORE tag() → absent from the marker index.
+    const idx = {}
+    for (const a of spec.assets) {
+      if (a.key.startsWith('assembly:')) continue
+      const runId = (a.key === 'section:assemblies' || a.key === 'componentSet:icon') ? 'run-ms7vkx9n-1' : 'run-ms7q88mf-1'
+      idx[a.key] = { id: 'id:' + a.key, hash: a.hash, kind: a.kind, runId }
+    }
+    const plan = computePlan(spec, idx)
+    expect(plan.summary).toEqual({ create: 36, update: 0, skip: 137, prune: 0, total: 173 })
+    const created = plan.ops.filter((o) => o.action === 'create').map((o) => o.key)
+    expect(created.every((k) => k.startsWith('assembly:'))).toBe(true)
+  })
+
+  it('rollback of the repair run can NEVER remove assets created by earlier runs', () => {
+    const spec = buildSpec()
+    const idx = {}
+    for (const a of spec.assets) {
+      const runId = a.key.startsWith('assembly:') ? 'run-repair'
+        : (a.key === 'section:assemblies' || a.key === 'componentSet:icon') ? 'run-ms7vkx9n-1'
+          : 'run-ms7q88mf-1'
+      idx[a.key] = { id: 'id:' + a.key, hash: a.hash, kind: a.kind, runId }
+    }
+    expect(runScope(idx, 'run-repair').length).toBe(36) // ONLY the adopted assemblies
+    expect(runScope(idx, 'run-ms7vkx9n-1').length).toBe(2) // section2 + icon (partial historical run)
+    expect(runScope(idx, 'run-ms7q88mf-1').length).toBe(spec.assets.length - 38)
+    expect(runScope(idx, null).length).toBe(spec.assets.length)
+  })
+
+  it('assembly revision bump is surgical: only assembly hashes changed vs assembly-rev-1', () => {
+    const byKey = (s) => Object.fromEntries(s.assets.map((x) => [x.key, x.hash]))
+    const A = byKey(buildSpec({ component: 3, textStyle: 2, assembly: 1 }))
+    const B = byKey(buildSpec({ component: 3, textStyle: 2, assembly: 2 }))
+    const changed = Object.keys(A).filter((k) => A[k] !== B[k])
+    expect(changed.length).toBe(36)
+    expect(changed.every((k) => k.startsWith('assembly:'))).toBe(true)
   })
 })

@@ -25,6 +25,26 @@ const { computePlan, detectAmbiguity } = require('./plan')
 const { parseColor, FONTS, WEIGHT_ALIASES, assessFontAvailability } = require('./tokens')
 const { TONE_TOKEN } = require('./components')
 const { PRESETS, STATE_PRESETS } = require('./presets')
+const { validateAssemblyText, textProblem, charactersError, pickAdoptable } = require('./validate')
+
+/**
+ * DEFENSIVE characters assignment. Never assigns unless the value is a real
+ * string; never stringifies undefined/null; never substitutes placeholders —
+ * throws a structured error carrying the full text context instead.
+ * Empty strings are allowed ONLY when a blueprint explicitly declares them
+ * (e.g. IconButton's hidden label) via opts.allowEmpty.
+ * @param {any} node TEXT node
+ * @param {unknown} value
+ * @param {{assemblyKey?:string, role?:string, locale?:string}} ctxInfo
+ * @param {{allowEmpty?:boolean}} [opts]
+ */
+function setChars(node, value, ctxInfo, opts) {
+  const p = textProblem(value)
+  if (p && !(opts && opts.allowEmpty && (p === 'empty string' || p === 'whitespace-only string'))) {
+    throw charactersError(value, ctxInfo)
+  }
+  node.characters = /** @type {string} */ (value)
+}
 
 const NS = C.NAMESPACE
 const K = C.KEYS
@@ -266,7 +286,9 @@ async function renderNode(spec, ctx) {
     if (s.type === 'text') {
       node = figma.createText()
       node.fontName = ctx.fonts.resolve('body', 'Regular')
-      node.characters = s.text || ''
+      // blueprints may declare a deliberately-empty label (IconButton); anything
+      // undefined/null/non-string still fails closed with full context.
+      setChars(node, s.text != null ? s.text : '', { role: s.role }, { allowEmpty: true })
     } else if (s.type === 'ellipse') {
       node = figma.createEllipse()
       node.resize(s.w || 10, s.h || 10)
@@ -367,7 +389,7 @@ async function applyOverrides(roles, overrides, ctx) {
     if (s.textFill) { const st = styleFor(s.textFill); if (st && node.type === 'TEXT') { try { await node.setFillStyleIdAsync(st.id) } catch (_e) { /* ignore */ } } }
     if (s.opacity != null) node.opacity = s.opacity
     if (s.hidden !== undefined) node.visible = !s.hidden
-    if (s.text !== undefined && node.type === 'TEXT') { try { node.characters = s.text } catch (_e) { /* ignore */ } }
+    if (s.text !== undefined && node.type === 'TEXT') { setChars(node, s.text, { role: o.role }) }
     if (s.w != null) { try { node.resize(s.w, node.height) } catch (_e) { /* ignore */ } }
     if (s.minW != null) { try { node.minWidth = s.minW } catch (_e) { /* ignore */ } }
   }
@@ -588,18 +610,37 @@ function textPropIdsOf(set) {
  * @param {any} asm spec assembly
  * @param {any} live
  * @param {any} ctx { section2, fonts, paintByToken, textStyleByName, runId }
- * @returns {Promise<{ node:any, instances:{family:string, componentId:string}[] }>}
+ * @returns {Promise<{ node:any, instances:{family:string, componentId:string}[], adopted:boolean }>}
  */
 async function upsertAssembly(asm, live, ctx) {
   const existing = live.assemblies[asm.key]
   let originRunId = ctx.runId
+  let frame = null
+  let adopted = false
   if (existing) {
     try { const prior = existing.getSharedPluginData(NS, K.RUN_ID); if (prior && prior.length) originRunId = prior } catch (_e) { /* ignore */ }
     try { existing.remove() } catch (_e) { /* ignore */ }
     delete live.assemblies[asm.key]
+  } else {
+    // ORPHAN ADOPTION (repairs the run-ms7vkx9n-1 partial state IN PLACE):
+    // that run's set_characters failure threw BEFORE tag(), leaving exactly-
+    // named, unmanaged partial frames inside the managed section. Adopt the
+    // single exact-name unmanaged FRAME child, clear its partial content and
+    // rebuild into the SAME node (id preserved). Two matches = fail closed.
+    const children = (/** @type {any} */ (ctx.section2).children || []).map((c) => ({ id: c.id, name: c.name, type: c.type, managed: isManaged(c), node: c }))
+    const pick = pickAdoptable(children, asm.name)
+    if (pick.ambiguous.length) throw new Error('adoption ambiguity for ' + asm.key + ': multiple unmanaged frames named "' + asm.name + '" [' + pick.ambiguous.join(', ') + '] — resolve manually before Apply')
+    if (pick.id) {
+      const hit = children.find((c) => c.id === pick.id)
+      frame = hit && hit.node
+      if (frame) {
+        adopted = true
+        for (const ch of [...(frame.children || [])]) { try { ch.remove() } catch (_e) { /* ignore */ } }
+      }
+    }
   }
 
-  const frame = figma.createFrame()
+  if (!frame) frame = figma.createFrame()
   frame.name = asm.name
   frame.layoutMode = 'VERTICAL'
   frame.primaryAxisSizingMode = 'AUTO'
@@ -617,10 +658,14 @@ async function upsertAssembly(asm, live, ctx) {
 
   /** @param {any} item @param {any} parent */
   const place = async (item, parent) => {
-    if (item.heading) {
+    if ('heading' in item) {
+      // item.heading is a PRE-LOCALIZED string (locale-strings.js). The
+      // run-ms7vkx9n-1 defect read `.fa/.en` off this string → undefined →
+      // Figma rejected set_characters. Assign the string itself, defensively.
       const t = figma.createText()
-      t.fontName = ctx.fonts.resolve(item.style && item.style.startsWith('Display') ? 'display' : 'display', item.style === 'Body/M' ? 'Regular' : 'Bold')
-      t.characters = asm.locale === 'fa' ? item.heading.fa : item.heading.en
+      const displayStyle = !item.style || item.style.startsWith('Display') || item.style.startsWith('Heading')
+      t.fontName = ctx.fonts.resolve(displayStyle ? 'display' : 'body', displayStyle ? 'Bold' : 'Regular')
+      setChars(t, item.heading, { assemblyKey: asm.key, role: 'Heading(' + (item.style || 'Heading/L') + ')', locale: asm.locale })
       parent.appendChild(t)
       const ramp = ctx.textStyleByName[item.style || 'Heading/L']
       if (ramp) { try { await t.setTextStyleIdAsync(ramp.id) } catch (_e) { /* ignore */ } }
@@ -658,12 +703,17 @@ async function upsertAssembly(asm, live, ctx) {
     try { inst = variant.createInstance() } catch (_e) { return }
     parent.appendChild(inst)
     instancesUsed.push({ family: item.family, componentId: variant.id })
-    // text props
+    // text props — same defensive contract as characters (no undefined/null/empty)
     const props = item.props || {}
     const ids = textPropIdsOf(set)
     /** @type {Record<string, string>} */
     const setProps = {}
-    for (const name of Object.keys(props)) if (ids[name]) setProps[ids[name]] = props[name]
+    for (const name of Object.keys(props)) {
+      const v = props[name]
+      const p = textProblem(v)
+      if (p) throw charactersError(v, { assemblyKey: asm.key, role: item.family + '.' + name, locale: asm.locale })
+      if (ids[name]) setProps[ids[name]] = /** @type {string} */ (v)
+    }
     if (Object.keys(setProps).length) { try { inst.setProperties(setProps) } catch (_e) { /* ignore */ } }
   }
 
@@ -674,7 +724,7 @@ async function upsertAssembly(asm, live, ctx) {
   frame.setSharedPluginData(NS, 'originalRef', asm.originalRef || '')
   frame.setSharedPluginData(NS, 'newlyGenerated', asm.newlyGenerated ? '1' : '')
   live.assemblies[asm.key] = frame
-  return { node: frame, instances: instancesUsed }
+  return { node: frame, instances: instancesUsed, adopted }
 }
 
 // ── layout inside sections ─────────────────────────────────────────────────
@@ -704,12 +754,19 @@ function layoutAssemblies(nodes, section) {
 
 // ── top-level operations ───────────────────────────────────────────────────
 /**
- * @param {{ dryRun?: boolean, allowFontFallback?: boolean }} [options]
+ * @param {{ dryRun?: boolean, allowFontFallback?: boolean, _specForTest?: any }} [options]
+ *   _specForTest is a TEST-ONLY hook (never set by the UI): it lets the test
+ *   suite inject a corrupted spec and prove the fail-closed gates fire before
+ *   any mutation. Production paths always build the real spec.
  */
 async function run(options) {
   const dryRun = !!(options && options.dryRun)
   const allowFontFallback = !!(options && options.allowFontFallback)
-  const spec = buildSpec()
+  const spec = (options && options._specForTest) || buildSpec()
+  // FAIL-CLOSED TEXT PREFLIGHT — validate every string that will reach
+  // TextNode.characters / instance text props BEFORE touching the file or
+  // generating a runId (added after run-ms7vkx9n-1).
+  const textValidation = validateAssemblyText(spec)
   const live = await buildLiveIndex()
   const plan = computePlan(spec, live.index)
   const ambiguities = detectAmbiguity(live.observations)
@@ -721,17 +778,22 @@ async function run(options) {
 
   if (dryRun) {
     return {
-      ok: ambiguities.length === 0,
+      ok: ambiguities.length === 0 && textValidation.ok,
       mode: 'dry-run',
       counts: spec.counts,
       plan,
       ambiguities,
+      textValidation,
       fontGate: { canonicalPresent: fontGate.canonicalPresent, missing: fontGate.missing, wouldBlockApply: !fontGate.canonicalPresent && !allowFontFallback },
       manifestPresent: !!live.section,
     }
   }
 
-  // FAIL CLOSED — no mutation on ambiguity or missing canonical fonts.
+  // FAIL CLOSED — no mutation (and no runId) on invalid text, ambiguity or
+  // missing canonical fonts.
+  if (!textValidation.ok) {
+    return { ok: false, mode: 'apply', blocked: 'TEXT_VALIDATION_FAILED', issues: textValidation.issues, counts: spec.counts }
+  }
   if (ambiguities.length) {
     return { ok: false, mode: 'apply', blocked: 'AMBIGUOUS_OWNERSHIP', ambiguities, counts: spec.counts }
   }
@@ -800,7 +862,7 @@ async function run(options) {
       try {
         const r = await upsertAssembly(asm, live, ctx2)
         asmNodes.push(r.node)
-        mapping.push({ originalRef: asm.originalRef, assembly: asm.key, nodeId: r.node.id, instances: r.instances })
+        mapping.push({ originalRef: asm.originalRef, assembly: asm.key, nodeId: r.node.id, adopted: !!r.adopted, instances: r.instances })
       } catch (e) { errors.push('assembly ' + asm.key + ': ' + e.message); asmNodes.push(null) }
     }
     layoutAssemblies(asmNodes, live.section2)

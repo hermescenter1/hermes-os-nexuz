@@ -29,6 +29,7 @@ const MODULES = [
   ['presets', 'lib/presets.js'],
   ['components', 'lib/components.js'],
   ['locale-strings', 'lib/locale-strings.js'],
+  ['validate', 'lib/validate.js'],
   ['assemblies', 'lib/assemblies.js'],
   ['starter', 'lib/starter.js'],
   ['spec', 'lib/spec.js'],

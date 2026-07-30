@@ -4,7 +4,7 @@
     {
       "id": "constants",
       "file": "src/lib/constants.js",
-      "sha256": "3f7454e038fd7a22"
+      "sha256": "44bcdf9a73a3e23e"
     },
     {
       "id": "util",
@@ -32,6 +32,11 @@
       "sha256": "7e9300822cc14f44"
     },
     {
+      "id": "validate",
+      "file": "src/lib/validate.js",
+      "sha256": "0846d47051403055"
+    },
+    {
       "id": "assemblies",
       "file": "src/lib/assemblies.js",
       "sha256": "fda22defa0853a93"
@@ -54,7 +59,7 @@
     {
       "id": "figma-exec",
       "file": "src/lib/figma-exec.js",
-      "sha256": "b44b10b249e723ce"
+      "sha256": "1d34eb71ebd05e23"
     },
     {
       "id": "main",
@@ -62,8 +67,8 @@
       "sha256": "0f458e8b0d1edb2e"
     }
   ],
-  "bundleSha256": "18ef2107e762e0ff",
-  "uiSha256": "a35758953df492bc",
+  "bundleSha256": "0fff3ca023f06ca3",
+  "uiSha256": "6e0da9806d65f907",
   "counts": {
     "collections": 4,
     "variables": 46,

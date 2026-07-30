@@ -114,6 +114,11 @@
     }
     if (type === 'dry-run') {
       let s = payload.text + '\n\n(Dry run only — nothing was written. Manifest present: ' + payload.manifestPresent + ')'
+      if (payload.textValidation) {
+        s += payload.textValidation.ok
+          ? '\n✅ Text preflight: all assembly strings valid (FA/EN/DE).'
+          : '\n❌ TEXT VALIDATION FAILED (Apply will fail closed):\n' + payload.textValidation.issues.slice(0, 10).map((i) => '   - ' + i.assemblyKey + ' [' + i.locale + '/' + i.viewport + '] ' + i.role + ' (' + i.catalogKey + '): ' + i.problem).join('\n')
+      }
       if (payload.ambiguities && payload.ambiguities.length) s += '\n❌ OWNERSHIP AMBIGUITY (Apply will fail closed): ' + payload.ambiguities.map((a) => a.assetKey).join(', ')
       if (payload.fontGate) {
         s += payload.fontGate.canonicalPresent
@@ -129,6 +134,7 @@
         let s = '⛔ Apply blocked (' + r.blocked + ') — nothing was written.\n'
         if (r.missingFonts) s += '  missing fonts: ' + r.missingFonts.map((m) => m.family + ' ' + m.weight).join(', ') + '\n  ' + (r.guidance || '')
         if (r.ambiguities) s += '  duplicate managed markers: ' + r.ambiguities.map((a) => a.assetKey + ' → [' + a.ids.join(', ') + ']').join('; ')
+        if (r.issues) s += '  invalid text values:\n' + r.issues.slice(0, 10).map((i) => '   - ' + i.assemblyKey + ' [' + i.locale + '/' + i.viewport + '] ' + i.role + ' (' + i.catalogKey + '): ' + i.problem).join('\n') + (r.issues.length > 10 ? '\n   … +' + (r.issues.length - 10) + ' more' : '')
         out.textContent = s
         busy(false); return
       }
