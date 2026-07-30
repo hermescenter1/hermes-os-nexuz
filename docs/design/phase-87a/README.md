@@ -1,5 +1,13 @@
 # PHASE 87A — Hermes OS Brand System & Figma Foundation
 
+> **Closure update (Phase 87 closure).** The "FIGMA CONNECTION REQUIRED / no
+> real Figma file exists yet" caveat below is **resolved**: the Figma file
+> **"Hermes OS – Design System"** now exists and was read live during closure
+> (frame `03 — Variables and Tokens`, node `12:4`). The code matches the design
+> source with no token drift, and the mapping is now machine-checked. See
+> [`../phase-87-closure/`](../phase-87-closure/README.md) for the acceptance
+> manifest, the versionable token contract, and the audit.
+
 Deliverables of the Figma-first design phase (audit + brand strategy + Figma
 foundation only — **no production code changed, nothing committed**).
 
