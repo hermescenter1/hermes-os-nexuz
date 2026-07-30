@@ -200,4 +200,50 @@ function parseColor(input) {
   throw new Error('Unsupported color format: ' + input)
 }
 
-module.exports = { COLOR_TOKENS, SPACE_TOKENS, RADIUS_TOKENS, SIZE_TOKENS, SHADOW_TOKENS, TEXT_STYLES, FONTS, parseColor }
+/**
+ * Common style-name spellings per canonical weight. Estedad/Vazirmatn desktop
+ * releases use the NO-SPACE "SemiBold"/"ExtraBold" spellings (verified against
+ * the upstream repos), Figma's own bundled fonts use "Semi Bold" — aliasing
+ * resolves the SAME weight under either name; it is NOT a substitution.
+ */
+const WEIGHT_ALIASES = Object.freeze({
+  Thin: ['Thin', '100'],
+  'Extra Light': ['Extra Light', 'ExtraLight', 'Ultra Light', '200'],
+  Light: ['Light', '300'],
+  Regular: ['Regular', 'Normal', 'Book', '400'],
+  Medium: ['Medium', '500'],
+  'Semi Bold': ['Semi Bold', 'SemiBold', 'Demi Bold', 'DemiBold', 'Demi', '600'],
+  Bold: ['Bold', '700'],
+  'Extra Bold': ['Extra Bold', 'ExtraBold', 'Ultra Bold', '800'],
+  Black: ['Black', 'Heavy', '900'],
+})
+
+/**
+ * PURE canonical-typography gate. Given the set of available "Family Style"
+ * strings (from listAvailableFontsAsync), decide whether every canonical
+ * (family, weight) pair the type ramp needs resolves — exactly or via a
+ * same-weight name alias. Missing pairs BLOCK a canonical Apply (fail closed)
+ * unless the owner explicitly opts into the documented fallback.
+ * @param {Set<string>} available "Family Style" strings
+ * @returns {{ canonicalPresent: boolean, missing: {family:string, weight:string}[], resolved: {family:string, weight:string, style:string}[] }}
+ */
+function assessFontAvailability(available) {
+  /** @type {{family:string, weight:string}[]} */
+  const missing = []
+  /** @type {{family:string, weight:string, style:string}[]} */
+  const resolved = []
+  const need = new Set()
+  for (const t of TEXT_STYLES) {
+    if (t.font === 'mono') continue // mono ships a generic fallback chain by design
+    need.add(FONTS[t.font].family + '|' + t.weight)
+  }
+  for (const key of [...need].sort()) {
+    const [family, weight] = key.split('|')
+    const style = (WEIGHT_ALIASES[weight] || [weight]).find((s) => available.has(family + ' ' + s))
+    if (style) resolved.push({ family, weight, style })
+    else missing.push({ family, weight })
+  }
+  return { canonicalPresent: missing.length === 0, missing, resolved }
+}
+
+module.exports = { COLOR_TOKENS, SPACE_TOKENS, RADIUS_TOKENS, SIZE_TOKENS, SHADOW_TOKENS, TEXT_STYLES, FONTS, WEIGHT_ALIASES, parseColor, assessFontAvailability }

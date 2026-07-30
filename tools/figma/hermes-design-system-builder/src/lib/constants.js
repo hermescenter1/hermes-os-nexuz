@@ -44,12 +44,35 @@ const MANIFEST_NODE_NAME = '⟦ hermes-dsb · manifest — do not delete ⟧'
 /** All generated COMPONENTS live inside this one top-level section for isolation. */
 const SECTION_NAME = 'Hermes DS · Generated (managed by plugin)'
 
+/** Native reference assemblies live in this SECOND managed section. */
+const SECTION2_NAME = 'Hermes DS · Native Reference Assemblies'
+
 /** Local variable collection names created by this plugin. */
 const COLLECTIONS = Object.freeze({
   COLORS: 'Hermes · Semantic Colors',
   SPACING: 'Hermes · Spacing',
   RADIUS: 'Hermes · Radius',
   SIZING: 'Hermes · Sizing',
+})
+
+/**
+ * Deterministic REVISION markers. Bumping a revision changes the content hash of
+ * the affected asset kind, so a rerun produces a surgical UPDATE plan (only those
+ * assets) instead of a no-op SKIP — this is how a fidelity uplift of the local
+ * builder is safely rolled out to already-applied managed assets.
+ *
+ *   revision 1 = the initially shipped scaffold (commit 8d49c44, applied run-ms7q88mf-1)
+ *   revision 2 = intermediate fidelity uplift (never applied, folded into FINAL)
+ *   revision 3 = FINAL production-fidelity components (full anatomy/states/props)
+ *   assembly 1 = first revision of the native reference assemblies
+ *
+ * Foundation variables/collections/paint/effect styles are NOT revisioned here —
+ * their content is fully token-derived, so they only update when a token changes.
+ */
+const REVISIONS = Object.freeze({
+  component: 3, // component-set builder revision (FINAL)
+  textStyle: 2, // text-style / font-resolution revision
+  assembly: 1, // native reference assemblies revision
 })
 
 /** Asset kinds (mirrors KEYS.ASSET_KIND values). */
@@ -61,8 +84,9 @@ const KIND = Object.freeze({
   EFFECT_STYLE: 'effectStyle',
   COMPONENT: 'component',
   COMPONENT_SET: 'componentSet',
+  ASSEMBLY: 'assembly',
   SECTION: 'section',
   MANIFEST: 'manifest',
 })
 
-module.exports = { PLUGIN_VERSION, PLUGIN_NAME, NAMESPACE, KEYS, MANIFEST_NODE_NAME, SECTION_NAME, COLLECTIONS, KIND }
+module.exports = { PLUGIN_VERSION, PLUGIN_NAME, NAMESPACE, KEYS, MANIFEST_NODE_NAME, SECTION_NAME, SECTION2_NAME, COLLECTIONS, KIND, REVISIONS }

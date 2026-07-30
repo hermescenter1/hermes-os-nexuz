@@ -4,7 +4,7 @@
     {
       "id": "constants",
       "file": "src/lib/constants.js",
-      "sha256": "3c9675efa3c3bb3b"
+      "sha256": "3f7454e038fd7a22"
     },
     {
       "id": "util",
@@ -14,12 +14,27 @@
     {
       "id": "tokens",
       "file": "src/lib/tokens.js",
-      "sha256": "7965774a6c7f0340"
+      "sha256": "7e706856028a8821"
+    },
+    {
+      "id": "presets",
+      "file": "src/lib/presets.js",
+      "sha256": "10123442bafdedbb"
     },
     {
       "id": "components",
       "file": "src/lib/components.js",
-      "sha256": "98fc8c4a69782ffd"
+      "sha256": "ce227f93c4674434"
+    },
+    {
+      "id": "locale-strings",
+      "file": "src/lib/locale-strings.js",
+      "sha256": "7e9300822cc14f44"
+    },
+    {
+      "id": "assemblies",
+      "file": "src/lib/assemblies.js",
+      "sha256": "fda22defa0853a93"
     },
     {
       "id": "starter",
@@ -29,42 +44,44 @@
     {
       "id": "spec",
       "file": "src/lib/spec.js",
-      "sha256": "a286c1bb7631f5a3"
+      "sha256": "f2a0d9afa5c42f7a"
     },
     {
       "id": "plan",
       "file": "src/lib/plan.js",
-      "sha256": "dd181a4a917aa270"
+      "sha256": "bb01b423aaea90eb"
     },
     {
       "id": "figma-exec",
       "file": "src/lib/figma-exec.js",
-      "sha256": "571cf4965701b2dd"
+      "sha256": "b44b10b249e723ce"
     },
     {
       "id": "main",
       "file": "src/main.js",
-      "sha256": "b2ee7a307d1495a3"
+      "sha256": "0f458e8b0d1edb2e"
     }
   ],
-  "bundleSha256": "a6f2d85affd43897",
-  "uiSha256": "247499b21b019842",
+  "bundleSha256": "18ef2107e762e0ff",
+  "uiSha256": "a35758953df492bc",
   "counts": {
     "collections": 4,
     "variables": 46,
     "paintStyles": 29,
     "textStyles": 8,
     "effectStyles": 4,
-    "families": 43,
-    "components": 126,
-    "total": 135
+    "families": 44,
+    "components": 352,
+    "assemblies": 36,
+    "sections": 2,
+    "total": 173
   },
   "planFresh": {
-    "create": 135,
+    "create": 173,
     "update": 0,
     "skip": 0,
     "prune": 0,
-    "total": 135
+    "total": 173
   },
   "starterSupported": [
     "Local variables & variable collections",

@@ -45,6 +45,12 @@
     <button id="verify">Verify</button>
     <button id="rollback" class="danger">Rollback</button>
   </div>
+  <div class="row" style="align-items:center; gap:6px;">
+    <input type="checkbox" id="fallback" style="accent-color: var(--brand);" />
+    <label for="fallback" style="font-size:11px; color: var(--muted); cursor:pointer;">
+      Allow documented font fallback (otherwise Apply <b>fails closed</b> when Estedad/Vazirmatn are not installed)
+    </label>
+  </div>
 
   <div class="card">
     <h2>Plan</h2>
@@ -70,10 +76,11 @@
   const send = (type, extra) => parent.postMessage({ pluginMessage: Object.assign({ type: type }, extra || {}) }, '*')
   const busy = (b) => { for (const id of ['dry','apply','verify','rollback']) $(id).disabled = b }
 
-  $('dry').onclick = () => { busy(true); out.textContent = 'Running dry run…'; send('dry-run') }
+  const fb = () => ({ allowFontFallback: $('fallback').checked })
+  $('dry').onclick = () => { busy(true); out.textContent = 'Running dry run…'; send('dry-run', fb()) }
   $('apply').onclick = () => {
-    if (!confirm('Apply will CREATE or UPDATE native variables, styles and components in this file. Reference frames are never touched. Continue?')) return
-    busy(true); out.textContent = 'Applying… (this can take a minute)'; send('apply')
+    if (!confirm('Apply will CREATE or UPDATE native variables, styles, components and reference assemblies in this file. Original reference frames are never touched. Continue?')) return
+    busy(true); out.textContent = 'Applying… (this can take a few minutes)'; send('apply', fb())
   }
   $('verify').onclick = () => { busy(true); out.textContent = 'Verifying…'; send('verify') }
   $('rollback').onclick = () => {
@@ -85,7 +92,8 @@
     const rows = [
       ['Collections', c.collections], ['Variables', c.variables], ['Paint styles', c.paintStyles],
       ['Text styles', c.textStyles], ['Effect styles', c.effectStyles], ['Component sets', c.families],
-      ['Components (variants)', c.components], ['Total assets', c.total],
+      ['Components (variants)', c.components], ['Reference assemblies', c.assemblies],
+      ['Total assets', c.total],
     ]
     $('counts').innerHTML = rows.map((r) => '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('')
   }
@@ -105,13 +113,29 @@
       return
     }
     if (type === 'dry-run') {
-      out.textContent = payload.text + '\n\n(Dry run only — nothing was written. Manifest present: ' + payload.manifestPresent + ')'
+      let s = payload.text + '\n\n(Dry run only — nothing was written. Manifest present: ' + payload.manifestPresent + ')'
+      if (payload.ambiguities && payload.ambiguities.length) s += '\n❌ OWNERSHIP AMBIGUITY (Apply will fail closed): ' + payload.ambiguities.map((a) => a.assetKey).join(', ')
+      if (payload.fontGate) {
+        s += payload.fontGate.canonicalPresent
+          ? '\n✅ Canonical fonts present.'
+          : '\n⚠ Canonical fonts MISSING: ' + payload.fontGate.missing.map((m) => m.family + ' ' + m.weight).join(', ') + (payload.fontGate.wouldBlockApply ? ' → Apply will FAIL CLOSED (or tick the fallback checkbox).' : ' → fallback explicitly allowed.')
+      }
+      out.textContent = s
       busy(false); return
     }
     if (type === 'apply') {
       const r = payload
+      if (r.blocked) {
+        let s = '⛔ Apply blocked (' + r.blocked + ') — nothing was written.\n'
+        if (r.missingFonts) s += '  missing fonts: ' + r.missingFonts.map((m) => m.family + ' ' + m.weight).join(', ') + '\n  ' + (r.guidance || '')
+        if (r.ambiguities) s += '  duplicate managed markers: ' + r.ambiguities.map((a) => a.assetKey + ' → [' + a.ids.join(', ') + ']').join('; ')
+        out.textContent = s
+        busy(false); return
+      }
       let s = (r.ok ? '✅ Applied' : '⚠ Applied with issues') + '  runId=' + r.runId + '\n'
       s += '  created ' + r.applied.create + ' · updated ' + r.applied.update + ' · skipped ' + r.applied.skip + '\n'
+      if (r.assemblies && r.assemblies.length) s += '  reference assemblies built: ' + r.assemblies.length + '\n'
+      if (r.fontAliases && r.fontAliases.length) s += '  font name-aliases: ' + r.fontAliases.join('; ') + '\n'
       if (r.fontSubstitutions && r.fontSubstitutions.length) s += '  font fallbacks: ' + r.fontSubstitutions.join('; ') + '\n'
       if (r.errors && r.errors.length) s += '  errors:\n   - ' + r.errors.join('\n   - ') + '\n'
       out.textContent = s

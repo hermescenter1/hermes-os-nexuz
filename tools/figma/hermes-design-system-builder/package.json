@@ -10,7 +10,7 @@
     "test": "vitest run",
     "build": "node build.mjs",
     "dry-run": "node build.mjs --dry-run",
-    "verify": "npm run typecheck && npm run test && npm run build"
+    "verify": "npm run typecheck && npm run build && npm run test"
   },
   "engines": {
     "node": ">=18"

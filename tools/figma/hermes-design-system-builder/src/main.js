@@ -35,12 +35,12 @@ figma.ui.onmessage = async (msg) => {
         break
       }
       case 'dry-run': {
-        const res = await exec.run({ dryRun: true })
+        const res = await exec.run({ dryRun: true, allowFontFallback: !!m.allowFontFallback })
         post('dry-run', Object.assign({}, res, { text: renderPlanText(res.plan) }))
         break
       }
       case 'apply': {
-        const res = await exec.run({ dryRun: false })
+        const res = await exec.run({ dryRun: false, allowFontFallback: !!m.allowFontFallback })
         post('apply', res)
         break
       }

@@ -1,25 +1,30 @@
 // @ts-check
 'use strict'
 /**
- * Figma executor — the ONLY part that touches the `figma` global. Runs inside
- * Figma Desktop. Implements Dry Run, Apply, Verify and Rollback on top of the
- * pure spec/plan.
+ * Figma executor — the ONLY module that touches the `figma` global. Implements
+ * Dry Run, Apply, Verify and Rollback for the FINAL production-fidelity
+ * revision: full component anatomy/states/properties, native reference
+ * assemblies, fail-closed safety gates.
  *
  * Safety invariants:
- *  - Every asset it creates is tagged in the `hermesDSB` shared-plugin-data
- *    namespace with a stable assetKey + content hash + runId.
- *  - Idempotency + rollback key off those markers (a LIVE scan of the file is
- *    the source of truth), so a rerun never duplicates and rollback removes
- *    ONLY plugin-created assets — the 34 reference frames (unmarked) are never
- *    read for mutation and never deleted.
- *  - Components are isolated inside one managed Section, away from (0,0).
+ *  - Every created asset is tagged in the `hermesDSB` shared-plugin-data
+ *    namespace (assetKey + kind + content hash + FIRST-creation runId).
+ *  - Idempotency + rollback key off a LIVE marker scan; a rerun never
+ *    duplicates; rollback removes ONLY plugin-created assets; the 34 unmanaged
+ *    reference frames are never read-for-mutation and never deleted.
+ *  - FAIL CLOSED before any mutation on (a) ambiguous ownership (duplicate
+ *    assetKey markers) and (b) missing canonical fonts without an explicit,
+ *    documented owner opt-in to fallback.
+ *  - Interrupted Apply recovery = RERUN: per-asset hashes converge (documented
+ *    transactional limitation: no snapshot restore of pre-update content).
  */
 
 const C = require('./constants')
 const { buildSpec } = require('./spec')
-const { computePlan } = require('./plan')
-const { parseColor, FONTS } = require('./tokens')
+const { computePlan, detectAmbiguity } = require('./plan')
+const { parseColor, FONTS, WEIGHT_ALIASES, assessFontAvailability } = require('./tokens')
 const { TONE_TOKEN } = require('./components')
+const { PRESETS, STATE_PRESETS } = require('./presets')
 
 const NS = C.NAMESPACE
 const K = C.KEYS
@@ -28,9 +33,8 @@ const K = C.KEYS
 /**
  * Tag an asset as managed. RUN_ID records the run that FIRST created the asset
  * and is preserved across reruns/updates, so a runId-filtered rollback removes
- * exactly the assets that run created (not ones a later run merely re-touched).
- * @param {any} obj node/style/variable/collection
- * @param {{assetKey:string, kind:string, hash:string, runId:string}} t
+ * exactly the assets that run created.
+ * @param {any} obj @param {{assetKey:string, kind:string, hash:string, runId:string}} t
  */
 function tag(obj, t) {
   obj.setSharedPluginData(NS, K.MANAGED, '1')
@@ -41,11 +45,11 @@ function tag(obj, t) {
   obj.setSharedPluginData(NS, K.RUN_ID, priorRun && priorRun.length ? priorRun : t.runId)
   obj.setSharedPluginData(NS, K.PLUGIN_VERSION, C.PLUGIN_VERSION)
 }
-/** @param {any} obj @returns {boolean} */
+/** @param {any} obj */
 function isManaged(obj) {
   try { return obj.getSharedPluginData(NS, K.MANAGED) === '1' } catch (_e) { return false }
 }
-/** @param {any} obj @returns {{assetKey:string, kind:string, hash:string, runId:string}} */
+/** @param {any} obj */
 function readTag(obj) {
   return {
     assetKey: obj.getSharedPluginData(NS, K.ASSET_KEY),
@@ -55,24 +59,15 @@ function readTag(obj) {
   }
 }
 
-// ── run id (deterministic identity does NOT depend on this) ────────────────
 let _runSeq = 0
-/** @returns {string} */
 function newRunId() {
   _runSeq += 1
-  // Date is available in a real plugin (unlike use_figma). Only used for grouping.
   return 'run-' + Date.now().toString(36) + '-' + _runSeq
 }
 
-// ── LIVE index: scan the file for our markers (source of truth) ────────────
-/**
- * @returns {Promise<{ index: Record<string, {id:string, hash:string, kind:string}>,
- *   styles: {paint: Record<string,any>, text: Record<string,any>, effect: Record<string,any>},
- *   variables: Record<string, any>, collections: Record<string, any>,
- *   section: any|null, componentSets: Record<string, any> }>}
- */
+// ── LIVE index (source of truth) + ambiguity observations ──────────────────
 async function buildLiveIndex() {
-  /** @type {Record<string, {id:string, hash:string, kind:string}>} */
+  /** @type {Record<string, {id:string, hash:string, kind:string, runId:string}>} */
   const index = {}
   const paint = {}
   const text = {}
@@ -80,94 +75,98 @@ async function buildLiveIndex() {
   const variables = {}
   const collections = {}
   const componentSets = {}
+  const assemblies = {}
+  /** @type {{assetKey:string, id:string, kind:string}[]} */
+  const observations = []
   let section = null
+  let section2 = null
 
-  const cols = await figma.variables.getLocalVariableCollectionsAsync()
-  for (const c of cols) if (isManaged(c)) { const t = readTag(c); index[t.assetKey] = { id: c.id, hash: t.hash, kind: t.kind }; collections[t.assetKey] = c }
-
-  const vars = await figma.variables.getLocalVariablesAsync()
-  for (const v of vars) if (isManaged(v)) { const t = readTag(v); index[t.assetKey] = { id: v.id, hash: t.hash, kind: t.kind }; variables[t.assetKey] = v }
-
-  for (const ps of await figma.getLocalPaintStylesAsync()) if (isManaged(ps)) { const t = readTag(ps); index[t.assetKey] = { id: ps.id, hash: t.hash, kind: t.kind }; paint[t.assetKey] = ps }
-  for (const ts of await figma.getLocalTextStylesAsync()) if (isManaged(ts)) { const t = readTag(ts); index[t.assetKey] = { id: ts.id, hash: t.hash, kind: t.kind }; text[t.assetKey] = ts }
-  for (const es of await figma.getLocalEffectStylesAsync()) if (isManaged(es)) { const t = readTag(es); index[t.assetKey] = { id: es.id, hash: t.hash, kind: t.kind }; effect[t.assetKey] = es }
-
-  // The manifest node and any unkeyed managed node are intentionally NOT indexed
-  // (they are bookkeeping, not plannable assets — otherwise they'd be flagged as
-  // perpetual prune candidates and break the all-SKIP-on-rerun invariant).
-  /** @param {any} node */
-  const indexManaged = (node) => {
-    const t = readTag(node)
+  /** @param {any} obj @param {Record<string, any>|null} bucket */
+  const note = (obj, bucket) => {
+    const t = readTag(obj)
     if (t.kind === C.KIND.MANIFEST || !t.assetKey) return
-    index[t.assetKey] = { id: node.id, hash: t.hash, kind: t.kind }
-    if (t.kind === C.KIND.COMPONENT_SET) componentSets[t.assetKey] = node
-    if (t.kind === C.KIND.SECTION) section = node
+    observations.push({ assetKey: t.assetKey, id: obj.id, kind: t.kind })
+    index[t.assetKey] = { id: obj.id, hash: t.hash, kind: t.kind, runId: t.runId }
+    if (bucket) bucket[t.assetKey] = obj
   }
+
+  for (const c of await figma.variables.getLocalVariableCollectionsAsync()) if (isManaged(c)) note(c, collections)
+  for (const v of await figma.variables.getLocalVariablesAsync()) if (isManaged(v)) note(v, variables)
+  for (const ps of await figma.getLocalPaintStylesAsync()) if (isManaged(ps)) note(ps, paint)
+  for (const ts of await figma.getLocalTextStylesAsync()) if (isManaged(ts)) note(ts, text)
+  for (const es of await figma.getLocalEffectStylesAsync()) if (isManaged(es)) note(es, effect)
+
   for (const child of figma.currentPage.children) {
-    if (isManaged(child)) indexManaged(child)
+    if (isManaged(child)) {
+      const t = readTag(child)
+      if (t.kind === C.KIND.SECTION) {
+        observations.push({ assetKey: t.assetKey, id: child.id, kind: t.kind })
+        index[t.assetKey] = { id: child.id, hash: t.hash, kind: t.kind, runId: t.runId }
+        if (t.assetKey === 'section:assemblies') section2 = child
+        else section = child
+      } else {
+        note(child, t.kind === C.KIND.COMPONENT_SET ? componentSets : t.kind === C.KIND.ASSEMBLY ? assemblies : null)
+      }
+    }
     if (child.type === 'SECTION') {
-      if (isManaged(child) && readTag(child).kind === C.KIND.SECTION) section = child
       for (const sub of /** @type {any} */ (child).children || []) {
-        if (isManaged(sub)) indexManaged(sub)
+        if (!isManaged(sub)) continue
+        const t = readTag(sub)
+        note(sub, t.kind === C.KIND.COMPONENT_SET ? componentSets : t.kind === C.KIND.ASSEMBLY ? assemblies : null)
       }
     }
   }
-  return { index, styles: { paint, text, effect }, variables, collections, section, componentSets }
+  return { index, observations, styles: { paint, text, effect }, variables, collections, componentSets, assemblies, section, section2 }
 }
 
-// ── font resolution with transparent fallback ──────────────────────────────
-/**
- * Loads every font the type ramp needs, falling back to Inter when the product
- * font is not installed, and records each substitution honestly.
- * @param {ReadonlyArray<any>} textStyleSpecs
- * @returns {Promise<{ resolve: (role:string, weight:string) => {family:string, style:string}, substitutions: string[] }>}
- */
+// ── font resolution (aliases → downgrade → fallback; gate is separate) ─────
 async function resolveFonts(textStyleSpecs) {
   const available = await figma.listAvailableFontsAsync()
   const has = new Set(available.map((f) => f.fontName.family + ' ' + f.fontName.style))
-  /** @type {string[]} */
   const substitutions = []
+  const aliases = []
   /** @type {Record<string, {family:string, style:string}>} */
   const cache = {}
 
-  /** @param {string} family @param {string} style */
-  const tryLoad = async (family, style) => {
-    if (!has.has(family + ' ' + style)) return false
-    try { await figma.loadFontAsync({ family, style }); return true } catch (_e) { return false }
+  /** @param {string} family @param {string} weight */
+  const tryLoad = async (family, weight) => {
+    for (const style of WEIGHT_ALIASES[weight] || [weight]) {
+      if (!has.has(family + ' ' + style)) continue
+      try { await figma.loadFontAsync({ family, style }); return style } catch (_e) { /* next alias */ }
+    }
+    return null
   }
 
   for (const t of textStyleSpecs) {
-    const role = t.font // 'display' | 'body' | 'mono'
-    const desired = FONTS[role]
-    const key = role + '|' + t.weight
+    const desired = FONTS[t.font]
+    const key = t.font + '|' + t.weight
     if (cache[key]) continue
-    let family = desired.family
-    let style = t.weight
-    let ok = await tryLoad(family, style)
-    if (!ok && t.weight !== 'Regular' && (await tryLoad(family, 'Regular'))) {
-      // Weight downgrade within the same family — record it honestly too.
-      substitutions.push(family + ' ' + t.weight + ' → ' + family + ' Regular')
-      style = 'Regular'
-      ok = true
+    let style = await tryLoad(desired.family, t.weight)
+    if (style) {
+      if (style !== t.weight) aliases.push(desired.family + ' ' + t.weight + ' ≈ ' + desired.family + ' ' + style)
+      cache[key] = { family: desired.family, style }
+      continue
     }
-    if (!ok) {
-      // Fall back to Inter with the closest available weight.
-      const fb = desired.fallback
-      const fbStyle = ['Bold', 'Semi Bold', 'Medium', 'Regular'].find((w) => has.has(fb + ' ' + w)) || 'Regular'
-      await figma.loadFontAsync({ family: fb, style: fbStyle })
-      substitutions.push(family + ' ' + t.weight + ' → ' + fb + ' ' + fbStyle)
-      family = fb; style = fbStyle
+    if (t.weight !== 'Regular') {
+      const reg = await tryLoad(desired.family, 'Regular')
+      if (reg) { substitutions.push(desired.family + ' ' + t.weight + ' → ' + desired.family + ' ' + reg); cache[key] = { family: desired.family, style: reg }; continue }
     }
-    cache[key] = { family, style }
+    const fb = desired.fallback
+    let fbStyle = (await tryLoad(fb, t.weight)) || (await tryLoad(fb, 'Regular'))
+    if (!fbStyle) { fbStyle = 'Regular'; try { await figma.loadFontAsync({ family: fb, style: 'Regular' }) } catch (_e) { /* Inter preloaded */ } }
+    substitutions.push(desired.family + ' ' + t.weight + ' → ' + fb + ' ' + fbStyle)
+    cache[key] = { family: fb, style: fbStyle }
   }
   return {
     resolve: (role, weight) => cache[role + '|' + weight] || cache[role + '|Regular'] || { family: 'Inter', style: 'Regular' },
     substitutions,
+    aliases,
+    availableSet: has,
   }
 }
 
-// ── small paint helpers ────────────────────────────────────────────────────
-/** @param {string} value @returns {any} solid paint */
+// ── paint helper ───────────────────────────────────────────────────────────
+/** @param {string} value */
 function solidPaint(value) {
   const c = parseColor(value)
   const p = { type: 'SOLID', color: { r: c.r, g: c.g, b: c.b } }
@@ -175,43 +174,22 @@ function solidPaint(value) {
   return p
 }
 
-// ── creators (idempotent: reuse live object when present) ──────────────────
-/**
- * @param {any} specEntry
- * @param {any} live
- * @param {{assetKey:string, hash:string, runId:string}} meta
- * @returns {any} collection
- */
+// ── foundation upserts (unchanged semantics from rev1) ─────────────────────
 function upsertCollection(specEntry, live, meta) {
   let col = live.collections[specEntry.key]
-  if (!col) {
-    col = figma.variables.createVariableCollection(specEntry.name)
-    live.collections[specEntry.key] = col
-  } else if (col.name !== specEntry.name) {
-    col.name = specEntry.name
-  }
-  try { if (col.modes[0] && col.modes[0].name !== specEntry.modeName) col.renameMode(col.defaultModeId, specEntry.modeName) } catch (_e) { /* mode rename best-effort */ }
+  if (!col) { col = figma.variables.createVariableCollection(specEntry.name); live.collections[specEntry.key] = col }
+  else if (col.name !== specEntry.name) col.name = specEntry.name
+  try { if (col.modes[0] && col.modes[0].name !== specEntry.modeName) col.renameMode(col.defaultModeId, specEntry.modeName) } catch (_e) { /* best-effort */ }
   tag(col, { assetKey: specEntry.key, kind: C.KIND.COLLECTION, hash: specEntry.hash, runId: meta.runId })
   return col
 }
-
-/**
- * @param {any} v spec variable
- * @param {any} live
- * @param {string} runId
- * @returns {any} variable
- */
 function upsertVariable(v, live, runId) {
   const col = live.collections[v.collectionKey]
   if (!col) throw new Error('collection missing for ' + v.key)
   let variable = live.variables[v.key]
-  if (!variable) {
-    variable = figma.variables.createVariable(v.name, col, v.resolvedType)
-    live.variables[v.key] = variable
-  } else if (variable.name !== v.name) {
-    variable.name = v.name
-  }
-  try { variable.scopes = v.scopes } catch (_e) { /* invalid scope ignored */ }
+  if (!variable) { variable = figma.variables.createVariable(v.name, col, v.resolvedType); live.variables[v.key] = variable }
+  else if (variable.name !== v.name) variable.name = v.name
+  try { variable.scopes = v.scopes } catch (_e) { /* ignore */ }
   variable.description = v.description
   const modeId = col.defaultModeId
   if (v.resolvedType === 'COLOR') variable.setValueForMode(modeId, parseColor(v.value))
@@ -219,34 +197,18 @@ function upsertVariable(v, live, runId) {
   tag(variable, { assetKey: v.key, kind: C.KIND.VARIABLE, hash: v.hash, runId })
   return variable
 }
-
-/**
- * @param {any} p spec paintStyle
- * @param {any} live
- * @param {string} runId
- * @returns {any} paint style
- */
 function upsertPaintStyle(p, live, runId) {
   let ps = live.styles.paint[p.key]
   if (!ps) { ps = figma.createPaintStyle(); live.styles.paint[p.key] = ps }
   ps.name = p.name
   ps.description = p.description
-  let paint = solidPaint(p.value)
+  let paint = /** @type {any} */ (solidPaint(p.value))
   const variable = live.variables[p.variableKey]
-  if (variable) {
-    try { paint = figma.variables.setBoundVariableForPaint(paint, 'color', variable) } catch (_e) { /* keep raw */ }
-  }
+  if (variable) { try { paint = figma.variables.setBoundVariableForPaint(paint, 'color', variable) } catch (_e) { /* raw */ } }
   ps.paints = [paint]
   tag(ps, { assetKey: p.key, kind: C.KIND.PAINT_STYLE, hash: p.hash, runId })
   return ps
 }
-
-/**
- * @param {any} t spec textStyle
- * @param {any} live
- * @param {{resolve:Function}} fonts
- * @param {string} runId
- */
 function upsertTextStyle(t, live, fonts, runId) {
   let ts = live.styles.text[t.key]
   if (!ts) { ts = figma.createTextStyle(); live.styles.text[t.key] = ts }
@@ -259,221 +221,591 @@ function upsertTextStyle(t, live, fonts, runId) {
   tag(ts, { assetKey: t.key, kind: C.KIND.TEXT_STYLE, hash: t.hash, runId })
   return ts
 }
-
-/**
- * @param {any} e spec effectStyle
- * @param {any} live
- * @param {string} runId
- */
 function upsertEffectStyle(e, live, runId) {
   let es = live.styles.effect[e.key]
   if (!es) { es = figma.createEffectStyle(); live.styles.effect[e.key] = es }
   es.name = e.name
   es.description = e.description
-  es.effects = [{
-    type: 'DROP_SHADOW',
-    color: { r: e.color[0], g: e.color[1], b: e.color[2], a: e.color[3] },
-    offset: { x: e.offset.x, y: e.offset.y },
-    radius: e.radius,
-    spread: e.spread,
-    visible: true,
-    blendMode: 'NORMAL',
-  }]
+  es.effects = [{ type: 'DROP_SHADOW', color: { r: e.color[0], g: e.color[1], b: e.color[2], a: e.color[3] }, offset: { x: e.offset.x, y: e.offset.y }, radius: e.radius, spread: e.spread, visible: true, blendMode: 'NORMAL' }]
   tag(es, { assetKey: e.key, kind: C.KIND.EFFECT_STYLE, hash: e.hash, runId })
   return es
 }
 
-// ── section + component family builder ─────────────────────────────────────
-/**
- * @param {any} sectionSpec
- * @param {any} live
- * @param {string} runId
- */
-function ensureSection(sectionSpec, live, runId) {
-  let section = live.section
+// ── sections ───────────────────────────────────────────────────────────────
+/** @param {any} sectionSpec @param {any} live @param {'section'|'section2'} slot @param {string} runId @param {{x:number,y:number,w:number,h:number}} box */
+function ensureSectionSlot(sectionSpec, live, slot, runId, box) {
+  let section = live[slot]
   if (!section) {
     const sec = /** @type {any} */ (figma.createSection())
-    // Position to the right of everything already on the page (never over (0,0)).
     let maxX = 0
     for (const ch of figma.currentPage.children) maxX = Math.max(maxX, ch.x + ch.width)
-    sec.x = maxX + 400
-    sec.y = 0
-    try { sec.resizeWithoutConstraints(2400, 1600) } catch (_e) { try { sec.resize(2400, 1600) } catch (_e2) { /* ignore */ } }
+    sec.x = box.x ?? maxX + 400
+    sec.y = box.y
+    try { sec.resizeWithoutConstraints(box.w, box.h) } catch (_e) { try { sec.resize(box.w, box.h) } catch (_e2) { /* ignore */ } }
     section = sec
-    live.section = sec
+    live[slot] = sec
   }
   section.name = sectionSpec.name
   tag(section, { assetKey: sectionSpec.key, kind: C.KIND.SECTION, hash: sectionSpec.hash, runId })
   return section
 }
 
+// ── blueprint renderer ─────────────────────────────────────────────────────
 /**
- * Build (or rebuild) one component SET for a family: a variant component per
- * value, auto-layout, token-bound fills via paint styles, an applied text style
- * label, then combineAsVariants + component properties.
- * @param {any} fam spec family
- * @param {any} live
- * @param {any} ctx { section, paintByToken, textStyleByName, effectByName, fonts, runId }
- * @returns {Promise<{ set:any, fidelity:string }>}
+ * Render a NodeSpec tree into Figma nodes. Returns { node, roles } where roles
+ * maps role → created node (for overrides + property bindings).
+ * @param {any} spec @param {any} ctx { fonts, paintByToken, iconDefault }
  */
-async function upsertFamily(fam, live, ctx) {
-  // Remove a stale managed set with the same key so rebuild stays idempotent.
-  const existing = live.componentSets[fam.key]
-  if (existing) { try { existing.remove() } catch (_e) { /* ignore */ } delete live.componentSets[fam.key] }
+async function renderNode(spec, ctx) {
+  /** @type {Record<string, any>} */
+  const roles = {}
 
-  const surfaceStyle = ctx.paintByToken['Color/Surface/Primary']
-  const borderStyle = ctx.paintByToken['Color/Border/Default']
-  const titleStyle = ctx.textStyleByName['Title/S'] || null
+  /** @param {any} s @param {any|null} parent */
+  const build = async (s, parent) => {
+    let node
+    if (s.type === 'text') {
+      node = figma.createText()
+      node.fontName = ctx.fonts.resolve('body', 'Regular')
+      node.characters = s.text || ''
+    } else if (s.type === 'ellipse') {
+      node = figma.createEllipse()
+      node.resize(s.w || 10, s.h || 10)
+    } else if (s.type === 'rect') {
+      node = figma.createRectangle()
+      node.resize(s.w || 10, s.h || 10)
+      if (s.radius != null) node.cornerRadius = s.radius
+      if (s.rotation) { try { node.rotation = s.rotation } catch (_e) { /* ignore */ } }
+    } else if (s.type === 'iconSlot') {
+      if (ctx.iconDefault) {
+        try { node = ctx.iconDefault.createInstance() } catch (_e) { node = null }
+      }
+      if (!node) { node = figma.createEllipse(); node.resize(s.w || 16, s.h || 16) }
+    } else {
+      node = figma.createFrame()
+      node.layoutMode = s.row ? 'HORIZONTAL' : 'VERTICAL'
+      node.primaryAxisSizingMode = 'AUTO'
+      node.counterAxisSizingMode = 'AUTO'
+      node.itemSpacing = s.gap ?? 0
+      node.paddingLeft = node.paddingRight = s.padX ?? 0
+      node.paddingTop = node.paddingBottom = s.padY ?? 0
+      if (s.center) node.counterAxisAlignItems = 'CENTER'
+      if (s.radius != null) node.cornerRadius = s.radius
+      node.fills = []
+    }
+    node.name = s.role
+    if (parent) parent.appendChild(node)
 
-  /** @param {any} node @param {string} method @param {string} id */
-  const applyStyle = async (node, method, id) => { try { await node[method](id) } catch (_e) { /* style apply best-effort */ } }
+    // paints via bound styles (fall back to raw token value)
+    const styleFor = (tok) => (tok ? ctx.paintByToken[tok] : null)
+    if (s.fill !== undefined && s.type !== 'iconSlot') {
+      if (s.fill === null) node.fills = []
+      else {
+        const st = styleFor(s.fill)
+        if (st) { try { await node.setFillStyleIdAsync(st.id) } catch (_e) { /* ignore */ } }
+      }
+    }
+    if (s.stroke !== undefined && s.stroke !== null) {
+      const st = styleFor(s.stroke)
+      node.strokes = [solidPaint('#203743')]
+      node.strokeWeight = s.strokeW ?? 1
+      if (st) { try { await node.setStrokeStyleIdAsync(st.id) } catch (_e) { /* ignore */ } }
+    }
+    if (s.type === 'text') {
+      const ramp = ctx.textStyleByName[s.textStyle]
+      if (ramp) { try { await node.setTextStyleIdAsync(ramp.id) } catch (_e) { /* ignore */ } }
+      const tf = styleFor(s.textFill)
+      if (tf) { try { await node.setFillStyleIdAsync(tf.id) } catch (_e) { /* ignore */ } }
+      if (s.maxW) { node.textAutoResize = 'HEIGHT'; node.resize(s.maxW, node.height) }
+    }
+    if (s.hidden) node.visible = false
 
-  /** @type {any[]} */
-  const variantComponents = []
-  for (const value of fam.variants) {
-    const comp = figma.createComponent()
-    comp.name = fam.variantProp + '=' + value
-    comp.layoutMode = 'VERTICAL'
-    comp.primaryAxisSizingMode = 'AUTO'
-    comp.counterAxisSizingMode = 'AUTO'
-    comp.itemSpacing = 8
-    comp.paddingLeft = 16; comp.paddingRight = 16; comp.paddingTop = 12; comp.paddingBottom = 12
-    comp.cornerRadius = 8
-    comp.strokes = [solidPaint('#203743')]
-    comp.strokeWeight = 1
-    ctx.section.appendChild(comp)
-    if (surfaceStyle) await applyStyle(comp, 'setFillStyleIdAsync', surfaceStyle.id)
-    if (borderStyle) await applyStyle(comp, 'setStrokeStyleIdAsync', borderStyle.id)
+    for (const c of s.children || []) await build(c, node)
 
-    // Family title
-    const title = figma.createText()
-    title.fontName = ctx.fonts.resolve('body', 'Semi Bold')
-    title.characters = fam.name
-    comp.appendChild(title)
-    if (titleStyle) await applyStyle(title, 'setTextStyleIdAsync', titleStyle.id)
-    const primaryText = ctx.paintByToken['Color/Text/Primary']
-    if (primaryText) await applyStyle(title, 'setFillStyleIdAsync', primaryText.id)
+    // sizing AFTER children/parenting (FILL requires an auto-layout parent)
+    if (parent && s.grow === 'fill') { try { node.layoutSizingHorizontal = 'FILL' } catch (_e) { /* ignore */ } }
+    if (s.minH != null) { try { node.minHeight = s.minH } catch (_e) { /* ignore */ } }
+    if (s.minW != null) { try { node.minWidth = s.minW } catch (_e) { /* ignore */ } }
+    if (s.type === 'frame' && (s.w != null || s.h != null)) {
+      // explicit dimensions on a frame: pin the sized axis to FIXED, then resize both.
+      try {
+        if (s.w != null) { if (s.row) node.primaryAxisSizingMode = 'FIXED'; else node.counterAxisSizingMode = 'FIXED' }
+        if (s.h != null) { if (s.row) node.counterAxisSizingMode = 'FIXED'; else node.primaryAxisSizingMode = 'FIXED' }
+        node.resize(s.w != null ? s.w : node.width, s.h != null ? s.h : node.height)
+      } catch (_e) { /* ignore */ }
+    }
 
-    // Variant value chip, tone-coloured when the value maps to a semantic token
-    const chip = figma.createText()
-    chip.fontName = ctx.fonts.resolve('body', 'Medium')
-    chip.characters = fam.variantProp + ': ' + value
-    comp.appendChild(chip)
-    const toneToken = TONE_TOKEN[value]
-    const toneStyle = toneToken ? ctx.paintByToken[toneToken] : ctx.paintByToken['Color/Text/Secondary']
-    if (toneStyle) await applyStyle(chip, 'setFillStyleIdAsync', toneStyle.id)
-
-    variantComponents.push(comp)
+    roles[s.role] = node
+    return node
   }
 
-  // Combine into a variant set inside the section
+  const node = await build(spec, null)
+  return { node, roles }
+}
+
+/**
+ * Apply one override list ({role, set:{...}}) to rendered roles.
+ * @param {Record<string, any>} roles @param {any[]} overrides @param {any} ctx
+ */
+async function applyOverrides(roles, overrides, ctx) {
+  for (const o of overrides || []) {
+    const node = o.role === 'root' ? roles.root : roles[o.role]
+    if (!node) continue
+    const s = o.set || {}
+    const styleFor = (tok) => (tok ? ctx.paintByToken[tok] : null)
+    if (s.fill !== undefined) {
+      if (s.fill === null) node.fills = []
+      else { const st = styleFor(s.fill); if (st) { try { await node.setFillStyleIdAsync(st.id) } catch (_e) { /* ignore */ } } }
+    }
+    if (s.stroke !== undefined) {
+      if (s.stroke === null) { node.strokes = [] } else {
+        const st = styleFor(s.stroke)
+        if (!node.strokes || !node.strokes.length) node.strokes = [solidPaint('#203743')]
+        if (st) { try { await node.setStrokeStyleIdAsync(st.id) } catch (_e) { /* ignore */ } }
+      }
+    }
+    if (s.strokeW != null) node.strokeWeight = s.strokeW
+    if (s.textFill) { const st = styleFor(s.textFill); if (st && node.type === 'TEXT') { try { await node.setFillStyleIdAsync(st.id) } catch (_e) { /* ignore */ } } }
+    if (s.opacity != null) node.opacity = s.opacity
+    if (s.hidden !== undefined) node.visible = !s.hidden
+    if (s.text !== undefined && node.type === 'TEXT') { try { node.characters = s.text } catch (_e) { /* ignore */ } }
+    if (s.w != null) { try { node.resize(s.w, node.height) } catch (_e) { /* ignore */ } }
+    if (s.minW != null) { try { node.minWidth = s.minW } catch (_e) { /* ignore */ } }
+  }
+}
+
+/** Mirror a rendered tree for RTL: reverse every horizontal frame's children + right-align text. @param {any} node */
+function mirrorRtl(node) {
+  if (node.type === 'FRAME' || node.type === 'COMPONENT') {
+    if (node.layoutMode === 'HORIZONTAL') {
+      const kids = [...node.children]
+      for (let i = kids.length - 1; i >= 0; i--) node.appendChild(kids[i])
+    }
+  }
+  if (node.type === 'TEXT') { try { node.textAlignHorizontal = 'RIGHT' } catch (_e) { /* ignore */ } }
+  for (const c of node.children || []) mirrorRtl(c)
+}
+
+/** presetOpts derived from a variant combo (size/shape/mark/density/collapse axes). @param {any} fam @param {Record<string,string>} combo */
+function presetOptsFor(fam, combo) {
+  const o = { ...(fam.presetOpts || {}) }
+  if (fam.sizeAxis && combo.Size) o.size = combo.Size
+  if (fam.shapeAxis && combo.Shape) o.shape = combo.Shape
+  if (fam.markAxis && combo.Mark) o.mark = combo.Mark
+  if (fam.densityAxis && combo.Density) o.compact = combo.Density === 'Compact'
+  if (fam.collapseAxis && combo.State) o.collapsed = combo.State === 'Collapsed'
+  return o
+}
+
+/** Default tone override for an axis value (StateDot/dot accents). @param {string} value */
+function toneOverridesFor(value) {
+  const tok = TONE_TOKEN[value]
+  if (!tok) return []
+  return [{ role: 'StateDot', set: { fill: tok } }, { role: 'RowDot1', set: { fill: tok } }]
+}
+
+// ── family builder (FINAL fidelity) ────────────────────────────────────────
+const { variantCombos } = require('./components')
+
+/**
+ * @param {any} fam spec family (blueprint contract)
+ * @param {any} live
+ * @param {any} ctx { section, paintByToken, textStyleByName, effectByName, fonts, runId, iconDefault }
+ */
+async function upsertFamily(fam, live, ctx) {
+  // Preserve ORIGIN run across rebuilds (rollback isolation across revisions).
+  const existing = live.componentSets[fam.key]
+  let originRunId = ctx.runId
+  if (existing) {
+    try { const prior = existing.getSharedPluginData(NS, K.RUN_ID); if (prior && prior.length) originRunId = prior } catch (_e) { /* ignore */ }
+    try { existing.remove() } catch (_e) { /* ignore */ }
+    delete live.componentSets[fam.key]
+  }
+
+  const combos = variantCombos(fam)
+  /** @type {any[]} */
+  const variantComponents = []
+  /** @type {{comp:any, roles:Record<string,any>, combo:Record<string,string>}[]} */
+  const rendered = []
+
+  for (const combo of combos) {
+    const spec = PRESETS[fam.preset](presetOptsFor(fam, combo))
+    const comp = figma.createComponent()
+    comp.name = Object.keys(combo).map((k) => k + '=' + combo[k]).join(', ')
+    comp.layoutMode = spec.row ? 'HORIZONTAL' : 'VERTICAL'
+    comp.primaryAxisSizingMode = 'AUTO'
+    comp.counterAxisSizingMode = 'AUTO'
+    comp.itemSpacing = spec.gap ?? 0
+    comp.paddingLeft = comp.paddingRight = spec.padX ?? 0
+    comp.paddingTop = comp.paddingBottom = spec.padY ?? 0
+    if (spec.center) comp.counterAxisAlignItems = 'CENTER'
+    if (spec.radius != null) comp.cornerRadius = spec.radius
+    comp.fills = []
+    ctx.section.appendChild(comp)
+
+    // root paints
+    const roles = { root: comp }
+    const styleFor = (tok) => (tok ? ctx.paintByToken[tok] : null)
+    if (spec.fill) { const st = styleFor(spec.fill); if (st) { try { await comp.setFillStyleIdAsync(st.id) } catch (_e) { /* ignore */ } } }
+    if (spec.stroke) {
+      comp.strokes = [solidPaint('#203743')]
+      comp.strokeWeight = spec.strokeW ?? 1
+      const st = styleFor(spec.stroke)
+      if (st) { try { await comp.setStrokeStyleIdAsync(st.id) } catch (_e) { /* ignore */ } }
+    }
+    if (spec.minH != null) { try { comp.minHeight = spec.minH } catch (_e) { /* ignore */ } }
+    if (spec.minW != null) { try { comp.minWidth = spec.minW } catch (_e) { /* ignore */ } }
+
+    for (const child of spec.children || []) {
+      const r = await renderNode(child, ctx)
+      comp.appendChild(r.node)
+      Object.assign(roles, r.roles)
+      if (child.grow === 'fill') { try { r.node.layoutSizingHorizontal = 'FILL' } catch (_e) { /* ignore */ } }
+    }
+    if (fam.hideLabel && roles.Label) { try { roles.Label.visible = false } catch (_e) { /* ignore */ } }
+
+    // per-axis overrides: family valueOverrides > STATE presets > tone defaults
+    for (const axisProp of Object.keys(combo)) {
+      const value = combo[axisProp]
+      if (axisProp === 'Direction') continue
+      const famOv = fam.valueOverrides && fam.valueOverrides[axisProp] && fam.valueOverrides[axisProp][value]
+      if (famOv) await applyOverrides(roles, famOv, ctx)
+      else if (axisProp === 'State') await applyOverrides(roles, STATE_PRESETS[value] || [], ctx)
+      else await applyOverrides(roles, toneOverridesFor(value), ctx)
+      // State presets ALSO apply under family override presence for base semantics
+      if (famOv && axisProp === 'State' && STATE_PRESETS[value] && STATE_PRESETS[value].length) {
+        await applyOverrides(roles, STATE_PRESETS[value].filter((o2) => !famOv.some((f2) => f2.role === o2.role)), ctx)
+      }
+    }
+    // Card-style elevation axis binds the matching effect style
+    if (fam.elevationAxis && combo.Elevation && ctx.effectByName['Elevation/' + combo.Elevation]) {
+      try { await comp.setEffectStyleIdAsync(ctx.effectByName['Elevation/' + combo.Elevation].id) } catch (_e) { /* ignore */ }
+    }
+    if (fam.elevation && ctx.effectByName[fam.elevation]) {
+      try { await comp.setEffectStyleIdAsync(ctx.effectByName[fam.elevation].id) } catch (_e) { /* ignore */ }
+    }
+    if (combo.Direction === 'RTL') mirrorRtl(comp)
+
+    variantComponents.push(comp)
+    rendered.push({ comp, roles, combo })
+  }
+
+  // Combine into a set (single-combo families keep the lone component)
   let set
-  try {
-    set = figma.combineAsVariants(variantComponents, ctx.section)
-  } catch (_e) {
-    // Fallback: keep the first component as the asset and remove the rest so no
-    // untagged orphan components are left behind (they would escape rollback).
-    for (let i = 1; i < variantComponents.length; i++) { try { variantComponents[i].remove() } catch (_e2) { /* ignore */ } }
+  if (variantComponents.length > 1) {
+    try {
+      set = figma.combineAsVariants(variantComponents, ctx.section)
+    } catch (_e) {
+      for (let i = 1; i < variantComponents.length; i++) { try { variantComponents[i].remove() } catch (_e2) { /* ignore */ } }
+      set = variantComponents[0]
+    }
+  } else {
     set = variantComponents[0]
   }
   set.name = fam.name
-  set.description = fam.description + (fam.maps ? '\nMaps to ' + fam.maps : '')
-  // Best-effort NATIVE accessibility annotation (in addition to the description).
-  try { /** @type {any} */ (set).annotations = [{ label: fam.description }] } catch (_e) { /* annotations best-effort */ }
+  set.description = fam.description + (fam.maps ? '\nMaps to ' + fam.maps : '') + '\nA11y: ' + fam.a11y
+  try { /** @type {any} */ (set).annotations = [{ label: fam.a11y }] } catch (_e) { /* best-effort */ }
   try {
     set.layoutMode = 'HORIZONTAL'
-    set.itemSpacing = 16
-    set.paddingLeft = 16; set.paddingRight = 16; set.paddingTop = 16; set.paddingBottom = 16
-  } catch (_e) { /* single component has no set layout */ }
+    set.itemSpacing = 24
+    ;/** @type {any} */ (set).layoutWrap = 'WRAP'
+    set.paddingLeft = set.paddingRight = set.paddingTop = set.paddingBottom = 24
+    ;/** @type {any} */ (set).maxWidth = 1600
+  } catch (_e) { /* lone component */ }
 
-  // Component properties: TEXT props + an RTL boolean (definitions; layer binding is a follow-up)
+  // Component properties bound to layers
+  /** @type {Record<string, string>} propName → full property id */
+  const propIds = {}
   let propsAdded = 0
-  try {
-    for (const tp of fam.text || []) { set.addComponentProperty(tp, 'TEXT', ''); propsAdded++ }
-  } catch (_e) { /* property add best-effort */ }
-  try {
-    for (const bp of fam.bool || []) { set.addComponentProperty(bp, 'BOOLEAN', false); propsAdded++ }
-  } catch (_e) { /* ignore */ }
-  if (fam.rtl) { try { set.addComponentProperty('RTL', 'BOOLEAN', false); propsAdded++ } catch (_e) { /* ignore */ } }
+  const canProps = typeof set.addComponentProperty === 'function'
+  if (canProps) {
+    for (const tp of fam.text || []) {
+      try { propIds[tp.name] = set.addComponentProperty(tp.name, 'TEXT', ''); propsAdded++ } catch (_e) { /* ignore */ }
+    }
+    for (const bp of fam.bools || []) {
+      // default mirrors the base blueprint's layer visibility (a Hint hidden by
+      // default gets default=false), keeping property defaults honest.
+      const baseLayer = rendered[0] && rendered[0].roles[bp.role]
+      const def = baseLayer ? baseLayer.visible !== false : true
+      try { propIds[bp.name] = set.addComponentProperty(bp.name, 'BOOLEAN', def); propsAdded++ } catch (_e) { /* ignore */ }
+    }
+    for (const sp of fam.swaps || []) {
+      if (!ctx.iconDefault) continue
+      try { propIds[sp.name] = set.addComponentProperty(sp.name, 'INSTANCE_SWAP', ctx.iconDefault.id); propsAdded++ } catch (_e) { /* ignore */ }
+    }
+    // bind refs on every variant's layers
+    for (const r of rendered) {
+      for (const tp of fam.text || []) {
+        const layer = r.roles[tp.role]
+        if (layer && propIds[tp.name] && layer.type === 'TEXT') { try { layer.componentPropertyReferences = { characters: propIds[tp.name] } } catch (_e) { /* ignore */ } }
+      }
+      for (const bp of fam.bools || []) {
+        const layer = r.roles[bp.role]
+        if (layer && propIds[bp.name]) { try { layer.componentPropertyReferences = { visible: propIds[bp.name] } } catch (_e) { /* ignore */ } }
+      }
+      for (const sp of fam.swaps || []) {
+        const layer = r.roles[sp.role]
+        if (layer && propIds[sp.name] && layer.type === 'INSTANCE') { try { layer.componentPropertyReferences = { mainComponent: propIds[sp.name] } } catch (_e) { /* ignore */ } }
+      }
+    }
+  }
 
-  tag(set, { assetKey: fam.key, kind: C.KIND.COMPONENT_SET, hash: fam.hash, runId: ctx.runId })
+  tag(set, { assetKey: fam.key, kind: C.KIND.COMPONENT_SET, hash: fam.hash, runId: originRunId })
   live.componentSets[fam.key] = set
-  return { set, fidelity: 'foundation-scaffold (' + fam.variants.length + ' variants, ' + propsAdded + ' props)' }
+  return { set, propIds, fidelity: 'rev' + fam.rev + ' (' + combos.length + ' variants, ' + propsAdded + ' props)' }
 }
 
-// ── grid layout for component sets inside the section ──────────────────────
-/** @param {any[]} sets @param {any} section */
+// ── variant lookup + assemblies ────────────────────────────────────────────
+/** Find the component inside a set matching a combo. @param {any} set @param {Record<string,string>} combo */
+function findVariant(set, combo) {
+  if (!set) return null
+  if (set.type === 'COMPONENT') return set
+  const want = Object.keys(combo).map((k) => k + '=' + combo[k]).join(', ')
+  const kids = (set.children || []).filter((c) => c.type === 'COMPONENT')
+  // exact name match first, then subset match (every requested pair present)
+  let hit = kids.find((c) => c.name === want)
+  if (hit) return hit
+  const pairs = Object.keys(combo).map((k) => k + '=' + combo[k])
+  hit = kids.find((c) => pairs.every((p2) => c.name.includes(p2)))
+  return hit || kids[0] || null
+}
+
+/** Full text-property id map of a set (for skipped families). @param {any} set */
+function textPropIdsOf(set) {
+  /** @type {Record<string, string>} */
+  const out = {}
+  try {
+    const defs = set.componentPropertyDefinitions || {}
+    for (const full of Object.keys(defs)) {
+      const base = full.split('#')[0]
+      out[base] = full
+    }
+  } catch (_e) { /* ignore */ }
+  return out
+}
+
+/**
+ * Build one native reference assembly from component instances.
+ * @param {any} asm spec assembly
+ * @param {any} live
+ * @param {any} ctx { section2, fonts, paintByToken, textStyleByName, runId }
+ * @returns {Promise<{ node:any, instances:{family:string, componentId:string}[] }>}
+ */
+async function upsertAssembly(asm, live, ctx) {
+  const existing = live.assemblies[asm.key]
+  let originRunId = ctx.runId
+  if (existing) {
+    try { const prior = existing.getSharedPluginData(NS, K.RUN_ID); if (prior && prior.length) originRunId = prior } catch (_e) { /* ignore */ }
+    try { existing.remove() } catch (_e) { /* ignore */ }
+    delete live.assemblies[asm.key]
+  }
+
+  const frame = figma.createFrame()
+  frame.name = asm.name
+  frame.layoutMode = 'VERTICAL'
+  frame.primaryAxisSizingMode = 'AUTO'
+  frame.counterAxisSizingMode = 'FIXED'
+  frame.itemSpacing = 24
+  frame.paddingLeft = frame.paddingRight = asm.context === 'mobile' ? 16 : 48
+  frame.paddingTop = frame.paddingBottom = asm.context === 'mobile' ? 24 : 48
+  frame.resize(asm.width, 100)
+  const bg = ctx.paintByToken['Color/Background/Base']
+  if (bg) { try { await frame.setFillStyleIdAsync(bg.id) } catch (_e) { /* ignore */ } }
+  ctx.section2.appendChild(frame)
+
+  /** @type {{family:string, componentId:string}[]} */
+  const instancesUsed = []
+
+  /** @param {any} item @param {any} parent */
+  const place = async (item, parent) => {
+    if (item.heading) {
+      const t = figma.createText()
+      t.fontName = ctx.fonts.resolve(item.style && item.style.startsWith('Display') ? 'display' : 'display', item.style === 'Body/M' ? 'Regular' : 'Bold')
+      t.characters = asm.locale === 'fa' ? item.heading.fa : item.heading.en
+      parent.appendChild(t)
+      const ramp = ctx.textStyleByName[item.style || 'Heading/L']
+      if (ramp) { try { await t.setTextStyleIdAsync(ramp.id) } catch (_e) { /* ignore */ } }
+      const fillStyle = ctx.paintByToken[item.style === 'Body/M' ? 'Color/Text/Secondary' : 'Color/Text/Primary']
+      if (fillStyle) { try { await t.setFillStyleIdAsync(fillStyle.id) } catch (_e) { /* ignore */ } }
+      t.textAutoResize = 'HEIGHT'
+      try { t.layoutSizingHorizontal = 'FILL' } catch (_e) { /* ignore */ }
+      if (asm.rtl) { try { t.textAlignHorizontal = 'RIGHT' } catch (_e) { /* ignore */ } }
+      return
+    }
+    if (item.row) {
+      const row = figma.createFrame()
+      row.name = 'Row'
+      row.layoutMode = 'HORIZONTAL'
+      row.primaryAxisSizingMode = 'AUTO'
+      row.counterAxisSizingMode = 'AUTO'
+      row.itemSpacing = 16
+      row.fills = []
+      parent.appendChild(row)
+      const items = asm.rtl ? [...item.row].reverse() : item.row
+      for (const sub of items) await place(sub, row)
+      return
+    }
+    // component instance
+    const famKey = 'componentSet:' + item.family
+    const set = live.componentSets[famKey]
+    if (!set) return
+    const combo = { ...(item.variant || {}) }
+    // Direction axis participation
+    const specFam = ctx.familyByKey[famKey]
+    if (specFam && specFam.dirAxis) combo.Direction = asm.rtl ? 'RTL' : 'LTR'
+    const variant = findVariant(set, combo)
+    if (!variant) return
+    let inst
+    try { inst = variant.createInstance() } catch (_e) { return }
+    parent.appendChild(inst)
+    instancesUsed.push({ family: item.family, componentId: variant.id })
+    // text props
+    const props = item.props || {}
+    const ids = textPropIdsOf(set)
+    /** @type {Record<string, string>} */
+    const setProps = {}
+    for (const name of Object.keys(props)) if (ids[name]) setProps[ids[name]] = props[name]
+    if (Object.keys(setProps).length) { try { inst.setProperties(setProps) } catch (_e) { /* ignore */ } }
+  }
+
+  for (const item of asm.items) await place(item, frame)
+
+  tag(frame, { assetKey: asm.key, kind: C.KIND.ASSEMBLY, hash: asm.hash, runId: originRunId })
+  // DE assemblies have no original Figma reference — mark them as generated.
+  frame.setSharedPluginData(NS, 'originalRef', asm.originalRef || '')
+  frame.setSharedPluginData(NS, 'newlyGenerated', asm.newlyGenerated ? '1' : '')
+  live.assemblies[asm.key] = frame
+  return { node: frame, instances: instancesUsed }
+}
+
+// ── layout inside sections ─────────────────────────────────────────────────
 function layoutSets(sets, section) {
-  const COLS = 6
-  const CW = 360
-  const CH = 240
-  const PAD = 40
+  const COLS = 2
+  const CW = 1700
+  const CH = 900
+  const PAD = 60
   sets.forEach((s, i) => {
     if (!s) return
-    const col = i % COLS
-    const row = Math.floor(i / COLS)
-    try { s.x = section.x + PAD + col * CW; s.y = section.y + 80 + row * CH } catch (_e) { /* ignore */ }
+    try { s.x = section.x + PAD + (i % COLS) * CW; s.y = section.y + 80 + Math.floor(i / COLS) * CH } catch (_e) { /* ignore */ }
   })
+}
+function layoutAssemblies(nodes, section) {
+  const PAD = 60
+  let yDesk = 80
+  let yMob = 80
+  for (const n of nodes) {
+    if (!n) continue
+    try {
+      if (n.width > 800) { n.x = section.x + PAD; n.y = section.y + yDesk; yDesk += n.height + 120 }
+      else { n.x = section.x + PAD + 1360; n.y = section.y + yMob; yMob += n.height + 120 }
+    } catch (_e) { /* ignore */ }
+  }
+  try { /** @type {any} */ (section).resizeWithoutConstraints(1900, Math.max(yDesk, yMob) + 120) } catch (_e) { /* ignore */ }
 }
 
 // ── top-level operations ───────────────────────────────────────────────────
 /**
- * @param {{ dryRun?: boolean }} [options]
- * @returns {Promise<any>}
+ * @param {{ dryRun?: boolean, allowFontFallback?: boolean }} [options]
  */
 async function run(options) {
   const dryRun = !!(options && options.dryRun)
+  const allowFontFallback = !!(options && options.allowFontFallback)
   const spec = buildSpec()
   const live = await buildLiveIndex()
   const plan = computePlan(spec, live.index)
+  const ambiguities = detectAmbiguity(live.observations)
+
+  // font gate assessment (read-only)
+  const availableFonts = await figma.listAvailableFontsAsync()
+  const availableSet = new Set(availableFonts.map((f) => f.fontName.family + ' ' + f.fontName.style))
+  const fontGate = assessFontAvailability(availableSet)
 
   if (dryRun) {
-    return { ok: true, mode: 'dry-run', counts: spec.counts, plan, manifestPresent: !!live.section }
+    return {
+      ok: ambiguities.length === 0,
+      mode: 'dry-run',
+      counts: spec.counts,
+      plan,
+      ambiguities,
+      fontGate: { canonicalPresent: fontGate.canonicalPresent, missing: fontGate.missing, wouldBlockApply: !fontGate.canonicalPresent && !allowFontFallback },
+      manifestPresent: !!live.section,
+    }
+  }
+
+  // FAIL CLOSED — no mutation on ambiguity or missing canonical fonts.
+  if (ambiguities.length) {
+    return { ok: false, mode: 'apply', blocked: 'AMBIGUOUS_OWNERSHIP', ambiguities, counts: spec.counts }
+  }
+  if (!fontGate.canonicalPresent && !allowFontFallback) {
+    return {
+      ok: false, mode: 'apply', blocked: 'FONTS_MISSING',
+      missingFonts: fontGate.missing,
+      guidance: 'Install the canonical desktop fonts (see docs/design/phase-87-closure/font-installation-manifest.md) or explicitly enable the documented fallback.',
+      counts: spec.counts,
+    }
   }
 
   const runId = newRunId()
   const errors = []
   const fonts = await resolveFonts(spec.textStyles)
-
-  // Map ops by key so the family loop can honour skip (and preserve node IDs).
   const opByKey = {}
   for (const op of plan.ops) opByKey[op.key] = op
 
   try {
-    // section
-    ensureSection(spec.section, live, runId)
-    // collections
-    for (const col of spec.collections) upsertCollection(col, live, { assetKey: col.key, hash: col.hash, runId })
-    // variables
+    // sections
+    ensureSectionSlot(spec.section, live, 'section', runId, { x: undefined, y: 0, w: 3600, h: 12000 })
+    // foundation
+    for (const col of spec.collections) upsertCollection(col, live, { runId })
     for (const v of spec.variables) { try { upsertVariable(v, live, runId) } catch (e) { errors.push('variable ' + v.key + ': ' + e.message) } }
-    // paint styles (bind to variables)
     const paintByToken = {}
     for (const p of spec.paintStyles) { try { const ps = upsertPaintStyle(p, live, runId); paintByToken[p.name] = ps } catch (e) { errors.push('paintStyle ' + p.key + ': ' + e.message) } }
-    // text styles
     const textStyleByName = {}
     for (const t of spec.textStyles) { try { const ts = upsertTextStyle(t, live, fonts, runId); textStyleByName[t.name] = ts } catch (e) { errors.push('textStyle ' + t.key + ': ' + e.message) } }
-    // effect styles
     const effectByName = {}
     for (const e of spec.effectStyles) { try { const es = upsertEffectStyle(e, live, runId); effectByName[e.name] = es } catch (er) { errors.push('effectStyle ' + e.key + ': ' + er.message) } }
 
-    // component families — rebuild only when changed; skip preserves node IDs.
-    const ctx = { section: live.section, paintByToken, textStyleByName, effectByName, fonts, runId }
+    // families — Icon FIRST (instance-swap default target), then the rest.
+    const famOrder = [...spec.families].sort((a, b) => (a.key === 'componentSet:icon' ? -1 : b.key === 'componentSet:icon' ? 1 : 0))
+    const ctx = { section: live.section, paintByToken, textStyleByName, effectByName, fonts, runId, iconDefault: null, familyByKey: {} }
+    for (const f of spec.families) ctx.familyByKey[f.key] = f
     const builtSets = []
     const fidelity = []
-    for (const fam of spec.families) {
+    for (const fam of famOrder) {
       const op = opByKey[fam.key]
       if (op && op.action === 'skip' && live.componentSets[fam.key]) {
         builtSets.push(live.componentSets[fam.key])
         fidelity.push({ family: fam.name, fidelity: 'unchanged (skipped, id preserved)' })
-        continue
+      } else {
+        try {
+          const r = await upsertFamily(fam, live, ctx)
+          builtSets.push(r.set)
+          fidelity.push({ family: fam.name, fidelity: r.fidelity })
+        } catch (e) { errors.push('family ' + fam.key + ': ' + e.message); builtSets.push(null) }
       }
-      try { const r = await upsertFamily(fam, live, ctx); builtSets.push(r.set); fidelity.push({ family: fam.name, fidelity: r.fidelity }) }
-      catch (e) { errors.push('family ' + fam.key + ': ' + e.message); builtSets.push(null) }
+      if (fam.key === 'componentSet:icon') {
+        const iconSet = live.componentSets['componentSet:icon']
+        ctx.iconDefault = findVariant(iconSet, { Mark: 'Dot' })
+      }
     }
     layoutSets(builtSets, live.section)
 
-    // record run on manifest node
-    await writeManifest(live, runId, spec, plan)
+    // assemblies — second managed section, instances only.
+    ensureSectionSlot(spec.section2, live, 'section2', runId, { x: (live.section ? live.section.x + 3800 : undefined), y: 0, w: 1900, h: 12000 })
+    const ctx2 = { section2: live.section2, fonts, paintByToken, textStyleByName, runId, familyByKey: ctx.familyByKey }
+    const asmNodes = []
+    /** @type {any[]} */
+    const mapping = []
+    for (const asm of spec.assemblies) {
+      const op = opByKey[asm.key]
+      if (op && op.action === 'skip' && live.assemblies[asm.key]) { asmNodes.push(live.assemblies[asm.key]); continue }
+      try {
+        const r = await upsertAssembly(asm, live, ctx2)
+        asmNodes.push(r.node)
+        mapping.push({ originalRef: asm.originalRef, assembly: asm.key, nodeId: r.node.id, instances: r.instances })
+      } catch (e) { errors.push('assembly ' + asm.key + ': ' + e.message); asmNodes.push(null) }
+    }
+    layoutAssemblies(asmNodes, live.section2)
+
+    await writeManifest(live, runId, spec, plan, mapping)
 
     return {
       ok: errors.length === 0,
@@ -483,21 +815,22 @@ async function run(options) {
       plan,
       applied: { create: plan.summary.create, update: plan.summary.update, skip: plan.summary.skip },
       fontSubstitutions: fonts.substitutions,
+      fontAliases: fonts.aliases,
+      fontFallbackExplicitlyAllowed: allowFontFallback && !fontGate.canonicalPresent,
+      assemblies: mapping,
       fidelity,
       errors,
+      recovery: 'If this Apply was interrupted, RERUN Apply: per-asset hashes converge (stale assets update, finished ones skip).',
     }
   } catch (e) {
-    return { ok: false, mode: 'apply', runId, error: e.message, errors }
+    return { ok: false, mode: 'apply', runId, error: e.message, errors, recovery: 'Rerun Apply to converge, or Rollback(runId) to remove assets first created by this run.' }
   }
 }
 
-/**
- * VERIFY: confirm every spec asset exists and its recorded hash matches.
- * @returns {Promise<any>}
- */
 async function verify() {
   const spec = buildSpec()
   const live = await buildLiveIndex()
+  const ambiguities = detectAmbiguity(live.observations)
   const present = []
   const missing = []
   const drifted = []
@@ -507,41 +840,39 @@ async function verify() {
     if (e.hash !== a.hash) drifted.push({ key: a.key, kind: a.kind, name: a.name, recorded: e.hash, expected: a.hash })
     else present.push(a.key)
   }
-  // Reference-frame guard: how many top-level frames exist that are NOT managed.
   let referenceFrames = 0
   for (const ch of figma.currentPage.children) if (!isManaged(ch)) referenceFrames++
   return {
-    ok: missing.length === 0 && drifted.length === 0,
+    ok: missing.length === 0 && drifted.length === 0 && ambiguities.length === 0,
     present: present.length,
     missing,
     drifted,
+    ambiguities,
     referenceFramesPreserved: referenceFrames,
     total: spec.assets.length,
   }
 }
 
-/**
- * ROLLBACK: remove plugin-created assets. When runId is given, only assets from
- * that run are removed. Never touches anything without the managed marker.
- * @param {{ runId?: string|null }} [options]
- * @returns {Promise<any>}
- */
+/** @param {{ runId?: string|null }} [options] */
 async function rollback(options) {
   const filterRun = options && options.runId ? options.runId : null
-  const removed = { variables: 0, collections: 0, paintStyles: 0, textStyles: 0, effectStyles: 0, componentSets: 0, manifest: 0, section: 0 }
+  const removed = { variables: 0, collections: 0, paintStyles: 0, textStyles: 0, effectStyles: 0, componentSets: 0, assemblies: 0, manifest: 0, sections: 0 }
   const errors = []
   const notes = []
 
-  /** @param {any} obj @returns {boolean} */
   const inScope = (obj) => isManaged(obj) && (!filterRun || obj.getSharedPluginData(NS, K.RUN_ID) === filterRun)
 
-  // Order: components → styles → variables → collections → section (dependency-safe).
   for (const ch of [...figma.currentPage.children]) {
     if (ch.type === 'SECTION') {
       for (const sub of [...(/** @type {any} */ (ch).children || [])]) {
         if (!inScope(sub)) continue
         const kind = sub.getSharedPluginData(NS, K.ASSET_KIND)
-        try { sub.remove(); if (kind === C.KIND.MANIFEST) removed.manifest++; else removed.componentSets++ } catch (e) { errors.push(e.message) }
+        try {
+          sub.remove()
+          if (kind === C.KIND.MANIFEST) removed.manifest++
+          else if (kind === C.KIND.ASSEMBLY) removed.assemblies++
+          else removed.componentSets++
+        } catch (e) { errors.push(e.message) }
       }
     }
   }
@@ -550,59 +881,43 @@ async function rollback(options) {
   for (const es of await figma.getLocalEffectStylesAsync()) if (inScope(es)) { try { es.remove(); removed.effectStyles++ } catch (e) { errors.push(e.message) } }
   for (const v of await figma.variables.getLocalVariablesAsync()) if (inScope(v)) { try { v.remove(); removed.variables++ } catch (e) { errors.push(e.message) } }
   for (const c of await figma.variables.getLocalVariableCollectionsAsync()) if (inScope(c)) { try { c.remove(); removed.collections++ } catch (e) { errors.push(e.message) } }
-  // Remove the managed section last — ONLY when it is now empty, so the section's
-  // cascading delete can never take out-of-scope managed nodes (other runs) or any
-  // unmanaged content a user may have dragged inside it.
+  // sections last — ONLY when empty (cascade can never delete out-of-scope/user nodes)
   for (const ch of [...figma.currentPage.children]) {
     if (ch.type === 'SECTION' && inScope(ch)) {
       const remaining = (/** @type {any} */ (ch).children || []).length
-      if (remaining === 0) { try { ch.remove(); removed.section++ } catch (e) { errors.push(e.message) } }
-      else notes.push('section kept: ' + remaining + ' out-of-scope/user child(ren) remain')
+      if (remaining === 0) { try { ch.remove(); removed.sections++ } catch (e) { errors.push(e.message) } }
+      else notes.push('section "' + ch.name + '" kept: ' + remaining + ' out-of-scope/user child(ren) remain')
     }
   }
   return { ok: errors.length === 0, scope: filterRun || 'all-managed', removed, notes, errors }
 }
 
-// ── manifest node (audit / run history; idempotency uses live markers) ─────
+// ── manifest node (audit copy; live markers are the source of truth) ───────
 const CHUNK = 60000
-/** @param {any} node @param {string} base @param {string} str */
 function writeChunked(node, base, str) {
   const n = Math.max(1, Math.ceil(str.length / CHUNK))
   node.setSharedPluginData(NS, base + ':count', String(n))
   for (let i = 0; i < n; i++) node.setSharedPluginData(NS, base + ':' + i, str.slice(i * CHUNK, (i + 1) * CHUNK))
 }
 
-/**
- * Rebuild the authoritative assetKey -> {id, hash, kind} index from the live
- * objects touched THIS run (buildLiveIndex only saw pre-existing assets, so on a
- * fresh file it starts empty — read the ids/tags back off what we created).
- * @param {any} live
- * @returns {Record<string, {id:string, hash:string, kind:string}>}
- */
 function rebuildIndexFromLive(live) {
   /** @type {Record<string, {id:string, hash:string, kind:string}>} */
   const idx = {}
-  /** @param {any} obj */
   const add = (obj) => {
     if (!obj) return
     try { const t = readTag(obj); if (t.assetKey) idx[t.assetKey] = { id: obj.id, hash: t.hash, kind: t.kind } } catch (_e) { /* ignore */ }
   }
-  const groups = [live.collections, live.variables, live.styles.paint, live.styles.text, live.styles.effect, live.componentSets]
+  const groups = [live.collections, live.variables, live.styles.paint, live.styles.text, live.styles.effect, live.componentSets, live.assemblies]
   for (const g of groups) for (const k of Object.keys(g || {})) add(g[k])
   add(live.section)
+  add(live.section2)
   return idx
 }
 
-/**
- * @param {any} live
- * @param {string} runId
- * @param {any} spec
- * @param {any} plan
- */
-async function writeManifest(live, runId, spec, plan) {
+async function writeManifest(live, runId, spec, plan, mapping) {
   const section = live.section
   if (!section) return
-  let node = section.children.find((/** @type {any} */ n) => n.getSharedPluginData(NS, K.ASSET_KIND) === C.KIND.MANIFEST)
+  let node = section.children.find((n) => n.getSharedPluginData(NS, K.ASSET_KIND) === C.KIND.MANIFEST)
   if (!node) {
     node = figma.createFrame()
     node.name = C.MANIFEST_NODE_NAME
@@ -611,13 +926,13 @@ async function writeManifest(live, runId, spec, plan) {
     section.appendChild(node)
   }
   const index = rebuildIndexFromLive(live)
-  const payload = { pluginVersion: C.PLUGIN_VERSION, lastRunId: runId, counts: spec.counts, summary: plan.summary, index }
+  const payload = { pluginVersion: C.PLUGIN_VERSION, lastRunId: runId, counts: spec.counts, summary: plan.summary, index, referenceMapping: mapping || [] }
   writeChunked(node, 'manifest', JSON.stringify(payload))
   node.setSharedPluginData(NS, K.MANAGED, '1')
   node.setSharedPluginData(NS, K.ASSET_KIND, C.KIND.MANIFEST)
-  // Reserved assetKey so the node is never re-planned as a prune orphan.
   node.setSharedPluginData(NS, K.ASSET_KEY, 'manifest:node')
-  node.setSharedPluginData(NS, K.RUN_ID, runId)
+  const priorRun = node.getSharedPluginData(NS, K.RUN_ID)
+  node.setSharedPluginData(NS, K.RUN_ID, priorRun && priorRun.length ? priorRun : runId)
 }
 
 module.exports = { run, verify, rollback, buildLiveIndex }

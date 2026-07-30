@@ -86,4 +86,46 @@ function renderPlanText(plan) {
   return lines.join('\n')
 }
 
-module.exports = { computePlan, renderPlanText }
+/**
+ * Pure model of rollback scoping: given an index of managed assets carrying the
+ * run that FIRST created each one, return the assetKeys a rollback would remove.
+ * `runId` null/undefined = "all managed". Mirrors the executor's inScope marker
+ * predicate, so run-isolation across plugin revisions can be proven in tests:
+ * a pure "upgrade" run (which only UPDATES existing assets, preserving their
+ * origin runId) creates nothing new, so rollback(upgradeRunId) removes nothing.
+ * @param {Record<string, {runId?: string}>} index
+ * @param {string|null} [runId]
+ * @returns {string[]} assetKeys in scope, sorted
+ */
+function runScope(index, runId) {
+  const keys = []
+  for (const k of Object.keys(index || {})) {
+    const e = index[k]
+    if (!e) continue
+    if (!runId || e.runId === runId) keys.push(k)
+  }
+  return keys.sort()
+}
+
+/**
+ * Detect ownership ambiguity: two live managed objects claiming the SAME
+ * assetKey (duplicate markers — e.g. a user duplicated a managed node). Apply
+ * must FAIL CLOSED on any ambiguity instead of guessing which node to update.
+ * Pure: takes [{assetKey, id, kind}] observations in scan order.
+ * @param {{assetKey:string, id:string, kind?:string}[]} observations
+ * @returns {{assetKey:string, ids:string[]}[]} ambiguities (empty = safe)
+ */
+function detectAmbiguity(observations) {
+  /** @type {Record<string, Set<string>>} */
+  const seen = {}
+  for (const o of observations || []) {
+    if (!o || !o.assetKey) continue
+    if (!seen[o.assetKey]) seen[o.assetKey] = new Set()
+    seen[o.assetKey].add(o.id)
+  }
+  const out = []
+  for (const k of Object.keys(seen)) if (seen[k].size > 1) out.push({ assetKey: k, ids: [...seen[k]].sort() })
+  return out.sort((a, b) => (a.assetKey < b.assetKey ? -1 : 1))
+}
+
+module.exports = { computePlan, renderPlanText, runScope, detectAmbiguity }

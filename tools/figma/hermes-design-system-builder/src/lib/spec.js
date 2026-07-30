@@ -8,9 +8,10 @@
  * and the Apply executor consumes.
  */
 
-const { COLLECTIONS, KIND } = require('./constants')
+const { COLLECTIONS, KIND, REVISIONS, SECTION2_NAME } = require('./constants')
 const { COLOR_TOKENS, SPACE_TOKENS, RADIUS_TOKENS, SIZE_TOKENS, SHADOW_TOKENS, TEXT_STYLES } = require('./tokens')
-const { FAMILIES } = require('./components')
+const { FAMILIES, variantCombos } = require('./components')
+const { buildAssemblies } = require('./assemblies')
 const { modeStrategy } = require('./starter')
 const { slug, hashAsset } = require('./util')
 
@@ -41,13 +42,15 @@ function variableDescription(figmaName, usage, cssVar, tailwind, a11y) {
 }
 
 /**
+ * @param {{component:number, textStyle:number, assembly?:number}} [revisions]
  * @returns {{
  *   collections: any[], variables: any[], paintStyles: any[], textStyles: any[],
- *   effectStyles: any[], families: any[], section: any, assets: any[],
- *   counts: Record<string, number>
+ *   effectStyles: any[], families: any[], assemblies: any[], section: any,
+ *   section2: any, assets: any[], counts: Record<string, number>
  * }}
  */
-function buildSpec() {
+function buildSpec(revisions) {
+  const rev = revisions || REVISIONS
   /** @type {any[]} */
   const collections = []
   /** @type {any[]} */
@@ -98,6 +101,7 @@ function buildSpec() {
   const textStyles = TEXT_STYLES.map((t) => ({
     key: 'textStyle:' + t.name, kind: KIND.TEXT_STYLE, name: t.name,
     font: t.font, weight: t.weight, size: t.size, line: t.line, tracking: t.tracking,
+    rev: rev.textStyle,
     description: t.usage + ' · Managed by Hermes Design System Builder',
   }))
 
@@ -109,20 +113,39 @@ function buildSpec() {
   }))
 
   // ── Component families (one component SET each) ──────────────────────────
+  // ── Component families: the FULL blueprint contract is in the hash payload,
+  // so any anatomy/state/prop/axis change rolls out as a deterministic update.
   const families = FAMILIES.map((f) => ({
     key: 'componentSet:' + f.key, kind: KIND.COMPONENT_SET, name: f.name,
-    category: f.category, maps: f.maps, variantProp: f.variant.prop, variants: f.variant.values,
-    text: f.text || [], bool: f.bool || [], rtl: !!f.rtl, description: f.description,
+    category: f.category, maps: f.maps,
+    preset: f.preset, presetOpts: f.presetOpts || {},
+    axes: f.axes, dirAxis: !!f.dirAxis,
+    valueOverrides: f.valueOverrides || {},
+    text: f.text || [], bools: f.bools || [], swaps: f.swaps || [],
+    elevationAxis: !!f.elevationAxis, elevation: f.elevation || null,
+    hideLabel: !!f.hideLabel, sizeAxis: !!f.sizeAxis, shapeAxis: !!f.shapeAxis,
+    markAxis: !!f.markAxis, densityAxis: !!f.densityAxis, collapseAxis: !!f.collapseAxis,
+    trimBody: !!f.trimBody,
+    a11y: f.a11y,
+    description: f.description + ' Labels/descriptions localize FA·EN·DE at runtime (next-intl); the tri-lingual reference assemblies carry the per-locale strings.',
+    variantCount: variantCombos(f).length,
+    rev: rev.component,
+  }))
+
+  // ── Native reference assemblies (second managed section) ─────────────────
+  const assemblies = buildAssemblies().map((a) => ({
+    ...a, kind: KIND.ASSEMBLY, rev: rev.assembly ?? 1,
   }))
 
   const section = { key: 'section:generated', kind: KIND.SECTION, name: require('./constants').SECTION_NAME }
+  const section2 = { key: 'section:assemblies', kind: KIND.SECTION, name: SECTION2_NAME }
 
   // ── Flatten in canonical apply order + attach content hashes ─────────────
   /** @type {any[]} */
-  const assets = [section, ...collections, ...variables, ...paintStyles, ...textStyles, ...effectStyles, ...families]
+  const assets = [section, section2, ...collections, ...variables, ...paintStyles, ...textStyles, ...effectStyles, ...families, ...assemblies]
   for (const a of assets) a.hash = hashAsset(hashPayload(a))
 
-  const componentCount = families.reduce((n, f) => n + f.variants.length, 0)
+  const componentCount = families.reduce((n, f) => n + f.variantCount, 0)
   const counts = {
     collections: collections.length,
     variables: variables.length,
@@ -131,10 +154,12 @@ function buildSpec() {
     effectStyles: effectStyles.length,
     families: families.length,
     components: componentCount,
+    assemblies: assemblies.length,
+    sections: 2,
     total: assets.length,
   }
 
-  return { collections, variables, paintStyles, textStyles, effectStyles, families, section, assets, counts }
+  return { collections, variables, paintStyles, textStyles, effectStyles, families, assemblies, section, section2, assets, counts }
 }
 
 /**

@@ -24,6 +24,27 @@ This directory ties the now-live Figma source of truth to the shipped code and
 locks the design-token contract in CI. It is a real, useful foundation — but
 only one part of Phase 87.
 
+> ## ✅ 2026-07-30 UPDATE — `BLOCKED_BY_FIGMA_WRITE_ACCESS` is RESOLVED
+>
+> The blocker below was a **tooling** limitation of the Talk-to-Figma MCP, not a
+> permission one. A local **Figma development plugin** (*Hermes Design System
+> Builder*, `tools/figma/hermes-design-system-builder/`, commit `8d49c44`) creates
+> the native **Variables, Styles, Components, Component Sets, Variants, Component
+> Properties and Auto Layout** through the **official Figma Plugin API**, locally,
+> on the **free Starter plan**. The owner imported and ran it against this file:
+> **Apply created 135 native assets, Verify = 135/135 with all 34 reference frames
+> preserved, a second Dry Run was fully idempotent.**
+>
+> So §0/§7 below are **historically accurate for the Talk-to-Figma path but no
+> longer the current status.** Full evidence, the honest component-fidelity audit
+> (the generated components are a real *foundation scaffold*, **not** production
+> parity yet), the deferred plan-gated capabilities, and the revision-2
+> managed-update plan are in **[`native-apply-evidence.md`](native-apply-evidence.md)**.
+>
+> Still deferred (`DEFERRED_REQUIRES_FIGMA_PROFESSIONAL`, not claimed complete):
+> multiple variable **modes** and **Team Library publishing**. Runtime surface
+> productionization stays gated on component fidelity. PR #23 remains **Draft**.
+
 ## 0. Capability preflight (Figma write)
 
 Performed live (channel `eesk9gpi`) before any further work:
