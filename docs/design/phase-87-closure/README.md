@@ -1,9 +1,48 @@
-# PHASE 87 — Premium Visual Foundation · Closure & Acceptance Manifest
+# PHASE 87 — Premium Visual Foundation · Governance & Traceability Foundation
 
-Status: **foundation closed, Production-ready.** This directory is the governance
-capstone for Phase 87 (the premium visual foundation before v1). It ties the
-now-live Figma source of truth to the shipped code and locks the design-token
-contract in CI.
+> ## ⚠️ Status: Phase 87 is **PARTIAL — not closed, not accepted**
+>
+> This directory delivers the **governance & traceability foundation only**
+> (audit + versionable, machine-checked token contract + docs). It is **not** a
+> Phase 87 closure and must not be treated as acceptance.
+>
+> **`BLOCKED_BY_FIGMA_WRITE_ACCESS`** — the "Figma Native Productionization"
+> half of Phase 87 (native color **Variables** + semantic modes; typography/
+> spacing/radius/elevation/motion **Styles/Variables**; converting the 23 code
+> primitives to native **Components/Variants**; completing 13 core + 7 industrial
+> native components) **cannot be performed** with the connected tooling. The
+> Talk-to-Figma MCP exposes node/shape/property write (frames, text, fills,
+> layout) but **no** create/update tool for Figma Variables, Styles, or
+> Components — proven by the capability preflight below. Drawing frames as
+> fake components/variables is an explicitly prohibited workaround, so it was
+> not done.
+>
+> See [Capability preflight](#0-capability-preflight-figma-write) and
+> [Remaining Phase 87 gaps](#7-remaining-phase-87-gaps).
+
+This directory ties the now-live Figma source of truth to the shipped code and
+locks the design-token contract in CI. It is a real, useful foundation — but
+only one part of Phase 87.
+
+## 0. Capability preflight (Figma write)
+
+Performed live (channel `eesk9gpi`) before any further work:
+
+| Capability | Tool(s) | Result |
+|---|---|---|
+| Node/frame/shape/text create | `create_frame`, `create_rectangle`, `create_text` | ✅ available |
+| Property update (fill/stroke/layout/radius/…) | `set_fill_color`, `set_layout_mode`, … | ✅ available |
+| Node delete | `delete_node` | ✅ available |
+| **Color Variables + semantic modes** | *(none)* | ❌ **no tool** |
+| **Paint/Text/Effect Styles** | `get_styles` read-only (returns empty) | ❌ **no create tool** |
+| **Components / variant sets** | `create_component_instance` needs an existing key; `get_local_components` = 0 | ❌ **no create tool** |
+
+**Non-destructive proof.** Created a probe frame off-canvas
+(`__phase87_write_probe__DELETE_ME`, id `131:2`, x/y 20000) with fill `#0B1720`,
+read it back, updated the fill to Hermes Cyan `#16D9E3`, read it back, then
+deleted it and verified the node is gone and the page is back to 34 frames.
+Node/property write works; the **native Variables/Styles/Components** APIs the
+phase requires are absent, hence `BLOCKED_BY_FIGMA_WRITE_ACCESS`.
 
 > **Scope boundary.** Phase 87 = premium visual *foundation*. The immersive /
 > cinematic redesign (heavy WebGL, full experience rework) is **Phase 103**,
@@ -63,7 +102,7 @@ Every semantic-color token read from frame `12:4` matches the code exactly —
 
 ---
 
-## 3. Deliverables of this closure
+## 3. Deliverables of this foundation
 
 | Deliverable | File | Kind |
 |---|---|---|
@@ -72,31 +111,41 @@ Every semantic-color token read from frame `12:4` matches the code exactly —
 | Repository + visual audit (Section A) | [`audit-manifest.md`](audit-manifest.md) | doc |
 | Token contract governance (naming rules, migration, consumers) | [`token-contract.md`](token-contract.md) | doc |
 | RTL/LTR · a11y · responsive checklists, Figma-to-code handoff, component contribution rules, visual-regression procedure | [`checklists.md`](checklists.md) | doc |
-| This acceptance manifest | `README.md` | doc |
+| This governance manifest | `README.md` | doc |
 
 No production runtime code, API, Prisma schema, auth, RBAC, middleware, CSP,
-trust seal (eNAMAD / ProvenExpert), footer, or SMTP flow was changed by this
-closure. It is additive: one token-data module, one test, and documentation.
+trust seal (eNAMAD / ProvenExpert), footer, or SMTP flow was changed. It is
+additive: one token-data module, one test, and documentation.
 
 ---
 
-## 4. Acceptance criteria
+## 4. What this PR does and does **not** satisfy
 
-| Criterion | Result | Evidence |
+These governance/traceability checks hold for **this PR**:
+
+| Governance check | Result | Evidence |
 |---|---|---|
-| Figma is the source of truth and is reachable | ✅ | live channel `eesk9gpi`, frame `12:4` read |
-| Canonical tokens match Figma exactly (no drift) | ✅ | `token-contract.test.ts` (28+ tokens) + `foundation.test.ts` (21) |
+| Figma is the source of truth and is reachable (read) | ✅ | live channel `eesk9gpi`, frame `12:4` read |
+| Canonical code tokens match Figma exactly (no drift) | ✅ | `token-contract.test.ts` + `foundation.test.ts` |
 | Token contract is versionable and machine-checked | ✅ | `token-contract.ts` + CI test |
-| Traceability Figma ↔ CSS var ↔ Tailwind | ✅ | contract records Figma node + cssVar + tailwind key |
+| Traceability Figma node ↔ CSS var ↔ Tailwind | ✅ | contract records all three |
 | No behavior / API / auth / RBAC / tenant / OT / CMMS change | ✅ | diff is docs + token-data + test only |
 | Trust seals, footer, login, SMTP untouched | ✅ | not in diff |
-| Backward compatibility (legacy token layer intact) | ✅ | `foundation.test.ts` asserts legacy `--bg`/`--signal` unchanged; 3,749 legacy uses preserved |
-| Accessibility baseline documented | ✅ | [`checklists.md`](checklists.md) + audit |
-| RTL/LTR and FA/EN/DE first-class | ✅ | reference frames per-locale; audit §RTL |
+| Backward compatibility (legacy token layer intact) | ✅ | `foundation.test.ts` + 3,749 legacy uses preserved |
 | No new dependency, no CSP widening | ✅ | none added |
 
-Validation gates (lint, typecheck, unit/integration tests, build, `git diff
---check`) are run on the closure branch and reported in the PR.
+The full **Phase 87 acceptance** criteria are **NOT** met by this PR:
+
+| Phase 87 acceptance criterion | Result |
+|---|---|
+| Figma **write** / native productionization | ❌ `BLOCKED_BY_FIGMA_WRITE_ACCESS` (no Variables/Styles/Components create tools) |
+| Native color Variables + semantic modes | ❌ blocked |
+| Native typography/spacing/radius/elevation/motion styles/variables | ❌ blocked |
+| 23 primitives → native components/variants | ❌ blocked |
+| 13 core + 7 industrial native components | ❌ blocked |
+| Reference experiences connected to native variables/components | ❌ blocked |
+| Runtime surfaces updated to the foundation | ❌ not done (would follow native productionization) |
+| Real responsive / RTL / a11y **evidence** on changed surfaces | ❌ n/a (no surfaces changed) |
 
 ---
 
@@ -105,21 +154,33 @@ Validation gates (lint, typecheck, unit/integration tests, build, `git diff
 Immersive/cinematic redesign, heavy WebGL, and full per-surface experience
 rework are Phase 103 (post-v1) and were not attempted here.
 
-## 6. In-scope debt deferred within Phase 87 (documented, not silently dropped)
+## 6. In-scope debt (documented, not silently dropped)
 
-The audit ([`audit-manifest.md`](audit-manifest.md)) records findings that are
-real but whose fixes are **large, cross-cutting sweeps** that would violate the
-Phase 87 rule "do not break the whole UI at once" if forced in this closure.
-They are recorded with exact locations and safe-fix approaches:
+Recorded in the audit ([`audit-manifest.md`](audit-manifest.md)) with exact
+locations and safe-fix approaches: staged physical→logical RTL migration
+(~1,051 border + ~108 margin classes remain; nav/overlays already enforced by
+tests); `ds/` completion (13 core + 7 industrial primitives, several already in
+feature modules); `ProvenExpertSeal` noscript i18n string (real gap, seal is
+Production-critical + CSP-sensitive so not touched here).
 
-- Physical → logical RTL class migration (bulk): ~1,051 physical border + ~108
-  physical margin classes remain (alongside 1,247 logical adoptions). Nav and
-  overlays are already enforced logical by tests; the remainder is a staged
-  migration.
-- `ds/` component-library completion: 13 core components + 7 industrial
-  reasoning primitives named in the Figma "Core Components" board are not yet
-  first-class `ds/` primitives (several exist in feature modules / app-shell).
-- `ProvenExpertSeal` noscript fallback carries one hard-coded English string —
-  a real i18n gap, but the seal is Production-critical and CSP-sensitive
-  (Phase 19 rule: trust seals must not be damaged), so the fix is specified in
-  the audit rather than applied in a foundation-closure PR.
+## 7. Remaining Phase 87 gaps
+
+**`REMAINING_PHASE_87_GAPS` ≠ NONE → Phase 87 is PARTIAL, not complete.**
+
+1. **Figma native productionization — BLOCKED_BY_FIGMA_WRITE_ACCESS.** The
+   Talk-to-Figma MCP has no create/update tool for Variables, Styles, or
+   Components (see §0). Native Variables/modes, Styles, and Component/variant
+   sets cannot be built without either (a) a Figma MCP that exposes the
+   Variables/Styles/Components plugin APIs, or (b) the design team building them
+   in Figma directly. Faking them as plain frames is a prohibited workaround.
+2. **Runtime surface productionization** (public shell, login, dashboard shell,
+   Industrial Brain reference surfaces) and the token contract's runtime
+   adoption depend on (1) and are not done.
+3. **Executable responsive / RTL / a11y evidence** on changed surfaces is not
+   produced because no surface was changed.
+
+**Unblock path:** provide a Figma integration with native Variables/Styles/
+Components write access (or have the design team author the native library),
+then this same branch/PR can proceed to the productionization + code + evidence
+work. Until then this PR should be read as the **governance foundation only**
+and must not be accepted as a Phase 87 closure.
