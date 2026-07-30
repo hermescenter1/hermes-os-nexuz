@@ -1,0 +1,89 @@
+{
+  "plugin": "Hermes Design System Builder",
+  "builtFrom": [
+    {
+      "id": "constants",
+      "file": "src/lib/constants.js",
+      "sha256": "3c9675efa3c3bb3b"
+    },
+    {
+      "id": "util",
+      "file": "src/lib/util.js",
+      "sha256": "c884cbf2f9cc95b3"
+    },
+    {
+      "id": "tokens",
+      "file": "src/lib/tokens.js",
+      "sha256": "7965774a6c7f0340"
+    },
+    {
+      "id": "components",
+      "file": "src/lib/components.js",
+      "sha256": "98fc8c4a69782ffd"
+    },
+    {
+      "id": "starter",
+      "file": "src/lib/starter.js",
+      "sha256": "5067a3f4179f5de1"
+    },
+    {
+      "id": "spec",
+      "file": "src/lib/spec.js",
+      "sha256": "a286c1bb7631f5a3"
+    },
+    {
+      "id": "plan",
+      "file": "src/lib/plan.js",
+      "sha256": "dd181a4a917aa270"
+    },
+    {
+      "id": "figma-exec",
+      "file": "src/lib/figma-exec.js",
+      "sha256": "571cf4965701b2dd"
+    },
+    {
+      "id": "main",
+      "file": "src/main.js",
+      "sha256": "b2ee7a307d1495a3"
+    }
+  ],
+  "bundleSha256": "a6f2d85affd43897",
+  "uiSha256": "247499b21b019842",
+  "counts": {
+    "collections": 4,
+    "variables": 46,
+    "paintStyles": 29,
+    "textStyles": 8,
+    "effectStyles": 4,
+    "families": 43,
+    "components": 126,
+    "total": 135
+  },
+  "planFresh": {
+    "create": 135,
+    "update": 0,
+    "skip": 0,
+    "prune": 0,
+    "total": 135
+  },
+  "starterSupported": [
+    "Local variables & variable collections",
+    "Local Paint / Text / Effect styles",
+    "Components, Component Sets & Variants",
+    "Component Properties (BOOLEAN / TEXT / INSTANCE_SWAP / VARIANT)",
+    "Auto Layout",
+    "Variable → Paint style binding",
+    "Component descriptions & mapping to token-contract.ts",
+    "Single default variable mode (\"Value\")"
+  ],
+  "starterDeferred": [
+    {
+      "capability": "Multiple variable modes (e.g. light/dark theme, per-locale FA/EN/DE modes)",
+      "code": "DEFERRED_REQUIRES_FIGMA_PROFESSIONAL"
+    },
+    {
+      "capability": "Publishing variables/styles/components as a shared Team Library",
+      "code": "DEFERRED_REQUIRES_FIGMA_PROFESSIONAL"
+    }
+  ]
+}

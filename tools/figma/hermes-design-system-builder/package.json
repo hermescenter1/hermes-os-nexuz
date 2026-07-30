@@ -1,0 +1,19 @@
+{
+  "name": "@hermes/design-system-builder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local, auditable Figma development plugin that creates native local Variables, Styles, Components, Component Sets, Variants, Component Properties and Auto Layout in the \"Hermes OS – Design System\" file. No network, no telemetry, deterministic and idempotent.",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "build": "node build.mjs",
+    "dry-run": "node build.mjs --dry-run",
+    "verify": "npm run typecheck && npm run test && npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "//": "This package intentionally declares NO dependencies. Its scripts resolve tsc and vitest from the repository root node_modules (npx walks up). It must not create its own lockfile and must not change the repository package manager."
+}
