@@ -353,10 +353,21 @@ untouched. Their cleanup is deferred to **Gate 0D-B** and must not be attempted
 outside that gate.
 
 **Enforcement scope.** CI runs `scripts/production-compose-project-static-check.mjs`
-on every pull request, which mechanically enforces these invariants for the two
-production-critical files it reads — `docker-compose.prod.yml` and
-`.github/workflows/deploy.yml`. Operator runbooks elsewhere under `docs/` and
-`deploy/` are **not** yet covered by the checker; some still contain unpinned or
-legacy `docker-compose` examples. Pinning those is tracked as a follow-up doc
-pass. Until then, apply the `-p hermes` rule by hand whenever you copy a command
-from any runbook.
+on every pull request. It enforces these invariants in two tiers:
+
+- **Tier 1 — the deploy pipeline:** `docker-compose.prod.yml` (top-level
+  `name: hermes`) and `.github/workflows/deploy.yml` (only the exact targeted
+  `up`/`ps` commands, pinned, plus the full Gate 0A contract).
+- **Tier 2 — the operator surface:** every runbook, checklist and shell script
+  under `docs/`, `deploy/` and `scripts/` (plus this file). Any executable or
+  copy-paste **production** Compose command (one referencing
+  `docker-compose.prod.yml`) must be pinned with `-p hermes` and use the v2
+  `docker compose` form. As executable operator commands the checker also
+  forbids an obsolete master-branch pull and any volume-destroying cleanup (the
+  ❌ items listed above). Explicit prohibition lines (marked ❌, or containing
+  "Never", "Do not", "must not", "forbidden") are recognized as prose, so a
+  runbook can still name a dangerous command in order to forbid it. The separate
+  OpenBao staging Compose project is excluded by an `openbao` deny-list.
+
+If you add a new runbook or script with an unpinned production Compose command,
+CI fails until you pin it.

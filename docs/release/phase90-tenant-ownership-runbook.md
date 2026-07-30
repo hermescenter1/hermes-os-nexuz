@@ -96,13 +96,13 @@ Do not reorder. Steps (c) and (f) are the only state-changing steps.
 | # | Step | Verify before continuing |
 | --- | --- | --- |
 | a | **Verify a database backup exists and restores.** | Backup timestamp is recent; a test restore succeeded. |
-| b | `git pull` on the deploy host (no build yet). | `git rev-parse HEAD` matches the reviewed commit. |
+| b | Fetch and check out the reviewed SHA on the deploy host (no build yet, no unbounded pull): `git fetch --prune origin && git merge-base --is-ancestor <REVIEWED_SHA> origin/main && git checkout --detach <REVIEWED_SHA>` | `git rev-parse HEAD` matches the reviewed commit. |
 | c | `npx prisma migrate deploy` | Command exits 0 and reports the Phase 90 migration applied. |
 | d | **Verify the migration.** Run the schema check below. | All four columns and four indexes present. |
-| e | `docker compose -f docker-compose.prod.yml build hermes-web` | Build exits 0. |
-| f | `docker compose -f docker-compose.prod.yml up -d --no-deps hermes-web` | Only `hermes-web` is recreated; Postgres/Redis untouched. |
+| e | `docker compose -p hermes -f docker-compose.prod.yml build hermes-web` | Build exits 0. |
+| f | `docker compose -p hermes -f docker-compose.prod.yml up -d --no-deps hermes-web` | Only `hermes-web` is recreated; Postgres/Redis untouched. |
 | g | Liveness + readiness | `GET /api/health` → 200 `{"status":"ok"}`; `GET /api/health/ready` → 200 `{"status":"ready","database":true}`. |
-| h | `docker compose -f docker-compose.prod.yml restart nginx` | Public pages load over HTTPS. |
+| h | `docker compose -p hermes -f docker-compose.prod.yml restart nginx` | Public pages load over HTTPS. |
 | i | **Tenant-isolation smoke** (below) | All checks pass. |
 | j | Rollback decision | See §5. |
 

@@ -6,13 +6,28 @@
 // and created a second, empty "hermes-os-nexuz" stack (new network + empty
 // named volumes) beside the canonical "hermes" stack.
 //
-// Scope of enforcement (deliberately narrow, fail-closed): this checker reads
-// exactly `docker-compose.prod.yml` and `.github/workflows/deploy.yml`. It is a
-// CI regression tripwire for THOSE two files, not a whole-repo linter. Operator
-// runbooks under docs/ and deploy/ are out of scope here (a separate follow-up
-// pass pins those). No network access, no dependencies, deterministic.
+// Scope of enforcement (fail-closed, no network, no dependencies, deterministic):
+//
+//   Tier 1 — the deploy pipeline. `docker-compose.prod.yml` and
+//     `.github/workflows/deploy.yml` are held to the strict production contract
+//     (top-level name, exact up/ps commands, Gate 0A protections).
+//
+//   Tier 2 — the operator surface. Every runbook, checklist and shell script
+//     under docs/, deploy/ and scripts/ (plus root DEPLOYMENT.md) is scanned for
+//     executable / copy-paste PRODUCTION Compose commands (those referencing
+//     `docker-compose.prod.yml`). Each must be pinned with `-p hermes`, use the
+//     v2 `docker compose` form, and must not carry a derived project name.
+//     Obsolete `git pull origin master` and destructive `down -v` /
+//     `docker volume rm` / `docker system prune` are forbidden as executable
+//     commands. Explicit prohibition/warning lines (❌, "Never", "Do not") are
+//     recognized as prose and skipped, so a runbook can still tell operators
+//     what NOT to run. The separate OpenBao staging stack (its own Compose
+//     project) is excluded by the `openbao` deny-list.
+//
+// The root cause guarded against: an unpinned invocation deriving the project
+// name from the checkout directory — in a workflow, a runbook, or a script.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -261,8 +276,94 @@ gate(
   "ssh must keep `-o StrictHostKeyChecking=yes` on an executable line",
 );
 
+// ── TIER 2: operator surface (runbooks, checklists, shell scripts) ───────────
+// Discover operational files under fixed roots so newly added runbooks are
+// covered automatically. Only .md and .sh are scanned; the `openbao` deny-list
+// excludes the separate OpenBao staging Compose project; the checker file and
+// the `.github/workflows/deploy.yml` (Tier 1) are not re-scanned here.
+const OPERATIONAL_ROOTS = ["docs", "deploy", "scripts"];
+const OPERATIONAL_EXTRA = ["DEPLOYMENT.md"];
+const OPERATIONAL_DENY = ["openbao"];
+
+function collectOperationalFiles(dir, acc) {
+  let entries;
+  try {
+    entries = readdirSync(resolve(root, dir), { withFileTypes: true });
+  } catch {
+    return acc;
+  }
+  for (const entry of entries) {
+    const rel = `${dir}/${entry.name}`;
+    if (OPERATIONAL_DENY.some((d) => rel.includes(d))) continue;
+    if (entry.isDirectory()) {
+      collectOperationalFiles(rel, acc);
+    } else if (/\.(md|sh)$/.test(entry.name)) {
+      acc.push(rel);
+    }
+  }
+  return acc;
+}
+
+const operationalFiles = [];
+for (const dir of OPERATIONAL_ROOTS) collectOperationalFiles(dir, operationalFiles);
+for (const f of OPERATIONAL_EXTRA) operationalFiles.push(f);
+
+// A production Compose command is an actual invocation (`docker compose` v2 or
+// legacy `docker-compose` as a command word) that references the production
+// file. The leading `[^\w.]` boundary accepts a preceding space, backtick,
+// quote or paren (markdown inline code / fenced blocks) but rejects a preceding
+// `.` or word char; the trailing `(\s|$)` after `compose` means the filename
+// token `docker-compose.prod.yml` in prose is NOT mistaken for an invocation.
+const OPS_INVOCATION = /(^|[^\w.])docker(?:\s+compose|-compose)(\s|$)/;
+const OPS_LEGACY = /(^|[^\w.])docker-compose(\s|$)/;
+const OPS_PROD_FILE = /docker-compose\.prod\.yml/;
+// Prohibition/warning prose: a runbook (or this file's own rule docs) may name a
+// dangerous command precisely to forbid it. These words mark such lines as prose.
+const OPS_PROHIBITION = /❌|\bnever\b|\bdo not\b|\bdon['’]?t\b|\bmust not\b|\bforbidden\b/i;
+const OPS_DESTRUCTIVE = [
+  [/\bdown\b[^\n]*(?:\s-v\b|--volumes\b)/, "OPS_DOWN_VOLUMES"],
+  [/docker\s+volume\s+rm\b/, "OPS_VOLUME_RM"],
+  [/docker\s+system\s+prune\b/, "OPS_SYSTEM_PRUNE"],
+];
+
+for (const file of operationalFiles) {
+  let content;
+  try {
+    content = readNormalized(file);
+  } catch {
+    continue;
+  }
+  for (const { line, lineNumber } of toLogicalLines(content)) {
+    const at = `${file}:${lineNumber}`;
+    // Strip markdown emphasis/code marks so "Do **not**" reads as "do not".
+    const prohibition = OPS_PROHIBITION.test(line.replace(/[*`_~]/g, ""));
+
+    // Obsolete: production must never deploy from master or via an unbounded pull.
+    gate(
+      prohibition || !/\bgit\s+pull\b[^\n]*\borigin\s+master\b/.test(line),
+      "OPS_OBSOLETE_MASTER_PULL",
+      `${at}: obsolete \`git pull origin master\` — deploy a validated SHA reachable from origin/main via detached checkout, or use the Production Deploy workflow`,
+    );
+
+    // Destructive commands are forbidden as executable operator instructions.
+    if (!prohibition) {
+      for (const [pattern, code] of OPS_DESTRUCTIVE) {
+        gate(!pattern.test(line), code, `${at}: \`${line.trim()}\``);
+      }
+    }
+
+    // Production Compose commands must be pinned.
+    if (!OPS_INVOCATION.test(line) || !OPS_PROD_FILE.test(line) || prohibition) continue;
+    gate(!OPS_LEGACY.test(line), "OPS_COMPOSE_V2", `${at}: use \`docker compose\` (v2), not \`docker-compose\``);
+    gate(/\s-p\s+hermes(?=\s|$)/.test(line), "OPS_PROJECT_PIN", `${at}: production Compose command must pass \`-p hermes\` — \`${line.trim()}\``);
+    gate(!/-p\s+hermes-os-nexuz\b/.test(line), "OPS_DERIVED_PROJECT", `${at}: forbidden derived project name \`hermes-os-nexuz\``);
+  }
+}
+
 if (failures > 0) {
   console.error(`[production-compose-static] ${failures} failure(s)`);
   process.exit(1);
 }
-console.log("[production-compose-static] PASS");
+console.log(
+  `[production-compose-static] PASS (Tier 1: deploy.yml + compose file; Tier 2: ${operationalFiles.length} operator files)`,
+);

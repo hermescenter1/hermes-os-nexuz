@@ -10,7 +10,10 @@
 set -euo pipefail
 
 BACKUP_FILE="${1:-}"
+# Container names under the canonical `hermes` Compose project:
+# <project>-<service>-<index> (Compose v2). Overridable via env for other setups.
 CONTAINER="${POSTGRES_CONTAINER:-hermes-postgres-1}"
+WEB_CONTAINER="${HERMES_WEB_CONTAINER:-hermes-hermes-web-1}"
 DB_NAME="${POSTGRES_DB:-hermes_db}"
 DB_USER="${POSTGRES_USER:-hermes}"
 
@@ -44,8 +47,8 @@ echo "Press Ctrl+C within 10 seconds to cancel..."
 sleep 10
 
 # ── Stop the app to prevent writes during restore ─────────────────────────────
-echo "[$(date -Iseconds)] Stopping hermes-web to prevent writes during restore..."
-docker stop hermes-web 2>/dev/null || true
+echo "[$(date -Iseconds)] Stopping ${WEB_CONTAINER} to prevent writes during restore..."
+docker stop "${WEB_CONTAINER}" 2>/dev/null || true
 
 # ── Drop and recreate the database ───────────────────────────────────────────
 echo "[$(date -Iseconds)] Terminating active connections to '${DB_NAME}'..."
@@ -67,8 +70,8 @@ docker exec -i "${CONTAINER}" \
 echo "[$(date -Iseconds)] Restore complete."
 
 # ── Restart the app ───────────────────────────────────────────────────────────
-echo "[$(date -Iseconds)] Restarting hermes-web..."
-docker start hermes-web 2>/dev/null || echo "Note: could not restart hermes-web — start it manually."
+echo "[$(date -Iseconds)] Restarting ${WEB_CONTAINER}..."
+docker start "${WEB_CONTAINER}" 2>/dev/null || echo "Note: could not restart ${WEB_CONTAINER} — start it manually."
 
 echo "[$(date -Iseconds)] Done. Run migrations if the backup predates the current schema:"
-echo "  docker-compose -f docker-compose.prod.yml exec hermes-web npx prisma migrate deploy"
+echo "  docker compose -p hermes -f docker-compose.prod.yml exec hermes-web npx prisma migrate deploy"

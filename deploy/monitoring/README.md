@@ -11,7 +11,7 @@
 ### Start (single-server, convenience mode)
 
 ```bash
-docker-compose -f docker-compose.prod.yml --profile monitoring up -d
+docker compose -p hermes -f docker-compose.prod.yml --profile monitoring up -d
 ```
 
 Access the dashboard at: `http://your-server-ip:3001`
