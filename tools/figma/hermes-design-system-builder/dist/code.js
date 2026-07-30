@@ -2883,15 +2883,26 @@ async function verify() {
     if (e.hash !== a.hash) drifted.push({ key: a.key, kind: a.kind, name: a.name, recorded: e.hash, expected: a.hash })
     else present.push(a.key)
   }
-  let referenceFrames = 0
-  for (const ch of figma.currentPage.children) if (!isManaged(ch)) referenceFrames++
+  // Top-level frame breakdown. UNMANAGED top-level FRAMEs = the 34 original
+  // reference frames (never tagged, byte-preserved). Managed nodes — the two
+  // sections and the 36 generated reference assemblies — are NOT reference
+  // frames and are reported separately so nothing is mislabeled as "unmanaged".
+  let originalReferenceFrames = 0
+  let managedTopLevel = 0
+  for (const ch of figma.currentPage.children) {
+    if (isManaged(ch)) managedTopLevel++
+    else if (ch.type === 'FRAME') originalReferenceFrames++
+  }
+  const managedAssembliesPresent = spec.assemblies.filter((a) => !!live.index[a.key]).length
   return {
     ok: missing.length === 0 && drifted.length === 0 && ambiguities.length === 0,
     present: present.length,
     missing,
     drifted,
     ambiguities,
-    referenceFramesPreserved: referenceFrames,
+    originalReferenceFramesPreserved: originalReferenceFrames, // unmanaged originals only
+    managedAssembliesPresent, // generated managed reference assemblies (not references)
+    managedTopLevel,
     total: spec.assets.length,
   }
 }

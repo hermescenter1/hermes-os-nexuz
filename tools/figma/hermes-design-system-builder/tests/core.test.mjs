@@ -628,6 +628,27 @@ describe('no mutation before validation (stubbed Figma proof)', () => {
       expect(calls).toEqual([])
     } finally { delete globalThis.figma }
   })
+
+  it('verify() counts unmanaged top-level FRAMEs as original refs, NOT the managed assemblies', async () => {
+    const node = (type, managed) => ({ type, id: type + ':' + Math.round(Math.random() * 1e9), getSharedPluginData: (_ns, k) => (k === 'managed' && managed ? '1' : '') })
+    globalThis.figma = {
+      currentPage: {
+        children: [
+          ...Array.from({ length: 34 }, () => node('FRAME', false)), // 34 original references (unmanaged)
+          node('SECTION', true), node('SECTION', true), // 2 managed sections
+          ...Array.from({ length: 36 }, () => node('FRAME', true)), // 36 managed assemblies at top level
+        ],
+      },
+      variables: { getLocalVariableCollectionsAsync: async () => [], getLocalVariablesAsync: async () => [] },
+      getLocalPaintStylesAsync: async () => [], getLocalTextStylesAsync: async () => [], getLocalEffectStylesAsync: async () => [],
+    }
+    try {
+      const res = await exec.verify()
+      expect(res.originalReferenceFramesPreserved).toBe(34) // managed assemblies excluded
+      expect(res.managedTopLevel).toBe(38) // 2 sections + 36 managed assembly frames
+      expect(res).not.toHaveProperty('referenceFramesPreserved') // old ambiguous field gone
+    } finally { delete globalThis.figma }
+  })
 })
 
 describe('orphan adoption (repairs partial frames in place)', () => {

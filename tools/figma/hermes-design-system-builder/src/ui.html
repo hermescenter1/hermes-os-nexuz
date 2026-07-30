@@ -151,7 +151,8 @@
       const r = payload
       let s = (r.ok ? '✅ Verified — all assets present, no drift' : '⚠ Verify found issues') + '\n'
       s += '  present ' + r.present + ' / ' + r.total + '\n'
-      s += '  reference frames preserved (unmanaged top-level): ' + r.referenceFramesPreserved + '\n'
+      s += '  original reference frames preserved (unmanaged): ' + r.originalReferenceFramesPreserved + '\n'
+      s += '  generated managed assemblies present: ' + r.managedAssembliesPresent + '\n'
       if (r.missing.length) s += '  missing (' + r.missing.length + '): ' + r.missing.slice(0, 12).map((m) => m.name).join(', ') + (r.missing.length > 12 ? '…' : '') + '\n'
       if (r.drifted.length) s += '  drifted (' + r.drifted.length + '): ' + r.drifted.slice(0, 12).map((m) => m.name).join(', ') + '\n'
       out.textContent = s

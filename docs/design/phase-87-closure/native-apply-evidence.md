@@ -8,6 +8,34 @@
 > created — locally, on the free Starter plan, through the official Figma Plugin
 > API — with the two plan-gated capabilities explicitly deferred (below).
 
+## 0. ✅ FINAL RESULT — repaired Apply SUCCEEDED (owner-run, 2026-07-30)
+
+After the repair (§4″), the owner ran the repaired bundle (dist sha
+`0fff3ca023f06ca3`):
+
+- **Repair Apply completed successfully — zero reported errors.** The 36
+  assemblies were materialised via in-place orphan adoption (ids preserved),
+  no duplicate frames.
+- **Verify: 173 / 173 assets present, no drift.**
+- **Final idempotency Dry Run: `create 0 · update 0 · skip 173 · prune 0`** —
+  per kind: variables 46, collections 4, paint styles 29, text styles 8, effect
+  styles 4, component sets 44 (352 native variants), assemblies 36, sections 2,
+  all **skip**. Rerunning never duplicates.
+
+**Top-level frame count — correct breakdown (do NOT call all of them unmanaged
+references):** the file now has **70 top-level frames = 34 original reference
+frames + 36 generated managed assemblies**.
+
+- The **34 original** reference frames are **unmanaged** (carry no `hermesDSB`
+  marker), **byte/node-preserved, never touched** by the plugin.
+- The **36 generated assemblies** are **MANAGED** plugin assets (tagged, tracked
+  in the manifest/index, present-and-no-drift in Verify). They are reference
+  *assemblies built from native instances* — **not** unmanaged reference frames.
+
+The plugin's Verify output reflects this split: `originalReferenceFramesPreserved`
+counts only the 34 unmanaged originals; `managedAssembliesPresent` counts the 36
+managed assemblies separately.
+
 ## 1. Execution evidence (owner-run, 2026-07-30)
 
 Plugin source: `tools/figma/hermes-design-system-builder/` · immutable commit
@@ -36,8 +64,9 @@ Rerunning the plugin never duplicates. Rollback was not invoked.
 ✅ **Native, local, Starter-compatible** creation of semantic color Variables +
 collections; spacing/radius/sizing Variables; local Paint/Text/Effect Styles;
 23 primitive + 13 core + 7 industrial Component Sets with Variants + Component
-Properties + Auto Layout; deterministic, idempotent, rollback-safe; 34 reference
-frames preserved. This is a **real** result, not a scaffold-as-frames workaround.
+Properties + Auto Layout; deterministic, idempotent, rollback-safe; the 34
+original reference frames preserved (unmanaged), the 36 generated assemblies
+managed. This is a **real** result, not a scaffold-as-frames workaround.
 
 **Explicitly NOT complete — `DEFERRED_REQUIRES_FIGMA_PROFESSIONAL` (do not claim):**
 - **Multiple variable modes** (light/dark, per-locale FA/EN/DE). Starter = 1 mode
@@ -193,8 +222,9 @@ compatible revision (`REVISIONS = { component: 3, textStyle: 2, assembly: 1 }`).
   have no Figma original — they are clearly marked `· generated` / 
   `newlyGenerated`** and derive purely from the approved component system +
   repo translations. The Apply report + on-canvas manifest store the mapping
-  original ref → assembly node → instances used. The 34 original unmanaged
-  reference frames are never touched.
+  original ref → assembly node → instances used. The 34 original **unmanaged**
+  reference frames are never touched; the 36 assemblies are **managed** and are
+  counted separately from the originals (see §0 — 70 top-level frames total).
 - **Fail-closed safety**: Apply is blocked BEFORE any mutation on (a) duplicate
   managed markers (ownership ambiguity) and (b) missing canonical fonts unless
   the owner explicitly ticks the documented-fallback checkbox

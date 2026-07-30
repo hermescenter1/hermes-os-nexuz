@@ -59,7 +59,7 @@
     {
       "id": "figma-exec",
       "file": "src/lib/figma-exec.js",
-      "sha256": "1d34eb71ebd05e23"
+      "sha256": "074819cf3d0b4794"
     },
     {
       "id": "main",
@@ -67,8 +67,8 @@
       "sha256": "0f458e8b0d1edb2e"
     }
   ],
-  "bundleSha256": "0fff3ca023f06ca3",
-  "uiSha256": "6e0da9806d65f907",
+  "bundleSha256": "b562f9016c3b863c",
+  "uiSha256": "fce4b2ec685a9157",
   "counts": {
     "collections": 4,
     "variables": 46,
