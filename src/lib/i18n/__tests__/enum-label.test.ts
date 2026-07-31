@@ -55,11 +55,13 @@ describe("enumLabel — catalog first, safe fallback second", () => {
   });
 
   it("the FA-bearing namespaces really do carry Persian for every migrated enum", () => {
-    // `assetOperations` was translated to GERMAN only — its `fa` entries are an
-    // English carryover, which is exactly why the migrated surfaces read status,
-    // criticality, risk and lifecycle from `assetMaintenance` instead.
+    // PHASE 89 also translated the `assetOperations` enum labels, so its `fa`
+    // is no longer an English carryover. The migrated surfaces still read
+    // status, criticality, risk and lifecycle from `assetMaintenance` by design
+    // (one canonical source of localized enum labels).
     const faDoc = (fa as unknown as typeof en);
-    expect(faDoc.assetOperations.enums.status.IN_SERVICE).toBe(en.assetOperations.enums.status.IN_SERVICE);
+    expect(faDoc.assetOperations.enums.status.IN_SERVICE).not.toBe(en.assetOperations.enums.status.IN_SERVICE);
+    expect(faDoc.assetOperations.enums.status.IN_SERVICE).toMatch(/[؀-ۿ]/);
     for (const [ns, path] of [
       ["assetMaintenance", "assetStatus"], ["assetMaintenance", "criticality"],
       ["assetMaintenance", "risk"], ["assetMaintenance", "lifecycle"],

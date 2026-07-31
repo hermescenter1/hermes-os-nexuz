@@ -149,34 +149,34 @@ export default function BenchmarksPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-white/40 text-xs uppercase border-b border-white/10">
-                      <th className="text-left py-2">{t("site")}</th>
-                      <th className="text-right py-2">{t("avgRisk")}</th>
-                      <th className="text-right py-2">{t("maxRisk")}</th>
-                      <th className="text-right py-2">{t("confidence")}</th>
-                      <th className="text-right py-2">{t("assets")}</th>
-                      <th className="text-right py-2">{t("status")}</th>
+                      <th className="text-start py-2">{t("site")}</th>
+                      <th className="text-end py-2">{t("avgRisk")}</th>
+                      <th className="text-end py-2">{t("maxRisk")}</th>
+                      <th className="text-end py-2">{t("confidence")}</th>
+                      <th className="text-end py-2">{t("assets")}</th>
+                      <th className="text-end py-2">{t("status")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.riskRanking.map((s, i) => (
                       <tr key={String(s.id)} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                         <td className="py-2 text-white">{String(s.siteName)}</td>
-                        <td className="py-2 text-right text-red-400 font-mono">
+                        <td className="py-2 text-end text-red-400 font-mono">
                           {s.avgRiskScore !== null ? Number(s.avgRiskScore).toFixed(1) : t("na")}
                         </td>
-                        <td className="py-2 text-right text-red-300/70 font-mono text-xs">
+                        <td className="py-2 text-end text-red-300/70 font-mono text-xs">
                           {s.maxRiskScore !== null ? Number(s.maxRiskScore).toFixed(1) : "—"}
                         </td>
-                        <td className="py-2 text-right">
+                        <td className="py-2 text-end">
                           <span className={`text-xs ${
                             s.confidence === "HIGH" ? "text-green-400" :
                             s.confidence === "MEDIUM" ? "text-yellow-400" : "text-orange-400"
                           }`}>{String(s.confidence)}</span>
                         </td>
-                        <td className="py-2 text-right text-white/50 text-xs">
+                        <td className="py-2 text-end text-white/50 text-xs">
                           {String(s.assetsWithData)}/{String(s.assetCount)}
                         </td>
-                        <td className="py-2 text-right">
+                        <td className="py-2 text-end">
                           {String(s.dataStatus) === "insufficientData" && (
                             <span className="text-xs text-white/30">{t("insufficientData")}</span>
                           )}
@@ -198,27 +198,27 @@ export default function BenchmarksPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-white/40 text-xs uppercase border-b border-white/10">
-                      <th className="text-left py-2">{t("site")}</th>
-                      <th className="text-right py-2">{t("availability")}</th>
-                      <th className="text-right py-2">{t("efficiency")}</th>
-                      <th className="text-right py-2">{t("healthScore")}</th>
-                      <th className="text-right py-2">{t("assets")}</th>
+                      <th className="text-start py-2">{t("site")}</th>
+                      <th className="text-end py-2">{t("availability")}</th>
+                      <th className="text-end py-2">{t("efficiency")}</th>
+                      <th className="text-end py-2">{t("healthScore")}</th>
+                      <th className="text-end py-2">{t("assets")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.kpiComparison.map(s => (
                       <tr key={String(s.id)} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                         <td className="py-2 text-white">{String(s.siteName)}</td>
-                        <td className="py-2 text-right text-green-400 font-mono">
+                        <td className="py-2 text-end text-green-400 font-mono">
                           {s.avgAvailability !== null ? `${Number(s.avgAvailability).toFixed(1)}%` : <span className="text-white/30">{t("notComparable")}</span>}
                         </td>
-                        <td className="py-2 text-right text-cyan-400 font-mono">
+                        <td className="py-2 text-end text-cyan-400 font-mono">
                           {s.avgEfficiency !== null ? `${Number(s.avgEfficiency).toFixed(1)}%` : <span className="text-white/30">{t("notComparable")}</span>}
                         </td>
-                        <td className="py-2 text-right text-blue-400 font-mono">
+                        <td className="py-2 text-end text-blue-400 font-mono">
                           {s.avgHealthScore !== null ? `${Number(s.avgHealthScore).toFixed(1)}%` : <span className="text-white/30">{t("notComparable")}</span>}
                         </td>
-                        <td className="py-2 text-right text-white/50 text-xs">
+                        <td className="py-2 text-end text-white/50 text-xs">
                           {String(s.assetsWithKpiData)}/{String(s.assetCount)}
                         </td>
                       </tr>

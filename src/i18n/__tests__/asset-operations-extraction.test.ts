@@ -92,15 +92,13 @@ const GERMAN_IDENTICAL = new Set<string>([
 const INFORMAL_ADDRESS =
   /\b(du|dein|deine|deiner|deinem|deinen|dich|dir|euch|euer|eure|eurem|euren|eurer)\b/i;
 
-// English-only leaves temporarily copied to fa/de (nav eyebrow, enum labels,
-// unit words with no current Persian, page metadata title).
+// PHASE 89 translated the asset registry (enum labels, status/criticality,
+// nav eyebrow, meta.registry, unit words) into Persian. The only leaves that
+// legitimately stay identical to English in fa are the protocol acronyms:
+// PLC / HMI / VFD (compact + full) and the IPC compact label.
 const ENGLISH_ONLY = new Set<string>([
-  "nav.eyebrow",
-  "detail.years",
-  "meta.registry",
-  ...["PRODUCTION_LINE","MACHINE","PLC","HMI","SCADA_NODE","ELECTRICAL_PANEL","MCC_PANEL","VFD","MOTOR","PUMP","VALVE","SENSOR","INSTRUMENT","ROBOT","CONVEYOR","COMPRESSOR","UTILITY_SYSTEM","SAFETY_SYSTEM","NETWORK_DEVICE","INDUSTRIAL_PC"].flatMap((k) => [`enums.typeCompact.${k}`, `enums.typeFull.${k}`]),
-  ...["IN_SERVICE","DEGRADED","UNDER_MAINTENANCE","STANDBY","PLANNED","COMMISSIONED","RETIRED","REPLACED","DECOMMISSIONED"].map((k) => `enums.status.${k}`),
-  ...["CRITICAL","HIGH","MEDIUM","LOW","NON_CRITICAL"].map((k) => `enums.criticality.${k}`),
+  ...["PLC", "HMI", "VFD"].flatMap((k) => [`enums.typeCompact.${k}`, `enums.typeFull.${k}`]),
+  "enums.typeCompact.INDUSTRIAL_PC", // IPC (compact); typeFull is translated ("رایانهٔ صنعتی")
 ]);
 
 describe("assetOperations namespace — three-locale parity", () => {
@@ -192,7 +190,7 @@ describe("assetOperations — German translation (Phase 86C4B1)", () => {
 describe("assetOperations — bilingual vs English-only classification", () => {
   const e = flatten(enAO), f = flatten(faAO);
 
-  it("English-only leaves temp-copy English into fa (preserves current behavior)", () => {
+  it("only protocol-acronym enum labels stay identical to English in fa (Phase 89)", () => {
     const wrong = [...ENGLISH_ONLY].filter((k) => f.get(k) !== e.get(k));
     expect(wrong).toEqual([]);
   });

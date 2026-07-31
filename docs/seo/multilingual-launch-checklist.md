@@ -58,7 +58,10 @@
    distinguishable in the existing analytics — no new tracker was added.
 
 ### Domain policy
-- Primary canonical host: `www.hermesnovin.com` (BASE_URL default).
+- Primary canonical host: `www.hermesnovin.com` — set via the required
+  `NEXT_PUBLIC_BASE_URL` env var above (the code fallback in
+  `src/lib/seo/config.ts` is the apex host, so this var MUST be set in
+  production or every SEO surface will emit apex canonicals).
 - `www.hermesos.uk`: do NOT activate metadata for it until it is live; when
   live, choose either a 301 redirect to the primary host (recommended) or a
   distinct-content strategy — never duplicate canonicals across both hosts.

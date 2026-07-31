@@ -168,7 +168,7 @@ export default function PathsPage() {
                         <div className="flex-1 h-1 bg-white/10 rounded-full">
                           <div className="h-1 rounded-full bg-cyan-400" style={{ width: `${e.weight * 100}%` }} />
                         </div>
-                        <span className="text-white/40 text-xs font-mono w-10 text-right">{(e.weight * 100).toFixed(0)}%</span>
+                        <span className="text-white/40 text-xs font-mono w-10 text-end">{(e.weight * 100).toFixed(0)}%</span>
                       </div>
                     ))}
                   </div>

@@ -89,9 +89,10 @@ const enMO = (en as Tree).maintenanceOperations;
 const faMO = (fa as Tree).maintenanceOperations;
 const deMO = (de as Tree).maintenanceOperations;
 
-// English-only leaves temp-copied to fa: the "CMMS" nav eyebrow plus every
-// `pages.*` leaf (all server-page headers/labels are currently English-only).
-const isEnglishOnly = (key: string) => key === "nav.eyebrow" || key.startsWith("pages.");
+// PHASE 89 translated every server-page label into professional Persian; the
+// only leaf that legitimately stays identical to English is the "CMMS" nav
+// eyebrow (an acronym, allowlisted in fa-identical-allowlist.ts).
+const isEnglishOnly = (key: string) => key === "nav.eyebrow";
 
 // German values that legitimately stay identical to English: the CMMS acronym,
 // the "Dashboard" loanword, and words already spelled the same in German.
@@ -215,7 +216,7 @@ describe("maintenanceOperations — German translation (Phase 86C4B1)", () => {
 describe("maintenanceOperations — bilingual vs English-only classification", () => {
   const e = flatten(enMO), f = flatten(faMO);
 
-  it("English-only leaves copy English into fa exactly (preserves current output)", () => {
+  it("only the CMMS nav eyebrow stays English in fa; every page label is Persian (Phase 89)", () => {
     const wrong = [...e].filter(([k, v]) => isEnglishOnly(k) && f.get(k) !== v).map(([k]) => k);
     expect(wrong).toEqual([]);
   });

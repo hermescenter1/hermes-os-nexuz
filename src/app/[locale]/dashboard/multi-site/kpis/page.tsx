@@ -113,21 +113,21 @@ export default function SiteKPIsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-white/40 text-xs uppercase border-b border-white/10">
-                    <th className="text-left py-2">{t("site")}</th>
-                    <th className="text-right py-2">{t("availability")}</th>
-                    <th className="text-right py-2">{t("efficiency")}</th>
-                    <th className="text-right py-2">{t("healthScore")}</th>
-                    <th className="text-right py-2">{t("coverage")}</th>
+                    <th className="text-start py-2">{t("site")}</th>
+                    <th className="text-end py-2">{t("availability")}</th>
+                    <th className="text-end py-2">{t("efficiency")}</th>
+                    <th className="text-end py-2">{t("healthScore")}</th>
+                    <th className="text-end py-2">{t("coverage")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {okSites.map(s => (
                     <tr key={s.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                       <td className="py-3 text-white font-medium">{s.siteName}</td>
-                      <td className="py-3 text-right"><KpiCell value={s.avgAvailability} /></td>
-                      <td className="py-3 text-right"><KpiCell value={s.avgEfficiency} /></td>
-                      <td className="py-3 text-right"><KpiCell value={s.avgHealthScore} /></td>
-                      <td className="py-3 text-right text-white/40 text-xs">
+                      <td className="py-3 text-end"><KpiCell value={s.avgAvailability} /></td>
+                      <td className="py-3 text-end"><KpiCell value={s.avgEfficiency} /></td>
+                      <td className="py-3 text-end"><KpiCell value={s.avgHealthScore} /></td>
+                      <td className="py-3 text-end text-white/40 text-xs">
                         {s.assetsWithKpiData}/{s.assetCount}
                       </td>
                     </tr>
@@ -135,7 +135,7 @@ export default function SiteKPIsPage() {
                   {badSites.map(s => (
                     <tr key={s.id} className="border-b border-white/5 opacity-50">
                       <td className="py-3 text-white/50">{s.siteName}</td>
-                      <td colSpan={4} className="py-3 text-right text-xs text-white/30">
+                      <td colSpan={4} className="py-3 text-end text-xs text-white/30">
                         {t("insufficientData")}
                       </td>
                     </tr>
@@ -145,7 +145,7 @@ export default function SiteKPIsPage() {
             </div>
           </GlassCard>
 
-          <p className="text-xs text-white/30 text-right">
+          <p className="text-xs text-white/30 text-end">
             {t("period")}: {data.periodLabel} · {t("dataFreshness")}: {formatDateTime(data.computedAt, locale)}
           </p>
         </>

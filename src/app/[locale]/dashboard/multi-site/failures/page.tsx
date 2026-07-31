@@ -155,7 +155,7 @@ export default function CrossSiteFailuresPage() {
           </div>
 
           {data.patterns.length > 0 && (
-            <p className="text-xs text-white/30 text-right">
+            <p className="text-xs text-white/30 text-end">
               {t("dataFreshness")}: {formatDateTime(data.computedAt, locale)}
             </p>
           )}
