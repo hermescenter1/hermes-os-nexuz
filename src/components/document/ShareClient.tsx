@@ -6,7 +6,7 @@ import type { EdmsShare } from "@/lib/document/types";
 import { formatDate } from "@/lib/i18n/format";
 
 const ACCESS_STYLE: Record<string, { bg: string; text: string }> = {
-  VIEW:        { bg: "bg-faint/[0.08]",  text: "text-faint"  },
+  VIEW:        { bg: "bg-faint/[0.08]",  text: "text-metadata"  },
   DOWNLOAD:    { bg: "bg-ice/[0.08]",    text: "text-ice"    },
   COMMENT:     { bg: "bg-warn/[0.08]",   text: "text-warn"   },
   EDIT:        { bg: "bg-signal/[0.08]", text: "text-signal" },
@@ -33,16 +33,16 @@ export function ShareClient({ shares }: Props) {
     <div className="card-enterprise rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-line flex items-center justify-between">
         <h3 className="text-sm font-semibold text-ink">{isFa ? "اشتراک‌گذاری‌ها" : "Document Shares"}</h3>
-        <span className="text-xs text-faint">{shares.length} {isFa ? "مورد" : "items"}</span>
+        <span className="text-xs text-metadata">{shares.length} {isFa ? "مورد" : "items"}</span>
       </div>
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-line bg-surface2">
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "سند" : "Document"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "با" : "Shared With"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "سطح دسترسی" : "Access"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "انقضا" : "Expires"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "تاریخ" : "Created"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "سند" : "Document"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "با" : "Shared With"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{isFa ? "سطح دسترسی" : "Access"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{isFa ? "انقضا" : "Expires"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{isFa ? "تاریخ" : "Created"}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line">
@@ -51,7 +51,7 @@ export function ShareClient({ shares }: Props) {
             return (
               <tr key={s.id} className="hover:bg-surface2 transition-colors">
                 <td className="px-4 py-3">
-                  <span className="text-xs font-mono text-faint">{s.documentId.slice(0, 8)}…</span>
+                  <span className="text-xs font-mono text-metadata">{s.documentId.slice(0, 8)}…</span>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-sm text-ink">{s.sharedWith}</span>
@@ -62,12 +62,12 @@ export function ShareClient({ shares }: Props) {
                   </span>
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
-                  <span className="text-xs text-faint">
+                  <span className="text-xs text-metadata">
                     {s.expiresAt ? formatDate(s.expiresAt, locale) : (isFa ? "هرگز" : "Never")}
                   </span>
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
-                  <span className="text-xs text-faint font-mono">{formatDate(s.createdAt, locale)}</span>
+                  <span className="text-xs text-metadata font-mono">{formatDate(s.createdAt, locale)}</span>
                 </td>
               </tr>
             );

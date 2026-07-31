@@ -69,7 +69,7 @@ export default async function CategoryPage({
           {cat.description && (
             <p className="text-muted text-sm mt-1">{cat.description}</p>
           )}
-          <p className="text-faint text-xs mt-2">
+          <p className="text-metadata text-xs mt-2">
             {articles.length} {t("articlesUnit")}
           </p>
         </div>

@@ -72,7 +72,7 @@ export function CustomerActivityClient() {
     <div className="space-y-6">
       {Object.entries(groups).map(([date, logs]) => (
         <div key={date}>
-          <p className="font-mono text-xs uppercase tracking-widest text-faint mb-3">{date}</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-metadata mb-3">{date}</p>
           <div className="rounded-xl border border-line bg-surface divide-y divide-line">
             {logs.map((log) => (
               <div key={log.id} className="px-5 py-3.5 flex items-center gap-3">
@@ -81,9 +81,9 @@ export function CustomerActivityClient() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-ink truncate">{log.description}</p>
-                  <p className="text-xs text-faint font-mono">{log.eventType}</p>
+                  <p className="text-xs text-metadata font-mono">{log.eventType}</p>
                 </div>
-                <span className="shrink-0 text-xs text-faint">
+                <span className="shrink-0 text-xs text-metadata">
                   {formatDate(log.createdAt, locale, { hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>

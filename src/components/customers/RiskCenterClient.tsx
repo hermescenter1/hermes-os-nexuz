@@ -132,7 +132,7 @@ export function RiskCenterClient() {
             </button>
           ))}
         </div>
-        <span className="ml-auto kpi-label text-faint">{filtered.length} risks</span>
+        <span className="ml-auto kpi-label text-metadata">{filtered.length} risks</span>
       </div>
 
       {/* Risk list */}
@@ -150,36 +150,36 @@ export function RiskCenterClient() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-body text-sm font-semibold text-ink">{r.companyName}</p>
                   <span className={SEV_CLASS[r.severity]}>{r.severity}</span>
-                  <span className="kpi-label text-faint">{RISK_TYPE_LABELS[r.type]}</span>
+                  <span className="kpi-label text-metadata">{RISK_TYPE_LABELS[r.type]}</span>
                 </div>
-                <p className="kpi-label text-faint mt-0.5 truncate">{r.description}</p>
+                <p className="kpi-label text-metadata mt-0.5 truncate">{r.description}</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className={STATUS_CLASS[r.status]}>{r.status}</span>
-                <span className="kpi-label text-faint hidden sm:block">{r.owner}</span>
+                <span className="kpi-label text-metadata hidden sm:block">{r.owner}</span>
               </div>
             </div>
 
             {expanded === r.id && (
               <div className="mt-3 pt-3 border-t border-line grid grid-cols-2 gap-3 text-left">
                 <div>
-                  <p className="kpi-label text-faint">Risk Type</p>
+                  <p className="kpi-label text-metadata">Risk Type</p>
                   <p className="font-body text-xs text-ink">{RISK_TYPE_LABELS[r.type]}</p>
                 </div>
                 <div>
-                  <p className="kpi-label text-faint">Detected</p>
+                  <p className="kpi-label text-metadata">Detected</p>
                   <p className="font-body text-xs text-ink">{r.detectedAt}</p>
                 </div>
                 <div>
-                  <p className="kpi-label text-faint">Owner</p>
+                  <p className="kpi-label text-metadata">Owner</p>
                   <p className="font-body text-xs text-ink">{r.owner}</p>
                 </div>
                 <div>
-                  <p className="kpi-label text-faint">Status</p>
+                  <p className="kpi-label text-metadata">Status</p>
                   <span className={STATUS_CLASS[r.status]}>{r.status}</span>
                 </div>
                 <div className="col-span-2">
-                  <p className="kpi-label text-faint">Description</p>
+                  <p className="kpi-label text-metadata">Description</p>
                   <p className="font-body text-xs text-ink">{r.description}</p>
                 </div>
               </div>
@@ -199,7 +199,7 @@ export function RiskCenterClient() {
         <div className="space-y-2">
           {data.byType.map(t => (
             <div key={t.type} className="flex items-center gap-3">
-              <span className="kpi-label text-faint flex-1">{t.label}</span>
+              <span className="kpi-label text-metadata flex-1">{t.label}</span>
               <div className="w-32 h-1.5 rounded bg-line overflow-hidden">
                 <div className="h-1.5 rounded bg-danger/50" style={{ width: `${(t.count / data.total) * 100}%` }} />
               </div>

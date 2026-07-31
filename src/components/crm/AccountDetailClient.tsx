@@ -96,7 +96,7 @@ export function AccountDetailClient({ accountId }: { accountId: string }) {
           { label: t("accountDetail.tierLabel"),     value: tierLabel(account.tier) },
         ].map(({ label, value }) => (
           <div key={label} className="rounded-xl border border-line bg-surface p-4">
-            <p className="font-mono text-xs uppercase tracking-widest text-faint">{label}</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-metadata">{label}</p>
             <p className="mt-1 text-lg font-bold text-ink">{value}</p>
           </div>
         ))}
@@ -153,7 +153,7 @@ export function AccountDetailClient({ accountId }: { accountId: string }) {
                     <span className="absolute -start-[21px] top-1 h-3 w-3 rounded-full border-2 border-cyan-500 bg-bg" aria-hidden="true" />
                     <p className="text-sm font-medium text-ink">{journeyLabel(e.eventType)}</p>
                     {e.description && <p className="text-xs text-muted" dir="auto">{e.description}</p>}
-                    <p className="text-xs text-faint">{df.format(new Date(e.occurredAt))}</p>
+                    <p className="text-xs text-metadata">{df.format(new Date(e.occurredAt))}</p>
                   </div>
                 ))}
               </div>
@@ -189,7 +189,7 @@ export function AccountDetailClient({ accountId }: { accountId: string }) {
                 <div>
                   <p className="text-sm font-medium text-ink">{t("accountDetail.renewal")} · <bdi dir="ltr">{r.status}</bdi></p>
                   <p className="text-xs text-muted">{df.format(new Date(r.renewalDate))} · {t("common.probabilityOf", { n: r.probability })}</p>
-                  {r.notes && <p className="text-xs text-faint" dir="auto">{r.notes}</p>}
+                  {r.notes && <p className="text-xs text-metadata" dir="auto">{r.notes}</p>}
                 </div>
                 <span className="font-mono text-cyan-400 text-sm"><bdi dir="ltr">{fmt(r.value)}</bdi></span>
               </div>

@@ -8,8 +8,8 @@ function docTypeBadge(t: string) {
   if (t === "MANUAL")      return "bg-ice/[0.08] text-ice";
   if (t === "DRAWING")     return "bg-signal/[0.08] text-signal";
   if (t === "CERTIFICATE") return "bg-warn/[0.10] text-warn";
-  if (t === "DATASHEET")   return "bg-surface2 text-faint";
-  return "bg-surface2 text-faint";
+  if (t === "DATASHEET")   return "bg-surface2 text-metadata";
+  return "bg-surface2 text-metadata";
 }
 
 interface AssetWithDocs extends RegistryAssetRecord {
@@ -61,7 +61,7 @@ export function AssetDocumentsClient({ assets }: Props) {
                     {a.name}
                   </Link>
                 </div>
-                <span className="text-xs text-faint">{a.documentLinks.length} {t("documents.docsUnit")}</span>
+                <span className="text-xs text-metadata">{a.documentLinks.length} {t("documents.docsUnit")}</span>
               </div>
 
               <div className="space-y-2">
@@ -72,7 +72,7 @@ export function AssetDocumentsClient({ assets }: Props) {
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-ink font-medium">{doc.title}</p>
-                      {doc.description && <p className="text-xs text-faint mt-0.5">{doc.description}</p>}
+                      {doc.description && <p className="text-xs text-metadata mt-0.5">{doc.description}</p>}
                       {doc.documentId && (
                         <p className="font-mono text-xs text-ice/70 mt-0.5">{doc.documentId}</p>
                       )}

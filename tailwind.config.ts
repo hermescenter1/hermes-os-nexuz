@@ -16,6 +16,7 @@ export default {
         ink:       "var(--ink)",
         muted:     "var(--muted)",
         faint:     "var(--faint)",
+        metadata:  "var(--color-text-metadata)",
         signal:    "var(--signal)",
         signalDim: "var(--signal-dim)",
         ice:       "var(--ice)",

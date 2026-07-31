@@ -41,7 +41,7 @@ export function NewLoginClient({ locale, from }: Props) {
         // preventing a silent bounce-loop for lower-privilege roles
         const fromPath = from ? decodeURIComponent(from) : null;
         const fromNeedsPrivilege = fromPath
-          ? /^\/(fa|en)\/(engineering|admin)/.test(fromPath)
+          ? /^\/(fa|en|de)\/(engineering|admin)/.test(fromPath)
           : false;
         const dest = fromPath && (!fromNeedsPrivilege || privileged) ? fromPath : defaultDest;
         window.location.href = dest;

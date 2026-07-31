@@ -16,7 +16,7 @@ function fmtDate(d: string, locale = "en") {
 
 // Status → badge CSS (label comes from journalEditorial.status.*)
 const STATUS_STYLE: Record<string, { cls: string; dot: string }> = {
-  DRAFT:     { cls: "bg-surface3 text-faint border-line/40",        dot: "bg-faint"   },
+  DRAFT:     { cls: "bg-surface3 text-metadata border-line/40",        dot: "bg-faint"   },
   SUBMITTED: { cls: "bg-warn/10 text-warn border-warn/20",          dot: "bg-warn"    },
   IN_REVIEW: { cls: "bg-ice/10 text-ice border-ice/20",             dot: "bg-ice"     },
   PUBLISHED: { cls: "bg-signal/10 text-signal border-signal/20",    dot: "bg-signal"  },
@@ -37,7 +37,7 @@ async function ArticleRow({ article, isFa, locale }: { article: ArticleListItem;
             {statusLabel}
           </span>
           {article.language && (
-            <span className="text-[9px] text-faint font-mono border border-line/30 px-1.5 py-0.5 rounded">
+            <span className="text-[9px] text-metadata font-mono border border-line/30 px-1.5 py-0.5 rounded">
               {article.language}
             </span>
           )}
@@ -54,7 +54,7 @@ async function ArticleRow({ article, isFa, locale }: { article: ArticleListItem;
             {article.rejectionReason}
           </p>
         )}
-        <p className="mt-2 text-[10px] text-faint font-mono">
+        <p className="mt-2 text-[10px] text-metadata font-mono">
           {t("updatedLabel")} {fmtDate(article.updatedAt, locale)}
         </p>
       </div>

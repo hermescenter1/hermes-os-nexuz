@@ -83,7 +83,7 @@ export function CustomerSuccessClient() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {healthKpis.map(({ label, value, color }) => (
           <div key={label} className="rounded-xl border border-line bg-surface p-4">
-            <p className="font-mono text-xs uppercase tracking-widest text-faint">{label}</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-metadata">{label}</p>
             <p className={`mt-1 text-3xl font-bold ${color}`} dir="ltr">{value}</p>
           </div>
         ))}
@@ -115,7 +115,7 @@ export function CustomerSuccessClient() {
             <thead>
               <tr className="border-b border-line">
                 {columns.map(h => (
-                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-faint">{h}</th>
+                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-metadata">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -134,7 +134,7 @@ export function CustomerSuccessClient() {
                   <td className="px-4 py-3">
                     {a.health
                       ? <HealthScoreCard score={a.health.score} category={a.health.category} compact />
-                      : <span className="text-faint text-xs">—</span>
+                      : <span className="text-metadata text-xs">—</span>
                     }
                   </td>
                 </tr>
@@ -153,7 +153,7 @@ export function CustomerSuccessClient() {
                   {data.accounts.find(a => a.id === r.accountId)?.name ?? r.accountId}
                 </p>
                 <p className="text-xs text-muted">{t("common.due", { date: df.format(new Date(r.renewalDate)) })} · {t("common.probabilityOf", { n: r.probability })}</p>
-                {r.notes && <p className="text-xs text-faint" dir="auto">{r.notes}</p>}
+                {r.notes && <p className="text-xs text-metadata" dir="auto">{r.notes}</p>}
               </div>
               <div className="flex flex-col items-end gap-1.5">
                 <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${RENEWAL_STATUS_STYLES[r.status] ?? ""}`}>
@@ -173,7 +173,7 @@ export function CustomerSuccessClient() {
               <div className="space-y-0.5">
                 <p className="text-sm font-medium text-ink" dir="auto">{e.title}</p>
                 <p className="text-xs text-muted"><bdi dir="ltr">{e.type}</bdi> · <span dir="auto">{data.accounts.find(a => a.id === e.accountId)?.name ?? ""}</span></p>
-                {e.description && <p className="text-xs text-faint" dir="auto">{e.description}</p>}
+                {e.description && <p className="text-xs text-metadata" dir="auto">{e.description}</p>}
               </div>
               <div className="flex flex-col items-end gap-1.5">
                 <span className="text-xs text-muted"><bdi dir="ltr">{e.status}</bdi></span>
@@ -195,7 +195,7 @@ export function CustomerSuccessClient() {
                 </div>
                 <div className="text-end">
                   <p className="font-mono text-sm text-cyan-400" dir="ltr">{(mgr.accountIds as string[]).length}</p>
-                  <p className="text-xs text-faint">{t("cs.ofAccounts", { capacity: mgr.capacity })}</p>
+                  <p className="text-xs text-metadata">{t("cs.ofAccounts", { capacity: mgr.capacity })}</p>
                 </div>
               </div>
             </div>

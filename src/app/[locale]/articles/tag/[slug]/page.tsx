@@ -65,7 +65,7 @@ export default async function TagPage({
           <h1 className="text-2xl font-bold text-ink">
             #{isFa ? (tag.nameFa ?? tag.name) : tag.name}
           </h1>
-          <p className="text-faint text-xs mt-2">
+          <p className="text-metadata text-xs mt-2">
             {articles.length} {t("articlesUnit")}
           </p>
         </div>

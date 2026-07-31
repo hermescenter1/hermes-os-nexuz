@@ -7,7 +7,7 @@ import { formatDate } from "@/lib/i18n/format";
 const TYPE_STYLE: Record<string, { bg: string; text: string }> = {
   MAJOR: { bg: "bg-danger/[0.08]",  text: "text-danger"  },
   MINOR: { bg: "bg-ice/[0.08]",     text: "text-ice"     },
-  PATCH: { bg: "bg-faint/[0.08]",   text: "text-faint"   },
+  PATCH: { bg: "bg-faint/[0.08]",   text: "text-metadata"   },
 };
 
 interface Props { revisions: EdmsRevision[] }
@@ -33,11 +33,11 @@ export function RevisionHistoryClient({ revisions }: Props) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-line bg-surface2">
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "نسخه" : "Revision"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "نوع" : "Type"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "سند" : "Document"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "خلاصه" : "Summary"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "تاریخ" : "Date"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "نسخه" : "Revision"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{isFa ? "نوع" : "Type"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{isFa ? "سند" : "Document"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{isFa ? "خلاصه" : "Summary"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "تاریخ" : "Date"}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line">
@@ -56,13 +56,13 @@ export function RevisionHistoryClient({ revisions }: Props) {
                   </span>
                 </td>
                 <td className="px-4 py-3 hidden md:table-cell">
-                  <span className="text-xs font-mono text-faint">{rev.documentId.slice(0, 8)}…</span>
+                  <span className="text-xs font-mono text-metadata">{rev.documentId.slice(0, 8)}…</span>
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
                   <span className="text-xs text-muted truncate block max-w-[240px]">{rev.summary ?? "—"}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-xs text-faint font-mono">{formatDate(rev.createdAt, locale)}</span>
+                  <span className="text-xs text-metadata font-mono">{formatDate(rev.createdAt, locale)}</span>
                 </td>
               </tr>
             );

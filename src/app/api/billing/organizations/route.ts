@@ -10,6 +10,7 @@ import { verifyAccessToken }          from "@/lib/auth/jwt";
 import { ACCESS_TOKEN_COOKIE }        from "@/lib/auth/config";
 import { getPrisma }                  from "@/lib/db/prisma";
 import { recordAuditEvent, BILLING_AUDIT } from "@/lib/audit/audit-service";
+import { logger }                     from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,7 +70,8 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    logger.error("[billing.organizations] GET failed.", { error: String(err), userId });
+    return NextResponse.json({ error: "Failed to load organization. Please try again." }, { status: 500 });
   }
 }
 
@@ -131,6 +133,7 @@ export async function POST(req: NextRequest) {
       },
     }, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    logger.error("[billing.organizations] POST failed.", { error: String(err), userId });
+    return NextResponse.json({ error: "Failed to create organization. Please try again." }, { status: 500 });
   }
 }

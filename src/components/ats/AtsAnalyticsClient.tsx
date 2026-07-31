@@ -54,7 +54,7 @@ export function AtsAnalyticsClient() {
           { label: "Avg ATS Score",    value: `${data.averageAtsScore}`, color: "text-warn"  },
           { label: "Hired",            value: data.hiredCandidates,     color: "text-signal" },
           { label: "Rejected",         value: data.rejectedCandidates,  color: "text-danger" },
-          { label: "Velocity (days)",  value: data.hiringVelocityDays,  color: "text-faint"  },
+          { label: "Velocity (days)",  value: data.hiringVelocityDays,  color: "text-metadata"  },
           { label: "Hire Rate",        value: `${data.totalCandidates > 0 ? Math.round((data.hiredCandidates / data.totalCandidates) * 100) : 0}%`, color: "text-signal" },
         ].map(kpi => (
           <div key={kpi.label} className="global-ops-cell">
@@ -75,7 +75,7 @@ export function AtsAnalyticsClient() {
           <div className="space-y-2.5">
             {data.byStage.map(s => (
               <div key={s.stage} className="flex items-center gap-3">
-                <span className="kpi-label text-faint w-28 flex-shrink-0">{s.label}</span>
+                <span className="kpi-label text-metadata w-28 flex-shrink-0">{s.label}</span>
                 <div className="flex-1 h-1.5 rounded bg-line overflow-hidden">
                   <div
                     className="h-1.5 rounded bg-signal/50"
@@ -102,7 +102,7 @@ export function AtsAnalyticsClient() {
                 : "bg-danger/60";
               return (
                 <div key={s.range} className="flex items-center gap-3">
-                  <span className="kpi-label text-faint w-14 flex-shrink-0">{s.range}</span>
+                  <span className="kpi-label text-metadata w-14 flex-shrink-0">{s.range}</span>
                   <div className="flex-1 h-1.5 rounded bg-line overflow-hidden">
                     <div
                       className={`h-1.5 rounded ${barColor}`}
@@ -128,7 +128,7 @@ export function AtsAnalyticsClient() {
           <div className="space-y-2">
             {data.topSkills.map(s => (
               <div key={s.skill} className="flex items-center gap-3">
-                <span className="kpi-label text-faint truncate flex-1 min-w-0">{s.skill}</span>
+                <span className="kpi-label text-metadata truncate flex-1 min-w-0">{s.skill}</span>
                 <div className="w-20 h-1.5 rounded bg-line overflow-hidden flex-shrink-0">
                   <div
                     className="h-1.5 rounded bg-ice/60"
@@ -149,7 +149,7 @@ export function AtsAnalyticsClient() {
           <div className="space-y-2.5">
             {data.bySources.map(s => (
               <div key={s.source} className="flex items-center gap-3">
-                <span className="kpi-label text-faint w-16 flex-shrink-0 capitalize">{s.source}</span>
+                <span className="kpi-label text-metadata w-16 flex-shrink-0 capitalize">{s.source}</span>
                 <div className="flex-1 h-1.5 rounded bg-line overflow-hidden">
                   <div
                     className="h-1.5 rounded bg-signal/40"
@@ -157,7 +157,7 @@ export function AtsAnalyticsClient() {
                   />
                 </div>
                 <span className="font-mono text-xs text-ink w-4 text-right flex-shrink-0">{s.count}</span>
-                <span className="kpi-label text-faint w-8 text-right flex-shrink-0">
+                <span className="kpi-label text-metadata w-8 text-right flex-shrink-0">
                   {Math.round((s.count / data.totalCandidates) * 100)}%
                 </span>
               </div>
@@ -180,7 +180,7 @@ export function AtsAnalyticsClient() {
                 <div className="flex justify-between mb-1">
                   <span className="kpi-label text-ink">{d.department}</span>
                   <div className="flex gap-3">
-                    <span className="kpi-label text-faint">{d.jobs} job{d.jobs !== 1 ? "s" : ""}</span>
+                    <span className="kpi-label text-metadata">{d.jobs} job{d.jobs !== 1 ? "s" : ""}</span>
                     <span className="kpi-label text-ink">{d.candidates} candidates</span>
                   </div>
                 </div>
@@ -207,7 +207,7 @@ export function AtsAnalyticsClient() {
                 return (
                   <div key={r.reason} className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-body text-xs text-faint leading-snug">{r.reason}</p>
+                      <p className="font-body text-xs text-metadata leading-snug">{r.reason}</p>
                       <div className="h-1 rounded bg-line overflow-hidden mt-1">
                         <div
                           className="h-1 rounded bg-danger/50"
@@ -221,7 +221,7 @@ export function AtsAnalyticsClient() {
               })}
             </div>
           ) : (
-            <p className="kpi-label text-faint">No rejections yet</p>
+            <p className="kpi-label text-metadata">No rejections yet</p>
           )}
         </div>
       </div>

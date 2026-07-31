@@ -121,7 +121,7 @@ function TraceSteps({ steps, onNodeClick }: {
   onNodeClick:  (n: KnowledgeGraphNode) => void;
 }) {
   if (steps.length === 0) {
-    return <p className="kpi-label text-faint">No trace available.</p>;
+    return <p className="kpi-label text-metadata">No trace available.</p>;
   }
   return (
     <div className="space-y-1">
@@ -229,7 +229,7 @@ export function RelationshipExplorer({ nodes, edges, onNodeClick }: Relationship
 
               {selectedAlarm && alarmTrace.length > 0 && (
                 <div className="mt-3">
-                  <p className="kpi-label text-faint mb-1">
+                  <p className="kpi-label text-metadata mb-1">
                     {alarmTrace.length} hop trace · Alarm → Root Cause → Resolution
                   </p>
                 </div>
@@ -241,7 +241,7 @@ export function RelationshipExplorer({ nodes, edges, onNodeClick }: Relationship
               <p className="kpi-label mb-2">Intelligence Trace</p>
               <TraceSteps steps={alarmTrace} onNodeClick={onNodeClick} />
               {!selectedAlarm && (
-                <p className="kpi-label text-faint">Select an alarm to trace its engineering resolution chain.</p>
+                <p className="kpi-label text-metadata">Select an alarm to trace its engineering resolution chain.</p>
               )}
             </div>
           </div>
@@ -263,7 +263,7 @@ export function RelationshipExplorer({ nodes, edges, onNodeClick }: Relationship
 
               {selectedVendor && vendorTrace.length > 0 && (
                 <div className="mt-3">
-                  <p className="kpi-label text-faint mb-1">
+                  <p className="kpi-label text-metadata mb-1">
                     {vendorTrace.length} hop trace · Vendor → Product → Asset → Alarm
                   </p>
                 </div>
@@ -275,7 +275,7 @@ export function RelationshipExplorer({ nodes, edges, onNodeClick }: Relationship
               <p className="kpi-label mb-2">Asset Chain Trace</p>
               <TraceSteps steps={vendorTrace} onNodeClick={onNodeClick} />
               {!selectedVendor && (
-                <p className="kpi-label text-faint">Select a vendor to trace from vendor technology to alarm conditions.</p>
+                <p className="kpi-label text-metadata">Select a vendor to trace from vendor technology to alarm conditions.</p>
               )}
             </div>
           </div>

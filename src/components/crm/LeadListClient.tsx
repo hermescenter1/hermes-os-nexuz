@@ -84,7 +84,7 @@ export function LeadListClient() {
             <thead>
               <tr className="border-b border-line">
                 {columns.map(h => (
-                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-faint">{h}</th>
+                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-metadata">{h}</th>
                 ))}
               </tr>
             </thead>

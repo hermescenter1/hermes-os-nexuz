@@ -59,7 +59,7 @@ export function JobListClient() {
             {s.toUpperCase()}
           </button>
         ))}
-        <span className="kpi-label text-faint ms-auto">
+        <span className="kpi-label text-metadata ms-auto">
           {loading ? "Loading…" : `${jobs.length} position${jobs.length !== 1 ? "s" : ""}`}
         </span>
       </div>
@@ -89,7 +89,7 @@ export function JobListClient() {
                       <p className="font-body text-sm font-semibold text-ink truncate">{job.title}</p>
                       <span className={STATUS_BADGE[job.status]}>{job.status}</span>
                     </div>
-                    <p className="kpi-label text-faint">
+                    <p className="kpi-label text-metadata">
                       {job.department} · {job.location} · {CONTRACT_LABEL[job.contractType]}
                     </p>
                   </div>
@@ -145,13 +145,13 @@ export function JobListClient() {
                         { label: "Opened",             value: job.openedAt                                },
                       ].map(row => (
                         <div key={row.label} className="flex justify-between gap-2">
-                          <span className="kpi-label text-faint">{row.label}</span>
+                          <span className="kpi-label text-metadata">{row.label}</span>
                           <span className="font-mono text-[0.65rem] text-ink">{row.value}</span>
                         </div>
                       ))}
                     </div>
                   </div>
-                  <p className="font-body text-xs text-faint leading-relaxed">{job.description}</p>
+                  <p className="font-body text-xs text-metadata leading-relaxed">{job.description}</p>
                 </div>
               )}
             </div>

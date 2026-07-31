@@ -64,7 +64,7 @@ export function OpportunityPipelineClient() {
             <thead>
               <tr className="border-b border-line">
                 {columns.map(h => (
-                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-faint">{h}</th>
+                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-metadata">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -113,13 +113,13 @@ export function OpportunityPipelineClient() {
                 </div>
                 {total > 0 && <p className="font-mono text-xs text-cyan-400"><bdi dir="ltr">{fmt(total)}</bdi></p>}
                 <div className="space-y-2">
-                  {cards.length === 0 && <p className="text-xs text-faint italic">{t("opps.emptyColumn")}</p>}
+                  {cards.length === 0 && <p className="text-xs text-metadata italic">{t("opps.emptyColumn")}</p>}
                   {cards.map(o => (
                     <Link key={o.id} href={`${base}/crm/opportunities/${o.id}`}>
                       <div className="rounded-lg border border-line bg-bg p-3 hover:border-cyan-500/30 transition-colors cursor-pointer">
                         <p className="text-xs font-medium text-ink line-clamp-2" dir="auto">{o.title}</p>
                         <p className="mt-1 font-mono text-xs text-cyan-400"><bdi dir="ltr">{fmt(o.value)}</bdi></p>
-                        <p className="text-xs text-faint">{t("common.probabilityOf", { n: o.probability })}</p>
+                        <p className="text-xs text-metadata">{t("common.probabilityOf", { n: o.probability })}</p>
                       </div>
                     </Link>
                   ))}

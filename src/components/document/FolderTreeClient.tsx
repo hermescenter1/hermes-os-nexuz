@@ -26,7 +26,7 @@ function FolderItem({ folder, depth }: { folder: FolderNode; depth: number }) {
         className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-surface3 cursor-pointer transition-colors group"
         style={{ paddingInlineStart: `${0.5 + depth * 1}rem` }}
       >
-        <span className="text-faint group-hover:text-muted transition-colors">
+        <span className="text-metadata group-hover:text-muted transition-colors">
           {hasChildren ? (
             <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
               <path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/>
@@ -59,7 +59,7 @@ export function FolderTreeClient({ folders }: Props) {
         {isFa ? "پوشه‌ها" : "Folders"}
       </p>
       {tree.length === 0 ? (
-        <p className="text-xs text-faint px-2">{isFa ? "پوشه‌ای ایجاد نشده" : "No folders yet"}</p>
+        <p className="text-xs text-metadata px-2">{isFa ? "پوشه‌ای ایجاد نشده" : "No folders yet"}</p>
       ) : (
         tree.map(node => <FolderItem key={node.id} folder={node} depth={0} />)
       )}

@@ -89,7 +89,7 @@ export function CustomerSettingsClient() {
     <form onSubmit={(e) => void handleSave(e)} className="space-y-6">
       {/* Notification preferences */}
       <div className="rounded-xl border border-line bg-surface p-6">
-        <p className="font-mono text-xs uppercase tracking-widest text-faint mb-4">Notification Preferences</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-metadata mb-4">Notification Preferences</p>
         <div className="divide-y divide-line">
           <Toggle label="Email Notifications"          field="emailNotifications" />
           <Toggle label="Ticket Status Updates"        field="ticketUpdates" />
@@ -101,10 +101,10 @@ export function CustomerSettingsClient() {
 
       {/* Portal preferences */}
       <div className="rounded-xl border border-line bg-surface p-6 space-y-4">
-        <p className="font-mono text-xs uppercase tracking-widest text-faint">Portal Preferences</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-metadata">Portal Preferences</p>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-faint block mb-1">Language</label>
+            <label className="text-xs text-metadata block mb-1">Language</label>
             <select
               value={prefs.language}
               onChange={(e) => setPrefs({ ...prefs, language: e.target.value })}
@@ -115,7 +115,7 @@ export function CustomerSettingsClient() {
             </select>
           </div>
           <div>
-            <label className="text-xs text-faint block mb-1">Timezone</label>
+            <label className="text-xs text-metadata block mb-1">Timezone</label>
             <select
               value={prefs.timezone}
               onChange={(e) => setPrefs({ ...prefs, timezone: e.target.value })}
@@ -132,7 +132,7 @@ export function CustomerSettingsClient() {
 
       {/* Privacy links */}
       <div className="rounded-xl border border-line bg-surface p-6 space-y-3">
-        <p className="font-mono text-xs uppercase tracking-widest text-faint">Privacy & Compliance</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-metadata">Privacy & Compliance</p>
         <div className="flex flex-col gap-2 text-sm">
           <Link href="/cookies"      className="text-signal hover:underline">Manage Cookie Preferences</Link>
           <Link href="/privacy"      className="text-muted hover:text-ink hover:underline">Privacy Policy</Link>

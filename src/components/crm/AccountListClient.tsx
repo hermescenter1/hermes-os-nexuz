@@ -53,7 +53,7 @@ export function AccountListClient() {
         onChange={e => setSearch(e.target.value)}
         aria-label={t("accounts.searchLabel")}
         placeholder={t("accounts.searchPlaceholder")}
-        className="w-full max-w-xs rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-cyan-500/40 focus:outline-none"
+        className="w-full max-w-xs rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-metadata focus:border-cyan-500/40 focus:outline-none"
       />
 
       {loading && (
@@ -74,7 +74,7 @@ export function AccountListClient() {
             <thead>
               <tr className="border-b border-line">
                 {columns.map(h => (
-                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-faint">{h}</th>
+                  <th key={h} scope="col" className="px-4 py-3 text-start text-xs font-medium uppercase tracking-widest text-metadata">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -95,7 +95,7 @@ export function AccountListClient() {
                   <td className="px-4 py-3">
                     {a.health
                       ? <HealthScoreCard score={a.health.score} category={a.health.category} compact />
-                      : <span className="text-faint text-xs">—</span>
+                      : <span className="text-metadata text-xs">—</span>
                     }
                   </td>
                   <td className="px-4 py-3 font-mono text-cyan-400" dir="ltr">{a.openDeals}</td>

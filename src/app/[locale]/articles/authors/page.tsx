@@ -99,7 +99,7 @@ export default async function AuthorsPage({
                   <p className="text-sm font-bold text-ink group-hover:text-signal transition-colors truncate mb-0.5">
                     {author.displayName}
                   </p>
-                  <p className="text-[10px] text-faint truncate font-mono">{author.roleTitle ?? author.company}</p>
+                  <p className="text-[10px] text-metadata truncate font-mono">{author.roleTitle ?? author.company}</p>
                   {/* All authors in this directory have published articles */}
                   <span className="inline-flex items-center gap-1 mt-1 text-[9px] px-1.5 py-px rounded border font-mono uppercase tracking-wider bg-signal/[0.08] text-signal border-signal/20">
                     {t("discover.publishedAuthor")}
@@ -116,7 +116,7 @@ export default async function AuthorsPage({
               {author.industrialCredibilityScore && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-[9px] text-faint uppercase tracking-widest font-mono">
+                    <p className="text-[9px] text-metadata uppercase tracking-widest font-mono">
                       {t("browse.industrialCredibility")}
                     </p>
                     <p className="text-[10px] font-bold font-mono text-signal">{author.industrialCredibilityScore.toFixed(1)}</p>
@@ -129,7 +129,7 @@ export default async function AuthorsPage({
               )}
 
               {/* Stats — Phase 75: totalViews is real aggregate from PUBLISHED+PUBLIC articles */}
-              <div className="flex flex-wrap items-center gap-3 text-[10px] text-faint font-mono">
+              <div className="flex flex-wrap items-center gap-3 text-[10px] text-metadata font-mono">
                 <span>{author.articleCount} {t("browse.publishedUnit")}</span>
                 <span className="text-line">·</span>
                 <span>{fmtNum(author.totalViews)} {t("viewsUnit")}</span>
@@ -151,7 +151,7 @@ export default async function AuthorsPage({
                     </span>
                   ))}
                   {author.expertiseAreas.length > 3 && (
-                    <span className="text-[9px] text-faint font-mono">+{author.expertiseAreas.length - 3}</span>
+                    <span className="text-[9px] text-metadata font-mono">+{author.expertiseAreas.length - 3}</span>
                   )}
                 </div>
               )}

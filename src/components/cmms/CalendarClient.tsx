@@ -10,7 +10,7 @@ const EVENT_STYLE: Record<string, { border: string; bg: string; text: string }> 
   lubrication: { border: "border-s-2 border-warn/40",   bg: "bg-warn/[0.04]",   text: "text-warn"   },
   shutdown:    { border: "border-s-2 border-danger/50", bg: "bg-danger/[0.04]", text: "text-danger" },
   corrective:  { border: "border-s-2 border-warn/50",   bg: "bg-warn/[0.06]",   text: "text-warn"   },
-  maintenance: { border: "border-s-2 border-faint/30",  bg: "bg-surface3",      text: "text-faint"  },
+  maintenance: { border: "border-s-2 border-faint/30",  bg: "bg-surface3",      text: "text-metadata"  },
 };
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -38,11 +38,11 @@ function EventCard({ event: ev, dimmed = false }: { event: MaintenanceCalendarEv
         <div className="text-end shrink-0">
           <p className="text-xs font-mono font-medium text-ink">{formatDate(ev.startDate, locale)}</p>
           {ev.endDate && (
-            <p className="text-xs text-faint font-mono">→ {formatDate(ev.endDate, locale)}</p>
+            <p className="text-xs text-metadata font-mono">→ {formatDate(ev.endDate, locale)}</p>
           )}
         </div>
       </div>
-      <div className="mt-2.5 flex flex-wrap gap-3 text-xs text-faint">
+      <div className="mt-2.5 flex flex-wrap gap-3 text-xs text-metadata">
         {ev.assetId     && <span>{ev.assetId}</span>}
         {ev.technicianId && <span>{ev.technicianId}</span>}
       </div>
@@ -64,7 +64,7 @@ export function CalendarClient({ events }: { events: MaintenanceCalendarEvent[] 
         <section>
           <div className="flex items-center gap-3 mb-4">
             <p className="eyebrow-label text-signal">{t("calendar.upcomingEvents")}</p>
-            <span className="text-xs text-faint font-mono">({upcoming.length})</span>
+            <span className="text-xs text-metadata font-mono">({upcoming.length})</span>
           </div>
           <div className="space-y-3">
             {upcoming.map(ev => <EventCard key={ev.id} event={ev} />)}
@@ -75,8 +75,8 @@ export function CalendarClient({ events }: { events: MaintenanceCalendarEvent[] 
       {past.length > 0 && (
         <section>
           <div className="flex items-center gap-3 mb-4">
-            <p className="eyebrow-label text-faint">{t("calendar.pastEvents")}</p>
-            <span className="text-xs text-faint font-mono">({past.length})</span>
+            <p className="eyebrow-label text-metadata">{t("calendar.pastEvents")}</p>
+            <span className="text-xs text-metadata font-mono">({past.length})</span>
           </div>
           <div className="space-y-3">
             {past.map(ev => <EventCard key={ev.id} event={ev} dimmed />)}

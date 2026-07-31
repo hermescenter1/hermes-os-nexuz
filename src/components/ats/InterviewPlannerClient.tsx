@@ -129,7 +129,7 @@ export function InterviewPlannerClient() {
         {[
           { label: "Total",     value: interviews.length, color: "text-ink"    },
           { label: "Scheduled", value: counts.scheduled,  color: "text-warn"   },
-          { label: "Pending",   value: counts.pending,    color: "text-faint"  },
+          { label: "Pending",   value: counts.pending,    color: "text-metadata"  },
           { label: "Completed", value: counts.completed,  color: "text-signal" },
           { label: "Cancelled", value: counts.cancelled,  color: "text-danger" },
         ].map(kpi => (
@@ -158,7 +158,7 @@ export function InterviewPlannerClient() {
             {s.toUpperCase()}
           </button>
         ))}
-        <span className="kpi-label text-faint ms-auto">{visible.length} interview{visible.length !== 1 ? "s" : ""}</span>
+        <span className="kpi-label text-metadata ms-auto">{visible.length} interview{visible.length !== 1 ? "s" : ""}</span>
       </div>
 
       {/* Interview list */}
@@ -176,8 +176,8 @@ export function InterviewPlannerClient() {
                     <span className={STATUS_BADGE[interview.status]}>{interview.status}</span>
                     <span className={TYPE_BADGE[interview.type]}>{interview.type}</span>
                   </div>
-                  <p className="kpi-label text-faint">{interview.jobTitle}</p>
-                  <p className="kpi-label text-faint mt-0.5">
+                  <p className="kpi-label text-metadata">{interview.jobTitle}</p>
+                  <p className="kpi-label text-metadata mt-0.5">
                     Interviewer: {interview.interviewer}
                   </p>
                 </div>
@@ -187,14 +187,14 @@ export function InterviewPlannerClient() {
                       <p className="font-mono text-xs text-ink">
                         {formatDate(interview.scheduledAt, locale, { day: "numeric", month: "short", year: "numeric" })}
                       </p>
-                      <p className="kpi-label text-faint">
+                      <p className="kpi-label text-metadata">
                         {formatDate(interview.scheduledAt, locale, { hour: "2-digit", minute: "2-digit" })} UTC
                       </p>
                     </>
                   ) : (
-                    <p className="kpi-label text-faint">Not scheduled</p>
+                    <p className="kpi-label text-metadata">Not scheduled</p>
                   )}
-                  <p className="kpi-label text-faint mt-0.5">{interview.durationMinutes} min</p>
+                  <p className="kpi-label text-metadata mt-0.5">{interview.durationMinutes} min</p>
                 </div>
               </div>
             </button>
@@ -202,13 +202,13 @@ export function InterviewPlannerClient() {
             {expanded === interview.id && interview.notes && (
               <div className="border-t border-line px-5 py-3 bg-bg">
                 <p className="kpi-label mb-1">Interview Notes</p>
-                <p className="font-body text-xs text-faint leading-relaxed">{interview.notes}</p>
+                <p className="font-body text-xs text-metadata leading-relaxed">{interview.notes}</p>
               </div>
             )}
           </div>
         ))}
         {visible.length === 0 && (
-          <p className="kpi-label text-faint py-8 text-center">No interviews match this filter</p>
+          <p className="kpi-label text-metadata py-8 text-center">No interviews match this filter</p>
         )}
       </div>
     </div>

@@ -137,7 +137,7 @@ export default async function IndustrialOverviewPage({
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-base text-muted select-none">{SECTION_ICONS[key]}</span>
                       {meta.badge && (
-                        <span className="rounded border border-line px-1.5 py-0.5 font-body text-[0.60rem] text-faint">{meta.badge}</span>
+                        <span className="rounded border border-line px-1.5 py-0.5 font-body text-[0.60rem] text-metadata">{meta.badge}</span>
                       )}
                     </div>
                     <h3 className="font-display text-sm font-semibold text-ink group-hover:text-signal transition-colors duration-150 mb-1">

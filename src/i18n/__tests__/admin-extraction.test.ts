@@ -171,13 +171,18 @@ describe("admin namespaces — value quality", () => {
     expect(faFlat.get("adminOperations.leads.useCase")).toBe("توضیح کاربرد");
   });
 
-  it("fa keeps English verbatim for previously English-only admin surfaces (behavior preserved)", () => {
-    // These surfaces were hardcoded English for BOTH locales before extraction;
-    // fa keeps the English text verbatim so fa users see exactly what they saw.
-    expect(faFlat.get("adminOperations.customers.title")).toBe(enFlat.get("adminOperations.customers.title"));
-    expect(faFlat.get("adminGovernance.compliance.title")).toBe(enFlat.get("adminGovernance.compliance.title"));
-    expect(faFlat.get("adminGovernance.cookieConsent.title")).toBe(enFlat.get("adminGovernance.cookieConsent.title"));
-    expect(faFlat.get("adminGovernance.academyAdmin.courseManagement")).toBe(enFlat.get("adminGovernance.academyAdmin.courseManagement"));
+  it("fa now carries genuine Persian for the former English-only admin surfaces (Phase 89)", () => {
+    // PHASE 89 translated these previously English-frozen admin surfaces into
+    // professional Persian; fa users no longer see English carryover here.
+    for (const k of [
+      "adminOperations.customers.title",
+      "adminGovernance.compliance.title",
+      "adminGovernance.cookieConsent.title",
+      "adminGovernance.academyAdmin.courseManagement",
+    ]) {
+      expect(faFlat.get(k), `${k} still English`).not.toBe(enFlat.get(k));
+      expect(/[؀-ۿ]/.test(String(faFlat.get(k))), `${k} lacks Persian`).toBe(true);
+    }
   });
 });
 

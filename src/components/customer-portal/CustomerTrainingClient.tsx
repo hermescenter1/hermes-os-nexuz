@@ -39,7 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
   ENROLLED:    "border-ice/30 bg-ice/10 text-ice",
   IN_PROGRESS: "border-signal/30 bg-signal/10 text-signal",
   COMPLETED:   "border-line bg-surface-2 text-muted",
-  ARCHIVED:    "border-line text-faint",
+  ARCHIVED:    "border-line text-metadata",
 };
 
 export function CustomerTrainingClient() {
@@ -80,7 +80,7 @@ export function CustomerTrainingClient() {
                 <span className="text-xl text-signal">◆</span>
                 <div>
                   <p className="text-sm font-medium text-ink">{cert.course.titleEn}</p>
-                  <p className="text-xs text-faint">Issued {formatDate(cert.issuedAt, locale)}</p>
+                  <p className="text-xs text-metadata">Issued {formatDate(cert.issuedAt, locale)}</p>
                 </div>
               </div>
             ))}
@@ -90,7 +90,7 @@ export function CustomerTrainingClient() {
 
       {/* Active enrollments */}
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-faint mb-4">My Courses</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-metadata mb-4">My Courses</p>
         {enrollments.length === 0 ? (
           <div className="rounded-xl border border-line bg-surface px-8 py-16 text-center space-y-4">
             <h2 className="text-lg font-bold text-ink">No Courses Enrolled</h2>
@@ -110,7 +110,7 @@ export function CustomerTrainingClient() {
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div>
                       <p className="font-medium text-ink">{en.course.titleEn}</p>
-                      <p className="text-xs text-faint mt-0.5">
+                      <p className="text-xs text-metadata mt-0.5">
                         {en.course.level ?? "All levels"}
                         {en.course.estimatedHours ? ` · ${en.course.estimatedHours}h` : ""}
                       </p>
@@ -121,7 +121,7 @@ export function CustomerTrainingClient() {
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-faint">Progress</span>
+                      <span className="text-xs text-metadata">Progress</span>
                       <span className="text-xs text-muted font-mono">{en.progress}%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-line">

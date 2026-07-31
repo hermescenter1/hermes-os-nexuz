@@ -101,7 +101,7 @@ export function SuccessPlansClient() {
             {s === "all" ? "ALL" : STATUS_LABELS[s as PlanStatus].toUpperCase()}
           </button>
         ))}
-        <span className="ml-auto kpi-label text-faint">{filtered.length} plans</span>
+        <span className="ml-auto kpi-label text-metadata">{filtered.length} plans</span>
       </div>
 
       {/* Plan list */}
@@ -128,23 +128,23 @@ export function SuccessPlansClient() {
                       <p className="font-body text-sm font-semibold text-ink">{plan.companyName}</p>
                       <span className={STATUS_BADGE[plan.status]}>{STATUS_LABELS[plan.status]}</span>
                     </div>
-                    <p className="kpi-label text-faint truncate">{plan.goal}</p>
+                    <p className="kpi-label text-metadata truncate">{plan.goal}</p>
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0">
                     {/* Milestone progress */}
                     <div className="text-right hidden sm:block">
-                      <p className="kpi-label text-faint">Milestones</p>
+                      <p className="kpi-label text-metadata">Milestones</p>
                       <p className="font-mono text-sm font-bold text-ink">{done}/{total}</p>
                     </div>
                     <div className="text-right hidden sm:block">
-                      <p className="kpi-label text-faint">Due</p>
+                      <p className="kpi-label text-metadata">Due</p>
                       <p className="font-mono text-xs text-ink">{plan.dueDate}</p>
                     </div>
                     <div className="text-right hidden sm:block">
-                      <p className="kpi-label text-faint">Owner</p>
+                      <p className="kpi-label text-metadata">Owner</p>
                       <p className="font-mono text-xs text-ink">{plan.owner}</p>
                     </div>
-                    <span className="kpi-label text-faint">{isOpen ? "▲" : "▼"}</span>
+                    <span className="kpi-label text-metadata">{isOpen ? "▲" : "▼"}</span>
                   </div>
                 </div>
 
@@ -159,8 +159,8 @@ export function SuccessPlansClient() {
                   />
                 </div>
                 <div className="flex justify-between mt-0.5">
-                  <span className="kpi-label text-faint">{pct}% complete</span>
-                  <span className="kpi-label text-faint">{done}/{total} milestones</span>
+                  <span className="kpi-label text-metadata">{pct}% complete</span>
+                  <span className="kpi-label text-metadata">{done}/{total} milestones</span>
                 </div>
               </button>
 
@@ -170,7 +170,7 @@ export function SuccessPlansClient() {
 
                   {/* Milestones */}
                   <div className="mb-4">
-                    <p className="kpi-label text-faint mb-2">Milestones</p>
+                    <p className="kpi-label text-metadata mb-2">Milestones</p>
                     <div className="space-y-2">
                       {plan.milestones.map(m => (
                         <div key={m.id} className="flex items-center gap-3">
@@ -179,10 +179,10 @@ export function SuccessPlansClient() {
                           }`}>
                             {m.completed && <span className="text-signal text-xs">✓</span>}
                           </div>
-                          <p className={`font-body text-xs flex-1 ${m.completed ? "text-faint line-through" : "text-ink"}`}>
+                          <p className={`font-body text-xs flex-1 ${m.completed ? "text-metadata line-through" : "text-ink"}`}>
                             {m.title}
                           </p>
-                          <span className="kpi-label text-faint flex-shrink-0">{m.dueDate}</span>
+                          <span className="kpi-label text-metadata flex-shrink-0">{m.dueDate}</span>
                         </div>
                       ))}
                     </div>
@@ -198,15 +198,15 @@ export function SuccessPlansClient() {
 
                   <div className="mt-3 grid grid-cols-3 gap-3">
                     <div>
-                      <p className="kpi-label text-faint">Owner</p>
+                      <p className="kpi-label text-metadata">Owner</p>
                       <p className="font-mono text-xs text-ink">{plan.owner}</p>
                     </div>
                     <div>
-                      <p className="kpi-label text-faint">Due Date</p>
+                      <p className="kpi-label text-metadata">Due Date</p>
                       <p className="font-mono text-xs text-ink">{plan.dueDate}</p>
                     </div>
                     <div>
-                      <p className="kpi-label text-faint">Created</p>
+                      <p className="kpi-label text-metadata">Created</p>
                       <p className="font-mono text-xs text-ink">{plan.createdAt}</p>
                     </div>
                   </div>
@@ -218,7 +218,7 @@ export function SuccessPlansClient() {
 
         {filtered.length === 0 && (
           <div className="rounded-xl border border-line bg-surface px-5 py-8 text-center">
-            <p className="kpi-label text-faint">No success plans match the selected filter</p>
+            <p className="kpi-label text-metadata">No success plans match the selected filter</p>
           </div>
         )}
       </div>

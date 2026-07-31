@@ -82,11 +82,11 @@ export default function SiteKnowledgeCoveragePage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-white/40 text-xs uppercase border-b border-white/10">
-                  <th className="text-left py-2">#</th>
-                  <th className="text-left py-2">{t("site")}</th>
-                  <th className="text-right py-2">{t("coverage")}</th>
-                  <th className="text-right py-2">{t("assetsLinked")}</th>
-                  <th className="text-left py-2 pl-4">{t("linksByType")}</th>
+                  <th className="text-start py-2">#</th>
+                  <th className="text-start py-2">{t("site")}</th>
+                  <th className="text-end py-2">{t("coverage")}</th>
+                  <th className="text-end py-2">{t("assetsLinked")}</th>
+                  <th className="text-start py-2 pl-4">{t("linksByType")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -96,10 +96,10 @@ export default function SiteKnowledgeCoveragePage() {
                     <tr key={s.siteId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                       <td className="py-3 text-white/30 text-xs pr-3">{i + 1}</td>
                       <td className="py-3 text-white font-medium">{s.siteName}</td>
-                      <td className="py-3 text-right">
+                      <td className="py-3 text-end">
                         <CoverageBar score={s.coverageScore} />
                       </td>
-                      <td className="py-3 text-right text-white/50 text-xs">
+                      <td className="py-3 text-end text-white/50 text-xs">
                         {s.assetsWithLinks}/{s.assetCount}
                       </td>
                       <td className="py-3 pl-4 text-xs text-white/40">

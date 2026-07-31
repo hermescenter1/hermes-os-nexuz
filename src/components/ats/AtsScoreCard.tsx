@@ -15,9 +15,9 @@ function ScoreBar({ label, value, weight }: ScoreBarProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-0.5">
-        <span className="kpi-label text-faint">{label}</span>
+        <span className="kpi-label text-metadata">{label}</span>
         <span className={`font-mono text-[0.65rem] font-semibold ${SCORE_COLOR(value)}`}>
-          {value} <span className="text-faint font-normal">({weight})</span>
+          {value} <span className="text-metadata font-normal">({weight})</span>
         </span>
       </div>
       <div className="h-1 rounded bg-line overflow-hidden">
@@ -88,7 +88,7 @@ export function AtsScoreCard({ score, compact = false }: Props) {
           {score.explanations.map((e, i) => (
             <div key={i} className="flex items-start gap-1.5">
               <span className="h-1 w-1 rounded-full bg-signal/60 flex-shrink-0 mt-1.5" />
-              <p className="font-body text-xs text-faint leading-snug">{e}</p>
+              <p className="font-body text-xs text-metadata leading-snug">{e}</p>
             </div>
           ))}
         </div>

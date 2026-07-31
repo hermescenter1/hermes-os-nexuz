@@ -18,14 +18,14 @@ function fmtNum(n: number) {
 // Status → badge CSS (label comes from journalEditorial.modStatus.*)
 function statusStyle(s: string): { color: string; dot: string } {
   const map: Record<string, { color: string; dot: string }> = {
-    DRAFT:      { color: "bg-surface3 text-faint border-line/40",          dot: "bg-faint"   },
+    DRAFT:      { color: "bg-surface3 text-metadata border-line/40",          dot: "bg-faint"   },
     SUBMITTED:  { color: "bg-warn/[0.10] text-warn border-warn/20",        dot: "bg-warn"    },
     IN_REVIEW:  { color: "bg-ice/[0.10] text-ice border-ice/20",           dot: "bg-ice"     },
     PUBLISHED:  { color: "bg-signal/[0.10] text-signal border-signal/20",  dot: "bg-signal"  },
     REJECTED:   { color: "bg-danger/[0.10] text-danger border-danger/20",  dot: "bg-danger"  },
     ARCHIVED:   { color: "bg-surface3 text-muted border-line/40",          dot: "bg-muted"   },
   };
-  return map[s] ?? { color: "bg-surface3 text-faint border-line/40", dot: "bg-faint" };
+  return map[s] ?? { color: "bg-surface3 text-metadata border-line/40", dot: "bg-faint" };
 }
 
 interface ArticleActionState {
@@ -180,7 +180,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
         {statCards.map(s => (
           <div key={s.label} className={`rounded-xl p-4 border ${s.border} ${s.bg}`}>
             <p className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</p>
-            <p className="text-[10px] text-faint mt-1 uppercase tracking-wider font-mono">{s.label}</p>
+            <p className="text-[10px] text-metadata mt-1 uppercase tracking-wider font-mono">{s.label}</p>
           </div>
         ))}
       </div>
@@ -191,9 +191,9 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder={t("mod.searchPlaceholder")}
-            className="bg-surface/80 border border-line/60 text-sm text-ink rounded-xl px-4 py-2 ps-9 focus:outline-none focus:border-signal/40 w-52 placeholder:text-faint"
+            className="bg-surface/80 border border-line/60 text-sm text-ink rounded-xl px-4 py-2 ps-9 focus:outline-none focus:border-signal/40 w-52 placeholder:text-metadata"
           />
-          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-faint absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-metadata absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none">
             <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd"/>
           </svg>
         </div>
@@ -220,7 +220,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center py-20 border border-line/30 rounded-2xl bg-surface/20">
           <div className="w-12 h-12 rounded-full border border-line/40 bg-surface2 flex items-center justify-center mb-4">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-faint">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-metadata">
               <path fillRule="evenodd" d="M4 4a2 2 0 0 1 2-2h4.586A2 2 0 0 1 12 2.586L15.414 6A2 2 0 0 1 16 7.414V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Z" clipRule="evenodd"/>
             </svg>
           </div>
@@ -259,7 +259,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                         <span className="hs-badge hs--knowledge text-[9px]">{tj("badge.expert")}</span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-faint font-mono">
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-metadata font-mono">
                       <span>{a.author.displayName}</span>
                       {a.category && (
                         <>
@@ -323,7 +323,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                       onChange={e => patch(a.id, { rejectReason: e.target.value })}
                       rows={2}
                       placeholder={t("mod.rejectPlaceholder")}
-                      className="w-full bg-surface border border-line/50 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-faint focus:outline-none focus:border-danger/40 resize-none mb-2.5"
+                      className="w-full bg-surface border border-line/50 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-metadata focus:outline-none focus:border-danger/40 resize-none mb-2.5"
                     />
                     <div className="flex items-center gap-2">
                       <button
@@ -350,7 +350,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
       )}
 
       {filtered.length > 0 && (
-        <p className="text-[10px] text-faint font-mono text-center pt-2">
+        <p className="text-[10px] text-metadata font-mono text-center pt-2">
           {t("mod.showing", { count: filtered.length, n: String(filtered.length) })}
         </p>
       )}

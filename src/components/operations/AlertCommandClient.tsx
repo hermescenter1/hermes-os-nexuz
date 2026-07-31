@@ -139,7 +139,7 @@ export function AlertCommandClient() {
 
         {/* Alert queue */}
         <div className="lg:col-span-2 flex flex-col gap-1">
-          <p className="kpi-label text-faint mb-1">
+          <p className="kpi-label text-metadata mb-1">
             Showing {visible.length} alert{visible.length !== 1 ? "s" : ""} · sorted by severity
           </p>
           {visible.map(alert => (
@@ -156,11 +156,11 @@ export function AlertCommandClient() {
                 <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${SEV_DOT[alert.severity]}`} />
                 <span className={SEV_BADGE[alert.severity]}>{alert.severity}</span>
                 <p className="font-body text-xs text-ink truncate flex-1">{alert.label}</p>
-                <span className="font-mono text-[0.58rem] text-faint flex-shrink-0">{alert.vendorName}</span>
+                <span className="font-mono text-[0.58rem] text-metadata flex-shrink-0">{alert.vendorName}</span>
               </div>
               {selectedId === alert.id && (
                 <div className="mt-1.5 ps-4 text-left">
-                  <p className="kpi-label text-faint">
+                  <p className="kpi-label text-metadata">
                     {alert.category} · {alert.deviceLabel || alert.deviceId}
                   </p>
                 </div>
@@ -193,7 +193,7 @@ export function AlertCommandClient() {
                   { label: "Status",   value: "ACTIVE"            },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between gap-2">
-                    <span className="kpi-label text-faint flex-shrink-0">{row.label}</span>
+                    <span className="kpi-label text-metadata flex-shrink-0">{row.label}</span>
                     <span className="font-mono text-[0.65rem] text-ink text-right truncate">{row.value}</span>
                   </div>
                 ))}
@@ -204,7 +204,7 @@ export function AlertCommandClient() {
               <div className="h-layer-sep mb-3">
                 <span className="kpi-label">Alert Detail</span>
               </div>
-              <p className="kpi-label text-faint">Select an alert to inspect</p>
+              <p className="kpi-label text-metadata">Select an alert to inspect</p>
             </div>
           )}
 
@@ -236,7 +236,7 @@ export function AlertCommandClient() {
         </div>
       </div>
 
-      <p className="kpi-label text-faint">
+      <p className="kpi-label text-metadata">
         Source: Engineering Knowledge Graph · Built {formatDate(data.builtAt, locale, { timeStyle: "medium" })} · Deterministic
       </p>
     </div>
