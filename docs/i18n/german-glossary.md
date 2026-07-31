@@ -52,6 +52,16 @@ or technical abbreviations and stay untranslated everywhere.
 | Request a Demo | Demo anfragen | |
 | Sign in / Sign out | Anmelden / Abmelden | |
 | Password reset | Passwort zurücksetzen | |
+| Engineering case | Engineering-Fall | case management: „Fallverwaltung"; a single record: „der Fall" |
+| Recommended action | empfohlene Maßnahme | |
+| Asset | Anlage / Asset | „Asset" accepted in German asset-management software; registry: „Anlagenregister" |
+| Alarm | Alarm | identical German word; alarm list: „Alarmliste"; acknowledged: „quittiert" |
+| Gateway | Gateway | established anglicism (das Gateway); OT context: „Edge-Gateway" |
+| Knowledge article | Wissensartikel | |
+| Unknown analysis | Unbekannten-Analyse | product surface stays „Unknown Analysis Center" (brand) |
+| Dashboard | Dashboard | established anglicism (das Dashboard); factory dashboard: „Werksdashboard" |
+| Operational status | Betriebsstatus | status chips Online/Offline stay untranslated (accepted usage) |
+| Maintenance | Instandhaltung | corrective repair: „Instandsetzung"; work order: „Arbeitsauftrag" |
 
 ## Style rules
 
@@ -64,12 +74,21 @@ or technical abbreviations and stay untranslated everywhere.
 
 ## Namespace status (catalog `messages/de.json`)
 
-- Genuinely German: meta, nav, common, home, footer, brand, auth, landing,
-  contact, journal, journalWriter, journalEditorial, adminOperations,
-  adminGovernance, industrialBrain, assetOperations, maintenanceOperations,
-  automationOperations, enterpriseOperations, **publicSite (87L.6)**,
-  **authExperience (87L.6)**.
-- Deliberate English carryover (documented, pending translation): remaining
-  public product pages (platform, modules, services, architecture, library)
-  and the authenticated app namespaces. See the 87L.6 report for the
-  activation gate.
+**PHASE 88 — the catalog is CLOSED.** Every namespace is genuinely German; the
+namespace-level carryover ceiling in `de-catalog.test.ts` is **zero** (87L.6F)
+and any regression fails CI immediately.
+
+Value-level enforcement (Phase 88): all **362** leaves whose German value is
+intentionally identical to English are individually reviewed and categorized in
+`src/i18n/de-identical-allowlist.ts` (German words spelled identically ·
+accepted loanwords · brand/product names · protocols/standards · vendors ·
+contact data/URLs · brand eyebrows · non-linguistic values).
+`src/i18n/__tests__/de-identical-audit.test.ts` enforces the list in both
+directions — a NEW DE==EN equality fails with the exact key path (translate it
+or review+allowlist it), and a stale entry fails until pruned. The same suite
+guards against Persian script in `de.json`, whitespace-only values in any
+locale, and raw-key-looking values.
+
+Outbound auth e-mails (verification / password reset / welcome) are fully
+tri-lingual in `src/lib/email/templates/email-locale.ts` (Sie-form German,
+placeholders preserved; unknown locale falls back to English).

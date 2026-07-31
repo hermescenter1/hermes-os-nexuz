@@ -450,11 +450,17 @@ describe('security + packaging guarantees', () => {
   })
   it('build report matches the CURRENT sources and the built bundle (stale dist fails)', () => {
     const report = JSON.parse(readFileSync(join(ROOT, 'dist/build-report.json'), 'utf8'))
-    const sha16 = (buf) => createHash('sha256').update(buf).digest('hex').slice(0, 16)
+    // PHASE 88 portability fix: the recorded shas were computed over LF file
+    // contents (build.mjs writes LF; committed blobs are LF), but a fresh
+    // Windows checkout with core.autocrlf materialises CRLF. Normalise line
+    // endings before hashing so the guard is content-based, not EOL-based —
+    // any REAL source/bundle change still fails.
+    const sha16 = (text) =>
+      createHash('sha256').update(text.replace(/\r\n/g, '\n')).digest('hex').slice(0, 16)
     for (const e of report.builtFrom) {
-      expect(sha16(readFileSync(join(ROOT, e.file))), e.file + ' (rebuild dist)').toBe(e.sha256)
+      expect(sha16(readFileSync(join(ROOT, e.file), 'utf8')), e.file + ' (rebuild dist)').toBe(e.sha256)
     }
-    expect(sha16(readFileSync(join(ROOT, 'dist/code.js')))).toBe(report.bundleSha256)
+    expect(sha16(readFileSync(join(ROOT, 'dist/code.js'), 'utf8'))).toBe(report.bundleSha256)
   })
 })
 

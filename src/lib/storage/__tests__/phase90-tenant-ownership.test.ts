@@ -171,11 +171,16 @@ describe("90A — analysis repository is tenant-scoped end to end", () => {
     expect(await repo.get("legacy-2")).toEqual(await repo.get("never-existed"));
   });
 
+  // PHASE 88 flake fix: 225 sequential awaited creates are data-volume work,
+  // not a latency contract — under full-suite parallel load on Windows this
+  // legitimately exceeds the 5s default (measured 5003ms; passes in isolation).
+  // Explicit generous timeout per vitest's own guidance; the bounded-list
+  // assertion is untouched.
   it("list is bounded", async () => {
     const repo = await repoFor(ALICE);
     for (let i = 0; i < MAX_OWNED_ROWS + 25; i += 1) await repo.create(draft);
     expect((await repo.list()).length).toBeLessThanOrEqual(MAX_OWNED_ROWS);
-  });
+  }, 30_000);
 });
 
 describe("90A — case repository ownership and published corpus", () => {
