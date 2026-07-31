@@ -1,0 +1,111 @@
+{
+  "plugin": "Hermes Design System Builder",
+  "builtFrom": [
+    {
+      "id": "constants",
+      "file": "src/lib/constants.js",
+      "sha256": "44bcdf9a73a3e23e"
+    },
+    {
+      "id": "util",
+      "file": "src/lib/util.js",
+      "sha256": "c884cbf2f9cc95b3"
+    },
+    {
+      "id": "tokens",
+      "file": "src/lib/tokens.js",
+      "sha256": "7e706856028a8821"
+    },
+    {
+      "id": "presets",
+      "file": "src/lib/presets.js",
+      "sha256": "10123442bafdedbb"
+    },
+    {
+      "id": "components",
+      "file": "src/lib/components.js",
+      "sha256": "ce227f93c4674434"
+    },
+    {
+      "id": "locale-strings",
+      "file": "src/lib/locale-strings.js",
+      "sha256": "7e9300822cc14f44"
+    },
+    {
+      "id": "validate",
+      "file": "src/lib/validate.js",
+      "sha256": "0846d47051403055"
+    },
+    {
+      "id": "assemblies",
+      "file": "src/lib/assemblies.js",
+      "sha256": "fda22defa0853a93"
+    },
+    {
+      "id": "starter",
+      "file": "src/lib/starter.js",
+      "sha256": "5067a3f4179f5de1"
+    },
+    {
+      "id": "spec",
+      "file": "src/lib/spec.js",
+      "sha256": "f2a0d9afa5c42f7a"
+    },
+    {
+      "id": "plan",
+      "file": "src/lib/plan.js",
+      "sha256": "bb01b423aaea90eb"
+    },
+    {
+      "id": "figma-exec",
+      "file": "src/lib/figma-exec.js",
+      "sha256": "074819cf3d0b4794"
+    },
+    {
+      "id": "main",
+      "file": "src/main.js",
+      "sha256": "0f458e8b0d1edb2e"
+    }
+  ],
+  "bundleSha256": "b562f9016c3b863c",
+  "uiSha256": "fce4b2ec685a9157",
+  "counts": {
+    "collections": 4,
+    "variables": 46,
+    "paintStyles": 29,
+    "textStyles": 8,
+    "effectStyles": 4,
+    "families": 44,
+    "components": 352,
+    "assemblies": 36,
+    "sections": 2,
+    "total": 173
+  },
+  "planFresh": {
+    "create": 173,
+    "update": 0,
+    "skip": 0,
+    "prune": 0,
+    "total": 173
+  },
+  "starterSupported": [
+    "Local variables & variable collections",
+    "Local Paint / Text / Effect styles",
+    "Components, Component Sets & Variants",
+    "Component Properties (BOOLEAN / TEXT / INSTANCE_SWAP / VARIANT)",
+    "Auto Layout",
+    "Variable → Paint style binding",
+    "Component descriptions & mapping to token-contract.ts",
+    "Single default variable mode (\"Value\")"
+  ],
+  "starterDeferred": [
+    {
+      "capability": "Multiple variable modes (e.g. light/dark theme, per-locale FA/EN/DE modes)",
+      "code": "DEFERRED_REQUIRES_FIGMA_PROFESSIONAL"
+    },
+    {
+      "capability": "Publishing variables/styles/components as a shared Team Library",
+      "code": "DEFERRED_REQUIRES_FIGMA_PROFESSIONAL"
+    }
+  ]
+}
