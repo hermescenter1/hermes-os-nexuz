@@ -243,7 +243,9 @@ export async function listPublishedCases(): Promise<StoredCase[]> {
 
 /**
  * PHASE 90 — owner-scoped. `owner` MUST come from `resolveBrainOwner()`
- * (session-derived). Null sees only the legacy NULL-owner pool.
+ * (session-derived). Null sees NOTHING (ownerWhere(null) is an impossible-
+ * sentinel predicate) — never another tenant's rows and never the quarantined
+ * legacy NULL-owner pool.
  */
 export function caseRepository(owner: BrainOwner | null = null): Repository<StoredCase, CaseCreate> {
   return getStorageMode() === "database"

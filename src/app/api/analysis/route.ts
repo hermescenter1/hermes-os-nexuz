@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { analysisRepository, type AnalysisCreate } from "@/lib/storage/analysis-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
-import { requireAuthoring, hasAuthoring } from "@/lib/auth/api-guards";
+import { requireAuthoring, hasAuthoring, requireWritableOwner } from "@/lib/auth/api-guards";
 import { resolveBrainOwner } from "@/lib/storage/brain-owner";
 
 /**
@@ -55,8 +55,12 @@ export async function POST(req: Request) {
     isUnknown: Boolean(body.isUnknown),
   };
 
-  // PHASE 90: the new row is attributed to the authenticated caller/org.
-  const repo = analysisRepository(await resolveBrainOwner());
+  // PHASE 90B: the write is attributed to a single, unambiguous tenant, or it
+  // fails closed (409 ACTIVE_ORGANIZATION_REQUIRED / 503 OWNER_CONTEXT_UNAVAILABLE)
+  // before any row is written.
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const repo = analysisRepository(own.owner);
   try {
     return NextResponse.json({ storageMode: getStorageMode(), record: await repo.create(input) });
   } catch {

@@ -78,12 +78,24 @@ export interface StoredAnalysis {
  * PHASE 90 — the trusted server-side owner of a Brain resource.
  *
  * Always built from the authenticated session (never from a request body or
- * query string). `orgId` is null for users with no organization membership;
- * such a user is scoped to their own `userId` alone.
+ * query string). Exactly one of three contexts (see `resolveBrainOwner`):
+ *
+ *  - PERSONAL: the user has NO active organization membership. `orgId` is null,
+ *    `ambiguous` is false. Scope = only their own personal (org-less) rows.
+ *  - ORG: the user has EXACTLY ONE active membership, or a server-authenticated
+ *    active organization validated against their active memberships. `orgId` is
+ *    that org, `ambiguous` is false. Scope = that organization's rows plus the
+ *    user's own personal rows.
+ *  - AMBIGUOUS: the user has MORE THAN ONE active membership and no valid
+ *    server-authenticated active organization. `orgId` is null, `ambiguous` is
+ *    true. FAILS CLOSED: sees nothing, and writes/attribution are refused — no
+ *    organization is ever chosen arbitrarily.
  */
 export interface BrainOwner {
   userId: string;
   orgId: string | null;
+  /** True only in the AMBIGUOUS context above (fail closed). */
+  ambiguous?: boolean;
 }
 
 export interface StoredUnknown {
@@ -96,6 +108,10 @@ export interface StoredUnknown {
   status: UnknownStatus;
   createdAt: string;
   updatedAt: string;
+  /** PHASE 90B — tenant ownership; null on legacy pre-phase rows. Derived from
+   *  the authenticated server context, never from client input. */
+  userId?: string | null;
+  organizationId?: string | null;
 }
 
 // ---- Phase 19A: Project Intelligence ----
@@ -109,6 +125,10 @@ export interface StoredProject {
   status: ProjectStatus;
   createdAt: string;
   updatedAt: string;
+  /** PHASE 90B — tenant ownership; null on legacy pre-phase rows. Derived from
+   *  the authenticated server context, never from client input. */
+  userId?: string | null;
+  organizationId?: string | null;
 }
 
 // ---- Phase 18A/18C: Engineering Memory ----
@@ -129,6 +149,10 @@ export interface StoredMemory {
   projectId?: string;
   createdAt: string;
   updatedAt: string;
+  /** PHASE 90B — tenant ownership; null on legacy pre-phase rows. Derived from
+   *  the authenticated server context, never from client input. */
+  userId?: string | null;
+  organizationId?: string | null;
 }
 
 export interface StoredMemoryFeedback {

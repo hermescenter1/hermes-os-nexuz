@@ -26,6 +26,7 @@ function seedProject(id: string, name = "Test Project", createdAt = "2026-01-01T
     id, name,
     description: `${name} description`,
     status: "active",
+    userId: "u-test",
     createdAt,
     updatedAt: createdAt,
   });
@@ -43,7 +44,7 @@ function seedMemory(
     id, query: `q-${id}`, domain,
     analysisSummary: `summary for ${domain}`,
     confidence: 70,
-    relatedCaseIds: [], relatedDocumentIds: [],
+    relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test",
     outcome, projectId,
     createdAt, updatedAt: createdAt,
   });

@@ -44,7 +44,7 @@ function seedMemory(id: string, opts: { domain?: string; confidence?: number; ou
     domain: opts.domain ?? "drives",
     analysisSummary: `summary ${mIdx}`,
     confidence: opts.confidence ?? 70,
-    relatedCaseIds: [], relatedDocumentIds: [],
+    relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test",
     outcome: opts.outcome ?? "unknown",
     createdAt: "2026-01-10T00:00:00.000Z", updatedAt: "2026-01-10T00:00:00.000Z",
   });

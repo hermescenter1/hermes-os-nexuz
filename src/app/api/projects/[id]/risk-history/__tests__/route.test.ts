@@ -25,7 +25,7 @@ function seedProject(
 ) {
   const projects = (globalThis as Record<string, unknown>).__hermesProjects as object[];
   projects.push({
-    id, name, description: `${name} desc`, status: "active",
+    id, name, description: `${name} desc`, status: "active", userId: "u-test",
     createdAt, updatedAt: createdAt,
   });
 }
@@ -41,7 +41,7 @@ function seedMemory(
   mems.push({
     id, query: `q-${id}`, domain,
     analysisSummary: `summary for ${domain}`, confidence,
-    relatedCaseIds: [], relatedDocumentIds: [],
+    relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test",
     outcome: "unknown", projectId,
     createdAt, updatedAt: createdAt,
   });

@@ -1064,6 +1064,7 @@ function seedProjectMemory(projectId: string) {
       confidence: 80,
       relatedCaseIds: [],
       relatedDocumentIds: [],
+      userId: "u-test",
       outcome: "success",
       projectId,
       createdAt: new Date().toISOString(),
@@ -1343,6 +1344,7 @@ function seedProjectRecord(p: SeedProject) {
     name: p.name ?? "Test Project",
     description: p.description ?? "A test project",
     status: p.status ?? "active",
+    userId: "u-test",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }];
@@ -1358,6 +1360,7 @@ function seedMemoryRecords(records: SeedMemory[]) {
       confidence: 60,
       relatedCaseIds: [],
       relatedDocumentIds: [],
+      userId: "u-test",
       outcome: "unknown",
       projectId: r.projectId,
       createdAt: new Date().toISOString(),

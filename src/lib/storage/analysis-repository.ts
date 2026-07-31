@@ -143,8 +143,9 @@ function createDatabaseAnalysisRepo(owner: BrainOwner | null): Repository<Stored
 
 /**
  * PHASE 90 — the repository is now owner-scoped. `owner` MUST come from
- * `resolveBrainOwner()` (session-derived); passing null yields a repository
- * that can only see the legacy NULL-owner pool, never another tenant's rows.
+ * `resolveBrainOwner()` (session-derived); passing null yields a repository that
+ * can see NOTHING (ownerWhere(null) is an impossible-sentinel predicate) — never
+ * another tenant's rows and never the quarantined legacy NULL-owner pool.
  */
 export function analysisRepository(owner: BrainOwner | null = null): Repository<StoredAnalysis, AnalysisCreate> {
   return getStorageMode() === "database"

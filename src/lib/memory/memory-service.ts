@@ -22,7 +22,9 @@ import type {
   StoredMemoryFeedback,
   MemoryOutcome,
   MemoryWithFeedback,
+  BrainOwner,
 } from "@/lib/storage/types";
+import { resolveBrainOwner } from "@/lib/storage/brain-owner";
 import {
   rankMemories,
   rankMemoriesWithFeedback,
@@ -32,6 +34,19 @@ import {
 import { isProjectIntelligenceEnabled } from "@/lib/rag/config";
 
 export type { MemoryMatch, SearchOptions, MemoryWithFeedback };
+
+/**
+ * PHASE 90B — every read/write is scoped to the caller's tenant.
+ *
+ * `owner` is resolved from the authenticated session by default (never from
+ * client input). Pass an explicit owner to reuse a single resolution across a
+ * loop (avoids re-resolving per call); pass explicit `null` to force the
+ * fails-closed "sees nothing" scope. `undefined` (omitted) => resolve now.
+ */
+type OwnerArg = BrainOwner | null | undefined;
+async function scopeOwner(owner: OwnerArg): Promise<BrainOwner | null> {
+  return owner === undefined ? await resolveBrainOwner() : owner;
+}
 
 export const VALID_OUTCOMES: readonly MemoryOutcome[] = [
   "unknown",
@@ -45,40 +60,51 @@ export function isValidOutcome(v: unknown): v is MemoryOutcome {
 }
 
 export async function createEngineeringMemory(
-  input: MemoryCreate
+  input: MemoryCreate,
+  owner?: OwnerArg
 ): Promise<StoredMemory> {
-  return memoryRepository().create(input);
+  return memoryRepository(await scopeOwner(owner)).create(input);
 }
 
 export async function listEngineeringMemories(
-  limit = 50
+  limit = 50,
+  owner?: OwnerArg
 ): Promise<StoredMemory[]> {
-  const all = await memoryRepository().list();
+  const all = await memoryRepository(await scopeOwner(owner)).list();
   return limit > 0 ? all.slice(0, limit) : all;
 }
 
 export async function getEngineeringMemory(
-  id: string
+  id: string,
+  owner?: OwnerArg
 ): Promise<MemoryWithFeedback | null> {
-  const memory = await memoryRepository().get(id);
+  // The owner-scoped get() returns null for a foreign / quarantined / missing
+  // id — indistinguishable, so no cross-tenant existence disclosure. Feedback
+  // is only loaded once the parent memory is proven owned.
+  const memory = await memoryRepository(await scopeOwner(owner)).get(id);
   if (!memory) return null;
   const feedback = await feedbackRepository().listByMemoryId(id);
   return { ...memory, feedback };
 }
 
 /** Adds feedback to an existing memory and mirrors the outcome onto the
- *  parent record for convenient filtering. Returns null when the memory
- *  does not exist (caller maps this to 404). */
+ *  parent record for convenient filtering. Returns null when the memory does
+ *  not exist OR is not owned by the caller (caller maps this to 404) — so a
+ *  tenant can never append feedback to, or mutate the outcome of, another
+ *  tenant's memory. */
 export async function addMemoryFeedback(
   memoryId: string,
-  input: FeedbackCreate
+  input: FeedbackCreate,
+  owner?: OwnerArg
 ): Promise<StoredMemoryFeedback | null> {
-  const exists = await memoryRepository().get(memoryId);
+  const scope = await scopeOwner(owner);
+  const exists = await memoryRepository(scope).get(memoryId);
   if (!exists) return null;
   const feedback = await feedbackRepository().create(input);
   // Mirror outcome onto the memory so GET /api/memory can filter by outcome
-  // without loading all feedback rows.
-  await memoryRepository().update(memoryId, { outcome: input.outcome });
+  // without loading all feedback rows. Owner-scoped so it cannot touch a
+  // foreign record even if the id were guessed.
+  await memoryRepository(scope).update(memoryId, { outcome: input.outcome });
   return feedback;
 }
 
@@ -112,11 +138,14 @@ export function rankEngineeringMemories(
  */
 export async function searchEngineeringMemories(
   query: string,
-  options: SearchOptions = {}
+  options: SearchOptions = {},
+  owner?: OwnerArg
 ): Promise<MemoryMatch[]> {
   let memories: StoredMemory[] = [];
   try {
-    memories = await memoryRepository().list();
+    // PHASE 90B: ranking operates only over the caller's own tenant memories,
+    // never the global corpus.
+    memories = await memoryRepository(await scopeOwner(owner)).list();
   } catch {
     return [];
   }
@@ -147,8 +176,9 @@ export async function getSimilarMemories(
   query: string,
   domain?: string,
   limit?: number,
-  projectId?: string
+  projectId?: string,
+  owner?: OwnerArg
 ): Promise<MemoryMatch[]> {
   const effectiveProjectId = isProjectIntelligenceEnabled() ? projectId : undefined;
-  return searchEngineeringMemories(query, { domain, limit, projectId: effectiveProjectId });
+  return searchEngineeringMemories(query, { domain, limit, projectId: effectiveProjectId }, owner);
 }

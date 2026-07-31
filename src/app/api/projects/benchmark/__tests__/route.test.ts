@@ -67,7 +67,7 @@ function seedProject(overrides: Record<string, unknown>) {
   const projects = (globalThis as Record<string, unknown>).__hermesProjects as unknown[];
   projects.push({
     id: "p1", name: "Project One", description: "",
-    status: "active", createdAt: "2026-01-01T00:00:00.000Z",
+    status: "active", userId: "u-test", createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z", ...overrides,
   });
 }
@@ -80,7 +80,7 @@ function seedMemory(id: string, projectId: string, confidence = 70) {
   memories.push({
     id, query: `q${++memIdx}`, domain: "drives",
     analysisSummary: `s${memIdx}`, confidence,
-    relatedCaseIds: [], relatedDocumentIds: [],
+    relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test",
     outcome: "unknown", projectId,
     createdAt: "2026-01-10T00:00:00.000Z",
     updatedAt: "2026-01-10T00:00:00.000Z",

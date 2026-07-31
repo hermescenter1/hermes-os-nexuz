@@ -4,7 +4,9 @@ import { caseRepository } from "@/lib/storage/case-repository";
 import { knowledgeRepository } from "@/lib/storage/knowledge-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
-import { requireAuthoring, hasAuthoring } from "@/lib/auth/api-guards";
+import { requireAuthoring, hasAuthoring, requireWritableOwner } from "@/lib/auth/api-guards";
+import { resolveBrainOwner } from "@/lib/storage/brain-owner";
+import { resolveRequestId } from "@/lib/logger/correlation";
 
 /**
  * /api/unknown — Unknown analysis triage (Phase 11B).
@@ -24,11 +26,14 @@ function asArray(v: unknown): string[] {
 }
 
 export async function GET() {
-  const repo = unknownRepository();
   try {
     if (!await hasAuthoring()) {
       return NextResponse.json({ storageMode: getStorageMode(), unknowns: [] });
     }
+    // PHASE 90B: an authoring caller sees only their own / their org's unknown
+    // rows (owner server-derived) — never another tenant's, never the
+    // quarantined legacy NULL-owner pool.
+    const repo = unknownRepository(await resolveBrainOwner());
     return NextResponse.json({ storageMode: getStorageMode(), unknowns: await repo.list() });
   } catch {
     return NextResponse.json({ storageMode: getStorageMode(), unknowns: [] });
@@ -56,7 +61,9 @@ export async function POST(req: Request) {
     suggestedVendors: asArray(body.suggestedVendors),
     status: "open",
   };
-  const repo = unknownRepository();
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const repo = unknownRepository(own.owner);
   try {
     return NextResponse.json({ storageMode: getStorageMode(), unknown: await repo.create(input) });
   } catch {
@@ -77,8 +84,20 @@ export async function PATCH(req: Request) {
   const id = String(body.id ?? "");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const repo = unknownRepository();
+  // PHASE 90B: every unknown read/write and the case it converts into are
+  // scoped to the caller's tenant; the owner is server-derived, never from body.
+  // A write needs a single unambiguous tenant, or it fails closed (409 / 503).
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
+  const repo = unknownRepository(owner);
   const action = String(body.action ?? "");
+  const auditBase = {
+    userId: gate.user.id,
+    organizationId: owner?.orgId ?? null,
+    correlationId: resolveRequestId(req),
+    outcome: "success",
+  };
 
   try {
     const u = await repo.get(id);
@@ -88,7 +107,7 @@ export async function PATCH(req: Request) {
 
     if (action === "convert") {
       // Create a draft EngineeringCase seeded from the unknown query.
-      const c = await caseRepository().create({
+      const c = await caseRepository(owner).create({
         title: u.query.slice(0, 80),
         vendor: u.suggestedVendors[0] ?? "",
         domain: u.suggestedDomains[0] ?? "",
@@ -104,7 +123,7 @@ export async function PATCH(req: Request) {
       });
       created = { kind: "case", id: c.id };
       await repo.update(id, { status: "converted" });
-      await recordAuditEvent({ userId: gate.user.id, action: AUDIT_ACTIONS.UNKNOWN_CONVERTED, entityType: "unknown", entityId: id, metadata: { caseId: c.id } });
+      await recordAuditEvent({ ...auditBase, action: AUDIT_ACTIONS.UNKNOWN_CONVERTED, entityType: "unknown", entityId: id, metadata: { caseId: c.id } });
     } else if (action === "library") {
       // Create a draft KnowledgeArticle seeded from the unknown query.
       const a = await knowledgeRepository().create({
@@ -124,14 +143,14 @@ export async function PATCH(req: Request) {
       });
       created = { kind: "knowledge", id: a.id };
       await repo.update(id, { status: "library" });
-      await recordAuditEvent({ userId: gate.user.id, action: AUDIT_ACTIONS.UNKNOWN_TO_LIBRARY, entityType: "unknown", entityId: id, metadata: { articleId: a.id } });
+      await recordAuditEvent({ ...auditBase, action: AUDIT_ACTIONS.UNKNOWN_TO_LIBRARY, entityType: "unknown", entityId: id, metadata: { articleId: a.id } });
     } else {
       // Plain status update (e.g. resolved).
       const status = body.status as UnknownCreate["status"];
       if (status) {
         await repo.update(id, { status });
         if (status === "resolved") {
-          await recordAuditEvent({ userId: gate.user.id, action: AUDIT_ACTIONS.UNKNOWN_RESOLVED, entityType: "unknown", entityId: id, metadata: {} });
+          await recordAuditEvent({ ...auditBase, action: AUDIT_ACTIONS.UNKNOWN_RESOLVED, entityType: "unknown", entityId: id, metadata: {} });
         }
       }
     }

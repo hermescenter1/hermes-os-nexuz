@@ -28,15 +28,30 @@ const ANNA: BrainOwner = { userId: "u-anna", orgId: "org-a" };
 const SOLO: BrainOwner = { userId: "u-solo", orgId: null };
 
 describe("90A — owner predicate", () => {
-  it("builds a query clause, never a post-fetch filter", () => {
+  it("org context matches the active org plus own personal rows, never a bare userId", () => {
     const w = ownerWhere(ALICE);
-    expect(w.OR).toEqual([{ userId: "u-alice" }, { organizationId: "org-a" }]);
-    // 90-93A: the quarantined legacy pool is NOT part of an ordinary read.
-    expect(JSON.stringify(w)).not.toContain("null");
+    // PHASE 90B: org rows of the active org + the user's own org-less rows.
+    expect(w.OR).toEqual([
+      { organizationId: "org-a" },
+      { AND: [{ organizationId: null }, { userId: "u-alice" }] },
+    ]);
+    // A bare { userId } clause would leak a row created under a DIFFERENT org.
+    expect(w.OR).not.toContainEqual({ userId: "u-alice" });
   });
 
-  it("a user with no org contributes no organization clause", () => {
-    expect(ownerWhere(SOLO).OR).toEqual([{ userId: "u-solo" }]);
+  it("personal context (no org) matches only the user's own org-less rows", () => {
+    expect(ownerWhere(SOLO).OR).toEqual([
+      { AND: [{ organizationId: null }, { userId: "u-solo" }] },
+    ]);
+  });
+
+  it("an ambiguous owner matches NOTHING (fail closed)", () => {
+    const ambiguous: BrainOwner = { userId: "u-multi", orgId: null, ambiguous: true };
+    const w = ownerWhere(ambiguous);
+    expect(w.OR).toHaveLength(1);
+    expect((w.OR[0] as { userId?: string }).userId).toMatch(/no_owner/);
+    expect(ownerCanRead({ userId: "u-multi", organizationId: "org-a" }, ambiguous)).toBe(false);
+    expect(ownerCanRead({ userId: "u-multi", organizationId: null }, ambiguous)).toBe(false);
   });
 
   it("a null owner matches NOTHING — never the legacy pool, never everything", () => {
@@ -44,7 +59,7 @@ describe("90A — owner predicate", () => {
     // An impossible sentinel, not `{}` (which would match every row) and not
     // the legacy predicate (which would expose unattributable data).
     expect(w.OR).toHaveLength(1);
-    expect(w.OR[0].userId).toMatch(/no_owner/);
+    expect((w.OR[0] as { userId?: string }).userId).toMatch(/no_owner/);
     expect(ownerCanRead({ userId: "u-alice", organizationId: "org-a" }, null)).toBe(false);
     expect(ownerCanRead({ userId: null, organizationId: null }, null)).toBe(false);
   });
@@ -55,6 +70,20 @@ describe("90A — owner predicate", () => {
     expect(ownerCanRead(aliceRow, ANNA), "org colleague may read").toBe(true);
     expect(ownerCanRead(aliceRow, BOB), "other tenant must not read").toBe(false);
     expect(ownerCanRead(aliceRow, SOLO), "no-org user must not read").toBe(false);
+  });
+
+  it("PHASE 90B: an org row is unreachable from a different org context, even for its creator", () => {
+    const aliceOrgARow = { userId: "u-alice", organizationId: "org-a" };
+    expect(ownerCanRead(aliceOrgARow, { userId: "u-alice", orgId: "org-b" }), "same user, other org").toBe(false);
+    expect(ownerCanRead(aliceOrgARow, ALICE), "same user, same org").toBe(true);
+  });
+
+  it("PHASE 90B: a personal (org-less) row is visible only to its own user, in any of their contexts", () => {
+    const alicePersonal = { userId: "u-alice", organizationId: null };
+    expect(ownerCanRead(alicePersonal, ALICE), "creator in org context").toBe(true);
+    expect(ownerCanRead(alicePersonal, { userId: "u-alice", orgId: null }), "creator in personal context").toBe(true);
+    expect(ownerCanRead(alicePersonal, ANNA), "org colleague cannot read a personal row").toBe(false);
+    expect(ownerCanRead(alicePersonal, BOB), "other user").toBe(false);
   });
 
   it("legacy NULL-owner rows are QUARANTINED from every ordinary caller", () => {
@@ -71,16 +100,21 @@ describe("90A — owner predicate", () => {
   });
 
   it("the quarantine predicate exists for administrative recovery only", () => {
-    // It must select exactly the unattributable rows — and it must not be
-    // reachable from `ownerWhere`, which is what ordinary reads use.
     expect(legacyQuarantineWhere()).toEqual({ userId: null, organizationId: null });
-    expect(JSON.stringify(ownerWhere(ALICE))).not.toContain("null");
+    // ownerWhere never selects the quarantine pool: its only org-less clause is
+    // AND-paired with a concrete userId, so a userId-NULL row can never match.
+    const personal = ownerWhere(ALICE).OR.find((c) => "AND" in c) as { AND: unknown[] } | undefined;
+    expect(personal?.AND).toEqual([{ organizationId: null }, { userId: "u-alice" }]);
   });
 
-  it("attribution derives from the owner and is never blank for a real session", () => {
+  it("attribution FAILS CLOSED for a null or ambiguous context, else derives from the owner", () => {
     expect(ownerAttribution(ALICE)).toEqual({ userId: "u-alice", organizationId: "org-a" });
     expect(ownerAttribution(SOLO)).toEqual({ userId: "u-solo", organizationId: null });
-    expect(ownerAttribution(null)).toEqual({ userId: null, organizationId: null });
+    // A null owner must NEVER produce an unattributed { userId: null } row.
+    expect(() => ownerAttribution(null), "null owner => no unattributed write").toThrow(/unavailable/i);
+    expect(() => ownerAttribution({ userId: "u-multi", orgId: null, ambiguous: true })).toThrow(
+      /[Aa]mbiguous/,
+    );
   });
 });
 
