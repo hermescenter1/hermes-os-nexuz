@@ -107,10 +107,11 @@ describe("90A — owner predicate", () => {
     expect(personal?.AND).toEqual([{ organizationId: null }, { userId: "u-alice" }]);
   });
 
-  it("attribution FAILS CLOSED in an ambiguous context, else derives from the owner", () => {
+  it("attribution FAILS CLOSED for a null or ambiguous context, else derives from the owner", () => {
     expect(ownerAttribution(ALICE)).toEqual({ userId: "u-alice", organizationId: "org-a" });
     expect(ownerAttribution(SOLO)).toEqual({ userId: "u-solo", organizationId: null });
-    expect(ownerAttribution(null)).toEqual({ userId: null, organizationId: null });
+    // A null owner must NEVER produce an unattributed { userId: null } row.
+    expect(() => ownerAttribution(null), "null owner => no unattributed write").toThrow(/unavailable/i);
     expect(() => ownerAttribution({ userId: "u-multi", orgId: null, ambiguous: true })).toThrow(
       /[Aa]mbiguous/,
     );

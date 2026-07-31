@@ -54,6 +54,20 @@ export class AmbiguousOwnerContextError extends Error {
 }
 
 /**
+ * Raised when a write is attempted with NO owner context (an unauthenticated
+ * caller, or a `resolveBrainOwner()` that returned null after the auth gate
+ * passed — e.g. a transient session/membership resolution failure). The write
+ * fails closed rather than creating an UNATTRIBUTED (owner-less) row that would
+ * silently land in the quarantined legacy pool.
+ */
+export class OwnerContextUnavailableError extends Error {
+  constructor() {
+    super("Owner context unavailable: authentication or membership resolution failed.");
+    this.name = "OwnerContextUnavailableError";
+  }
+}
+
+/**
  * Prisma `where` clause matching EXACTLY the rows this owner may see:
  *
  *   ORG context      => organizationId = orgId
@@ -145,21 +159,25 @@ export function ownerCanRead(
  * Owner attribution for a NEW row. Returned separately from caller-supplied
  * data so a caller can never override it by spreading request input.
  *
- * FAILS CLOSED for an ambiguous context: rather than attribute a write to an
- * arbitrarily-chosen organization (or silently quarantine it), it throws so the
- * caller rejects the write. A personal/org/unauthenticated context attributes
- * the concrete (userId, orgId|null).
+ * FAILS CLOSED — it never returns an unattributed or arbitrarily-attributed
+ * owner, so a create can never write an owner-less or misattributed row:
+ *   - null owner (context unavailable) => throws OwnerContextUnavailableError.
+ *   - ambiguous context (>1 active org) => throws AmbiguousOwnerContextError.
+ *   - personal/org context             => the concrete (userId, orgId|null).
  */
 export function ownerAttribution(owner: BrainOwner | null): {
-  userId: string | null;
+  userId: string;
   organizationId: string | null;
 } {
-  if (owner?.ambiguous) {
+  if (!owner) {
+    throw new OwnerContextUnavailableError();
+  }
+  if (owner.ambiguous) {
     throw new AmbiguousOwnerContextError();
   }
   return {
-    userId: owner?.userId ?? null,
-    organizationId: owner?.orgId ?? null,
+    userId: owner.userId,
+    organizationId: owner.orgId,
   };
 }
 

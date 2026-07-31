@@ -4,7 +4,7 @@ import { caseRepository } from "@/lib/storage/case-repository";
 import { knowledgeRepository } from "@/lib/storage/knowledge-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
-import { requireAuthoring, hasAuthoring } from "@/lib/auth/api-guards";
+import { requireAuthoring, hasAuthoring, requireWritableOwner } from "@/lib/auth/api-guards";
 import { resolveBrainOwner } from "@/lib/storage/brain-owner";
 import { resolveRequestId } from "@/lib/logger/correlation";
 
@@ -61,7 +61,9 @@ export async function POST(req: Request) {
     suggestedVendors: asArray(body.suggestedVendors),
     status: "open",
   };
-  const repo = unknownRepository(await resolveBrainOwner());
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const repo = unknownRepository(own.owner);
   try {
     return NextResponse.json({ storageMode: getStorageMode(), unknown: await repo.create(input) });
   } catch {
@@ -84,7 +86,10 @@ export async function PATCH(req: Request) {
 
   // PHASE 90B: every unknown read/write and the case it converts into are
   // scoped to the caller's tenant; the owner is server-derived, never from body.
-  const owner = await resolveBrainOwner();
+  // A write needs a single unambiguous tenant, or it fails closed (409 / 503).
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
   const repo = unknownRepository(owner);
   const action = String(body.action ?? "");
   const auditBase = {

@@ -5,7 +5,7 @@ import {
   isValidProjectStatus,
 } from "@/lib/memory/project-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
-import { requireAuthoring, hasAuthoring } from "@/lib/auth/api-guards";
+import { requireAuthoring, hasAuthoring, requireWritableOwner } from "@/lib/auth/api-guards";
 
 /** GET /api/projects — list all projects, newest first.
  *  Phase 82C: project records go to authoring callers only; everyone else
@@ -54,8 +54,12 @@ export async function POST(req: Request) {
     );
   }
 
+  // PHASE 90B: attribute to a single unambiguous tenant, or fail closed
+  // (409 / 503) before writing.
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
   try {
-    const project = await createProject({ name, description, status: rawStatus });
+    const project = await createProject({ name, description, status: rawStatus }, own.owner);
     return NextResponse.json(
       { storageMode: getStorageMode(), project },
       { status: 201 }

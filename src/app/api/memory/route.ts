@@ -6,7 +6,7 @@ import {
 } from "@/lib/memory/memory-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import type { MemoryCreate } from "@/lib/storage/memory-repository";
-import { requireAuthoring, hasAuthoring } from "@/lib/auth/api-guards";
+import { requireAuthoring, hasAuthoring, requireWritableOwner } from "@/lib/auth/api-guards";
 
 /** GET /api/memory — list saved engineering memories (newest first).
  *  Accepts optional `?limit=N` query param (default 50, max 200).
@@ -73,8 +73,12 @@ export async function POST(req: Request) {
       : {}),
   };
 
+  // PHASE 90B: attribute to a single unambiguous tenant, or fail closed
+  // (409 / 503) before writing.
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
   try {
-    const memory = await createEngineeringMemory(input);
+    const memory = await createEngineeringMemory(input, own.owner);
     return NextResponse.json({ storageMode: getStorageMode(), memory }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "create_failed" }, { status: 500 });

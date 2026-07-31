@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveBrainOwner } from "@/lib/storage/brain-owner";
+import { requireWritableOwner } from "@/lib/auth/api-guards";
 import { caseRepository, listPublishedCases, type CaseCreate } from "@/lib/storage/case-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
@@ -95,7 +96,9 @@ export async function POST(req: Request) {
     status: (body.status as CaseCreate["status"]) ?? "draft",
   };
 
-  const owner = await resolveBrainOwner();
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
   const repo = caseRepository(owner);
   try {
     // Prevent duplicate titles: update the existing record instead.
@@ -131,7 +134,9 @@ export async function PATCH(req: Request) {
   }
   const id = String(body.id ?? "");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const owner = await resolveBrainOwner();
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
   const repo = caseRepository(owner);
   try {
     const rec = await repo.update(id, body as Partial<CaseCreate>);
@@ -165,7 +170,9 @@ export async function DELETE(req: Request) {
 
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const owner = await resolveBrainOwner();
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
   const repo = caseRepository(owner);
   try {
     const ok = await repo.delete(id);

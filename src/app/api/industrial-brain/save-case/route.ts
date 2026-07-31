@@ -7,6 +7,7 @@ import { caseRepository, type CaseCreate } from "@/lib/storage/case-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
 import { resolveRequestId } from "@/lib/logger/correlation";
+import { requireWritableOwner } from "@/lib/auth/api-guards";
 
 export const dynamic = "force-dynamic";
 
@@ -241,7 +242,9 @@ export async function POST(req: Request) {
   // PHASE 90: the owner is resolved ONCE from the session and drives both the
   // owner-scoped repository and the durable audit record (tenant + outcome +
   // correlation id), so a saved case can never be attributed to another tenant.
-  const owner = await resolveBrainOwner();
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
   const repo = caseRepository(owner);
   try {
     // Same title-dedupe semantics as the existing case API: re-saving the

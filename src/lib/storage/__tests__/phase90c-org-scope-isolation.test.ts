@@ -248,52 +248,97 @@ describe("90B — services honour org context", () => {
   });
 });
 
-/* ───────────────────── route: create + audit fail closed (ambiguous) ───────────────────── */
+/* ───────────────── repo: create fails closed for a null / ambiguous owner ───────────────── */
 
-describe("90B — cases POST fails closed in an ambiguous org context (no write, no audit)", () => {
-  const ENV = ["DATABASE_URL", "HERMES_STORAGE_MODE"] as const;
+describe("90B — repo create fails closed for a non-writable owner (no unattributed row)", () => {
+  beforeEach(() => {
+    (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [];
+  });
+  it("null owner throws OwnerContextUnavailable; ambiguous throws Ambiguous; nothing is written", async () => {
+    const store = () => (globalThis as Record<string, unknown>).__hermesEngineeringMemory as unknown[];
+    await expect(memoryRepository(null).create({ ...MEMORY_DRAFT }), "null owner").rejects.toThrow(/unavailable/i);
+    await expect(memoryRepository(AMBIGUOUS).create({ ...MEMORY_DRAFT }), "ambiguous owner").rejects.toThrow(/[Aa]mbiguous/);
+    expect(store().length, "no unattributed / misattributed row written").toBe(0);
+  });
+});
+
+/* ─────────── route: write fails closed with a distinguishable code (no row, no audit) ─────────── */
+
+const CASES_ENV = ["DATABASE_URL", "HERMES_STORAGE_MODE"] as const;
+
+function casesPostReq(): Request {
+  return new Request("http://localhost/api/cases", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ title: "Fail-closed case", vendor: "v" }),
+  });
+}
+
+async function assertNoCaseWriteNoAudit(): Promise<void> {
+  const { listAuditEvents } = await import("@/lib/audit/audit-service");
+  const events = (await listAuditEvents(10)).events;
+  expect(events.some((e) => e.action === "case.created"), "no case.created audit").toBe(false);
+  const drafts = (globalThis as Record<string, unknown>).__hermesCaseDrafts as unknown[];
+  expect(drafts.length, "no case row written").toBe(0);
+}
+
+function restoreCasesEnv(saved: Record<string, string | undefined>): void {
+  for (const k of CASES_ENV) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; }
+}
+
+describe("90B — cases POST => 409 ACTIVE_ORGANIZATION_REQUIRED in an ambiguous org context", () => {
   let saved: Record<string, string | undefined>;
-
   beforeEach(() => {
     saved = {};
-    for (const k of ENV) { saved[k] = process.env[k]; delete process.env[k]; }
+    for (const k of CASES_ENV) { saved[k] = process.env[k]; delete process.env[k]; }
     (globalThis as Record<string, unknown>).__hermesCaseDrafts = [];
     (globalThis as Record<string, unknown>).__hermesAudit = [];
     vi.resetModules();
-    // Authenticated authoring user…
-    vi.doMock("@/lib/auth/session", () => ({
-      getCurrentUser: async () => ({ id: "u-alice", email: "a@b.c", name: "A", role: "admin" }),
-    }));
-    // …who is an ACTIVE member of TWO organizations with no active-org selected
-    // → resolveBrainOwner resolves an AMBIGUOUS context.
-    vi.doMock("@/lib/db/prisma", () => ({
-      getPrisma: async () => ({
-        organizationMember: { findMany: async () => [{ organizationId: "org-a" }, { organizationId: "org-b" }] },
-      }),
-    }));
+    // Authenticated authoring user who is an ACTIVE member of TWO orgs with no
+    // active-org selected → resolveBrainOwner resolves an AMBIGUOUS context.
+    vi.doMock("@/lib/auth/session", () => ({ getCurrentUser: async () => ({ id: "u-alice", email: "a@b.c", name: "A", role: "admin" }) }));
+    vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => ({ organizationMember: { findMany: async () => [{ organizationId: "org-a" }, { organizationId: "org-b" }] } }) }));
   });
   afterEach(() => {
-    for (const k of ENV) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; }
+    restoreCasesEnv(saved);
     vi.doUnmock("@/lib/auth/session");
     vi.doUnmock("@/lib/db/prisma");
     vi.resetModules();
   });
-
-  it("returns an error, writes no case, and records no audit event", async () => {
+  it("returns 409 with a stable code, writes no row and records no audit", async () => {
     const { POST } = await import("@/app/api/cases/route");
-    const req = new Request("http://localhost/api/cases", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title: "Ambiguous ctx case", vendor: "v" }),
-    });
-    const res = await POST(req);
-    expect(res.status, "write is refused (fail closed)").toBe(500);
+    const res = await POST(casesPostReq());
+    expect(res.status, "ambiguous => 409").toBe(409);
+    expect((await res.json()).code).toBe("ACTIVE_ORGANIZATION_REQUIRED");
+    await assertNoCaseWriteNoAudit();
+  });
+});
 
-    const { listAuditEvents } = await import("@/lib/audit/audit-service");
-    const events = (await listAuditEvents(10)).events;
-    expect(events.some((e) => e.action === "case.created"), "no case.created audit").toBe(false);
-
-    const drafts = (globalThis as Record<string, unknown>).__hermesCaseDrafts as unknown[];
-    expect(drafts.length, "no case row written").toBe(0);
+describe("90B — cases POST => 503 OWNER_CONTEXT_UNAVAILABLE when the owner cannot be resolved", () => {
+  let saved: Record<string, string | undefined>;
+  beforeEach(() => {
+    saved = {};
+    for (const k of CASES_ENV) { saved[k] = process.env[k]; delete process.env[k]; }
+    (globalThis as Record<string, unknown>).__hermesCaseDrafts = [];
+    (globalThis as Record<string, unknown>).__hermesAudit = [];
+    vi.resetModules();
+    // The auth gate passes (getCurrentUser returns a user) but the SECOND owner
+    // resolution fails (resolveBrainOwner → null) — a transient session/membership
+    // failure. The write must fail closed, not create an owner-less row.
+    vi.doMock("@/lib/auth/session", () => ({ getCurrentUser: async () => ({ id: "u-alice", email: "a@b.c", name: "A", role: "admin" }) }));
+    vi.doMock("@/lib/storage/brain-owner", () => ({ resolveBrainOwner: async () => null }));
+  });
+  afterEach(() => {
+    restoreCasesEnv(saved);
+    vi.doUnmock("@/lib/auth/session");
+    vi.doUnmock("@/lib/storage/brain-owner");
+    vi.resetModules();
+  });
+  it("returns 503 with a stable code, writes no row and records no audit", async () => {
+    const { POST } = await import("@/app/api/cases/route");
+    const res = await POST(casesPostReq());
+    expect(res.status, "owner unavailable => 503").toBe(503);
+    expect((await res.json()).code).toBe("OWNER_CONTEXT_UNAVAILABLE");
+    await assertNoCaseWriteNoAudit();
   });
 });
