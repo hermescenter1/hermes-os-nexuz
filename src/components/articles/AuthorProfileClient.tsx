@@ -74,7 +74,7 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
       <div className="p-5 space-y-4">
         {/* Trust level — deterministic, labeled clearly */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-faint font-mono uppercase tracking-wider shrink-0">
+          <span className="text-[10px] text-metadata font-mono uppercase tracking-wider shrink-0">
             {t("authorProfile.trustLevel")}
           </span>
           <span className="text-xs font-semibold text-ink">{trustLevel}</span>
@@ -83,29 +83,29 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
         {/* Stats grid — all from real PUBLISHED + PUBLIC articles */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-signal/15">
-            <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+            <p className="text-[9px] text-metadata uppercase tracking-widest mb-1 font-mono">
               {t("authorProfile.publishedStat")}
             </p>
             <p className="text-base font-bold text-signal">{publishedCount}</p>
           </div>
           {totalViews > 0 ? (
             <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
-              <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+              <p className="text-[9px] text-metadata uppercase tracking-widest mb-1 font-mono">
                 {t("authorProfile.totalViews")}
               </p>
               <p className="text-base font-bold text-ink">{fmtNum(totalViews)}</p>
             </div>
           ) : (
             <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
-              <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+              <p className="text-[9px] text-metadata uppercase tracking-widest mb-1 font-mono">
                 {t("authorProfile.totalViews")}
               </p>
-              <p className="text-[10px] text-faint font-mono">{t("authorProfile.pending")}</p>
+              <p className="text-[10px] text-metadata font-mono">{t("authorProfile.pending")}</p>
             </div>
           )}
           {totalReactions > 0 && (
             <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
-              <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+              <p className="text-[9px] text-metadata uppercase tracking-widest mb-1 font-mono">
                 {t("authorProfile.totalReactions")}
               </p>
               <p className="text-base font-bold text-ink">{fmtNum(totalReactions)}</p>
@@ -113,7 +113,7 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
           )}
           {latestPublishedAt && (
             <div className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
-              <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">
+              <p className="text-[9px] text-metadata uppercase tracking-widest mb-1 font-mono">
                 {t("authorProfile.latestPub")}
               </p>
               <p className="text-xs font-semibold text-ink">{fmtDate(latestPublishedAt, locale)}</p>
@@ -124,7 +124,7 @@ function ReputationBlock({ author, articles, isFa }: { author: ArticleAuthorProf
         {/* Expertise areas */}
         {author.expertiseAreas.length > 0 && (
           <div>
-            <p className="text-[9px] text-faint uppercase tracking-widest mb-2 font-mono">
+            <p className="text-[9px] text-metadata uppercase tracking-widest mb-2 font-mono">
               {t("authorProfile.expertiseAreas")}
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -198,7 +198,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
           {/* Top eyebrow */}
           <div className="mb-8">
             <Link href={`/${locale}/articles/authors`}
-              className="inline-flex items-center gap-1.5 text-[10px] text-faint hover:text-signal font-mono uppercase tracking-wider transition-colors">
+              className="inline-flex items-center gap-1.5 text-[10px] text-metadata hover:text-signal font-mono uppercase tracking-wider transition-colors">
               {/* back arrow — rotated for LTR (en), unrotated for RTL (fa) */}
               <svg viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 ${isFa ? "" : "rotate-180"}`}>
                 <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
@@ -251,7 +251,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
                 </div>
 
                 {/* Follow is a future feature — no fake persistence */}
-                <span className="shrink-0 text-xs px-4 py-2 rounded-xl border border-line/40 text-faint cursor-default opacity-60 select-none">
+                <span className="shrink-0 text-xs px-4 py-2 rounded-xl border border-line/40 text-metadata cursor-default opacity-60 select-none">
                   {t("authorProfile.comingSoon")}
                 </span>
               </div>
@@ -259,7 +259,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
               {author.roleTitle && <p className="text-base text-ink font-semibold mb-0.5">{author.roleTitle}</p>}
               {author.company    && <p className="text-sm text-muted mb-1">{author.company}</p>}
               {author.location   && (
-                <p className="text-xs text-faint flex items-center gap-1.5">
+                <p className="text-xs text-metadata flex items-center gap-1.5">
                   <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 opacity-60">
                     <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 0 0 .281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 1 0 3 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 0 0 2.273 1.765 11.842 11.842 0 0 0 .994.573l.018.008.006.003ZM10 11.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" clipRule="evenodd"/>
                   </svg>
@@ -281,7 +281,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
                 <p className={`text-2xl font-bold font-mono ${s.main ? "text-signal" : "text-ink"}`}>
                   {fmtNum(s.value)}
                 </p>
-                <p className="text-[10px] text-faint mt-0.5 uppercase tracking-wider font-mono">{s.label}</p>
+                <p className="text-[10px] text-metadata mt-0.5 uppercase tracking-wider font-mono">{s.label}</p>
               </div>
             ))}
           </div>
@@ -289,14 +289,14 @@ export function AuthorProfileClient({ author, articles }: Props) {
           {/* Credibility score */}
           {score && (
             <div className="mt-6 flex items-center gap-3">
-              <p className="text-xs text-faint font-mono uppercase tracking-wider shrink-0">
+              <p className="text-xs text-metadata font-mono uppercase tracking-wider shrink-0">
                 {t("browse.industrialCredibility")}
               </p>
               <div className="flex-1 h-1.5 rounded-full bg-surface2 overflow-hidden max-w-xs">
                 <div className="h-full rounded-full bg-gradient-to-r from-signal to-ice"
                   style={{ width: `${(score / 10) * 100}%` }} />
               </div>
-              <p className="text-sm font-bold font-mono text-signal shrink-0">{score.toFixed(1)}<span className="text-faint font-normal text-xs">/10</span></p>
+              <p className="text-sm font-bold font-mono text-signal shrink-0">{score.toFixed(1)}<span className="text-metadata font-normal text-xs">/10</span></p>
             </div>
           )}
         </div>
@@ -349,7 +349,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
                 <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
                 <h2 className="text-sm font-bold text-ink uppercase tracking-wider">
                   {t("authorProfile.articlesHeading")}
-                  <span className="ms-2 text-xs text-faint font-normal font-mono">({articles.length})</span>
+                  <span className="ms-2 text-xs text-metadata font-normal font-mono">({articles.length})</span>
                 </h2>
               </div>
             </div>
@@ -402,7 +402,7 @@ export function AuthorProfileClient({ author, articles }: Props) {
                     {a.excerpt && (
                       <p className="text-xs text-muted line-clamp-1 mb-2">{a.excerpt}</p>
                     )}
-                    <div className="flex items-center gap-3 text-[10px] text-faint font-mono">
+                    <div className="flex items-center gap-3 text-[10px] text-metadata font-mono">
                       <span>{fmtDate(a.publishedAt ?? a.createdAt, locale)}</span>
                       <span className="text-line">·</span>
                       <span>{a.readingTimeMinutes} {t("authorProfile.minUnit")}</span>

@@ -11,7 +11,7 @@ function riskColor(state: string) {
   if (state === "MONITOR")  return "text-ice bg-ice/[0.08]";
   if (state === "AT_RISK")  return "text-warn bg-warn/[0.10]";
   if (state === "CRITICAL") return "text-danger bg-danger/[0.10]";
-  return "text-faint bg-surface2";
+  return "text-metadata bg-surface2";
 }
 
 function criticalityColor(c: string) {
@@ -19,7 +19,7 @@ function criticalityColor(c: string) {
   if (c === "HIGH")        return "text-warn bg-warn/[0.10]";
   if (c === "MEDIUM")      return "text-ice bg-ice/[0.08]";
   if (c === "LOW")         return "text-signal bg-signal/[0.08]";
-  return "text-faint bg-surface2";
+  return "text-metadata bg-surface2";
 }
 
 function healthColor(score: number) {
@@ -66,9 +66,9 @@ export function AssetsDashboardClient({ data }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {kpis.map((k, i) => (
           <div key={i} className={`card-enterprise rounded-xl p-4 border-s-2 ${k.color}`}>
-            <p className="eyebrow-label text-faint mb-1">{k.label}</p>
+            <p className="eyebrow-label text-metadata mb-1">{k.label}</p>
             <p className="text-2xl font-semibold text-ink tabular-nums">{k.value}</p>
-            <p className="text-xs text-faint mt-0.5">{k.sub}</p>
+            <p className="text-xs text-metadata mt-0.5">{k.sub}</p>
           </div>
         ))}
       </div>
@@ -77,14 +77,14 @@ export function AssetsDashboardClient({ data }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Health distribution */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{t("dashboard.healthDistribution")}</p>
+          <p className="eyebrow-label text-metadata mb-4">{t("dashboard.healthDistribution")}</p>
           <div className="space-y-3">
             {[
               { label: t("dashboard.healthy"),  value: data.healthDistribution.healthy,  color: "bg-signal", textColor: "text-signal" },
               { label: t("dashboard.monitor"),  value: data.healthDistribution.monitor,  color: "bg-ice",    textColor: "text-ice"    },
               { label: t("dashboard.atRisk"),   value: data.healthDistribution.atRisk,   color: "bg-warn",   textColor: "text-warn"   },
               { label: t("dashboard.critical"), value: data.healthDistribution.critical, color: "bg-danger", textColor: "text-danger" },
-              { label: t("dashboard.unknown"),  value: data.healthDistribution.unknown,  color: "bg-line2",  textColor: "text-faint"  },
+              { label: t("dashboard.unknown"),  value: data.healthDistribution.unknown,  color: "bg-line2",  textColor: "text-metadata"  },
             ].map(row => {
               const pct = data.totalAssets ? Math.round((row.value / data.totalAssets) * 100) : 0;
               return (
@@ -104,7 +104,7 @@ export function AssetsDashboardClient({ data }: Props) {
 
         {/* Assets by type */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{t("dashboard.assetsByType")}</p>
+          <p className="eyebrow-label text-metadata mb-4">{t("dashboard.assetsByType")}</p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(data.assetsByType)
               .sort((a, b) => b[1] - a[1])
@@ -120,7 +120,7 @@ export function AssetsDashboardClient({ data }: Props) {
 
       {/* Criticality heatmap */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-4">{t("dashboard.criticalityDistribution")}</p>
+        <p className="eyebrow-label text-metadata mb-4">{t("dashboard.criticalityDistribution")}</p>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {["CRITICAL", "HIGH", "MEDIUM", "LOW", "NON_CRITICAL"].map(c => {
             const count = data.assetsByCriticality[c] ?? 0;
@@ -139,7 +139,7 @@ export function AssetsDashboardClient({ data }: Props) {
         {/* Top critical */}
         <div className="card-surface rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="eyebrow-label text-faint">{t("dashboard.topCriticalAssets")}</p>
+            <p className="eyebrow-label text-metadata">{t("dashboard.topCriticalAssets")}</p>
             <Link href={`/${locale}/assets/registry`} className="text-xs text-ice hover:underline">
               {t("common.viewAll")}
             </Link>
@@ -150,7 +150,7 @@ export function AssetsDashboardClient({ data }: Props) {
                 className="flex items-center gap-3 hover:bg-surface3 rounded-lg p-2 transition-colors group">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-ink truncate group-hover:text-ice">{a.name}</p>
-                  <p className="text-xs text-faint">{a.assetNumber}</p>
+                  <p className="text-xs text-metadata">{a.assetNumber}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${riskColor(a.riskState)}`}>
@@ -161,7 +161,7 @@ export function AssetsDashboardClient({ data }: Props) {
                       <div className={`h-full rounded-full ${healthColor(a.healthScore)}`}
                         style={{ width: `${a.healthScore}%` }} />
                     </div>
-                    <p className="text-xs text-faint text-end mt-0.5">{a.healthScore}%</p>
+                    <p className="text-xs text-metadata text-end mt-0.5">{a.healthScore}%</p>
                   </div>
                 </div>
               </Link>
@@ -172,7 +172,7 @@ export function AssetsDashboardClient({ data }: Props) {
         {/* Recent lifecycle events */}
         <div className="card-surface rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="eyebrow-label text-faint">{t("dashboard.recentLifecycleEvents")}</p>
+            <p className="eyebrow-label text-metadata">{t("dashboard.recentLifecycleEvents")}</p>
             <Link href={`/${locale}/assets/lifecycle`} className="text-xs text-ice hover:underline">
               {t("common.viewAll")}
             </Link>
@@ -183,8 +183,8 @@ export function AssetsDashboardClient({ data }: Props) {
                 <div className="w-1.5 h-1.5 rounded-full bg-ice mt-2 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-ink font-medium">{enumLabel(t, "enums.eventType", ev.eventType)}</p>
-                  <p className="text-xs text-faint">{ev.notes ? ev.notes.slice(0, 60) + (ev.notes.length > 60 ? "…" : "") : ""}</p>
-                  <p className="text-xs text-faint/70 mt-0.5">{formatDate(ev.occurredAt, locale)}</p>
+                  <p className="text-xs text-metadata">{ev.notes ? ev.notes.slice(0, 60) + (ev.notes.length > 60 ? "…" : "") : ""}</p>
+                  <p className="text-xs text-metadata mt-0.5">{formatDate(ev.occurredAt, locale)}</p>
                 </div>
                 <span className="text-xs text-ice shrink-0">{enumLabel(tAm, "lifecycle", ev.toState)}</span>
               </div>
@@ -195,7 +195,7 @@ export function AssetsDashboardClient({ data }: Props) {
 
       {/* Status distribution */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-4">{t("dashboard.statusDistribution")}</p>
+        <p className="eyebrow-label text-metadata mb-4">{t("dashboard.statusDistribution")}</p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(data.assetsByStatus).sort((a, b) => b[1] - a[1]).map(([status, count]) => (
             <div key={status} className="flex items-center gap-2 bg-surface3 rounded-lg px-3 py-2 border border-line">

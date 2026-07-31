@@ -25,7 +25,7 @@ const CA_STYLE: Record<string, { bg: string; text: string }> = {
   OPEN:        { bg: "bg-ice/[0.08]",    text: "text-ice"    },
   IN_PROGRESS: { bg: "bg-warn/[0.08]",   text: "text-warn"   },
   CLOSED:      { bg: "bg-signal/[0.08]", text: "text-signal" },
-  CANCELLED:   { bg: "bg-faint/[0.06]",  text: "text-faint"  },
+  CANCELLED:   { bg: "bg-faint/[0.06]",  text: "text-metadata"  },
 };
 
 export function FailureReportsClient({ failures }: { failures: MaintenanceFailure[] }) {
@@ -82,7 +82,7 @@ export function FailureReportsClient({ failures }: { failures: MaintenanceFailur
               <p className="text-sm text-muted mb-3 line-clamp-2 leading-relaxed">{f.description}</p>
 
               {/* Meta row */}
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-faint mb-4">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-metadata mb-4">
                 <span>{t("failures.category")}: <span className="text-muted">{f.category}</span></span>
                 <span>{t("failures.occurred")}: <span className="font-mono text-muted">{formatDate(f.occurredAt, locale)}</span></span>
                 {f.resolvedAt && (
@@ -96,13 +96,13 @@ export function FailureReportsClient({ failures }: { failures: MaintenanceFailur
               {/* Root Causes */}
               {f.causes && f.causes.length > 0 && (
                 <div className="mb-3">
-                  <p className="eyebrow-label text-faint mb-2">{t("failures.rootCauses")}</p>
+                  <p className="eyebrow-label text-metadata mb-2">{t("failures.rootCauses")}</p>
                   <div className="space-y-1">
                     {f.causes.map(c => (
                       <div key={c.id} className="flex items-center gap-2.5 text-xs">
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.isConfirmed ? "bg-warn" : "bg-faint"}`} />
                         <span className="text-muted flex-1">{c.cause}</span>
-                        <span className="text-faint font-mono">{Math.round(c.probability * 100)}%</span>
+                        <span className="text-metadata font-mono">{Math.round(c.probability * 100)}%</span>
                       </div>
                     ))}
                   </div>
@@ -112,7 +112,7 @@ export function FailureReportsClient({ failures }: { failures: MaintenanceFailur
               {/* Corrective Actions */}
               {f.correctiveActions && f.correctiveActions.length > 0 && (
                 <div>
-                  <p className="eyebrow-label text-faint mb-2">{t("failures.correctiveActions")}</p>
+                  <p className="eyebrow-label text-metadata mb-2">{t("failures.correctiveActions")}</p>
                   <div className="space-y-1">
                     {f.correctiveActions.map(ca => {
                       const cs = CA_STYLE[ca.status] ?? { bg: "bg-muted/[0.06]", text: "text-muted" };

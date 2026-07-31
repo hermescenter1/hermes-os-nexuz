@@ -10,7 +10,7 @@ function riskBadge(r: string) {
   if (r === "MONITOR")  return "bg-ice/[0.08] text-ice";
   if (r === "AT_RISK")  return "bg-warn/[0.10] text-warn";
   if (r === "CRITICAL") return "bg-danger/[0.10] text-danger";
-  return "bg-surface2 text-faint";
+  return "bg-surface2 text-metadata";
 }
 function healthBar(n: number) {
   if (n >= 85) return "bg-signal";
@@ -66,7 +66,7 @@ export function AssetHealthClient({ assets }: Props) {
               {/* Health score bar */}
               <div className="mb-4">
                 <div className="flex items-end justify-between mb-1.5">
-                  <span className="text-xs text-faint">{t("common.healthScore")}</span>
+                  <span className="text-xs text-metadata">{t("common.healthScore")}</span>
                   <span className={`text-xl font-semibold tabular-nums ${healthText(a.healthScore)}`}>{a.healthScore}%</span>
                 </div>
                 <div className="h-2 bg-surface3 rounded-full overflow-hidden">
@@ -80,38 +80,38 @@ export function AssetHealthClient({ assets }: Props) {
                 <div className="grid grid-cols-2 gap-2">
                   {latestSnap.vibrationRms !== null && (
                     <div className="bg-surface2 rounded-lg p-2">
-                      <p className="text-xs text-faint">{t("health.vibrationRms")}</p>
-                      <p className="text-sm font-medium text-ink">{latestSnap.vibrationRms?.toFixed(1)} <span className="text-faint text-xs">mm/s</span></p>
+                      <p className="text-xs text-metadata">{t("health.vibrationRms")}</p>
+                      <p className="text-sm font-medium text-ink">{latestSnap.vibrationRms?.toFixed(1)} <span className="text-metadata text-xs">mm/s</span></p>
                     </div>
                   )}
                   {latestSnap.temperature !== null && (
                     <div className="bg-surface2 rounded-lg p-2">
-                      <p className="text-xs text-faint">{t("health.temperature")}</p>
-                      <p className="text-sm font-medium text-ink">{latestSnap.temperature?.toFixed(0)} <span className="text-faint text-xs">°C</span></p>
+                      <p className="text-xs text-metadata">{t("health.temperature")}</p>
+                      <p className="text-sm font-medium text-ink">{latestSnap.temperature?.toFixed(0)} <span className="text-metadata text-xs">°C</span></p>
                     </div>
                   )}
                   {latestSnap.pressure !== null && (
                     <div className="bg-surface2 rounded-lg p-2">
-                      <p className="text-xs text-faint">{t("health.pressure")}</p>
-                      <p className="text-sm font-medium text-ink">{latestSnap.pressure?.toFixed(1)} <span className="text-faint text-xs">bar</span></p>
+                      <p className="text-xs text-metadata">{t("health.pressure")}</p>
+                      <p className="text-sm font-medium text-ink">{latestSnap.pressure?.toFixed(1)} <span className="text-metadata text-xs">bar</span></p>
                     </div>
                   )}
                   {latestSnap.currentDraw !== null && (
                     <div className="bg-surface2 rounded-lg p-2">
-                      <p className="text-xs text-faint">{t("health.currentDraw")}</p>
-                      <p className="text-sm font-medium text-ink">{latestSnap.currentDraw?.toFixed(0)} <span className="text-faint text-xs">A</span></p>
+                      <p className="text-xs text-metadata">{t("health.currentDraw")}</p>
+                      <p className="text-sm font-medium text-ink">{latestSnap.currentDraw?.toFixed(0)} <span className="text-metadata text-xs">A</span></p>
                     </div>
                   )}
                 </div>
               )}
               {latestSnap?.notes && (
-                <p className="text-xs text-faint mt-3 border-t border-line pt-3">{latestSnap.notes}</p>
+                <p className="text-xs text-metadata mt-3 border-t border-line pt-3">{latestSnap.notes}</p>
               )}
               {latestSnap && (
-                <p className="text-xs text-faint/60 mt-2">{t("health.recorded")}: {formatDate(latestSnap.takenAt, locale)}</p>
+                <p className="text-xs text-metadata mt-2">{t("health.recorded")}: {formatDate(latestSnap.takenAt, locale)}</p>
               )}
               {!latestSnap && (
-                <p className="text-xs text-faint italic">{t("health.noHealthData")}</p>
+                <p className="text-xs text-metadata italic">{t("health.noHealthData")}</p>
               )}
             </div>
           );

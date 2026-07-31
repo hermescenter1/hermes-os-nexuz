@@ -43,10 +43,10 @@ export function TemplateGalleryClient({ templates }: Props) {
 
           {/* Footer */}
           <div className="flex items-center justify-between mt-auto pt-2 border-t border-line">
-            <span className="text-xs text-faint bg-surface3 px-2 py-0.5 rounded border border-line">
+            <span className="text-xs text-metadata bg-surface3 px-2 py-0.5 rounded border border-line">
               {enumLabel(ted, "docType", tpl.documentType)}
             </span>
-            <span className={`text-xs font-medium ${tpl.isActive ? "text-signal" : "text-faint"}`}>
+            <span className={`text-xs font-medium ${tpl.isActive ? "text-signal" : "text-metadata"}`}>
               {tpl.isActive ? (isFa ? "فعال" : "Active") : (isFa ? "غیرفعال" : "Inactive")}
             </span>
           </div>

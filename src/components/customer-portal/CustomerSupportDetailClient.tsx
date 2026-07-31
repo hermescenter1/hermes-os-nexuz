@@ -7,7 +7,7 @@ import type { CustomerSupportTicket, CustomerSupportMessage } from "@/lib/custom
 import { formatDateTime } from "@/lib/i18n/format";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  LOW:      "border-line text-faint",
+  LOW:      "border-line text-metadata",
   MEDIUM:   "border-ice/30 bg-ice/10 text-ice",
   HIGH:     "border-amber-400/30 bg-amber-400/10 text-amber-400",
   CRITICAL: "border-red-500/30 bg-red-500/10 text-red-400",
@@ -69,11 +69,11 @@ export function CustomerSupportDetailClient({ ticketId }: { ticketId: string }) 
     <div className="space-y-6">
       {/* Ticket header */}
       <div className="rounded-xl border border-line bg-surface p-6">
-        <Link href="/customer/support" className="text-xs text-faint hover:text-signal">← Support</Link>
+        <Link href="/customer/support" className="text-xs text-metadata hover:text-signal">← Support</Link>
         <div className="mt-3 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-ink">{ticket.title}</h2>
-            <p className="text-xs text-faint mt-1">
+            <p className="text-xs text-metadata mt-1">
               {ticket.category} · Created {formatDateTime(ticket.createdAt, locale)}
             </p>
           </div>
@@ -92,7 +92,7 @@ export function CustomerSupportDetailClient({ ticketId }: { ticketId: string }) 
       {/* Thread */}
       <div className="rounded-xl border border-line bg-surface">
         <div className="px-6 py-4 border-b border-line">
-          <p className="font-mono text-xs uppercase tracking-widest text-faint">Message Thread</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-metadata">Message Thread</p>
         </div>
         {messages.length === 0 ? (
           <div className="px-6 py-8 text-center text-sm text-muted">No messages yet. Add a reply below.</div>
@@ -103,12 +103,12 @@ export function CustomerSupportDetailClient({ ticketId }: { ticketId: string }) 
                 <div className="flex items-center justify-between mb-2 gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-ink">{msg.authorName}</span>
-                    <span className="text-xs text-faint font-mono">{msg.authorRole}</span>
+                    <span className="text-xs text-metadata font-mono">{msg.authorRole}</span>
                     {msg.isInternal && (
                       <span className="rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-mono text-amber-400">Internal</span>
                     )}
                   </div>
-                  <span className="shrink-0 text-xs text-faint">{formatDateTime(msg.createdAt, locale)}</span>
+                  <span className="shrink-0 text-xs text-metadata">{formatDateTime(msg.createdAt, locale)}</span>
                 </div>
                 <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">{msg.body}</p>
               </li>
@@ -126,7 +126,7 @@ export function CustomerSupportDetailClient({ ticketId }: { ticketId: string }) 
                 minLength={1}
                 rows={3}
                 placeholder="Write a reply…"
-                className="w-full rounded-lg border border-line bg-surface-2 px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-signal focus:outline-none resize-none"
+                className="w-full rounded-lg border border-line bg-surface-2 px-4 py-2.5 text-sm text-ink placeholder:text-metadata focus:border-signal focus:outline-none resize-none"
               />
               <button type="submit" disabled={sending} className="rounded-lg bg-signal px-5 py-2 text-sm font-semibold text-bg disabled:opacity-50 hover:bg-signal/90 transition-colors">
                 {sending ? "Sending…" : "Send Reply"}
@@ -135,7 +135,7 @@ export function CustomerSupportDetailClient({ ticketId }: { ticketId: string }) 
           </div>
         )}
         {isClosed && (
-          <div className="px-6 py-4 border-t border-line text-sm text-faint">
+          <div className="px-6 py-4 border-t border-line text-sm text-metadata">
             This ticket is {ticket.status.toLowerCase()}. Open a new ticket if you need further assistance.
           </div>
         )}

@@ -81,8 +81,8 @@ export function NodeInspector({
   if (!node) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center px-6">
-        <p className="kpi-label text-faint">Select a node to inspect</p>
-        <p className="kpi-label text-faint/60 mt-2">Click any node in the graph</p>
+        <p className="kpi-label text-metadata">Select a node to inspect</p>
+        <p className="kpi-label text-metadata mt-2">Click any node in the graph</p>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export function NodeInspector({
             {node.label}
           </h3>
           {node.sublabel && (
-            <p className="kpi-label text-faint mt-0.5">{node.sublabel}</p>
+            <p className="kpi-label text-metadata mt-0.5">{node.sublabel}</p>
           )}
         </div>
         <button
@@ -135,7 +135,7 @@ export function NodeInspector({
             <div className="space-y-1.5">
               {Object.entries(node.properties).map(([k, v]) => (
                 <div key={k} className="flex items-start justify-between gap-2">
-                  <span className="kpi-label text-faint capitalize flex-shrink-0">
+                  <span className="kpi-label text-metadata capitalize flex-shrink-0">
                     {k.replace(/([A-Z])/g, " $1").toLowerCase()}
                   </span>
                   <span className="font-mono text-[0.65rem] text-ink text-right truncate max-w-[120px]">

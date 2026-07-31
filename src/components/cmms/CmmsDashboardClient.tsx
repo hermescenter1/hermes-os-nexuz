@@ -5,13 +5,13 @@ import type { CmmsDashboard } from "@/lib/cmms/types";
 import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
-  DRAFT:       { bg: "bg-faint/[0.08]",   text: "text-faint"  },
+  DRAFT:       { bg: "bg-faint/[0.08]",   text: "text-metadata"  },
   PLANNED:     { bg: "bg-ice/[0.08]",     text: "text-ice"    },
   SCHEDULED:   { bg: "bg-signal/[0.08]",  text: "text-signal" },
   IN_PROGRESS: { bg: "bg-warn/[0.10]",    text: "text-warn"   },
   ON_HOLD:     { bg: "bg-muted/[0.08]",   text: "text-muted"  },
   COMPLETED:   { bg: "bg-signal/[0.08]",  text: "text-signal" },
-  CANCELLED:   { bg: "bg-faint/[0.06]",   text: "text-faint"  },
+  CANCELLED:   { bg: "bg-faint/[0.06]",   text: "text-metadata"  },
   OVERDUE:     { bg: "bg-danger/[0.10]",  text: "text-danger" },
 };
 
@@ -84,7 +84,7 @@ export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
         {kpiCards.map(k => (
           <div key={k.label} className={`card-enterprise card-hover rounded-xl p-4 border-s-2 ${k.border}`}>
-            <div className={`text-2xl font-bold font-mono ${k.color}`}>{k.value}{k.unit && <span className="text-xs font-normal text-faint ms-1">{k.unit}</span>}</div>
+            <div className={`text-2xl font-bold font-mono ${k.color}`}>{k.value}{k.unit && <span className="text-xs font-normal text-metadata ms-1">{k.unit}</span>}</div>
             <div className="text-xs text-muted mt-1 leading-snug">{k.label}</div>
           </div>
         ))}
@@ -134,12 +134,12 @@ export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
           </div>
           <div className="divide-y divide-line">
             {upcomingTasks.length === 0 ? (
-              <div className="px-5 py-6 text-center"><p className="text-xs text-faint">{t("dashboard.noUpcoming")}</p></div>
+              <div className="px-5 py-6 text-center"><p className="text-xs text-metadata">{t("dashboard.noUpcoming")}</p></div>
             ) : (
               upcomingTasks.map(task => (
                 <div key={task.id} className="px-5 py-3 border-s-2 border-warn/40 ms-5 hover:bg-surface2 transition-colors">
                   <p className="text-sm font-medium text-ink truncate">{task.title}</p>
-                  <p className="text-xs text-faint mt-0.5">
+                  <p className="text-xs text-metadata mt-0.5">
                     {task.scheduledDate ? formatDate(task.scheduledDate, locale) : "—"} · {task.maintenanceType}
                   </p>
                 </div>
@@ -155,14 +155,14 @@ export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
         <div className="card-enterprise rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-line flex items-center justify-between">
             <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">{t("dashboard.recentWorkOrders")}</h3>
-            <span className="text-xs text-faint">{recentTasks.length}</span>
+            <span className="text-xs text-metadata">{recentTasks.length}</span>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line bg-surface2">
-                <th className="text-start px-4 py-2.5 text-xs font-semibold text-faint uppercase tracking-wide">{t("dashboard.colTitle")}</th>
-                <th className="text-start px-4 py-2.5 text-xs font-semibold text-faint uppercase tracking-wide">{t("dashboard.colStatus")}</th>
-                <th className="text-start px-4 py-2.5 text-xs font-semibold text-faint uppercase tracking-wide">{t("dashboard.colPri")}</th>
+                <th className="text-start px-4 py-2.5 text-xs font-semibold text-metadata uppercase tracking-wide">{t("dashboard.colTitle")}</th>
+                <th className="text-start px-4 py-2.5 text-xs font-semibold text-metadata uppercase tracking-wide">{t("dashboard.colStatus")}</th>
+                <th className="text-start px-4 py-2.5 text-xs font-semibold text-metadata uppercase tracking-wide">{t("dashboard.colPri")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -192,14 +192,14 @@ export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
         <div className="card-enterprise rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-line flex items-center justify-between">
             <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">{t("dashboard.recentFailures")}</h3>
-            <span className="text-xs text-faint">{recentFailures.length}</span>
+            <span className="text-xs text-metadata">{recentFailures.length}</span>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line bg-surface2">
-                <th className="text-start px-4 py-2.5 text-xs font-semibold text-faint uppercase tracking-wide">{t("dashboard.colTitle")}</th>
-                <th className="text-start px-4 py-2.5 text-xs font-semibold text-faint uppercase tracking-wide">{t("dashboard.colSeverity")}</th>
-                <th className="text-start px-4 py-2.5 text-xs font-semibold text-faint uppercase tracking-wide">{t("dashboard.colDate")}</th>
+                <th className="text-start px-4 py-2.5 text-xs font-semibold text-metadata uppercase tracking-wide">{t("dashboard.colTitle")}</th>
+                <th className="text-start px-4 py-2.5 text-xs font-semibold text-metadata uppercase tracking-wide">{t("dashboard.colSeverity")}</th>
+                <th className="text-start px-4 py-2.5 text-xs font-semibold text-metadata uppercase tracking-wide">{t("dashboard.colDate")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -211,7 +211,7 @@ export function CmmsDashboardClient({ data }: { data: CmmsDashboard }) {
                   <td className={`px-4 py-2.5 text-xs font-bold ${SEV_STYLE[f.severity] ?? "text-muted"}`}>
                     {f.severity}
                   </td>
-                  <td className="px-4 py-2.5 text-xs text-faint font-mono">
+                  <td className="px-4 py-2.5 text-xs text-metadata font-mono">
                     {formatDate(f.occurredAt, locale)}
                   </td>
                 </tr>

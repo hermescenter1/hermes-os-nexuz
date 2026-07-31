@@ -200,7 +200,7 @@ export function KnowledgeStudioClient() {
           <div key={kpi.label} className="global-ops-cell">
             <p className="kpi-label mb-2">{kpi.label}</p>
             <p className={`intel-kpi-value ${kpi.color}`}>{kpi.value}</p>
-            <p className="kpi-label text-faint mt-1">{kpi.note}</p>
+            <p className="kpi-label text-metadata mt-1">{kpi.note}</p>
           </div>
         ))}
       </div>
@@ -232,7 +232,7 @@ export function KnowledgeStudioClient() {
                     </div>
                   </div>
                   {i < 2 && (
-                    <div className="flex-shrink-0 mx-1.5 text-faint text-xs">→</div>
+                    <div className="flex-shrink-0 mx-1.5 text-metadata text-xs">→</div>
                   )}
                 </div>
               ))}
@@ -286,7 +286,7 @@ export function KnowledgeStudioClient() {
               style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.28)" }}
             >
               <h2 className="intel-title mb-1">Knowledge Domain Map</h2>
-              <p className="kpi-label text-faint mb-4">
+              <p className="kpi-label text-metadata mb-4">
                 {Object.keys(metrics.domainCounts).length} / {KNOWLEDGE_DOMAINS.length} domains with active records
               </p>
               <KnowledgeDomainMap

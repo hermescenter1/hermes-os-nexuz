@@ -54,7 +54,7 @@ export function ExecKpiStrip({ items, className = "", children }: ExecKpiStripPr
             </p>
           )}
           {item.note && !item.delta && (
-            <p className="mt-1.5 kpi-label text-faint">{item.note}</p>
+            <p className="mt-1.5 kpi-label text-metadata">{item.note}</p>
           )}
         </div>
       ))}

@@ -43,9 +43,9 @@ function IncidentRow({
       <div className="flex items-center gap-2 min-w-0">
         <span className={`${SEV_BADGE[incident.severity]} flex-shrink-0`}>{incident.severity}</span>
         <p className="font-body text-xs text-ink truncate flex-1">{incident.alarmLabel}</p>
-        <span className="font-mono text-[0.58rem] text-faint flex-shrink-0">{incident.vendorName}</span>
+        <span className="font-mono text-[0.58rem] text-metadata flex-shrink-0">{incident.vendorName}</span>
       </div>
-      <p className="kpi-label text-faint mt-0.5 truncate">{incident.category}</p>
+      <p className="kpi-label text-metadata mt-0.5 truncate">{incident.category}</p>
     </button>
   );
 }
@@ -54,8 +54,8 @@ function IncidentDetail({ incident }: { incident: WarRoomIncident | null }) {
   if (!incident) {
     return (
       <div className="rounded-xl border border-line bg-surface px-5 py-8 flex flex-col items-center justify-center text-center">
-        <p className="kpi-label text-faint">Select an incident to inspect</p>
-        <p className="kpi-label text-faint/60 mt-1">Click any incident in the queue</p>
+        <p className="kpi-label text-metadata">Select an incident to inspect</p>
+        <p className="kpi-label text-metadata mt-1">Click any incident in the queue</p>
       </div>
     );
   }
@@ -68,7 +68,7 @@ function IncidentDetail({ incident }: { incident: WarRoomIncident | null }) {
           {incident.severity.toUpperCase()}
         </span>
         <h3 className="intel-title leading-snug mb-1">{incident.alarmLabel}</h3>
-        <p className="kpi-label text-faint">
+        <p className="kpi-label text-metadata">
           {incident.vendorName} · {incident.category} · Impact Score: {incident.impactScore}
         </p>
       </div>
@@ -109,7 +109,7 @@ function IncidentDetail({ incident }: { incident: WarRoomIncident | null }) {
           { label: "Type",      value: "Deterministic · No AI inference" },
         ].map(row => (
           <div key={row.label} className="flex justify-between gap-2">
-            <span className="kpi-label text-faint flex-shrink-0">{row.label}</span>
+            <span className="kpi-label text-metadata flex-shrink-0">{row.label}</span>
             <span className="font-mono text-[0.65rem] text-ink text-right truncate">{row.value}</span>
           </div>
         ))}
@@ -196,7 +196,7 @@ export function WarRoomClient() {
             <p className="font-body text-xs text-ink">
               {data.criticalVendors.join(" · ")}
             </p>
-            <p className="kpi-label text-faint mt-1">
+            <p className="kpi-label text-metadata mt-1">
               These vendor zones have documented critical alarm types in the engineering knowledge base.
               All incidents have traceable root causes and resolutions.
             </p>
@@ -267,7 +267,7 @@ export function WarRoomClient() {
               <p className="font-body text-xs text-ink leading-relaxed">
                 {selected.resolution}
               </p>
-              <p className="kpi-label text-faint mt-2">
+              <p className="kpi-label text-metadata mt-2">
                 Source: Engineering Case {selected.caseId} · Not AI-generated · Deterministic
               </p>
             </div>
@@ -280,7 +280,7 @@ export function WarRoomClient() {
         <div className="h-layer-sep mb-4">
           <span className="kpi-label">Cross-Site Impact Analysis</span>
         </div>
-        <p className="kpi-label text-faint mb-3">
+        <p className="kpi-label text-metadata mb-3">
           Vendor zone exposure across all documented alarm types · {data.incidents.length} total incidents
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -306,7 +306,7 @@ export function WarRoomClient() {
         </div>
       </div>
 
-      <p className="kpi-label text-faint">
+      <p className="kpi-label text-metadata">
         Source: Hermes Engineering Knowledge Base · Built {formatDate(data.builtAt, locale, { timeStyle: "medium" })} · All incidents traceable
       </p>
     </div>

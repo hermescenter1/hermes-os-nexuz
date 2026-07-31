@@ -170,7 +170,7 @@ export default function CopilotPage() {
                       }`}>
                         {nf.format(Math.round(row.confidence * 100))}{pct}
                       </span>
-                      <span className="font-mono text-[0.60rem] text-faint">{tf.format(row.ts)}</span>
+                      <span className="font-mono text-[0.60rem] text-metadata">{tf.format(row.ts)}</span>
                     </div>
                   </li>
                 ))}

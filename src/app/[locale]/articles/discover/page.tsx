@@ -91,7 +91,7 @@ async function ArticleCard({ article, isFa, locale }: {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3 text-[10px] text-faint font-mono shrink-0">
+        <div className="flex items-center gap-3 text-[10px] text-metadata font-mono shrink-0">
           <span>{fmtNum(article.viewCount)} {t("viewsUnit")}</span>
           <span>{fmtNum(article.reactionCount)} {t("discover.reactUnit")}</span>
         </div>
@@ -121,7 +121,7 @@ async function ArticleCard({ article, isFa, locale }: {
             {article.author.displayName}
           </Link>
         </div>
-        <span className="text-[10px] text-faint font-mono">
+        <span className="text-[10px] text-metadata font-mono">
           {article.publishedAt ? fmtDate(article.publishedAt, locale) : ""}
         </span>
       </div>
@@ -151,7 +151,7 @@ async function ExpertCard({ expert, isFa, locale }: {
             <p className="text-sm font-bold text-ink group-hover:text-signal transition-colors">
               {expert.displayName}
             </p>
-            <p className="text-[10px] text-faint font-mono">@{expert.handle}</p>
+            <p className="text-[10px] text-metadata font-mono">@{expert.handle}</p>
           </div>
           {expert.verifiedExpert && (
             <span className="text-[9px] px-1.5 py-0.5 rounded border border-signal/20 bg-signal/[0.06] text-signal font-mono shrink-0">
@@ -173,7 +173,7 @@ async function ExpertCard({ expert, isFa, locale }: {
             ))}
           </div>
         )}
-        <div className="flex items-center gap-3 text-[9px] text-faint font-mono flex-wrap">
+        <div className="flex items-center gap-3 text-[9px] text-metadata font-mono flex-wrap">
           <span className="text-signal font-semibold">
             {expert.publishedCount} {t("discover.pubUnit")}
           </span>
@@ -205,14 +205,14 @@ async function EmptyState() {
   const t = await getTranslations("journal");
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-xl border border-line/30 bg-surface/20">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-10 h-10 text-faint mb-3" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-10 h-10 text-metadata mb-3" aria-hidden="true">
         <circle cx="11" cy="11" r="8" strokeWidth="1.5"/>
         <path d="m21 21-4.35-4.35" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
       <p className="text-sm font-semibold text-muted mb-1">
         {t("discover.emptyTitle")}
       </p>
-      <p className="text-xs text-faint">
+      <p className="text-xs text-metadata">
         {t("discover.emptyBody")}
       </p>
     </div>
@@ -318,7 +318,7 @@ export default async function DiscoverPage({
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <svg viewBox="0 0 20 20" fill="currentColor"
-                className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-faint pointer-events-none ${isFa ? "end-3" : "start-3"}`}
+                className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-metadata pointer-events-none ${isFa ? "end-3" : "start-3"}`}
                 aria-hidden="true">
                 <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd"/>
               </svg>
@@ -341,7 +341,7 @@ export default async function DiscoverPage({
 
           {/* Filter row */}
           <div className={`flex flex-wrap gap-2 items-center ${isFa ? "flex-row-reverse" : ""}`}>
-            <span className="text-[10px] text-faint font-mono uppercase tracking-wider shrink-0">
+            <span className="text-[10px] text-metadata font-mono uppercase tracking-wider shrink-0">
               {t("discover.filterLabel")}:
             </span>
 
@@ -418,7 +418,7 @@ export default async function DiscoverPage({
                 : "border-transparent text-muted hover:text-ink"
             }`}>
             {t("discover.tabArticles")}
-            <span className="ms-1.5 text-[9px] font-mono text-faint">({articles.length})</span>
+            <span className="ms-1.5 text-[9px] font-mono text-metadata">({articles.length})</span>
           </Link>
           <Link href={buildTabUrl(currentParams, "experts")}
             className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors -mb-px ${
@@ -427,14 +427,14 @@ export default async function DiscoverPage({
                 : "border-transparent text-muted hover:text-ink"
             }`}>
             {t("discover.tabExperts")}
-            <span className="ms-1.5 text-[9px] font-mono text-faint">({experts.length})</span>
+            <span className="ms-1.5 text-[9px] font-mono text-metadata">({experts.length})</span>
           </Link>
         </div>
 
         {/* ── Results ───────────────────────────────────────────────────── */}
         {tab === "articles" && (
           <section aria-label={t("discover.tabArticles")}>
-            <p className="text-[10px] text-faint font-mono mb-3">
+            <p className="text-[10px] text-metadata font-mono mb-3">
               {results(articles.length)}
               {articleSort !== "latest" && (
                 <span className="ms-2 text-signal">
@@ -456,7 +456,7 @@ export default async function DiscoverPage({
 
         {tab === "experts" && (
           <section aria-label={t("discover.tabExperts")}>
-            <p className="text-[10px] text-faint font-mono mb-3">
+            <p className="text-[10px] text-metadata font-mono mb-3">
               {results(experts.length)}
               {expertSort !== "views" && (
                 <span className="ms-2 text-signal">

@@ -105,14 +105,14 @@ export function CustomerDocumentsClient() {
                 <span className="shrink-0 font-mono text-sm text-signal">{CATEGORY_ICONS[doc.category]}</span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-ink truncate">{doc.title}</p>
-                  <p className="text-xs text-faint">
+                  <p className="text-xs text-metadata">
                     v{doc.version} · {formatBytes(doc.fileSizeBytes)} · {formatDate(doc.createdAt, locale)}
                   </p>
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 <span className={`rounded border px-2 py-0.5 text-[10px] font-mono ${
-                  doc.isPublic ? "border-signal/30 bg-signal/10 text-signal" : "border-line text-faint"
+                  doc.isPublic ? "border-signal/30 bg-signal/10 text-signal" : "border-line text-metadata"
                 }`}>
                   {doc.isPublic ? "Public" : "Private"}
                 </span>
@@ -129,7 +129,7 @@ export function CustomerDocumentsClient() {
                     Download
                   </a>
                 ) : (
-                  <span className="text-xs text-faint">No file</span>
+                  <span className="text-xs text-metadata">No file</span>
                 )}
               </div>
             </div>

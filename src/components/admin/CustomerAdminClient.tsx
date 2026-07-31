@@ -12,7 +12,7 @@ const TIER_COLORS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE:    "border-signal/30 bg-signal/10 text-signal",
-  INACTIVE:  "border-line text-faint",
+  INACTIVE:  "border-line text-metadata",
   SUSPENDED: "border-red-500/30 bg-red-500/10 text-red-400",
 };
 
@@ -82,13 +82,13 @@ export function CustomerAdminClient() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line bg-surface-2">
-                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">{t("colAccount")}</th>
-                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">{t("colIndustry")}</th>
-                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">{t("colTier")}</th>
-                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-faint">{t("colStatus")}</th>
-                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-faint">{t("colHealth")}</th>
-                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-faint">{t("colTickets")}</th>
-                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-faint">{t("colProjects")}</th>
+                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-metadata">{t("colAccount")}</th>
+                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-metadata">{t("colIndustry")}</th>
+                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-metadata">{t("colTier")}</th>
+                  <th className="px-5 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-metadata">{t("colStatus")}</th>
+                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-metadata">{t("colHealth")}</th>
+                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-metadata">{t("colTickets")}</th>
+                  <th className="px-5 py-3 text-right font-mono text-[10px] uppercase tracking-widest text-metadata">{t("colProjects")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -96,7 +96,7 @@ export function CustomerAdminClient() {
                   <tr key={a.id} className="hover:bg-surface-2 transition-colors">
                     <td className="px-5 py-4">
                       <p className="font-medium text-ink">{a.displayName}</p>
-                      <p className="text-xs text-faint font-mono">{a.accountNumber}</p>
+                      <p className="text-xs text-metadata font-mono">{a.accountNumber}</p>
                     </td>
                     <td className="px-5 py-4 text-muted">{a.industry ?? "—"}</td>
                     <td className="px-5 py-4">
@@ -114,10 +114,10 @@ export function CustomerAdminClient() {
                         <span className={`font-mono font-bold ${a.healthScore >= 80 ? "text-signal" : a.healthScore >= 60 ? "text-amber-400" : "text-red-400"}`}>
                           {Math.round(a.healthScore)}%
                         </span>
-                      ) : <span className="text-faint">—</span>}
+                      ) : <span className="text-metadata">—</span>}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <span className={`font-mono ${a.openTickets > 0 ? "text-amber-400" : "text-faint"}`}>{a.openTickets}</span>
+                      <span className={`font-mono ${a.openTickets > 0 ? "text-amber-400" : "text-metadata"}`}>{a.openTickets}</span>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <span className="font-mono text-muted">{a.activeProjects}</span>

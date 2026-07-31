@@ -85,7 +85,7 @@ export function HealthCenterClient() {
         ].map(kpi => (
           <div key={kpi.label} className="global-ops-cell">
             <p className="kpi-label mb-1.5">{kpi.label}</p>
-            <p className={`intel-kpi-value ${kpi.color}`}>{kpi.v}<span className="kpi-label text-faint">/100</span></p>
+            <p className={`intel-kpi-value ${kpi.color}`}>{kpi.v}<span className="kpi-label text-metadata">/100</span></p>
           </div>
         ))}
       </div>
@@ -102,7 +102,7 @@ export function HealthCenterClient() {
               className={`flex items-center justify-between px-3 py-2 rounded border transition-colors ${tier === "all" ? "border-signal/50 bg-signal/5" : "border-line hover:border-signal/30"}`}
             >
               <span className="kpi-label text-ink">All Tiers</span>
-              <span className="font-mono text-xs text-faint">{data.accounts.length}</span>
+              <span className="font-mono text-xs text-metadata">{data.accounts.length}</span>
             </button>
             {data.byTier.map(t => (
               <button
@@ -111,7 +111,7 @@ export function HealthCenterClient() {
                 className={`flex items-center justify-between px-3 py-2 rounded border transition-colors ${tier === t.tier ? "border-signal/50 bg-signal/5" : "border-line hover:border-signal/30"}`}
               >
                 <span className={`kpi-label capitalize ${TIER_COLOR[t.tier]}`}>{t.label}</span>
-                <span className="font-mono text-xs text-faint">{t.count}</span>
+                <span className="font-mono text-xs text-metadata">{t.count}</span>
               </button>
             ))}
           </div>
@@ -127,7 +127,7 @@ export function HealthCenterClient() {
               : v >= 65 ? "bg-signal/60" : v >= 40 ? "bg-warn" : "bg-danger/60";
             return (
               <div key={d.key as string} className="flex items-center gap-2 mb-1.5">
-                <span className="kpi-label text-faint w-24 flex-shrink-0">{d.label}</span>
+                <span className="kpi-label text-metadata w-24 flex-shrink-0">{d.label}</span>
                 <div className="flex-1 h-1 rounded bg-line overflow-hidden">
                   <div className={`h-1 rounded ${barColor}`} style={{ width: `${v}%` }} />
                 </div>
@@ -139,7 +139,7 @@ export function HealthCenterClient() {
 
         {/* Account list */}
         <div className="flex flex-col gap-2 lg:col-span-2">
-          <p className="kpi-label text-faint mb-1">{filtered.length} accounts</p>
+          <p className="kpi-label text-metadata mb-1">{filtered.length} accounts</p>
           {filtered.map(a => (
             <button
               key={a.id}
@@ -152,9 +152,9 @@ export function HealthCenterClient() {
                 <div className="flex-1 min-w-0">
                   <p className="font-body text-sm font-semibold text-ink truncate">{a.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="kpi-label text-faint">{PLAN_LABELS[a.plan]}</span>
-                    <span className="kpi-label text-faint">·</span>
-                    <span className="kpi-label text-faint">{a.csm}</span>
+                    <span className="kpi-label text-metadata">{PLAN_LABELS[a.plan]}</span>
+                    <span className="kpi-label text-metadata">·</span>
+                    <span className="kpi-label text-metadata">{a.csm}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
@@ -174,7 +174,7 @@ export function HealthCenterClient() {
                       : v >= 65 ? "bg-signal/60" : v >= 40 ? "bg-warn" : "bg-danger/60";
                     return (
                       <div key={d.key as string} className="flex items-center gap-2">
-                        <span className="kpi-label text-faint w-20 flex-shrink-0">{d.label}</span>
+                        <span className="kpi-label text-metadata w-20 flex-shrink-0">{d.label}</span>
                         <div className="flex-1 h-1 rounded bg-line overflow-hidden">
                           <div className={`h-1 rounded ${barColor}`} style={{ width: `${v}%` }} />
                         </div>
@@ -184,7 +184,7 @@ export function HealthCenterClient() {
                   })}
                   <div className="col-span-2 mt-1">
                     {a.health.explanations.slice(0, 3).map((ex, i) => (
-                      <p key={i} className="kpi-label text-faint leading-relaxed">· {ex}</p>
+                      <p key={i} className="kpi-label text-metadata leading-relaxed">· {ex}</p>
                     ))}
                   </div>
                 </div>

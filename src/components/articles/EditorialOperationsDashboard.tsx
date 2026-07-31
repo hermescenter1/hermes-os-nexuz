@@ -35,8 +35,8 @@ function KpiCard({ label, value, accent = false, sub }: {
       <p className={`text-2xl font-bold font-mono ${accent ? "text-signal" : "text-ink"}`}>
         {typeof value === "number" ? fmtNum(value) : value}
       </p>
-      <p className="text-[10px] text-faint uppercase tracking-wider font-mono mt-0.5">{label}</p>
-      {sub && <p className="text-[9px] text-faint/60 mt-0.5 font-mono">{sub}</p>}
+      <p className="text-[10px] text-metadata uppercase tracking-wider font-mono mt-0.5">{label}</p>
+      {sub && <p className="text-[9px] text-metadata mt-0.5 font-mono">{sub}</p>}
     </div>
   );
 }
@@ -45,7 +45,7 @@ function KpiCard({ label, value, accent = false, sub }: {
 // Renders the raw ArtStatus enum value (technical, not a translated label).
 
 const STATUS_STYLE: Record<string, string> = {
-  DRAFT:      "bg-surface3 text-faint border-line/40",
+  DRAFT:      "bg-surface3 text-metadata border-line/40",
   SUBMITTED:  "bg-warn/[0.10] text-warn border-warn/20",
   IN_REVIEW:  "bg-ice/[0.10] text-ice border-ice/20",
   PUBLISHED:  "bg-signal/[0.10] text-signal border-signal/20",
@@ -54,7 +54,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_STYLE[status] ?? "bg-surface3 text-faint border-line/40";
+  const cls = STATUS_STYLE[status] ?? "bg-surface3 text-metadata border-line/40";
   return (
     <span className={`inline-block text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase tracking-wider ${cls}`}>
       {status}
@@ -91,16 +91,16 @@ async function TopArticlesSection({ articles, isFa, locale }: {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-line/30 bg-surface/60">
-              <th className="text-start px-4 py-2.5 text-faint font-mono uppercase tracking-wider text-[9px] w-full">
+              <th className="text-start px-4 py-2.5 text-metadata font-mono uppercase tracking-wider text-[9px] w-full">
                 {t("ops.colTitle")}
               </th>
-              <th className="text-end px-4 py-2.5 text-faint font-mono uppercase tracking-wider text-[9px] whitespace-nowrap">
+              <th className="text-end px-4 py-2.5 text-metadata font-mono uppercase tracking-wider text-[9px] whitespace-nowrap">
                 {t("ops.colViews")}
               </th>
-              <th className="text-end px-4 py-2.5 text-faint font-mono uppercase tracking-wider text-[9px] whitespace-nowrap hidden sm:table-cell">
+              <th className="text-end px-4 py-2.5 text-metadata font-mono uppercase tracking-wider text-[9px] whitespace-nowrap hidden sm:table-cell">
                 {t("ops.colReact")}
               </th>
-              <th className="text-end px-4 py-2.5 text-faint font-mono uppercase tracking-wider text-[9px] whitespace-nowrap hidden md:table-cell">
+              <th className="text-end px-4 py-2.5 text-metadata font-mono uppercase tracking-wider text-[9px] whitespace-nowrap hidden md:table-cell">
                 {t("ops.colDate")}
               </th>
             </tr>
@@ -113,7 +113,7 @@ async function TopArticlesSection({ articles, isFa, locale }: {
                     className="text-ink hover:text-signal transition-colors font-medium line-clamp-1">
                     {a.title}
                   </Link>
-                  <p className="text-faint text-[10px] mt-0.5 font-mono">{a.authorDisplayName}</p>
+                  <p className="text-metadata text-[10px] mt-0.5 font-mono">{a.authorDisplayName}</p>
                 </td>
                 <td className="px-4 py-2.5 text-end font-mono text-signal font-semibold whitespace-nowrap">
                   {fmtNum(a.viewCount)}
@@ -121,7 +121,7 @@ async function TopArticlesSection({ articles, isFa, locale }: {
                 <td className="px-4 py-2.5 text-end font-mono text-muted whitespace-nowrap hidden sm:table-cell">
                   {fmtNum(a.reactionCount)}
                 </td>
-                <td className="px-4 py-2.5 text-end text-faint font-mono whitespace-nowrap hidden md:table-cell">
+                <td className="px-4 py-2.5 text-end text-metadata font-mono whitespace-nowrap hidden md:table-cell">
                   {fmtDate(a.publishedAt, locale)}
                 </td>
               </tr>
@@ -160,8 +160,8 @@ async function TopAuthorsSection({ authors, locale }: {
             )}
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-ink group-hover:text-signal transition-colors truncate">{a.displayName}</p>
-              <p className="text-[10px] text-faint font-mono truncate">@{a.handle}</p>
-              <div className="flex items-center gap-2 mt-0.5 text-[9px] text-faint font-mono">
+              <p className="text-[10px] text-metadata font-mono truncate">@{a.handle}</p>
+              <div className="flex items-center gap-2 mt-0.5 text-[9px] text-metadata font-mono">
                 <span>{a.publishedCount} {t("ops.pubUnit")}</span>
                 <span className="text-line">Â·</span>
                 <span>{fmtNum(a.totalViews)} {tj("viewsUnit")}</span>
@@ -188,7 +188,7 @@ async function StatusDistributionSection({ lifecycleCounts, visibilityCounts }: 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Lifecycle */}
         <div className="rounded-xl border border-line/40 p-4">
-          <p className="text-[10px] text-faint uppercase tracking-wider font-mono mb-3">
+          <p className="text-[10px] text-metadata uppercase tracking-wider font-mono mb-3">
             {t("ops.lifecycle")}
           </p>
           <div className="space-y-2">
@@ -206,7 +206,7 @@ async function StatusDistributionSection({ lifecycleCounts, visibilityCounts }: 
         </div>
         {/* Visibility */}
         <div className="rounded-xl border border-line/40 p-4">
-          <p className="text-[10px] text-faint uppercase tracking-wider font-mono mb-3">
+          <p className="text-[10px] text-metadata uppercase tracking-wider font-mono mb-3">
             {t("ops.visibility")}
           </p>
           <div className="space-y-2">
@@ -240,7 +240,7 @@ async function RecentActivitySection({ events, isFa, locale }: {
     <section>
       <SectionHeader eyebrow={t("ops.editorial")} title={t("ops.recentActivity")} />
       <div className="rounded-xl border border-line/30 bg-surface/20 p-8 text-center">
-        <p className="text-faint text-xs font-mono">
+        <p className="text-metadata text-xs font-mono">
           {t("ops.noActivity")}
         </p>
       </div>
@@ -266,7 +266,7 @@ async function RecentActivitySection({ events, isFa, locale }: {
             </div>
             <div className="shrink-0 flex flex-col items-end gap-1">
               <StatusBadge status={e.action.toUpperCase()} />
-              <span className="text-[9px] text-faint font-mono">{fmtDate(e.createdAt, locale)}</span>
+              <span className="text-[9px] text-metadata font-mono">{fmtDate(e.createdAt, locale)}</span>
             </div>
           </div>
         ))}
@@ -310,7 +310,7 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
           </h1>
           <p className="text-xs text-muted">
             {t("ops.editorialIntelligence")}
-            <span className="ms-3 text-[9px] text-faint font-mono">
+            <span className="ms-3 text-[9px] text-metadata font-mono">
               {t("ops.lastUpdated")} {fmtDate(data.generatedAt, locale)}
             </span>
           </p>
@@ -341,14 +341,14 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
           <div className="rounded-xl border border-warn/20 bg-warn/[0.03] p-5 flex flex-wrap gap-6 items-center">
             <div>
               <p className="text-2xl font-bold text-warn font-mono">{pendingReview.count}</p>
-              <p className="text-[10px] text-faint uppercase tracking-wider font-mono mt-0.5">
+              <p className="text-[10px] text-metadata uppercase tracking-wider font-mono mt-0.5">
                 {t("ops.kpiPendingReview")}
               </p>
             </div>
             {pendingReview.oldestAt && (
               <div>
                 <p className="text-xs font-semibold text-ink">{fmtDate(pendingReview.oldestAt, locale)}</p>
-                <p className="text-[10px] text-faint font-mono uppercase tracking-wider">
+                <p className="text-[10px] text-metadata font-mono uppercase tracking-wider">
                   {t("ops.oldestSubmission")}
                 </p>
               </div>
@@ -356,7 +356,7 @@ export async function EditorialOperationsDashboard({ data, isFa, locale }: Props
             {pendingReview.latestAt && (
               <div>
                 <p className="text-xs font-semibold text-ink">{fmtDate(pendingReview.latestAt, locale)}</p>
-                <p className="text-[10px] text-faint font-mono uppercase tracking-wider">
+                <p className="text-[10px] text-metadata font-mono uppercase tracking-wider">
                   {t("ops.latestSubmission")}
                 </p>
               </div>

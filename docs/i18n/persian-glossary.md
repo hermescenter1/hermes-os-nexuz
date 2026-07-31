@@ -33,8 +33,9 @@ protocol tokens, and markup were preserved verbatim.
 | Legal document | سند حقوقی | |
 | Cookie | کوکی | |
 | Work Order | دستورکار | WO Type → «نوع دستورکار» |
-| Maintenance | نگهداری | CMMS surface heading: «داشبورد نگهداری» |
+| Maintenance (equipment upkeep) | نگهداری | **Canonical** (industrial CMMS sense). CMMS surface heading: «داشبورد نگهداری». The variant «نگهداشت» is retired for this concept — Phase 89 unified **all 35 maintenance-sense leaves catalog-wide** (9 in `maintenanceOperations` + 26 in `assetOperations`/`knowledge`/`brain`/`journal`/`library`/`publicSite`/`dashboard`/`architecture`/`adminDocuments`) to «نگهداری», matching the dominant catalog usage, the canonical `assetMaintenance` label source, and the `appShell` nav «نگهداری و تعمیرات (CMMS)». The maintenance noun «نگهداشت» is no longer present in the catalog (verified; the unrelated inflected verb forms «نگهداشتن/نگهداشته» = "to keep/kept" remain valid Persian and are intentionally not guarded by a substring test to avoid false positives). |
 | Preventive / predictive maintenance | نگهداری پیشگیرانه / پیش‌بینانه | PM Plans → «طرح‌های نگهداری» |
+| Retention / keeping (data, records) | نگهداری | Distinct sense — do NOT rewrite to «نگهداشت»: `documents.nav.retention`, `knowledge.historian`/`audit` (data retention), GDPR «داده‌ها را نگهداری می‌کنیم». |
 | Failure / Root Cause Analysis | خرابی / تحلیل علت ریشه‌ای | |
 | Downtime | زمان توقف / توقف | |
 | Checklist / Template | چک‌لیست / قالب | |

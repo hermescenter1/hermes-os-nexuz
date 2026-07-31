@@ -141,8 +141,8 @@ export function EcosystemCoverageBar({
         })}
       </div>
       <div className="flex justify-between">
-        <span className="kpi-label text-faint">{covered} / {KNOWLEDGE_DOMAINS.length} domains</span>
-        <span className="kpi-label text-faint">{total} records</span>
+        <span className="kpi-label text-metadata">{covered} / {KNOWLEDGE_DOMAINS.length} domains</span>
+        <span className="kpi-label text-metadata">{total} records</span>
       </div>
     </div>
   );

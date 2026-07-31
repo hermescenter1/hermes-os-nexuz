@@ -37,7 +37,7 @@ export function CustomerAccountClient() {
 
   const Field = ({ label, value }: { label: string; value: string | null | undefined }) => (
     <div>
-      <p className="text-xs text-faint uppercase tracking-wide font-mono">{label}</p>
+      <p className="text-xs text-metadata uppercase tracking-wide font-mono">{label}</p>
       <p className="mt-0.5 text-sm text-ink">{value || "—"}</p>
     </div>
   );
@@ -48,7 +48,7 @@ export function CustomerAccountClient() {
       <div className="rounded-xl border border-line bg-surface p-6 space-y-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="font-mono text-xs uppercase tracking-widest text-faint">Account Details</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-metadata">Account Details</p>
             <h2 className="mt-1 text-lg font-bold text-ink">{account.displayName}</h2>
           </div>
           <span className={`rounded border px-3 py-1 text-xs font-mono font-semibold ${
@@ -76,7 +76,7 @@ export function CustomerAccountClient() {
       {/* Contacts */}
       <div className="rounded-xl border border-line bg-surface">
         <div className="px-6 py-4 border-b border-line">
-          <p className="font-mono text-xs uppercase tracking-widest text-faint">Account Contacts</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-metadata">Account Contacts</p>
         </div>
         {contacts.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-muted">No contacts on file.</div>

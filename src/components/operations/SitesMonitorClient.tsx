@@ -49,7 +49,7 @@ function ZoneCard({ zone }: { zone: VendorZone }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-body text-sm font-semibold text-ink truncate">{zone.name}</p>
-          <p className="kpi-label text-faint mt-0.5">{zone.vendor.toUpperCase()} · TECHNOLOGY ZONE</p>
+          <p className="kpi-label text-metadata mt-0.5">{zone.vendor.toUpperCase()} · TECHNOLOGY ZONE</p>
         </div>
         <span className={STATUS_BADGE[zone.status]}>{zone.status.toUpperCase()}</span>
       </div>
@@ -110,10 +110,10 @@ function ZoneCard({ zone }: { zone: VendorZone }) {
       {zone.protocols.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {zone.protocols.slice(0, 4).map(p => (
-            <span key={p} className="font-mono text-[0.55rem] px-1.5 py-0.5 rounded bg-surface2 border border-line text-faint">{p}</span>
+            <span key={p} className="font-mono text-[0.55rem] px-1.5 py-0.5 rounded bg-surface2 border border-line text-metadata">{p}</span>
           ))}
           {zone.protocols.length > 4 && (
-            <span className="kpi-label text-faint">+{zone.protocols.length - 4}</span>
+            <span className="kpi-label text-metadata">+{zone.protocols.length - 4}</span>
           )}
         </div>
       )}
@@ -226,14 +226,14 @@ export function SitesMonitorClient() {
             )}
           </button>
         ))}
-        <span className="kpi-label text-faint ms-2">
+        <span className="kpi-label text-metadata ms-2">
           Showing {visibleZones.length} of {counts.total} zones
         </span>
       </div>
 
       {/* Zone cards grid */}
       {visibleZones.length === 0
-        ? <p className="kpi-label text-faint">No zones match this filter.</p>
+        ? <p className="kpi-label text-metadata">No zones match this filter.</p>
         : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {visibleZones.map(zone => <ZoneCard key={zone.id} zone={zone} />)}
@@ -241,7 +241,7 @@ export function SitesMonitorClient() {
         )
       }
 
-      <p className="kpi-label text-faint">
+      <p className="kpi-label text-metadata">
         Built · {formatDate(data.builtAt, locale, { timeStyle: "medium" })} · Deterministic · No AI
       </p>
     </div>

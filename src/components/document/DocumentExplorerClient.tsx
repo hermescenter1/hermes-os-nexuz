@@ -11,7 +11,7 @@ const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
   REVIEW:   { bg: "bg-warn/[0.08]",   text: "text-warn"   },
   APPROVED: { bg: "bg-signal/[0.08]", text: "text-signal" },
   REJECTED: { bg: "bg-danger/[0.08]", text: "text-danger" },
-  ARCHIVED: { bg: "bg-faint/[0.08]",  text: "text-faint"  },
+  ARCHIVED: { bg: "bg-faint/[0.08]",  text: "text-metadata"  },
 };
 
 interface Props {
@@ -45,7 +45,7 @@ export function DocumentExplorerClient({ documents, folders }: Props) {
                 <div>
                   <p className="text-sm font-medium text-ink leading-snug group-hover:text-signal transition-colors">{folder.name}</p>
                   {folder.description && (
-                    <p className="text-xs text-faint mt-0.5 line-clamp-1">{folder.description}</p>
+                    <p className="text-xs text-metadata mt-0.5 line-clamp-1">{folder.description}</p>
                   )}
                 </div>
               </div>
@@ -60,7 +60,7 @@ export function DocumentExplorerClient({ documents, folders }: Props) {
           <p className="eyebrow-label text-muted">
             {isFa ? "اسناد" : "Documents"}
           </p>
-          <span className="text-xs text-faint">{documents.length} {isFa ? "سند" : "items"}</span>
+          <span className="text-xs text-metadata">{documents.length} {isFa ? "سند" : "items"}</span>
         </div>
 
         <div className="card-enterprise rounded-xl overflow-hidden">
@@ -72,11 +72,11 @@ export function DocumentExplorerClient({ documents, folders }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line bg-surface2">
-                  <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "عنوان" : "Title"}</th>
-                  <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "نوع" : "Type"}</th>
-                  <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "بازبینی" : "Rev"}</th>
-                  <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "وضعیت" : "Status"}</th>
-                  <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "ویرایش" : "Updated"}</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "عنوان" : "Title"}</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{isFa ? "نوع" : "Type"}</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{isFa ? "بازبینی" : "Rev"}</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "وضعیت" : "Status"}</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{isFa ? "ویرایش" : "Updated"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -96,7 +96,7 @@ export function DocumentExplorerClient({ documents, folders }: Props) {
                         <span className="text-xs text-muted">{enumLabel(ted, "docType", doc.documentType)}</span>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <span className="text-xs font-mono text-faint">{doc.currentRevision ?? "—"}</span>
+                        <span className="text-xs font-mono text-metadata">{doc.currentRevision ?? "—"}</span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border border-white/[0.05] ${s.bg} ${s.text}`}>
@@ -104,7 +104,7 @@ export function DocumentExplorerClient({ documents, folders }: Props) {
                         </span>
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="text-xs text-faint">{formatDate(doc.updatedAt, locale)}</span>
+                        <span className="text-xs text-metadata">{formatDate(doc.updatedAt, locale)}</span>
                       </td>
                     </tr>
                   );

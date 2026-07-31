@@ -8,7 +8,7 @@ export default function CustomerTrainingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-faint">Training</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-metadata">Training</p>
         <h2 className="mt-1 text-xl font-bold text-ink">Training & Academy</h2>
         <p className="mt-1 text-sm text-muted">Your enrolled courses, progress, and earned certificates.</p>
       </div>

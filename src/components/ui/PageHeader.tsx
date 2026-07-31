@@ -84,7 +84,7 @@ export function PageBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
       {items.map((item, i) => (
         <span key={i} className="flex items-center gap-1.5">
           {i > 0 && (
-            <span className="text-faint select-none" aria-hidden="true">/</span>
+            <span className="text-metadata select-none" aria-hidden="true">/</span>
           )}
           {item.href ? (
             <a

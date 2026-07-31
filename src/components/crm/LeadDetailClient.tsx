@@ -73,7 +73,7 @@ export function LeadDetailClient({ leadId }: { leadId: string }) {
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {fields.map(([k, v]) => (
             <div key={k} className="rounded-lg bg-surface-2 px-4 py-3">
-              <dt className="font-mono text-xs uppercase tracking-widest text-faint">{k}</dt>
+              <dt className="font-mono text-xs uppercase tracking-widest text-metadata">{k}</dt>
               <dd className="mt-0.5 text-sm font-medium text-ink" dir="auto">{v}</dd>
             </div>
           ))}

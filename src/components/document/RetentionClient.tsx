@@ -27,7 +27,7 @@ export function RetentionClient({ policies, checks }: Props) {
           <h3 className="text-sm font-semibold text-ink">
             {isFa ? "سیاست‌های نگهداری" : "Retention Policies"}
           </h3>
-          <span className="text-xs text-faint">{policies.length}</span>
+          <span className="text-xs text-metadata">{policies.length}</span>
         </div>
         <div className="divide-y divide-line">
           {policies.length === 0 ? (
@@ -40,7 +40,7 @@ export function RetentionClient({ policies, checks }: Props) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-ink">{p.name}</p>
                   {p.description && <p className="text-xs text-muted mt-0.5">{p.description}</p>}
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-faint mt-1.5">
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-metadata mt-1.5">
                     <span>{p.retentionDays} {isFa ? "روز" : "days"}</span>
                     <span>{p.documentType ?? (isFa ? "همه انواع" : "All types")}</span>
                     {p.autoArchive && <span>{isFa ? "بایگانی خودکار" : "Auto-archive"}</span>}
@@ -50,7 +50,7 @@ export function RetentionClient({ policies, checks }: Props) {
                 <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg border border-white/[0.05] ${
                   p.isActive
                     ? "bg-signal/[0.08] text-signal border-signal/20"
-                    : "bg-faint/[0.06] text-faint"
+                    : "bg-faint/[0.06] text-metadata"
                 }`}>
                   {p.isActive ? (isFa ? "فعال" : "Active") : (isFa ? "غیرفعال" : "Inactive")}
                 </span>
@@ -76,7 +76,7 @@ export function RetentionClient({ policies, checks }: Props) {
                 <div key={c.documentId} className="px-5 py-4 flex items-center justify-between gap-4 hover:bg-surface2 transition-colors">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink truncate">{c.title}</p>
-                    <p className="text-xs text-faint mt-0.5">
+                    <p className="text-xs text-metadata mt-0.5">
                       {c.ageInDays} {isFa ? "روز" : "days old"} · {isFa ? "سیاست" : "Policy"}: {c.policyName ?? "—"}
                     </p>
                   </div>

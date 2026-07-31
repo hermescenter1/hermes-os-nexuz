@@ -37,7 +37,7 @@ export function HistoryClient({ history }: { history: MaintenanceHistory[] }) {
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <h2 className="text-base font-semibold text-ink">{t("history.heading")}</h2>
-        <span className="text-xs text-faint font-mono">({history.length} {t("history.eventsUnit")})</span>
+        <span className="text-xs text-metadata font-mono">({history.length} {t("history.eventsUnit")})</span>
       </div>
 
       <div className="relative">
@@ -65,11 +65,11 @@ export function HistoryClient({ history }: { history: MaintenanceHistory[] }) {
                       )}
                     </div>
                     <div className="text-end shrink-0">
-                      <p className="text-xs font-mono text-faint">{formatDate(h.createdAt, locale)}</p>
-                      <p className="text-xs font-mono text-faint">{formatDate(h.createdAt, locale, { timeStyle: "medium" })}</p>
+                      <p className="text-xs font-mono text-metadata">{formatDate(h.createdAt, locale)}</p>
+                      <p className="text-xs font-mono text-metadata">{formatDate(h.createdAt, locale, { timeStyle: "medium" })}</p>
                     </div>
                   </div>
-                  <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-faint">
+                  <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-metadata">
                     <span className="font-mono">{t("history.wo")}: {h.taskId.slice(0, 8)}…</span>
                     {h.userId && <span>{t("history.by")}: {h.userId}</span>}
                   </div>

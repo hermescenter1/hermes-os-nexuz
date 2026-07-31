@@ -12,7 +12,7 @@ function UsageBar({ used, limit, label }: { used: number; limit: number; label: 
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-faint">{label}</span>
+        <span className="text-xs text-metadata">{label}</span>
         <span className="text-xs text-muted font-mono">{pct.toFixed(0)}%</span>
       </div>
       <div className="h-1.5 rounded-full bg-line">
@@ -71,7 +71,7 @@ export function CustomerSubscriptionClient() {
       <div className="rounded-xl border border-line bg-surface p-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <p className="font-mono text-xs uppercase tracking-widest text-faint">Current Plan</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-metadata">Current Plan</p>
             <h2 className="mt-1 text-2xl font-bold text-ink">{sub.planName}</h2>
             <p className="text-sm text-muted">{sub.planTier} · {sub.billingCycle}</p>
           </div>
@@ -94,7 +94,7 @@ export function CustomerSubscriptionClient() {
 
       {/* Usage */}
       <div className="rounded-xl border border-line bg-surface p-6 space-y-6">
-        <p className="font-mono text-xs uppercase tracking-widest text-faint">Usage This Period</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-metadata">Usage This Period</p>
         <UsageBar used={sub.usersCount}     limit={sub.usersLimit}     label="Users" />
         <UsageBar used={sub.storageUsedGb}  limit={sub.storageLimitGb} label="Storage (GB)" />
         <UsageBar used={sub.apiCallsMonth}  limit={sub.apiCallsLimit}  label="API Calls" />
@@ -103,7 +103,7 @@ export function CustomerSubscriptionClient() {
       {/* Features */}
       {sub.features.length > 0 && (
         <div className="rounded-xl border border-line bg-surface p-6">
-          <p className="font-mono text-xs uppercase tracking-widest text-faint mb-4">Included Features</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-metadata mb-4">Included Features</p>
           <div className="flex flex-wrap gap-2">
             {sub.features.map((f) => (
               <span key={f} className="rounded-full border border-signal/30 bg-signal/5 px-3 py-1 text-xs text-signal">
@@ -130,7 +130,7 @@ export function CustomerSubscriptionClient() {
 
       {/* Invoice placeholder */}
       <div className="rounded-xl border border-line bg-surface p-6">
-        <p className="font-mono text-xs uppercase tracking-widest text-faint mb-3">Invoices</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-metadata mb-3">Invoices</p>
         <div className="py-8 text-center text-sm text-muted">
           Invoice history and billing management will be available in a future update.
         </div>

@@ -39,6 +39,9 @@ services:
       args:
         NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
         NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID:-}
+        # SEO canonical host — build-time only. Defaults to the production www
+        # host; set NEXT_PUBLIC_BASE_URL in .env.production only to override.
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://www.hermesnovin.com}
     restart: unless-stopped
     env_file: .env.production
     volumes:

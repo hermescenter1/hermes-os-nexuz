@@ -28,7 +28,7 @@ export function ReportsClient({ report }: { report: ReportData }) {
 
       {/* Reliability KPIs */}
       <section>
-        <p className="eyebrow-label text-faint mb-3">{t("reports.reliabilityKpis")}</p>
+        <p className="eyebrow-label text-metadata mb-3">{t("reports.reliabilityKpis")}</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             // "MTBF"/"MTTR" are protected reliability acronyms shown identically
@@ -47,11 +47,11 @@ export function ReportsClient({ report }: { report: ReportData }) {
               border: "border-warn/20" },
           ].map(k => (
             <div key={k.label} className={`card-enterprise rounded-xl p-4 border-s-2 ${k.border}`}>
-              <div className="text-xs text-faint mb-1">{k.label}</div>
+              <div className="text-xs text-metadata mb-1">{k.label}</div>
               <div className={`text-2xl font-bold font-mono ${k.color}`}>
-                {k.value}{k.unit && <span className="text-xs font-normal text-faint ms-1">{k.unit}</span>}
+                {k.value}{k.unit && <span className="text-xs font-normal text-metadata ms-1">{k.unit}</span>}
               </div>
-              <div className="text-xs text-faint mt-1.5 leading-snug">{k.sub}</div>
+              <div className="text-xs text-metadata mt-1.5 leading-snug">{k.sub}</div>
             </div>
           ))}
         </div>
@@ -60,7 +60,7 @@ export function ReportsClient({ report }: { report: ReportData }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Failure Pareto */}
         <section>
-          <p className="eyebrow-label text-faint mb-3">{t("reports.failurePareto")}</p>
+          <p className="eyebrow-label text-metadata mb-3">{t("reports.failurePareto")}</p>
           <div className="card-enterprise rounded-xl p-5 space-y-4">
             {failurePareto.map(({ category, count }, i) => {
               const max   = failurePareto[0]?.count ?? 1;
@@ -69,7 +69,7 @@ export function ReportsClient({ report }: { report: ReportData }) {
                 <div key={category}>
                   <div className="flex justify-between text-xs mb-1.5">
                     <span className="font-medium text-ink">{i + 1}. {category}</span>
-                    <span className="text-faint font-mono">{count} {t("reports.failuresUnit")}</span>
+                    <span className="text-metadata font-mono">{count} {t("reports.failuresUnit")}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-surface3">
                     <div className="h-1.5 rounded-full bg-danger/70" style={{ width: `${width}%` }} />
@@ -82,7 +82,7 @@ export function ReportsClient({ report }: { report: ReportData }) {
 
         {/* Cost Breakdown */}
         <section>
-          <p className="eyebrow-label text-faint mb-3">{t("reports.costBreakdown")}</p>
+          <p className="eyebrow-label text-metadata mb-3">{t("reports.costBreakdown")}</p>
           <div className="card-enterprise rounded-xl p-5 space-y-4">
             {Object.entries(costByCategory).map(([cat, amt]) => {
               const pct = Math.round((amt / (totalCost || 1)) * 100);
@@ -90,7 +90,7 @@ export function ReportsClient({ report }: { report: ReportData }) {
                 <div key={cat}>
                   <div className="flex justify-between text-xs mb-1.5">
                     <span className="font-medium text-ink">{cat}</span>
-                    <span className="text-faint font-mono">${formatNumber(Math.round(amt), locale)} ({pct}%)</span>
+                    <span className="text-metadata font-mono">${formatNumber(Math.round(amt), locale)} ({pct}%)</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-surface3">
                     <div className="h-1.5 rounded-full bg-warn/70" style={{ width: `${pct}%` }} />
@@ -108,7 +108,7 @@ export function ReportsClient({ report }: { report: ReportData }) {
 
       {/* Work Order Summary */}
       <section>
-        <p className="eyebrow-label text-faint mb-3">{t("reports.woSummary")}</p>
+        <p className="eyebrow-label text-metadata mb-3">{t("reports.woSummary")}</p>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             { label: t("reports.sumTotal"),      value: taskSummary.total,      ac: "text-ink",    b: "border-line"      },

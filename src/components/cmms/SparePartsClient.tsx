@@ -39,7 +39,7 @@ export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
           <div className="space-y-1.5">
             {lowStock.map(p => (
               <div key={p.id} className="flex items-center justify-between text-xs">
-                <span className="font-mono text-faint">{p.partNumber}</span>
+                <span className="font-mono text-metadata">{p.partNumber}</span>
                 <span className="text-muted truncate mx-3 flex-1">{p.name}</span>
                 <span className={`font-mono font-bold ${p.stockQty === 0 ? "text-danger" : "text-warn"}`}>
                   {p.stockQty}/{p.minStockQty} {p.unit}
@@ -55,14 +55,14 @@ export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line bg-surface2">
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("spares.colPartNumber")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("spares.colName")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{t("spares.colCategory")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("spares.colManufacturer")}</th>
-              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("spares.colStock")}</th>
-              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{t("spares.colMin")}</th>
-              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("spares.colUnitCost")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{t("spares.colLocation")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{t("spares.colPartNumber")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{t("spares.colName")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{t("spares.colCategory")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{t("spares.colManufacturer")}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{t("spares.colStock")}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{t("spares.colMin")}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{t("spares.colUnitCost")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden xl:table-cell">{t("spares.colLocation")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -87,13 +87,13 @@ export function SparePartsClient({ parts }: { parts: MaintenanceSparePart[] }) {
                     {p.stockQty} {p.unit}
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell text-end">
-                    <span className="text-xs font-mono text-faint">{p.minStockQty}</span>
+                    <span className="text-xs font-mono text-metadata">{p.minStockQty}</span>
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell text-end">
                     <span className="text-xs font-mono text-muted">${p.unitCost.toFixed(2)}</span>
                   </td>
                   <td className="px-4 py-3 hidden xl:table-cell max-w-[160px]">
-                    <span className="text-xs text-faint truncate block">{p.location ?? "—"}</span>
+                    <span className="text-xs text-metadata truncate block">{p.location ?? "—"}</span>
                   </td>
                 </tr>
               );

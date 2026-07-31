@@ -24,7 +24,11 @@
   /indexnow-key.txt). Generate once; never commit.
 - `INDEXNOW_TRIGGER_SECRET` — inbound auth for the trigger route (fail-closed
   503 when unset).
-- `NEXT_PUBLIC_BASE_URL=https://www.hermesnovin.com` — canonical host.
+- `NEXT_PUBLIC_BASE_URL` — canonical host, **build-time only** (`NEXT_PUBLIC_*`
+  are inlined by webpack at build, not read at runtime). The Docker build now
+  defaults it to `https://www.hermesnovin.com` via a build arg in `Dockerfile`
+  and `docker-compose.prod.yml`, so setting it here is only needed to OVERRIDE
+  for a non-production host.
 - Bing/Google verification tokens via their meta-tag env vars if DNS
   verification is not used (never commit real tokens).
 
@@ -58,10 +62,13 @@
    distinguishable in the existing analytics — no new tracker was added.
 
 ### Domain policy
-- Primary canonical host: `www.hermesnovin.com` — set via the required
-  `NEXT_PUBLIC_BASE_URL` env var above (the code fallback in
-  `src/lib/seo/config.ts` is the apex host, so this var MUST be set in
-  production or every SEO surface will emit apex canonicals).
+- Primary canonical host: `www.hermesnovin.com` — baked by default at build
+  time via the `NEXT_PUBLIC_BASE_URL` build arg in `Dockerfile` and
+  `docker-compose.prod.yml` (default `https://www.hermesnovin.com`). The
+  `src/lib/seo/config.ts` code fallback is the apex host and is reached only in
+  non-Docker/dev builds; the production Docker build always inlines www unless
+  explicitly overridden with `--build-arg NEXT_PUBLIC_BASE_URL=…`. (Phase 89
+  found the build arg was missing, so production was inlining apex canonicals.)
 - `www.hermesos.uk`: do NOT activate metadata for it until it is live; when
   live, choose either a 301 redirect to the primary host (recommended) or a
   distinct-content strategy — never duplicate canonicals across both hosts.

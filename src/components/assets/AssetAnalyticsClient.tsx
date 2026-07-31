@@ -38,7 +38,7 @@ export function AssetAnalyticsClient({ assets }: Props) {
       <div>
         <div className="flex justify-between text-sm mb-1">
           <span className="text-muted">{label}</span>
-          <span className="text-ink font-medium">{value} <span className="text-faint text-xs">({pct}%)</span></span>
+          <span className="text-ink font-medium">{value} <span className="text-metadata text-xs">({pct}%)</span></span>
         </div>
         <div className="h-2 bg-surface3 rounded-full overflow-hidden">
           <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
@@ -64,7 +64,7 @@ export function AssetAnalyticsClient({ assets }: Props) {
           { label: t("analytics.inService"),    value: activeCount, color: "text-ice" },
         ].map((k, i) => (
           <div key={i} className="card-enterprise rounded-xl p-4 border-s-2 border-ice/25">
-            <p className="eyebrow-label text-faint mb-1">{k.label}</p>
+            <p className="eyebrow-label text-metadata mb-1">{k.label}</p>
             <p className={`text-2xl font-semibold ${k.color}`}>{k.value}</p>
           </div>
         ))}
@@ -73,7 +73,7 @@ export function AssetAnalyticsClient({ assets }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* By type */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{t("analytics.byType")}</p>
+          <p className="eyebrow-label text-metadata mb-4">{t("analytics.byType")}</p>
           <div className="space-y-3">
             {Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
               <BarRow key={type} label={typeLabel(type)} value={count} total={assets.length} color="bg-ice" />
@@ -83,7 +83,7 @@ export function AssetAnalyticsClient({ assets }: Props) {
 
         {/* By criticality */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{t("analytics.byCriticality")}</p>
+          <p className="eyebrow-label text-metadata mb-4">{t("analytics.byCriticality")}</p>
           <div className="space-y-3">
             {[["CRITICAL","bg-danger"],["HIGH","bg-warn"],["MEDIUM","bg-ice"],["LOW","bg-signal"],["NON_CRITICAL","bg-line2"]].map(([c, col]) => (
               <BarRow key={c} label={c} value={byCrit[c] ?? 0} total={assets.length} color={col} />
@@ -93,7 +93,7 @@ export function AssetAnalyticsClient({ assets }: Props) {
 
         {/* By status */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{t("analytics.byStatus")}</p>
+          <p className="eyebrow-label text-metadata mb-4">{t("analytics.byStatus")}</p>
           <div className="space-y-3">
             {Object.entries(byStatus).sort((a, b) => b[1] - a[1]).map(([s, c]) => (
               <BarRow key={s} label={enumLabel(tAm, "assetStatus", s)} value={c} total={assets.length} color="bg-signal" />
@@ -103,7 +103,7 @@ export function AssetAnalyticsClient({ assets }: Props) {
 
         {/* By lifecycle state */}
         <div className="card-surface rounded-xl p-5">
-          <p className="eyebrow-label text-faint mb-4">{t("analytics.byLifecycle")}</p>
+          <p className="eyebrow-label text-metadata mb-4">{t("analytics.byLifecycle")}</p>
           <div className="space-y-3">
             {Object.entries(byLC).sort((a, b) => b[1] - a[1]).map(([s, c]) => (
               <BarRow key={s} label={enumLabel(tAm, "lifecycle", s)} value={c} total={assets.length} color="bg-ice" />

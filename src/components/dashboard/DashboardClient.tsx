@@ -113,7 +113,7 @@ function MetricRows({ list, nf }: { list: MetricSeries[]; nf: Intl.NumberFormat 
                 <span className="ms-1 font-body text-xs font-normal text-muted" dir="ltr">{m.unit}</span>
               </span>
             </div>
-            <p className="mt-0.5 font-body text-[0.65rem] text-faint">
+            <p className="mt-0.5 font-body text-[0.65rem] text-metadata">
               {t("min")} {nf.format(m.min)} · {t("max")} {nf.format(m.max)}
             </p>
           </div>
@@ -368,7 +368,7 @@ export function DashboardClient() {
                     {t(`alarmsP.msgs.${a.msgKey}`)}
                   </span>
                   <span className={`shrink-0 font-body text-[0.65rem] ${sevText[a.severity]}`}>{t(`severity.${a.severity}`)}</span>
-                  <span className="font-mono text-[0.65rem] text-faint" dir="ltr">{tf.format(a.ts)}</span>
+                  <span className="font-mono text-[0.65rem] text-metadata" dir="ltr">{tf.format(a.ts)}</span>
                 </li>
               ))}
             </ul>
@@ -461,7 +461,7 @@ export function DashboardClient() {
                   <span className="flex-1 truncate font-body text-xs text-ink">
                     {t(`maintenanceP.assets.${m.assetKey}`)}
                   </span>
-                  <span className="font-mono text-[0.65rem] text-faint shrink-0">
+                  <span className="font-mono text-[0.65rem] text-metadata shrink-0">
                     {nf.format(m.dueDays)} {t("maintenanceP.due")}
                   </span>
                 </li>
@@ -539,7 +539,7 @@ export function DashboardClient() {
               <li key={sv.id} className="flex items-center justify-between">
                 <span className="font-mono text-xs text-ink" dir="ltr">{sv.id}</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[0.65rem] text-faint">{nf.format(sv.latencyMs)}ms</span>
+                  <span className="font-mono text-[0.65rem] text-metadata">{nf.format(sv.latencyMs)}ms</span>
                   <StatusDot tone={statusColor[sv.status] ?? ""} />
                 </div>
               </li>
@@ -556,7 +556,7 @@ export function DashboardClient() {
             {s.plc.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-2">
                 <span className="font-mono text-xs text-ink" dir="ltr">{p.id}</span>
-                <span className="font-mono text-[0.65rem] text-faint">{nf.format(p.cycleMs)}ms</span>
+                <span className="font-mono text-[0.65rem] text-metadata">{nf.format(p.cycleMs)}ms</span>
                 <StatusDot tone={statusColor[p.status] ?? ""} />
               </li>
             ))}
@@ -601,7 +601,7 @@ export function DashboardClient() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 font-body text-[0.7rem] text-faint">{t("aiP.note")}</p>
+          <p className="mt-3 font-body text-[0.7rem] text-metadata">{t("aiP.note")}</p>
         </Panel>
       )}
 
@@ -621,7 +621,7 @@ export function DashboardClient() {
       </div>
 
       {/* Timestamp */}
-      <p className="kpi-label text-faint" dir="ltr">
+      <p className="kpi-label text-metadata" dir="ltr">
         {t("updated")} {tf.format(s.ts)}
       </p>
     </div>
