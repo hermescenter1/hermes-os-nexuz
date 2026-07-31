@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   computeOutcomeScore,
   computeMemoryConfidence,
@@ -11,6 +11,19 @@ import {
   OUTCOME_SCORES,
 } from "../memory-retrieval";
 import type { StoredMemoryFeedback, MemoryWithFeedback } from "@/lib/storage/types";
+
+/**
+ * PHASE 90B: the searchEngineeringMemories integration tests below persist and
+ * read memories through the now tenant-scoped service; run them as a single
+ * fixed tenant by mocking the session-derived owner so create + read share one
+ * scope. The pure scoring tests are unaffected (they use static imports).
+ */
+beforeEach(() => {
+  vi.resetModules();
+  vi.doMock("@/lib/storage/brain-owner", () => ({
+    resolveBrainOwner: async () => ({ userId: "u-test", orgId: null }),
+  }));
+});
 
 /**
  * Phase 18C — learning loop unit tests.

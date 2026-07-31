@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { StoredMemory } from "@/lib/storage/types";
 
 /**
@@ -6,6 +6,12 @@ import type { StoredMemory } from "@/lib/storage/types";
  *
  * All tests run in session mode (no DATABASE_URL) so they hit the in-process
  * globalThis stores. Each test resets those stores to guarantee isolation.
+ *
+ * PHASE 90B: memory reads/writes are now tenant-scoped (owner derived from the
+ * session). These functional unit tests run as a single fixed tenant by mocking
+ * the session-derived owner, so a create and its read share one scope. The
+ * exhaustive cross-tenant isolation matrix lives in
+ * src/lib/storage/__tests__/phase90b-knowledge-tenant-ownership.test.ts.
  */
 
 function resetStores() {
@@ -13,7 +19,13 @@ function resetStores() {
   (globalThis as Record<string, unknown>).__hermesMemoryFeedback = [];
 }
 
-beforeEach(resetStores);
+beforeEach(() => {
+  resetStores();
+  vi.resetModules();
+  vi.doMock("@/lib/storage/brain-owner", () => ({
+    resolveBrainOwner: async () => ({ userId: "u-test", orgId: null }),
+  }));
+});
 
 const BASE: Parameters<typeof import("@/lib/memory/memory-service").createEngineeringMemory>[0] =
   {

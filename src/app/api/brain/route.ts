@@ -463,6 +463,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "question too short" }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }
 
+  // PHASE 90: resolve the tenant owner ONCE from the authenticated session and
+  // reuse it for every durable write below. The owner is never taken from the
+  // request body/query/header, so a caller can never attribute a record to
+  // another tenant. requireAuthoring already proved a session exists.
+  const owner = await resolveBrainOwner();
+
   // Phase 11B-A: in database mode, merge PostgreSQL-published cases/knowledge
   // into the reasoning pipeline and retrieval engine. Best-effort — any
   // repository failure resolves to an empty corpus (see getPublishedCorpus),
@@ -510,23 +516,31 @@ export async function POST(req: Request) {
       ...(pipe.suggested ? { suggestedDomains: pipe.suggested } : {}),
       unknown: true,
     });
-    // Phase 11B: in database mode, persist the analysis record and an Unknown
-    // triage row to PostgreSQL. Session mode keeps the in-process behavior.
+    // PHASE 90: durable analysis history is owner-scoped in BOTH modes, so the
+    // session-mode GET path is tenant-isolated too (it reads the same owner-
+    // scoped repository, never the global ring).
+    try {
+      await analysisRepository(owner).create({
+        query: question,
+        locale,
+        mode: "library",
+        domains: [],
+        vendors: pipe.vendors,
+        cases: [],
+        knowledge: [],
+        confidence: pipe.confidence,
+        riskLevel: "unknown",
+        isUnknown: true,
+      });
+    } catch {
+      /* best-effort persistence */
+    }
+    // Phase 11B: the Unknown triage row (raw query) persists to PostgreSQL in
+    // database mode. PHASE 90: it is attributed to the caller's tenant via the
+    // owner-scoped repository, so the Unknown Center never crosses tenants.
     if (isDatabaseMode()) {
       try {
-        await analysisRepository(await resolveBrainOwner()).create({
-          query: question,
-          locale,
-          mode: "library",
-          domains: [],
-          vendors: pipe.vendors,
-          cases: [],
-          knowledge: [],
-          confidence: pipe.confidence,
-          riskLevel: "unknown",
-          isUnknown: true,
-        });
-        await unknownRepository().create({
+        await unknownRepository(owner).create({
           query: question,
           locale,
           confidence: pipe.confidence,
@@ -793,26 +807,25 @@ export async function POST(req: Request) {
     unknown: false,
   });
 
-  // Phase 11B: durable analysis history. In database mode this persists to
-  // PostgreSQL; in session mode the in-process ring above already holds it,
-  // so we skip the repo write to avoid double-storing the same record.
-  if (isDatabaseMode()) {
-    try {
-      await analysisRepository(await resolveBrainOwner()).create({
-        query: question,
-        locale,
-        mode: analysis.mode,
-        domains: pipe.domains.map((d) => d.id),
-        vendors: pipe.vendors,
-        cases: pipe.caseMatches.map((m) => m.case.id),
-        knowledge: pipe.libraries,
-        confidence: analysis.confidence,
-        riskLevel: analysis.riskLevel ?? "low",
-        isUnknown: false,
-      });
-    } catch {
-      /* history persistence is best-effort; never blocks the response */
-    }
+  // PHASE 90: durable, owner-scoped analysis history in BOTH modes. The
+  // in-process analysisMemory ring above is retained as the deterministic
+  // Analysis Memory Engine, but it is no longer the source for GET /api/brain —
+  // that reads the owner-scoped repository so history is tenant-isolated.
+  try {
+    await analysisRepository(owner).create({
+      query: question,
+      locale,
+      mode: analysis.mode,
+      domains: pipe.domains.map((d) => d.id),
+      vendors: pipe.vendors,
+      cases: pipe.caseMatches.map((m) => m.case.id),
+      knowledge: pipe.libraries,
+      confidence: analysis.confidence,
+      riskLevel: analysis.riskLevel ?? "low",
+      isUnknown: false,
+    });
+  } catch {
+    /* history persistence is best-effort; never blocks the response */
   }
 
   return NextResponse.json(analysis, { headers: { "Cache-Control": "no-store" } });
@@ -860,47 +873,54 @@ function recentLibrariesOf(records: AnalysisRecord[]): string[] {
  * back to the session-memory path below — never a hard error.
  */
 export async function GET(req: Request) {
-  // Authorize (authoring capability) BEFORE touching the analysis repository
-  // or memory ring. PHASE 90: the repository is additionally tenant-scoped, so
-  // a caller only ever sees their own / their organization's history.
+  // Authorize (authoring capability) BEFORE touching the analysis repository.
   const gate = await requireAuthoring();
   if (!gate.ok) return denyNoStore(gate.response);
 
+  // PHASE 90: the analysis history is ALWAYS owner-scoped — in database mode, in
+  // session mode, and on any repository error. It is NEVER sourced from the
+  // process-global analysisMemory ring, which is tenant-unaware and would leak
+  // one tenant's questions and aggregate stats to another. A caller only ever
+  // sees their own / their organization's history.
+  const owner = await resolveBrainOwner();
   const url = new URL(req.url);
   const n = Math.min(Number(url.searchParams.get("n") ?? 20) || 20, 50);
+  const storageMode = isDatabaseMode() ? "database" : "session";
+  const note =
+    storageMode === "database"
+      ? "Database mode: history is durable in PostgreSQL (AnalysisRecord), tenant-scoped, and survives restarts."
+      : "Session mode: history is process-lifetime only (in-memory) and tenant-scoped — set DATABASE_URL to persist it across restarts.";
 
-  if (isDatabaseMode()) {
-    try {
-      // PHASE 90: history is scoped to the caller's tenant, not global.
-      const rows = await analysisRepository(await resolveBrainOwner()).list();
-      const all = rows.map(rowToAnalysisRecord);
-      const recent = all.slice(0, n);
-      return NextResponse.json(
-        {
-          recent,
-          recentLibraries: recentLibrariesOf(recent),
-          stats: computeMemoryStats(all),
-          caseDatabase: { cases: CASES.length },
-          storageMode: "database",
-          note: "Database mode: history is durable in PostgreSQL (AnalysisRecord) and survives restarts.",
-        },
-        { headers: { "Cache-Control": "no-store" } }
-      );
-    } catch {
-      /* fall through to the session-memory path below */
-    }
+  try {
+    // analysisRepository(owner) is owner-scoped AND mode-agnostic: it reads the
+    // durable table in database mode and the owner-filtered in-process store in
+    // session mode, degrading internally without throwing.
+    const rows = await analysisRepository(owner).list();
+    const all = rows.map(rowToAnalysisRecord);
+    const recent = all.slice(0, n);
+    return NextResponse.json(
+      {
+        recent,
+        recentLibraries: recentLibrariesOf(recent),
+        stats: computeMemoryStats(all),
+        caseDatabase: { cases: CASES.length },
+        storageMode,
+        note,
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  } catch {
+    // Fail closed to an owner-scoped-empty result — NEVER the global ring.
+    return NextResponse.json(
+      {
+        recent: [],
+        recentLibraries: [],
+        stats: computeMemoryStats([]),
+        caseDatabase: { cases: CASES.length },
+        storageMode,
+        note,
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   }
-
-  const recent = analysisMemory.recent(n);
-  return NextResponse.json(
-    {
-      recent,
-      recentLibraries: recentLibrariesOf(recent),
-      stats: analysisMemory.stats(),
-      caseDatabase: { cases: CASES.length },
-      storageMode: "session",
-      note: "Session mode: history is process-lifetime only (in-memory) — set DATABASE_URL to persist it across restarts.",
-    },
-    { headers: { "Cache-Control": "no-store" } }
-  );
 }

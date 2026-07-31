@@ -139,6 +139,7 @@ describe("GET /api/projects/analytics — single project", () => {
       {
         id: "proj-1", name: "Line 3 Retrofit",
         description: "Kiln drive upgrade", status: "active",
+        userId: "u-test",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -147,14 +148,14 @@ describe("GET /api/projects/analytics — single project", () => {
       {
         id: "m1", query: "VFD fault",   domain: "drives",
         analysisSummary: "check ramp",  confidence: 70,
-        relatedCaseIds: [], relatedDocumentIds: [],
+        relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test",
         outcome: "success", projectId: "proj-1",
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       },
       {
         id: "m2", query: "PLC timeout", domain: "plc",
         analysisSummary: "check comm",  confidence: 50,
-        relatedCaseIds: [], relatedDocumentIds: [],
+        relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test",
         outcome: "failed",  projectId: "proj-1",
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       },
@@ -191,13 +192,13 @@ describe("GET /api/projects/analytics — single project", () => {
 describe("GET /api/projects/analytics — multiple projects with mixed outcomes", () => {
   beforeEach(() => {
     (globalThis as Record<string, unknown>).__hermesProjects = [
-      { id: "p1", name: "Alpha", description: "", status: "active",   createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "p2", name: "Beta",  description: "", status: "archived", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "p1", name: "Alpha", description: "", status: "active",   userId: "u-test", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "p2", name: "Beta",  description: "", status: "archived", userId: "u-test", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     ];
     (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [
-      { id: "m1", query: "q1", domain: "drives", analysisSummary: "", confidence: 80, relatedCaseIds: [], relatedDocumentIds: [], outcome: "success", projectId: "p1", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "m2", query: "q2", domain: "drives", analysisSummary: "", confidence: 80, relatedCaseIds: [], relatedDocumentIds: [], outcome: "success", projectId: "p1", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "m3", query: "q3", domain: "plc",    analysisSummary: "", confidence: 40, relatedCaseIds: [], relatedDocumentIds: [], outcome: "failed",  projectId: "p2", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "m1", query: "q1", domain: "drives", analysisSummary: "", confidence: 80, relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test", outcome: "success", projectId: "p1", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "m2", query: "q2", domain: "drives", analysisSummary: "", confidence: 80, relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test", outcome: "success", projectId: "p1", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "m3", query: "q3", domain: "plc",    analysisSummary: "", confidence: 40, relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test", outcome: "failed",  projectId: "p2", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     ];
   });
 
@@ -258,7 +259,7 @@ describe("GET /api/projects/analytics — storage failure fallback", () => {
 describe("GET /api/projects/analytics — backward compatibility", () => {
   it("does not affect GET /api/projects (list) endpoint", async () => {
     (globalThis as Record<string, unknown>).__hermesProjects = [
-      { id: "p1", name: "Test", description: "", status: "active", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "p1", name: "Test", description: "", status: "active", userId: "u-test", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     ];
     const { GET: listGET } = await import("../../route");
     const res = await listGET();

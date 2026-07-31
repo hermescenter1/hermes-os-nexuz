@@ -28,14 +28,14 @@ beforeEach(() => {
   (globalThis as Record<string, unknown>).__hermesMemoryFeedback = [];
   (globalThis as Record<string, unknown>).__hermesProjects = [
     {
-      id: "p1", name: PRIVATE_PROJECT, description: "d", status: "active",
+      id: "p1", name: PRIVATE_PROJECT, description: "d", status: "active", userId: "u-test",
       createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
     },
   ];
   (globalThis as Record<string, unknown>).__hermesEngineeringMemory = [
     {
       id: "m1", query: PRIVATE_QUERY, domain: "drives",
-      analysisSummary: "s", confidence: 80, relatedCaseIds: [], relatedDocumentIds: [],
+      analysisSummary: "s", confidence: 80, relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test",
       outcome: "success", projectId: "p1",
       createdAt: "2026-01-10T00:00:00.000Z", updatedAt: "2026-01-10T00:00:00.000Z",
     },

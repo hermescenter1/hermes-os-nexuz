@@ -38,6 +38,9 @@ model EngineeringCase {
 
   @@index([userId, createdAt])
   @@index([organizationId, createdAt])
+  // PHASE 90B — supports the public listPublishedCases() read
+  // (where status = 'published' order by createdAt desc) at volume.
+  @@index([status, createdAt])
 }
 
 model KnowledgeArticle {
@@ -93,6 +96,16 @@ model UnknownAnalysis {
   status           String   @default("open")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  // PHASE 90B — tenant ownership (additive, nullable). The raw unknown query
+  // text is tenant-private; NULL rows are QUARANTINED by the application layer
+  // exactly as AnalysisRecord/EngineeringCase. Derived from the authenticated
+  // server context, never from client input.
+  userId           String?
+  organizationId   String?
+
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
 }
 
 // ---- Phase 16A: document ingestion foundation (additive; no upload route,
@@ -246,7 +259,14 @@ model Project {
   updatedAt   DateTime            @updatedAt
   memories    EngineeringMemory[]
 
+  // PHASE 90B — tenant ownership (additive, nullable). NULL rows are quarantined
+  // by the application layer. Derived from the authenticated server context.
+  userId         String?
+  organizationId String?
+
   @@index([status])
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
 }
 
 // ---- Phase 18A: Engineering Memory Foundation (additive) ----
@@ -277,9 +297,19 @@ model EngineeringMemory {
   updatedAt          DateTime         @updatedAt
   feedback           MemoryFeedback[]
 
+  // PHASE 90B — tenant ownership (additive, nullable). Saved Brain analyses are
+  // tenant-private; NULL rows are QUARANTINED by the application layer exactly
+  // as AnalysisRecord/EngineeringCase. Derived from the authenticated server
+  // context, never from client input. MemoryFeedback inherits scope through its
+  // parent memory (feedback access is gated on parent ownership).
+  userId             String?
+  organizationId     String?
+
   @@index([domain])
   @@index([outcome])
   @@index([projectId])
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
 }
 
 model MemoryFeedback {
@@ -424,8 +454,17 @@ model AuditLog {
   createdAt  DateTime @default(now())
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  // PHASE 90B — durable audit tenancy + traceability (additive, nullable).
+  // organizationId lets the trail be scoped/queried per tenant at the DB layer;
+  // outcome distinguishes an attempted vs. completed operation; correlationId
+  // ties the row to its originating request (see logger/correlation.ts).
+  organizationId String?
+  outcome        String?
+  correlationId  String?
+
   @@index([action])
   @@index([userId])
+  @@index([organizationId])
 }
 
 // ════════════════════════════════════════════════════════════════════════════

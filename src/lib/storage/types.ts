@@ -96,6 +96,10 @@ export interface StoredUnknown {
   status: UnknownStatus;
   createdAt: string;
   updatedAt: string;
+  /** PHASE 90B — tenant ownership; null on legacy pre-phase rows. Derived from
+   *  the authenticated server context, never from client input. */
+  userId?: string | null;
+  organizationId?: string | null;
 }
 
 // ---- Phase 19A: Project Intelligence ----
@@ -109,6 +113,10 @@ export interface StoredProject {
   status: ProjectStatus;
   createdAt: string;
   updatedAt: string;
+  /** PHASE 90B — tenant ownership; null on legacy pre-phase rows. Derived from
+   *  the authenticated server context, never from client input. */
+  userId?: string | null;
+  organizationId?: string | null;
 }
 
 // ---- Phase 18A/18C: Engineering Memory ----
@@ -129,6 +137,10 @@ export interface StoredMemory {
   projectId?: string;
   createdAt: string;
   updatedAt: string;
+  /** PHASE 90B — tenant ownership; null on legacy pre-phase rows. Derived from
+   *  the authenticated server context, never from client input. */
+  userId?: string | null;
+  organizationId?: string | null;
 }
 
 export interface StoredMemoryFeedback {

@@ -1,4 +1,4 @@
-import { caseRepository } from "@/lib/storage/case-repository";
+import { listPublishedCases } from "@/lib/storage/case-repository";
 import { knowledgeRepository } from "@/lib/storage/knowledge-repository";
 import type { StoredCase, StoredArticle } from "@/lib/storage/types";
 import type { EngineeringCase } from "./cases";
@@ -97,12 +97,14 @@ const EMPTY_CORPUS: PublishedCorpus = { cases: [], knowledge: [] };
  */
 export async function getPublishedCorpus(): Promise<PublishedCorpus> {
   try {
+    // PHASE 90B: the published corpus is public knowledge, read through the
+    // explicitly-unscoped listPublishedCases() — NOT the owner-scoped
+    // caseRepository() (which, with no owner, would correctly see nothing).
     const [storedCases, storedArticles] = await Promise.all([
-      caseRepository().list(),
+      listPublishedCases(),
       knowledgeRepository().list(),
     ]);
     const cases = storedCases
-      .filter((c) => c.status === "published")
       .map(toEngineeringCase)
       .filter((c): c is EngineeringCase => c !== null);
     const knowledge = storedArticles

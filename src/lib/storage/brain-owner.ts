@@ -28,7 +28,16 @@ type MemberModel = {
  * it does not authorize.
  */
 export async function resolveBrainOwner(): Promise<BrainOwner | null> {
-  const user = await getCurrentUser();
+  // Never throws: a failure to read the session (e.g. called outside a request
+  // scope) fails closed to null, so every owner-scoped read degrades to "sees
+  // nothing" rather than propagating an error into a caller that expected a
+  // graceful degrade. Callers must still run their own authorization gate.
+  let user: Awaited<ReturnType<typeof getCurrentUser>>;
+  try {
+    user = await getCurrentUser();
+  } catch {
+    return null;
+  }
   if (!user) return null;
 
   return { userId: user.id, orgId: await activeOrgIdOf(user.id) };

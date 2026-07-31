@@ -201,6 +201,10 @@ export interface AuditEvent {
   entityId: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;
+  /** PHASE 90B — tenant scope + traceability (nullable; legacy rows are null). */
+  organizationId: string | null;
+  outcome: string | null;
+  correlationId: string | null;
 }
 
 export interface AuditFilter {
@@ -218,6 +222,12 @@ export interface AuditInput {
   entityType: string;
   entityId?: string | null;
   metadata?: Record<string, unknown>;
+  /** PHASE 90B — tenant scope of the audited action, the attempted-vs-completed
+   *  outcome, and the originating request's correlation id. All are derived from
+   *  the authenticated server context / request, never from a client body. */
+  organizationId?: string | null;
+  outcome?: string | null;
+  correlationId?: string | null;
 }
 
 const now = () => new Date().toISOString();
@@ -247,6 +257,9 @@ function rowToEvent(r: Record<string, unknown>): AuditEvent {
     entityId: r.entityId ? String(r.entityId) : null,
     metadata: (r.metadata as Record<string, unknown>) ?? {},
     createdAt: r.createdAt ? new Date(r.createdAt as string).toISOString() : now(),
+    organizationId: r.organizationId ? String(r.organizationId) : null,
+    outcome: r.outcome ? String(r.outcome) : null,
+    correlationId: r.correlationId ? String(r.correlationId) : null,
   };
 }
 
@@ -260,6 +273,9 @@ export async function recordAuditEvent(input: AuditInput): Promise<void> {
     entityId: input.entityId ?? null,
     metadata: input.metadata ?? {},
     createdAt: now(),
+    organizationId: input.organizationId ?? null,
+    outcome: input.outcome ?? null,
+    correlationId: input.correlationId ?? null,
   };
 
   // Always keep an in-process copy so the running session can see events.
@@ -279,6 +295,9 @@ export async function recordAuditEvent(input: AuditInput): Promise<void> {
             entityType: event.entityType,
             entityId: event.entityId,
             metadata: event.metadata,
+            organizationId: event.organizationId,
+            outcome: event.outcome,
+            correlationId: event.correlationId,
           },
         });
       }
