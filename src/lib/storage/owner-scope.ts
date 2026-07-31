@@ -9,15 +9,18 @@
  * predicate, so ownership is enforced IN THE DATABASE QUERY rather than by
  * post-fetch filtering.
  *
- * LEGACY POOL: rows written before this phase have NULL owners. They stay
- * visible to authenticated authoring users (the exact audience that could
- * already read them), so the migration is non-destructive and no history
- * disappears. Every row written from now on is attributed, and attributed rows
- * are only ever visible to their owner or the owner's organization.
+ * LEGACY POOL: rows written before this phase have NULL owner columns. They are
+ * QUARANTINED (invisible to every ordinary read) — no history is served to an
+ * arbitrary tenant. Every row written from now on is attributed, and attributed
+ * rows are visible ONLY within their exact active-organization context, or — for
+ * personal (org-less) rows — to the creating user alone. A row created under one
+ * organization is never reachable from another organization's context, even by
+ * the same user (see `ownerWhere` / `ownerCanRead`).
  *
- * The owner is ALWAYS derived from the authenticated server-side session —
- * see `resolveBrainOwner`. No caller may pass a userId/orgId from a request
- * body or query string.
+ * The owner is ALWAYS derived from the authenticated server-side session — see
+ * `resolveBrainOwner`, which resolves exactly one of PERSONAL / ORG / AMBIGUOUS
+ * (fail-closed) contexts. No caller may pass a userId/orgId from a request body
+ * or query string.
  */
 
 import type { BrainOwner } from "./types";
@@ -25,37 +28,63 @@ import type { BrainOwner } from "./types";
 /** Hard ceiling on any owner-scoped list query — no unbounded private reads. */
 export const MAX_OWNED_ROWS = 200;
 
+/** One arm of an `ownerWhere` OR. Either an exact org match, the impossible
+ *  sentinel, or the "personal row" AND-pair (org IS NULL AND userId = me). */
+export type OwnerClause =
+  | { organizationId: string }
+  | { userId: string }
+  | { AND: Array<{ organizationId: null } | { userId: string }> };
+
 /** A Prisma `where` fragment. Deliberately structural: the storage layer talks
  *  to Prisma models through an untyped seam (see the repositories). */
 export type OwnerWhere = {
-  OR: Array<Record<string, string | null>>;
+  OR: OwnerClause[];
 };
 
 /**
- * Prisma `where` clause matching exactly the rows this owner may see:
- *   - rows they created themselves,
- *   - rows owned by their organization (when they belong to one).
+ * Raised when a write is attempted in an AMBIGUOUS org context (>1 active
+ * membership, no server-authenticated active organization). The write fails
+ * closed rather than being attributed to an arbitrarily-chosen organization.
+ */
+export class AmbiguousOwnerContextError extends Error {
+  constructor() {
+    super("Ambiguous organization context: an active organization must be selected before writing.");
+    this.name = "AmbiguousOwnerContextError";
+  }
+}
+
+/**
+ * Prisma `where` clause matching EXACTLY the rows this owner may see:
  *
- * LEGACY ROWS ARE NOT INCLUDED. A NULL-owner row cannot be attributed to any
- * tenant, so serving it to "every authoring user" would be exactly the
- * cross-tenant exposure this module exists to prevent. Such rows are
- * QUARANTINED: invisible to every ordinary read, write, delete and export.
- * Recovering them is an explicit, permission-gated, audited administrative
- * action (see `legacyQuarantineWhere`), never an ordinary API read.
+ *   ORG context      => organizationId = orgId
+ *                       OR (organizationId IS NULL AND userId = userId)
+ *   PERSONAL context => organizationId IS NULL AND userId = userId
+ *   AMBIGUOUS / null => nothing (impossible sentinel)
  *
- * Passing `null` (an unauthenticated context) is a programming error — callers
- * must gate on authentication first — so it yields a predicate that matches
- * NOTHING rather than something.
+ * Deliberately NOT `{ userId }` alone: a bare userId clause would expose a row
+ * the user created while a member of a DIFFERENT organization (organizationId =
+ * that other org). Cross-organization visibility is only ever via the exact
+ * active-org match; personal (org-less) rows are keyed to the user alone.
+ *
+ * LEGACY NULL-owner rows (userId NULL AND organizationId NULL) are never matched
+ * — the personal clause requires a concrete userId — so they stay QUARANTINED.
  */
 export function ownerWhere(owner: BrainOwner | null): OwnerWhere {
-  if (!owner) {
-    // Impossible predicate: an unauthenticated context sees no private row.
+  if (!owner || owner.ambiguous) {
+    // Impossible predicate: an unauthenticated or ambiguous context sees no row.
     // (`userId` is a String? column, so it can never equal this sentinel.)
     return { OR: [{ userId: IMPOSSIBLE_OWNER }] };
   }
-  const clauses: Array<Record<string, string | null>> = [{ userId: owner.userId }];
-  if (owner.orgId) clauses.push({ organizationId: owner.orgId });
-  return { OR: clauses };
+  // A personal row: org-less and created by THIS user; visible only to them.
+  const personal: OwnerClause = {
+    AND: [{ organizationId: null }, { userId: owner.userId }],
+  };
+  if (owner.orgId) {
+    // Org context: the active organization's rows (tenant-wide) + own personal.
+    return { OR: [{ organizationId: owner.orgId }, personal] };
+  }
+  // Personal context (no active organization): only the user's personal rows.
+  return { OR: [personal] };
 }
 
 /**
@@ -86,8 +115,13 @@ export function isLegacyQuarantined(row: {
 }
 
 /**
- * True when `row` is readable by `owner`. Mirrors `ownerWhere` for the
- * in-memory (session-storage) repositories, which have no query engine.
+ * True when `row` is readable by `owner`. Mirrors `ownerWhere` EXACTLY for the
+ * in-memory (session-storage) repositories, which have no query engine — the
+ * session and database backends therefore enforce identical isolation.
+ *
+ *   personal row (org IS NULL) => readable only by the SAME userId.
+ *   org row (org = X)          => readable only in the active-org context X.
+ *   ambiguous / null owner     => nothing.
  */
 export function ownerCanRead(
   row: { userId?: string | null; organizationId?: string | null },
@@ -95,21 +129,34 @@ export function ownerCanRead(
 ): boolean {
   // Quarantined legacy rows are readable by NO ONE through ordinary paths.
   if (isLegacyQuarantined(row)) return false;
-  if (!owner) return false;
+  if (!owner || owner.ambiguous) return false;
   const rowUser = row.userId ?? null;
   const rowOrg = row.organizationId ?? null;
-  if (rowUser !== null && rowUser === owner.userId) return true;
-  return rowOrg !== null && owner.orgId !== null && rowOrg === owner.orgId;
+  if (rowOrg === null) {
+    // Personal row: keyed to the user alone (never an org colleague).
+    return rowUser !== null && rowUser === owner.userId;
+  }
+  // Organization row: reachable only within its exact active organization —
+  // never via a bare userId match from a different org context.
+  return owner.orgId !== null && rowOrg === owner.orgId;
 }
 
 /**
  * Owner attribution for a NEW row. Returned separately from caller-supplied
  * data so a caller can never override it by spreading request input.
+ *
+ * FAILS CLOSED for an ambiguous context: rather than attribute a write to an
+ * arbitrarily-chosen organization (or silently quarantine it), it throws so the
+ * caller rejects the write. A personal/org/unauthenticated context attributes
+ * the concrete (userId, orgId|null).
  */
 export function ownerAttribution(owner: BrainOwner | null): {
   userId: string | null;
   organizationId: string | null;
 } {
+  if (owner?.ambiguous) {
+    throw new AmbiguousOwnerContextError();
+  }
   return {
     userId: owner?.userId ?? null,
     organizationId: owner?.orgId ?? null,

@@ -170,9 +170,11 @@ function makeFakeModel(rows: Record<string, unknown>[]) {
     for (const [k, v] of Object.entries(where)) {
       if (k === "OR") {
         if (!Array.isArray(v) || !v.some((cl) => matchWhere(row, cl as Record<string, unknown>))) return false;
+      } else if (k === "AND") {
+        if (!Array.isArray(v) || !v.every((cl) => matchWhere(row, cl as Record<string, unknown>))) return false;
       } else if (v !== null && typeof v === "object" && "not" in (v as object)) {
         if (row[k] === (v as { not: unknown }).not) return false;
-      } else if (row[k] !== v) {
+      } else if ((row[k] ?? null) !== v) {
         return false;
       }
     }
@@ -229,12 +231,13 @@ describe("90B — database parity: the fake-Prisma path enforces the same matrix
       getStorageMode: () => "database",
       isDatabaseMode: () => true,
     }));
+    // One stable model instance per collection so id sequences stay monotonic
+    // across the many getPrisma() calls a single matrix run makes.
+    const engineeringMemory = makeFakeModel(rows);
+    const unknownAnalysis = makeFakeModel(rows);
+    const project = makeFakeModel(rows);
     vi.doMock("@/lib/db/prisma", () => ({
-      getPrisma: async () => ({
-        engineeringMemory: makeFakeModel(rows),
-        unknownAnalysis: makeFakeModel(rows),
-        project: makeFakeModel(rows),
-      }),
+      getPrisma: async () => ({ engineeringMemory, unknownAnalysis, project }),
     }));
   });
 
