@@ -366,3 +366,45 @@ export async function filterAuditEvents(
   // Session mode (or database degraded): filter the in-process buffer.
   return { storageMode: mode, events: applyFilter(buffer(), filter) };
 }
+
+/**
+ * PHASE 92 — fetch the audit rows for a single correlation id, for incident
+ * timeline reconstruction. The correlationId is a server-minted, validated id
+ * (see logger/correlation.ts), never free client text. Never throws.
+ *
+ * NOTE: `organizationId` may be supplied to scope the lookup to one tenant at
+ * the query layer — the operator surface passes it so a cross-tenant id cannot
+ * surface another org's rows.
+ */
+export async function findAuditEventsByCorrelation(
+  correlationId: string,
+  opts: { limit?: number; organizationId?: string | null } = {},
+): Promise<{ storageMode: StorageMode; events: AuditEvent[] }> {
+  const mode = getStorageMode();
+  const limit = opts.limit && opts.limit > 0 ? Math.min(opts.limit, 500) : 200;
+
+  if (mode === "database") {
+    try {
+      const m = await model();
+      if (m) {
+        const where: Record<string, unknown> = { correlationId };
+        if (opts.organizationId) where.organizationId = opts.organizationId;
+        const rows = await m.findMany({
+          where,
+          orderBy: { createdAt: "asc" },
+          take: limit,
+        });
+        return { storageMode: "database", events: rows.map(rowToEvent) };
+      }
+    } catch {
+      /* fall through to the in-process buffer */
+    }
+  }
+
+  const events = buffer()
+    .filter((e) => e.correlationId === correlationId)
+    .filter((e) => !opts.organizationId || e.organizationId === opts.organizationId)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .slice(0, limit);
+  return { storageMode: mode, events };
+}
