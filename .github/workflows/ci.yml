@@ -80,3 +80,70 @@ jobs:
           APP_URL: https://placeholder.build
           HERMES_STORAGE_MODE: session
         run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # PHASE 91 — live PostgreSQL rehearsal + real-database security integration.
+  #
+  # A CI-local PostgreSQL 16 service (pgvector, matching production's vector
+  # columns). The credentials below are DISPOSABLE, CI-only, and only ever reach
+  # a localhost service container — they are NOT and cannot access production or
+  # staging. No repository secrets, no SSH, no external environment, read-only
+  # repo permissions (inherited), a job timeout, and a database health check. No
+  # continue-on-error: any failed assertion fails the job.
+  # ---------------------------------------------------------------------------
+  phase91-postgres:
+    name: Phase 91 PostgreSQL rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://hermes_ci:phase91-ci-only-password@localhost:5432/hermes_phase91_ci
+      LEGACY_DATABASE_URL: postgresql://hermes_ci:phase91-ci-only-password@localhost:5432/hermes_phase91_legacy
+      HERMES_STORAGE_MODE: database
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: hermes_ci
+          POSTGRES_PASSWORD: phase91-ci-only-password
+          POSTGRES_DB: hermes_phase91_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hermes_ci -d hermes_phase91_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      - name: Fresh migration rehearsal (prisma migrate deploy on an empty database)
+        run: npx --no-install prisma migrate deploy
+
+      - name: Validate Prisma schema against the migrated database
+        run: npm run db:validate
+
+      - name: Real PostgreSQL security integration suite
+        run: npm run test:phase91:postgres
+
+      - name: Legacy upgrade rehearsal (base data survives the Phase 91 migrations)
+        env:
+          # This step operates on a SEPARATE, freshly created database; the main
+          # DATABASE_URL above is the maintenance connection used only to CREATE it.
+          DATABASE_URL: postgresql://hermes_ci:phase91-ci-only-password@localhost:5432/hermes_phase91_legacy
+          MAINT_DATABASE_URL: postgresql://hermes_ci:phase91-ci-only-password@localhost:5432/hermes_phase91_ci
+        run: node scripts/ci/phase91-legacy-upgrade.mjs

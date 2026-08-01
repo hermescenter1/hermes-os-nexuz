@@ -338,6 +338,12 @@ model User {
   // Phase 28: brute-force protection
   failedLoginAttempts  Int                  @default(0)
   lockedUntil          DateTime?
+  // Phase 91: monotonic session generation. Incremented by a "revoke all
+  // sessions" (password reset, member suspend/remove). A session is only active
+  // when its stamped RefreshToken.userTokenVersion equals this value, which makes
+  // the bulk kill-switch immune to an in-flight refresh that would otherwise mint
+  // a fresh, un-revoked session in the revoke-vs-rotate window.
+  tokenVersion         Int                  @default(0)
   lastLoginAt          DateTime?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -379,7 +385,13 @@ model AuthSession {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Phase 28: JWT refresh token (stored as SHA-256 hash, never plaintext)
+// Phase 28: JWT refresh token (stored as SHA-256 hash, never plaintext).
+//
+// Phase 91: this row is ALSO the server-authoritative *session record*. Its `id`
+// is the opaque session identifier (`sid`) embedded in the access token and the
+// legacy session cookie. Revoking a session = setting `revokedAt` here, which is
+// enforced on the next protected request by the server-side authorization guards.
+// `lastUsedAt` powers the owner-facing active-session inventory ("last active").
 model RefreshToken {
   id         String    @id @default(cuid())
   userId     String
@@ -387,11 +399,22 @@ model RefreshToken {
   expiresAt  DateTime
   revokedAt  DateTime?
   deviceInfo String?
+  lastUsedAt DateTime?
+  // Phase 91: the owner's User.tokenVersion at the moment this session was
+  // minted. A "revoke all sessions" bumps User.tokenVersion; any row stamped with
+  // an older value is dead even if it was inserted a moment AFTER the bulk revoke
+  // (the revoke-vs-rotate race). Defaults to 0 so pre-Phase-91 rows stay valid.
+  userTokenVersion Int  @default(0)
   createdAt  DateTime  @default(now())
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
+  // Phase 91: the session-inventory and revoke-* paths all filter on
+  // (userId, revokedAt); this composite keeps those owner-scoped auth queries
+  // index-only as the table grows. Added in a SEPARATE additive migration
+  // (20260815000001) so the original Phase 91 migration is never rewritten.
+  @@index([userId, revokedAt])
 }
 
 // Phase 28: email verification tokens (plaintext — one-time use)

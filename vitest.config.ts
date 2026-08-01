@@ -17,6 +17,8 @@ export default defineConfig({
     environment: "node",
     // Never run tests out of the Next build output — `.next/standalone`
     // contains stale duplicate copies of these route tests (Phase 82C.1).
-    exclude: [...configDefaults.exclude, "**/.next/**"],
+    // Phase 91: `*.pg.test.ts` require a live PostgreSQL database and run only
+    // under vitest.phase91-postgres.config.ts in CI — never in the unit run.
+    exclude: [...configDefaults.exclude, "**/.next/**", "**/*.pg.test.ts"],
   },
 });
