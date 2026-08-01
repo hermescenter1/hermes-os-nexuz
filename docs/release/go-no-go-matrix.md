@@ -28,9 +28,10 @@ DEFER. Any single NO-GO blocks the release.
    detection meanwhile via the admin observability surface.
 2. Owner performs the recommended live FA/EN/DE × desktop/mobile accessibility
    sweep on key pages.
-3. Owner accepts the documented v1.x hardening backlog: backup at-rest encryption
-   + file-permission hardening, restore environment guard, and `/api/brain`
-   owner-context 409/503 alignment.
+3. Owner accepts the documented v1.x hardening backlog: backup **at-rest
+   encryption** and `/api/brain` owner-context 409/503 alignment. (Backup file
+   permissions and the restore environment guard are now **implemented** —
+   BACKUP_PERMISSIONS=ENFORCED, RESTORE_ENVIRONMENT_GUARD=FAIL_CLOSED.)
 
 ---
 

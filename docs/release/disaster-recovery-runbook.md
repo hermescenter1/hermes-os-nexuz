@@ -30,19 +30,28 @@ or introduce WAL archiving / PITR (out of scope for v1; a v1.x follow-up).
 |---|---|
 | `scripts/backup-postgres.sh` | `docker exec` → `pg_dump --format=custom --no-acl --no-owner` → `${BACKUP_DIR}/hermes_<TIMESTAMP>.dump`; prunes dumps older than `${BACKUP_RETENTION_DAYS:-30}`; then calls `verify-backup.sh`. |
 | `scripts/verify-backup.sh` | Integrity: `pg_restore --list` (parses every byte of the TOC) **and** asserts the essential tables `Organization`, `User`, `IndustrialSite`, `IndustrialAsset` are present; writes `.last-verification.json` (consumed by `/api/admin/system`). |
-| `scripts/restore-postgres.sh` | Validate arg/file → verify integrity → 10 s abort countdown → stop `hermes-web` → terminate connections → `DROP DATABASE` + `CREATE DATABASE` → `pg_restore --no-acl --no-owner` → restart `hermes-web` → reminder to run `migrate deploy`. |
+| `scripts/restore-postgres.sh` | Validate arg/file → verify integrity → **fail-closed confirmation guard** → stop `hermes-web` → terminate connections → `DROP DATABASE` + `CREATE DATABASE` → `pg_restore --no-acl --no-owner` → restart `hermes-web` → reminder to run `migrate deploy`. |
+
+**BACKUP_PERMISSIONS = ENFORCED:** `backup-postgres.sh` sets `umask 077`, hardens
+`BACKUP_DIR` to `0700` and each dump to `0600`, so dumps (full tenant data) are
+never world- or group-readable (`phase93-backup-restore-hardening.test.ts`).
+
+**RESTORE_ENVIRONMENT_GUARD = FAIL_CLOSED:** `restore-postgres.sh` refuses by
+default. It runs only on an explicit, **target-specific** confirmation —
+interactively (type `restore <db>`) or non-interactively via
+`RESTORE_CONFIRM="restore <db>"`. The phrase embeds the exact target database, so
+a confirmation meant for staging cannot authorise a production restore; with no
+confirmation and no TTY it exits non-zero without touching the database. (The old
+10 s Ctrl+C countdown was fail-OPEN and has been removed.)
 
 Artifacts are custom-format `.dump` files (NOT `.sql.gz`). Redis is a cache /
 rate-limit store and is **not** part of the recovery point — it rebuilds itself;
 the auth limiter fails safe to an in-process fallback while Redis is absent
 (`phase93-redis-unavailable-failmode.test.ts`).
 
-> **Known v1 gaps (documented, accepted):** backups are **not encrypted at rest**
-> and `backup-postgres.sh` does not harden the dump file permissions; `restore-postgres.sh`
-> has no environment guard beyond the 10 s countdown and correct-container
-> reliance. Mitigate operationally: store `BACKUP_DIR` on a restricted-permission
-> volume and only ever pass a production container name deliberately. Hardening
-> these is a v1.x follow-up (see the v1 checklist).
+> **Remaining v1.x follow-up (accepted):** backups are still **not encrypted at
+> rest**. Mitigate by placing `BACKUP_DIR` on an encrypted, restricted volume;
+> at-rest encryption (e.g. gpg or an encrypted filesystem) is a v1.x follow-up.
 
 ---
 
@@ -52,9 +61,10 @@ the auth limiter fails safe to an in-process fallback while Redis is absent
    `/api/health/ready` returning 503 (SLI-2)? Is `dependency_up{postgres}==0` (SLI-7)?
 2. **Pick the newest verified backup.** `ls -lt ${BACKUP_DIR}/hermes_*.dump`.
    Confirm `.last-verification.json` shows the latest as verified.
-3. **Restore** (drops + recreates the DB — the app is briefly stopped):
+3. **Restore** (drops + recreates the DB — the app is briefly stopped; fail-closed
+   confirmation required, interactively or via `RESTORE_CONFIRM`):
    ```bash
-   POSTGRES_CONTAINER=hermes-postgres-1 \
+   POSTGRES_CONTAINER=hermes-postgres-1 RESTORE_CONFIRM="restore hermes_db" \
    bash /opt/hermes-os/scripts/restore-postgres.sh /opt/hermes-os/backups/hermes_<TIMESTAMP>.dump
    ```
 4. **Apply migrations** if the backup predates the deployed schema:

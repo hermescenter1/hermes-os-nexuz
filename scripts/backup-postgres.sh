@@ -12,6 +12,12 @@
 
 set -euo pipefail
 
+# PHASE 93 — enforce restrictive permissions on all backup artifacts. Database
+# dumps contain every tenant's data; they must never be world- or group-readable.
+# umask 077 makes every file/dir this script creates owner-only (0600 / 0700),
+# and is inherited by the verify-backup.sh child process.
+umask 077
+
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
 BACKUP_FILE="${BACKUP_DIR}/hermes_${TIMESTAMP}.dump"
@@ -21,6 +27,8 @@ DB_USER="${POSTGRES_USER:-hermes}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 
 mkdir -p "${BACKUP_DIR}"
+# Enforce owner-only on the backup directory even if it pre-existed with looser bits.
+chmod 700 "${BACKUP_DIR}" 2>/dev/null || true
 
 echo "[$(date -Iseconds)] Starting backup → ${BACKUP_FILE}"
 
@@ -37,6 +45,9 @@ if [[ $? -ne 0 ]]; then
   rm -f "${BACKUP_FILE}"
   exit 1
 fi
+
+# Enforce owner-only read/write on the dump itself (defense in depth beyond umask).
+chmod 600 "${BACKUP_FILE}"
 
 SIZE=$(du -sh "${BACKUP_FILE}" | cut -f1)
 echo "[$(date -Iseconds)] Backup complete: ${BACKUP_FILE} (${SIZE})"
