@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { resetPasswordSchema }        from "@/lib/auth/password-policy";
 import { completePasswordReset }      from "@/lib/auth/password-reset";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
+import { resolveClientIp }            from "@/lib/security/request-guards";
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  // Phase 93: throttle on the spoof-resistant X-Real-IP (resolveClientIp), not
+  // the client-appendable left-most X-Forwarded-For which would let an attacker
+  // rotate the header to bypass the reset-password throttle.
+  const ip = resolveClientIp(req);
   if (!await checkRateLimit("reset-password", ip)) {
     return NextResponse.json(
       { error: "Too many attempts. Please try again later.",

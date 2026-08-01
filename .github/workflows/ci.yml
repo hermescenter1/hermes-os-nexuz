@@ -218,3 +218,65 @@ jobs:
           DATABASE_URL: postgresql://hermes_ci:phase92-ci-only-password@localhost:5432/hermes_phase92_legacy
           MAINT_DATABASE_URL: postgresql://hermes_ci:phase92-ci-only-password@localhost:5432/hermes_phase92_ci
         run: node scripts/ci/phase92-legacy-rehearsal.mjs
+
+  # ---------------------------------------------------------------------------
+  # PHASE 93 — disaster-recovery restore rehearsal (real backup → restore cycle).
+  #
+  # Exercises the ACTUAL operational pipeline (backup-postgres.sh /
+  # verify-backup.sh / restore-postgres.sh flags) against a disposable CI-local
+  # PostgreSQL 16 service: pg_dump (custom) → pg_restore --list verify → drop →
+  # timed pg_restore → per-table row-count integrity proof → idempotent migrate
+  # deploy → fresh-DB restore. Measures a real RTO. Credentials are DISPOSABLE,
+  # CI-only, reach only a localhost service container, and cannot touch production
+  # or staging. No secrets, no SSH, read-only repo permissions (inherited), a job
+  # timeout, a DB health check, and NO continue-on-error: any failure fails the job.
+  # ---------------------------------------------------------------------------
+  phase93-dr:
+    name: Phase 93 disaster-recovery restore rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # `prisma generate` loads prisma.config.ts, which resolves env("DATABASE_URL")
+      # at CLI load — so the generate step needs it even though this job dials
+      # per-database URLs from the rehearsal script. Points at the maintenance DB.
+      DATABASE_URL: postgresql://hermes_ci:phase93-ci-only-password@localhost:5432/hermes_phase93_ci
+      # Maintenance connection: used only to CREATE/DROP the rehearsal databases.
+      MAINT_DATABASE_URL: postgresql://hermes_ci:phase93-ci-only-password@localhost:5432/hermes_phase93_ci
+      HERMES_STORAGE_MODE: database
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: hermes_ci
+          POSTGRES_PASSWORD: phase93-ci-only-password
+          POSTGRES_DB: hermes_phase93_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hermes_ci -d hermes_phase93_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      - name: Show pg_dump / pg_restore client version (must be >= pg16 server)
+        run: pg_dump --version && pg_restore --version
+
+      - name: Disaster-recovery restore rehearsal (backup → restore → integrity + RTO)
+        run: node scripts/ci/phase93-dr-restore-rehearsal.mjs

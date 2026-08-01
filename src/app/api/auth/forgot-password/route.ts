@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { forgotPasswordSchema }       from "@/lib/auth/password-policy";
 import { initiatePasswordReset }       from "@/lib/auth/password-reset";
 import { checkRateLimit, retryAfter }  from "@/lib/auth/rate-limiter";
+import { resolveClientIp }             from "@/lib/security/request-guards";
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  // Phase 93: throttle on the spoof-resistant X-Real-IP (resolveClientIp), not
+  // the client-appendable left-most X-Forwarded-For which would let an attacker
+  // rotate the header to bypass the forgot-password enumeration throttle.
+  const ip = resolveClientIp(req);
   if (!await checkRateLimit("forgot-password", ip)) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later.",

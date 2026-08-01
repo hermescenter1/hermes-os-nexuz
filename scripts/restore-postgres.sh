@@ -37,14 +37,39 @@ docker exec -i "${CONTAINER}" pg_restore --list - < "${BACKUP_FILE}" > /dev/null
 }
 echo "[$(date -Iseconds)] Backup integrity OK."
 
-# ── Safety countdown ──────────────────────────────────────────────────────────
+# ── Fail-closed environment guard (PHASE 93) ─────────────────────────────────
+# The old 10-second countdown was fail-OPEN: it proceeded unless a human happened
+# to be watching and hit Ctrl+C. A destructive DROP DATABASE must instead be
+# fail-CLOSED — it runs ONLY on an explicit, target-specific confirmation that
+# also prevents fat-fingering the wrong database. The required phrase embeds the
+# exact target DB, so a confirmation intended for a staging DB cannot authorise a
+# restore against production.
+REQUIRED_CONFIRM="restore ${DB_NAME}"
 echo ""
 echo "WARNING: This will DROP and recreate the database '${DB_NAME}'."
 echo "   Container : ${CONTAINER}"
 echo "   Backup    : ${BACKUP_FILE}"
 echo ""
-echo "Press Ctrl+C within 10 seconds to cancel..."
-sleep 10
+if [[ -n "${RESTORE_CONFIRM:-}" ]]; then
+  # Non-interactive (automation): the env var must match EXACTLY.
+  if [[ "${RESTORE_CONFIRM}" != "${REQUIRED_CONFIRM}" ]]; then
+    echo "Error: RESTORE_CONFIRM must equal '${REQUIRED_CONFIRM}'. Refusing (fail-closed)." >&2
+    exit 3
+  fi
+  echo "[$(date -Iseconds)] Confirmed via RESTORE_CONFIRM."
+elif [[ -t 0 ]]; then
+  # Interactive: the operator must TYPE the exact target-specific phrase.
+  read -r -p "Type '${REQUIRED_CONFIRM}' to proceed: " REPLY_CONFIRM
+  if [[ "${REPLY_CONFIRM}" != "${REQUIRED_CONFIRM}" ]]; then
+    echo "Confirmation mismatch. Aborting (fail-closed)." >&2
+    exit 3
+  fi
+else
+  # No confirmation and no interactive terminal → never proceed.
+  echo "Error: destructive restore requires confirmation. Set RESTORE_CONFIRM='${REQUIRED_CONFIRM}'" >&2
+  echo "       or run interactively. Refusing (fail-closed)." >&2
+  exit 3
+fi
 
 # ── Stop the app to prevent writes during restore ─────────────────────────────
 echo "[$(date -Iseconds)] Stopping ${WEB_CONTAINER} to prevent writes during restore..."

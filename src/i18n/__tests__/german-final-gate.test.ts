@@ -352,7 +352,9 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     // 94C1: +195 otEdge leaves (194 namespace + 1 appShell nav label) -> 5365
     // 94C2: +91 otEdge.onboarding leaves -> 5456
     // 92:   +35 observability leaves (SRE operator surface) -> 5491
-    expect(allEn.length).toBe(5491);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot error messages
+    // 93:   observability namespace rebuilt as the SRE Control Room
+    //       (+73 net observability leaves + 1 appShell observability nav label) -> 5565
+    expect(allEn.length).toBe(5565);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot error messages
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -365,12 +367,12 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     expect(buckets.persianContamination.slice(0, 40)).toEqual([]);
   });
 
-  it("satisfies 5491 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 5565 = translations + identicals + tokens + numeric/unit", () => {
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
-    ).toBe(5491);
+    ).toBe(5565);
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);
   });
