@@ -236,6 +236,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      # `prisma generate` loads prisma.config.ts, which resolves env("DATABASE_URL")
+      # at CLI load — so the generate step needs it even though this job dials
+      # per-database URLs from the rehearsal script. Points at the maintenance DB.
+      DATABASE_URL: postgresql://hermes_ci:phase93-ci-only-password@localhost:5432/hermes_phase93_ci
       # Maintenance connection: used only to CREATE/DROP the rehearsal databases.
       MAINT_DATABASE_URL: postgresql://hermes_ci:phase93-ci-only-password@localhost:5432/hermes_phase93_ci
       HERMES_STORAGE_MODE: database
