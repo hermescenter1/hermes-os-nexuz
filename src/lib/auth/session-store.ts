@@ -232,6 +232,12 @@ export type RevokeOthersResult =
   | { ok: true; revoked: number; generation: number }
   | { ok: false; error: "kept_invalid" | "unavailable" };
 
+/** Sentinel thrown inside the transaction to roll back a partially-applied
+ *  revoke-others when the kept session is not in the exact expected state. */
+class KeptInvalidError extends Error {
+  constructor() { super("kept_invalid"); this.name = "KeptInvalidError"; }
+}
+
 /**
  * PHASE 91 — self-service "log out every other device" done as ONE atomic,
  * generation-safe transaction. Keeping the current session alive while cutting
@@ -241,15 +247,21 @@ export type RevokeOthersResult =
  *   1. the kept session must belong to the caller, be active, unexpired, and at
  *      the current generation (else `kept_invalid` — no partial effect);
  *   2. bump User.tokenVersion (new generation);
- *   3. move the kept session to the new generation so the CALLER stays valid
- *      (the access token references the row by sid, and the row now matches);
+ *   3. move the kept session to the new generation with an OWNER-SCOPED
+ *      CONDITIONAL update that must affect EXACTLY ONE row (still owned, active,
+ *      unexpired, at the pre-bump generation). If a concurrent operation revoked
+ *      or changed the kept session between step 1 and here, zero rows match and
+ *      the whole transaction rolls back → `kept_invalid`, generation NOT
+ *      partially advanced, kept session never resurrected;
  *   4. revoke every other session by id.
  *
  * Because the generation advances, any concurrent refresh of a non-kept session
  * is dead regardless of ordering: a successor it mints carries the OLD generation
  * (rejected by isSessionActive), or its rotate observes the new generation and
  * refuses. No non-kept session can remain active, and no cross-user row is
- * touched (every write is filtered by `userId`).
+ * touched (every write is filtered by `userId`). Correct under PostgreSQL's
+ * default READ COMMITTED: the conditional single-row updates are re-evaluated
+ * against the latest committed row after the row lock is taken.
  */
 export async function revokeAllOtherSessionsAtomically(
   userId:  string,
@@ -278,8 +290,19 @@ export async function revokeAllOtherSessionsAtomically(
       });
       const newGen = Number((updatedUser as { tokenVersion?: number })?.tokenVersion ?? curVer + 1);
 
-      // Keep the caller alive by moving their row to the new generation.
-      await rt.update({ where: { id: keepSid }, data: { userTokenVersion: newGen } });
+      // Keep the caller alive by moving their row to the new generation — but
+      // ONLY if it is still exactly the row we validated (owner, active,
+      // unexpired, pre-bump generation). This is the compare-and-set that makes
+      // a concurrent revoke of the kept session safe: exactly one row must move,
+      // otherwise the transaction rolls back and nothing is partially applied.
+      const moved = await rt.updateMany({
+        where: {
+          id: keepSid, userId, revokedAt: null,
+          expiresAt: { gt: new Date() }, userTokenVersion: curVer,
+        },
+        data: { userTokenVersion: newGen },
+      });
+      if (!moved || moved.count !== 1) throw new KeptInvalidError();
 
       // Explicitly revoke all others (defence in depth on top of the generation gap).
       const res = await rt.updateMany({
@@ -289,6 +312,7 @@ export async function revokeAllOtherSessionsAtomically(
       return { ok: true, revoked: res?.count ?? 0, generation: newGen };
     });
   } catch (err) {
+    if (err instanceof KeptInvalidError) return { ok: false, error: "kept_invalid" };
     logger.error("[session-store] revokeAllOtherSessionsAtomically error", { error: String(err) });
     return { ok: false, error: "unavailable" };
   }

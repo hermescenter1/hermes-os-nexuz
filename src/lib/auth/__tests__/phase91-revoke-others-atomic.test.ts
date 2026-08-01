@@ -20,15 +20,17 @@ async function load(db: unknown) {
 afterEach(() => { vi.doUnmock("@/lib/db/prisma"); vi.restoreAllMocks(); });
 
 describe("Phase 91 — revokeAllOtherSessionsAtomically", () => {
-  it("happy path: bump generation, move kept to new gen, revoke only others", async () => {
+  it("happy path: bump generation, compare-and-set move kept to new gen, revoke only others", async () => {
     let userUpdate: Record<string, unknown> | null = null;
-    let keptUpdate: Record<string, unknown> | null = null;
+    let keptMove: { where: Record<string, unknown>; data: Record<string, unknown> } | null = null;
     let othersWhere: Record<string, unknown> | null = null;
     const db = {
       refreshToken: {
         findUnique: async () => kept(),
-        update: async (a: Record<string, unknown>) => { keptUpdate = a; return {}; },
-        updateMany: async (a: { where: Record<string, unknown> }) => { othersWhere = a.where; return { count: 4 }; },
+        updateMany: async (a: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+          if (a.where.id === "keep") { keptMove = a; return { count: 1 }; }   // conditional move
+          othersWhere = a.where; return { count: 4 };                          // revoke others
+        },
       },
       user: { update: async (a: Record<string, unknown>) => { userUpdate = a; return { tokenVersion: 2 }; } },
     };
@@ -37,9 +39,32 @@ describe("Phase 91 — revokeAllOtherSessionsAtomically", () => {
     expect(r.ok).toBe(true);
     if (r.ok) { expect(r.revoked).toBe(4); expect(r.generation).toBe(2); }
     expect((userUpdate as unknown as { data: { tokenVersion: unknown } }).data.tokenVersion).toEqual({ increment: 1 });
-    expect((keptUpdate as unknown as { data: { userTokenVersion: number } }).data.userTokenVersion).toBe(2); // kept survives at new gen
-    expect((othersWhere as unknown as { id: unknown }).id).toEqual({ not: "keep" });                        // only others
-    expect((othersWhere as unknown as { userId: string }).userId).toBe("u1");                                // tenant/owner scoped
+    // The move is an owner-scoped compare-and-set: pre-bump gen + active + owned.
+    expect(keptMove!.where.userTokenVersion).toBe(1);
+    expect(keptMove!.where.userId).toBe("u1");
+    expect(keptMove!.where.revokedAt).toBeNull();
+    expect(keptMove!.data.userTokenVersion).toBe(2);          // kept survives at new gen
+    expect((othersWhere as unknown as { id: unknown }).id).toEqual({ not: "keep" });   // only others
+    expect((othersWhere as unknown as { userId: string }).userId).toBe("u1");           // tenant/owner scoped
+  });
+
+  it("kept session concurrently revoked (move affects 0 rows) → kept_invalid, others never revoked", async () => {
+    let othersRevoked = false;
+    const db = {
+      refreshToken: {
+        findUnique: async () => kept(), // read-time it looked valid...
+        updateMany: async (a: { where: Record<string, unknown> }) => {
+          if (a.where.id === "keep") return { count: 0 }; // ...but the compare-and-set matches nothing (concurrent revoke)
+          othersRevoked = true; return { count: 9 };
+        },
+      },
+      user: { update: async () => ({ tokenVersion: 2 }) },
+    };
+    const store = await load(db);
+    const r = await store.revokeAllOtherSessionsAtomically("u1", "keep");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("kept_invalid");
+    expect(othersRevoked).toBe(false); // rolled back before touching other sessions
   });
 
   it("cross-user kept session → kept_invalid, no writes", async () => {
