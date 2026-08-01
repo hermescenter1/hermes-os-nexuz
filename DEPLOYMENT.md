@@ -183,10 +183,14 @@ echo "0 3 * * * root POSTGRES_CONTAINER=hermes-postgres-1 BACKUP_DIR=/opt/hermes
 ### Restore from Backup
 
 ```bash
-bash /opt/hermes-os/scripts/restore-postgres.sh /opt/hermes-os/backups/hermes_20260101_030000.sql.gz
+# backup-postgres.sh writes pg_dump custom-format artifacts named hermes_<TIMESTAMP>.dump.
+bash /opt/hermes-os/scripts/restore-postgres.sh /opt/hermes-os/backups/hermes_20260101_030000.dump
 ```
 
 **Warning:** restore drops and recreates the database. The app is stopped briefly during restore.
+If the backup predates a schema migration, run `npx prisma migrate deploy` after the restore.
+
+See `docs/release/disaster-recovery-runbook.md` for the full DR procedure, RPO/RTO, and the CI-proven backup→restore rehearsal.
 
 ---
 
