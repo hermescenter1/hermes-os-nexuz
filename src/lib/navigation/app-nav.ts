@@ -127,6 +127,11 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
       { labelKey: "apiKeys", href: "/dashboard/api", pageCapability: "api_admin" },
       { labelKey: "orgSettings", href: "/dashboard/organization/settings", pageCapability: "org_admin" },
       { labelKey: "admin", href: "/admin", pageCapability: "admin" },
+      // PHASE 93 — the SRE Control Room (/admin/observability) had no nav entry,
+      // so an admin had no way to discover it. `admin` mirrors the page's own
+      // RequireCapability("admin") guard; visibility is the intersection of that
+      // and the middleware /admin policy — presentation only, enforces nothing.
+      { labelKey: "observability", href: "/admin/observability", pageCapability: "admin" },
     ],
   },
 ];

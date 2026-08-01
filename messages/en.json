@@ -1,34 +1,106 @@
 {
     "observability": {
       "eyebrow": "Operations",
-      "title": "Observability",
-      "lede": "Operational health, active alerts, security events, error fingerprints and incident reconstruction.",
-      "sections": {
-        "health": "Dependency health",
-        "alerts": "Active alerts",
-        "security": "Security events",
-        "errors": "Error fingerprints",
-        "audit": "Recent audit events",
-        "incident": "Incident timeline",
-        "metrics": "Metrics"
+      "title": "SRE Control Room",
+      "lede": "Live operational health, dependency probes, security and error signals, incident reconstruction and backup posture — every value is measured, never simulated.",
+      "posture": {
+        "healthy": "All systems operational",
+        "degraded": "Operating with degradation",
+        "critical": "Critical attention required",
+        "detail": "Derived from live probes and in-process signals · as of {at}"
+      },
+      "kpi": {
+        "database": "Database",
+        "redis": "Cache",
+        "activeAlerts": "Active alerts",
+        "activeAlertsSub": "currently firing",
+        "errorEvents": "Error events",
+        "securityEvents": "Security events",
+        "uptime": "Process uptime",
+        "cumulative": "cumulative"
+      },
+      "status": {
+        "unknown": "Unknown",
+        "notConfigured": "Not configured",
+        "up": "Up",
+        "down": "Down",
+        "operational": "Operational",
+        "clear": "Clear",
+        "fallback": "Fallback active",
+        "redisBacked": "Redis-backed"
       },
       "labels": {
-        "severity": "Severity",
-        "event": "Event",
-        "count": "Count",
-        "firstSeen": "First seen",
-        "lastSeen": "Last seen",
-        "operation": "Operation",
-        "reason": "Reason",
-        "outcome": "Outcome",
-        "action": "Action",
-        "correlationId": "Correlation ID",
-        "dependency": "Dependency",
-        "source": "Source",
+        "liveProbe": "live probe",
+        "count": "count",
         "time": "Time",
-        "noData": "No data",
-        "degraded": "Degraded",
-        "healthy": "Healthy"
+        "event": "Event",
+        "severity": "Severity",
+        "outcome": "Outcome",
+        "reason": "Reason",
+        "operation": "Operation",
+        "lastSeen": "Last seen",
+        "source": "Source",
+        "action": "Action",
+        "dataSource": "Data source"
+      },
+      "sections": {
+        "topology": "Dependency topology",
+        "latency": "Dependency latency",
+        "httpLatency": "HTTP request latency",
+        "httpRate": "HTTP request rate",
+        "alerts": "Active alerts",
+        "securityRecent": "Recent security events",
+        "errors": "Error fingerprints",
+        "incident": "Incident timeline",
+        "audit": "Audit explorer",
+        "backup": "Backup status",
+        "startup": "Startup validation",
+        "runtime": "Runtime"
+      },
+      "topology": {
+        "application": "Application",
+        "database": "Database",
+        "redis": "Redis (cache)",
+        "apiLimiter": "API rate limiter",
+        "authLimiter": "Auth rate limiter",
+        "self": "self",
+        "rateLimiter": "rate limiter",
+        "externalNote": "Nginx, mail and OpenBao are not probed from the application and are intentionally omitted; add a real probe before showing their health."
+      },
+      "charts": {
+        "latencyAvg": "Average",
+        "latencySamples": "Samples",
+        "latencyThreshold": "Warn / critical",
+        "latencyEmpty": "No probe samples recorded yet — the readiness endpoint records database probe latency when it is called.",
+        "errorsBySeverity": "Errors by severity",
+        "securityByEvent": "Security events by type",
+        "authActivity": "Authentication & session activity",
+        "authFailures": "Authentication failures",
+        "authzDenials": "Authorization denials",
+        "sessionOps": "Session operations",
+        "alertDelivery": "Alert delivery"
+      },
+      "notInstrumented": {
+        "badge": "Not instrumented",
+        "httpRequestLatency": "HTTP request latency",
+        "httpRequestRate": "HTTP request rate",
+        "explanation": "This signal has no recording call-site and no durable time-series store, so no real data exists. It is shown as not measured — deliberately not as zero, which would falsely imply traffic was observed.",
+        "sourceValue": "Prometheus scrape · /api/metrics",
+        "action": "Operator action: enable a Prometheus scrape of /api/metrics and add real HTTP instrumentation (tracked as a separate follow-up)."
+      },
+      "empties": {
+        "noErrors": "No errors recorded.",
+        "noSecurity": "No security events recorded.",
+        "noData": "No data recorded yet.",
+        "noAlerts": "No active alerts.",
+        "noAudit": "No audit events match.",
+        "auditError": "The audit store is unavailable — this panel is degraded."
+      },
+      "severities": {
+        "info": "Info",
+        "warning": "Warning",
+        "error": "Error",
+        "critical": "Critical"
       },
       "incidentLookup": {
         "label": "Look up an incident by correlation ID",
@@ -37,11 +109,34 @@
         "invalid": "Malformed correlation ID",
         "empty": "No events for this correlation ID"
       },
-      "severities": {
-        "info": "Info",
-        "warning": "Warning",
-        "error": "Error",
-        "critical": "Critical"
+      "audit": {
+        "filterLabel": "Filter by action or outcome",
+        "filterPlaceholder": "for example login or denied",
+        "results": "{shown} of {total} shown",
+        "outcomeDistribution": "Outcome distribution"
+      },
+      "backup": {
+        "verified": "Verified",
+        "notVerified": "Not verified",
+        "noBackup": "No backup found",
+        "noBackupHint": "No .dump file was found in BACKUP_DIR — confirm the backup cron is running.",
+        "lastBackup": "Last backup",
+        "age": "Age",
+        "size": "Size",
+        "verifiedAt": "Verified at",
+        "neverVerified": "never verified",
+        "file": "File"
+      },
+      "startup": {
+        "fatal": "{n} fatal",
+        "ok": "Passed",
+        "notRun": "Did not run"
+      },
+      "runtime": {
+        "environment": "Environment",
+        "uptime": "Uptime",
+        "rss": "Resident memory",
+        "heap": "Heap used / total"
       }
     },
   "meta": {
@@ -5486,6 +5581,7 @@
         "apiKeys": "API Keys",
         "orgSettings": "Organization Settings",
         "admin": "Admin Console",
+        "observability": "Observability",
         "otEdge": "OT Edge"
       }
     },

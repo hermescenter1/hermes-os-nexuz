@@ -1,47 +1,142 @@
 {
     "observability": {
       "eyebrow": "Betrieb",
-      "title": "Beobachtbarkeit",
-      "lede": "Betriebszustand, aktive Warnungen, Sicherheitsereignisse, Fehler-Fingerabdrücke und Vorfallrekonstruktion.",
-      "sections": {
-        "health": "Abhängigkeitszustand",
-        "alerts": "Aktive Warnungen",
-        "security": "Sicherheitsereignisse",
-        "errors": "Fehler-Fingerabdrücke",
-        "audit": "Aktuelle Audit-Ereignisse",
-        "incident": "Vorfall-Zeitleiste",
-        "metrics": "Kennzahlen"
+      "title": "SRE-Leitstand",
+      "lede": "Live-Betriebszustand, Abhängigkeitsprüfungen, Sicherheits- und Fehlersignale, Vorfallrekonstruktion und Sicherungslage — jeder Wert ist gemessen, niemals simuliert.",
+      "posture": {
+        "healthy": "Alle Systeme betriebsbereit",
+        "degraded": "Betrieb mit Einschränkungen",
+        "critical": "Kritische Aufmerksamkeit erforderlich",
+        "detail": "Abgeleitet aus Live-Prüfungen und prozessinternen Signalen · Stand {at}"
+      },
+      "kpi": {
+        "database": "Datenbank",
+        "redis": "Zwischenspeicher",
+        "activeAlerts": "Aktive Warnungen",
+        "activeAlertsSub": "derzeit ausgelöst",
+        "errorEvents": "Fehlerereignisse",
+        "securityEvents": "Sicherheitsereignisse",
+        "uptime": "Prozesslaufzeit",
+        "cumulative": "kumuliert"
+      },
+      "status": {
+        "unknown": "Unbekannt",
+        "notConfigured": "Nicht konfiguriert",
+        "up": "Aktiv",
+        "down": "Ausgefallen",
+        "operational": "Betriebsbereit",
+        "clear": "Frei",
+        "fallback": "Ersatz aktiv",
+        "redisBacked": "Redis-gestützt"
       },
       "labels": {
-        "severity": "Schweregrad",
-        "event": "Ereignis",
+        "liveProbe": "Live-Prüfung",
         "count": "Anzahl",
-        "firstSeen": "Zuerst gesehen",
-        "lastSeen": "Zuletzt gesehen",
-        "operation": "Vorgang",
-        "reason": "Grund",
-        "outcome": "Ergebnis",
-        "action": "Aktion",
-        "correlationId": "Korrelations-ID",
-        "dependency": "Abhängigkeit",
-        "source": "Quelle",
         "time": "Zeit",
-        "noData": "Keine Daten",
-        "degraded": "Beeinträchtigt",
-        "healthy": "Gesund"
+        "event": "Ereignis",
+        "severity": "Schweregrad",
+        "outcome": "Ergebnis",
+        "reason": "Grund",
+        "operation": "Vorgang",
+        "lastSeen": "Zuletzt gesehen",
+        "source": "Quelle",
+        "action": "Aktion",
+        "dataSource": "Datenquelle"
       },
-      "incidentLookup": {
-        "label": "Vorfall anhand der Korrelations-ID suchen",
-        "placeholder": "zum Beispiel 3f2a-b19c",
-        "submit": "Rekonstruieren",
-        "invalid": "Ungültige Korrelations-ID",
-        "empty": "Keine Ereignisse für diese Korrelations-ID"
+      "sections": {
+        "topology": "Abhängigkeitstopologie",
+        "latency": "Abhängigkeitslatenz",
+        "httpLatency": "HTTP-Anfragelatenz",
+        "httpRate": "HTTP-Anfragerate",
+        "alerts": "Aktive Warnungen",
+        "securityRecent": "Letzte Sicherheitsereignisse",
+        "errors": "Fehler-Fingerabdrücke",
+        "incident": "Vorfall-Zeitachse",
+        "audit": "Audit-Explorer",
+        "backup": "Sicherungsstatus",
+        "startup": "Startvalidierung",
+        "runtime": "Laufzeit"
+      },
+      "topology": {
+        "application": "Anwendung",
+        "database": "Datenbank",
+        "redis": "Redis (Cache)",
+        "apiLimiter": "API-Ratenbegrenzer",
+        "authLimiter": "Auth-Ratenbegrenzer",
+        "self": "selbst",
+        "rateLimiter": "Ratenbegrenzer",
+        "externalNote": "Nginx, Mail und OpenBao werden von der Anwendung nicht geprüft und sind bewusst ausgelassen; fügen Sie eine echte Prüfung hinzu, bevor deren Zustand angezeigt wird."
+      },
+      "charts": {
+        "latencyAvg": "Durchschnitt",
+        "latencySamples": "Stichproben",
+        "latencyThreshold": "Warnung / kritisch",
+        "latencyEmpty": "Noch keine Prüfstichproben erfasst — der Bereitschaftsendpunkt erfasst die Datenbank-Prüflatenz, wenn er aufgerufen wird.",
+        "errorsBySeverity": "Fehler nach Schweregrad",
+        "securityByEvent": "Sicherheitsereignisse nach Typ",
+        "authActivity": "Authentifizierungs- und Sitzungsaktivität",
+        "authFailures": "Authentifizierungsfehler",
+        "authzDenials": "Autorisierungsverweigerungen",
+        "sessionOps": "Sitzungsvorgänge",
+        "alertDelivery": "Warnungszustellung"
+      },
+      "notInstrumented": {
+        "badge": "Nicht instrumentiert",
+        "httpRequestLatency": "HTTP-Anfragelatenz",
+        "httpRequestRate": "HTTP-Anfragerate",
+        "explanation": "Dieses Signal hat keine Aufzeichnungsstelle und keinen dauerhaften Zeitreihenspeicher, daher liegen keine echten Daten vor. Es wird als nicht gemessen angezeigt — bewusst nicht als Null, was fälschlich Verkehr vortäuschen würde.",
+        "sourceValue": "Prometheus-Scrape · /api/metrics",
+        "action": "Betreiberaktion: einen Prometheus-Scrape von /api/metrics aktivieren und echte HTTP-Instrumentierung hinzufügen (als separate Nachverfolgung erfasst)."
+      },
+      "empties": {
+        "noErrors": "Keine Fehler erfasst.",
+        "noSecurity": "Keine Sicherheitsereignisse erfasst.",
+        "noData": "Noch keine Daten erfasst.",
+        "noAlerts": "Keine aktiven Warnungen.",
+        "noAudit": "Keine Audit-Ereignisse passen.",
+        "auditError": "Der Audit-Speicher ist nicht verfügbar — dieses Panel ist eingeschränkt."
       },
       "severities": {
         "info": "Hinweis",
         "warning": "Warnung",
         "error": "Fehler",
         "critical": "Kritisch"
+      },
+      "incidentLookup": {
+        "label": "Vorfall über Korrelations-ID nachschlagen",
+        "placeholder": "zum Beispiel 3f2a-b19c",
+        "submit": "Rekonstruieren",
+        "invalid": "Fehlerhafte Korrelations-ID",
+        "empty": "Keine Ereignisse für diese Korrelations-ID"
+      },
+      "audit": {
+        "filterLabel": "Nach Aktion oder Ergebnis filtern",
+        "filterPlaceholder": "zum Beispiel login oder denied",
+        "results": "{shown} von {total} angezeigt",
+        "outcomeDistribution": "Ergebnisverteilung"
+      },
+      "backup": {
+        "verified": "Verifiziert",
+        "notVerified": "Nicht verifiziert",
+        "noBackup": "Keine Sicherung gefunden",
+        "noBackupHint": "Keine .dump-Datei in BACKUP_DIR gefunden — prüfen Sie, ob der Sicherungs-Cron läuft.",
+        "lastBackup": "Letzte Sicherung",
+        "age": "Alter",
+        "size": "Größe",
+        "verifiedAt": "Verifiziert am",
+        "neverVerified": "nie verifiziert",
+        "file": "Datei"
+      },
+      "startup": {
+        "fatal": "{n} fatale",
+        "ok": "Bestanden",
+        "notRun": "Nicht ausgeführt"
+      },
+      "runtime": {
+        "environment": "Umgebung",
+        "uptime": "Laufzeit",
+        "rss": "Residenter Speicher",
+        "heap": "Heap belegt / gesamt"
       }
     },
   "meta": {
@@ -5486,6 +5581,7 @@
         "apiKeys": "API-Schlüssel",
         "orgSettings": "Organisationseinstellungen",
         "admin": "Admin-Konsole",
+        "observability": "Beobachtbarkeit",
         "otEdge": "OT-Edge"
       }
     },
