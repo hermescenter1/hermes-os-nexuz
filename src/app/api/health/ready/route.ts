@@ -22,22 +22,29 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getPrisma } from "@/lib/db/prisma";
 import { resolveRequestId } from "@/lib/logger/correlation";
 import { logInfraFailure } from "@/lib/logger/security-events";
+import { setGauge, observeHistogram } from "@/lib/observability/metrics";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function databaseReady(reqId: string): Promise<boolean> {
+  const t0 = Date.now();
   try {
     const prisma = await getPrisma();
     if (!prisma) {
       logInfraFailure("database", "health.ready", new Error("prisma client unavailable"), reqId);
+      setGauge("dependency_up", 0, { dependency: "database" });
       return false;
     }
     await (prisma as unknown as { $queryRawUnsafe: (q: string) => Promise<unknown> })
       .$queryRawUnsafe("SELECT 1");
+    // PHASE 92 — record dependency readiness + probe latency (low-cardinality).
+    observeHistogram("dependency_latency_ms", Date.now() - t0, { dependency: "database" });
+    setGauge("dependency_up", 1, { dependency: "database" });
     return true;
   } catch (err) {
     logInfraFailure("database", "health.ready", err, reqId);
+    setGauge("dependency_up", 0, { dependency: "database" });
     return false;
   }
 }

@@ -9,6 +9,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:phase91:postgres": "vitest run --config vitest.phase91-postgres.config.ts",
+    "test:phase92:postgres": "vitest run --config vitest.phase92-postgres.config.ts",
+    "audit:retention": "node scripts/audit-retention.mjs",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",

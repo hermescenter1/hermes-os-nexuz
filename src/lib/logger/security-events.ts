@@ -18,6 +18,7 @@
  */
 
 import { logger } from "./index";
+import { observeSecurityEvent } from "@/lib/observability/security-monitor";
 
 export type SecurityOutcome = "denied" | "failed";
 
@@ -56,6 +57,20 @@ export function logAuthFailure(ctx: SecurityEventContext): void {
     },
     ctx.reqId,
   );
+  // PHASE 92 — feed metrics / ring / thresholded alerts (no second log line).
+  observeSecurityEvent({
+    event: "auth_failure",
+    outcome: "failed",
+    correlationId: ctx.reqId,
+    operation: ctx.operation,
+    reason: ctx.reason,
+    userId: ctx.userId,
+    orgId: ctx.orgId,
+    siteId: ctx.siteId,
+    role: ctx.role,
+    resourceId: ctx.resourceId,
+    resourceType: ctx.resourceType,
+  });
 }
 
 /**
@@ -74,6 +89,20 @@ export function logAuthzDenial(ctx: SecurityEventContext): void {
     },
     ctx.reqId,
   );
+  // PHASE 92 — feed metrics / ring / thresholded alerts (no second log line).
+  observeSecurityEvent({
+    event: "authz_denied",
+    outcome: "denied",
+    correlationId: ctx.reqId,
+    operation: ctx.operation,
+    reason: ctx.reason,
+    userId: ctx.userId,
+    orgId: ctx.orgId,
+    siteId: ctx.siteId,
+    role: ctx.role,
+    resourceId: ctx.resourceId,
+    resourceType: ctx.resourceType,
+  });
 }
 
 /**

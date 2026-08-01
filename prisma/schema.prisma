@@ -488,6 +488,11 @@ model AuditLog {
   @@index([action])
   @@index([userId])
   @@index([organizationId])
+  // PHASE 92 — additive indexes for observability query paths:
+  //  createdAt     → bounded retention sweeps and time-window operator queries
+  //  correlationId → incident timeline reconstruction by correlation id
+  @@index([createdAt])
+  @@index([correlationId])
 }
 
 // ════════════════════════════════════════════════════════════════════════════
