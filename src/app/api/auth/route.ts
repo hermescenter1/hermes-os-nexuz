@@ -1,15 +1,34 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { authenticate }          from "@/lib/auth/service";
 import { signSession }           from "@/lib/auth/crypto";
-import { SESSION_COOKIE, isAuthConfigured, ACCESS_TOKEN_COOKIE, MAX_FAILED_ATTEMPTS, LOCK_DURATION } from "@/lib/auth/config";
+import { SESSION_COOKIE, isAuthConfigured, ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, REFRESH_TOKEN_TTL, REFRESH_TOKEN_TTL_LONG, MAX_FAILED_ATTEMPTS, LOCK_DURATION } from "@/lib/auth/config";
 import { getCurrentUser }        from "@/lib/auth/session";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
-import { signAccessToken }       from "@/lib/auth/jwt";
-import { setAuthCookies, clearAuthCookies } from "@/lib/auth/token-session";
+import { verifyAccessToken }     from "@/lib/auth/jwt";
+import { issueTokens }           from "@/lib/auth/token-session";
+import { revokeSession }         from "@/lib/auth/session-store";
+import { hashArgon2, verifyArgon2 } from "@/lib/auth/argon2-wrapper";
 import { checkRateLimit, retryAfter }       from "@/lib/auth/rate-limiter";
 import { getPrisma }             from "@/lib/db/prisma";
 import { isRole }                from "@/lib/auth/roles";
 import { systemEmitter }         from "@/lib/events/system/emitter";
+
+/**
+ * PHASE 91 — constant-work password check for non-existent accounts.
+ *
+ * `authenticate()` only runs the (deliberately expensive) argon2 verify when the
+ * email maps to a real user, so an unknown email returns measurably faster — a
+ * timing oracle for account enumeration. When the account does not exist we burn
+ * an equivalent argon2 verify against a fixed dummy hash so both paths cost the
+ * same. The dummy hash is computed once and cached.
+ */
+let _dummyHash: string | null = null;
+async function burnPasswordVerifyTime(password: string): Promise<void> {
+  try {
+    if (!_dummyHash) _dummyHash = await hashArgon2("hermes-enumeration-timing-guard");
+    await verifyArgon2(_dummyHash, password);
+  } catch { /* best-effort — never affects the response */ }
+}
 
 /**
  * /api/auth — credentials login/logout + session check (Phase 12A / Phase 28).
@@ -78,6 +97,16 @@ export async function POST(req: NextRequest) {
 
   // ── Logout ────────────────────────────────────────────────────────────────
   if (action === "logout") {
+    // PHASE 91 — truly revoke the session server-side, not just clear the cookie.
+    // Before this, a captured refresh token stayed valid after logout because the
+    // row was never revoked. Revoke the session referenced by this request's
+    // access token so the credential dies on the next protected request too.
+    const at      = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+    const payload = at ? await verifyAccessToken(at) : null;
+    if (payload?.sub && payload.sid) {
+      await revokeSession(payload.sub, payload.sid);
+    }
+
     const user = await getCurrentUser();
     if (user) {
       await recordAuditEvent({
@@ -91,7 +120,7 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.json({ ok: true });
     res.cookies.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
     res.cookies.set(ACCESS_TOKEN_COOKIE, "", { maxAge: 0, path: "/" });
-    res.cookies.set("hermes_rt", "", { maxAge: 0, path: "/api/auth/refresh" });
+    res.cookies.set(REFRESH_TOKEN_COOKIE, "", { maxAge: 0, path: "/api/auth/refresh" });
     return res;
   }
 
@@ -132,6 +161,10 @@ export async function POST(req: NextRequest) {
       if (found) {
         await updateLoginMeta(String(found.id), true);
         systemEmitter.dispatch({ type: "login.failed", userId: String(found.id), email, ip });
+      } else {
+        // Unknown account: spend the same argon2 work a wrong-password attempt on
+        // a real account would, so the two are indistinguishable by response time.
+        await burnPasswordVerifyTime(password);
       }
     }
 
@@ -155,25 +188,31 @@ export async function POST(req: NextRequest) {
     metadata:   { email: user.email, role: user.role, rememberMe },
   });
 
-  // Issue legacy HMAC session cookie (backward compat)
+  // PHASE 91 — issue an access + refresh pair through the shared path so a
+  // server-authoritative, revocable session record is created and its opaque id
+  // (`sid`) is embedded in BOTH the access token and the legacy session cookie.
+  // Before this, the primary login issued only a non-revocable 8h access token
+  // and a 30d HMAC cookie with no server session behind them.
+  const deviceInfo = req.headers.get("user-agent")?.slice(0, 256) ?? null;
+  const { accessToken, refreshToken, sid } = await issueTokens(
+    { id: user.id, email: user.email, role: isRole(user.role) ? user.role : "customer", name: user.name },
+    rememberMe,
+    deviceInfo,
+  );
+
+  // Legacy HMAC session cookie (backward compat), now bound to the same session.
   const sessionToken = signSession({
     userId: user.id,
     email:  user.email,
     role:   user.role,
     name:   user.name,
     iat:    Date.now(),
+    sid:    sid ?? undefined,
   });
 
-  // Issue JWT access token + refresh token (Phase 28)
-  const accessToken = await signAccessToken({
-    sub:   user.id,
-    email: user.email,
-    role:  isRole(user.role) ? user.role : "customer",
-    name:  user.name,
-  });
-
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction  = process.env.NODE_ENV === "production";
   const sessionMaxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
+  const refreshMaxAge = rememberMe ? REFRESH_TOKEN_TTL_LONG : REFRESH_TOKEN_TTL;
 
   const res = NextResponse.json({ ok: true, user });
 
@@ -193,6 +232,16 @@ export async function POST(req: NextRequest) {
     path:     "/",
     secure:   isProduction,
     maxAge:   60 * 60 * 8,
+  });
+
+  // Refresh token (Phase 91 — now also issued on the primary login path so the
+  // session can be rotated and revoked). Scoped to the refresh endpoint only.
+  res.cookies.set(REFRESH_TOKEN_COOKIE, refreshToken, {
+    httpOnly: true,
+    sameSite: "strict",
+    path:     "/api/auth/refresh",
+    secure:   isProduction,
+    maxAge:   refreshMaxAge,
   });
 
   return res;

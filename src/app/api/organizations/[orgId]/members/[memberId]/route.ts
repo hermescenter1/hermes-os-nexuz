@@ -7,6 +7,7 @@ import { NextRequest, NextResponse }           from "next/server";
 import { requireOrgActor }                     from "@/lib/org/context";
 import { requirePermission, assignableRoles }  from "@/lib/org/rbac";
 import { changeMemberRole, changeMemberStatus, removeMember } from "@/lib/org/members";
+import { resolveRequestId }                    from "@/lib/logger/correlation";
 import type { OrgRole, MemberStatus }           from "@/lib/org/types";
 
 /** PHASE 90 — closed set of persistable membership statuses. */
@@ -36,6 +37,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       memberId,
       newRole:        body.role as OrgRole,
       actorUserId:    ctx.userId,
+      correlationId:  resolveRequestId(req),
     });
     if (!out.ok) return NextResponse.json({ error: out.error }, { status: 422 });
     return NextResponse.json({ member: out.member });
@@ -58,6 +60,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       memberId,
       newStatus:      body.status as MemberStatus,
       actorUserId:    ctx.userId,
+      correlationId:  resolveRequestId(req),
     });
     if (!out.ok) return NextResponse.json({ error: out.error }, { status: 422 });
     return NextResponse.json({ member: out.member });
@@ -75,7 +78,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const perm = requirePermission(ctx.role, "remove_member");
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
-  const out = await removeMember({ organizationId: orgId, memberId, actorUserId: ctx.userId });
+  const out = await removeMember({ organizationId: orgId, memberId, actorUserId: ctx.userId, correlationId: resolveRequestId(req) });
   if (!out.ok) return NextResponse.json({ error: out.error }, { status: 422 });
   return NextResponse.json({ ok: true });
 }

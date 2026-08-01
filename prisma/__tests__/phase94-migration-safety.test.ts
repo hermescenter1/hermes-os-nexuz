@@ -225,8 +225,19 @@ describe("94 — migration ordering", () => {
     expect(all.indexOf(MIGRATION)).toBeLessThan(all.indexOf(MIGRATION_941));
   });
 
-  it("the machine-authentication migration is the newest, so it applies last", () => {
-    expect(dirs().at(-1)).toBe(MIGRATION_941);
+  it("the machine-authentication migration stays correctly ordered after the Phase 94 foundation", () => {
+    // PHASE 91 — this used to pin MIGRATION_941 as the newest folder overall, a
+    // snapshot that goes stale the moment any later phase adds a migration (Phase
+    // 91 added 20260815000000_phase91_iam_hardening). The durable invariant this
+    // test actually protects is that 94B4.1 applies AFTER the 94 foundation (its
+    // ALTER needs the table) and that anything appended after it carries a
+    // strictly greater timestamp, so the ordered apply sequence stays correct.
+    const all = dirs();
+    const idx941 = all.indexOf(MIGRATION_941);
+    expect(idx941).toBeGreaterThan(all.indexOf(MIGRATION));
+    for (const d of all.slice(idx941 + 1)) {
+      expect(d.slice(0, 14) > MIGRATION_941.slice(0, 14)).toBe(true);
+    }
   });
 });
 

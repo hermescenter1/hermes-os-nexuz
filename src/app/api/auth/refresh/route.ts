@@ -22,8 +22,10 @@ export async function POST(req: NextRequest) {
     return res;
   }
 
-  // Issue new tokens and set cookies
-  const { accessToken, refreshToken } = await issueTokens(result.user, false);
+  // Issue new tokens and set cookies. PHASE 91 — carry the authorized generation
+  // so the freshly minted session is stamped with the version the rotation gate
+  // validated (closing the revoke-vs-rotate window).
+  const { accessToken, refreshToken } = await issueTokens(result.user, false, null, result.tokenVersion);
 
   const response = NextResponse.json({ ok: true, user: { id: result.user.id, email: result.user.email, name: result.user.name, role: result.user.role } });
   const isProduction = process.env.NODE_ENV === "production";

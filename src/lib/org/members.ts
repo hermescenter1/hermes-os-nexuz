@@ -8,6 +8,7 @@
 
 import { getPrisma }                    from "@/lib/db/prisma";
 import { recordAuditEvent, ORG_AUDIT }  from "@/lib/audit/audit-service";
+import { revokeAllSessions }            from "@/lib/auth/session-store";
 import type { MemberRecord, OrgRole, MemberStatus } from "./types";
 
 type MemberModel = {
@@ -129,6 +130,8 @@ export interface ChangeMemberRoleInput {
   memberId:       string;
   newRole:        OrgRole;
   actorUserId?:   string;
+  /** PHASE 91 — originating request id, threaded into the audit record. */
+  correlationId?: string;
 }
 
 /** Change a member's role. Enforces last-owner safeguard. */
@@ -157,11 +160,14 @@ export async function changeMemberRole(
     const member = rowToMember(row);
 
     await recordAuditEvent({
-      userId:     input.actorUserId,
-      action:     ORG_AUDIT.MEMBER_ROLE_CHANGED,
-      entityType: "OrganizationMember",
-      entityId:   member.id,
-      metadata:   { orgId: input.organizationId, prevRole: String(prevRow.role), newRole: input.newRole },
+      userId:         input.actorUserId,
+      action:         ORG_AUDIT.MEMBER_ROLE_CHANGED,
+      entityType:     "OrganizationMember",
+      entityId:       member.id,
+      organizationId: input.organizationId,
+      outcome:        "success",
+      correlationId:  input.correlationId ?? null,
+      metadata:       { orgId: input.organizationId, targetUserId: String(prevRow.userId), prevRole: String(prevRow.role), newRole: input.newRole },
     });
 
     return { ok: true, member };
@@ -175,6 +181,8 @@ export interface ChangeMemberStatusInput {
   memberId:       string;
   newStatus:      MemberStatus;
   actorUserId?:   string;
+  /** PHASE 91 — originating request id, threaded into the audit record. */
+  correlationId?: string;
 }
 
 /** Change a member's status (ACTIVE / SUSPENDED). Enforces last-owner safeguard on suspension. */
@@ -206,12 +214,22 @@ export async function changeMemberStatus(
     });
     const member = rowToMember(row);
 
+    // PHASE 91 — a suspended member must lose access immediately. Their org role
+    // is already re-read per request (so the ACTIVE allow-list denies them), but
+    // revoking their sessions also cuts non-org surfaces and closes the window.
+    if (input.newStatus === "SUSPENDED") {
+      await revokeAllSessions(String(prevRow.userId));
+    }
+
     await recordAuditEvent({
-      userId:     input.actorUserId,
-      action:     ORG_AUDIT.MEMBER_STATUS_CHANGED,
-      entityType: "OrganizationMember",
-      entityId:   member.id,
-      metadata:   { orgId: input.organizationId, newStatus: input.newStatus },
+      userId:         input.actorUserId,
+      action:         ORG_AUDIT.MEMBER_STATUS_CHANGED,
+      entityType:     "OrganizationMember",
+      entityId:       member.id,
+      organizationId: input.organizationId,
+      outcome:        "success",
+      correlationId:  input.correlationId ?? null,
+      metadata:       { orgId: input.organizationId, targetUserId: String(prevRow.userId), newStatus: input.newStatus },
     });
 
     return { ok: true, member };
@@ -224,6 +242,8 @@ export interface RemoveMemberInput {
   organizationId: string;
   memberId:       string;
   actorUserId?:   string;
+  /** PHASE 91 — originating request id, threaded into the audit record. */
+  correlationId?: string;
 }
 
 /** Remove a member. Enforces last-owner safeguard. */
@@ -244,12 +264,18 @@ export async function removeMember(
   try {
     await m.delete({ where: { id: input.memberId } });
 
+    // PHASE 91 — a removed member should not keep live sessions.
+    await revokeAllSessions(String(existing.userId));
+
     await recordAuditEvent({
-      userId:     input.actorUserId,
-      action:     ORG_AUDIT.MEMBER_REMOVED,
-      entityType: "OrganizationMember",
-      entityId:   input.memberId,
-      metadata:   { orgId: input.organizationId, userId: String(existing.userId) },
+      userId:         input.actorUserId,
+      action:         ORG_AUDIT.MEMBER_REMOVED,
+      entityType:     "OrganizationMember",
+      entityId:       input.memberId,
+      organizationId: input.organizationId,
+      outcome:        "success",
+      correlationId:  input.correlationId ?? null,
+      metadata:       { orgId: input.organizationId, targetUserId: String(existing.userId) },
     });
 
     return { ok: true };
@@ -263,6 +289,8 @@ export interface TransferOwnershipInput {
   fromMemberId:   string;
   toMemberId:     string;
   actorUserId?:   string;
+  /** PHASE 91 — originating request id, threaded into the audit record. */
+  correlationId?: string;
 }
 
 /** Transfer OWNER role: promote toMember to OWNER, downgrade fromMember to ADMIN. */
@@ -288,11 +316,14 @@ export async function transferOwnership(
     });
 
     await recordAuditEvent({
-      userId:     input.actorUserId,
-      action:     ORG_AUDIT.OWNERSHIP_TRANSFERRED,
-      entityType: "Organization",
-      entityId:   input.organizationId,
-      metadata:   { fromMemberId: input.fromMemberId, toMemberId: input.toMemberId },
+      userId:         input.actorUserId,
+      action:         ORG_AUDIT.OWNERSHIP_TRANSFERRED,
+      entityType:     "Organization",
+      entityId:       input.organizationId,
+      organizationId: input.organizationId,
+      outcome:        "success",
+      correlationId:  input.correlationId ?? null,
+      metadata:       { fromMemberId: input.fromMemberId, toMemberId: input.toMemberId },
     });
 
     return { ok: true };

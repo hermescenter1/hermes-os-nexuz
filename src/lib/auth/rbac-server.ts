@@ -8,20 +8,31 @@ import { NextResponse }          from "next/server";
 import type { NextRequest }      from "next/server";
 import { verifyAccessToken }     from "./jwt";
 import { verifySession }         from "./crypto";
+import { isPayloadSessionActive } from "./session-store";
 import { ACCESS_TOKEN_COOKIE, SESSION_COOKIE } from "./config";
 import { isRole, type Role }     from "./roles";
 
-/** Get the authenticated role from a server-side API request. */
+/**
+ * Get the authenticated role from a server-side API request.
+ *
+ * PHASE 91 — for sid-bound credentials the referenced session must still be
+ * active; a revoked session is skipped (falls through to the next credential,
+ * then to null). Legacy credentials without a sid behave exactly as before.
+ */
 export async function getAuthRole(req: NextRequest): Promise<Role | null> {
   const at = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   if (at) {
     const payload = await verifyAccessToken(at);
-    if (payload && isRole(payload.role)) return payload.role;
+    if (payload && isRole(payload.role) && (await isPayloadSessionActive(payload))) {
+      return payload.role;
+    }
   }
   const session = req.cookies.get(SESSION_COOKIE)?.value;
   if (session) {
     const payload = verifySession(session);
-    if (payload && isRole(payload.role)) return payload.role;
+    if (payload && isRole(payload.role) && (await isPayloadSessionActive(payload))) {
+      return payload.role;
+    }
   }
   return null;
 }

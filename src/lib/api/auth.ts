@@ -18,6 +18,7 @@ import type { NextRequest }    from "next/server";
 import { verifyAccessToken }   from "@/lib/auth/jwt";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
 import { getPrisma }           from "@/lib/db/prisma";
+import { isPayloadSessionActive } from "@/lib/auth/session-store";
 import { verifyApiKey, touchLastUsed } from "./keys";
 import { API_KEY_PREFIX }      from "./types";
 import type { PlatformActorContext } from "./types";
@@ -61,6 +62,10 @@ async function resolveJwtContext(
 
   const payload = await verifyAccessToken(raw);
   if (!payload?.sub) return null;
+
+  // PHASE 91 — a revoked session's access token is rejected here, so it cannot
+  // reach the platform API (key management, metered endpoints) after revocation.
+  if (!(await isPayloadSessionActive(payload))) return null;
 
   const orgId = await resolveFirstOrgId(payload.sub);
   if (!orgId) return null;

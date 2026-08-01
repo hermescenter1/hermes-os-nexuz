@@ -158,6 +158,20 @@ export async function acceptInvitation(
   const orgId = String(row.organizationId);
   const role  = String(row.role) as OrgRole;
 
+  // PHASE 91 — atomic single-use claim BEFORE creating the membership. Two
+  // concurrent accepts of the same invitation both pass the read-time PENDING
+  // check above, so flip the status conditionally: only the first update matches
+  // `status: "PENDING"` and sees count === 1; the loser is rejected. Previously
+  // the status was flipped unconditionally after addMember, leaving a replay
+  // window that relied solely on addMember's duplicate-membership guard.
+  const claim = await m.updateMany({
+    where: { id: String(row.id), status: "PENDING" },
+    data:  { status: "ACCEPTED", updatedAt: new Date() },
+  }) as { count: number };
+  if (!claim || claim.count !== 1) {
+    return { ok: false, error: "Invitation is no longer pending" };
+  }
+
   const addResult = await addMember({
     organizationId: orgId,
     userId,
@@ -166,11 +180,6 @@ export async function acceptInvitation(
     actorUserId: userId,
   });
   if (!addResult.ok) return { ok: false, error: addResult.error };
-
-  await m.update({
-    where: { id: String(row.id) },
-    data:  { status: "ACCEPTED", updatedAt: new Date() },
-  });
 
   await recordAuditEvent({
     userId,

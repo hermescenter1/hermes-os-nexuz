@@ -10,6 +10,7 @@
 import type { NextRequest }    from "next/server";
 import { verifyAccessToken }   from "@/lib/auth/jwt";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
+import { isPayloadSessionActive } from "@/lib/auth/session-store";
 import { getPrisma }           from "@/lib/db/prisma";
 import type { OrgActorContext, OrgRole, MemberStatus } from "./types";
 import { logAuthFailure, logAuthzDenial } from "@/lib/logger/security-events";
@@ -63,10 +64,21 @@ export async function requireOrgActor(
   req:   NextRequest,
   orgId: string,
 ): Promise<{ ctx: OrgActorContext } | { error: string; status: number }> {
-  const userId = await getUserIdFromRequest(req);
-  if (!userId) {
+  const token   = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+  const payload = token ? await verifyAccessToken(token) : null;
+  if (!payload?.sub) {
     logAuthFailure({ operation: "org.actor", reason: "no_session", orgId });
     return { error: "Authentication required", status: 401 };
+  }
+  const userId = payload.sub;
+
+  // PHASE 91 — enforce session revocation. A sid-bound access token whose
+  // server-side session record has been revoked (logout, admin revoke, password
+  // reset, suspension) is rejected on THIS request, not merely when it expires.
+  // Legacy tokens without a sid pass through unchanged.
+  if (!(await isPayloadSessionActive(payload))) {
+    logAuthzDenial({ operation: "org.actor", reason: "session_revoked", userId, orgId });
+    return { error: "Session is no longer active", status: 401 };
   }
 
   const ctx = await getOrgActorContext(req, orgId);
