@@ -1,4 +1,49 @@
 {
+    "observability": {
+      "eyebrow": "Betrieb",
+      "title": "Beobachtbarkeit",
+      "lede": "Betriebszustand, aktive Warnungen, Sicherheitsereignisse, Fehler-Fingerabdrücke und Vorfallrekonstruktion.",
+      "sections": {
+        "health": "Abhängigkeitszustand",
+        "alerts": "Aktive Warnungen",
+        "security": "Sicherheitsereignisse",
+        "errors": "Fehler-Fingerabdrücke",
+        "audit": "Aktuelle Audit-Ereignisse",
+        "incident": "Vorfall-Zeitleiste",
+        "metrics": "Kennzahlen"
+      },
+      "labels": {
+        "severity": "Schweregrad",
+        "event": "Ereignis",
+        "count": "Anzahl",
+        "firstSeen": "Zuerst gesehen",
+        "lastSeen": "Zuletzt gesehen",
+        "operation": "Vorgang",
+        "reason": "Grund",
+        "outcome": "Ergebnis",
+        "action": "Aktion",
+        "correlationId": "Korrelations-ID",
+        "dependency": "Abhängigkeit",
+        "source": "Quelle",
+        "time": "Zeit",
+        "noData": "Keine Daten",
+        "degraded": "Beeinträchtigt",
+        "healthy": "Gesund"
+      },
+      "incidentLookup": {
+        "label": "Vorfall anhand der Korrelations-ID suchen",
+        "placeholder": "zum Beispiel 3f2a-b19c",
+        "submit": "Rekonstruieren",
+        "invalid": "Ungültige Korrelations-ID",
+        "empty": "Keine Ereignisse für diese Korrelations-ID"
+      },
+      "severities": {
+        "info": "Hinweis",
+        "warning": "Warnung",
+        "error": "Fehler",
+        "critical": "Kritisch"
+      }
+    },
   "meta": {
     "title": "Hermes OS — Industrielle KI-Plattform",
     "description": "Enterprise-Plattform für industrielle Automatisierung: PLC, SCADA, HMI, KI-Copilot und intelligente Betriebsführung — entwickelt für persisch- und englischsprachige Produktionsumgebungen.",

@@ -1,4 +1,49 @@
 {
+    "observability": {
+      "eyebrow": "Operations",
+      "title": "Observability",
+      "lede": "Operational health, active alerts, security events, error fingerprints and incident reconstruction.",
+      "sections": {
+        "health": "Dependency health",
+        "alerts": "Active alerts",
+        "security": "Security events",
+        "errors": "Error fingerprints",
+        "audit": "Recent audit events",
+        "incident": "Incident timeline",
+        "metrics": "Metrics"
+      },
+      "labels": {
+        "severity": "Severity",
+        "event": "Event",
+        "count": "Count",
+        "firstSeen": "First seen",
+        "lastSeen": "Last seen",
+        "operation": "Operation",
+        "reason": "Reason",
+        "outcome": "Outcome",
+        "action": "Action",
+        "correlationId": "Correlation ID",
+        "dependency": "Dependency",
+        "source": "Source",
+        "time": "Time",
+        "noData": "No data",
+        "degraded": "Degraded",
+        "healthy": "Healthy"
+      },
+      "incidentLookup": {
+        "label": "Look up an incident by correlation ID",
+        "placeholder": "for example 3f2a-b19c",
+        "submit": "Reconstruct",
+        "invalid": "Malformed correlation ID",
+        "empty": "No events for this correlation ID"
+      },
+      "severities": {
+        "info": "Info",
+        "warning": "Warning",
+        "error": "Error",
+        "critical": "Critical"
+      }
+    },
   "meta": {
     "title": "Hermes OS — Industrial AI Platform",
     "description": "Enterprise industrial automation platform: PLC, SCADA, HMI, AI copilot, and intelligent operations — built for Persian and English plant floors.",
