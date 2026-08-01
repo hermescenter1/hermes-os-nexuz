@@ -102,7 +102,7 @@ export async function ControlRoomView({ cid }: { locale: string; cid?: string })
   const incident = model.incident;
 
   return (
-    <PageShell>
+    <PageShell clipX>
         <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("lede")} />
 
         {/* ── Posture + KPI header ───────────────────────────────────────── */}
@@ -382,7 +382,7 @@ export async function ControlRoomView({ cid }: { locale: string; cid?: string })
                   action: t("labels.action"),
                   outcome: t("labels.outcome"),
                   empty: t("empties.noAudit"),
-                  results: (shown, total) => t("audit.results", { shown, total }),
+                  resultsTemplate: t("audit.results", { shown: "__SHOWN__", total: "__TOTAL__" }),
                 }}
               />
             )}

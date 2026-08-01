@@ -1,0 +1,274 @@
+{
+  "user": {
+    "id": "cmsajs2bj000034uaibzngxkj",
+    "name": "Operator",
+    "email": "admin@hermes.local",
+    "role": "admin"
+  },
+  "results": [
+    {
+      "locale": "fa",
+      "view": "desktop",
+      "w": 1440,
+      "h": 900,
+      "file": "docs/release/phase93-visual-evidence/obs-fa-desktop.png",
+      "lang": "fa-IR",
+      "dir": "rtl",
+      "h1Count": 1,
+      "h1": "اتاق کنترل SRE",
+      "main": 1,
+      "nav": 1,
+      "panels": 18,
+      "overflowPx": 0,
+      "notInstrumented": true,
+      "auditInput": true,
+      "charts": 1,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "cls": "absolute animate-ambient-pulse",
+          "right": 1728,
+          "w": 936,
+          "t": ""
+        }
+      ],
+      "httpPanelsHonest": true,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "focus": {
+        "tag": "BUTTON",
+        "outlineWidth": "3px",
+        "outlineStyle": "solid",
+        "boxShadow": false
+      },
+      "PASS": true
+    },
+    {
+      "locale": "fa",
+      "view": "mobile",
+      "w": 390,
+      "h": 844,
+      "file": "docs/release/phase93-visual-evidence/obs-fa-mobile.png",
+      "lang": "fa-IR",
+      "dir": "rtl",
+      "h1Count": 1,
+      "h1": "اتاق کنترل SRE",
+      "main": 1,
+      "nav": 1,
+      "panels": 18,
+      "overflowPx": 0,
+      "notInstrumented": true,
+      "auditInput": true,
+      "charts": 1,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "cls": "absolute animate-ambient-pulse",
+          "right": 468,
+          "w": 254,
+          "t": ""
+        }
+      ],
+      "httpPanelsHonest": true,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "focus": {
+        "tag": "BUTTON",
+        "outlineWidth": "2px",
+        "outlineStyle": "solid",
+        "boxShadow": false
+      },
+      "PASS": true
+    },
+    {
+      "locale": "en",
+      "view": "desktop",
+      "w": 1440,
+      "h": 900,
+      "file": "docs/release/phase93-visual-evidence/obs-en-desktop.png",
+      "lang": "en-GB",
+      "dir": "ltr",
+      "h1Count": 1,
+      "h1": "SRE Control Room",
+      "main": 1,
+      "nav": 1,
+      "panels": 18,
+      "overflowPx": 0,
+      "notInstrumented": true,
+      "auditInput": true,
+      "charts": 1,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "cls": "absolute animate-ambient-pulse",
+          "right": 1728,
+          "w": 936,
+          "t": ""
+        }
+      ],
+      "httpPanelsHonest": true,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "focus": {
+        "tag": "BUTTON",
+        "outlineWidth": "3px",
+        "outlineStyle": "solid",
+        "boxShadow": false
+      },
+      "PASS": true
+    },
+    {
+      "locale": "en",
+      "view": "mobile",
+      "w": 390,
+      "h": 844,
+      "file": "docs/release/phase93-visual-evidence/obs-en-mobile.png",
+      "lang": "en-GB",
+      "dir": "ltr",
+      "h1Count": 1,
+      "h1": "SRE Control Room",
+      "main": 1,
+      "nav": 1,
+      "panels": 18,
+      "overflowPx": 0,
+      "notInstrumented": true,
+      "auditInput": true,
+      "charts": 1,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "cls": "absolute animate-ambient-pulse",
+          "right": 468,
+          "w": 254,
+          "t": ""
+        },
+        {
+          "tag": "DIV",
+          "cls": "flex shrink-0 items-center gap-2",
+          "right": 395,
+          "w": 140,
+          "t": "OperatorSign outفارسی"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "flex items-center gap-1.5 rounded-md border border-line",
+          "right": 395,
+          "w": 36,
+          "t": "فارسی"
+        }
+      ],
+      "httpPanelsHonest": true,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "focus": {
+        "tag": "BUTTON",
+        "outlineWidth": "2px",
+        "outlineStyle": "solid",
+        "boxShadow": false
+      },
+      "PASS": true
+    },
+    {
+      "locale": "de",
+      "view": "desktop",
+      "w": 1440,
+      "h": 900,
+      "file": "docs/release/phase93-visual-evidence/obs-de-desktop.png",
+      "lang": "de-DE",
+      "dir": "ltr",
+      "h1Count": 1,
+      "h1": "SRE-Leitstand",
+      "main": 1,
+      "nav": 1,
+      "panels": 18,
+      "overflowPx": 0,
+      "notInstrumented": true,
+      "auditInput": true,
+      "charts": 1,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "cls": "absolute animate-ambient-pulse",
+          "right": 1728,
+          "w": 936,
+          "t": ""
+        }
+      ],
+      "httpPanelsHonest": true,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "focus": {
+        "tag": "BUTTON",
+        "outlineWidth": "3px",
+        "outlineStyle": "solid",
+        "boxShadow": false
+      },
+      "PASS": true
+    },
+    {
+      "locale": "de",
+      "view": "mobile",
+      "w": 390,
+      "h": 844,
+      "file": "docs/release/phase93-visual-evidence/obs-de-mobile.png",
+      "lang": "de-DE",
+      "dir": "ltr",
+      "h1Count": 1,
+      "h1": "SRE-Leitstand",
+      "main": 1,
+      "nav": 1,
+      "panels": 18,
+      "overflowPx": 0,
+      "notInstrumented": true,
+      "auditInput": true,
+      "charts": 1,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "cls": "absolute animate-ambient-pulse",
+          "right": 468,
+          "w": 254,
+          "t": ""
+        },
+        {
+          "tag": "DIV",
+          "cls": "ms-auto flex items-center gap-3",
+          "right": 408,
+          "w": 194,
+          "t": "PlattformIntelligenzBetriebW"
+        },
+        {
+          "tag": "DIV",
+          "cls": "flex shrink-0 items-center gap-2",
+          "right": 408,
+          "w": 140,
+          "t": "OperatorAbmeldenEnglish"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "flex items-center gap-1.5 rounded-md border border-line",
+          "right": 408,
+          "w": 36,
+          "t": "English"
+        },
+        {
+          "tag": "SPAN",
+          "cls": "flex items-center gap-1.5",
+          "right": 399,
+          "w": 18,
+          "t": "English"
+        }
+      ],
+      "httpPanelsHonest": true,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "focus": {
+        "tag": "BUTTON",
+        "outlineWidth": "2px",
+        "outlineStyle": "solid",
+        "boxShadow": false
+      },
+      "PASS": true
+    }
+  ]
+}

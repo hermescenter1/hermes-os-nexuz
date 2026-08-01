@@ -43,7 +43,10 @@ export function AuditExplorer({
     action: string;
     outcome: string;
     empty: string;
-    results: (shown: number, total: number) => string;
+    // Pre-translated template with __SHOWN__ / __TOTAL__ sentinels — interpolated
+    // client-side as the filter narrows. (A function prop cannot cross the RSC
+    // → client boundary, so the server hands us the localized template instead.)
+    resultsTemplate: string;
   };
 }) {
   const [q, setQ] = useState("");
@@ -74,7 +77,9 @@ export function AuditExplorer({
           />
         </label>
         <span aria-live="polite" className="ds-tabular text-label-compact text-text-muted">
-          {labels.results(filtered.length, rows.length)}
+          {labels.resultsTemplate
+            .replace("__SHOWN__", String(filtered.length))
+            .replace("__TOTAL__", String(rows.length))}
         </span>
       </div>
 
