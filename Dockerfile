@@ -29,9 +29,9 @@ ARG NEXT_PUBLIC_GA_MEASUREMENT_ID=""
 ARG NEXT_PUBLIC_GTM_ID=""
 # SEO canonical host — inlined into every canonical / hreflang / sitemap / robots
 # / OpenGraph / JSON-LD URL at build time (src/lib/seo/config.ts). Defaults to the
-# production www host so a build that forgets to pass it still emits correct
+# canonical production host so a build that forgets to pass it still emits correct
 # canonicals; override with --build-arg NEXT_PUBLIC_BASE_URL=… for other envs.
-ARG NEXT_PUBLIC_BASE_URL="https://www.hermesnovin.com"
+ARG NEXT_PUBLIC_BASE_URL="https://hermesnovin.com"
 
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=$NEXT_PUBLIC_GA_MEASUREMENT_ID

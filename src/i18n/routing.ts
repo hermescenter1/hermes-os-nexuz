@@ -8,6 +8,8 @@ import {
 
 // Public routing uses ACTIVE_LOCALES only — German stays out until activated.
 export const routing = defineRouting({
+  // HTML metadata and sitemap provide canonical hreflang links.
+  alternateLinks: false,
   locales: ACTIVE_LOCALES,
   defaultLocale: DEFAULT_LOCALE,
   localePrefix: "always",
