@@ -1,7 +1,7 @@
 import { NextResponse }    from "next/server";
 import { getPrisma }       from "@/lib/db/prisma";
 import { hashArgon2 }      from "@/lib/auth/argon2-wrapper";
-import { setAuthCookies }  from "@/lib/auth/token-session";
+import { setAuthCookies, SessionPersistenceError } from "@/lib/auth/token-session";
 import { createCandidate } from "@/lib/ats/db";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
 import {
@@ -110,11 +110,21 @@ export async function POST(req: Request) {
     workAuthorization: body.workAuthorization,
   });
 
-  // Issue tokens + set cookies so the candidate is immediately logged in
-  await setAuthCookies(
-    { id: userId, email: normalEmail, role: "candidate", name },
-    false
-  );
+  // Issue tokens + set cookies so the candidate is immediately logged in.
+  // PHASE 91 — in database mode this fails closed if the session cannot be
+  // persisted: no partial, non-revocable session is ever established. The account
+  // was created; the client can sign in once the store recovers.
+  try {
+    await setAuthCookies(
+      { id: userId, email: normalEmail, role: "candidate", name },
+      false
+    );
+  } catch (e) {
+    if (e instanceof SessionPersistenceError) {
+      return NextResponse.json({ error: "SESSION_PERSISTENCE_UNAVAILABLE" }, { status: 503 });
+    }
+    throw e;
+  }
 
   return NextResponse.json(
     { ok: true, userId, candidateId: candidate?.id ?? null },

@@ -410,6 +410,11 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+  // Phase 91: the session-inventory and revoke-* paths all filter on
+  // (userId, revokedAt); this composite keeps those owner-scoped auth queries
+  // index-only as the table grows. Added in a SEPARATE additive migration
+  // (20260815000001) so the original Phase 91 migration is never rewritten.
+  @@index([userId, revokedAt])
 }
 
 // Phase 28: email verification tokens (plaintext — one-time use)

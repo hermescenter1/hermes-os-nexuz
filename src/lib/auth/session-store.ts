@@ -21,6 +21,7 @@
  */
 
 import { getPrisma } from "@/lib/db/prisma";
+import { getStorageMode } from "@/lib/storage/storage-mode";
 import { logger } from "@/lib/logger";
 
 export interface SessionSummary {
@@ -45,12 +46,26 @@ type UserModel = {
   update: (a: unknown) => Promise<unknown>;
 };
 
+type PrismaClientLike = Record<string, unknown> & {
+  $transaction?: <T>(fn: (tx: unknown) => Promise<T>) => Promise<T>;
+};
+
 function refreshModel(db: unknown): RefreshModel {
   return (db as Record<string, unknown>).refreshToken as RefreshModel;
 }
 
 function userModel(db: unknown): UserModel {
   return (db as Record<string, unknown>).user as UserModel;
+}
+
+/**
+ * Run `fn` in a real interactive transaction when supported (production Prisma);
+ * minimal test doubles without `$transaction` run it directly. Atomicity in
+ * production is provided by the database and exercised by the migration rehearsal.
+ */
+async function withTx<T>(db: PrismaClientLike, fn: (client: Record<string, unknown>) => Promise<T>): Promise<T> {
+  if (typeof db.$transaction === "function") return db.$transaction((tx) => fn(tx as Record<string, unknown>));
+  return fn(db);
 }
 
 /** Fire-and-forget, throttled "last active" write. Never throws, never blocks. */
@@ -103,13 +118,25 @@ export async function isPayloadSessionActive(payload: { sid?: string }): Promise
   return isSessionActive(payload.sid);
 }
 
-/** Owner-scoped list of the user's active sessions. Never exposes the token hash. */
+/**
+ * Owner-scoped list of the user's active sessions. Never exposes the token hash.
+ *
+ * PHASE 91 failure contract, with an explicit mode distinction:
+ *  - SESSION mode has no durable session store by design, so the caller
+ *    genuinely has zero server-side sessions → `[]` (200), never 503.
+ *  - DATABASE mode with no client / a query error is a real outage → `null`,
+ *    so the caller answers 503. It never conflates "store down" with "you have
+ *    no sessions", and never discloses a database message.
+ */
 export async function listUserSessions(
   userId:     string,
   currentSid: string | null = null,
-): Promise<SessionSummary[]> {
+): Promise<SessionSummary[] | null> {
+  // Session mode: no durable store exists — that is the healthy steady state,
+  // not an outage. Report an empty inventory rather than a spurious 503.
+  if (getStorageMode() !== "database") return [];
   const db = await getPrisma();
-  if (!db) return [];
+  if (!db) return null; // database mode but store unavailable — caller must 503
   try {
     const rt   = refreshModel(db);
     const rows = await rt.findMany({
@@ -126,7 +153,7 @@ export async function listUserSessions(
     }));
   } catch (err) {
     logger.error("[session-store] listUserSessions error", { error: String(err) });
-    return [];
+    return null; // treat a store error as unavailable, not as "no sessions"
   }
 }
 
@@ -198,5 +225,71 @@ export async function revokeAllSessions(userId: string): Promise<number> {
     // best-effort cleanup of the revokedAt flags.
     logger.error("[session-store] revokeAllSessions revoke error", { error: String(err) });
     return 0;
+  }
+}
+
+export type RevokeOthersResult =
+  | { ok: true; revoked: number; generation: number }
+  | { ok: false; error: "kept_invalid" | "unavailable" };
+
+/**
+ * PHASE 91 — self-service "log out every other device" done as ONE atomic,
+ * generation-safe transaction. Keeping the current session alive while cutting
+ * every other one is a security transition, not a bulk delete, so the whole
+ * operation is serialised in a single transaction:
+ *
+ *   1. the kept session must belong to the caller, be active, unexpired, and at
+ *      the current generation (else `kept_invalid` — no partial effect);
+ *   2. bump User.tokenVersion (new generation);
+ *   3. move the kept session to the new generation so the CALLER stays valid
+ *      (the access token references the row by sid, and the row now matches);
+ *   4. revoke every other session by id.
+ *
+ * Because the generation advances, any concurrent refresh of a non-kept session
+ * is dead regardless of ordering: a successor it mints carries the OLD generation
+ * (rejected by isSessionActive), or its rotate observes the new generation and
+ * refuses. No non-kept session can remain active, and no cross-user row is
+ * touched (every write is filtered by `userId`).
+ */
+export async function revokeAllOtherSessionsAtomically(
+  userId:  string,
+  keepSid: string,
+): Promise<RevokeOthersResult> {
+  const db = await getPrisma();
+  if (!db) return { ok: false, error: "unavailable" };
+  try {
+    return await withTx(db as PrismaClientLike, async (c): Promise<RevokeOthersResult> => {
+      const rt = refreshModel(c);
+      const um = userModel(c) as UserModel & { update: (a: unknown) => Promise<Record<string, unknown>> };
+
+      const kept = await rt.findUnique({
+        where:   { id: keepSid },
+        include: { user: { select: { tokenVersion: true } } },
+      });
+      // Owner-scoped + active + unexpired + current generation, or fail whole op.
+      if (!kept || String(kept.userId) !== userId) return { ok: false, error: "kept_invalid" };
+      if (kept.revokedAt)                          return { ok: false, error: "kept_invalid" };
+      if (new Date(kept.expiresAt as string) < new Date()) return { ok: false, error: "kept_invalid" };
+      const curVer = Number((kept.user as { tokenVersion?: number } | undefined)?.tokenVersion ?? 0);
+      if (Number(kept.userTokenVersion ?? 0) !== curVer) return { ok: false, error: "kept_invalid" };
+
+      const updatedUser = await um.update({
+        where: { id: userId }, data: { tokenVersion: { increment: 1 } }, select: { tokenVersion: true },
+      });
+      const newGen = Number((updatedUser as { tokenVersion?: number })?.tokenVersion ?? curVer + 1);
+
+      // Keep the caller alive by moving their row to the new generation.
+      await rt.update({ where: { id: keepSid }, data: { userTokenVersion: newGen } });
+
+      // Explicitly revoke all others (defence in depth on top of the generation gap).
+      const res = await rt.updateMany({
+        where: { userId, revokedAt: null, id: { not: keepSid } },
+        data:  { revokedAt: new Date() },
+      });
+      return { ok: true, revoked: res?.count ?? 0, generation: newGen };
+    });
+  } catch (err) {
+    logger.error("[session-store] revokeAllOtherSessionsAtomically error", { error: String(err) });
+    return { ok: false, error: "unavailable" };
   }
 }

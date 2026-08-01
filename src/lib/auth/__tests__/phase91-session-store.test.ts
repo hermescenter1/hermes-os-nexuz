@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 /**
  * PHASE 91 — the RefreshToken row is the server-authoritative session record.
@@ -77,12 +77,15 @@ function row(id: string, userId: string, over: Partial<Row> = {}): Row {
 
 async function withDb(rows: Row[]) {
   vi.resetModules();
+  // listUserSessions distinguishes session vs database mode, so pin database mode.
+  vi.doMock("@/lib/storage/storage-mode", () => ({ getStorageMode: () => "database", isDatabaseMode: () => true }));
   vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => fakeDb(rows) }));
   return import("@/lib/auth/session-store");
 }
 
 afterEach(() => {
   vi.doUnmock("@/lib/db/prisma");
+  vi.doUnmock("@/lib/storage/storage-mode");
   vi.restoreAllMocks();
 });
 
@@ -137,11 +140,34 @@ describe("Phase 91 session-store — inventory & revocation", () => {
   it("listUserSessions returns opaque ids and NEVER the token hash", async () => {
     const store = await withDb([row("s1", "u1"), row("s2", "u1")]);
     const list = await store.listUserSessions("u1", "s1");
-    expect(list.map((s) => s.id).sort()).toEqual(["s1", "s2"]);
-    expect(list.find((s) => s.id === "s1")!.current).toBe(true);
-    const serialized = JSON.stringify(list);
+    expect(list).not.toBeNull();
+    const arr = list!;
+    expect(arr.map((s) => s.id).sort()).toEqual(["s1", "s2"]);
+    expect(arr.find((s) => s.id === "s1")!.current).toBe(true);
+    const serialized = JSON.stringify(arr);
     expect(serialized).not.toContain("SECRET");
     expect(serialized).not.toContain("tokenHash");
+  });
+
+  it("database mode, genuinely empty inventory → [] (200)", async () => {
+    const empty = await withDb([]);
+    expect(await empty.listUserSessions("u1")).toEqual([]);
+  });
+
+  it("database mode, store down (getPrisma null) → null (503)", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/storage/storage-mode", () => ({ getStorageMode: () => "database", isDatabaseMode: () => true }));
+    vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => null }));
+    const down = await import("@/lib/auth/session-store");
+    expect(await down.listUserSessions("u1")).toBeNull();
+  });
+
+  it("SESSION mode → [] (200), never a spurious 503, even though getPrisma is null", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/storage/storage-mode", () => ({ getStorageMode: () => "session", isDatabaseMode: () => false }));
+    vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => null }));
+    const sessionMode = await import("@/lib/auth/session-store");
+    expect(await sessionMode.listUserSessions("u1")).toEqual([]);
   });
 
   it("revokeSession is owner-scoped: cannot revoke another user's session", async () => {

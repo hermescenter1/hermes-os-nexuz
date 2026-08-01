@@ -1,17 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { authenticate }          from "@/lib/auth/service";
-import { signSession }           from "@/lib/auth/crypto";
+import { signSession, verifySession } from "@/lib/auth/crypto";
 import { SESSION_COOKIE, isAuthConfigured, ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, REFRESH_TOKEN_TTL, REFRESH_TOKEN_TTL_LONG, MAX_FAILED_ATTEMPTS, LOCK_DURATION } from "@/lib/auth/config";
 import { getCurrentUser }        from "@/lib/auth/session";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
 import { verifyAccessToken }     from "@/lib/auth/jwt";
-import { issueTokens }           from "@/lib/auth/token-session";
+import { issueTokens, SessionPersistenceError } from "@/lib/auth/token-session";
 import { revokeSession }         from "@/lib/auth/session-store";
+import { getStorageMode }        from "@/lib/storage/storage-mode";
+import { resolveRequestId }      from "@/lib/logger/correlation";
 import { hashArgon2, verifyArgon2 } from "@/lib/auth/argon2-wrapper";
 import { checkRateLimit, retryAfter }       from "@/lib/auth/rate-limiter";
 import { getPrisma }             from "@/lib/db/prisma";
 import { isRole }                from "@/lib/auth/roles";
 import { systemEmitter }         from "@/lib/events/system/emitter";
+
+/** Uniform fail-closed response for database-mode session persistence failures. Sets NO cookies. */
+function sessionPersistenceUnavailable(): NextResponse {
+  return NextResponse.json({ error: "SESSION_PERSISTENCE_UNAVAILABLE" }, { status: 503 });
+}
 
 /**
  * PHASE 91 — constant-work password check for non-existent accounts.
@@ -97,26 +104,45 @@ export async function POST(req: NextRequest) {
 
   // ── Logout ────────────────────────────────────────────────────────────────
   if (action === "logout") {
-    // PHASE 91 — truly revoke the session server-side, not just clear the cookie.
-    // Before this, a captured refresh token stayed valid after logout because the
-    // row was never revoked. Revoke the session referenced by this request's
-    // access token so the credential dies on the next protected request too.
-    const at      = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-    const payload = at ? await verifyAccessToken(at) : null;
-    if (payload?.sub && payload.sid) {
-      await revokeSession(payload.sub, payload.sid);
+    // PHASE 91 — correct ordering. Resolve a TRUSTED, server-verified identity
+    // FIRST (from the signed access token, else the signed legacy cookie), and
+    // capture id/email/role/sid/correlationId. Only THEN revoke the session and
+    // write the audit from the CAPTURED identity — never a re-resolution, which
+    // would now return null (the session was just revoked) and lose the audit.
+    const at        = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+    const atPayload = at ? await verifyAccessToken(at) : null;
+    let identity: { id: string; email: string; role: string; sid: string | null } | null =
+      atPayload?.sub
+        ? { id: atPayload.sub, email: atPayload.email, role: atPayload.role, sid: atPayload.sid ?? null }
+        : null;
+    if (!identity) {
+      const legacy = req.cookies.get(SESSION_COOKIE)?.value;
+      const lp = legacy ? verifySession(legacy) : null;
+      if (lp?.userId) identity = { id: lp.userId, email: lp.email, role: lp.role, sid: lp.sid ?? null };
+    }
+    const correlationId = resolveRequestId(req);
+
+    // Revoke the server-side session (best-effort — must not block cookie clearing).
+    if (identity?.sid) {
+      try { await revokeSession(identity.id, identity.sid); } catch { /* still clear cookies below */ }
     }
 
-    const user = await getCurrentUser();
-    if (user) {
-      await recordAuditEvent({
-        userId:     user.id,
-        action:     "auth.logout",
-        entityType: "auth",
-        entityId:   user.id,
-        metadata:   { email: user.email },
-      });
+    // Audit from the captured identity. A failure here must NOT reactivate the
+    // session or block logout.
+    if (identity) {
+      try {
+        await recordAuditEvent({
+          userId:        identity.id,
+          action:        "auth.logout",
+          entityType:    "auth",
+          entityId:      identity.id,
+          outcome:       "success",
+          correlationId,
+          metadata:      { email: identity.email, role: identity.role, sid: identity.sid },
+        });
+      } catch { /* swallow — logout proceeds and cookies still clear */ }
     }
+
     const res = NextResponse.json({ ok: true });
     res.cookies.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
     res.cookies.set(ACCESS_TOKEN_COOKIE, "", { maxAge: 0, path: "/" });
@@ -194,11 +220,37 @@ export async function POST(req: NextRequest) {
   // Before this, the primary login issued only a non-revocable 8h access token
   // and a 30d HMAC cookie with no server session behind them.
   const deviceInfo = req.headers.get("user-agent")?.slice(0, 256) ?? null;
-  const { accessToken, refreshToken, sid } = await issueTokens(
-    { id: user.id, email: user.email, role: isRole(user.role) ? user.role : "customer", name: user.name },
-    rememberMe,
-    deviceInfo,
-  );
+
+  // B5 — capture the generation observed at authentication time. If a security
+  // kill-switch (password reset / suspend / member removal) advances tokenVersion
+  // before this login's session is persisted, issuance fails closed (the tx
+  // re-reads and throws generation_mismatch). Database mode only; session mode
+  // has no generation.
+  let expectedVersion: number | undefined;
+  if (getStorageMode() === "database") {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const um = (db as Record<string, unknown>).user as { findUnique: (a: unknown) => Promise<Record<string, unknown> | null> };
+        const u = await um.findUnique({ where: { id: user.id }, select: { tokenVersion: true } });
+        if (!u) return sessionPersistenceUnavailable(); // removed between auth and issuance
+        expectedVersion = Number((u as { tokenVersion?: number }).tokenVersion ?? 0);
+      } catch { return sessionPersistenceUnavailable(); }
+    }
+    // db === null in database mode → issueTokens throws below → 503.
+  }
+
+  let accessToken: string, refreshToken: string, sid: string | null;
+  try {
+    ({ accessToken, refreshToken, sid } = await issueTokens(
+      { id: user.id, email: user.email, role: isRole(user.role) ? user.role : "customer", name: user.name },
+      rememberMe,
+      { deviceInfo, expectedVersion },
+    ));
+  } catch (e) {
+    if (e instanceof SessionPersistenceError) return sessionPersistenceUnavailable();
+    throw e;
+  }
 
   // Legacy HMAC session cookie (backward compat), now bound to the same session.
   const sessionToken = signSession({
