@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { z }            from "zod";
 import { verifyEmail }  from "@/lib/auth/verification";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
+import { resolveClientIp }            from "@/lib/security/request-guards";
 
 const schema = z.object({ token: z.string().min(1, "Token required") });
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  // Phase 93: throttle on the spoof-resistant X-Real-IP (resolveClientIp), not
+  // the client-appendable left-most X-Forwarded-For which would let an attacker
+  // rotate the header to bypass the verify-email throttle.
+  const ip = resolveClientIp(req);
   if (!await checkRateLimit("verify-email", ip)) {
     return NextResponse.json(
       { error: "Too many attempts.", retryAfterSeconds: retryAfter("verify-email", ip) },

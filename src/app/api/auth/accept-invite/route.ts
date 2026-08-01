@@ -3,6 +3,7 @@ import { z }            from "zod";
 import { passwordSchema }             from "@/lib/auth/password-policy";
 import { acceptAccessInvite }         from "@/lib/auth/access-invite";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
+import { resolveClientIp }            from "@/lib/security/request-guards";
 
 /**
  * Phase 81C: accept an admin-issued access invite. The only public path that
@@ -24,7 +25,10 @@ const AcceptInviteSchema = z
   });
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  // Phase 93: throttle on the spoof-resistant X-Real-IP (resolveClientIp), not
+  // the client-appendable left-most X-Forwarded-For which would let an attacker
+  // rotate the header to bypass the invite-acceptance throttle.
+  const ip = resolveClientIp(req);
   if (!await checkRateLimit("accept-invite", ip)) {
     return NextResponse.json(
       { ok: false, code: "rate-limited", error: "Too many attempts. Please try again later.",

@@ -14,6 +14,7 @@ import { checkRateLimit, retryAfter }       from "@/lib/auth/rate-limiter";
 import { getPrisma }             from "@/lib/db/prisma";
 import { isRole }                from "@/lib/auth/roles";
 import { systemEmitter }         from "@/lib/events/system/emitter";
+import { resolveClientIp }       from "@/lib/security/request-guards";
 
 /** Uniform fail-closed response for database-mode session persistence failures. Sets NO cookies. */
 function sessionPersistenceUnavailable(): NextResponse {
@@ -151,7 +152,11 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Login ─────────────────────────────────────────────────────────────────
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  // Phase 93: key brute-force throttling on the spoof-resistant proxy header
+  // (X-Real-IP, set by nginx to $remote_addr) via resolveClientIp — NOT the
+  // client-appendable left-most X-Forwarded-For, which an attacker could rotate
+  // per request to mint a fresh rate-limit bucket and bypass the login throttle.
+  const ip = resolveClientIp(req);
   if (!await checkRateLimit("login", ip)) {
     return NextResponse.json(
       { error: "Too many login attempts. Please try again later.",

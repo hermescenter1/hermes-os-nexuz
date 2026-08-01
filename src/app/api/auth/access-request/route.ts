@@ -3,6 +3,7 @@ import { z }                         from "zod";
 import { createHash }                from "crypto";
 import { getPrisma }                 from "@/lib/db/prisma";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
+import { resolveClientIp }            from "@/lib/security/request-guards";
 
 /**
  * Phase 81A: Secure Registration Gate.
@@ -28,9 +29,10 @@ const AccessRequestSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-           ?? req.headers.get("x-real-ip")
-           ?? "unknown";
+  // Phase 93: throttle on the spoof-resistant X-Real-IP (resolveClientIp), not
+  // the client-appendable left-most X-Forwarded-For which would let an attacker
+  // rotate the header to bypass the access-request throttle.
+  const ip = resolveClientIp(req);
   const ipHash = createHash("sha256").update(ip + process.env.JWT_ACCESS_SECRET).digest("hex").slice(0, 16);
 
   if (!await checkRateLimit("access-request", ip)) {
