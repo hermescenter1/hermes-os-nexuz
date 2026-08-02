@@ -280,3 +280,42 @@ jobs:
 
       - name: Disaster-recovery restore rehearsal (backup → restore → integrity + RTO)
         run: node scripts/ci/phase93-dr-restore-rehearsal.mjs
+
+  # ---------------------------------------------------------------------------
+  # PHASE 95 — offline AI governance & model assurance evaluation.
+  #
+  # Deterministic, OFFLINE governance suite: model-registry static gate,
+  # tenant-provider policy (default-deny), prompt-injection screening, RAG
+  # provenance/poisoning, citation integrity, unsafe-output blocking, evidence
+  # sufficiency, deterministic-first routing, execution-trace redaction, plus the
+  # synthetic adversarial datasets with zero-tolerance safety/security budgets,
+  # and a secret-leak scan. It makes NO external provider call, needs no service
+  # container, no secrets and no Production access. No continue-on-error: any
+  # failed assertion or budget violation fails the job.
+  # ---------------------------------------------------------------------------
+  phase95-ai-governance:
+    name: Phase 95 AI governance evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+        run: npx --no-install prisma generate
+
+      - name: Offline AI-governance evaluation (deterministic, no provider calls)
+        run: node scripts/ci/phase95-ai-governance-eval.mjs
