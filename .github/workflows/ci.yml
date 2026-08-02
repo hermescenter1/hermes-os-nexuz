@@ -280,3 +280,60 @@ jobs:
 
       - name: Disaster-recovery restore rehearsal (backup → restore → integrity + RTO)
         run: node scripts/ci/phase93-dr-restore-rehearsal.mjs
+
+  # ---------------------------------------------------------------------------
+  # PHASE 95 — disposable real-OpenBao credential-plane rehearsal.
+  #
+  # A throwaway OpenBao dev server (IN-MEMORY storage, loopback HTTP, started with
+  # `server -dev`) exercised through the EXISTING opt-in launchers: the real KV v2
+  # create → resolve → rotate → revoke → delete lifecycle, plus least-privilege
+  # policy install + AppRole login + allowed-vs-denied prefix enforcement, run
+  # twice with fresh unique names to prove idempotent, self-cleaning setup. The
+  # dev root token is DISPOSABLE, CI-only, in-memory, and reaches only a loopback
+  # container — it is NOT and cannot be a production/staging credential. No
+  # repository secrets, no SSH, read-only repo permissions (inherited), a job
+  # timeout, and NO continue-on-error: any failed assertion fails the job.
+  # ---------------------------------------------------------------------------
+  phase95-openbao:
+    name: Phase 95 disposable OpenBao rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BAO_ADDR: http://127.0.0.1:8200
+      # DISPOSABLE dev-mode root token — in-memory, loopback only, never a real secret.
+      BAO_TOKEN: phase95-ci-only-dev-root-token
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Start disposable OpenBao (dev mode — in-memory, loopback)
+        run: |
+          docker run -d --name openbao-ci \
+            --cap-add=IPC_LOCK \
+            -e BAO_DEV_ROOT_TOKEN_ID="$BAO_TOKEN" \
+            -e BAO_DEV_LISTEN_ADDRESS=0.0.0.0:8200 \
+            -p 127.0.0.1:8200:8200 \
+            openbao/openbao:2.5.4 server -dev
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+        run: npx --no-install prisma generate
+
+      - name: Disposable OpenBao credential-plane rehearsal
+        run: node scripts/ci/phase95-openbao-rehearsal.mjs
+
+      - name: Tear down disposable OpenBao (always)
+        if: always()
+        run: docker rm -f openbao-ci || true
