@@ -52,6 +52,10 @@ export interface GatewayProfileDto {
    * Operators need to know a gateway is provisioned; nobody needs the pointer.
    */
   signingConfigured: boolean;
+  /** PHASE 94 — an enrolled credential exists but has been revoked. */
+  credentialRevoked: boolean;
+  /** PHASE 94 — monotonic credential version; null when not enrolled. */
+  signingKeyVersion: number | null;
   /**
    * PHASE 94B4.1 — the machine ingestion handle, present ONLY in the response
    * to creating a profile. It is an identifier, not a credential (the HMAC is
@@ -88,6 +92,10 @@ export function toGatewayProfileDto(row: Row): GatewayProfileDto {
     signingConfigured:
       row.signingConfigured === true ||
       (typeof row.signingKeyRef === "string" && row.signingKeyRef.length > 0),
+    // PHASE 94 — derived from the record's boolean, or the raw revoked timestamp
+    // when a database row is mapped directly. The reference is never emitted.
+    credentialRevoked: row.credentialRevoked === true || row.signingKeyRevokedAt instanceof Date,
+    signingKeyVersion: typeof row.signingKeyVersion === "number" ? row.signingKeyVersion : null,
     // Included only when the caller passed a record that carries it — which is
     // exclusively the record returned by `createProfile`. List and detail
     // mappings never populate the field, so this cannot leak by default.

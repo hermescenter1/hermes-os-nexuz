@@ -60,6 +60,9 @@ import type {
   TransitionOutcome,
   UpdateGatewayProfileInput,
   UpdateOtDeviceProfileInput,
+  GatewayEnrollmentRecord,
+  AttachSigningReferenceInput,
+  SwapSigningReferenceInput,
 } from "./ports";
 
 /* ── Minimal structural view of the Prisma client ───────────────────────── */
@@ -139,6 +142,8 @@ function gatewayRecord(row: Row): GatewayProfileRecord {
     simulatorMode: b(row.simulatorMode),
     disabled: b(row.disabled),
     signingConfigured: typeof row.signingKeyRef === "string" && row.signingKeyRef.length > 0,
+    credentialRevoked: row.signingKeyRevokedAt instanceof Date,
+    signingKeyVersion: typeof row.signingKeyVersion === "number" ? row.signingKeyVersion : null,
     lastEnvelopeAt: nd(row.lastEnvelopeAt),
     createdAt: d(row.createdAt),
     updatedAt: d(row.updatedAt),
@@ -370,6 +375,136 @@ export function createGatewayRepository(db: OtPrismaClient): GatewayProfileRepos
         simulatorMode: b(r.simulatorMode),
         capabilities: arr(r.capabilities),
       } satisfies GatewaySigningConfiguration);
+    },
+
+    /* ── PHASE 94 enrollment lifecycle ─────────────────────────────────────
+     * Visibility (org + site, the latter living on the related gateway) is
+     * checked with a scoped `findFirst`; the mutation then uses scalar-only
+     * `updateMany` predicates plus a compare-and-set on the current reference.
+     * A foreign id is invisible to the findFirst and returns NOT_FOUND — never
+     * distinguishable from a missing one. `applied` reflects whether the CAS
+     * precondition held, so the service can tell a real change from a no-op
+     * without the database disclosing why. */
+
+    async findEnrollment(ctx, id) {
+      const res = await guarded(() =>
+        db.edgeGatewayProfile.findFirst({
+          where: { id, ...scope(ctx) },
+          select: {
+            id: true,
+            gatewayId: true,
+            organizationId: true,
+            signingKeyRef: true,
+            signingKeyVersion: true,
+            lifecycle: true,
+            signingKeyEnrolledAt: true,
+            signingKeyRevokedAt: true,
+            gateway: { select: { siteId: true } },
+          },
+        }),
+      );
+      if (!res.ok) return res;
+      if (!res.value) return fail("NOT_FOUND");
+      const r = res.value as Row;
+      const gw = (r.gateway ?? {}) as Row;
+      return succeed({
+        id: s(r.id),
+        gatewayId: s(r.gatewayId),
+        organizationId: s(r.organizationId),
+        siteId: ns(gw.siteId),
+        signingKeyRef: ns(r.signingKeyRef),
+        signingKeyVersion: typeof r.signingKeyVersion === "number" ? r.signingKeyVersion : null,
+        lifecycle: s(r.lifecycle),
+        signingKeyEnrolledAt: nd(r.signingKeyEnrolledAt),
+        signingKeyRevokedAt: nd(r.signingKeyRevokedAt),
+      } satisfies GatewayEnrollmentRecord);
+    },
+
+    async attachSigningReference(ctx, id, input: AttachSigningReferenceInput) {
+      const visible = await guarded(() =>
+        db.edgeGatewayProfile.findFirst({ where: { id, ...scope(ctx) }, select: { id: true } }),
+      );
+      if (!visible.ok) return visible;
+      if (!visible.value) return fail("NOT_FOUND");
+      // First enrollment only: applies solely when no reference is set yet.
+      const res = await guarded(() =>
+        db.edgeGatewayProfile.updateMany({
+          where: { id, ...orgScope(ctx), signingKeyRef: null },
+          data: {
+            signingKeyRef: input.reference,
+            signingKeyVersion: input.version,
+            signingKeyEnrolledAt: input.enrolledAt,
+            signingKeyRotatedAt: null,
+            signingKeyRevokedAt: null,
+          },
+        }),
+      );
+      if (!res.ok) return res;
+      return succeed({ applied: res.value.count === 1 });
+    },
+
+    async swapSigningReference(ctx, id, input: SwapSigningReferenceInput) {
+      const visible = await guarded(() =>
+        db.edgeGatewayProfile.findFirst({ where: { id, ...scope(ctx) }, select: { id: true } }),
+      );
+      if (!visible.ok) return visible;
+      if (!visible.value) return fail("NOT_FOUND");
+      // Rotate: swap only when the current reference matches AND the credential
+      // is not revoked, so a revoked gateway can never be silently re-armed and
+      // exactly one of two concurrent rotations wins.
+      const res = await guarded(() =>
+        db.edgeGatewayProfile.updateMany({
+          where: { id, ...orgScope(ctx), signingKeyRef: input.expectedReference, signingKeyRevokedAt: null },
+          data: {
+            signingKeyRef: input.reference,
+            signingKeyVersion: input.version,
+            signingKeyRotatedAt: input.rotatedAt,
+          },
+        }),
+      );
+      if (!res.ok) return res;
+      return succeed({ applied: res.value.count === 1 });
+    },
+
+    async revokeSigningReference(ctx, id, input) {
+      const visible = await guarded(() =>
+        db.edgeGatewayProfile.findFirst({ where: { id, ...scope(ctx) }, select: { id: true } }),
+      );
+      if (!visible.ok) return visible;
+      if (!visible.value) return fail("NOT_FOUND");
+      // Fail closed: REVOKED lifecycle refuses every envelope regardless of the
+      // secret store. The reference is KEPT so a later resolution still fails
+      // closed (SECRET_REVOKED) rather than becoming "unknown".
+      const res = await guarded(() =>
+        db.edgeGatewayProfile.updateMany({
+          where: { id, ...orgScope(ctx), signingKeyRef: input.expectedReference, signingKeyRevokedAt: null },
+          data: { lifecycle: "REVOKED", signingKeyRevokedAt: input.revokedAt },
+        }),
+      );
+      if (!res.ok) return res;
+      return succeed({ applied: res.value.count === 1 });
+    },
+
+    async clearSigningReference(ctx, id, input) {
+      const visible = await guarded(() =>
+        db.edgeGatewayProfile.findFirst({ where: { id, ...scope(ctx) }, select: { id: true } }),
+      );
+      if (!visible.ok) return visible;
+      if (!visible.value) return fail("NOT_FOUND");
+      const res = await guarded(() =>
+        db.edgeGatewayProfile.updateMany({
+          where: { id, ...orgScope(ctx), signingKeyRef: input.expectedReference },
+          data: {
+            signingKeyRef: null,
+            signingKeyVersion: null,
+            signingKeyEnrolledAt: null,
+            signingKeyRotatedAt: null,
+            signingKeyRevokedAt: null,
+          },
+        }),
+      );
+      if (!res.ok) return res;
+      return succeed({ applied: res.value.count === 1 });
     },
   };
 }

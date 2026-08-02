@@ -25,6 +25,12 @@ export type ServiceErrorCode =
   | "REPLAY_DETECTED"
   | "CAPABILITY_NOT_ALLOWED"
   | "TRANSIENT_FAILURE"
+  // PHASE 94 — the writable secret backend required to issue/rotate a machine
+  // credential is not available (disabled by configuration, or unreachable).
+  // Distinct from TRANSIENT_FAILURE so a client can tell "retry later" from
+  // "this deployment cannot provision credentials until an operator enables the
+  // secret backend". It carries no detail about which backend or why.
+  | "SECRET_BACKEND_UNAVAILABLE"
   | "INTERNAL_FAILURE";
 
 export interface ServiceError {
@@ -67,6 +73,14 @@ export function fromRepo(err: RepositoryError): ServiceError {
 export const OT_AUDIT = {
   GATEWAY_ENVELOPE_ACCEPTED: "OT_GATEWAY_ENVELOPE_ACCEPTED",
   GATEWAY_ENVELOPE_REJECTED: "OT_GATEWAY_ENVELOPE_REJECTED",
+  // PHASE 94 — machine-credential enrollment lifecycle. Every event carries
+  // only allow-listed scalar metadata (see AUDIT_ALLOWED_KEYS); no reference,
+  // version secret, credential or provider internal ever reaches an audit row.
+  GATEWAY_ENROLLMENT_CREATED: "OT_GATEWAY_ENROLLMENT_CREATED",
+  GATEWAY_CREDENTIAL_ROTATED: "OT_GATEWAY_CREDENTIAL_ROTATED",
+  GATEWAY_CREDENTIAL_REVOKED: "OT_GATEWAY_CREDENTIAL_REVOKED",
+  GATEWAY_ENROLLMENT_DELETED: "OT_GATEWAY_ENROLLMENT_DELETED",
+  GATEWAY_ENROLLMENT_FAILED: "OT_GATEWAY_ENROLLMENT_FAILED",
   IMPORT_STARTED: "ENGINEERING_IMPORT_STARTED",
   IMPORT_COMPLETED: "ENGINEERING_IMPORT_COMPLETED",
   IMPORT_FAILED: "ENGINEERING_IMPORT_FAILED",
@@ -100,6 +114,12 @@ export const AUDIT_ALLOWED_KEYS = Object.freeze([
   "status",
   "state",
   "previousState",
+  // PHASE 94 — enrollment lifecycle outcome ("created"/"rotated"/"revoked"/
+  // "deleted"/"failed"/"compensated") and the monotonic credential version.
+  // Both are non-secret scalars; neither is a reference or credential.
+  "outcome",
+  "version",
+  "operation",
   "failureCategory",
   "rejection",
   "payloadType",

@@ -6169,6 +6169,18 @@ model EdgeGatewayProfile {
   disabled       Boolean                @default(false)
   /// Opaque REFERENCE to a signing secret held elsewhere — never the secret.
   signingKeyRef  String?                @db.VarChar(191)
+  // PHASE 94 — machine-credential enrollment lifecycle metadata.
+  //
+  // NONE of these hold secret material. `signingKeyVersion` is a monotonic
+  // per-gateway counter for operator/audit visibility (each rotation increments
+  // it); it is NOT the secret manager's internal CAS version. The timestamps
+  // record when a credential was first issued, last rotated and revoked. All are
+  // nullable so the migration is purely additive: a legacy row simply reports
+  // "not enrolled" until an operator enrolls it.
+  signingKeyVersion   Int?
+  signingKeyEnrolledAt DateTime?
+  signingKeyRotatedAt  DateTime?
+  signingKeyRevokedAt  DateTime?
   // PHASE 94B4.1 — the machine-facing ingestion identifier.
   //
   // A gateway authenticating itself does not yet know its organization, so the

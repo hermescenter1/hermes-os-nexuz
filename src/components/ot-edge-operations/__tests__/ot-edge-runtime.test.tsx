@@ -80,6 +80,8 @@ const gatewayRow = (over: Partial<GatewayRow> = {}): GatewayRow => ({
   simulatorMode: false,
   disabled: false,
   signingConfigured: true,
+  credentialRevoked: false,
+  signingKeyVersion: null,
   lastSeenAt: "2026-05-06T07:08:09.000Z",
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-02-02T00:00:00.000Z",
