@@ -17,6 +17,12 @@ const root = process.cwd();
 const backup = readFileSync(join(root, "scripts", "backup-postgres.sh"), "utf8");
 const restore = readFileSync(join(root, "scripts", "restore-postgres.sh"), "utf8");
 const verify = readFileSync(join(root, "scripts", "verify-backup.sh"), "utf8");
+// Executable lines only — comment lines (which intentionally describe the
+// forbidden anti-patterns) must not trip the pipe-free code assertions below.
+const verifyCode = verify
+  .split("\n")
+  .filter((l) => !l.trimStart().startsWith("#"))
+  .join("\n");
 
 describe("BACKUP_PERMISSIONS = ENFORCED (backup-postgres.sh)", () => {
   it("sets a restrictive umask so created artifacts are owner-only", () => {
@@ -76,5 +82,27 @@ describe("PHASE 93.1 — backup verification is actually invoked & correct", () 
     expect(verify).toContain(".last-verification.json");
     expect(verify).toMatch(/write_result "verified"/);
     expect(verify).toMatch(/write_result "failed"/);
+  });
+});
+
+describe("PHASE 93.2 — table checks are pipe-free (no pipefail SIGPIPE false-negative)", () => {
+  it("uses a here-string for the table check, not a producer|grep pipeline", () => {
+    // With `set -o pipefail`, `echo "${TOC}" | grep -q` lets the producer take a
+    // SIGPIPE (141) once grep matches early on a large TOC, turning the pipeline
+    // non-zero and falsely reporting the table missing. A here-string has no
+    // producer process.
+    expect(verify).toMatch(/grep -q "TABLE DATA\.\*\$\{TABLE\}" <<< "\$\{TOC_OUTPUT\}"/);
+  });
+
+  it("has NO echo/printf/cat | grep -q pipeline in the verifier CODE", () => {
+    expect(verifyCode).not.toMatch(/\b(echo|printf|cat)\b[^\n]*\|\s*grep\s+-q/);
+  });
+
+  it("does not mask the table check with a `|| true` weakening (code)", () => {
+    expect(verifyCode).not.toMatch(/grep\s+-q[^\n]*\|\|\s*true/);
+  });
+
+  it("keeps set -euo pipefail (fix does not relax shell strictness)", () => {
+    expect(verify).toMatch(/^\s*set -euo pipefail\s*$/m);
   });
 });
