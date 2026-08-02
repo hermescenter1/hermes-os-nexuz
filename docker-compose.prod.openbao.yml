@@ -1,0 +1,63 @@
+# Hermes OS — Production OpenBao overlay (PHASE 95, DISABLED BY DEFAULT).
+#
+# This is an OPT-IN overlay for the OT machine-credential secret backend. The
+# base production stack (docker-compose.prod.yml) is left BYTE-IDENTICAL and
+# ships with the backend OFF: nothing here activates unless an operator both
+#
+#   1. adds `-f docker-compose.prod.openbao.yml` to the compose invocation, and
+#   2. exports the three host credential-file paths below (unset → compose fails
+#      fast via the `:?` guards; there is no silent default that could activate
+#      the backend by accident).
+#
+# It wires ONLY read-only credential delivery + the fixed in-container paths the
+# application already reads (see .env.example "OT Edge" block and
+# src/lib/ot-edge/secret-backend.ts). It contains NO secret values, copies
+# nothing into the image, and sets no build arguments.
+#
+# Usage (production — explicit operator gate; see docs/ot/phase95-activation-runbook.md):
+#   export OPENBAO_ROLE_ID_HOST_FILE=/secure/outside/repo/hermes-openbao/role_id
+#   export OPENBAO_SECRET_ID_HOST_FILE=/secure/outside/repo/hermes-openbao/secret_id
+#   export OPENBAO_CA_HOST_FILE=/secure/outside/repo/hermes-openbao/openbao-ca.pem
+#   docker compose -p hermes \
+#     -f docker-compose.prod.yml -f docker-compose.prod.openbao.yml \
+#     --env-file .env.production up -d
+#
+# The remaining OpenBao settings (OT_SECRET_BACKEND, OPENBAO_ENDPOINT,
+# OPENBAO_KV_MOUNT, OPENBAO_KV_PREFIX, OPENBAO_APPROLE_MOUNT,
+# OPENBAO_EXPIRY_SKEW_SECONDS, OPENBAO_REQUEST_TIMEOUT_MS,
+# OPENBAO_MAX_RESPONSE_BYTES) come from .env.production — documented, name-only,
+# in .env.example. An enabled-but-incomplete configuration FAILS STARTUP; it
+# never falls back to an env HMAC key, PostgreSQL or an in-memory provider.
+#
+# Compose project MUST remain `hermes` (Gate 0D-A); this overlay inherits it.
+
+name: hermes
+
+services:
+  hermes-web:
+    # Fixed in-container credential paths. The application reads role_id/secret_id
+    # from files at LOGIN time (never from an env value), and trusts the private
+    # OpenBao CA via Node's standard NODE_EXTRA_CA_CERTS — which makes native
+    # fetch verify BOTH the TLS hostname and this CA chain. The values here point
+    # only at the read-only secret mounts below.
+    environment:
+      OPENBAO_APPROLE_ROLE_ID_FILE: /run/secrets/openbao_role_id
+      OPENBAO_APPROLE_SECRET_ID_FILE: /run/secrets/openbao_secret_id
+      NODE_EXTRA_CA_CERTS: /run/secrets/openbao_ca
+    secrets:
+      # Compose file-secrets are bind-mounted READ-ONLY at /run/secrets/<name>.
+      # The host source files must be created out-of-repo, owned by the deploy
+      # user, mode 0400 (see the activation runbook). No value is stored here.
+      - openbao_role_id
+      - openbao_secret_id
+      - openbao_ca
+
+# Host paths are REQUIRED (`:?` fails compose when unset) — the explicit operator
+# gate. They live outside the repository and are never committed.
+secrets:
+  openbao_role_id:
+    file: ${OPENBAO_ROLE_ID_HOST_FILE:?set OPENBAO_ROLE_ID_HOST_FILE to the secure host path for the AppRole role_id}
+  openbao_secret_id:
+    file: ${OPENBAO_SECRET_ID_HOST_FILE:?set OPENBAO_SECRET_ID_HOST_FILE to the secure host path for the AppRole secret_id}
+  openbao_ca:
+    file: ${OPENBAO_CA_HOST_FILE:?set OPENBAO_CA_HOST_FILE to the secure host path for the OpenBao private CA certificate}
