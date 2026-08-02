@@ -46,9 +46,16 @@ EOF
 
 echo "[${TIMESTAMP}] Verifying ${FILENAME}..."
 
-# Stage 1: pg_restore --list — parse the entire TOC (validates all bytes)
+# Stage 1: pg_restore --list — parse the entire TOC (validates all bytes).
+#
+# PHASE 93.1 — listing a dump's TOC does NOT open a database connection, so no
+# `-U <db-user>` is needed. The dump is streamed on STDIN via `docker exec -i`
+# and pg_restore reads stdin when given NO file argument. The previous command
+# passed a trailing `-` which pg_restore treats as an input FILENAME named "-"
+# (→ `could not open input file "-"`), so verification always failed. Read from
+# stdin only — no `-U`, no trailing `-`.
 TOC_OUTPUT=$(docker exec -i "${CONTAINER}" \
-  pg_restore --list -U "${DB_USER}" - < "${BACKUP_FILE}" 2>&1) || {
+  pg_restore --list < "${BACKUP_FILE}" 2>&1) || {
   echo "[$(date -Iseconds)] FAILED: pg_restore --list failed — dump is corrupt or invalid" >&2
   write_result "failed" "pg_restore --list failed"
   exit 1

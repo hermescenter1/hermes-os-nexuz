@@ -52,11 +52,16 @@ chmod 600 "${BACKUP_FILE}"
 SIZE=$(du -sh "${BACKUP_FILE}" | cut -f1)
 echo "[$(date -Iseconds)] Backup complete: ${BACKUP_FILE} (${SIZE})"
 
-# Run verification immediately after backup
+# Run verification immediately after backup.
+#
+# PHASE 93.1 — detect the verifier by EXISTENCE (`-f`), not the executable bit
+# (`-x`). The repo ships verify-backup.sh as a normal 0644 file, so an `-x` test
+# silently skipped verification on a fresh checkout. Invoke it explicitly through
+# `bash` so it never depends on the executable mode.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -x "${SCRIPT_DIR}/verify-backup.sh" ]]; then
+if [[ -f "${SCRIPT_DIR}/verify-backup.sh" ]]; then
   echo "[$(date -Iseconds)] Running backup verification..."
-  "${SCRIPT_DIR}/verify-backup.sh" "${BACKUP_FILE}" "${CONTAINER}" "${DB_USER}"
+  bash "${SCRIPT_DIR}/verify-backup.sh" "${BACKUP_FILE}" "${CONTAINER}" "${DB_USER}"
 else
   echo "[$(date -Iseconds)] WARNING: verify-backup.sh not found — skipping verification"
 fi
