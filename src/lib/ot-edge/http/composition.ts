@@ -24,6 +24,8 @@ import { createImportService, type EngineeringImportService } from "../services/
 import { createAnalysisService, type EngineeringAnalysisService } from "../services/analysis-service";
 import { createFindingService, type EngineeringFindingService } from "../services/finding-service";
 import { createGatewayEnvelopeService, type GatewayEnvelopeService } from "../services/gateway-service";
+import { createEnrollmentService, type EnrollmentService } from "../services/enrollment-service";
+import { getSecretBackend, composeSecretProvider } from "../secret-backend";
 import type { OtRepositories } from "../persistence/ports";
 import type { GatewayAuthLookup } from "../machine-context";
 import type { SecretProvider } from "../envelope-signature";
@@ -34,6 +36,8 @@ export interface OtServices {
   analysis: EngineeringAnalysisService;
   findings: EngineeringFindingService;
   gateway: GatewayEnvelopeService;
+  /** PHASE 94 — machine-credential enrollment lifecycle. */
+  enrollment: EnrollmentService;
   /**
    * PHASE 94B4.1 — everything the envelope route needs to authenticate a
    * machine. Grouped so a route cannot construct half of it: a route that
@@ -77,6 +81,14 @@ export async function resolveOtServices(): Promise<OtServices | null> {
   const audit = createAuditPort(recordAuditEvent);
   const metrics = loggerMetricSink;
 
+  // PHASE 94 — resolve the writable secret backend. Disabled by default: the
+  // manager is null, no network call is made, and `machineAuth.secrets` stays
+  // the read-only env provider (current behaviour, unchanged). When enabled, the
+  // envelope verifier resolves openbao-backed references through the manager and
+  // enrollment can issue/rotate credentials; when disabled, enrollment fails
+  // closed with SECRET_BACKEND_UNAVAILABLE.
+  const secretManager = getSecretBackend().manager;
+
   return {
     repos,
     imports: createImportService({
@@ -94,10 +106,13 @@ export async function resolveOtServices(): Promise<OtServices | null> {
     }),
     findings: createFindingService({ findings: repos.findings, audit, metrics }),
     gateway: createGatewayEnvelopeService({ nonces: repos.nonces, audit, metrics }),
+    enrollment: createEnrollmentService({ gateways: repos.gateways, secretManager, audit, metrics }),
     machineAuth: {
       lookup: createGatewayAuthLookup(db as OtPrismaClient),
       // Only the server-approved reference map. A route never sees a secret.
-      secrets: envSecretProvider,
+      // With the writable backend disabled this is exactly `envSecretProvider`;
+      // with it enabled, openbao-backed references also resolve, through it.
+      secrets: composeSecretProvider(envSecretProvider, secretManager),
       // Simulator envelopes stay off unless explicitly enabled for the env.
       simulatorAllowed: process.env.OT_SIMULATOR_ENABLED === "1",
     },

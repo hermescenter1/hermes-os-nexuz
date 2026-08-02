@@ -89,6 +89,10 @@ export interface GatewayProfileRecord {
   disabled: boolean;
   /** Presence only. The reference itself never crosses this boundary. */
   signingConfigured: boolean;
+  /** PHASE 94 — the credential is enrolled but has been revoked. */
+  credentialRevoked: boolean;
+  /** PHASE 94 — monotonic per-gateway credential version; null when not enrolled. */
+  signingKeyVersion: number | null;
   lastEnvelopeAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -120,6 +124,45 @@ export interface CreateGatewayProfileInput {
   signingKeyRef?: string | null;
 }
 
+/**
+ * PHASE 94 — the internal enrollment view of a gateway profile.
+ *
+ * Carries `signingKeyRef` (like `GatewaySigningConfiguration`) because the
+ * enrollment service must know the CURRENT reference to compare-and-swap on
+ * rotate and to revoke/clear. It is INTERNAL ONLY — it must never reach a DTO, a
+ * route response or a log. `siteId` is resolved via the related gateway purely
+ * so an audit event can be site-scoped.
+ */
+export interface GatewayEnrollmentRecord {
+  /** EdgeGatewayProfile.id — the enrollment target. */
+  id: string;
+  /** Parent IndustrialGateway.id — safe to surface to the enrolling operator. */
+  gatewayId: string;
+  organizationId: string;
+  siteId: string | null;
+  /** INTERNAL. The current opaque reference, or null when not enrolled. */
+  signingKeyRef: string | null;
+  /** Monotonic per-gateway counter; null when not enrolled. */
+  signingKeyVersion: number | null;
+  lifecycle: string;
+  signingKeyEnrolledAt: Date | null;
+  signingKeyRevokedAt: Date | null;
+}
+
+export interface AttachSigningReferenceInput {
+  reference: string;
+  version: number;
+  enrolledAt: Date;
+}
+
+export interface SwapSigningReferenceInput {
+  /** The reference the caller believes is current; the swap is gated on it. */
+  expectedReference: string;
+  reference: string;
+  version: number;
+  rotatedAt: Date;
+}
+
 export type UpdateGatewayProfileInput = Omit<CreateGatewayProfileInput, "gatewayId">;
 
 export interface GatewayProfileRepository {
@@ -133,6 +176,24 @@ export interface GatewayProfileRepository {
   updateLifecycle(ctx: OtServiceContext, id: string, lifecycle: string): Promise<RepoResult<GatewayProfileRecord>>;
   /** Internal verifier path only — never a DTO source. */
   findSigningConfiguration(ctx: OtServiceContext, gatewayId: string): Promise<RepoResult<GatewaySigningConfiguration>>;
+
+  /* ── PHASE 94 enrollment lifecycle ──────────────────────────────────────
+   * Each takes a trusted `OtServiceContext` and enforces tenant + site scope
+   * in the SAME query as the write, so a foreign id can never be enrolled,
+   * rotated, revoked or cleared. The mutations are conditional (compare-and-set
+   * on the current reference), so `{ applied: false }` means "the precondition
+   * did not hold" (concurrent change / wrong state) without disclosing which. */
+
+  /** Internal enrollment view — carries `signingKeyRef`; never a DTO source. */
+  findEnrollment(ctx: OtServiceContext, id: string): Promise<RepoResult<GatewayEnrollmentRecord>>;
+  /** First enrollment: applies only when no reference is currently set. */
+  attachSigningReference(ctx: OtServiceContext, id: string, input: AttachSigningReferenceInput): Promise<RepoResult<{ applied: boolean }>>;
+  /** Rotation: swaps only when the current reference equals `expectedReference` and the credential is not revoked. */
+  swapSigningReference(ctx: OtServiceContext, id: string, input: SwapSigningReferenceInput): Promise<RepoResult<{ applied: boolean }>>;
+  /** Revocation: marks REVOKED and stamps `signingKeyRevokedAt`; keeps the reference so resolution fails closed. */
+  revokeSigningReference(ctx: OtServiceContext, id: string, input: { expectedReference: string; revokedAt: Date }): Promise<RepoResult<{ applied: boolean }>>;
+  /** Deletion: clears the reference and all enrollment metadata. Idempotent at the service layer. */
+  clearSigningReference(ctx: OtServiceContext, id: string, input: { expectedReference: string }): Promise<RepoResult<{ applied: boolean }>>;
 }
 
 /* ── OT device ──────────────────────────────────────────────────────────── */

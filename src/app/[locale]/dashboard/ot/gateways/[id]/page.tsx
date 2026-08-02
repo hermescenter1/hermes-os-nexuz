@@ -9,6 +9,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GatewayDetailClient } from "@/components/ot-edge-operations";
 import { OtDetailActions } from "@/components/ot-edge-onboarding";
+import { GatewayEnrollmentPanel } from "@/components/ot-edge-enrollment";
 import { noIndexMetadata } from "@/lib/seo/metadata";
 
 export const metadata = noIndexMetadata("OT Edge — Gateway");
@@ -41,6 +42,7 @@ export default async function OtGatewayDetailPage({
       />
       <div className="mt-6">
         <GatewayDetailClient id={id} locale={locale} />
+        <GatewayEnrollmentPanel id={id} />
       </div>
     </>
   );

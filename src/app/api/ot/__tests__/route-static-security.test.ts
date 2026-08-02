@@ -59,6 +59,10 @@ describe("94B4 — the route tree is complete", () => {
         "/engineering/projects/route.ts",
         "/ot/devices/[id]/route.ts",
         "/ot/devices/route.ts",
+        // PHASE 94 — machine-credential enrollment lifecycle.
+        "/ot/gateways/[id]/enrollment/revoke/route.ts",
+        "/ot/gateways/[id]/enrollment/rotate/route.ts",
+        "/ot/gateways/[id]/enrollment/route.ts",
         "/ot/gateways/[id]/envelopes/route.ts",
         "/ot/gateways/[id]/route.ts",
         "/ot/gateways/route.ts",
@@ -66,19 +70,26 @@ describe("94B4 — the route tree is complete", () => {
     );
   });
 
-  it("exports exactly nineteen HTTP handlers", () => {
+  it("exports exactly twenty-three HTTP handlers", () => {
+    // PHASE 94 added four: enrollment POST + DELETE, rotate POST, revoke POST.
     let handlers = 0;
     for (const p of ROUTES) {
       handlers += (strip(readFileSync(p, "utf8")).match(/export async function (GET|POST|PATCH|PUT|DELETE)\b/g) ?? []).length;
     }
-    expect(handlers).toBe(19);
+    expect(handlers).toBe(23);
   });
 
-  it("exposes no DELETE or PUT — Phase 94 is read and advisory only", () => {
+  it("exposes no PUT, and DELETE only on the enrollment route", () => {
+    // PHASE 94 — credential enrollment adds ONE destructive handler: deleting an
+    // enrollment. It is the only DELETE in the tree; everything else stays read
+    // or advisory. PUT is still exposed nowhere.
+    const DELETE_ALLOWED = "/ot/gateways/[id]/enrollment/route.ts";
     for (const p of ROUTES) {
       const code = strip(readFileSync(p, "utf8"));
-      expect(code, `${rel(p)} must not expose DELETE`).not.toMatch(/export async function DELETE/);
       expect(code, `${rel(p)} must not expose PUT`).not.toMatch(/export async function PUT/);
+      if (rel(p) !== DELETE_ALLOWED) {
+        expect(code, `${rel(p)} must not expose DELETE`).not.toMatch(/export async function DELETE/);
+      }
     }
   });
 });
@@ -86,7 +97,9 @@ describe("94B4 — the route tree is complete", () => {
 describe("94B4 — every route is gated and thin", () => {
   it.each(HUMAN_ROUTES)("%s routes every handler through withOtRoute", (r) => {
     const code = strip(readFileSync(join(API, r.slice(1)), "utf8"));
-    const handlers = (code.match(/export async function (GET|POST|PATCH)\b/g) ?? []).length;
+    // PHASE 94 — DELETE is a human handler too (enrollment deletion), so it is
+    // counted here: one `withOtRoute` gate per handler still holds.
+    const handlers = (code.match(/export async function (GET|POST|PATCH|DELETE)\b/g) ?? []).length;
     const gated = (code.match(/withOtRoute\(/g) ?? []).length;
     // One gate per handler: authentication, membership, permission, rate limit
     // and trusted-context construction all live inside it.

@@ -50,7 +50,14 @@ function filesUnder(dir: string, extensions: string[]): string[] {
 }
 
 const COMPONENTS = filesUnder("src/components/ot-edge-operations", [".ts", ".tsx"]);
-const LIB = filesUnder("src/lib/ot-operations", [".ts"]);
+// PHASE 94 — `enrollment.ts` is the machine-credential client, a DISTINCT
+// surface from the read-only operations client. It legitimately names
+// "credential"/"secret" and speaks POST/DELETE, so it is excluded here and held
+// instead to its own, stricter rules in
+// `src/components/ot-edge-enrollment/__tests__/enrollment-static.test.ts`.
+const LIB = filesUnder("src/lib/ot-operations", [".ts"]).filter(
+  (f) => !f.endsWith("/enrollment.ts"),
+);
 const PAGES = filesUnder("src/app/[locale]/dashboard/ot", [".tsx"]);
 const ALL = [...COMPONENTS, ...LIB, ...PAGES];
 
