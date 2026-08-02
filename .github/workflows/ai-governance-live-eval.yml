@@ -1,0 +1,68 @@
+# PHASE 95 — MANUAL, approval-gated LIVE AI-governance evaluation.
+#
+# This workflow is DISPATCH-ONLY and is NOT part of PR CI. It exists so the
+# HALLUCINATION_REGRESSION_WITHIN_BUDGET gate can later be evaluated against the
+# PINNED live model using SYNTHETIC data only, in a dedicated environment. It is
+# NOT run as part of this phase. Offline PR CI never calls a provider.
+#
+# Guarantees encoded here:
+#   - workflow_dispatch only (no push / PR / schedule trigger).
+#   - environment: ai-evaluation (protected; the provider key lives only there).
+#   - read-only repository permissions; persist-credentials: false.
+#   - pinned actions; concurrency protection; synthetic dataset only.
+#   - the job emits metrics only and never prints a secret or raw model output.
+
+name: AI Governance Live Eval (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type RUN-LIVE-EVAL to confirm a live, synthetic-data-only evaluation"
+        required: true
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-governance-live-eval
+  cancel-in-progress: false
+
+jobs:
+  live-eval:
+    name: Live pinned-model evaluation (synthetic data only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Protected environment: the provider API key is supplied ONLY here.
+    environment: ai-evaluation
+    if: ${{ github.event.inputs.confirm == 'RUN-LIVE-EVAL' }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+        run: npx --no-install prisma generate
+
+      - name: Live pinned-model evaluation (synthetic hallucination dataset)
+        env:
+          PHASE95_LIVE_EVAL: "1"
+          # Provided by the ai-evaluation GitHub Environment ONLY. Never echoed.
+          ANTHROPIC_API_KEY: ${{ secrets.AI_EVALUATION_ANTHROPIC_API_KEY }}
+        run: node scripts/ci/phase95-ai-governance-live-eval.mjs
+        # Metrics (counts only, no secrets, no raw model output) are printed to
+        # the job log. Artifact upload is intentionally omitted (no unverified
+        # third-party action pin is introduced by this phase).
