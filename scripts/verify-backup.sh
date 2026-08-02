@@ -61,9 +61,17 @@ TOC_OUTPUT=$(docker exec -i "${CONTAINER}" \
   exit 1
 }
 
-# Stage 2: Check essential tables are present in the TOC
+# Stage 2: Check essential tables are present in the TOC.
+#
+# PHASE 93.2 — MUST use a here-string, NOT `echo "${TOC_OUTPUT}" | grep -q …`.
+# Under `set -o pipefail`, `grep -q` closes the pipe on its first match, so on a
+# large TOC the `echo` producer receives SIGPIPE (exit 141); pipefail then makes
+# the whole pipeline non-zero and the check falsely reports the table missing
+# (confirmed: PRODUCER_EXIT=141, GREP_EXIT=0). A here-string has no producer
+# process, so there is no SIGPIPE and pipefail cannot corrupt the result. Do NOT
+# reintroduce a producer→`grep -q` pipeline and do NOT mask it with `|| true`.
 for TABLE in "${ESSENTIAL_TABLES[@]}"; do
-  if ! echo "${TOC_OUTPUT}" | grep -q "TABLE DATA.*${TABLE}"; then
+  if ! grep -q "TABLE DATA.*${TABLE}" <<< "${TOC_OUTPUT}"; then
     echo "[$(date -Iseconds)] FAILED: essential table '${TABLE}' not found in dump TOC" >&2
     write_result "failed" "missing table: ${TABLE}"
     exit 1
