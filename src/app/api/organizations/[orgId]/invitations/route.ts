@@ -9,6 +9,7 @@ import { requirePermission, assignableRoles } from "@/lib/org/rbac";
 import { listInvitations, inviteMember } from "@/lib/org/invitations";
 import type { OrgRole }                from "@/lib/org/types";
 import { logAuthzDenial }              from "@/lib/logger/security-events";
+import { enforceEntitlement }          from "@/lib/billing-governance/runtime/require-entitlement";
 
 const VALID_ORG_ROLES = new Set<OrgRole>([
   "OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN", "MEMBER",
@@ -78,6 +79,11 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     invitedRole = requested;
   }
+
+  // Phase 96: seat entitlement (active member + pending invitation = 1 seat).
+  // Separate from RBAC; fails closed while the per-plan seat limit is unconfigured.
+  const gate = await enforceEntitlement({ organisationId: orgId, entitlementKey: "members", requestedUnits: 1, userId: ctx.userId });
+  if (!gate.ok) return gate.response;
 
   const out = await inviteMember({
     organizationId: orgId,

@@ -252,6 +252,9 @@ describe("de.json — Phase 86C1 translation audit", () => {
     "otEdge",
     // PHASE 92 — the observability / SRE operator surface, genuinely German.
     "observability",
+    // PHASE 96 — the public pricing page. 18 genuinely German leaves (status,
+    // feature/resource headings, trial + currency notes); zero English carryover.
+    "pricing",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));
@@ -260,10 +263,12 @@ describe("de.json — Phase 86C1 translation audit", () => {
   const preservedInBatch = batch.filter((r) => r.de === r.en);
   const carryover = stillEnglish.filter((r) => r.de === r.en);
 
-  it("batch namespaces cover 557 keys; 505 carry German, 52 preserved terms", () => {
+  it("batch namespaces cover 560 keys; 508 carry German, 52 preserved terms", () => {
     // 89C: +18 meta leaves (breadcrumbs + page metadata templates), all genuinely German.
-    expect(batch.length).toBe(557);
-    expect(translated.length).toBe(505);
+    // 96:  +3 meta.pages.pricing leaves (title/description/keywords), genuinely German,
+    //      so batch 557->560 and translated 505->508; preserved terms unchanged (52).
+    expect(batch.length).toBe(560);
+    expect(translated.length).toBe(508);
     expect(preservedInBatch.length).toBe(52);
   });
 

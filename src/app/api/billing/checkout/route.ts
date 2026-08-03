@@ -23,6 +23,7 @@ import {
   isStripeConfigured,
 }                                        from "@/lib/billing/stripe";
 import { logger }                        from "@/lib/logger";
+import { isActiveCurrency }              from "@/lib/billing-governance";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const result = await requireOrgContext(req);
@@ -61,6 +62,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // ── Paid plan: Stripe Checkout ────────────────────────────────────────────
+  // Phase 96: fail closed on an unsupported/inactive charge currency. Only the
+  // launch currency (GBP) is chargeable; other currencies are "ready" but not
+  // activated, so a charge in them must not proceed (no implicit conversion).
+  if (!isActiveCurrency(plan.currency)) {
+    return NextResponse.json(
+      { error: "This plan's pricing is not yet available.", code: "COMMERCIAL_CONFIGURATION_REQUIRED" },
+      { status: 409 },
+    );
+  }
+
   if (!isStripeConfigured()) {
     return NextResponse.json(
       { error: "Payment provider is not configured. Contact support." },

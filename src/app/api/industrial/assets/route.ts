@@ -6,6 +6,7 @@ import { requirePermission }            from "@/lib/org/rbac";
 import { listAssets, createAsset }      from "@/lib/industrial/assets";
 import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
 import { getAllowedSiteIds }              from "@/lib/site/context";
+import { enforceEntitlement }             from "@/lib/billing-governance/runtime/require-entitlement";
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
@@ -47,6 +48,11 @@ export async function POST(req: NextRequest) {
     const perm = requirePermission(member.ctx.role, "manage_industrial");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
   }
+
+  // Phase 96: commercial entitlement (separate from RBAC; fails closed while the
+  // per-plan asset limit is unconfigured).
+  const gate = await enforceEntitlement({ organisationId: ctx.orgId, entitlementKey: "assets", requestedUnits: 1, userId: ctx.userId });
+  if (!gate.ok) return gate.response;
 
   const body = await req.json().catch(() => ({}));
   const { siteId, name } = body as Record<string, string>;
