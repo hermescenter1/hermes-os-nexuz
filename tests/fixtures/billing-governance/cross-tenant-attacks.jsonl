@@ -1,0 +1,4 @@
+{"name":"subscription of another org","entitlementKey":"library","ctxOrg":"org-1","subOrg":"org-2","status":"ACTIVE","planKey":"ENTERPRISE","expectAllowed":false}
+{"name":"override from another org ignored","entitlementKey":"sites","ctxOrg":"org-1","subOrg":"org-1","status":"ACTIVE","planKey":"TEAM","usage":0,"overrideOrg":"org-2","overrideLimit":100,"expectAllowed":false}
+{"name":"paid feature via foreign enterprise sub denied","entitlementKey":"external_ai","ctxOrg":"org-victim","subOrg":"org-attacker","status":"ACTIVE","planKey":"ENTERPRISE","expectAllowed":false}
+{"name":"metered create via foreign active sub denied","entitlementKey":"assets","ctxOrg":"org-1","subOrg":"org-9","status":"ACTIVE","planKey":"TEAM","usage":0,"requestedUnits":1,"expectAllowed":false}
