@@ -7,12 +7,18 @@
 
 import type { PrismaClient } from "@prisma/client";
 import { getPrisma } from "@/lib/db/prisma";
+import { logger } from "@/lib/logger";
 import type { ExecutionTraceRecord } from "../execution-trace";
 
 export async function persistExecutionTrace(rec: ExecutionTraceRecord): Promise<boolean> {
   try {
     const client = (await getPrisma()) as unknown as PrismaClient | null;
-    if (!client) return false;
+    if (!client) {
+      // Observable, non-fatal: no DB (e.g. session mode) — the deterministic
+      // Brain response is unaffected. Never logs raw prompt/response content.
+      logger.warn("ai.trace.persist_skipped", { event: "ai_trace_persist_skipped", traceId: rec.traceId, workflow: rec.workflow });
+      return false;
+    }
     await client.aiExecutionTrace.create({
       data: {
         traceId: rec.traceId,
@@ -43,6 +49,8 @@ export async function persistExecutionTrace(rec: ExecutionTraceRecord): Promise<
     });
     return true;
   } catch {
+    // Observable, non-fatal. Only the trace id + workflow are logged.
+    logger.warn("ai.trace.persist_failed", { event: "ai_trace_persist_failed", traceId: rec.traceId, workflow: rec.workflow });
     return false; // never throw
   }
 }
