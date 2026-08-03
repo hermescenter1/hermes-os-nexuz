@@ -554,6 +554,12 @@ enum SubscriptionStatus {
   PAST_DUE
   CANCELED
   EXPIRED
+  // Phase 96 — richer deterministic lifecycle (additive; existing values kept).
+  INCOMPLETE
+  PAYMENT_FAILED
+  GRACE_PERIOD
+  SUSPENDED
+  CANCEL_AT_PERIOD_END
 }
 
 enum InvoiceStatus {
@@ -597,6 +603,9 @@ model Organization {
   subscriptions        Subscription[]
   invoices             Invoice[]
   usageRecords         UsageRecord[]
+  // Phase 96: commercial entitlements
+  entitlementOverrides OrganizationEntitlementOverride[]
+  trial                OrganizationTrial?
   invitations          OrganizationInvitation[]
   departments          Department[]
   apiKeys              ApiKey[]
@@ -752,6 +761,10 @@ model Plan {
   features      Json           @default("[]")
   limits        Json           @default("{}")
   isActive      Boolean        @default(true)
+  // Phase 96: canonical commercial plan key (COMMUNITY|PROFESSIONAL|TEAM|
+  // ENTERPRISE). Nullable + owner-backfilled; the entitlement resolver denies
+  // (UNKNOWN_PLAN, fail closed) until a plan is mapped to a canonical key.
+  planKey       String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   subscriptions Subscription[]
@@ -770,6 +783,24 @@ model Subscription {
   autoRenew            Boolean @default(true)
   // Phase 48C: Stripe subscription reference
   stripeSubscriptionId String? @unique
+  // Phase 96 — deterministic lifecycle metadata (all additive, nullable or
+  // defaulted; the domain state machine is authoritative and maps to `status`).
+  trialStartedAt             DateTime?
+  trialEndsAt                DateTime?
+  currentPeriodStart         DateTime?
+  currentPeriodEnd           DateTime?
+  cancelAtPeriodEnd          Boolean   @default(false)
+  cancelledAt                DateTime?
+  graceEndsAt                DateTime?
+  suspendedAt                DateTime?
+  expiredAt                  DateTime?
+  // provider: "stripe" | "manual" (Enterprise manual contract).
+  provider                   String    @default("stripe")
+  providerSubscriptionId     String?
+  // Out-of-order / idempotency guard for provider events.
+  lastProviderEventCreatedAt DateTime?
+  lastProviderEventId        String?
+  stateVersion               Int       @default(0)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -814,6 +845,11 @@ model Payment {
   amount            Decimal       @db.Decimal(20, 4)
   currency          Currency
   status            PaymentStatus @default(PENDING)
+  // Phase 96 — manual, Billing-Admin-only, bounded, audited refunds. Additive.
+  refundedAmount    Decimal       @db.Decimal(20, 4) @default(0)
+  refundedAt        DateTime?
+  refundReason      String?
+  refundedById      String?       // userId (loose reference — no FK)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   invoice           Invoice       @relation(fields: [invoiceId], references: [id])
@@ -872,6 +908,79 @@ model UsageRecord {
   @@index([organizationId])
   @@index([metric])
   @@index([userId])
+}
+
+// ── Phase 96: Commercialisation, Billing & Entitlements ───────────────────────
+
+// Idempotency + replay + out-of-order store for signed provider webhooks. Stores
+// only the event envelope — NEVER the raw payload, card data, or a provider
+// secret. `objectReferenceHash` is a SHA-256 of the referenced object id, not
+// the object itself. The (provider, providerEventId) unique constraint is the
+// authoritative dedup / claim mechanism.
+model BillingWebhookEvent {
+  id                  String    @id @default(cuid())
+  provider            String    // "stripe"
+  providerEventId     String
+  providerCreatedAt   DateTime
+  eventType           String
+  objectReferenceHash String?
+  // "RECEIVED" | "PROCESSING" | "PROCESSED" | "IGNORED" | "FAILED"
+  status              String    @default("RECEIVED")
+  attemptCount        Int       @default(0)
+  receivedAt          DateTime  @default(now())
+  processingStartedAt DateTime?
+  processedAt         DateTime?
+  // Non-sensitive machine code only (e.g. "HANDLER_ERROR", "OUT_OF_ORDER").
+  failureCode         String?
+
+  @@unique([provider, providerEventId])
+  @@index([eventType])
+  @@index([status])
+}
+
+// Billing-Admin authorised, TIME-BOUNDED entitlement override. `expiresAt` is
+// REQUIRED (no permanent silent override); `reason` + `approvedBy` are required;
+// all lifecycle transitions are audited. Never changes tenant ownership.
+model OrganizationEntitlementOverride {
+  id             String    @id @default(cuid())
+  organizationId String
+  entitlementKey String
+  decision       String    // "GRANT" | "DENY"
+  limitOverride  Int?      // metered ceiling override; null on GRANT = unlimited
+  reason         String
+  approvedBy     String    // userId of the authorising Billing Admin
+  approvedAt     DateTime  @default(now())
+  effectiveFrom  DateTime  @default(now())
+  expiresAt      DateTime  // REQUIRED — enforced non-null at the DB level
+  revokedAt      DateTime?
+  revokedById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, entitlementKey])
+  @@index([expiresAt])
+}
+
+// Database-authoritative trial history. A UNIQUE organizationId guarantees at
+// most ONE automatic trial per organisation — a browser cannot reset or recreate
+// it. Trial expiry never deletes tenant data.
+model OrganizationTrial {
+  id             String    @id @default(cuid())
+  organizationId String    @unique
+  planKey        String
+  source         String    @default("AUTOMATIC") // "AUTOMATIC" | "ADMIN_GRANT"
+  startedAt      DateTime  @default(now())
+  endsAt         DateTime
+  grantedBy      String?   // userId for an admin-granted trial
+  convertedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([endsAt])
 }
 
 // ── Industrial Gateway Foundation — Phase 35 ─────────────────────────────────
