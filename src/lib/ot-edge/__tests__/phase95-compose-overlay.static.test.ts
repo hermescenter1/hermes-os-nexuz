@@ -140,8 +140,8 @@ describe("95 — activation script: privileged, fail-closed, runtime-verifiable"
   });
 
   it("GAP 3 — rollback PROVES the backend is disabled (env + all three mounts absent)", () => {
-    expect(activate).toMatch(/verify_rollback_disabled/);
-    expect(activate).toMatch(/OT_SECRET_BACKEND[^\n]*!= openbao/);
+    expect(activate).toMatch(/verify_base_disabled/);
+    expect(activate).toMatch(/OT_SECRET_BACKEND[^\n]*!= "?openbao/);
     for (const name of ["openbao_role_id", "openbao_secret_id", "openbao_ca"]) {
       expect(activate).toMatch(new RegExp(`! -e /run/secrets/${name}`));
     }
@@ -163,6 +163,26 @@ describe("95 — activation script: privileged, fail-closed, runtime-verifiable"
     expect(activate).not.toMatch(/echo[^\n]*\$ROLE_ID_HOST_FILE/);
     // Credential presence checked with test flags only.
     expect(activate).toMatch(/-r \/run\/secrets\/openbao_role_id/);
+  });
+
+  it("enforces the credential-integrity invariants (non-root, group isolation, realpath, runtime dir, cmp, CA parse)", () => {
+    expect(activate).toMatch(/\[ "\$\(id -u\)" -eq 0 \]/); // non-root self-check
+    expect(activate).toMatch(/member of the runtime secret group/);
+    expect(activate).toMatch(/id -G/);
+    expect(activate).toMatch(/sudo -n realpath -e -- /);
+    expect(activate).toMatch(/runtime directory mode is not exactly 0710/);
+    expect(activate).toMatch(/sudo -n cmp -s -- /);
+    expect(activate).toMatch(/openssl x509/);
+    expect(activate).toMatch(/parseable PEM/);
+  });
+
+  it("marker-absent path PROVES the base is disabled; active proof checks RO mounts + UID/GID", () => {
+    expect(activate).toMatch(/verify_base_disabled/);
+    expect(activate).toMatch(/BASE_STATE_UNVERIFIED/);
+    expect(activate).toMatch(/verify_active_mount/);
+    expect(activate).toMatch(/=false=/); // RW must be false
+    expect(activate).toMatch(/docker exec "\$cid" id -u/);
+    expect(activate).toMatch(/docker exec "\$cid" id -g/);
   });
 
   it("still validates the marker fail-closed (root:root, no symlink, exact 0440, RFC1918)", () => {

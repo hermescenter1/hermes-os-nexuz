@@ -185,7 +185,25 @@ after recreate, the workflow rolls back to base compose and treats the rollback
 as successful ONLY after PROVING (inside the final container) that
 `OT_SECRET_BACKEND != openbao`, all three `/run/secrets/openbao_*` mounts are
 absent, and the healthcheck is healthy; otherwise it reports `ROLLBACK_UNVERIFIED`
-and exits non-zero without claiming the backend is disabled.
+and exits non-zero without claiming the backend is disabled. The **marker-absent**
+path is held to the SAME proof: it deploys base compose and only claims success
+after proving the backend is disabled (else `BASE_STATE_UNVERIFIED`).
+
+**Additional runtime-verifiable invariants the workflow enforces before activating**
+(all `sudo -n`, read-only, secret-free):
+- The deploy user is non-root AND **not** a member of the runtime GID
+  (`id -G`); the script refuses otherwise.
+- Every marker source path is **canonical** (`realpath -e` equals the input — no
+  symlink or `..` in any component) and resolves outside the repository.
+- The RoleID/SecretID copies share ONE runtime directory that is `root:root 0710`;
+  each copy is `root:<runtime-gid> 0440` and **byte-identical** (`cmp -s`) to its
+  canonical credential (`/etc/hermes-openbao/app/{role-id,secret-id}`, `root:root
+  0600`).
+- The CA is `root:root`, not group/other-writable, runtime-readable, non-empty,
+  and a **parseable PEM** (`openssl x509 -noout`, with openssl checked fail-closed).
+- Active verification additionally proves the container runs as **UID 1001** and
+  the runtime **GID**, and that all three `/run/secrets/openbao_*` mounts are
+  present, **read-only (RW=false)**, and sourced from the canonical runtime paths.
 
 ---
 

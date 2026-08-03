@@ -262,8 +262,8 @@ gate(/activation_failed/.test(pipelineText), "DEPLOY_ACTIVE_UP_GUARDED", "active
 gate(/if ! docker compose -p hermes -f docker-compose\.prod\.yml -f docker-compose\.prod\.openbao\.yml --env-file \.env\.production up /.test(pipelineText), "DEPLOY_ACTIVE_UP_IF", "the active `up` must be invoked inside an `if ! …` guard");
 // GAP 3 — rollback must PROVE the backend is disabled (env + all three mounts
 // absent), and only claim success after that proof.
-gate(/verify_rollback_disabled/.test(pipelineText), "DEPLOY_ROLLBACK_PROVES_DISABLED", "rollback must call a `verify_rollback_disabled` proof");
-gate(/OT_SECRET_BACKEND[^\n]*!= openbao/.test(pipelineText), "DEPLOY_ROLLBACK_ENV", "rollback must assert OT_SECRET_BACKEND != openbao");
+gate(/verify_base_disabled/.test(pipelineText), "DEPLOY_ROLLBACK_PROVES_DISABLED", "rollback must call the `verify_base_disabled` proof");
+gate(/OT_SECRET_BACKEND[^\n]*!= "?openbao/.test(pipelineText), "DEPLOY_ROLLBACK_ENV", "rollback/base proof must assert OT_SECRET_BACKEND != openbao");
 for (const name of ["openbao_role_id", "openbao_secret_id", "openbao_ca"]) {
   gate(new RegExp(`! -e /run/secrets/${name}`).test(pipelineText), "DEPLOY_ROLLBACK_MOUNTS_ABSENT", `rollback must assert /run/secrets/${name} is absent`);
 }
@@ -272,6 +272,27 @@ gate(/ROLLBACK_UNVERIFIED/.test(pipelineText), "DEPLOY_ROLLBACK_UNVERIFIED", "an
 // mere `openbao` word match.
 gate(!/grep -qw openbao \/etc\/hosts/.test(pipelineText), "DEPLOY_HOST_MAPPING_NOT_WORDONLY", "host mapping must not be a bare `grep -qw openbao /etc/hosts`");
 gate(/verify_host_mapping/.test(pipelineText) && /awk -v ip="\$PRIVATE_IP"/.test(pipelineText), "DEPLOY_HOST_MAPPING_EXACT", "host mapping must prove `openbao` resolves to exactly $PRIVATE_IP");
+
+// ── 3c. Credential/state integrity invariants (runtime-verifiable) ───────────
+// The script must run as the non-root deploy user and prove the deploy user is
+// NOT in the runtime secret group.
+gate(/\[ "\$\(id -u\)" -eq 0 \]/.test(pipelineText), "DEPLOY_NONROOT_SELF", "the activation script must refuse to run as root");
+gate(/member of the runtime secret group/.test(pipelineText) && /id -G/.test(pipelineText), "DEPLOY_GROUP_ISOLATION", "must reject a deploy user that belongs to the runtime GID (via id -G)");
+// Marker-absent must also PROVE the base container is disabled (shared helper).
+gate(/verify_base_disabled/.test(pipelineText), "DEPLOY_BASE_PROOF_HELPER", "a shared `verify_base_disabled` must prove the disabled base state");
+gate(/deploy_and_prove_base/.test(pipelineText) && /BASE_STATE_UNVERIFIED/.test(pipelineText), "DEPLOY_MARKER_ABSENT_PROVEN", "marker-absent path must deploy AND prove the base is disabled (BASE_STATE_UNVERIFIED on failure)");
+// Source paths canonicalised (no symlink/`..`) via realpath -e.
+gate(/sudo -n realpath -e -- /.test(pipelineText), "DEPLOY_REALPATH", "source paths must be canonicalised with `sudo -n realpath -e --` and compared to the input");
+// Runtime directory root:root 0710.
+gate(/runtime directory mode is not exactly 0710/.test(pipelineText) && /runtime directory is not root:root/.test(pipelineText), "DEPLOY_RUNTIME_DIR", "the shared runtime directory must be enforced root:root 0710");
+// Runtime copies byte-identical to the canonical AppRole credentials.
+gate(/sudo -n cmp -s -- /.test(pipelineText) && /does not match the canonical/.test(pipelineText), "DEPLOY_CANONICAL_CMP", "runtime copies must be `cmp -s` byte-identical to the canonical credentials");
+// CA root ownership + PEM parse (openssl existence fail-closed).
+gate(/CA file is not owned root:root/.test(pipelineText) && /openssl x509/.test(pipelineText) && /parseable PEM/.test(pipelineText), "DEPLOY_CA_TRUST", "the CA must be root-owned and a parseable PEM (openssl checked fail-closed)");
+// Active proof: read-only mounts (RW=false) sourced from the runtime paths, and
+// the container UID/GID.
+gate(/=false=/.test(pipelineText) && /verify_active_mount/.test(pipelineText), "DEPLOY_ACTIVE_MOUNTS_RO", "active verification must prove all three mounts are read-only (RW=false) from the runtime sources");
+gate(/docker exec "\$cid" id -u/.test(pipelineText) && /docker exec "\$cid" id -g/.test(pipelineText), "DEPLOY_ACTIVE_IDS", "active verification must prove the container UID=1001 and GID=runtime GID");
 
 // ── 4. Forbidden executable patterns must never (re)appear ───────────────────
 const forbiddenPatterns = [
