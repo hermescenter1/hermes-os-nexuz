@@ -401,6 +401,11 @@
         "titleTemplate": "{name} — Karriere bei Hermes OS",
         "keywordsSuffix": "Industriejobs, Automatisierungstechnik",
         "notFoundTitle": "Stelle nicht gefunden"
+      },
+      "pricing": {
+        "title": "Hermes OS Preise — Tarife für Industrieteams",
+        "description": "Vergleichen Sie die Hermes OS Tarife — Community, Professional, Team und Enterprise — für industrielle KI, SCADA/PLC-Konnektivität, Automatisierung und Wissensmanagement.",
+        "keywords": "Hermes OS Preise, industrielle KI-Tarife, SCADA-Plattform Preise, Automatisierungsplattform Tarife"
       }
     },
     "breadcrumbs": {
@@ -7211,6 +7216,38 @@
         "unavailableTitle": "Ausstellung von Anmeldedaten nicht verfügbar",
         "unavailableBody": "Diese Bereitstellung kann noch keine Maschinen-Anmeldedaten ausstellen. Ein Operator muss zunächst das Secret-Backend aktivieren."
       }
+    }
+  },
+  "pricing": {
+    "eyebrow": "Preise",
+    "title": "Tarife für den echten Anlagenbetrieb",
+    "lede": "Jeder Tarif läuft auf derselben Industrieplattform. Community ist schon heute kostenlos; kostenpflichtige Tarife schalten tiefere KI-, Automatisierungs- und OT-Konnektivität frei, sobald unser Team die kommerziellen Konditionen final festgelegt hat.",
+    "status": {
+      "availableSelfServe": "Kostenlos",
+      "configurationRequired": "Preis noch nicht verfügbar",
+      "contactSales": "Vertrieb kontaktieren"
+    },
+    "features": {
+      "heading": "Enthaltene Funktionen",
+      "none": "Keine zusätzlichen Funktionen enthalten"
+    },
+    "resources": {
+      "heading": "Gemessene Ressourcen",
+      "configurable": "Konfigurierbar",
+      "contactSales": "Vertrieb kontaktieren"
+    },
+    "trial": {
+      "available": "Kostenloser Testzeitraum verfügbar",
+      "notApplicable": "Testzeitraum nicht zutreffend"
+    },
+    "currency": {
+      "heading": "Währung",
+      "active": "{currency} ist die aktive Startwährung.",
+      "ready": "{currencies} werden unterstützt und in Kürze aktiviert."
+    },
+    "cta": {
+      "getStarted": "Jetzt starten",
+      "contactSales": "Vertrieb kontaktieren"
     }
   }
 }

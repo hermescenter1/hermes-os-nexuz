@@ -401,6 +401,11 @@
         "titleTemplate": "{name} — Hermes OS Careers",
         "keywordsSuffix": "industrial jobs, automation engineering",
         "notFoundTitle": "Job Not Found"
+      },
+      "pricing": {
+        "title": "Hermes OS Pricing — Plans for Industrial Teams",
+        "description": "Compare Hermes OS plans — Community, Professional, Team and Enterprise — for industrial AI, SCADA/PLC connectivity, automation and knowledge management.",
+        "keywords": "Hermes OS pricing, industrial AI plans, SCADA platform pricing, automation platform plans"
       }
     },
     "breadcrumbs": {
@@ -7211,6 +7216,38 @@
         "unavailableTitle": "Credential provisioning unavailable",
         "unavailableBody": "This deployment cannot issue machine credentials yet. An operator must enable the secret backend before enrollment is possible."
       }
+    }
+  },
+  "pricing": {
+    "eyebrow": "Pricing",
+    "title": "Plans for real plant floors",
+    "lede": "Every plan runs on the same industrial-grade platform. Community is free today; paid tiers unlock deeper AI, automation and OT connectivity as commercial terms are finalised by our team.",
+    "status": {
+      "availableSelfServe": "Free",
+      "configurationRequired": "Pricing unavailable",
+      "contactSales": "Contact sales"
+    },
+    "features": {
+      "heading": "Included features",
+      "none": "No additional features included"
+    },
+    "resources": {
+      "heading": "Metered resources",
+      "configurable": "Configurable",
+      "contactSales": "Contact sales"
+    },
+    "trial": {
+      "available": "Free trial available",
+      "notApplicable": "Trial not applicable"
+    },
+    "currency": {
+      "heading": "Currency",
+      "active": "{currency} is the active launch currency.",
+      "ready": "{currencies} are supported and will activate soon."
+    },
+    "cta": {
+      "getStarted": "Get started",
+      "contactSales": "Contact sales"
     }
   }
 }

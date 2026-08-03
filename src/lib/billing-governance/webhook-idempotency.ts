@@ -69,7 +69,7 @@ export async function runIdempotentWebhook(
     }
     await store.markProcessed(env.provider, env.providerEventId);
     return "PROCESSED";
-  } catch (err) {
+  } catch {
     // Non-sensitive machine code only; the raw error is logged elsewhere.
     await store.markFailed(env.provider, env.providerEventId, "HANDLER_ERROR");
     return "FAILED";
