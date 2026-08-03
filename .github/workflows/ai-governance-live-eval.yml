@@ -1,16 +1,20 @@
 # PHASE 95 — MANUAL, approval-gated LIVE AI-governance evaluation.
 #
-# This workflow is DISPATCH-ONLY and is NOT part of PR CI. It exists so the
+# DISPATCH-ONLY and NOT part of PR CI. It exists so the
 # HALLUCINATION_REGRESSION_WITHIN_BUDGET gate can later be evaluated against the
-# PINNED live model using SYNTHETIC data only, in a dedicated environment. It is
-# NOT run as part of this phase. Offline PR CI never calls a provider.
+# PINNED live model using SYNTHETIC data only, in a protected environment. It is
+# NOT run as part of this phase and cannot run automatically.
 #
-# Guarantees encoded here:
-#   - workflow_dispatch only (no push / PR / schedule trigger).
-#   - environment: ai-evaluation (protected; the provider key lives only there).
+# Fail-closed guarantees encoded here:
+#   - workflow_dispatch ONLY (no push / pull_request / schedule trigger).
+#   - environment: ai-evaluation (protected; the provider key lives ONLY there).
 #   - read-only repository permissions; persist-credentials: false.
-#   - pinned actions; concurrency protection; synthetic dataset only.
-#   - the job emits metrics only and never prints a secret or raw model output.
+#   - pinned actions; concurrency protection; bounded timeout.
+#   - a guard step runs BEFORE dependency install and BEFORE any provider call
+#     and refuses unless every precondition holds (confirm string, exact commit
+#     SHA match, pinned model, approved non-main ref, required files present).
+#   - the job emits COUNTS/HASHES/IDENTIFIERS only — never a secret or raw model
+#     output; no artifact containing model output; no provider fallback.
 
 name: AI Governance Live Eval (manual)
 
@@ -21,6 +25,14 @@ on:
         description: "Type RUN-LIVE-EVAL to confirm a live, synthetic-data-only evaluation"
         required: true
         default: ""
+      expected_sha:
+        description: "Full 40-character lowercase commit SHA to evaluate (must equal the checked-out SHA)"
+        required: true
+        default: ""
+      expected_model:
+        description: "Pinned model — the only accepted value is claude-sonnet-4-20250514"
+        required: true
+        default: "claude-sonnet-4-20250514"
 
 permissions:
   contents: read
@@ -37,11 +49,57 @@ jobs:
     # Protected environment: the provider API key is supplied ONLY here.
     environment: ai-evaluation
     if: ${{ github.event.inputs.confirm == 'RUN-LIVE-EVAL' }}
+    env:
+      APPROVED_REF: agent/phase95-runtime-enforcement
+      PINNED_MODEL: claude-sonnet-4-20250514
     steps:
-      - name: Check out
+      - name: Check out the selected ref
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+
+      # ---------------------------------------------------------------------
+      # FAIL-CLOSED GUARD — runs BEFORE npm ci and BEFORE any provider call.
+      # Any unmet precondition aborts the job with no dependency install and no
+      # network access to a provider.
+      # ---------------------------------------------------------------------
+      - name: Pre-flight guard (fail closed)
+        env:
+          IN_CONFIRM: ${{ github.event.inputs.confirm }}
+          IN_EXPECTED_SHA: ${{ github.event.inputs.expected_sha }}
+          IN_EXPECTED_MODEL: ${{ github.event.inputs.expected_model }}
+          GH_SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          fail() { echo "[live-eval guard] REFUSED: $1"; exit 1; }
+
+          # 1) Explicit confirmation string.
+          [ "$IN_CONFIRM" = "RUN-LIVE-EVAL" ] || fail "confirm != RUN-LIVE-EVAL"
+
+          # 2) Pinned model — the ONLY accepted value.
+          [ "$IN_EXPECTED_MODEL" = "$PINNED_MODEL" ] || fail "expected_model is not the pinned model"
+
+          # 3) expected_sha is a full 40-char lowercase hex SHA.
+          echo "$IN_EXPECTED_SHA" | grep -Eq '^[0-9a-f]{40}$' || fail "expected_sha is not a full lowercase hex SHA"
+
+          # 4) The checked-out commit exactly equals expected_sha.
+          [ "$GH_SHA" = "$IN_EXPECTED_SHA" ] || fail "github.sha does not equal expected_sha"
+
+          # 5) The selected ref must NOT be the default branch.
+          [ "$REF_NAME" != "main" ] || fail "the default branch (main) may not run the live evaluation"
+
+          # 6) The selected ref must be the approved Phase 95 runtime branch (or a
+          #    documented immutable evaluation ref — none defined yet, so strict).
+          [ "$REF_NAME" = "$APPROVED_REF" ] || fail "ref '$REF_NAME' is not the approved Phase 95 runtime branch"
+
+          # 7) The required live-eval script + harness + synthetic fixture must
+          #    exist on the selected ref (a bootstrap-only ref, e.g. main, lacks these).
+          [ -f scripts/ci/phase95-ai-governance-live-eval.mjs ] || fail "live-eval launcher missing on this ref"
+          [ -f src/lib/ai-governance/live-evaluation.ts ] || fail "live-eval harness missing on this ref"
+          [ -f tests/fixtures/ai-governance/hallucination-regression.jsonl ] || fail "synthetic dataset missing on this ref"
+
+          echo "[live-eval guard] OK — sha=$GH_SHA ref=$REF_NAME model=$PINNED_MODEL"
 
       - name: Set up Node.js 20
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -60,9 +118,10 @@ jobs:
       - name: Live pinned-model evaluation (synthetic hallucination dataset)
         env:
           PHASE95_LIVE_EVAL: "1"
+          GITHUB_SHA: ${{ github.sha }}
           # Provided by the ai-evaluation GitHub Environment ONLY. Never echoed.
           ANTHROPIC_API_KEY: ${{ secrets.AI_EVALUATION_ANTHROPIC_API_KEY }}
+        # Emits ONLY the PHASE95_LIVE_EVAL_* metric lines (counts, hashes,
+        # provider/model identifiers, PASS/FAIL). No secret, no raw model output.
+        # No artifact upload; no provider fallback.
         run: node scripts/ci/phase95-ai-governance-live-eval.mjs
-        # Metrics (counts only, no secrets, no raw model output) are printed to
-        # the job log. Artifact upload is intentionally omitted (no unverified
-        # third-party action pin is introduced by this phase).
