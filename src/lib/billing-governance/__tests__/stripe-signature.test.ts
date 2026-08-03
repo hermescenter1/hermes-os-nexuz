@@ -6,7 +6,7 @@ import Stripe from "stripe";
 // event — exactly the synthetic-fixture contract required by Phase 96.
 
 const TEST_WEBHOOK_SECRET = "whsec_phase96_test_only_secret_do_not_use_in_prod";
-const stripe = new Stripe("sk_test_offline_dummy_key", { apiVersion: "2025-01-27.acacia" as Stripe.LatestApiVersion });
+const stripe = new Stripe("sk_test_offline_dummy_key", { apiVersion: "2025-01-27.acacia" as never });
 
 const PAYLOAD = JSON.stringify({
   id: "evt_test_1",
