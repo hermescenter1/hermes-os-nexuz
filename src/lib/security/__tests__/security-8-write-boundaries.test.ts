@@ -214,6 +214,28 @@ describe("POST /api/ai — authenticated + rate limited", () => {
     return completeChat;
   }
 
+  // PHASE 95: /api/ai is DISABLED BY DEFAULT. Enable it for the auth/rate-limit
+  // security assertions below (they verify behaviour when the route is on), and
+  // assert the fail-closed 503 when the flag is unset.
+  const savedFlag = process.env.HERMES_PUBLIC_AI_ENABLED;
+  beforeEach(() => {
+    process.env.HERMES_PUBLIC_AI_ENABLED = "1";
+  });
+  afterEach(() => {
+    if (savedFlag === undefined) delete process.env.HERMES_PUBLIC_AI_ENABLED;
+    else process.env.HERMES_PUBLIC_AI_ENABLED = savedFlag;
+  });
+
+  it("disabled by default → 503 (fail closed), LLM never called", async () => {
+    delete process.env.HERMES_PUBLIC_AI_ENABLED;
+    const spy = mockGateway();
+    mockEngineer();
+    const { POST } = await import(ROUTE);
+    const res = await POST(jsonReq("/api/ai", { messages: [{ role: "user", content: "hi" }] }));
+    expect(res.status).toBe(503);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
   it("anonymous → 401, LLM never called", async () => {
     const spy = mockGateway();
     mockNoUser();

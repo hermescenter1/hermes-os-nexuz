@@ -627,6 +627,9 @@ model Organization {
   // Phase 38: Industrial Copilot
   copilotConversations CopilotConversation[]
   copilotInsights      CopilotInsight[]
+  // Phase 95: AI governance & model assurance
+  aiProviderPolicies   AiProviderPolicy[]
+  aiExecutionTraces    AiExecutionTrace[]
   // Phase 39: Predictive Maintenance
   assetBaselines       AssetBaseline[]
   assetRiskScores      AssetRiskScore[]
@@ -6437,4 +6440,65 @@ model EngineeringFinding {
   @@index([organizationId, projectId, severity])
   @@index([organizationId, status])
   @@index([projectId, humanApprovalRequired])
+}
+
+// Phase 95 — AI Governance & Model Assurance.
+//
+// Organisation-scoped external-provider approval. Fail-closed: no row = deny.
+// Stores ONLY the approval envelope — never a provider key or a raw prompt.
+model AiProviderPolicy {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  providerRegistryId String
+  enabled            Boolean   @default(false)
+  allowedDataClasses String[]
+  allowedWorkflows   String[]
+  approvedBy         String
+  approvedAt         DateTime  @default(now())
+  policyVersion      String
+  expiresAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, providerRegistryId])
+  @@index([organizationId])
+}
+
+// Privacy-preserving AI execution trace. Stores HASHES, identifiers,
+// classifications, versions and outcomes ONLY — never a raw prompt, raw provider
+// response, secret, or inaccessible source content.
+model AiExecutionTrace {
+  id                         String   @id @default(cuid())
+  traceId                    String   @unique
+  organizationId             String?
+  siteId                     String?
+  userId                     String?
+  workflow                   String
+  executionMode              String
+  providerRegistryId         String?
+  modelId                    String?
+  policyVersion              String?
+  deterministicResultVersion String
+  inputHash                  String
+  outputHash                 String
+  sourceReferenceIds         String[]
+  citationVerificationStatus String
+  evidenceSufficiency        String
+  confidence                 Float
+  safetyDecision             String
+  humanApprovalRequired      Boolean
+  fallbackReason             String?
+  providerAttempted          Boolean
+  providerSucceeded          Boolean
+  latencyMs                  Int?
+  inputTokenCount            Int?
+  outputTokenCount           Int?
+  createdAt                  DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([workflow, createdAt])
 }
