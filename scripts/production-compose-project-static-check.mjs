@@ -10,7 +10,11 @@
 //
 //   Tier 1 — the deploy pipeline. `docker-compose.prod.yml` and
 //     `.github/workflows/deploy.yml` are held to the strict production contract
-//     (top-level name, exact up/ps commands, Gate 0A protections).
+//     (top-level name; only targeted `up`, quiet single-service `ps -q`, and a
+//     validation-only `config` of the base + OpenBao overlay; the stable
+//     marker-gated activation with automatic rollback; Gate 0A protections).
+//     Destructive subcommands (down/stop/restart/rm/kill/exec/run) and profiles
+//     remain forbidden.
 //
 //   Tier 2 — the operator surface. Every runbook, checklist and shell script
 //     under docs/, deploy/ and scripts/ (plus root DEPLOYMENT.md) is scanned for
@@ -105,7 +109,10 @@ gate(
 // ── Compose invocation model ─────────────────────────────────────────────────
 // Matches `docker compose` (one or more spaces) OR the legacy `docker-compose`
 // binary as a command word (not the `-f docker-compose.prod.yml` file arg).
-const COMPOSE_INVOCATION = /(^|\s)docker(?:\s+|-)compose(\s|$)/;
+// The leading boundary accepts a preceding space OR `(` / backtick so a compose
+// command inside a `cid=$(docker compose … )` command substitution is still
+// detected and held to the full contract.
+const COMPOSE_INVOCATION = /(^|[\s(`])docker(?:\s+|-)compose(\s|$)/;
 const LEGACY_BINARY = /(^|\s)docker-compose(\s|$)/;
 
 // Extract the compose subcommand (first bare token after `docker compose` and
@@ -146,7 +153,7 @@ gate(
   "DEPLOY_COMPOSE_PRESENT",
   "expected at least the targeted `up` and the `ps` Compose commands",
 );
-const ALLOWED_SUBCOMMANDS = new Set(["up", "ps"]);
+const ALLOWED_SUBCOMMANDS = new Set(["up", "ps", "config"]);
 for (const { line, lineNumber } of composeInvocations) {
   const at = `deploy.yml line ${lineNumber}`;
   gate(!LEGACY_BINARY.test(line), "DEPLOY_COMPOSE_V2", `${at}: use \`docker compose\` (v2), not \`docker-compose\``);
@@ -162,11 +169,28 @@ for (const { line, lineNumber } of composeInvocations) {
   // Only up / ps are permitted in the deploy workflow. This inherently blocks
   // down, stop, restart, exec, run, rm, kill and any migration-via-exec.
   const sub = composeSubcommand(line);
-  gate(sub !== null && ALLOWED_SUBCOMMANDS.has(sub), "DEPLOY_SUBCOMMAND_ALLOWLIST", `${at}: Compose subcommand \`${sub}\` not allowed (only up/ps)`);
+  // Only up / ps / config are permitted. This inherently blocks down, stop,
+  // restart, exec, run, rm, kill and any migration-via-exec.
+  gate(sub !== null && ALLOWED_SUBCOMMANDS.has(sub), "DEPLOY_SUBCOMMAND_ALLOWLIST", `${at}: Compose subcommand \`${sub}\` not allowed (only up/ps/config)`);
   // Any `up` must stay targeted: never recreate postgres/redis/nginx.
   if (sub === "up") {
     gate(/--no-deps/.test(line), "DEPLOY_UP_NO_DEPS", `${at}: \`up\` must pass \`--no-deps\` (never recreate postgres/redis/nginx)`);
     gate(/\bhermes-web\b/.test(line), "DEPLOY_UP_TARGET", `${at}: \`up\` must target the \`hermes-web\` service only`);
+  }
+  // Any `ps` must be a quiet, single-service status probe (never the whole
+  // stack). It may appear inside a `cid=$(… )` command substitution.
+  if (sub === "ps") {
+    gate(/(^|\s)-q(\s|$)/.test(line), "DEPLOY_PS_QUIET", `${at}: \`ps\` must pass \`-q\``);
+    gate(/\bhermes-web\b/.test(line), "DEPLOY_PS_TARGET", `${at}: \`ps\` must target the \`hermes-web\` service only (never the whole stack)`);
+  }
+  // `config` is validation-only for the merged OpenBao activation. It MUST carry
+  // the base file, the OpenBao overlay, the production env-file, and discard its
+  // output — and never a profile (which could pull in extra services).
+  if (sub === "config") {
+    gate(/\s-f\s+docker-compose\.prod\.openbao\.yml(?=\s|$)/.test(line), "DEPLOY_CONFIG_OVERLAY", `${at}: \`config\` must include \`-f docker-compose.prod.openbao.yml\``);
+    gate(/--env-file\s+\.env\.production(?=\s|$)/.test(line), "DEPLOY_CONFIG_ENVFILE", `${at}: \`config\` must pass \`--env-file .env.production\``);
+    gate(/>\s*\/dev\/null/.test(line), "DEPLOY_CONFIG_QUIET", `${at}: \`config\` must be validation-only (redirect stdout to /dev/null)`);
+    gate(!/--profiles?\b/.test(line), "DEPLOY_CONFIG_NO_PROFILE", `${at}: \`config\` must not enable a --profile`);
   }
 }
 
@@ -178,12 +202,45 @@ gate(
   "DEPLOY_TARGETED_UP",
   "missing `docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web`",
 );
+// Base status probe (may be wrapped in a `cid=$(… )` command substitution).
 gate(
   composeInvocations.some(({ line }) =>
-    /^docker compose -p hermes -f docker-compose\.prod\.yml ps hermes-web$/.test(line.trim()),
+    /docker compose -p hermes -f docker-compose\.prod\.yml ps -q hermes-web/.test(line),
   ),
   "DEPLOY_STATUS_PS",
-  "missing `docker compose -p hermes -f docker-compose.prod.yml ps hermes-web`",
+  "missing a base `docker compose -p hermes -f docker-compose.prod.yml ps -q hermes-web`",
+);
+// Active-overlay deploy form: BOTH compose files + production env-file, targeted.
+gate(
+  composeInvocations.some(({ line }) =>
+    /docker compose -p hermes -f docker-compose\.prod\.yml -f docker-compose\.prod\.openbao\.yml --env-file \.env\.production up -d --build --no-deps hermes-web/.test(line),
+  ),
+  "DEPLOY_ACTIVE_UP",
+  "missing the active-overlay `up` (base + OpenBao overlay + --env-file .env.production)",
+);
+
+// ── 3b. Marker-gated activation contract (must stay stable across deploys) ───
+gate(
+  deployWorkflow.includes("MARKER=/etc/hermes-openbao/activation.env"),
+  "DEPLOY_MARKER_PATH",
+  "deploy must define `MARKER=/etc/hermes-openbao/activation.env`",
+);
+gate(
+  /if \[ ! -e "\$MARKER" \]/.test(deployWorkflow),
+  "DEPLOY_MARKER_ABSENT_BASE",
+  "marker-absent path must branch to base-only deploy (`if [ ! -e \"$MARKER\" ]`)",
+);
+gate(
+  composeInvocations.some(
+    ({ line }) => composeSubcommand(line) === "config" && /docker-compose\.prod\.openbao\.yml/.test(line),
+  ),
+  "DEPLOY_MARKER_CONFIG",
+  "marker-present path must `config` the base + OpenBao overlay before deploying",
+);
+gate(
+  /rolling back to base compose/i.test(deployWorkflow),
+  "DEPLOY_AUTO_ROLLBACK",
+  "activation failure must auto-roll back to base compose (backend disabled)",
 );
 
 // ── 4. Forbidden executable patterns must never (re)appear ───────────────────
@@ -192,6 +249,7 @@ const forbiddenPatterns = [
   [/docker\s+system\s+prune/, "FORBIDDEN_SYSTEM_PRUNE"],
   [/docker\s+volume\s+rm/, "FORBIDDEN_VOLUME_RM"],
   [/--remove-orphans/, "FORBIDDEN_REMOVE_ORPHANS"],
+  [/--profiles?\b/, "FORBIDDEN_PROFILE"],
   [/\bgit\s+pull\b/, "FORBIDDEN_GIT_PULL"],
   [/\bssh-keyscan\b/, "FORBIDDEN_SSH_KEYSCAN"],
   [/-p\s+hermes-os-nexuz\b/, "FORBIDDEN_DERIVED_PROJECT"],
