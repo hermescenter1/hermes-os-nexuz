@@ -105,56 +105,102 @@ Full detail: [`ops/openbao/RUNBOOK.md`](../../ops/openbao/RUNBOOK.md).
 
 ---
 
-## 5. Secure credential-file delivery to Production
+## 5. Credential ownership & the non-root runtime (IMPORTANT — corrected)
 
-**[PROD]** Deliver the three files out-of-repo, owned by `<deploy-user>`, mode
-`0400`, regular files (never symlinks — the runtime rejects symlinked credential
-files):
+The `hermes-web` container runs as the image's **non-root UID 1001**. Docker
+Compose does **not** remap uid/gid/mode for a bind mount, so the container reads
+the host files exactly as they are on disk.
 
-```
-/secure/outside/repo/hermes-openbao/role_id           (0400)
-/secure/outside/repo/hermes-openbao/secret_id         (0400)
-/secure/outside/repo/hermes-openbao/openbao-ca.pem    (0444 ok — public cert)
-```
-- [ ] `stat -c '%a %U' <file>` shows `400 <deploy-user>` for role_id/secret_id.
-- [ ] Files are regular (not symlinks): `test -f <f> && ! test -L <f>`.
-- [ ] Transfer channel encrypted; the plaintext SecretID never touches a shell
+- The **canonical** AppRole files stay `root:root 0600` and are NOT changed:
+  ```
+  /etc/hermes-openbao/app/role-id     root:root 0600
+  /etc/hermes-openbao/app/secret-id   root:root 0600
+  ```
+  (0600 root-only — a non-root container cannot read these directly. Do not
+  loosen them.)
+- **[PROD]** Create out-of-repo, read-only **RUNTIME COPIES** owned by root and a
+  **dedicated runtime group** so — and only so — the UID-1001 process can read
+  them. Pick/create a dedicated GID (`<runtime-gid>`), then:
+  ```bash
+  install -d -o root -g root -m 0710 /etc/hermes-openbao/runtime
+  install -o root -g <runtime-gid> -m 0440 /etc/hermes-openbao/app/role-id   /etc/hermes-openbao/runtime/role-id
+  install -o root -g <runtime-gid> -m 0440 /etc/hermes-openbao/app/secret-id /etc/hermes-openbao/runtime/secret-id
+  ```
+  Result — exactly what the deploy workflow enforces before activating:
+  ```
+  /etc/hermes-openbao/runtime            root:root         0710   (dir; traversable only by owner+group)
+  /etc/hermes-openbao/runtime/role-id    root:<runtime-gid> 0440
+  /etc/hermes-openbao/runtime/secret-id  root:<runtime-gid> 0440
+  /etc/hermes-openbao/ca.crt             root:root         0644   (public cert; read-only, world-readable ok)
+  ```
+- [ ] Copies are regular files, never symlinks (the runtime AND the workflow
+      reject symlinks).
+- [ ] The container is run as `1001:<runtime-gid>` (the overlay's `user:`), so the
+      process's supplementary GID matches the `0440` copies' group.
+- [ ] No command prints a credential; the plaintext SecretID never touches a shell
       history or a log.
 
 > **Note on erasure.** Ordinary `rm` is not cryptographic secure erasure. Treat
-> the delivery directory as a secret store and restrict it.
+> the runtime directory as a secret store and restrict it.
 
 ---
 
-## 6. Compose mounts (read-only, opt-in overlay)
+## 6. Activation marker (`/etc/hermes-openbao/activation.env`) — the stable gate
 
-**[PROD]** The base stack stays disabled. Enable via the overlay only:
+Activation is **persistent across deploys** via a root-owned marker the deploy
+workflow reads on every run. This closes the gap where a plain redeploy dropped
+the overlay.
+
+- **[PROD]** Create the marker as a `root:root` regular file with **no `other`
+  permissions** (e.g. `0600`), containing ONLY these five **non-secret** lines
+  (no secret values, no comments, no blank-padding tricks — one `KEY=VALUE` each):
+  ```
+  OPENBAO_ROLE_ID_HOST_FILE=/etc/hermes-openbao/runtime/role-id
+  OPENBAO_SECRET_ID_HOST_FILE=/etc/hermes-openbao/runtime/secret-id
+  OPENBAO_CA_HOST_FILE=/etc/hermes-openbao/ca.crt
+  OPENBAO_PRIVATE_IP=<private IPv4 of the OpenBao host>
+  OPENBAO_RUNTIME_GID=<runtime-gid>
+  ```
+  ```bash
+  install -o root -g root -m 0600 /dev/null /etc/hermes-openbao/activation.env
+  # then write the five KEY=VALUE lines with an editor (no secrets)
+  ```
+- The workflow **rejects** the marker (fail closed → base compose) if it is a
+  symlink, not `root:root`, has any `other` bit, or contains a duplicate/unknown
+  key, a shell command / command-substitution, or any non-`KEY=VALUE` line. It
+  also re-checks the source files (out-of-repo regular non-symlinks; role/secret
+  `root:<runtime-gid>` mode exactly `0440`; CA read-only and runtime-readable),
+  validates the private IPv4 (RFC1918 only) and the numeric GID, and runs
+  `docker compose config` on both files before touching the running stack.
+
+**Marker absent → every deploy stays base-only (backend disabled).**
+**Marker present & valid → every deploy activates the overlay.**
+
+---
+
+## 7. Backend activation & deploy
+
+The remaining OpenBao settings the overlay sets itself (non-secret):
+`OT_SECRET_BACKEND=openbao`, `OPENBAO_ENDPOINT=https://openbao:8200`,
+`OPENBAO_KV_MOUNT=hermes-kv`, `OPENBAO_KV_PREFIX=gateways`,
+`OPENBAO_APPROLE_MOUNT=approle`, the two `/run/secrets/*` file paths,
+`NODE_EXTRA_CA_CERTS=/run/secrets/openbao_ca`, and the bounded-client settings.
+`https://openbao:8200` resolves to `OPENBAO_PRIVATE_IP` via the overlay's
+`extra_hosts`. An enabled-but-incomplete configuration **fails startup** — it
+never falls back.
+
+Activate by running the normal **Production Deploy** workflow (manual dispatch,
+pinned SHA) with the marker in place. The workflow deploys with BOTH files:
 ```bash
-export OPENBAO_ROLE_ID_HOST_FILE=/secure/outside/repo/hermes-openbao/role_id
-export OPENBAO_SECRET_ID_HOST_FILE=/secure/outside/repo/hermes-openbao/secret_id
-export OPENBAO_CA_HOST_FILE=/secure/outside/repo/hermes-openbao/openbao-ca.pem
+# (executed by the workflow on the server; shown for reference)
+docker compose -p hermes -f docker-compose.prod.yml -f docker-compose.prod.openbao.yml \
+  --env-file .env.production up -d --build --no-deps hermes-web
 ```
-Overlay: [`docker-compose.prod.openbao.yml`](../../docker-compose.prod.openbao.yml)
-mounts all three **read-only** at `/run/secrets/*`. Unset host paths → compose
-fails fast (`:?` guard). The Compose project stays `hermes`.
-
----
-
-## 7. Backend activation
-
-**[PROD]** In `.env.production` set (names documented in `.env.example`):
-```
-OT_SECRET_BACKEND=openbao
-OPENBAO_ENDPOINT=https://<openbao-host>:<port>
-OPENBAO_KV_MOUNT=<mount>
-OPENBAO_KV_PREFIX=<prefix>
-OPENBAO_APPROLE_MOUNT=approle
-OPENBAO_APPROLE_ROLE_ID_FILE=/run/secrets/openbao_role_id
-OPENBAO_APPROLE_SECRET_ID_FILE=/run/secrets/openbao_secret_id
-NODE_EXTRA_CA_CERTS=/run/secrets/openbao_ca
-# optional: OPENBAO_REQUEST_TIMEOUT_MS, OPENBAO_MAX_RESPONSE_BYTES, OPENBAO_EXPIRY_SKEW_SECONDS
-```
-An enabled-but-incomplete configuration **fails startup** — it never falls back.
+Then it verifies inside the container: `OT_SECRET_BACKEND=openbao`; the three
+`/run/secrets/*` files are regular, read-only and readable by the runtime UID/GID;
+`/etc/hosts` resolves `openbao`; and the healthcheck is healthy. **If verification
+fails after recreate, the workflow automatically rolls back to the base compose
+(backend disabled) and re-verifies health** — without printing any credential.
 
 ---
 
@@ -206,15 +252,28 @@ gateway `<gateway-id>` (never a real production gateway):
 
 ## 12. Rollback
 
-Fastest safe rollback is to **disable the backend** — enrollment fails closed and
-the envelope verifier reverts to env-backed keys; already-issued device
-credentials keep working until rotated.
-```bash
-# [PROD] set OT_SECRET_BACKEND= (unset) in .env.production, redeploy WITHOUT the overlay
-docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d hermes-web
-```
+Rollback is to **disable the backend** by making activation absent, then
+redeploying base-only — enrollment fails closed and the envelope verifier reverts
+to env-backed keys; already-issued device credentials keep working until rotated.
+
+1. **[PROD]** Remove or disable the marker so future deploys stay base-only:
+   ```bash
+   # remove it, or rename it so it no longer exists at the canonical path
+   rm -f /etc/hermes-openbao/activation.env
+   ```
+2. Redeploy via the **Production Deploy** workflow (pinned SHA). With the marker
+   absent the workflow deploys **base compose only** (backend disabled). Or, for an
+   immediate manual rollback on the host:
+   ```bash
+   # [PROD] recreate hermes-web from the base compose only (no overlay)
+   docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d --build --no-deps hermes-web
+   ```
 - [ ] Confirm `health.secretBackend.status = "disabled"`.
-Revoked credentials **remain revoked** (DB lifecycle is authoritative).
+
+> The deploy workflow ALSO rolls back automatically: if activation verification
+> fails after recreate, it recreates `hermes-web` from base compose (backend
+> disabled) and re-verifies health — no credential is printed. Revoked credentials
+> **remain revoked** (DB lifecycle is authoritative).
 
 ---
 
@@ -313,6 +372,7 @@ Collect and archive (secret-free):
 | File delivery / Compose / activation / canary / smoke / rollback | **[PROD]** | print a secret to stdout |
 | Reboot OpenBao | **[OPENBAO]** | before unseal/recovery is proven (§17) |
 
-> Final reminder: **no command in this runbook prints a secret**; all credential
-> material moves via files (mode `0400`) and stdin. If a step seems to require
-> echoing a token, stop — you are doing it wrong.
+> Final reminder: **no command in this runbook prints a secret**; canonical
+> credentials stay `root:root 0600` and runtime copies are `root:<runtime-gid>
+> 0440` — moved via files and stdin only. If a step seems to require echoing a
+> token, stop — you are doing it wrong.

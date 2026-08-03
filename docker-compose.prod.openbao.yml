@@ -1,63 +1,80 @@
 # Hermes OS — Production OpenBao overlay (PHASE 95, DISABLED BY DEFAULT).
 #
-# This is an OPT-IN overlay for the OT machine-credential secret backend. The
-# base production stack (docker-compose.prod.yml) is left BYTE-IDENTICAL and
-# ships with the backend OFF: nothing here activates unless an operator both
+# OPT-IN overlay for the OT machine-credential secret backend. The base stack
+# (docker-compose.prod.yml) is left BYTE-IDENTICAL and ships with the backend
+# OFF: nothing here activates unless an operator both
 #
 #   1. adds `-f docker-compose.prod.openbao.yml` to the compose invocation, and
-#   2. exports the three host credential-file paths below (unset → compose fails
-#      fast via the `:?` guards; there is no silent default that could activate
-#      the backend by accident).
+#   2. exports every REQUIRED host variable below (unset → compose fails fast via
+#      the `:?` guards; there is no silent default that could activate the
+#      backend by accident).
 #
-# It wires ONLY read-only credential delivery + the fixed in-container paths the
-# application already reads (see .env.example "OT Edge" block and
-# src/lib/ot-edge/secret-backend.ts). It contains NO secret values, copies
-# nothing into the image, and sets no build arguments.
+# WHY BIND MOUNTS, NOT COMPOSE FILE-SECRETS: for a `file`-sourced top-level
+# secret, Docker Compose does NOT remap uid/gid/mode — it bind-mounts the host
+# file as-is. The canonical AppRole files are `root:root 0600`, which the non-root
+# container (UID 1001) cannot read. Instead the operator prepares RUNTIME COPIES
+# owned `root:<runtime-gid>` mode `0440` in a `root:root 0710` directory OUTSIDE
+# the repo, runs the container as `1001:<runtime-gid>`, and these read-only binds
+# expose them at the fixed in-container paths the app already reads.
 #
-# Usage (production — explicit operator gate; see docs/ot/phase95-activation-runbook.md):
-#   export OPENBAO_ROLE_ID_HOST_FILE=/secure/outside/repo/hermes-openbao/role_id
-#   export OPENBAO_SECRET_ID_HOST_FILE=/secure/outside/repo/hermes-openbao/secret_id
-#   export OPENBAO_CA_HOST_FILE=/secure/outside/repo/hermes-openbao/openbao-ca.pem
+# This file contains NO secret VALUES, copies nothing into the image, and sets no
+# build arguments. Compose project MUST remain `hermes` (Gate 0D-A).
+#
+# Usage (production — the deploy workflow drives this via the activation marker;
+# see docs/ot/phase95-activation-runbook.md):
+#   export OPENBAO_ROLE_ID_HOST_FILE=/etc/hermes-openbao/runtime/role-id
+#   export OPENBAO_SECRET_ID_HOST_FILE=/etc/hermes-openbao/runtime/secret-id
+#   export OPENBAO_CA_HOST_FILE=/etc/hermes-openbao/ca.crt
+#   export OPENBAO_PRIVATE_IP=10.x.y.z
+#   export OPENBAO_RUNTIME_GID=NNNN
 #   docker compose -p hermes \
 #     -f docker-compose.prod.yml -f docker-compose.prod.openbao.yml \
-#     --env-file .env.production up -d
-#
-# The remaining OpenBao settings (OT_SECRET_BACKEND, OPENBAO_ENDPOINT,
-# OPENBAO_KV_MOUNT, OPENBAO_KV_PREFIX, OPENBAO_APPROLE_MOUNT,
-# OPENBAO_EXPIRY_SKEW_SECONDS, OPENBAO_REQUEST_TIMEOUT_MS,
-# OPENBAO_MAX_RESPONSE_BYTES) come from .env.production — documented, name-only,
-# in .env.example. An enabled-but-incomplete configuration FAILS STARTUP; it
-# never falls back to an env HMAC key, PostgreSQL or an in-memory provider.
-#
-# Compose project MUST remain `hermes` (Gate 0D-A); this overlay inherits it.
+#     --env-file .env.production up -d --build --no-deps hermes-web
 
 name: hermes
 
 services:
   hermes-web:
-    # Fixed in-container credential paths. The application reads role_id/secret_id
-    # from files at LOGIN time (never from an env value), and trusts the private
-    # OpenBao CA via Node's standard NODE_EXTRA_CA_CERTS — which makes native
-    # fetch verify BOTH the TLS hostname and this CA chain. The values here point
-    # only at the read-only secret mounts below.
+    # Run as the image's non-root UID 1001 plus a DEDICATED runtime GID that owns
+    # the 0440 credential copies, so the process can read them (and nothing else).
+    user: "1001:${OPENBAO_RUNTIME_GID:?set OPENBAO_RUNTIME_GID to the numeric GID that owns the 0440 runtime credential copies}"
+    # Resolve the private OpenBao hostname to its private IP inside the container.
+    extra_hosts:
+      - "openbao=${OPENBAO_PRIVATE_IP:?set OPENBAO_PRIVATE_IP to the private IPv4 of the OpenBao host}"
+    # Non-secret configuration only. Secret MATERIAL is never here — it is read
+    # from the read-only binds below at AppRole login time.
     environment:
-      OPENBAO_APPROLE_ROLE_ID_FILE: /run/secrets/openbao_role_id
-      OPENBAO_APPROLE_SECRET_ID_FILE: /run/secrets/openbao_secret_id
-      NODE_EXTRA_CA_CERTS: /run/secrets/openbao_ca
-    secrets:
-      # Compose file-secrets are bind-mounted READ-ONLY at /run/secrets/<name>.
-      # The host source files must be created out-of-repo, owned by the deploy
-      # user, mode 0400 (see the activation runbook). No value is stored here.
-      - openbao_role_id
-      - openbao_secret_id
-      - openbao_ca
-
-# Host paths are REQUIRED (`:?` fails compose when unset) — the explicit operator
-# gate. They live outside the repository and are never committed.
-secrets:
-  openbao_role_id:
-    file: ${OPENBAO_ROLE_ID_HOST_FILE:?set OPENBAO_ROLE_ID_HOST_FILE to the secure host path for the AppRole role_id}
-  openbao_secret_id:
-    file: ${OPENBAO_SECRET_ID_HOST_FILE:?set OPENBAO_SECRET_ID_HOST_FILE to the secure host path for the AppRole secret_id}
-  openbao_ca:
-    file: ${OPENBAO_CA_HOST_FILE:?set OPENBAO_CA_HOST_FILE to the secure host path for the OpenBao private CA certificate}
+      OT_SECRET_BACKEND: "openbao"
+      OPENBAO_ENDPOINT: "https://openbao:8200"
+      OPENBAO_KV_MOUNT: "hermes-kv"
+      OPENBAO_KV_PREFIX: "gateways"
+      OPENBAO_APPROLE_MOUNT: "approle"
+      OPENBAO_APPROLE_ROLE_ID_FILE: "/run/secrets/openbao_role_id"
+      OPENBAO_APPROLE_SECRET_ID_FILE: "/run/secrets/openbao_secret_id"
+      OPENBAO_EXPIRY_SKEW_SECONDS: "30"
+      OPENBAO_REQUEST_TIMEOUT_MS: "5000"
+      OPENBAO_MAX_RESPONSE_BYTES: "65536"
+      OPENBAO_ALLOW_INSECURE_LOOPBACK: "0"
+      NODE_EXTRA_CA_CERTS: "/run/secrets/openbao_ca"
+    # READ-ONLY bind mounts of the out-of-repo runtime credential copies + CA.
+    # `create_host_path: false` fails closed if a source is missing (never mounts
+    # an accidental empty directory). Sources come ONLY from REQUIRED host vars.
+    volumes:
+      - type: bind
+        source: "${OPENBAO_ROLE_ID_HOST_FILE:?set OPENBAO_ROLE_ID_HOST_FILE to the out-of-repo root:<gid> 0440 role-id copy}"
+        target: /run/secrets/openbao_role_id
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: "${OPENBAO_SECRET_ID_HOST_FILE:?set OPENBAO_SECRET_ID_HOST_FILE to the out-of-repo root:<gid> 0440 secret-id copy}"
+        target: /run/secrets/openbao_secret_id
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: "${OPENBAO_CA_HOST_FILE:?set OPENBAO_CA_HOST_FILE to the read-only OpenBao private CA certificate}"
+        target: /run/secrets/openbao_ca
+        read_only: true
+        bind:
+          create_host_path: false
