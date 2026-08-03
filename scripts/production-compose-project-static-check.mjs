@@ -54,6 +54,17 @@ const readNormalized = (path) =>
 
 const composeFile = readNormalized("docker-compose.prod.yml");
 const deployWorkflow = readNormalized(".github/workflows/deploy.yml");
+// PHASE 95: the marker-gated activation + rollback logic lives in a dedicated,
+// unit-tested script that the workflow invokes. It is part of the Tier 1 deploy
+// pipeline and is held to the SAME compose/marker/rollback contract.
+const activateScript = (() => {
+  try {
+    return readNormalized("scripts/deploy/openbao-activate.sh");
+  } catch {
+    return "";
+  }
+})();
+const pipelineText = `${deployWorkflow}\n${activateScript}`;
 
 // ── Logical lines ────────────────────────────────────────────────────────────
 // A shell joins backslash-newline continuations before parsing, so all
@@ -84,7 +95,9 @@ function toLogicalLines(text) {
   return logical;
 }
 
-const deployLogical = toLogicalLines(deployWorkflow);
+// Compose/marker/rollback contract runs over the WHOLE pipeline (workflow +
+// activation script); Gate 0A on/permissions checks stay on deploy.yml alone.
+const deployLogical = toLogicalLines(pipelineText);
 // Executable lines: non-empty, not a full-line comment.
 const executableLines = deployLogical.filter(
   ({ line }) => line.trim() !== "" && !/^\s*#/.test(line),
@@ -219,17 +232,23 @@ gate(
   "missing the active-overlay `up` (base + OpenBao overlay + --env-file .env.production)",
 );
 
-// ── 3b. Marker-gated activation contract (must stay stable across deploys) ───
+// ── 3b. Marker-gated activation contract (runtime-verifiable, fail-closed) ────
 gate(
-  deployWorkflow.includes("MARKER=/etc/hermes-openbao/activation.env"),
+  pipelineText.includes("/etc/hermes-openbao/activation.env"),
   "DEPLOY_MARKER_PATH",
-  "deploy must define `MARKER=/etc/hermes-openbao/activation.env`",
+  "deploy pipeline must reference the marker `/etc/hermes-openbao/activation.env`",
 );
-gate(
-  /if \[ ! -e "\$MARKER" \]/.test(deployWorkflow),
-  "DEPLOY_MARKER_ABSENT_BASE",
-  "marker-absent path must branch to base-only deploy (`if [ ! -e \"$MARKER\" ]`)",
-);
+// Passwordless sudo is required so the non-root deploy user can VALIDATE the
+// root-owned marker + credentials — proven up front so a `sudo -n test` failure
+// cannot be misread as "marker absent".
+gate(/sudo -n true/.test(pipelineText), "DEPLOY_SUDO_REQUIRED", "deploy must assert `sudo -n true` before reading root-owned activation state");
+// Marker existence/reads MUST be privileged; a bare (unprivileged) `-e "$MARKER"`
+// is permission-ambiguous and is forbidden.
+gate(/sudo -n test -e "\$MARKER"/.test(pipelineText), "DEPLOY_MARKER_PRIVILEGED_E", "marker existence must be probed with `sudo -n test -e \"$MARKER\"`");
+gate(!/\[\s+(?:!\s+)?-e\s+"\$MARKER"\s*\]/.test(pipelineText), "DEPLOY_MARKER_NO_BARE_E", "forbidden unprivileged/ambiguous bracket test `[ -e \"$MARKER\" ]`");
+gate(/sudo -n stat /.test(pipelineText) && /sudo -n cat -- "\$MARKER"/.test(pipelineText), "DEPLOY_MARKER_PRIVILEGED_READ", "marker stat/read must use `sudo -n stat` / `sudo -n cat`");
+// The marker must never be executed.
+gate(!/\bsource\s+[^\n]*\$MARKER/.test(pipelineText) && !/\beval\s+[^\n]*\$MARKER/.test(pipelineText) && !/^\s*\.\s+"?\$MARKER/m.test(pipelineText), "DEPLOY_MARKER_NO_SOURCE", "the marker must not be `source`d/`eval`d");
 gate(
   composeInvocations.some(
     ({ line }) => composeSubcommand(line) === "config" && /docker-compose\.prod\.openbao\.yml/.test(line),
@@ -237,11 +256,22 @@ gate(
   "DEPLOY_MARKER_CONFIG",
   "marker-present path must `config` the base + OpenBao overlay before deploying",
 );
-gate(
-  /rolling back to base compose/i.test(deployWorkflow),
-  "DEPLOY_AUTO_ROLLBACK",
-  "activation failure must auto-roll back to base compose (backend disabled)",
-);
+// GAP 2 — the active `up` runs under explicit control (activation_failed), and
+// its own failure funnels into the rollback.
+gate(/activation_failed/.test(pipelineText), "DEPLOY_ACTIVE_UP_GUARDED", "active `up` must be guarded by explicit error handling (`activation_failed`), never a bare set -e abort");
+gate(/if ! docker compose -p hermes -f docker-compose\.prod\.yml -f docker-compose\.prod\.openbao\.yml --env-file \.env\.production up /.test(pipelineText), "DEPLOY_ACTIVE_UP_IF", "the active `up` must be invoked inside an `if ! …` guard");
+// GAP 3 — rollback must PROVE the backend is disabled (env + all three mounts
+// absent), and only claim success after that proof.
+gate(/verify_rollback_disabled/.test(pipelineText), "DEPLOY_ROLLBACK_PROVES_DISABLED", "rollback must call a `verify_rollback_disabled` proof");
+gate(/OT_SECRET_BACKEND[^\n]*!= openbao/.test(pipelineText), "DEPLOY_ROLLBACK_ENV", "rollback must assert OT_SECRET_BACKEND != openbao");
+for (const name of ["openbao_role_id", "openbao_secret_id", "openbao_ca"]) {
+  gate(new RegExp(`! -e /run/secrets/${name}`).test(pipelineText), "DEPLOY_ROLLBACK_MOUNTS_ABSENT", `rollback must assert /run/secrets/${name} is absent`);
+}
+gate(/ROLLBACK_UNVERIFIED/.test(pipelineText), "DEPLOY_ROLLBACK_UNVERIFIED", "an unprovable rollback must report ROLLBACK_UNVERIFIED (never claim disabled)");
+// GAP 4 — host mapping must be checked EXACTLY against the private IP, not by a
+// mere `openbao` word match.
+gate(!/grep -qw openbao \/etc\/hosts/.test(pipelineText), "DEPLOY_HOST_MAPPING_NOT_WORDONLY", "host mapping must not be a bare `grep -qw openbao /etc/hosts`");
+gate(/verify_host_mapping/.test(pipelineText) && /awk -v ip="\$PRIVATE_IP"/.test(pipelineText), "DEPLOY_HOST_MAPPING_EXACT", "host mapping must prove `openbao` resolves to exactly $PRIVATE_IP");
 
 // ── 4. Forbidden executable patterns must never (re)appear ───────────────────
 const forbiddenPatterns = [

@@ -17,6 +17,10 @@ const root = resolve(__dirname, "..", "..", "..", "..");
 const base = readFileSync(resolve(root, "docker-compose.prod.yml"), "utf8");
 const overlay = readFileSync(resolve(root, "docker-compose.prod.openbao.yml"), "utf8");
 const deploy = readFileSync(resolve(root, ".github/workflows/deploy.yml"), "utf8");
+const activate = readFileSync(resolve(root, "scripts/deploy/openbao-activate.sh"), "utf8");
+// The activation/rollback logic lives in the dedicated script the workflow calls;
+// the two together are the deploy pipeline.
+const pipeline = `${deploy}\n${activate}`;
 
 describe("95 — base production Compose stays disabled-by-default", () => {
   it("never activates the OT secret backend", () => {
@@ -95,52 +99,79 @@ describe("95 — production OpenBao overlay contract (bind mounts, non-root runt
   });
 });
 
-describe("95 — deploy workflow: marker-gated activation, dual compose, rollback", () => {
-  it("knows the activation marker and both compose files", () => {
-    expect(deploy).toContain("/etc/hermes-openbao/activation.env");
-    expect(deploy).toContain("-f docker-compose.prod.yml -f docker-compose.prod.openbao.yml");
+describe("95 — deploy workflow calls the verifiable activation script", () => {
+  it("the workflow requires sudo -n and delegates to the activation script", () => {
+    expect(deploy).toMatch(/sudo -n true/);
+    expect(deploy).toContain("bash scripts/deploy/openbao-activate.sh");
+    // The heavy activation logic is no longer inlined in the YAML heredoc.
+    expect(deploy).not.toMatch(/done <<< "\$marker_content"/);
+  });
+});
+
+describe("95 — activation script: privileged, fail-closed, runtime-verifiable", () => {
+  it("references the marker and both compose files", () => {
+    expect(activate).toContain("/etc/hermes-openbao/activation.env");
+    expect(activate).toContain("-f docker-compose.prod.yml -f docker-compose.prod.openbao.yml");
   });
 
-  it("cannot activate the backend without the overlay file", () => {
-    // The only line that turns the backend on is the dual-file `up`; the overlay
-    // filename must appear on every activating command.
-    const upLines = deploy.split("\n").filter((l) => /compose .*up -d/.test(l));
-    const activating = upLines.filter((l) => /prod\.openbao\.yml/.test(l));
-    expect(activating.length).toBeGreaterThanOrEqual(1);
-    // A base-only `up` (rollback / disabled path) also exists.
-    expect(upLines.some((l) => !/prod\.openbao\.yml/.test(l))).toBe(true);
+  it("requires passwordless sudo and validates marker state PRIVILEGED (no ambiguous bare -e)", () => {
+    expect(activate).toMatch(/sudo -n true/);
+    expect(activate).toMatch(/sudo -n test -e "\$MARKER"/);
+    expect(activate).toMatch(/sudo -n stat /);
+    expect(activate).toMatch(/sudo -n cat -- "\$MARKER"/);
+    // A bare/unprivileged `[ ! -e "$MARKER" ]` (permission-ambiguous) is gone.
+    expect(pipeline).not.toMatch(/\[\s+(?:!\s+)?-e\s+"\$MARKER"\s*\]/);
+    // Marker is never sourced/eval'd.
+    expect(activate).not.toMatch(/\bsource\s+[^\n]*\$MARKER/);
+    expect(activate).not.toMatch(/\beval\s+[^\n]*\$MARKER/);
+    expect(activate).not.toMatch(/^\s*\.\s+"?\$MARKER/m);
   });
 
-  it("keeps the disabled path base-only when the marker is absent", () => {
-    expect(deploy).toMatch(/marker absent[\s\S]*deploy_base/i);
-    expect(deploy).toMatch(/if \[ ! -e "\$MARKER" \]/);
+  it("marker-absent path is base-only; marker-present path configs both files", () => {
+    expect(activate).toMatch(/if ! marker_present; then/);
+    expect(activate).toMatch(/deploy_base_disabled/);
+    expect(activate).toMatch(/docker compose -p hermes -f docker-compose\.prod\.yml -f docker-compose\.prod\.openbao\.yml --env-file \.env\.production config >\/dev\/null/);
   });
 
-  it("has an automatic rollback to base compose on activation failure", () => {
-    expect(deploy).toMatch(/verify_active/);
-    expect(deploy.toLowerCase()).toContain("rolling back to base compose");
-    expect(deploy).toMatch(/Activation verification FAILED/);
+  it("GAP 2 — the active up is guarded and its failure triggers rollback", () => {
+    expect(activate).toMatch(/activation_failed/);
+    expect(activate).toMatch(/if ! docker compose -p hermes -f docker-compose\.prod\.yml -f docker-compose\.prod\.openbao\.yml --env-file \.env\.production up /);
+    expect(activate).toMatch(/rollback_base/);
   });
 
-  it("validates the marker fail-closed (root-owned, no symlink, no other bits, allow-listed keys)", () => {
-    expect(deploy).toMatch(/root:root/);
-    expect(deploy).toMatch(/-L "\$MARKER"/);
-    expect(deploy).toMatch(/grants 'other' permissions/);
-    expect(deploy).toMatch(/unknown marker key/);
-    expect(deploy).toMatch(/duplicate marker key/);
-    // exact-0440 credential + RFC1918 private-IP checks
-    expect(deploy).toMatch(/not exactly 0440/);
-    expect(deploy).toMatch(/private-range address/);
+  it("GAP 3 — rollback PROVES the backend is disabled (env + all three mounts absent)", () => {
+    expect(activate).toMatch(/verify_rollback_disabled/);
+    expect(activate).toMatch(/OT_SECRET_BACKEND[^\n]*!= openbao/);
+    for (const name of ["openbao_role_id", "openbao_secret_id", "openbao_ca"]) {
+      expect(activate).toMatch(new RegExp(`! -e /run/secrets/${name}`));
+    }
+    // The final container must carry NO OpenBao bind mount.
+    expect(activate).toMatch(/\/run\/secrets\/openbao_/);
+    expect(activate).toMatch(/ROLLBACK_UNVERIFIED/);
   });
 
-  it("never echoes a secret or reads credential CONTENT (only tests presence/mode)", () => {
-    // No `cat`/`echo` of the credential files or /run/secrets material.
-    expect(deploy).not.toMatch(/cat\s+[^\n]*\/run\/secrets/);
-    expect(deploy).not.toMatch(/cat\s+"?\$(ROLE_ID_HOST_FILE|SECRET_ID_HOST_FILE)/);
-    // The marker is parsed by an allow-listed read loop, never sourced/eval'd.
-    expect(deploy).not.toMatch(/source\s+"?\$MARKER/);
-    expect(deploy).not.toMatch(/eval\s+[^\n]*\$MARKER/);
-    // Credential presence is checked with test flags, not by printing content.
-    expect(deploy).toMatch(/-r \/run\/secrets\/openbao_role_id/);
+  it("GAP 4 — host mapping is proven EXACTLY against the private IP, not a word match", () => {
+    expect(activate).not.toMatch(/grep -qw openbao \/etc\/hosts/);
+    expect(activate).toMatch(/verify_host_mapping/);
+    expect(activate).toMatch(/awk -v ip="\$PRIVATE_IP"/);
+  });
+
+  it("never prints a secret, marker value, or the private IP, and reads no credential CONTENT", () => {
+    expect(activate).not.toMatch(/cat\s+[^\n]*\/run\/secrets/);
+    // No echo/log of the parsed values or the IP.
+    expect(activate).not.toMatch(/echo[^\n]*\$PRIVATE_IP/);
+    expect(activate).not.toMatch(/echo[^\n]*\$ROLE_ID_HOST_FILE/);
+    // Credential presence checked with test flags only.
+    expect(activate).toMatch(/-r \/run\/secrets\/openbao_role_id/);
+  });
+
+  it("still validates the marker fail-closed (root:root, no symlink, exact 0440, RFC1918)", () => {
+    expect(activate).toMatch(/root:root/);
+    expect(activate).toMatch(/test ! -L "\$MARKER"/);
+    expect(activate).toMatch(/grants 'other' permissions/);
+    expect(activate).toMatch(/unknown marker key/);
+    expect(activate).toMatch(/duplicate marker key/);
+    expect(activate).toMatch(/not exactly 0440/);
+    expect(activate).toMatch(/private-range address/);
   });
 });

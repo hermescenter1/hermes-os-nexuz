@@ -165,16 +165,27 @@ the overlay.
   install -o root -g root -m 0600 /dev/null /etc/hermes-openbao/activation.env
   # then write the five KEY=VALUE lines with an editor (no secrets)
   ```
+- The non-root deploy user reads the root-owned marker and credential copies
+  ONLY through `sudo -n` (passwordless), and ONLY to VALIDATE them — it is never
+  added to `root` or the runtime secret group, and never reads a credential's
+  content. Passwordless sudo is proven up front (`sudo -n true`), so a later
+  `sudo -n test` failure can never be mistaken for "marker absent" (fail closed).
 - The workflow **rejects** the marker (fail closed → base compose) if it is a
   symlink, not `root:root`, has any `other` bit, or contains a duplicate/unknown
   key, a shell command / command-substitution, or any non-`KEY=VALUE` line. It
   also re-checks the source files (out-of-repo regular non-symlinks; role/secret
   `root:<runtime-gid>` mode exactly `0440`; CA read-only and runtime-readable),
   validates the private IPv4 (RFC1918 only) and the numeric GID, and runs
-  `docker compose config` on both files before touching the running stack.
+  `docker compose config` on both files before touching the running stack. The
+  marker is never `source`d/`eval`d — it is parsed by an allow-listed reader.
 
 **Marker absent → every deploy stays base-only (backend disabled).**
-**Marker present & valid → every deploy activates the overlay.**
+**Marker present & valid → every deploy activates the overlay.** On any failure
+after recreate, the workflow rolls back to base compose and treats the rollback
+as successful ONLY after PROVING (inside the final container) that
+`OT_SECRET_BACKEND != openbao`, all three `/run/secrets/openbao_*` mounts are
+absent, and the healthcheck is healthy; otherwise it reports `ROLLBACK_UNVERIFIED`
+and exits non-zero without claiming the backend is disabled.
 
 ---
 
