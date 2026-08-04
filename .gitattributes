@@ -5,3 +5,7 @@ ops/openbao/staging/*.sh text eol=lf
 ops/openbao/staging/*.py text eol=lf
 ops/openbao/staging/*.md text eol=lf
 scripts/openbao-operator-backup-static-check.mjs text eol=lf
+# Compliance secret-hygiene gate is a shebang .mjs parsed by Vitest/oxc; a CRLF
+# checkout (Windows autocrlf) breaks parsing. Force LF on every platform.
+scripts/security/check-env-example.mjs text eol=lf
+scripts/security/__tests__/check-env-example.test.mjs text eol=lf
