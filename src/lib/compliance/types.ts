@@ -158,8 +158,32 @@ export interface DbDataExportRequest {
   ipAddress:      string | null;
   completedAt:    Date | null;
   metadata:       Record<string, unknown>;
+  privacyRequestId: string | null;
+  lifecycle:      string;
+  subjectClass:   string | null;
+  approvedBy:     string | null;
+  approvedAt:     Date | null;
+  schemaVersion:  string | null;
+  packageKey:     string | null;
+  contentHash:    string | null;
+  idempotencyKey: string | null;
+  revokedBy:      string | null;
+  revokedAt:      Date | null;
+  failureCode:    string | null;
   createdAt:      Date;
   updatedAt:      Date;
+}
+
+export interface DbExportDownloadToken {
+  id:              string;
+  exportRequestId: string;
+  tokenHash:       string;
+  subjectUserId:   string | null;
+  organizationId:  string | null;
+  expiresAt:       Date;
+  usedAt:          Date | null;
+  revokedAt:       Date | null;
+  createdAt:       Date;
 }
 
 export interface DbDataDeletionRequest {

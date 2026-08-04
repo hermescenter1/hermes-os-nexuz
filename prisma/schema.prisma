@@ -2943,6 +2943,7 @@ model PrivacyRequest {
   user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   candidate      AtsCandidate?        @relation(fields: [candidateId], references: [id], onDelete: SetNull)
   organization   Organization?        @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  exportJobs     DataExportRequest[]  @relation("PrivacyRequestExports")
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
@@ -3055,12 +3056,62 @@ model DataExportRequest {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  // ── Phase 97 Part G — governed child export job ─────────────────────────────
+  // The authoritative parent is PrivacyRequest (privacyRequestId). `lifecycle`
+  // is the governed closed state machine; the legacy `status` is retained and
+  // mapped by the migration (FAILED→FAILED, otherwise the fail-closed
+  // REVIEW_REQUIRED — no approval is invented for legacy rows, and the legacy
+  // downloadUrl is NEVER an authoritative download capability). packageKey is an
+  // opaque server-generated storage key (never a public/provider URL). A DB
+  // CHECK bounds the lifecycle vocabulary and a partial unique index bounds one
+  // ACTIVE job per parent (all migration-only, see the Part G migration).
+  privacyRequestId String?
+  lifecycle        String   @default("REVIEW_REQUIRED")
+  subjectClass     String?  // USER | CANDIDATE (documented subject classification)
+  approvedBy       String?
+  approvedAt       DateTime?
+  schemaVersion    String?
+  packageKey       String?
+  contentHash      String?
+  idempotencyKey   String?
+  revokedBy        String?
+  revokedAt        DateTime?
+  failureCode      String?
+
+  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  privacyRequest PrivacyRequest? @relation("PrivacyRequestExports", fields: [privacyRequestId], references: [id], onDelete: SetNull)
+  downloadTokens ExportDownloadToken[]
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([email])
+  @@index([organizationId, lifecycle])
+  @@index([privacyRequestId])
+}
+
+// ── ExportDownloadToken ───────────────────────────────────────────────────────
+//
+// A short-lived, single-use download capability for a READY export. Only the
+// SHA-256 hash is stored — the plaintext is returned once at issuance and never
+// persisted or logged. Bound to the export request + subject + org; atomically
+// consumed on redemption; cascades from the owning export job (evidence remains
+// represented by the export job itself, which is preserved).
+
+model ExportDownloadToken {
+  id              String    @id @default(cuid())
+  exportRequestId String
+  tokenHash       String    @unique
+  subjectUserId   String?
+  organizationId  String?
+  expiresAt       DateTime
+  usedAt          DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  exportRequest   DataExportRequest @relation(fields: [exportRequestId], references: [id], onDelete: Cascade)
+
+  @@index([exportRequestId])
 }
 
 // ── DataDeletionRequest ───────────────────────────────────────────────────────

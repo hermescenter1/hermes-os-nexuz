@@ -88,7 +88,12 @@ export type OrgPermission =
   | "view_legal_documents"         // read the tenant legal-document register
   | "manage_legal_documents"       // create/edit drafts, submit for review, schedule, withdraw, archive
   | "approve_legal_documents"      // transition IN_REVIEW → APPROVED
-  | "publish_legal_documents";     // transition APPROVED/SCHEDULED → PUBLISHED (transactional supersession)
+  | "publish_legal_documents"      // transition APPROVED/SCHEDULED → PUBLISHED (transactional supersession)
+  // PHASE 97 Part G — governed subject data export. Approval is separate from
+  // management so authorising a subject-data export is a distinct accountable act.
+  | "view_exports"                 // read the tenant export-job register
+  | "manage_exports"               // create/cancel/revoke export jobs, issue tokens
+  | "approve_exports";             // authorise an export job (REQUESTED → AUTHORISED)
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -167,6 +172,11 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   manage_legal_documents:         ["OWNER", "ADMIN"],
   approve_legal_documents:        ["OWNER"],
   publish_legal_documents:        ["OWNER"],
+  // Export: read for oversight roles; management for org admins; approval (which
+  // releases a subject's personal data for packaging) reserved to the OWNER.
+  view_exports:                   ["OWNER", "ADMIN", "MANAGER"],
+  manage_exports:                 ["OWNER", "ADMIN"],
+  approve_exports:                ["OWNER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

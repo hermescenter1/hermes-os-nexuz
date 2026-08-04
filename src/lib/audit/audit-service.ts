@@ -184,6 +184,14 @@ export const COMPLIANCE_AUDIT = {
   LEGAL_DOCUMENT_TRANSITIONED:    "compliance.legal_document.transitioned",
   LEGAL_ACCEPTANCE_CREATED:       "compliance.legal_acceptance.created",
   LEGAL_ACCEPTANCE_WITHDRAWN:     "compliance.legal_acceptance.withdrawn",
+  // Phase 97 Part G — governed subject data export (identifiers + closed enums +
+  // counts only; never package contents, field values, email, IP, UA, token or URL).
+  EXPORT_JOB_CREATED:             "compliance.export.job_created",
+  EXPORT_JOB_TRANSITIONED:        "compliance.export.job_transitioned",
+  EXPORT_TOKEN_ISSUED:            "compliance.export.token_issued",
+  EXPORT_DOWNLOADED:              "compliance.export.downloaded",
+  EXPORT_TOKEN_REPLAY_DENIED:     "compliance.export.token_replay_denied",
+  EXPORT_REVOKED:                 "compliance.export.revoked",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */
