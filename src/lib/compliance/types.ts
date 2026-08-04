@@ -291,6 +291,8 @@ export interface DbLegalHold {
   reviewDate:           Date | null;
   releaseApprovedBy:    string | null;
   releasedAt:           Date | null;
+  cancelledBy:          string | null;
+  cancelledAt:          Date | null;
   createdBy:            string | null;
   updatedBy:            string | null;
   createdAt:            Date;

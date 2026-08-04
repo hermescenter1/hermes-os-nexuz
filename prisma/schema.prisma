@@ -685,6 +685,8 @@ model Organization {
   dataDeletionRequests DataDeletionRequest[]
   processingActivities ProcessingActivity[]
   consentRecords       ConsentRecord[]
+  retentionPolicies    RetentionPolicy[]
+  legalHolds           LegalHold[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -3149,6 +3151,10 @@ model RetentionPolicy {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  // Config-like org-owned data: Cascade follows the repository convention for
+  // required organization relations (OrganizationMember, ApiKey, Department …).
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([organizationId, enabled])
   @@index([organizationId, approvalState])
   @@index([organizationId, updatedAt])
@@ -3167,17 +3173,24 @@ model LegalHold {
   incidentId           String?
   rangeStart           DateTime?
   rangeEnd             DateTime?
-  status               String    @default("PROPOSED") // PROPOSED | ACTIVE | RELEASED
+  status               String    @default("PROPOSED") // PROPOSED | ACTIVE | RELEASED | CANCELLED
   approvedBy           String?
   approvedAt           DateTime?
   startDate            DateTime?
   reviewDate           DateTime?
   releaseApprovedBy    String?
   releasedAt           DateTime?
+  cancelledBy          String?   // set when a never-activated PROPOSED hold is CANCELLED (distinct from release)
+  cancelledAt          DateTime?
   createdBy            String?
   updatedBy            String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+
+  // Legal evidence: fail-closed. Restrict prevents hard-deleting an organization
+  // that still holds a legal hold, so evidence is never silently orphaned. Do NOT
+  // change to Cascade/SetNull without an explicit legal deletion policy.
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, status])
   @@index([organizationId, scopeType])

@@ -165,11 +165,11 @@ describe("legal holds — tenant isolation + status machine", () => {
     expect(act.res.status).toBe(200);
     expect(holds[0].status).toBe("ACTIVE");
     expect(holds[0].approvedBy).toBe("admin-A");
-    // ACTIVE → RELEASED ok, then RELEASED → ACTIVE rejected.
+    // ACTIVE → RELEASED ok, then RELEASED is terminal & immutable.
     await call("../legal-holds/[id]/route", "PATCH", "/legal-holds/h-A", { status: "RELEASED" }, "h-A");
     const bad = await call("../legal-holds/[id]/route", "PATCH", "/legal-holds/h-A", { status: "ACTIVE" }, "h-A");
     expect(bad.res.status).toBe(409);
-    expect(bad.json.code).toBe("INVALID_TRANSITION");
+    expect(bad.json.code).toBe("HOLD_IMMUTABLE");
   });
 });
 

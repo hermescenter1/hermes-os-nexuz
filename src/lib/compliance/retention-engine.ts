@@ -39,8 +39,8 @@ export const RETENTION_ACTIONS: RetentionAction[] = ["DELETE", "ANONYMISE", "ARC
 export type RetentionTrigger = "CREATION" | "LAST_ACTIVITY" | "CASE_CLOSURE" | "REVIEW_REQUIRED";
 export const RETENTION_TRIGGERS: RetentionTrigger[] = ["CREATION", "LAST_ACTIVITY", "CASE_CLOSURE", "REVIEW_REQUIRED"];
 
-export type LegalHoldStatus = "PROPOSED" | "ACTIVE" | "RELEASED";
-export const LEGAL_HOLD_STATUSES: LegalHoldStatus[] = ["PROPOSED", "ACTIVE", "RELEASED"];
+export type LegalHoldStatus = "PROPOSED" | "ACTIVE" | "RELEASED" | "CANCELLED";
+export const LEGAL_HOLD_STATUSES: LegalHoldStatus[] = ["PROPOSED", "ACTIVE", "RELEASED", "CANCELLED"];
 
 export type RetentionApprovalState = "PENDING_REVIEW" | "APPROVED" | "REJECTED";
 export const RETENTION_APPROVAL_STATES: RetentionApprovalState[] = ["PENDING_REVIEW", "APPROVED", "REJECTED"];

@@ -12,6 +12,7 @@ import {
   toLegalHoldCreateData,
   toLegalHoldDto,
 } from "@/lib/compliance/retention-schema";
+import { validateLegalHoldScope } from "@/lib/compliance/legal-hold";
 
 /**
  * Legal hold registry (Phase 97 Part F) — org-scoped.
@@ -35,10 +36,17 @@ export async function POST(req: NextRequest) {
   const parsed = createLegalHoldSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid legal hold", code: "INVALID_INPUT" }, { status: 400 });
 
+  // Fail-closed scope validation — a semantically incomplete or contradictory
+  // hold is rejected before it can ever be persisted.
+  const scopeValidation = validateLegalHoldScope(parsed.data);
+  if (!scopeValidation.ok) {
+    return NextResponse.json({ error: "Invalid legal hold scope", code: scopeValidation.code, reason: scopeValidation.reason }, { status: 400 });
+  }
+
   const created = await createLegalHoldForOrg({
     organizationId: scope.organizationId,
     createdBy:      scope.userId,
-    data:           toLegalHoldCreateData(parsed.data),
+    data:           toLegalHoldCreateData(parsed.data, scopeValidation.normalized),
   });
   if (!created) return NextResponse.json({ error: "Could not create hold", code: "PERSIST_FAILED" }, { status: 503 });
 

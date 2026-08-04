@@ -1,0 +1,206 @@
+/**
+ * SECURITY (Phase 97 checkpoint hardening) — legal-hold lifecycle integrity.
+ *
+ * Invariants:
+ *   INVALID_LEGAL_HOLD_ACTIVATION=0
+ *   ACTIVE_LEGAL_HOLD_MATERIAL_MUTATION=0
+ *   RELEASED_LEGAL_HOLD_MUTATION=0
+ *   LEGAL_HOLD_SCOPE_CHANGE_WITHOUT_REAPPROVAL=0
+ *   LEGAL_HOLD_POLICY_BYPASS=0
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { NextRequest } from "next/server";
+import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
+
+type Member = { userId: string; organizationId: string; role: string; status: string };
+type Row = Record<string, unknown> & { id: string; organizationId: string };
+
+let payload: { sub: string; role: string; sid?: string } | null = null;
+let members: Member[] = [];
+let holds: Row[] = [];
+let policies: Row[] = [];
+const auditCalls: Array<Record<string, unknown>> = [];
+let idSeq = 0;
+
+function matches(where: Record<string, unknown>, r: Row): boolean {
+  for (const [k, v] of Object.entries(where)) if (r[k] !== v) return false;
+  return true;
+}
+function model(store: () => Row[]) {
+  return {
+    findMany: async ({ where = {} }: { where?: Record<string, unknown> }) => store().filter((r) => matches(where, r)),
+    findFirst: async ({ where }: { where: Record<string, unknown> }) => store().find((r) => matches(where, r)) ?? null,
+    create: async ({ data }: { data: Record<string, unknown> }) => {
+      const row = { ...data, id: (data.id as string) ?? `gen-${++idSeq}` } as Row;
+      store().push(row);
+      return row;
+    },
+    updateMany: async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+      const matched = store().filter((r) => matches(where, r));
+      matched.forEach((r) => Object.assign(r, data));
+      return { count: matched.length };
+    },
+  };
+}
+function makeDb() {
+  return {
+    organizationMember: {
+      findMany: async ({ where }: { where: { userId: string; status: string } }) =>
+        members.filter((m) => m.userId === where.userId && m.status === where.status).map((m) => ({ organizationId: m.organizationId, role: m.role })),
+    },
+    legalHold: model(() => holds),
+    retentionPolicy: model(() => policies),
+  };
+}
+
+const MOCKED = ["@/lib/auth/jwt", "@/lib/auth/session-store", "@/lib/db/prisma", "@/lib/audit/audit-service", "@/lib/logger/security-events"];
+beforeEach(() => {
+  vi.resetModules();
+  payload = { sub: "admin-A", role: "admin", sid: "s1" };
+  members = [{ userId: "admin-A", organizationId: "org-A", role: "ADMIN", status: "ACTIVE" }];
+  holds = []; policies = []; auditCalls.length = 0;
+  vi.doMock("@/lib/auth/jwt", () => ({ verifyAccessToken: async () => payload }));
+  vi.doMock("@/lib/auth/session-store", () => ({ isPayloadSessionActive: async () => true }));
+  vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => makeDb() }));
+  vi.doMock("@/lib/audit/audit-service", () => ({
+    recordAuditEvent: async (e: Record<string, unknown>) => { auditCalls.push(e); },
+    COMPLIANCE_AUDIT: { LEGAL_HOLD_CREATED: "compliance.legal_hold.created", LEGAL_HOLD_UPDATED: "compliance.legal_hold.updated", RETENTION_POLICY_CREATED: "compliance.retention_policy.created" },
+  }));
+  vi.doMock("@/lib/logger/security-events", () => ({ logAuthFailure: () => {}, logAuthzDenial: () => {}, logInfraFailure: () => {} }));
+});
+afterEach(() => { for (const m of MOCKED) vi.doUnmock(m); vi.restoreAllMocks(); });
+
+function mkReq(path: string, method: string, body?: unknown) {
+  return new NextRequest(`http://localhost/api/compliance${path}`, {
+    method, headers: { cookie: `${ACCESS_TOKEN_COOKIE}=fake`, "content-type": "application/json" },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+}
+async function holdPOST(body: unknown) {
+  const { POST } = await import("../legal-holds/route");
+  const res = await POST(mkReq("/legal-holds", "POST", body));
+  return { res, json: await res.json() };
+}
+async function holdPATCH(id: string, body: unknown) {
+  const { PATCH } = await import("../legal-holds/[id]/route");
+  const res = await PATCH(mkReq(`/legal-holds/${id}`, "PATCH", body), { params: Promise.resolve({ id }) });
+  return { res, json: await res.json() };
+}
+async function policyPOST(body: unknown) {
+  const { POST } = await import("../retention-policies/route");
+  const res = await POST(mkReq("/retention-policies", "POST", body));
+  return { res, json: await res.json() };
+}
+
+describe("create — fail-closed scope", () => {
+  it("rejects an incomplete scope (SUBJECT without subjectId)", async () => {
+    const { res, json } = await holdPOST({ name: "H", scopeType: "SUBJECT" });
+    expect(res.status).toBe(400);
+    expect(json.code).toBe("INVALID_SCOPE");
+    expect(holds).toHaveLength(0);
+  });
+  it("rejects a contradictory scope (ORGANIZATION + subjectId)", async () => {
+    const { res } = await holdPOST({ name: "H", scopeType: "ORGANIZATION", subjectId: "s1" });
+    expect(res.status).toBe(400);
+  });
+  it("accepts a valid scope and creates PROPOSED", async () => {
+    const { res, json } = await holdPOST({ name: "H", scopeType: "SUBJECT", subjectId: "s1" });
+    expect(res.status).toBe(201);
+    expect(json.hold.status).toBe("PROPOSED");
+  });
+});
+
+describe("activation revalidation — INVALID_LEGAL_HOLD_ACTIVATION=0", () => {
+  it("a PROPOSED hold with an incomplete persisted scope cannot become ACTIVE", async () => {
+    // Seed directly (bypassing create) an incomplete PROPOSED hold.
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: null, status: "PROPOSED" }];
+    const { res, json } = await holdPATCH("h1", { status: "ACTIVE" });
+    expect(res.status).toBe(422);
+    expect(json.code).toBe("INVALID_LEGAL_HOLD_ACTIVATION");
+    expect(holds[0].status).toBe("PROPOSED");
+  });
+  it("activation sets approvedBy/approvedAt server-side when scope is valid", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    const { res } = await holdPATCH("h1", { status: "ACTIVE" });
+    expect(res.status).toBe(200);
+    expect(holds[0].status).toBe("ACTIVE");
+    expect(holds[0].approvedBy).toBe("admin-A");
+    expect(holds[0].approvedAt).toBeInstanceOf(Date);
+  });
+});
+
+describe("ACTIVE immutability", () => {
+  beforeEach(() => { holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "ACTIVE" }]; });
+
+  it("denies a material scope change (ACTIVE_LEGAL_HOLD_MATERIAL_MUTATION=0 / scope-change-without-reapproval=0)", async () => {
+    const { res, json } = await holdPATCH("h1", { subjectId: "s2" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("ACTIVE_HOLD_IMMUTABLE");
+    expect(holds[0].subjectId).toBe("s1");
+  });
+  it("denies changing scopeType under the existing approval", async () => {
+    const { res } = await holdPATCH("h1", { scopeType: "ORGANIZATION" });
+    expect(res.status).toBe(409);
+    expect(holds[0].scopeType).toBe("SUBJECT");
+  });
+  it("allows a reviewDate-only update", async () => {
+    const { res } = await holdPATCH("h1", { reviewDate: "2026-09-01T00:00:00.000Z" });
+    expect(res.status).toBe(200);
+    expect(holds[0].reviewDate).toBeInstanceOf(Date);
+  });
+  it("allows the release transition and sets releaseApprovedBy/releasedAt", async () => {
+    const { res } = await holdPATCH("h1", { status: "RELEASED" });
+    expect(res.status).toBe(200);
+    expect(holds[0].status).toBe("RELEASED");
+    expect(holds[0].releaseApprovedBy).toBe("admin-A");
+  });
+});
+
+describe("terminal immutability + cancellation", () => {
+  it("a RELEASED hold is fully immutable (RELEASED_LEGAL_HOLD_MUTATION=0)", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "RELEASED" }];
+    const { res, json } = await holdPATCH("h1", { reviewDate: "2026-09-01T00:00:00.000Z" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("HOLD_IMMUTABLE");
+  });
+  it("a PROPOSED hold is CANCELLED (distinct from release) with attribution", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    const { res } = await holdPATCH("h1", { status: "CANCELLED" });
+    expect(res.status).toBe(200);
+    expect(holds[0].status).toBe("CANCELLED");
+    expect(holds[0].cancelledBy).toBe("admin-A");
+    expect(holds[0].releasedAt ?? null).toBeNull(); // not blurred with release
+  });
+  it("a PROPOSED hold cannot jump straight to RELEASED", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    const { res, json } = await holdPATCH("h1", { status: "RELEASED" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("INVALID_TRANSITION");
+  });
+});
+
+describe("legalHoldAware is not a client bypass — LEGAL_HOLD_POLICY_BYPASS=0", () => {
+  it("a retention policy body carrying legalHoldAware=false is rejected", async () => {
+    const { res } = await policyPOST({ name: "P", dataClass: "pii", targetResource: "case", legalHoldAware: false });
+    expect(res.status).toBe(400); // strict schema rejects the field outright
+    expect(policies).toHaveLength(0);
+  });
+  it("a created policy always has legalHoldAware=true", async () => {
+    const { res, json } = await policyPOST({ name: "P", dataClass: "pii", targetResource: "case" });
+    expect(res.status).toBe(201);
+    expect(policies[0].legalHoldAware).toBe(true);
+    expect(json.policy).toBeTruthy();
+  });
+});
+
+describe("audit hygiene", () => {
+  it("hold update audit carries closed enums + ids only", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "SECRET HOLD NAME", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    await holdPATCH("h1", { status: "ACTIVE" });
+    const ev = auditCalls.find((e) => e.action === "compliance.legal_hold.updated");
+    expect(ev).toBeTruthy();
+    const serialised = JSON.stringify(ev);
+    expect(serialised).not.toContain("SECRET HOLD NAME");
+  });
+});

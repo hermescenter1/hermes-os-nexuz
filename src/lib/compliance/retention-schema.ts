@@ -16,6 +16,7 @@ import {
   classifyRetentionPolicy,
   type RetentionPolicyLike,
 } from "./retention-engine";
+import type { NormalizedLegalHoldScope } from "./legal-hold";
 import type { DbRetentionPolicy, DbLegalHold } from "./types";
 
 const enumOf = (vals: readonly string[]) => z.enum(vals as [string, ...string[]]);
@@ -32,7 +33,9 @@ const retentionBase = {
   action:           enumOf(RETENTION_ACTIONS).optional(),
   reviewOwner:      z.string().trim().max(200).optional(),
   approvalState:    enumOf(RETENTION_APPROVAL_STATES).optional(),
-  legalHoldAware:   z.boolean().optional(),
+  // legalHoldAware is DELIBERATELY not client-settable — no policy flag may
+  // disable active legal-hold protection (LEGAL_HOLD_POLICY_BYPASS=0). It is
+  // forced true server-side. A client body carrying it is rejected by strict().
   dryRunOnly:       z.boolean().optional(),
   enabled:          z.boolean().optional(),
 };
@@ -53,7 +56,7 @@ export function toRetentionCreateData(input: CreateRetentionPolicyInput): Record
     action:           input.action ?? "REVIEW_REQUIRED",     // fail-closed: no automated action
     reviewOwner:      input.reviewOwner ?? null,
     approvalState:    input.approvalState ?? "PENDING_REVIEW",
-    legalHoldAware:   input.legalHoldAware ?? true,
+    legalHoldAware:   true, // forced true server-side — never a bypass
     dryRunOnly:       input.dryRunOnly ?? true,             // dry-run by default
     enabled:          input.enabled ?? false,               // disabled by default
   };
@@ -115,21 +118,30 @@ export type UpdateLegalHoldInput = z.infer<typeof updateLegalHoldSchema>;
 
 const dateOrNull = (s?: string) => (s ? new Date(s) : null);
 
-export function toLegalHoldCreateData(input: CreateLegalHoldInput): Record<string, unknown> {
+/**
+ * Build the CREATE payload from validated input PLUS a pre-validated normalized
+ * scope (see validateLegalHoldScope). The scope fields come only from the
+ * normalized object, so a contradictory field can never be persisted. A new hold
+ * is always PROPOSED — never ACTIVE on creation.
+ */
+export function toLegalHoldCreateData(
+  input: CreateLegalHoldInput,
+  normalized: NormalizedLegalHoldScope,
+): Record<string, unknown> {
   return {
     name:                 input.name,
     reasonClass:          input.reasonClass ?? "REVIEW_REQUIRED",
-    scopeType:            input.scopeType,
-    subjectId:            input.subjectId ?? null,
-    resourceType:         input.resourceType ?? null,
-    resourceId:           input.resourceId ?? null,
-    processingActivityId: input.processingActivityId ?? null,
-    incidentId:           input.incidentId ?? null,
-    rangeStart:           dateOrNull(input.rangeStart),
-    rangeEnd:             dateOrNull(input.rangeEnd),
+    scopeType:            normalized.scopeType,
+    subjectId:            normalized.subjectId,
+    resourceType:         normalized.resourceType,
+    resourceId:           normalized.resourceId,
+    processingActivityId: normalized.processingActivityId,
+    incidentId:           normalized.incidentId,
+    rangeStart:           normalized.rangeStart,
+    rangeEnd:             normalized.rangeEnd,
     startDate:            dateOrNull(input.startDate),
     reviewDate:           dateOrNull(input.reviewDate),
-    status:               "PROPOSED", // fail-closed: a new hold is never ACTIVE on creation
+    status:               "PROPOSED",
   };
 }
 
@@ -151,6 +163,7 @@ export function toLegalHoldDto(row: DbLegalHold) {
     startDate:            row.startDate,
     reviewDate:           row.reviewDate,
     releasedAt:           row.releasedAt,
+    cancelledAt:          row.cancelledAt,
     createdAt:            row.createdAt,
     updatedAt:            row.updatedAt,
   };
