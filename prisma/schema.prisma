@@ -2973,12 +2973,28 @@ model LegalDocument {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
+  // ── Phase 97 governed lifecycle (additive) ──────────────────────────────────
+  // `lifecycle` is authoritative; `isPublished` is retained for compatibility and
+  // kept in lock-step with the PUBLISHED state. Existing rows are mapped
+  // isPublished→PUBLISHED else DRAFT by the migration. Owner-scoped version
+  // uniqueness and single-effective-version uniqueness are enforced by
+  // migration-only partial / NULLS-NOT-DISTINCT unique indexes (not expressible
+  // as a Prisma @@unique), so the previous global-only unique is dropped there.
+  lifecycle      String            @default("DRAFT") // DRAFT|IN_REVIEW|APPROVED|SCHEDULED|PUBLISHED|SUPERSEDED|WITHDRAWN|ARCHIVED
+  approvedBy     String?
+  approvedAt     DateTime?
+  publishedBy    String?
+  withdrawnAt    DateTime?
+  supersededById String?
+
   acceptances    LegalAcceptance[]
   organization   Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  supersededBy   LegalDocument?    @relation("LegalDocumentSupersession", fields: [supersededById], references: [id], onDelete: SetNull)
+  supersedes     LegalDocument[]   @relation("LegalDocumentSupersession")
 
-  @@unique([documentType, version, locale])
   @@index([documentType, isPublished, locale])
   @@index([organizationId, documentType])
+  @@index([organizationId, lifecycle])
 }
 
 // ── LegalAcceptance ───────────────────────────────────────────────────────────
@@ -2997,6 +3013,17 @@ model LegalAcceptance {
   locale          String        @default("en")
   createdAt       DateTime      @default(now())
 
+  // Phase 97 additive safe evidence. Bound to the immutable document version via
+  // legalDocumentId; the denormalized fields make the record self-describing and
+  // are NEVER rewritten when a new version is published. Withdrawal sets
+  // withdrawnAt (evidence preserved, never deleted). No raw IP/UA/JWT/cookie is
+  // added — the governed acceptance path leaves ipAddress/userAgent null.
+  documentType    String?
+  documentVersion String?
+  sourceClass     String?
+  correlationId   String?
+  withdrawnAt     DateTime?
+
   legalDocument   LegalDocument  @relation(fields: [legalDocumentId], references: [id])
   user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
@@ -3004,6 +3031,7 @@ model LegalAcceptance {
   @@index([legalDocumentId, createdAt])
   @@index([userId, legalDocumentId])
   @@index([candidateId, legalDocumentId])
+  @@index([legalDocumentId, userId])
 }
 
 // ── DataExportRequest ─────────────────────────────────────────────────────────

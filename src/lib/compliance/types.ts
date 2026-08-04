@@ -114,6 +114,12 @@ export interface DbLegalDocument {
   effectiveDate:  Date | null;
   organizationId: string | null;
   createdBy:      string | null;
+  lifecycle:      string;
+  approvedBy:     string | null;
+  approvedAt:     Date | null;
+  publishedBy:    string | null;
+  withdrawnAt:    Date | null;
+  supersededById: string | null;
   createdAt:      Date;
   updatedAt:      Date;
 }
@@ -127,8 +133,17 @@ export interface DbLegalAcceptance {
   ipAddress:       string | null;
   userAgent:       string | null;
   locale:          string;
+  documentType:    string | null;
+  documentVersion: string | null;
+  sourceClass:     string | null;
+  correlationId:   string | null;
+  withdrawnAt:     Date | null;
   createdAt:       Date;
 }
+
+export type LegalDocumentLifecycle =
+  | "DRAFT" | "IN_REVIEW" | "APPROVED" | "SCHEDULED"
+  | "PUBLISHED" | "SUPERSEDED" | "WITHDRAWN" | "ARCHIVED";
 
 export interface DbDataExportRequest {
   id:             string;

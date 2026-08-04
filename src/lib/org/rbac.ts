@@ -81,7 +81,14 @@ export type OrgPermission =
   | "manage_processing_activities" // create / update / approve RoPA entries
   | "manage_privacy_requests"      // triage/transition a data-subject request
   | "manage_retention"             // author/approve retention policies (dry-run)
-  | "manage_legal_hold";           // create/activate/release legal holds
+  | "manage_legal_hold"            // create/activate/release legal holds
+  // PHASE 97 Part D — legal-document lifecycle. Approval and publication are
+  // DELIBERATELY separate permissions so the two accountable actions cannot be
+  // performed by the same authority by default.
+  | "view_legal_documents"         // read the tenant legal-document register
+  | "manage_legal_documents"       // create/edit drafts, submit for review, schedule, withdraw, archive
+  | "approve_legal_documents"      // transition IN_REVIEW → APPROVED
+  | "publish_legal_documents";     // transition APPROVED/SCHEDULED → PUBLISHED (transactional supersession)
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -153,6 +160,13 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   manage_privacy_requests:        ["OWNER", "ADMIN"],
   manage_retention:               ["OWNER", "ADMIN"],
   manage_legal_hold:              ["OWNER", "ADMIN"],
+  // Legal documents: read for the oversight roles; authoring for org admins.
+  // Approval and publication are the OWNER's by default (separable, accountable
+  // acts) — an ADMIN authors and submits but does not self-approve or publish.
+  view_legal_documents:           ["OWNER", "ADMIN", "MANAGER"],
+  manage_legal_documents:         ["OWNER", "ADMIN"],
+  approve_legal_documents:        ["OWNER"],
+  publish_legal_documents:        ["OWNER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

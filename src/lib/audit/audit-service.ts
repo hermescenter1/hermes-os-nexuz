@@ -177,6 +177,13 @@ export const COMPLIANCE_AUDIT = {
   RETENTION_POLICY_UPDATED:       "compliance.retention_policy.updated",
   LEGAL_HOLD_CREATED:             "compliance.legal_hold.created",
   LEGAL_HOLD_UPDATED:             "compliance.legal_hold.updated",
+  // Phase 97 — Legal-document lifecycle & acceptance (identifiers + closed enums
+  // only; never document content, review notes, email, IP, UA or tokens).
+  LEGAL_DOCUMENT_CREATED:         "compliance.legal_document.created",
+  LEGAL_DOCUMENT_CONTENT_UPDATED: "compliance.legal_document.content_updated",
+  LEGAL_DOCUMENT_TRANSITIONED:    "compliance.legal_document.transitioned",
+  LEGAL_ACCEPTANCE_CREATED:       "compliance.legal_acceptance.created",
+  LEGAL_ACCEPTANCE_WITHDRAWN:     "compliance.legal_acceptance.withdrawn",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */
