@@ -167,6 +167,9 @@ export const MULTI_SITE_AUDIT = {
  */
 export const COMPLIANCE_AUDIT = {
   PRIVACY_REQUEST_STATUS_CHANGED: "compliance.privacy_request.status_changed",
+  // Phase 97 — Processing Inventory (Article 30 RoPA).
+  PROCESSING_ACTIVITY_CREATED:    "compliance.processing_activity.created",
+  PROCESSING_ACTIVITY_UPDATED:    "compliance.processing_activity.updated",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */

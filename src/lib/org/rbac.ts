@@ -67,7 +67,18 @@ export type OrgPermission =
   | "view_engineering_project" // read projects, tags, alarms, network nodes, findings
   | "create_engineering_import"// submit a canonical engineering manifest
   | "run_engineering_analysis" // execute the deterministic rule engine
-  | "review_engineering_finding"; // transition a finding's workflow state
+  | "review_engineering_finding" // transition a finding's workflow state
+  // PHASE 97 — Compliance, Privacy & Legal readiness (org axis).
+  //
+  // `view_compliance` is the read gate for the tenant compliance operations
+  // center (processing inventory, and — in later Phase 97 slices — privacy
+  // requests, legal documents, retention, holds, incidents and evidence packs).
+  // `manage_processing_activities` is the write gate for the Article 30 Record of
+  // Processing Activities registry. Platform-global actions (e.g. assigning an
+  // unassigned public request to a tenant) are NOT org permissions — they go
+  // through `requirePlatformSuperadmin`, never a role in this map.
+  | "view_compliance"              // read the compliance operations center
+  | "manage_processing_activities"; // create / update / approve RoPA entries
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -130,6 +141,12 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   // Reviewing a finding records an engineering judgement about a safety- or
   // production-relevant condition, so it stays with the accountable roles.
   review_engineering_finding: ["OWNER", "ADMIN", "MANAGER"],
+  // PHASE 97 — Compliance. READ is limited to the accountable oversight roles
+  // (compliance records describe how personal data is processed); ENGINEER /
+  // VIEWER / BILLING_ADMIN are default-denied. WRITE to the RoPA registry is
+  // narrower still — the org administrators who own the compliance record.
+  view_compliance:                ["OWNER", "ADMIN", "MANAGER"],
+  manage_processing_activities:   ["OWNER", "ADMIN"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

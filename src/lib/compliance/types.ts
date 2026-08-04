@@ -175,3 +175,89 @@ export const REQUEST_TYPE_LABELS: Record<PrivacyRequestType, string> = {
 
 export const CURRENT_CONSENT_VERSION = "1.0";
 export const CURRENT_POLICY_VERSION  = "1.0";
+
+// ── Phase 97 — Processing Inventory (Article 30 RoPA) ─────────────────────────
+//
+// Classification vocabularies are CLOSED and fail-closed by default. No statutory
+// duration, lawful-basis conclusion or approval is ever invented: a value the
+// owner/legal counsel has not set stays LEGAL_REVIEW_REQUIRED / REVIEW_REQUIRED /
+// CONFIGURATION_REQUIRED and is reported as incomplete in evidence generation.
+
+export type ProcessingActivityStatus =
+  | "DRAFT"
+  | "ACTIVE"
+  | "UNDER_REVIEW"
+  | "RETIRED";
+
+export type ProcessingApprovalState =
+  | "PENDING_REVIEW"
+  | "APPROVED"
+  | "REJECTED";
+
+export type LegalBasisStatus =
+  | "CONFIGURED"
+  | "LEGAL_REVIEW_REQUIRED"
+  | "CONFIGURATION_REQUIRED";
+
+export type RiskClassification =
+  | "LOW"
+  | "MEDIUM"
+  | "HIGH"
+  | "REVIEW_REQUIRED";
+
+export const PROCESSING_ACTIVITY_STATUSES: ProcessingActivityStatus[] = ["DRAFT", "ACTIVE", "UNDER_REVIEW", "RETIRED"];
+export const PROCESSING_APPROVAL_STATES:   ProcessingApprovalState[]  = ["PENDING_REVIEW", "APPROVED", "REJECTED"];
+export const LEGAL_BASIS_STATUSES:         LegalBasisStatus[]         = ["CONFIGURED", "LEGAL_REVIEW_REQUIRED", "CONFIGURATION_REQUIRED"];
+export const RISK_CLASSIFICATIONS:         RiskClassification[]       = ["LOW", "MEDIUM", "HIGH", "REVIEW_REQUIRED"];
+
+/**
+ * Recognised lawful-basis classifications (GDPR Article 6). These are the values
+ * an authorised user may SELECT — they are classifications, not a legal
+ * conclusion. An empty/unknown basis is represented by legalBasisStatus, never by
+ * guessing one of these.
+ */
+export const LEGAL_BASIS_CLASSIFICATIONS = [
+  "consent",
+  "contract",
+  "legal_obligation",
+  "vital_interests",
+  "public_task",
+  "legitimate_interests",
+] as const;
+export type LegalBasisClassification = typeof LEGAL_BASIS_CLASSIFICATIONS[number];
+
+export interface DbProcessingActivity {
+  id:                    string;
+  organizationId:        string | null;
+  name:                  string;
+  purpose:               string;
+  legalBasis:            string;
+  dataCategories:        unknown;
+  recipients:            unknown;
+  retentionPeriod:       string | null;
+  thirdCountries:        unknown;
+  isActive:              boolean;
+  description:           string | null;
+  dataSubjectCategories: unknown;
+  sourceSystems:         unknown;
+  destinationSystems:    unknown;
+  internalRecipients:    unknown;
+  externalRecipients:    unknown;
+  subprocessors:         unknown;
+  storageLocations:      unknown;
+  retentionPolicyRef:    string | null;
+  legalBasisStatus:      string;
+  specialCategory:       boolean;
+  automatedDecision:     boolean;
+  internationalTransfer: boolean;
+  riskClassification:    string;
+  dataOwner:             string | null;
+  systemOwner:           string | null;
+  status:                string;
+  approvalState:         string;
+  reviewDate:            Date | null;
+  createdBy:             string | null;
+  updatedBy:             string | null;
+  createdAt:             Date;
+  updatedAt:             Date;
+}

@@ -3045,9 +3045,41 @@ model ProcessingActivity {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  // ── Phase 97 additive RoPA enrichment ────────────────────────────────────────
+  // All columns are additive and defaulted so existing Phase 61 rows survive an
+  // upgrade unchanged. Classification-style columns fail CLOSED by default
+  // (LEGAL_REVIEW_REQUIRED / REVIEW_REQUIRED / DRAFT / PENDING_REVIEW) so an
+  // un-reviewed activity never reads as "compliant" and is flagged incomplete in
+  // evidence generation. String classifications (not Postgres enums) match the
+  // existing `legalBasis` column style and keep the migration purely additive.
+  description             String?
+  dataSubjectCategories   Json      @default("[]")
+  sourceSystems           Json      @default("[]")
+  destinationSystems      Json      @default("[]")
+  internalRecipients      Json      @default("[]")
+  externalRecipients      Json      @default("[]")
+  subprocessors           Json      @default("[]")
+  storageLocations        Json      @default("[]")
+  retentionPolicyRef      String?
+  legalBasisStatus        String    @default("LEGAL_REVIEW_REQUIRED") // CONFIGURED | LEGAL_REVIEW_REQUIRED | CONFIGURATION_REQUIRED
+  specialCategory         Boolean   @default(false)
+  automatedDecision       Boolean   @default(false)
+  internationalTransfer   Boolean   @default(false)
+  riskClassification      String    @default("REVIEW_REQUIRED") // LOW | MEDIUM | HIGH | REVIEW_REQUIRED
+  dataOwner               String?
+  systemOwner             String?
+  status                  String    @default("DRAFT") // DRAFT | ACTIVE | UNDER_REVIEW | RETIRED
+  approvalState           String    @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | REJECTED
+  reviewDate              DateTime?
+  createdBy               String?
+  updatedBy               String?
+
   organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, isActive])
+  @@index([organizationId, status])
+  @@index([organizationId, approvalState])
+  @@index([organizationId, updatedAt])
 }
 
 // ── Phase 64: Vendor Ecosystem Platform ──────────────────────────────────────

@@ -12,6 +12,7 @@ import type {
   DbLegalAcceptance,
   DbDataExportRequest,
   DbDataDeletionRequest,
+  DbProcessingActivity,
   ComplianceStats,
 } from "./types";
 
@@ -529,6 +530,88 @@ export async function getDataRequests(organizationId?: string): Promise<{
       deletions: deletions as DbDataDeletionRequest[],
     };
   } catch { return { exports: [], deletions: [] }; }
+}
+
+// ── Processing Inventory (Article 30 RoPA) — Phase 97 ─────────────────────────
+//
+// SECURITY — every read and write is tenant-scoped IN THE DATABASE PREDICATE. A
+// single-row read uses `findFirst({ id, organizationId })` and a mutation uses
+// `updateMany({ where: { id, organizationId } })` + an affected-row assertion by
+// the caller, so a processing activity belonging to another tenant is never
+// matched, disclosed or written. The organizationId is always the server-derived
+// authoritative scope — never a client-supplied value.
+
+export async function listProcessingActivitiesForOrg(
+  organizationId: string,
+  take = 200,
+): Promise<DbProcessingActivity[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.activity.findMany({
+      where:   { organizationId },
+      orderBy: { updatedAt: "desc" },
+      take,
+    } as unknown)) as DbProcessingActivity[];
+  } catch { return []; }
+}
+
+export async function getProcessingActivityForOrg(
+  id: string,
+  organizationId: string,
+): Promise<DbProcessingActivity | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.activity.findFirst({
+      where: { id, organizationId },
+    } as unknown)) as DbProcessingActivity | null;
+  } catch { return null; }
+}
+
+export async function createProcessingActivityForOrg(params: {
+  organizationId: string;
+  createdBy:      string;
+  data:           Record<string, unknown>;
+}): Promise<DbProcessingActivity | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.activity.create({
+      data: {
+        id:             randomUUID(),
+        organizationId: params.organizationId, // authoritative scope, never from client
+        createdBy:      params.createdBy,
+        updatedBy:      params.createdBy,
+        updatedAt:      new Date(),
+        ...params.data,
+      },
+    } as unknown)) as DbProcessingActivity;
+  } catch { return null; }
+}
+
+export async function updateProcessingActivityForOrg(params: {
+  id:             string;
+  organizationId: string;
+  updatedBy:      string;
+  data:           Record<string, unknown>;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.activity.updateMany({
+      // tenant condition lives in the query — both id AND authoritative org id.
+      where: { id: params.id, organizationId: params.organizationId },
+      data: {
+        ...params.data,
+        // These are set server-side and can never be overridden by params.data
+        // because they follow the spread.
+        updatedBy: params.updatedBy,
+        updatedAt: new Date(),
+      },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
