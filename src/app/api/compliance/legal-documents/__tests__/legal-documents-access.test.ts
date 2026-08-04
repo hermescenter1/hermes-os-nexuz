@@ -36,17 +36,38 @@ function makeDb() {
           .map((m) => ({ organizationId: m.organizationId, role: m.role })),
     },
     legalDocument: {
-      findMany: async ({ where, take }: { where?: Record<string, unknown>; take?: number }) => {
+      findMany: async ({ where, take, orderBy }: { where?: Record<string, unknown>; take?: number; orderBy?: { version?: string } }) => {
         let rows = legalDocs.slice();
         if (where) {
           for (const [k, v] of Object.entries(where)) {
-            rows = rows.filter((r) => (r as Record<string, unknown>)[k] === v);
+            if (k === "OR" && Array.isArray(v)) {
+              rows = rows.filter((r) => (v as Array<Record<string, unknown>>).some((cond) => matchCondition(r as unknown as Record<string, unknown>, cond)));
+            } else {
+              rows = rows.filter((r) => (r as unknown as Record<string, unknown>)[k] === v);
+            }
           }
+        }
+        if (orderBy?.version === "desc") {
+          rows = rows.slice().sort((a, b) => String(b.version).localeCompare(String(a.version), undefined, { numeric: true }));
         }
         return typeof take === "number" ? rows.slice(0, take) : rows;
       },
     },
   };
+}
+
+/** Minimal Prisma-where matcher supporting equality and `{ lte }` on a date. */
+function matchCondition(row: Record<string, unknown>, cond: Record<string, unknown>): boolean {
+  for (const [k, v] of Object.entries(cond)) {
+    if (v !== null && typeof v === "object" && "lte" in (v as object)) {
+      const cell = row[k];
+      if (cell == null) return false;
+      if (new Date(cell as string).getTime() > new Date((v as { lte: Date }).lte).getTime()) return false;
+    } else if (row[k] !== v) {
+      return false;
+    }
+  }
+  return true;
 }
 
 const MOCKED = ["@/lib/auth/jwt", "@/lib/auth/session-store", "@/lib/db/prisma", "@/lib/logger/security-events", "@/lib/storage/storage-mode"];
@@ -160,34 +181,55 @@ describe("admin collection GET — auth & tenant scope", () => {
   });
 });
 
-describe("public [type] GET — published/effective only + minimal DTO", () => {
-  it("returns a published, effective document through a public DTO without internal fields", async () => {
-    legalDocs = [row({ documentType: "PRIVACY_POLICY", isPublished: true, effectiveDate: new Date("2026-01-01"), organizationId: "org-A", createdBy: "creator-user" })];
+describe("public [type] GET — global, published, effective only + minimal DTO", () => {
+  it("returns a published, effective GLOBAL document (organizationId=null) through a minimal public DTO", async () => {
+    legalDocs = [row({ documentType: "PRIVACY_POLICY", isPublished: true, effectiveDate: new Date("2026-01-01"), organizationId: null, createdBy: "creator-user" })];
     const { res, json } = await getPublic("privacy_policy");
     expect(res.status).toBe(200);
     expect(json.document).toMatchObject({ documentType: "PRIVACY_POLICY", version: "1.0", title: "T", content: "body" });
-    expect(json.document).not.toHaveProperty("createdBy");
-    expect(json.document).not.toHaveProperty("organizationId");
-    expect(json.document).not.toHaveProperty("isPublished");
+    // Public DTO must exclude all internal fields.
     expect(json.document).not.toHaveProperty("id");
+    expect(json.document).not.toHaveProperty("organizationId");
+    expect(json.document).not.toHaveProperty("createdBy");
+    expect(json.document).not.toHaveProperty("isPublished");
+    expect(json.document).not.toHaveProperty("updatedAt");
+    expect(json.document).not.toHaveProperty("createdAt");
   });
 
-  it("does not serve an unpublished document (404)", async () => {
-    legalDocs = [row({ documentType: "PRIVACY_POLICY", isPublished: false })];
+  it("NEVER serves a published TENANT-OWNED document anonymously (PUBLIC_TENANT_LEGAL_DOCUMENT_EXPOSURE=0)", async () => {
+    legalDocs = [row({ documentType: "PRIVACY_POLICY", isPublished: true, effectiveDate: new Date("2026-01-01"), organizationId: "org-A" })];
+    const { res, json } = await getPublic("privacy_policy");
+    expect(res.status).toBe(404);
+    expect(json.document).toBeNull();
+  });
+
+  it("does not serve an unpublished global document (404)", async () => {
+    legalDocs = [row({ documentType: "PRIVACY_POLICY", isPublished: false, organizationId: null })];
     const { res } = await getPublic("privacy_policy");
     expect(res.status).toBe(404);
   });
 
-  it("does not serve a not-yet-effective (future-dated) document (404)", async () => {
-    legalDocs = [row({ documentType: "TERMS_OF_SERVICE", isPublished: true, effectiveDate: new Date(Date.now() + 1_000_000_000) })];
+  it("returns 404 for a future-dated global document when no current version exists", async () => {
+    legalDocs = [row({ documentType: "TERMS_OF_SERVICE", isPublished: true, organizationId: null, effectiveDate: new Date(Date.now() + 1_000_000_000) })];
     const { res } = await getPublic("terms_of_service");
     expect(res.status).toBe(404);
   });
 
-  it("filters by locale", async () => {
+  it("returns the older CURRENTLY-EFFECTIVE global version when a newer future version also exists", async () => {
     legalDocs = [
-      row({ id: "en", documentType: "COOKIE_POLICY", locale: "en", isPublished: true }),
-      row({ id: "de", documentType: "COOKIE_POLICY", locale: "de", isPublished: true, title: "DE-Titel" }),
+      row({ id: "v2", documentType: "TERMS_OF_SERVICE", version: "2.0", title: "Future v2", isPublished: true, organizationId: null, effectiveDate: new Date(Date.now() + 1_000_000_000) }),
+      row({ id: "v1", documentType: "TERMS_OF_SERVICE", version: "1.0", title: "Effective v1", isPublished: true, organizationId: null, effectiveDate: new Date("2026-01-01") }),
+    ];
+    const { res, json } = await getPublic("terms_of_service");
+    expect(res.status).toBe(200);
+    expect(json.document.version).toBe("1.0");
+    expect(json.document.title).toBe("Effective v1");
+  });
+
+  it("filters by locale (global documents)", async () => {
+    legalDocs = [
+      row({ id: "en", documentType: "COOKIE_POLICY", locale: "en", isPublished: true, organizationId: null }),
+      row({ id: "de", documentType: "COOKIE_POLICY", locale: "de", isPublished: true, organizationId: null, title: "DE-Titel" }),
     ];
     const { json } = await getPublic("cookie_policy", "de");
     expect(json.document.title).toBe("DE-Titel");

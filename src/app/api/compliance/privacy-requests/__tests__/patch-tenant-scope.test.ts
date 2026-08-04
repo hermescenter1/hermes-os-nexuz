@@ -183,7 +183,7 @@ describe("PATCH privacy-requests/[id] — authorised mutation", () => {
     expect(capturedUpdateWhere).toMatchObject({ id: "req-A", organizationId: "org-A" });
   });
 
-  it("audits with allow-listed identifiers only — no request free text", async () => {
+  it("audits with allow-listed identifiers + a safe note-updated boolean — no request free text", async () => {
     seedOrgAdmin();
     await runPatch("req-A", { status: "REJECTED", responseNote: "internal note free text" });
     expect(auditCalls).toHaveLength(1);
@@ -191,11 +191,20 @@ describe("PATCH privacy-requests/[id] — authorised mutation", () => {
     expect(event.action).toBe("compliance.privacy_request.status_changed");
     expect(event.organizationId).toBe("org-A");
     expect(event.entityId).toBe("req-A");
-    expect(Object.keys(event.metadata as object).sort()).toEqual(["newStatus", "previousStatus"]);
+    const meta = event.metadata as Record<string, unknown>;
+    expect(Object.keys(meta).sort()).toEqual(["newStatus", "previousStatus", "responseNoteUpdated"]);
+    expect(meta.responseNoteUpdated).toBe(true); // a note WAS provided (boolean only)
     const serialised = JSON.stringify(event);
     expect(serialised).not.toContain("SUPER SECRET DESCRIPTION");
     expect(serialised).not.toContain("internal note free text");
     expect(serialised).not.toContain("subject@example.com");
+  });
+
+  it("records responseNoteUpdated=false when no note is supplied", async () => {
+    seedOrgAdmin();
+    await runPatch("req-A", { status: "COMPLETED" });
+    const meta = auditCalls[0].metadata as Record<string, unknown>;
+    expect(meta.responseNoteUpdated).toBe(false);
   });
 
   it("never logs raw JWT, cookie, email, IP or user agent on denial", async () => {

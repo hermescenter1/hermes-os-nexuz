@@ -1,5 +1,5 @@
 import { NextResponse }          from "next/server";
-import { getLatestLegalDocument } from "@/lib/compliance/db";
+import { getLatestPublicLegalDocument } from "@/lib/compliance/db";
 import type { LegalDocumentType, DbLegalDocument } from "@/lib/compliance/types";
 
 const VALID_TYPES: LegalDocumentType[] = [
@@ -26,11 +26,12 @@ function toPublicDto(doc: DbLegalDocument) {
 
 /**
  * SECURITY (compliance hotfix) — the sole unauthenticated public legal-document
- * endpoint. It returns ONLY a document that is published, currently effective
- * and matches the requested type + locale, projected through a public DTO that
- * excludes all internal fields. `getLatestLegalDocument` already filters to
- * `isPublished: true`; here we additionally reject a not-yet-effective document
- * so a future-dated draft-in-waiting is never served.
+ * endpoint. `getLatestPublicLegalDocument` enforces EVERY constraint in the
+ * database: platform-global scope (`organizationId: null`, so a tenant-owned
+ * document is never exposed), `isPublished: true`, and currently-effective
+ * (`effectiveDate` null OR <= now, so a future version cannot shadow an older
+ * effective one). The result is projected through a public DTO that excludes
+ * all internal fields. No organization id is ever taken from the request.
  */
 export async function GET(
   req: Request,
@@ -45,9 +46,8 @@ export async function GET(
     return NextResponse.json({ error: "Document not found", document: null }, { status: 404 });
   }
 
-  const doc = await getLatestLegalDocument(normalizedType, locale);
-  const isEffective = !!doc && (!doc.effectiveDate || new Date(doc.effectiveDate).getTime() <= Date.now());
-  if (!doc || !doc.isPublished || !isEffective) {
+  const doc = await getLatestPublicLegalDocument(normalizedType, locale);
+  if (!doc) {
     return NextResponse.json({ error: "Document not found", document: null }, { status: 404 });
   }
 

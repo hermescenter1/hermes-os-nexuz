@@ -290,6 +290,42 @@ export async function getLatestLegalDocument(
   } catch { return null; }
 }
 
+/**
+ * SECURITY (compliance hotfix) — the ONLY query behind the anonymous public
+ * legal-document endpoint. Every constraint is enforced IN THE DATABASE so no
+ * post-retrieval check can be bypassed:
+ *   - `organizationId: null` — platform-global templates ONLY; a published
+ *     tenant-owned document can never surface anonymously.
+ *   - `isPublished: true`   — drafts are never public.
+ *   - effective NOW         — `effectiveDate` is null OR already elapsed, so a
+ *     future-dated newer version is excluded from selection and the newest
+ *     CURRENTLY-EFFECTIVE version wins (no 404 while an older effective version
+ *     still exists).
+ * The organization scope is fixed to null here and never taken from the client.
+ */
+export async function getLatestPublicLegalDocument(
+  documentType: LegalDocumentType,
+  locale = "en",
+  now: Date = new Date(),
+): Promise<DbLegalDocument | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    const docs = (await db.legal.findMany({
+      where: {
+        documentType,
+        locale,
+        isPublished:    true,
+        organizationId: null,
+        OR: [{ effectiveDate: null }, { effectiveDate: { lte: now } }],
+      },
+      orderBy: { version: "desc" },
+      take:    1,
+    } as unknown)) as DbLegalDocument[];
+    return docs[0] ?? null;
+  } catch { return null; }
+}
+
 export async function getAllLegalDocuments(organizationId?: string): Promise<DbLegalDocument[]> {
   const db = await m();
   if (!db) return [];

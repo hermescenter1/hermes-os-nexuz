@@ -37,6 +37,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid status", code: "INVALID_STATUS" }, { status: 400 });
   }
   const newStatus = body.status as PrivacyRequestStatus;
+  // Safe boolean only — records THAT the note was set, never its value/length/hash.
+  const responseNoteUpdated = typeof body.responseNote === "string";
 
   // Read the current row ONLY within the caller's org (for the previous-status
   // audit value and a uniform not-found response). Both this read and the write
@@ -51,7 +53,7 @@ export async function PATCH(
     organizationId: scope.organizationId,
     status:         newStatus,
     reviewedBy:     scope.userId,
-    responseNote:   typeof body.responseNote === "string" ? body.responseNote : null,
+    responseNote:   responseNoteUpdated ? body.responseNote : null,
   });
   if (affected !== 1) {
     return NextResponse.json({ error: "Request not found", code: "NOT_FOUND" }, { status: 404 });
@@ -65,7 +67,7 @@ export async function PATCH(
     entityId:       id,
     organizationId: scope.organizationId,
     outcome:        "SUCCESS",
-    metadata:       { previousStatus: existing.status, newStatus },
+    metadata:       { previousStatus: existing.status, newStatus, responseNoteUpdated },
   });
 
   const updated = await getPrivacyRequestForOrg(id, scope.organizationId);
