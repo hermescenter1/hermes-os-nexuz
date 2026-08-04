@@ -13,6 +13,8 @@ import type {
   DbDataExportRequest,
   DbDataDeletionRequest,
   DbProcessingActivity,
+  DbRetentionPolicy,
+  DbLegalHold,
   ComplianceStats,
 } from "./types";
 
@@ -34,6 +36,8 @@ async function m() {
     export:     d.dataExportRequest   as AnyModel,
     deletion:   d.dataDeletionRequest as AnyModel,
     activity:   d.processingActivity  as AnyModel,
+    retention:  d.retentionPolicy     as AnyModel,
+    hold:       d.legalHold           as AnyModel,
   };
 }
 
@@ -679,6 +683,117 @@ export async function updateProcessingActivityForOrg(params: {
         updatedBy: params.updatedBy,
         updatedAt: new Date(),
       },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
+// ── Retention Policies (Phase 97) — org-scoped, planning only ─────────────────
+
+export async function listRetentionPoliciesForOrg(organizationId: string, take = 200): Promise<DbRetentionPolicy[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.retention.findMany({ where: { organizationId }, orderBy: { updatedAt: "desc" }, take } as unknown)) as DbRetentionPolicy[];
+  } catch { return []; }
+}
+
+export async function getRetentionPolicyForOrg(id: string, organizationId: string): Promise<DbRetentionPolicy | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.retention.findFirst({ where: { id, organizationId } } as unknown)) as DbRetentionPolicy | null;
+  } catch { return null; }
+}
+
+export async function createRetentionPolicyForOrg(params: {
+  organizationId: string; createdBy: string; data: Record<string, unknown>;
+}): Promise<DbRetentionPolicy | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.retention.create({
+      data: {
+        id:             randomUUID(),
+        organizationId: params.organizationId,
+        createdBy:      params.createdBy,
+        updatedBy:      params.createdBy,
+        updatedAt:      new Date(),
+        ...params.data,
+      },
+    } as unknown)) as DbRetentionPolicy;
+  } catch { return null; }
+}
+
+export async function updateRetentionPolicyForOrg(params: {
+  id: string; organizationId: string; updatedBy: string; data: Record<string, unknown>;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.retention.updateMany({
+      where: { id: params.id, organizationId: params.organizationId },
+      data:  { ...params.data, updatedBy: params.updatedBy, updatedAt: new Date() },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
+// ── Legal Holds (Phase 97) — org-scoped ───────────────────────────────────────
+
+export async function listLegalHoldsForOrg(organizationId: string, take = 200): Promise<DbLegalHold[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.hold.findMany({ where: { organizationId }, orderBy: { updatedAt: "desc" }, take } as unknown)) as DbLegalHold[];
+  } catch { return []; }
+}
+
+/** ACTIVE holds only — used by the (dry-run) retention planner. */
+export async function listActiveLegalHoldsForOrg(organizationId: string): Promise<DbLegalHold[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.hold.findMany({ where: { organizationId, status: "ACTIVE" }, take: 1000 } as unknown)) as DbLegalHold[];
+  } catch { return []; }
+}
+
+export async function getLegalHoldForOrg(id: string, organizationId: string): Promise<DbLegalHold | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.hold.findFirst({ where: { id, organizationId } } as unknown)) as DbLegalHold | null;
+  } catch { return null; }
+}
+
+export async function createLegalHoldForOrg(params: {
+  organizationId: string; createdBy: string; data: Record<string, unknown>;
+}): Promise<DbLegalHold | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.hold.create({
+      data: {
+        id:             randomUUID(),
+        organizationId: params.organizationId,
+        createdBy:      params.createdBy,
+        updatedBy:      params.createdBy,
+        updatedAt:      new Date(),
+        ...params.data,
+      },
+    } as unknown)) as DbLegalHold;
+  } catch { return null; }
+}
+
+export async function updateLegalHoldForOrg(params: {
+  id: string; organizationId: string; updatedBy: string; data: Record<string, unknown>;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.hold.updateMany({
+      where: { id: params.id, organizationId: params.organizationId },
+      data:  { ...params.data, updatedBy: params.updatedBy, updatedAt: new Date() },
     } as unknown)) as { count?: number };
     return { affected: typeof result?.count === "number" ? result.count : 0 };
   } catch { return { affected: 0 }; }

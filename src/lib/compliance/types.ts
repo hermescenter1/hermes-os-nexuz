@@ -250,6 +250,53 @@ export const LEGAL_BASIS_CLASSIFICATIONS = [
 ] as const;
 export type LegalBasisClassification = typeof LEGAL_BASIS_CLASSIFICATIONS[number];
 
+export interface DbRetentionPolicy {
+  id:               string;
+  organizationId:   string;
+  name:             string;
+  description:      string | null;
+  dataClass:        string;
+  targetResource:   string;
+  retentionTrigger: string;
+  retentionDays:    number | null;
+  action:           string;
+  reviewOwner:      string | null;
+  approvalState:    string;
+  legalHoldAware:   boolean;
+  dryRunOnly:       boolean;
+  enabled:          boolean;
+  createdBy:        string | null;
+  updatedBy:        string | null;
+  createdAt:        Date;
+  updatedAt:        Date;
+}
+
+export interface DbLegalHold {
+  id:                   string;
+  organizationId:       string;
+  name:                 string;
+  reasonClass:          string;
+  scopeType:            string;
+  subjectId:            string | null;
+  resourceType:         string | null;
+  resourceId:           string | null;
+  processingActivityId: string | null;
+  incidentId:           string | null;
+  rangeStart:           Date | null;
+  rangeEnd:             Date | null;
+  status:               string;
+  approvedBy:           string | null;
+  approvedAt:           Date | null;
+  startDate:            Date | null;
+  reviewDate:           Date | null;
+  releaseApprovedBy:    string | null;
+  releasedAt:           Date | null;
+  createdBy:            string | null;
+  updatedBy:            string | null;
+  createdAt:            Date;
+  updatedAt:            Date;
+}
+
 export interface DbProcessingActivity {
   id:                    string;
   organizationId:        string | null;

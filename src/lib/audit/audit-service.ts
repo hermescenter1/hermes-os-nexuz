@@ -172,6 +172,11 @@ export const COMPLIANCE_AUDIT = {
   PROCESSING_ACTIVITY_UPDATED:    "compliance.processing_activity.updated",
   // Phase 97 — PrivacyRequest lifecycle (platform triage assignment).
   PRIVACY_REQUEST_ASSIGNED:       "compliance.privacy_request.assigned",
+  // Phase 97 — Retention governance & Legal holds.
+  RETENTION_POLICY_CREATED:       "compliance.retention_policy.created",
+  RETENTION_POLICY_UPDATED:       "compliance.retention_policy.updated",
+  LEGAL_HOLD_CREATED:             "compliance.legal_hold.created",
+  LEGAL_HOLD_UPDATED:             "compliance.legal_hold.updated",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */

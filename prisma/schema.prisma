@@ -3119,6 +3119,71 @@ model ProcessingActivity {
   @@index([organizationId, updatedAt])
 }
 
+// ── Phase 97 — Retention governance & Legal holds ─────────────────────────────
+//
+// Both are organization-owned (organizationId required, no cross-tenant sharing).
+// organizationId is a plain indexed column (no Prisma relation) to keep the
+// change localized — tenant isolation is enforced in every query predicate, the
+// established security boundary. Durations and approvals are NEVER invented:
+// retentionDays null / approvalState PENDING_REVIEW / action REVIEW_REQUIRED all
+// read as CONFIGURATION_REQUIRED and produce no automated action. Retention is
+// dry-run by default and disabled by default; a legal hold overrides deletion.
+
+model RetentionPolicy {
+  id               String    @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+  dataClass        String
+  targetResource   String
+  retentionTrigger String    @default("REVIEW_REQUIRED") // CREATION | LAST_ACTIVITY | CASE_CLOSURE | REVIEW_REQUIRED
+  retentionDays    Int?      // null == CONFIGURATION_REQUIRED (no invented duration)
+  action           String    @default("REVIEW_REQUIRED") // DELETE | ANONYMISE | ARCHIVE | REVIEW_REQUIRED | NO_AUTOMATED_ACTION
+  reviewOwner      String?
+  approvalState    String    @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | REJECTED
+  legalHoldAware   Boolean   @default(true)
+  dryRunOnly       Boolean   @default(true)
+  enabled          Boolean   @default(false)
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([organizationId, enabled])
+  @@index([organizationId, approvalState])
+  @@index([organizationId, updatedAt])
+}
+
+model LegalHold {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  name                 String
+  reasonClass          String    @default("REVIEW_REQUIRED") // classification only — never free legal reasoning in general logs
+  scopeType            String    // SUBJECT | RESOURCE | RESOURCE_TYPE | ORGANIZATION | INCIDENT | DATE_RANGE | PROCESSING_ACTIVITY
+  subjectId            String?
+  resourceType         String?
+  resourceId           String?
+  processingActivityId String?
+  incidentId           String?
+  rangeStart           DateTime?
+  rangeEnd             DateTime?
+  status               String    @default("PROPOSED") // PROPOSED | ACTIVE | RELEASED
+  approvedBy           String?
+  approvedAt           DateTime?
+  startDate            DateTime?
+  reviewDate           DateTime?
+  releaseApprovedBy    String?
+  releasedAt           DateTime?
+  createdBy            String?
+  updatedBy            String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, scopeType])
+  @@index([organizationId, subjectId])
+}
+
 // ── Phase 64: Vendor Ecosystem Platform ──────────────────────────────────────
 
 enum VendorType {

@@ -79,7 +79,9 @@ export type OrgPermission =
   // through `requirePlatformSuperadmin`, never a role in this map.
   | "view_compliance"              // read the compliance operations center
   | "manage_processing_activities" // create / update / approve RoPA entries
-  | "manage_privacy_requests";     // triage/transition a data-subject request
+  | "manage_privacy_requests"      // triage/transition a data-subject request
+  | "manage_retention"             // author/approve retention policies (dry-run)
+  | "manage_legal_hold";           // create/activate/release legal holds
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -149,6 +151,8 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_compliance:                ["OWNER", "ADMIN", "MANAGER"],
   manage_processing_activities:   ["OWNER", "ADMIN"],
   manage_privacy_requests:        ["OWNER", "ADMIN"],
+  manage_retention:               ["OWNER", "ADMIN"],
+  manage_legal_hold:              ["OWNER", "ADMIN"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {
