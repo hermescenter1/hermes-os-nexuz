@@ -78,7 +78,8 @@ export type OrgPermission =
   // unassigned public request to a tenant) are NOT org permissions — they go
   // through `requirePlatformSuperadmin`, never a role in this map.
   | "view_compliance"              // read the compliance operations center
-  | "manage_processing_activities"; // create / update / approve RoPA entries
+  | "manage_processing_activities" // create / update / approve RoPA entries
+  | "manage_privacy_requests";     // triage/transition a data-subject request
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -147,6 +148,7 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   // narrower still — the org administrators who own the compliance record.
   view_compliance:                ["OWNER", "ADMIN", "MANAGER"],
   manage_processing_activities:   ["OWNER", "ADMIN"],
+  manage_privacy_requests:        ["OWNER", "ADMIN"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

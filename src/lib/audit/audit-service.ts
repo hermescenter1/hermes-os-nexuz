@@ -170,6 +170,8 @@ export const COMPLIANCE_AUDIT = {
   // Phase 97 — Processing Inventory (Article 30 RoPA).
   PROCESSING_ACTIVITY_CREATED:    "compliance.processing_activity.created",
   PROCESSING_ACTIVITY_UPDATED:    "compliance.processing_activity.updated",
+  // Phase 97 — PrivacyRequest lifecycle (platform triage assignment).
+  PRIVACY_REQUEST_ASSIGNED:       "compliance.privacy_request.assigned",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */

@@ -5,13 +5,26 @@ export type PrivacyRequestType =
   | "DATA_DELETION"
   | "CONSENT_WITHDRAWAL"
   | "ACCESS_REQUEST"
-  | "CORRECTION_REQUEST";
+  | "CORRECTION_REQUEST"
+  | "RESTRICTION"
+  | "OBJECTION"
+  | "OTHER";
 
 export type PrivacyRequestStatus =
   | "PENDING"
   | "IN_REVIEW"
   | "COMPLETED"
-  | "REJECTED";
+  | "REJECTED"
+  | "RECEIVED"
+  | "IDENTITY_VERIFICATION_REQUIRED"
+  | "VERIFIED"
+  | "TRIAGED"
+  | "DATA_COLLECTION"
+  | "LEGAL_REVIEW_REQUIRED"
+  | "APPROVED"
+  | "PARTIALLY_APPROVED"
+  | "FULFILMENT_IN_PROGRESS"
+  | "CANCELLED";
 
 export type LegalDocumentType =
   | "PRIVACY_POLICY"
@@ -77,6 +90,14 @@ export interface DbPrivacyRequest {
   completedAt:    Date | null;
   responseNote:   string | null;
   metadata:       Record<string, unknown>;
+  assignedById:              string | null;
+  assignedAt:                Date | null;
+  responsiblePersonId:       string | null;
+  identityVerifiedAt:        Date | null;
+  acknowledgementDueAt:      Date | null;
+  identityVerificationDueAt: Date | null;
+  responseDueAt:             Date | null;
+  extensionDueAt:            Date | null;
   createdAt:      Date;
   updatedAt:      Date;
 }
@@ -171,6 +192,9 @@ export const REQUEST_TYPE_LABELS: Record<PrivacyRequestType, string> = {
   CONSENT_WITHDRAWAL:  "Consent Withdrawal",
   ACCESS_REQUEST:      "Data Access Request",
   CORRECTION_REQUEST:  "Data Correction",
+  RESTRICTION:         "Restriction of Processing",
+  OBJECTION:           "Objection to Processing",
+  OTHER:               "Other Request",
 };
 
 export const CURRENT_CONSENT_VERSION = "1.0";

@@ -273,6 +273,76 @@ export async function updatePrivacyRequestStatusForOrg(params: {
   } catch { return { affected: 0 }; }
 }
 
+/**
+ * SECURITY (Phase 97) — the platform TRIAGE queue: privacy requests that have no
+ * organization yet (`organizationId: null`). Reserved for the strict platform
+ * boundary. A tenant admin's queries always pin THEIR org id, so an unassigned
+ * request never appears in any tenant list — enforced by the predicate here and
+ * by every tenant-scoped read carrying a concrete organizationId.
+ */
+export async function listUnassignedPrivacyRequests(take = 200): Promise<DbPrivacyRequest[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.privacy.findMany({
+      where:   { organizationId: null },
+      orderBy: { createdAt: "asc" },
+      take,
+    } as unknown)) as DbPrivacyRequest[];
+  } catch { return []; }
+}
+
+/** Read a single UNASSIGNED privacy request (platform boundary only). */
+export async function getUnassignedPrivacyRequest(id: string): Promise<DbPrivacyRequest | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.privacy.findFirst({
+      where: { id, organizationId: null },
+    } as unknown)) as DbPrivacyRequest | null;
+  } catch { return null; }
+}
+
+/**
+ * SECURITY (Phase 97) — assign an UNASSIGNED request to an organization. The
+ * write predicate carries `organizationId: null`, so the assignment succeeds only
+ * while the request is still unassigned: an already-assigned request (belonging to
+ * any tenant) is never matched, so this can neither reassign nor hijack. Returns
+ * the affected-row count; the caller asserts exactly one row changed.
+ */
+export async function assignPrivacyRequestToOrg(params: {
+  id:             string;
+  organizationId: string;
+  assignedById:   string;
+  status?:        PrivacyRequestStatus;
+  deadlines?: {
+    acknowledgementDueAt:      Date | null;
+    identityVerificationDueAt: Date | null;
+    responseDueAt:             Date | null;
+    extensionDueAt:            Date | null;
+  };
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.privacy.updateMany({
+      where: { id: params.id, organizationId: null },
+      data: {
+        organizationId:            params.organizationId,
+        assignedById:              params.assignedById,
+        assignedAt:                new Date(),
+        status:                    params.status ?? "TRIAGED",
+        acknowledgementDueAt:      params.deadlines?.acknowledgementDueAt ?? undefined,
+        identityVerificationDueAt: params.deadlines?.identityVerificationDueAt ?? undefined,
+        responseDueAt:             params.deadlines?.responseDueAt ?? undefined,
+        extensionDueAt:            params.deadlines?.extensionDueAt ?? undefined,
+        updatedAt:                 new Date(),
+      },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
 // ── Legal Documents ───────────────────────────────────────────────────────────
 
 export async function getLatestLegalDocument(

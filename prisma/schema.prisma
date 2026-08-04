@@ -2801,6 +2801,13 @@ enum PrivacyRequestType {
   CONSENT_WITHDRAWAL
   ACCESS_REQUEST
   CORRECTION_REQUEST
+  // Phase 97 additive — GDPR Articles 18 (restriction), 21 (objection) and a
+  // catch-all. The existing five remain the canonical repository names
+  // (ACCESS_REQUEST≈access, DATA_EXPORT≈portability, CORRECTION_REQUEST≈
+  // rectification, DATA_DELETION≈erasure).
+  RESTRICTION
+  OBJECTION
+  OTHER
 }
 
 enum PrivacyRequestStatus {
@@ -2808,6 +2815,20 @@ enum PrivacyRequestStatus {
   IN_REVIEW
   COMPLETED
   REJECTED
+  // Phase 97 additive — explicit lifecycle states. PENDING is retained as the
+  // legacy initial state (equivalent to RECEIVED) so existing rows and the public
+  // intake route keep working; the state machine treats PENDING and RECEIVED as
+  // interchangeable entry states.
+  RECEIVED
+  IDENTITY_VERIFICATION_REQUIRED
+  VERIFIED
+  TRIAGED
+  DATA_COLLECTION
+  LEGAL_REVIEW_REQUIRED
+  APPROVED
+  PARTIALLY_APPROVED
+  FULFILMENT_IN_PROGRESS
+  CANCELLED
 }
 
 enum LegalDocumentType {
@@ -2902,6 +2923,21 @@ model PrivacyRequest {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
+  // ── Phase 97 additive lifecycle / triage / policy-clock columns ─────────────
+  // organizationId == null means UNASSIGNED (platform triage queue). Assignment
+  // sets organizationId from null and records who/when. Deadline columns are only
+  // populated when an owner has configured a deadline policy; otherwise they stay
+  // null and the policy status is reported as CONFIGURATION_REQUIRED (no
+  // statutory duration is ever invented).
+  assignedById              String?
+  assignedAt                DateTime?
+  responsiblePersonId       String?
+  identityVerifiedAt        DateTime?
+  acknowledgementDueAt      DateTime?
+  identityVerificationDueAt DateTime?
+  responseDueAt             DateTime?
+  extensionDueAt            DateTime?
+
   user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   candidate      AtsCandidate?        @relation(fields: [candidateId], references: [id], onDelete: SetNull)
   organization   Organization?        @relation(fields: [organizationId], references: [id], onDelete: SetNull)
@@ -2910,6 +2946,7 @@ model PrivacyRequest {
   @@index([userId, createdAt])
   @@index([email])
   @@index([organizationId, createdAt])
+  @@index([organizationId, status])
 }
 
 // ── LegalDocument ─────────────────────────────────────────────────────────────

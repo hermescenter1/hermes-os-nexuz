@@ -99,8 +99,10 @@ async function runPatch(id: string, body: unknown, withToken = true) {
 function seedOrgAdmin() {
   payload = { sub: "admin-A", role: "admin", sid: "s1" };
   members = [{ userId: "admin-A", organizationId: "org-A", role: "ADMIN", status: "ACTIVE" }];
+  // req-A starts IN_REVIEW so the Phase 97 state machine permits IN_REVIEW→APPROVED
+  // and IN_REVIEW→REJECTED (the transitions these tenant-scope tests exercise).
   requests = [
-    { id: "req-A", organizationId: "org-A", status: "PENDING", description: "SUPER SECRET DESCRIPTION", email: "subject@example.com" },
+    { id: "req-A", organizationId: "org-A", status: "IN_REVIEW", description: "SUPER SECRET DESCRIPTION", email: "subject@example.com" },
     { id: "req-B", organizationId: "org-B", status: "PENDING", description: "OTHER TENANT DATA", email: "other@example.com" },
   ];
 }
@@ -128,11 +130,11 @@ describe("PATCH privacy-requests/[id] — authentication & permission", () => {
     expect(json.code).toBe("INSUFFICIENT_PERMISSION");
   });
 
-  it("denies an org MANAGER (lacks update_org) (403)", async () => {
+  it("denies an org MANAGER (lacks manage_privacy_requests) (403)", async () => {
     payload = { sub: "mgr-A", role: "admin", sid: "s1" };
     members = [{ userId: "mgr-A", organizationId: "org-A", role: "MANAGER", status: "ACTIVE" }];
-    requests = [{ id: "req-A", organizationId: "org-A", status: "PENDING", description: null, email: "s@example.com" }];
-    const { res } = await runPatch("req-A", { status: "COMPLETED" });
+    requests = [{ id: "req-A", organizationId: "org-A", status: "IN_REVIEW", description: null, email: "s@example.com" }];
+    const { res } = await runPatch("req-A", { status: "APPROVED" });
     expect(res.status).toBe(403);
   });
 
@@ -176,11 +178,20 @@ describe("PATCH privacy-requests/[id] — tenant isolation", () => {
 describe("PATCH privacy-requests/[id] — authorised mutation", () => {
   it("succeeds for a same-organisation authorised admin and scopes the DB write by org", async () => {
     seedOrgAdmin();
-    const { res, json } = await runPatch("req-A", { status: "COMPLETED", responseNote: "internal note free text" });
+    const { res, json } = await runPatch("req-A", { status: "APPROVED", responseNote: "internal note free text" });
     expect(res.status).toBe(200);
-    expect(json.request.status).toBe("COMPLETED");
+    expect(json.request.status).toBe("APPROVED");
     // The database mutation predicate carries BOTH id and the authoritative org id.
     expect(capturedUpdateWhere).toMatchObject({ id: "req-A", organizationId: "org-A" });
+  });
+
+  it("rejects a transition the state machine does not allow (409, untouched)", async () => {
+    seedOrgAdmin();
+    // IN_REVIEW → COMPLETED is not a permitted single transition.
+    const { res, json } = await runPatch("req-A", { status: "COMPLETED" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("INVALID_TRANSITION");
+    expect(requests.find((r) => r.id === "req-A")!.status).toBe("IN_REVIEW");
   });
 
   it("audits with allow-listed identifiers + a safe note-updated boolean — no request free text", async () => {
@@ -202,7 +213,7 @@ describe("PATCH privacy-requests/[id] — authorised mutation", () => {
 
   it("records responseNoteUpdated=false when no note is supplied", async () => {
     seedOrgAdmin();
-    await runPatch("req-A", { status: "COMPLETED" });
+    await runPatch("req-A", { status: "APPROVED" });
     const meta = auditCalls[0].metadata as Record<string, unknown>;
     expect(meta.responseNoteUpdated).toBe(false);
   });
