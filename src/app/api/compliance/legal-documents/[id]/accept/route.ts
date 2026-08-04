@@ -8,7 +8,7 @@ import {
   isActiveMemberOfOrg,
   getActiveAcceptanceForUser,
   recordGovernedAcceptance,
-  withdrawAcceptanceForUser,
+  withdrawAcceptanceById,
 } from "@/lib/compliance/db";
 import { recordAuditEvent, COMPLIANCE_AUDIT } from "@/lib/audit/audit-service";
 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const correlationId = req.headers.get("x-correlation-id");
-  const acceptance = await recordGovernedAcceptance({
+  const result = await recordGovernedAcceptance({
     legalDocumentId: id,
     userId:          subject.sub,
     organizationId:  doc.organizationId,
@@ -62,7 +62,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     sourceClass:     "AUTHENTICATED_WEB",
     correlationId:   correlationId && /^[A-Za-z0-9._-]{1,128}$/.test(correlationId) ? correlationId : null,
   });
-  if (!acceptance) return NextResponse.json({ error: "Could not record acceptance", code: "PERSIST_FAILED" }, { status: 503 });
+  if (!result.ok) {
+    // The concurrent-insert race lost to the partial-unique index: read the
+    // winner and answer idempotently — never a spurious PERSIST_FAILED.
+    if (result.reason === "DUPLICATE") {
+      const winner = await getActiveAcceptanceForUser(id, subject.sub);
+      if (winner) return NextResponse.json({ accepted: true, alreadyAccepted: true, documentType: doc.documentType, version: doc.version });
+    }
+    return NextResponse.json({ error: "Could not record acceptance", code: "PERSIST_FAILED" }, { status: 503 });
+  }
+  const acceptance = result.acceptance;
 
   await recordAuditEvent({
     userId:         subject.sub,
@@ -84,16 +93,29 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!subject) return NextResponse.json({ error: "Authentication required", code: "AUTHENTICATION_REQUIRED" }, { status: 401 });
 
   const { id } = await params;
-  const { affected } = await withdrawAcceptanceForUser({ legalDocumentId: id, userId: subject.sub });
+  // Bind to the SPECIFIC active acceptance row (its id / org / version), so the
+  // audit records the acceptance — not the document — and a uniform 404 hides
+  // whether any acceptance existed.
+  const active = await getActiveAcceptanceForUser(id, subject.sub);
+  if (!active) return NextResponse.json({ error: "No active acceptance", code: "NOT_FOUND" }, { status: 404 });
+
+  const { affected } = await withdrawAcceptanceById({ acceptanceId: active.id, userId: subject.sub });
   if (affected < 1) return NextResponse.json({ error: "No active acceptance", code: "NOT_FOUND" }, { status: 404 });
 
   await recordAuditEvent({
-    userId:     subject.sub,
-    action:     COMPLIANCE_AUDIT.LEGAL_ACCEPTANCE_WITHDRAWN,
-    entityType: "LegalAcceptance",
-    entityId:   id,
-    outcome:    "SUCCESS",
-    metadata:   { legalDocumentId: id },
+    userId:         subject.sub,
+    action:         COMPLIANCE_AUDIT.LEGAL_ACCEPTANCE_WITHDRAWN,
+    entityType:     "LegalAcceptance",
+    entityId:       active.id,
+    organizationId: active.organizationId,
+    outcome:        "SUCCESS",
+    // Safe evidence only — never IP/UA/JWT/cookie/email/title/content.
+    metadata: {
+      legalDocumentId: id,
+      documentType:    active.documentType,
+      documentVersion: active.documentVersion,
+      sourceClass:     active.sourceClass,
+    },
   });
   return NextResponse.json({ withdrawn: true });
 }

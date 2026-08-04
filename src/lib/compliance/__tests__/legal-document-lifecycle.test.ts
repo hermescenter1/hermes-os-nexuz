@@ -21,8 +21,13 @@ describe("legal-document state machine", () => {
     expect(canTransitionLegalDocument("APPROVED", "SCHEDULED")).toBe(true);
     expect(canTransitionLegalDocument("APPROVED", "PUBLISHED")).toBe(true);
     expect(canTransitionLegalDocument("SCHEDULED", "PUBLISHED")).toBe(true);
-    expect(canTransitionLegalDocument("PUBLISHED", "SUPERSEDED")).toBe(true);
     expect(canTransitionLegalDocument("SUPERSEDED", "ARCHIVED")).toBe(true);
+  });
+
+  it("direct PUBLISHED→SUPERSEDED is NOT an API-callable transition (internal/transactional only)", () => {
+    expect(canTransitionLegalDocument("PUBLISHED", "SUPERSEDED")).toBe(false);
+    expect(transitionAction("PUBLISHED", "SUPERSEDED")).toBeNull();
+    expect(LEGAL_DOCUMENT_TRANSITIONS.PUBLISHED).toEqual(["WITHDRAWN", "ARCHIVED"]);
   });
 
   it("rejects publication without approval and other skips", () => {

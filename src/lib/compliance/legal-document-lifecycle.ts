@@ -26,7 +26,11 @@ export const LEGAL_DOCUMENT_TRANSITIONS: Record<LegalDocumentLifecycle, LegalDoc
   IN_REVIEW:  ["APPROVED", "DRAFT"],
   APPROVED:   ["SCHEDULED", "PUBLISHED", "DRAFT"],
   SCHEDULED:  ["PUBLISHED", "APPROVED"],
-  PUBLISHED:  ["SUPERSEDED", "WITHDRAWN", "ARCHIVED"],
+  // SUPERSEDED is DELIBERATELY not an API-callable transition from PUBLISHED — it
+  // is produced ONLY transactionally inside publishLegalDocumentForScope when a
+  // replacement version is successfully published (which sets supersededById).
+  // A direct PATCH to SUPERSEDED is therefore rejected as INVALID_TRANSITION.
+  PUBLISHED:  ["WITHDRAWN", "ARCHIVED"],
   SUPERSEDED: ["ARCHIVED"],
   WITHDRAWN:  ["ARCHIVED"],
   ARCHIVED:   [],
@@ -43,7 +47,7 @@ const TRANSITION_ACTION: Record<string, LegalDocumentAction> = {
   "APPROVED->DRAFT":      "manage",
   "SCHEDULED->PUBLISHED": "publish",
   "SCHEDULED->APPROVED":  "manage",
-  "PUBLISHED->SUPERSEDED": "publish", // only ever performed transactionally by another version's publish
+  // No PUBLISHED->SUPERSEDED here — supersession is internal/transactional only.
   "PUBLISHED->WITHDRAWN": "publish",
   "PUBLISHED->ARCHIVED":  "manage",
   "SUPERSEDED->ARCHIVED": "manage",

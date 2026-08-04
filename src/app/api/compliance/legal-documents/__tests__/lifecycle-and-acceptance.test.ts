@@ -22,6 +22,11 @@ let members: Member[] = [];
 let docs: Row[] = [];
 let acceptances: Row[] = [];
 const auditCalls: Array<Record<string, unknown>> = [];
+// Concurrency-race simulation for the governed acceptance insert: 1st read misses,
+// the create raises a P2002 (as the partial-unique index would under a real race),
+// and the re-read returns the winner — exercising the route's idempotent recovery.
+let raceMode = false;
+let acceptFindCount = 0;
 
 function matchWhere(where: Record<string, unknown>, r: Row): boolean {
   for (const [k, v] of Object.entries(where)) {
@@ -57,9 +62,18 @@ function collModel(store: () => Row[]) {
   };
 }
 function makeDb() {
+  const acceptanceModel = raceMode ? {
+    findFirst: async ({ where }: { where: Record<string, unknown> }) => {
+      acceptFindCount += 1;
+      if (acceptFindCount === 1) return null; // first read misses (pre-insert)
+      return { id: "winner-acc", legalDocumentId: where.legalDocumentId, userId: where.userId, organizationId: null, documentType: "PRIVACY_POLICY", documentVersion: "1.0", sourceClass: "AUTHENTICATED_WEB", withdrawnAt: null } as Row;
+    },
+    create: async () => { throw { code: "P2002" }; }, // the partial-unique index rejects the racing insert
+    updateMany: async () => ({ count: 0 }),
+  } : collModel(() => acceptances);
   const db: Record<string, unknown> = {
     legalDocument: collModel(() => docs),
-    legalAcceptance: collModel(() => acceptances),
+    legalAcceptance: acceptanceModel,
     organizationMember: {
       findMany: async ({ where }: { where: { userId: string; status: string } }) =>
         members.filter((m) => m.userId === where.userId && m.status === where.status).map((m) => ({ organizationId: m.organizationId, role: m.role })),
@@ -75,6 +89,7 @@ const MOCKED = ["@/lib/auth/jwt", "@/lib/auth/session-store", "@/lib/db/prisma",
 beforeEach(() => {
   vi.resetModules();
   payload = null; members = []; docs = []; acceptances = []; auditCalls.length = 0;
+  raceMode = false; acceptFindCount = 0;
   vi.doMock("@/lib/auth/jwt", () => ({ verifyAccessToken: async () => payload }));
   vi.doMock("@/lib/auth/session-store", () => ({ isPayloadSessionActive: async () => true }));
   vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => makeDb() }));
@@ -102,6 +117,7 @@ async function post(body: unknown) { const { POST } = await import("../route"); 
 async function patch(id: string, body: unknown) { const { PATCH } = await import("../[id]/route"); const r = await PATCH(req(`/${id}`, "PATCH", body), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
 async function getOne(id: string) { const { GET } = await import("../[id]/route"); const r = await GET(req(`/${id}`, "GET"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
 async function accept(id: string) { const { POST } = await import("../[id]/accept/route"); const r = await POST(req(`/${id}/accept`, "POST"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
+async function withdraw(id: string) { const { DELETE } = await import("../[id]/accept/route"); const r = await DELETE(req(`/${id}/accept`, "DELETE"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
 
 function ownerA() { payload = { sub: "owner-A", role: "customer", sid: "s" }; members = [{ userId: "owner-A", organizationId: "org-A", role: "OWNER", status: "ACTIVE" }]; }
 function adminA() { payload = { sub: "admin-A", role: "admin", sid: "s" }; members = [{ userId: "admin-A", organizationId: "org-A", role: "ADMIN", status: "ACTIVE" }]; }
@@ -261,6 +277,91 @@ describe("legal acceptance version binding", () => {
     docs = [doc({ id: "g1", organizationId: null, lifecycle: "DRAFT", isPublished: false })];
     payload = { sub: "user-1", role: "customer", sid: "s" };
     expect((await accept("g1")).res.status).toBe(404);
+  });
+});
+
+describe("Part D hardening — supersession & publication races", () => {
+  it("direct PUBLISHED→SUPERSEDED via the generic API is denied (DIRECT_LEGAL_DOCUMENT_SUPERSESSION=0)", async () => {
+    ownerA();
+    docs = [doc({ id: "d1", lifecycle: "PUBLISHED", isPublished: true })];
+    const bad = await patch("d1", { transition: "SUPERSEDED" });
+    expect(bad.res.status).toBe(409);
+    expect(bad.json.code).toBe("INVALID_TRANSITION");
+    expect(docs[0].lifecycle).toBe("PUBLISHED"); // unchanged, no supersededById
+    expect(docs[0].supersededById ?? null).toBeNull();
+  });
+
+  it("early publication of a future-effective version is denied and leaves the current version effective", async () => {
+    ownerA();
+    const future = new Date(Date.now() + 3600_000).toISOString();
+    docs = [
+      doc({ id: "v1", version: "1.0", lifecycle: "PUBLISHED", isPublished: true, effectiveDate: null }),
+      doc({ id: "v2", version: "2.0", lifecycle: "SCHEDULED", isPublished: false, effectiveDate: future }),
+    ];
+    const early = await patch("v2", { transition: "PUBLISHED" });
+    expect(early.res.status).toBe(409);
+    expect(early.json.code).toBe("NOT_EFFECTIVE_YET");
+    // Current version untouched; scheduled version not published; no gap.
+    const v1 = docs.find((d) => d.id === "v1")!, v2 = docs.find((d) => d.id === "v2")!;
+    expect(v1.lifecycle).toBe("PUBLISHED"); expect(v1.isPublished).toBe(true);
+    expect(v2.lifecycle).toBe("SCHEDULED"); expect(v2.isPublished).toBe(false);
+    expect(docs.filter((d) => d.isPublished === true)).toHaveLength(1);
+  });
+
+  it("publishing at/after effectiveDate succeeds and supersedes the previous version", async () => {
+    ownerA();
+    const past = new Date(Date.now() - 3600_000).toISOString();
+    docs = [
+      doc({ id: "v1", version: "1.0", lifecycle: "PUBLISHED", isPublished: true, effectiveDate: null }),
+      doc({ id: "v2", version: "2.0", lifecycle: "SCHEDULED", isPublished: false, effectiveDate: past }),
+    ];
+    const ok = await patch("v2", { transition: "PUBLISHED" });
+    expect(ok.res.status).toBe(200);
+    expect(docs.find((d) => d.id === "v2")!.lifecycle).toBe("PUBLISHED");
+    expect(docs.find((d) => d.id === "v1")!.lifecycle).toBe("SUPERSEDED");
+    expect(docs.find((d) => d.id === "v1")!.supersededById).toBe("v2");
+    expect(docs.filter((d) => d.isPublished === true)).toHaveLength(1);
+  });
+});
+
+describe("Part D hardening — acceptance idempotency race & withdrawal audit", () => {
+  it("a concurrent insert race resolves to an idempotent success (not PERSIST_FAILED)", async () => {
+    raceMode = true; // first read misses, create → P2002, re-read → winner
+    docs = [doc({ id: "g1", organizationId: null, documentType: "PRIVACY_POLICY", version: "1.0", lifecycle: "PUBLISHED", isPublished: true })];
+    payload = { sub: "user-1", role: "customer", sid: "s" }; members = [];
+    const r = await accept("g1");
+    expect(r.res.status).toBe(200);
+    expect(r.json.alreadyAccepted).toBe(true);
+  });
+
+  it("withdrawal binds the audit to the acceptance id + org, then a new acceptance is allowed", async () => {
+    docs = [doc({ id: "g1", organizationId: "org-A", documentType: "PRIVACY_POLICY", version: "1.0", lifecycle: "PUBLISHED", isPublished: true })];
+    payload = { sub: "user-1", role: "customer", sid: "s" };
+    members = [{ userId: "user-1", organizationId: "org-A", role: "VIEWER", status: "ACTIVE" }];
+    const a = await accept("g1");
+    expect(a.res.status).toBe(201);
+    const accId = acceptances[0].id as string;
+
+    const w = await withdraw("g1");
+    expect(w.res.status).toBe(200);
+    expect(acceptances[0].withdrawnAt).toBeInstanceOf(Date); // evidence preserved, not deleted
+    const ev = auditCalls.find((e) => e.action === "compliance.legal_acceptance.withdrawn")!;
+    expect(ev.entityType).toBe("LegalAcceptance");
+    expect(ev.entityId).toBe(accId);          // acceptance id, not the document id
+    expect(ev.organizationId).toBe("org-A");
+    const meta = ev.metadata as Record<string, unknown>;
+    expect(Object.keys(meta).sort()).toEqual(["documentType", "documentVersion", "legalDocumentId", "sourceClass"]);
+
+    // A NEW acceptance after withdrawal is allowed (the old row was withdrawn).
+    const again = await accept("g1");
+    expect(again.res.status).toBe(201);
+    expect(acceptances.filter((r) => (r.withdrawnAt ?? null) === null)).toHaveLength(1);
+  });
+
+  it("withdrawal with no active acceptance is a uniform 404", async () => {
+    docs = [doc({ id: "g1", organizationId: null, lifecycle: "PUBLISHED", isPublished: true })];
+    payload = { sub: "user-1", role: "customer", sid: "s" };
+    expect((await withdraw("g1")).res.status).toBe(404);
   });
 });
 

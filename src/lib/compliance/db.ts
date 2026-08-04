@@ -542,6 +542,10 @@ export async function transitionLegalDocumentForScope(params: {
  * transaction guarantees the sequential case never leaves two effective versions.
  * Returns { ok, code } — never throws.
  */
+class PublishError extends Error {
+  constructor(public codeName: string) { super(codeName); this.name = "PublishError"; }
+}
+
 export async function publishLegalDocumentForScope(params: {
   id: string; organizationScope: string | null; actorId: string;
 }): Promise<{ ok: boolean; code?: string }> {
@@ -550,13 +554,23 @@ export async function publishLegalDocumentForScope(params: {
   const c = client as unknown as {
     $transaction: <T>(fn: (tx: Record<string, AnyModel>) => Promise<T>) => Promise<T>;
   };
+  const now = new Date();
   try {
-    return await c.$transaction(async (tx) => {
+    // Every failure inside the transaction THROWS, so Prisma rolls the whole
+    // transaction back — a failed replacement publication can never leave the
+    // previous document superseded (no current-effective gap).
+    await c.$transaction(async (tx) => {
       const legal = tx.legalDocument as AnyModel;
       const target = (await legal.findFirst({ where: { id: params.id, organizationId: params.organizationScope } })) as DbLegalDocument | null;
-      if (!target) return { ok: false, code: "NOT_FOUND" };
+      if (!target) throw new PublishError("NOT_FOUND");
       if (target.lifecycle !== "APPROVED" && target.lifecycle !== "SCHEDULED") {
-        return { ok: false, code: "NOT_APPROVED" }; // publishing requires an approved document
+        throw new PublishError("NOT_APPROVED"); // publishing requires an approved document
+      }
+      // Effective-date gate on the PERSISTED target, evaluated with the
+      // authoritative server clock (never a browser-supplied time). A future
+      // effectiveDate cannot publish — the current version is left untouched.
+      if (target.effectiveDate && new Date(target.effectiveDate as unknown as string).getTime() > now.getTime()) {
+        throw new PublishError("NOT_EFFECTIVE_YET");
       }
       // Supersede the current effective version in the same scope (if any).
       await legal.updateMany({
@@ -567,19 +581,20 @@ export async function publishLegalDocumentForScope(params: {
           isPublished:    true,
           id:             { not: target.id },
         },
-        data: { isPublished: false, lifecycle: "SUPERSEDED", supersededById: target.id, updatedAt: new Date() },
+        data: { isPublished: false, lifecycle: "SUPERSEDED", supersededById: target.id, updatedAt: now },
       });
       // Flip the target to PUBLISHED.
       const upd = (await legal.updateMany({
         where: { id: target.id, organizationId: params.organizationScope, lifecycle: target.lifecycle },
-        data: { isPublished: true, lifecycle: "PUBLISHED", publishedBy: params.actorId, publishedAt: new Date(), updatedAt: new Date() },
+        data: { isPublished: true, lifecycle: "PUBLISHED", publishedBy: params.actorId, publishedAt: now, updatedAt: now },
       })) as { count?: number };
-      if ((upd?.count ?? 0) !== 1) return { ok: false, code: "CONFLICT" };
-      return { ok: true };
+      if ((upd?.count ?? 0) !== 1) throw new PublishError("CONFLICT");
     });
-  } catch {
-    // A unique-violation on the effective index (a concurrent publish won the race)
-    // surfaces here — fail closed rather than leave two effective versions.
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof PublishError) return { ok: false, code: err.codeName };
+    // A unique-violation on the effective index (a concurrent publish won the
+    // race) surfaces here — the transaction rolled back, so fail closed.
     return { ok: false, code: "EFFECTIVE_CONFLICT" };
   }
 }
@@ -676,6 +691,10 @@ export async function getActiveAcceptanceForUser(
   } catch { return null; }
 }
 
+export type RecordAcceptanceResult =
+  | { ok: true; acceptance: DbLegalAcceptance }
+  | { ok: false; reason: "DUPLICATE" | "ERROR" };
+
 export async function recordGovernedAcceptance(data: {
   legalDocumentId: string;
   userId:          string;
@@ -685,11 +704,11 @@ export async function recordGovernedAcceptance(data: {
   documentVersion: string;
   sourceClass:     string;
   correlationId?:  string | null;
-}): Promise<DbLegalAcceptance | null> {
+}): Promise<RecordAcceptanceResult> {
   const db = await m();
-  if (!db) return null;
+  if (!db) return { ok: false, reason: "ERROR" };
   try {
-    return (await db.acceptance.create({
+    const acceptance = (await db.acceptance.create({
       data: {
         id:              randomUUID(),
         legalDocumentId: data.legalDocumentId,
@@ -703,18 +722,29 @@ export async function recordGovernedAcceptance(data: {
         // ipAddress / userAgent DELIBERATELY left null — governed evidence only.
       },
     } as unknown)) as DbLegalAcceptance;
-  } catch { return null; }
+    return { ok: true, acceptance };
+  } catch (err) {
+    // The partial-unique active-governed index rejects a concurrent duplicate —
+    // this is the EXPECTED race, not a persistence failure.
+    if ((err as { code?: string })?.code === "P2002") return { ok: false, reason: "DUPLICATE" };
+    return { ok: false, reason: "ERROR" };
+  }
 }
 
-/** Mark a user's active acceptance withdrawn — evidence preserved, never deleted. */
-export async function withdrawAcceptanceForUser(params: {
-  legalDocumentId: string; userId: string;
+/**
+ * Withdraw a SPECIFIC acceptance row (by its id) belonging to the user, only
+ * while still active. Evidence is preserved (withdrawnAt set, row never deleted).
+ * The predicate carries id + userId + withdrawnAt:null so a foreign or already-
+ * withdrawn row is never touched.
+ */
+export async function withdrawAcceptanceById(params: {
+  acceptanceId: string; userId: string;
 }): Promise<{ affected: number }> {
   const db = await m();
   if (!db) return { affected: 0 };
   try {
     const r = (await db.acceptance.updateMany({
-      where: { legalDocumentId: params.legalDocumentId, userId: params.userId, withdrawnAt: null },
+      where: { id: params.acceptanceId, userId: params.userId, withdrawnAt: null },
       data:  { withdrawnAt: new Date() },
     } as unknown)) as { count?: number };
     return { affected: typeof r?.count === "number" ? r.count : 0 };
