@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { updateConsent }       from "@/lib/analytics/gtag";
-import { GoogleTagManager }    from "./GoogleTagManager";
+import {
+  gtagReady,
+  initGtag,
+  updateConsent,
+  type GoogleConsentPrefs,
+} from "@/lib/analytics/gtag";
+import { GoogleTagManager } from "./GoogleTagManager";
 
-interface ConsentPrefs {
-  analytics: boolean;
-  marketing: boolean;
+interface ConsentPrefs extends GoogleConsentPrefs {
+  necessary: boolean;
 }
 
 interface Props {
@@ -15,92 +19,173 @@ interface Props {
 
 const CONSENT_KEY = "hermes_cookie_consent";
 
-function readLocalConsent(): { analytics: boolean } | null {
+const DEFAULT_PREFS: ConsentPrefs = {
+  necessary: true,
+  analytics: false,
+  marketing: false,
+  preferences: false,
+};
+
+let configuredMeasurementId = "";
+
+function normalizeConsent(value: unknown): ConsentPrefs {
+  if (!value || typeof value !== "object") {
+    return DEFAULT_PREFS;
+  }
+
+  const input = value as Partial<ConsentPrefs>;
+
+  return {
+    necessary: true,
+    analytics: input.analytics === true,
+    marketing: input.marketing === true,
+    preferences: input.preferences === true,
+  };
+}
+
+function readLocalConsent(): ConsentPrefs | null {
   try {
     const raw = localStorage.getItem(CONSENT_KEY);
-    return raw ? (JSON.parse(raw) as { analytics: boolean }) : null;
-  } catch { return null; }
+
+    if (!raw) return null;
+
+    return normalizeConsent(JSON.parse(raw));
+  } catch {
+    return null;
+  }
 }
 
-export function AnalyticsProvider({ gaId }: Props) {
-  const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-    if (!gaId) {
-      console.log("[GA] AnalyticsProvider: no gaId — analytics disabled");
-      return;
-    }
-    console.log("[GA] AnalyticsProvider mounted. gaId:", gaId);
-
-    async function checkConsent() {
-      // Fast path: localStorage has priority — no round-trip needed if already stored
-      const local = readLocalConsent();
-      if (local?.analytics === true) {
-        console.log("[GA] checkConsent: localStorage has analytics=true");
-        setAllowed(true);
-        activateGA4(gaId);
-        return;
-      }
-
-      // DB path: covers the case where consent was granted on another device/browser
-      try {
-        const res  = await fetch("/api/compliance/cookie-consent");
-        const data = await res.json() as { consent?: ConsentPrefs | null };
-        const granted = data.consent?.analytics === true;
-        console.log("[GA] checkConsent DB resolved: analytics=", granted);
-        if (granted) {
-          setAllowed(true);
-          activateGA4(gaId);
-        }
-      } catch (err) {
-        console.log("[GA] checkConsent DB failed:", err);
-      }
-    }
-    void checkConsent();
-
-    function onConsentUpdate(e: Event) {
-      const prefs   = (e as CustomEvent<ConsentPrefs>).detail;
-      const granted = prefs.analytics === true;
-      console.log("[GA] hermes:consent-updated: analytics=", granted);
-      setAllowed(granted);
-      if (granted) {
-        activateGA4(gaId);
-      } else {
-        updateConsent(false);
-      }
-    }
-    window.addEventListener("hermes:consent-updated", onConsentUpdate);
-    return () => window.removeEventListener("hermes:consent-updated", onConsentUpdate);
-  }, [gaId]);
-
-  // GA4 script is loaded from SSR <head>; GTM still needs client-side injection
-  if (!allowed) return null;
-  return <GoogleTagManager />;
-}
-
-// Called after user grants analytics consent. The gtag.js script is already
-// in the page (injected by layout SSR), so we just update consent mode and
-// call gtag.config to start sending hits.
-function activateGA4(gaId: string): void {
-  console.log("[GA] activateGA4 called. window.gtag=", typeof window.gtag);
+function applyGoogleConsent(
+  gaId: string,
+  prefs: ConsentPrefs,
+): void {
+  let attempts = 0;
 
   function run(): void {
-    if (typeof window.gtag !== "function") {
-      // gtag.js is async — wait for window.load if not yet executed
-      console.log("[GA] window.gtag not ready yet — deferring to window.load");
-      window.addEventListener("load", run, { once: true });
+    if (!gtagReady()) {
+      attempts += 1;
+
+      if (attempts <= 40) {
+        window.setTimeout(run, 50);
+      } else {
+        console.error("[GA] gtag was not ready after consent update");
+      }
+
       return;
     }
-    window.gtag("consent", "update", {
-      analytics_storage:      "granted",
-      ad_storage:             "denied",
-      ad_user_data:           "denied",
-      ad_personalization:     "denied",
-    });
-    window.gtag("js", new Date());
-    window.gtag("config", gaId, { anonymize_ip: true, send_page_view: true });
-    console.log("[GA] GA4 activated successfully. ID:", gaId);
+
+    // Always forward the complete choice, including denials.
+    updateConsent(prefs);
+
+    // GA4 configuration and page_view only run after analytics consent.
+    if (
+      prefs.analytics &&
+      configuredMeasurementId !== gaId
+    ) {
+      initGtag(gaId);
+      configuredMeasurementId = gaId;
+
+      console.log("[GA] GA4 activated successfully. ID:", gaId);
+    }
   }
 
   run();
+}
+
+export function AnalyticsProvider({ gaId }: Props) {
+  const [gtmAllowed, setGtmAllowed] = useState(false);
+
+  useEffect(() => {
+    if (!gaId) {
+      console.log(
+        "[GA] AnalyticsProvider: no gaId — analytics disabled",
+      );
+      return;
+    }
+
+    function apply(prefs: ConsentPrefs): void {
+      setGtmAllowed(prefs.analytics || prefs.marketing);
+      applyGoogleConsent(gaId, prefs);
+    }
+
+    async function checkConsent(): Promise<void> {
+      /*
+       * The local browser choice is authoritative when present.
+       * This is important for explicit rejection: a stale DB value
+       * must never override a newer local denial.
+       */
+      const local = readLocalConsent();
+
+      if (local) {
+        console.log("[GA] Applying consent from localStorage");
+        apply(local);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "/api/compliance/cookie-consent",
+          {
+            credentials: "same-origin",
+            cache: "no-store",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Consent API returned ${response.status}`,
+          );
+        }
+
+        const data = (await response.json()) as {
+          consent?: ConsentPrefs | null;
+        };
+
+        if (data.consent) {
+          console.log("[GA] Applying consent from database");
+          apply(normalizeConsent(data.consent));
+          return;
+        }
+
+        // Explicitly preserve denied defaults when no choice exists.
+        updateConsent(DEFAULT_PREFS);
+      } catch (error) {
+        console.log("[GA] Consent API failed:", error);
+        updateConsent(DEFAULT_PREFS);
+      }
+    }
+
+    function onConsentUpdate(event: Event): void {
+      const customEvent =
+        event as CustomEvent<ConsentPrefs>;
+
+      const prefs = normalizeConsent(customEvent.detail);
+
+      console.log("[GA] Applying updated consent", {
+        analytics: prefs.analytics,
+        marketing: prefs.marketing,
+        preferences: prefs.preferences,
+      });
+
+      apply(prefs);
+    }
+
+    void checkConsent();
+
+    window.addEventListener(
+      "hermes:consent-updated",
+      onConsentUpdate,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "hermes:consent-updated",
+        onConsentUpdate,
+      );
+    };
+  }, [gaId]);
+
+  if (!gtmAllowed) return null;
+
+  return <GoogleTagManager />;
 }
