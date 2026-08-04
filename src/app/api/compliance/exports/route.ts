@@ -40,6 +40,13 @@ export async function POST(req: NextRequest) {
   const parent = await getPrivacyRequestForOrg(privacyRequestId, scope.organizationId);
   if (!parent) return NextResponse.json({ error: "Parent request not found", code: "NOT_FOUND" }, { status: 404 });
 
+  // Idempotent-first (Finding 4): an already-active child job is returned as-is,
+  // regardless of the parent's current state — so a retry never fails or duplicates.
+  const active = await getActiveExportJobForParent(privacyRequestId, scope.organizationId);
+  if (active) return NextResponse.json({ export: toExportJobDto(active), idempotent: true });
+
+  // Otherwise a NEW job requires an exactly-APPROVED, identity-verified, USER-subject
+  // parent (PARTIALLY_APPROVED / FULFILMENT_IN_PROGRESS / Candidate are fail-closed).
   const eligibility = assessParentExportEligibility(parent);
   if (!eligibility.ok) {
     return NextResponse.json({ error: "Parent request not eligible for export", code: eligibility.code }, { status: 409 });

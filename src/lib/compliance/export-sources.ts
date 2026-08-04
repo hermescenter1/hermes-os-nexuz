@@ -17,9 +17,20 @@ export interface ExportSubject {
 type Finder = { findMany: (args: unknown) => Promise<Record<string, unknown>[]> };
 export type ExportPrisma = Record<string, Finder>;
 
+/**
+ * Organization scope of a source. Any tenant-bearing source MUST enforce an
+ * organization predicate in its query (asserted by a focused test), so a subject's
+ * records from another organization are never included in this org's export.
+ */
+export type SourceScope = "GLOBAL_SUBJECT" | "CURRENT_ORGANIZATION" | "GLOBAL_OR_CURRENT_ORGANIZATION";
+
+/** Scopes that read tenant-bearing rows and therefore require an org predicate. */
+export const TENANT_BEARING_SCOPES: SourceScope[] = ["CURRENT_ORGANIZATION", "GLOBAL_OR_CURRENT_ORGANIZATION"];
+
 export interface SourceDefinition {
   name:           string;
   schemaVersion:  string;
+  scope:          SourceScope;
   includedFields: string[];
   /** Documented, for the manifest — NOT selected. */
   excludedFields: string[];
@@ -30,6 +41,7 @@ export interface SourceDefinition {
 export interface CollectedSource {
   name:           string;
   schemaVersion:  string;
+  scope:          SourceScope;
   includedFields: string[];
   excludedFields: string[];
   redactionRules: string[];
@@ -48,10 +60,22 @@ export const FORBIDDEN_EXPORT_FIELDS = [
 const emptyIfNoUser = <T,>(subject: ExportSubject, fn: () => Promise<T[]>): Promise<T[]> =>
   subject.userId ? fn() : Promise.resolve([]);
 
+// Stable, key-sorted serialization used to canonically order records so the
+// package hash never depends on database return order (Finding 7).
+function canonicalKey(r: Record<string, unknown>): string {
+  const norm = (v: unknown): unknown => v instanceof Date ? v.toISOString() : (v && typeof v === "object" && !Array.isArray(v)
+    ? Object.fromEntries(Object.keys(v as Record<string, unknown>).sort().map((k) => [k, norm((v as Record<string, unknown>)[k])])) : v);
+  return JSON.stringify(norm(r));
+}
+export function canonicaliseRecords(records: Record<string, unknown>[]): Record<string, unknown>[] {
+  return [...records].sort((a, b) => canonicalKey(a).localeCompare(canonicalKey(b)));
+}
+
 export const EXPORT_SOURCES: SourceDefinition[] = [
   {
     name: "user_profile",
     schemaVersion: "1.0",
+    scope: "GLOBAL_SUBJECT",
     includedFields: ["id", "name", "email", "emailVerified", "createdAt"],
     excludedFields: ["passwordHash", "tokenVersion", "failedLoginAttempts", "lockedUntil", "role"],
     redactionRules: ["credentials-excluded", "security-state-excluded"],
@@ -59,11 +83,13 @@ export const EXPORT_SOURCES: SourceDefinition[] = [
       db.user.findMany({
         where: { id: subject.userId },
         select: { id: true, name: true, email: true, emailVerified: true, createdAt: true },
+        orderBy: { id: "asc" },
       })),
   },
   {
     name: "organization_membership",
     schemaVersion: "1.0",
+    scope: "CURRENT_ORGANIZATION",
     includedFields: ["role", "status", "joinedAt", "createdAt"],
     excludedFields: ["invitedById", "departmentId"],
     redactionRules: ["safe-projection"],
@@ -72,12 +98,14 @@ export const EXPORT_SOURCES: SourceDefinition[] = [
         ? db.organizationMember.findMany({
             where: { userId: subject.userId, organizationId: subject.organizationId },
             select: { role: true, status: true, joinedAt: true, createdAt: true },
+            orderBy: [{ createdAt: "asc" }, { role: "asc" }],
           })
         : Promise.resolve([]),
   },
   {
     name: "privacy_requests",
     schemaVersion: "1.0",
+    scope: "CURRENT_ORGANIZATION",
     includedFields: ["requestType", "status", "description", "locale", "createdAt", "completedAt"],
     excludedFields: ["ipAddress", "userAgent", "reviewedBy", "responseNote", "assignedById", "email"],
     redactionRules: ["network-metadata-excluded", "internal-review-notes-excluded"],
@@ -85,23 +113,33 @@ export const EXPORT_SOURCES: SourceDefinition[] = [
       db.privacyRequest.findMany({
         where: { userId: subject.userId, organizationId: subject.organizationId },
         select: { requestType: true, status: true, description: true, locale: true, createdAt: true, completedAt: true },
+        orderBy: [{ createdAt: "asc" }, { requestType: "asc" }],
       })),
   },
   {
     name: "legal_acceptances",
     schemaVersion: "1.0",
+    scope: "GLOBAL_OR_CURRENT_ORGANIZATION",
     includedFields: ["documentType", "documentVersion", "legalDocumentId", "locale", "sourceClass", "createdAt", "withdrawnAt"],
-    excludedFields: ["ipAddress", "userAgent", "correlationId"],
-    redactionRules: ["network-metadata-excluded"],
+    excludedFields: ["ipAddress", "userAgent", "correlationId", "organizationId"],
+    redactionRules: ["network-metadata-excluded", "foreign-tenant-acceptances-excluded"],
+    // SECURITY (Finding 1): a multi-org subject's tenant acceptances from ANOTHER
+    // organization must never enter this org's export. The org predicate is in the
+    // DB query: global (organizationId NULL) OR the current authoritative org only.
     collect: (db, subject) => emptyIfNoUser(subject, () =>
       db.legalAcceptance.findMany({
-        where: { userId: subject.userId },
+        where: {
+          userId: subject.userId,
+          OR: [{ organizationId: null }, { organizationId: subject.organizationId }],
+        },
         select: { documentType: true, documentVersion: true, legalDocumentId: true, locale: true, sourceClass: true, createdAt: true, withdrawnAt: true },
+        orderBy: [{ createdAt: "asc" }, { legalDocumentId: "asc" }],
       })),
   },
   {
     name: "consent_records",
     schemaVersion: "1.0",
+    scope: "CURRENT_ORGANIZATION",
     includedFields: ["consentType", "consentVersion", "granted", "locale", "createdAt"],
     excludedFields: ["ipAddress", "userAgent", "metadata"],
     redactionRules: ["network-metadata-excluded", "raw-metadata-excluded"],
@@ -109,11 +147,16 @@ export const EXPORT_SOURCES: SourceDefinition[] = [
       db.consentRecord.findMany({
         where: { userId: subject.userId, organizationId: subject.organizationId },
         select: { consentType: true, consentVersion: true, granted: true, locale: true, createdAt: true },
+        orderBy: [{ createdAt: "asc" }, { consentType: "asc" }],
       })),
   },
 ];
 
-/** Collect every allow-listed source for the subject. Deterministic ordering. */
+/**
+ * Collect every allow-listed source for the subject. Records are canonically
+ * ordered (Finding 7) so the resulting package is deterministic regardless of
+ * database return order.
+ */
 export async function collectExportSources(db: ExportPrisma, subject: ExportSubject): Promise<CollectedSource[]> {
   const out: CollectedSource[] = [];
   for (const src of [...EXPORT_SOURCES].sort((a, b) => a.name.localeCompare(b.name))) {
@@ -121,10 +164,11 @@ export async function collectExportSources(db: ExportPrisma, subject: ExportSubj
     out.push({
       name: src.name,
       schemaVersion: src.schemaVersion,
+      scope: src.scope,
       includedFields: src.includedFields,
       excludedFields: src.excludedFields,
       redactionRules: src.redactionRules,
-      records,
+      records: canonicaliseRecords(records),
     });
   }
   return out;

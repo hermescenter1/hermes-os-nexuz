@@ -73,18 +73,17 @@ export async function createExportJobForParent(params: {
 }): Promise<{ ok: true; job: DbDataExportRequest } | { ok: false; reason: "DUPLICATE" | "ERROR" }> {
   const db = await xm();
   if (!db) return { ok: false, reason: "ERROR" };
-  const subjectClass = params.parent.userId ? "USER" : "CANDIDATE";
   try {
     const job = (await db.export.create({
       data: {
         id:               randomUUID(),
         privacyRequestId: params.parent.id,
-        organizationId:   params.parent.organizationId,
-        userId:           params.parent.userId,
-        candidateId:      params.parent.candidateId,
+        organizationId:   params.parent.organizationId, // authoritative org (non-null for governed)
+        userId:           params.parent.userId,          // USER subject (non-null; Finding 5)
+        candidateId:      null,                          // governed jobs are USER-only (Finding 5/6)
         email:            params.parent.email,
         locale:           params.parent.locale,
-        subjectClass,
+        subjectClass:     "USER",
         status:           "PENDING",            // legacy column retained
         lifecycle:        "REQUESTED",
         idempotencyKey:   params.parent.id,     // one active job per parent
@@ -170,13 +169,40 @@ export async function createDownloadToken(params: {
 }
 
 /**
- * Atomically consume a download token. The single updateMany with a rich
- * predicate is the atomic single-use gate: only an unused, unrevoked, unexpired
- * token bound to this export + subject is consumed, and only the first concurrent
- * redemption sets usedAt (affected === 1). Returns whether it was consumed.
+ * Gate A (Finding 3) — read an ELIGIBLE token WITHOUT mutating it. The full
+ * binding predicate (export + subject + ORG + unused + unrevoked + unexpired) is
+ * applied so a storage or integrity failure downstream never burns the token.
+ */
+export async function findEligibleDownloadToken(params: {
+  exportRequestId: string; tokenHash: string; subjectUserId: string; organizationId: string | null; now: Date;
+}): Promise<DbExportDownloadToken | null> {
+  const db = await xm();
+  if (!db) return null;
+  try {
+    return (await db.token.findFirst({
+      where: {
+        exportRequestId: params.exportRequestId,
+        tokenHash:       params.tokenHash,
+        subjectUserId:   params.subjectUserId,
+        organizationId:  params.organizationId,
+        usedAt:          null,
+        revokedAt:       null,
+        expiresAt:       { gt: params.now },
+      },
+    } as unknown)) as DbExportDownloadToken | null;
+  } catch { return null; }
+}
+
+/**
+ * Gate B (Finding 3) — atomically consume the token AFTER the package has been
+ * fetched and integrity-validated. The single updateMany with the full binding
+ * predicate (including organizationId) is the atomic single-use gate: only the
+ * first concurrent redemption sets usedAt (affected === 1). Returns whether it was
+ * consumed. A storage/integrity failure occurs BEFORE this call, so it cannot burn
+ * the token.
  */
 export async function consumeDownloadToken(params: {
-  exportRequestId: string; tokenHash: string; subjectUserId: string; now: Date;
+  exportRequestId: string; tokenHash: string; subjectUserId: string; organizationId: string | null; now: Date;
 }): Promise<{ consumed: boolean }> {
   const db = await xm();
   if (!db) return { consumed: false };
@@ -186,6 +212,7 @@ export async function consumeDownloadToken(params: {
         exportRequestId: params.exportRequestId,
         tokenHash:       params.tokenHash,
         subjectUserId:   params.subjectUserId,
+        organizationId:  params.organizationId,
         usedAt:          null,
         revokedAt:       null,
         expiresAt:       { gt: params.now },

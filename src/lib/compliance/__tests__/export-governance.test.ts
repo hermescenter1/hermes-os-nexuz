@@ -12,7 +12,7 @@ import {
   assessParentExportEligibility,
 } from "../export-lifecycle";
 import { EXPORT_SOURCES, FORBIDDEN_EXPORT_FIELDS, collectExportSources, type ExportPrisma } from "../export-sources";
-import { buildExportPackage, verifyExportPackage, computeExportContentHash } from "../export-package";
+import { buildExportPackage, verifyExportPackage, computeExportContentHash, parseAndValidateExportPackage } from "../export-package";
 import { generateExportToken, hashExportToken, looksLikeExportToken } from "../export-token";
 import { runGovernedExport } from "../export-executor";
 
@@ -43,14 +43,47 @@ describe("export lifecycle", () => {
 });
 
 describe("parent eligibility (fail-closed)", () => {
-  const ok = { requestType: "DATA_EXPORT", status: "APPROVED", identityVerifiedAt: new Date() };
-  it("accepts an approved, identity-verified, export-typed parent", () => { expect(assessParentExportEligibility(ok).ok).toBe(true); });
+  const ok = { requestType: "DATA_EXPORT", status: "APPROVED", identityVerifiedAt: new Date(), userId: "u1", candidateId: null as string | null };
+  it("accepts an approved, identity-verified, USER-subject, export-typed parent", () => { expect(assessParentExportEligibility(ok).ok).toBe(true); });
+  it("rejects a Candidate / missing-user subject BEFORE anything else (Finding 5)", () => {
+    expect(assessParentExportEligibility({ ...ok, userId: null }).code).toBe("EXPORT_SUBJECT_CLASS_UNSUPPORTED");
+    expect(assessParentExportEligibility({ ...ok, candidateId: "c1" }).code).toBe("EXPORT_SUBJECT_CLASS_UNSUPPORTED");
+  });
+  it("PARTIALLY_APPROVED and FULFILMENT_IN_PROGRESS are fail-closed (Finding 4)", () => {
+    expect(assessParentExportEligibility({ ...ok, status: "PARTIALLY_APPROVED" }).code).toBe("PARENT_SCOPE_CONFIGURATION_REQUIRED");
+    expect(assessParentExportEligibility({ ...ok, status: "FULFILMENT_IN_PROGRESS" }).code).toBe("PARENT_NOT_APPROVED");
+  });
   it("rejects an incompatible type / unapproved / unverified parent", () => {
     expect(assessParentExportEligibility({ ...ok, requestType: "OBJECTION" }).code).toBe("PARENT_TYPE_INCOMPATIBLE");
     expect(assessParentExportEligibility({ ...ok, status: "IN_REVIEW" }).code).toBe("PARENT_NOT_APPROVED");
     expect(assessParentExportEligibility({ ...ok, identityVerifiedAt: null }).code).toBe("IDENTITY_NOT_VERIFIED");
   });
 });
+
+describe("source scope (Finding 1) — tenant-bearing sources declare + enforce an org predicate", () => {
+  it("every tenant-bearing source has an org predicate in its query", async () => {
+    const { EXPORT_SOURCES, TENANT_BEARING_SCOPES } = await import("../export-sources");
+    for (const s of EXPORT_SOURCES) {
+      if (!TENANT_BEARING_SCOPES.includes(s.scope)) continue;
+      const captured: Array<Record<string, unknown>> = [];
+      const db = { user: cap(captured), organizationMember: cap(captured), privacyRequest: cap(captured), legalAcceptance: cap(captured), consentRecord: cap(captured) };
+      await s.collect(db as never, { userId: "u1", candidateId: null, organizationId: "org-A" });
+      const where = captured[0] as { organizationId?: unknown; OR?: unknown };
+      const hasOrgPredicate = where.organizationId !== undefined || Array.isArray(where.OR);
+      expect(hasOrgPredicate).toBe(true);
+    }
+  });
+  it("legal_acceptances restricts to global OR the current org (never a foreign tenant)", async () => {
+    const { EXPORT_SOURCES } = await import("../export-sources");
+    const captured: Array<Record<string, unknown>> = [];
+    const db = { legalAcceptance: cap(captured) };
+    await EXPORT_SOURCES.find((s) => s.name === "legal_acceptances")!.collect(db as never, { userId: "u1", candidateId: null, organizationId: "org-A" });
+    const where = captured[0] as { userId: string; OR: Array<Record<string, unknown>> };
+    expect(where.userId).toBe("u1");
+    expect(where.OR).toEqual([{ organizationId: null }, { organizationId: "org-A" }]);
+  });
+});
+function cap(store: Array<Record<string, unknown>>) { return { findMany: async (a: unknown) => { store.push(((a ?? {}) as { where?: Record<string, unknown> }).where ?? {}); return []; } }; }
 
 describe("execution posture + expiry policy", () => {
   it("execution is disabled by default", () => {
@@ -105,15 +138,26 @@ describe("allow-listed collection excludes every secret", () => {
   });
 });
 
-describe("deterministic package + hash", () => {
-  const sources = [{ name: "user_profile", schemaVersion: "1.0", includedFields: ["id"], excludedFields: [], redactionRules: [], records: [{ id: "u1" }] }];
+describe("deterministic package + hash (DETERMINISTIC_EXPORT_PACKAGE=PASS)", () => {
+  const src = (records: Record<string, unknown>[]) => [{ name: "user_profile", schemaVersion: "1.0", scope: "GLOBAL_SUBJECT" as const, includedFields: ["id"], excludedFields: [], redactionRules: [], records }];
+  const sources = src([{ id: "u1" }]);
   const meta = { exportRequestId: "e1", privacyRequestId: "p1", subjectClass: "USER", organizationScope: "org-A", locale: "en", generatedAt: new Date("2026-01-01"), expiry: { status: "CONFIGURATION_REQUIRED", expiresAt: null } };
   it("same synthetic input → same content hash (apart from generatedAt)", () => {
     const a = buildExportPackage(sources, meta);
     const b = buildExportPackage(sources, { ...meta, generatedAt: new Date("2027-05-05") });
     expect(a.contentHash).toBe(b.contentHash);
-    expect(a.manifest.schemaVersion).toBe("1.0");
     expect(a.manifest.sources[0].recordCount).toBe(1);
+  });
+  it("records returned in OPPOSITE order produce identical hash AND identical bytes (Finding 7)", () => {
+    const fwd = buildExportPackage(src([{ id: "a" }, { id: "b" }, { id: "c" }]), meta);
+    const rev = buildExportPackage(src([{ id: "c" }, { id: "b" }, { id: "a" }]), meta);
+    expect(rev.contentHash).toBe(fwd.contentHash);
+    expect(JSON.stringify(rev.documents)).toBe(JSON.stringify(fwd.documents));
+  });
+  it("adding / mutating a record changes the hash", () => {
+    const base = buildExportPackage(src([{ id: "a" }]), meta);
+    expect(buildExportPackage(src([{ id: "a" }, { id: "b" }]), meta).contentHash).not.toBe(base.contentHash);
+    expect(buildExportPackage(src([{ id: "MUT" }]), meta).contentHash).not.toBe(base.contentHash);
   });
   it("the hash detects mutation of packaged content", () => {
     const pkg = buildExportPackage(sources, meta);
@@ -122,9 +166,34 @@ describe("deterministic package + hash", () => {
     expect(verifyExportPackage(pkg)).toBe(false);
   });
   it("hash is stable regardless of key ordering", () => {
-    const h1 = computeExportContentHash("USER", "org-A", "en", [{ name: "s", schemaVersion: "1.0", includedFields: [], excludedFields: [], redactionRules: [], records: [{ a: 1, b: 2 }] }]);
-    const h2 = computeExportContentHash("USER", "org-A", "en", [{ name: "s", schemaVersion: "1.0", includedFields: [], excludedFields: [], redactionRules: [], records: [{ b: 2, a: 1 }] }]);
-    expect(h1).toBe(h2);
+    const mk = (r: Record<string, unknown>) => computeExportContentHash("USER", "org-A", "en", [{ name: "s", schemaVersion: "1.0", scope: "GLOBAL_SUBJECT", includedFields: [], excludedFields: [], redactionRules: [], records: [r] }]);
+    expect(mk({ a: 1, b: 2 })).toBe(mk({ b: 2, a: 1 }));
+  });
+});
+
+describe("runtime package integrity validation (Finding 2)", () => {
+  const meta = { exportRequestId: "e1", privacyRequestId: "p1", subjectClass: "USER", organizationScope: "org-A", locale: "en", generatedAt: new Date("2026-01-01"), expiry: { status: "CONFIGURATION_REQUIRED", expiresAt: null } };
+  const sources = [{ name: "user_profile", schemaVersion: "1.0", scope: "GLOBAL_SUBJECT" as const, includedFields: ["id"], excludedFields: [], redactionRules: [], records: [{ id: "u1" }] }];
+  const pkg = buildExportPackage(sources, meta);
+  const bytes = Buffer.from(JSON.stringify(pkg));
+  const expected = { exportRequestId: "e1", privacyRequestId: "p1", organizationScope: "org-A", subjectClass: "USER", schemaVersion: "1.0", jobContentHash: pkg.contentHash };
+
+  it("accepts a well-formed, correctly-bound, hash-matching package", () => {
+    const r = parseAndValidateExportPackage(bytes, expected);
+    expect(r.ok).toBe(true);
+  });
+  it("rejects a missing / malformed package", () => {
+    expect(parseAndValidateExportPackage(null, expected)).toMatchObject({ ok: false, code: "PACKAGE_NOT_FOUND" });
+    expect(parseAndValidateExportPackage(Buffer.from("not json"), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+  });
+  it("rejects a binding mismatch (foreign org/subject/request)", () => {
+    expect(parseAndValidateExportPackage(bytes, { ...expected, organizationScope: "org-B" })).toMatchObject({ ok: false, code: "PACKAGE_BINDING_MISMATCH" });
+    expect(parseAndValidateExportPackage(bytes, { ...expected, exportRequestId: "eX" })).toMatchObject({ ok: false, code: "PACKAGE_BINDING_MISMATCH" });
+  });
+  it("rejects a hash mismatch vs the authoritative job hash, and tampered content", () => {
+    expect(parseAndValidateExportPackage(bytes, { ...expected, jobContentHash: "0".repeat(64) })).toMatchObject({ ok: false, code: "PACKAGE_HASH_MISMATCH" });
+    const tampered = JSON.parse(bytes.toString()); tampered.documents.user_profile.push({ id: "INJECTED" });
+    expect(parseAndValidateExportPackage(Buffer.from(JSON.stringify(tampered)), expected)).toMatchObject({ ok: false, code: "PACKAGE_HASH_MISMATCH" });
   });
 });
 

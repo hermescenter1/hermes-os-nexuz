@@ -6,8 +6,8 @@
  * always produces the same hash apart from explicitly time-bound fields
  * (generatedAt). The hash detects any tampering with the packaged content.
  */
-import { createHash } from "node:crypto";
-import type { CollectedSource } from "./export-sources";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { canonicaliseRecords, type CollectedSource } from "./export-sources";
 
 export const EXPORT_SCHEMA_VERSION = "1.0";
 
@@ -30,7 +30,7 @@ export interface ExportManifest {
   organizationScope: string | null;
   locale:            string;
   sources: Array<{
-    name: string; schemaVersion: string; recordCount: number;
+    name: string; schemaVersion: string; scope: string; recordCount: number;
     includedFields: string[]; excludedFields: string[]; redactionRules: string[];
   }>;
   contentHash:       string;
@@ -67,15 +67,17 @@ export function computeExportContentHash(subjectClass: string, organizationScope
     subjectClass,
     organizationScope,
     locale,
+    // Defensive determinism (Finding 7): sort sources by name AND canonically sort
+    // each source's records, so DB return order can never change the hash.
     sources: [...sources]
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((s) => ({ name: s.name, schemaVersion: s.schemaVersion, records: s.records })),
+      .map((s) => ({ name: s.name, schemaVersion: s.schemaVersion, records: canonicaliseRecords(s.records) })),
   };
   return createHash("sha256").update(stableStringify(content)).digest("hex");
 }
 
 export function buildExportPackage(sources: CollectedSource[], meta: ExportPackageMeta): ExportPackage {
-  const sorted = [...sources].sort((a, b) => a.name.localeCompare(b.name));
+  const sorted = [...sources].sort((a, b) => a.name.localeCompare(b.name)).map((s) => ({ ...s, records: canonicaliseRecords(s.records) }));
   const contentHash = computeExportContentHash(meta.subjectClass, meta.organizationScope, meta.locale, sorted);
   const documents: Record<string, Record<string, unknown>[]> = {};
   for (const s of sorted) documents[s.name] = s.records;
@@ -89,7 +91,7 @@ export function buildExportPackage(sources: CollectedSource[], meta: ExportPacka
     organizationScope: meta.organizationScope,
     locale:            meta.locale,
     sources: sorted.map((s) => ({
-      name: s.name, schemaVersion: s.schemaVersion, recordCount: s.records.length,
+      name: s.name, schemaVersion: s.schemaVersion, scope: s.scope, recordCount: s.records.length,
       includedFields: s.includedFields, excludedFields: s.excludedFields, redactionRules: s.redactionRules,
     })),
     contentHash,
@@ -98,13 +100,82 @@ export function buildExportPackage(sources: CollectedSource[], meta: ExportPacka
   return { manifest, documents, contentHash };
 }
 
+/** Constant-time comparison of two equal-length hex hashes (best effort). */
+export function hashesEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  try { return timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex")); } catch { return false; }
+}
+
 /** Recompute the content hash from a package's documents to detect mutation. */
 export function verifyExportPackage(pkg: ExportPackage): boolean {
-  const sources: CollectedSource[] = pkg.manifest.sources.map((s) => ({
-    name: s.name, schemaVersion: s.schemaVersion, includedFields: s.includedFields,
-    excludedFields: s.excludedFields, redactionRules: s.redactionRules,
+  const sources = manifestToSources(pkg);
+  const recomputed = computeExportContentHash(pkg.manifest.subjectClass, pkg.manifest.organizationScope, pkg.manifest.locale, sources);
+  return hashesEqual(recomputed, pkg.contentHash);
+}
+
+function manifestToSources(pkg: ExportPackage): CollectedSource[] {
+  return pkg.manifest.sources.map((s) => ({
+    name: s.name, schemaVersion: s.schemaVersion, scope: (s.scope as CollectedSource["scope"]) ?? "CURRENT_ORGANIZATION",
+    includedFields: s.includedFields, excludedFields: s.excludedFields, redactionRules: s.redactionRules,
     records: pkg.documents[s.name] ?? [],
   }));
-  const recomputed = computeExportContentHash(pkg.manifest.subjectClass, pkg.manifest.organizationScope, pkg.manifest.locale, sources);
-  return recomputed === pkg.contentHash;
+}
+
+// ── Finding 2 — runtime package integrity validation ──────────────────────────
+
+export interface ExpectedPackageBinding {
+  exportRequestId:   string;
+  privacyRequestId:  string | null;
+  organizationScope: string | null;
+  subjectClass:      string;
+  schemaVersion:     string | null;
+  jobContentHash:    string | null; // AUTHORITATIVE (from PostgreSQL)
+}
+export type PackageValidation =
+  | { ok: true; pkg: ExportPackage }
+  | { ok: false; code: "PACKAGE_NOT_FOUND" | "PACKAGE_INVALID" | "PACKAGE_BINDING_MISMATCH" | "PACKAGE_HASH_MISMATCH" };
+
+const MAX_PACKAGE_BYTES = 25 * 1024 * 1024;
+
+function isPlainObject(v: unknown): v is Record<string, unknown> { return !!v && typeof v === "object" && !Array.isArray(v); }
+
+/**
+ * Strictly parse and validate a stored package against the authoritative export
+ * job. Rejects malformed/oversized/unparseable packages, binding mismatches, and
+ * any hash that disagrees with the recomputed hash, package.contentHash,
+ * manifest.contentHash or the authoritative job.contentHash.
+ */
+export function parseAndValidateExportPackage(bytes: Buffer | null, expected: ExpectedPackageBinding): PackageValidation {
+  if (!bytes || bytes.length === 0) return { ok: false, code: "PACKAGE_NOT_FOUND" };
+  if (bytes.length > MAX_PACKAGE_BYTES) return { ok: false, code: "PACKAGE_INVALID" };
+
+  let raw: unknown;
+  try { raw = JSON.parse(bytes.toString("utf8")); } catch { return { ok: false, code: "PACKAGE_INVALID" }; }
+  if (!isPlainObject(raw) || !isPlainObject(raw.manifest) || !isPlainObject(raw.documents) || typeof raw.contentHash !== "string") {
+    return { ok: false, code: "PACKAGE_INVALID" };
+  }
+  const m = raw.manifest as Record<string, unknown>;
+  if (!Array.isArray(m.sources) || typeof m.contentHash !== "string" || typeof m.subjectClass !== "string") {
+    return { ok: false, code: "PACKAGE_INVALID" };
+  }
+  const pkg = raw as unknown as ExportPackage;
+
+  // Binding must match the authoritative job exactly.
+  if (m.exportRequestId !== expected.exportRequestId
+    || (m.privacyRequestId ?? null) !== expected.privacyRequestId
+    || (m.organizationScope ?? null) !== expected.organizationScope
+    || m.subjectClass !== expected.subjectClass
+    || (m.schemaVersion ?? null) !== expected.schemaVersion) {
+    return { ok: false, code: "PACKAGE_BINDING_MISMATCH" };
+  }
+
+  // Recompute and compare against every hash, including the authoritative one.
+  const recomputed = computeExportContentHash(pkg.manifest.subjectClass, pkg.manifest.organizationScope, pkg.manifest.locale, manifestToSources(pkg));
+  if (!hashesEqual(recomputed, pkg.contentHash) || !hashesEqual(recomputed, String(m.contentHash))) {
+    return { ok: false, code: "PACKAGE_HASH_MISMATCH" };
+  }
+  if (expected.jobContentHash && !hashesEqual(recomputed, expected.jobContentHash)) {
+    return { ok: false, code: "PACKAGE_HASH_MISMATCH" };
+  }
+  return { ok: true, pkg };
 }

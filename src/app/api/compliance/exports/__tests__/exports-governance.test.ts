@@ -9,6 +9,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
+import { buildExportPackage } from "@/lib/compliance/export-package";
+
+/** Build a valid, correctly-bound package (matching the job) + return its bytes+hash. */
+function validPackageFor(jobId: string, privacyRequestId: string | null, org: string | null) {
+  const pkg = buildExportPackage(
+    [{ name: "user_profile", schemaVersion: "1.0", scope: "GLOBAL_SUBJECT", includedFields: ["id"], excludedFields: [], redactionRules: [], records: [{ id: "subj-1" }] }],
+    { exportRequestId: jobId, privacyRequestId, subjectClass: "USER", organizationScope: org, locale: "en", generatedAt: new Date("2026-01-01"), expiry: { status: "CONFIGURED", expiresAt: new Date("2027-01-01") } },
+  );
+  return { bytes: Buffer.from(JSON.stringify(pkg)), contentHash: pkg.contentHash };
+}
 
 type Row = Record<string, unknown> & { id: string };
 type Member = { userId: string; organizationId: string; role: string; status: string };
@@ -129,6 +139,35 @@ describe("create from an approved parent (authoritative scope)", () => {
   });
 });
 
+describe("Part G hardening — parent eligibility (Findings 4 & 5)", () => {
+  it("rejects a Candidate parent before creating any job (Finding 5)", async () => {
+    adminA(); privacy = [parent({ userId: null, candidateId: "cand-1" })];
+    const r = await createPOST({ privacyRequestId: "pr1" });
+    expect(r.json.code).toBe("EXPORT_SUBJECT_CLASS_UNSUPPORTED");
+    expect(jobs).toHaveLength(0);
+  });
+  it("PARTIALLY_APPROVED cannot create a full export (Finding 4)", async () => {
+    adminA(); privacy = [parent({ status: "PARTIALLY_APPROVED" })];
+    const r = await createPOST({ privacyRequestId: "pr1" });
+    expect(r.json.code).toBe("PARENT_SCOPE_CONFIGURATION_REQUIRED");
+    expect(jobs).toHaveLength(0);
+  });
+  it("FULFILMENT_IN_PROGRESS with an existing active job returns it idempotently", async () => {
+    adminA(); privacy = [parent({ status: "FULFILMENT_IN_PROGRESS" })];
+    jobs = [job({ id: "existing", privacyRequestId: "pr1", lifecycle: "AUTHORISED", organizationId: "org-A", userId: "subj-1" })];
+    const r = await createPOST({ privacyRequestId: "pr1" });
+    expect(r.json.idempotent).toBe(true);
+    expect(r.json.export.id).toBe("existing");
+    expect(jobs).toHaveLength(1);
+  });
+  it("FULFILMENT_IN_PROGRESS WITHOUT an active job cannot create one", async () => {
+    adminA(); privacy = [parent({ status: "FULFILMENT_IN_PROGRESS" })];
+    const r = await createPOST({ privacyRequestId: "pr1" });
+    expect(r.json.code).toBe("PARENT_NOT_APPROVED");
+    expect(jobs).toHaveLength(0);
+  });
+});
+
 describe("transitions + approval separation + disabled execution", () => {
   it("authorise needs approve_exports (ADMIN denied, OWNER allowed)", async () => {
     adminA(); jobs = [job({ lifecycle: "REQUESTED" })];
@@ -173,31 +212,52 @@ describe("token issuance + gating", () => {
   });
 });
 
-describe("download redemption (single-use, subject/tenant bound)", () => {
-  async function ready() { jobs = [job({ lifecycle: "READY", packageKey: "exports/e1/package.json", contentHash: "h", expiresAt: new Date(Date.now() + 3600_000) })]; storageStore["exports/e1/package.json"] = Buffer.from(JSON.stringify({ manifest: { contentHash: "h" } })); }
-  it("redeems a valid token once, then a replay is a uniform 404", async () => {
-    adminA(); await ready();
-    const t = (await issueToken("e1")).json.token as string;
-    payload = { sub: "subj-1", role: "customer", sid: "s" }; // the subject
-    const ok = await download("e1", t);
-    expect(ok.raw.status).toBe(200);
-    const replay = await download("e1", t);
-    expect(replay.raw.status).toBe(404);
+describe("download redemption — two-gate, integrity-verified, single-use", () => {
+  const KEY = "exports/e1/package.json";
+  async function ready(overPkg?: Buffer) {
+    const vp = validPackageFor("e1", "pr1", "org-A");
+    jobs = [job({ lifecycle: "READY", packageKey: KEY, contentHash: vp.contentHash, schemaVersion: "1.0", subjectClass: "USER", privacyRequestId: "pr1", organizationId: "org-A", userId: "subj-1", expiresAt: new Date(Date.now() + 3600_000) })];
+    storageStore[KEY] = overPkg ?? vp.bytes;
+  }
+  async function issueAndSubject() { adminA(); const t = (await issueToken("e1")).json.token as string; payload = { sub: "subj-1", role: "customer", sid: "s" }; return t; }
+
+  it("redeems a valid, integrity-verified token once, then a replay is a uniform 404", async () => {
+    await ready(); const t = await issueAndSubject();
+    expect((await download("e1", t)).raw.status).toBe(200);
+    expect((await download("e1", t)).raw.status).toBe(404);
     expect(auditCalls.some((e) => e.action === "compliance.export.token_replay_denied")).toBe(true);
   });
-  it("a foreign subject cannot redeem the token (404)", async () => {
-    adminA(); await ready();
-    const t = (await issueToken("e1")).json.token as string;
-    payload = { sub: "OTHER-SUBJECT", role: "customer", sid: "s" };
+  it("a foreign subject cannot redeem (404) and does not consume the token", async () => {
+    await ready(); const t = (adminA(), (await issueToken("e1")).json.token as string);
+    payload = { sub: "OTHER", role: "customer", sid: "s" };
     expect((await download("e1", t)).raw.status).toBe(404);
-    expect(tokens[0].usedAt ?? null).toBeNull(); // not consumed
+    expect(tokens[0].usedAt ?? null).toBeNull();
   });
-  it("an expired export cannot be downloaded (404)", async () => {
-    adminA(); jobs = [job({ lifecycle: "READY", packageKey: "exports/e1/package.json", expiresAt: new Date(Date.now() - 1000) })];
-    storageStore["exports/e1/package.json"] = Buffer.from("{}");
-    tokens = [{ id: "t1", exportRequestId: "e1", tokenHash: "x", subjectUserId: "subj-1", organizationId: "org-A", expiresAt: new Date(Date.now() - 1000), usedAt: null, revokedAt: null }];
-    payload = { sub: "subj-1", role: "customer", sid: "s" };
-    expect((await download("e1", "someplaintexttoken")).raw.status).toBe(404);
+  it("a missing storage object does NOT consume the token; a retry after recovery succeeds", async () => {
+    await ready(); const t = await issueAndSubject();
+    delete storageStore[KEY]; // storage miss
+    const miss = await download("e1", t);
+    expect(miss.raw.status).toBe(404);
+    expect(tokens[0].usedAt ?? null).toBeNull(); // TOKEN_BURN_ON_STORAGE_FAILURE=0
+    await ready();                                // storage recovered (re-seed valid package)
+    expect((await download("e1", t)).raw.status).toBe(200); // same token still works
+  });
+  it("a package integrity failure does NOT consume the token", async () => {
+    const tampered = JSON.parse(validPackageFor("e1", "pr1", "org-A").bytes.toString());
+    tampered.documents.user_profile.push({ id: "INJECTED" });
+    await ready(Buffer.from(JSON.stringify(tampered)));
+    const t = await issueAndSubject();
+    const r = await download("e1", t);
+    expect(r.raw.status).toBe(409);
+    expect(r.json.code).toBe("PACKAGE_HASH_MISMATCH"); // TAMPERED_EXPORT_DELIVERY=0
+    expect(tokens[0].usedAt ?? null).toBeNull();       // TOKEN_BURN_ON_PACKAGE_INTEGRITY_FAILURE=0
+  });
+  it("two concurrent valid redemptions yield exactly one successful download", async () => {
+    await ready(); const t = await issueAndSubject();
+    const [a, b] = await Promise.all([download("e1", t), download("e1", t)]);
+    const successes = [a, b].filter((r) => r.raw.status === 200).length;
+    expect(successes).toBe(1);
+    expect(tokens.filter((tok) => (tok.usedAt ?? null) !== null)).toHaveLength(1);
   });
 });
 

@@ -53,19 +53,38 @@ const EXECUTOR_STEPS = new Set(["AUTHORISED->COLLECTING", "COLLECTING->REDACTING
 
 /** PrivacyRequest types whose fulfilment may produce a subject-data export. */
 export const EXPORT_COMPATIBLE_REQUEST_TYPES = ["DATA_EXPORT", "ACCESS_REQUEST"];
-/** Parent PrivacyRequest lifecycle states that are approved for export fulfilment. */
-export const EXPORT_APPROVED_PARENT_STATES = ["APPROVED", "PARTIALLY_APPROVED", "FULFILMENT_IN_PROGRESS"];
+/**
+ * The ONLY parent state from which a NEW export child job may be created.
+ * PARTIALLY_APPROVED is fail-open without a scoped-approval model (Finding 4) and
+ * FULFILMENT_IN_PROGRESS must not spawn a new job — those are handled by the
+ * idempotent-retry path (return the existing active job) or rejected.
+ */
+export const EXPORT_CREATE_PARENT_STATE = "APPROVED";
 
-export interface ParentExportEligibility {
-  ok: boolean;
-  code?: "PARENT_TYPE_INCOMPATIBLE" | "PARENT_NOT_APPROVED" | "IDENTITY_NOT_VERIFIED";
-}
-/** Fail-closed eligibility of a parent PrivacyRequest for an export child job. */
+export type ParentEligibilityCode =
+  | "EXPORT_SUBJECT_CLASS_UNSUPPORTED"
+  | "PARENT_TYPE_INCOMPATIBLE"
+  | "PARENT_SCOPE_CONFIGURATION_REQUIRED"
+  | "PARENT_NOT_APPROVED"
+  | "IDENTITY_NOT_VERIFIED";
+
+export interface ParentExportEligibility { ok: boolean; code?: ParentEligibilityCode }
+
+/**
+ * Fail-closed eligibility to CREATE a NEW export child job from a parent.
+ *   - Part G supports USER subjects only — a Candidate (or missing userId) parent
+ *     is rejected before any job/token/package is created (Finding 5).
+ *   - only an exactly-APPROVED, identity-verified, export-typed parent qualifies;
+ *     PARTIALLY_APPROVED is fail-closed (no scoped-approval model yet, Finding 4).
+ */
 export function assessParentExportEligibility(parent: {
   requestType: string; status: string; identityVerifiedAt: Date | null;
+  userId: string | null; candidateId: string | null;
 }): ParentExportEligibility {
+  if (!parent.userId || parent.candidateId) return { ok: false, code: "EXPORT_SUBJECT_CLASS_UNSUPPORTED" };
   if (!EXPORT_COMPATIBLE_REQUEST_TYPES.includes(parent.requestType)) return { ok: false, code: "PARENT_TYPE_INCOMPATIBLE" };
-  if (!EXPORT_APPROVED_PARENT_STATES.includes(parent.status)) return { ok: false, code: "PARENT_NOT_APPROVED" };
+  if (parent.status === "PARTIALLY_APPROVED") return { ok: false, code: "PARENT_SCOPE_CONFIGURATION_REQUIRED" };
+  if (parent.status !== EXPORT_CREATE_PARENT_STATE) return { ok: false, code: "PARENT_NOT_APPROVED" };
   if (!parent.identityVerifiedAt) return { ok: false, code: "IDENTITY_NOT_VERIFIED" };
   return { ok: true };
 }
