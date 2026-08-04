@@ -160,6 +160,15 @@ export const MULTI_SITE_AUDIT = {
   KNOWLEDGE_COVERAGE_QUERIED:           "multi_site.knowledge_coverage.queried",
 } as const;
 
+/**
+ * Compliance / privacy audit action identifiers (compliance security hotfix).
+ * Metadata for these events is allow-listed to identifiers and closed-enum
+ * values only — never request free text, response notes, email, IP or UA.
+ */
+export const COMPLIANCE_AUDIT = {
+  PRIVACY_REQUEST_STATUS_CHANGED: "compliance.privacy_request.status_changed",
+} as const;
+
 /** Organization management audit action identifiers (Phase 32). */
 export const ORG_AUDIT = {
   ORG_CREATED:             "org.created",

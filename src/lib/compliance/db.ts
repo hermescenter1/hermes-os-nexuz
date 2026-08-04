@@ -220,6 +220,58 @@ export async function updatePrivacyRequestStatus(
   } catch { return null; }
 }
 
+/**
+ * SECURITY (compliance hotfix) — read a single PrivacyRequest ONLY within the
+ * caller's authoritative organization. Returns null for a foreign or unknown id
+ * without disclosing which case it is, so the route can answer a uniform 404.
+ */
+export async function getPrivacyRequestForOrg(
+  id: string,
+  organizationId: string,
+): Promise<DbPrivacyRequest | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.privacy.findFirst({
+      where: { id, organizationId },
+    } as unknown)) as DbPrivacyRequest | null;
+  } catch { return null; }
+}
+
+/**
+ * SECURITY (compliance hotfix) — status mutation whose database predicate is
+ * tenant-scoped: the `updateMany` filter carries BOTH the request id AND the
+ * authoritative organization id, so a request belonging to another tenant is
+ * never matched, let alone written. Returns the affected-row count; the caller
+ * asserts exactly one row changed and otherwise answers a non-disclosing 404.
+ * The tenant condition lives in the query, never in application code that could
+ * be bypassed.
+ */
+export async function updatePrivacyRequestStatusForOrg(params: {
+  id:             string;
+  organizationId: string;
+  status:         PrivacyRequestStatus;
+  reviewedBy:     string;
+  responseNote?:  string | null;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.privacy.updateMany({
+      where: { id: params.id, organizationId: params.organizationId },
+      data: {
+        status:       params.status,
+        reviewedBy:   params.reviewedBy,
+        reviewedAt:   new Date(),
+        completedAt:  params.status === "COMPLETED" ? new Date() : undefined,
+        responseNote: params.responseNote ?? null,
+        updatedAt:    new Date(),
+      },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
 // ── Legal Documents ───────────────────────────────────────────────────────────
 
 export async function getLatestLegalDocument(
@@ -244,6 +296,38 @@ export async function getAllLegalDocuments(organizationId?: string): Promise<DbL
   try {
     return (await db.legal.findMany({
       where:   organizationId ? { organizationId } : {},
+      orderBy: [{ documentType: "asc" }, { version: "desc" }],
+    } as unknown)) as DbLegalDocument[];
+  } catch { return []; }
+}
+
+/**
+ * SECURITY (compliance hotfix) — documents belonging to a SPECIFIC tenant only.
+ * The predicate pins `organizationId`, so a tenant administrator can never read
+ * another organization's documents (published or draft) through the admin API.
+ */
+export async function getLegalDocumentsForOrg(organizationId: string): Promise<DbLegalDocument[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.legal.findMany({
+      where:   { organizationId },
+      orderBy: [{ documentType: "asc" }, { version: "desc" }],
+    } as unknown)) as DbLegalDocument[];
+  } catch { return []; }
+}
+
+/**
+ * SECURITY (compliance hotfix) — platform-global legal templates only
+ * (`organizationId: null`). Reserved for the strictest platform-admin boundary;
+ * tenant administrators never receive these.
+ */
+export async function getGlobalLegalDocuments(): Promise<DbLegalDocument[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.legal.findMany({
+      where:   { organizationId: null },
       orderBy: [{ documentType: "asc" }, { version: "desc" }],
     } as unknown)) as DbLegalDocument[];
   } catch { return []; }
