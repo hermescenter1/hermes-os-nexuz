@@ -252,6 +252,8 @@ describe("de.json — Phase 86C1 translation audit", () => {
     "otEdge",
     // PHASE 92 — the observability / SRE operator surface, genuinely German.
     "observability",
+    // TRUST — the footer Trust & Verification badge headings, genuinely German.
+    "trustBadges",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

@@ -1,4 +1,10 @@
 {
+    "trustBadges": {
+      "sectionTitle": "Vertrauen & Verifizierung",
+      "enamadHeading": "Offizielles iranisches Vertrauenssiegel",
+      "saashubHeading": "Geprüfter Software-Eintrag",
+      "provenExpertHeading": "Kundenbewertungen"
+    },
     "observability": {
       "eyebrow": "Betrieb",
       "title": "SRE-Leitstand",

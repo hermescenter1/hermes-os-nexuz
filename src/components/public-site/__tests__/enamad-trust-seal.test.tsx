@@ -174,8 +174,10 @@ describe("eNAMAD trust seal — security attributes", () => {
   });
 
   it("the source file uses no dangerouslySetInnerHTML and no iframe", async () => {
+    // The eNAMAD markup now lives in the shared TrustBadgesSection component so
+    // both public footers render an identical seal; the source guards follow it.
     const fs = await import("node:fs/promises");
-    const src = await fs.readFile("src/components/public-site/PublicFooter.tsx", "utf8");
+    const src = await fs.readFile("src/components/trust/TrustBadgesSection.tsx", "utf8");
     expect(src).not.toContain("dangerouslySetInnerHTML");
     expect(src).not.toContain("<iframe");
     // JSX casing matters: lowercase `referrerpolicy` would be dropped by React
@@ -245,13 +247,17 @@ describe("eNAMAD trust seal — layout stability and responsiveness", () => {
     await unmount();
   });
 
-  it("keeps a square aspect ratio at both breakpoints (no stretching)", async () => {
+  it("keeps its NATURAL aspect ratio at both breakpoints (no stretching)", async () => {
+    // The redesign no longer forces a square: the width is fixed (~88–96px) and
+    // the height follows the seal's intrinsic proportions (h-auto), so the
+    // official artwork is never distorted.
     const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
     const cls = container.querySelector<HTMLImageElement>('img[src*="trustseal"]')!.className;
-    expect(cls).toContain("h-[76px]");
-    expect(cls).toContain("w-[76px]");
-    expect(cls).toContain("sm:h-[88px]");
-    expect(cls).toContain("sm:w-[88px]");
+    expect(cls).toContain("h-auto");
+    expect(cls).toContain("w-[88px]");
+    expect(cls).toContain("sm:w-[96px]");
+    // no forced height that would stretch a non-square seal into a square
+    expect(cls).not.toMatch(/\bh-\[\d+px\]/);
     await unmount();
   });
 
@@ -360,8 +366,9 @@ describe("eNAMAD trust seal — Content Security Policy", () => {
 
 describe("eNAMAD trust seal — the superseded seal is fully retired", () => {
   it("the footer source carries neither the old id nor the old Code", async () => {
+    // The seal markup lives in the shared TrustBadgesSection component now.
     const fs = await import("node:fs/promises");
-    const src = await fs.readFile("src/components/public-site/PublicFooter.tsx", "utf8");
+    const src = await fs.readFile("src/components/trust/TrustBadgesSection.tsx", "utf8");
     expect(src, "retired seal id still present").not.toContain(RETIRED_ID);
     expect(src, "retired seal Code still present").not.toContain(RETIRED_CODE);
     expect(src).toContain(SEAL_ID);
