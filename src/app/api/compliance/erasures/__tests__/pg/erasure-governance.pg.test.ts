@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { getPrisma } from "@/lib/db/prisma";
 import { createErasureJobForParent, approveErasurePlanForOrg } from "@/lib/compliance/erasure-db";
+import { buildErasurePlan } from "@/lib/compliance/erasure-planner";
 
 /**
  * Phase 97 Part H — real-PostgreSQL rehearsal. Proves against the actual DB: the
@@ -25,6 +26,7 @@ async function deleteJobs(p: Pg) {
 async function cleanup() {
   const p = await db();
   await deleteJobs(p);
+  await p.$executeRawUnsafe(`DELETE FROM "RetentionPolicy" WHERE id LIKE '${TAG}%'`);
   await p.$executeRawUnsafe(`DELETE FROM "PrivacyRequest" WHERE id LIKE '${TAG}%'`);
   await p.$executeRawUnsafe(`DELETE FROM "User" WHERE id LIKE '${TAG}%'`);
   await p.$executeRawUnsafe(`DELETE FROM "Organization" WHERE id LIKE '${TAG}%'`);
@@ -44,29 +46,35 @@ describe.skipIf(!PG_ENABLED)("Phase 97 Part H PG", () => {
   afterAll(cleanup);
   beforeEach(async () => { await deleteJobs(await db()); });
 
-  // A GOVERNED job (all binding columns non-null), optionally at a plan/approved state.
-  const insGoverned = (p: Pg, id: string, lifecycle: string, parent: string | null, opts: { approved?: boolean; plan?: boolean; execIdem?: boolean; planHash?: string } = {}) =>
+  // A GOVERNED job (all binding columns non-null), optionally at a plan/approved
+  // state. Approved rows carry the approval binding (approvedPlanHash = planHash,
+  // approvedPlanVersion = planVersion) required by the approval-binding CHECK.
+  const insGoverned = (p: Pg, id: string, lifecycle: string, parent: string | null, opts: { approved?: boolean; plan?: boolean; execIdem?: boolean; planHash?: string; planJson?: string; approvedPlanHash?: string } = {}) =>
     p.$executeRawUnsafe(
       `INSERT INTO "DataDeletionRequest" (id,email,status,lifecycle,"privacyRequestId","organizationId","userId","subjectClass","idempotencyKey",
-         "approvedBy","approvedAt","planJson","planHash","planVersion","plannedAt","plannedBy","executionIdempotencyKey","createdAt","updatedAt")
+         "approvedBy","approvedAt","approvedPlanHash","approvedPlanVersion","planJson","planHash","planVersion","plannedAt","plannedBy","executionIdempotencyKey","createdAt","updatedAt")
        VALUES ($1,'${TAG}@x.com','PENDING',$2,$3,'${ORG}','${USER}','USER',$3,
          ${opts.approved ? "'a'" : "NULL"}, ${opts.approved ? "now()" : "NULL"},
-         ${opts.plan ? "'{}'::jsonb" : "NULL"}, ${opts.plan ? `'${opts.planHash ?? HEX}'` : "NULL"}, ${opts.plan ? "1" : "NULL"}, ${opts.plan ? "now()" : "NULL"}, ${opts.plan ? "'p'" : "NULL"},
+         ${opts.approved && opts.plan ? `'${opts.approvedPlanHash ?? opts.planHash ?? HEX}'` : "NULL"}, ${opts.approved && opts.plan ? "1" : "NULL"},
+         ${opts.plan ? `$4::jsonb` : "NULL"}, ${opts.plan ? `'${opts.planHash ?? HEX}'` : "NULL"}, ${opts.plan ? "1" : "NULL"}, ${opts.plan ? "now()" : "NULL"}, ${opts.plan ? "'p'" : "NULL"},
          ${opts.execIdem ? "'k'" : "NULL"}, now(), now())`,
-      id, lifecycle, parent);
+      ...(opts.plan ? [id, lifecycle, parent, opts.planJson ?? "{}"] : [id, lifecycle, parent]));
 
   const insLegacy = (p: Pg, id: string, lifecycle: string) =>
     p.$executeRawUnsafe(`INSERT INTO "DataDeletionRequest" (id,email,status,lifecycle,"createdAt","updatedAt") VALUES ($1,'${TAG}@x.com','PENDING',$2,now(),now())`, id, lifecycle);
 
-  it("the migration + governed constraints exist", async () => {
+  it("the migrations + governed constraints exist", async () => {
     const p = await db();
-    const mig = await p.$queryRawUnsafe<{ migration_name: string }[]>(`SELECT migration_name FROM _prisma_migrations WHERE migration_name LIKE '%governed_subject_erasure%' AND finished_at IS NOT NULL`);
-    expect(mig.length).toBeGreaterThanOrEqual(1);
+    const mig = await p.$queryRawUnsafe<{ migration_name: string }[]>(`SELECT migration_name FROM _prisma_migrations WHERE (migration_name LIKE '%governed_subject_erasure%' OR migration_name LIKE '%erasure_approval_binding%') AND finished_at IS NOT NULL`);
+    expect(mig.length).toBeGreaterThanOrEqual(2);
     const chk = await p.$queryRawUnsafe<{ conname: string }[]>(`SELECT conname FROM pg_constraint WHERE conname IN (
       'DataDeletionRequest_lifecycle_check','DataDeletionRequest_parentless_state_check','DataDeletionRequest_governed_check',
       'DataDeletionRequest_approval_check','DataDeletionRequest_plan_evidence_check','DataDeletionRequest_execution_idem_check',
-      'DataDeletionRequest_plan_hash_format_check','DataDeletionRequest_parent_tuple_fkey') ORDER BY conname`);
-    expect(chk.length).toBe(8);
+      'DataDeletionRequest_plan_hash_format_check','DataDeletionRequest_parent_tuple_fkey',
+      'DataDeletionRequest_plan_attribution_check','DataDeletionRequest_approved_plan_binding_check') ORDER BY conname`);
+    expect(chk.length).toBe(10);
+    const idx = await p.$queryRawUnsafe<{ indexname: string }[]>(`SELECT indexname FROM pg_indexes WHERE indexname='RetentionPolicy_live_selection_key'`);
+    expect(idx.length).toBe(1);
   });
 
   it("the lifecycle CHECK rejects an unknown value", async () => {
@@ -119,15 +127,59 @@ describe.skipIf(!PG_ENABLED)("Phase 97 Part H PG", () => {
     expect(active[0].c).toBe(1);
   });
 
-  it("concurrent approval binding yields exactly one APPROVED (CONCURRENT_ERASURE_APPROVAL_RACE=0)", async () => {
+  /** A REAL canonical (empty-items) plan whose recomputed hash matches storage —
+   *  the approval transaction strictly re-parses and re-hashes the persisted snapshot. */
+  function realPlanFor(jobId: string) {
+    const { plan, planHash } = buildErasurePlan({
+      jobId, privacyRequestId: PR, organizationId: ORG, subjectClass: "USER", subjectId: USER,
+      planVersion: 1, now: new Date("2026-06-01T00:00:00.000Z"), collected: [], holds: [], policies: [],
+    });
+    return { planJson: JSON.stringify(plan), planHash };
+  }
+
+  it("approval requires the exact plan version (STALE_ERASURE_PLAN_APPROVAL=0), then concurrent approval yields exactly one APPROVED", async () => {
     const p = await db();
-    await insGoverned(p, `${TAG}-rev`, "IN_REVIEW", `${PR}`, { plan: true, planHash: HEX });
+    const { planJson, planHash } = realPlanFor(`${TAG}-rev`);
+    await insGoverned(p, `${TAG}-rev`, "IN_REVIEW", `${PR}`, { plan: true, planHash, planJson });
+    // Wrong expectedPlanVersion is a closed denial.
+    const wrongVersion = await approveErasurePlanForOrg({ id: `${TAG}-rev`, organizationId: ORG, actorId: "owner", expectedPlanHash: planHash, expectedPlanVersion: 2, now: new Date() });
+    expect(wrongVersion.ok).toBe(false);
+    // Wrong expectedPlanHash is a closed denial.
+    const wrongHash = await approveErasurePlanForOrg({ id: `${TAG}-rev`, organizationId: ORG, actorId: "owner", expectedPlanHash: "0".repeat(64), expectedPlanVersion: 1, now: new Date() });
+    expect(wrongHash.ok).toBe(false);
+    // Concurrent correct approvals: exactly one wins the row lock and commits.
     const [a, b] = await Promise.all([
-      approveErasurePlanForOrg({ id: `${TAG}-rev`, organizationId: ORG, actorId: "owner", expectedPlanHash: HEX, now: new Date() }),
-      approveErasurePlanForOrg({ id: `${TAG}-rev`, organizationId: ORG, actorId: "owner", expectedPlanHash: HEX, now: new Date() }),
+      approveErasurePlanForOrg({ id: `${TAG}-rev`, organizationId: ORG, actorId: "owner", expectedPlanHash: planHash, expectedPlanVersion: 1, now: new Date() }),
+      approveErasurePlanForOrg({ id: `${TAG}-rev`, organizationId: ORG, actorId: "owner", expectedPlanHash: planHash, expectedPlanVersion: 1, now: new Date() }),
     ]);
     expect([a, b].filter((r) => r.ok).length).toBe(1);
-    const row = await p.$queryRawUnsafe<{ lifecycle: string }[]>(`SELECT lifecycle FROM "DataDeletionRequest" WHERE id='${TAG}-rev'`);
+    const row = await p.$queryRawUnsafe<{ lifecycle: string; approvedPlanHash: string | null; approvedPlanVersion: number | null }[]>(
+      `SELECT lifecycle,"approvedPlanHash","approvedPlanVersion" FROM "DataDeletionRequest" WHERE id='${TAG}-rev'`);
     expect(row[0].lifecycle).toBe("APPROVED");
+    expect(row[0].approvedPlanHash).toBe(planHash);   // committed approval binding
+    expect(row[0].approvedPlanVersion).toBe(1);
+  });
+
+  it("plan attribution + approved-plan binding CHECKs reject incomplete/mismatched rows", async () => {
+    const p = await db();
+    // PLAN_READY without plannedBy → plan_attribution_check.
+    await expect(p.$executeRawUnsafe(
+      `INSERT INTO "DataDeletionRequest" (id,email,status,lifecycle,"privacyRequestId","organizationId","userId","subjectClass","idempotencyKey","planJson","planHash","planVersion","plannedAt","createdAt","updatedAt")
+       VALUES ('${TAG}-noattr','${TAG}@x.com','PENDING','PLAN_READY','${PR}','${ORG}','${USER}','USER','${PR}','{}'::jsonb,'${HEX}',1,now(),now(),now())`)).rejects.toBeTruthy();
+    // APPROVED whose approvedPlanHash differs from planHash → approved_plan_binding_check.
+    await expect(insGoverned(p, `${TAG}-mismatch`, "APPROVED", `${PR}`, { plan: true, approved: true, planHash: HEX, approvedPlanHash: "b".repeat(64) })).rejects.toBeTruthy();
+  });
+
+  it("at most ONE live (enabled+APPROVED) retention policy per (org, dataClass, targetResource)", async () => {
+    const p = await db();
+    const insPolicy = (id: string, approvalState: string, enabled: boolean) => p.$executeRawUnsafe(
+      `INSERT INTO "RetentionPolicy" (id,"organizationId",name,"dataClass","targetResource","approvalState",enabled,"updatedAt")
+       VALUES ($1,'${ORG}','P','consent','consent_records',$2,$3,now())`, id, approvalState, enabled);
+    await insPolicy(`${TAG}-pol1`, "APPROVED", true);
+    // A second LIVE policy for the same tuple is rejected by the unique index.
+    await expect(insPolicy(`${TAG}-pol2`, "APPROVED", true)).rejects.toBeTruthy();
+    // A draft/pending or disabled duplicate remains allowed (not live).
+    await insPolicy(`${TAG}-pol3`, "PENDING_REVIEW", true);
+    await insPolicy(`${TAG}-pol4`, "APPROVED", false);
   });
 });

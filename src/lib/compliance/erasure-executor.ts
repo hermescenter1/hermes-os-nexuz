@@ -13,6 +13,7 @@
  */
 import { ERASURE_REGISTRY_VERSION } from "./erasure-targets";
 import { isErasureExecutionEnabled } from "./erasure-lifecycle";
+import { isSha256Hex } from "./export-package";
 import type { ErasurePlan } from "./erasure-planner";
 
 export type ErasurePreflightCode =
@@ -25,16 +26,19 @@ export type ErasurePreflightCode =
   | "ERASURE_PLAN_STALE";
 
 /**
- * Revalidate immediately before every action. `recomputedPlanHash` MUST be produced
- * from the CURRENT authoritative inputs (current holds, retention policies, target
- * records) so a change after approval is detected as ERASURE_PLAN_STALE. Fail-closed
- * on every material discrepancy; a destructive action never proceeds otherwise.
+ * Revalidate immediately before every action. `approvedPlanHash`/`approvedPlanVersion`
+ * MUST be the DEDICATED approval-binding fields persisted by the approval transaction
+ * (DataDeletionRequest.approvedPlanHash / .approvedPlanVersion) — never the mutable
+ * current plan fields alone. `recomputedPlanHash` MUST be produced from the CURRENT
+ * authoritative inputs (current holds, retention policies, target records) so any
+ * change after approval is detected as ERASURE_PLAN_STALE. Fail-closed on every
+ * material discrepancy; a destructive action never proceeds otherwise.
  */
 export function runErasurePreflight(params: {
   lifecycle:           string;
   executionEnabled:    boolean;
-  approvedPlanHash:    string | null;
-  approvedPlanVersion: number | null;
+  approvedPlanHash:    string | null;   // job.approvedPlanHash (approval-bound)
+  approvedPlanVersion: number | null;   // job.approvedPlanVersion (approval-bound)
   recomputedPlanHash:  string;
   recomputedPlanVersion: number;
   bindingOk:           boolean;      // parent/org/subject binding still holds
@@ -46,7 +50,8 @@ export function runErasurePreflight(params: {
   if (!params.bindingOk) return { ok: false, code: "ERASURE_BINDING_INVALID" };
   if (!params.executionIdempotencyKey) return { ok: false, code: "ERASURE_IDEMPOTENCY_MISSING" };
   if (params.registryVersion !== ERASURE_REGISTRY_VERSION) return { ok: false, code: "ERASURE_REGISTRY_MISMATCH" };
-  if (!params.approvedPlanHash
+  if (!params.approvedPlanHash || !isSha256Hex(params.approvedPlanHash)
+    || params.approvedPlanVersion == null || params.approvedPlanVersion <= 0
     || params.recomputedPlanHash !== params.approvedPlanHash
     || params.approvedPlanVersion !== params.recomputedPlanVersion) {
     return { ok: false, code: "ERASURE_PLAN_STALE" };

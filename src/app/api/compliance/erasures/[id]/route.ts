@@ -12,7 +12,6 @@ import { requirePermission, type OrgPermission } from "@/lib/org/rbac";
 import { recordAuditEvent, COMPLIANCE_AUDIT } from "@/lib/audit/audit-service";
 import { toErasureJobDto, toErasureJobDetailDto } from "@/lib/compliance/erasure-view";
 import { erasureTransitionAction, isKnownErasureLifecycle, type ErasureAction } from "@/lib/compliance/erasure-lifecycle";
-import { canApproveErasurePlan, type ErasurePlan } from "@/lib/compliance/erasure-planner";
 
 const ACTION_PERMISSION: Record<ErasureAction, OrgPermission> = {
   manage:  "manage_erasures",
@@ -43,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!scope.ok) return NextResponse.json({ error: scope.error, code: scope.code }, { status: scope.status });
 
   const { id } = await params;
-  const body = await req.json().catch(() => null) as { transition?: string; expectedPlanHash?: string } | null;
+  const body = await req.json().catch(() => null) as { transition?: string; expectedPlanHash?: string; expectedPlanVersion?: number } | null;
   if (!body || typeof body.transition !== "string") return NextResponse.json({ error: "transition is required", code: "INVALID_INPUT" }, { status: 400 });
 
   const job = await getErasureJobForOrg(id, scope.organizationId);
@@ -57,25 +56,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Insufficient organization permissions", code: "INSUFFICIENT_PERMISSION" }, { status: 403 });
   }
 
-  // Approve — requires the exact current planHash AND an approvable plan.
+  // Approve — binds to the EXACT planHash AND planVersion. All validation (strict
+  // parse of the persisted snapshot, hash recomputation, approvability) runs INSIDE
+  // the SELECT ... FOR UPDATE transaction in approveErasurePlanForOrg — never on the
+  // pre-lock read above. The audit uses the committed transaction's returned values.
   if (to === "APPROVED") {
     const expectedPlanHash = typeof body.expectedPlanHash === "string" ? body.expectedPlanHash : "";
-    if (!expectedPlanHash) return NextResponse.json({ error: "expectedPlanHash is required to approve", code: "INVALID_INPUT" }, { status: 400 });
-    const plan = job.planJson as unknown as ErasurePlan | null;
-    if (!plan || !job.planHash) return NextResponse.json({ error: "No plan to approve", code: "NO_PLAN" }, { status: 409 });
-    const approvable = canApproveErasurePlan(plan);
-    if (!approvable.ok) {
-      return NextResponse.json({ error: "Plan is not approvable", code: "PLAN_NOT_APPROVABLE", blockerCount: approvable.blockers.length }, { status: 409 });
+    const expectedPlanVersion = typeof body.expectedPlanVersion === "number" && Number.isInteger(body.expectedPlanVersion) ? body.expectedPlanVersion : 0;
+    if (!expectedPlanHash || expectedPlanVersion <= 0) {
+      return NextResponse.json({ error: "expectedPlanHash and expectedPlanVersion are required to approve", code: "INVALID_INPUT" }, { status: 400 });
     }
-    const result = await approveErasurePlanForOrg({ id, organizationId: scope.organizationId, actorId: scope.userId, expectedPlanHash, now: new Date() });
+    const result = await approveErasurePlanForOrg({ id, organizationId: scope.organizationId, actorId: scope.userId, expectedPlanHash, expectedPlanVersion, now: new Date() });
     if (!result.ok) {
       if (result.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
-      const code = result.reason === "PLAN_HASH_MISMATCH" ? "APPROVED_PLAN_HASH_MISMATCH" : "TRANSITION_CONFLICT";
+      if (result.reason === "PLAN_NOT_APPROVABLE") {
+        return NextResponse.json({ error: "Plan is not approvable", code: "PLAN_NOT_APPROVABLE", blockerCount: result.blockerCount ?? 0 }, { status: 409 });
+      }
+      const code =
+        result.reason === "PLAN_HASH_MISMATCH"    ? "APPROVED_PLAN_HASH_MISMATCH" :
+        result.reason === "PLAN_VERSION_MISMATCH" ? "APPROVED_PLAN_VERSION_MISMATCH" :
+        result.reason === "PLAN_INVALID"          ? "PLAN_INVALID" :
+        "TRANSITION_CONFLICT";
       return NextResponse.json({ error: "Approval conflict", code }, { status: 409 });
     }
     await recordAuditEvent({
       userId: scope.userId, action: COMPLIANCE_AUDIT.ERASURE_APPROVED, entityType: "DataDeletionRequest", entityId: id,
-      organizationId: scope.organizationId, outcome: "SUCCESS", metadata: { planVersion: job.planVersion, planHash: result.planHash },
+      organizationId: scope.organizationId, outcome: "SUCCESS",
+      // Committed values from the approval transaction — never the pre-lock read.
+      metadata: { approvedPlanVersion: result.planVersion, approvedPlanHash: result.planHash },
     });
     const updated = await getErasureJobForOrg(id, scope.organizationId);
     return NextResponse.json({ erasure: updated ? toErasureJobDetailDto(updated) : null });

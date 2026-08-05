@@ -204,6 +204,7 @@ export const COMPLIANCE_AUDIT = {
   ERASURE_EXECUTION_DENIED:       "compliance.erasure.execution_denied",
   ERASURE_PLAN_STALE:             "compliance.erasure.plan_stale",
   ERASURE_CANCELLED:              "compliance.erasure.cancelled",
+  ERASURE_MANUAL_RESOLVED:        "compliance.erasure.manual_resolved",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */

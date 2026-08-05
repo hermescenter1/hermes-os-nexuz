@@ -113,7 +113,7 @@ beforeEach(() => {
       ERASURE_REVIEW_SUBMITTED: "compliance.erasure.review_submitted", ERASURE_APPROVED: "compliance.erasure.approved",
       ERASURE_REJECTED: "compliance.erasure.rejected", ERASURE_JOB_TRANSITIONED: "compliance.erasure.job_transitioned",
       ERASURE_EXECUTION_DENIED: "compliance.erasure.execution_denied", ERASURE_PLAN_STALE: "compliance.erasure.plan_stale",
-      ERASURE_CANCELLED: "compliance.erasure.cancelled",
+      ERASURE_CANCELLED: "compliance.erasure.cancelled", ERASURE_MANUAL_RESOLVED: "compliance.erasure.manual_resolved",
     },
   }));
   vi.doMock("@/lib/logger/security-events", () => ({ logAuthFailure: () => {}, logAuthzDenial: () => {}, logInfraFailure: () => {} }));
@@ -129,6 +129,9 @@ async function getJob(id: string) { const { GET } = await import("../[id]/route"
 async function patchJob(id: string, body: unknown) { const { PATCH } = await import("../[id]/route"); const r = await PATCH(req(`/${id}`, "PATCH", body), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
 async function planPOST(id: string) { const { POST } = await import("../[id]/plan/route"); const r = await POST(req(`/${id}/plan`, "POST"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
 async function executePOST(id: string) { const { POST } = await import("../[id]/execute/route"); const r = await POST(req(`/${id}/execute`, "POST"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
+async function resolvePOST(id: string, body: unknown) { const { POST } = await import("../[id]/resolutions/route"); const r = await POST(req(`/${id}/resolutions`, "POST", body), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
+/** Exactly-one LIVE (enabled + APPROVED + due) retention policy for consent_records. */
+function liveConsentPolicy(): Row { return { id: "pol-consent", organizationId: "org-A", dataClass: "consent", targetResource: "consent_records", action: "DELETE", retentionDays: 30, approvalState: "APPROVED", enabled: true, dryRunOnly: true } as Row; }
 
 function ownerA() { payload = { sub: "owner-A", role: "customer", sid: "s" }; members = [{ id: "mo", userId: "owner-A", organizationId: "org-A", role: "OWNER", status: "ACTIVE" }]; }
 function adminA() { payload = { sub: "admin-A", role: "admin", sid: "s" }; members = [{ id: "ma", userId: "admin-A", organizationId: "org-A", role: "ADMIN", status: "ACTIVE" }]; }
@@ -184,11 +187,12 @@ describe("create from an approved parent (authoritative scope)", () => {
   });
 });
 
-describe("plan → review → approve (binds to exact planHash)", () => {
+describe("plan → review → approve (binds to exact planHash AND planVersion)", () => {
   async function planned() {
     adminA();
     jobs = [job({ lifecycle: "REQUESTED" })];
     consent = [{ id: "c1", userId: "subj-1", organizationId: "org-A", createdAt: new Date("2026-01-01") }];
+    policies = [liveConsentPolicy()]; // exactly-one live policy → retention gate passes
     const r = await planPOST("e1");
     return r;
   }
@@ -200,6 +204,16 @@ describe("plan → review → approve (binds to exact planHash)", () => {
     expect(jobs[0].planVersion).toBe(1);
     expect(JSON.stringify(auditCalls)).not.toContain("s@x.com"); // RAW_ERASURE_CONTENT_IN_AUDIT=0
   });
+  it("a missing retention policy fails closed and blocks approval (MISSING_RETENTION_POLICY_DELETE_PERMISSION=0)", async () => {
+    await planned();
+    policies = []; // remove the live policy → regenerate → CONFIGURATION_REQUIRED
+    await planPOST("e1");
+    await patchJob("e1", { transition: "IN_REVIEW" });
+    ownerA();
+    const r = await patchJob("e1", { transition: "APPROVED", expectedPlanHash: jobs[0].planHash as string, expectedPlanVersion: jobs[0].planVersion as number });
+    expect(r.res.status).toBe(409);
+    expect(r.json.code).toBe("PLAN_NOT_APPROVABLE");
+  });
   it("plan cannot be generated once APPROVED (immutability)", async () => {
     await planned();
     jobs[0].lifecycle = "APPROVED"; jobs[0].approvedBy = "owner-A"; jobs[0].approvedAt = new Date();
@@ -207,21 +221,29 @@ describe("plan → review → approve (binds to exact planHash)", () => {
     expect(r.res.status).toBe(409);
     expect(r.json.code).toBe("INVALID_STATE");
   });
-  it("approval needs approve_erasures and binds to the exact planHash", async () => {
+  it("approval needs approve_erasures and binds to the exact planHash + planVersion", async () => {
     await planned();
     await patchJob("e1", { transition: "IN_REVIEW" });
     expect(jobs[0].lifecycle).toBe("IN_REVIEW");
     const hash = jobs[0].planHash as string;
     // ADMIN lacks approve_erasures.
-    expect((await patchJob("e1", { transition: "APPROVED", expectedPlanHash: hash })).res.status).toBe(403);
-    // Wrong hash is rejected.
+    expect((await patchJob("e1", { transition: "APPROVED", expectedPlanHash: hash, expectedPlanVersion: 1 })).res.status).toBe(403);
     ownerA();
-    expect((await patchJob("e1", { transition: "APPROVED", expectedPlanHash: "0".repeat(64) })).json.code).toBe("APPROVED_PLAN_HASH_MISMATCH");
-    // Correct hash approves.
-    const ok = await patchJob("e1", { transition: "APPROVED", expectedPlanHash: hash });
+    // Missing version is a 400; wrong hash / wrong version are closed 409s.
+    expect((await patchJob("e1", { transition: "APPROVED", expectedPlanHash: hash })).res.status).toBe(400);
+    expect((await patchJob("e1", { transition: "APPROVED", expectedPlanHash: "0".repeat(64), expectedPlanVersion: 1 })).json.code).toBe("APPROVED_PLAN_HASH_MISMATCH");
+    expect((await patchJob("e1", { transition: "APPROVED", expectedPlanHash: hash, expectedPlanVersion: 2 })).json.code).toBe("APPROVED_PLAN_VERSION_MISMATCH");
+    // Correct hash + version approve and persist the approval binding.
+    const ok = await patchJob("e1", { transition: "APPROVED", expectedPlanHash: hash, expectedPlanVersion: 1 });
     expect(ok.res.status).toBe(200);
     expect(jobs[0].lifecycle).toBe("APPROVED");
     expect(jobs[0].approvedBy).toBe("owner-A");
+    expect(jobs[0].approvedPlanHash).toBe(hash);
+    expect(jobs[0].approvedPlanVersion).toBe(1);
+    // The audit used the committed transaction's values.
+    const audit = auditCalls.find((e) => e.action === "compliance.erasure.approved") as { metadata: Record<string, unknown> };
+    expect(audit.metadata.approvedPlanHash).toBe(hash);
+    expect(audit.metadata.approvedPlanVersion).toBe(1);
   });
   it("a plan with MANUAL_REVIEW_REQUIRED cannot be approved", async () => {
     adminA();
@@ -230,9 +252,52 @@ describe("plan → review → approve (binds to exact planHash)", () => {
     await planPOST("e1");
     await patchJob("e1", { transition: "IN_REVIEW" });
     ownerA();
-    const r = await patchJob("e1", { transition: "APPROVED", expectedPlanHash: jobs[0].planHash as string });
+    const r = await patchJob("e1", { transition: "APPROVED", expectedPlanHash: jobs[0].planHash as string, expectedPlanVersion: jobs[0].planVersion as number });
     expect(r.res.status).toBe(409);
     expect(r.json.code).toBe("PLAN_NOT_APPROVABLE");
+  });
+});
+
+describe("governed manual-review resolution (route)", () => {
+  async function manualInReview() {
+    adminA();
+    jobs = [job({ lifecycle: "REQUESTED" })];
+    users = [{ id: "subj-1" }]; // user_profile → MANUAL_REVIEW_REQUIRED
+    await planPOST("e1");
+    await patchJob("e1", { transition: "IN_REVIEW" });
+    return { hash: jobs[0].planHash as string, version: jobs[0].planVersion as number };
+  }
+  it("resolution requires approve_erasures (ADMIN denied) and a closed code", async () => {
+    const { hash, version } = await manualInReview();
+    // ADMIN lacks approve_erasures → 403 (MANUAL_REVIEW_CLIENT_OVERRIDE=0).
+    expect((await resolvePOST("e1", { target: "user_profile", recordId: "subj-1", resolution: "NO_ACTION_REQUIRED", sourcePlanHash: hash, sourcePlanVersion: version })).res.status).toBe(403);
+    ownerA();
+    // A non-closed code (e.g. DELETE_ALLOWED) is rejected as input.
+    expect((await resolvePOST("e1", { target: "user_profile", recordId: "subj-1", resolution: "DELETE_ALLOWED", sourcePlanHash: hash, sourcePlanVersion: version })).res.status).toBe(400);
+  });
+  it("a stale source plan binding or a non-manual item is rejected", async () => {
+    const { hash, version } = await manualInReview();
+    ownerA();
+    expect((await resolvePOST("e1", { target: "user_profile", recordId: "subj-1", resolution: "NO_ACTION_REQUIRED", sourcePlanHash: "0".repeat(64), sourcePlanVersion: version })).json.code).toBe("PLAN_BINDING_MISMATCH");
+    expect((await resolvePOST("e1", { target: "user_profile", recordId: "not-an-item", resolution: "NO_ACTION_REQUIRED", sourcePlanHash: hash, sourcePlanVersion: version })).json.code).toBe("ITEM_NOT_MANUAL");
+  });
+  it("a resolution produces a new plan version, invalidates approval and requires reapproval (ERASURE_RESOLUTION_WITHOUT_REAPPROVAL=0)", async () => {
+    const { hash, version } = await manualInReview();
+    ownerA();
+    const r = await resolvePOST("e1", { target: "user_profile", recordId: "subj-1", resolution: "NO_ACTION_REQUIRED", sourcePlanHash: hash, sourcePlanVersion: version });
+    expect(r.res.status).toBe(201);
+    expect(jobs[0].lifecycle).toBe("PLAN_READY");            // back for review of the NEW version
+    expect(jobs[0].planVersion).toBe(2);                     // new canonical version
+    expect(jobs[0].planHash).not.toBe(hash);                 // new hash
+    expect(jobs[0].approvedBy ?? null).toBeNull();           // prior approval invalidated
+    expect(jobs[0].approvedPlanHash ?? null).toBeNull();
+    // The OLD hash/version can no longer be approved; the NEW one can.
+    await patchJob("e1", { transition: "IN_REVIEW" });
+    expect((await patchJob("e1", { transition: "APPROVED", expectedPlanHash: hash, expectedPlanVersion: version })).json.code).toBe("APPROVED_PLAN_HASH_MISMATCH");
+    const ok = await patchJob("e1", { transition: "APPROVED", expectedPlanHash: jobs[0].planHash as string, expectedPlanVersion: 2 });
+    expect(ok.res.status).toBe(200);
+    expect(jobs[0].approvedPlanVersion).toBe(2);
+    expect(auditCalls.some((e) => e.action === "compliance.erasure.manual_resolved")).toBe(true);
   });
 });
 

@@ -3153,11 +3153,19 @@ model DataDeletionRequest {
   idempotencyKey          String?
   approvedBy              String?
   approvedAt              DateTime?
+  // Approval binds to the EXACT approved snapshot: hash + version are set inside the
+  // approval transaction and DB CHECKs require them to equal planHash/planVersion for
+  // APPROVED and later states (see the erasure approval-binding migration).
+  approvedPlanHash        String?
+  approvedPlanVersion     Int?
   planJson                Json?
   planVersion             Int?
   planHash                String?
   plannedAt               DateTime?
   plannedBy               String?
+  // Governed manual-review decisions (closed codes, server-attributed); applied by
+  // the planner on regeneration — never a client-supplied classification override.
+  reviewResolutions       Json?
   executionIdempotencyKey String?
   executionStartedAt      DateTime?
   blockedReasonCode       String?

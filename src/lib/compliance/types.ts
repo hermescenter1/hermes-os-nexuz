@@ -207,11 +207,14 @@ export interface DbDataDeletionRequest {
   idempotencyKey:          string | null;
   approvedBy:              string | null;
   approvedAt:              Date | null;
+  approvedPlanHash:        string | null;
+  approvedPlanVersion:     number | null;
   planJson:                Record<string, unknown> | null;
   planVersion:             number | null;
   planHash:                string | null;
   plannedAt:               Date | null;
   plannedBy:               string | null;
+  reviewResolutions:       Record<string, unknown>[] | null;
   executionIdempotencyKey: string | null;
   executionStartedAt:      Date | null;
   blockedReasonCode:       string | null;

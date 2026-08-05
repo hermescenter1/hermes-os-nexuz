@@ -12,7 +12,11 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { randomUUID } from "node:crypto";
 import type { DbDataDeletionRequest } from "./types";
-import type { ErasurePlan } from "./erasure-planner";
+import {
+  computeErasurePlanHash, canApproveErasurePlan, isManualResolutionCode,
+  type ErasurePlan, type ManualReviewResolution, type ManualResolutionCode,
+} from "./erasure-planner";
+import { getErasureTarget } from "./erasure-targets";
 
 type AnyModel = Record<string, (...args: unknown[]) => Promise<unknown>>;
 type TxRaw = Record<string, AnyModel> & {
@@ -107,12 +111,27 @@ export async function createErasureJobForParent(params: {
 
 class PlanError extends Error { constructor(public reason: PlanReason) { super(reason); this.name = "PlanError"; } }
 type PlanReason = "NOT_FOUND" | "INVALID_STATE";
-class ApproveError extends Error { constructor(public reason: ApproveReason) { super(reason); this.name = "ApproveError"; } }
-type ApproveReason = "NOT_FOUND" | "NOT_IN_REVIEW" | "PLAN_HASH_MISMATCH" | "CONFLICT";
+class ApproveError extends Error { constructor(public reason: ApproveReason, public blockerCount = 0) { super(reason); this.name = "ApproveError"; } }
+type ApproveReason = "NOT_FOUND" | "NOT_IN_REVIEW" | "PLAN_HASH_MISMATCH" | "PLAN_VERSION_MISMATCH" | "PLAN_INVALID" | "PLAN_NOT_APPROVABLE" | "CONFLICT";
 class ArmError extends Error { constructor(public reason: ArmReason) { super(reason); this.name = "ArmError"; } }
 type ArmReason = "NOT_FOUND" | "NOT_APPROVED" | "CONFLICT";
+class ResolveError extends Error { constructor(public reason: ResolveReason) { super(reason); this.name = "ResolveError"; } }
+type ResolveReason = "NOT_FOUND" | "INVALID_STATE" | "PLAN_BINDING_MISMATCH" | "ITEM_NOT_MANUAL" | "UNKNOWN_TARGET" | "RESOLUTION_UNSUPPORTED" | "CONFLICT";
 
-const PLANNABLE_FROM = new Set(["REQUESTED", "PLANNING", "PLAN_READY", "BLOCKED"]);
+// Regeneration is allowed pre-approval only. IN_REVIEW is included because a governed
+// manual-review resolution during review must produce a NEW canonical plan version
+// (landing back in PLAN_READY, consistent with the IN_REVIEW→PLAN_READY transition).
+const PLANNABLE_FROM = new Set(["REQUESTED", "PLANNING", "PLAN_READY", "IN_REVIEW", "BLOCKED"]);
+
+/** Strictly parse a persisted planJson snapshot; null when structurally invalid. */
+function parseStoredPlan(raw: unknown): ErasurePlan | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const p = raw as Record<string, unknown>;
+  if (typeof p.schemaVersion !== "string" || typeof p.jobId !== "string" || !Array.isArray(p.items)) return null;
+  if (typeof p.planVersion !== "number" || !Number.isInteger(p.planVersion) || p.planVersion <= 0) return null;
+  if (!p.items.every((it) => !!it && typeof it === "object" && !Array.isArray(it))) return null;
+  return raw as ErasurePlan;
+}
 
 /**
  * Transactionally store a freshly-built plan snapshot. Locks the job, requires a
@@ -142,7 +161,8 @@ export async function generateAndStoreErasurePlan(params: {
         data: {
           planJson: snapshot, planHash: params.planHash, planVersion: newVersion,
           plannedAt: params.now, plannedBy: params.actorId,
-          approvedBy: null, approvedAt: null,          // any prior approval is invalidated
+          // Any prior approval — attribution AND its bound hash/version — is invalidated.
+          approvedBy: null, approvedAt: null, approvedPlanHash: null, approvedPlanVersion: null,
           blockedReasonCode: null, lifecycle: "PLAN_READY", updatedAt: params.now,
         },
       })) as { count?: number };
@@ -156,14 +176,25 @@ export async function generateAndStoreErasurePlan(params: {
 }
 
 /**
- * Approve a plan, binding approval ATOMICALLY to an exact planHash. Locks the job,
- * requires IN_REVIEW and job.planHash === expectedPlanHash, then sets approval
- * attribution and moves to APPROVED. A concurrent approval loses the lock race and
- * sees a non-IN_REVIEW state (CONFLICT); a stale expectedPlanHash is rejected.
+ * Approve a plan, binding approval ATOMICALLY to an exact planHash AND planVersion.
+ * Inside the SELECT ... FOR UPDATE transaction the stored job is re-read, its
+ * persisted planJson is STRICTLY parsed and its hash RECOMPUTED; approval requires
+ *   recomputed == job.planHash == expectedPlanHash
+ *   planJson.planVersion == job.planVersion == expectedPlanVersion
+ * and canApproveErasurePlan(persisted snapshot) to pass — all evaluated on the
+ * LOCKED row, never on a pre-lock route read. On success approvedPlanHash and
+ * approvedPlanVersion are set together with the APPROVED transition, and the
+ * committed values are returned for the audit record. A concurrent approval loses
+ * the lock race (CONFLICT); a stale hash/version is rejected
+ * (STALE_ERASURE_PLAN_APPROVAL=0).
  */
 export async function approveErasurePlanForOrg(params: {
-  id: string; organizationId: string; actorId: string; expectedPlanHash: string; now: Date;
-}): Promise<{ ok: true; planHash: string } | { ok: false; reason: ApproveReason | "UNAVAILABLE" }> {
+  id: string; organizationId: string; actorId: string;
+  expectedPlanHash: string; expectedPlanVersion: number; now: Date;
+}): Promise<
+  | { ok: true; planHash: string; planVersion: number }
+  | { ok: false; reason: ApproveReason | "UNAVAILABLE"; blockerCount?: number }
+> {
   const client = await getPrisma();
   if (!client) return { ok: false, reason: "UNAVAILABLE" };
   const c = client as unknown as TxClient;
@@ -174,16 +205,96 @@ export async function approveErasurePlanForOrg(params: {
       const job = (await erasure.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as DbDataDeletionRequest | null;
       if (!job) throw new ApproveError("NOT_FOUND");
       if (job.lifecycle !== "IN_REVIEW") throw new ApproveError("NOT_IN_REVIEW");
-      if (!job.planHash || job.planHash !== params.expectedPlanHash) throw new ApproveError("PLAN_HASH_MISMATCH");
+
+      // Strictly parse the PERSISTED snapshot and recompute its canonical hash.
+      const plan = parseStoredPlan(job.planJson);
+      if (!plan) throw new ApproveError("PLAN_INVALID");
+      let recomputed: string;
+      try { recomputed = computeErasurePlanHash(plan); } catch { throw new ApproveError("PLAN_INVALID"); }
+      if (!job.planHash || recomputed !== job.planHash || job.planHash !== params.expectedPlanHash) {
+        throw new ApproveError("PLAN_HASH_MISMATCH");
+      }
+      if (job.planVersion == null || plan.planVersion !== job.planVersion || job.planVersion !== params.expectedPlanVersion) {
+        throw new ApproveError("PLAN_VERSION_MISMATCH");
+      }
+      // Approvability is evaluated on the LOCKED persisted snapshot (unresolved
+      // manual items / CONFIGURATION_REQUIRED / unknown classifications block).
+      const approvable = canApproveErasurePlan(plan);
+      if (!approvable.ok) throw new ApproveError("PLAN_NOT_APPROVABLE", approvable.blockers.length);
+
       const upd = (await erasure.updateMany({
-        where: { id: params.id, organizationId: params.organizationId, lifecycle: "IN_REVIEW", planHash: params.expectedPlanHash },
-        data: { lifecycle: "APPROVED", approvedBy: params.actorId, approvedAt: params.now, updatedAt: params.now },
+        where: { id: params.id, organizationId: params.organizationId, lifecycle: "IN_REVIEW", planHash: params.expectedPlanHash, planVersion: params.expectedPlanVersion },
+        data: {
+          lifecycle: "APPROVED", approvedBy: params.actorId, approvedAt: params.now,
+          approvedPlanHash: params.expectedPlanHash, approvedPlanVersion: params.expectedPlanVersion,
+          updatedAt: params.now,
+        },
       })) as { count?: number };
       if ((upd?.count ?? 0) !== 1) throw new ApproveError("CONFLICT");
-      return { ok: true as const, planHash: params.expectedPlanHash };
+      return { ok: true as const, planHash: params.expectedPlanHash, planVersion: params.expectedPlanVersion };
     });
   } catch (err) {
-    if (err instanceof ApproveError) return { ok: false, reason: err.reason };
+    if (err instanceof ApproveError) return { ok: false, reason: err.reason, blockerCount: err.blockerCount };
+    return { ok: false, reason: "CONFLICT" };
+  }
+}
+
+/**
+ * Record a GOVERNED manual-review resolution, bound to the EXACT reviewed plan
+ * (sourcePlanHash + sourcePlanVersion). Locks the job, requires PLAN_READY or
+ * IN_REVIEW, validates the item is currently MANUAL_REVIEW_REQUIRED in the persisted
+ * snapshot, the target is known and the resolution is drawn from the closed
+ * conservative set (ANONYMISE only when the target's strategy supports it). The
+ * caller MUST regenerate the plan afterwards — a resolution never mutates the
+ * reviewed snapshot in place and approval always re-binds to the new version.
+ */
+export async function storeManualReviewResolution(params: {
+  id: string; organizationId: string; actorId: string;
+  target: string; recordId: string; resolution: ManualResolutionCode;
+  sourcePlanHash: string; sourcePlanVersion: number; authority: string; now: Date;
+}): Promise<{ ok: true } | { ok: false; reason: ResolveReason | "UNAVAILABLE" }> {
+  const client = await getPrisma();
+  if (!client) return { ok: false, reason: "UNAVAILABLE" };
+  const c = client as unknown as TxClient;
+  try {
+    return await c.$transaction(async (tx) => {
+      const erasure = tx.dataDeletionRequest as AnyModel;
+      if (!(await lockErasureJobRow(tx, params.id, params.organizationId))) throw new ResolveError("NOT_FOUND");
+      const job = (await erasure.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as DbDataDeletionRequest | null;
+      if (!job) throw new ResolveError("NOT_FOUND");
+      if (!(job.lifecycle === "PLAN_READY" || job.lifecycle === "IN_REVIEW")) throw new ResolveError("INVALID_STATE");
+      if (!job.planHash || job.planHash !== params.sourcePlanHash || job.planVersion !== params.sourcePlanVersion) {
+        throw new ResolveError("PLAN_BINDING_MISMATCH");
+      }
+      if (!isManualResolutionCode(params.resolution)) throw new ResolveError("RESOLUTION_UNSUPPORTED");
+      const targetDef = getErasureTarget(params.target);
+      if (!targetDef) throw new ResolveError("UNKNOWN_TARGET");
+      if (params.resolution === "ANONYMISE_REQUIRED" && targetDef.allowedExecutionStrategy !== "ANONYMISE") {
+        throw new ResolveError("RESOLUTION_UNSUPPORTED");
+      }
+      const plan = parseStoredPlan(job.planJson);
+      if (!plan) throw new ResolveError("PLAN_BINDING_MISMATCH");
+      const itemIsManual = plan.items.some((it) => it.target === params.target && it.recordId === params.recordId && it.classification === "MANUAL_REVIEW_REQUIRED");
+      if (!itemIsManual) throw new ResolveError("ITEM_NOT_MANUAL");
+
+      const record: ManualReviewResolution = {
+        jobId: params.id, sourcePlanHash: params.sourcePlanHash, sourcePlanVersion: params.sourcePlanVersion,
+        target: params.target, recordId: params.recordId, resolution: params.resolution,
+        resolvedBy: params.actorId, resolvedAt: params.now.toISOString(), authority: params.authority,
+      };
+      const existing = Array.isArray(job.reviewResolutions) ? (job.reviewResolutions as unknown as ManualReviewResolution[]) : [];
+      // A newer governed decision for the same item replaces the older one.
+      const next = [...existing.filter((r) => !(r.target === params.target && r.recordId === params.recordId)), record];
+
+      const upd = (await erasure.updateMany({
+        where: { id: params.id, organizationId: params.organizationId, lifecycle: job.lifecycle, planHash: params.sourcePlanHash },
+        data: { reviewResolutions: next, updatedAt: params.now },
+      })) as { count?: number };
+      if ((upd?.count ?? 0) !== 1) throw new ResolveError("CONFLICT");
+      return { ok: true as const };
+    });
+  } catch (err) {
+    if (err instanceof ResolveError) return { ok: false, reason: err.reason };
     return { ok: false, reason: "CONFLICT" };
   }
 }
@@ -235,7 +346,7 @@ export async function transitionErasureJobForOrg(params: {
       const erasure = tx.dataDeletionRequest as AnyModel;
       if (!(await lockErasureJobRow(tx, params.id, params.organizationId))) return { affected: 0 };
       const data: Record<string, unknown> = { lifecycle: params.to, updatedAt: new Date() };
-      if (params.to === "PLANNING") { data.approvedBy = null; data.approvedAt = null; } // invalidate approval
+      if (params.to === "PLANNING") { data.approvedBy = null; data.approvedAt = null; data.approvedPlanHash = null; data.approvedPlanVersion = null; } // invalidate approval + its binding
       if (params.to === "BLOCKED") { data.blockedReasonCode = params.blockedReasonCode ?? "BLOCKED"; }
       if (params.to === "FAILED") { data.failureCode = params.blockedReasonCode ?? "UNSPECIFIED"; }
       const r = (await erasure.updateMany({

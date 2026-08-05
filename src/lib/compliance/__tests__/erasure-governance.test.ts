@@ -131,6 +131,16 @@ function planInput(over: Partial<BuildErasurePlanInput> = {}): BuildErasurePlanI
     planVersion: 1, now: new Date("2026-06-01"), collected: [], holds: [], policies: [], ...over,
   };
 }
+/** Exactly-one LIVE (enabled + APPROVED + configured) policy — retention gate passes
+ *  and, with the 2026-01-01 records vs 2026-06-01 now, the 30-day retention is due. */
+function livePolicy(dataClass: string, targetResource: string, over: Partial<ErasureRetentionPolicyLike> = {}): ErasureRetentionPolicyLike {
+  return { id: `pol-${targetResource}`, organizationId: "org-A", dataClass, targetResource, action: "DELETE", retentionDays: 30, approvalState: "APPROVED", enabled: true, dryRunOnly: true, ...over };
+}
+const LIVE_POLICIES = [
+  livePolicy("consent", "consent_records"),
+  livePolicy("membership", "organization_membership"),
+  livePolicy("privacy_request", "privacy_request_artifacts", { action: "ANONYMISE" }),
+];
 
 describe("deterministic plan + classifications", () => {
   it("classifies each target by precedence (DELETE/ANONYMISE/RETENTION/MANUAL/DEPENDENCY/HOLD/NOT_SUBJECT)", () => {
@@ -141,7 +151,7 @@ describe("deterministic plan + classifications", () => {
       { target: tgt("user_profile"), records: [rec({ recordId: "u1", ownedByOrganizationId: null, holdInputs: { subjectId: "u1", resourceType: "user_profile", resourceId: "u1", timestamp: null } })] },        // MANUAL_REVIEW_REQUIRED
       { target: tgt("organization_membership"), records: [rec({ recordId: "m1", dependency: { blocked: true, codes: ["SOLE_ORGANIZATION_OWNER"] }, holdInputs: { subjectId: "u1", resourceType: "organization_membership", resourceId: "m1", timestamp: new Date("2026-01-01") } })] }, // DEPENDENCY_BLOCKED
     ];
-    const { plan } = buildErasurePlan(planInput({ collected }));
+    const { plan } = buildErasurePlan(planInput({ collected, policies: LIVE_POLICIES }));
     const byTarget = Object.fromEntries(plan.items.map((i) => [i.target, i]));
     expect(byTarget.consent_records.classification).toBe("DELETE_ALLOWED");
     expect(byTarget.consent_records.plannedAction).toBe("DELETE");
@@ -166,6 +176,34 @@ describe("deterministic plan + classifications", () => {
     const { plan } = buildErasurePlan(planInput({ collected, policies: [policy] }));
     expect(plan.items[0].classification).toBe("RETENTION_REQUIRED");
     expect(plan.items[0].reasonCodes).toContain("CONFIGURATION_REQUIRED");
+  });
+  it("ZERO matching policies fail closed — never permission to delete", () => {
+    const collected = [{ target: tgt("consent_records"), records: [rec({ recordId: "c1" })] }];
+    const { plan } = buildErasurePlan(planInput({ collected, policies: [] }));
+    expect(plan.items[0].classification).toBe("RETENTION_REQUIRED");
+    expect(plan.items[0].reasonCodes).toContain("CONFIGURATION_REQUIRED");
+    expect(plan.items[0].reasonCodes).toContain("NO_RETENTION_POLICY");
+    expect(plan.items[0].plannedAction).toBe("NONE");
+  });
+  it("MULTIPLE matching live policies fail closed (AMBIGUOUS_RETENTION_POLICY_DELETE_PERMISSION=0), never first-by-id", () => {
+    const collected = [{ target: tgt("consent_records"), records: [rec({ recordId: "c1" })] }];
+    const { plan } = buildErasurePlan(planInput({ collected, policies: [livePolicy("consent", "consent_records", { id: "a-first" }), livePolicy("consent", "consent_records", { id: "z-second" })] }));
+    expect(plan.items[0].classification).toBe("RETENTION_REQUIRED");
+    expect(plan.items[0].reasonCodes).toContain("AMBIGUOUS_RETENTION_POLICY");
+    expect(plan.items[0].plannedAction).toBe("NONE");
+    expect(plan.items[0].retentionPolicyId).toBeNull(); // no silent selection
+  });
+  it("a DISABLED approved policy fails closed; an enabled+approved+due policy allows DELETE", () => {
+    const collected = [{ target: tgt("consent_records"), records: [rec({ recordId: "c1" })] }];
+    const disabled = buildErasurePlan(planInput({ collected, policies: [livePolicy("consent", "consent_records", { enabled: false })] }));
+    expect(disabled.plan.items[0].classification).toBe("RETENTION_REQUIRED");
+    expect(disabled.plan.items[0].reasonCodes).toContain("CONFIGURATION_REQUIRED");
+    const live = buildErasurePlan(planInput({ collected, policies: [livePolicy("consent", "consent_records")] }));
+    expect(live.plan.items[0].classification).toBe("DELETE_ALLOWED");
+    // A live policy whose retention is NOT yet due keeps the record retained.
+    const notDue = buildErasurePlan(planInput({ collected, policies: [livePolicy("consent", "consent_records", { retentionDays: 3650 })] }));
+    expect(notDue.plan.items[0].classification).toBe("RETENTION_REQUIRED");
+    expect(notDue.plan.items[0].reasonCodes).toContain("RETENTION_NOT_DUE");
   });
   it("a record not attributable to the subject is NOT_SUBJECT_DATA", () => {
     const collected = [{ target: tgt("consent_records"), records: [rec({ recordId: "cX", ownedByUserId: "someone-else" })] }];
@@ -206,11 +244,51 @@ describe("plan approvability (immutability gate inputs)", () => {
   it("MANUAL_REVIEW_REQUIRED and CONFIGURATION_REQUIRED block approval; a clean/evidence plan is approvable", () => {
     const manual = buildErasurePlan(planInput({ collected: [{ target: tgt("user_profile"), records: [rec({ recordId: "u1", ownedByOrganizationId: null, holdInputs: { subjectId: "u1", resourceType: "user_profile", resourceId: "u1", timestamp: null } })] }] }));
     expect(canApproveErasurePlan(manual.plan).ok).toBe(false);
+    // A missing-policy (CONFIGURATION_REQUIRED) item blocks approval too.
+    const unconfigured = buildErasurePlan(planInput({ collected: [{ target: tgt("consent_records"), records: [rec({ recordId: "c1" })] }], policies: [] }));
+    expect(canApproveErasurePlan(unconfigured.plan).ok).toBe(false);
     const clean = buildErasurePlan(planInput({ collected: [
       { target: tgt("consent_records"), records: [rec({ recordId: "c1" })] },
       { target: tgt("legal_acceptances"), records: [rec({ recordId: "la1", ownedByOrganizationId: null, holdInputs: { subjectId: "u1", resourceType: "legal_acceptance", resourceId: "la1", timestamp: new Date("2026-01-01") } })] },
-    ] }));
+    ], policies: LIVE_POLICIES }));
     expect(canApproveErasurePlan(clean.plan).ok).toBe(true); // DELETE_ALLOWED + RETENTION_REQUIRED (evidence)
+  });
+});
+
+describe("governed manual-review resolution (closed, conservative)", () => {
+  const userCollected = [{ target: tgt("user_profile"), records: [rec({ recordId: "u1", ownedByOrganizationId: null, holdInputs: { subjectId: "u1", resourceType: "user_profile", resourceId: "u1", timestamp: null } })] }];
+  const res = (resolution: string) => [{ jobId: "job-1", sourcePlanHash: "a".repeat(64), sourcePlanVersion: 1, target: "user_profile", recordId: "u1", resolution, resolvedBy: "owner-A", resolvedAt: "2026-06-01T00:00:00.000Z", authority: "TENANT_OWNER" }] as never;
+  it("NO_ACTION_REQUIRED / RETENTION_REQUIRED conservatively re-classify and unblock approval", () => {
+    for (const code of ["NO_ACTION_REQUIRED", "RETENTION_REQUIRED"]) {
+      const { plan } = buildErasurePlan(planInput({ collected: userCollected, resolutions: res(code) }));
+      expect(plan.items[0].classification).toBe("RETENTION_REQUIRED");
+      expect(plan.items[0].plannedAction).toBe("NONE");
+      expect(plan.items[0].reasonCodes).toContain("MANUAL_RESOLUTION");
+      expect(canApproveErasurePlan(plan).ok).toBe(true);
+    }
+  });
+  it("GLOBAL_PLATFORM_REVIEW_REQUIRED keeps the item blocking (UNRESOLVED_MANUAL_ITEM_APPROVAL=0)", () => {
+    const { plan } = buildErasurePlan(planInput({ collected: userCollected, resolutions: res("GLOBAL_PLATFORM_REVIEW_REQUIRED") }));
+    expect(plan.items[0].classification).toBe("MANUAL_REVIEW_REQUIRED");
+    expect(canApproveErasurePlan(plan).ok).toBe(false);
+  });
+  it("an ANONYMISE resolution on a target without an anonymise strategy fails closed", () => {
+    const { plan } = buildErasurePlan(planInput({ collected: userCollected, resolutions: res("ANONYMISE_REQUIRED") }));
+    expect(plan.items[0].classification).toBe("MANUAL_REVIEW_REQUIRED");
+    expect(plan.items[0].reasonCodes).toContain("RESOLUTION_STRATEGY_UNSUPPORTED");
+  });
+  it("a bogus resolution code is ignored (client cannot inject a classification) and DELETE is never obtainable", () => {
+    const { plan } = buildErasurePlan(planInput({ collected: userCollected, resolutions: res("DELETE_ALLOWED") }));
+    expect(plan.items[0].classification).toBe("MANUAL_REVIEW_REQUIRED"); // unknown code → unresolved
+    for (const code of ["NO_ACTION_REQUIRED", "RETENTION_REQUIRED", "ANONYMISE_REQUIRED", "GLOBAL_PLATFORM_REVIEW_REQUIRED"]) {
+      const { plan: p } = buildErasurePlan(planInput({ collected: userCollected, resolutions: res(code) }));
+      expect(p.items[0].plannedAction).not.toBe("DELETE"); // GLOBAL_USER_DELETION_BY_SINGLE_TENANT=0
+    }
+  });
+  it("a resolution changes the planHash (approval must re-bind to the new version)", () => {
+    const before = buildErasurePlan(planInput({ collected: userCollected }));
+    const after = buildErasurePlan(planInput({ collected: userCollected, resolutions: res("NO_ACTION_REQUIRED") }));
+    expect(after.planHash).not.toBe(before.planHash);
   });
 });
 
@@ -220,7 +298,7 @@ describe("execution posture (disabled by default) + preflight + idempotency", ()
     expect(erasureExecutionGate({}).enabled).toBe(false);
     expect(isErasureExecutionEnabled({ COMPLIANCE_ERASURE_EXECUTION_ENABLED: "true" })).toBe(true);
   });
-  const approved = { plan: buildErasurePlan(planInput({ collected: [{ target: tgt("consent_records"), records: [rec({ recordId: "c1" })] }] })) };
+  const approved = { plan: buildErasurePlan(planInput({ collected: [{ target: tgt("consent_records"), records: [rec({ recordId: "c1" })] }], policies: [livePolicy("consent", "consent_records")] })) };
   const base = {
     lifecycle: "APPROVED", executionEnabled: true, approvedPlanHash: approved.plan.planHash, approvedPlanVersion: 1,
     recomputedPlanHash: approved.plan.planHash, recomputedPlanVersion: 1, bindingOk: true, executionIdempotencyKey: "k1", registryVersion: "1.0",

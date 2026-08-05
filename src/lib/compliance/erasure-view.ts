@@ -22,6 +22,8 @@ export function toErasureJobDto(job: DbDataDeletionRequest) {
     planHash:          job.planHash,
     plannedAt:         job.plannedAt,
     approvedAt:        job.approvedAt,
+    approvedPlanHash:    job.approvedPlanHash,
+    approvedPlanVersion: job.approvedPlanVersion,
     blockedReasonCode: job.blockedReasonCode,
     failureCode:       job.failureCode,
     planCounts:        planCounts(job),

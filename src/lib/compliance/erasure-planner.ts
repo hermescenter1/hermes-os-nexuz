@@ -37,6 +37,37 @@ export interface ErasurePlanItem {
   legalHoldId:               string | null;
 }
 
+// ── Governed manual-review resolution (closed, conservative) ──────────────────
+//
+// A MANUAL_REVIEW_REQUIRED item may be resolved ONLY through an explicit,
+// server-authoritative review decision drawn from this closed set. DELETE_ALLOWED
+// is deliberately ABSENT: an ordinary tenant review can never grant deletion of
+// the global User identity row (GLOBAL_USER_DELETION_BY_SINGLE_TENANT=0).
+export type ManualResolutionCode =
+  | "NO_ACTION_REQUIRED"
+  | "RETENTION_REQUIRED"
+  | "ANONYMISE_REQUIRED"
+  | "GLOBAL_PLATFORM_REVIEW_REQUIRED";
+export const MANUAL_RESOLUTION_CODES: ManualResolutionCode[] = [
+  "NO_ACTION_REQUIRED", "RETENTION_REQUIRED", "ANONYMISE_REQUIRED", "GLOBAL_PLATFORM_REVIEW_REQUIRED",
+];
+export function isManualResolutionCode(v: unknown): v is ManualResolutionCode {
+  return typeof v === "string" && (MANUAL_RESOLUTION_CODES as string[]).includes(v);
+}
+
+/** A versioned, server-attributed review decision bound to the exact reviewed plan. */
+export interface ManualReviewResolution {
+  jobId:             string;
+  sourcePlanHash:    string;
+  sourcePlanVersion: number;
+  target:            string;
+  recordId:          string;
+  resolution:        ManualResolutionCode;
+  resolvedBy:        string;
+  resolvedAt:        string;   // ISO timestamp
+  authority:         string;   // authority boundary, e.g. TENANT_OWNER
+}
+
 export interface ErasurePlan {
   schemaVersion:    string;
   registryVersion:  string;
@@ -62,16 +93,17 @@ export interface BuildErasurePlanInput {
   collected:        Array<{ target: ErasureTargetDefinition; records: ErasureTargetRecord[] }>;
   holds:            HoldLike[];
   policies:         ErasureRetentionPolicyLike[];
+  /** Governed manual-review decisions (server-recorded; never client-injected). */
+  resolutions?:     ManualReviewResolution[];
 }
 
 const PRESERVE_ACTIONS = new Set(["ARCHIVE", "NO_AUTOMATED_ACTION", "REVIEW_REQUIRED"]);
 
-function findMatchingPolicy(target: ErasureTargetDefinition, policies: ErasureRetentionPolicyLike[], org: string | null): ErasureRetentionPolicyLike | null {
-  if (!target.retentionLookup || !org) return null;
-  const matches = policies
-    .filter((p) => p.organizationId === org && p.dataClass === target.retentionLookup!.dataClass && p.targetResource === target.retentionLookup!.targetResource)
-    .sort((a, b) => a.id.localeCompare(b.id));
-  return matches[0] ?? null;
+/** ALL matching policies for a target — never a silent first-by-id pick. Zero or
+ *  more than one match is a fail-closed condition decided by the caller. */
+function findMatchingPolicies(target: ErasureTargetDefinition, policies: ErasureRetentionPolicyLike[], org: string | null): ErasureRetentionPolicyLike[] {
+  if (!target.retentionLookup || !org) return [];
+  return policies.filter((p) => p.organizationId === org && p.dataClass === target.retentionLookup!.dataClass && p.targetResource === target.retentionLookup!.targetResource);
 }
 
 function findMatchingHold(record: ErasureTargetRecord, org: string | null, holds: HoldLike[]): HoldLike & { id?: string } | null {
@@ -103,66 +135,101 @@ function classifyRecord(
   org: string | null,
   holds: HoldLike[],
   policies: ErasureRetentionPolicyLike[],
+  resolutions: ManualReviewResolution[],
   now: Date,
 ): ErasurePlanItem {
   const dependencyClassifications = [...record.dependency.codes].sort();
   let legalHoldId: string | null = null;
   let retentionPolicyId: string | null = null;
+  const item = (classification: ErasureClassification, plannedAction: ExecutionStrategy, reasonCodes: string[]): ErasurePlanItem =>
+    ({ target: target.name, recordId: record.recordId, classification, plannedAction, reasonCodes, dependencyClassifications, retentionPolicyId, legalHoldId });
 
   // 1. Authoritative ownership — a record not attributable to the subject under the
   //    registry's explicit rules is NOT_SUBJECT_DATA (examined but not the subject's).
   const ownedBySubject = !!subjectId && record.ownedByUserId === subjectId;
   const ownedInScope = record.ownedByOrganizationId === null || (org !== null && record.ownedByOrganizationId === org);
   if (!ownedBySubject || !ownedInScope) {
-    return { target: target.name, recordId: record.recordId, classification: "NOT_SUBJECT_DATA", plannedAction: "NONE", reasonCodes: ["OWNERSHIP_NOT_SUBJECT"], dependencyClassifications, retentionPolicyId: null, legalHoldId: null };
+    return item("NOT_SUBJECT_DATA", "NONE", ["OWNERSHIP_NOT_SUBJECT"]);
   }
 
   // 2. Active LegalHold ALWAYS wins over deletion/anonymisation.
   const hold = findMatchingHold(record, org, holds);
   if (hold) {
     legalHoldId = hold.id ?? null;
-    return { target: target.name, recordId: record.recordId, classification: "LEGAL_HOLD", plannedAction: "NONE", reasonCodes: ["ACTIVE_LEGAL_HOLD"], dependencyClassifications, retentionPolicyId: null, legalHoldId };
+    return item("LEGAL_HOLD", "NONE", ["ACTIVE_LEGAL_HOLD"]);
   }
 
-  // 3. Retention. Preservation-sensitive targets always RETENTION_REQUIRED. For a
-  //    deletable target, a matching policy that is unapproved/unconfigured is
-  //    CONFIGURATION_REQUIRED and is NEVER read as permission to delete.
-  const policy = findMatchingPolicy(target, policies, org);
-  if (policy) retentionPolicyId = policy.id;
+  // 3. Retention — FAIL-CLOSED. Preservation-sensitive targets are always
+  //    RETENTION_REQUIRED. For every other target that declares a retentionLookup:
+  //      - ZERO matching policies      → RETENTION_REQUIRED / CONFIGURATION_REQUIRED
+  //        (a missing policy is NEVER permission to delete);
+  //      - MULTIPLE matching policies  → RETENTION_REQUIRED / AMBIGUOUS_RETENTION_POLICY
+  //        (never silently pick one — the live-selection unique index and governance
+  //        must reduce it to exactly one);
+  //      - EXACTLY ONE                 → it must be enabled=true, APPROVED and fully
+  //        configured before due-ness is even evaluated.
   if (target.defaultClassification === "RETENTION_REQUIRED") {
-    return { target: target.name, recordId: record.recordId, classification: "RETENTION_REQUIRED", plannedAction: "NONE", reasonCodes: ["PRESERVATION_SENSITIVE"], dependencyClassifications, retentionPolicyId, legalHoldId };
+    return item("RETENTION_REQUIRED", "NONE", ["PRESERVATION_SENSITIVE"]);
   }
-  if (policy) {
+  if (target.retentionLookup) {
+    const matches = findMatchingPolicies(target, policies, org);
+    if (matches.length === 0) {
+      return item("RETENTION_REQUIRED", "NONE", ["CONFIGURATION_REQUIRED", "NO_RETENTION_POLICY"]);
+    }
+    if (matches.length > 1) {
+      return item("RETENTION_REQUIRED", "NONE", ["AMBIGUOUS_RETENTION_POLICY"]);
+    }
+    const policy = matches[0];
+    retentionPolicyId = policy.id;
     const cfg = classifyRetentionPolicy(policy);
-    if (cfg.status === "CONFIGURATION_REQUIRED") {
-      // Fail-closed: missing/unapproved retention config never grants deletion.
-      return { target: target.name, recordId: record.recordId, classification: "RETENTION_REQUIRED", plannedAction: "NONE", reasonCodes: ["CONFIGURATION_REQUIRED"], dependencyClassifications, retentionPolicyId, legalHoldId };
+    if (cfg.status === "CONFIGURATION_REQUIRED" || policy.enabled !== true) {
+      // Disabled, rejected, pending or incomplete configuration never grants deletion.
+      return item("RETENTION_REQUIRED", "NONE", ["CONFIGURATION_REQUIRED"]);
     }
     const preserves = PRESERVE_ACTIONS.has(policy.action);
     const triggerAt = record.holdInputs.timestamp ?? null;
     const notYetDue = policy.retentionDays != null && triggerAt != null && now.getTime() < addDays(triggerAt, policy.retentionDays).getTime();
     if (preserves || notYetDue) {
-      return { target: target.name, recordId: record.recordId, classification: "RETENTION_REQUIRED", plannedAction: "NONE", reasonCodes: [preserves ? "POLICY_PRESERVES" : "RETENTION_NOT_DUE"], dependencyClassifications, retentionPolicyId, legalHoldId };
+      return item("RETENTION_REQUIRED", "NONE", [preserves ? "POLICY_PRESERVES" : "RETENTION_NOT_DUE"]);
     }
   }
 
   // 4. Required relational/operational dependency.
   if (record.dependency.blocked) {
-    return { target: target.name, recordId: record.recordId, classification: "DEPENDENCY_BLOCKED", plannedAction: "NONE", reasonCodes: dependencyClassifications.length ? dependencyClassifications : ["DEPENDENCY"], dependencyClassifications, retentionPolicyId, legalHoldId };
+    return item("DEPENDENCY_BLOCKED", "NONE", dependencyClassifications.length ? dependencyClassifications : ["DEPENDENCY"]);
   }
 
   // 5/6. Anonymisation, then deletion — clamped to the target's allowed strategy.
   if (target.defaultClassification === "ANONYMISE_REQUIRED") {
     const action = actionFor("ANONYMISE_REQUIRED", target.allowedExecutionStrategy);
-    if (action === "ANONYMISE") return { target: target.name, recordId: record.recordId, classification: "ANONYMISE_REQUIRED", plannedAction: "ANONYMISE", reasonCodes: ["ANONYMISE_STRATEGY"], dependencyClassifications, retentionPolicyId, legalHoldId };
+    if (action === "ANONYMISE") return item("ANONYMISE_REQUIRED", "ANONYMISE", ["ANONYMISE_STRATEGY"]);
   }
   if (target.defaultClassification === "DELETE_ALLOWED") {
     const action = actionFor("DELETE_ALLOWED", target.allowedExecutionStrategy);
-    if (action === "DELETE") return { target: target.name, recordId: record.recordId, classification: "DELETE_ALLOWED", plannedAction: "DELETE", reasonCodes: ["NO_KNOWN_BLOCKER"], dependencyClassifications, retentionPolicyId, legalHoldId };
+    if (action === "DELETE") return item("DELETE_ALLOWED", "DELETE", ["NO_KNOWN_BLOCKER"]);
   }
 
-  // 7. Manual-review fallback — the system cannot safely determine an action.
-  return { target: target.name, recordId: record.recordId, classification: "MANUAL_REVIEW_REQUIRED", plannedAction: "NONE", reasonCodes: ["INDETERMINATE"], dependencyClassifications, retentionPolicyId, legalHoldId };
+  // 7. Manual review — the system cannot safely determine an action. A GOVERNED,
+  //    server-recorded resolution (closed codes only; DELETE never obtainable) may
+  //    conservatively re-classify the item; GLOBAL_PLATFORM_REVIEW_REQUIRED keeps
+  //    it blocking. A client can never inject a classification directly.
+  const resolution = resolutions.find((r) => r.target === target.name && r.recordId === record.recordId && isManualResolutionCode(r.resolution));
+  if (resolution) {
+    switch (resolution.resolution) {
+      case "NO_ACTION_REQUIRED":
+        return item("RETENTION_REQUIRED", "NONE", ["MANUAL_RESOLUTION", "RESOLVED_NO_ACTION_REQUIRED"]);
+      case "RETENTION_REQUIRED":
+        return item("RETENTION_REQUIRED", "NONE", ["MANUAL_RESOLUTION", "RESOLVED_RETENTION_REQUIRED"]);
+      case "ANONYMISE_REQUIRED":
+        if (target.allowedExecutionStrategy === "ANONYMISE") {
+          return item("ANONYMISE_REQUIRED", "ANONYMISE", ["MANUAL_RESOLUTION", "RESOLVED_ANONYMISE_REQUIRED"]);
+        }
+        return item("MANUAL_REVIEW_REQUIRED", "NONE", ["RESOLUTION_STRATEGY_UNSUPPORTED"]);
+      case "GLOBAL_PLATFORM_REVIEW_REQUIRED":
+        return item("MANUAL_REVIEW_REQUIRED", "NONE", ["GLOBAL_PLATFORM_REVIEW_REQUIRED"]);
+    }
+  }
+  return item("MANUAL_REVIEW_REQUIRED", "NONE", ["INDETERMINATE"]);
 }
 
 function emptyCounts(): Record<ErasureClassification, number> {
@@ -175,9 +242,10 @@ function emptyCounts(): Record<ErasureClassification, number> {
  *  planHash. */
 export function buildErasurePlan(input: BuildErasurePlanInput): { plan: ErasurePlan; planHash: string } {
   const items: ErasurePlanItem[] = [];
+  const resolutions = input.resolutions ?? [];
   for (const { target, records } of input.collected) {
     for (const record of records) {
-      items.push(classifyRecord(target, record, input.subjectId, input.organizationId, input.holds, input.policies, input.now));
+      items.push(classifyRecord(target, record, input.subjectId, input.organizationId, input.holds, input.policies, resolutions, input.now));
     }
   }
   items.sort((a, b) => (a.target === b.target ? a.recordId.localeCompare(b.recordId) : a.target.localeCompare(b.target)));
