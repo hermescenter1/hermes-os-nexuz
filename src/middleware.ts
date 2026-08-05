@@ -43,6 +43,13 @@ const GA_IMG_DOMAINS     = HAS_ANALYTICS ? " https://www.google-analytics.com ht
  * always rendered in the public footer.
  */
 const ENAMAD_IMG_DOMAIN  = " https://trustseal.enamad.ir";
+/**
+ * SaaSHub "Approved" trust badge (public footer). The badge image is served
+ * from SaaSHub's own CDN, so it needs an explicit img-src entry — the badge
+ * requires no script, frame, style or connect access, so no other directive is
+ * relaxed. Deliberately narrow: exact host, https only, no wildcard.
+ */
+const SAASHUB_IMG_DOMAIN = " https://cdn-b.saashub.com";
 const PROVENEXPERT_SCRIPT_DOMAIN = " https://s.provenexpert.net";
 const PROVENEXPERT_CONNECT_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com https://d.provenexpert.net";
 const PROVENEXPERT_IMG_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com";
@@ -54,7 +61,7 @@ function buildCSP(nonce: string): string {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'${GA_SCRIPT_DOMAINS}${PROVENEXPERT_SCRIPT_DOMAIN}${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data:${GA_IMG_DOMAINS}${ENAMAD_IMG_DOMAIN}${PROVENEXPERT_IMG_DOMAINS}`,
+    `img-src 'self' data:${GA_IMG_DOMAINS}${ENAMAD_IMG_DOMAIN}${SAASHUB_IMG_DOMAIN}${PROVENEXPERT_IMG_DOMAINS}`,
     // data: is required because the official ProvenExpert widget embeds its
     // WOFF2 fonts as data: URLs inside its stylesheet.
     "font-src 'self' data:",

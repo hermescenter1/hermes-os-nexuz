@@ -4,6 +4,7 @@ import { HermesLogoMark }  from "./HermesLogo";
 import { FooterLangSwitch } from "./FooterLangSwitch";
 import { SOCIAL_LINKS }    from "@/lib/site/social-links";
 import ProvenExpertSeal from "./trust/ProvenExpertSeal";
+import { SaaSHubBadge } from "./trust/SaaSHubBadge";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
 
@@ -143,6 +144,13 @@ export function SiteFooter() {
             </h2>
 
             <ProvenExpertSeal />
+
+            {/* Official SaaSHub "Approved" badge — peer trust element next to
+                the ProvenExpert widget. flex-wrap keeps it from overflowing on
+                narrow viewports. */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+              <SaaSHubBadge />
+            </div>
           </div>
         </section>
       </div>
