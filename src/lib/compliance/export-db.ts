@@ -11,7 +11,34 @@ import type { DbDataExportRequest, DbExportDownloadToken } from "./types";
 import { isSha256Hex, isSupportedExportSchemaVersion } from "./export-package";
 
 type AnyModel = Record<string, (...args: unknown[]) => Promise<unknown>>;
-type TxClient = { $transaction: <T>(fn: (tx: Record<string, AnyModel>) => Promise<T>) => Promise<T> };
+/** The interactive-transaction client — model delegates PLUS parameterized raw SQL
+ *  (needed to take a real PostgreSQL row lock, which the model API cannot express). */
+type TxRaw = Record<string, AnyModel> & {
+  $queryRawUnsafe: <T = unknown>(sql: string, ...values: unknown[]) => Promise<T>;
+};
+type TxClient = { $transaction: <T>(fn: (tx: TxRaw) => Promise<T>) => Promise<T> };
+
+/**
+ * Acquire a REAL PostgreSQL row lock on the authoritative export job for the rest of
+ * the surrounding interactive transaction. `SELECT ... FOR UPDATE` blocks until any
+ * concurrent transaction already holding this row's lock commits or rolls back, so
+ * issuance, revocation and redemption SERIALIZE on the DataExportRequest row across
+ * every application instance (a process-local JS mutex could not do this). The row
+ * identifiers are BOUND as parameters ($1/$2) — never interpolated into the SQL —
+ * and the query returns the id only. Returns whether the row exists (was locked).
+ *
+ * Callers MUST invoke this FIRST (before re-reading the job or touching any token
+ * row), giving every delivery operation the same lock order and no deadlock.
+ */
+async function lockExportJobRow(tx: TxRaw, id: string, organizationId: string | null): Promise<boolean> {
+  if (!organizationId) return false; // a governed job always has a non-null org
+  const rows = (await tx.$queryRawUnsafe<Array<{ id: string }>>(
+    'SELECT "id" FROM "DataExportRequest" WHERE "id" = $1 AND "organizationId" = $2 FOR UPDATE',
+    id,
+    organizationId,
+  )) ?? [];
+  return Array.isArray(rows) && rows.length === 1;
+}
 
 async function xm() {
   const db = await getPrisma();
@@ -202,15 +229,16 @@ export async function findEligibleDownloadToken(params: {
 // so a redemption and a revocation always resolve to one consistent outcome and a
 // job transition can never commit while a live token could remain (Finding 2).
 
-// ── Transactional delivery operations (Finding 2) ─────────────────────────────
+// ── Transactional delivery operations (Finding 2 + linearization) ─────────────
 //
-// Issuance, revocation and redemption all take the SAME row-lock order — the
-// authoritative export job FIRST, then its token rows — so they linearize without
-// deadlock. Each operation revalidates the persisted job state inside the
-// transaction and every write is guarded by an expected-state predicate, so a
-// concurrent revocation and a concurrent redemption always resolve to exactly one
-// consistent outcome (never a token issued/consumed after a committed revocation,
-// never a partial commit).
+// Issuance, revocation and redemption all take a REAL PostgreSQL row lock on the
+// authoritative export job FIRST (lockExportJobRow → SELECT ... FOR UPDATE), then
+// re-read the job under that lock, then touch token rows — the SAME lock order, so
+// they linearize across all application instances without deadlock. Because the job
+// row is genuinely locked, a concurrent operation blocks until the holder commits
+// and then observes the committed lifecycle, so a token can never be issued or
+// consumed after a committed revocation, and no revocation commits while a live
+// token could remain.
 
 class IssueError extends Error { constructor(public reason: IssueReason) { super(reason); this.name = "IssueError"; } }
 type IssueReason = "NOT_FOUND" | "NOT_READY" | "REVOKED" | "EXPIRY_POLICY" | "EXPIRED" | "INCOMPLETE";
@@ -225,12 +253,14 @@ function isStructurallyCompleteReadyJob(job: DbDataExportRequest): boolean {
 }
 
 /**
- * Issue a download token for a READY job TRANSACTIONALLY. The authoritative job is
- * re-read and fully revalidated (READY, unrevoked, unexpired, structurally
- * complete: parent/org/subject bound, valid content+package hashes, supported
- * schema, completedAt) before the bound token is created and committed. Because
- * revocation locks/updates the same job row first, a token can never be created
- * after a revocation has linearized (TOKEN_ISSUED_AFTER_REVOCATION=0), and a
+ * Issue a download token for a READY job TRANSACTIONALLY. The authoritative job row
+ * is LOCKED (SELECT ... FOR UPDATE) first, then re-read and fully revalidated
+ * (READY, unrevoked, unexpired, structurally complete: parent/org/subject bound,
+ * valid content+package hashes, supported schema, completedAt) before the bound
+ * token is created and committed. Because revocation takes the same row lock first,
+ * if a revocation committed before issuance acquired the lock, issuance re-reads
+ * REVOKED and denies (TOKEN_ISSUED_AFTER_COMMITTED_REVOCATION=0); if issuance
+ * committed first, revocation then acquires the lock and revokes the new token. A
  * structurally incomplete READY row never yields a capability
  * (TOKEN_ISSUED_FOR_INCOMPLETE_EXPORT=0).
  */
@@ -244,6 +274,9 @@ export async function issueDownloadTokenForReadyJob(params: {
     return await c.$transaction(async (tx) => {
       const exp = tx.dataExportRequest as AnyModel;
       const tok = tx.exportDownloadToken as AnyModel;
+      // 1. Lock the authoritative job row FOR UPDATE (before reading or writing).
+      if (!(await lockExportJobRow(tx, params.id, params.organizationId))) throw new IssueError("NOT_FOUND");
+      // 2. Re-read the now-locked job and validate its authoritative lifecycle.
       const job = (await exp.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as DbDataExportRequest | null;
       if (!job) throw new IssueError("NOT_FOUND");
       if (job.lifecycle !== "READY") throw new IssueError("NOT_READY");
@@ -270,11 +303,14 @@ export async function issueDownloadTokenForReadyJob(params: {
 }
 
 /**
- * Revoke a READY job AND all its outstanding tokens in ONE transaction. The job is
- * read/locked first (expected lifecycle READY), transitioned to REVOKED with
- * server-side attribution, then every unused/unrevoked token is revoked. If the
- * token revocation fails the whole transaction rolls back, so the job transition is
- * never committed while a live token could remain (REVOCATION_PARTIAL_COMMIT=0).
+ * Revoke a READY job AND all its outstanding tokens in ONE transaction. The job row
+ * is LOCKED (SELECT ... FOR UPDATE) first, re-read (expected lifecycle READY),
+ * transitioned to REVOKED with server-side attribution, then every unused/unrevoked
+ * token is revoked. Holding the row lock means a concurrent issuance/redemption
+ * either already committed (its token is swept here) or blocks and later observes
+ * REVOKED. If the token revocation fails the whole transaction rolls back, so the
+ * job transition is never committed while a live token could remain
+ * (REVOCATION_PARTIAL_COMMIT=0, REVOKED_EXPORT_WITH_LIVE_TOKEN=0).
  */
 export async function revokeExportJobAndTokensForOrg(params: {
   id: string; organizationId: string; actorId: string; now: Date;
@@ -286,9 +322,13 @@ export async function revokeExportJobAndTokensForOrg(params: {
     return await c.$transaction(async (tx) => {
       const exp = tx.dataExportRequest as AnyModel;
       const tok = tx.exportDownloadToken as AnyModel;
+      // 1. Lock the authoritative job row FOR UPDATE (before reading or writing).
+      if (!(await lockExportJobRow(tx, params.id, params.organizationId))) throw new RevokeError("NOT_FOUND");
+      // 2. Re-read the now-locked job and validate its authoritative lifecycle.
       const job = (await exp.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as DbDataExportRequest | null;
       if (!job) throw new RevokeError("NOT_FOUND");
       if (job.lifecycle !== "READY") throw new RevokeError("NOT_READY");
+      // 3. Write the job row, then the token rows (consistent order).
       const upd = (await exp.updateMany({
         where: { id: params.id, organizationId: params.organizationId, lifecycle: "READY" },
         data: { lifecycle: "REVOKED", revokedBy: params.actorId, revokedAt: params.now, updatedAt: params.now },
@@ -307,12 +347,13 @@ export async function revokeExportJobAndTokensForOrg(params: {
 }
 
 /**
- * Gate B (linearized) — atomically consume a token AFTER integrity validation,
- * revalidating the authoritative job in the SAME transaction. The job is read first
+ * Gate B (linearized) — atomically consume a token AFTER integrity validation. The
+ * authoritative job row is LOCKED (SELECT ... FOR UPDATE) first, then re-read
  * (READY, unrevoked, unexpired, matching org+subject) and only then is the bound,
- * unused, unrevoked, unexpired token consumed with a guarded updateMany. If a
- * revocation has committed first the job read denies the consume, so no download
- * commits after a committed revocation (DOWNLOAD_AFTER_COMMITTED_REVOCATION=0).
+ * unused, unrevoked, unexpired token consumed with a guarded updateMany. Because the
+ * job row is genuinely locked, a revocation that has committed first is observed as
+ * REVOKED here, so no download commits after a committed revocation
+ * (DOWNLOAD_AFTER_COMMITTED_REVOCATION=0).
  */
 export async function consumeDownloadTokenLinearized(params: {
   exportRequestId: string; tokenHash: string; subjectUserId: string; organizationId: string | null; now: Date;
@@ -324,6 +365,9 @@ export async function consumeDownloadTokenLinearized(params: {
     return await c.$transaction(async (tx) => {
       const exp = tx.dataExportRequest as AnyModel;
       const tok = tx.exportDownloadToken as AnyModel;
+      // 1. Lock the authoritative job row FOR UPDATE (before reading or writing).
+      if (!(await lockExportJobRow(tx, params.exportRequestId, params.organizationId))) return { consumed: false };
+      // 2. Re-read the now-locked job and validate lifecycle + subject binding.
       const job = (await exp.findFirst({
         where: { id: params.exportRequestId, organizationId: params.organizationId, userId: params.subjectUserId },
       })) as DbDataExportRequest | null;
@@ -331,6 +375,7 @@ export async function consumeDownloadTokenLinearized(params: {
         || new Date(job.expiresAt as unknown as string).getTime() <= params.now.getTime()) {
         return { consumed: false };
       }
+      // 3. Consume the bound token (guarded single-use).
       const r = (await tok.updateMany({
         where: {
           exportRequestId: params.exportRequestId,

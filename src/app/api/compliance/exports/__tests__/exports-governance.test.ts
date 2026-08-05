@@ -76,6 +76,18 @@ function makeDb() {
     dataExportRequest: coll(() => jobs, { uniqueActiveParent: true }),
     exportDownloadToken: coll(() => tokens, { tokenModel: true }),
   };
+  // Models the real `SELECT "id" ... FOR UPDATE` job-row lock: returns the row id
+  // (or []) so the production lock helper can proceed. Serialization/consistency in
+  // this single-process mock is provided by the $transaction mutex below; the REAL
+  // cross-connection FOR UPDATE blocking is proven by the PG linearization tests.
+  db.$queryRawUnsafe = async (sql: string, ...vals: unknown[]) => {
+    if (/FOR UPDATE/i.test(sql) && /"DataExportRequest"/i.test(sql)) {
+      const [id, org] = vals as [string, string];
+      const row = jobs.find((j) => j.id === id && j.organizationId === org);
+      return row ? [{ id: row.id }] : [];
+    }
+    return [];
+  };
   // A faithful-enough $transaction: serialized (the shared job row-lock in the real
   // DB serializes issuance/redemption/revocation) with snapshot-restore rollback on
   // throw, so a failed token revocation rolls the whole revocation back.
