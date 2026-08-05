@@ -15,9 +15,19 @@ import { createHash } from "node:crypto";
 import { stableStringify } from "./export-package";
 import { classifyRetentionPolicy, holdCovers, type HoldLike, type RetentionPolicyLike } from "./retention-engine";
 import type { ErasureClassification, ErasureTargetDefinition, ErasureTargetRecord, ExecutionStrategy } from "./erasure-targets";
-import { ERASURE_CLASSIFICATIONS, ERASURE_REGISTRY_VERSION } from "./erasure-targets";
+import { ERASURE_CLASSIFICATIONS, ERASURE_REGISTRY_VERSION, ERASURE_TARGET_NAMES } from "./erasure-targets";
 
 export const ERASURE_PLAN_SCHEMA_VERSION = "1.0";
+export const EXECUTION_STRATEGIES: ExecutionStrategy[] = ["DELETE", "ANONYMISE", "NONE"];
+
+/** The only valid classification→plannedAction combinations. Every non-destructive
+ *  classification MUST plan NONE; DELETE_ALLOWED plans DELETE; ANONYMISE plans ANONYMISE. */
+export function isValidClassificationAction(classification: string, action: string): boolean {
+  if (classification === "DELETE_ALLOWED") return action === "DELETE";
+  if (classification === "ANONYMISE_REQUIRED") return action === "ANONYMISE";
+  if ((ERASURE_CLASSIFICATIONS as string[]).includes(classification)) return action === "NONE";
+  return false;
+}
 
 export interface ErasureRetentionPolicyLike extends RetentionPolicyLike {
   id:             string;
@@ -55,17 +65,71 @@ export function isManualResolutionCode(v: unknown): v is ManualResolutionCode {
   return typeof v === "string" && (MANUAL_RESOLUTION_CODES as string[]).includes(v);
 }
 
-/** A versioned, server-attributed review decision bound to the exact reviewed plan. */
+/** Closed lifecycle of a governed manual-review decision. A resolution is APPLIED
+ *  only while it is bound to the CURRENT plan it produced; a later independent plan
+ *  regeneration INVALIDATEs it and the item returns to MANUAL_REVIEW_REQUIRED, and a
+ *  fresh decision for the same item SUPERSEDEs the old one. */
+export type ResolutionStatus = "APPLIED" | "SUPERSEDED" | "INVALIDATED";
+export const RESOLUTION_STATUSES: ResolutionStatus[] = ["APPLIED", "SUPERSEDED", "INVALIDATED"];
+export function isResolutionStatus(v: unknown): v is ResolutionStatus {
+  return typeof v === "string" && (RESOLUTION_STATUSES as string[]).includes(v);
+}
+/** Authorities permitted to record a tenant manual-review decision. DELETE is never
+ *  obtainable through any of these (GLOBAL_USER_DELETION_BY_SINGLE_TENANT=0). */
+export const ALLOWED_RESOLUTION_AUTHORITIES = ["TENANT_OWNER"] as const;
+export function isAllowedResolutionAuthority(v: unknown): v is string {
+  return typeof v === "string" && (ALLOWED_RESOLUTION_AUTHORITIES as readonly string[]).includes(v);
+}
+
+/**
+ * A versioned, server-attributed review decision with FULL lineage. It records both
+ * the plan it reviewed (sourcePlanHash/Version) and the plan it produced
+ * (resultPlanHash/Version), so a decision can only ever apply to its own immediate
+ * resulting plan — never to an unrelated later regeneration.
+ */
 export interface ManualReviewResolution {
   jobId:             string;
-  sourcePlanHash:    string;
-  sourcePlanVersion: number;
   target:            string;
   recordId:          string;
   resolution:        ManualResolutionCode;
+  sourcePlanHash:    string;
+  sourcePlanVersion: number;
+  resultPlanHash:    string;
+  resultPlanVersion: number;
+  resolutionStatus:  ResolutionStatus;
+  authority:         string;   // authority boundary, e.g. TENANT_OWNER
   resolvedBy:        string;
   resolvedAt:        string;   // ISO timestamp
-  authority:         string;   // authority boundary, e.g. TENANT_OWNER
+}
+
+/** Structurally normalize a persisted reviewResolutions array — drops any malformed
+ *  entry so a corrupt/stale row can never inject an unexpected decision. */
+export function normalizeStoredResolutions(raw: unknown): ManualReviewResolution[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ManualReviewResolution[] = [];
+  for (const r of raw) {
+    if (!r || typeof r !== "object" || Array.isArray(r)) continue;
+    const o = r as Record<string, unknown>;
+    if (typeof o.jobId !== "string" || typeof o.target !== "string" || typeof o.recordId !== "string") continue;
+    if (!isManualResolutionCode(o.resolution) || !isResolutionStatus(o.resolutionStatus)) continue;
+    if (typeof o.sourcePlanHash !== "string" || typeof o.resultPlanHash !== "string") continue;
+    if (!Number.isInteger(o.sourcePlanVersion) || !Number.isInteger(o.resultPlanVersion)) continue;
+    if (typeof o.authority !== "string" || typeof o.resolvedBy !== "string" || typeof o.resolvedAt !== "string") continue;
+    out.push({
+      jobId: o.jobId, target: o.target, recordId: o.recordId, resolution: o.resolution,
+      sourcePlanHash: o.sourcePlanHash, sourcePlanVersion: o.sourcePlanVersion as number,
+      resultPlanHash: o.resultPlanHash, resultPlanVersion: o.resultPlanVersion as number,
+      resolutionStatus: o.resolutionStatus, authority: o.authority as string,
+      resolvedBy: o.resolvedBy as string, resolvedAt: o.resolvedAt as string,
+    });
+  }
+  return out;
+}
+
+/** The resolutions that produced the given (current) plan — the ONLY ones a planner
+ *  build may reuse. A resolution bound to a different result plan is stale. */
+export function activeResolutionsForPlan(resolutions: ManualReviewResolution[], planHash: string, planVersion: number): ManualReviewResolution[] {
+  return resolutions.filter((r) => r.resolutionStatus === "APPLIED" && r.resultPlanHash === planHash && r.resultPlanVersion === planVersion);
 }
 
 export interface ErasurePlan {
@@ -213,7 +277,7 @@ function classifyRecord(
   //    server-recorded resolution (closed codes only; DELETE never obtainable) may
   //    conservatively re-classify the item; GLOBAL_PLATFORM_REVIEW_REQUIRED keeps
   //    it blocking. A client can never inject a classification directly.
-  const resolution = resolutions.find((r) => r.target === target.name && r.recordId === record.recordId && isManualResolutionCode(r.resolution));
+  const resolution = resolutions.find((r) => r.target === target.name && r.recordId === record.recordId && isManualResolutionCode(r.resolution) && r.resolutionStatus === "APPLIED");
   if (resolution) {
     switch (resolution.resolution) {
       case "NO_ACTION_REQUIRED":
@@ -316,4 +380,96 @@ export function canApproveErasurePlan(plan: ErasurePlan): { ok: boolean; blocker
     if (it.classification === "ANONYMISE_REQUIRED" && it.plannedAction !== "ANONYMISE") { blockers.push({ target: it.target, recordId: it.recordId, reason: "ACTION_MISMATCH" }); continue; }
   }
   return { ok: blockers.length === 0, blockers };
+}
+
+// ── Strict persisted-plan validation ──────────────────────────────────────────
+
+export type PersistedPlanCode =
+  | "PLAN_INVALID"
+  | "PLAN_BINDING_MISMATCH"
+  | "PLAN_SCHEMA_UNSUPPORTED"
+  | "PLAN_REGISTRY_STALE"
+  | "PLAN_COUNT_MISMATCH"
+  | "PLAN_HASH_MISMATCH";
+
+export type PersistedPlanValidation =
+  | { ok: true; plan: ErasurePlan }
+  | { ok: false; code: PersistedPlanCode };
+
+export interface PersistedPlanBinding {
+  jobId:            string;
+  privacyRequestId: string | null;
+  organizationId:   string | null;
+  subjectId:        string | null;
+  expectedPlanHash: string | null;   // job.planHash (authoritative)
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> { return !!v && typeof v === "object" && !Array.isArray(v); }
+function isStringArray(v: unknown): v is string[] { return Array.isArray(v) && v.every((x) => typeof x === "string" && x.length > 0); }
+function isValidTimestamp(v: unknown): boolean { return typeof v === "string" && v.length > 0 && Number.isFinite(Date.parse(v)); }
+
+/**
+ * The SINGLE shared strict validator for a persisted ErasurePlan snapshot, used
+ * before approval and before resolution. Versioned policy: only the known canonical
+ * fields are read; UNKNOWN extra fields are IGNORED (never cast or iterated), and
+ * because the canonical planHash covers exactly the known field set, an unknown field
+ * cannot change the authoritative hash. Every nested value is structurally validated
+ * before use, so malformed input can only ever return a closed error — never throw.
+ * The recomputed canonical hash must equal the authoritative job.planHash, and the
+ * stored counts must exactly equal the recomputed item counts.
+ */
+export function validatePersistedErasurePlan(raw: unknown, binding: PersistedPlanBinding): PersistedPlanValidation {
+  try {
+    if (!isPlainObject(raw)) return { ok: false, code: "PLAN_INVALID" };
+    if (raw.schemaVersion !== ERASURE_PLAN_SCHEMA_VERSION) return { ok: false, code: "PLAN_SCHEMA_UNSUPPORTED" };
+    if (raw.registryVersion !== ERASURE_REGISTRY_VERSION) return { ok: false, code: "PLAN_REGISTRY_STALE" };
+
+    // Authoritative bindings.
+    if (raw.jobId !== binding.jobId) return { ok: false, code: "PLAN_BINDING_MISMATCH" };
+    if ((raw.privacyRequestId ?? null) !== binding.privacyRequestId) return { ok: false, code: "PLAN_BINDING_MISMATCH" };
+    if ((raw.organizationId ?? null) !== binding.organizationId) return { ok: false, code: "PLAN_BINDING_MISMATCH" };
+    if (raw.subjectClass !== "USER") return { ok: false, code: "PLAN_BINDING_MISMATCH" };
+    if ((raw.subjectId ?? null) !== binding.subjectId) return { ok: false, code: "PLAN_BINDING_MISMATCH" };
+
+    if (typeof raw.planVersion !== "number" || !Number.isInteger(raw.planVersion) || raw.planVersion <= 0) return { ok: false, code: "PLAN_INVALID" };
+    if (!isValidTimestamp(raw.generatedAt)) return { ok: false, code: "PLAN_INVALID" };
+    if (!Array.isArray(raw.items)) return { ok: false, code: "PLAN_INVALID" };
+
+    const seen = new Set<string>();
+    const recomputedCounts: Record<string, number> = Object.fromEntries(ERASURE_CLASSIFICATIONS.map((c) => [c, 0]));
+    for (const it of raw.items) {
+      if (!isPlainObject(it)) return { ok: false, code: "PLAN_INVALID" };
+      if (typeof it.target !== "string" || !ERASURE_TARGET_NAMES.includes(it.target)) return { ok: false, code: "PLAN_INVALID" };      // unknown target
+      if (typeof it.recordId !== "string" || it.recordId.length === 0) return { ok: false, code: "PLAN_INVALID" };
+      const key = `${it.target} ${it.recordId}`;
+      if (seen.has(key)) return { ok: false, code: "PLAN_INVALID" };                                                                    // duplicate
+      seen.add(key);
+      if (typeof it.classification !== "string" || !(ERASURE_CLASSIFICATIONS as string[]).includes(it.classification)) return { ok: false, code: "PLAN_INVALID" };
+      if (typeof it.plannedAction !== "string" || !(EXECUTION_STRATEGIES as string[]).includes(it.plannedAction)) return { ok: false, code: "PLAN_INVALID" };
+      if (!isValidClassificationAction(it.classification, it.plannedAction)) return { ok: false, code: "PLAN_INVALID" };
+      if (!isStringArray(it.reasonCodes) || !isStringArray(it.dependencyClassifications)) return { ok: false, code: "PLAN_INVALID" };
+      if (!(it.retentionPolicyId === null || typeof it.retentionPolicyId === "string")) return { ok: false, code: "PLAN_INVALID" };
+      if (!(it.legalHoldId === null || typeof it.legalHoldId === "string")) return { ok: false, code: "PLAN_INVALID" };
+      recomputedCounts[it.classification as string] += 1;
+    }
+
+    // Counts must exactly equal the recomputed item counts.
+    if (!isPlainObject(raw.counts)) return { ok: false, code: "PLAN_INVALID" };
+    for (const c of ERASURE_CLASSIFICATIONS) {
+      if ((raw.counts as Record<string, unknown>)[c] !== recomputedCounts[c]) return { ok: false, code: "PLAN_COUNT_MISMATCH" };
+    }
+    for (const k of Object.keys(raw.counts as Record<string, unknown>)) {
+      if (!(ERASURE_CLASSIFICATIONS as string[]).includes(k)) return { ok: false, code: "PLAN_COUNT_MISMATCH" };
+    }
+
+    const plan = raw as unknown as ErasurePlan;
+    // Authoritative hash: the recomputed canonical hash must equal job.planHash.
+    let recomputed: string;
+    try { recomputed = computeErasurePlanHash(plan); } catch { return { ok: false, code: "PLAN_INVALID" }; }
+    if (!binding.expectedPlanHash || recomputed !== binding.expectedPlanHash) return { ok: false, code: "PLAN_HASH_MISMATCH" };
+
+    return { ok: true, plan };
+  } catch {
+    return { ok: false, code: "PLAN_INVALID" };
+  }
 }

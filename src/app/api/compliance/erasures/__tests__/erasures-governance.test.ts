@@ -299,6 +299,24 @@ describe("governed manual-review resolution (route)", () => {
     expect(jobs[0].approvedPlanVersion).toBe(2);
     expect(auditCalls.some((e) => e.action === "compliance.erasure.manual_resolved")).toBe(true);
   });
+  it("an INDEPENDENT plan regeneration invalidates a prior resolution — the item reverts to MANUAL and blocks approval (STALE_MANUAL_RESOLUTION_REPLAY=0)", async () => {
+    const { hash, version } = await manualInReview();
+    ownerA();
+    // Resolve the manual item → v2, PLAN_READY, resolution APPLIED bound to v2.
+    const r = await resolvePOST("e1", { target: "user_profile", recordId: "subj-1", resolution: "NO_ACTION_REQUIRED", sourcePlanHash: hash, sourcePlanVersion: version });
+    expect(r.res.status).toBe(201);
+    expect((jobs[0].reviewResolutions as { resolutionStatus: string }[])[0].resolutionStatus).toBe("APPLIED");
+    // An independent POST /plan is NOT the resolution's own regeneration → it drops
+    // the resolution entirely: the item reverts to MANUAL_REVIEW_REQUIRED (v3).
+    await planPOST("e1");
+    expect(jobs[0].planVersion).toBe(3);
+    expect((jobs[0].reviewResolutions as { resolutionStatus: string }[])[0].resolutionStatus).toBe("INVALIDATED");
+    // Approval is now blocked again — the manual item is unresolved.
+    await patchJob("e1", { transition: "IN_REVIEW" });
+    const blocked = await patchJob("e1", { transition: "APPROVED", expectedPlanHash: jobs[0].planHash as string, expectedPlanVersion: 3 });
+    expect(blocked.res.status).toBe(409);
+    expect(blocked.json.code).toBe("PLAN_NOT_APPROVABLE");
+  });
 });
 
 describe("execution gate (disabled by default)", () => {

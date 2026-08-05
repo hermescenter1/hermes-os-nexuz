@@ -15,8 +15,8 @@ import {
   getErasureTarget, collectErasureTargets, type ErasurePrisma, type ErasureTargetRecord, type ErasureTargetDefinition,
 } from "../erasure-targets";
 import {
-  buildErasurePlan, computeErasurePlanHash, canApproveErasurePlan,
-  type BuildErasurePlanInput, type ErasureRetentionPolicyLike,
+  buildErasurePlan, computeErasurePlanHash, canApproveErasurePlan, validatePersistedErasurePlan,
+  type BuildErasurePlanInput, type ErasureRetentionPolicyLike, type ErasurePlan,
 } from "../erasure-planner";
 import {
   runErasurePreflight, applyErasurePlanSynthetic, createSyntheticErasureStore, erasureExecutionGate,
@@ -257,7 +257,7 @@ describe("plan approvability (immutability gate inputs)", () => {
 
 describe("governed manual-review resolution (closed, conservative)", () => {
   const userCollected = [{ target: tgt("user_profile"), records: [rec({ recordId: "u1", ownedByOrganizationId: null, holdInputs: { subjectId: "u1", resourceType: "user_profile", resourceId: "u1", timestamp: null } })] }];
-  const res = (resolution: string) => [{ jobId: "job-1", sourcePlanHash: "a".repeat(64), sourcePlanVersion: 1, target: "user_profile", recordId: "u1", resolution, resolvedBy: "owner-A", resolvedAt: "2026-06-01T00:00:00.000Z", authority: "TENANT_OWNER" }] as never;
+  const res = (resolution: string) => [{ jobId: "job-1", target: "user_profile", recordId: "u1", resolution, sourcePlanHash: "a".repeat(64), sourcePlanVersion: 1, resultPlanHash: "b".repeat(64), resultPlanVersion: 2, resolutionStatus: "APPLIED", authority: "TENANT_OWNER", resolvedBy: "owner-A", resolvedAt: "2026-06-01T00:00:00.000Z" }] as never;
   it("NO_ACTION_REQUIRED / RETENTION_REQUIRED conservatively re-classify and unblock approval", () => {
     for (const code of ["NO_ACTION_REQUIRED", "RETENTION_REQUIRED"]) {
       const { plan } = buildErasurePlan(planInput({ collected: userCollected, resolutions: res(code) }));
@@ -319,5 +319,50 @@ describe("execution posture (disabled by default) + preflight + idempotency", ()
     expect(second.skippedIdempotent).toBe(true);
     expect(second.performed).toBe(0);
     expect(store.deleted.size).toBe(1);
+  });
+});
+
+describe("strict persisted-plan validator", () => {
+  const built = buildErasurePlan(planInput({
+    collected: [{ target: tgt("consent_records"), records: [rec({ recordId: "c1" })] }],
+    policies: [livePolicy("consent", "consent_records")],
+  }));
+  const plan = built.plan;                 // a real, count-consistent, hash-matching plan
+  const binding = { jobId: "job-1", privacyRequestId: "pr-1", organizationId: "org-A", subjectId: "u1", expectedPlanHash: built.planHash };
+  const clone = (): ErasurePlan => JSON.parse(JSON.stringify(plan));
+
+  it("accepts a well-formed, correctly-bound, hash- and count-consistent plan", () => {
+    expect(validatePersistedErasurePlan(plan, binding)).toMatchObject({ ok: true });
+  });
+  it("rejects malformed / non-object input without throwing (MALFORMED_ERASURE_PLAN_APPROVAL=0)", () => {
+    for (const bad of [null, undefined, 42, "x", [], { schemaVersion: "1.0", items: "no" }]) {
+      expect(validatePersistedErasurePlan(bad, binding).ok).toBe(false);
+    }
+  });
+  it("rejects an unsupported schema and a stale registry version", () => {
+    expect(validatePersistedErasurePlan({ ...clone(), schemaVersion: "9.9" }, binding)).toMatchObject({ ok: false, code: "PLAN_SCHEMA_UNSUPPORTED" });
+    expect(validatePersistedErasurePlan({ ...clone(), registryVersion: "9.9" }, binding)).toMatchObject({ ok: false, code: "PLAN_REGISTRY_STALE" });
+  });
+  it("rejects a cross-job / cross-subject / cross-org binding (CROSS_JOB/SUBJECT_ERASURE_PLAN_APPROVAL=0)", () => {
+    expect(validatePersistedErasurePlan(plan, { ...binding, jobId: "other-job" })).toMatchObject({ ok: false, code: "PLAN_BINDING_MISMATCH" });
+    expect(validatePersistedErasurePlan(plan, { ...binding, subjectId: "other-user" })).toMatchObject({ ok: false, code: "PLAN_BINDING_MISMATCH" });
+    expect(validatePersistedErasurePlan(plan, { ...binding, organizationId: "org-B" })).toMatchObject({ ok: false, code: "PLAN_BINDING_MISMATCH" });
+    expect(validatePersistedErasurePlan({ ...clone(), subjectClass: "CANDIDATE" }, binding)).toMatchObject({ ok: false, code: "PLAN_BINDING_MISMATCH" });
+  });
+  it("rejects an unknown target, duplicate item, and a bad classification/action combo (UNKNOWN_ERASURE_TARGET_APPROVAL=0)", () => {
+    const unknown = clone(); unknown.items[0].target = "sessions";
+    expect(validatePersistedErasurePlan(unknown, binding)).toMatchObject({ ok: false, code: "PLAN_INVALID" });
+    const dup = clone(); dup.items = [dup.items[0], { ...dup.items[0] }];
+    expect(validatePersistedErasurePlan(dup, binding)).toMatchObject({ ok: false, code: "PLAN_INVALID" });
+    const badAction = clone(); badAction.items[0].plannedAction = "DELETE" as never; // consent DELETE_ALLOWED is fine; force a mismatch:
+    badAction.items[0].classification = "RETENTION_REQUIRED"; badAction.items[0].plannedAction = "DELETE" as never;
+    expect(validatePersistedErasurePlan(badAction, binding)).toMatchObject({ ok: false, code: "PLAN_INVALID" });
+  });
+  it("rejects a count mismatch and a hash mismatch (ERASURE_PLAN_COUNT_MISMATCH=0)", () => {
+    const badCount = clone(); badCount.counts.DELETE_ALLOWED = 99;
+    expect(validatePersistedErasurePlan(badCount, binding)).toMatchObject({ ok: false, code: "PLAN_COUNT_MISMATCH" });
+    // A tampered item changes the recomputed hash while job.planHash (binding) is unchanged.
+    const tampered = clone(); tampered.items[0].reasonCodes = ["TAMPERED"];
+    expect(validatePersistedErasurePlan(tampered, binding)).toMatchObject({ ok: false, code: "PLAN_HASH_MISMATCH" });
   });
 });

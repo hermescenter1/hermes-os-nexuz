@@ -9,7 +9,7 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { listActiveLegalHoldsForOrg, listRetentionPoliciesForOrg } from "./db";
 import { collectErasureTargets, type ErasurePrisma } from "./erasure-targets";
-import { buildErasurePlan, type ErasurePlan, type ErasureRetentionPolicyLike, type ManualReviewResolution } from "./erasure-planner";
+import { buildErasurePlan, type ErasurePlan, type ErasureRetentionPolicyLike } from "./erasure-planner";
 import { generateAndStoreErasurePlan, getErasureJobForOrg } from "./erasure-db";
 import type { HoldLike } from "./retention-engine";
 import type { DbLegalHold, DbRetentionPolicy } from "./types";
@@ -61,9 +61,11 @@ export async function planErasureForJob(params: {
     collected,
     holds:            holdsRaw.map(toHoldLike),
     policies:         policiesRaw.map(toPolicyLike),
-    // Server-recorded governed review decisions — applied by the planner only at the
-    // manual-review fallback (a resolution can never bypass hold/retention/dependency).
-    resolutions:      Array.isArray(job.reviewResolutions) ? (job.reviewResolutions as unknown as ManualReviewResolution[]) : [],
+    // An INDEPENDENT regeneration (this path) NEVER reuses a prior manual resolution:
+    // it builds with none, and generateAndStoreErasurePlan INVALIDATEs the stored
+    // decisions, so any resolved item reverts to MANUAL_REVIEW_REQUIRED until a new
+    // governed review is recorded (STALE_MANUAL_RESOLUTION_REPLAY=0).
+    resolutions:      [],
   });
 
   const stored = await generateAndStoreErasurePlan({ id: params.id, organizationId: params.organizationId, actorId: params.actorId, plan, planHash, now: params.now });

@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { getPrisma } from "@/lib/db/prisma";
-import { createErasureJobForParent, approveErasurePlanForOrg } from "@/lib/compliance/erasure-db";
+import {
+  createErasureJobForParent, approveErasurePlanForOrg,
+  resolveManualReviewAndRegeneratePlanForOrg, transitionErasureJobForOrg,
+} from "@/lib/compliance/erasure-db";
+import { planErasureForJob } from "@/lib/compliance/erasure-planning";
 import { buildErasurePlan } from "@/lib/compliance/erasure-planner";
 
 /**
@@ -181,5 +185,80 @@ describe.skipIf(!PG_ENABLED)("Phase 97 Part H PG", () => {
     // A draft/pending or disabled duplicate remains allowed (not live).
     await insPolicy(`${TAG}-pol3`, "PENDING_REVIEW", true);
     await insPolicy(`${TAG}-pol4`, "APPROVED", false);
+  });
+
+  // ── Atomic, lineage-bound manual resolution (real functions, independent conns) ──
+  type JobRow = { lifecycle: string; planHash: string | null; planVersion: number | null; reviewResolutions: Array<{ target: string; recordId: string; resolutionStatus: string; resultPlanHash: string; resultPlanVersion: number }> | null };
+  async function readJob(id: string): Promise<JobRow> {
+    const p = await db();
+    const r = await p.$queryRawUnsafe<JobRow[]>(`SELECT lifecycle,"planHash","planVersion","reviewResolutions" FROM "DataDeletionRequest" WHERE id=$1`, id);
+    return r[0];
+  }
+  /** A governed job planned to PLAN_READY with a REAL MANUAL_REVIEW_REQUIRED item
+   *  (user_profile — the shared global User row is always MANUAL for a tenant). */
+  async function setupManual(): Promise<{ jobId: string; planHash: string; planVersion: number }> {
+    const created = await createErasureJobForParent({ parent: { id: PR, organizationId: ORG, userId: USER, email: `${TAG}@x.com`, locale: "en" }, actorId: "a" });
+    if (!created.ok) throw new Error("create failed");
+    const jobId = created.job.id;
+    const planned = await planErasureForJob({ id: jobId, organizationId: ORG, actorId: "planner", now: new Date() });
+    if (!planned.ok) throw new Error("plan failed");
+    return { jobId, planHash: planned.planHash, planVersion: planned.planVersion };
+  }
+  const resolveArgs = (jobId: string, planHash: string, planVersion: number) => ({
+    id: jobId, organizationId: ORG, actorId: "owner", target: "user_profile", recordId: USER,
+    resolution: "NO_ACTION_REQUIRED" as const, sourcePlanHash: planHash, sourcePlanVersion: planVersion, authority: "TENANT_OWNER", now: new Date(),
+  });
+
+  it("two simultaneous resolutions on the same source plan → exactly one commits one new version", async () => {
+    const { jobId, planHash, planVersion } = await setupManual();
+    const [a, b] = await Promise.all([
+      resolveManualReviewAndRegeneratePlanForOrg(resolveArgs(jobId, planHash, planVersion)),
+      resolveManualReviewAndRegeneratePlanForOrg(resolveArgs(jobId, planHash, planVersion)),
+    ]);
+    expect([a, b].filter((r) => r.ok).length).toBe(1);
+    expect((await readJob(jobId)).planVersion).toBe(2); // only one resulting version committed
+  });
+
+  it("resolution racing plan regeneration never leaves an orphan APPLIED resolution", async () => {
+    const { jobId, planHash, planVersion } = await setupManual();
+    await Promise.all([
+      resolveManualReviewAndRegeneratePlanForOrg(resolveArgs(jobId, planHash, planVersion)),
+      planErasureForJob({ id: jobId, organizationId: ORG, actorId: "planner2", now: new Date() }),
+    ]);
+    const job = await readJob(jobId);
+    for (const r of (job.reviewResolutions ?? []).filter((x) => x.resolutionStatus === "APPLIED")) {
+      expect(r.resultPlanHash).toBe(job.planHash);       // APPLIED only when bound to the CURRENT plan
+      expect(r.resultPlanVersion).toBe(job.planVersion);
+    }
+    expect(job.lifecycle).toBe("PLAN_READY");
+  });
+
+  it("a stale source binding rolls back with no partial commit (RESOLUTION_PARTIAL_COMMIT=0)", async () => {
+    const { jobId, planHash, planVersion } = await setupManual();
+    await planErasureForJob({ id: jobId, organizationId: ORG, actorId: "planner", now: new Date() }); // v2 — source v1 now stale
+    const before = await readJob(jobId);
+    const r = await resolveManualReviewAndRegeneratePlanForOrg(resolveArgs(jobId, planHash, planVersion));
+    expect(r.ok).toBe(false);
+    const after = await readJob(jobId);
+    expect(after.planVersion).toBe(before.planVersion);  // no new version
+    expect(JSON.stringify(after.reviewResolutions)).toBe(JSON.stringify(before.reviewResolutions)); // resolution not stored
+  });
+
+  it("an independent regeneration invalidates a prior resolution; item reverts and approval is blocked", async () => {
+    const { jobId, planHash, planVersion } = await setupManual();
+    expect((await resolveManualReviewAndRegeneratePlanForOrg(resolveArgs(jobId, planHash, planVersion))).ok).toBe(true);
+    await planErasureForJob({ id: jobId, organizationId: ORG, actorId: "planner", now: new Date() }); // independent regen
+    const job = await readJob(jobId);
+    expect((job.reviewResolutions ?? []).some((r) => r.resolutionStatus === "INVALIDATED")).toBe(true);
+    await transitionErasureJobForOrg({ id: jobId, organizationId: ORG, from: "PLAN_READY", to: "IN_REVIEW", actorId: "owner" });
+    const appr = await approveErasurePlanForOrg({ id: jobId, organizationId: ORG, actorId: "owner", expectedPlanHash: job.planHash!, expectedPlanVersion: job.planVersion!, now: new Date() });
+    expect(appr.ok).toBe(false); // user_profile MANUAL again → unapprovable
+  });
+
+  it("approval cannot race past an unresolved manual item", async () => {
+    const { jobId, planHash, planVersion } = await setupManual();
+    await transitionErasureJobForOrg({ id: jobId, organizationId: ORG, from: "PLAN_READY", to: "IN_REVIEW", actorId: "owner" });
+    const appr = await approveErasurePlanForOrg({ id: jobId, organizationId: ORG, actorId: "owner", expectedPlanHash: planHash, expectedPlanVersion: planVersion, now: new Date() });
+    expect(appr.ok).toBe(false);
   });
 });
