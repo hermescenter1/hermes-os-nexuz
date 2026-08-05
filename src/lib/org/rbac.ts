@@ -93,7 +93,13 @@ export type OrgPermission =
   // management so authorising a subject-data export is a distinct accountable act.
   | "view_exports"                 // read the tenant export-job register
   | "manage_exports"               // create/cancel/revoke export jobs, issue tokens
-  | "approve_exports";             // authorise an export job (REQUESTED → AUTHORISED)
+  | "approve_exports"              // authorise an export job (REQUESTED → AUTHORISED)
+  // PHASE 97 Part H — governed subject data erasure. Approval is stricter than
+  // management, and execution is additionally gated behind a default-false flag.
+  | "view_erasures"                // read the tenant erasure-job register + plan
+  | "manage_erasures"              // create/plan/cancel/send-back erasure jobs
+  | "approve_erasures"             // approve/reject an erasure plan (binds to planHash)
+  | "execute_erasures";            // arm/execute an approved plan (behind the disabled gate)
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -177,6 +183,10 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_exports:                   ["OWNER", "ADMIN", "MANAGER"],
   manage_exports:                 ["OWNER", "ADMIN"],
   approve_exports:                ["OWNER"],
+  view_erasures:                  ["OWNER", "ADMIN", "MANAGER"],
+  manage_erasures:                ["OWNER", "ADMIN"],
+  approve_erasures:               ["OWNER"],
+  execute_erasures:               ["OWNER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

@@ -192,6 +192,18 @@ export const COMPLIANCE_AUDIT = {
   EXPORT_DOWNLOADED:              "compliance.export.downloaded",
   EXPORT_TOKEN_REPLAY_DENIED:     "compliance.export.token_replay_denied",
   EXPORT_REVOKED:                 "compliance.export.revoked",
+  // Phase 97 Part H — governed subject data erasure (identifiers + closed
+  // classifications + counts only; never record contents, email, IP, UA, token,
+  // credentials, free-text personal data or the full planJson).
+  ERASURE_JOB_CREATED:            "compliance.erasure.job_created",
+  ERASURE_PLAN_GENERATED:         "compliance.erasure.plan_generated",
+  ERASURE_REVIEW_SUBMITTED:       "compliance.erasure.review_submitted",
+  ERASURE_APPROVED:               "compliance.erasure.approved",
+  ERASURE_REJECTED:               "compliance.erasure.rejected",
+  ERASURE_JOB_TRANSITIONED:       "compliance.erasure.job_transitioned",
+  ERASURE_EXECUTION_DENIED:       "compliance.erasure.execution_denied",
+  ERASURE_PLAN_STALE:             "compliance.erasure.plan_stale",
+  ERASURE_CANCELLED:              "compliance.erasure.cancelled",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */

@@ -3139,12 +3139,38 @@ model DataDeletionRequest {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  // ── Phase 97 Part H — governed child erasure job ────────────────────────────
+  // The authoritative parent is PrivacyRequest (privacyRequestId). `lifecycle` is
+  // the governed closed state machine; the legacy `status` is retained. planJson is
+  // a canonical, immutable plan SNAPSHOT (identifiers + closed classifications +
+  // reason codes only — never raw subject content). A composite parent-tuple FK
+  // (RESTRICT), a partial unique active-parent index, and lifecycle/governed/
+  // parentless/approval/plan-evidence/plan-hash CHECKs are migration-only (see the
+  // Part H migration). Production execution is disabled by default and fail-closed.
+  privacyRequestId        String?
+  lifecycle               String   @default("REVIEW_REQUIRED")
+  subjectClass            String?  // USER (governed jobs are USER-only)
+  idempotencyKey          String?
+  approvedBy              String?
+  approvedAt              DateTime?
+  planJson                Json?
+  planVersion             Int?
+  planHash                String?
+  plannedAt               DateTime?
+  plannedBy               String?
+  executionIdempotencyKey String?
+  executionStartedAt      DateTime?
+  blockedReasonCode       String?
+  failureCode             String?
+
   user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([email])
+  @@index([organizationId, lifecycle])
+  @@index([privacyRequestId])
 }
 
 // ── ProcessingActivity ────────────────────────────────────────────────────────

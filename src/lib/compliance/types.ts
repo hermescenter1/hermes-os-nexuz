@@ -200,6 +200,22 @@ export interface DbDataDeletionRequest {
   locale:         string;
   ipAddress:      string | null;
   metadata:       Record<string, unknown>;
+  // Phase 97 Part H — governed child erasure job.
+  privacyRequestId:        string | null;
+  lifecycle:               string;
+  subjectClass:            string | null;
+  idempotencyKey:          string | null;
+  approvedBy:              string | null;
+  approvedAt:              Date | null;
+  planJson:                Record<string, unknown> | null;
+  planVersion:             number | null;
+  planHash:                string | null;
+  plannedAt:               Date | null;
+  plannedBy:               string | null;
+  executionIdempotencyKey: string | null;
+  executionStartedAt:      Date | null;
+  blockedReasonCode:       string | null;
+  failureCode:             string | null;
   createdAt:      Date;
   updatedAt:      Date;
 }
