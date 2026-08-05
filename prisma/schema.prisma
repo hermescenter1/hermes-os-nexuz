@@ -3073,6 +3073,10 @@ model DataExportRequest {
   schemaVersion    String?
   packageKey       String?
   contentHash      String?
+  // Full-envelope integrity hash (SHA-256 over the canonical package envelope,
+  // excluding only packageHash itself). Distinct from contentHash (subject content
+  // only); set when the package is completed. A DB CHECK enforces SHA-256 hex.
+  packageHash      String?
   idempotencyKey   String?
   revokedBy        String?
   revokedAt        DateTime?

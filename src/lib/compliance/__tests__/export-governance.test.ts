@@ -12,7 +12,7 @@ import {
   assessParentExportEligibility,
 } from "../export-lifecycle";
 import { EXPORT_SOURCES, FORBIDDEN_EXPORT_FIELDS, collectExportSources, type ExportPrisma } from "../export-sources";
-import { buildExportPackage, verifyExportPackage, computeExportContentHash, parseAndValidateExportPackage } from "../export-package";
+import { buildExportPackage, verifyExportPackage, computeExportContentHash, computeExportPackageHash, isSha256Hex, parseAndValidateExportPackage } from "../export-package";
 import { generateExportToken, hashExportToken, looksLikeExportToken } from "../export-token";
 import { runGovernedExport } from "../export-executor";
 
@@ -171,29 +171,102 @@ describe("deterministic package + hash (DETERMINISTIC_EXPORT_PACKAGE=PASS)", () 
   });
 });
 
-describe("runtime package integrity validation (Finding 2)", () => {
-  const meta = { exportRequestId: "e1", privacyRequestId: "p1", subjectClass: "USER", organizationScope: "org-A", locale: "en", generatedAt: new Date("2026-01-01"), expiry: { status: "CONFIGURATION_REQUIRED", expiresAt: null } };
-  const sources = [{ name: "user_profile", schemaVersion: "1.0", scope: "GLOBAL_SUBJECT" as const, includedFields: ["id"], excludedFields: [], redactionRules: [], records: [{ id: "u1" }] }];
-  const pkg = buildExportPackage(sources, meta);
+// A registry-consistent package (real user_profile source contract) — the strict
+// parser validates every source against the closed registry, so fixtures must use
+// the real included/excluded/redaction contract and a matching authoritative expiry.
+const UP = EXPORT_SOURCES.find((s) => s.name === "user_profile")!;
+const EXPIRES = new Date("2027-01-01T00:00:00.000Z");
+function registryPkg(over?: { records?: Record<string, unknown>[]; privacyRequestId?: string | null; organizationScope?: string | null; generatedAt?: Date }) {
+  return buildExportPackage(
+    [{ name: UP.name, schemaVersion: UP.schemaVersion, scope: UP.scope, includedFields: UP.includedFields, excludedFields: UP.excludedFields, redactionRules: UP.redactionRules, records: over?.records ?? [{ id: "u1", name: "N", email: "e@x.com", emailVerified: true, createdAt: "2026-01-01T00:00:00.000Z" }] }],
+    { exportRequestId: "e1", privacyRequestId: over?.privacyRequestId ?? "p1", subjectClass: "USER", organizationScope: over?.organizationScope ?? "org-A", locale: "en", generatedAt: over?.generatedAt ?? new Date("2026-01-01"), expiry: { status: "CONFIGURED", expiresAt: EXPIRES } },
+  );
+}
+function expectedFor(pkg: ReturnType<typeof registryPkg>) {
+  return { exportRequestId: "e1", privacyRequestId: "p1", organizationScope: "org-A", subjectUserId: "subj-1", subjectClass: "USER", schemaVersion: "1.0", jobContentHash: pkg.contentHash, jobPackageHash: computeExportPackageHash(pkg), expiresAt: EXPIRES };
+}
+
+describe("full-envelope package hash (Finding 3)", () => {
+  it("packageHash is a SHA-256 hex and is stable for identical envelopes", () => {
+    const a = registryPkg(); const b = registryPkg();
+    expect(isSha256Hex(computeExportPackageHash(a))).toBe(true);
+    expect(computeExportPackageHash(a)).toBe(computeExportPackageHash(b));
+  });
+  it("packageHash changes when an evidence-bearing manifest field changes (but contentHash may not)", () => {
+    const base = registryPkg();
+    const baseHash = computeExportPackageHash(base);
+    // generatedAt is in the envelope (time-bound) but NOT in contentHash.
+    const laterGen = registryPkg({ generatedAt: new Date("2027-05-05") });
+    expect(laterGen.contentHash).toBe(base.contentHash);           // content unchanged
+    expect(computeExportPackageHash(laterGen)).not.toBe(baseHash); // envelope changed
+    // Mutating an evidence-bearing manifest field (scope) changes packageHash.
+    const scopeTampered = JSON.parse(JSON.stringify(base)); scopeTampered.manifest.sources[0].scope = "CURRENT_ORGANIZATION";
+    expect(computeExportPackageHash(scopeTampered)).not.toBe(baseHash);
+    // Mutating recordCount changes packageHash.
+    const countTampered = JSON.parse(JSON.stringify(base)); countTampered.manifest.sources[0].recordCount = 99;
+    expect(computeExportPackageHash(countTampered)).not.toBe(baseHash);
+  });
+});
+
+describe("strict package validation + full-envelope integrity (Finding 3)", () => {
+  const pkg = registryPkg();
   const bytes = Buffer.from(JSON.stringify(pkg));
-  const expected = { exportRequestId: "e1", privacyRequestId: "p1", organizationScope: "org-A", subjectClass: "USER", schemaVersion: "1.0", jobContentHash: pkg.contentHash };
+  const expected = expectedFor(pkg);
+  const tamper = (fn: (p: Record<string, unknown>) => void) => { const p = JSON.parse(bytes.toString()); fn(p); return Buffer.from(JSON.stringify(p)); };
 
   it("accepts a well-formed, correctly-bound, hash-matching package", () => {
-    const r = parseAndValidateExportPackage(bytes, expected);
-    expect(r.ok).toBe(true);
+    expect(parseAndValidateExportPackage(bytes, expected).ok).toBe(true);
   });
   it("rejects a missing / malformed package", () => {
     expect(parseAndValidateExportPackage(null, expected)).toMatchObject({ ok: false, code: "PACKAGE_NOT_FOUND" });
     expect(parseAndValidateExportPackage(Buffer.from("not json"), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
   });
-  it("rejects a binding mismatch (foreign org/subject/request)", () => {
+  it("rejects a structurally incomplete authoritative job (missing packageHash / hashes / bindings)", () => {
+    expect(parseAndValidateExportPackage(bytes, { ...expected, jobPackageHash: null })).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+    expect(parseAndValidateExportPackage(bytes, { ...expected, jobContentHash: null })).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+    expect(parseAndValidateExportPackage(bytes, { ...expected, privacyRequestId: null })).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+    expect(parseAndValidateExportPackage(bytes, { ...expected, subjectUserId: null })).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+    expect(parseAndValidateExportPackage(bytes, { ...expected, expiresAt: null })).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+  });
+  it("rejects a binding mismatch (foreign org / request)", () => {
     expect(parseAndValidateExportPackage(bytes, { ...expected, organizationScope: "org-B" })).toMatchObject({ ok: false, code: "PACKAGE_BINDING_MISMATCH" });
     expect(parseAndValidateExportPackage(bytes, { ...expected, exportRequestId: "eX" })).toMatchObject({ ok: false, code: "PACKAGE_BINDING_MISMATCH" });
   });
-  it("rejects a hash mismatch vs the authoritative job hash, and tampered content", () => {
+  it("rejects an expiry mismatch between manifest and authoritative job", () => {
+    expect(parseAndValidateExportPackage(bytes, { ...expected, expiresAt: new Date("2099-01-01T00:00:00.000Z") })).toMatchObject({ ok: false, code: "PACKAGE_BINDING_MISMATCH" });
+    expect(parseAndValidateExportPackage(tamper((p) => { (p.manifest as { expiry: { expiresAt: string } }).expiry.expiresAt = "2050-01-01T00:00:00.000Z"; }), expected)).toMatchObject({ ok: false, code: "PACKAGE_BINDING_MISMATCH" });
+  });
+  it("rejects a hash mismatch vs the authoritative content/package hash, and tampered content", () => {
     expect(parseAndValidateExportPackage(bytes, { ...expected, jobContentHash: "0".repeat(64) })).toMatchObject({ ok: false, code: "PACKAGE_HASH_MISMATCH" });
-    const tampered = JSON.parse(bytes.toString()); tampered.documents.user_profile.push({ id: "INJECTED" });
-    expect(parseAndValidateExportPackage(Buffer.from(JSON.stringify(tampered)), expected)).toMatchObject({ ok: false, code: "PACKAGE_HASH_MISMATCH" });
+    expect(parseAndValidateExportPackage(bytes, { ...expected, jobPackageHash: "0".repeat(64) })).toMatchObject({ ok: false, code: "PACKAGE_HASH_MISMATCH" });
+    expect(parseAndValidateExportPackage(tamper((p) => { ((p.documents as Record<string, unknown[]>).user_profile).push({ id: "INJECTED" }); }), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" }); // record-count mismatch caught first
+  });
+  it("rejects source-contract tampering (scope / redaction / included fields)", () => {
+    expect(parseAndValidateExportPackage(tamper((p) => { (p.manifest as { sources: { scope: string }[] }).sources[0].scope = "CURRENT_ORGANIZATION"; }), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+    expect(parseAndValidateExportPackage(tamper((p) => { (p.manifest as { sources: { redactionRules: string[] }[] }).sources[0].redactionRules = ["none"]; }), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+    expect(parseAndValidateExportPackage(tamper((p) => { (p.manifest as { sources: { includedFields: string[] }[] }).sources[0].includedFields = ["id"]; }), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+  });
+  it("rejects an incorrect recordCount", () => {
+    expect(parseAndValidateExportPackage(tamper((p) => { (p.manifest as { sources: { recordCount: number }[] }).sources[0].recordCount = 5; }), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+  });
+  it("rejects an unknown or duplicate source", () => {
+    expect(parseAndValidateExportPackage(tamper((p) => { (p.manifest as { sources: unknown[] }).sources.push({ name: "ghost_source", schemaVersion: "1.0", scope: "GLOBAL_SUBJECT", recordCount: 0, includedFields: [], excludedFields: [], redactionRules: [] }); }), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+    expect(parseAndValidateExportPackage(tamper((p) => { const s = (p.manifest as { sources: unknown[] }).sources; s.push(JSON.parse(JSON.stringify(s[0]))); }), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+    expect(parseAndValidateExportPackage(tamper((p) => { (p.documents as Record<string, unknown>).ghost_source = [{ x: 1 }]; }), expected)).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+  });
+  it("malformed nested source data returns PACKAGE_INVALID and never throws", () => {
+    for (const mut of [
+      (p: Record<string, unknown>) => { (p.manifest as { sources: unknown }).sources = "not-an-array"; },
+      (p: Record<string, unknown>) => { (p.manifest as { sources: unknown[] }).sources[0] = "not-an-object"; },
+      (p: Record<string, unknown>) => { (p.documents as Record<string, unknown>).user_profile = "not-an-array"; },
+      (p: Record<string, unknown>) => { (p.documents as Record<string, unknown[]>).user_profile = [42 as unknown as Record<string, unknown>]; },
+      (p: Record<string, unknown>) => { (p.manifest as { generatedAt: unknown }).generatedAt = "not-a-date"; },
+      (p: Record<string, unknown>) => { (p.manifest as { expiry: unknown }).expiry = null; },
+      (p: Record<string, unknown>) => { delete (p as { manifest?: unknown }).manifest; },
+    ]) {
+      const r = parseAndValidateExportPackage(tamper(mut), expected);
+      expect(r).toMatchObject({ ok: false, code: "PACKAGE_INVALID" });
+    }
   });
 });
 
@@ -219,6 +292,8 @@ describe("executor (EXPORT_SECRET_LEAK=0)", () => {
     const res = await runGovernedExport({ db, storage, exportRequestId: "e1", privacyRequestId: "p1", subject: { userId: "u1", candidateId: null, organizationId: "org-A" }, subjectClass: "USER", locale: "en", expiryConfig: null, now: new Date("2026-01-01") });
     expect(res.packageKey).toBe("exports/e1/package.json");
     expect(res.expiryStatus).toBe("CONFIGURATION_REQUIRED");
+    expect(isSha256Hex(res.packageHash)).toBe(true);              // full-envelope integrity (Finding 3)
+    expect(res.packageHash).toBe(computeExportPackageHash(res.pkg));
     const serialised = stored[res.packageKey];
     expect(serialised).not.toContain("SECRET-HASH");
     expect(serialised).not.toContain("10.0.0.9"); // raw IP excluded

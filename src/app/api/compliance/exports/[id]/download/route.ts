@@ -3,7 +3,7 @@ import type { NextRequest }           from "next/server";
 import { verifyAccessToken }          from "@/lib/auth/jwt";
 import { ACCESS_TOKEN_COOKIE }        from "@/lib/auth/config";
 import { isPayloadSessionActive }     from "@/lib/auth/session-store";
-import { getExportJobForSubject, findEligibleDownloadToken, consumeDownloadToken } from "@/lib/compliance/export-db";
+import { getExportJobForSubject, findEligibleDownloadToken, consumeDownloadTokenLinearized } from "@/lib/compliance/export-db";
 import { getDocumentObjectStorage }   from "@/lib/documents/object-storage";
 import { recordAuditEvent, COMPLIANCE_AUDIT } from "@/lib/audit/audit-service";
 import { hashExportToken, looksLikeExportToken } from "@/lib/compliance/export-token";
@@ -62,17 +62,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     exportRequestId:   job.id,
     privacyRequestId:  job.privacyRequestId,
     organizationScope: job.organizationId,
+    subjectUserId:     job.userId,
     subjectClass:      job.subjectClass ?? "USER",
     schemaVersion:     job.schemaVersion,
     jobContentHash:    job.contentHash,
+    jobPackageHash:    job.packageHash,
+    expiresAt:         job.expiresAt,
   });
   if (!validation.ok) {
     const status = validation.code === "PACKAGE_NOT_FOUND" ? 404 : validation.code === "PACKAGE_INVALID" ? 500 : 409;
     return NextResponse.json({ error: "Package integrity check failed", code: validation.code }, { status });
   }
 
-  // Gate B — atomic single-use consumption AFTER integrity is proven.
-  const { consumed } = await consumeDownloadToken({ exportRequestId: id, tokenHash, subjectUserId: payload.sub, organizationId: job.organizationId, now: new Date() });
+  // Gate B — linearized atomic single-use consumption AFTER integrity is proven.
+  // The job (READY/unrevoked/unexpired/org+subject) is revalidated in the same
+  // transaction, so a committed revocation denies the consume.
+  const { consumed } = await consumeDownloadTokenLinearized({ exportRequestId: id, tokenHash, subjectUserId: payload.sub, organizationId: job.organizationId, now: new Date() });
   if (!consumed) {
     await recordAuditEvent({ userId: payload.sub, action: COMPLIANCE_AUDIT.EXPORT_TOKEN_REPLAY_DENIED, entityType: "DataExportRequest", entityId: id, organizationId: job.organizationId, outcome: "DENIED", metadata: { exportRequestId: id } });
     return NextResponse.json(NOT_FOUND, { status: 404 });

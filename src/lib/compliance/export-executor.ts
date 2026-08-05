@@ -9,7 +9,7 @@
  * never invokes this and never marks a job READY.
  */
 import { collectExportSources, type ExportPrisma, type ExportSubject } from "./export-sources";
-import { buildExportPackage, type ExportPackage } from "./export-package";
+import { buildExportPackage, computeExportPackageHash, type ExportPackage } from "./export-package";
 import { resolveExportExpiry, type ExportExpiryConfig } from "./export-lifecycle";
 import { exportPackageKey } from "./export-db";
 import type { ObjectStorage } from "@/lib/documents/object-storage";
@@ -17,6 +17,7 @@ import type { ObjectStorage } from "@/lib/documents/object-storage";
 export interface GovernedExportResult {
   packageKey:   string;
   contentHash:  string;
+  packageHash:  string;
   recordCounts: Record<string, number>;
   expiryStatus: string;
   expiresAt:    Date | null;
@@ -53,5 +54,6 @@ export async function runGovernedExport(params: {
   const recordCounts: Record<string, number> = {};
   for (const s of sources) recordCounts[s.name] = s.records.length;
 
-  return { packageKey: key, contentHash: pkg.contentHash, recordCounts, expiryStatus: expiry.status, expiresAt: expiry.expiresAt, pkg };
+  const packageHash = computeExportPackageHash(pkg); // full-envelope integrity (Finding 3)
+  return { packageKey: key, contentHash: pkg.contentHash, packageHash, recordCounts, expiryStatus: expiry.status, expiresAt: expiry.expiresAt, pkg };
 }

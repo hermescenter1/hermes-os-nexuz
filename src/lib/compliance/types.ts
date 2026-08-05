@@ -166,6 +166,7 @@ export interface DbDataExportRequest {
   schemaVersion:  string | null;
   packageKey:     string | null;
   contentHash:    string | null;
+  packageHash:    string | null;
   idempotencyKey: string | null;
   revokedBy:      string | null;
   revokedAt:      Date | null;

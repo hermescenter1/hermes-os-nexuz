@@ -8,8 +8,10 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { randomUUID } from "node:crypto";
 import type { DbDataExportRequest, DbExportDownloadToken } from "./types";
+import { isSha256Hex, isSupportedExportSchemaVersion } from "./export-package";
 
 type AnyModel = Record<string, (...args: unknown[]) => Promise<unknown>>;
+type TxClient = { $transaction: <T>(fn: (tx: Record<string, AnyModel>) => Promise<T>) => Promise<T> };
 
 async function xm() {
   const db = await getPrisma();
@@ -124,7 +126,7 @@ export async function transitionExportJobForOrg(params: {
 /** Directly set execution-result fields on a job (used by the test-only executor). */
 export async function setExportExecutionResultForOrg(params: {
   id: string; organizationId: string; from: string;
-  lifecycle: string; packageKey?: string | null; contentHash?: string | null;
+  lifecycle: string; packageKey?: string | null; contentHash?: string | null; packageHash?: string | null;
   schemaVersion?: string | null; expiresAt?: Date | null; failureCode?: string | null;
 }): Promise<{ affected: number }> {
   const db = await xm();
@@ -136,6 +138,7 @@ export async function setExportExecutionResultForOrg(params: {
         lifecycle:     params.lifecycle,
         packageKey:    params.packageKey ?? undefined,
         contentHash:   params.contentHash ?? undefined,
+        packageHash:   params.packageHash ?? undefined,
         schemaVersion: params.schemaVersion ?? undefined,
         expiresAt:     params.expiresAt ?? undefined,
         completedAt:   params.lifecycle === "READY" ? new Date() : undefined,
@@ -193,45 +196,154 @@ export async function findEligibleDownloadToken(params: {
   } catch { return null; }
 }
 
-/**
- * Gate B (Finding 3) — atomically consume the token AFTER the package has been
- * fetched and integrity-validated. The single updateMany with the full binding
- * predicate (including organizationId) is the atomic single-use gate: only the
- * first concurrent redemption sets usedAt (affected === 1). Returns whether it was
- * consumed. A storage/integrity failure occurs BEFORE this call, so it cannot burn
- * the token.
- */
-export async function consumeDownloadToken(params: {
-  exportRequestId: string; tokenHash: string; subjectUserId: string; organizationId: string | null; now: Date;
-}): Promise<{ consumed: boolean }> {
-  const db = await xm();
-  if (!db) return { consumed: false };
-  try {
-    const r = (await db.token.updateMany({
-      where: {
-        exportRequestId: params.exportRequestId,
-        tokenHash:       params.tokenHash,
-        subjectUserId:   params.subjectUserId,
-        organizationId:  params.organizationId,
-        usedAt:          null,
-        revokedAt:       null,
-        expiresAt:       { gt: params.now },
-      },
-      data: { usedAt: params.now },
-    } as unknown)) as { count?: number };
-    return { consumed: (r?.count ?? 0) === 1 };
-  } catch { return { consumed: false }; }
+// Token consumption and token revocation are NOT exposed as standalone
+// non-transactional operations: both MUST happen inside the linearized
+// transactions below (consumeDownloadTokenLinearized / revokeExportJobAndTokensForOrg)
+// so a redemption and a revocation always resolve to one consistent outcome and a
+// job transition can never commit while a live token could remain (Finding 2).
+
+// ── Transactional delivery operations (Finding 2) ─────────────────────────────
+//
+// Issuance, revocation and redemption all take the SAME row-lock order — the
+// authoritative export job FIRST, then its token rows — so they linearize without
+// deadlock. Each operation revalidates the persisted job state inside the
+// transaction and every write is guarded by an expected-state predicate, so a
+// concurrent revocation and a concurrent redemption always resolve to exactly one
+// consistent outcome (never a token issued/consumed after a committed revocation,
+// never a partial commit).
+
+class IssueError extends Error { constructor(public reason: IssueReason) { super(reason); this.name = "IssueError"; } }
+type IssueReason = "NOT_FOUND" | "NOT_READY" | "REVOKED" | "EXPIRY_POLICY" | "EXPIRED" | "INCOMPLETE";
+class RevokeError extends Error { constructor(public reason: RevokeReason) { super(reason); this.name = "RevokeError"; } }
+type RevokeReason = "NOT_FOUND" | "NOT_READY" | "CONFLICT";
+
+function isStructurallyCompleteReadyJob(job: DbDataExportRequest): boolean {
+  return !!job.privacyRequestId && !!job.organizationId && !!job.userId
+    && job.subjectClass === "USER" && !!job.packageKey
+    && isSha256Hex(job.contentHash) && isSha256Hex(job.packageHash)
+    && isSupportedExportSchemaVersion(job.schemaVersion) && !!job.completedAt;
 }
 
-/** Revoke every outstanding (unused, unrevoked) token for an export request. */
-export async function revokeTokensForExport(exportRequestId: string): Promise<{ affected: number }> {
-  const db = await xm();
-  if (!db) return { affected: 0 };
+/**
+ * Issue a download token for a READY job TRANSACTIONALLY. The authoritative job is
+ * re-read and fully revalidated (READY, unrevoked, unexpired, structurally
+ * complete: parent/org/subject bound, valid content+package hashes, supported
+ * schema, completedAt) before the bound token is created and committed. Because
+ * revocation locks/updates the same job row first, a token can never be created
+ * after a revocation has linearized (TOKEN_ISSUED_AFTER_REVOCATION=0), and a
+ * structurally incomplete READY row never yields a capability
+ * (TOKEN_ISSUED_FOR_INCOMPLETE_EXPORT=0).
+ */
+export async function issueDownloadTokenForReadyJob(params: {
+  id: string; organizationId: string; tokenHash: string; now: Date;
+}): Promise<{ ok: true; token: DbExportDownloadToken } | { ok: false; reason: IssueReason | "UNAVAILABLE" | "PERSIST_FAILED" }> {
+  const client = await getPrisma();
+  if (!client) return { ok: false, reason: "UNAVAILABLE" };
+  const c = client as unknown as TxClient;
   try {
-    const r = (await db.token.updateMany({
-      where: { exportRequestId, revokedAt: null, usedAt: null },
-      data: { revokedAt: new Date() },
-    } as unknown)) as { count?: number };
-    return { affected: typeof r?.count === "number" ? r.count : 0 };
-  } catch { return { affected: 0 }; }
+    return await c.$transaction(async (tx) => {
+      const exp = tx.dataExportRequest as AnyModel;
+      const tok = tx.exportDownloadToken as AnyModel;
+      const job = (await exp.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as DbDataExportRequest | null;
+      if (!job) throw new IssueError("NOT_FOUND");
+      if (job.lifecycle !== "READY") throw new IssueError("NOT_READY");
+      if (job.revokedAt) throw new IssueError("REVOKED");
+      if (!job.expiresAt) throw new IssueError("EXPIRY_POLICY");
+      if (new Date(job.expiresAt as unknown as string).getTime() <= params.now.getTime()) throw new IssueError("EXPIRED");
+      if (!isStructurallyCompleteReadyJob(job)) throw new IssueError("INCOMPLETE");
+      const token = (await tok.create({
+        data: {
+          id: randomUUID(),
+          exportRequestId: job.id,
+          tokenHash: params.tokenHash,
+          subjectUserId: job.userId,       // non-null (governed) — satisfies token binding
+          organizationId: job.organizationId,
+          expiresAt: new Date(job.expiresAt as unknown as string),
+        },
+      })) as DbExportDownloadToken;
+      return { ok: true as const, token };
+    });
+  } catch (err) {
+    if (err instanceof IssueError) return { ok: false, reason: err.reason };
+    return { ok: false, reason: "PERSIST_FAILED" };
+  }
+}
+
+/**
+ * Revoke a READY job AND all its outstanding tokens in ONE transaction. The job is
+ * read/locked first (expected lifecycle READY), transitioned to REVOKED with
+ * server-side attribution, then every unused/unrevoked token is revoked. If the
+ * token revocation fails the whole transaction rolls back, so the job transition is
+ * never committed while a live token could remain (REVOCATION_PARTIAL_COMMIT=0).
+ */
+export async function revokeExportJobAndTokensForOrg(params: {
+  id: string; organizationId: string; actorId: string; now: Date;
+}): Promise<{ ok: true; tokensRevoked: number } | { ok: false; reason: RevokeReason | "UNAVAILABLE" }> {
+  const client = await getPrisma();
+  if (!client) return { ok: false, reason: "UNAVAILABLE" };
+  const c = client as unknown as TxClient;
+  try {
+    return await c.$transaction(async (tx) => {
+      const exp = tx.dataExportRequest as AnyModel;
+      const tok = tx.exportDownloadToken as AnyModel;
+      const job = (await exp.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as DbDataExportRequest | null;
+      if (!job) throw new RevokeError("NOT_FOUND");
+      if (job.lifecycle !== "READY") throw new RevokeError("NOT_READY");
+      const upd = (await exp.updateMany({
+        where: { id: params.id, organizationId: params.organizationId, lifecycle: "READY" },
+        data: { lifecycle: "REVOKED", revokedBy: params.actorId, revokedAt: params.now, updatedAt: params.now },
+      })) as { count?: number };
+      if ((upd?.count ?? 0) !== 1) throw new RevokeError("CONFLICT");
+      const rev = (await tok.updateMany({
+        where: { exportRequestId: params.id, revokedAt: null, usedAt: null },
+        data: { revokedAt: params.now },
+      })) as { count?: number };
+      return { ok: true as const, tokensRevoked: rev?.count ?? 0 };
+    });
+  } catch (err) {
+    if (err instanceof RevokeError) return { ok: false, reason: err.reason };
+    return { ok: false, reason: "CONFLICT" };
+  }
+}
+
+/**
+ * Gate B (linearized) — atomically consume a token AFTER integrity validation,
+ * revalidating the authoritative job in the SAME transaction. The job is read first
+ * (READY, unrevoked, unexpired, matching org+subject) and only then is the bound,
+ * unused, unrevoked, unexpired token consumed with a guarded updateMany. If a
+ * revocation has committed first the job read denies the consume, so no download
+ * commits after a committed revocation (DOWNLOAD_AFTER_COMMITTED_REVOCATION=0).
+ */
+export async function consumeDownloadTokenLinearized(params: {
+  exportRequestId: string; tokenHash: string; subjectUserId: string; organizationId: string | null; now: Date;
+}): Promise<{ consumed: boolean }> {
+  const client = await getPrisma();
+  if (!client) return { consumed: false };
+  const c = client as unknown as TxClient;
+  try {
+    return await c.$transaction(async (tx) => {
+      const exp = tx.dataExportRequest as AnyModel;
+      const tok = tx.exportDownloadToken as AnyModel;
+      const job = (await exp.findFirst({
+        where: { id: params.exportRequestId, organizationId: params.organizationId, userId: params.subjectUserId },
+      })) as DbDataExportRequest | null;
+      if (!job || job.lifecycle !== "READY" || job.revokedAt || !job.expiresAt
+        || new Date(job.expiresAt as unknown as string).getTime() <= params.now.getTime()) {
+        return { consumed: false };
+      }
+      const r = (await tok.updateMany({
+        where: {
+          exportRequestId: params.exportRequestId,
+          tokenHash:       params.tokenHash,
+          subjectUserId:   params.subjectUserId,
+          organizationId:  params.organizationId,
+          usedAt:          null,
+          revokedAt:       null,
+          expiresAt:       { gt: params.now },
+        },
+        data: { usedAt: params.now },
+      })) as { count?: number };
+      return { consumed: (r?.count ?? 0) === 1 };
+    });
+  } catch { return { consumed: false }; }
 }

@@ -3,7 +3,7 @@ import type { NextRequest }           from "next/server";
 import {
   getExportJobForOrg,
   transitionExportJobForOrg,
-  revokeTokensForExport,
+  revokeExportJobAndTokensForOrg,
 } from "@/lib/compliance/export-db";
 import { requireComplianceOrgScope }  from "@/lib/compliance/authz";
 import { requirePermission, type OrgPermission } from "@/lib/org/rbac";
@@ -71,17 +71,39 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Insufficient organization permissions", code: "INSUFFICIENT_PERMISSION" }, { status: 403 });
   }
 
+  // Revocation is ATOMIC (Finding 2): the READY→REVOKED transition and the
+  // invalidation of every outstanding token happen in one transaction. If token
+  // invalidation fails the whole revocation rolls back, so success is never
+  // returned while a live token could remain. The audit event is written only
+  // after the transaction commits.
+  if (to === "REVOKED") {
+    const result = await revokeExportJobAndTokensForOrg({ id, organizationId: scope.organizationId, actorId: scope.userId, now: new Date() });
+    if (!result.ok) {
+      if (result.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
+      if (result.reason === "UNAVAILABLE") return NextResponse.json({ error: "Revocation failed", code: "REVOCATION_FAILED" }, { status: 503 });
+      return NextResponse.json({ error: "Transition conflict", code: "TRANSITION_CONFLICT" }, { status: 409 });
+    }
+    await recordAuditEvent({
+      userId: scope.userId,
+      action: COMPLIANCE_AUDIT.EXPORT_REVOKED,
+      entityType: "DataExportRequest",
+      entityId: id,
+      organizationId: scope.organizationId,
+      outcome: "SUCCESS",
+      metadata: { fromLifecycle: job.lifecycle, toLifecycle: to, action, tokensRevoked: result.tokensRevoked },
+    });
+    const revoked = await getExportJobForOrg(id, scope.organizationId);
+    return NextResponse.json({ export: revoked ? toExportJobDto(revoked) : null });
+  }
+
   const { affected } = await transitionExportJobForOrg({
     id, organizationId: scope.organizationId, from: job.lifecycle, to, actorId: scope.userId,
   });
   if (affected !== 1) return NextResponse.json({ error: "Transition conflict", code: "TRANSITION_CONFLICT" }, { status: 409 });
 
-  // Revocation invalidates every outstanding download token.
-  if (to === "REVOKED") await revokeTokensForExport(id);
-
   await recordAuditEvent({
     userId: scope.userId,
-    action: to === "REVOKED" ? COMPLIANCE_AUDIT.EXPORT_REVOKED : COMPLIANCE_AUDIT.EXPORT_JOB_TRANSITIONED,
+    action: COMPLIANCE_AUDIT.EXPORT_JOB_TRANSITIONED,
     entityType: "DataExportRequest",
     entityId: id,
     organizationId: scope.organizationId,
