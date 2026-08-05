@@ -24,15 +24,15 @@ export function MetadataClient({ metadata }: Props) {
     <div className="card-enterprise rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-line flex items-center justify-between">
         <h3 className="text-sm font-semibold text-ink">{isFa ? "فراداده‌ها" : "Metadata"}</h3>
-        <span className="text-xs text-faint">{metadata.length} {isFa ? "ورودی" : "entries"}</span>
+        <span className="text-xs text-metadata">{metadata.length} {isFa ? "ورودی" : "entries"}</span>
       </div>
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-line bg-surface2">
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "کلید" : "Key"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "مقدار" : "Value"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "سند" : "Document"}</th>
-            <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "بروزرسانی" : "Updated"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "کلید" : "Key"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "مقدار" : "Value"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{isFa ? "سند" : "Document"}</th>
+            <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{isFa ? "بروزرسانی" : "Updated"}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line">
@@ -45,10 +45,10 @@ export function MetadataClient({ metadata }: Props) {
                 <span className="text-sm text-ink">{m.value}</span>
               </td>
               <td className="px-4 py-3 hidden md:table-cell">
-                <span className="text-xs font-mono text-faint">{m.documentId.slice(0, 8)}…</span>
+                <span className="text-xs font-mono text-metadata">{m.documentId.slice(0, 8)}…</span>
               </td>
               <td className="px-4 py-3 hidden lg:table-cell">
-                <span className="text-xs text-faint font-mono">{formatDate(m.updatedAt, locale)}</span>
+                <span className="text-xs text-metadata font-mono">{formatDate(m.updatedAt, locale)}</span>
               </td>
             </tr>
           ))}

@@ -35,7 +35,7 @@
   /* Text — neutral, high contrast */
   --ink:   #F0F4F8;   /* near-white, slightly cool — not pure white */
   --muted: #8A9BB0;   /* balanced blue-gray secondary */
-  --faint: #4A5A6E;   /* disabled / decorative / metadata */
+  --faint: #4A5A6E;   /* decorative surface tint / border only (bg-faint, border-faint) — NOT readable text; text uses --color-text-metadata */
 
   /* Signal: teal — ACTIVE STATES & PRIMARY CTAs ONLY */
   --signal:     #1EC8A4;
@@ -180,7 +180,7 @@ h6 { font-weight: 550; letter-spacing: 0; }
   font-size: var(--text-xs);
   font-weight: 400;
   line-height: 1.50;
-  color: var(--faint);
+  color: var(--color-text-metadata);
 }
 
 /* Eyebrow — editorial label above a heading (body font, not mono) */
@@ -219,7 +219,7 @@ h6 { font-weight: 550; letter-spacing: 0; }
   font-weight: 500;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--faint);
+  color: var(--color-text-metadata);
 }
 
 /* Legacy aliases (keep for backward compat) */
@@ -1093,7 +1093,7 @@ h6 { font-weight: 550; letter-spacing: 0; }
   caret-color:   var(--ink);
   transition:    border-color 150ms var(--ease-expo), background 150ms var(--ease-expo);
 }
-.hs-writer-field::placeholder { color: var(--faint); }
+.hs-writer-field::placeholder { color: var(--color-text-metadata); }
 .hs-writer-field:focus {
   outline:       none;
   border-color:  rgba(var(--signal-rgb), 0.32);
@@ -1170,6 +1170,7 @@ h6 { font-weight: 550; letter-spacing: 0; }
   --color-text-primary:   #EDF7FA;
   --color-text-secondary: #A9BAC6;
   --color-text-muted:     #708694;   /* metadata only — NOT body on elevated/interactive */
+  --color-text-metadata:  #8496A6;   /* readable tertiary/caption text — WCAG AA (>=4.5:1) on every surface incl. --color-surface-interactive; supersedes legacy --faint for text */
   --color-text-disabled:  #495C68;
   --color-text-inverse:   #071018;   /* dark text on light/brand surfaces */
 

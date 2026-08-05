@@ -16,7 +16,7 @@ function riskBadge(r: string) {
   if (r === "MONITOR")  return "bg-ice/[0.08] text-ice";
   if (r === "AT_RISK")  return "bg-warn/[0.10] text-warn";
   if (r === "CRITICAL") return "bg-danger/[0.10] text-danger";
-  return "bg-surface2 text-faint";
+  return "bg-surface2 text-metadata";
 }
 
 function AssetNode({ asset, locale, depth = 0 }: { asset: RegistryAssetRecord; locale: string; depth?: number }) {
@@ -32,7 +32,7 @@ function AssetNode({ asset, locale, depth = 0 }: { asset: RegistryAssetRecord; l
         {/* Expand toggle */}
         <button
           onClick={() => setExpanded(v => !v)}
-          className="w-4 h-4 shrink-0 text-faint hover:text-ink"
+          className="w-4 h-4 shrink-0 text-metadata hover:text-ink"
         >
           {hasChildren ? (expanded ? "▾" : "▸") : <span className="inline-block w-4" />}
         </button>
@@ -90,8 +90,8 @@ export function AssetHierarchyClient({ assets }: Props) {
         {/* Column headers */}
         <div className="flex items-center gap-2 px-2 pb-3 border-b border-line mb-2">
           <div className="w-4 shrink-0" />
-          <div className="flex-1 text-xs font-medium text-faint ps-2">{t("hierarchy.assetName")}</div>
-          <div className="w-24 text-xs font-medium text-faint text-end pe-2">{t("common.health")}</div>
+          <div className="flex-1 text-xs font-medium text-metadata ps-2">{t("hierarchy.assetName")}</div>
+          <div className="w-24 text-xs font-medium text-metadata text-end pe-2">{t("common.health")}</div>
         </div>
 
         {assets.length === 0 && (

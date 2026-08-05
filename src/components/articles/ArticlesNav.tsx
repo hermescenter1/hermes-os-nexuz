@@ -81,7 +81,7 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
             : "text-muted hover:text-ink hover:bg-surface2/60 border border-transparent hover:border-line/30",
         ].join(" ")}
       >
-        <span className={`transition-colors ${active ? "text-signal" : "text-faint group-hover:text-muted"}`}>
+        <span className={`transition-colors ${active ? "text-signal" : "text-metadata group-hover:text-muted"}`}>
           {ICONS[l.icon]}
         </span>
         <span className="truncate">{t(`nav.${l.tkey}`)}</span>
@@ -110,7 +110,7 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
       {showAuth && (
         <>
           <div className="my-4 border-t border-line/25" />
-          <p className="px-3 mb-2.5 text-[9px] font-semibold text-faint uppercase tracking-[0.18em]">
+          <p className="px-3 mb-2.5 text-[9px] font-semibold text-metadata uppercase tracking-[0.18em]">
             {t("nav.myAccount")}
           </p>
           <div className="flex flex-col gap-1">
@@ -122,7 +122,7 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
       {showEditorial && (
         <>
           <div className="my-4 border-t border-line/25" />
-          <p className="px-3 mb-2.5 text-[9px] font-semibold text-faint uppercase tracking-[0.18em]">
+          <p className="px-3 mb-2.5 text-[9px] font-semibold text-metadata uppercase tracking-[0.18em]">
             {t("nav.editorial")}
           </p>
           <div className="flex flex-col gap-1">

@@ -5,13 +5,13 @@ import type { MaintenanceTask } from "@/lib/cmms/types";
 import { formatDate } from "@/lib/i18n/format";
 
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
-  DRAFT:       { bg: "bg-faint/[0.08]",  text: "text-faint"  },
+  DRAFT:       { bg: "bg-faint/[0.08]",  text: "text-metadata"  },
   PLANNED:     { bg: "bg-ice/[0.08]",    text: "text-ice"    },
   SCHEDULED:   { bg: "bg-signal/[0.08]", text: "text-signal" },
   IN_PROGRESS: { bg: "bg-warn/[0.10]",   text: "text-warn"   },
   ON_HOLD:     { bg: "bg-muted/[0.08]",  text: "text-muted"  },
   COMPLETED:   { bg: "bg-signal/[0.08]", text: "text-signal" },
-  CANCELLED:   { bg: "bg-faint/[0.06]",  text: "text-faint"  },
+  CANCELLED:   { bg: "bg-faint/[0.06]",  text: "text-metadata"  },
   OVERDUE:     { bg: "bg-danger/[0.10]", text: "text-danger" },
 };
 
@@ -36,20 +36,20 @@ export function MaintenanceTasksClient({
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <h2 className="text-base font-semibold text-ink">{heading}</h2>
-        <span className="text-xs text-faint font-mono">({tasks.length})</span>
+        <span className="text-xs text-metadata font-mono">({tasks.length})</span>
       </div>
 
       <div className="card-enterprise rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line bg-surface2">
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("tasks.colTitle")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{t("tasks.colType")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("tasks.colStatus")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("tasks.colPriority")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("tasks.colTechnician")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("tasks.colScheduled")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden xl:table-cell">{t("tasks.colEstH")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{t("tasks.colTitle")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{t("tasks.colType")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{t("tasks.colStatus")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{t("tasks.colPriority")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{t("tasks.colTechnician")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{t("tasks.colScheduled")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden xl:table-cell">{t("tasks.colEstH")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -66,7 +66,7 @@ export function MaintenanceTasksClient({
                   <tr key={task.id} className="hover:bg-surface2 transition-colors">
                     <td className="px-4 py-3 max-w-[220px]">
                       <p className="font-medium text-ink truncate">{task.title}</p>
-                      {task.assetId && <p className="text-xs text-faint font-mono truncate">{task.assetId}</p>}
+                      {task.assetId && <p className="text-xs text-metadata font-mono truncate">{task.assetId}</p>}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <span className="text-xs text-muted">{task.maintenanceType}</span>
@@ -83,7 +83,7 @@ export function MaintenanceTasksClient({
                       <span className="text-xs text-muted">{task.technicianId ?? "—"}</span>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className="text-xs text-faint font-mono">
+                      <span className="text-xs text-metadata font-mono">
                         {task.scheduledDate ? formatDate(task.scheduledDate, locale) : "—"}
                       </span>
                     </td>

@@ -171,7 +171,7 @@ export function SiteNav({ role }: { role: Role | null }) {
               const isJournal = g.groupKey === "journal";
               return (
                 <div key={g.groupKey}>
-                  <p className={`text-[10px] font-semibold uppercase tracking-[0.15em] mb-2 ${isJournal ? "text-signal/80" : "text-faint"}`}>
+                  <p className={`text-[10px] font-semibold uppercase tracking-[0.15em] mb-2 ${isJournal ? "text-signal/80" : "text-metadata"}`}>
                     {isJournal && <span className="inline-block w-1.5 h-1.5 rounded-full bg-signal me-2 align-middle" />}
                     {t(`groups.${g.groupKey}`)}
                   </p>

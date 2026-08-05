@@ -22,6 +22,16 @@ export const REQUEST_ID_HEADER = "x-request-id";
 const SAFE_ID = /^[A-Za-z0-9_-]{8,128}$/;
 
 /**
+ * True when `id` is a well-formed correlation id. Exposed so any surface that
+ * accepts a correlation id as input (e.g. the incident-timeline lookup) rejects
+ * a hostile value before using it in a query or a log line — the same guard
+ * `resolveRequestId` applies to an inbound header.
+ */
+export function isSafeRequestId(id: string): boolean {
+  return SAFE_ID.test(id);
+}
+
+/**
  * The correlation id for this request: the caller's `X-Request-ID` when it is
  * well-formed, otherwise a fresh one.
  *

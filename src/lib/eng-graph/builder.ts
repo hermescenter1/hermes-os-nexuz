@@ -22,7 +22,7 @@ import type {
 } from "./types";
 import { VENDORS }          from "@/lib/industrial/vendors";
 import casesJson            from "@/lib/industrial/knowledge-data/cases.json";
-import { caseRepository }   from "@/lib/storage/case-repository";
+import { listPublishedCases } from "@/lib/storage/case-repository";
 import { knowledgeRepository } from "@/lib/storage/knowledge-repository";
 
 const GRAPH_VERSION = "56.1.0";
@@ -429,8 +429,11 @@ export async function buildEngGraph(): Promise<EngGraphSnapshot> {
 
   // ── 8. Dynamic enrichment: published session cases ──────────────────────────
   try {
-    const dynCases = await caseRepository().list();
-    for (const dc of dynCases.filter(x => x.status === "published")) {
+    // PHASE 90B: the public knowledge graph shows only PUBLISHED cases, read
+    // through the explicitly-unscoped listPublishedCases() — never the
+    // owner-scoped caseRepository() (which would leak/deny by owner).
+    const dynCases = await listPublishedCases();
+    for (const dc of dynCases) {
       const dcId  = `dyn-case-${dc.id}`;
       const rcId  = `dyn-rc-${dc.id}`;
       const resId = `dyn-res-${dc.id}`;

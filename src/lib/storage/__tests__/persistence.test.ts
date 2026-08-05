@@ -42,7 +42,7 @@ describe("Persistent Knowledge Core", () => {
     expect((await r.get(a.id))?.title).toBe("RT Art");
   });
   it("unknown: create -> resolve", async () => {
-    const r = unknownRepository();
+    const r = unknownRepository(OWNER);
     const u = await r.create({ query: "weird", locale: "en", confidence: 0.2, suggestedDomains: ["plc"], suggestedVendors: [], status: "open" });
     expect((await r.update(u.id, { status: "resolved" }))?.status).toBe("resolved");
   });

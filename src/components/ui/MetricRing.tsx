@@ -78,7 +78,7 @@ export function MetricRing({
       {label && (
         <div className="text-center">
           <p className="font-mono text-[0.65rem] uppercase tracking-widest text-muted">{label}</p>
-          {sublabel && <p className="text-[0.6rem] text-faint mt-0.5">{sublabel}</p>}
+          {sublabel && <p className="text-[0.6rem] text-metadata mt-0.5">{sublabel}</p>}
         </div>
       )}
     </div>

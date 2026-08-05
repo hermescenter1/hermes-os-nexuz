@@ -250,6 +250,8 @@ describe("de.json — Phase 86C1 translation audit", () => {
     "errors",
     // PHASE 94C1 — the OT Edge operations surface, genuinely German.
     "otEdge",
+    // PHASE 92 — the observability / SRE operator surface, genuinely German.
+    "observability",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

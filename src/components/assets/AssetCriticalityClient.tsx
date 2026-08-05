@@ -9,7 +9,7 @@ function critBadge(c: string) {
   if (c === "HIGH")     return "bg-warn/[0.10] text-warn";
   if (c === "MEDIUM")   return "bg-ice/[0.08] text-ice";
   if (c === "LOW")      return "bg-signal/[0.08] text-signal";
-  return "bg-surface2 text-faint";
+  return "bg-surface2 text-metadata";
 }
 function scoreColor(n: number) {
   if (n >= 80) return "text-danger";
@@ -23,7 +23,7 @@ function DimensionBar({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="flex justify-between text-xs mb-1">
-        <span className="text-faint">{label}</span>
+        <span className="text-metadata">{label}</span>
         <span className="text-muted">{value}/5</span>
       </div>
       <div className="h-1.5 bg-surface3 rounded-full overflow-hidden">
@@ -83,7 +83,7 @@ export function AssetCriticalityClient({ assets }: Props) {
                     <span className={`text-2xl font-semibold tabular-nums ${scoreColor(assessment.overallScore)}`}>
                       {assessment.overallScore.toFixed(1)}
                     </span>
-                    <span className="text-xs text-faint">{t("common.overallScore")}</span>
+                    <span className="text-xs text-metadata">{t("common.overallScore")}</span>
                   </div>
                   <div className="space-y-2">
                     <DimensionBar label={t("criticalityPage.safetyImpact")}          value={assessment.safetyImpact} />
@@ -93,11 +93,11 @@ export function AssetCriticalityClient({ assets }: Props) {
                     <DimensionBar label={t("criticalityPage.replacementDifficulty")}  value={assessment.replacementDifficulty} />
                   </div>
                   {assessment.notes && (
-                    <p className="text-xs text-faint mt-3 border-t border-line pt-3">{assessment.notes}</p>
+                    <p className="text-xs text-metadata mt-3 border-t border-line pt-3">{assessment.notes}</p>
                   )}
                 </>
               ) : (
-                <p className="text-xs text-faint italic">{t("criticalityPage.noAssessment")}</p>
+                <p className="text-xs text-metadata italic">{t("criticalityPage.noAssessment")}</p>
               )}
             </div>
           );

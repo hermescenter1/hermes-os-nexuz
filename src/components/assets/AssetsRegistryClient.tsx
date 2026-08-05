@@ -15,21 +15,21 @@ function riskBadge(r: string) {
   if (r === "MONITOR")  return "bg-ice/[0.08] text-ice";
   if (r === "AT_RISK")  return "bg-warn/[0.10] text-warn";
   if (r === "CRITICAL") return "bg-danger/[0.10] text-danger";
-  return "bg-surface2 text-faint";
+  return "bg-surface2 text-metadata";
 }
 function critBadge(c: string) {
   if (c === "CRITICAL")   return "bg-danger/[0.10] text-danger";
   if (c === "HIGH")       return "bg-warn/[0.10] text-warn";
   if (c === "MEDIUM")     return "bg-ice/[0.08] text-ice";
   if (c === "LOW")        return "bg-signal/[0.08] text-signal";
-  return "bg-surface2 text-faint";
+  return "bg-surface2 text-metadata";
 }
 function statusBadge(s: string) {
   if (s === "IN_SERVICE")        return "bg-signal/[0.08] text-signal";
   if (s === "DEGRADED")          return "bg-warn/[0.10] text-warn";
   if (s === "UNDER_MAINTENANCE") return "bg-ice/[0.08] text-ice";
-  if (s === "STANDBY")           return "bg-surface2 text-faint";
-  return "bg-surface2 text-faint";
+  if (s === "STANDBY")           return "bg-surface2 text-metadata";
+  return "bg-surface2 text-metadata";
 }
 function healthColor(n: number) {
   if (n >= 85) return "bg-signal";
@@ -112,7 +112,7 @@ export function AssetsRegistryClient({ assets }: Props) {
                   t("registry.colLocation"),
                   "",
                 ].map((h, i) => (
-                  <th key={i} className="text-start px-4 py-3 text-xs font-medium text-faint whitespace-nowrap">{h}</th>
+                  <th key={i} className="text-start px-4 py-3 text-xs font-medium text-metadata whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -129,7 +129,7 @@ export function AssetsRegistryClient({ assets }: Props) {
                   <td className="px-4 py-3 text-ice font-mono text-xs whitespace-nowrap">{a.assetNumber}</td>
                   <td className="px-4 py-3">
                     <p className="font-medium text-ink whitespace-nowrap">{a.name}</p>
-                    {a.manufacturer && <p className="text-xs text-faint">{a.manufacturer}</p>}
+                    {a.manufacturer && <p className="text-xs text-metadata">{a.manufacturer}</p>}
                   </td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{typeLabel(a.assetType)}</td>
                   <td className="px-4 py-3">

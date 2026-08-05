@@ -46,17 +46,32 @@ EOF
 
 echo "[${TIMESTAMP}] Verifying ${FILENAME}..."
 
-# Stage 1: pg_restore --list — parse the entire TOC (validates all bytes)
+# Stage 1: pg_restore --list — parse the entire TOC (validates all bytes).
+#
+# PHASE 93.1 — listing a dump's TOC does NOT open a database connection, so no
+# `-U <db-user>` is needed. The dump is streamed on STDIN via `docker exec -i`
+# and pg_restore reads stdin when given NO file argument. The previous command
+# passed a trailing `-` which pg_restore treats as an input FILENAME named "-"
+# (→ `could not open input file "-"`), so verification always failed. Read from
+# stdin only — no `-U`, no trailing `-`.
 TOC_OUTPUT=$(docker exec -i "${CONTAINER}" \
-  pg_restore --list -U "${DB_USER}" - < "${BACKUP_FILE}" 2>&1) || {
+  pg_restore --list < "${BACKUP_FILE}" 2>&1) || {
   echo "[$(date -Iseconds)] FAILED: pg_restore --list failed — dump is corrupt or invalid" >&2
   write_result "failed" "pg_restore --list failed"
   exit 1
 }
 
-# Stage 2: Check essential tables are present in the TOC
+# Stage 2: Check essential tables are present in the TOC.
+#
+# PHASE 93.2 — MUST use a here-string, NOT `echo "${TOC_OUTPUT}" | grep -q …`.
+# Under `set -o pipefail`, `grep -q` closes the pipe on its first match, so on a
+# large TOC the `echo` producer receives SIGPIPE (exit 141); pipefail then makes
+# the whole pipeline non-zero and the check falsely reports the table missing
+# (confirmed: PRODUCER_EXIT=141, GREP_EXIT=0). A here-string has no producer
+# process, so there is no SIGPIPE and pipefail cannot corrupt the result. Do NOT
+# reintroduce a producer→`grep -q` pipeline and do NOT mask it with `|| true`.
 for TABLE in "${ESSENTIAL_TABLES[@]}"; do
-  if ! echo "${TOC_OUTPUT}" | grep -q "TABLE DATA.*${TABLE}"; then
+  if ! grep -q "TABLE DATA.*${TABLE}" <<< "${TOC_OUTPUT}"; then
     echo "[$(date -Iseconds)] FAILED: essential table '${TABLE}' not found in dump TOC" >&2
     write_result "failed" "missing table: ${TABLE}"
     exit 1

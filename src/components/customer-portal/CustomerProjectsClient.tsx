@@ -79,7 +79,7 @@ export function CustomerProjectsClient() {
             {/* Progress bar */}
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-faint">Progress</span>
+                <span className="text-xs text-metadata">Progress</span>
                 <span className="text-xs text-muted font-mono">{p.progress}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-line">
@@ -90,7 +90,7 @@ export function CustomerProjectsClient() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6 text-xs text-faint">
+            <div className="flex items-center gap-6 text-xs text-metadata">
               {p.managerName && <span>Manager: <span className="text-muted">{p.managerName}</span></span>}
               {p.startDate && <span>Started: <span className="text-muted">{formatDate(p.startDate, locale)}</span></span>}
               {p._count && <span>{p._count.tickets} tickets · {p._count.documents} docs</span>}

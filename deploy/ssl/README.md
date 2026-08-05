@@ -15,14 +15,14 @@ Best for: VPS with a public domain and port 80/443 accessible.
 sudo apt install certbot
 
 # Stop Nginx temporarily (or use the webroot challenge if Nginx is running)
-docker-compose -f docker-compose.prod.yml stop nginx
+docker compose -p hermes -f docker-compose.prod.yml stop nginx
 
 # Issue certificate
 sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com \
   --email admin@yourdomain.com --agree-tos --no-eff-email
 
 # Restart Nginx
-docker-compose -f docker-compose.prod.yml start nginx
+docker compose -p hermes -f docker-compose.prod.yml start nginx
 ```
 
 ### Using the webroot challenge (Nginx stays running)
@@ -44,8 +44,10 @@ After the certificate is issued, uncomment the HTTPS server block in `deploy/ngi
 # Test renewal
 sudo certbot renew --dry-run
 
-# Cron job (runs twice daily — standard Certbot recommendation)
-echo "0 0,12 * * * root certbot renew --quiet --deploy-hook 'docker exec hermes-nginx nginx -s reload'" \
+# Cron job (runs twice daily — standard Certbot recommendation).
+# Under the canonical `hermes` project the Nginx container is `hermes-nginx-1`
+# (<project>-<service>-<index>, Compose v2).
+echo "0 0,12 * * * root certbot renew --quiet --deploy-hook 'docker exec hermes-nginx-1 nginx -s reload'" \
   | sudo tee /etc/cron.d/certbot-renew
 ```
 

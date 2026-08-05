@@ -2,7 +2,7 @@
 
 import { useEffect }                    from "react";
 import { GA_MEASUREMENT_ID }            from "@/lib/analytics/config";
-import { initGtag, updateConsent }      from "@/lib/analytics/gtag";
+import { initGtag } from "@/lib/analytics/gtag";
 
 // GA4 is injected via direct DOM manipulation so it reliably loads regardless of
 // when this component is mounted (dynamically, post-hydration, after consent grant).
@@ -22,8 +22,6 @@ export function GoogleAnalytics() {
     script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
     script.onload = () => {
       initGtag(GA_MEASUREMENT_ID);
-      // Formally grant analytics storage after the script is loaded and initialized
-      updateConsent(true);
     };
     document.head.appendChild(script);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

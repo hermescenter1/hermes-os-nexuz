@@ -7,7 +7,7 @@ export const metadata: Metadata = noIndexMetadata("Overview — Customer Portal 
 export default function CustomerPortalPage() {
   return (
     <div className="space-y-2">
-      <p className="font-mono text-xs uppercase tracking-widest text-faint">Overview</p>
+      <p className="font-mono text-xs uppercase tracking-widest text-metadata">Overview</p>
       <CustomerOverviewClient />
     </div>
   );

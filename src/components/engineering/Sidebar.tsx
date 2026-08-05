@@ -31,14 +31,14 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
             </span>
             <span className="font-display text-sm font-bold tracking-tight text-ink">Hermes OS</span>
           </div>
-          <p className="text-[0.65rem] font-body font-medium text-faint tracking-[0.05em] uppercase ps-[34px]">
+          <p className="text-[0.65rem] font-body font-medium text-metadata tracking-[0.05em] uppercase ps-[34px]">
             Engineering Hub
           </p>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden text-faint hover:text-muted transition-colors p-1.5 rounded"
+            className="lg:hidden text-metadata hover:text-muted transition-colors p-1.5 rounded"
             aria-label="Close menu"
           >
             <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4">
@@ -50,7 +50,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
-        <p className="px-2 pb-2 text-[0.65rem] font-body font-semibold tracking-[0.08em] uppercase text-faint">
+        <p className="px-2 pb-2 text-[0.65rem] font-body font-semibold tracking-[0.08em] uppercase text-metadata">
           Modules
         </p>
         {NAV.map(({ href, label, icon: Icon, exact }) => {
@@ -79,7 +79,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       <div className="px-3 py-4 border-t border-line">
         <Link
           href="/"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-faint hover:text-muted transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-metadata hover:text-muted transition-colors"
         >
           <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5 flex-none">
             <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

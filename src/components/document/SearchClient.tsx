@@ -11,7 +11,7 @@ const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
   REVIEW:   { bg: "bg-warn/[0.08]",   text: "text-warn"   },
   APPROVED: { bg: "bg-signal/[0.08]", text: "text-signal" },
   REJECTED: { bg: "bg-danger/[0.08]", text: "text-danger" },
-  ARCHIVED: { bg: "bg-faint/[0.08]",  text: "text-faint"  },
+  ARCHIVED: { bg: "bg-faint/[0.08]",  text: "text-metadata"  },
 };
 
 interface Props { initial: EdmsSearchResult }
@@ -42,7 +42,7 @@ export function SearchClient({ initial }: Props) {
       <form onSubmit={handleSearch} className="card-enterprise rounded-xl p-4 flex gap-3">
         <div className="flex-1 relative">
           <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-faint">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-metadata">
               <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd"/>
             </svg>
           </div>
@@ -50,7 +50,7 @@ export function SearchClient({ initial }: Props) {
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder={isFa ? "جستجوی اسناد بر اساس عنوان، نوع، کلیدواژه…" : "Search documents by title, type, keywords…"}
-            className="w-full ps-9 pe-3 py-2.5 rounded-lg border border-line bg-surface2 text-ink text-sm placeholder:text-faint focus:outline-none focus:border-signal/40 focus:ring-1 focus:ring-signal/20 transition-colors"
+            className="w-full ps-9 pe-3 py-2.5 rounded-lg border border-line bg-surface2 text-ink text-sm placeholder:text-metadata focus:outline-none focus:border-signal/40 focus:ring-1 focus:ring-signal/20 transition-colors"
           />
         </div>
         <button
@@ -64,7 +64,7 @@ export function SearchClient({ initial }: Props) {
 
       {/* Result count */}
       <div className="flex items-center gap-2 px-1">
-        <span className="text-xs text-faint">
+        <span className="text-xs text-metadata">
           {result.total} {isFa ? "نتیجه" : (result.total !== 1 ? "results" : "result")}
         </span>
       </div>
@@ -79,10 +79,10 @@ export function SearchClient({ initial }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line bg-surface2">
-                <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "عنوان" : "Title"}</th>
-                <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{isFa ? "نوع" : "Type"}</th>
-                <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{isFa ? "وضعیت" : "Status"}</th>
-                <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{isFa ? "نسخه" : "Revision"}</th>
+                <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "عنوان" : "Title"}</th>
+                <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{isFa ? "نوع" : "Type"}</th>
+                <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{isFa ? "وضعیت" : "Status"}</th>
+                <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{isFa ? "نسخه" : "Revision"}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -104,7 +104,7 @@ export function SearchClient({ initial }: Props) {
                       </span>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className="text-xs font-mono text-faint">{doc.currentRevision ?? "—"}</span>
+                      <span className="text-xs font-mono text-metadata">{doc.currentRevision ?? "—"}</span>
                     </td>
                   </tr>
                 );

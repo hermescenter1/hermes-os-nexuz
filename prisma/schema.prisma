@@ -38,6 +38,9 @@ model EngineeringCase {
 
   @@index([userId, createdAt])
   @@index([organizationId, createdAt])
+  // PHASE 90B — supports the public listPublishedCases() read
+  // (where status = 'published' order by createdAt desc) at volume.
+  @@index([status, createdAt])
 }
 
 model KnowledgeArticle {
@@ -93,6 +96,16 @@ model UnknownAnalysis {
   status           String   @default("open")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  // PHASE 90B — tenant ownership (additive, nullable). The raw unknown query
+  // text is tenant-private; NULL rows are QUARANTINED by the application layer
+  // exactly as AnalysisRecord/EngineeringCase. Derived from the authenticated
+  // server context, never from client input.
+  userId           String?
+  organizationId   String?
+
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
 }
 
 // ---- Phase 16A: document ingestion foundation (additive; no upload route,
@@ -246,7 +259,14 @@ model Project {
   updatedAt   DateTime            @updatedAt
   memories    EngineeringMemory[]
 
+  // PHASE 90B — tenant ownership (additive, nullable). NULL rows are quarantined
+  // by the application layer. Derived from the authenticated server context.
+  userId         String?
+  organizationId String?
+
   @@index([status])
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
 }
 
 // ---- Phase 18A: Engineering Memory Foundation (additive) ----
@@ -277,9 +297,19 @@ model EngineeringMemory {
   updatedAt          DateTime         @updatedAt
   feedback           MemoryFeedback[]
 
+  // PHASE 90B — tenant ownership (additive, nullable). Saved Brain analyses are
+  // tenant-private; NULL rows are QUARANTINED by the application layer exactly
+  // as AnalysisRecord/EngineeringCase. Derived from the authenticated server
+  // context, never from client input. MemoryFeedback inherits scope through its
+  // parent memory (feedback access is gated on parent ownership).
+  userId             String?
+  organizationId     String?
+
   @@index([domain])
   @@index([outcome])
   @@index([projectId])
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
 }
 
 model MemoryFeedback {
@@ -308,6 +338,12 @@ model User {
   // Phase 28: brute-force protection
   failedLoginAttempts  Int                  @default(0)
   lockedUntil          DateTime?
+  // Phase 91: monotonic session generation. Incremented by a "revoke all
+  // sessions" (password reset, member suspend/remove). A session is only active
+  // when its stamped RefreshToken.userTokenVersion equals this value, which makes
+  // the bulk kill-switch immune to an in-flight refresh that would otherwise mint
+  // a fresh, un-revoked session in the revoke-vs-rotate window.
+  tokenVersion         Int                  @default(0)
   lastLoginAt          DateTime?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -349,7 +385,13 @@ model AuthSession {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Phase 28: JWT refresh token (stored as SHA-256 hash, never plaintext)
+// Phase 28: JWT refresh token (stored as SHA-256 hash, never plaintext).
+//
+// Phase 91: this row is ALSO the server-authoritative *session record*. Its `id`
+// is the opaque session identifier (`sid`) embedded in the access token and the
+// legacy session cookie. Revoking a session = setting `revokedAt` here, which is
+// enforced on the next protected request by the server-side authorization guards.
+// `lastUsedAt` powers the owner-facing active-session inventory ("last active").
 model RefreshToken {
   id         String    @id @default(cuid())
   userId     String
@@ -357,11 +399,22 @@ model RefreshToken {
   expiresAt  DateTime
   revokedAt  DateTime?
   deviceInfo String?
+  lastUsedAt DateTime?
+  // Phase 91: the owner's User.tokenVersion at the moment this session was
+  // minted. A "revoke all sessions" bumps User.tokenVersion; any row stamped with
+  // an older value is dead even if it was inserted a moment AFTER the bulk revoke
+  // (the revoke-vs-rotate race). Defaults to 0 so pre-Phase-91 rows stay valid.
+  userTokenVersion Int  @default(0)
   createdAt  DateTime  @default(now())
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
+  // Phase 91: the session-inventory and revoke-* paths all filter on
+  // (userId, revokedAt); this composite keeps those owner-scoped auth queries
+  // index-only as the table grows. Added in a SEPARATE additive migration
+  // (20260815000001) so the original Phase 91 migration is never rewritten.
+  @@index([userId, revokedAt])
 }
 
 // Phase 28: email verification tokens (plaintext — one-time use)
@@ -424,8 +477,22 @@ model AuditLog {
   createdAt  DateTime @default(now())
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  // PHASE 90B — durable audit tenancy + traceability (additive, nullable).
+  // organizationId lets the trail be scoped/queried per tenant at the DB layer;
+  // outcome distinguishes an attempted vs. completed operation; correlationId
+  // ties the row to its originating request (see logger/correlation.ts).
+  organizationId String?
+  outcome        String?
+  correlationId  String?
+
   @@index([action])
   @@index([userId])
+  @@index([organizationId])
+  // PHASE 92 — additive indexes for observability query paths:
+  //  createdAt     → bounded retention sweeps and time-window operator queries
+  //  correlationId → incident timeline reconstruction by correlation id
+  @@index([createdAt])
+  @@index([correlationId])
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -6102,6 +6169,18 @@ model EdgeGatewayProfile {
   disabled       Boolean                @default(false)
   /// Opaque REFERENCE to a signing secret held elsewhere — never the secret.
   signingKeyRef  String?                @db.VarChar(191)
+  // PHASE 94 — machine-credential enrollment lifecycle metadata.
+  //
+  // NONE of these hold secret material. `signingKeyVersion` is a monotonic
+  // per-gateway counter for operator/audit visibility (each rotation increments
+  // it); it is NOT the secret manager's internal CAS version. The timestamps
+  // record when a credential was first issued, last rotated and revoked. All are
+  // nullable so the migration is purely additive: a legacy row simply reports
+  // "not enrolled" until an operator enrolls it.
+  signingKeyVersion   Int?
+  signingKeyEnrolledAt DateTime?
+  signingKeyRotatedAt  DateTime?
+  signingKeyRevokedAt  DateTime?
   // PHASE 94B4.1 — the machine-facing ingestion identifier.
   //
   // A gateway authenticating itself does not yet know its organization, so the

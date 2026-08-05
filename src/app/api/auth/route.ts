@@ -1,15 +1,42 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { authenticate }          from "@/lib/auth/service";
-import { signSession }           from "@/lib/auth/crypto";
-import { SESSION_COOKIE, isAuthConfigured, ACCESS_TOKEN_COOKIE, MAX_FAILED_ATTEMPTS, LOCK_DURATION } from "@/lib/auth/config";
+import { signSession, verifySession } from "@/lib/auth/crypto";
+import { SESSION_COOKIE, isAuthConfigured, ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, REFRESH_TOKEN_TTL, REFRESH_TOKEN_TTL_LONG, MAX_FAILED_ATTEMPTS, LOCK_DURATION } from "@/lib/auth/config";
 import { getCurrentUser }        from "@/lib/auth/session";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
-import { signAccessToken }       from "@/lib/auth/jwt";
-import { setAuthCookies, clearAuthCookies } from "@/lib/auth/token-session";
+import { verifyAccessToken }     from "@/lib/auth/jwt";
+import { issueTokens, SessionPersistenceError } from "@/lib/auth/token-session";
+import { revokeSession }         from "@/lib/auth/session-store";
+import { getStorageMode }        from "@/lib/storage/storage-mode";
+import { resolveRequestId }      from "@/lib/logger/correlation";
+import { hashArgon2, verifyArgon2 } from "@/lib/auth/argon2-wrapper";
 import { checkRateLimit, retryAfter }       from "@/lib/auth/rate-limiter";
 import { getPrisma }             from "@/lib/db/prisma";
 import { isRole }                from "@/lib/auth/roles";
 import { systemEmitter }         from "@/lib/events/system/emitter";
+import { resolveClientIp }       from "@/lib/security/request-guards";
+
+/** Uniform fail-closed response for database-mode session persistence failures. Sets NO cookies. */
+function sessionPersistenceUnavailable(): NextResponse {
+  return NextResponse.json({ error: "SESSION_PERSISTENCE_UNAVAILABLE" }, { status: 503 });
+}
+
+/**
+ * PHASE 91 — constant-work password check for non-existent accounts.
+ *
+ * `authenticate()` only runs the (deliberately expensive) argon2 verify when the
+ * email maps to a real user, so an unknown email returns measurably faster — a
+ * timing oracle for account enumeration. When the account does not exist we burn
+ * an equivalent argon2 verify against a fixed dummy hash so both paths cost the
+ * same. The dummy hash is computed once and cached.
+ */
+let _dummyHash: string | null = null;
+async function burnPasswordVerifyTime(password: string): Promise<void> {
+  try {
+    if (!_dummyHash) _dummyHash = await hashArgon2("hermes-enumeration-timing-guard");
+    await verifyArgon2(_dummyHash, password);
+  } catch { /* best-effort — never affects the response */ }
+}
 
 /**
  * /api/auth — credentials login/logout + session check (Phase 12A / Phase 28).
@@ -78,25 +105,58 @@ export async function POST(req: NextRequest) {
 
   // ── Logout ────────────────────────────────────────────────────────────────
   if (action === "logout") {
-    const user = await getCurrentUser();
-    if (user) {
-      await recordAuditEvent({
-        userId:     user.id,
-        action:     "auth.logout",
-        entityType: "auth",
-        entityId:   user.id,
-        metadata:   { email: user.email },
-      });
+    // PHASE 91 — correct ordering. Resolve a TRUSTED, server-verified identity
+    // FIRST (from the signed access token, else the signed legacy cookie), and
+    // capture id/email/role/sid/correlationId. Only THEN revoke the session and
+    // write the audit from the CAPTURED identity — never a re-resolution, which
+    // would now return null (the session was just revoked) and lose the audit.
+    const at        = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+    const atPayload = at ? await verifyAccessToken(at) : null;
+    let identity: { id: string; email: string; role: string; sid: string | null } | null =
+      atPayload?.sub
+        ? { id: atPayload.sub, email: atPayload.email, role: atPayload.role, sid: atPayload.sid ?? null }
+        : null;
+    if (!identity) {
+      const legacy = req.cookies.get(SESSION_COOKIE)?.value;
+      const lp = legacy ? verifySession(legacy) : null;
+      if (lp?.userId) identity = { id: lp.userId, email: lp.email, role: lp.role, sid: lp.sid ?? null };
     }
+    const correlationId = resolveRequestId(req);
+
+    // Revoke the server-side session (best-effort — must not block cookie clearing).
+    if (identity?.sid) {
+      try { await revokeSession(identity.id, identity.sid); } catch { /* still clear cookies below */ }
+    }
+
+    // Audit from the captured identity. A failure here must NOT reactivate the
+    // session or block logout.
+    if (identity) {
+      try {
+        await recordAuditEvent({
+          userId:        identity.id,
+          action:        "auth.logout",
+          entityType:    "auth",
+          entityId:      identity.id,
+          outcome:       "success",
+          correlationId,
+          metadata:      { email: identity.email, role: identity.role, sid: identity.sid },
+        });
+      } catch { /* swallow — logout proceeds and cookies still clear */ }
+    }
+
     const res = NextResponse.json({ ok: true });
     res.cookies.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
     res.cookies.set(ACCESS_TOKEN_COOKIE, "", { maxAge: 0, path: "/" });
-    res.cookies.set("hermes_rt", "", { maxAge: 0, path: "/api/auth/refresh" });
+    res.cookies.set(REFRESH_TOKEN_COOKIE, "", { maxAge: 0, path: "/api/auth/refresh" });
     return res;
   }
 
   // ── Login ─────────────────────────────────────────────────────────────────
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  // Phase 93: key brute-force throttling on the spoof-resistant proxy header
+  // (X-Real-IP, set by nginx to $remote_addr) via resolveClientIp — NOT the
+  // client-appendable left-most X-Forwarded-For, which an attacker could rotate
+  // per request to mint a fresh rate-limit bucket and bypass the login throttle.
+  const ip = resolveClientIp(req);
   if (!await checkRateLimit("login", ip)) {
     return NextResponse.json(
       { error: "Too many login attempts. Please try again later.",
@@ -132,6 +192,10 @@ export async function POST(req: NextRequest) {
       if (found) {
         await updateLoginMeta(String(found.id), true);
         systemEmitter.dispatch({ type: "login.failed", userId: String(found.id), email, ip });
+      } else {
+        // Unknown account: spend the same argon2 work a wrong-password attempt on
+        // a real account would, so the two are indistinguishable by response time.
+        await burnPasswordVerifyTime(password);
       }
     }
 
@@ -155,25 +219,57 @@ export async function POST(req: NextRequest) {
     metadata:   { email: user.email, role: user.role, rememberMe },
   });
 
-  // Issue legacy HMAC session cookie (backward compat)
+  // PHASE 91 — issue an access + refresh pair through the shared path so a
+  // server-authoritative, revocable session record is created and its opaque id
+  // (`sid`) is embedded in BOTH the access token and the legacy session cookie.
+  // Before this, the primary login issued only a non-revocable 8h access token
+  // and a 30d HMAC cookie with no server session behind them.
+  const deviceInfo = req.headers.get("user-agent")?.slice(0, 256) ?? null;
+
+  // B5 — capture the generation observed at authentication time. If a security
+  // kill-switch (password reset / suspend / member removal) advances tokenVersion
+  // before this login's session is persisted, issuance fails closed (the tx
+  // re-reads and throws generation_mismatch). Database mode only; session mode
+  // has no generation.
+  let expectedVersion: number | undefined;
+  if (getStorageMode() === "database") {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const um = (db as Record<string, unknown>).user as { findUnique: (a: unknown) => Promise<Record<string, unknown> | null> };
+        const u = await um.findUnique({ where: { id: user.id }, select: { tokenVersion: true } });
+        if (!u) return sessionPersistenceUnavailable(); // removed between auth and issuance
+        expectedVersion = Number((u as { tokenVersion?: number }).tokenVersion ?? 0);
+      } catch { return sessionPersistenceUnavailable(); }
+    }
+    // db === null in database mode → issueTokens throws below → 503.
+  }
+
+  let accessToken: string, refreshToken: string, sid: string | null;
+  try {
+    ({ accessToken, refreshToken, sid } = await issueTokens(
+      { id: user.id, email: user.email, role: isRole(user.role) ? user.role : "customer", name: user.name },
+      rememberMe,
+      { deviceInfo, expectedVersion },
+    ));
+  } catch (e) {
+    if (e instanceof SessionPersistenceError) return sessionPersistenceUnavailable();
+    throw e;
+  }
+
+  // Legacy HMAC session cookie (backward compat), now bound to the same session.
   const sessionToken = signSession({
     userId: user.id,
     email:  user.email,
     role:   user.role,
     name:   user.name,
     iat:    Date.now(),
+    sid:    sid ?? undefined,
   });
 
-  // Issue JWT access token + refresh token (Phase 28)
-  const accessToken = await signAccessToken({
-    sub:   user.id,
-    email: user.email,
-    role:  isRole(user.role) ? user.role : "customer",
-    name:  user.name,
-  });
-
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction  = process.env.NODE_ENV === "production";
   const sessionMaxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
+  const refreshMaxAge = rememberMe ? REFRESH_TOKEN_TTL_LONG : REFRESH_TOKEN_TTL;
 
   const res = NextResponse.json({ ok: true, user });
 
@@ -193,6 +289,16 @@ export async function POST(req: NextRequest) {
     path:     "/",
     secure:   isProduction,
     maxAge:   60 * 60 * 8,
+  });
+
+  // Refresh token (Phase 91 — now also issued on the primary login path so the
+  // session can be rotated and revoked). Scoped to the refresh endpoint only.
+  res.cookies.set(REFRESH_TOKEN_COOKIE, refreshToken, {
+    httpOnly: true,
+    sameSite: "strict",
+    path:     "/api/auth/refresh",
+    secure:   isProduction,
+    maxAge:   refreshMaxAge,
   });
 
   return res;

@@ -226,7 +226,7 @@ export function AvatarSettingsClient({ initialAvatarUrl, displayName }: Props) {
                   </button>
                 )}
               </div>
-              <p className="text-[10px] text-faint font-mono">{T.hint}</p>
+              <p className="text-[10px] text-metadata font-mono">{T.hint}</p>
             </div>
           </div>
 

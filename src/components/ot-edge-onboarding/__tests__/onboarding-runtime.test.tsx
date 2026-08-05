@@ -139,6 +139,8 @@ const gatewayRow = (over: Partial<GatewayRow> = {}): GatewayRow => ({
   simulatorMode: false,
   disabled: false,
   signingConfigured: false,
+  credentialRevoked: false,
+  signingKeyVersion: null,
   lastSeenAt: null,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",

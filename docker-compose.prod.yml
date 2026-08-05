@@ -4,21 +4,30 @@
 # See deploy/ssl/README.md for Cloudflare and external-proxy alternatives.
 #
 # Usage:
-#   docker compose -f docker-compose.prod.yml --env-file .env.production up --build -d
+#   docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up --build -d
 #
 # The --env-file flag lets docker compose read .env.production for ${VAR} interpolation
 # inside this file (build args), in addition to injecting vars into the container at runtime.
 #
 # With monitoring (ideally on a separate host — see deploy/monitoring/README.md):
-#   docker compose -f docker-compose.prod.yml --profile monitoring up -d
+#   docker compose -p hermes -f docker-compose.prod.yml --profile monitoring up -d
 #
 # First run — apply migrations before starting the app:
-#   docker compose -f docker-compose.prod.yml run --rm hermes-web \
+#   docker compose -p hermes -f docker-compose.prod.yml run --rm hermes-web \
 #     node -e "const {execSync}=require('child_process'); execSync('npx prisma migrate deploy', {stdio:'inherit'})"
 #
 # Required in .env.production:
 #   NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX   (client bundle — baked at build time)
 #   GA_MEASUREMENT_ID=G-XXXXXXXXXX               (server layout — read at request time)
+
+# Gate 0D-A — canonical Production Compose project name (defense in depth).
+# Without this, Compose derives the project from the checkout directory; an
+# unpinned invocation from /opt/hermes-os-nexuz once created a second, empty
+# "hermes-os-nexuz" stack (new network + empty named volumes) beside the real
+# "hermes" stack. The canonical resources are hermes_postgres_data and
+# hermes_hermes_internal. Explicit `-p hermes` remains MANDATORY on every
+# Production command even with this default in place.
+name: hermes
 
 services:
   hermes-web:
@@ -30,6 +39,9 @@ services:
       args:
         NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
         NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID:-}
+        # SEO canonical host — build-time only. Defaults to the production canonical
+        # host; set NEXT_PUBLIC_BASE_URL in .env.production only to override.
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://hermesnovin.com}
     restart: unless-stopped
     env_file: .env.production
     volumes:
@@ -124,7 +136,7 @@ services:
   # ── Optional monitoring ────────────────────────────────────────────────────
   # NOTE: For real production, run Uptime Kuma on a SEPARATE VPS so monitoring
   # survives app downtime. This profile is provided for single-server setups.
-  # Start with: docker-compose -f docker-compose.prod.yml --profile monitoring up -d
+  # Start with: docker compose -p hermes -f docker-compose.prod.yml --profile monitoring up -d
   uptime-kuma:
     image: louislam/uptime-kuma:1
     profiles: ["monitoring"]

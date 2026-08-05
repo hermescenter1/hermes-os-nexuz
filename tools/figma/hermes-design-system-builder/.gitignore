@@ -1,0 +1,5 @@
+# Local junk only. The built plugin bundle in dist/ IS tracked so the plugin can
+# be imported into Figma Desktop without running a build first.
+*.log
+.DS_Store
+node_modules/

@@ -132,7 +132,7 @@ export function UsageAnalyticsClient() {
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="font-body text-sm text-ink">{f.label}</span>
                   <div className="flex items-center gap-3">
-                    <span className="kpi-label text-faint">{f.customersUsing}/{f.totalCustomers} accounts</span>
+                    <span className="kpi-label text-metadata">{f.customersUsing}/{f.totalCustomers} accounts</span>
                     <span className={`font-mono text-sm font-bold ${f.pct >= 70 ? "text-signal" : f.pct >= 40 ? "text-warn" : "text-danger"}`}>
                       {f.pct}%
                     </span>
@@ -168,7 +168,7 @@ export function UsageAnalyticsClient() {
                 <div className="space-y-2.5">
                   {entries.map((e, i) => (
                     <div key={e.id} className="flex items-center gap-3">
-                      <span className="font-mono text-xs text-faint w-4 flex-shrink-0">{i + 1}</span>
+                      <span className="font-mono text-xs text-metadata w-4 flex-shrink-0">{i + 1}</span>
                       <span className="font-body text-xs text-ink flex-1 min-w-0 truncate">{e.name}</span>
                       <div className="w-20 h-1.5 rounded bg-line overflow-hidden flex-shrink-0">
                         <div
@@ -194,7 +194,7 @@ export function UsageAnalyticsClient() {
             <thead>
               <tr className="border-b border-line">
                 {["Account", "Plan", "Copilot", "Knowledge", "Industrial", "ATS", "Alerts", "Total"].map(h => (
-                  <th key={h} className="kpi-label text-faint text-left pb-2 pr-4">{h}</th>
+                  <th key={h} className="kpi-label text-metadata text-left pb-2 pr-4">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -204,7 +204,7 @@ export function UsageAnalyticsClient() {
                 return (
                   <tr key={c.id} className="border-b border-line/50 hover:bg-line/10">
                     <td className="py-2 pr-4 font-body text-xs text-ink">{c.name}</td>
-                    <td className="py-2 pr-4 kpi-label text-faint capitalize">{c.plan}</td>
+                    <td className="py-2 pr-4 kpi-label text-metadata capitalize">{c.plan}</td>
                     <td className="py-2 pr-4 font-mono text-xs text-ink">{c.copilot}</td>
                     <td className="py-2 pr-4 font-mono text-xs text-ink">{c.knowledge}</td>
                     <td className="py-2 pr-4 font-mono text-xs text-ink">{c.industrial}</td>

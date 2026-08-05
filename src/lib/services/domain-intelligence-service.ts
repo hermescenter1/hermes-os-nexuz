@@ -8,6 +8,7 @@
 
 import { listProjects } from "@/lib/memory/project-service";
 import { listEngineeringMemories, getEngineeringMemory } from "@/lib/memory/memory-service";
+import { resolveBrainOwner } from "@/lib/storage/brain-owner";
 import {
   computeDomainList,
   computeDomainDetail,
@@ -33,17 +34,20 @@ async function loadData(): Promise<{
   memories:           StoredMemory[];
   feedbackByMemoryId: Map<string, StoredMemoryFeedback[]>;
 }> {
+  // PHASE 90B: resolve the tenant owner ONCE and thread it (no per-memory N+1).
+  const owner = await resolveBrainOwner();
+
   let projects: StoredProject[] = [];
   let memories: StoredMemory[]  = [];
 
-  try { projects = await listProjects(); }             catch { /* degrade */ }
-  try { memories = await listEngineeringMemories(0); } catch { /* degrade */ }
+  try { projects = await listProjects(owner); }             catch { /* degrade */ }
+  try { memories = await listEngineeringMemories(0, owner); } catch { /* degrade */ }
 
   const feedbackByMemoryId = new Map<string, StoredMemoryFeedback[]>();
   await Promise.allSettled(
     memories.map(async m => {
       try {
-        const full = await getEngineeringMemory(m.id);
+        const full = await getEngineeringMemory(m.id, owner);
         if (full && full.feedback.length > 0) feedbackByMemoryId.set(m.id, full.feedback);
       } catch { /* skip this memory's feedback */ }
     })

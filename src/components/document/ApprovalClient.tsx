@@ -86,7 +86,7 @@ export function ApprovalClient({ approvals }: Props) {
                       {isFa ? "مرحله" : "Stage"} {apr.stage} — {apr.approverRole}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-3 text-xs text-faint">
+                  <div className="flex flex-wrap gap-3 text-xs text-metadata">
                     <span>{isFa ? "سند" : "Document"}: <span className="font-mono text-muted">{apr.documentId.slice(0, 8)}…</span></span>
                     {apr.dueDate && (
                       <span>{isFa ? "موعد" : "Due"}: <span className="text-muted">{formatDate(apr.dueDate, locale)}</span></span>

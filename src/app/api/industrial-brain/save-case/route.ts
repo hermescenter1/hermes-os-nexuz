@@ -6,6 +6,8 @@ import { can }            from "@/lib/auth/roles";
 import { caseRepository, type CaseCreate } from "@/lib/storage/case-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
+import { resolveRequestId } from "@/lib/logger/correlation";
+import { requireWritableOwner } from "@/lib/auth/api-guards";
 
 export const dynamic = "force-dynamic";
 
@@ -237,7 +239,13 @@ export async function POST(req: Request) {
 
   const input = mapAnalysisToCase(parsed.data.analysis, parsed.data.meta);
 
-  const repo = caseRepository(await resolveBrainOwner());
+  // PHASE 90: the owner is resolved ONCE from the session and drives both the
+  // owner-scoped repository and the durable audit record (tenant + outcome +
+  // correlation id), so a saved case can never be attributed to another tenant.
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
+  const repo = caseRepository(owner);
   try {
     // Same title-dedupe semantics as the existing case API: re-saving the
     // same analysis title updates the draft instead of duplicating it.
@@ -248,9 +256,12 @@ export async function POST(req: Request) {
 
     await recordAuditEvent({
       userId: user.id,
+      organizationId: owner?.orgId ?? null,
       action: existing ? AUDIT_ACTIONS.CASE_UPDATED : AUDIT_ACTIONS.CASE_CREATED,
       entityType: "case",
       entityId: saved?.id ?? null,
+      outcome: "success",
+      correlationId: resolveRequestId(req),
       metadata: { title: input.title, source: "industrial-brain" },
     });
 

@@ -9,7 +9,7 @@ import { formatDate, formatNumber } from "@/lib/i18n/format";
 function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div className="rounded-xl border border-line bg-surface p-5 space-y-1">
-      <p className="font-mono text-xs uppercase tracking-widest text-faint">{label}</p>
+      <p className="font-mono text-xs uppercase tracking-widest text-metadata">{label}</p>
       <p className="text-2xl font-bold text-ink">{value}</p>
       {sub && <p className="text-xs text-muted">{sub}</p>}
     </div>
@@ -63,7 +63,7 @@ export function CustomerOverviewClient() {
       <div className="rounded-xl border border-line bg-surface p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-mono text-xs uppercase tracking-widest text-faint">Account</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-metadata">Account</p>
             <h2 className="mt-1 text-xl font-bold text-ink">{account.displayName}</h2>
             <p className="mt-1 text-sm text-muted">
               {account.accountNumber} · {account.industry ?? "General"} · {account.tier}
@@ -96,7 +96,7 @@ export function CustomerOverviewClient() {
         <div className="rounded-xl border border-line bg-surface p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="font-mono text-xs uppercase tracking-widest text-faint">Subscription</p>
+              <p className="font-mono text-xs uppercase tracking-widest text-metadata">Subscription</p>
               <p className="mt-1 font-semibold text-ink">{subscription.planName} · {subscription.billingCycle}</p>
             </div>
             <span className={`rounded border px-3 py-1 text-xs font-mono font-semibold ${
@@ -109,15 +109,15 @@ export function CustomerOverviewClient() {
           </div>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
-              <p className="text-faint text-xs">Users</p>
+              <p className="text-metadata text-xs">Users</p>
               <p className="text-ink font-medium">{subscription.usersCount} / {subscription.usersLimit}</p>
             </div>
             <div>
-              <p className="text-faint text-xs">Storage</p>
+              <p className="text-metadata text-xs">Storage</p>
               <p className="text-ink font-medium">{subscription.storageUsedGb.toFixed(1)} / {subscription.storageLimitGb} GB</p>
             </div>
             <div>
-              <p className="text-faint text-xs">API Calls</p>
+              <p className="text-metadata text-xs">API Calls</p>
               <p className="text-ink font-medium">{formatNumber(subscription.apiCallsMonth, locale)} / {formatNumber(subscription.apiCallsLimit, locale)}</p>
             </div>
           </div>
@@ -153,14 +153,14 @@ export function CustomerOverviewClient() {
       {recentActivity.length > 0 && (
         <div className="rounded-xl border border-line bg-surface">
           <div className="px-6 py-4 border-b border-line flex items-center justify-between">
-            <p className="font-mono text-xs uppercase tracking-widest text-faint">Recent Activity</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-metadata">Recent Activity</p>
             <Link href="/customer/activity" className="text-xs text-signal hover:underline">View all</Link>
           </div>
           <ul className="divide-y divide-line">
             {recentActivity.slice(0, 5).map((log) => (
               <li key={log.id} className="px-6 py-3 flex items-center justify-between gap-4">
                 <span className="text-sm text-ink">{log.description}</span>
-                <span className="shrink-0 text-xs text-faint">
+                <span className="shrink-0 text-xs text-metadata">
                   {formatDate(log.createdAt, locale)}
                 </span>
               </li>

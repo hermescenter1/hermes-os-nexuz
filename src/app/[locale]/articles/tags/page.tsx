@@ -64,7 +64,7 @@ export default async function TagsPage({
         {/* Section label */}
         <div className="flex items-center gap-2.5 mb-8">
           <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
-          <p className="text-xs font-bold text-faint uppercase tracking-widest font-mono">
+          <p className="text-xs font-bold text-metadata uppercase tracking-widest font-mono">
             {t("browse.tagCloud")}
           </p>
         </div>
@@ -82,7 +82,7 @@ export default async function TagsPage({
                   {isFa ? (tag.nameFa ?? tag.name) : tag.name}
                 </span>
                 {tag.articleCount != null && tag.articleCount > 0 && (
-                  <span className="text-[10px] font-mono text-faint group-hover:text-signal/70 transition-colors shrink-0">
+                  <span className="text-[10px] font-mono text-metadata group-hover:text-signal/70 transition-colors shrink-0">
                     {tag.articleCount}
                   </span>
                 )}

@@ -8,7 +8,7 @@ export default function CustomerDocumentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-faint">Documents</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-metadata">Documents</p>
         <h2 className="mt-1 text-xl font-bold text-ink">Document Library</h2>
         <p className="mt-1 text-sm text-muted">All documents shared by Hermes OS with your organization.</p>
       </div>

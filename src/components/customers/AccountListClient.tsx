@@ -79,7 +79,7 @@ export function AccountListClient() {
           <option value="name">Sort: Name</option>
           <option value="active">Sort: Last Active</option>
         </select>
-        <span className="kpi-label text-faint ml-auto">{accounts.length} accounts</span>
+        <span className="kpi-label text-metadata ml-auto">{accounts.length} accounts</span>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -104,10 +104,10 @@ export function AccountListClient() {
               <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="font-body text-sm font-semibold text-ink truncate">{a.companyName}</p>
-                  <p className="kpi-label text-faint">{a.industry} · {a.country}</p>
+                  <p className="kpi-label text-metadata">{a.industry} · {a.country}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="kpi-label text-faint hidden sm:block">{PLAN_LABELS[a.plan as CustomerPlan]}</span>
+                  <span className="kpi-label text-metadata hidden sm:block">{PLAN_LABELS[a.plan as CustomerPlan]}</span>
                   <CustomerStatusBadge status={a.status} />
                   <CustomerHealthBadge tier={a.healthScore.tier} score={a.healthScore.total} />
                 </div>
@@ -115,21 +115,21 @@ export function AccountListClient() {
             </button>
           ))}
           {!loading && accounts.length === 0 && (
-            <p className="kpi-label text-faint text-center py-8">No accounts match filter</p>
+            <p className="kpi-label text-metadata text-center py-8">No accounts match filter</p>
           )}
         </div>
 
         {/* Detail panel */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5 sticky top-4 h-fit">
           {!selected ? (
-            <p className="kpi-label text-faint text-center py-8">Select an account to view details</p>
+            <p className="kpi-label text-metadata text-center py-8">Select an account to view details</p>
           ) : (
             <div className="flex flex-col gap-4">
               <div>
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="type-secondary font-semibold text-ink">{selected.companyName}</p>
-                    <p className="kpi-label text-faint">{selected.industry} · {selected.country}</p>
+                    <p className="kpi-label text-metadata">{selected.industry} · {selected.country}</p>
                   </div>
                   <CustomerStatusBadge status={selected.status} />
                 </div>
@@ -148,7 +148,7 @@ export function AccountListClient() {
                   { label: "Last Active",  value: selected.lastActiveAt },
                 ].map(kv => (
                   <div key={kv.label}>
-                    <p className="kpi-label text-faint">{kv.label}</p>
+                    <p className="kpi-label text-metadata">{kv.label}</p>
                     <p className="font-mono text-xs text-ink">{kv.value}</p>
                   </div>
                 ))}
@@ -157,7 +157,7 @@ export function AccountListClient() {
               <div className="h-layer-sep" />
 
               <div>
-                <p className="kpi-label text-faint mb-2">Health Score</p>
+                <p className="kpi-label text-metadata mb-2">Health Score</p>
                 <div className="flex items-center gap-3 mb-3">
                   <span className={`text-2xl font-mono font-bold ${
                     selected.healthScore.total >= 65 ? "text-signal" :
@@ -175,7 +175,7 @@ export function AccountListClient() {
                     { label: "Support Risk",     v: selected.healthScore.supportRisk,     invert: true  },
                   ].map(dim => (
                     <div key={dim.label} className="flex items-center gap-2">
-                      <span className="kpi-label text-faint w-28 flex-shrink-0">{dim.label}</span>
+                      <span className="kpi-label text-metadata w-28 flex-shrink-0">{dim.label}</span>
                       <div className="flex-1 h-1 rounded bg-line overflow-hidden">
                         <div
                           className={`h-1 rounded ${
@@ -195,7 +195,7 @@ export function AccountListClient() {
               <div className="h-layer-sep" />
 
               <div>
-                <p className="kpi-label text-faint mb-2">Usage</p>
+                <p className="kpi-label text-metadata mb-2">Usage</p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
                     { label: "Copilot Queries",     v: selected.usage.copilotQueries            },
@@ -206,7 +206,7 @@ export function AccountListClient() {
                     { label: "Alerts Handled",      v: selected.usage.alertsHandled             },
                   ].map(u => (
                     <div key={u.label}>
-                      <p className="kpi-label text-faint">{u.label}</p>
+                      <p className="kpi-label text-metadata">{u.label}</p>
                       <p className="font-mono text-xs font-bold text-ink">{u.v}</p>
                     </div>
                   ))}

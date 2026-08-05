@@ -28,6 +28,14 @@ export const OT_METRICS = [
   "ot_idempotency_collision",
   // PHASE 94B3.3 — outcome of a human finding-review transition.
   "ot_finding_transition",
+  // PHASE 94 — machine-credential enrollment lifecycle. Counters only, labelled
+  // with the closed `outcome` vocabulary (ok/conflict/error); never a gateway,
+  // tenant, reference or credential.
+  "ot_enrollment_created",
+  "ot_enrollment_rotated",
+  "ot_enrollment_revoked",
+  "ot_enrollment_deleted",
+  "ot_enrollment_failed",
 ] as const;
 export type OtMetric = (typeof OT_METRICS)[number];
 

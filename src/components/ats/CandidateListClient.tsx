@@ -71,7 +71,7 @@ export function CandidateListClient() {
           placeholder="Search candidates, skills, location…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="rounded border border-line bg-bg px-3 py-1.5 text-xs text-ink placeholder:text-faint focus:outline-none focus:border-signal/50 w-56"
+          className="rounded border border-line bg-bg px-3 py-1.5 text-xs text-ink placeholder:text-metadata focus:outline-none focus:border-signal/50 w-56"
         />
         <div className="flex flex-wrap gap-1.5">
           {(["all", ...STAGE_ORDER] as const).map(s => (
@@ -88,7 +88,7 @@ export function CandidateListClient() {
             </button>
           ))}
         </div>
-        <span className="kpi-label text-faint ms-auto">{loading ? "Loading…" : `${visible.length} candidates`}</span>
+        <span className="kpi-label text-metadata ms-auto">{loading ? "Loading…" : `${visible.length} candidates`}</span>
       </div>
 
       {/* Main grid */}
@@ -120,7 +120,7 @@ export function CandidateListClient() {
                         <p className="font-body text-xs font-semibold text-ink">{c.name}</p>
                         <span className={STAGE_BADGE[c.stage]}>{STAGE_LABELS[c.stage]}</span>
                       </div>
-                      <p className="kpi-label text-faint mt-0.5">
+                      <p className="kpi-label text-metadata mt-0.5">
                         {c.location} · {c.experienceYears}y exp · {SOURCE_LABEL[c.source]}
                       </p>
                     </div>
@@ -146,7 +146,7 @@ export function CandidateListClient() {
                 </button>
               ))}
               {visible.length === 0 && (
-                <p className="kpi-label text-faint py-8 text-center">No candidates match your filters</p>
+                <p className="kpi-label text-metadata py-8 text-center">No candidates match your filters</p>
               )}
             </div>
           )}
@@ -159,7 +159,7 @@ export function CandidateListClient() {
               {/* Header */}
               <div className="border-b border-line pb-3">
                 <p className="font-body text-sm font-semibold text-ink">{selected.name}</p>
-                <p className="kpi-label text-faint mt-0.5">{selected.location} · {selected.experienceYears}y experience</p>
+                <p className="kpi-label text-metadata mt-0.5">{selected.location} · {selected.experienceYears}y experience</p>
                 <span className={`${STAGE_BADGE[selected.stage]} mt-1.5 inline-block`}>
                   {STAGE_LABELS[selected.stage]}
                 </span>
@@ -179,7 +179,7 @@ export function CandidateListClient() {
                   { label: "Applied",      value: selected.appliedAt       },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between gap-2">
-                    <span className="kpi-label text-faint flex-shrink-0">{row.label}</span>
+                    <span className="kpi-label text-metadata flex-shrink-0">{row.label}</span>
                     <span className="font-mono text-[0.65rem] text-ink text-right truncate">{row.value}</span>
                   </div>
                 ))}
@@ -187,13 +187,13 @@ export function CandidateListClient() {
 
               <div>
                 <p className="kpi-label mb-1.5">CV Summary</p>
-                <p className="font-body text-xs text-faint leading-relaxed">{selected.cvSummary}</p>
+                <p className="font-body text-xs text-metadata leading-relaxed">{selected.cvSummary}</p>
               </div>
             </div>
           ) : (
             <div className="rounded-xl border border-line bg-surface px-4 py-8 flex flex-col items-center justify-center text-center">
-              <p className="kpi-label text-faint">Select a candidate</p>
-              <p className="kpi-label text-faint/60 mt-1">Click any row to view ATS score breakdown</p>
+              <p className="kpi-label text-metadata">Select a candidate</p>
+              <p className="kpi-label text-metadata mt-1">Click any row to view ATS score breakdown</p>
             </div>
           )}
         </div>

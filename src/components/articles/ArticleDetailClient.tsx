@@ -170,7 +170,7 @@ function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }
       </span>
 
       {/* Right-side meta */}
-      <div className="flex flex-wrap items-center gap-3 ms-auto text-[9px] text-faint font-mono">
+      <div className="flex flex-wrap items-center gap-3 ms-auto text-[9px] text-metadata font-mono">
         {article.viewCount > 0 && (
           <>
             <span>{fmtNum(article.viewCount)} {t("viewsUnit")}</span>
@@ -236,7 +236,7 @@ function ActionsBar({ article }: { article: ArticleDetail }) {
   return (
     <div className="flex flex-wrap items-center gap-2.5 py-5 border-y border-line/30">
       {/* Stats */}
-      <div className="flex items-center gap-4 text-xs text-faint me-auto font-mono">
+      <div className="flex items-center gap-4 text-xs text-metadata me-auto font-mono">
         <span>{fmtNum(article.viewCount)} {t("viewsUnit")}</span>
         <span className="text-line">·</span>
         <span>{fmtNum(article.saveCount)} {t("detail.savesUnit")}</span>
@@ -251,7 +251,7 @@ function ActionsBar({ article }: { article: ArticleDetail }) {
             className={`text-[10px] px-2.5 py-1.5 rounded-full border transition-all font-mono uppercase tracking-wide ${
               reacted === key
                 ? "border-signal bg-signal/12 text-signal font-semibold"
-                : "border-line/60 text-faint hover:border-signal/30 hover:text-ink"
+                : "border-line/60 text-metadata hover:border-signal/30 hover:text-ink"
             }`}>
             {t(`detail.reaction.${key}`)}
           </button>
@@ -354,7 +354,7 @@ function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: b
                 </div>
                 <p className="text-sm text-muted">{author.roleTitle ?? author.company}</p>
                 {author.location && (
-                  <p className="text-xs text-faint mt-0.5 flex items-center gap-1">
+                  <p className="text-xs text-metadata mt-0.5 flex items-center gap-1">
                     <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 opacity-60">
                       <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 0 0 .281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 1 0 3 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 0 0 2.273 1.765 11.842 11.842 0 0 0 .994.573l.018.008.006.003ZM10 11.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" clipRule="evenodd"/>
                     </svg>
@@ -373,7 +373,7 @@ function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: b
             </div>
 
             {/* Stats */}
-            <div className="flex flex-wrap items-center gap-5 text-xs text-faint mb-3 font-mono">
+            <div className="flex flex-wrap items-center gap-5 text-xs text-metadata mb-3 font-mono">
               <span>{author.articleCount} {t("articlesUnit")}</span>
               <span className="text-line">·</span>
               <span>{fmtNum(author.followerCount)} {t("followersUnit")}</span>
@@ -460,10 +460,10 @@ function KnowledgeMetaBlock({ article }: { article: ArticleDetail }) {
         {km.articleQualityScore && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <p className="text-[10px] text-faint uppercase tracking-wider font-mono">
+              <p className="text-[10px] text-metadata uppercase tracking-wider font-mono">
                 {t("detail.contentQualityScore")}
               </p>
-              <p className="text-xs font-bold font-mono text-signal">{km.articleQualityScore.toFixed(1)}<span className="text-faint font-normal">/10</span></p>
+              <p className="text-xs font-bold font-mono text-signal">{km.articleQualityScore.toFixed(1)}<span className="text-metadata font-normal">/10</span></p>
             </div>
             <div className="h-1.5 rounded-full bg-surface3 overflow-hidden">
               <div className="h-full rounded-full bg-gradient-to-r from-signal to-ice transition-all"
@@ -477,7 +477,7 @@ function KnowledgeMetaBlock({ article }: { article: ArticleDetail }) {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {fields.map(([label, val]) => (
               <div key={label} className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
-                <p className="text-[9px] text-faint uppercase tracking-widest mb-1 font-mono">{label}</p>
+                <p className="text-[9px] text-metadata uppercase tracking-widest mb-1 font-mono">{label}</p>
                 <p className="text-xs text-ink font-semibold truncate">{val}</p>
               </div>
             ))}
@@ -486,7 +486,7 @@ function KnowledgeMetaBlock({ article }: { article: ArticleDetail }) {
 
         {km.evidenceLevel && (
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-faint">{t("detail.evidenceLevel")}</span>
+            <span className="text-metadata">{t("detail.evidenceLevel")}</span>
             <span className="text-ink font-medium">{km.evidenceLevel}</span>
           </div>
         )}
@@ -528,7 +528,7 @@ function RelatedArticles({ articles, isFa, locale }: { articles: ArticleListItem
             <h3 className="text-sm font-bold text-ink group-hover:text-signal transition-colors leading-snug line-clamp-2">
               {a.title}
             </h3>
-            <div className="flex items-center gap-2 text-[10px] text-faint mt-auto font-mono">
+            <div className="flex items-center gap-2 text-[10px] text-metadata mt-auto font-mono">
               <span className="truncate max-w-[80px]">{a.author.displayName}</span>
               <span className="text-line">·</span>
               <span>{a.readingTimeMinutes} {t("readingUnit")}</span>
@@ -564,7 +564,7 @@ export function ArticleDetailClient({ article, related }: Props) {
     <div className="min-h-screen">
       {/* Sticky breadcrumb header */}
       <div className="border-b border-line/30 bg-surface/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-3 flex items-center gap-2 text-xs text-faint">
+        <div className="max-w-4xl mx-auto px-6 py-3 flex items-center gap-2 text-xs text-metadata">
           <Link href={`/${locale}/articles`}
             className="hover:text-signal transition-colors flex items-center gap-1 font-medium">
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
@@ -617,14 +617,14 @@ export function ArticleDetailClient({ article, related }: Props) {
               <span className="hs-badge hs--risk text-[9px]">{t("badge.safetyCritical")}</span>
             )}
             {/* article.language is the persisted ArtLanguage field (data, not UI locale) */}
-            <span className="ms-auto text-[9px] text-faint font-mono uppercase tracking-wider border border-line/40 px-2 py-0.5 rounded-full">
+            <span className="ms-auto text-[9px] text-metadata font-mono uppercase tracking-wider border border-line/40 px-2 py-0.5 rounded-full">
               {article.language === "FA" ? "فارسی / FA" : "English / EN"}
             </span>
           </div>
 
           {/* Title */}
           {isFa && FA_ARTICLE_MAP[article.slug] && (
-            <p className="text-[10px] text-faint font-mono mb-2 opacity-55">{article.title}</p>
+            <p className="text-[10px] text-metadata font-mono mb-2 opacity-55">{article.title}</p>
           )}
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-ink leading-tight mb-5 max-w-3xl">
             {(isFa ? FA_ARTICLE_MAP[article.slug]?.title : null) ?? article.title}
@@ -655,19 +655,19 @@ export function ArticleDetailClient({ article, related }: Props) {
                     </svg>
                   )}
                 </div>
-                <p className="text-xs text-faint">{article.author.roleTitle ?? article.author.company}</p>
+                <p className="text-xs text-metadata">{article.author.roleTitle ?? article.author.company}</p>
               </div>
             </Link>
 
             {/* Meta */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-faint font-mono">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-metadata font-mono">
               <span>{fmtDate(article.publishedAt, locale)}</span>
               <span className="text-line">·</span>
               <span>{article.readingTimeMinutes} {t("minRead")}</span>
               {article.knowledgeMetadata?.articleQualityScore && (
                 <>
                   <span className="text-line">·</span>
-                  <span className="text-signal font-bold">{article.knowledgeMetadata.articleQualityScore.toFixed(1)}<span className="text-faint font-normal">/10</span></span>
+                  <span className="text-signal font-bold">{article.knowledgeMetadata.articleQualityScore.toFixed(1)}<span className="text-metadata font-normal">/10</span></span>
                 </>
               )}
             </div>
@@ -698,7 +698,7 @@ export function ArticleDetailClient({ article, related }: Props) {
         {/* Tags */}
         {article.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 py-6 border-t border-line/30">
-            <span className="text-xs text-faint me-1 font-mono uppercase tracking-wider self-center">
+            <span className="text-xs text-metadata me-1 font-mono uppercase tracking-wider self-center">
               {t("detail.tagsLabel")}
             </span>
             {article.tags.map(tag => (

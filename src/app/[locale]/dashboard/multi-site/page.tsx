@@ -153,7 +153,7 @@ export default function MultiSiteSummaryPage() {
           </div>
 
           {data.latestBenchmarkAt && (
-            <p className="text-xs text-white/30 text-right">
+            <p className="text-xs text-white/30 text-end">
               {t("dataFreshness")}: {formatDateTime(data.latestBenchmarkAt, locale)}
             </p>
           )}

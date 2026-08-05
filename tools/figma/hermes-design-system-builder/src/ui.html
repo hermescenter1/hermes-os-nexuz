@@ -1,0 +1,174 @@
+<!-- Hermes Design System Builder — plugin UI.
+     No network, no external fonts/scripts. All styles + logic inline.
+     Communicates with the plugin thread only via postMessage. -->
+<style>
+  :root {
+    --bg: #071018; --surface: #0C1720; --elevated: #11212C; --interactive: #152A36;
+    --border: #203743; --brand: #16D9E3; --ice: #8BF4F8; --on-brand: #071018;
+    --text: #EDF7FA; --muted: #A9BAC6; --dim: #708694;
+    --success: #38D996; --warning: #F5B942; --danger: #F05D68;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 12px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  .wrap { padding: 14px 16px 20px; }
+  h1 { font-size: 13px; margin: 0 0 2px; letter-spacing: .2px; }
+  .sub { color: var(--dim); font-size: 11px; margin: 0 0 12px; }
+  .row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  button { font: inherit; font-weight: 600; border-radius: 6px; padding: 8px 12px; cursor: pointer; border: 1px solid var(--border); background: var(--interactive); color: var(--text); }
+  button:hover { border-color: var(--brand); }
+  button.primary { background: var(--brand); color: var(--on-brand); border-color: var(--brand); }
+  button.danger { border-color: var(--danger); color: var(--danger); }
+  button.danger:hover { background: rgba(240,93,104,.12); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--dim); margin: 0 0 6px; }
+  .counts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; }
+  .counts div { display: flex; justify-content: space-between; }
+  .counts b { color: var(--brand); font-variant-numeric: tabular-nums; }
+  ul { margin: 4px 0 0; padding-left: 16px; }
+  li { margin: 2px 0; }
+  .ok { color: var(--success); }
+  .warn { color: var(--warning); }
+  .bad { color: var(--danger); }
+  pre { white-space: pre-wrap; word-break: break-word; background: var(--elevated); border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin: 0; font: 11px/1.5 ui-monospace, "Cascadia Code", monospace; max-height: 220px; overflow: auto; }
+  .foot { color: var(--dim); font-size: 10.5px; margin-top: 8px; }
+  .badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <h1>Hermes Design System Builder <span id="ver" class="badge"></span></h1>
+  <p class="sub">Native local Variables · Styles · Components — Starter-safe, deterministic, idempotent. No network.</p>
+
+  <div class="row">
+    <button id="dry" class="primary">Dry Run</button>
+    <button id="apply">Apply</button>
+    <button id="verify">Verify</button>
+    <button id="rollback" class="danger">Rollback</button>
+  </div>
+  <div class="row" style="align-items:center; gap:6px;">
+    <input type="checkbox" id="fallback" style="accent-color: var(--brand);" />
+    <label for="fallback" style="font-size:11px; color: var(--muted); cursor:pointer;">
+      Allow documented font fallback (otherwise Apply <b>fails closed</b> when Estedad/Vazirmatn are not installed)
+    </label>
+  </div>
+
+  <div class="card">
+    <h2>Plan</h2>
+    <div id="counts" class="counts"><div>Loading…</div></div>
+  </div>
+
+  <div class="card" id="capCard">
+    <h2>Starter capabilities</h2>
+    <div id="caps"><span class="ok">supported</span> / <span class="warn">deferred</span> load on init…</div>
+  </div>
+
+  <div class="card">
+    <h2>Result</h2>
+    <pre id="out">Click “Dry Run” to preview every asset that would be created — nothing is written until you click Apply.</pre>
+  </div>
+
+  <p class="foot" id="editnote"></p>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id)
+  const out = $('out')
+  const send = (type, extra) => parent.postMessage({ pluginMessage: Object.assign({ type: type }, extra || {}) }, '*')
+  const busy = (b) => { for (const id of ['dry','apply','verify','rollback']) $(id).disabled = b }
+
+  const fb = () => ({ allowFontFallback: $('fallback').checked })
+  $('dry').onclick = () => { busy(true); out.textContent = 'Running dry run…'; send('dry-run', fb()) }
+  $('apply').onclick = () => {
+    if (!confirm('Apply will CREATE or UPDATE native variables, styles, components and reference assemblies in this file. Original reference frames are never touched. Continue?')) return
+    busy(true); out.textContent = 'Applying… (this can take a few minutes)'; send('apply', fb())
+  }
+  $('verify').onclick = () => { busy(true); out.textContent = 'Verifying…'; send('verify') }
+  $('rollback').onclick = () => {
+    if (!confirm('Rollback will DELETE every asset this plugin created (all managed runs). Reference frames are NOT affected. Continue?')) return
+    busy(true); out.textContent = 'Rolling back…'; send('rollback')
+  }
+
+  function renderCounts(c) {
+    const rows = [
+      ['Collections', c.collections], ['Variables', c.variables], ['Paint styles', c.paintStyles],
+      ['Text styles', c.textStyles], ['Effect styles', c.effectStyles], ['Component sets', c.families],
+      ['Components (variants)', c.components], ['Reference assemblies', c.assemblies],
+      ['Total assets', c.total],
+    ]
+    $('counts').innerHTML = rows.map((r) => '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('')
+  }
+
+  window.onmessage = (event) => {
+    const msg = event.data.pluginMessage
+    if (!msg) return
+    const { type, payload } = msg
+    if (type === 'meta') {
+      $('ver').textContent = 'v' + payload.version
+      renderCounts(payload.counts)
+      const sup = payload.supported.map((s) => '<li class="ok">' + s.capability + '</li>').join('')
+      const def = payload.deferred.map((d) => '<li class="warn">' + d.capability + ' — <b>' + d.code + '</b></li>').join('')
+      $('caps').innerHTML = '<ul>' + sup + def + '</ul>'
+      $('editnote').textContent = '⚠ ' + payload.fileEdit.requirement
+      busy(false)
+      return
+    }
+    if (type === 'dry-run') {
+      let s = payload.text + '\n\n(Dry run only — nothing was written. Manifest present: ' + payload.manifestPresent + ')'
+      if (payload.textValidation) {
+        s += payload.textValidation.ok
+          ? '\n✅ Text preflight: all assembly strings valid (FA/EN/DE).'
+          : '\n❌ TEXT VALIDATION FAILED (Apply will fail closed):\n' + payload.textValidation.issues.slice(0, 10).map((i) => '   - ' + i.assemblyKey + ' [' + i.locale + '/' + i.viewport + '] ' + i.role + ' (' + i.catalogKey + '): ' + i.problem).join('\n')
+      }
+      if (payload.ambiguities && payload.ambiguities.length) s += '\n❌ OWNERSHIP AMBIGUITY (Apply will fail closed): ' + payload.ambiguities.map((a) => a.assetKey).join(', ')
+      if (payload.fontGate) {
+        s += payload.fontGate.canonicalPresent
+          ? '\n✅ Canonical fonts present.'
+          : '\n⚠ Canonical fonts MISSING: ' + payload.fontGate.missing.map((m) => m.family + ' ' + m.weight).join(', ') + (payload.fontGate.wouldBlockApply ? ' → Apply will FAIL CLOSED (or tick the fallback checkbox).' : ' → fallback explicitly allowed.')
+      }
+      out.textContent = s
+      busy(false); return
+    }
+    if (type === 'apply') {
+      const r = payload
+      if (r.blocked) {
+        let s = '⛔ Apply blocked (' + r.blocked + ') — nothing was written.\n'
+        if (r.missingFonts) s += '  missing fonts: ' + r.missingFonts.map((m) => m.family + ' ' + m.weight).join(', ') + '\n  ' + (r.guidance || '')
+        if (r.ambiguities) s += '  duplicate managed markers: ' + r.ambiguities.map((a) => a.assetKey + ' → [' + a.ids.join(', ') + ']').join('; ')
+        if (r.issues) s += '  invalid text values:\n' + r.issues.slice(0, 10).map((i) => '   - ' + i.assemblyKey + ' [' + i.locale + '/' + i.viewport + '] ' + i.role + ' (' + i.catalogKey + '): ' + i.problem).join('\n') + (r.issues.length > 10 ? '\n   … +' + (r.issues.length - 10) + ' more' : '')
+        out.textContent = s
+        busy(false); return
+      }
+      let s = (r.ok ? '✅ Applied' : '⚠ Applied with issues') + '  runId=' + r.runId + '\n'
+      s += '  created ' + r.applied.create + ' · updated ' + r.applied.update + ' · skipped ' + r.applied.skip + '\n'
+      if (r.assemblies && r.assemblies.length) s += '  reference assemblies built: ' + r.assemblies.length + '\n'
+      if (r.fontAliases && r.fontAliases.length) s += '  font name-aliases: ' + r.fontAliases.join('; ') + '\n'
+      if (r.fontSubstitutions && r.fontSubstitutions.length) s += '  font fallbacks: ' + r.fontSubstitutions.join('; ') + '\n'
+      if (r.errors && r.errors.length) s += '  errors:\n   - ' + r.errors.join('\n   - ') + '\n'
+      out.textContent = s
+      busy(false); return
+    }
+    if (type === 'verify') {
+      const r = payload
+      let s = (r.ok ? '✅ Verified — all assets present, no drift' : '⚠ Verify found issues') + '\n'
+      s += '  present ' + r.present + ' / ' + r.total + '\n'
+      s += '  original reference frames preserved (unmanaged): ' + r.originalReferenceFramesPreserved + '\n'
+      s += '  generated managed assemblies present: ' + r.managedAssembliesPresent + '\n'
+      if (r.missing.length) s += '  missing (' + r.missing.length + '): ' + r.missing.slice(0, 12).map((m) => m.name).join(', ') + (r.missing.length > 12 ? '…' : '') + '\n'
+      if (r.drifted.length) s += '  drifted (' + r.drifted.length + '): ' + r.drifted.slice(0, 12).map((m) => m.name).join(', ') + '\n'
+      out.textContent = s
+      busy(false); return
+    }
+    if (type === 'rollback') {
+      const r = payload
+      const rm = r.removed
+      let s = (r.ok ? '✅ Rolled back (' + r.scope + ')' : '⚠ Rollback had issues') + '\n'
+      s += '  removed — variables ' + rm.variables + ', collections ' + rm.collections + ', paint ' + rm.paintStyles + ', text ' + rm.textStyles + ', effect ' + rm.effectStyles + ', componentSets ' + rm.componentSets + ', section ' + rm.section + '\n'
+      if (r.errors && r.errors.length) s += '  errors: ' + r.errors.join('; ')
+      out.textContent = s
+      busy(false); return
+    }
+    if (type === 'error') { out.textContent = '❌ ' + payload.message; busy(false); return }
+  }
+
+  send('init')
+</script>

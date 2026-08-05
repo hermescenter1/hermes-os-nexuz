@@ -10,7 +10,7 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = 
   REVIEW:   { bg: "bg-warn/[0.08]",   text: "text-warn",   dot: "bg-warn"   },
   APPROVED: { bg: "bg-signal/[0.08]", text: "text-signal", dot: "bg-signal" },
   REJECTED: { bg: "bg-danger/[0.08]", text: "text-danger", dot: "bg-danger" },
-  ARCHIVED: { bg: "bg-faint/[0.08]",  text: "text-faint",  dot: "bg-faint"  },
+  ARCHIVED: { bg: "bg-faint/[0.08]",  text: "text-metadata",  dot: "bg-faint"  },
   OBSOLETE: { bg: "bg-muted/[0.08]",  text: "text-muted",  dot: "bg-muted"  },
 };
 
@@ -64,7 +64,7 @@ export function DocumentDetailClient({ document: doc }: Props) {
             { label: isFa ? "ویرایش" : "Updated",  value: formatDate(doc.updatedAt, locale) },
           ].map(d => (
             <div key={d.label}>
-              <dt className="text-xs text-faint mb-1">{d.label}</dt>
+              <dt className="text-xs text-metadata mb-1">{d.label}</dt>
               <dd className={`text-sm font-medium text-ink ${d.mono ? "font-mono" : ""}`}>{d.value}</dd>
             </div>
           ))}
@@ -87,22 +87,22 @@ export function DocumentDetailClient({ document: doc }: Props) {
         <div className="card-enterprise rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-line flex items-center justify-between">
             <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">{isFa ? "تاریخچه بازبینی" : "Revision History"}</h3>
-            <span className="text-xs text-faint">{doc.revisions.length}</span>
+            <span className="text-xs text-metadata">{doc.revisions.length}</span>
           </div>
           <div className="divide-y divide-line">
             {doc.revisions.length === 0 ? (
-              <div className="px-5 py-6 text-center"><p className="text-xs text-faint">{isFa ? "بازبینی‌ای یافت نشد" : "No revisions yet"}</p></div>
+              <div className="px-5 py-6 text-center"><p className="text-xs text-metadata">{isFa ? "بازبینی‌ای یافت نشد" : "No revisions yet"}</p></div>
             ) : (
               doc.revisions.slice(0, 6).map(rev => (
                 <div key={rev.id} className="px-5 py-3 flex items-center justify-between hover:bg-surface2 transition-colors">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-bold text-signal">{rev.revisionNumber}</span>
-                      <span className="text-xs text-faint">{rev.revisionType}</span>
+                      <span className="text-xs text-metadata">{rev.revisionType}</span>
                     </div>
                     {rev.summary && <p className="text-xs text-muted mt-0.5 truncate max-w-[200px]">{rev.summary}</p>}
                   </div>
-                  <span className="text-xs text-faint font-mono">{formatDate(rev.createdAt, locale)}</span>
+                  <span className="text-xs text-metadata font-mono">{formatDate(rev.createdAt, locale)}</span>
                 </div>
               ))
             )}
@@ -113,11 +113,11 @@ export function DocumentDetailClient({ document: doc }: Props) {
         <div className="card-enterprise rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-line flex items-center justify-between">
             <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">{isFa ? "تأییدیه‌ها" : "Approvals"}</h3>
-            <span className="text-xs text-faint">{doc.approvals.length}</span>
+            <span className="text-xs text-metadata">{doc.approvals.length}</span>
           </div>
           <div className="divide-y divide-line">
             {doc.approvals.length === 0 ? (
-              <div className="px-5 py-6 text-center"><p className="text-xs text-faint">{isFa ? "تأییدیه‌ای یافت نشد" : "No approvals yet"}</p></div>
+              <div className="px-5 py-6 text-center"><p className="text-xs text-metadata">{isFa ? "تأییدیه‌ای یافت نشد" : "No approvals yet"}</p></div>
             ) : (
               doc.approvals.slice(0, 6).map(apr => {
                 const a = APPROVAL_STYLE[apr.status] ?? { bg: "bg-muted/[0.06]", text: "text-muted" };
@@ -143,16 +143,16 @@ export function DocumentDetailClient({ document: doc }: Props) {
         <div className="card-enterprise rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-line flex items-center justify-between">
             <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">{isFa ? "نظرات" : "Comments"}</h3>
-            <span className="text-xs text-faint">{doc.comments.length}</span>
+            <span className="text-xs text-metadata">{doc.comments.length}</span>
           </div>
           <div className="divide-y divide-line">
             {doc.comments.length === 0 ? (
-              <div className="px-5 py-6 text-center"><p className="text-xs text-faint">{isFa ? "نظری ثبت نشده" : "No comments yet"}</p></div>
+              <div className="px-5 py-6 text-center"><p className="text-xs text-metadata">{isFa ? "نظری ثبت نشده" : "No comments yet"}</p></div>
             ) : (
               doc.comments.slice(0, 5).map(cmt => (
                 <div key={cmt.id} className="px-5 py-3 hover:bg-surface2 transition-colors">
                   <p className="text-xs text-ink leading-relaxed">{cmt.content}</p>
-                  <p className="text-xs text-faint mt-1 font-mono">{formatDateTime(cmt.createdAt, locale)}</p>
+                  <p className="text-xs text-metadata mt-1 font-mono">{formatDateTime(cmt.createdAt, locale)}</p>
                 </div>
               ))
             )}
@@ -163,11 +163,11 @@ export function DocumentDetailClient({ document: doc }: Props) {
         <div className="card-enterprise rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-line flex items-center justify-between">
             <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">{isFa ? "فراداده" : "Metadata"}</h3>
-            <span className="text-xs text-faint">{doc.metadata.length}</span>
+            <span className="text-xs text-metadata">{doc.metadata.length}</span>
           </div>
           <div className="divide-y divide-line">
             {doc.metadata.length === 0 ? (
-              <div className="px-5 py-6 text-center"><p className="text-xs text-faint">{isFa ? "فراداده‌ای یافت نشد" : "No metadata"}</p></div>
+              <div className="px-5 py-6 text-center"><p className="text-xs text-metadata">{isFa ? "فراداده‌ای یافت نشد" : "No metadata"}</p></div>
             ) : (
               doc.metadata.slice(0, 8).map(m => (
                 <div key={m.id} className="px-5 py-2.5 flex items-center gap-3 hover:bg-surface2 transition-colors">
@@ -185,7 +185,7 @@ export function DocumentDetailClient({ document: doc }: Props) {
         <div className="card-enterprise rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-line flex items-center justify-between">
             <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">{isFa ? "مسیر حسابرسی" : "Audit Trail"}</h3>
-            <span className="text-xs text-faint">{doc.audit.length} {isFa ? "رویداد" : "events"}</span>
+            <span className="text-xs text-metadata">{doc.audit.length} {isFa ? "رویداد" : "events"}</span>
           </div>
           <div className="divide-y divide-line">
             {doc.audit.map(a => (
@@ -194,7 +194,7 @@ export function DocumentDetailClient({ document: doc }: Props) {
                   {a.action}
                 </span>
                 <span className="text-xs text-muted truncate flex-1">{a.details ?? a.action}</span>
-                <span className="text-xs text-faint font-mono shrink-0 whitespace-nowrap">
+                <span className="text-xs text-metadata font-mono shrink-0 whitespace-nowrap">
                   {formatDateTime(a.createdAt, locale)}
                 </span>
               </div>

@@ -41,7 +41,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       {/* System status — neutral, static */}
       <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded border border-line">
         <span className="w-1.5 h-1.5 rounded-full bg-signal/70" />
-        <span className="text-[0.65rem] font-body font-medium text-faint tracking-[0.04em]">Online</span>
+        <span className="text-[0.65rem] font-body font-medium text-metadata tracking-[0.04em]">Online</span>
       </div>
     </header>
   );

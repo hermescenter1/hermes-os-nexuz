@@ -47,7 +47,7 @@ function seedMemory(
     domain: opts.domain ?? "drives",
     analysisSummary: `summary ${mIdx}`,
     confidence: opts.confidence ?? 70,
-    relatedCaseIds: [], relatedDocumentIds: [],
+    relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test",
     outcome: opts.outcome ?? "unknown",
     projectId: opts.projectId,
     createdAt: "2026-01-10T00:00:00.000Z", updatedAt: "2026-01-10T00:00:00.000Z",

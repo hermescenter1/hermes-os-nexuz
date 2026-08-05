@@ -49,8 +49,8 @@ function CandidateCard({
           {candidate.atsScore.total}
         </span>
       </div>
-      <p className="kpi-label text-faint truncate">{candidate.location}</p>
-      <p className="kpi-label text-faint">{candidate.experienceYears}y exp</p>
+      <p className="kpi-label text-metadata truncate">{candidate.location}</p>
+      <p className="kpi-label text-metadata">{candidate.experienceYears}y exp</p>
     </button>
   );
 }
@@ -92,7 +92,7 @@ export function PipelineBoardClient() {
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="kpi-label text-faint">
+      <p className="kpi-label text-metadata">
         {data.total} candidate{data.total !== 1 ? "s" : ""} across {data.columns.filter(c => c.count > 0).length} active stages · Click a card to inspect
       </p>
 
@@ -119,7 +119,7 @@ export function PipelineBoardClient() {
                 />
               ))}
               {col.count === 0 && (
-                <p className="kpi-label text-faint text-center py-4">Empty</p>
+                <p className="kpi-label text-metadata text-center py-4">Empty</p>
               )}
             </div>
           </div>
@@ -134,7 +134,7 @@ export function PipelineBoardClient() {
               <span className="kpi-label">Candidate Profile</span>
             </div>
             <p className="font-body text-sm font-semibold text-ink mb-1">{selected.name}</p>
-            <p className="kpi-label text-faint mb-3">{selected.location} · {selected.experienceYears}y experience</p>
+            <p className="kpi-label text-metadata mb-3">{selected.location} · {selected.experienceYears}y experience</p>
             <div className="space-y-1">
               {[
                 { label: "Work Auth", value: selected.workAuthorization.replace(/-/g, " ") },
@@ -142,7 +142,7 @@ export function PipelineBoardClient() {
                 { label: "Applied",    value: selected.appliedAt },
               ].map(row => (
                 <div key={row.label} className="flex justify-between gap-2">
-                  <span className="kpi-label text-faint">{row.label}</span>
+                  <span className="kpi-label text-metadata">{row.label}</span>
                   <span className="font-mono text-[0.65rem] text-ink">{row.value}</span>
                 </div>
               ))}
@@ -168,7 +168,7 @@ export function PipelineBoardClient() {
             <div className="h-layer-sep mb-3">
               <span className="kpi-label">CV Summary</span>
             </div>
-            <p className="font-body text-xs text-faint leading-relaxed">{selected.cvSummary}</p>
+            <p className="font-body text-xs text-metadata leading-relaxed">{selected.cvSummary}</p>
           </div>
         </div>
       )}

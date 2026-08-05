@@ -38,6 +38,14 @@ export interface SessionPayload {
   role: string;
   name: string;
   iat: number;
+  /**
+   * PHASE 91 — opaque session id (`RefreshToken.id`) so the legacy HMAC cookie
+   * references the same server-authoritative session record as the JWT access
+   * token. Optional for backward compatibility with cookies signed before this
+   * phase; those remain valid until their absolute-age ceiling but are not
+   * individually revocable.
+   */
+  sid?: string;
 }
 
 export function signSession(payload: SessionPayload): string {

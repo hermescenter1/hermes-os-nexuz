@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { resolveBrainOwner } from "@/lib/storage/brain-owner";
+import { requireWritableOwner } from "@/lib/auth/api-guards";
 import { caseRepository, listPublishedCases, type CaseCreate } from "@/lib/storage/case-repository";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { recordAuditEvent, AUDIT_ACTIONS } from "@/lib/audit/audit-service";
 import { getCurrentUser, type CurrentUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/roles";
+import { resolveRequestId } from "@/lib/logger/correlation";
 
 /**
  * /api/cases — Engineering case drafts (Phase 11B).
@@ -94,7 +96,10 @@ export async function POST(req: Request) {
     status: (body.status as CaseCreate["status"]) ?? "draft",
   };
 
-  const repo = caseRepository(await resolveBrainOwner());
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
+  const repo = caseRepository(owner);
   try {
     // Prevent duplicate titles: update the existing record instead.
     const existing = repo.findByTitle ? await repo.findByTitle(title) : null;
@@ -103,9 +108,12 @@ export async function POST(req: Request) {
       : await repo.create(input);
     await recordAuditEvent({
       userId: gate.user.id,
+      organizationId: owner?.orgId ?? null,
       action: existing ? AUDIT_ACTIONS.CASE_UPDATED : AUDIT_ACTIONS.CASE_CREATED,
       entityType: "case",
       entityId: rec?.id ?? null,
+      outcome: "success",
+      correlationId: resolveRequestId(req),
       metadata: { title },
     });
     return NextResponse.json({ storageMode: getStorageMode(), case: rec, updated: !!existing });
@@ -126,7 +134,10 @@ export async function PATCH(req: Request) {
   }
   const id = String(body.id ?? "");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const repo = caseRepository(await resolveBrainOwner());
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
+  const repo = caseRepository(owner);
   try {
     const rec = await repo.update(id, body as Partial<CaseCreate>);
     if (!rec) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -139,9 +150,12 @@ export async function PATCH(req: Request) {
           : AUDIT_ACTIONS.CASE_UPDATED;
     await recordAuditEvent({
       userId: gate.user.id,
+      organizationId: owner?.orgId ?? null,
       action,
       entityType: "case",
       entityId: id,
+      outcome: "success",
+      correlationId: resolveRequestId(req),
       metadata: { status },
     });
     return NextResponse.json({ storageMode: getStorageMode(), case: rec });
@@ -156,7 +170,10 @@ export async function DELETE(req: Request) {
 
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const repo = caseRepository(await resolveBrainOwner());
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
+  const owner = own.owner;
+  const repo = caseRepository(owner);
   try {
     const ok = await repo.delete(id);
     // PHASE 90: only record the audit event when the delete actually happened.
@@ -166,9 +183,12 @@ export async function DELETE(req: Request) {
     if (ok) {
       await recordAuditEvent({
         userId: gate.user.id,
+        organizationId: owner?.orgId ?? null,
         action: AUDIT_ACTIONS.CASE_DELETED,
         entityType: "case",
         entityId: id,
+        outcome: "success",
+        correlationId: resolveRequestId(req),
         metadata: {},
       });
     }

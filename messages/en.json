@@ -1,4 +1,144 @@
 {
+    "observability": {
+      "eyebrow": "Operations",
+      "title": "SRE Control Room",
+      "lede": "Live operational health, dependency probes, security and error signals, incident reconstruction and backup posture — every value is measured, never simulated.",
+      "posture": {
+        "healthy": "All systems operational",
+        "degraded": "Operating with degradation",
+        "critical": "Critical attention required",
+        "detail": "Derived from live probes and in-process signals · as of {at}"
+      },
+      "kpi": {
+        "database": "Database",
+        "redis": "Cache",
+        "activeAlerts": "Active alerts",
+        "activeAlertsSub": "currently firing",
+        "errorEvents": "Error events",
+        "securityEvents": "Security events",
+        "uptime": "Process uptime",
+        "cumulative": "cumulative"
+      },
+      "status": {
+        "unknown": "Unknown",
+        "notConfigured": "Not configured",
+        "up": "Up",
+        "down": "Down",
+        "operational": "Operational",
+        "clear": "Clear",
+        "fallback": "Fallback active",
+        "redisBacked": "Redis-backed"
+      },
+      "labels": {
+        "liveProbe": "live probe",
+        "count": "count",
+        "time": "Time",
+        "event": "Event",
+        "severity": "Severity",
+        "outcome": "Outcome",
+        "reason": "Reason",
+        "operation": "Operation",
+        "lastSeen": "Last seen",
+        "source": "Source",
+        "action": "Action",
+        "dataSource": "Data source"
+      },
+      "sections": {
+        "topology": "Dependency topology",
+        "latency": "Dependency latency",
+        "httpLatency": "HTTP request latency",
+        "httpRate": "HTTP request rate",
+        "alerts": "Active alerts",
+        "securityRecent": "Recent security events",
+        "errors": "Error fingerprints",
+        "incident": "Incident timeline",
+        "audit": "Audit explorer",
+        "backup": "Backup status",
+        "startup": "Startup validation",
+        "runtime": "Runtime"
+      },
+      "topology": {
+        "application": "Application",
+        "database": "Database",
+        "redis": "Redis (cache)",
+        "apiLimiter": "API rate limiter",
+        "authLimiter": "Auth rate limiter",
+        "self": "self",
+        "rateLimiter": "rate limiter",
+        "externalNote": "Nginx, mail and OpenBao are not probed from the application and are intentionally omitted; add a real probe before showing their health."
+      },
+      "charts": {
+        "latencyAvg": "Average",
+        "latencySamples": "Samples",
+        "latencyThreshold": "Warn / critical",
+        "latencyEmpty": "No probe samples recorded yet — the readiness endpoint records database probe latency when it is called.",
+        "errorsBySeverity": "Errors by severity",
+        "securityByEvent": "Security events by type",
+        "authActivity": "Authentication & session activity",
+        "authFailures": "Authentication failures",
+        "authzDenials": "Authorization denials",
+        "sessionOps": "Session operations",
+        "alertDelivery": "Alert delivery"
+      },
+      "notInstrumented": {
+        "badge": "Not instrumented",
+        "httpRequestLatency": "HTTP request latency",
+        "httpRequestRate": "HTTP request rate",
+        "explanation": "This signal has no recording call-site and no durable time-series store, so no real data exists. It is shown as not measured — deliberately not as zero, which would falsely imply traffic was observed.",
+        "sourceValue": "Prometheus scrape · /api/metrics",
+        "action": "Operator action: enable a Prometheus scrape of /api/metrics and add real HTTP instrumentation (tracked as a separate follow-up)."
+      },
+      "empties": {
+        "noErrors": "No errors recorded.",
+        "noSecurity": "No security events recorded.",
+        "noData": "No data recorded yet.",
+        "noAlerts": "No active alerts.",
+        "noAudit": "No audit events match.",
+        "auditError": "The audit store is unavailable — this panel is degraded."
+      },
+      "severities": {
+        "info": "Info",
+        "warning": "Warning",
+        "error": "Error",
+        "critical": "Critical"
+      },
+      "incidentLookup": {
+        "label": "Look up an incident by correlation ID",
+        "placeholder": "for example 3f2a-b19c",
+        "submit": "Reconstruct",
+        "invalid": "Malformed correlation ID",
+        "empty": "No events for this correlation ID"
+      },
+      "audit": {
+        "filterLabel": "Filter by action or outcome",
+        "filterPlaceholder": "for example login or denied",
+        "results": "{shown} of {total} shown",
+        "outcomeDistribution": "Outcome distribution"
+      },
+      "backup": {
+        "verified": "Verified",
+        "notVerified": "Not verified",
+        "noBackup": "No backup found",
+        "noBackupHint": "No .dump file was found in BACKUP_DIR — confirm the backup cron is running.",
+        "lastBackup": "Last backup",
+        "age": "Age",
+        "size": "Size",
+        "verifiedAt": "Verified at",
+        "neverVerified": "never verified",
+        "file": "File"
+      },
+      "startup": {
+        "fatal": "{n} fatal",
+        "ok": "Passed",
+        "notRun": "Did not run"
+      },
+      "runtime": {
+        "environment": "Environment",
+        "uptime": "Uptime",
+        "rss": "Resident memory",
+        "heap": "Heap used / total"
+      }
+    },
   "meta": {
     "title": "Hermes OS — Industrial AI Platform",
     "description": "Enterprise industrial automation platform: PLC, SCADA, HMI, AI copilot, and intelligent operations — built for Persian and English plant floors.",
@@ -5441,6 +5581,7 @@
         "apiKeys": "API Keys",
         "orgSettings": "Organization Settings",
         "admin": "Admin Console",
+        "observability": "Observability",
         "otEdge": "OT Edge"
       }
     },
@@ -7026,6 +7167,7 @@
         "FORBIDDEN": "Your account is not permitted to perform this operation in this organization, or for this site.",
         "NOT_FOUND": "This record does not exist, or it is outside the sites you are authorized to see.",
         "RATE_LIMITED": "Too many requests were made in a short period. Please wait a moment and retry.",
+        "SECRET_BACKEND_UNAVAILABLE": "Credential provisioning is not available on this deployment. An operator must enable the secret backend.",
         "UNAVAILABLE": "The records cannot be written at the moment. This is a temporary condition on the server.",
         "UNSUPPORTED_MEDIA": "The request could not be processed. Please retry.",
         "PAYLOAD_TOO_LARGE": "The submitted values are too large.",
@@ -7040,6 +7182,34 @@
       "permission": {
         "deniedTitle": "Not authorized",
         "deniedBody": "Your account does not have permission to create or change these records in this organization."
+      },
+      "enrollment": {
+        "title": "Machine credential",
+        "subtitle": "Issue, rotate or revoke the signing credential this gateway uses to authenticate its signed envelopes. The credential is shown once and cannot be retrieved again.",
+        "statusNotEnrolled": "No credential issued",
+        "statusActive": "Credential active",
+        "statusRevoked": "Credential revoked",
+        "versionLabel": "Credential version {version}",
+        "issue": "Issue credential",
+        "rotate": "Rotate credential",
+        "revoke": "Revoke credential",
+        "delete": "Delete credential",
+        "working": "Working…",
+        "confirmRotate": "Rotating replaces the current credential. The gateway must be reconfigured with the new value or it will stop authenticating. Continue?",
+        "confirmRevoke": "Revoking immediately stops this gateway from authenticating. Continue?",
+        "confirmDelete": "Deleting removes the credential entirely. The gateway will stop authenticating. Continue?",
+        "credentialTitle": "Copy the credential now",
+        "credentialWarning": "This is the only time the credential is shown. Store it in a secure location and configure the gateway with it. It cannot be retrieved again.",
+        "credentialLabel": "Signing credential",
+        "referenceLabel": "Signing reference",
+        "algorithmLabel": "Signature algorithm",
+        "copyCredential": "Copy credential",
+        "copyReference": "Copy reference",
+        "copied": "Copied",
+        "acknowledge": "I have stored the credential securely",
+        "revokedNotice": "This credential has been revoked and can no longer authenticate. Delete it to issue a new one.",
+        "unavailableTitle": "Credential provisioning unavailable",
+        "unavailableBody": "This deployment cannot issue machine credentials yet. An operator must enable the secret backend before enrollment is possible."
       }
     }
   }

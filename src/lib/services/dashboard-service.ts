@@ -9,6 +9,7 @@
 import { listProjects } from "@/lib/memory/project-service";
 import { listEngineeringMemories, getEngineeringMemory } from "@/lib/memory/memory-service";
 import { getKnowledgeGraph } from "./knowledge-graph-service";
+import { resolveBrainOwner } from "@/lib/storage/brain-owner";
 import { computeDashboard } from "@/lib/analytics/dashboard";
 import type { DashboardResult } from "@/lib/analytics/dashboard";
 import type { StoredProject, StoredMemory, StoredMemoryFeedback } from "@/lib/storage/types";
@@ -38,19 +39,24 @@ const EMPTY_GRAPH: KnowledgeGraph = {
 };
 
 export async function getDashboard(): Promise<DashboardResult> {
+  // PHASE 90B: resolve the caller's tenant owner ONCE and thread it into every
+  // load, so this aggregation is tenant-scoped without re-resolving the owner
+  // per memory (avoids an N+1 membership lookup).
+  const owner = await resolveBrainOwner();
+
   let projects: StoredProject[] = [];
   let memories: StoredMemory[]  = [];
   let graph:    KnowledgeGraph  = EMPTY_GRAPH;
 
-  try { projects = await listProjects(); }             catch { /* degrade gracefully */ }
-  try { memories = await listEngineeringMemories(0); } catch { /* degrade gracefully */ }
-  try { graph    = await getKnowledgeGraph(); }        catch { /* use empty graph */ }
+  try { projects = await listProjects(owner); }             catch { /* degrade gracefully */ }
+  try { memories = await listEngineeringMemories(0, owner); } catch { /* degrade gracefully */ }
+  try { graph    = await getKnowledgeGraph(owner); }        catch { /* use empty graph */ }
 
   const feedbackByMemoryId = new Map<string, StoredMemoryFeedback[]>();
   await Promise.allSettled(
     memories.map(async m => {
       try {
-        const full = await getEngineeringMemory(m.id);
+        const full = await getEngineeringMemory(m.id, owner);
         if (full && full.feedback.length > 0) feedbackByMemoryId.set(m.id, full.feedback);
       } catch { /* skip this memory's feedback */ }
     })

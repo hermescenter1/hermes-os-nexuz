@@ -12,6 +12,12 @@
 
 set -euo pipefail
 
+# PHASE 93 — enforce restrictive permissions on all backup artifacts. Database
+# dumps contain every tenant's data; they must never be world- or group-readable.
+# umask 077 makes every file/dir this script creates owner-only (0600 / 0700),
+# and is inherited by the verify-backup.sh child process.
+umask 077
+
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
 BACKUP_FILE="${BACKUP_DIR}/hermes_${TIMESTAMP}.dump"
@@ -21,6 +27,8 @@ DB_USER="${POSTGRES_USER:-hermes}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 
 mkdir -p "${BACKUP_DIR}"
+# Enforce owner-only on the backup directory even if it pre-existed with looser bits.
+chmod 700 "${BACKUP_DIR}" 2>/dev/null || true
 
 echo "[$(date -Iseconds)] Starting backup → ${BACKUP_FILE}"
 
@@ -38,14 +46,22 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
+# Enforce owner-only read/write on the dump itself (defense in depth beyond umask).
+chmod 600 "${BACKUP_FILE}"
+
 SIZE=$(du -sh "${BACKUP_FILE}" | cut -f1)
 echo "[$(date -Iseconds)] Backup complete: ${BACKUP_FILE} (${SIZE})"
 
-# Run verification immediately after backup
+# Run verification immediately after backup.
+#
+# PHASE 93.1 — detect the verifier by EXISTENCE (`-f`), not the executable bit
+# (`-x`). The repo ships verify-backup.sh as a normal 0644 file, so an `-x` test
+# silently skipped verification on a fresh checkout. Invoke it explicitly through
+# `bash` so it never depends on the executable mode.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -x "${SCRIPT_DIR}/verify-backup.sh" ]]; then
+if [[ -f "${SCRIPT_DIR}/verify-backup.sh" ]]; then
   echo "[$(date -Iseconds)] Running backup verification..."
-  "${SCRIPT_DIR}/verify-backup.sh" "${BACKUP_FILE}" "${CONTAINER}" "${DB_USER}"
+  bash "${SCRIPT_DIR}/verify-backup.sh" "${BACKUP_FILE}" "${CONTAINER}" "${DB_USER}"
 else
   echo "[$(date -Iseconds)] WARNING: verify-backup.sh not found — skipping verification"
 fi

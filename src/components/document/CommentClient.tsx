@@ -40,7 +40,7 @@ export function CommentClient({ comments }: Props) {
               </span>
             )}
           </div>
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-faint">
+          <div className="mt-2 flex flex-wrap gap-3 text-xs text-metadata">
             <span className="font-mono">{c.documentId.slice(0, 8)}…</span>
             <span>{formatDateTime(c.createdAt, locale)}</span>
           </div>

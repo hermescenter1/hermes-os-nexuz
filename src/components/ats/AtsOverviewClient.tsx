@@ -70,7 +70,7 @@ export function AtsOverviewClient() {
           { label: "In Pipeline",       value: data.totalCandidates - (data.byStage.hired + data.byStage.rejected), color: "text-ink" },
           { label: "Offers Extended",   value: data.byStage.offer,       color: "text-warn"   },
           { label: "Hired",             value: data.byStage.hired,       color: "text-signal" },
-          { label: "Velocity (days)",   value: data.hiringVelocityDays,  color: "text-faint"  },
+          { label: "Velocity (days)",   value: data.hiringVelocityDays,  color: "text-metadata"  },
         ].map(kpi => (
           <div key={kpi.label} className="global-ops-cell">
             <p className="kpi-label mb-1.5">{kpi.label}</p>
@@ -94,7 +94,7 @@ export function AtsOverviewClient() {
               return (
                 <div key={stage} className="flex items-center gap-3">
                   <div className={`h-2 w-2 rounded-full flex-shrink-0 ${STAGE_DOT[stage]}`} />
-                  <span className="kpi-label text-faint w-28 flex-shrink-0">{STAGE_LABELS[stage]}</span>
+                  <span className="kpi-label text-metadata w-28 flex-shrink-0">{STAGE_LABELS[stage]}</span>
                   <div className="flex-1 h-1.5 rounded bg-line overflow-hidden">
                     <div
                       className={`h-1.5 rounded ${STAGE_DOT[stage]} opacity-60`}
@@ -102,7 +102,7 @@ export function AtsOverviewClient() {
                     />
                   </div>
                   <span className="font-mono text-xs text-ink w-6 text-right flex-shrink-0">{count}</span>
-                  <span className="kpi-label text-faint w-8 text-right flex-shrink-0">{pct}%</span>
+                  <span className="kpi-label text-metadata w-8 text-right flex-shrink-0">{pct}%</span>
                 </div>
               );
             })}
@@ -117,10 +117,10 @@ export function AtsOverviewClient() {
           <div className="space-y-2">
             {data.topJobs.map((j, i) => (
               <div key={j.jobId} className="flex items-start gap-2">
-                <span className="font-mono text-xs text-faint w-3 flex-shrink-0">{i + 1}</span>
+                <span className="font-mono text-xs text-metadata w-3 flex-shrink-0">{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-body text-xs text-ink leading-snug truncate">{j.title}</p>
-                  <p className="kpi-label text-faint">{j.count} applicants</p>
+                  <p className="kpi-label text-metadata">{j.count} applicants</p>
                 </div>
               </div>
             ))}
@@ -144,9 +144,9 @@ export function AtsOverviewClient() {
                   <span className="font-semibold">{act.candidateName}</span>
                   {" — "}{act.jobTitle}
                 </p>
-                <p className="kpi-label text-faint">{act.detail}</p>
+                <p className="kpi-label text-metadata">{act.detail}</p>
               </div>
-              <span className="font-mono text-[0.58rem] text-faint flex-shrink-0">{act.timestamp}</span>
+              <span className="font-mono text-[0.58rem] text-metadata flex-shrink-0">{act.timestamp}</span>
             </div>
           ))}
         </div>

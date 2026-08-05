@@ -10,7 +10,10 @@
 set -euo pipefail
 
 BACKUP_FILE="${1:-}"
+# Container names under the canonical `hermes` Compose project:
+# <project>-<service>-<index> (Compose v2). Overridable via env for other setups.
 CONTAINER="${POSTGRES_CONTAINER:-hermes-postgres-1}"
+WEB_CONTAINER="${HERMES_WEB_CONTAINER:-hermes-hermes-web-1}"
 DB_NAME="${POSTGRES_DB:-hermes_db}"
 DB_USER="${POSTGRES_USER:-hermes}"
 
@@ -34,18 +37,43 @@ docker exec -i "${CONTAINER}" pg_restore --list - < "${BACKUP_FILE}" > /dev/null
 }
 echo "[$(date -Iseconds)] Backup integrity OK."
 
-# ── Safety countdown ──────────────────────────────────────────────────────────
+# ── Fail-closed environment guard (PHASE 93) ─────────────────────────────────
+# The old 10-second countdown was fail-OPEN: it proceeded unless a human happened
+# to be watching and hit Ctrl+C. A destructive DROP DATABASE must instead be
+# fail-CLOSED — it runs ONLY on an explicit, target-specific confirmation that
+# also prevents fat-fingering the wrong database. The required phrase embeds the
+# exact target DB, so a confirmation intended for a staging DB cannot authorise a
+# restore against production.
+REQUIRED_CONFIRM="restore ${DB_NAME}"
 echo ""
 echo "WARNING: This will DROP and recreate the database '${DB_NAME}'."
 echo "   Container : ${CONTAINER}"
 echo "   Backup    : ${BACKUP_FILE}"
 echo ""
-echo "Press Ctrl+C within 10 seconds to cancel..."
-sleep 10
+if [[ -n "${RESTORE_CONFIRM:-}" ]]; then
+  # Non-interactive (automation): the env var must match EXACTLY.
+  if [[ "${RESTORE_CONFIRM}" != "${REQUIRED_CONFIRM}" ]]; then
+    echo "Error: RESTORE_CONFIRM must equal '${REQUIRED_CONFIRM}'. Refusing (fail-closed)." >&2
+    exit 3
+  fi
+  echo "[$(date -Iseconds)] Confirmed via RESTORE_CONFIRM."
+elif [[ -t 0 ]]; then
+  # Interactive: the operator must TYPE the exact target-specific phrase.
+  read -r -p "Type '${REQUIRED_CONFIRM}' to proceed: " REPLY_CONFIRM
+  if [[ "${REPLY_CONFIRM}" != "${REQUIRED_CONFIRM}" ]]; then
+    echo "Confirmation mismatch. Aborting (fail-closed)." >&2
+    exit 3
+  fi
+else
+  # No confirmation and no interactive terminal → never proceed.
+  echo "Error: destructive restore requires confirmation. Set RESTORE_CONFIRM='${REQUIRED_CONFIRM}'" >&2
+  echo "       or run interactively. Refusing (fail-closed)." >&2
+  exit 3
+fi
 
 # ── Stop the app to prevent writes during restore ─────────────────────────────
-echo "[$(date -Iseconds)] Stopping hermes-web to prevent writes during restore..."
-docker stop hermes-web 2>/dev/null || true
+echo "[$(date -Iseconds)] Stopping ${WEB_CONTAINER} to prevent writes during restore..."
+docker stop "${WEB_CONTAINER}" 2>/dev/null || true
 
 # ── Drop and recreate the database ───────────────────────────────────────────
 echo "[$(date -Iseconds)] Terminating active connections to '${DB_NAME}'..."
@@ -67,8 +95,8 @@ docker exec -i "${CONTAINER}" \
 echo "[$(date -Iseconds)] Restore complete."
 
 # ── Restart the app ───────────────────────────────────────────────────────────
-echo "[$(date -Iseconds)] Restarting hermes-web..."
-docker start hermes-web 2>/dev/null || echo "Note: could not restart hermes-web — start it manually."
+echo "[$(date -Iseconds)] Restarting ${WEB_CONTAINER}..."
+docker start "${WEB_CONTAINER}" 2>/dev/null || echo "Note: could not restart ${WEB_CONTAINER} — start it manually."
 
 echo "[$(date -Iseconds)] Done. Run migrations if the backup predates the current schema:"
-echo "  docker-compose -f docker-compose.prod.yml exec hermes-web npx prisma migrate deploy"
+echo "  docker compose -p hermes -f docker-compose.prod.yml exec hermes-web npx prisma migrate deploy"

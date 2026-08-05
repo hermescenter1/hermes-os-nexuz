@@ -118,9 +118,9 @@ export default function KnowledgePage() {
                         style={{ background: m.accent, opacity: 0.7 }}
                       />
                       {m.count !== undefined ? (
-                        <span className="font-mono text-xs text-faint">{m.count}</span>
+                        <span className="font-mono text-xs text-metadata">{m.count}</span>
                       ) : m.badge ? (
-                        <span className="rounded border border-line px-1.5 py-0.5 font-body text-[0.65rem] text-faint">{m.badge}</span>
+                        <span className="rounded border border-line px-1.5 py-0.5 font-body text-[0.65rem] text-metadata">{m.badge}</span>
                       ) : null}
                     </div>
                     <p className="font-display font-semibold text-ink group-hover:text-signal transition-colors duration-150 mb-1.5 text-base">
@@ -128,8 +128,8 @@ export default function KnowledgePage() {
                     </p>
                     <p className="type-secondary text-xs leading-relaxed">{t(`${m.key}.subtitle`)}</p>
                     <div className="mt-3 flex items-center gap-1">
-                      <span className="text-xs text-faint group-hover:text-muted transition-colors">Open</span>
-                      <span className="text-xs text-faint group-hover:text-signal transition-colors duration-150 ms-0.5">→</span>
+                      <span className="text-xs text-metadata group-hover:text-muted transition-colors">Open</span>
+                      <span className="text-xs text-metadata group-hover:text-signal transition-colors duration-150 ms-0.5">→</span>
                     </div>
                   </div>
                 </Link>

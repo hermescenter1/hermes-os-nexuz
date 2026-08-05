@@ -1,4 +1,144 @@
 {
+    "observability": {
+      "eyebrow": "Betrieb",
+      "title": "SRE-Leitstand",
+      "lede": "Live-Betriebszustand, Abhängigkeitsprüfungen, Sicherheits- und Fehlersignale, Vorfallrekonstruktion und Sicherungslage — jeder Wert ist gemessen, niemals simuliert.",
+      "posture": {
+        "healthy": "Alle Systeme betriebsbereit",
+        "degraded": "Betrieb mit Einschränkungen",
+        "critical": "Kritische Aufmerksamkeit erforderlich",
+        "detail": "Abgeleitet aus Live-Prüfungen und prozessinternen Signalen · Stand {at}"
+      },
+      "kpi": {
+        "database": "Datenbank",
+        "redis": "Zwischenspeicher",
+        "activeAlerts": "Aktive Warnungen",
+        "activeAlertsSub": "derzeit ausgelöst",
+        "errorEvents": "Fehlerereignisse",
+        "securityEvents": "Sicherheitsereignisse",
+        "uptime": "Prozesslaufzeit",
+        "cumulative": "kumuliert"
+      },
+      "status": {
+        "unknown": "Unbekannt",
+        "notConfigured": "Nicht konfiguriert",
+        "up": "Aktiv",
+        "down": "Ausgefallen",
+        "operational": "Betriebsbereit",
+        "clear": "Frei",
+        "fallback": "Ersatz aktiv",
+        "redisBacked": "Redis-gestützt"
+      },
+      "labels": {
+        "liveProbe": "Live-Prüfung",
+        "count": "Anzahl",
+        "time": "Zeit",
+        "event": "Ereignis",
+        "severity": "Schweregrad",
+        "outcome": "Ergebnis",
+        "reason": "Grund",
+        "operation": "Vorgang",
+        "lastSeen": "Zuletzt gesehen",
+        "source": "Quelle",
+        "action": "Aktion",
+        "dataSource": "Datenquelle"
+      },
+      "sections": {
+        "topology": "Abhängigkeitstopologie",
+        "latency": "Abhängigkeitslatenz",
+        "httpLatency": "HTTP-Anfragelatenz",
+        "httpRate": "HTTP-Anfragerate",
+        "alerts": "Aktive Warnungen",
+        "securityRecent": "Letzte Sicherheitsereignisse",
+        "errors": "Fehler-Fingerabdrücke",
+        "incident": "Vorfall-Zeitachse",
+        "audit": "Audit-Explorer",
+        "backup": "Sicherungsstatus",
+        "startup": "Startvalidierung",
+        "runtime": "Laufzeit"
+      },
+      "topology": {
+        "application": "Anwendung",
+        "database": "Datenbank",
+        "redis": "Redis (Cache)",
+        "apiLimiter": "API-Ratenbegrenzer",
+        "authLimiter": "Auth-Ratenbegrenzer",
+        "self": "selbst",
+        "rateLimiter": "Ratenbegrenzer",
+        "externalNote": "Nginx, Mail und OpenBao werden von der Anwendung nicht geprüft und sind bewusst ausgelassen; fügen Sie eine echte Prüfung hinzu, bevor deren Zustand angezeigt wird."
+      },
+      "charts": {
+        "latencyAvg": "Durchschnitt",
+        "latencySamples": "Stichproben",
+        "latencyThreshold": "Warnung / kritisch",
+        "latencyEmpty": "Noch keine Prüfstichproben erfasst — der Bereitschaftsendpunkt erfasst die Datenbank-Prüflatenz, wenn er aufgerufen wird.",
+        "errorsBySeverity": "Fehler nach Schweregrad",
+        "securityByEvent": "Sicherheitsereignisse nach Typ",
+        "authActivity": "Authentifizierungs- und Sitzungsaktivität",
+        "authFailures": "Authentifizierungsfehler",
+        "authzDenials": "Autorisierungsverweigerungen",
+        "sessionOps": "Sitzungsvorgänge",
+        "alertDelivery": "Warnungszustellung"
+      },
+      "notInstrumented": {
+        "badge": "Nicht instrumentiert",
+        "httpRequestLatency": "HTTP-Anfragelatenz",
+        "httpRequestRate": "HTTP-Anfragerate",
+        "explanation": "Dieses Signal hat keine Aufzeichnungsstelle und keinen dauerhaften Zeitreihenspeicher, daher liegen keine echten Daten vor. Es wird als nicht gemessen angezeigt — bewusst nicht als Null, was fälschlich Verkehr vortäuschen würde.",
+        "sourceValue": "Prometheus-Scrape · /api/metrics",
+        "action": "Betreiberaktion: einen Prometheus-Scrape von /api/metrics aktivieren und echte HTTP-Instrumentierung hinzufügen (als separate Nachverfolgung erfasst)."
+      },
+      "empties": {
+        "noErrors": "Keine Fehler erfasst.",
+        "noSecurity": "Keine Sicherheitsereignisse erfasst.",
+        "noData": "Noch keine Daten erfasst.",
+        "noAlerts": "Keine aktiven Warnungen.",
+        "noAudit": "Keine Audit-Ereignisse passen.",
+        "auditError": "Der Audit-Speicher ist nicht verfügbar — dieses Panel ist eingeschränkt."
+      },
+      "severities": {
+        "info": "Hinweis",
+        "warning": "Warnung",
+        "error": "Fehler",
+        "critical": "Kritisch"
+      },
+      "incidentLookup": {
+        "label": "Vorfall über Korrelations-ID nachschlagen",
+        "placeholder": "zum Beispiel 3f2a-b19c",
+        "submit": "Rekonstruieren",
+        "invalid": "Fehlerhafte Korrelations-ID",
+        "empty": "Keine Ereignisse für diese Korrelations-ID"
+      },
+      "audit": {
+        "filterLabel": "Nach Aktion oder Ergebnis filtern",
+        "filterPlaceholder": "zum Beispiel login oder denied",
+        "results": "{shown} von {total} angezeigt",
+        "outcomeDistribution": "Ergebnisverteilung"
+      },
+      "backup": {
+        "verified": "Verifiziert",
+        "notVerified": "Nicht verifiziert",
+        "noBackup": "Keine Sicherung gefunden",
+        "noBackupHint": "Keine .dump-Datei in BACKUP_DIR gefunden — prüfen Sie, ob der Sicherungs-Cron läuft.",
+        "lastBackup": "Letzte Sicherung",
+        "age": "Alter",
+        "size": "Größe",
+        "verifiedAt": "Verifiziert am",
+        "neverVerified": "nie verifiziert",
+        "file": "Datei"
+      },
+      "startup": {
+        "fatal": "{n} fatale",
+        "ok": "Bestanden",
+        "notRun": "Nicht ausgeführt"
+      },
+      "runtime": {
+        "environment": "Umgebung",
+        "uptime": "Laufzeit",
+        "rss": "Residenter Speicher",
+        "heap": "Heap belegt / gesamt"
+      }
+    },
   "meta": {
     "title": "Hermes OS — Industrielle KI-Plattform",
     "description": "Enterprise-Plattform für industrielle Automatisierung: PLC, SCADA, HMI, KI-Copilot und intelligente Betriebsführung — entwickelt für persisch- und englischsprachige Produktionsumgebungen.",
@@ -5441,6 +5581,7 @@
         "apiKeys": "API-Schlüssel",
         "orgSettings": "Organisationseinstellungen",
         "admin": "Admin-Konsole",
+        "observability": "Beobachtbarkeit",
         "otEdge": "OT-Edge"
       }
     },
@@ -7026,6 +7167,7 @@
         "FORBIDDEN": "Ihr Konto darf diesen Vorgang in diesem Mandanten oder für diesen Standort nicht ausführen.",
         "NOT_FOUND": "Dieser Datensatz existiert nicht oder liegt außerhalb der Standorte, die Sie einsehen dürfen.",
         "RATE_LIMITED": "In kurzer Zeit wurden zu viele Anfragen gestellt. Warten Sie einen Moment und versuchen Sie es erneut.",
+        "SECRET_BACKEND_UNAVAILABLE": "Die Ausstellung von Anmeldedaten ist auf dieser Bereitstellung nicht verfügbar. Ein Operator muss das Secret-Backend aktivieren.",
         "UNAVAILABLE": "Die Datensätze können derzeit nicht geschrieben werden. Dies ist ein vorübergehender Zustand auf dem Server.",
         "UNSUPPORTED_MEDIA": "Die Anfrage konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.",
         "PAYLOAD_TOO_LARGE": "Die übermittelten Werte sind zu groß.",
@@ -7040,6 +7182,34 @@
       "permission": {
         "deniedTitle": "Nicht berechtigt",
         "deniedBody": "Ihr Konto hat keine Berechtigung, diese Datensätze in diesem Mandanten anzulegen oder zu ändern."
+      },
+      "enrollment": {
+        "title": "Maschinen-Anmeldedaten",
+        "subtitle": "Stellen Sie die Signatur-Anmeldedaten aus, mit denen dieses Gateway seine signierten Envelopes authentifiziert, rotieren oder widerrufen Sie sie. Die Anmeldedaten werden nur einmal angezeigt und können danach nicht erneut abgerufen werden.",
+        "statusNotEnrolled": "Keine Anmeldedaten ausgestellt",
+        "statusActive": "Anmeldedaten aktiv",
+        "statusRevoked": "Anmeldedaten widerrufen",
+        "versionLabel": "Anmeldedaten-Version {version}",
+        "issue": "Anmeldedaten ausstellen",
+        "rotate": "Anmeldedaten rotieren",
+        "revoke": "Anmeldedaten widerrufen",
+        "delete": "Anmeldedaten löschen",
+        "working": "Wird ausgeführt…",
+        "confirmRotate": "Beim Rotieren werden die aktuellen Anmeldedaten ersetzt. Das Gateway muss mit dem neuen Wert konfiguriert werden, sonst kann es sich nicht mehr authentifizieren. Fortfahren?",
+        "confirmRevoke": "Ein Widerruf beendet die Authentifizierung dieses Gateways sofort. Fortfahren?",
+        "confirmDelete": "Das Löschen entfernt die Anmeldedaten vollständig. Das Gateway kann sich danach nicht mehr authentifizieren. Fortfahren?",
+        "credentialTitle": "Kopieren Sie die Anmeldedaten jetzt",
+        "credentialWarning": "Dies ist das einzige Mal, dass die Anmeldedaten angezeigt werden. Bewahren Sie sie an einem sicheren Ort auf und konfigurieren Sie das Gateway damit. Sie können nicht erneut abgerufen werden.",
+        "credentialLabel": "Signatur-Anmeldedaten",
+        "referenceLabel": "Signaturreferenz",
+        "algorithmLabel": "Signaturalgorithmus",
+        "copyCredential": "Anmeldedaten kopieren",
+        "copyReference": "Referenz kopieren",
+        "copied": "Kopiert",
+        "acknowledge": "Ich habe die Anmeldedaten sicher gespeichert",
+        "revokedNotice": "Diese Anmeldedaten wurden widerrufen und können sich nicht mehr authentifizieren. Löschen Sie sie, um neue auszustellen.",
+        "unavailableTitle": "Ausstellung von Anmeldedaten nicht verfügbar",
+        "unavailableBody": "Diese Bereitstellung kann noch keine Maschinen-Anmeldedaten ausstellen. Ein Operator muss zunächst das Secret-Backend aktivieren."
       }
     }
   }

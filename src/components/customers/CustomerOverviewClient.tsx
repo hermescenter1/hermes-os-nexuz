@@ -93,7 +93,7 @@ export function CustomerOverviewClient() {
           <div className="space-y-2.5">
             {data.byHealth.map(h => (
               <div key={h.tier} className="flex items-center gap-3">
-                <span className="kpi-label text-faint w-20 flex-shrink-0 capitalize">{h.tier}</span>
+                <span className="kpi-label text-metadata w-20 flex-shrink-0 capitalize">{h.tier}</span>
                 <div className="flex-1 h-1.5 rounded bg-line overflow-hidden">
                   <div className={`h-1.5 rounded ${TIER_BAR[h.tier]}`} style={{ width: `${(h.count / maxTierCount) * 100}%` }} />
                 </div>
@@ -109,7 +109,7 @@ export function CustomerOverviewClient() {
           <div className="space-y-2">
             {data.byIndustry.map(d => (
               <div key={d.industry} className="flex items-center gap-3">
-                <span className="kpi-label text-faint flex-1 min-w-0 truncate">{d.industry}</span>
+                <span className="kpi-label text-metadata flex-1 min-w-0 truncate">{d.industry}</span>
                 <div className="w-20 h-1.5 rounded bg-line overflow-hidden flex-shrink-0">
                   <div
                     className="h-1.5 rounded bg-ice/60"
@@ -131,7 +131,7 @@ export function CustomerOverviewClient() {
                 <div className="flex justify-between mb-0.5">
                   <span className="kpi-label text-ink">{p.label}</span>
                   <div className="flex gap-3">
-                    <span className="kpi-label text-faint">{p.count}</span>
+                    <span className="kpi-label text-metadata">{p.count}</span>
                     <span className="kpi-label text-ink">${(p.arr / 1000).toFixed(0)}k ARR</span>
                   </div>
                 </div>
@@ -152,7 +152,7 @@ export function CustomerOverviewClient() {
           <div className="space-y-2.5">
             {data.topHealthAccounts.map((a, i) => (
               <div key={a.id} className="flex items-center gap-3">
-                <span className="font-mono text-xs text-faint w-4 flex-shrink-0">{i + 1}</span>
+                <span className="font-mono text-xs text-metadata w-4 flex-shrink-0">{i + 1}</span>
                 <p className="font-body text-xs text-ink flex-1 min-w-0 truncate">{a.name}</p>
                 <CustomerHealthBadge tier={a.tier} score={a.score} />
               </div>
@@ -165,7 +165,7 @@ export function CustomerOverviewClient() {
           <div className="space-y-2.5">
             {data.bottomHealthAccounts.map((a, i) => (
               <div key={a.id} className="flex items-center gap-3">
-                <span className="font-mono text-xs text-faint w-4 flex-shrink-0">{i + 1}</span>
+                <span className="font-mono text-xs text-metadata w-4 flex-shrink-0">{i + 1}</span>
                 <p className="font-body text-xs text-ink flex-1 min-w-0 truncate">{a.name}</p>
                 <CustomerHealthBadge tier={a.tier} score={a.score} />
               </div>

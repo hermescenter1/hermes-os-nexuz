@@ -10,7 +10,7 @@ function linkTypeBadge(t: string) {
   if (t === "CORRECTIVE_WORK_ORDER") return "bg-danger/[0.10] text-danger";
   if (t === "WORK_ORDER")            return "bg-ice/[0.08] text-ice";
   if (t === "INSPECTION")            return "bg-signal/[0.08] text-signal";
-  return "bg-surface2 text-faint";
+  return "bg-surface2 text-metadata";
 }
 
 interface AssetWithLinks extends RegistryAssetRecord {
@@ -50,7 +50,7 @@ export function AssetMaintenanceClient({ assets }: Props) {
                     {a.name}
                   </Link>
                 </div>
-                <span className="text-xs text-faint">{a.maintenanceLinks.length} {t("maintenanceLinks.linksUnit")}</span>
+                <span className="text-xs text-metadata">{a.maintenanceLinks.length} {t("maintenanceLinks.linksUnit")}</span>
               </div>
 
               <div className="space-y-2">
@@ -68,7 +68,7 @@ export function AssetMaintenanceClient({ assets }: Props) {
                       )}
                       {lnk.notes && <p className="text-xs text-muted mt-0.5">{lnk.notes}</p>}
                     </div>
-                    <p className="text-xs text-faint shrink-0">{formatDate(lnk.linkedAt, locale)}</p>
+                    <p className="text-xs text-metadata shrink-0">{formatDate(lnk.linkedAt, locale)}</p>
                   </div>
                 ))}
               </div>

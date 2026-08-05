@@ -14,6 +14,10 @@
 # - The server checks out the exact SHA (no unbounded git pull) and rebuilds
 #   only the hermes-web service: postgres, redis, nginx, named volumes and the
 #   host itself are never stopped, recreated, pruned or restarted.
+# - Every Compose command pins the canonical Production project with
+#   "-p hermes" (Gate 0D-A): the project name must never be derived from the
+#   checkout directory, which once created a second empty "hermes-os-nexuz"
+#   stack beside the real one.
 
 name: Production Deploy
 
@@ -174,6 +178,6 @@ jobs:
 
           git checkout --detach "$TARGET_SHA"
 
-          docker compose -f docker-compose.prod.yml up -d --build --no-deps hermes-web
-          docker compose -f docker-compose.prod.yml ps hermes-web
+          docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web
+          docker compose -p hermes -f docker-compose.prod.yml ps hermes-web
           REMOTE

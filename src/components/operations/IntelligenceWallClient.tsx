@@ -83,7 +83,7 @@ export function IntelligenceWallClient() {
           { label: "Protocols",      value: data.protocols,                     color: "text-ice"    },
           { label: "Assets",         value: data.assets,                        color: "text-ink"    },
           { label: "Cases",          value: data.cases,                         color: "text-warn"   },
-          { label: "Graph Density",  value: data.graphDensity.toFixed(4),       color: "text-faint"  },
+          { label: "Graph Density",  value: data.graphDensity.toFixed(4),       color: "text-metadata"  },
         ].map(kpi => (
           <div key={kpi.label} className="global-ops-cell">
             <p className="kpi-label mb-1.5">{kpi.label}</p>
@@ -125,7 +125,7 @@ export function IntelligenceWallClient() {
                   const maxCount = Math.max(...Object.values(data.nodesByType).map(v => v as number), 1);
                   return (
                     <div key={type} className="flex items-center gap-2">
-                      <span className="kpi-label text-faint w-28 flex-shrink-0">
+                      <span className="kpi-label text-metadata w-28 flex-shrink-0">
                         {type.replace(/_/g, " ")}
                       </span>
                       <div className="flex-1 h-1.5 rounded bg-line overflow-hidden">
@@ -154,7 +154,7 @@ export function IntelligenceWallClient() {
                   const maxCount = Math.max(...Object.values(data.edgesByType).map(v => v as number), 1);
                   return (
                     <div key={type} className="flex items-center gap-2">
-                      <span className="kpi-label text-faint w-32 flex-shrink-0 truncate">
+                      <span className="kpi-label text-metadata w-32 flex-shrink-0 truncate">
                         {type.replace(/_/g, " ")}
                       </span>
                       <div className="flex-1 h-1.5 rounded bg-line overflow-hidden">
@@ -183,7 +183,7 @@ export function IntelligenceWallClient() {
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
                   <p className="font-body text-sm font-semibold text-ink">{v.name}</p>
-                  <p className="kpi-label text-faint mt-0.5">{v.vendor.toUpperCase()} · TECHNOLOGY DOMAIN</p>
+                  <p className="kpi-label text-metadata mt-0.5">{v.vendor.toUpperCase()} · TECHNOLOGY DOMAIN</p>
                 </div>
                 <div className="grid grid-cols-4 gap-4 text-right">
                   {[
@@ -257,7 +257,7 @@ export function IntelligenceWallClient() {
                 <div key={row.label} className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-body text-xs text-ink">{row.label}</p>
-                    <p className="kpi-label text-faint">{row.note}</p>
+                    <p className="kpi-label text-metadata">{row.note}</p>
                   </div>
                   <p className="intel-kpi-value text-signal">{row.value}</p>
                 </div>
@@ -283,7 +283,7 @@ export function IntelligenceWallClient() {
                   {comp.state.toUpperCase()}
                 </span>
               </div>
-              <p className="kpi-label text-faint">
+              <p className="kpi-label text-metadata">
                 {comp.state === "online"    ? "Operational · Full capability"
                 : comp.state === "simulated"? "Simulated mode · Demo data"
                 : "Planned · Phase 2 roadmap"}

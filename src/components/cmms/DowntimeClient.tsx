@@ -10,8 +10,8 @@ const REASON_STYLE: Record<string, { bg: string; text: string }> = {
   SETUP:               { bg: "bg-muted/[0.08]",  text: "text-muted"  },
   WAITING_PARTS:       { bg: "bg-warn/[0.08]",   text: "text-warn"   },
   WAITING_APPROVAL:    { bg: "bg-warn/[0.10]",   text: "text-warn"   },
-  EXTERNAL:            { bg: "bg-faint/[0.08]",  text: "text-faint"  },
-  UNKNOWN:             { bg: "bg-faint/[0.06]",  text: "text-faint"  },
+  EXTERNAL:            { bg: "bg-faint/[0.08]",  text: "text-metadata"  },
+  UNKNOWN:             { bg: "bg-faint/[0.06]",  text: "text-metadata"  },
 };
 
 export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }) {
@@ -44,12 +44,12 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line bg-surface2">
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("downtime.colAsset")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("downtime.colReason")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden md:table-cell">{t("downtime.colStarted")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide">{t("downtime.colDuration")}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("downtime.colImpact")}</th>
-              <th className="text-end px-4 py-3 text-xs font-semibold text-faint uppercase tracking-wide hidden lg:table-cell">{t("downtime.colLoss")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{t("downtime.colAsset")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{t("downtime.colReason")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden md:table-cell">{t("downtime.colStarted")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide">{t("downtime.colDuration")}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{t("downtime.colImpact")}</th>
+              <th className="text-end px-4 py-3 text-xs font-semibold text-metadata uppercase tracking-wide hidden lg:table-cell">{t("downtime.colLoss")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -58,7 +58,7 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
               return (
                 <tr key={d.id} className="hover:bg-surface2 transition-colors">
                   <td className="px-4 py-3">
-                    <span className="text-xs font-mono text-faint">{d.assetId ?? "—"}</span>
+                    <span className="text-xs font-mono text-metadata">{d.assetId ?? "—"}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-white/[0.05] ${r.bg} ${r.text}`}>
@@ -66,7 +66,7 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
                     </span>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
-                    <span className="text-xs text-faint font-mono">{formatDate(d.startedAt, locale)}</span>
+                    <span className="text-xs text-metadata font-mono">{formatDate(d.startedAt, locale)}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-xs font-mono font-medium text-warn">
@@ -79,7 +79,7 @@ export function DowntimeClient({ downtime }: { downtime: MaintenanceDowntime[] }
                     <span className="text-xs text-muted truncate block">{d.impact ?? "—"}</span>
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell text-end">
-                    <span className={`text-xs font-mono font-medium ${d.productionLoss ? "text-warn" : "text-faint"}`}>
+                    <span className={`text-xs font-mono font-medium ${d.productionLoss ? "text-warn" : "text-metadata"}`}>
                       {d.productionLoss ? `$${formatNumber(d.productionLoss, locale)}` : "—"}
                     </span>
                   </td>

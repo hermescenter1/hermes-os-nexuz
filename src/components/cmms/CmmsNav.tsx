@@ -47,7 +47,7 @@ export function CmmsNav() {
       {/* Module identity */}
       <div className="px-3 mb-5">
         <p className="eyebrow-mono text-warn mb-0.5">{t("nav.eyebrow")}</p>
-        <p className="text-xs text-faint leading-none">{t("nav.tagline")}</p>
+        <p className="text-xs text-metadata leading-none">{t("nav.tagline")}</p>
       </div>
 
       <div className="flex flex-col gap-0.5">
@@ -66,7 +66,7 @@ export function CmmsNav() {
                   : "text-muted hover:text-ink hover:bg-surface3 border border-transparent",
               ].join(" ")}
             >
-              <span className={active ? "text-warn" : "text-faint"}>
+              <span className={active ? "text-warn" : "text-metadata"}>
                 {ICONS[l.key]}
               </span>
               <span>{t(`nav.items.${l.key}`)}</span>

@@ -151,7 +151,7 @@ export function OperationsOverviewClient() {
                     ? <div className="h-8 w-10 rounded bg-surface2 animate-pulse mb-1" />
                     : <p className={`exec-kpi-value mb-1 ${cell.color}`}>{cell.value}</p>
                   }
-                  <p className="kpi-label text-faint">{cell.sub}</p>
+                  <p className="kpi-label text-metadata">{cell.sub}</p>
                 </div>
               ))}
             </div>
@@ -162,7 +162,7 @@ export function OperationsOverviewClient() {
             <div className="h-layer-sep mb-4">
               <span className="kpi-label">Cross-Site Intelligence Feed</span>
             </div>
-            <p className="kpi-label text-faint mb-3">
+            <p className="kpi-label text-metadata mb-3">
               Deterministic — sourced from engineering knowledge base · {FEED_ITEMS.length} active signals
             </p>
             <div className="space-y-1.5">
@@ -175,7 +175,7 @@ export function OperationsOverviewClient() {
                   <div className="min-w-0 flex-1">
                     <p className="font-body text-xs text-ink truncate">{item.label}</p>
                   </div>
-                  <span className="font-mono text-[0.60rem] text-faint flex-shrink-0">{item.vendor}</span>
+                  <span className="font-mono text-[0.60rem] text-metadata flex-shrink-0">{item.vendor}</span>
                 </div>
               ))}
             </div>
@@ -241,7 +241,7 @@ export function OperationsOverviewClient() {
                     </p>
                   </div>
                   <div className="rounded border border-line bg-bg px-3 py-2.5">
-                    <p className="kpi-label text-faint mb-1">READ-ONLY PLATFORM</p>
+                    <p className="kpi-label text-metadata mb-1">READ-ONLY PLATFORM</p>
                     <p className="font-body text-xs text-muted">
                       No PLC writes. No AI inference. All analysis is deterministic and traceable.
                     </p>

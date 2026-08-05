@@ -10,6 +10,7 @@ import { getPrisma } from "@/lib/db/prisma";
 import { logger } from "@/lib/logger";
 import { generateResetToken, hashResetToken } from "./jwt-server";
 import { hashArgon2 } from "./argon2-wrapper";
+import { revokeAllTokens } from "./token-session";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 import { PASSWORD_RESET_TTL } from "./config";
 import { authEmitter } from "@/lib/events/auth/emitter";
@@ -105,12 +106,18 @@ export async function completePasswordReset(
       data:  { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
     });
 
+    // PHASE 91 — invalidate every existing session on a password reset. A reset
+    // is the account-recovery path after a suspected compromise; leaving the
+    // attacker's sessions alive would defeat it. Revoking the refresh/session
+    // records is enforced on the next protected request for sid-bound tokens.
+    await revokeAllTokens(String(prt.userId));
+
     await recordAuditEvent({
       userId:     String(prt.userId),
       action:     "auth.password_reset_completed",
       entityType: "user",
       entityId:   String(prt.userId),
-      metadata:   {},
+      metadata:   { sessionsRevoked: true },
     });
 
     return { ok: true };

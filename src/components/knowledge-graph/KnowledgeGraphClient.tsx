@@ -140,7 +140,7 @@ export function KnowledgeGraphClient() {
             </span>
           </button>
         ))}
-        <span className="kpi-label text-faint ms-1">
+        <span className="kpi-label text-metadata ms-1">
           {snap.stats.totalNodes} nodes · {snap.stats.totalEdges} edges
         </span>
       </div>
@@ -233,7 +233,7 @@ export function KnowledgeGraphClient() {
         </div>
       </div>
 
-      <p className="kpi-label text-faint" dir="ltr">
+      <p className="kpi-label text-metadata" dir="ltr">
         Built · {formatDate(snap.builtAt, locale, { timeStyle: "medium" })} · v{snap.version}
       </p>
     </div>

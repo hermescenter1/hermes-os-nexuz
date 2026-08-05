@@ -81,12 +81,24 @@ describe("90 — schema and migration stay semantically aligned", () => {
     }
   });
 
-  it.each(models)("%s indexes in the schema exist verbatim in the SQL", (model) => {
+  it.each(models)("%s ownership indexes exist verbatim in the SQL", (model) => {
     const indexes = [...modelBlock(model).matchAll(/@@index\(\[([^\]]+)\]\)/g)].map((m) =>
       m[1].split(",").map((c) => c.trim()),
     );
-    expect(indexes.length, `${model} should declare the two ownership indexes`).toBe(2);
-    for (const cols of indexes) {
+    // A model may legitimately gain OTHER indexes in a LATER migration (Phase
+    // 90B added EngineeringCase([status, createdAt]) for the public read); this
+    // assertion validates only the two Phase 90 OWNERSHIP indexes and that each
+    // is present verbatim in THIS migration's SQL. It does not weaken the check
+    // — the ownership indexes are still required — it just no longer forbids a
+    // later, unrelated index on the same table.
+    const ownershipIndexes = indexes.filter(
+      (cols) =>
+        cols.length === 2 &&
+        cols[1] === "createdAt" &&
+        (cols[0] === "userId" || cols[0] === "organizationId"),
+    );
+    expect(ownershipIndexes.length, `${model} should declare the two ownership indexes`).toBe(2);
+    for (const cols of ownershipIndexes) {
       const quoted = cols.map((c) => `"${c}"`).join(", ");
       expect(sql, `missing index on ${model}(${cols.join(", ")})`).toContain(
         `ON "${model}"(${quoted});`,

@@ -132,6 +132,10 @@ export interface GatewayRow {
   disabled: boolean;
   /** Presence only — never the reference itself. */
   signingConfigured: boolean;
+  /** PHASE 94 — an enrolled credential exists but has been revoked. */
+  credentialRevoked: boolean;
+  /** PHASE 94 — monotonic credential version; null when not enrolled. */
+  signingKeyVersion: number | null;
   /** When the most recent signed envelope was ACCEPTED. Null = never. */
   lastSeenAt: string | null;
   createdAt: string | null;

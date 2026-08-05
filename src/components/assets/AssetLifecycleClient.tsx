@@ -11,8 +11,8 @@ function evColor(type: string) {
   if (type === "MAINTENANCE_STARTED") return "bg-ice text-bg";
   if (type === "INSPECTION")        return "bg-ice/[0.08] text-ice";
   if (type === "FUNCTION_TEST")     return "bg-signal/[0.08] text-signal";
-  if (type === "FIRMWARE_UPDATED")  return "bg-surface2 text-faint";
-  return "bg-surface2 text-faint";
+  if (type === "FIRMWARE_UPDATED")  return "bg-surface2 text-metadata";
+  return "bg-surface2 text-metadata";
 }
 function evDot(type: string) {
   if (type === "COMMISSIONED")       return "bg-signal";
@@ -46,7 +46,7 @@ export function AssetLifecycleClient({ events }: Props) {
 
       {/* State distribution */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-3">{t("lifecycle.stateDistribution")}</p>
+        <p className="eyebrow-label text-metadata mb-3">{t("lifecycle.stateDistribution")}</p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(stateDistribution).sort((a, b) => b[1] - a[1]).map(([state, count]) => (
             <div key={state} className="flex items-center gap-2 bg-surface2 rounded-lg px-3 py-1.5 border border-line">
@@ -59,7 +59,7 @@ export function AssetLifecycleClient({ events }: Props) {
 
       {/* Timeline */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-5">{t("lifecycle.eventTimeline")}</p>
+        <p className="eyebrow-label text-metadata mb-5">{t("lifecycle.eventTimeline")}</p>
         {sorted.length === 0 && (
           <p className="text-center py-8 text-muted">{t("lifecycle.noEvents")}</p>
         )}
@@ -78,13 +78,13 @@ export function AssetLifecycleClient({ events }: Props) {
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${evColor(ev.eventType)}`}>
                     {enumLabel(t, "enums.eventType", ev.eventType)}
                   </span>
-                  <span className="text-xs text-faint">{formatDate(ev.occurredAt, locale)}</span>
+                  <span className="text-xs text-metadata">{formatDate(ev.occurredAt, locale)}</span>
                   {ev.performedBy && (
-                    <span className="text-xs text-faint/70">{t("lifecycle.by")} {ev.performedBy}</span>
+                    <span className="text-xs text-metadata">{t("lifecycle.by")} {ev.performedBy}</span>
                   )}
                 </div>
                 {ev.fromState && (
-                  <p className="text-xs text-faint mb-1">
+                  <p className="text-xs text-metadata mb-1">
                     {enumLabel(tAm, "lifecycle", ev.fromState)} → <span className="text-muted">{enumLabel(tAm, "lifecycle", ev.toState)}</span>
                   </p>
                 )}
@@ -92,7 +92,7 @@ export function AssetLifecycleClient({ events }: Props) {
                 {ev.documents.length > 0 && (
                   <div className="flex gap-1 mt-1.5 flex-wrap">
                     {ev.documents.map(d => (
-                      <span key={d} className="text-xs bg-surface2 border border-line px-2 py-0.5 rounded text-faint">{d}</span>
+                      <span key={d} className="text-xs bg-surface2 border border-line px-2 py-0.5 rounded text-metadata">{d}</span>
                     ))}
                   </div>
                 )}

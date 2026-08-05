@@ -7,7 +7,7 @@ import type { CustomerSupportTicket }  from "@/lib/customer-portal/types";
 import { formatDate, formatDateTime } from "@/lib/i18n/format";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  LOW:      "border-line text-faint",
+  LOW:      "border-line text-metadata",
   MEDIUM:   "border-ice/30 bg-ice/10 text-ice",
   HIGH:     "border-amber-400/30 bg-amber-400/10 text-amber-400",
   CRITICAL: "border-red-500/30 bg-red-500/10 text-red-400",
@@ -18,7 +18,7 @@ const STATUS_COLORS: Record<string, string> = {
   IN_PROGRESS:      "border-ice/30 bg-ice/10 text-ice",
   WAITING_CUSTOMER: "border-amber-400/30 bg-amber-400/10 text-amber-400",
   RESOLVED:         "border-line bg-surface-2 text-muted",
-  CLOSED:           "border-line text-faint",
+  CLOSED:           "border-line text-metadata",
 };
 
 const TICKET_CATEGORIES = ["GENERAL", "TECHNICAL", "BILLING", "ONBOARDING", "FEATURE_REQUEST", "BUG_REPORT", "TRAINING"];
@@ -91,7 +91,7 @@ export function CustomerSupportClient() {
       {/* Header + create */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-faint">Support Center</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-metadata">Support Center</p>
           <p className="text-sm text-muted mt-0.5">{tickets.length} ticket{tickets.length !== 1 ? "s" : ""}</p>
         </div>
         <button
@@ -105,9 +105,9 @@ export function CustomerSupportClient() {
       {/* Create form */}
       {showForm && (
         <form ref={formRef} onSubmit={(e) => void handleSubmit(e)} className="rounded-xl border border-signal/30 bg-surface p-6 space-y-4">
-          <p className="font-mono text-xs uppercase tracking-widest text-faint">New Support Ticket</p>
-          <input name="title" required minLength={3} maxLength={200} placeholder="Issue title" className="w-full rounded-lg border border-line bg-surface-2 px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-signal focus:outline-none" />
-          <textarea name="description" required minLength={10} rows={4} placeholder="Describe the issue in detail..." className="w-full rounded-lg border border-line bg-surface-2 px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-signal focus:outline-none resize-none" />
+          <p className="font-mono text-xs uppercase tracking-widest text-metadata">New Support Ticket</p>
+          <input name="title" required minLength={3} maxLength={200} placeholder="Issue title" className="w-full rounded-lg border border-line bg-surface-2 px-4 py-2.5 text-sm text-ink placeholder:text-metadata focus:border-signal focus:outline-none" />
+          <textarea name="description" required minLength={10} rows={4} placeholder="Describe the issue in detail..." className="w-full rounded-lg border border-line bg-surface-2 px-4 py-2.5 text-sm text-ink placeholder:text-metadata focus:border-signal focus:outline-none resize-none" />
           <div className="grid grid-cols-2 gap-4">
             <select name="priority" defaultValue="MEDIUM" className="rounded-lg border border-line bg-surface-2 px-4 py-2.5 text-sm text-ink focus:border-signal focus:outline-none">
               {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((p) => <option key={p} value={p}>{p}</option>)}
@@ -136,7 +136,7 @@ export function CustomerSupportClient() {
                 <div className="flex items-start justify-between gap-4 mb-2">
                   <div>
                     <p className="font-medium text-ink">{t.title}</p>
-                    <p className="text-xs text-faint mt-0.5">{t.category} · {formatDate(t.createdAt, locale)}</p>
+                    <p className="text-xs text-metadata mt-0.5">{t.category} · {formatDate(t.createdAt, locale)}</p>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <span className={`rounded border px-2 py-0.5 text-[10px] font-mono font-semibold ${PRIORITY_COLORS[t.priority] ?? "border-line text-muted"}`}>{t.priority}</span>

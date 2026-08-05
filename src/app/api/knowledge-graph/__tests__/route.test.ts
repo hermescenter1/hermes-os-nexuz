@@ -43,7 +43,7 @@ afterEach(() => {
 
 function seedProject(id: string, overrides: Record<string, unknown> = {}) {
   const arr = (globalThis as Record<string, unknown>).__hermesProjects as unknown[];
-  arr.push({ id, name: `Project ${id}`, description: "", status: "active",
+  arr.push({ id, name: `Project ${id}`, description: "", status: "active", userId: "u-test",
     createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", ...overrides });
 }
 
@@ -54,7 +54,7 @@ function seedMemory(id: string, projectId?: string) {
   arr.push({
     id, query: `query ${memIdx}`, domain: "drives",
     analysisSummary: `summary ${memIdx}`, confidence: 70,
-    relatedCaseIds: [], relatedDocumentIds: [],
+    relatedCaseIds: [], relatedDocumentIds: [], userId: "u-test",
     outcome: "unknown", projectId,
     createdAt: "2026-01-10T00:00:00.000Z", updatedAt: "2026-01-10T00:00:00.000Z",
   });

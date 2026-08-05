@@ -24,7 +24,7 @@ export function AssetSettingsClient({ locations }: Props) {
       {/* Locations */}
       <div className="card-surface rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <p className="eyebrow-label text-faint">{t("settings.plantLocations")}</p>
+          <p className="eyebrow-label text-metadata">{t("settings.plantLocations")}</p>
           <span className="text-xs text-ice">{locations.length} {t("settings.locationsUnit")}</span>
         </div>
 
@@ -44,12 +44,12 @@ export function AssetSettingsClient({ locations }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-ink">{l.name}</span>
-                  <span className="text-xs bg-surface3 text-faint px-2 py-0.5 rounded">{l.locationType}</span>
+                  <span className="text-xs bg-surface3 text-metadata px-2 py-0.5 rounded">{l.locationType}</span>
                 </div>
-                <p className="text-xs text-faint mt-0.5 font-mono">{l.code}</p>
+                <p className="text-xs text-metadata mt-0.5 font-mono">{l.code}</p>
               </div>
               {l.building && (
-                <div className="text-xs text-faint shrink-0">
+                <div className="text-xs text-metadata shrink-0">
                   {[l.building, l.floor, l.room].filter(Boolean).join(" / ")}
                 </div>
               )}
@@ -61,7 +61,7 @@ export function AssetSettingsClient({ locations }: Props) {
 
       {/* Module configuration */}
       <div className="card-surface rounded-xl p-5">
-        <p className="eyebrow-label text-faint mb-4">{t("settings.moduleConfig")}</p>
+        <p className="eyebrow-label text-metadata mb-4">{t("settings.moduleConfig")}</p>
         <div className="space-y-3">
           {[
             { label: t("settings.showInactive"),    value: t("settings.valueNo") },
@@ -76,7 +76,7 @@ export function AssetSettingsClient({ locations }: Props) {
             </div>
           ))}
         </div>
-        <p className="text-xs text-faint mt-4">
+        <p className="text-xs text-metadata mt-4">
           {t("settings.configNote")}
         </p>
       </div>

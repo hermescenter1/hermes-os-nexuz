@@ -310,7 +310,9 @@ describe("94B.1 — the gateway DTO reports the real last-envelope time", () => 
       [
         "id", "gatewayId", "displayName", "siteId", "lifecycle", "environment",
         "softwareVersion", "capabilities", "readOnlyMode", "simulatorMode",
-        "disabled", "signingConfigured", "lastSeenAt", "createdAt", "updatedAt",
+        // PHASE 94 — enrollment status (presence/revoked/version), never the reference.
+        "disabled", "signingConfigured", "credentialRevoked", "signingKeyVersion",
+        "lastSeenAt", "createdAt", "updatedAt",
       ].sort(),
     );
     expect(dto.signingConfigured).toBe(true);

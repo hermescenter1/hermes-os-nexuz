@@ -1,6 +1,19 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { scoreMemory, scoreLearned, WEIGHTS } from "../memory-retrieval";
 import type { StoredMemory, MemoryWithFeedback } from "@/lib/storage/types";
+
+/**
+ * PHASE 90B: project/memory reads/writes are tenant-scoped. These functional
+ * unit tests run as a single fixed tenant by mocking the session-derived owner,
+ * so a create and its read share one scope. Exhaustive cross-tenant isolation is
+ * covered in src/lib/storage/__tests__/phase90b-knowledge-tenant-ownership.test.ts.
+ */
+beforeEach(() => {
+  vi.resetModules();
+  vi.doMock("@/lib/storage/brain-owner", () => ({
+    resolveBrainOwner: async () => ({ userId: "u-test", orgId: null }),
+  }));
+});
 
 /**
  * Phase 19A — Project Intelligence: unit tests.

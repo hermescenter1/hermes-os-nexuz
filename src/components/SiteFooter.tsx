@@ -85,7 +85,7 @@ export function SiteFooter() {
 
           {/* Platform column */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-faint mb-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-metadata mb-4">
               {t("colPlatform")}
             </p>
             <ul className="space-y-2.5">
@@ -115,7 +115,7 @@ export function SiteFooter() {
 
           {/* Company column */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-faint mb-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-metadata mb-4">
               {t("colCompany")}
             </p>
             <ul className="space-y-2.5">
@@ -159,7 +159,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-6 pb-6">
         <div className="border-t border-line/30 pt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <p className="font-mono text-[11px] text-muted/40">{t("copyright")}</p>
-          <p className="font-mono text-[10px] text-faint/30 uppercase tracking-widest">{t("tagline")}</p>
+          <p className="font-mono text-[10px] text-metadata uppercase tracking-widest">{t("tagline")}</p>
         </div>
       </div>
     </footer>

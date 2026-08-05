@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { addMemoryFeedback, isValidOutcome } from "@/lib/memory/memory-service";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import type { FeedbackCreate } from "@/lib/storage/memory-repository";
-import { requireAuthoring } from "@/lib/auth/api-guards";
+import { requireAuthoring, requireWritableOwner } from "@/lib/auth/api-guards";
 
 /** POST /api/memory/[id]/feedback — record field outcome feedback for a memory.
  *
@@ -48,8 +48,12 @@ export async function POST(
     submittedBy: gate.user.id,
   };
 
+  // PHASE 90B: writing feedback (which mutates the parent memory outcome) needs
+  // a single unambiguous tenant, or it fails closed (409 / 503) before writing.
+  const own = await requireWritableOwner();
+  if (!own.ok) return own.response;
   try {
-    const feedback = await addMemoryFeedback(id, input);
+    const feedback = await addMemoryFeedback(id, input, own.owner);
     if (!feedback) return NextResponse.json({ error: "not_found" }, { status: 404 });
     return NextResponse.json({ storageMode: getStorageMode(), feedback }, { status: 201 });
   } catch {

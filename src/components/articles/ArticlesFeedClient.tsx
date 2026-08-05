@@ -211,7 +211,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
           )}
         </div>
         <h3 className="text-xs font-semibold text-ink group-hover:text-signal transition-colors line-clamp-2 leading-snug mb-1.5">{display.title}</h3>
-        <div className="flex items-center gap-2 text-[10px] text-faint">
+        <div className="flex items-center gap-2 text-[10px] text-metadata">
           <span className="truncate max-w-[80px]">{article.author.displayName}</span>
           <span className="text-line">·</span>
           <span>{article.readingTimeMinutes}{t("readingUnit")}</span>
@@ -251,7 +251,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
         {/* Title */}
         <Link href={href}>
           {display.titleEn && (
-            <p className="text-[10px] text-faint font-mono mb-2 tracking-wide opacity-70">{display.titleEn}</p>
+            <p className="text-[10px] text-metadata font-mono mb-2 tracking-wide opacity-70">{display.titleEn}</p>
           )}
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-ink hover:text-signal transition-colors leading-tight mb-4 max-w-2xl">
             {display.title}
@@ -276,10 +276,10 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
                 </p>
                 {article.author.verifiedExpert && <VerifiedIcon />}
               </div>
-              <p className="text-xs text-faint">{article.author.roleTitle ?? article.author.company}</p>
+              <p className="text-xs text-metadata">{article.author.roleTitle ?? article.author.company}</p>
             </div>
           </Link>
-          <div className="flex items-center gap-3 text-xs text-faint">
+          <div className="flex items-center gap-3 text-xs text-metadata">
             <span>{fmtDate(article.publishedAt, locale)}</span>
             <span className="text-line">·</span>
             <span>{article.readingTimeMinutes} {t("minRead")}</span>
@@ -321,7 +321,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
         {/* Title + excerpt */}
         <Link href={href} className="flex-1">
           {display.titleEn && (
-            <p className="text-[9px] text-faint font-mono mb-1 truncate opacity-60">{display.titleEn}</p>
+            <p className="text-[9px] text-metadata font-mono mb-1 truncate opacity-60">{display.titleEn}</p>
           )}
           <h3 className="font-bold text-ink group-hover:text-signal transition-colors leading-snug mb-2 line-clamp-2 text-[0.9375rem]">
             {display.title}
@@ -353,7 +353,7 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
             {article.author.displayName}
           </span>
         </Link>
-        <div className="flex items-center gap-2.5 text-[10px] text-faint font-mono shrink-0">
+        <div className="flex items-center gap-2.5 text-[10px] text-metadata font-mono shrink-0">
           <span>{article.readingTimeMinutes}{t("readingUnit")}</span>
           <span className="text-line">·</span>
           <span>{fmtNum(article.viewCount)}</span>
@@ -383,7 +383,7 @@ function AuthorCard({ author, locale }: { author: ArticleAuthorProfile; locale: 
           </p>
           {author.verifiedExpert && <VerifiedIcon size="xs" />}
         </div>
-        <p className="text-[10px] text-faint truncate mb-2">{author.roleTitle ?? author.company}</p>
+        <p className="text-[10px] text-metadata truncate mb-2">{author.roleTitle ?? author.company}</p>
         {author.industrialCredibilityScore && (
           <div className="flex items-center gap-2">
             <div className="flex-1 h-0.5 rounded-full bg-surface3 overflow-hidden">
@@ -396,7 +396,7 @@ function AuthorCard({ author, locale }: { author: ArticleAuthorProfile; locale: 
         {author.expertiseAreas.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {author.expertiseAreas.slice(0, 2).map(area => (
-              <span key={area} className="text-[9px] px-1.5 py-0.5 rounded bg-surface3/80 text-faint font-mono border border-line/20">{area}</span>
+              <span key={area} className="text-[9px] px-1.5 py-0.5 rounded bg-surface3/80 text-metadata font-mono border border-line/20">{area}</span>
             ))}
           </div>
         )}
@@ -448,7 +448,7 @@ function JournalMasthead({ locale }: { locale: string }) {
               <div key={m.label} className="flex items-center gap-2">
                 {liveIdx.has(i) && <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse shrink-0" />}
                 <span className="text-lg font-bold text-ink font-mono">{m.value}</span>
-                <span className="text-[10px] text-faint uppercase tracking-wide">{m.label}</span>
+                <span className="text-[10px] text-metadata uppercase tracking-wide">{m.label}</span>
               </div>
             ))}
           </div>
@@ -508,7 +508,7 @@ function ViewHeader({ view, articleCount, isFa }: {
         </p>
         <div className="flex flex-wrap items-end gap-4">
           <h1 className="text-3xl font-bold text-ink">{v.title}</h1>
-          <span className="text-sm text-faint font-mono mb-1">
+          <span className="text-sm text-metadata font-mono mb-1">
             {articleCount} {t("articlesUnit")}
           </span>
         </div>
@@ -578,7 +578,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                 </div>
                 <div>
                   <p className="eyebrow-mono text-signal text-[9px] leading-none">HERMES INDUSTRIAL JOURNAL</p>
-                  <p className="text-[10px] text-faint leading-none mt-0.5">{t("knowledgeNetwork")}</p>
+                  <p className="text-[10px] text-metadata leading-none mt-0.5">{t("knowledgeNetwork")}</p>
                 </div>
               </div>
               <nav className="hidden md:flex items-center gap-0.5">
@@ -603,7 +603,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                 <input
                   type="text" value={search} onChange={e => setSearch(e.target.value)}
                   placeholder={t("searchPlaceholder")}
-                  className="text-[11px] text-ink rounded-lg px-3 py-1.5 ps-8 focus:outline-none w-44 placeholder:text-faint transition-all"
+                  className="text-[11px] text-ink rounded-lg px-3 py-1.5 ps-8 focus:outline-none w-44 placeholder:text-metadata transition-all"
                   style={{
                     background: "rgba(6,8,13,0.75)",
                     border: "1px solid rgba(255,255,255,0.07)",
@@ -613,7 +613,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                   onFocus={e => { (e.target as HTMLInputElement).style.borderColor = "rgba(30,200,164,0.35)"; (e.target as HTMLInputElement).style.boxShadow = "0 0 0 1px rgba(30,200,164,0.15), inset 0 1px 0 rgba(255,255,255,0.03)"; }}
                   onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = "rgba(255,255,255,0.07)"; (e.target as HTMLInputElement).style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.03)"; }}
                 />
-                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-faint absolute start-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-metadata absolute start-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                   <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd"/>
                 </svg>
               </div>
@@ -700,7 +700,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
             {articles.length === 0 ? (
               <div className="flex flex-col items-center py-20 border border-line/30 rounded-2xl bg-surface/30">
                 <div className="w-12 h-12 rounded-full border border-line/40 bg-surface2 flex items-center justify-center mb-4">
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-faint">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-metadata">
                     <path fillRule="evenodd" d="M4 4a2 2 0 0 1 2-2h4.586A2 2 0 0 1 12 2.586L15.414 6A2 2 0 0 1 16 7.414V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Z" clipRule="evenodd"/>
                   </svg>
                 </div>
@@ -738,14 +738,14 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                     {trending.map((a, idx) => (
                       <Link key={a.id} href={`/${locale}/articles/${a.slug}`}
                         className="group flex items-start gap-2.5 p-2.5 rounded-lg hover:bg-surface2/60 transition-all">
-                        <span className="w-5 h-5 rounded-md bg-surface3 flex items-center justify-center text-[9px] font-bold text-faint font-mono shrink-0 mt-0.5">
+                        <span className="w-5 h-5 rounded-md bg-surface3 flex items-center justify-center text-[9px] font-bold text-metadata font-mono shrink-0 mt-0.5">
                           {idx + 1}
                         </span>
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-muted group-hover:text-ink transition-colors line-clamp-2 leading-snug">
                             {(isFa ? FA_ARTICLE_MAP[a.slug]?.title : null) ?? a.title}
                           </p>
-                          <p className="text-[10px] text-faint mt-1">
+                          <p className="text-[10px] text-metadata mt-1">
                             {fmtNum(a.viewCount)} {t("viewsUnit")} · {a.readingTimeMinutes}{t("readingUnit")}
                           </p>
                         </div>
@@ -798,7 +798,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                           {isFa ? c.nameFa : c.name}
                         </span>
                         {c.articleCount != null && (
-                          <span className="text-[9px] text-faint font-mono tabular-nums">{c.articleCount}</span>
+                          <span className="text-[9px] text-metadata font-mono tabular-nums">{c.articleCount}</span>
                         )}
                       </Link>
                     ))}
@@ -831,8 +831,8 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                       <p className="text-sm font-bold text-ink group-hover:text-signal transition-colors truncate">{a.displayName}</p>
                       {a.verifiedExpert && <VerifiedIcon size="xs" />}
                     </div>
-                    <p className="text-[10px] text-faint truncate mb-2">{a.roleTitle ?? a.company}</p>
-                    <div className="flex items-center gap-3 text-[10px] text-faint">
+                    <p className="text-[10px] text-metadata truncate mb-2">{a.roleTitle ?? a.company}</p>
+                    <div className="flex items-center gap-3 text-[10px] text-metadata">
                       <span>{a.articleCount} {t("articlesUnit")}</span>
                       <span className="text-line">·</span>
                       <span>{fmtNum(a.followerCount)} {t("followersUnit")}</span>

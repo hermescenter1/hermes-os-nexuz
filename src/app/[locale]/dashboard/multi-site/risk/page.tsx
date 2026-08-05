@@ -109,13 +109,13 @@ export default function SiteRiskPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-white/40 text-xs uppercase border-b border-white/10">
-                    <th className="text-left py-2 pr-4">#</th>
-                    <th className="text-left py-2">{t("site")}</th>
-                    <th className="text-right py-2">{t("avgRisk")}</th>
-                    <th className="text-right py-2">{t("maxRisk")}</th>
-                    <th className="text-right py-2">{t("distribution")}</th>
-                    <th className="text-right py-2">{t("confidence")}</th>
-                    <th className="text-right py-2">{t("coverage")}</th>
+                    <th className="text-start py-2 pr-4">#</th>
+                    <th className="text-start py-2">{t("site")}</th>
+                    <th className="text-end py-2">{t("avgRisk")}</th>
+                    <th className="text-end py-2">{t("maxRisk")}</th>
+                    <th className="text-end py-2">{t("distribution")}</th>
+                    <th className="text-end py-2">{t("confidence")}</th>
+                    <th className="text-end py-2">{t("coverage")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -123,13 +123,13 @@ export default function SiteRiskPage() {
                     <tr key={s.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                       <td className="py-3 pr-4 text-white/30 text-xs">{i + 1}</td>
                       <td className="py-3 text-white font-medium">{s.siteName}</td>
-                      <td className={`py-3 text-right font-mono font-bold ${riskColor(s.avgRiskScore)}`}>
+                      <td className={`py-3 text-end font-mono font-bold ${riskColor(s.avgRiskScore)}`}>
                         {s.avgRiskScore !== null ? s.avgRiskScore.toFixed(1) : "—"}
                       </td>
-                      <td className="py-3 text-right font-mono text-white/50 text-xs">
+                      <td className="py-3 text-end font-mono text-white/50 text-xs">
                         {s.maxRiskScore !== null ? s.maxRiskScore.toFixed(1) : "—"}
                       </td>
-                      <td className="py-3 text-right text-xs">
+                      <td className="py-3 text-end text-xs">
                         {s.riskDistribution ? (
                           <span className="text-white/50">
                             <span className="text-green-400">{s.riskDistribution.LOW}L</span>{" "}
@@ -139,13 +139,13 @@ export default function SiteRiskPage() {
                           </span>
                         ) : "—"}
                       </td>
-                      <td className="py-3 text-right">
+                      <td className="py-3 text-end">
                         <span className={`text-xs ${
                           s.confidence === "HIGH" ? "text-green-400" :
                           s.confidence === "MEDIUM" ? "text-yellow-400" : "text-orange-400"
                         }`}>{s.confidence}</span>
                       </td>
-                      <td className="py-3 text-right text-white/40 text-xs">
+                      <td className="py-3 text-end text-white/40 text-xs">
                         {s.assetsWithData}/{s.assetCount}
                       </td>
                     </tr>
@@ -154,7 +154,7 @@ export default function SiteRiskPage() {
                     <tr key={s.id} className="border-b border-white/5 opacity-50">
                       <td className="py-3 pr-4 text-white/20 text-xs">—</td>
                       <td className="py-3 text-white/50">{s.siteName}</td>
-                      <td colSpan={5} className="py-3 text-right text-xs text-white/30">
+                      <td colSpan={5} className="py-3 text-end text-xs text-white/30">
                         {t("insufficientData")}
                       </td>
                     </tr>
@@ -164,7 +164,7 @@ export default function SiteRiskPage() {
             </div>
           </GlassCard>
 
-          <p className="text-xs text-white/30 text-right">
+          <p className="text-xs text-white/30 text-end">
             {t("dataFreshness")}: {formatDateTime(data.computedAt, locale)}
           </p>
         </>

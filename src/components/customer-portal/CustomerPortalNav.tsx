@@ -26,7 +26,7 @@ export function CustomerPortalNav() {
 
   return (
     <nav className="flex flex-col gap-1">
-      <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-faint px-3">
+      <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-metadata px-3">
         Customer Portal
       </p>
       {NAV_ITEMS.map(({ href, label, icon }) => (

@@ -89,7 +89,7 @@ export function ArticleWriterClient() {
     if (rows) {
       return (
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
+          <label className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
             {label}{opts?.required && <span className="text-danger ms-1">*</span>}
           </label>
           <textarea
@@ -105,7 +105,7 @@ export function ArticleWriterClient() {
     }
     return (
       <div className="flex flex-col gap-1.5">
-        <label className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
+        <label className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
           {label}{opts?.required && <span className="text-danger ms-1">*</span>}
         </label>
         <input
@@ -287,7 +287,7 @@ export function ArticleWriterClient() {
                       ? "bg-signal/10 text-signal border border-signal/20 shadow-[inset_0_1px_0_rgba(30,200,164,0.1)]"
                       : "text-muted hover:text-ink hover:bg-surface3/40"
                   }`}>
-                  <span className={tab === tb.key ? "text-signal" : "text-faint"}>{tb.icon}</span>
+                  <span className={tab === tb.key ? "text-signal" : "text-metadata"}>{tb.icon}</span>
                   {t(`tab.${tb.key}`)}
                 </button>
               ))}
@@ -377,14 +377,14 @@ export function ArticleWriterClient() {
             <div className="rounded-xl border border-line/40 overflow-hidden" style={{ background: "var(--surface)" }}>
               <div className="px-4 py-3 border-b border-line/30"
                 style={{ background: "linear-gradient(90deg, rgba(30,200,164,0.05) 0%, transparent 100%)" }}>
-                <p className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
+                <p className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
                   {t("articleSettings")}
                 </p>
               </div>
               <div className="p-4 space-y-4">
                 {/* Content type */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
+                  <label className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
                     {t("contentTypeLabel")}
                   </label>
                   <select value={form.contentType} onChange={e => update("contentType", e.target.value)}
@@ -397,7 +397,7 @@ export function ArticleWriterClient() {
 
                 {/* Language — article language selector (ArtLanguage); left as-is by design */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
+                  <label className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
                     {isFa ? "زبان مقاله" : "Language"}
                   </label>
                   <select value={form.language} onChange={e => update("language", e.target.value)}
@@ -409,7 +409,7 @@ export function ArticleWriterClient() {
 
                 {/* Category */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
+                  <label className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
                     {t("categoryLabel")}
                   </label>
                   <select value={form.category} onChange={e => update("category", e.target.value)}
@@ -423,7 +423,7 @@ export function ArticleWriterClient() {
 
                 {/* Tags */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
+                  <label className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
                     {t("tagsLabel")}
                   </label>
                   <input
@@ -431,7 +431,7 @@ export function ArticleWriterClient() {
                     placeholder={t("tagsPlaceholder")}
                     className={SELECT_CLS}
                   />
-                  <p className="text-[9px] text-faint font-mono">{t("tagsHint")}</p>
+                  <p className="text-[9px] text-metadata font-mono">{t("tagsHint")}</p>
                 </div>
               </div>
             </div>
@@ -439,14 +439,14 @@ export function ArticleWriterClient() {
             {/* Writing guide */}
             <div className="rounded-xl border border-line/30 overflow-hidden">
               <div className="px-4 py-3 border-b border-line/30">
-                <p className="text-[10px] font-bold text-faint uppercase tracking-widest font-mono">
+                <p className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
                   {t("writingGuide")}
                 </p>
               </div>
               <div className="p-4">
                 <ul className="space-y-2">
                   {guide.map(item => (
-                    <li key={item.code} className="flex items-center gap-2 text-xs text-faint">
+                    <li key={item.code} className="flex items-center gap-2 text-xs text-metadata">
                       <code className="text-[10px] px-1.5 py-0.5 rounded bg-surface3 border border-line/30 text-signal font-mono shrink-0">{item.code}</code>
                       <span>{item.tip}</span>
                     </li>

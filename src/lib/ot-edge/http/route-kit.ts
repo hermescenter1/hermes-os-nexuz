@@ -54,6 +54,9 @@ export const HTTP_STATUS: Record<ServiceErrorCode, number> = {
   REPLAY_DETECTED: 409,
   CAPABILITY_NOT_ALLOWED: 403,
   TRANSIENT_FAILURE: 503,
+  // The writable secret backend needed to issue/rotate a credential is not
+  // available. 503 so a client treats it as a server-side capability gap.
+  SECRET_BACKEND_UNAVAILABLE: 503,
   INTERNAL_FAILURE: 500,
 };
 
@@ -70,6 +73,8 @@ const MESSAGE: Record<ServiceErrorCode, string> = {
   REPLAY_DETECTED: "This request has already been processed.",
   CAPABILITY_NOT_ALLOWED: "You do not have permission to perform this operation.",
   TRANSIENT_FAILURE: "The service is temporarily unavailable. Please retry.",
+  SECRET_BACKEND_UNAVAILABLE:
+    "Credential provisioning is not available on this deployment.",
   INTERNAL_FAILURE: "The request could not be completed.",
 };
 

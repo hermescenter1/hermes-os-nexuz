@@ -42,7 +42,7 @@ export function FavoriteClient({ favorites }: Props) {
                 {isFa ? "سند" : "Document"}:{" "}
                 <span className="font-mono text-muted">{fav.documentId.slice(0, 12)}…</span>
               </Link>
-              <p className="text-xs text-faint mt-0.5 font-mono">
+              <p className="text-xs text-metadata mt-0.5 font-mono">
                 {formatDate(fav.createdAt, locale)}
               </p>
             </div>
