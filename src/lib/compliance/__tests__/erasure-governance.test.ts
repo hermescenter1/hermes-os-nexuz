@@ -16,6 +16,7 @@ import {
 } from "../erasure-targets";
 import {
   buildErasurePlan, computeErasurePlanHash, canApproveErasurePlan, validatePersistedErasurePlan,
+  resolutionAffectedResultItem,
   type BuildErasurePlanInput, type ErasureRetentionPolicyLike, type ErasurePlan,
 } from "../erasure-planner";
 import {
@@ -364,5 +365,36 @@ describe("strict persisted-plan validator", () => {
     // A tampered item changes the recomputed hash while job.planHash (binding) is unchanged.
     const tampered = clone(); tampered.items[0].reasonCodes = ["TAMPERED"];
     expect(validatePersistedErasurePlan(tampered, binding)).toMatchObject({ ok: false, code: "PLAN_HASH_MISMATCH" });
+  });
+});
+
+describe("resolution status bound to plan outcome", () => {
+  const userCollected = [{ target: tgt("user_profile"), records: [rec({ recordId: "u1", ownedByOrganizationId: null, holdInputs: { subjectId: "u1", resourceType: "user_profile", resourceId: "u1", timestamp: null } })] }];
+  const applied = (resolution: string) => [{ jobId: "job-1", target: "user_profile", recordId: "u1", resolution, sourcePlanHash: "a".repeat(64), sourcePlanVersion: 1, resultPlanHash: "b".repeat(64), resultPlanVersion: 2, resolutionStatus: "APPLIED", authority: "TENANT_OWNER", resolvedBy: "o", resolvedAt: "2026-06-01T00:00:00.000Z" }] as never;
+  const itemOf = (plan: ErasurePlan, target: string, recordId: string) => plan.items.find((i) => i.target === target && i.recordId === recordId);
+
+  it("returns true only for a result item whose classification/action/reason match the closed decision", () => {
+    // A resolution that ACTUALLY affected the plan (NO_ACTION → RETENTION_REQUIRED + marker).
+    const { plan } = buildErasurePlan(planInput({ collected: userCollected, resolutions: applied("NO_ACTION_REQUIRED") }));
+    expect(resolutionAffectedResultItem("NO_ACTION_REQUIRED", itemOf(plan, "user_profile", "u1"))).toBe(true);
+  });
+  it("is false when the record disappeared, or a hold / retention / dependency overrode it, or the strategy is unsupported", () => {
+    expect(resolutionAffectedResultItem("NO_ACTION_REQUIRED", undefined)).toBe(false);
+    expect(resolutionAffectedResultItem("NO_ACTION_REQUIRED", { classification: "LEGAL_HOLD", plannedAction: "NONE", reasonCodes: ["ACTIVE_LEGAL_HOLD"] })).toBe(false);
+    expect(resolutionAffectedResultItem("NO_ACTION_REQUIRED", { classification: "RETENTION_REQUIRED", plannedAction: "NONE", reasonCodes: ["POLICY_PRESERVES"] })).toBe(false); // retention, not the resolution
+    expect(resolutionAffectedResultItem("NO_ACTION_REQUIRED", { classification: "DEPENDENCY_BLOCKED", plannedAction: "NONE", reasonCodes: ["DEPENDENCY"] })).toBe(false);
+    expect(resolutionAffectedResultItem("ANONYMISE_REQUIRED", { classification: "MANUAL_REVIEW_REQUIRED", plannedAction: "NONE", reasonCodes: ["RESOLUTION_STRATEGY_UNSUPPORTED"] })).toBe(false);
+  });
+  it("a LegalHold added after the plan overrides an existing resolution (build-level)", () => {
+    const hold = { id: "h1", organizationId: "org-A", scopeType: "SUBJECT", status: "ACTIVE", subjectId: "u1" };
+    const { plan } = buildErasurePlan(planInput({ collected: userCollected, holds: [hold], resolutions: applied("NO_ACTION_REQUIRED") }));
+    const item = itemOf(plan, "user_profile", "u1")!;
+    expect(item.classification).toBe("LEGAL_HOLD");                                 // hold wins over the resolution
+    expect(resolutionAffectedResultItem("NO_ACTION_REQUIRED", item)).toBe(false);   // → would be INVALIDATED
+  });
+  it("a resolution whose record is absent has no result item (disappeared → not applied)", () => {
+    const { plan } = buildErasurePlan(planInput({ collected: [{ target: tgt("user_profile"), records: [] }], resolutions: applied("NO_ACTION_REQUIRED") }));
+    expect(itemOf(plan, "user_profile", "u1")).toBeUndefined();
+    expect(resolutionAffectedResultItem("NO_ACTION_REQUIRED", itemOf(plan, "user_profile", "u1"))).toBe(false);
   });
 });

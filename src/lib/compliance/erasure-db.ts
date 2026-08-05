@@ -15,7 +15,7 @@ import type { DbDataDeletionRequest, DbLegalHold, DbRetentionPolicy } from "./ty
 import {
   canApproveErasurePlan, isManualResolutionCode, isAllowedResolutionAuthority,
   validatePersistedErasurePlan, normalizeStoredResolutions, activeResolutionsForPlan,
-  buildErasurePlan,
+  resolutionAffectedResultItem, buildErasurePlan,
   type ErasurePlan, type ManualReviewResolution, type ManualResolutionCode,
   type ErasureRetentionPolicyLike, type ResolutionStatus,
 } from "./erasure-planner";
@@ -122,7 +122,8 @@ type ArmReason = "NOT_FOUND" | "NOT_APPROVED" | "CONFLICT";
 class ResolveError extends Error { constructor(public reason: ResolveReason) { super(reason); this.name = "ResolveError"; } }
 type ResolveReason =
   | "NOT_FOUND" | "INVALID_STATE" | "PLAN_BINDING_MISMATCH" | "PLAN_INVALID"
-  | "ITEM_NOT_MANUAL" | "UNKNOWN_TARGET" | "RESOLUTION_UNSUPPORTED" | "AUTHORITY_INVALID" | "CONFLICT";
+  | "ITEM_NOT_MANUAL" | "UNKNOWN_TARGET" | "RESOLUTION_UNSUPPORTED" | "AUTHORITY_INVALID"
+  | "RESOLUTION_NOT_APPLIED" | "CONFLICT";
 
 // Regeneration is allowed pre-approval only. IN_REVIEW is included because a governed
 // manual-review resolution during review must produce a NEW canonical plan version
@@ -345,10 +346,25 @@ export async function resolveManualReviewAndRegeneratePlanForOrg(params: {
         collected, holds: holdsRaw.map(toHoldLike), policies: policiesRaw.map(toPolicyLike), resolutions: applied,
       });
 
-      // Bind lineage: applied records → the new result plan (APPLIED). Every other
-      // prior record is retained but marked SUPERSEDED (one record per item).
+      // Bind resolution status to the plan OUTCOME. Each applied resolution is APPLIED
+      // only if it ACTUALLY affected its result item (the item exists AND its
+      // classification/action/reason correspond to that exact closed decision — i.e.
+      // it was not overridden by a hold/retention/dependency/ownership change and its
+      // record did not disappear). Otherwise it is INVALIDATED.
       const key = (r: { target: string; recordId: string }) => `${r.target} ${r.recordId}`;
-      const boundApplied = applied.map((r) => ({ ...r, resultPlanHash: resultHash, resultPlanVersion: newVersion, resolutionStatus: "APPLIED" as ResolutionStatus }));
+      const resultByKey = new Map(resultPlan.items.map((it) => [key(it), it]));
+
+      // Fail closed: the NEWLY submitted resolution MUST have a matching result item,
+      // otherwise nothing is stored and the whole transaction rolls back.
+      if (!resolutionAffectedResultItem(params.resolution, resultByKey.get(key(newRecord)))) {
+        throw new ResolveError("RESOLUTION_NOT_APPLIED");
+      }
+
+      const boundApplied = applied.map((r) => (
+        resolutionAffectedResultItem(r.resolution, resultByKey.get(key(r)))
+          ? { ...r, resultPlanHash: resultHash, resultPlanVersion: newVersion, resolutionStatus: "APPLIED" as ResolutionStatus }
+          : { ...r, resolutionStatus: "INVALIDATED" as ResolutionStatus }
+      ));
       const byKey = new Map<string, ManualReviewResolution>();
       for (const r of prior) byKey.set(key(r), r.resolutionStatus === "APPLIED" ? { ...r, resolutionStatus: "SUPERSEDED" } : r);
       for (const r of boundApplied) byKey.set(key(r), r);

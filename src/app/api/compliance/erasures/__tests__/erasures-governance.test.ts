@@ -317,6 +317,21 @@ describe("governed manual-review resolution (route)", () => {
     expect(blocked.res.status).toBe(409);
     expect(blocked.json.code).toBe("PLAN_NOT_APPROVABLE");
   });
+  it("fails closed (RESOLUTION_NOT_APPLIED) and rolls back when a LegalHold added after planning overrides the item", async () => {
+    const { hash, version } = await manualInReview();
+    ownerA();
+    // A SUBJECT LegalHold is added AFTER the plan was generated — the regenerated
+    // result item becomes LEGAL_HOLD, so the resolution cannot apply.
+    holds = [{ id: "h1", organizationId: "org-A", scopeType: "SUBJECT", status: "ACTIVE", subjectId: "subj-1" }];
+    const r = await resolvePOST("e1", { target: "user_profile", recordId: "subj-1", resolution: "NO_ACTION_REQUIRED", sourcePlanHash: hash, sourcePlanVersion: version });
+    expect(r.res.status).toBe(409);
+    expect(r.json.code).toBe("RESOLUTION_NOT_APPLIED");
+    // Nothing was stored — no new version, no resolution (transaction rolled back).
+    expect(jobs[0].planVersion).toBe(version);
+    expect(jobs[0].planHash).toBe(hash);
+    expect((jobs[0].reviewResolutions ?? []) as unknown[]).toHaveLength(0);
+    expect(auditCalls.some((e) => e.action === "compliance.erasure.manual_resolved")).toBe(false);
+  });
 });
 
 describe("execution gate (disabled by default)", () => {

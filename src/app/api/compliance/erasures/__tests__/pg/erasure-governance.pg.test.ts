@@ -26,6 +26,7 @@ async function db(): Promise<Pg> { const p = await getPrisma(); if (!p) throw ne
 // (not TAG-prefixed), so id-only cleanup would leak an active job onto the parent.
 async function deleteJobs(p: Pg) {
   await p.$executeRawUnsafe(`DELETE FROM "DataDeletionRequest" WHERE id LIKE '${TAG}%' OR "organizationId" = '${ORG}' OR "privacyRequestId" = '${PR}'`);
+  await p.$executeRawUnsafe(`DELETE FROM "LegalHold" WHERE "organizationId" = '${ORG}'`);
 }
 async function cleanup() {
   const p = await db();
@@ -260,5 +261,48 @@ describe.skipIf(!PG_ENABLED)("Phase 97 Part H PG", () => {
     await transitionErasureJobForOrg({ id: jobId, organizationId: ORG, from: "PLAN_READY", to: "IN_REVIEW", actorId: "owner" });
     const appr = await approveErasurePlanForOrg({ id: jobId, organizationId: ORG, actorId: "owner", expectedPlanHash: planHash, expectedPlanVersion: planVersion, now: new Date() });
     expect(appr.ok).toBe(false);
+  });
+
+  it("a resolution that affected the plan is stored APPLIED and bound to the resulting plan", async () => {
+    const { jobId, planHash, planVersion } = await setupManual();
+    const r = await resolveManualReviewAndRegeneratePlanForOrg(resolveArgs(jobId, planHash, planVersion));
+    expect(r.ok).toBe(true);
+    const job = await readJob(jobId);
+    const rr = (job.reviewResolutions ?? []).find((x) => x.target === "user_profile" && x.recordId === USER)!;
+    expect(rr.resolutionStatus).toBe("APPLIED");
+    expect(rr.resultPlanHash).toBe(job.planHash);        // bound to the OUTCOME plan
+    expect(rr.resultPlanVersion).toBe(job.planVersion);
+  });
+
+  it("a LegalHold added after planning fails the resolution closed (RESOLUTION_NOT_APPLIED) with no partial commit", async () => {
+    const p = await db();
+    const { jobId, planHash, planVersion } = await setupManual();
+    const before = await readJob(jobId);
+    // A SUBJECT hold added AFTER planning overrides the item at re-collection time.
+    await p.$executeRawUnsafe(
+      `INSERT INTO "LegalHold" (id,"organizationId",name,"scopeType","subjectId",status,"approvedBy","approvedAt","startDate","updatedAt","createdAt")
+       VALUES ('${TAG}-hold','${ORG}','H','SUBJECT','${USER}','ACTIVE','a',now(),now(),now(),now())`);
+    const r = await resolveManualReviewAndRegeneratePlanForOrg(resolveArgs(jobId, planHash, planVersion));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe("RESOLUTION_NOT_APPLIED");
+    const after = await readJob(jobId);
+    expect(after.planVersion).toBe(before.planVersion);  // rolled back — no new version
+    expect(JSON.stringify(after.reviewResolutions)).toBe(JSON.stringify(before.reviewResolutions));
+  });
+
+  it("an INVALIDATED (unused) resolution is not carried into a later plan", async () => {
+    const { jobId, planHash, planVersion } = await setupManual();
+    expect((await resolveManualReviewAndRegeneratePlanForOrg(resolveArgs(jobId, planHash, planVersion))).ok).toBe(true); // v2 APPLIED
+    await planErasureForJob({ id: jobId, organizationId: ORG, actorId: "planner", now: new Date() });                    // v3 INVALIDATED
+    const v3 = await readJob(jobId);
+    // A NEW resolution from v3 must not silently reuse the INVALIDATED v2 decision —
+    // it produces a fresh APPLIED decision bound to the new plan; none stays bound to v2.
+    const r = await resolveManualReviewAndRegeneratePlanForOrg(resolveArgs(jobId, v3.planHash!, v3.planVersion!));
+    expect(r.ok).toBe(true);
+    const v4 = await readJob(jobId);
+    for (const rr of (v4.reviewResolutions ?? []).filter((x) => x.resolutionStatus === "APPLIED")) {
+      expect(rr.resultPlanHash).toBe(v4.planHash);
+      expect(rr.resultPlanVersion).toBe(v4.planVersion);
+    }
   });
 });

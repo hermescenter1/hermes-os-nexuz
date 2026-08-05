@@ -132,6 +132,37 @@ export function activeResolutionsForPlan(resolutions: ManualReviewResolution[], 
   return resolutions.filter((r) => r.resolutionStatus === "APPLIED" && r.resultPlanHash === planHash && r.resultPlanVersion === planVersion);
 }
 
+/**
+ * Whether a resolution ACTUALLY affected a resulting plan item. A resolution is only
+ * genuinely APPLIED when the result item exists AND its classification, action and
+ * governed reason codes correspond to that exact closed decision — i.e. the planner
+ * reached the manual-review fallback for that record and consulted this resolution.
+ * If a LegalHold, retention, dependency or ownership change classified the record
+ * earlier (so the resolution was never consulted), or the record disappeared, or the
+ * strategy is no longer supported, the marker is absent and the resolution did NOT
+ * apply. Used to bind resolutionStatus to the plan OUTCOME rather than to the mere
+ * presence of a decision.
+ */
+export function resolutionAffectedResultItem(
+  resolution: ManualResolutionCode,
+  item: { classification: string; plannedAction: string; reasonCodes: string[] } | undefined | null,
+): boolean {
+  if (!item) return false;
+  const has = (c: string) => item.reasonCodes.includes(c);
+  switch (resolution) {
+    case "NO_ACTION_REQUIRED":
+      return item.classification === "RETENTION_REQUIRED" && item.plannedAction === "NONE" && has("MANUAL_RESOLUTION") && has("RESOLVED_NO_ACTION_REQUIRED");
+    case "RETENTION_REQUIRED":
+      return item.classification === "RETENTION_REQUIRED" && item.plannedAction === "NONE" && has("MANUAL_RESOLUTION") && has("RESOLVED_RETENTION_REQUIRED");
+    case "ANONYMISE_REQUIRED":
+      return item.classification === "ANONYMISE_REQUIRED" && item.plannedAction === "ANONYMISE" && has("MANUAL_RESOLUTION") && has("RESOLVED_ANONYMISE_REQUIRED");
+    case "GLOBAL_PLATFORM_REVIEW_REQUIRED":
+      return item.classification === "MANUAL_REVIEW_REQUIRED" && item.plannedAction === "NONE" && has("GLOBAL_PLATFORM_REVIEW_REQUIRED");
+    default:
+      return false;
+  }
+}
+
 export interface ErasurePlan {
   schemaVersion:    string;
   registryVersion:  string;
