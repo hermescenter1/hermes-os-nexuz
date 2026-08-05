@@ -1,8 +1,8 @@
 {
     "trustBadges": {
       "sectionTitle": "اعتماد و راستی‌آزمایی",
-      "enamadHeading": "نماد اعتماد الکترونیکی",
-      "saashubHeading": "نرم‌افزار تأییدشده",
+      "enamadHeading": "نماد اعتماد",
+      "saashubHeading": "تأیید نرم‌افزار",
       "provenExpertHeading": "نظرات مشتریان"
     },
     "observability": {

@@ -231,11 +231,34 @@ describe("eNAMAD trust seal — accessibility", () => {
 });
 
 describe("eNAMAD trust seal — layout stability and responsiveness", () => {
-  it("declares explicit intrinsic width and height (no layout shift)", async () => {
+  it("reserves layout via the chip (no blank box on failure, no layout shift)", async () => {
+    // The compact strip deliberately drops the width/height ATTRIBUTES: a
+    // broken load must collapse to zero height so the fallback caption shows
+    // instead of a large blank white box. Layout stability comes from the
+    // chip's reserved min-height instead.
     const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
     const img = container.querySelector<HTMLImageElement>('img[src*="trustseal"]')!;
-    expect(img.getAttribute("width")).toBe("88");
-    expect(img.getAttribute("height")).toBe("88");
+    expect(img.hasAttribute("width")).toBe(false);
+    expect(img.hasAttribute("height")).toBe(false);
+    const chip = img.parentElement!;
+    expect(chip.className).toContain("min-h-[76px]");
+    expect(chip.className).toContain("w-[80px]");
+    await unmount();
+  });
+
+  it("carries a fallback caption that never duplicates the accessible name", async () => {
+    const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
+    const img = container.querySelector<HTMLImageElement>('img[src*="trustseal"]')!;
+    const chip = img.parentElement!;
+    const caption = chip.querySelector('span[aria-hidden="true"]')!;
+    expect(caption, "fallback caption missing").not.toBeNull();
+    expect(caption.textContent).toBe("eNAMAD");
+    // hidden from the a11y tree — the anchor's aria-label stays the only name
+    expect(caption.getAttribute("aria-hidden")).toBe("true");
+    // the loaded image must be able to cover it: image stacked above with its
+    // own opaque background
+    expect(img.className).toContain("z-10");
+    expect(img.className).toContain("bg-white");
     await unmount();
   });
 
@@ -247,15 +270,14 @@ describe("eNAMAD trust seal — layout stability and responsiveness", () => {
     await unmount();
   });
 
-  it("keeps its NATURAL aspect ratio at both breakpoints (no stretching)", async () => {
-    // The redesign no longer forces a square: the width is fixed (~88–96px) and
-    // the height follows the seal's intrinsic proportions (h-auto), so the
-    // official artwork is never distorted.
+  it("keeps its NATURAL aspect ratio (no stretching)", async () => {
+    // Compact strip: the width is fixed (64px inside the 80px chip) and the
+    // height follows the seal's intrinsic proportions (h-auto), so the
+    // official artwork is never distorted into a square.
     const { container, unmount } = await mount(withIntl("en", <PublicFooter />));
     const cls = container.querySelector<HTMLImageElement>('img[src*="trustseal"]')!.className;
     expect(cls).toContain("h-auto");
-    expect(cls).toContain("w-[88px]");
-    expect(cls).toContain("sm:w-[96px]");
+    expect(cls).toContain("w-[64px]");
     // no forced height that would stretch a non-square seal into a square
     expect(cls).not.toMatch(/\bh-\[\d+px\]/);
     await unmount();

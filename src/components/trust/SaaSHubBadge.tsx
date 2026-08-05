@@ -33,7 +33,10 @@ export function SaaSHubBadge() {
         height={54}
         loading="lazy"
         decoding="async"
-        className="h-auto max-w-[150px]"
+        // Compact trust-strip sizing: capped below the intrinsic 150px so the
+        // badge reads as a peer of the other slots; h-auto preserves the
+        // official aspect ratio (never stretched or recoloured).
+        className="h-auto max-w-[136px]"
       />
     </a>
   );

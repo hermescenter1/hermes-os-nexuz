@@ -1,8 +1,8 @@
 {
     "trustBadges": {
       "sectionTitle": "Vertrauen & Verifizierung",
-      "enamadHeading": "Offizielles iranisches Vertrauenssiegel",
-      "saashubHeading": "Geprüfter Software-Eintrag",
+      "enamadHeading": "Vertrauenssiegel",
+      "saashubHeading": "Software-Verzeichnis",
       "provenExpertHeading": "Kundenbewertungen"
     },
     "observability": {
