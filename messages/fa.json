@@ -1,4 +1,10 @@
 {
+    "trustBadges": {
+      "sectionTitle": "اعتماد و راستی‌آزمایی",
+      "enamadHeading": "نماد اعتماد الکترونیکی",
+      "saashubHeading": "نرم‌افزار تأییدشده",
+      "provenExpertHeading": "نظرات مشتریان"
+    },
     "observability": {
       "eyebrow": "عملیات",
       "title": "اتاق کنترل SRE",

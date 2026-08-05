@@ -1,4 +1,10 @@
 {
+    "trustBadges": {
+      "sectionTitle": "Trust & Verification",
+      "enamadHeading": "Official Iranian Trust Seal",
+      "saashubHeading": "Approved Software Listing",
+      "provenExpertHeading": "Customer Reviews"
+    },
     "observability": {
       "eyebrow": "Operations",
       "title": "SRE Control Room",

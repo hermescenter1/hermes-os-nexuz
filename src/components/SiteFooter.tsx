@@ -3,8 +3,7 @@ import { Link }            from "@/i18n/navigation";
 import { HermesLogoMark }  from "./HermesLogo";
 import { FooterLangSwitch } from "./FooterLangSwitch";
 import { SOCIAL_LINKS }    from "@/lib/site/social-links";
-import ProvenExpertSeal from "./trust/ProvenExpertSeal";
-import { SaaSHubBadge } from "./trust/SaaSHubBadge";
+import { TrustBadgesSection } from "./trust/TrustBadgesSection";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
 
@@ -127,32 +126,10 @@ export function SiteFooter() {
 
         </div>
 
-        {/* ProvenExpert Trust & Verification */}
-        <section
-          className="mt-10 border-t border-line/30 pt-8"
-          aria-labelledby="footer-trust-title"
-        >
-          <div
-            className="mx-auto flex max-w-md flex-col items-center"
-            dir="ltr"
-          >
-            <h2
-              id="footer-trust-title"
-              className="mb-4 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-signal/70"
-            >
-              Trust &amp; Verification
-            </h2>
-
-            <ProvenExpertSeal />
-
-            {/* Official SaaSHub "Approved" badge — peer trust element next to
-                the ProvenExpert widget. flex-wrap keeps it from overflowing on
-                narrow viewports. */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-              <SaaSHubBadge />
-            </div>
-          </div>
-        </section>
+        {/* Trust & Verification — shared three-card section (eNAMAD · SaaSHub ·
+            ProvenExpert). Same component as PublicFooter so the two footers keep
+            an identical, balanced layout. */}
+        <TrustBadgesSection />
       </div>
 
       {/* Bottom bar */}
