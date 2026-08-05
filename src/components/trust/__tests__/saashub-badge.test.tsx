@@ -94,12 +94,16 @@ describe("SaaSHubBadge — accessibility", () => {
 });
 
 describe("SaaSHubBadge — layout stability", () => {
-  it("declares explicit width and height (no layout shift) and caps at 150px", async () => {
+  it("declares explicit width and height (no layout shift) and caps at 136px", async () => {
     const { container, unmount } = await mount(<SaaSHubBadge />);
     const img = container.querySelector<HTMLImageElement>("img")!;
+    // intrinsic dimensions stay the official 150×54 (aspect-ratio hint)…
     expect(img.getAttribute("width")).toBe("150");
     expect(img.getAttribute("height")).toBe("54");
-    expect(img.className).toContain("max-w-[150px]");
+    // …while the compact trust strip caps the RENDERED width below that;
+    // h-auto keeps the official aspect ratio, so nothing is stretched.
+    expect(img.className).toContain("max-w-[136px]");
+    expect(img.className).toContain("h-auto");
     expect(img.getAttribute("loading")).toBe("lazy");
     await unmount();
   });

@@ -1,39 +1,42 @@
-// Shared "Trust & Verification" section (server component).
+// Shared "Trust & Verification" strip (server component).
 //
 // One source of truth for the trust-badge layout so the two public footers
-// (PublicFooter, SiteFooter) never drift into two different designs. Renders
-// three EQUAL cards in a centred responsive grid:
+// (PublicFooter, SiteFooter) never drift into two different designs. A single
+// COMPACT centred glass panel holds three small badge slots:
 //
 //   eNAMAD  ·  SaaSHub  ·  ProvenExpert   (DOM order)
 //
-// The grid follows the document direction, so this single DOM order yields the
-// required visual order in BOTH directions with no per-locale reordering:
-//   • RTL (Persian): eNAMAD right · SaaSHub centre · ProvenExpert left
-//   • LTR (EN/DE)  : eNAMAD left  · SaaSHub centre · ProvenExpert right
-// SaaSHub is the middle grid item, so it is always centred.
+// The flex row follows the document direction, so this single DOM order yields
+// the correct visual placement in BOTH directions with no per-locale
+// reordering; SaaSHub is the middle slot, so it is always centred.
+//
+// Design: premium enterprise strip, not product cards — dark glass surface
+// (`bg-surface-glass` is the rgba glass token; Tailwind opacity modifiers do
+// NOT work on the hex-var token classes, so never suffix them with /NN),
+// subtle borders, tiny muted labels, minimal vertical footprint (~150px).
 
 import { useTranslations } from "next-intl";
 import ProvenExpertSeal from "./ProvenExpertSeal";
 import { SaaSHubBadge } from "./SaaSHubBadge";
 
 /**
- * A single equal-height trust card. All three badges sit inside an identical
- * frame so no badge can dominate the footer or float in isolation. Uses design
- * system tokens (no hard-coded colours) and a subtle hover/focus border.
+ * A compact badge slot: tiny muted label on top, badge artwork centred below.
+ * Fixed footprint (184×116px) keeps the three vendors optically equal — no
+ * badge may read as more important than its peers.
  */
-function TrustCard({
-  heading,
+function TrustSlot({
+  label,
   children,
 }: {
-  heading: string;
+  label: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="group flex min-h-[248px] min-w-0 flex-col items-center justify-start gap-4 overflow-hidden rounded-2xl border border-border-subtle bg-surface-elevated px-5 py-6 transition-colors duration-fast hover:border-brand-primary/40 focus-within:border-brand-primary/50">
-      <h3 className="text-center text-label-compact font-semibold uppercase tracking-wider text-text-muted">
-        {heading}
-      </h3>
-      <div className="flex w-full flex-1 items-center justify-center">
+    <div className="flex h-[116px] w-[184px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-border-subtle bg-black/10 px-3 py-2 transition-colors duration-fast hover:border-border-default hover:bg-black/20">
+      <span className="whitespace-nowrap text-[10px] font-medium tracking-wide text-text-muted">
+        {label}
+      </span>
+      <div className="flex min-h-0 w-full flex-1 items-center justify-center">
         {children}
       </div>
     </div>
@@ -46,22 +49,21 @@ export function TrustBadgesSection() {
   return (
     <section
       aria-label={t("sectionTitle")}
-      className="mt-12 border-t border-border-subtle pt-10"
+      className="mt-10 border-t border-border-subtle pt-6"
     >
-      <h2 className="mb-6 text-center text-label-compact font-semibold uppercase tracking-[0.18em] text-text-muted">
-        {t("sectionTitle")}
-      </h2>
-
-      <div className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
+      {/* Single centred glass panel — w-fit, never a full-width grid. */}
+      <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-3 rounded-2xl border border-border-subtle bg-surface-glass px-4 py-3 shadow-sm backdrop-blur-md sm:px-5 sm:py-4">
         {/*
           eNAMAD — official Iranian electronic trust seal (id=761266).
-          Root-cause fix for the "empty dark square" seen in production:
-          the seal artwork was sitting on a dark panel with an empty `alt`, so
-          any failed/slow load — or a seal whose transparent regions render dark
-          — left a blank square. The seal image now sits on a LIGHT chip so the
-          official artwork is legible, keeps its NATURAL aspect ratio (no forced
-          square that distorts it), and the visible card heading labels the cell
-          even before the external image resolves.
+
+          The seal artwork sits on a SMALL light chip (not a big white card) so
+          the official artwork stays legible on the dark footer without a large
+          white rectangle. The chip reserves a compact 80×76 box, and a tiny
+          muted "eNAMAD" caption sits BEHIND the image: the loaded seal covers
+          it (the img carries its own white background), while a genuinely
+          failed load collapses to zero height (no width/height attributes, so
+          nothing reserves a blank box) and reveals the caption. No unofficial
+          seal artwork is ever drawn.
 
           Every eNAMAD verification parameter is preserved verbatim: both URLs,
           `referrerPolicy="origin"` on the anchor AND the image, `target=_blank`,
@@ -70,22 +72,29 @@ export function TrustBadgesSection() {
           `code` attribute. eNAMAD explicitly forbids `rel="noopener noreferrer"`
           here, so this anchor deliberately carries NO `rel` attribute at all.
         */}
-        <TrustCard heading={t("enamadHeading")}>
+        <TrustSlot label={t("enamadHeading")}>
           <a
             referrerPolicy="origin"
             target="_blank"
             href="https://trustseal.enamad.ir/?id=761266&Code=MFGRdDzn6UCFPL3FOx24Dj5yabncQMST"
             aria-label="eNAMAD Electronic Trust Seal — Hermes Novin"
-            className="ds-focus inline-flex rounded-xl"
+            className="ds-focus inline-flex rounded-lg"
           >
-            {/* Light chip so the official seal is legible on the dark footer. */}
-            <span className="flex items-center justify-center rounded-xl bg-white p-2.5">
+            <span className="relative flex min-h-[76px] w-[80px] items-center justify-center overflow-hidden rounded-lg bg-white p-2">
+              {/* Fallback caption — only visible when the seal image genuinely
+                  fails to load (the loaded image covers it). aria-hidden so it
+                  never duplicates the anchor's accessible name. */}
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-black/40"
+              >
+                eNAMAD
+              </span>
               {/*
                 eslint-disable-next-line @next/next/no-img-element --
                 intentional: next/image would proxy this request through the
-                optimizer, dropping the `origin` referrer that eNAMAD checks when
-                serving and validating the seal. Explicit width/height give the
-                same layout-shift protection the rule enforces.
+                optimizer, dropping the `origin` referrer that eNAMAD checks
+                when serving and validating the seal.
               */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -97,42 +106,41 @@ export function TrustBadgesSection() {
                 // official snippet; a narrow spread keeps it type-safe in TSX
                 // while rendering the attribute exactly as eNAMAD published it.
                 {...{ code: "MFGRdDzn6UCFPL3FOx24Dj5yabncQMST" }}
-                width={88}
-                height={88}
                 loading="lazy"
                 decoding="async"
-                // Natural aspect ratio: fix the WIDTH (~88–96px) and let the
-                // height follow the seal's intrinsic proportions (h-auto), so
-                // the official artwork is never stretched into a square.
-                className="h-auto w-[88px] sm:w-[96px]"
+                // Natural aspect ratio (h-auto, fixed width only) — the seal is
+                // never stretched into a square. Deliberately NO width/height
+                // attributes: a broken load must collapse to zero height so the
+                // fallback caption shows instead of a blank white box; the chip's
+                // min-h reserves the layout, so there is still no layout shift.
+                // Own white background so the loaded (possibly transparent)
+                // artwork fully covers the fallback caption behind it.
+                className="relative z-10 h-auto w-[64px] bg-white"
               />
             </span>
           </a>
-        </TrustCard>
+        </TrustSlot>
 
-        {/* SaaSHub — official "Approved" badge, centred (middle grid item). */}
-        <TrustCard heading={t("saashubHeading")}>
+        {/* SaaSHub — official "Approved" badge (middle slot, always centred). */}
+        <TrustSlot label={t("saashubHeading")}>
           <SaaSHubBadge />
-        </TrustCard>
+        </TrustSlot>
 
         {/*
-          ProvenExpert — official review widget. It renders at its own natural
-          size and is much taller than the other badges, so it is contained in a
-          reserved-height wrapper and scaled down with transform-origin centre.
-          `overflow-hidden` + the fixed height keep it from dictating the footer
-          width or growing its card taller than the peers. The widget content,
-          URLs and configuration are untouched.
+          ProvenExpert — official review widget, untouched configuration. The
+          widget renders at its own natural size (min 220px tall), far larger
+          than the peer badges, so it is contained in a fixed compact viewport
+          (116×84) and reduced with a pure transform (scale 0.38, origin
+          centre). The reserved viewport prevents layout shift and stops the
+          widget from dominating the strip or dictating the footer width.
         */}
-        <TrustCard heading={t("provenExpertHeading")}>
-          <div className="flex h-[176px] w-full items-center justify-center overflow-hidden">
-            {/* w-full (not a fixed width) so the widget never forces its grid
-                column wider than the card — combined with min-w-0 on the card
-                this prevents any horizontal overflow. */}
-            <div className="w-full origin-center scale-[0.72]">
+        <TrustSlot label={t("provenExpertHeading")}>
+          <div className="flex h-[84px] w-[116px] items-center justify-center overflow-hidden">
+            <div className="w-[300px] shrink-0 origin-center scale-[0.38]">
               <ProvenExpertSeal />
             </div>
           </div>
-        </TrustCard>
+        </TrustSlot>
       </div>
     </section>
   );
