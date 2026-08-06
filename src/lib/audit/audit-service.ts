@@ -216,6 +216,16 @@ export const COMPLIANCE_AUDIT = {
   DATA_TRANSFER_UPDATED:          "compliance.data_transfer.updated",
   DATA_TRANSFER_TRANSITIONED:     "compliance.data_transfer.transitioned",
   DATA_TRANSFER_APPROVED:         "compliance.data_transfer.approved",
+  // Phase 97 — governed compliance-incident management (identifiers + closed codes
+  // + correlationId + evidence hashes only; NEVER raw log/request/response bodies,
+  // personal data, credentials, free-form summary text or notification content).
+  INCIDENT_CREATED:               "compliance.incident.created",
+  INCIDENT_UPDATED:               "compliance.incident.updated",
+  INCIDENT_TRANSITIONED:          "compliance.incident.transitioned",
+  INCIDENT_ASSESSMENT_RECORDED:   "compliance.incident.assessment_recorded",
+  INCIDENT_DECISION_RECORDED:     "compliance.incident.decision_recorded",
+  INCIDENT_BLOCKER_CHANGED:       "compliance.incident.blocker_changed",
+  INCIDENT_REOPENED:              "compliance.incident.reopened",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */

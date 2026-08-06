@@ -278,6 +278,60 @@ export interface DbDataTransfer {
   updatedAt:               Date;
 }
 
+// ── Phase 97 — Governed Compliance Incident Management ────────────────────────
+
+export interface DbComplianceIncident {
+  id:                   string;
+  organizationId:       string;
+  incidentType:         string;
+  severity:             string;
+  lifecycle:            string;
+  assessmentStatus:     string;
+  sourceClass:          string;
+  correlationId:        string | null;
+  detectedAt:           Date;
+  occurredAt:           Date | null;
+  summaryCode:          string | null;
+  sensitiveSummary:     string | null;
+  idempotencyKey:       string;
+  processingActivityId: string | null;
+  subprocessorId:       string | null;
+  dataTransferId:       string | null;
+  openBlockerCount:     number;
+  ownerId:              string | null;
+  assignedToId:         string | null;
+  reviewedBy:           string | null;
+  reviewedAt:           Date | null;
+  decisionBy:           string | null;
+  decisionAt:           Date | null;
+  resolvedBy:           string | null;
+  resolvedAt:           Date | null;
+  closedBy:             string | null;
+  closedAt:             Date | null;
+  reopenedBy:           string | null;
+  reopenedAt:           Date | null;
+  createdBy:            string | null;
+  updatedBy:            string | null;
+  createdAt:            Date;
+  updatedAt:            Date;
+}
+
+export interface DbComplianceIncidentEvent {
+  id:                   string;
+  organizationId:       string;
+  complianceIncidentId: string;
+  sequence:             number;
+  eventCode:            string;
+  fromLifecycle:        string | null;
+  toLifecycle:          string | null;
+  fromAssessment:       string | null;
+  toAssessment:         string | null;
+  actorId:              string | null;
+  evidenceHash:         string | null;
+  correlationId:        string | null;
+  createdAt:            Date;
+}
+
 export interface ComplianceStats {
   totalPrivacyRequests:    number;
   pendingRequests:         number;

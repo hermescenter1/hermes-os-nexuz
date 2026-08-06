@@ -689,6 +689,7 @@ model Organization {
   legalHolds           LegalHold[]
   subprocessors        Subprocessor[]
   dataTransfers        DataTransfer[]
+  complianceIncidents  ComplianceIncident[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -3398,6 +3399,93 @@ model DataTransfer {
   @@index([organizationId, updatedAt])
   @@index([subprocessorId])
   @@index([processingActivityId])
+}
+
+// ── Phase 97 — Governed Compliance Incident Management ────────────────────────
+//
+// A tenant-owned governed assessment/evidence record for compliance incidents. The
+// runtime source of truth for cross-plane reconstruction remains the Phase 92
+// observability facilities (security ring, audit log, error fingerprints); this
+// record REFERENCES that timeline by correlationId only — it never copies raw log
+// bodies, request/response bodies, credentials, personal data or free-form
+// notification content. Closed vocabularies + fail-closed defaults live in
+// migration-only CHECK constraints; the append-only timeline is a separate child.
+model ComplianceIncident {
+  id                    String    @id @default(cuid())
+  organizationId        String
+  incidentType          String    @default("REVIEW_REQUIRED")
+  severity              String    @default("REVIEW_REQUIRED")
+  lifecycle             String    @default("OPEN")
+  assessmentStatus      String    @default("REVIEW_REQUIRED")
+  sourceClass           String    @default("REVIEW_REQUIRED")
+  // Reference to the observability incident-reconstruction timeline (never copied in).
+  correlationId         String?
+  detectedAt            DateTime  @default(now())
+  occurredAt            DateTime?
+  // Closed structured summary CODE (safe for audit); the free-form summary is a
+  // SEPARATE optional, bounded, explicitly-sensitive field never emitted to audit/
+  // metrics/logs.
+  summaryCode           String?
+  sensitiveSummary      String?
+  // Duplicate-creation protection (unique per organization).
+  idempotencyKey        String
+  // Tenant-safe governed-record references (composite FKs added migration-only).
+  processingActivityId  String?
+  subprocessorId        String?
+  dataTransferId        String?
+  // Unresolved blocking action items — closure is fail-closed while > 0.
+  openBlockerCount      Int       @default(0)
+  // Server-derived attribution only.
+  ownerId               String?
+  assignedToId          String?
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  decisionBy            String?
+  decisionAt            DateTime?
+  resolvedBy            String?
+  resolvedAt            DateTime?
+  closedBy              String?
+  closedAt              DateTime?
+  reopenedBy            String?
+  reopenedAt            DateTime?
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  timeline              ComplianceIncidentEvent[]
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, lifecycle])
+  @@index([organizationId, updatedAt])
+  @@index([correlationId])
+}
+
+// Append-only incident timeline / evidence. Identifiers, closed event codes, actor
+// attribution, timestamps and an optional evidence hash ONLY — never raw log bodies,
+// request/response bodies, personal data, credentials or free-form notification text.
+// Mutation/deletion is blocked at the database (migration-only trigger).
+model ComplianceIncidentEvent {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  complianceIncidentId String
+  sequence             Int
+  eventCode            String
+  fromLifecycle        String?
+  toLifecycle          String?
+  fromAssessment       String?
+  toAssessment         String?
+  actorId              String?
+  evidenceHash         String?
+  correlationId        String?
+  createdAt            DateTime  @default(now())
+
+  incident             ComplianceIncident @relation(fields: [complianceIncidentId], references: [id], onDelete: Restrict)
+
+  @@unique([complianceIncidentId, sequence])
+  @@index([organizationId, complianceIncidentId])
+  @@index([complianceIncidentId, createdAt])
 }
 
 // ── Phase 64: Vendor Ecosystem Platform ──────────────────────────────────────

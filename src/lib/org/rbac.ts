@@ -104,7 +104,15 @@ export type OrgPermission =
   // distinct accountable act reserved for the highest organization authority.
   | "view_transfer_governance"     // read the subprocessor + transfer registers
   | "manage_transfer_governance"   // create/edit/review draft + under-review records
-  | "approve_transfer_governance"; // approve/activate governed records (gated)
+  | "approve_transfer_governance"  // approve/activate governed records (gated)
+  // PHASE 97 — governed compliance-incident management. Recording a high-authority
+  // legal / external-notification decision and closing/reopening an incident are
+  // DELIBERATELY separate, OWNER-only accountable acts, distinct from day-to-day
+  // triage/investigation (manage).
+  | "view_compliance_incidents"    // read the incident register + append-only timeline
+  | "manage_compliance_incidents"  // create/triage/investigate/resolve, adjust blockers, progress assessment
+  | "decide_compliance_incidents"  // record a legal / external-notification decision (evidence only)
+  | "close_compliance_incidents";  // close or reopen an incident
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -195,6 +203,13 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_transfer_governance:       ["OWNER", "ADMIN", "MANAGER"],
   manage_transfer_governance:     ["OWNER", "ADMIN"],
   approve_transfer_governance:    ["OWNER"],
+  // Compliance incidents: read for the oversight roles; triage/investigation for org
+  // admins; recording a legal/external-notification decision and closing/reopening
+  // are reserved to the OWNER (the highest accountable authority).
+  view_compliance_incidents:      ["OWNER", "ADMIN", "MANAGER"],
+  manage_compliance_incidents:    ["OWNER", "ADMIN"],
+  decide_compliance_incidents:    ["OWNER"],
+  close_compliance_incidents:     ["OWNER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {
