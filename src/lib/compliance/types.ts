@@ -223,6 +223,56 @@ export interface DbDataDeletionRequest {
   updatedAt:      Date;
 }
 
+// ── Phase 97 Part I — Subprocessor & Data-Transfer governance ─────────────────
+
+export interface DbSubprocessor {
+  id:                   string;
+  organizationId:       string;
+  name:                 string;
+  legalEntity:          string | null;
+  providerRegistryId:   string | null;
+  serviceCategory:      string;
+  operatingCountries:   unknown;
+  processingCountries:  unknown;
+  dataCategories:       unknown;
+  subjectCategories:    unknown;
+  contractReviewStatus: string;
+  privacyReviewStatus:  string;
+  securityReviewStatus: string;
+  lifecycle:            string;
+  reviewedBy:           string | null;
+  reviewedAt:           Date | null;
+  approvedBy:           string | null;
+  approvedAt:           Date | null;
+  nextReviewAt:         Date | null;
+  createdBy:            string | null;
+  updatedBy:            string | null;
+  createdAt:            Date;
+  updatedAt:            Date;
+}
+
+export interface DbDataTransfer {
+  id:                      string;
+  organizationId:          string;
+  subprocessorId:          string | null;
+  processingActivityId:    string | null;
+  sourceJurisdiction:      string;
+  destinationJurisdiction: string;
+  transferCategory:        string;
+  transferMechanismStatus: string;
+  legalReviewStatus:       string;
+  riskReviewStatus:        string;
+  lifecycle:               string;
+  reviewedBy:              string | null;
+  reviewedAt:              Date | null;
+  approvedBy:              string | null;
+  approvedAt:              Date | null;
+  createdBy:               string | null;
+  updatedBy:               string | null;
+  createdAt:               Date;
+  updatedAt:               Date;
+}
+
 export interface ComplianceStats {
   totalPrivacyRequests:    number;
   pendingRequests:         number;

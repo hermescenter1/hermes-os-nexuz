@@ -687,6 +687,8 @@ model Organization {
   consentRecords       ConsentRecord[]
   retentionPolicies    RetentionPolicy[]
   legalHolds           LegalHold[]
+  subprocessors        Subprocessor[]
+  dataTransfers        DataTransfer[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -3312,6 +3314,82 @@ model LegalHold {
   @@index([organizationId, status])
   @@index([organizationId, scopeType])
   @@index([organizationId, subjectId])
+}
+
+// ── Phase 97 Part I: Subprocessor & Data-Transfer governance ─────────────────
+// Tenant compliance registers (NOT the Phase 64 public vendor marketplace). All
+// classification columns are strings with fail-closed quarantine defaults
+// (REVIEW_REQUIRED / LEGAL_REVIEW_REQUIRED / CONFIGURATION_REQUIRED) — no legal
+// mechanism, adequacy decision or approved country is ever invented. Closed
+// lifecycle/review/approval CHECKs plus the composite cross-tenant relation FKs
+// on DataTransfer (subprocessorId+organizationId, processingActivityId+
+// organizationId) are migration-only raw SQL (see the Part I migration). No
+// credentials, tokens, raw personal data, contract bodies or provider secrets
+// are ever stored here.
+
+model Subprocessor {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  name                 String
+  legalEntity          String?
+  providerRegistryId   String?   // optional link to the Phase 95 AI-provider registry
+  serviceCategory      String    @default("REVIEW_REQUIRED")
+  operatingCountries   Json      @default("[]")
+  processingCountries  Json      @default("[]")
+  dataCategories       Json      @default("[]")
+  subjectCategories    Json      @default("[]")
+  contractReviewStatus String    @default("REVIEW_REQUIRED") // REVIEW_REQUIRED | IN_REVIEW | APPROVED | REJECTED
+  privacyReviewStatus  String    @default("REVIEW_REQUIRED")
+  securityReviewStatus String    @default("REVIEW_REQUIRED")
+  lifecycle            String    @default("DRAFT") // DRAFT | UNDER_REVIEW | APPROVED | ACTIVE | SUSPENDED | RETIRED | REVIEW_REQUIRED
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  approvedBy           String?
+  approvedAt           DateTime?
+  nextReviewAt         DateTime?
+  createdBy            String?
+  updatedBy            String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Governance evidence: fail-closed. Restrict prevents hard-deleting an
+  // organization that still owns subprocessor evidence (LegalHold precedent).
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, lifecycle])
+  @@index([organizationId, updatedAt])
+}
+
+model DataTransfer {
+  id                      String    @id @default(cuid())
+  organizationId          String
+  // Plain indexed strings — the tenant-safe composite FKs (id+organizationId →
+  // Subprocessor / ProcessingActivity) are added migration-only, so a valid
+  // foreign-tenant identifier can never be linked at the database layer.
+  subprocessorId          String?
+  processingActivityId    String?
+  sourceJurisdiction      String    @default("CONFIGURATION_REQUIRED")
+  destinationJurisdiction String    @default("CONFIGURATION_REQUIRED")
+  transferCategory        String    @default("REVIEW_REQUIRED")
+  transferMechanismStatus String    @default("LEGAL_REVIEW_REQUIRED") // CONFIGURED | LEGAL_REVIEW_REQUIRED | CONFIGURATION_REQUIRED
+  legalReviewStatus       String    @default("REVIEW_REQUIRED")
+  riskReviewStatus        String    @default("REVIEW_REQUIRED")
+  lifecycle               String    @default("DRAFT")
+  reviewedBy              String?
+  reviewedAt              DateTime?
+  approvedBy              String?
+  approvedAt              DateTime?
+  createdBy               String?
+  updatedBy               String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, lifecycle])
+  @@index([organizationId, updatedAt])
+  @@index([subprocessorId])
+  @@index([processingActivityId])
 }
 
 // ── Phase 64: Vendor Ecosystem Platform ──────────────────────────────────────

@@ -99,7 +99,12 @@ export type OrgPermission =
   | "view_erasures"                // read the tenant erasure-job register + plan
   | "manage_erasures"              // create/plan/cancel/send-back erasure jobs
   | "approve_erasures"             // approve/reject an erasure plan (binds to planHash)
-  | "execute_erasures";            // arm/execute an approved plan (behind the disabled gate)
+  | "execute_erasures"             // arm/execute an approved plan (behind the disabled gate)
+  // PHASE 97 Part I — subprocessor & data-transfer governance. Approval is a
+  // distinct accountable act reserved for the highest organization authority.
+  | "view_transfer_governance"     // read the subprocessor + transfer registers
+  | "manage_transfer_governance"   // create/edit/review draft + under-review records
+  | "approve_transfer_governance"; // approve/activate governed records (gated)
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -187,6 +192,9 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   manage_erasures:                ["OWNER", "ADMIN"],
   approve_erasures:               ["OWNER"],
   execute_erasures:               ["OWNER"],
+  view_transfer_governance:       ["OWNER", "ADMIN", "MANAGER"],
+  manage_transfer_governance:     ["OWNER", "ADMIN"],
+  approve_transfer_governance:    ["OWNER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

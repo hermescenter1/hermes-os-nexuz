@@ -205,6 +205,17 @@ export const COMPLIANCE_AUDIT = {
   ERASURE_PLAN_STALE:             "compliance.erasure.plan_stale",
   ERASURE_CANCELLED:              "compliance.erasure.cancelled",
   ERASURE_MANUAL_RESOLVED:        "compliance.erasure.manual_resolved",
+  // Phase 97 Part I — subprocessor & data-transfer governance (identifiers +
+  // closed status codes only; never contract content, personal data,
+  // authentication material, provider secrets or request bodies).
+  SUBPROCESSOR_CREATED:           "compliance.subprocessor.created",
+  SUBPROCESSOR_UPDATED:           "compliance.subprocessor.updated",
+  SUBPROCESSOR_TRANSITIONED:      "compliance.subprocessor.transitioned",
+  SUBPROCESSOR_APPROVED:          "compliance.subprocessor.approved",
+  DATA_TRANSFER_CREATED:          "compliance.data_transfer.created",
+  DATA_TRANSFER_UPDATED:          "compliance.data_transfer.updated",
+  DATA_TRANSFER_TRANSITIONED:     "compliance.data_transfer.transitioned",
+  DATA_TRANSFER_APPROVED:         "compliance.data_transfer.approved",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */
