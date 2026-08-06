@@ -3440,8 +3440,14 @@ model ComplianceIncident {
   assignedToId          String?
   reviewedBy            String?
   reviewedAt            DateTime?
+  // High-authority decision evidence. A decision state requires a SHA-256 evidence
+  // hash + a positive monotonic version; a non-decision state must clear the current
+  // hash/attribution (never retain seemingly-valid evidence). Enforced by DB CHECKs.
   decisionBy            String?
   decisionAt            DateTime?
+  decisionEvidenceHash  String?
+  decisionVersion       Int       @default(0)
+  decisionAssessmentStatus String?
   resolvedBy            String?
   resolvedAt            DateTime?
   closedBy              String?
@@ -3454,8 +3460,9 @@ model ComplianceIncident {
   updatedAt            DateTime  @updatedAt
 
   organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  timeline              ComplianceIncidentEvent[]
 
+  // Composite-FK target for the tenant-bound timeline / actions (added migration-only).
+  @@unique([id, organizationId])
   @@unique([organizationId, idempotencyKey])
   @@index([organizationId, lifecycle])
   @@index([organizationId, updatedAt])
@@ -3472,20 +3479,55 @@ model ComplianceIncidentEvent {
   complianceIncidentId String
   sequence             Int
   eventCode            String
+  // Actor attribution is mandatory: actorId NOT NULL + a closed actorClass
+  // (PLATFORM | ORGANIZATION_MEMBER). Server-derived; never client-controlled.
+  actorId              String
+  actorClass           String    @default("ORGANIZATION_MEMBER")
   fromLifecycle        String?
   toLifecycle          String?
   fromAssessment       String?
   toAssessment         String?
-  actorId              String?
+  // Decision binding (DECISION_RECORDED / REOPENED): the event carries the same
+  // evidence hash + version + outcome as the incident's decision snapshot.
   evidenceHash         String?
+  decisionVersion      Int?
+  decisionOutcome      String?
+  // Authoritative action reference (ACTION_CREATED / ACTION_RESOLVED / ACTION_CANCELLED).
+  actionId             String?
   correlationId        String?
   createdAt            DateTime  @default(now())
 
-  incident             ComplianceIncident @relation(fields: [complianceIncidentId], references: [id], onDelete: Restrict)
-
+  // Tenant-bound composite parent FK + append-only trigger added migration-only.
   @@unique([complianceIncidentId, sequence])
   @@index([organizationId, complianceIncidentId])
   @@index([complianceIncidentId, createdAt])
+}
+
+// Authoritative unresolved-blocker / follow-up actions for a compliance incident.
+// The single source of truth for closure blocking; ComplianceIncident.openBlockerCount
+// is only a transactionally-reconciled cache of OPEN rows here.
+model ComplianceIncidentAction {
+  id                     String    @id @default(cuid())
+  organizationId         String
+  complianceIncidentId   String
+  priority               String    @default("MEDIUM")
+  status                 String    @default("OPEN")
+  actionCode             String
+  createdBy              String?
+  createdAt              DateTime  @default(now())
+  resolvedBy             String?
+  resolvedAt             DateTime?
+  resolutionEvidenceHash String?
+  updatedBy              String?
+  updatedAt              DateTime  @updatedAt
+
+  // Authoritative organization ownership + tenant-bound parent FK added migration-only.
+  @@index([organizationId])
+  @@index([complianceIncidentId])
+  @@index([organizationId, complianceIncidentId, status])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
 }
 
 // ── Phase 64: Vendor Ecosystem Platform ──────────────────────────────────────

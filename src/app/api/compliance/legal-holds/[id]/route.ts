@@ -4,6 +4,7 @@ import {
   getLegalHoldForOrg,
   updateLegalHoldForOrg,
 } from "@/lib/compliance/db";
+import { applyIncidentScopedHoldTransition } from "@/lib/compliance/incident-db";
 import { requireComplianceOrgScope }  from "@/lib/compliance/authz";
 import { recordAuditEvent, COMPLIANCE_AUDIT } from "@/lib/audit/audit-service";
 import {
@@ -149,8 +150,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "No effective change", code: "INVALID_INPUT" }, { status: 400 });
   }
 
-  const { affected } = await updateLegalHoldForOrg({ id, organizationId: scope.organizationId, updatedBy: scope.userId, data });
-  if (affected !== 1) return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
+  // An INCIDENT-scoped hold activating or releasing runs under the SHARED global lock
+  // order ComplianceIncident → LegalHold: the parent incident is locked FIRST, so
+  // activation and incident closure linearise and an incident CLOSED with an ACTIVE
+  // hold can never persist (activation is refused unless the incident is still active).
+  const effectiveScopeType = (data.scopeType as string | undefined) ?? existing.scopeType;
+  const effectiveIncidentId = ("incidentId" in data ? (data.incidentId as string | null) : existing.incidentId);
+  const newStatus = data.status as string | undefined;
+  if (effectiveScopeType === "INCIDENT" && effectiveIncidentId && (newStatus === "ACTIVE" || newStatus === "RELEASED")) {
+    const res = await applyIncidentScopedHoldTransition({
+      holdId: id, organizationId: scope.organizationId, incidentId: effectiveIncidentId,
+      fromStatus: existing.status, toStatus: newStatus, data, now,
+    });
+    if (!res.ok) {
+      if (res.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
+      if (res.reason === "INCIDENT_NOT_ACTIVE") return NextResponse.json({ error: "The parent incident is not in an active state; reopen it before activating a hold", code: "INCIDENT_NOT_ACTIVE" }, { status: 409 });
+      return NextResponse.json({ error: "Hold transition conflict", code: "CONFLICT" }, { status: 409 });
+    }
+  } else {
+    const { affected } = await updateLegalHoldForOrg({ id, organizationId: scope.organizationId, updatedBy: scope.userId, data });
+    if (affected !== 1) return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
+  }
 
   const row = await getLegalHoldForOrg(id, scope.organizationId);
   await recordAuditEvent({

@@ -46,14 +46,58 @@ export type IncidentSourceClass = typeof INCIDENT_SOURCE_CLASSES[number];
 export const INCIDENT_EVENT_CODES = [
   "CREATED", "UPDATED", "LIFECYCLE_TRANSITIONED", "ASSESSMENT_TRANSITIONED", "DECISION_RECORDED",
   "OWNERSHIP_ASSIGNED", "BLOCKER_RAISED", "BLOCKER_CLEARED", "EVIDENCE_ATTACHED", "REOPENED",
+  "ACTION_CREATED", "ACTION_RESOLVED", "ACTION_CANCELLED",
 ] as const;
 export type IncidentEventCode = typeof INCIDENT_EVENT_CODES[number];
+
+/** Closed actor classification for a timeline event — an org member or the platform.
+ *  Server-derived; never client-controlled. */
+export const INCIDENT_ACTOR_CLASSES = ["PLATFORM", "ORGANIZATION_MEMBER"] as const;
+export type IncidentActorClass = typeof INCIDENT_ACTOR_CLASSES[number];
+
+/** Closed outcome recorded on a decision-bearing timeline event. */
+export const DECISION_OUTCOMES = ["RECORDED", "INVALIDATED"] as const;
+export type DecisionOutcome = typeof DECISION_OUTCOMES[number];
+
+// ── Governed incident actions (authoritative blockers) ────────────────────────
+
+export const INCIDENT_ACTION_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
+export type IncidentActionPriority = typeof INCIDENT_ACTION_PRIORITIES[number];
+
+export const INCIDENT_ACTION_STATUSES = ["OPEN", "RESOLVED", "CANCELLED"] as const;
+export type IncidentActionStatus = typeof INCIDENT_ACTION_STATUSES[number];
+
+export const INCIDENT_ACTION_CODES = [
+  "ASSESSMENT_EVIDENCE_REQUIRED", "LEGAL_REVIEW_REQUIRED", "CONTAINMENT_REQUIRED", "REMEDIATION_REQUIRED",
+  "DATA_PRESERVATION_REQUIRED", "POLICY_REVIEW_REQUIRED", "FOLLOW_UP_REQUIRED", "OTHER_REVIEW_REQUIRED",
+] as const;
+export type IncidentActionCode = typeof INCIDENT_ACTION_CODES[number];
+
+/** Priorities that must ALWAYS block closure while OPEN (the default gate blocks ANY
+ *  open action; these are the floor). */
+export const HIGH_PRIORITY_ACTIONS: IncidentActionPriority[] = ["HIGH", "CRITICAL"];
 
 export function isIncidentType(v: unknown): v is IncidentType { return typeof v === "string" && (INCIDENT_TYPES as readonly string[]).includes(v); }
 export function isIncidentSeverity(v: unknown): v is IncidentSeverity { return typeof v === "string" && (INCIDENT_SEVERITIES as readonly string[]).includes(v); }
 export function isIncidentLifecycle(v: unknown): v is IncidentLifecycle { return typeof v === "string" && (INCIDENT_LIFECYCLES as readonly string[]).includes(v); }
 export function isAssessmentStatus(v: unknown): v is AssessmentStatus { return typeof v === "string" && (ASSESSMENT_STATUSES as readonly string[]).includes(v); }
 export function isIncidentSourceClass(v: unknown): v is IncidentSourceClass { return typeof v === "string" && (INCIDENT_SOURCE_CLASSES as readonly string[]).includes(v); }
+export function isIncidentActorClass(v: unknown): v is IncidentActorClass { return typeof v === "string" && (INCIDENT_ACTOR_CLASSES as readonly string[]).includes(v); }
+export function isIncidentActionPriority(v: unknown): v is IncidentActionPriority { return typeof v === "string" && (INCIDENT_ACTION_PRIORITIES as readonly string[]).includes(v); }
+export function isIncidentActionStatus(v: unknown): v is IncidentActionStatus { return typeof v === "string" && (INCIDENT_ACTION_STATUSES as readonly string[]).includes(v); }
+export function isIncidentActionCode(v: unknown): v is IncidentActionCode { return typeof v === "string" && (INCIDENT_ACTION_CODES as readonly string[]).includes(v); }
+
+/** A currently-valid recorded decision requires a lowercase SHA-256 evidence hash AND
+ *  a positive monotonic version — never just the assessmentStatus string. */
+export const SHA256_HEX = /^[a-f0-9]{64}$/;
+export function isValidDecisionEvidence(evidenceHash: string | null | undefined, decisionVersion: number): boolean {
+  return typeof evidenceHash === "string" && SHA256_HEX.test(evidenceHash) && Number.isInteger(decisionVersion) && decisionVersion > 0;
+}
+/** decisionVersion is monotonic and never decreases; the next valid decision receives
+ *  the last issued version + 1. Invalidation preserves the version as lineage. */
+export function nextDecisionVersion(currentVersion: number): number {
+  return (Number.isInteger(currentVersion) && currentVersion > 0 ? currentVersion : 0) + 1;
+}
 
 // ── Closed lifecycle transition map + action classification ───────────────────
 
@@ -135,23 +179,33 @@ export function assessmentClosureBlocker(assessmentStatus: string): string | nul
 }
 
 /**
- * RESOLVED and CLOSED are blocked while: the mandatory assessment is not decided,
- * required ownership is missing, unresolved blocking action items exist, or an active
- * LegalHold requires continued preservation. Evaluated on the LOCKED row; the active
- * LegalHold flag is supplied by the DB layer from a same-org query.
+ * RESOLVED and CLOSED are blocked while: the mandatory assessment is not decided OR
+ * its CURRENT decision evidence is not valid (a hash + version, never merely the
+ * status string); the owner is missing or the owner's membership is not currently
+ * ACTIVE; any authoritative OPEN IncidentAction exists (an anonymous cached count is
+ * never trusted — the caller supplies the authoritative OPEN count read under the
+ * incident lock); or an active LegalHold requires continued preservation. Every input
+ * is read on the LOCKED row / under the incident lock by the DB layer.
  */
 export function incidentClosureBlockers(input: {
   assessmentStatus: string;
+  decisionEvidenceHash: string | null;
+  decisionVersion: number;
   ownerId: string | null;
-  assignedToId: string | null;
-  openBlockerCount: number;
+  ownerMembershipActive: boolean;
+  openActionCount: number;      // authoritative COUNT of OPEN ComplianceIncidentAction rows
   activeLegalHold: boolean;
 }): IncidentBlocker[] {
   const blockers: IncidentBlocker[] = [];
   const a = assessmentClosureBlocker(input.assessmentStatus);
   if (a) blockers.push({ field: "assessmentStatus", reason: a });
-  if (!input.ownerId && !input.assignedToId) blockers.push({ field: "ownership", reason: "OWNERSHIP_REQUIRED" });
-  if (input.openBlockerCount > 0) blockers.push({ field: "openBlockerCount", reason: "UNRESOLVED_BLOCKERS" });
+  // Even in a "decided" assessment state, closure requires CURRENT valid evidence.
+  else if (!isValidDecisionEvidence(input.decisionEvidenceHash, input.decisionVersion)) {
+    blockers.push({ field: "decisionEvidence", reason: "DECISION_EVIDENCE_REQUIRED" });
+  }
+  if (!input.ownerId) blockers.push({ field: "ownership", reason: "OWNERSHIP_REQUIRED" });
+  else if (!input.ownerMembershipActive) blockers.push({ field: "ownership", reason: "OWNER_MEMBERSHIP_INACTIVE" });
+  if (input.openActionCount > 0) blockers.push({ field: "openActions", reason: "UNRESOLVED_ACTIONS" });
   if (input.activeLegalHold) blockers.push({ field: "legalHold", reason: "ACTIVE_LEGAL_HOLD" });
   return blockers;
 }

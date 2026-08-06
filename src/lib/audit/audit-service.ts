@@ -222,10 +222,13 @@ export const COMPLIANCE_AUDIT = {
   INCIDENT_CREATED:               "compliance.incident.created",
   INCIDENT_UPDATED:               "compliance.incident.updated",
   INCIDENT_TRANSITIONED:          "compliance.incident.transitioned",
+  INCIDENT_ASSIGNED:              "compliance.incident.assigned",
   INCIDENT_ASSESSMENT_RECORDED:   "compliance.incident.assessment_recorded",
   INCIDENT_DECISION_RECORDED:     "compliance.incident.decision_recorded",
-  INCIDENT_BLOCKER_CHANGED:       "compliance.incident.blocker_changed",
   INCIDENT_REOPENED:              "compliance.incident.reopened",
+  INCIDENT_ACTION_CREATED:        "compliance.incident.action_created",
+  INCIDENT_ACTION_RESOLVED:       "compliance.incident.action_resolved",
+  INCIDENT_ACTION_CANCELLED:      "compliance.incident.action_cancelled",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */

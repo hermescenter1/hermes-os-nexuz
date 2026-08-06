@@ -304,6 +304,9 @@ export interface DbComplianceIncident {
   reviewedAt:           Date | null;
   decisionBy:           string | null;
   decisionAt:           Date | null;
+  decisionEvidenceHash: string | null;
+  decisionVersion:      number;
+  decisionAssessmentStatus: string | null;
   resolvedBy:           string | null;
   resolvedAt:           Date | null;
   closedBy:             string | null;
@@ -322,14 +325,34 @@ export interface DbComplianceIncidentEvent {
   complianceIncidentId: string;
   sequence:             number;
   eventCode:            string;
+  actorId:              string;
+  actorClass:           string;
   fromLifecycle:        string | null;
   toLifecycle:          string | null;
   fromAssessment:       string | null;
   toAssessment:         string | null;
-  actorId:              string | null;
   evidenceHash:         string | null;
+  decisionVersion:      number | null;
+  decisionOutcome:      string | null;
+  actionId:             string | null;
   correlationId:        string | null;
   createdAt:            Date;
+}
+
+export interface DbComplianceIncidentAction {
+  id:                     string;
+  organizationId:         string;
+  complianceIncidentId:   string;
+  priority:               string;
+  status:                 string;
+  actionCode:             string;
+  createdBy:              string | null;
+  createdAt:              Date;
+  resolvedBy:             string | null;
+  resolvedAt:             Date | null;
+  resolutionEvidenceHash: string | null;
+  updatedBy:              string | null;
+  updatedAt:              Date;
 }
 
 export interface ComplianceStats {

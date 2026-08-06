@@ -35,6 +35,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!requirePermission(scope.role, perm).ok) {
     return NextResponse.json({ error: "Insufficient organization permissions", code: "INSUFFICIENT_PERMISSION" }, { status: 403 });
   }
+  // Entering a high-authority decision state requires an evidence hash in the request.
+  if (action === "decide" && parsed.data.evidenceHash === undefined) {
+    return NextResponse.json({ error: "Decision evidence is required", code: "DECISION_EVIDENCE_REQUIRED" }, { status: 400 });
+  }
 
   const result = await recordAssessmentForOrg({
     id, organizationId: scope.organizationId, actorId: scope.userId, to: parsed.data.assessmentStatus,
@@ -43,6 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!result.ok) {
     if (result.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
     if (result.reason === "INVALID_ASSESSMENT") return NextResponse.json({ error: "Assessment transition not allowed", code: "INVALID_ASSESSMENT" }, { status: 409 });
+    if (result.reason === "DECISION_EVIDENCE_REQUIRED") return NextResponse.json({ error: "Decision evidence is required", code: "DECISION_EVIDENCE_REQUIRED" }, { status: 400 });
     if (result.reason === "IMMUTABLE_LIFECYCLE") return NextResponse.json({ error: "Incident assessment is frozen", code: "IMMUTABLE_LIFECYCLE" }, { status: 409 });
     return NextResponse.json({ error: "Assessment conflict", code: "CONFLICT" }, { status: 409 });
   }

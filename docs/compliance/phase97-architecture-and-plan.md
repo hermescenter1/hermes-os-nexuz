@@ -147,3 +147,58 @@ DEPLOYED=False
 MERGED=False
 LEGAL_CERTIFICATION_CLAIMED=False
 ```
+
+## 10. Governed compliance incidents — evidence & closure integrity
+
+Migrations `20260820000014` (base workflow) and `20260820000015` (evidence-integrity
+hardening) define a tenant-owned incident control plane. The runtime source of truth
+for cross-plane reconstruction remains the Phase 92 observability facilities; an
+incident only **references** that timeline by `correlationId`.
+
+- **Authoritative membership-bound ownership.** `ownerId` / `assignedToId` are org
+  member user ids bound by a composite FK `(organizationId, ownerId) →
+  OrganizationMember(organizationId, userId)` (RESTRICT). Generic create/update can
+  never assign an owner; assignment is a dedicated route
+  (`POST /api/compliance/incidents/[id]/assignment`, `manage_compliance_incidents`)
+  that locks the incident, then resolves + locks the membership (FOR SHARE) and
+  requires `status = ACTIVE`. Closure re-reads the owner's membership transactionally,
+  so a now-inactive/removed owner no longer satisfies closure.
+- **Immutable tenant-bound timeline.** `ComplianceIncidentEvent` binds to its incident
+  by a composite FK `(complianceIncidentId, organizationId) → ComplianceIncident(id,
+  organizationId)` (RESTRICT, non-cascading) plus an Organization FK; `actorId` is NOT
+  NULL with a closed `actorClass` (PLATFORM | ORGANIZATION_MEMBER); a `BEFORE UPDATE OR
+  DELETE` trigger rejects any mutation. An incident with timeline evidence cannot be
+  hard-deleted, and there is no incident DELETE route.
+- **Decision evidence versioning.** A high-authority decision state requires a SHA-256
+  `decisionEvidenceHash` in the request and a positive monotonic `decisionVersion`
+  (DB CHECKs); the `DECISION_RECORDED` timeline event carries the same hash + version +
+  `outcome = RECORDED`. A non-decision state must clear the current hash (no stale,
+  seemingly-valid evidence). `decisionVersion` never decreases; invalidation preserves
+  it as lineage and the next valid decision receives `version + 1`.
+- **Decision invalidation.** Reassessment out of a decision state and the explicit
+  reopen both clear the current decision evidence atomically (reopen also sets
+  `assessmentStatus = IN_ASSESSMENT`, clears resolution/closure attribution and appends
+  `REOPENED` with `outcome = INVALIDATED`). A reopened incident requires a completely
+  new decision before RESOLVED/CLOSED; the closure gate validates current evidence, not
+  the status string.
+- **IncidentAction as blocker authority.** `ComplianceIncidentAction` (closed
+  priority/status/actionCode, tenant-bound parent FK) is the single source of truth for
+  closure blocking; `openBlockerCount` is only a transactionally-reconciled cache. Any
+  OPEN action blocks RESOLVED/CLOSED (closure reads the authoritative OPEN count under
+  the incident lock); resolving a HIGH/CRITICAL action requires an evidence hash;
+  resolving a missing/terminal/foreign action is uniformly not-found.
+- **LegalHold ↔ closure lock ordering.** One global order —
+  `ComplianceIncident → OrganizationMember → LegalHold → ComplianceIncidentAction`.
+  Incident closure and INCIDENT-scoped hold activation/release both lock the incident
+  first, so they linearise and an incident CLOSED with an ACTIVE hold can never persist;
+  activation is refused unless the incident is still in an active working state.
+- **No automatic external notification.** The workflow records containment /
+  remediation / notification-decision **evidence** only. It never sends email/webhooks,
+  contacts customers/regulators/providers, executes containment, alters subject data, or
+  invents a legal deadline / jurisdiction / notification duty / breach verdict.
+- **Fail-closed migration.** `20260820000015` is additive/strengthening (no DROP TABLE /
+  DROP COLUMN / TRUNCATE / DELETE / auto-repair). A classification-count-only preflight
+  aborts (counts + closed labels only, never row content) when any pre-existing row
+  would violate a new constraint — invalid actor, parent-org mismatch, incomplete
+  decision evidence, invalid ownership binding, invalid incident-hold binding, or a
+  blocker-cache mismatch.
