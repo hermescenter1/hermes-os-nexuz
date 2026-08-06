@@ -27,7 +27,7 @@ describe("closed vocabularies", () => {
     expect(isAssessmentStatus("BREACH_CONFIRMED")).toBe(false); // never an auto-derived breach verdict
     expect(isIncidentSourceClass("OBSERVABILITY")).toBe(true);
     expect(isIncidentActorClass("ORGANIZATION_MEMBER")).toBe(true);
-    expect(isIncidentActorClass("PLATFORM")).toBe(true);
+    expect(isIncidentActorClass("PLATFORM")).toBe(false); // unenforced PLATFORM class removed (UNPROVEN_ACTOR_CLASSIFICATION=0)
     expect(isIncidentActorClass("ROBOT")).toBe(false);
     for (const p of ["LOW", "MEDIUM", "HIGH", "CRITICAL"]) expect(isIncidentActionPriority(p)).toBe(true);
     expect(isIncidentActionPriority("SEV0")).toBe(false);

@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const { idempotencyKey, ...data } = parsed.data;
   const result = await createIncidentForOrg({
     organizationId: scope.organizationId, actorId: scope.userId,
-    idempotencyKey: idempotencyKey ?? randomUUID(), data, now: new Date(),
+    idempotencyKey: idempotencyKey ?? randomUUID(), data,
   });
   if (!result.ok) {
     if (result.reason === "INVALID_RELATION") return NextResponse.json({ error: "Referenced record not found", code: "RELATED_RECORD_NOT_FOUND" }, { status: 404 });

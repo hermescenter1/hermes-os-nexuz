@@ -346,12 +346,12 @@ export interface DbComplianceIncidentAction {
   priority:               string;
   status:                 string;
   actionCode:             string;
-  createdBy:              string | null;
+  createdBy:              string;
   createdAt:              Date;
   resolvedBy:             string | null;
   resolvedAt:             Date | null;
   resolutionEvidenceHash: string | null;
-  updatedBy:              string | null;
+  updatedBy:              string;
   updatedAt:              Date;
 }
 

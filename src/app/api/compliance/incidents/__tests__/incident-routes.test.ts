@@ -59,6 +59,7 @@ function makeDb() {
     complianceIncidentAction: coll(() => actions),
   };
   db.$queryRawUnsafe = async (sql: string, ...vals: unknown[]) => {
+    if (/clock_timestamp\(\)/i.test(sql)) return [{ now: new Date() }];
     if (/MAX\("sequence"\)/i.test(sql)) {
       const [incId] = vals as [string];
       const max = events.filter((e) => e.complianceIncidentId === incId).reduce((m, e) => Math.max(m, Number(e.sequence)), 0);
@@ -78,8 +79,8 @@ function makeDb() {
       return legalHolds.filter((h) => h.organizationId === org && h.scopeType === "INCIDENT" && h.incidentId === incId).map((h) => ({ status: h.status }));
     }
     if (/"ComplianceIncidentAction"[\s\S]*FOR UPDATE/i.test(sql)) {
-      const [id, org] = vals as [string, string];
-      const a = actions.find((x) => x.id === id && x.organizationId === org);
+      const [id, org, incId] = vals as [string, string, string];
+      const a = actions.find((x) => x.id === id && x.organizationId === org && x.complianceIncidentId === incId);
       return a ? [{ id: a.id, status: a.status, priority: a.priority }] : [];
     }
     if (/"ComplianceIncident"[\s\S]*FOR UPDATE/i.test(sql)) {

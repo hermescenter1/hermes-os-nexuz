@@ -150,21 +150,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "No effective change", code: "INVALID_INPUT" }, { status: 400 });
   }
 
-  // An INCIDENT-scoped hold activating or releasing runs under the SHARED global lock
-  // order ComplianceIncident → LegalHold: the parent incident is locked FIRST, so
-  // activation and incident closure linearise and an incident CLOSED with an ACTIVE
-  // hold can never persist (activation is refused unless the incident is still active).
-  const effectiveScopeType = (data.scopeType as string | undefined) ?? existing.scopeType;
-  const effectiveIncidentId = ("incidentId" in data ? (data.incidentId as string | null) : existing.incidentId);
+  // An INCIDENT-scoped hold activating/releasing runs under the SHARED global lock
+  // order ComplianceIncident → LegalHold. The pre-read `existing` is only a candidate;
+  // the transition function locks the incident FIRST, then the hold, re-reads the FULL
+  // authoritative hold and requires it to EXACTLY match this pre-read snapshot
+  // {status, scopeType, incidentId, updatedAt} — otherwise the parent binding changed
+  // (HOLD_BINDING_CHANGED) and the caller must retry. It writes only explicit
+  // allow-listed fields with a post-lock time, so activation and incident closure
+  // linearise and a CLOSED incident with an ACTIVE hold can never persist.
   const newStatus = data.status as string | undefined;
-  if (effectiveScopeType === "INCIDENT" && effectiveIncidentId && (newStatus === "ACTIVE" || newStatus === "RELEASED")) {
+  if (existing.scopeType === "INCIDENT" && existing.incidentId && (newStatus === "ACTIVE" || newStatus === "RELEASED")) {
     const res = await applyIncidentScopedHoldTransition({
-      holdId: id, organizationId: scope.organizationId, incidentId: effectiveIncidentId,
-      fromStatus: existing.status, toStatus: newStatus, data, now,
+      holdId: id, organizationId: scope.organizationId, actorId: scope.userId, toStatus: newStatus,
+      expected: { status: existing.status, scopeType: existing.scopeType, incidentId: existing.incidentId, updatedAt: existing.updatedAt },
     });
     if (!res.ok) {
       if (res.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
       if (res.reason === "INCIDENT_NOT_ACTIVE") return NextResponse.json({ error: "The parent incident is not in an active state; reopen it before activating a hold", code: "INCIDENT_NOT_ACTIVE" }, { status: 409 });
+      if (res.reason === "HOLD_BINDING_CHANGED") return NextResponse.json({ error: "The hold's parent binding changed under the operation; retry", code: "HOLD_BINDING_CHANGED" }, { status: 409 });
       return NextResponse.json({ error: "Hold transition conflict", code: "CONFLICT" }, { status: 409 });
     }
   } else {

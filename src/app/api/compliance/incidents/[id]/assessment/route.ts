@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const result = await recordAssessmentForOrg({
     id, organizationId: scope.organizationId, actorId: scope.userId, to: parsed.data.assessmentStatus,
-    action, evidenceHash: parsed.data.evidenceHash ?? null, now: new Date(),
+    action, evidenceHash: parsed.data.evidenceHash ?? null,
   });
   if (!result.ok) {
     if (result.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });

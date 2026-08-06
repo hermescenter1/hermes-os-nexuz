@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const parsed = assignIncidentSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid input", code: "INVALID_INPUT" }, { status: 400 });
 
-  const result = await assignIncidentOwnerForOrg({ id, organizationId: scope.organizationId, actorId: scope.userId, ownerId: parsed.data.ownerId, now: new Date() });
+  const result = await assignIncidentOwnerForOrg({ id, organizationId: scope.organizationId, actorId: scope.userId, ownerId: parsed.data.ownerId });
   if (!result.ok) {
     if (result.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
     if (result.reason === "INVALID_MEMBERSHIP") return NextResponse.json({ error: "Assignee is not an active member of this organization", code: "INVALID_MEMBERSHIP" }, { status: 422 });

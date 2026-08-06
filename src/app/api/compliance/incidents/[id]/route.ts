@@ -53,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     const parsed = updateIncidentSchema.safeParse(body.update);
     if (!parsed.success) return NextResponse.json({ error: "Invalid input", code: "INVALID_INPUT" }, { status: 400 });
-    const result = await updateIncidentForOrg({ id, organizationId: scope.organizationId, actorId: scope.userId, data: parsed.data as Record<string, unknown>, now: new Date() });
+    const result = await updateIncidentForOrg({ id, organizationId: scope.organizationId, actorId: scope.userId, data: parsed.data as Record<string, unknown> });
     if (!result.ok) {
       if (result.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
       if (result.reason === "INVALID_RELATION") return NextResponse.json({ error: "Referenced record not found", code: "RELATED_RECORD_NOT_FOUND" }, { status: 404 });
@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Insufficient organization permissions", code: "INSUFFICIENT_PERMISSION" }, { status: 403 });
   }
 
-  const result = await transitionIncidentForOrg({ id, organizationId: scope.organizationId, actorId: scope.userId, from: row.lifecycle, to, action, now: new Date() });
+  const result = await transitionIncidentForOrg({ id, organizationId: scope.organizationId, actorId: scope.userId, from: row.lifecycle, to, action });
   if (!result.ok) {
     if (result.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
     if (result.reason === "NOT_CLOSABLE") {

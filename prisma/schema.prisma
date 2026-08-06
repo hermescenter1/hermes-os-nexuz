@@ -3513,12 +3513,14 @@ model ComplianceIncidentAction {
   priority               String    @default("MEDIUM")
   status                 String    @default("OPEN")
   actionCode             String
-  createdBy              String?
+  // Creator/updater are mandatory + bound to an authoritative same-org membership
+  // (FKs added migration-only).
+  createdBy              String
   createdAt              DateTime  @default(now())
   resolvedBy             String?
   resolvedAt             DateTime?
   resolutionEvidenceHash String?
-  updatedBy              String?
+  updatedBy              String
   updatedAt              DateTime  @updatedAt
 
   // Authoritative organization ownership + tenant-bound parent FK added migration-only.

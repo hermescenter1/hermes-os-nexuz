@@ -50,9 +50,13 @@ export const INCIDENT_EVENT_CODES = [
 ] as const;
 export type IncidentEventCode = typeof INCIDENT_EVENT_CODES[number];
 
-/** Closed actor classification for a timeline event — an org member or the platform.
- *  Server-derived; never client-controlled. */
-export const INCIDENT_ACTOR_CLASSES = ["PLATFORM", "ORGANIZATION_MEMBER"] as const;
+/** Closed actor classification for a timeline event. Fail-closed to the currently
+ *  IMPLEMENTED + DB-ENFORCED reality: every incident actor is a same-org
+ *  OrganizationMember (event actorId is bound by an OrganizationMember FK). A PLATFORM
+ *  actor class is deliberately NOT retained — it would require a future explicit
+ *  authoritative platform-actor design and must not be fabricated now
+ *  (UNPROVEN_ACTOR_CLASSIFICATION=0). Server-derived; never client-controlled. */
+export const INCIDENT_ACTOR_CLASSES = ["ORGANIZATION_MEMBER"] as const;
 export type IncidentActorClass = typeof INCIDENT_ACTOR_CLASSES[number];
 
 /** Closed outcome recorded on a decision-bearing timeline event. */

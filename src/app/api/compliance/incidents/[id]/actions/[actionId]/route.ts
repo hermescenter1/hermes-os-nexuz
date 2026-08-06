@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const parsed = terminateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid input", code: "INVALID_INPUT" }, { status: 400 });
 
-  const common = { incidentId: id, organizationId: scope.organizationId, actorId: scope.userId, actionId, now: new Date() };
+  const common = { incidentId: id, organizationId: scope.organizationId, actorId: scope.userId, actionId };
   const result = parsed.data.operation === "RESOLVE"
     ? await resolveIncidentActionForOrg({ ...common, evidenceHash: parsed.data.evidenceHash ?? null })
     : await cancelIncidentActionForOrg(common);

@@ -202,3 +202,41 @@ incident only **references** that timeline by `correlationId`.
   would violate a new constraint — invalid actor, parent-org mismatch, incomplete
   decision evidence, invalid ownership binding, invalid incident-hold binding, or a
   blocker-cache mismatch.
+
+## 11. Incident lineage + concurrency-proof hardening
+
+Migration `20260820000016` and the incident persistence layer close the remaining
+incident-lineage and concurrency-proof gaps.
+
+- **LegalHold authoritative parent snapshot.** An INCIDENT-scoped activation/release
+  never trusts the parent read before the transaction. The caller pre-reads only a
+  candidate + expected snapshot; under lock the candidate incident is locked FIRST,
+  then the hold, then the FULL hold is re-read and must EXACTLY match the expected
+  {status, scopeType, incidentId, updatedAt} — otherwise the binding moved
+  (HOLD_BINDING_CHANGED) and the operation rolls back for a fresh retry WITHOUT locking
+  a second incident. Only explicit allow-listed fields are written (never a generic
+  spread), with a post-lock time.
+- **Action-event same-parent binding.** An ACTION timeline event references its action
+  by the composite FK (actionId, organizationId, complianceIncidentId) →
+  ComplianceIncidentAction(id, organizationId, complianceIncidentId), so an ACTION event
+  can only reference an action of its OWN incident (cross-incident / foreign-tenant /
+  missing action references are rejected by PostgreSQL).
+- **Authoritative timeline actor provenance.** Every timeline actor and every action
+  creator/updater is bound to an actual same-org OrganizationMember by a composite FK;
+  the actorClass vocabulary is failed closed to the only implemented + enforced class,
+  ORGANIZATION_MEMBER (the unenforced PLATFORM option is removed — a future platform
+  actor requires an explicit authoritative design).
+- **Post-lock authoritative evidence time.** Every state change captures
+  `clock_timestamp()` AFTER all its locks are held and uses that single value for the
+  incident state, the action/hold and the timeline event; no route-created Date reaches
+  persisted evidence, and a timeline event's createdAt equals its incident's updatedAt.
+- **Deterministic concurrency barriers.** The real-PostgreSQL suite proves both
+  orderings of action-vs-closure, hold-activation-vs-closure, hold-release-vs-closure
+  and decision-vs-reassessment with explicit held-lock barriers (a transaction holds a
+  row lock; the racing operation provably blocks; the ordering is forced, never left to
+  scheduler luck), asserting the final persisted state, versions, hashes and hold/action
+  states after each ordering.
+- **Fail-closed migration.** `20260820000016` is additive/strengthening (only the weak
+  FK/CHECK being strengthened is dropped and replaced); a classification-count-only
+  preflight aborts on any pre-existing cross-incident action event, timeline actor
+  without membership, action without a creator, or creator without membership.
