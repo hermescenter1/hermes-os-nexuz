@@ -15,8 +15,9 @@
  * missing policy context fails closed as configuration-required — never as approval
  * (MISSING_PROVIDER_POLICY_FAIL_OPEN=0) — and no provider is ever contacted.
  */
+import { createHash } from "node:crypto";
 import { evaluateProviderAccess, type OrganisationProviderPolicy } from "@/lib/ai-governance/provider-policy";
-import type { GovernanceDenyReason } from "@/lib/ai-governance/types";
+import type { GovernanceDenyReason, DataClass } from "@/lib/ai-governance/types";
 
 // ── Closed vocabularies ───────────────────────────────────────────────────────
 
@@ -137,39 +138,72 @@ export function transferReviewBlockers(r: TransferReviewLike): ApprovalBlocker[]
   return blockers;
 }
 
-// ── Phase 95 provider-policy precedence (read-only, no provider contact) ──────
+// ── Phase 95 EXACT provider-scope binding (read-only, no provider contact) ────
+//
+// A provider-linked Subprocessor declares an EXPLICIT closed provider-governance
+// scope (providerDataClasses × providerWorkflows), separate from the free-form
+// compliance labels. Approval requires that EVERY declared combination is permitted
+// by the real Phase 95 evaluator — one allowed combination must never hide another
+// denied one. secret/credential scope is always denied; an unknown data class fails
+// closed; an empty scope never authorises. The approved evidence binds to the exact
+// Policy version and a SHA-256 hash of the canonical (sorted, deduped) scope.
 
-export type ProviderPolicyGate =
-  | { ok: true; basis: "NOT_PROVIDER_LINKED" }
-  | { ok: true; basis: "PROVIDER_POLICY_ALLOWED"; policyVersion: string }
+/** The Phase 95 closed data-class vocabulary, mirrored with a compile-time
+ *  exhaustiveness check so a future DataClass addition cannot silently drift. */
+export const KNOWN_DATA_CLASSES = ["public", "tenant_operational", "tenant_industrial_confidential", "personal_data", "secret"] as const satisfies readonly DataClass[];
+type _DataClassExhaustive = Exclude<DataClass, typeof KNOWN_DATA_CLASSES[number]> extends never ? true : never;
+const _dataClassExhaustive: _DataClassExhaustive = true; void _dataClassExhaustive;
+export function isDataClass(v: unknown): v is DataClass {
+  return typeof v === "string" && (KNOWN_DATA_CLASSES as readonly string[]).includes(v);
+}
+
+/** Sorted, deduplicated, trimmed, non-empty string list — the canonical scope form. */
+export function normalizeScopeList(list: unknown): string[] {
+  if (!Array.isArray(list)) return [];
+  const set = new Set<string>();
+  for (const v of list) { if (typeof v === "string") { const t = v.trim(); if (t) set.add(t); } }
+  return [...set].sort();
+}
+
+/** SHA-256 over the CANONICAL (sorted, deduped) provider scope — deterministic
+ *  regardless of input order or duplicates. Never contains a key or secret. */
+export function providerScopeHash(dataClasses: unknown, workflows: unknown): string {
+  const canon = { dataClasses: normalizeScopeList(dataClasses), workflows: normalizeScopeList(workflows) };
+  return createHash("sha256").update(JSON.stringify(canon)).digest("hex");
+}
+
+export type ProviderScopeGate =
+  | { ok: true; policyVersion: string; scopeHash: string }
+  | { ok: false; code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" }
   | { ok: false; code: "PROVIDER_POLICY_CONFIGURATION_REQUIRED" }
-  | { ok: false; code: "PROVIDER_POLICY_DENIED"; reason: GovernanceDenyReason };
+  | { ok: false; code: "PROVIDER_POLICY_DENIED"; reason: GovernanceDenyReason; dataClass: string; workflow: string };
 
 /**
- * Gate a provider-linked subprocessor through the REAL Phase 95 evaluator.
- *   - No providerRegistryId → the gate does not apply (reviews still gate approval).
- *   - Missing tenant policy row → CONFIGURATION_REQUIRED (fail closed, NOT approval).
- *   - Otherwise evaluateProviderAccess is run over the policy's OWN declared
- *     (dataClass × workflow) scope in the production environment; the subprocessor
- *     passes only if Phase 95 would permit at least one declared combination.
- *     Every combination denied ⇒ the Phase 95 denial WINS and approval is blocked.
- * Pure: nothing here performs any I/O or contacts any provider.
+ * Bind a provider-linked Subprocessor's EXACT declared scope to the current Policy.
+ * Every (dataClass × workflow) combination must be permitted by the external
+ * provider registry, the current org Policy, the production environment and the
+ * external-AI feature gate. Fail-closed: empty scope → PROVIDER_SCOPE_CONFIGURATION_
+ * REQUIRED; missing policy → PROVIDER_POLICY_CONFIGURATION_REQUIRED; any denial (incl.
+ * an unknown/secret data class) → PROVIDER_POLICY_DENIED. Deterministic: iteration is
+ * over the sorted, deduped scope, so the reported denial is stable. Pure — no I/O.
  */
-export function assessSubprocessorProviderPolicy(params: {
-  organizationId:     string;
-  providerRegistryId: string | null;
-  policy:             OrganisationProviderPolicy | null; // injected, read-only
-  externalAiEnabled:  boolean;
-  now:                Date;
-}): ProviderPolicyGate {
-  if (!params.providerRegistryId) return { ok: true, basis: "NOT_PROVIDER_LINKED" };
+export function bindProviderScope(params: {
+  organizationId:      string;
+  providerRegistryId:  string;   // caller guarantees non-null (record is provider-linked)
+  providerDataClasses: unknown;
+  providerWorkflows:   unknown;
+  policy:              OrganisationProviderPolicy | null; // the LOCKED policy row (or null)
+  externalAiEnabled:   boolean;
+  now:                 Date;
+}): ProviderScopeGate {
+  const dataClasses = normalizeScopeList(params.providerDataClasses);
+  const workflows = normalizeScopeList(params.providerWorkflows);
+  if (dataClasses.length === 0 || workflows.length === 0) return { ok: false, code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" };
   if (!params.policy) return { ok: false, code: "PROVIDER_POLICY_CONFIGURATION_REQUIRED" };
 
-  let lastReason: GovernanceDenyReason = "NO_POLICY";
-  let evaluated = 0;
-  for (const dataClass of params.policy.allowedDataClasses) {
-    for (const workflow of params.policy.allowedWorkflows) {
-      evaluated += 1;
+  for (const dataClass of dataClasses) {
+    if (!isDataClass(dataClass)) return { ok: false, code: "PROVIDER_POLICY_DENIED", reason: "UNAPPROVED_DATA_CLASS", dataClass, workflow: workflows[0] };
+    for (const workflow of workflows) {
       const decision = evaluateProviderAccess(
         {
           organisationId: params.organizationId,
@@ -182,30 +216,31 @@ export function assessSubprocessorProviderPolicy(params: {
         },
         params.policy,
       );
-      if (decision.allowed) return { ok: true, basis: "PROVIDER_POLICY_ALLOWED", policyVersion: decision.policyVersion };
-      lastReason = decision.reason;
+      if (!decision.allowed) return { ok: false, code: "PROVIDER_POLICY_DENIED", reason: decision.reason, dataClass, workflow };
     }
   }
-  // A policy that declares no usable scope cannot authorise anything.
-  if (evaluated === 0) return { ok: false, code: "PROVIDER_POLICY_DENIED", reason: "UNAPPROVED_DATA_CLASS" };
-  return { ok: false, code: "PROVIDER_POLICY_DENIED", reason: lastReason };
+  return { ok: true, policyVersion: params.policy.policyVersion, scopeHash: providerScopeHash(dataClasses, workflows) };
 }
 
-/** Combined subprocessor approval gate: reviews AND (when provider-linked) the
- *  Phase 95 gate must ALL pass. A Phase 95 denial can never be overridden. */
+/** Render a failed provider-scope gate as a closed approval-blocker reason. */
+export function providerScopeBlockerReason(scope: Extract<ProviderScopeGate, { ok: false }>): string {
+  return scope.code === "PROVIDER_POLICY_DENIED" ? `PROVIDER_POLICY_DENIED:${scope.reason}` : scope.code;
+}
+
+/** Combined subprocessor approval gate: reviews AND (when provider-linked) the exact
+ *  provider-scope binding must ALL pass. A Phase 95 denial can never be overridden. */
 export function canApproveSubprocessor(
   reviews: SubprocessorReviewLike,
-  providerGate: ProviderPolicyGate,
+  scope: ProviderScopeGate | null, // null = not provider-linked (gate does not apply)
 ): { ok: boolean; blockers: ApprovalBlocker[] } {
   const blockers = subprocessorReviewBlockers(reviews);
-  if (!providerGate.ok) {
-    blockers.push({ field: "providerRegistryId", reason: providerGate.code === "PROVIDER_POLICY_DENIED" ? `PROVIDER_POLICY_DENIED:${providerGate.reason}` : providerGate.code });
-  }
+  if (scope && !scope.ok) blockers.push({ field: "providerScope", reason: providerScopeBlockerReason(scope) });
   return { ok: blockers.length === 0, blockers };
 }
 
 /** Combined transfer approval gate: mechanism + legal + risk reviews, plus (when
- *  linked) an APPROVED/ACTIVE same-org subprocessor. */
+ *  linked) an APPROVED/ACTIVE same-org subprocessor. Provider re-validation
+ *  (current-policy version + scope binding) is applied additionally at the DB layer. */
 export function canApproveTransfer(
   reviews: TransferReviewLike,
   linkedSubprocessorLifecycle: string | null, // null = no subprocessor linked

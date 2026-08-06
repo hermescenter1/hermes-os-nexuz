@@ -8,11 +8,7 @@ import {
   transitionGovernanceRecordForOrg, approveSubprocessorForOrg,
 } from "@/lib/compliance/transfer-db";
 import { updateSubprocessorSchema, toSubprocessorDto } from "@/lib/compliance/transfer-schema";
-import {
-  isGovernanceLifecycle, governanceTransitionAction, assessSubprocessorProviderPolicy,
-  type GovernanceAction,
-} from "@/lib/compliance/transfer-governance";
-import { prismaProviderPolicyStore } from "@/lib/ai-governance/runtime/policy-store";
+import { isGovernanceLifecycle, governanceTransitionAction, type GovernanceAction } from "@/lib/compliance/transfer-governance";
 
 const ACTION_PERMISSION: Record<GovernanceAction, OrgPermission> = {
   manage:  "manage_transfer_governance",
@@ -88,22 +84,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if (to === "APPROVED" || to === "ACTIVE") {
-    // Read-only Phase 95 policy fetch (fail-closed null). The gate itself is
-    // evaluated inside the transaction on the LOCKED row's providerRegistryId — a
-    // concurrently-changed provider link denies via the evaluator's identity check.
-    const policy = row.providerRegistryId
-      ? await prismaProviderPolicyStore().find(scope.organizationId, row.providerRegistryId)
-      : null;
-    const externalAiEnabled = process.env.HERMES_EXTERNAL_AI_ENABLED === "1";
-    const now = new Date();
+    // The provider policy is READ + LOCKED inside the approval transaction on the
+    // LOCKED subprocessor's providerRegistryId (never pre-fetched here), so a
+    // concurrent disable/expiry/version-change/delete serializes with the approval.
     const result = await approveSubprocessorForOrg({
       id, organizationId: scope.organizationId, actorId: scope.userId,
       from: to === "APPROVED" ? "UNDER_REVIEW" : "APPROVED", to,
-      providerGate: (locked) => assessSubprocessorProviderPolicy({
-        organizationId: scope.organizationId, providerRegistryId: locked.providerRegistryId,
-        policy, externalAiEnabled, now,
-      }),
-      now,
+      externalAiEnabled: process.env.HERMES_EXTERNAL_AI_ENABLED === "1",
+      now: new Date(),
     });
     if (!result.ok) {
       if (result.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });

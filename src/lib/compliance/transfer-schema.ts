@@ -20,10 +20,17 @@ const mechanismStatus = z.enum(MECHANISM_STATUSES as [string, ...string[]]);
 
 // ── Subprocessor ──────────────────────────────────────────────────────────────
 
+// Provider scope is the EXPLICIT closed Phase 95 governance scope (never derived from
+// dataCategories/serviceCategory). Bounded string arrays; the exact allow-list is
+// enforced against the registry + org Policy at approval time, not here.
+const scopeList = z.array(z.string().trim().min(1).max(120)).max(32);
+
 export const createSubprocessorSchema = z.object({
   name:                bounded(200),
   legalEntity:         bounded(200).nullish(),
   providerRegistryId:  bounded(200).nullish(),
+  providerDataClasses: scopeList.optional(),
+  providerWorkflows:   scopeList.optional(),
   serviceCategory:     bounded(120).optional(),
   operatingCountries:  strList.optional(),
   processingCountries: strList.optional(),
@@ -35,6 +42,8 @@ export const updateSubprocessorSchema = z.object({
   name:                bounded(200).optional(),
   legalEntity:         bounded(200).nullish(),
   providerRegistryId:  bounded(200).nullish(),
+  providerDataClasses: scopeList.optional(),
+  providerWorkflows:   scopeList.optional(),
   serviceCategory:     bounded(120).optional(),
   operatingCountries:  strList.optional(),
   processingCountries: strList.optional(),
@@ -84,6 +93,11 @@ export function toSubprocessorDto(row: DbSubprocessor) {
     name:                 row.name,
     legalEntity:          row.legalEntity,
     providerRegistryId:   row.providerRegistryId,
+    providerDataClasses:  row.providerDataClasses,
+    providerWorkflows:    row.providerWorkflows,
+    approvedProviderPolicyVersion: row.approvedProviderPolicyVersion,
+    approvedProviderScopeHash:     row.approvedProviderScopeHash,
+    providerPolicyEvaluatedAt:     row.providerPolicyEvaluatedAt,
     serviceCategory:      row.serviceCategory,
     operatingCountries:   row.operatingCountries,
     processingCountries:  row.processingCountries,

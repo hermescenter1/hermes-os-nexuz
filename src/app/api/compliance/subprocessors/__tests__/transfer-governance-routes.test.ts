@@ -10,8 +10,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
+import { providerScopeHash } from "@/lib/compliance/transfer-governance";
 
 const REG = "anthropic:claude-sonnet-4-20250514";
+const WF = "brain.analysis"; // an arbitrary workflow shared by the policy + subprocessor scope
 
 type Row = Record<string, unknown> & { id: string };
 type Member = { id: string; userId: string; organizationId: string; role: string; status: string };
@@ -68,14 +70,14 @@ function makeDb() {
     subprocessor:       coll(() => subprocessors),
     dataTransfer:       coll(() => transfers),
     processingActivity: coll(() => activities),
-    aiProviderPolicy: {
-      findUnique: async ({ where }: { where: { organizationId_providerRegistryId: { organizationId: string; providerRegistryId: string } } }) => {
-        const k = where.organizationId_providerRegistryId;
-        return policies.find((p) => p.organizationId === k.organizationId && p.providerRegistryId === k.providerRegistryId) ?? null;
-      },
-    },
   };
   db.$queryRawUnsafe = async (sql: string, ...vals: unknown[]) => {
+    // AiProviderPolicy is READ + LOCKED (FOR SHARE) inside the approval transaction.
+    if (/"AiProviderPolicy"[\s\S]*FOR SHARE/i.test(sql)) {
+      const [org, reg] = vals as [string, string];
+      const p = policies.find((x) => x.organizationId === org && x.providerRegistryId === reg);
+      return p ? [{ policyVersion: p.policyVersion, enabled: p.enabled, expiresAt: p.expiresAt ?? null, allowedDataClasses: p.allowedDataClasses, allowedWorkflows: p.allowedWorkflows }] : [];
+    }
     if (/FOR UPDATE/i.test(sql)) {
       const [id, org] = vals as [string, string];
       const store = /"Subprocessor"/.test(sql) ? subprocessors : transfers;
@@ -133,6 +135,8 @@ function adminA() { payload = { sub: "admin-A", role: "admin", sid: "s" }; membe
 function sub(over: Partial<Row> = {}): Row {
   return {
     id: "sp1", organizationId: "org-A", name: "Vendor", legalEntity: null, providerRegistryId: null,
+    providerDataClasses: [], providerWorkflows: [],
+    approvedProviderPolicyVersion: null, approvedProviderScopeHash: null, providerPolicyEvaluatedAt: null,
     serviceCategory: "REVIEW_REQUIRED", operatingCountries: [], processingCountries: [], dataCategories: [], subjectCategories: [],
     contractReviewStatus: "REVIEW_REQUIRED", privacyReviewStatus: "REVIEW_REQUIRED", securityReviewStatus: "REVIEW_REQUIRED",
     lifecycle: "DRAFT", reviewedBy: null, reviewedAt: null, approvedBy: null, approvedAt: null, nextReviewAt: null,
@@ -251,21 +255,43 @@ describe("review + lifecycle gates", () => {
   });
 });
 
-describe("Phase 95 provider-policy precedence (read-only)", () => {
-  function providerLinked() {
+describe("Phase 95 exact provider-scope binding (transactional, read-only)", () => {
+  // A provider-linked subprocessor in UNDER_REVIEW with a declared closed scope.
+  function providerLinked(scope: Partial<Row> = {}) {
     ownerA();
-    subprocessors = [sub({ lifecycle: "UNDER_REVIEW", providerRegistryId: REG, ...REVIEWED })];
+    subprocessors = [sub({ lifecycle: "UNDER_REVIEW", providerRegistryId: REG, providerDataClasses: ["tenant_operational"], providerWorkflows: [WF], ...REVIEWED, ...scope })];
+    process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
   }
-  const livePolicy = () => ({
+  const livePolicy = (over: Partial<Row> = {}) => ({
     id: "pol1", organizationId: "org-A", providerRegistryId: REG, enabled: true,
-    allowedDataClasses: ["tenant_operational"], allowedWorkflows: ["brain_summary"],
+    allowedDataClasses: ["public", "tenant_operational"], allowedWorkflows: [WF],
     approvedBy: "owner-A", approvedAt: new Date(), policyVersion: "1.0", expiresAt: null,
-    createdAt: new Date(), updatedAt: new Date(),
+    createdAt: new Date(), updatedAt: new Date(), ...over,
   } as Row);
 
+  it("provider-linked with NO declared scope → configuration required (UNBOUND_PROVIDER_SCOPE_APPROVAL=0)", async () => {
+    providerLinked({ providerDataClasses: [], providerWorkflows: [] });
+    policies = [livePolicy()];
+    const r = await spPatch("sp1", { transition: "APPROVED" });
+    expect(r.res.status).toBe(409);
+    expect((r.json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_SCOPE_CONFIGURATION_REQUIRED")).toBe(true);
+    expect(subprocessors[0].lifecycle).toBe("UNDER_REVIEW");
+  });
+  it("an unrelated allowed Policy scope cannot approve a different declared class", async () => {
+    providerLinked({ providerDataClasses: ["personal_data"] }); // policy allows public/tenant_operational only
+    policies = [livePolicy()];
+    const r = await spPatch("sp1", { transition: "APPROVED" });
+    expect(r.res.status).toBe(409);
+    expect((r.json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_DENIED:UNAPPROVED_DATA_CLASS")).toBe(true);
+  });
+  it("secret scope is always denied (SECRET_PROVIDER_SCOPE_APPROVAL=0)", async () => {
+    providerLinked({ providerDataClasses: ["secret"] });
+    policies = [livePolicy({ allowedDataClasses: ["secret", "tenant_operational"] })];
+    const r = await spPatch("sp1", { transition: "APPROVED" });
+    expect((r.json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_DENIED:SECRET_OR_CREDENTIAL")).toBe(true);
+  });
   it("missing policy context fails CLOSED (MISSING_PROVIDER_POLICY_FAIL_OPEN=0)", async () => {
     providerLinked();
-    process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
     const r = await spPatch("sp1", { transition: "APPROVED" });
     expect(r.res.status).toBe(409);
     expect((r.json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_CONFIGURATION_REQUIRED")).toBe(true);
@@ -273,24 +299,74 @@ describe("Phase 95 provider-policy precedence (read-only)", () => {
   });
   it("a Phase 95 denial always wins even with complete reviews (PHASE95_PROVIDER_POLICY_DENIAL_OVERRIDDEN=0)", async () => {
     providerLinked();
-    process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
-    policies = [{ ...livePolicy(), enabled: false }];
+    policies = [livePolicy({ enabled: false })]; // disabled at transaction time
     const r = await spPatch("sp1", { transition: "APPROVED" });
     expect(r.res.status).toBe(409);
     expect((r.json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_DENIED:POLICY_DISABLED")).toBe(true);
-    // Flag off also denies regardless of a live policy.
-    policies = [livePolicy()];
-    delete process.env.HERMES_EXTERNAL_AI_ENABLED;
-    const r2 = await spPatch("sp1", { transition: "APPROVED" });
-    expect((r2.json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_DENIED:FEATURE_FLAG_OFF")).toBe(true);
+    // Deleting the policy before the transaction also fails closed.
+    policies = [];
+    expect(((await spPatch("sp1", { transition: "APPROVED" })).json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_CONFIGURATION_REQUIRED")).toBe(true);
+    // Flag off denies regardless of a live policy.
+    policies = [livePolicy()]; delete process.env.HERMES_EXTERNAL_AI_ENABLED;
+    expect(((await spPatch("sp1", { transition: "APPROVED" })).json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_DENIED:FEATURE_FLAG_OFF")).toBe(true);
   });
-  it("a live policy + enabled flag approves; no provider is ever contacted (pure read-only gate)", async () => {
+  it("a fully-allowed scope approves and persists EXACT version + canonical scope hash (APPROVED_PROVIDER_POLICY_VERSION_MISSING=0)", async () => {
     providerLinked();
-    process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
     policies = [livePolicy()];
     const r = await spPatch("sp1", { transition: "APPROVED" });
     expect(r.res.status).toBe(200);
     expect(subprocessors[0].lifecycle).toBe("APPROVED");
+    expect(subprocessors[0].approvedProviderPolicyVersion).toBe("1.0");
+    expect(subprocessors[0].approvedProviderScopeHash).toBe(providerScopeHash(["tenant_operational"], [WF]));
+    expect(subprocessors[0].providerPolicyEvaluatedAt).toBeTruthy();
+    // Audit carries only identifiers/closed codes — no provider config leaks.
+    expect(JSON.stringify(auditCalls)).not.toContain("allowedDataClasses");
+  });
+});
+
+describe("DataTransfer revalidates the current provider policy", () => {
+  const scopeHash = () => providerScopeHash(["tenant_operational"], [WF]);
+  function linkedApprovedSubprocessor(over: Partial<Row> = {}) {
+    return sub({ id: "spA", lifecycle: "APPROVED", providerRegistryId: REG, providerDataClasses: ["tenant_operational"], providerWorkflows: [WF],
+      ...REVIEWED, approvedBy: "owner-A", approvedAt: new Date(), approvedProviderPolicyVersion: "1.0", approvedProviderScopeHash: scopeHash(), providerPolicyEvaluatedAt: new Date(), ...over });
+  }
+  const reviewedTransfer = () => tr({ lifecycle: "UNDER_REVIEW", subprocessorId: "spA", transferMechanismStatus: "CONFIGURED", legalReviewStatus: "APPROVED", riskReviewStatus: "APPROVED" });
+  const livePolicy = (over: Partial<Row> = {}) => ({ id: "pol1", organizationId: "org-A", providerRegistryId: REG, enabled: true, allowedDataClasses: ["public", "tenant_operational"], allowedWorkflows: [WF], policyVersion: "1.0", expiresAt: null, ...over } as Row);
+
+  it("approves when the linked subprocessor's bound policy version still matches", async () => {
+    ownerA(); process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
+    subprocessors = [linkedApprovedSubprocessor()]; transfers = [reviewedTransfer()]; policies = [livePolicy()];
+    expect((await trPatch("tf1", { transition: "APPROVED" })).res.status).toBe(200);
+    expect(transfers[0].lifecycle).toBe("APPROVED");
+  });
+  it("blocks when the org Policy version was replaced after subprocessor approval (TRANSFER_APPROVED_WITH_POLICY_VERSION_MISMATCH=0)", async () => {
+    ownerA(); process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
+    subprocessors = [linkedApprovedSubprocessor()]; transfers = [reviewedTransfer()]; policies = [livePolicy({ policyVersion: "2.0" })];
+    const r = await trPatch("tf1", { transition: "APPROVED" });
+    expect(r.res.status).toBe(409);
+    expect((r.json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_VERSION_MISMATCH")).toBe(true);
+    expect(transfers[0].lifecycle).toBe("UNDER_REVIEW");
+  });
+  it("blocks after a current-policy denial / expiry (TRANSFER_APPROVED_AFTER_POLICY_DENIAL=0)", async () => {
+    ownerA(); process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
+    subprocessors = [linkedApprovedSubprocessor()]; transfers = [reviewedTransfer()];
+    policies = [livePolicy({ enabled: false })];
+    expect(((await trPatch("tf1", { transition: "APPROVED" })).json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_DENIED:POLICY_DISABLED")).toBe(true);
+    policies = [livePolicy({ expiresAt: new Date("2000-01-01") })];
+    expect(((await trPatch("tf1", { transition: "APPROVED" })).json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_DENIED:POLICY_EXPIRED")).toBe(true);
+    // Deleted policy → configuration required.
+    policies = [];
+    expect(((await trPatch("tf1", { transition: "APPROVED" })).json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_POLICY_CONFIGURATION_REQUIRED")).toBe(true);
+    expect(transfers[0].lifecycle).toBe("UNDER_REVIEW");
+  });
+  it("blocks when the linked subprocessor is committed SUSPENDED (real re-read under lock)", async () => {
+    ownerA(); process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
+    subprocessors = [linkedApprovedSubprocessor({ lifecycle: "SUSPENDED", approvedBy: null, approvedAt: null, approvedProviderPolicyVersion: null, approvedProviderScopeHash: null, providerPolicyEvaluatedAt: null })];
+    transfers = [reviewedTransfer()]; policies = [livePolicy()];
+    const r = await trPatch("tf1", { transition: "APPROVED" });
+    expect(r.res.status).toBe(409);
+    expect((r.json.blockers as Array<{ field: string }>).some((b) => b.field === "subprocessorId")).toBe(true);
+    expect(transfers[0].lifecycle).toBe("UNDER_REVIEW");
   });
 });
 

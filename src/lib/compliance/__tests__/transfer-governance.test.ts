@@ -8,22 +8,29 @@ import {
   GOVERNANCE_TRANSITIONS, canTransitionGovernance, governanceTransitionAction,
   isGovernanceLifecycle, isReviewStatus, isMechanismStatus, isEditableLifecycle,
   subprocessorReviewBlockers, transferReviewBlockers,
-  assessSubprocessorProviderPolicy, canApproveSubprocessor, canApproveTransfer,
+  bindProviderScope, providerScopeHash, isDataClass, KNOWN_DATA_CLASSES,
+  canApproveSubprocessor, canApproveTransfer,
 } from "../transfer-governance";
 import type { OrganisationProviderPolicy } from "@/lib/ai-governance/provider-policy";
 
-const REG = "anthropic:claude-sonnet-4-20250514"; // real external Phase 95 registry entry
+const REG = "anthropic:claude-sonnet-4-20250514"; // real external Phase 95 registry entry (allows public, tenant_operational)
+const WF = "brain.analysis";
 
 function policy(over: Partial<OrganisationProviderPolicy> = {}): OrganisationProviderPolicy {
   return {
     organisationId: "org-A", providerRegistryId: REG, enabled: true,
-    allowedDataClasses: ["tenant_operational"], allowedWorkflows: ["brain_summary"],
+    allowedDataClasses: ["public", "tenant_operational"], allowedWorkflows: [WF],
     approvedBy: "owner", approvedAt: new Date("2026-01-01"), policyVersion: "1.0",
     expiresAt: null, createdAt: new Date("2026-01-01"), updatedAt: new Date("2026-01-01"),
     ...over,
   };
 }
 const NOW = new Date("2026-06-01T00:00:00.000Z");
+const bind = (over: Partial<Parameters<typeof bindProviderScope>[0]> = {}) => bindProviderScope({
+  organizationId: "org-A", providerRegistryId: REG,
+  providerDataClasses: ["tenant_operational"], providerWorkflows: [WF],
+  policy: policy(), externalAiEnabled: true, now: NOW, ...over,
+});
 
 describe("closed lifecycle + transitions", () => {
   it("approve/activate need approve; supersession and the rest are manage", () => {
@@ -68,42 +75,73 @@ describe("review gates (fail-closed)", () => {
   });
 });
 
-describe("Phase 95 provider-policy precedence (read-only, pure)", () => {
-  const base = { organizationId: "org-A", providerRegistryId: REG, externalAiEnabled: true, now: NOW };
-  it("not provider-linked → gate does not apply", () => {
-    expect(assessSubprocessorProviderPolicy({ ...base, providerRegistryId: null, policy: null })).toMatchObject({ ok: true, basis: "NOT_PROVIDER_LINKED" });
+describe("provider data-class vocabulary + scope hash", () => {
+  it("isDataClass mirrors the closed Phase 95 vocabulary exactly", () => {
+    for (const c of KNOWN_DATA_CLASSES) expect(isDataClass(c)).toBe(true);
+    for (const bad of ["made-up", "PUBLIC", "", 42, null]) expect(isDataClass(bad)).toBe(false);
+    expect(KNOWN_DATA_CLASSES).toContain("secret");
   });
-  it("missing policy context fails CLOSED as configuration-required, never approval (MISSING_PROVIDER_POLICY_FAIL_OPEN=0)", () => {
-    expect(assessSubprocessorProviderPolicy({ ...base, policy: null })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_CONFIGURATION_REQUIRED" });
+  it("providerScopeHash is deterministic regardless of input order/duplicates (SHA-256 hex)", () => {
+    const a = providerScopeHash(["tenant_operational", "public"], ["b", "a"]);
+    const b = providerScopeHash(["public", "public", "tenant_operational"], ["a", "b", "a"]);
+    expect(a).toBe(b);
+    expect(a).toMatch(/^[a-f0-9]{64}$/);
+    expect(providerScopeHash(["public"], ["a"])).not.toBe(providerScopeHash(["personal_data"], ["a"]));
   });
-  it("a live policy + enabled flag passes through the REAL evaluator", () => {
-    const r = assessSubprocessorProviderPolicy({ ...base, policy: policy() });
-    expect(r).toMatchObject({ ok: true, basis: "PROVIDER_POLICY_ALLOWED", policyVersion: "1.0" });
+});
+
+describe("EXACT provider-scope binding (read-only, pure)", () => {
+  it("empty scope never authorises (PROVIDER_SCOPE_CONFIGURATION_REQUIRED)", () => {
+    expect(bind({ providerDataClasses: [] })).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" });
+    expect(bind({ providerWorkflows: [] })).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" });
   });
-  it("every Phase 95 denial WINS (flag off / unknown provider / disabled / expired / cross-tenant / secret-only scope)", () => {
-    expect(assessSubprocessorProviderPolicy({ ...base, externalAiEnabled: false, policy: policy() })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "FEATURE_FLAG_OFF" });
-    expect(assessSubprocessorProviderPolicy({ ...base, providerRegistryId: "nope:unknown", policy: policy({ providerRegistryId: "nope:unknown" }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "UNKNOWN_PROVIDER" });
-    expect(assessSubprocessorProviderPolicy({ ...base, policy: policy({ enabled: false }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "POLICY_DISABLED" });
-    expect(assessSubprocessorProviderPolicy({ ...base, policy: policy({ expiresAt: new Date("2026-01-02") }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "POLICY_EXPIRED" });
-    expect(assessSubprocessorProviderPolicy({ ...base, policy: policy({ organisationId: "org-B" }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "CROSS_TENANT" });
-    expect(assessSubprocessorProviderPolicy({ ...base, policy: policy({ allowedDataClasses: ["secret"] }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "SECRET_OR_CREDENTIAL" });
-    expect(assessSubprocessorProviderPolicy({ ...base, policy: policy({ allowedDataClasses: [] }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED" });
+  it("missing policy context fails CLOSED, never approval (MISSING_PROVIDER_POLICY_FAIL_OPEN=0)", () => {
+    expect(bind({ policy: null })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_CONFIGURATION_REQUIRED" });
+  });
+  it("a fully-allowed scope binds to the exact policy version + canonical scope hash", () => {
+    const r = bind();
+    expect(r).toMatchObject({ ok: true, policyVersion: "1.0" });
+    if (r.ok) expect(r.scopeHash).toBe(providerScopeHash(["tenant_operational"], [WF]));
+  });
+  it("an unrelated allowed Policy scope cannot approve a DIFFERENT declared class", () => {
+    // Policy allows public+tenant_operational; declaring personal_data is denied.
+    expect(bind({ providerDataClasses: ["personal_data"] })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "UNAPPROVED_DATA_CLASS" });
+  });
+  it("EVERY declared combination must be allowed — one allowed cannot hide a denied (PARTIAL_PROVIDER_SCOPE_APPROVAL=0)", () => {
+    const r = bind({ providerDataClasses: ["tenant_operational", "personal_data"] }); // second is denied
+    expect(r.ok).toBe(false);
+    const r2 = bind({ providerWorkflows: [WF, "unlisted.workflow"] }); // second workflow denied by policy
+    expect(r2.ok).toBe(false);
+  });
+  it("secret/credential scope is ALWAYS denied (SECRET_PROVIDER_SCOPE_APPROVAL=0)", () => {
+    expect(bind({ providerDataClasses: ["secret"] })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "SECRET_OR_CREDENTIAL" });
+  });
+  it("an unknown data class fails closed", () => {
+    expect(bind({ providerDataClasses: ["made-up-class"] })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "UNAPPROVED_DATA_CLASS" });
+  });
+  it("every Phase 95 denial WINS (flag off / unknown provider / disabled / expired / cross-tenant / env)", () => {
+    expect(bind({ externalAiEnabled: false })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "FEATURE_FLAG_OFF" });
+    expect(bind({ providerRegistryId: "nope:unknown", policy: policy({ providerRegistryId: "nope:unknown" }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "UNKNOWN_PROVIDER" });
+    expect(bind({ policy: policy({ enabled: false }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "POLICY_DISABLED" });
+    expect(bind({ policy: policy({ expiresAt: new Date("2026-01-02") }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "POLICY_EXPIRED" });
+    expect(bind({ policy: policy({ organisationId: "org-B" }) })).toMatchObject({ ok: false, code: "PROVIDER_POLICY_DENIED", reason: "CROSS_TENANT" });
   });
 });
 
 describe("combined approval gates", () => {
   const reviewsOk = { contractReviewStatus: "APPROVED", privacyReviewStatus: "APPROVED", securityReviewStatus: "APPROVED" };
-  it("a Phase 95 denial can never be overridden by complete reviews (PHASE95_PROVIDER_POLICY_DENIAL_OVERRIDDEN=0)", () => {
-    const denied = assessSubprocessorProviderPolicy({ organizationId: "org-A", providerRegistryId: REG, policy: policy({ enabled: false }), externalAiEnabled: true, now: NOW });
-    const gate = canApproveSubprocessor(reviewsOk, denied);
-    expect(gate.ok).toBe(false);
-    expect(gate.blockers.some((b) => b.field === "providerRegistryId" && b.reason.startsWith("PROVIDER_POLICY_DENIED"))).toBe(true);
+  it("not provider-linked (scope gate null) → reviews alone decide", () => {
+    expect(canApproveSubprocessor(reviewsOk, null).ok).toBe(true);
+    expect(canApproveSubprocessor({ ...reviewsOk, privacyReviewStatus: "IN_REVIEW" }, null).ok).toBe(false);
   });
-  it("reviews + allowed gate → approvable; missing policy blocks", () => {
-    const allowed = assessSubprocessorProviderPolicy({ organizationId: "org-A", providerRegistryId: REG, policy: policy(), externalAiEnabled: true, now: NOW });
-    expect(canApproveSubprocessor(reviewsOk, allowed).ok).toBe(true);
-    const missing = assessSubprocessorProviderPolicy({ organizationId: "org-A", providerRegistryId: REG, policy: null, externalAiEnabled: true, now: NOW });
-    expect(canApproveSubprocessor(reviewsOk, missing).ok).toBe(false);
+  it("a provider-scope denial can never be overridden by complete reviews (PHASE95_PROVIDER_POLICY_DENIAL_OVERRIDDEN=0)", () => {
+    const gate = canApproveSubprocessor(reviewsOk, bind({ policy: policy({ enabled: false }) }));
+    expect(gate.ok).toBe(false);
+    expect(gate.blockers.some((b) => b.field === "providerScope" && b.reason.startsWith("PROVIDER_POLICY_DENIED"))).toBe(true);
+  });
+  it("reviews + allowed binding → approvable; missing policy blocks", () => {
+    expect(canApproveSubprocessor(reviewsOk, bind()).ok).toBe(true);
+    expect(canApproveSubprocessor(reviewsOk, bind({ policy: null })).ok).toBe(false);
   });
   it("transfer: a linked subprocessor must be APPROVED/ACTIVE; a missing/foreign one blocks", () => {
     const reviews = { transferMechanismStatus: "CONFIGURED", legalReviewStatus: "APPROVED", riskReviewStatus: "APPROVED" };

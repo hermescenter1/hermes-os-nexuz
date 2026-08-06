@@ -3333,6 +3333,14 @@ model Subprocessor {
   name                 String
   legalEntity          String?
   providerRegistryId   String?   // optional link to the Phase 95 AI-provider registry
+  // Explicit CLOSED provider-governance scope (Phase 95 vocabularies), distinct from
+  // the free-form compliance labels below. Approval binds to the EXACT current Policy
+  // version + a SHA-256 hash of the canonical scope (see the provider-binding migration).
+  providerDataClasses  Json      @default("[]")
+  providerWorkflows    Json      @default("[]")
+  approvedProviderPolicyVersion String?
+  approvedProviderScopeHash     String?
+  providerPolicyEvaluatedAt     DateTime?
   serviceCategory      String    @default("REVIEW_REQUIRED")
   operatingCountries   Json      @default("[]")
   processingCountries  Json      @default("[]")

@@ -94,7 +94,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (to === "APPROVED" || to === "ACTIVE") {
     const result = await approveDataTransferForOrg({
       id, organizationId: scope.organizationId, actorId: scope.userId,
-      from: to === "APPROVED" ? "UNDER_REVIEW" : "APPROVED", to, now: new Date(),
+      from: to === "APPROVED" ? "UNDER_REVIEW" : "APPROVED", to,
+      externalAiEnabled: process.env.HERMES_EXTERNAL_AI_ENABLED === "1",
+      now: new Date(),
     });
     if (!result.ok) {
       if (result.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });

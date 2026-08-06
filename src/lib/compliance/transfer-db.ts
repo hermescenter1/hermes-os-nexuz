@@ -14,8 +14,11 @@ import { randomUUID } from "node:crypto";
 import type { DbSubprocessor, DbDataTransfer } from "./types";
 import {
   canApproveSubprocessor, canApproveTransfer, isEditableLifecycle,
-  type ApprovalBlocker, type ProviderPolicyGate,
+  bindProviderScope, providerScopeBlockerReason,
+  type ApprovalBlocker,
 } from "./transfer-governance";
+import type { OrganisationProviderPolicy } from "@/lib/ai-governance/provider-policy";
+import type { DataClass } from "@/lib/ai-governance/types";
 
 type AnyModel = Record<string, (...args: unknown[]) => Promise<unknown>>;
 type TxRaw = Record<string, AnyModel> & {
@@ -46,6 +49,41 @@ async function lockGovernanceRow(tx: TxRaw, register: Register, id: string, orga
     organizationId,
   )) ?? [];
   return Array.isArray(rows) && rows.length === 1;
+}
+
+/**
+ * Read AND LOCK the tenant's current AiProviderPolicy row for the surrounding
+ * interactive transaction with a REAL shared lock (SELECT ... FOR SHARE, parameterized).
+ * A concurrent disable / expiry update / version replacement (all UPDATEs) or a
+ * deletion take a conflicting exclusive lock, so they SERIALIZE with the approval —
+ * the evaluation always reflects the current committed policy, and a missing row
+ * returns null (fail closed). Only the approval envelope is read; no key/secret.
+ */
+async function lockAndReadProviderPolicy(tx: TxRaw, organizationId: string, providerRegistryId: string): Promise<OrganisationProviderPolicy | null> {
+  const rows = (await tx.$queryRawUnsafe<Array<{
+    policyVersion: string; enabled: boolean; expiresAt: Date | null;
+    allowedDataClasses: string[]; allowedWorkflows: string[];
+  }>>(
+    `SELECT "policyVersion","enabled","expiresAt","allowedDataClasses","allowedWorkflows"
+     FROM "AiProviderPolicy" WHERE "organizationId" = $1 AND "providerRegistryId" = $2 FOR SHARE`,
+    organizationId,
+    providerRegistryId,
+  )) ?? [];
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    organisationId:     organizationId,
+    providerRegistryId,
+    enabled:            r.enabled,
+    allowedDataClasses: (Array.isArray(r.allowedDataClasses) ? r.allowedDataClasses : []) as DataClass[],
+    allowedWorkflows:   Array.isArray(r.allowedWorkflows) ? r.allowedWorkflows : [],
+    approvedBy:         "", // envelope-only; never read by the evaluator
+    approvedAt:         new Date(0),
+    policyVersion:      r.policyVersion,
+    expiresAt:          r.expiresAt,
+    createdAt:          new Date(0),
+    updatedAt:          new Date(0),
+  };
 }
 
 // ── Reads (always org-predicated) ─────────────────────────────────────────────
@@ -219,13 +257,23 @@ export async function transitionGovernanceRecordForOrg(params: {
 
 /**
  * Approve (UNDER_REVIEW→APPROVED) or activate (APPROVED→ACTIVE) a SUBPROCESSOR.
- * Gates run on the LOCKED row: all three reviews positively complete AND — when the
- * record links a Phase 95 provider — the injected read-only provider-policy gate.
- * A Phase 95 denial always wins and CONFIGURATION_REQUIRED (missing policy) blocks.
+ *
+ * All gates run INSIDE one interactive transaction on the LOCKED rows, in the fixed
+ * lock order Subprocessor → AiProviderPolicy:
+ *   1. lock the Subprocessor row (FOR UPDATE) and re-read it;
+ *   2. all three reviews must be positively complete;
+ *   3. when the record links a Phase 95 provider, LOCK + read the matching
+ *      AiProviderPolicy (FOR SHARE) and bind the EXACT declared provider scope
+ *      (providerDataClasses × providerWorkflows) — every combination must be
+ *      permitted by the current locked policy (a denial always wins; missing policy /
+ *      missing scope fail closed); the approved evidence (exact policyVersion + scope
+ *      hash + evaluation time) is persisted so a later stale/disabled/deleted policy
+ *      can never leave the approval standing on stale grounds.
+ * No provider is ever contacted. Attribution is server-derived.
  */
 export async function approveSubprocessorForOrg(params: {
   id: string; organizationId: string; actorId: string; from: "UNDER_REVIEW" | "APPROVED"; to: "APPROVED" | "ACTIVE";
-  providerGate: (row: DbSubprocessor) => ProviderPolicyGate; now: Date;
+  externalAiEnabled: boolean; now: Date;
 }): Promise<{ ok: true; row: DbSubprocessor } | { ok: false; reason: GovReason; blockers?: ApprovalBlocker[] }> {
   const client = await getPrisma();
   if (!client) return { ok: false, reason: "CONFLICT" };
@@ -237,14 +285,34 @@ export async function approveSubprocessorForOrg(params: {
       const row = (await model.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as DbSubprocessor | null;
       if (!row) throw new GovError("NOT_FOUND");
       if (row.lifecycle !== params.from) throw new GovError("INVALID_TRANSITION");
-      const gate = canApproveSubprocessor(row, params.providerGate(row));
+
+      // Bind the exact provider scope against the CURRENT (locked) policy.
+      const evidence: Record<string, unknown> = {};
+      let scopeGate = null as ReturnType<typeof bindProviderScope> | null;
+      if (row.providerRegistryId) {
+        const policy = await lockAndReadProviderPolicy(tx, params.organizationId, row.providerRegistryId);
+        scopeGate = bindProviderScope({
+          organizationId: params.organizationId, providerRegistryId: row.providerRegistryId,
+          providerDataClasses: row.providerDataClasses, providerWorkflows: row.providerWorkflows,
+          policy, externalAiEnabled: params.externalAiEnabled, now: params.now,
+        });
+        if (scopeGate.ok) {
+          // Bind approval to the EXACT current policy version + canonical scope hash.
+          evidence.approvedProviderPolicyVersion = scopeGate.policyVersion;
+          evidence.approvedProviderScopeHash = scopeGate.scopeHash;
+          evidence.providerPolicyEvaluatedAt = params.now;
+        }
+      }
+      const gate = canApproveSubprocessor(row, scopeGate);
       if (!gate.ok) throw new GovError("NOT_APPROVABLE", gate.blockers);
+
       const upd = (await model.updateMany({
         where: { id: params.id, organizationId: params.organizationId, lifecycle: params.from },
         data: {
           lifecycle: params.to,
           // Attribution is server-derived; activation preserves the original approval.
           ...(params.to === "APPROVED" ? { approvedBy: params.actorId, approvedAt: params.now } : {}),
+          ...evidence, // re-bound at both approval and activation to the current policy
           updatedBy: params.actorId, updatedAt: params.now,
         },
       })) as { count?: number };
@@ -260,12 +328,23 @@ export async function approveSubprocessorForOrg(params: {
 
 /**
  * Approve (UNDER_REVIEW→APPROVED) or activate (APPROVED→ACTIVE) a DATA TRANSFER.
- * Gates on the LOCKED row: mechanism CONFIGURED + legal/risk reviews APPROVED, and a
- * linked subprocessor must be an APPROVED/ACTIVE record of the SAME organization
- * (re-read inside the transaction with the org predicate).
+ *
+ * Fixed lock order DataTransfer → Subprocessor → AiProviderPolicy, all inside one
+ * interactive transaction:
+ *   1. lock the DataTransfer (FOR UPDATE) and re-read;
+ *   2. mechanism CONFIGURED + legal/risk reviews APPROVED;
+ *   3. if it links a Subprocessor, LOCK that same-org Subprocessor (FOR UPDATE) — a
+ *      real row lock, so a committed suspension/retirement is observed and a racing
+ *      one serializes — and require it APPROVED or ACTIVE;
+ *   4. if the linked Subprocessor is provider-linked, LOCK + read its current
+ *      AiProviderPolicy (FOR SHARE) and RE-EVALUATE the exact bound scope against the
+ *      current policy; require the current policyVersion AND scope hash to match the
+ *      Subprocessor's approved evidence. A Phase 95 denial, missing/expired policy, a
+ *      changed policy version or a changed scope blocks the transfer. No provider call.
  */
 export async function approveDataTransferForOrg(params: {
-  id: string; organizationId: string; actorId: string; from: "UNDER_REVIEW" | "APPROVED"; to: "APPROVED" | "ACTIVE"; now: Date;
+  id: string; organizationId: string; actorId: string; from: "UNDER_REVIEW" | "APPROVED"; to: "APPROVED" | "ACTIVE";
+  externalAiEnabled: boolean; now: Date;
 }): Promise<{ ok: true; row: DbDataTransfer } | { ok: false; reason: GovReason; blockers?: ApprovalBlocker[] }> {
   const client = await getPrisma();
   if (!client) return { ok: false, reason: "CONFLICT" };
@@ -273,20 +352,49 @@ export async function approveDataTransferForOrg(params: {
   try {
     return await c.$transaction(async (tx) => {
       const model = tx.dataTransfer as AnyModel;
+      // 1. Lock + re-read the DataTransfer.
       if (!(await lockGovernanceRow(tx, "dataTransfer", params.id, params.organizationId))) throw new GovError("NOT_FOUND");
       const row = (await model.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as DbDataTransfer | null;
       if (!row) throw new GovError("NOT_FOUND");
       if (row.lifecycle !== params.from) throw new GovError("INVALID_TRANSITION");
+
+      const extraBlockers: ApprovalBlocker[] = [];
       let linkedLifecycle: string | null = null;
       if (row.subprocessorId) {
-        const sp = (await (tx.subprocessor as AnyModel).findFirst({
-          where: { id: row.subprocessorId, organizationId: params.organizationId }, select: { lifecycle: true },
-        })) as { lifecycle: string } | null;
+        // 3. Lock the linked SAME-ORG subprocessor with a REAL row lock, then re-read.
+        const locked = await lockGovernanceRow(tx, "subprocessor", row.subprocessorId, params.organizationId);
+        const sp = locked
+          ? (await (tx.subprocessor as AnyModel).findFirst({
+              where: { id: row.subprocessorId, organizationId: params.organizationId },
+              select: { lifecycle: true, providerRegistryId: true, providerDataClasses: true, providerWorkflows: true, approvedProviderPolicyVersion: true, approvedProviderScopeHash: true },
+            })) as { lifecycle: string; providerRegistryId: string | null; providerDataClasses: unknown; providerWorkflows: unknown; approvedProviderPolicyVersion: string | null; approvedProviderScopeHash: string | null } | null
+          : null;
         // A foreign-tenant or missing subprocessor can never support an approval.
         linkedLifecycle = sp?.lifecycle ?? "NOT_FOUND";
+
+        // 4. Provider re-validation against the CURRENT policy (only meaningful when
+        //    the subprocessor is itself in an approved state — the lifecycle gate
+        //    below already blocks otherwise, but re-validating is harmless).
+        if (sp?.providerRegistryId) {
+          const policy = await lockAndReadProviderPolicy(tx, params.organizationId, sp.providerRegistryId);
+          const bind = bindProviderScope({
+            organizationId: params.organizationId, providerRegistryId: sp.providerRegistryId,
+            providerDataClasses: sp.providerDataClasses, providerWorkflows: sp.providerWorkflows,
+            policy, externalAiEnabled: params.externalAiEnabled, now: params.now,
+          });
+          if (!bind.ok) {
+            extraBlockers.push({ field: "providerScope", reason: providerScopeBlockerReason(bind) });
+          } else {
+            if (bind.policyVersion !== sp.approvedProviderPolicyVersion) extraBlockers.push({ field: "providerScope", reason: "PROVIDER_POLICY_VERSION_MISMATCH" });
+            if (bind.scopeHash !== sp.approvedProviderScopeHash) extraBlockers.push({ field: "providerScope", reason: "PROVIDER_SCOPE_HASH_MISMATCH" });
+          }
+        }
       }
+
       const gate = canApproveTransfer(row, linkedLifecycle);
-      if (!gate.ok) throw new GovError("NOT_APPROVABLE", gate.blockers);
+      const blockers = [...gate.blockers, ...extraBlockers];
+      if (blockers.length > 0) throw new GovError("NOT_APPROVABLE", blockers);
+
       const upd = (await model.updateMany({
         where: { id: params.id, organizationId: params.organizationId, lifecycle: params.from },
         data: {

@@ -231,6 +231,11 @@ export interface DbSubprocessor {
   name:                 string;
   legalEntity:          string | null;
   providerRegistryId:   string | null;
+  providerDataClasses:  unknown;
+  providerWorkflows:    unknown;
+  approvedProviderPolicyVersion: string | null;
+  approvedProviderScopeHash:     string | null;
+  providerPolicyEvaluatedAt:     Date | null;
   serviceCategory:      string;
   operatingCountries:   unknown;
   processingCountries:  unknown;
