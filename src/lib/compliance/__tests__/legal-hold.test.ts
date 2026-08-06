@@ -10,6 +10,8 @@ import {
   validateLegalHoldScope,
   canTransitionLegalHold,
   isTerminalLegalHoldStatus,
+  classifyLegalHoldEdit,
+  classifyLegalHoldTransition,
   LEGAL_HOLD_TRANSITIONS,
   MATERIAL_LEGAL_HOLD_FIELDS,
   ACTIVE_EDITABLE_LEGAL_HOLD_FIELDS,
@@ -102,5 +104,38 @@ describe("material field constants", () => {
     expect(MATERIAL_LEGAL_HOLD_FIELDS).toContain("startDate");
     expect(MATERIAL_LEGAL_HOLD_FIELDS).not.toContain("reviewDate");
     expect(ACTIVE_EDITABLE_LEGAL_HOLD_FIELDS).toEqual(["reviewDate"]);
+  });
+});
+
+describe("classifyLegalHoldEdit — mutability from the LOCKED status", () => {
+  it("PROPOSED accepts any material edit", () => {
+    expect(classifyLegalHoldEdit("PROPOSED", ["name", "subjectId", "startDate"])).toEqual({ ok: true, scope: "MATERIAL" });
+  });
+  it("ACTIVE accepts a reviewDate-only edit", () => {
+    expect(classifyLegalHoldEdit("ACTIVE", ["reviewDate"])).toEqual({ ok: true, scope: "REVIEW_ONLY" });
+  });
+  it("ACTIVE rejects any material field (ACTIVE_LEGAL_HOLD_MATERIAL_MUTATION=0)", () => {
+    expect(classifyLegalHoldEdit("ACTIVE", ["subjectId"])).toEqual({ ok: false, reason: "ACTIVE_HOLD_IMMUTABLE" });
+    expect(classifyLegalHoldEdit("ACTIVE", ["reviewDate", "name"])).toEqual({ ok: false, reason: "ACTIVE_HOLD_IMMUTABLE" });
+  });
+  it("RELEASED and CANCELLED are fully immutable (TERMINAL_HOLD_MUTATION=0)", () => {
+    expect(classifyLegalHoldEdit("RELEASED", ["reviewDate"])).toEqual({ ok: false, reason: "HOLD_IMMUTABLE" });
+    expect(classifyLegalHoldEdit("CANCELLED", ["name"])).toEqual({ ok: false, reason: "HOLD_IMMUTABLE" });
+  });
+});
+
+describe("classifyLegalHoldTransition — edges from the LOCKED status", () => {
+  it("maps each valid edge to its kind", () => {
+    expect(classifyLegalHoldTransition("PROPOSED", "ACTIVE")).toEqual({ ok: true, kind: "ACTIVATE" });
+    expect(classifyLegalHoldTransition("ACTIVE", "RELEASED")).toEqual({ ok: true, kind: "RELEASE" });
+    expect(classifyLegalHoldTransition("PROPOSED", "CANCELLED")).toEqual({ ok: true, kind: "CANCEL" });
+  });
+  it("rejects every other pair (including out-of-order and terminal)", () => {
+    expect(classifyLegalHoldTransition("PROPOSED", "RELEASED")).toEqual({ ok: false });
+    expect(classifyLegalHoldTransition("ACTIVE", "CANCELLED")).toEqual({ ok: false });
+    expect(classifyLegalHoldTransition("ACTIVE", "ACTIVE")).toEqual({ ok: false });
+    expect(classifyLegalHoldTransition("RELEASED", "ACTIVE")).toEqual({ ok: false });
+    expect(classifyLegalHoldTransition("CANCELLED", "ACTIVE")).toEqual({ ok: false });
+    expect(classifyLegalHoldTransition("PROPOSED", "PROPOSED")).toEqual({ ok: false });
   });
 });

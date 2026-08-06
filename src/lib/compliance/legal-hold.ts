@@ -35,6 +35,45 @@ export function canTransitionLegalHold(from: string, to: string): boolean {
 }
 
 /**
+ * Pure mutability decision for a MATERIAL / REVIEW edit, evaluated from the
+ * authoritative LOCKED status (never a pre-transaction read). Terminal holds are
+ * fully immutable; an ACTIVE hold accepts ONLY `reviewDate`; a PROPOSED hold accepts
+ * material edits. `editKeys` is the set of fields the caller intends to write.
+ */
+export type LegalHoldEditPolicy =
+  | { ok: true;  scope: "MATERIAL" | "REVIEW_ONLY" }
+  | { ok: false; reason: "HOLD_IMMUTABLE" | "ACTIVE_HOLD_IMMUTABLE" };
+
+export function classifyLegalHoldEdit(lockedStatus: string, editKeys: readonly string[]): LegalHoldEditPolicy {
+  if (isTerminalLegalHoldStatus(lockedStatus)) return { ok: false, reason: "HOLD_IMMUTABLE" };
+  if (lockedStatus === "ACTIVE") {
+    const allowed = ACTIVE_EDITABLE_LEGAL_HOLD_FIELDS as readonly string[];
+    if (editKeys.some((k) => !allowed.includes(k))) return { ok: false, reason: "ACTIVE_HOLD_IMMUTABLE" };
+    return { ok: true, scope: "REVIEW_ONLY" };
+  }
+  // PROPOSED (the only remaining non-terminal, non-active lifecycle) — material edits allowed.
+  return { ok: true, scope: "MATERIAL" };
+}
+
+/**
+ * Pure lifecycle-transition decision, evaluated from the authoritative LOCKED status.
+ * Only the closed machine's edges are valid: PROPOSED→ACTIVE (activate),
+ * ACTIVE→RELEASED (release), PROPOSED→CANCELLED (withdraw a proposal). Every other
+ * pair (including any transition out of a terminal status) is rejected.
+ */
+export type LegalHoldTransitionKind = "ACTIVATE" | "RELEASE" | "CANCEL";
+
+export function classifyLegalHoldTransition(lockedStatus: string, toStatus: string):
+  | { ok: true; kind: LegalHoldTransitionKind }
+  | { ok: false } {
+  if (!canTransitionLegalHold(lockedStatus, toStatus)) return { ok: false };
+  if (toStatus === "ACTIVE")    return { ok: true, kind: "ACTIVATE" };
+  if (toStatus === "RELEASED")  return { ok: true, kind: "RELEASE" };
+  if (toStatus === "CANCELLED") return { ok: true, kind: "CANCEL" };
+  return { ok: false };
+}
+
+/**
  * Material fields — frozen once a hold is ACTIVE. Changing any of these under an
  * existing approval is forbidden; a material change requires release + a new
  * PROPOSED hold + separate activation.

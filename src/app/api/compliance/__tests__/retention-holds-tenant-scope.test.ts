@@ -49,7 +49,7 @@ function model(store: () => Row[]) {
 }
 
 function makeDb() {
-  return {
+  const db: Record<string, unknown> = {
     organizationMember: {
       findMany: async ({ where }: { where: { userId: string; status: string } }) =>
         members.filter((m) => m.userId === where.userId && m.status === where.status).map((m) => ({ organizationId: m.organizationId, role: m.role })),
@@ -57,6 +57,23 @@ function makeDb() {
     retentionPolicy: model(() => policies),
     legalHold: model(() => holds),
   };
+  // Governed LegalHold transitions run a real locked transaction; model the SELECT ...
+  // FOR UPDATE read + post-lock clock_timestamp() (real locking proven in *.pg.test.ts).
+  db.$queryRawUnsafe = async (sql: string, ...vals: unknown[]) => {
+    if (/clock_timestamp\(\)/i.test(sql)) return [{ now: new Date() }];
+    if (/"LegalHold"[\s\S]*FOR UPDATE/i.test(sql)) {
+      const [id, org] = vals as [string, string];
+      const r = holds.find((h) => h.id === id && h.organizationId === org);
+      return r ? [r] : [];
+    }
+    return [];
+  };
+  db.$transaction = async (fn: (tx: unknown) => Promise<unknown>) => {
+    const snap = holds.map((r) => ({ ...r }));
+    try { return await fn(db); }
+    catch (e) { holds.splice(0, holds.length, ...snap); throw e; }
+  };
+  return db;
 }
 
 const MOCKED = ["@/lib/auth/jwt", "@/lib/auth/session-store", "@/lib/db/prisma", "@/lib/audit/audit-service", "@/lib/logger/security-events"];

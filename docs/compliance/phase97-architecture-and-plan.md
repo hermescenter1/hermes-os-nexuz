@@ -240,3 +240,42 @@ incident-lineage and concurrency-proof gaps.
   FK/CHECK being strengthened is dropped and replaced); a classification-count-only
   preflight aborts on any pre-existing cross-incident action event, timeline actor
   without membership, action without a creator, or creator without membership.
+
+## 12. Full LegalHold mutation linearization
+
+Every LegalHold write — not only the incident-scoped transition — is linearized by a
+governed, row-locked persistence op. The PATCH route is no longer the authoritative
+lifecycle/mutability boundary: it authenticates, authorizes, parses strict input,
+performs a candidate pre-read (to route + reject a combined edit-plus-transition),
+selects the op, maps closed result codes and writes AuditLog only after the op commits.
+No route-created `Date` reaches an evidence write; `updateLegalHoldForOrg` is no longer
+called from the route. No new migration is required — the existing FKs/CHECKs suffice.
+
+- **Governed edit (`editLegalHoldForOrg`).** One transaction: `SELECT … FOR UPDATE` the
+  hold, re-read the full authoritative row, require the pre-read snapshot ({status,
+  scopeType, incidentId, updatedAt}) to still match (else `HOLD_CHANGED_RETRY`), decide
+  mutability from the LOCKED status (terminal → `HOLD_IMMUTABLE`; ACTIVE → `reviewDate`
+  only, else `ACTIVE_HOLD_IMMUTABLE`; PROPOSED → material), revalidate the complete
+  candidate scope fail-closed on any scope change (`INVALID_SCOPE`), capture
+  `clock_timestamp()` after the lock, write exactly the allow-listed fields under an
+  exact status predicate, and return the exact `fieldsWritten`.
+- **Governed non-incident transition (`transitionLegalHoldForOrg`).** Same locked
+  re-read + snapshot revalidation, then the exact edge is validated on the LOCKED status
+  (`INVALID_HOLD_TRANSITION` for any other pair); PROPOSED→ACTIVE, ACTIVE→RELEASED and
+  PROPOSED→CANCELLED only; ACTIVE/RELEASE of an INCIDENT-scoped hold is refused here (it
+  belongs to the incident-ordered path); activation revalidates the complete locked
+  scope (`INVALID_LEGAL_HOLD_ACTIVATION`); post-lock `clock_timestamp()` for all
+  attribution; exact `fieldsWritten`.
+- **Lock order.** Pure edit and non-incident transition lock **LegalHold** only;
+  INCIDENT-scoped ACTIVE/RELEASE keeps the **ComplianceIncident → LegalHold** order via
+  `applyIncidentScopedHoldTransition`. LegalHold is never locked before an incident.
+- **Deterministic barriers.** The real-PostgreSQL suite proves both orderings of
+  material-edit-vs-activation, review-edit-vs-release and activation-vs-cancellation, plus
+  duplicate-activation linearization, with explicit held-lock barriers (a transaction
+  holds the hold row lock; the racing governed op provably blocks; the ordering is forced),
+  asserting the final persisted row after each ordering. Terminal-mutation rejection,
+  out-of-order transitions, incomplete-scope activation, tenant-scoped not-found and the
+  post-lock evidence time (committed `updatedAt` equals the activation's `approvedAt`) are
+  proven directly against the DB.
+- **Audit accuracy.** `fieldsUpdated` is always the op's committed `fieldsWritten`; a
+  rejected/conflicted/stale mutation produces no success AuditLog event.

@@ -22,6 +22,10 @@ let holds: Row[] = [];
 let policies: Row[] = [];
 const auditCalls: Array<Record<string, unknown>> = [];
 let idSeq = 0;
+// Force a specific LegalHold read (1-indexed) to return null — used to simulate a
+// transient/racy post-commit re-read and prove the audit never sources newStatus from it.
+let holdReadCall = 0;
+let failHoldReadOnCall = 0;
 
 function matches(where: Record<string, unknown>, r: Row): boolean {
   for (const [k, v] of Object.entries(where)) if (r[k] !== v) return false;
@@ -30,7 +34,10 @@ function matches(where: Record<string, unknown>, r: Row): boolean {
 function model(store: () => Row[]) {
   return {
     findMany: async ({ where = {} }: { where?: Record<string, unknown> }) => store().filter((r) => matches(where, r)),
-    findFirst: async ({ where }: { where: Record<string, unknown> }) => store().find((r) => matches(where, r)) ?? null,
+    // A read returns a SNAPSHOT (a copy), like a real DB — never a live handle that a
+    // later in-place updateMany would mutate. This keeps `existing` (the route pre-read)
+    // authoritative for previousStatus even after the governed op commits.
+    findFirst: async ({ where }: { where: Record<string, unknown> }) => { const r = store().find((x) => matches(where, x)); return r ? { ...r } : null; },
     create: async ({ data }: { data: Record<string, unknown> }) => {
       const row = { ...data, id: (data.id as string) ?? `gen-${++idSeq}` } as Row;
       store().push(row);
@@ -44,14 +51,39 @@ function model(store: () => Row[]) {
   };
 }
 function makeDb() {
-  return {
+  const legalHold = model(() => holds);
+  const baseFindFirst = legalHold.findFirst;
+  legalHold.findFirst = async (args: { where: Record<string, unknown> }) => {
+    holdReadCall += 1;
+    if (failHoldReadOnCall === holdReadCall) return null; // simulate a transient/racy read
+    return baseFindFirst(args);
+  };
+  const db: Record<string, unknown> = {
     organizationMember: {
       findMany: async ({ where }: { where: { userId: string; status: string } }) =>
         members.filter((m) => m.userId === where.userId && m.status === where.status).map((m) => ({ organizationId: m.organizationId, role: m.role })),
     },
-    legalHold: model(() => holds),
+    legalHold,
     retentionPolicy: model(() => policies),
   };
+  // Governed LegalHold ops run a real interactive transaction with a SELECT ... FOR UPDATE
+  // row lock + a post-lock clock_timestamp(); model those two raw statements. (Locking is
+  // proven against real PostgreSQL by *.pg.test.ts; here we only need faithful row reads.)
+  db.$queryRawUnsafe = async (sql: string, ...vals: unknown[]) => {
+    if (/clock_timestamp\(\)/i.test(sql)) return [{ now: new Date() }];
+    if (/"LegalHold"[\s\S]*FOR UPDATE/i.test(sql)) {
+      const [id, org] = vals as [string, string];
+      const r = holds.find((h) => h.id === id && h.organizationId === org);
+      return r ? [r] : [];
+    }
+    return [];
+  };
+  db.$transaction = async (fn: (tx: unknown) => Promise<unknown>) => {
+    const snap = holds.map((r) => ({ ...r }));
+    try { return await fn(db); }
+    catch (e) { holds.splice(0, holds.length, ...snap); throw e; }
+  };
+  return db;
 }
 
 const MOCKED = ["@/lib/auth/jwt", "@/lib/auth/session-store", "@/lib/db/prisma", "@/lib/audit/audit-service", "@/lib/logger/security-events"];
@@ -60,6 +92,7 @@ beforeEach(() => {
   payload = { sub: "admin-A", role: "admin", sid: "s1" };
   members = [{ userId: "admin-A", organizationId: "org-A", role: "ADMIN", status: "ACTIVE" }];
   holds = []; policies = []; auditCalls.length = 0;
+  holdReadCall = 0; failHoldReadOnCall = 0;
   vi.doMock("@/lib/auth/jwt", () => ({ verifyAccessToken: async () => payload }));
   vi.doMock("@/lib/auth/session-store", () => ({ isPayloadSessionActive: async () => true }));
   vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => makeDb() }));
@@ -260,5 +293,111 @@ describe("accurate audit — fieldsUpdated matches only persisted fields", () =>
     expect(fields).not.toContain("name");
     expect(fields).not.toContain("scopeType");
     expect(fields).not.toContain("subjectId");
+  });
+});
+
+describe("governed linearization — exact fieldsWritten, post-lock time, no audit on rejection", () => {
+  const auditUpdates = () => auditCalls.filter((e) => e.action === "compliance.legal_hold.updated");
+  const fieldsOf = () => (auditUpdates()[0]?.metadata as { fieldsUpdated: string[] }).fieldsUpdated;
+
+  it("an ACTIVE reviewDate edit writes exactly [reviewDate, updatedAt, updatedBy] with Date values", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "ACTIVE" }];
+    const { res } = await holdPATCH("h1", { reviewDate: "2026-09-01T00:00:00.000Z" });
+    expect(res.status).toBe(200);
+    expect(fieldsOf()).toEqual(["reviewDate", "updatedAt", "updatedBy"]);
+    expect(holds[0].reviewDate).toBeInstanceOf(Date);
+    expect(holds[0].updatedAt).toBeInstanceOf(Date); // post-lock clock_timestamp(), not a route Date
+  });
+
+  it("a PROPOSED→CANCELLED transition writes cancellation attribution, never release fields", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    const { res } = await holdPATCH("h1", { status: "CANCELLED" });
+    expect(res.status).toBe(200);
+    expect(fieldsOf()).toEqual(["cancelledAt", "cancelledBy", "status", "updatedAt", "updatedBy"]);
+    expect(holds[0].releasedAt ?? null).toBeNull();
+  });
+
+  it("an ACTIVE→RELEASED transition writes exactly the release attribution", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "ACTIVE" }];
+    const { res } = await holdPATCH("h1", { status: "RELEASED" });
+    expect(res.status).toBe(200);
+    expect(fieldsOf()).toEqual(["releaseApprovedBy", "releasedAt", "status", "updatedAt", "updatedBy"]);
+  });
+
+  it("a rejected ACTIVE material edit produces NO success audit event (AUDIT_FOR_REJECTED_HOLD_MUTATION=0)", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "ACTIVE" }];
+    const { res, json } = await holdPATCH("h1", { subjectId: "s2" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("ACTIVE_HOLD_IMMUTABLE");
+    expect(auditUpdates()).toHaveLength(0);
+    expect(holds[0].subjectId).toBe("s1");
+  });
+
+  it("audit newStatus + previousStatus come from the committed op, never a post-commit re-read (LEGAL_HOLD_AUDIT_STALE_STATUS=0)", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    // Force the SECOND LegalHold read (the post-commit DTO/audit re-read) to fail; the op
+    // has already committed CANCELLED. Sourcing newStatus from that read would record the
+    // stale pre-transition status — so this asserts the committed op is the source.
+    failHoldReadOnCall = 2;
+    const { res, json } = await holdPATCH("h1", { status: "CANCELLED" });
+    expect(res.status).toBe(200);
+    expect(json.hold).toBeNull();                       // the re-read failed → DTO is null
+    expect(holds[0].status).toBe("CANCELLED");          // but the op DID commit
+    const ev = auditCalls.find((e) => e.action === "compliance.legal_hold.updated")!;
+    const md = ev.metadata as { previousStatus: string; newStatus: string; fieldsUpdated: string[] };
+    expect(md.previousStatus).toBe("PROPOSED");
+    expect(md.newStatus).toBe("CANCELLED");             // committed status, NOT the stale/null re-read
+    expect(md.fieldsUpdated).toContain("status");
+  });
+
+  it("a pure edit audits newStatus as the unchanged committed status", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "ACTIVE" }];
+    await holdPATCH("h1", { reviewDate: "2026-09-01T00:00:00.000Z" });
+    const ev = auditCalls.find((e) => e.action === "compliance.legal_hold.updated")!;
+    const md = ev.metadata as { previousStatus: string; newStatus: string };
+    expect(md.previousStatus).toBe("ACTIVE");
+    expect(md.newStatus).toBe("ACTIVE"); // an edit never changes status
+  });
+
+  it("a rejected terminal edit produces NO success audit event", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "CANCELLED" }];
+    const { res, json } = await holdPATCH("h1", { reviewDate: "2026-09-01T00:00:00.000Z" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("HOLD_IMMUTABLE");
+    expect(auditUpdates()).toHaveLength(0);
+  });
+
+  it("a PROPOSED scope edit revalidates the locked candidate scope fail-closed (INVALID_SCOPE)", async () => {
+    // SUBJECT→RESOURCE_TYPE without a resourceType leaves an incomplete candidate scope.
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    const { res, json } = await holdPATCH("h1", { scopeType: "RESOURCE_TYPE" });
+    expect(res.status).toBe(400);
+    expect(json.code).toBe("INVALID_SCOPE");
+    expect(holds[0].scopeType).toBe("SUBJECT"); // unchanged
+    expect(auditUpdates()).toHaveLength(0);
+  });
+
+  it("a PROPOSED scope edit writes the full normalized scope set from a clean base", async () => {
+    // ORGANIZATION → SUBJECT: no leftover target contradicts the new scope type.
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "ORGANIZATION", status: "PROPOSED" }];
+    const { res } = await holdPATCH("h1", { scopeType: "SUBJECT", subjectId: "s1" });
+    expect(res.status).toBe(200);
+    expect(holds[0].scopeType).toBe("SUBJECT");
+    expect(holds[0].subjectId).toBe("s1");
+    expect(holds[0].resourceType ?? null).toBeNull(); // normalized away
+    const fields = fieldsOf();
+    expect(fields).toContain("scopeType");
+    expect(fields).toContain("subjectId");
+    expect(fields).toContain("resourceType"); // written (as null) — part of the normalized scope set
+  });
+
+  it("a PROPOSED scope edit that leaves a contradictory old target is rejected fail-closed", async () => {
+    // SUBJECT→RESOURCE_TYPE cannot drop the old subjectId in one edit → INVALID_SCOPE.
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    const { res, json } = await holdPATCH("h1", { scopeType: "RESOURCE_TYPE", resourceType: "case" });
+    expect(res.status).toBe(400);
+    expect(json.code).toBe("INVALID_SCOPE");
+    expect(holds[0].scopeType).toBe("SUBJECT"); // unchanged
+    expect(auditUpdates()).toHaveLength(0);
   });
 });

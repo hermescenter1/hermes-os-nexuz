@@ -1,5 +1,6 @@
 /**
- * Phase 97 — compliance-incident persistence (tenant scoped, evidence-integrity hardened).
+ * Phase 97 — compliance-incident persistence + governed LegalHold mutation
+ * linearization (tenant scoped, evidence-integrity hardened).
  *
  * Every read/write predicate carries BOTH id AND the authoritative organizationId, so
  * a foreign-tenant record is never matched, disclosed or written. Every state change
@@ -28,6 +29,10 @@ import {
   isValidDecisionEvidence, nextDecisionVersion, HIGH_PRIORITY_ACTIONS,
   type IncidentAction, type AssessmentAction, type IncidentEventCode, type IncidentBlocker,
 } from "./incident-governance";
+import {
+  classifyLegalHoldEdit, classifyLegalHoldTransition, validateLegalHoldScope,
+  type LegalHoldScopeInput,
+} from "./legal-hold";
 
 type AnyModel = Record<string, (...args: unknown[]) => Promise<unknown>>;
 type TxRaw = Record<string, AnyModel> & {
@@ -522,7 +527,7 @@ export function cancelIncidentActionForOrg(params: { incidentId: string; organiz
 // post-lock clock_timestamp. Same global lock order as closure ⇒ an incident CLOSED with
 // an ACTIVE hold can never persist; activation is refused unless the incident is active.
 export type HoldTransitionResult =
-  | { ok: true; fieldsWritten: string[] }
+  | { ok: true; status: string; fieldsWritten: string[] }
   | { ok: false; reason: "NOT_FOUND" | "INCIDENT_NOT_ACTIVE" | "HOLD_BINDING_CHANGED" | "INVALID_HOLD_TRANSITION" | "CONFLICT" };
 export async function applyIncidentScopedHoldTransition(params: {
   holdId: string; organizationId: string; actorId: string; toStatus: "ACTIVE" | "RELEASED";
@@ -583,8 +588,196 @@ export async function applyIncidentScopedHoldTransition(params: {
         data,
       })) as { count?: number };
       if ((upd?.count ?? 0) !== 1) return { ok: false as const, reason: "CONFLICT" };
-      // Report ONLY the fields actually written, for accurate after-commit audit.
-      return { ok: true as const, fieldsWritten: Object.keys(data).sort() };
+      // Return the COMMITTED status + ONLY the fields actually written, so the route
+      // audits the authoritative result rather than a fallible post-commit re-read.
+      return { ok: true as const, status: params.toStatus, fieldsWritten: Object.keys(data).sort() };
+    });
+  } catch { return { ok: false, reason: "CONFLICT" }; }
+}
+
+// ── Governed LegalHold mutation linearization (LegalHold lock; no route authority) ─
+//
+// Every material/review edit AND every non-incident lifecycle transition runs in ONE
+// interactive transaction: the hold is locked with SELECT ... FOR UPDATE, the FULL
+// authoritative row is re-read, the pre-read snapshot ({status, scopeType, incidentId,
+// updatedAt}) is revalidated under lock (else HOLD_CHANGED_RETRY, so no stale-snapshot
+// write / lost update), mutability and transitions are decided from the LOCKED status
+// (never from the route pre-read), any changed scope is revalidated, the authoritative
+// time comes from clock_timestamp() AFTER the lock, exactly the allow-listed fields are
+// written under an exact status predicate, and the exact fieldsWritten are returned for
+// an accurate after-commit audit. INCIDENT-scoped ACTIVE/RELEASE stays with the
+// incident-ordered applyIncidentScopedHoldTransition; this generic path never touches an
+// incident lock (lock order is LegalHold only).
+
+export type HoldExpectedSnapshot = { status: string; scopeType: string; incidentId: string | null; updatedAt: Date };
+
+type LockedHold = {
+  status: string; scopeType: string; subjectId: string | null; resourceType: string | null;
+  resourceId: string | null; processingActivityId: string | null; incidentId: string | null;
+  rangeStart: Date | null; rangeEnd: Date | null; reasonClass: string | null; name: string | null;
+  startDate: Date | null; reviewDate: Date | null; updatedAt: Date;
+};
+
+const HOLD_SCOPE_EDIT_FIELDS = ["scopeType", "subjectId", "resourceType", "resourceId", "processingActivityId", "incidentId", "rangeStart", "rangeEnd"] as const;
+
+/** Epoch ms for an updatedAt value; null/undefined/invalid → NaN (matches only itself). */
+function instantMs(v: Date | string | null | undefined): number {
+  if (v === null || v === undefined) return NaN;
+  return v instanceof Date ? v.getTime() : new Date(v).getTime();
+}
+
+/** The LOCKED row must EXACTLY match the pre-read snapshot on the binding-identifying
+ *  columns; any drift means the row moved under us (optimistic revalidation). */
+function holdSnapshotMatches(hold: LockedHold, expected: HoldExpectedSnapshot): boolean {
+  const a = instantMs(hold.updatedAt), b = instantMs(expected.updatedAt);
+  const updatedMatch = (Number.isNaN(a) && Number.isNaN(b)) || a === b;
+  return hold.status === expected.status
+    && hold.scopeType === expected.scopeType
+    && (hold.incidentId ?? null) === (expected.incidentId ?? null)
+    && updatedMatch;
+}
+
+async function lockHoldRow(tx: TxRaw, holdId: string, organizationId: string): Promise<LockedHold | null> {
+  const rows = (await tx.$queryRawUnsafe<LockedHold[]>(
+    `SELECT "status", "scopeType", "subjectId", "resourceType", "resourceId", "processingActivityId",
+            "incidentId", "rangeStart", "rangeEnd", "reasonClass", "name", "startDate", "reviewDate", "updatedAt"
+       FROM "LegalHold" WHERE "id" = $1 AND "organizationId" = $2 FOR UPDATE`,
+    holdId, organizationId,
+  )) ?? [];
+  return rows[0] ?? null;
+}
+
+export type HoldEditResult =
+  | { ok: true; status: string; fieldsWritten: string[] }
+  | { ok: false; reason: "NOT_FOUND" | "HOLD_CHANGED_RETRY" | "HOLD_IMMUTABLE" | "ACTIVE_HOLD_IMMUTABLE" | "INVALID_SCOPE" | "CONFLICT"; scopeReason?: string };
+
+/** Governed pure material / review edit (LegalHold lock only). */
+export async function editLegalHoldForOrg(params: {
+  holdId: string; organizationId: string; actorId: string;
+  expected: HoldExpectedSnapshot;
+  edit: Partial<Record<
+    "name" | "reasonClass" | "scopeType" | "subjectId" | "resourceType" | "resourceId"
+    | "processingActivityId" | "incidentId" | "rangeStart" | "rangeEnd" | "startDate" | "reviewDate", unknown>>;
+}): Promise<HoldEditResult> {
+  const client = await getPrisma();
+  if (!client) return { ok: false, reason: "CONFLICT" };
+  const c = client as unknown as TxClient;
+  const e = params.edit;
+  const editKeys = Object.keys(e).filter((k) => e[k as keyof typeof e] !== undefined);
+  try {
+    return await c.$transaction(async (tx) => {
+      const hold = await lockHoldRow(tx, params.holdId, params.organizationId);
+      if (!hold) return { ok: false as const, reason: "NOT_FOUND" };
+      if (!holdSnapshotMatches(hold, params.expected)) return { ok: false as const, reason: "HOLD_CHANGED_RETRY" };
+
+      // Mutability from the LOCKED status — never from the route pre-read.
+      const policy = classifyLegalHoldEdit(hold.status, editKeys);
+      if (!policy.ok) return { ok: false as const, reason: policy.reason };
+
+      const data: Record<string, unknown> = {};
+      if (policy.scope === "MATERIAL") {
+        const scopeTouched = HOLD_SCOPE_EDIT_FIELDS.some((k) => editKeys.includes(k));
+        if (scopeTouched) {
+          // Candidate scope = locked row overlaid with the edits; revalidated fail-closed.
+          const candidate: LegalHoldScopeInput = {
+            scopeType:            (e.scopeType as string | undefined) ?? hold.scopeType,
+            subjectId:            e.subjectId !== undefined ? (e.subjectId as string | null) : hold.subjectId,
+            resourceType:         e.resourceType !== undefined ? (e.resourceType as string | null) : hold.resourceType,
+            resourceId:           e.resourceId !== undefined ? (e.resourceId as string | null) : hold.resourceId,
+            processingActivityId: e.processingActivityId !== undefined ? (e.processingActivityId as string | null) : hold.processingActivityId,
+            incidentId:           e.incidentId !== undefined ? (e.incidentId as string | null) : hold.incidentId,
+            rangeStart:           e.rangeStart !== undefined ? (e.rangeStart as Date | null) : hold.rangeStart,
+            rangeEnd:             e.rangeEnd !== undefined ? (e.rangeEnd as Date | null) : hold.rangeEnd,
+          };
+          const v = validateLegalHoldScope(candidate);
+          if (!v.ok) return { ok: false as const, reason: "INVALID_SCOPE", scopeReason: v.reason };
+          data.scopeType            = v.normalized.scopeType;
+          data.subjectId            = v.normalized.subjectId;
+          data.resourceType         = v.normalized.resourceType;
+          data.resourceId           = v.normalized.resourceId;
+          data.processingActivityId = v.normalized.processingActivityId;
+          data.incidentId           = v.normalized.incidentId;
+          data.rangeStart           = v.normalized.rangeStart;
+          data.rangeEnd             = v.normalized.rangeEnd;
+        }
+        if (e.name !== undefined)        data.name = e.name;
+        if (e.reasonClass !== undefined) data.reasonClass = e.reasonClass;
+        if (e.startDate !== undefined)   data.startDate = e.startDate as Date | null;
+        if (e.reviewDate !== undefined)  data.reviewDate = e.reviewDate as Date | null;
+      } else {
+        // REVIEW_ONLY — only reviewDate may change on an ACTIVE hold.
+        if (e.reviewDate !== undefined)  data.reviewDate = e.reviewDate as Date | null;
+      }
+      if (Object.keys(data).length === 0) return { ok: false as const, reason: "CONFLICT" }; // no effective field (route guards)
+
+      const now = await clockNow(tx);
+      data.updatedBy = params.actorId; data.updatedAt = now;
+      const upd = (await (tx.legalHold as AnyModel).updateMany({
+        where: { id: params.holdId, organizationId: params.organizationId, status: hold.status },
+        data,
+      })) as { count?: number };
+      if ((upd?.count ?? 0) !== 1) return { ok: false as const, reason: "CONFLICT" };
+      // An edit never changes status; the committed status is the locked one.
+      return { ok: true as const, status: hold.status, fieldsWritten: Object.keys(data).sort() };
+    });
+  } catch { return { ok: false, reason: "CONFLICT" }; }
+}
+
+export type HoldGenericTransitionResult =
+  | { ok: true; status: string; fieldsWritten: string[] }
+  | { ok: false; reason: "NOT_FOUND" | "HOLD_CHANGED_RETRY" | "INVALID_HOLD_TRANSITION" | "INVALID_LEGAL_HOLD_ACTIVATION" | "CONFLICT"; scopeReason?: string };
+
+/** Governed non-incident lifecycle transition (LegalHold lock only): PROPOSED→ACTIVE,
+ *  ACTIVE→RELEASED and PROPOSED→CANCELLED. INCIDENT-scoped ACTIVE/RELEASE is refused
+ *  here (routed to applyIncidentScopedHoldTransition); CANCEL is allowed for any scope. */
+export async function transitionLegalHoldForOrg(params: {
+  holdId: string; organizationId: string; actorId: string;
+  toStatus: "ACTIVE" | "RELEASED" | "CANCELLED";
+  expected: HoldExpectedSnapshot;
+}): Promise<HoldGenericTransitionResult> {
+  const client = await getPrisma();
+  if (!client) return { ok: false, reason: "CONFLICT" };
+  const c = client as unknown as TxClient;
+  try {
+    return await c.$transaction(async (tx) => {
+      const hold = await lockHoldRow(tx, params.holdId, params.organizationId);
+      if (!hold) return { ok: false as const, reason: "NOT_FOUND" };
+      if (!holdSnapshotMatches(hold, params.expected)) return { ok: false as const, reason: "HOLD_CHANGED_RETRY" };
+
+      // Validate the EXACT edge on the LOCKED status.
+      const cls = classifyLegalHoldTransition(hold.status, params.toStatus);
+      if (!cls.ok) return { ok: false as const, reason: "INVALID_HOLD_TRANSITION" };
+      // This generic path must never activate/release an INCIDENT-scoped hold — that is
+      // exclusively the incident-ordered path (defence in depth behind the route routing).
+      if ((cls.kind === "ACTIVATE" || cls.kind === "RELEASE") && hold.scopeType === "INCIDENT") {
+        return { ok: false as const, reason: "INVALID_HOLD_TRANSITION" };
+      }
+      // ACTIVATE requires the COMPLETE locked scope to be semantically valid.
+      if (cls.kind === "ACTIVATE") {
+        const v = validateLegalHoldScope({
+          scopeType: hold.scopeType, subjectId: hold.subjectId, resourceType: hold.resourceType,
+          resourceId: hold.resourceId, processingActivityId: hold.processingActivityId,
+          incidentId: hold.incidentId, rangeStart: hold.rangeStart, rangeEnd: hold.rangeEnd,
+        });
+        if (!v.ok) return { ok: false as const, reason: "INVALID_LEGAL_HOLD_ACTIVATION", scopeReason: v.reason };
+      }
+
+      const now = await clockNow(tx);
+      const data: Record<string, unknown> = { updatedBy: params.actorId, updatedAt: now };
+      if (cls.kind === "ACTIVATE") {
+        data.status = "ACTIVE"; data.approvedBy = params.actorId; data.approvedAt = now;
+        if (hold.startDate == null) data.startDate = now;
+      } else if (cls.kind === "RELEASE") {
+        data.status = "RELEASED"; data.releaseApprovedBy = params.actorId; data.releasedAt = now;
+      } else {
+        data.status = "CANCELLED"; data.cancelledBy = params.actorId; data.cancelledAt = now;
+      }
+      const upd = (await (tx.legalHold as AnyModel).updateMany({
+        where: { id: params.holdId, organizationId: params.organizationId, status: hold.status },
+        data,
+      })) as { count?: number };
+      if ((upd?.count ?? 0) !== 1) return { ok: false as const, reason: "CONFLICT" };
+      return { ok: true as const, status: data.status as string, fieldsWritten: Object.keys(data).sort() };
     });
   } catch { return { ok: false, reason: "CONFLICT" }; }
 }
