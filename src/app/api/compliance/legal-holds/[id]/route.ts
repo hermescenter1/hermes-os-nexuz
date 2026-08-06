@@ -62,117 +62,129 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const requestedStatus = input.status;
   const statusChange = requestedStatus !== undefined && requestedStatus !== existing.status;
+  // A lifecycle transition targets ACTIVE / RELEASED / CANCELLED; PROPOSED is never a
+  // valid transition target.
+  const TRANSITION_STATUSES = ["ACTIVE", "RELEASED", "CANCELLED"];
+  if (statusChange && !TRANSITION_STATUSES.includes(requestedStatus as string)) {
+    return NextResponse.json({ error: "Transition not allowed", code: "INVALID_TRANSITION" }, { status: 409 });
+  }
+  const isTransition = statusChange;
+
+  // ── Stable transition policy ────────────────────────────────────────────────
+  // A lifecycle transition may NOT be combined with any material / review-field edit.
+  // The caller must persist the PROPOSED edit first, then transition in a SEPARATE
+  // request against the resulting stable snapshot. This prevents silent field dropping
+  // and guarantees the pre-read snapshot IS the actual transition candidate.
+  const MATERIAL_KEYS = ["name", "reasonClass", "scopeType", "subjectId", "resourceType", "resourceId", "processingActivityId", "incidentId", "rangeStart", "rangeEnd", "startDate", "reviewDate"];
+  if (isTransition) {
+    const combined = MATERIAL_KEYS.filter((k) => (input as Record<string, unknown>)[k] !== undefined);
+    if (combined.length > 0) {
+      return NextResponse.json({ error: "A lifecycle transition may not carry a material edit; persist the edit first, then transition against the stable snapshot", code: "HOLD_TRANSITION_REQUIRES_STABLE_SNAPSHOT" }, { status: 409 });
+    }
+  }
+
   const now = new Date();
-  const data: Record<string, unknown> = {};
+  let fieldsUpdated: string[] = [];
 
-  if (existing.status === "ACTIVE") {
-    // Only reviewDate and a release transition are permitted. Any other field
-    // (material scope/reason/date OR even name) is refused under the approval.
-    const disallowed = Object.keys(input).filter((k) => k !== "reviewDate" && k !== "status");
-    if (disallowed.length > 0) {
-      return NextResponse.json({ error: "Active hold fields are immutable", code: "ACTIVE_HOLD_IMMUTABLE" }, { status: 409 });
-    }
-    if (statusChange && requestedStatus !== "RELEASED") {
-      return NextResponse.json({ error: "Transition not allowed", code: "INVALID_TRANSITION" }, { status: 409 });
-    }
-    if (input.reviewDate !== undefined) data.reviewDate = input.reviewDate ? new Date(input.reviewDate) : null;
-    if (statusChange) {
-      data.status = "RELEASED";
-      data.releaseApprovedBy = scope.userId;
-      data.releasedAt = now;
-    }
-  } else {
-    // existing.status === "PROPOSED"
-    const scopeFieldTouched = ["scopeType", "subjectId", "resourceType", "resourceId", "processingActivityId", "incidentId", "rangeStart", "rangeEnd"]
-      .some((k) => input[k as keyof typeof input] !== undefined);
-    const willActivate = statusChange && requestedStatus === "ACTIVE";
-
-    // Compute the candidate (final) scope = existing overlaid with any edits.
-    const pick = <T,>(v: T | undefined, fallback: T): T => (v === undefined ? fallback : v);
-    const candidate: LegalHoldScopeInput = {
-      scopeType:            pick(input.scopeType, existing.scopeType),
-      subjectId:            pick(input.subjectId, existing.subjectId),
-      resourceType:         pick(input.resourceType, existing.resourceType),
-      resourceId:           pick(input.resourceId, existing.resourceId),
-      processingActivityId: pick(input.processingActivityId, existing.processingActivityId),
-      incidentId:           pick(input.incidentId, existing.incidentId),
-      rangeStart:           input.rangeStart !== undefined ? input.rangeStart : existing.rangeStart,
-      rangeEnd:             input.rangeEnd !== undefined ? input.rangeEnd : existing.rangeEnd,
-    };
-
-    // Validate whenever the scope is edited OR the hold is being activated. On
-    // activation this is the mandatory pre-ACTIVE revalidation of the final record.
-    let normalized: ReturnType<typeof validateLegalHoldScope> | null = null;
-    if (scopeFieldTouched || willActivate) {
-      normalized = validateLegalHoldScope(candidate);
-      if (!normalized.ok) {
-        const code = willActivate ? "INVALID_LEGAL_HOLD_ACTIVATION" : "INVALID_SCOPE";
-        return NextResponse.json({ error: "Invalid legal hold scope", code, reason: normalized.reason }, { status: willActivate ? 422 : 400 });
+  if (!isTransition) {
+    // ── Pure material / review edit (no lifecycle transition) ──────────────────
+    const data: Record<string, unknown> = {};
+    if (existing.status === "ACTIVE") {
+      // Only reviewDate is editable on an ACTIVE hold; every material field is frozen.
+      const disallowed = Object.keys(input).filter((k) => k !== "reviewDate" && k !== "status");
+      if (disallowed.length > 0) return NextResponse.json({ error: "Active hold fields are immutable", code: "ACTIVE_HOLD_IMMUTABLE" }, { status: 409 });
+      if (input.reviewDate !== undefined) data.reviewDate = input.reviewDate ? new Date(input.reviewDate) : null;
+    } else {
+      // PROPOSED material edit; a changed scope is revalidated.
+      const scopeFieldTouched = ["scopeType", "subjectId", "resourceType", "resourceId", "processingActivityId", "incidentId", "rangeStart", "rangeEnd"]
+        .some((k) => input[k as keyof typeof input] !== undefined);
+      if (scopeFieldTouched) {
+        const pick = <T,>(v: T | undefined, fallback: T): T => (v === undefined ? fallback : v);
+        const candidate: LegalHoldScopeInput = {
+          scopeType:            pick(input.scopeType, existing.scopeType),
+          subjectId:            pick(input.subjectId, existing.subjectId),
+          resourceType:         pick(input.resourceType, existing.resourceType),
+          resourceId:           pick(input.resourceId, existing.resourceId),
+          processingActivityId: pick(input.processingActivityId, existing.processingActivityId),
+          incidentId:           pick(input.incidentId, existing.incidentId),
+          rangeStart:           input.rangeStart !== undefined ? input.rangeStart : existing.rangeStart,
+          rangeEnd:             input.rangeEnd !== undefined ? input.rangeEnd : existing.rangeEnd,
+        };
+        const normalized = validateLegalHoldScope(candidate);
+        if (!normalized.ok) return NextResponse.json({ error: "Invalid legal hold scope", code: "INVALID_SCOPE", reason: normalized.reason }, { status: 400 });
+        Object.assign(data, {
+          scopeType:            normalized.normalized.scopeType,
+          subjectId:            normalized.normalized.subjectId,
+          resourceType:         normalized.normalized.resourceType,
+          resourceId:           normalized.normalized.resourceId,
+          processingActivityId: normalized.normalized.processingActivityId,
+          incidentId:           normalized.normalized.incidentId,
+          rangeStart:           normalized.normalized.rangeStart,
+          rangeEnd:             normalized.normalized.rangeEnd,
+        });
       }
+      if (input.name !== undefined) data.name = input.name;
+      if (input.reasonClass !== undefined) data.reasonClass = input.reasonClass;
+      if (input.startDate !== undefined) data.startDate = input.startDate ? new Date(input.startDate) : null;
+      if (input.reviewDate !== undefined) data.reviewDate = input.reviewDate ? new Date(input.reviewDate) : null;
     }
-
-    if (statusChange && !canTransitionLegalHold(existing.status, requestedStatus)) {
-      return NextResponse.json({ error: "Transition not allowed", code: "INVALID_TRANSITION" }, { status: 409 });
-    }
-
-    // Editable non-status fields.
-    if (input.name !== undefined) data.name = input.name;
-    if (input.reasonClass !== undefined) data.reasonClass = input.reasonClass;
-    if (input.startDate !== undefined) data.startDate = input.startDate ? new Date(input.startDate) : null;
-    if (input.reviewDate !== undefined) data.reviewDate = input.reviewDate ? new Date(input.reviewDate) : null;
-    // Persist the normalized scope only when scope fields were actually edited.
-    if (scopeFieldTouched && normalized && normalized.ok) {
-      Object.assign(data, {
-        scopeType:            normalized.normalized.scopeType,
-        subjectId:            normalized.normalized.subjectId,
-        resourceType:         normalized.normalized.resourceType,
-        resourceId:           normalized.normalized.resourceId,
-        processingActivityId: normalized.normalized.processingActivityId,
-        incidentId:           normalized.normalized.incidentId,
-        rangeStart:           normalized.normalized.rangeStart,
-        rangeEnd:             normalized.normalized.rangeEnd,
-      });
-    }
-
-    if (requestedStatus === "ACTIVE") {
-      data.status = "ACTIVE";
-      data.approvedBy = scope.userId;
-      data.approvedAt = now;
-      if (!existing.startDate && data.startDate === undefined) data.startDate = now;
-    } else if (requestedStatus === "CANCELLED") {
-      data.status = "CANCELLED";
-      data.cancelledBy = scope.userId;
-      data.cancelledAt = now;
-    }
-  }
-
-  if (Object.keys(data).length === 0) {
-    return NextResponse.json({ error: "No effective change", code: "INVALID_INPUT" }, { status: 400 });
-  }
-
-  // An INCIDENT-scoped hold activating/releasing runs under the SHARED global lock
-  // order ComplianceIncident → LegalHold. The pre-read `existing` is only a candidate;
-  // the transition function locks the incident FIRST, then the hold, re-reads the FULL
-  // authoritative hold and requires it to EXACTLY match this pre-read snapshot
-  // {status, scopeType, incidentId, updatedAt} — otherwise the parent binding changed
-  // (HOLD_BINDING_CHANGED) and the caller must retry. It writes only explicit
-  // allow-listed fields with a post-lock time, so activation and incident closure
-  // linearise and a CLOSED incident with an ACTIVE hold can never persist.
-  const newStatus = data.status as string | undefined;
-  if (existing.scopeType === "INCIDENT" && existing.incidentId && (newStatus === "ACTIVE" || newStatus === "RELEASED")) {
-    const res = await applyIncidentScopedHoldTransition({
-      holdId: id, organizationId: scope.organizationId, actorId: scope.userId, toStatus: newStatus,
-      expected: { status: existing.status, scopeType: existing.scopeType, incidentId: existing.incidentId, updatedAt: existing.updatedAt },
-    });
-    if (!res.ok) {
-      if (res.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
-      if (res.reason === "INCIDENT_NOT_ACTIVE") return NextResponse.json({ error: "The parent incident is not in an active state; reopen it before activating a hold", code: "INCIDENT_NOT_ACTIVE" }, { status: 409 });
-      if (res.reason === "HOLD_BINDING_CHANGED") return NextResponse.json({ error: "The hold's parent binding changed under the operation; retry", code: "HOLD_BINDING_CHANGED" }, { status: 409 });
-      return NextResponse.json({ error: "Hold transition conflict", code: "CONFLICT" }, { status: 409 });
-    }
-  } else {
+    if (Object.keys(data).length === 0) return NextResponse.json({ error: "No effective change", code: "INVALID_INPUT" }, { status: 400 });
     const { affected } = await updateLegalHoldForOrg({ id, organizationId: scope.organizationId, updatedBy: scope.userId, data });
     if (affected !== 1) return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
+    fieldsUpdated = Object.keys(data).sort();
+  } else {
+    // ── Lifecycle transition against the STABLE persisted snapshot ─────────────
+    if (!canTransitionLegalHold(existing.status, requestedStatus as string)) {
+      return NextResponse.json({ error: "Transition not allowed", code: "INVALID_TRANSITION" }, { status: 409 });
+    }
+    // No material edit reached here, so the FINAL scope IS the stable persisted scope.
+    const finalScopeType = existing.scopeType;
+
+    // ACTIVE requires the COMPLETE stable persisted scope to be valid.
+    if (requestedStatus === "ACTIVE") {
+      const v = validateLegalHoldScope({
+        scopeType: existing.scopeType, subjectId: existing.subjectId, resourceType: existing.resourceType,
+        resourceId: existing.resourceId, processingActivityId: existing.processingActivityId,
+        incidentId: existing.incidentId, rangeStart: existing.rangeStart, rangeEnd: existing.rangeEnd,
+      });
+      if (!v.ok) return NextResponse.json({ error: "Invalid legal hold scope", code: "INVALID_LEGAL_HOLD_ACTIVATION", reason: v.reason }, { status: 422 });
+    }
+
+    if (finalScopeType === "INCIDENT" && (requestedStatus === "ACTIVE" || requestedStatus === "RELEASED")) {
+      // INCIDENT-scoped ACTIVE/RELEASED → ONLY the locked service; never generic.
+      if (!existing.incidentId) return NextResponse.json({ error: "Invalid legal hold scope", code: "INVALID_LEGAL_HOLD_ACTIVATION", reason: "INCIDENT_ID_REQUIRED" }, { status: 422 });
+      const res = await applyIncidentScopedHoldTransition({
+        holdId: id, organizationId: scope.organizationId, actorId: scope.userId, toStatus: requestedStatus,
+        expected: { status: existing.status, scopeType: existing.scopeType, incidentId: existing.incidentId, updatedAt: existing.updatedAt },
+      });
+      if (!res.ok) {
+        if (res.reason === "NOT_FOUND") return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
+        if (res.reason === "INCIDENT_NOT_ACTIVE") return NextResponse.json({ error: "The parent incident is not in an active state; reopen it before activating a hold", code: "INCIDENT_NOT_ACTIVE" }, { status: 409 });
+        if (res.reason === "HOLD_BINDING_CHANGED") return NextResponse.json({ error: "The hold's parent binding changed under the operation; retry", code: "HOLD_BINDING_CHANGED" }, { status: 409 });
+        if (res.reason === "INVALID_HOLD_TRANSITION") return NextResponse.json({ error: "Transition not allowed", code: "INVALID_HOLD_TRANSITION" }, { status: 409 });
+        return NextResponse.json({ error: "Hold transition conflict", code: "CONFLICT" }, { status: 409 });
+      }
+      fieldsUpdated = res.fieldsWritten;
+    } else {
+      // Non-incident transition (or CANCELLED) via the generic locked path.
+      const data: Record<string, unknown> = {};
+      if (requestedStatus === "ACTIVE") {
+        data.status = "ACTIVE"; data.approvedBy = scope.userId; data.approvedAt = now;
+        if (!existing.startDate) data.startDate = now;
+      } else if (requestedStatus === "RELEASED") {
+        data.status = "RELEASED"; data.releaseApprovedBy = scope.userId; data.releasedAt = now;
+      } else {
+        data.status = "CANCELLED"; data.cancelledBy = scope.userId; data.cancelledAt = now;
+      }
+      // DEFENSIVE ASSERTION: a request resulting in ACTIVE/RELEASED with final scopeType
+      // INCIDENT must NEVER reach the generic update (INCIDENT_SCOPED_ACTIVE/RELEASE_GENERIC_UPDATE=0).
+      if (finalScopeType === "INCIDENT" && (requestedStatus === "ACTIVE" || requestedStatus === "RELEASED")) {
+        return NextResponse.json({ error: "Incident-scoped hold transition misrouted", code: "INCIDENT_SCOPED_TRANSITION_MISROUTED" }, { status: 409 });
+      }
+      const { affected } = await updateLegalHoldForOrg({ id, organizationId: scope.organizationId, updatedBy: scope.userId, data });
+      if (affected !== 1) return NextResponse.json({ error: "Not found", code: "NOT_FOUND" }, { status: 404 });
+      fieldsUpdated = Object.keys(data).sort();
+    }
   }
 
   const row = await getLegalHoldForOrg(id, scope.organizationId);
@@ -183,11 +195,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     entityId: id,
     organizationId: scope.organizationId,
     outcome: "SUCCESS",
-    metadata: {
-      previousStatus: existing.status,
-      newStatus: row?.status ?? existing.status,
-      fieldsUpdated: Object.keys(data).sort(),
-    },
+    // fieldsUpdated reflects ONLY the fields the transaction actually persisted — for the
+    // incident-scoped path this is the service's fieldsWritten, never the pre-read input.
+    metadata: { previousStatus: existing.status, newStatus: row?.status ?? existing.status, fieldsUpdated },
   });
 
   return NextResponse.json({ hold: row ? toLegalHoldDto(row) : null });

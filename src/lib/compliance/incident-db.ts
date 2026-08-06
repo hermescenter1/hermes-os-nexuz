@@ -521,7 +521,9 @@ export function cancelIncidentActionForOrg(params: { incidentId: string; organiz
 // retry WITHOUT locking a second incident. Only allow-listed fields are written, with a
 // post-lock clock_timestamp. Same global lock order as closure ⇒ an incident CLOSED with
 // an ACTIVE hold can never persist; activation is refused unless the incident is active.
-export type HoldTransitionResult = { ok: true } | { ok: false; reason: "NOT_FOUND" | "INCIDENT_NOT_ACTIVE" | "HOLD_BINDING_CHANGED" | "CONFLICT" };
+export type HoldTransitionResult =
+  | { ok: true; fieldsWritten: string[] }
+  | { ok: false; reason: "NOT_FOUND" | "INCIDENT_NOT_ACTIVE" | "HOLD_BINDING_CHANGED" | "INVALID_HOLD_TRANSITION" | "CONFLICT" };
 export async function applyIncidentScopedHoldTransition(params: {
   holdId: string; organizationId: string; actorId: string; toStatus: "ACTIVE" | "RELEASED";
   expected: { status: string; scopeType: string; incidentId: string; updatedAt: Date };
@@ -561,7 +563,13 @@ export async function applyIncidentScopedHoldTransition(params: {
       if (hold.scopeType !== "INCIDENT" || hold.incidentId !== expected.incidentId) {
         return { ok: false as const, reason: "HOLD_BINDING_CHANGED" };
       }
-      // 5. Explicit allow-listed update (never a generic spread) + post-lock time.
+      // 5. Validate the EXACT lifecycle transition on the LOCKED status — do not trust
+      //    the route's validation alone. Only PROPOSED→ACTIVE and ACTIVE→RELEASED.
+      if ((params.toStatus === "ACTIVE" && hold.status !== "PROPOSED")
+        || (params.toStatus === "RELEASED" && hold.status !== "ACTIVE")) {
+        return { ok: false as const, reason: "INVALID_HOLD_TRANSITION" };
+      }
+      // 6. Explicit allow-listed update (never a generic spread) + post-lock time.
       const now = await clockNow(tx);
       const data: Record<string, unknown> = { status: params.toStatus, updatedBy: params.actorId, updatedAt: now };
       if (params.toStatus === "ACTIVE") {
@@ -575,7 +583,8 @@ export async function applyIncidentScopedHoldTransition(params: {
         data,
       })) as { count?: number };
       if ((upd?.count ?? 0) !== 1) return { ok: false as const, reason: "CONFLICT" };
-      return { ok: true as const };
+      // Report ONLY the fields actually written, for accurate after-commit audit.
+      return { ok: true as const, fieldsWritten: Object.keys(data).sort() };
     });
   } catch { return { ok: false, reason: "CONFLICT" }; }
 }

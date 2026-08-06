@@ -204,3 +204,61 @@ describe("audit hygiene", () => {
     expect(serialised).not.toContain("SECRET HOLD NAME");
   });
 });
+
+describe("stable transition policy — a transition may not carry a material edit", () => {
+  const auditUpdates = () => auditCalls.filter((e) => e.action === "compliance.legal_hold.updated");
+  it("SUBJECT→INCIDENT + ACTIVE in one request is rejected (never reaches the generic path)", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    const { res, json } = await holdPATCH("h1", { scopeType: "INCIDENT", incidentId: "i1", status: "ACTIVE" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("HOLD_TRANSITION_REQUIRES_STABLE_SNAPSHOT");
+    expect(holds[0].status).toBe("PROPOSED");           // no row change
+    expect(holds[0].scopeType).toBe("SUBJECT");
+    expect(auditUpdates()).toHaveLength(0);             // no audit event
+  });
+  it("INCIDENT A → INCIDENT B + ACTIVE is rejected", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "INCIDENT", incidentId: "A", status: "PROPOSED" }];
+    const { res, json } = await holdPATCH("h1", { incidentId: "B", status: "ACTIVE" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("HOLD_TRANSITION_REQUIRES_STABLE_SNAPSHOT");
+    expect(holds[0].incidentId).toBe("A");
+  });
+  it("INCIDENT → ORGANIZATION + ACTIVE is rejected", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "INCIDENT", incidentId: "A", status: "PROPOSED" }];
+    const { res, json } = await holdPATCH("h1", { scopeType: "ORGANIZATION", status: "ACTIVE" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("HOLD_TRANSITION_REQUIRES_STABLE_SNAPSHOT");
+  });
+  it("reviewDate + RELEASED is rejected", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "ACTIVE" }];
+    const { res, json } = await holdPATCH("h1", { reviewDate: "2026-09-01T00:00:00.000Z", status: "RELEASED" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("HOLD_TRANSITION_REQUIRES_STABLE_SNAPSHOT");
+    expect(holds[0].status).toBe("ACTIVE");
+  });
+  it("name/reason + CANCELLED is rejected", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    const { res, json } = await holdPATCH("h1", { name: "Renamed", status: "CANCELLED" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("HOLD_TRANSITION_REQUIRES_STABLE_SNAPSHOT");
+    expect(holds[0].status).toBe("PROPOSED");
+    expect(holds[0].name).toBe("H");
+  });
+});
+
+describe("accurate audit — fieldsUpdated matches only persisted fields", () => {
+  it("a generic (non-INCIDENT) activation audits only the fields it wrote", async () => {
+    holds = [{ id: "h1", organizationId: "org-A", name: "H", scopeType: "SUBJECT", subjectId: "s1", status: "PROPOSED" }];
+    const { res } = await holdPATCH("h1", { status: "ACTIVE" });
+    expect(res.status).toBe(200);
+    const ev = auditCalls.find((e) => e.action === "compliance.legal_hold.updated")!;
+    const fields = (ev.metadata as { fieldsUpdated: string[] }).fieldsUpdated;
+    expect(fields).toContain("status");
+    expect(fields).toContain("approvedBy");
+    expect(fields).toContain("approvedAt");
+    // Never claims a material field (name/scope) changed.
+    expect(fields).not.toContain("name");
+    expect(fields).not.toContain("scopeType");
+    expect(fields).not.toContain("subjectId");
+  });
+});

@@ -342,6 +342,50 @@ describe.skipIf(!PG_ENABLED)("Phase 97 — incident lineage + concurrency (real 
     expect(res.ok).toBe(false); if (!res.ok) expect(res.reason).toBe("INVALID_MEMBERSHIP");
     await p.$executeRawUnsafe(`UPDATE "OrganizationMember" SET status='ACTIVE', "updatedAt"=now() WHERE "organizationId"=$1 AND "userId"=$2`, ORG, U2);
   });
+
+  // ── Incident-scoped hold locked transition: exact transition + accurate fields ──
+  it("stable INCIDENT PROPOSED→ACTIVE and ACTIVE→RELEASED use the locked path and report only the fields written", async () => {
+    await insIncident(`${TAG}-st`, { lifecycle: "INVESTIGATING" });
+    await insHold(`${TAG}-stH`, `${TAG}-st`, "PROPOSED");
+    const snapP = await holdSnapshot(`${TAG}-stH`);
+    const act = await applyIncidentScopedHoldTransition({ holdId: `${TAG}-stH`, organizationId: ORG, actorId: U1, toStatus: "ACTIVE", expected: snapP });
+    expect(act.ok).toBe(true);
+    if (act.ok) { expect(act.fieldsWritten).toEqual(["approvedAt", "approvedBy", "startDate", "status", "updatedAt", "updatedBy"]); }
+    expect((await holdOf(`${TAG}-stH`)).status).toBe("ACTIVE");
+    const snapA = await holdSnapshot(`${TAG}-stH`);
+    const rel = await applyIncidentScopedHoldTransition({ holdId: `${TAG}-stH`, organizationId: ORG, actorId: U1, toStatus: "RELEASED", expected: snapA });
+    expect(rel.ok).toBe(true);
+    if (rel.ok) { expect(rel.fieldsWritten).toEqual(["releaseApprovedBy", "releasedAt", "status", "updatedBy", "updatedAt"].sort()); }
+    expect((await holdOf(`${TAG}-stH`)).status).toBe("RELEASED");
+  });
+
+  it("the locked service rejects an out-of-order transition (INVALID_HOLD_TRANSITION), independent of the route", async () => {
+    await insIncident(`${TAG}-it`, { lifecycle: "INVESTIGATING" });
+    await insHold(`${TAG}-itH`, `${TAG}-it`, "PROPOSED");
+    const snap = await holdSnapshot(`${TAG}-itH`);
+    // PROPOSED → RELEASED is not a valid hold transition (RELEASED requires ACTIVE).
+    const r = await applyIncidentScopedHoldTransition({ holdId: `${TAG}-itH`, organizationId: ORG, actorId: U1, toStatus: "RELEASED", expected: snap });
+    expect(r.ok).toBe(false); if (!r.ok) expect(r.reason).toBe("INVALID_HOLD_TRANSITION");
+    expect((await holdOf(`${TAG}-itH`)).status).toBe("PROPOSED");
+  });
+
+  it("a CLOSED parent cannot receive an ACTIVE incident-scoped hold via any path", async () => {
+    // Fully drive an incident to CLOSED, then attempt to activate a PROPOSED hold bound to it.
+    const c = await createIncidentForOrg({ organizationId: ORG, actorId: U1, idempotencyKey: `${TAG}-cp`, data: {} });
+    const id = c.ok ? c.row.id : "";
+    await transitionIncidentForOrg({ id, organizationId: ORG, actorId: U1, from: "OPEN", to: "TRIAGED", action: "manage" });
+    await transitionIncidentForOrg({ id, organizationId: ORG, actorId: U1, from: "TRIAGED", to: "INVESTIGATING", action: "manage" });
+    await assignIncidentOwnerForOrg({ id, organizationId: ORG, actorId: U1, ownerId: U1 });
+    await recordAssessmentForOrg({ id, organizationId: ORG, actorId: U1, to: "IN_ASSESSMENT", action: "assess" });
+    await recordAssessmentForOrg({ id, organizationId: ORG, actorId: U1, to: "DECISION_RECORDED", action: "decide", evidenceHash: HASH });
+    await transitionIncidentForOrg({ id, organizationId: ORG, actorId: U1, from: "INVESTIGATING", to: "RESOLVED", action: "resolve" });
+    await transitionIncidentForOrg({ id, organizationId: ORG, actorId: U1, from: "RESOLVED", to: "CLOSED", action: "close" });
+    await insHold(`${TAG}-cpH`, id, "PROPOSED");
+    const snap = await holdSnapshot(`${TAG}-cpH`);
+    const r = await applyIncidentScopedHoldTransition({ holdId: `${TAG}-cpH`, organizationId: ORG, actorId: U1, toStatus: "ACTIVE", expected: snap });
+    expect(r.ok).toBe(false); if (!r.ok) expect(r.reason).toBe("INCIDENT_NOT_ACTIVE");
+    expect((await holdOf(`${TAG}-cpH`)).status).toBe("PROPOSED"); // CLOSED_INCIDENT_WITH_ACTIVE_LEGAL_HOLD=0
+  });
 });
 
 /** Raw insert of an OPEN action WITHIN an already-open transaction (barrier helper). */
