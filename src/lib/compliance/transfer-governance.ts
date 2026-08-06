@@ -172,8 +172,61 @@ export function providerScopeHash(dataClasses: unknown, workflows: unknown): str
   return createHash("sha256").update(JSON.stringify(canon)).digest("hex");
 }
 
+// ── Strict, fail-closed provider-scope parsing ────────────────────────────────
+//
+// normalizeScopeList silently DROPS a non-string / whitespace-only element, which
+// would let a malformed stored scope be canonicalised-and-hashed as though the bad
+// element never existed (the hash would then EXCLUDE a stored element). The strict
+// parser instead REJECTS such input as PROVIDER_SCOPE_INVALID, so the canonical
+// scope + its SHA-256 hash are only ever computed over fully-validated data
+// (MALFORMED_PROVIDER_SCOPE_APPROVAL=0, PARTIALLY_NORMALIZED_PROVIDER_SCOPE_APPROVAL=0,
+// PROVIDER_SCOPE_HASH_EXCLUDES_STORED_ELEMENT=0).
+
+export const MAX_PROVIDER_SCOPE_ELEMENTS = 64;
+export const MAX_PROVIDER_SCOPE_ELEMENT_LENGTH = 120;
+
+export type ScopeListParse = { ok: true; values: string[] } | { ok: false };
+
+/**
+ * Strict parse of ONE provider-scope list. Fails closed (never silently ignores)
+ * on: a non-array, a non-string element (number/object/null/boolean), a
+ * whitespace-only/empty element, an over-long element, or an over-large array. On
+ * success returns the canonical (trimmed, deduped, sorted) list.
+ */
+export function parseProviderScopeList(list: unknown): ScopeListParse {
+  if (!Array.isArray(list)) return { ok: false };
+  if (list.length > MAX_PROVIDER_SCOPE_ELEMENTS) return { ok: false };
+  const set = new Set<string>();
+  for (const v of list) {
+    if (typeof v !== "string") return { ok: false };                 // number/object/null/boolean → INVALID
+    const t = v.trim();
+    if (!t || t.length > MAX_PROVIDER_SCOPE_ELEMENT_LENGTH) return { ok: false }; // whitespace-only / over-long → INVALID
+    set.add(t);
+  }
+  return { ok: true, values: [...set].sort() };
+}
+
+export type ProviderScopeParse =
+  | { ok: true; dataClasses: string[]; workflows: string[] }
+  | { ok: false; code: "PROVIDER_SCOPE_INVALID" }
+  | { ok: false; code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" };
+
+/**
+ * Strict parse of the FULL declared provider scope. A malformed element in either
+ * list fails closed as PROVIDER_SCOPE_INVALID (never silently normalized); an empty
+ * canonical list (nothing declared) is PROVIDER_SCOPE_CONFIGURATION_REQUIRED.
+ */
+export function parseProviderScope(dataClasses: unknown, workflows: unknown): ProviderScopeParse {
+  const dc = parseProviderScopeList(dataClasses);
+  const wf = parseProviderScopeList(workflows);
+  if (!dc.ok || !wf.ok) return { ok: false, code: "PROVIDER_SCOPE_INVALID" };
+  if (dc.values.length === 0 || wf.values.length === 0) return { ok: false, code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" };
+  return { ok: true, dataClasses: dc.values, workflows: wf.values };
+}
+
 export type ProviderScopeGate =
   | { ok: true; policyVersion: string; scopeHash: string }
+  | { ok: false; code: "PROVIDER_SCOPE_INVALID" }
   | { ok: false; code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" }
   | { ok: false; code: "PROVIDER_POLICY_CONFIGURATION_REQUIRED" }
   | { ok: false; code: "PROVIDER_POLICY_DENIED"; reason: GovernanceDenyReason; dataClass: string; workflow: string };
@@ -196,9 +249,11 @@ export function bindProviderScope(params: {
   externalAiEnabled:   boolean;
   now:                 Date;
 }): ProviderScopeGate {
-  const dataClasses = normalizeScopeList(params.providerDataClasses);
-  const workflows = normalizeScopeList(params.providerWorkflows);
-  if (dataClasses.length === 0 || workflows.length === 0) return { ok: false, code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" };
+  // STRICT parse first — a malformed stored/declared scope fails closed and its hash
+  // is never computed (so no bad element can be silently excluded from the hash).
+  const parsed = parseProviderScope(params.providerDataClasses, params.providerWorkflows);
+  if (!parsed.ok) return parsed;
+  const { dataClasses, workflows } = parsed;
   if (!params.policy) return { ok: false, code: "PROVIDER_POLICY_CONFIGURATION_REQUIRED" };
 
   for (const dataClass of dataClasses) {

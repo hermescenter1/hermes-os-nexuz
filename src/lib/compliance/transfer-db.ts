@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
 import type { DbSubprocessor, DbDataTransfer } from "./types";
 import {
   canApproveSubprocessor, canApproveTransfer, isEditableLifecycle,
-  bindProviderScope, providerScopeBlockerReason,
+  bindProviderScope, providerScopeBlockerReason, normalizeScopeList,
   type ApprovalBlocker,
 } from "./transfer-governance";
 import type { OrganisationProviderPolicy } from "@/lib/ai-governance/provider-policy";
@@ -84,6 +84,46 @@ async function lockAndReadProviderPolicy(tx: TxRaw, organizationId: string, prov
     createdAt:          new Date(0),
     updatedAt:          new Date(0),
   };
+}
+
+/**
+ * Authoritative evaluation time, captured AFTER every required row lock is held.
+ * clock_timestamp() returns the real wall-clock time at statement execution and
+ * ADVANCES during the transaction — unlike now()/transaction_timestamp(), which are
+ * fixed at BEGIN and would predate a long lock wait. The returned JS Date is used
+ * BOTH for the provider-policy expiry/scope evaluation AND as the persisted
+ * providerPolicyEvaluatedAt, so a policy that expires WHILE this request waits on the
+ * policy-row lock is seen as expired, and the evidence can never predate the lock
+ * wait (APPROVAL_AFTER_POLICY_EXPIRY_DURING_LOCK_WAIT=0,
+ * PROVIDER_POLICY_EVALUATED_AT_BEFORE_LOCK=0).
+ */
+async function evaluationClockAfterLocks(tx: TxRaw): Promise<Date> {
+  const rows = (await tx.$queryRawUnsafe<Array<{ now: Date }>>(`SELECT clock_timestamp() AS "now"`)) ?? [];
+  const t = rows[0]?.now;
+  return t instanceof Date ? t : new Date(t as unknown as string | number);
+}
+
+/** The provider-binding evidence columns, explicitly cleared. Persisted whenever a
+ *  provider link/scope is invalidated, superseded, or a non-provider row is approved,
+ *  so stale evidence never survives (STALE_PROVIDER_EVIDENCE_*=0). */
+const CLEARED_PROVIDER_EVIDENCE = {
+  approvedProviderPolicyVersion: null,
+  approvedProviderScopeHash:     null,
+  providerPolicyEvaluatedAt:     null,
+} as const;
+
+function scopeListEqual(a: unknown, b: unknown): boolean {
+  return JSON.stringify(normalizeScopeList(a)) === JSON.stringify(normalizeScopeList(b));
+}
+
+/** True when an editable-lifecycle update MATERIALLY changes the provider link or the
+ *  declared provider scope (including unlinking the provider) — which invalidates any
+ *  stored provider-binding evidence. */
+function providerBindingInvalidatedBy(data: Record<string, unknown>, current: Record<string, unknown>): boolean {
+  if ("providerRegistryId" in data && (data.providerRegistryId ?? null) !== (current.providerRegistryId ?? null)) return true;
+  if ("providerDataClasses" in data && !scopeListEqual(data.providerDataClasses, current.providerDataClasses)) return true;
+  if ("providerWorkflows" in data && !scopeListEqual(data.providerWorkflows, current.providerWorkflows)) return true;
+  return false;
 }
 
 // ── Reads (always org-predicated) ─────────────────────────────────────────────
@@ -205,14 +245,20 @@ export async function updateGovernanceRecordForOrg(params: {
     return await c.$transaction(async (tx) => {
       const model = tx[params.register] as AnyModel;
       if (!(await lockGovernanceRow(tx, params.register, params.id, params.organizationId))) throw new GovError("NOT_FOUND");
-      const row = (await model.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as { lifecycle: string } | null;
+      const row = (await model.findFirst({ where: { id: params.id, organizationId: params.organizationId } })) as
+        (Record<string, unknown> & { lifecycle: string }) | null;
       if (!row) throw new GovError("NOT_FOUND");
       if (!isEditableLifecycle(row.lifecycle)) throw new GovError("IMMUTABLE_LIFECYCLE");
+      // A material change to the provider link OR the declared scope (subprocessor
+      // only) invalidates any stored provider-binding evidence — clear it atomically
+      // with the same write (STALE_PROVIDER_EVIDENCE_AFTER_PROVIDER_UNLINK/_SCOPE_CHANGE=0).
+      const clearEvidence = params.register === "subprocessor" && providerBindingInvalidatedBy(params.data, row);
       const upd = (await model.updateMany({
         where: { id: params.id, organizationId: params.organizationId, lifecycle: row.lifecycle },
         data: {
           ...params.data,
           ...(params.reviewTouched ? { reviewedBy: params.actorId, reviewedAt: params.now } : {}),
+          ...(clearEvidence ? CLEARED_PROVIDER_EVIDENCE : {}),
           updatedBy: params.actorId,
           updatedAt: params.now,
         },
@@ -245,7 +291,15 @@ export async function transitionGovernanceRecordForOrg(params: {
       const model = tx[params.register] as AnyModel;
       if (!(await lockGovernanceRow(tx, params.register, params.id, params.organizationId))) return { affected: 0 };
       const data: Record<string, unknown> = { lifecycle: params.to, updatedBy: params.actorId, updatedAt: params.now };
-      if (params.to === "UNDER_REVIEW" || params.to === "DRAFT") { data.approvedBy = null; data.approvedAt = null; }
+      // Leaving an approved-evidence state for a re-review / draft / quarantine clears
+      // the approval attribution AND (subprocessor) the provider-binding evidence, so a
+      // re-review never proceeds on stale grounds. SUSPENDED retains its historical
+      // evidence, but SUSPENDED→UNDER_REVIEW clears it here before review proceeds
+      // (STALE_PROVIDER_EVIDENCE_AFTER_SUPERSESSION=0).
+      if (params.to === "UNDER_REVIEW" || params.to === "DRAFT" || params.to === "REVIEW_REQUIRED") {
+        data.approvedBy = null; data.approvedAt = null;
+        if (params.register === "subprocessor") Object.assign(data, CLEARED_PROVIDER_EVIDENCE);
+      }
       const r = (await model.updateMany({
         where: { id: params.id, organizationId: params.organizationId, lifecycle: params.from },
         data,
@@ -286,21 +340,26 @@ export async function approveSubprocessorForOrg(params: {
       if (!row) throw new GovError("NOT_FOUND");
       if (row.lifecycle !== params.from) throw new GovError("INVALID_TRANSITION");
 
-      // Bind the exact provider scope against the CURRENT (locked) policy.
-      const evidence: Record<string, unknown> = {};
+      // Provider-binding evidence is ALWAYS written explicitly (null for a
+      // non-provider-linked approval) so a prior provider link can never leave stale
+      // evidence behind (NON_PROVIDER_APPROVAL_WITH_PROVIDER_EVIDENCE=0).
+      const evidence: Record<string, unknown> = { ...CLEARED_PROVIDER_EVIDENCE };
       let scopeGate = null as ReturnType<typeof bindProviderScope> | null;
       if (row.providerRegistryId) {
         const policy = await lockAndReadProviderPolicy(tx, params.organizationId, row.providerRegistryId);
+        // Evaluation time captured AFTER the Subprocessor + policy locks are held.
+        const evalNow = await evaluationClockAfterLocks(tx);
         scopeGate = bindProviderScope({
           organizationId: params.organizationId, providerRegistryId: row.providerRegistryId,
           providerDataClasses: row.providerDataClasses, providerWorkflows: row.providerWorkflows,
-          policy, externalAiEnabled: params.externalAiEnabled, now: params.now,
+          policy, externalAiEnabled: params.externalAiEnabled, now: evalNow,
         });
         if (scopeGate.ok) {
-          // Bind approval to the EXACT current policy version + canonical scope hash.
+          // Bind approval to the EXACT current policy version + canonical scope hash,
+          // evaluated at the post-lock time.
           evidence.approvedProviderPolicyVersion = scopeGate.policyVersion;
           evidence.approvedProviderScopeHash = scopeGate.scopeHash;
-          evidence.providerPolicyEvaluatedAt = params.now;
+          evidence.providerPolicyEvaluatedAt = evalNow;
         }
       }
       const gate = canApproveSubprocessor(row, scopeGate);
@@ -377,10 +436,13 @@ export async function approveDataTransferForOrg(params: {
         //    below already blocks otherwise, but re-validating is harmless).
         if (sp?.providerRegistryId) {
           const policy = await lockAndReadProviderPolicy(tx, params.organizationId, sp.providerRegistryId);
+          // Evaluation time captured AFTER the DataTransfer + Subprocessor + policy
+          // locks are held (TRANSFER_APPROVAL_AFTER_POLICY_EXPIRY_DURING_LOCK_WAIT=0).
+          const evalNow = await evaluationClockAfterLocks(tx);
           const bind = bindProviderScope({
             organizationId: params.organizationId, providerRegistryId: sp.providerRegistryId,
             providerDataClasses: sp.providerDataClasses, providerWorkflows: sp.providerWorkflows,
-            policy, externalAiEnabled: params.externalAiEnabled, now: params.now,
+            policy, externalAiEnabled: params.externalAiEnabled, now: evalNow,
           });
           if (!bind.ok) {
             extraBlockers.push({ field: "providerScope", reason: providerScopeBlockerReason(bind) });

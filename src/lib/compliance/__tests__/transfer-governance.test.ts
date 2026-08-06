@@ -9,6 +9,7 @@ import {
   isGovernanceLifecycle, isReviewStatus, isMechanismStatus, isEditableLifecycle,
   subprocessorReviewBlockers, transferReviewBlockers,
   bindProviderScope, providerScopeHash, isDataClass, KNOWN_DATA_CLASSES,
+  parseProviderScope, parseProviderScopeList,
   canApproveSubprocessor, canApproveTransfer,
 } from "../transfer-governance";
 import type { OrganisationProviderPolicy } from "@/lib/ai-governance/provider-policy";
@@ -90,7 +91,36 @@ describe("provider data-class vocabulary + scope hash", () => {
   });
 });
 
+describe("strict provider-scope parsing (fail-closed, no silent drop)", () => {
+  it("parses a well-formed list to a canonical (trimmed, deduped, sorted) form", () => {
+    expect(parseProviderScopeList(["  b ", "a", "a", "b"])).toEqual({ ok: true, values: ["a", "b"] });
+  });
+  it("rejects a non-array, a non-string element, a whitespace-only element and over-long/over-large input", () => {
+    expect(parseProviderScopeList("nope")).toEqual({ ok: false });
+    expect(parseProviderScopeList(null)).toEqual({ ok: false });
+    for (const bad of [[1], [{}], [null], [true], ["ok", 2]]) expect(parseProviderScopeList(bad)).toEqual({ ok: false }); // MALFORMED, never dropped
+    expect(parseProviderScopeList(["   "])).toEqual({ ok: false });                 // whitespace-only
+    expect(parseProviderScopeList(["a".repeat(121)])).toEqual({ ok: false });       // over-long element
+    expect(parseProviderScopeList(Array.from({ length: 65 }, (_, i) => `w${i}`))).toEqual({ ok: false }); // over-large array
+  });
+  it("full-scope parse: malformed→INVALID, empty→CONFIGURATION_REQUIRED, valid→canonical", () => {
+    expect(parseProviderScope(["tenant_operational", 5], [WF])).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_INVALID" });
+    expect(parseProviderScope([WF], ["   "])).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_INVALID" });
+    expect(parseProviderScope([], [WF])).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" });
+    expect(parseProviderScope(["b", "a", "a"], [WF])).toEqual({ ok: true, dataClasses: ["a", "b"], workflows: [WF] });
+  });
+});
+
 describe("EXACT provider-scope binding (read-only, pure)", () => {
+  it("a malformed stored scope fails CLOSED as PROVIDER_SCOPE_INVALID — the hash is never computed", () => {
+    expect(bind({ providerDataClasses: ["tenant_operational", 7] })).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_INVALID" });
+    expect(bind({ providerWorkflows: [{ nested: true }] })).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_INVALID" });
+    expect(bind({ providerDataClasses: ["  "] })).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_INVALID" });
+    // Reordered / duplicated but well-formed scope still binds to the SAME hash.
+    const a = bind({ providerDataClasses: ["public", "tenant_operational"], policy: policy({ allowedDataClasses: ["public", "tenant_operational"] }) });
+    const b = bind({ providerDataClasses: ["tenant_operational", "public", "public"], policy: policy({ allowedDataClasses: ["public", "tenant_operational"] }) });
+    if (a.ok && b.ok) expect(a.scopeHash).toBe(b.scopeHash);
+  });
   it("empty scope never authorises (PROVIDER_SCOPE_CONFIGURATION_REQUIRED)", () => {
     expect(bind({ providerDataClasses: [] })).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" });
     expect(bind({ providerWorkflows: [] })).toMatchObject({ ok: false, code: "PROVIDER_SCOPE_CONFIGURATION_REQUIRED" });

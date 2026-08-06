@@ -72,6 +72,8 @@ function makeDb() {
     processingActivity: coll(() => activities),
   };
   db.$queryRawUnsafe = async (sql: string, ...vals: unknown[]) => {
+    // Authoritative evaluation clock, captured after the row locks are held.
+    if (/clock_timestamp\(\)/i.test(sql)) return [{ now: new Date() }];
     // AiProviderPolicy is READ + LOCKED (FOR SHARE) inside the approval transaction.
     if (/"AiProviderPolicy"[\s\S]*FOR SHARE/i.test(sql)) {
       const [org, reg] = vals as [string, string];
@@ -366,6 +368,78 @@ describe("DataTransfer revalidates the current provider policy", () => {
     const r = await trPatch("tf1", { transition: "APPROVED" });
     expect(r.res.status).toBe(409);
     expect((r.json.blockers as Array<{ field: string }>).some((b) => b.field === "subprocessorId")).toBe(true);
+    expect(transfers[0].lifecycle).toBe("UNDER_REVIEW");
+  });
+});
+
+describe("provider evidence integrity + strict scope (transactional)", () => {
+  const scopeHash = () => providerScopeHash(["tenant_operational"], [WF]);
+  const livePolicy = () => ({ id: "pol1", organizationId: "org-A", providerRegistryId: REG, enabled: true, allowedDataClasses: ["public", "tenant_operational"], allowedWorkflows: [WF], policyVersion: "1.0", expiresAt: null } as Row);
+  const providerApproved = (over: Partial<Row> = {}) => sub({
+    id: "sp1", lifecycle: "APPROVED", providerRegistryId: REG, providerDataClasses: ["tenant_operational"], providerWorkflows: [WF], ...REVIEWED,
+    approvedBy: "owner-A", approvedAt: new Date(), approvedProviderPolicyVersion: "1.0", approvedProviderScopeHash: scopeHash(), providerPolicyEvaluatedAt: new Date(), ...over,
+  });
+
+  it("supersession (APPROVED→UNDER_REVIEW) clears approval AND provider evidence (STALE_PROVIDER_EVIDENCE_AFTER_SUPERSESSION=0)", async () => {
+    ownerA(); subprocessors = [providerApproved()];
+    expect((await spPatch("sp1", { transition: "UNDER_REVIEW" })).res.status).toBe(200);
+    const r = subprocessors[0];
+    expect(r.lifecycle).toBe("UNDER_REVIEW");
+    expect(r.approvedBy ?? null).toBeNull();
+    expect(r.approvedProviderPolicyVersion ?? null).toBeNull();
+    expect(r.approvedProviderScopeHash ?? null).toBeNull();
+    expect(r.providerPolicyEvaluatedAt ?? null).toBeNull();
+  });
+  it("SUSPENDED retains evidence, but SUSPENDED→UNDER_REVIEW clears it", async () => {
+    ownerA(); subprocessors = [providerApproved()];
+    expect((await spPatch("sp1", { transition: "SUSPENDED" })).res.status).toBe(200);
+    expect(subprocessors[0].approvedProviderScopeHash).toBe(scopeHash()); // retained under suspension
+    expect((await spPatch("sp1", { transition: "UNDER_REVIEW" })).res.status).toBe(200);
+    expect(subprocessors[0].approvedProviderScopeHash ?? null).toBeNull();
+    expect(subprocessors[0].providerPolicyEvaluatedAt ?? null).toBeNull();
+  });
+  it("provider unlink on an editable row clears stored provider evidence (STALE_PROVIDER_EVIDENCE_AFTER_PROVIDER_UNLINK=0)", async () => {
+    ownerA(); subprocessors = [providerApproved({ lifecycle: "UNDER_REVIEW", approvedBy: null, approvedAt: null })];
+    expect((await spPatch("sp1", { update: { providerRegistryId: null } })).res.status).toBe(200);
+    expect(subprocessors[0].providerRegistryId ?? null).toBeNull();
+    expect(subprocessors[0].approvedProviderScopeHash ?? null).toBeNull();
+    expect(subprocessors[0].approvedProviderPolicyVersion ?? null).toBeNull();
+  });
+  it("scope change on an editable row clears stored provider evidence (STALE_PROVIDER_EVIDENCE_AFTER_SCOPE_CHANGE=0)", async () => {
+    ownerA(); subprocessors = [providerApproved({ lifecycle: "UNDER_REVIEW", approvedBy: null, approvedAt: null })];
+    expect((await spPatch("sp1", { update: { providerDataClasses: ["public"] } })).res.status).toBe(200);
+    expect(subprocessors[0].providerDataClasses).toEqual(["public"]);
+    expect(subprocessors[0].approvedProviderScopeHash ?? null).toBeNull();
+    expect(subprocessors[0].providerPolicyEvaluatedAt ?? null).toBeNull();
+  });
+  it("a NON-provider approval explicitly persists null provider evidence (NON_PROVIDER_APPROVAL_WITH_PROVIDER_EVIDENCE=0)", async () => {
+    ownerA();
+    subprocessors = [sub({ lifecycle: "UNDER_REVIEW", providerRegistryId: null, ...REVIEWED,
+      approvedProviderPolicyVersion: "9.9", approvedProviderScopeHash: "f".repeat(64), providerPolicyEvaluatedAt: new Date() })]; // stale, non-provider
+    expect((await spPatch("sp1", { transition: "APPROVED" })).res.status).toBe(200);
+    expect(subprocessors[0].lifecycle).toBe("APPROVED");
+    expect(subprocessors[0].approvedProviderPolicyVersion ?? null).toBeNull();
+    expect(subprocessors[0].approvedProviderScopeHash ?? null).toBeNull();
+    expect(subprocessors[0].providerPolicyEvaluatedAt ?? null).toBeNull();
+  });
+  it("a malformed stored provider scope fails CLOSED on approval (MALFORMED_PROVIDER_SCOPE_APPROVAL=0)", async () => {
+    ownerA(); process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
+    subprocessors = [sub({ lifecycle: "UNDER_REVIEW", providerRegistryId: REG, providerDataClasses: [123], providerWorkflows: [WF], ...REVIEWED })];
+    policies = [livePolicy()];
+    const r = await spPatch("sp1", { transition: "APPROVED" });
+    expect(r.res.status).toBe(409);
+    expect((r.json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_SCOPE_INVALID")).toBe(true);
+    expect(subprocessors[0].lifecycle).toBe("UNDER_REVIEW");
+  });
+  it("transfer revalidation rejects a malformed stored subprocessor scope", async () => {
+    ownerA(); process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
+    subprocessors = [sub({ id: "spA", lifecycle: "APPROVED", providerRegistryId: REG, providerDataClasses: [123], providerWorkflows: [WF], ...REVIEWED,
+      approvedBy: "owner-A", approvedAt: new Date(), approvedProviderPolicyVersion: "1.0", approvedProviderScopeHash: scopeHash(), providerPolicyEvaluatedAt: new Date() })];
+    transfers = [tr({ id: "tf1", lifecycle: "UNDER_REVIEW", subprocessorId: "spA", transferMechanismStatus: "CONFIGURED", legalReviewStatus: "APPROVED", riskReviewStatus: "APPROVED" })];
+    policies = [livePolicy()];
+    const r = await trPatch("tf1", { transition: "APPROVED" });
+    expect(r.res.status).toBe(409);
+    expect((r.json.blockers as Array<{ reason: string }>).some((b) => b.reason === "PROVIDER_SCOPE_INVALID")).toBe(true);
     expect(transfers[0].lifecycle).toBe("UNDER_REVIEW");
   });
 });
