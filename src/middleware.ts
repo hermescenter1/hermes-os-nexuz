@@ -29,7 +29,7 @@ const GTM_ID = process.env.GTM_ID             ?? process.env.NEXT_PUBLIC_GTM_ID;
 const HAS_ANALYTICS = Boolean(GA_ID || GTM_ID);
 
 const GA_SCRIPT_DOMAINS  = HAS_ANALYTICS ? " https://www.googletagmanager.com https://www.google-analytics.com" : "";
-const GA_CONNECT_DOMAINS = HAS_ANALYTICS ? " https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com" : "";
+const GA_CONNECT_DOMAINS = HAS_ANALYTICS ? " https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com" : "";
 const GA_IMG_DOMAINS     = HAS_ANALYTICS ? " https://www.google-analytics.com https://www.googletagmanager.com" : "";
 
 /**
