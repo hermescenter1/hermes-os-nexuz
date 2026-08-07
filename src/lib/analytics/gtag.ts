@@ -40,6 +40,12 @@ export function initGtag(measurementId: string): void {
   window.gtag("config", measurementId, {
     anonymize_ip: true,
     send_page_view: true,
+
+    // Hermes currently uses GA4 analytics only.
+    // Keep advertising/Google Signals disabled until Google Ads
+    // is intentionally enabled with its dedicated CSP policy.
+    allow_google_signals: false,
+    allow_ad_personalization_signals: false,
   });
 }
 
