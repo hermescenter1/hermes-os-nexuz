@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
@@ -19,13 +19,20 @@ function run(args: string[]) {
   return execFileSync("node", [CLI, ...args], { encoding: "utf8" });
 }
 
+// Key files must be owner-only (loadKeyFile refuses a group/other-readable key on
+// POSIX). Write then chmod 0600 so the tests pass on Linux (and match operators).
+function writeKey(path: string, hex: string) {
+  writeFileSync(path, hex + "\n", { mode: 0o600 });
+  chmodSync(path, 0o600);
+}
+
 let dir: string;
 let keyFile: string;
 
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), "hermes-hbk-"));
   keyFile = join(dir, "key.hex");
-  writeFileSync(keyFile, KEY_HEX + "\n");
+  writeKey(keyFile, KEY_HEX);
 });
 
 describe("HBK CLI — round trip", () => {
@@ -63,7 +70,7 @@ describe("HBK CLI — failure injection (fail closed)", () => {
     const sealed = join(dir, "w.hbk");
     const badKeyFile = join(dir, "bad.hex");
     writeFileSync(plain, randomBytes(1000));
-    writeFileSync(badKeyFile, "f".repeat(64));
+    writeKey(badKeyFile, "f".repeat(64));
     run(["encrypt", "--in", plain, "--out", sealed, "--key-file", keyFile, "--key-id", "k", "--type", "postgres"]);
     expect(() => run(["verify", "--in", sealed, "--key-file", badKeyFile])).toThrow();
   });

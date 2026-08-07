@@ -14,7 +14,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -79,7 +79,8 @@ async function main() {
 
   try {
     node([HBK, "genkey", "--out", keyFile]);
-    writeFileSync(badKey, "0".repeat(63) + "1");
+    writeFileSync(badKey, "0".repeat(63) + "1", { mode: 0o600 });
+    chmodSync(badKey, 0o600); // owner-only so it tests WRONG-KEY, not key-file permissions
 
     // 1. Create + seed both volumes.
     docker(["volume", "create", volPub]);

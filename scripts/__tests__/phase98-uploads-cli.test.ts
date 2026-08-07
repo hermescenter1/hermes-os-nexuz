@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { packRoots, unpackRoots, assertSafeLabel, ArchiveError } from "../dr/uploads-archive.mjs";
@@ -24,7 +24,9 @@ let keyFile: string;
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), "hermes-upcli-"));
   keyFile = join(dir, "key.hex");
-  writeFileSync(keyFile, "a".repeat(64) + "\n");
+  // Owner-only key file (loadKeyFile refuses group/other-readable keys on POSIX).
+  writeFileSync(keyFile, "a".repeat(64) + "\n", { mode: 0o600 });
+  chmodSync(keyFile, 0o600);
 });
 
 function seedRoots() {
@@ -103,7 +105,8 @@ describe("UPLOADS CLI — encrypted backup + restore rehearsal", () => {
     const { pub, docs } = seedRoots();
     const out = join(dir, "uploads2.hbk");
     const badKey = join(dir, "bad.hex");
-    writeFileSync(badKey, "b".repeat(64));
+    writeFileSync(badKey, "b".repeat(64), { mode: 0o600 });
+    chmodSync(badKey, 0o600);
     const rPub = mkdtempSync(join(tmpdir(), "hermes-rpub2-"));
     const rDocs = mkdtempSync(join(tmpdir(), "hermes-rdocs2-"));
     try {

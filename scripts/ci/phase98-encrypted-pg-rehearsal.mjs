@@ -17,7 +17,7 @@
  */
 
 import { execFileSync, execSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -147,7 +147,8 @@ async function main() {
     check("phase98_encpg_fresh_restore_integrity", deepEqual(before.digests, fresh.digests));
 
     // 14. FAILURE INJECTION — all must be rejected by hbk verify (no db mutation).
-    writeFileSync(badKeyFile, "0".repeat(63) + "1"); // valid-length but wrong key
+    writeFileSync(badKeyFile, "0".repeat(63) + "1", { mode: 0o600 }); // valid-length but wrong key
+    chmodSync(badKeyFile, 0o600); // owner-only so it tests WRONG-KEY, not key-file permissions
     check("POSTGRES_WRONG_KEY_REJECTION", hbkFails(["verify", "--in", art, "--key-file", badKeyFile, "--type", "postgres"]));
 
     const corrupt = join(work, "corrupt.hbk");
