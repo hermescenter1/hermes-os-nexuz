@@ -102,9 +102,11 @@ docker exec "${CONTAINER}" \
 # Enforce owner-only on the plaintext dump (defense in depth beyond umask).
 chmod 600 "${BACKUP_FILE}"
 
-# 5. Verify the PLAINTEXT dump before encrypting (fail-closed).
-echo "[$(date -Iseconds)] Verifying plaintext dump..."
-bash "${SCRIPT_DIR}/verify-backup.sh" "${BACKUP_FILE}" "${CONTAINER}" "${DB_USER}"
+# 5. Verify the PLAINTEXT dump before encrypting (fail-closed). The plaintext
+# lives in a private temp dir, but the durable verification record must land in
+# BACKUP_DIR (read by /api/admin/system) — pass VERIFICATION_DIR to place it there.
+echo "[$(date -Iseconds)] Running backup verification..."
+VERIFICATION_DIR="${BACKUP_DIR}" bash "${SCRIPT_DIR}/verify-backup.sh" "${BACKUP_FILE}" "${CONTAINER}" "${DB_USER}"
 
 # 6. Encrypt with authenticated encryption → .partial.
 echo "[$(date -Iseconds)] Encrypting (AES-256-GCM)..."
