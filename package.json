@@ -28,7 +28,13 @@
     "test:phase97:postgres": "vitest run --config vitest.phase97-postgres.config.ts",
     "eval:phase98": "node scripts/ci/phase98-dr-release-eval.mjs",
     "config:inventory": "node scripts/dr/generate-config-inventory.mjs",
-    "config:inventory:check": "node scripts/dr/generate-config-inventory.mjs --check"
+    "config:inventory:check": "node scripts/dr/generate-config-inventory.mjs --check",
+    "eval:phase99:readiness": "node scripts/ci/phase99-security-readiness-eval.mjs",
+    "eval:phase99:closure": "node scripts/ci/phase99-closure-eval.mjs",
+    "security:phase99:deps": "node scripts/ci/phase99-dependency-review.mjs",
+    "security:phase99:inventory": "node scripts/security/phase99/generate-inventory.mjs",
+    "security:phase99:inventory:check": "node scripts/security/phase99/generate-inventory.mjs --check",
+    "rehearse:phase99:incident": "node scripts/ci/phase99-pilot-incident-rehearsal.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

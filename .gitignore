@@ -32,3 +32,10 @@ deploy/ssl/certs/
 # Phase 98 — generated offline assurance artifact (produced by npm run eval:phase98,
 # uploaded by CI as a build artifact; not source).
 /phase98-assurance.json
+
+# Phase 99 — generated evaluator outputs (npm run eval:phase99:readiness /
+# :closure), uploaded by CI as build artifacts. The COMMITTED Phase 99 artifacts
+# are the route inventory, the finding register and the dependency review under
+# docs/security/ — these two are run results, not source.
+/phase99-readiness.json
+/phase99-closure.json

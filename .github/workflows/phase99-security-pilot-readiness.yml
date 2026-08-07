@@ -1,0 +1,156 @@
+# Phase 99 — External Security Review & Pilot Acceptance readiness.
+#
+# INTERNAL readiness assurance only. This workflow proves that the repository has
+# finished the work that must be done BEFORE an external security firm or a pilot
+# customer is engaged. It does NOT — and cannot — assert that an independent
+# penetration test, an external application/API review or a pilot acceptance has
+# happened: those are external human acts, judged by `eval:phase99:closure`, which
+# is deliberately NOT run here.
+#
+# No secrets, no SSH, no Production environment, read-only repository permissions.
+# All credentials used by any job are disposable, runtime-generated, CI-only
+# values. Docker rehearsals self-manage DISPOSABLE resources whose names begin
+# with `hermes99test` and can never touch the canonical Production project.
+
+name: Phase 99 Security & Pilot Readiness
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - agent/phase98-full-stack-dr-release-engineering
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase99-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase99-readiness:
+    name: Phase 99 security readiness (offline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # NON-SECRET CI placeholder so Prisma can resolve the var. No connection is
+      # made by generate/validate/tsc/lint/eval. NOT a Production value.
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+      - name: Validate Prisma schema
+        run: npm run db:validate
+      - name: Type-check
+        run: npx --no-install tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Route-security inventory is up to date
+        run: npm run security:phase99:inventory:check
+      - name: Dependency review (npm audit, sanitized artifact)
+        run: npm run security:phase99:deps
+      - name: Prior-phase governance evaluations (offline)
+        run: |
+          npm run eval:phase95
+          npm run eval:phase96
+          npm run eval:phase97
+          npm run eval:phase98
+      - name: Phase 99 internal readiness evaluation (offline, fail-closed)
+        run: npm run eval:phase99:readiness
+      - name: Pilot incident rehearsal (offline, non-destructive)
+        run: npm run rehearse:phase99:incident
+      - name: Upload safe Phase 99 readiness artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase99-readiness
+          path: |
+            phase99-readiness.json
+            docs/security/phase99-route-security-inventory.json
+            docs/security/phase99-dependency-review.json
+          if-no-files-found: warn
+
+  phase99-security-tests:
+    name: Phase 99 security regression tests (real PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      DATABASE_URL: postgresql://hermes_ci:phase99-ci-only-password@localhost:5432/hermes_phase99_ci
+      HERMES_STORAGE_MODE: database
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: hermes_ci
+          POSTGRES_PASSWORD: phase99-ci-only-password
+          POSTGRES_DB: hermes_phase99_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hermes_ci -d hermes_phase99_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+      - name: Fresh migration rehearsal (prisma migrate deploy on an empty database)
+        run: npx --no-install prisma migrate deploy
+      - name: Phase 99 remediation + static-invariant + site-scope suites
+        run: >-
+          npx --no-install vitest run
+          src/lib/security/__tests__/phase99-remediation.test.ts
+          src/lib/security/__tests__/phase99-static-invariants.test.ts
+          src/lib/industrial/__tests__/phase99-site-scope.test.ts
+      - name: Full unit test suite
+        run: npm test
+
+  phase99-disposable-app-security:
+    name: Phase 99 disposable application security (real standalone image)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+      - name: Build the standalone production image (disposable, hermes99test)
+        run: docker build -t hermes99test-app:${{ github.sha }} .
+      - name: Disposable security smoke of the running image
+        env:
+          HERMES_APP_IMAGE: hermes99test-app:${{ github.sha }}
+        run: node scripts/ci/phase99-disposable-app-security.mjs
