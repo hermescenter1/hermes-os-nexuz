@@ -1,0 +1,139 @@
+# Phase 98 — Full-Stack Disaster Recovery & Release Engineering assurance.
+#
+# Deploy-free, Production-free assurance for the DR + release-engineering control
+# plane. NO secrets, NO SSH, NO Production host contact, read-only repository
+# permissions. It can never reach Production: the only credentials are disposable,
+# runtime-generated, CI-only values. All gates are hard (no continue-on-error).
+#
+# Docker rehearsals self-manage DISPOSABLE containers/volumes/Compose projects
+# whose names begin with `hermes98`/`hermes98test_` — they can never touch the
+# canonical Production project `hermes`.
+#
+# Runs for main-bound PRs AND the stacked Phase 97 base so a stacked PR is assured.
+
+name: Phase 98 DR & Release Assurance
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - agent/phase97-compliance-privacy-legal-readiness
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase98-assurance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase98-offline:
+    name: Phase 98 offline release assurance
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # NON-SECRET CI placeholder so Prisma can resolve the var (no connection is
+      # made by generate/validate/tsc/lint/eval/build). NOT a Production value.
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+      - name: Validate Prisma schema
+        run: npm run db:validate
+      - name: Type-check
+        run: npx --no-install tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Configuration inventory is up to date + secret-free
+        run: npm run config:inventory:check
+      - name: Phase 95 governance evaluation (offline)
+        run: npm run eval:phase95
+      - name: Phase 96 billing evaluation (offline)
+        run: npm run eval:phase96
+      - name: Phase 97 compliance evaluation (offline)
+        run: npm run eval:phase97
+      - name: Phase 98 DR & release evaluation (offline)
+        run: npm run eval:phase98
+      - name: Focused Phase 98 unit/integration tests
+        run: npx --no-install vitest run scripts/__tests__/phase98-*.test.ts
+      - name: Full unit test suite
+        run: npm test
+      - name: Production build
+        run: npm run build
+      - name: Adversarial production-safety static review
+        run: node scripts/dr/production-safety-check.mjs
+      - name: Upload safe Phase 98 assurance artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase98-assurance
+          path: phase98-assurance.json
+          if-no-files-found: warn
+
+  phase98-encrypted-pg:
+    name: Phase 98 encrypted PostgreSQL recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+      - name: Encrypted PostgreSQL backup/restore rehearsal (real pg16)
+        run: node scripts/ci/phase98-encrypted-pg-rehearsal.mjs
+      - name: Migration gate + rollback rehearsal (real pg16)
+        run: node scripts/ci/phase98-migration-rollback-rehearsal.mjs
+
+  phase98-full-stack:
+    name: Phase 98 full-stack recovery and rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+      - name: Uploads/documents backup+restore rehearsal (disposable volumes)
+        run: node scripts/ci/phase98-uploads-rehearsal.mjs
+      - name: Release rollback rehearsal (blue/green mechanism)
+        run: node scripts/ci/phase98-release-rollback-rehearsal.mjs
+      - name: Build the app image once (reused by the full-node rehearsal)
+        run: docker build -t hermes98test-app:${{ github.sha }} .
+      - name: Full-node recovery rehearsal (disposable Compose project)
+        env:
+          HERMES_APP_IMAGE: hermes98test-app:${{ github.sha }}
+        run: node scripts/ci/phase98-full-node-recovery.mjs

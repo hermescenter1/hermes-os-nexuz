@@ -48,6 +48,13 @@ services:
       # Phase 76: Persist author avatar uploads across container rebuilds.
       # Without this volume, /app/public/uploads is lost on every docker build.
       - uploads_data:/app/public/uploads
+      # Phase 98: Persist uploaded documents, extracted text and compliance export
+      # packages (HERMES_LOCAL_DOCUMENT_STORAGE_DIR, default /app/.data/documents).
+      # Discovery found this durable-intent data had NO backing volume and was lost
+      # on container rebuild. Additive — existing volumes are unchanged. A one-time
+      # owner step is required on the live host to populate this new volume from any
+      # data currently on the container's writable layer (see the DR runbook).
+      - documents_data:/app/.data/documents
     depends_on:
       postgres:
         condition: service_healthy
@@ -153,6 +160,8 @@ volumes:
   redis_data:
   uptime_kuma_data:
   uploads_data:
+  # Phase 98: durable document/export storage (see hermes-web volumes above).
+  documents_data:
 
 networks:
   hermes_internal:

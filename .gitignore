@@ -28,3 +28,7 @@ scripts/backups/
 deploy/ssl/certs/
 /etc/letsencrypt/
 .env.production
+
+# Phase 98 — generated offline assurance artifact (produced by npm run eval:phase98,
+# uploaded by CI as a build artifact; not source).
+/phase98-assurance.json

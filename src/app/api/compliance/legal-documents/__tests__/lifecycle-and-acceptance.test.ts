@@ -114,10 +114,10 @@ function req(path: string, method: string, body?: unknown) {
   });
 }
 async function post(body: unknown) { const { POST } = await import("../route"); const r = await POST(req("", "POST", body)); return { res: r, json: await r.json() }; }
-async function patch(id: string, body: unknown) { const { PATCH } = await import("../[id]/route"); const r = await PATCH(req(`/${id}`, "PATCH", body), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
-async function getOne(id: string) { const { GET } = await import("../[id]/route"); const r = await GET(req(`/${id}`, "GET"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
-async function accept(id: string) { const { POST } = await import("../[id]/accept/route"); const r = await POST(req(`/${id}/accept`, "POST"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
-async function withdraw(id: string) { const { DELETE } = await import("../[id]/accept/route"); const r = await DELETE(req(`/${id}/accept`, "DELETE"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
+async function patch(id: string, body: unknown) { const { PATCH } = await import("../entries/[id]/route"); const r = await PATCH(req(`/entries/${id}`, "PATCH", body), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
+async function getOne(id: string) { const { GET } = await import("../entries/[id]/route"); const r = await GET(req(`/entries/${id}`, "GET"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
+async function accept(id: string) { const { POST } = await import("../entries/[id]/accept/route"); const r = await POST(req(`/entries/${id}/accept`, "POST"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
+async function withdraw(id: string) { const { DELETE } = await import("../entries/[id]/accept/route"); const r = await DELETE(req(`/entries/${id}/accept`, "DELETE"), { params: Promise.resolve({ id }) }); return { res: r, json: await r.json() }; }
 
 function ownerA() { payload = { sub: "owner-A", role: "customer", sid: "s" }; members = [{ userId: "owner-A", organizationId: "org-A", role: "OWNER", status: "ACTIVE" }]; }
 function adminA() { payload = { sub: "admin-A", role: "admin", sid: "s" }; members = [{ userId: "admin-A", organizationId: "org-A", role: "ADMIN", status: "ACTIVE" }]; }
