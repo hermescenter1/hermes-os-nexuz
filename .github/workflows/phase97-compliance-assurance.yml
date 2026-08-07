@@ -80,19 +80,22 @@ jobs:
       - name: Adversarial static checks (no forbidden evidence content / no destructive default)
         run: |
           set -euo pipefail
-          # A generated evidence manifest / item must never carry a raw sensitive field name.
-          if grep -RInE "sensitiveSummary|ipAddress|userAgent|planJson|packageKey|tokenHash" \
-               src/lib/compliance/evidence-projections.ts src/lib/compliance/evidence-pack-db.ts; then
-            echo "forbidden field referenced in evidence projection/service"; exit 1
+          # These are CODE checks: strip comments first so a documented mention of a forbidden
+          # field (the projections deliberately name what they EXCLUDE) is never mistaken for
+          # real usage. The authoritative enforcement is the runtime forbidden-field scan in
+          # eval:phase97 + the PG/route tests, which already ran above; this is defence in depth.
+          CODE=$(sed -E 's://.*$::' src/lib/compliance/evidence-projections.ts src/lib/compliance/evidence-pack-db.ts | grep -vE '^[[:space:]]*(\*|/\*|\*/)' || true)
+          # A generated evidence manifest / item must never carry a raw sensitive field.
+          if printf '%s\n' "$CODE" | grep -qE "sensitiveSummary|ipAddress|userAgent|planJson|packageKey|tokenHash"; then
+            echo "forbidden field used in evidence projection/service"; exit 1
           fi
           # The evidence service must never hard-delete.
-          if grep -InE "\.delete(Many)?\(|DROP TABLE|TRUNCATE" src/lib/compliance/evidence-pack-db.ts; then
+          if printf '%s\n' "$CODE" | grep -qE "\.delete\(|\.deleteMany\(|DROP TABLE|TRUNCATE"; then
             echo "destructive operation in evidence service"; exit 1
           fi
-          # Migration 17 must be additive-only.
-          if grep -InE "DROP TABLE|DROP COLUMN|TRUNCATE|DELETE FROM" \
-               prisma/migrations/20260820000017_phase97_compliance_evidence_packs/migration.sql \
-               | grep -vE "^\s*[0-9]*:?\s*--"; then
+          # Migration 17 must be additive-only (strip SQL -- comments, which name the forbidden ops).
+          MIG=$(sed -E 's:--.*$::' prisma/migrations/20260820000017_phase97_compliance_evidence_packs/migration.sql || true)
+          if printf '%s\n' "$MIG" | grep -qE "DROP TABLE|DROP COLUMN|TRUNCATE|DELETE FROM"; then
             echo "non-additive statement in migration 17"; exit 1
           fi
           echo "adversarial static checks clean"
