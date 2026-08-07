@@ -165,7 +165,10 @@ export default async function LocaleLayout({
     <html lang={LOCALE_LANG_TAG[locale as Locale]} dir={dir} className={`${estedad.variable} ${vazir.variable} ${inter.variable}`}>
       <head>
         {/* Structured data — global on every page */}
-        <JsonLd data={[organizationSchema(), webSiteSchema()]} />
+        <JsonLd
+          data={[organizationSchema(), webSiteSchema()]}
+          nonce={nonce}
+        />
         {/* Performance: DNS prefetch for canonical domain */}
         <link rel="dns-prefetch" href="https://hermesnovin.com" />
         {/* Favicon fallback for legacy browsers */}
