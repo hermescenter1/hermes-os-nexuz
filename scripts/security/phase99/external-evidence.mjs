@@ -196,6 +196,11 @@ export function validatePilotAcceptance(p, { expectedCommitSha, expectedScopeHas
  * invalid is FAIL, present and valid is PASS. A synthetic fixture is BLOCKED —
  * it is not a failure of the product, it simply is not evidence.
  */
+/**
+ * @param {unknown} evidence
+ * @param {(e: any) => { ok: boolean, errors: string[], synthetic?: boolean }} validator
+ * @returns {{ state: "PASS" | "BLOCKED" | "FAIL", reason: string | null, errors: string[] }}
+ */
 export function resolveGate(evidence, validator) {
   if (evidence === null || evidence === undefined) return { state: "BLOCKED", reason: "no external evidence supplied", errors: [] };
   const v = validator(evidence);

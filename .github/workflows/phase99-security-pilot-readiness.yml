@@ -71,6 +71,14 @@ jobs:
         run: npm run eval:phase99:readiness
       - name: Pilot incident rehearsal (offline, non-destructive)
         run: npm run rehearse:phase99:incident
+      # The full unit suite runs HERE, in the job with no database service.
+      # Several suites assert the no-database fallback path, so running them in a
+      # job where `getPrisma()` reaches a live PostgreSQL exercises a different
+      # branch than they were written for. The PostgreSQL job below therefore
+      # runs only the focused Phase 99 suites, matching how ci.yml keeps the
+      # Phase 91/92 database rehearsals on their own dedicated configs.
+      - name: Full unit test suite (no database service)
+        run: npm test
       - name: Upload safe Phase 99 readiness artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -119,14 +127,13 @@ jobs:
         run: npx --no-install prisma generate
       - name: Fresh migration rehearsal (prisma migrate deploy on an empty database)
         run: npx --no-install prisma migrate deploy
-      - name: Phase 99 remediation + static-invariant + site-scope suites
+      - name: Phase 99 remediation + static-invariant + site-scope + governance suites
         run: >-
           npx --no-install vitest run
           src/lib/security/__tests__/phase99-remediation.test.ts
           src/lib/security/__tests__/phase99-static-invariants.test.ts
           src/lib/industrial/__tests__/phase99-site-scope.test.ts
-      - name: Full unit test suite
-        run: npm test
+          scripts/__tests__/phase99-governance.test.ts
 
   phase99-disposable-app-security:
     name: Phase 99 disposable application security (real standalone image)

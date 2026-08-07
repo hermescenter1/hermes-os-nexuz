@@ -126,6 +126,11 @@ export function isSyntheticFixture(record) {
  * malformed input, so a corrupt registry produces findings-level errors rather
  * than an opaque crash.
  */
+/**
+ * @param {unknown} f
+ * @param {{ nowMs?: number | null }} [options]
+ * @returns {{ ok: boolean, errors: string[] }}
+ */
 export function validateFinding(f, { nowMs = null } = {}) {
   const errors = [];
   const req = (cond, msg) => { if (!cond) errors.push(msg); };
@@ -186,6 +191,11 @@ export function validateFinding(f, { nowMs = null } = {}) {
  * Validate a formal HIGH risk acceptance. This is the only path by which an open
  * HIGH stops blocking, so it is deliberately strict.
  */
+/**
+ * @param {unknown} a
+ * @param {{ nowMs?: number }} [options]
+ * @returns {{ ok: boolean, errors: string[] }}
+ */
 export function validateRiskAcceptance(a, { nowMs = Date.now() } = {}) {
   const errors = [];
   if (!a || typeof a !== "object") return { ok: false, errors: ["risk acceptance is not an object"] };
@@ -212,6 +222,11 @@ export function validateRiskAcceptance(a, { nowMs = Date.now() } = {}) {
 /**
  * Registry-wide invariants. Returns the exact counters Phase 99 must publish.
  * `acceptances` is keyed by findingId.
+ */
+/**
+ * @param {unknown[]} findings
+ * @param {Record<string, unknown>} [acceptances]
+ * @param {{ nowMs?: number }} [options]
  */
 export function evaluateRegistry(findings, acceptances = {}, { nowMs = Date.now() } = {}) {
   const errors = [];
