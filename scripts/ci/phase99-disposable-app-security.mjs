@@ -75,6 +75,12 @@ async function main() {
   writeFileSync(
     envFile,
     [
+      // The postgres image reads its bootstrap identity from this env file. All
+      // three are required: without POSTGRES_USER/POSTGRES_DB the image creates
+      // the default `postgres` role and database, and every later connection as
+      // `hermes` fails authentication.
+      `POSTGRES_USER=hermes`,
+      `POSTGRES_DB=hermes_db`,
       `POSTGRES_PASSWORD=${pgPassword}`,
       `REDIS_PASSWORD=${redisPassword}`,
       `DATABASE_URL=postgresql://hermes:${pgPassword}@postgres:5432/hermes_db`,
@@ -99,7 +105,11 @@ async function main() {
     // Migrate the disposable database from the host so the app boots against a
     // real schema (the runner image ships the Prisma runtime, not the CLI).
     const pgPort = docker(["compose", "-p", P, ...composeFiles, "port", "postgres", "5432"], { cwd: REPO }).trim().split(":").pop();
-    execFileSync("npx", ["--no-install", "prisma", "migrate", "deploy"], {
+    // Invoke the Prisma CLI through THIS node binary rather than through `npx`:
+    // `npx` is a shell shim, so execFileSync cannot find it on Windows (ENOENT)
+    // and it is an unnecessary resolution step in CI.
+    const prismaCli = join(REPO, "node_modules", "prisma", "build", "index.js");
+    execFileSync(process.execPath, [prismaCli, "migrate", "deploy"], {
       cwd: REPO,
       stdio: "inherit",
       env: { ...process.env, DATABASE_URL: `postgresql://hermes:${pgPassword}@127.0.0.1:${pgPort}/hermes_db` },
