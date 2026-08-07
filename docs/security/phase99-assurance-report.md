@@ -1,6 +1,16 @@
 # Phase 99 — Assurance Report
 
-**Status: INTERNAL READINESS COMPLETE. EXTERNAL GATES NOT MET. PHASE 99 IS NOT CLOSED.**
+**Status: INTERNAL READINESS NOT COMPLETE (owner decisions outstanding). EXTERNAL GATES NOT MET. PHASE 99 IS NOT CLOSED.**
+
+> **Correction (dependency remediation revision).** An earlier revision of this
+> report claimed `PHASE_99_INTERNAL_READINESS_COMPLETE=YES` while
+> `BLOCKED_OWNER` groups remained, and stated that three of the four production
+> dependency advisories "clear only by moving `next` across a major version".
+> Both statements were wrong and are corrected below. The evaluator's own
+> contract is authoritative: any group in `BLOCKED_OWNER` means internal
+> readiness is **NO**. And `npm audit` reported the `next` fix as
+> `isSemVerMajor: false` — it was a **patch** bump, 15.5.20 to 15.5.23, which
+> this revision applied. No major upgrade was ever required.
 
 This report states what Phase 99 actually established, and — more importantly —
 what it did not and could not establish. Phase 99 contains gates that this
@@ -107,9 +117,12 @@ Phase 99's internal review found and confirmed real defects. They are recorded i
 | Severity | Total | Open | Notes |
 | --- | --- | --- | --- |
 | CRITICAL | 1 | 0 | fixed and retested |
-| HIGH | 12 | 7 | all 7 open are dependency advisories awaiting an owner decision |
-| MEDIUM | 14 | 1 | |
+| HIGH | 12 | **0** | the 7 dependency advisories are now remediated, not accepted |
+| MEDIUM | 14 | 5 | the 5 remaining MEDIUM dependency advisories; none is a release blocker |
 | LOW | 4 | 0 | |
+
+`RELEASE_BLOCKERS=0`. Every HIGH closed through a fix with retest evidence;
+**no risk acceptance was created**, by an agent or otherwise.
 
 ### The critical finding
 
@@ -156,36 +169,89 @@ route, and a client-supplied `sessionId` is ignored outright.
 - **P99-INT-010/012/013 (LOW)** — unbounded page size, unbounded anonymous JSON
   parse, and a certificate verifier that reported expired certificates as valid.
 
+### P99-INT-011, reviewed and now fixed
+
+Previously open. It was an unbounded cross-tenant table scan reachable from the
+ten anonymous engineering-graph and operations endpoints: no data crossed the
+boundary (the builder already emitted published records only), but every request
+read every row of every tenant — drafts included — out of the database in order
+to discard most of it, and nothing bounded how often that could be driven.
+
+Re-reviewed for a contained correction, and one exists. Two changes, neither of
+which alters a response:
+
+1. An **additive optional `listPublished()`** on the knowledge repository pushes
+   the published predicate into the query. `list()` is untouched, because the
+   authenticated surfaces legitimately need drafts, and the builder falls back to
+   the previous shape for any repository with no publication concept. The node
+   set returned is identical; what changes is how much never leaves the database.
+2. A **shared `derived-graph` rate-limit bucket** (60/min per client IP, keyed on
+   the un-spoofable `X-Real-IP`) bounds the rebuild amplification across all ten
+   endpoints. The budget is far above real use: each view is fetched once on
+   component mount and nothing in the UI polls, so a visitor would have to reload
+   about once a second to notice it.
+
+**Deliberately not done:** memoizing the builder behind a TTL. That would delay a
+newly published article from appearing, which is a product-semantics change
+rather than a security fix. The published corpus itself stays unbounded by
+design — it is the public content these endpoints exist to expose.
+
+Retest: `src/lib/eng-graph/__tests__/phase99-derived-graph-bounds.test.ts`.
+
 ### Open findings
 
-- **P99-INT-011 (MEDIUM, OPEN)** — an unbounded cross-tenant table scan reachable
-  from the anonymous engineering-graph and operations endpoints. No data crosses
-  the boundary (unpublished rows are filtered before the response), but every
-  anonymous request loads all tenants' rows into memory. Not remediated here
-  because bounding a shared repository changes what the derived graph contains,
-  which is a product decision. Two candidate remediations are recorded.
-- **P99-DEP-001..007 (HIGH, OPEN)** — see below.
+- **P99-DEP-008..012 (MEDIUM, OPEN)** — five moderate dependency advisories
+  (`@hono/node-server`, `@prisma/dev`, `hono`, `prisma`, `valibot`). Recorded, not
+  release blockers, and left for a routine dependency pass rather than folded
+  into a security-review branch.
 
 ---
 
-## 3. Dependency review — owner decision required
+## 3. Dependency review — remediated
 
-`npm audit` reports **0 CRITICAL and 7 HIGH** advisories, 4 of them in the
-production dependency tree (`next`, `postcss`, `sharp`, `fast-uri`). The
-sanitized artifact is `docs/security/phase99-dependency-review.json`.
+**`DEPENDENCY_CRITICAL=0` and `DEPENDENCY_HIGH=0`**, reached entirely by fixing,
+with no risk acceptance and no major upgrade. The sanitized artifact is
+`docs/security/phase99-dependency-review.json`; the retest is
+`scripts/__tests__/phase99-dependency-remediation.test.ts`, which reads the
+resolved lockfile and asserts the fixed boundary for **every copy** of each
+package rather than trusting a transient `npm audit` run.
 
-The lockfile was deliberately **not** changed. Three of the four production HIGH
-advisories clear only by moving `next` across a major version, which is a product
-decision with a regression surface far wider than a security-review branch, and
-the phase brief forbids applying broad dependency upgrades automatically. Fixing
-the remaining in-range advisories would reduce the count without changing the
-gate outcome, so the lockfile stays untouched and the decision reaches the owner
-as one reviewable change.
+`npm audit fix` was **rejected**: its dry run proposed adding dozens of unrelated
+packages (a whole d3 subtree among them), which is the broad rewrite the phase
+brief forbids. Each advisory was instead resolved by the smallest deterministic
+change that clears it.
 
-**Recommendation:** run `npm audit fix` (never `--force`) for the in-range
-advisories in its own pull request with full validation, and evaluate the `next`
-upgrade separately. Until then these remain open HIGH findings and therefore
-release blockers — `RELEASE_BLOCKERS=7`.
+| Finding | Package | Resolution | Mechanism |
+| --- | --- | --- | --- |
+| P99-DEP-001 | brace-expansion | 1.1.15 → 1.1.18, 5.0.6 → 5.0.9 | in-range transitive update |
+| P99-DEP-002 | fast-uri | 3.1.2 → 3.1.5 | in-range transitive update |
+| P99-DEP-003 | js-yaml | 4.2.0 → 4.3.1 | in-range transitive update |
+| P99-DEP-007 | undici | 7.28.0 → 7.29.0 | in-range transitive update |
+| P99-DEP-004 | next | 15.5.20 → 15.5.23 | patch bump of the pinned direct dependency |
+| P99-DEP-005 | postcss | 8.5.1 → 8.5.26 | devDependency bump **plus an override** |
+| P99-DEP-006 | sharp | 0.34.5 → 0.35.3 | **override** |
+
+The first four moved with `npm update <pkg> --package-lock-only`, which cannot
+leave a parent's declared range. `package.json` was untouched by that step and
+exactly five lockfile entries changed.
+
+The last three needed more care, because npm's own `fixAvailable` was
+**optimistic**. It reported all three as fixed by `next@15.5.23`, but
+`next@15.5.23` still pins `postcss 8.4.31` exactly and still declares
+`sharp ^0.34.3` as an optional dependency — neither is reachable by bumping
+`next`. Two `overrides` entries lift exactly those two packages and nothing else.
+The resulting lockfile resolves a **single** copy of `next`, `postcss` and
+`sharp`, which the retest asserts: a surviving nested duplicate would mean
+something still pulls a vulnerable version.
+
+Both overrides are load-bearing security controls, not tidiness. Deleting either
+would silently reintroduce its advisory while every version spec still looked
+current, so the retest asserts their presence explicitly.
+
+**Remaining:** 5 MEDIUM advisories (`@hono/node-server`, `@prisma/dev`, `hono`,
+`prisma`, `valibot`), all recorded as open findings. None is a release blocker.
+
+`RELEASE_BLOCKERS=0`.
 
 ---
 
@@ -248,18 +314,45 @@ Two changes outside the Phase 99 security scope are disclosed rather than hidden
    controls Phase 99 added to the routes they exercise (a rate limit and a site
    authorization). Both updates make the harness supply what the new control
    needs; neither weakens an assertion.
+3. **`src/lib/auth/__tests__/brain-api-boundaries.test.ts`** — its
+   "public operations API keeps its anonymous contract" case called `GET()` with
+   no argument. That endpoint now takes a request so it can be rate limited, so
+   the case passes a real request. The anonymous contract it asserts is
+   unchanged, and it additionally asserts that a first request is not throttled.
 
 ---
 
 ## 7. Correct final state
 
 ```
-PHASE_99_INTERNAL_READINESS_COMPLETE=YES
+PHASE_99_INTERNAL_READINESS_COMPLETE=NO
 PHASE_99_EXTERNAL_GATES_COMPLETE=NO
 PHASE_99_IMPLEMENTATION_COMPLETE=NO
 PHASE_100_ALLOWED=NO
 ```
 
-Phase 99 is complete as engineering work and incomplete as a phase. That is the
-correct outcome, and converting any BLOCKED gate into PASS would make this report
-false.
+Internal readiness is **NO**, and this report will not say otherwise while any
+group sits in `BLOCKED_OWNER`. The evaluator's own contract decides this:
+`internalReadinessComplete` is true only when no group has failed **and** none is
+blocked. Five groups are blocked, all for the same reason — the pilot package is
+written and validated, but a pilot cannot be executed against a customer the
+owner has not yet selected.
+
+What changed with this revision: every security group and the dependency review
+now PASS, and `RELEASE_BLOCKERS` went from 8 to **0**. What did not change: the
+external gates. An independent penetration test, external application and API
+security reviews, and a pilot acceptance remain `BLOCKED`, and
+`eval:phase99:closure` still exits non-zero. Converting any of them to PASS would
+make this report false.
+
+### Outstanding, and who owns it
+
+| Outstanding | Owner |
+| --- | --- |
+| Select a pilot customer and record the alias | Owner |
+| Provision a non-production target, set `PENTEST_TARGET` | Owner |
+| Engage an authorised security firm against the final candidate commit | Owner |
+| 5 MEDIUM dependency advisories | routine dependency pass |
+
+The external penetration test must test the FINAL candidate commit, which is why
+dependency remediation was completed first.
