@@ -159,6 +159,32 @@ async function main() {
     // Readiness reflects real dependency state (200 with DB up).
     const ready = await fetchNoThrow(`${base}/api/health/ready`);
     check("READINESS_ANSWERS", ready.ok && (ready.status === 200 || ready.status === 503), `status ${ready.status}`);
+
+    // PHASE 99 dependency remediation — sharp 0.35.x newly applies its x86-64-v2
+    // microarchitecture gate to linuxmusl-x64 (0.34.x gated glibc linux-x64
+    // only), and sharp reaches the runner image solely through Next's standalone
+    // file trace, not through any Dockerfile COPY. Both failure modes are
+    // invisible at build time and surface only on the first optimization
+    // request, so exercise the real endpoint against a real asset.
+    const optimized = await fetchNoThrow(
+      `${base}/_next/image?url=${encodeURIComponent("/images/home-industrial/01-command-center-hero.webp")}&w=640&q=75`,
+    );
+    check(
+      "IMAGE_OPTIMIZER_SERVES",
+      optimized.ok && optimized.status === 200 && (optimized.headers.get("content-type") ?? "").startsWith("image/"),
+      `status ${optimized.status} content-type ${optimized.ok ? optimized.headers.get("content-type") : optimized.error}`,
+    );
+
+    // The site is redirect-first: `/` must reach the default locale. The
+    // standalone server synthesises the request origin itself, so a regression
+    // here is a total site-entry outage rather than a subtle bug.
+    const rootRedirect = await fetchNoThrow(`${base}/`, { redirect: "manual" });
+    const location = rootRedirect.ok ? (rootRedirect.headers.get("location") ?? "") : "";
+    check(
+      "ROOT_REDIRECTS_TO_DEFAULT_LOCALE",
+      rootRedirect.ok && rootRedirect.status >= 300 && rootRedirect.status < 400 && /\/fa(\/|$|\?)/.test(location),
+      `status ${rootRedirect.status} location ${location || rootRedirect.error}`,
+    );
   } finally {
     try {
       // DISPOSABLE teardown — guarded project only.

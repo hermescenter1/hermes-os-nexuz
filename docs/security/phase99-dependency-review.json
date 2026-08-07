@@ -7,7 +7,7 @@
   "totals": {
     "all": {
       "CRITICAL": 0,
-      "HIGH": 7,
+      "HIGH": 0,
       "MEDIUM": 5,
       "LOW": 0,
       "INFO": 0,
@@ -15,7 +15,7 @@
     },
     "productionOnly": {
       "CRITICAL": 0,
-      "HIGH": 4,
+      "HIGH": 0,
       "MEDIUM": 5,
       "LOW": 0,
       "INFO": 0,
@@ -23,112 +23,6 @@
     }
   },
   "packages": [
-    {
-      "package": "brace-expansion",
-      "reportedSeverity": "high",
-      "severity": "HIGH",
-      "direct": false,
-      "fixAvailable": true,
-      "advisories": [
-        "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp",
-        "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp",
-        "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
-        "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
-        "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
-        "https://github.com/advisories/GHSA-rgw5-rvv9-x895"
-      ],
-      "productionReachable": false,
-      "fixWithoutMajor": true
-    },
-    {
-      "package": "fast-uri",
-      "reportedSeverity": "high",
-      "severity": "HIGH",
-      "direct": false,
-      "fixAvailable": true,
-      "advisories": [
-        "https://github.com/advisories/GHSA-v2hh-gcrm-f6hx",
-        "https://github.com/advisories/GHSA-7p8r-x3mc-p8w7",
-        "https://github.com/advisories/GHSA-4c8g-83qw-93j6"
-      ],
-      "productionReachable": true,
-      "fixWithoutMajor": true
-    },
-    {
-      "package": "js-yaml",
-      "reportedSeverity": "high",
-      "severity": "HIGH",
-      "direct": false,
-      "fixAvailable": true,
-      "advisories": [
-        "https://github.com/advisories/GHSA-52cp-r559-cp3m",
-        "https://github.com/advisories/GHSA-5p4m-2wfm-xmqj"
-      ],
-      "productionReachable": false,
-      "fixWithoutMajor": true
-    },
-    {
-      "package": "next",
-      "reportedSeverity": "high",
-      "severity": "HIGH",
-      "direct": true,
-      "fixAvailable": true,
-      "advisories": [
-        "https://github.com/advisories/GHSA-m99w-x7hq-7vfj",
-        "https://github.com/advisories/GHSA-89xv-2m56-2m9x",
-        "https://github.com/advisories/GHSA-68g3-v927-f742",
-        "https://github.com/advisories/GHSA-4633-3j49-mh5q",
-        "https://github.com/advisories/GHSA-4c39-4ccg-62r3",
-        "https://github.com/advisories/GHSA-p9j2-gv94-2wf4",
-        "https://github.com/advisories/GHSA-q8wf-6r8g-63ch",
-        "https://github.com/advisories/GHSA-955p-x3mx-jcvp"
-      ],
-      "productionReachable": true,
-      "fixWithoutMajor": false
-    },
-    {
-      "package": "postcss",
-      "reportedSeverity": "high",
-      "severity": "HIGH",
-      "direct": true,
-      "fixAvailable": true,
-      "advisories": [
-        "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
-        "https://github.com/advisories/GHSA-6g55-p6wh-862q",
-        "https://github.com/advisories/GHSA-r28c-9q8g-f849",
-        "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp"
-      ],
-      "productionReachable": true,
-      "fixWithoutMajor": false
-    },
-    {
-      "package": "sharp",
-      "reportedSeverity": "high",
-      "severity": "HIGH",
-      "direct": false,
-      "fixAvailable": true,
-      "advisories": [
-        "https://github.com/advisories/GHSA-f88m-g3jw-g9cj"
-      ],
-      "productionReachable": true,
-      "fixWithoutMajor": false
-    },
-    {
-      "package": "undici",
-      "reportedSeverity": "high",
-      "severity": "HIGH",
-      "direct": false,
-      "fixAvailable": true,
-      "advisories": [
-        "https://github.com/advisories/GHSA-8xcm-r25x-g524",
-        "https://github.com/advisories/GHSA-4cwx-7wf7-3272",
-        "https://github.com/advisories/GHSA-m8rv-5g2x-5cg5",
-        "https://github.com/advisories/GHSA-jr45-8vmc-qm54",
-        "https://github.com/advisories/GHSA-v3r7-h72x-cjcm"
-      ],
-      "productionReachable": false,
-      "fixWithoutMajor": true
-    },
     {
       "package": "@hono/node-server",
       "reportedSeverity": "moderate",
@@ -162,7 +56,10 @@
         "https://github.com/advisories/GHSA-xgm2-5f3f-mvvc",
         "https://github.com/advisories/GHSA-hvrm-45r6-mjfj",
         "https://github.com/advisories/GHSA-w62v-xxxg-mg59",
-        "https://github.com/advisories/GHSA-8j4g-w8fx-2239"
+        "https://github.com/advisories/GHSA-8j4g-w8fx-2239",
+        "https://github.com/advisories/GHSA-f23p-vx2j-j53r",
+        "https://github.com/advisories/GHSA-79qm-7rj5-m7r9",
+        "https://github.com/advisories/GHSA-54fx-42gc-7vw4"
       ],
       "productionReachable": true,
       "fixWithoutMajor": true

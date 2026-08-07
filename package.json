@@ -48,7 +48,7 @@
     "framer-motion": "^12.40.0",
     "ioredis": "^5.11.1",
     "jose": "^6.2.3",
-    "next": "15.5.20",
+    "next": "15.5.23",
     "next-intl": "4.13.2",
     "nodemailer": "^9.0.1",
     "openai": "^6.43.0",
@@ -74,10 +74,14 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.5.19",
     "jsdom": "^29.1.1",
-    "postcss": "8.5.1",
+    "postcss": "8.5.26",
     "tailwindcss": "3.4.17",
     "typescript": "5.7.3",
     "vazirmatn": "^33.0.3",
     "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "postcss": "8.5.26",
+    "sharp": "0.35.3"
   }
 }
