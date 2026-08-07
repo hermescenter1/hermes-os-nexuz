@@ -1,11 +1,14 @@
-# Phase 97 — Architecture & Implementation Plan (pre-coding review)
+# Phase 97 — Architecture & Delivered Implementation
 
 > This software provides compliance-control evidence and workflows.
-> It does not constitute legal advice or automatic certification.
+> **It does not constitute legal advice or automatic certification.** A pack marked
+> `READY` means its manifest was generated consistently from one database snapshot —
+> nothing more.
 
-Companion to `phase97-existing-state-matrix.md`. This is the proposed design presented
-for owner review **before any implementation code is written** (per the chosen
-"infrastructure first, then review" strategy).
+Companion to `phase97-existing-state-matrix.md`. Phase 97 is **implemented and delivered**
+(Draft PR #43, awaiting owner review, stacked on Draft PR #42). The design below is the
+delivered design, not a proposal; §12 documents the final evidence-pack + Operations
+Center implementation. Sections 1–11 record the incremental design history that led to it.
 
 ## 1. Stack & branch facts
 
@@ -279,3 +282,134 @@ called from the route. No new migration is required — the existing FKs/CHECKs 
   proven directly against the DB.
 - **Audit accuracy.** `fieldsUpdated` is always the op's committed `fieldsWritten`; a
   rejected/conflicted/stale mutation produces no success AuditLog event.
+
+---
+
+## 12. Delivered evidence packs + Compliance Operations Center (final)
+
+This section documents the delivered implementation. It supersedes any "proposed"
+language above.
+
+### 12.1 Migrations (all additive/strengthening; 00–16 never modified)
+
+`20260820000000` … `20260820000016` — processing inventory, privacy-request lifecycle,
+retention + legal-hold integrity, legal-document lifecycle + publication/acceptance races,
+governed subject export + binding + delivery, governed subject erasure + approval binding,
+subprocessor/transfer governance + provider-scope binding, compliance incidents + evidence
+integrity + lineage integrity.
+
+`20260820000017_phase97_compliance_evidence_packs` — governed evidence packs:
+`ComplianceEvidencePack` + `ComplianceEvidencePackItem`; closed-vocabulary CHECKs
+(lifecycle, readiness, scope, scope/target consistency, lowercase-SHA-256 manifest/item
+hash, READY-manifest completeness, generated + revocation attribution completeness,
+non-negative itemCount, positive sequence, safe schema-version); composite same-org FKs
+(item→pack, and scope→ComplianceIncident / ProcessingActivity / PrivacyRequest, all
+RESTRICT); a `BEFORE UPDATE` trigger making a READY pack's evidence immutable (only a
+governed `REVOKED`/`EXPIRED` transition preserving every evidence field is allowed) and a
+`BEFORE UPDATE OR DELETE` trigger making every item append-only; a fail-closed
+classification-count-only preflight where a new constraint touches an existing table.
+Tenant-safe `@@unique([id, organizationId])` added to `ProcessingActivity` and
+`PrivacyRequest` so the composite scope FKs can bind.
+
+### 12.2 Models
+
+`ComplianceEvidencePack` — id, organizationId, lifecycle
+(`REQUESTED|GENERATING|READY|FAILED|REVOKED|EXPIRED`), readiness
+(`COMPLETE|REVIEW_REQUIRED|CONFIGURATION_REQUIRED|INSUFFICIENT_EVIDENCE`), scopeType
+(`ORGANIZATION|INCIDENT|PROCESSING_ACTIVITY|PRIVACY_REQUEST`), schemaVersion, idempotencyKey,
+explicit nullable targets, requestedBy/At, snapshotAt, generatedBy/At, manifestHash
+(lowercase SHA-256), manifestJson (canonical manifest), itemCount, failureCode, revokedBy/At,
+expiresAt, timestamps. `ComplianceEvidencePackItem` — id, organizationId, evidencePackId,
+sequence, entityType, entityId, evidenceCode, evidenceStatus, evidenceHash (lowercase
+SHA-256), sourceVersion, sourceUpdatedAt, safeMetadata, createdAt.
+
+### 12.3 Permissions (Organization RBAC)
+
+`view_compliance_evidence` = `[OWNER, ADMIN, MANAGER]`;
+`generate_compliance_evidence` = `[OWNER]`; `revoke_compliance_evidence` = `[OWNER]`
+(generation and revocation are accountable acts, OWNER-only, like approve/decide/close).
+
+### 12.4 API routes (all `requireComplianceOrgScope`, tenant-predicated, uniform NOT_FOUND)
+
+- `GET  /api/compliance/evidence-packs` — list (view).
+- `POST /api/compliance/evidence-packs` — request + generate (generate).
+- `GET  /api/compliance/evidence-packs/[id]` — pack + items (view).
+- `GET  /api/compliance/evidence-packs/[id]/manifest` — canonical manifest + hash +
+  lifecycle; `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff` (view).
+- `POST /api/compliance/evidence-packs/[id]/revoke` — governed revocation (revoke).
+
+No public / unauthenticated evidence route exists. Client organizationId, actor, lifecycle,
+readiness, snapshotAt, generatedAt, manifestHash, itemCount and evidence items are rejected
+by the strict schema.
+
+### 12.5 Generation, canonicalization + readiness
+
+Generation runs ONE interactive `RepeatableRead` transaction: lock the REQUESTED pack
+`FOR UPDATE`; capture `snapshotAt = transaction_timestamp()` (snapshot IDENTITY —
+deliberately different from the post-lock `clock_timestamp()` used for lifecycle evidence
+times); read all governed evidence through org-predicated queries that select SAFE columns
+only; build safe projections; hash each item's canonical projection
+(`sha256(stableStringify(item))`, reusing `export-package.stableStringify`); dedup by hash;
+sort deterministically; assign contiguous sequence; build the canonical manifest and its
+`manifestHash`; insert items; finalize the pack to `READY` atomically. A concurrent
+finalizer surfaces as a serialization error / optimistic `count!==1` and returns the
+already-finalized pack (one finalization only). On genuine failure a separate transaction
+records a closed `failureCode`; no partial items are ever committed. Readiness is the
+fail-closed fold `CONFIGURATION_REQUIRED > INSUFFICIENT_EVIDENCE > REVIEW_REQUIRED >
+COMPLETE`; an empty pack is `INSUFFICIENT_EVIDENCE`, never a silent COMPLETE. Determinism:
+same snapshot + same data → same manifestHash; input/item order and duplicate items never
+change the hash; a stored pack's hash never changes when source data later changes.
+
+### 12.6 Safe evidence projections + forbidden content
+
+Pure projection builders for ProcessingActivity, RetentionPolicy, LegalHold, Subprocessor,
+DataTransfer, LegalDocument, ComplianceIncident, provider policy (Phase 95), entitlement
+override (Phase 96), PrivacyRequest lifecycle, DataExportRequest / DataDeletionRequest
+governance, plus count-only aggregates and a closed UNSUPPORTED marker. Items carry only
+identifiers, versions, timestamps, counts, booleans, closed classifications and hashes.
+NEVER emitted: PrivacyRequest email/description, IP/user-agent, subject/candidate identity,
+consent raw identifiers, legal-document body/title, contract text, incident
+`sensitiveSummary` (only `summaryCode`), raw AuditLog metadata, raw SecurityEvent / Phase 92
+log content, provider configuration / API key / OpenBao data, session/token/download-token
+values, export archive contents, erasure subject data / `planJson`, or unrestricted free
+text. Safe columns are selected upstream so forbidden columns never enter the process.
+
+### 12.7 Immutability, revocation, tenant isolation, lock ordering
+
+READY manifests + all items are immutable (DB triggers). Revocation locks the pack
+`FOR UPDATE`, validates `READY → REVOKED`, derives revokedBy/revokedAt server-side,
+preserves the manifest + items, audits after commit. There is no hard-delete and no generic
+DELETE endpoint. Every query/mutation is predicated on `(id, organizationId)`; a foreign or
+unknown id is uniform NOT_FOUND; composite same-org FKs make a cross-tenant target
+impossible at the database. Lock order within the pack transaction is pack-then-items;
+earlier incident/hold lock orders are unchanged.
+
+### 12.8 Compliance Operations Center (trilingual)
+
+Server pages under `/[locale]/compliance/{,processing-activities,privacy-requests,
+legal-documents,retention,legal-holds,subprocessors,data-transfers,incidents,evidence-packs}`
+render a shared client that fetches from the server-gated `/api/compliance/*` endpoints
+(RBAC on the server; a 401/403 renders the localized unauthorized state). Lifecycle/
+readiness/status badges; explicit configuration-required and legal-review-required states;
+evidence-pack create + detail + client-side manifest verification (recompute SHA-256 of the
+canonical manifest and compare to the recorded hash) + governed revoke with accessible
+confirmation; incident lifecycle without `sensitiveSummary` leakage; RTL for Persian, LTR
+for English/German (direction from the locale layout); logical `text-start`/`text-end`
+alignment; loading/empty/error/unauthorized states. No destructive-execution control is
+exposed. All strings live in the `complianceCenter` namespace with strict FA/EN/DE parity
+(gate-enforced; genuine German, zero English carryover, no Persian contamination).
+
+### 12.9 Assurance, CI, backup, rollback, disabled functions
+
+`npm run eval:phase97` (offline, deterministic, fail-closed) runs a fourteen-group invariant
+suite + secret-leak scan and the compliance unit suites;
+`.github/workflows/phase97-compliance-assurance.yml` adds an offline job (generate,
+db:validate, tsc, lint, eval:phase95/96/97, npm test, build, adversarial static checks, safe
+JSON artifact) and a `pgvector/pgvector:pg16` PostgreSQL job (fresh deploy through migration
+17, second-deploy idempotency, db:validate, the compliance `*.pg.test.ts` suite). No deploy
+step, no SSH, no Production hostname/secret. Back up the evidence-pack tables with the rest
+of the tenant data; evidence is RESTRICT-owned so an organization holding a pack cannot be
+hard-deleted. Rollback of migration 17 is only by an explicit new migration; a READY pack is
+never un-generated, only revoked. Destructive retention, production export and production
+erasure remain DISABLED by default and are not exposed by this phase. This software is not
+legal advice or certification.

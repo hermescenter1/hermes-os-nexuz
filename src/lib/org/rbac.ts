@@ -112,7 +112,13 @@ export type OrgPermission =
   | "view_compliance_incidents"    // read the incident register + append-only timeline
   | "manage_compliance_incidents"  // create/triage/investigate/resolve, adjust blockers, progress assessment
   | "decide_compliance_incidents"  // record a legal / external-notification decision (evidence only)
-  | "close_compliance_incidents";  // close or reopen an incident
+  | "close_compliance_incidents"   // close or reopen an incident
+  // Governed compliance evidence packs. Generating and revoking an authoritative
+  // evidence snapshot are accountable acts reserved to the OWNER; viewing is for the
+  // oversight roles. READY is a manifest state, never a legal-compliance claim.
+  | "view_compliance_evidence"     // read evidence packs + their manifests
+  | "generate_compliance_evidence" // request + generate a governed evidence pack
+  | "revoke_compliance_evidence";  // revoke a READY evidence pack (evidence preserved)
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -210,6 +216,9 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   manage_compliance_incidents:    ["OWNER", "ADMIN"],
   decide_compliance_incidents:    ["OWNER"],
   close_compliance_incidents:     ["OWNER"],
+  view_compliance_evidence:       ["OWNER", "ADMIN", "MANAGER"],
+  generate_compliance_evidence:   ["OWNER"],
+  revoke_compliance_evidence:     ["OWNER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

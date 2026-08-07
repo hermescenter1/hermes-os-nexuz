@@ -21,7 +21,11 @@
     "db:restore": "bash scripts/restore-postgres.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "eval:phase95": "node scripts/ci/phase95-ai-governance-eval.mjs",
+    "eval:phase96": "node scripts/ci/phase96-billing-governance-eval.mjs",
+    "eval:phase97": "node scripts/ci/phase97-compliance-governance-eval.mjs",
+    "test:phase97:postgres": "vitest run --config vitest.phase97-postgres.config.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

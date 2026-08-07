@@ -229,6 +229,12 @@ export const COMPLIANCE_AUDIT = {
   INCIDENT_ACTION_CREATED:        "compliance.incident.action_created",
   INCIDENT_ACTION_RESOLVED:       "compliance.incident.action_resolved",
   INCIDENT_ACTION_CANCELLED:      "compliance.incident.action_cancelled",
+  // Phase 97 — governed compliance evidence packs (pack id + closed lifecycle/readiness
+  // + itemCount + lowercase SHA-256 manifest hash ONLY; NEVER manifest content, safe
+  // metadata bodies, personal data or secrets).
+  EVIDENCE_PACK_REQUESTED:        "compliance.evidence_pack.requested",
+  EVIDENCE_PACK_GENERATED:        "compliance.evidence_pack.generated",
+  EVIDENCE_PACK_REVOKED:          "compliance.evidence_pack.revoked",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */

@@ -6,8 +6,10 @@
 Base of Phase 97 branch: integration HEAD `50888bd95386a55d81bd3baa9fa6c6282cbd72cc`
 (= Phase 96 `fa461f1c` + hotfix `2efab8b9` merge `f005433` + LF hygiene `50888bd`).
 
-Discovery is **read-only**. No implementation has been written. This document is the
-pre-coding review artifact required by Stage 5. Columns follow the mandated schema.
+**Phase 97 is now implemented and delivered** (Draft PR #43; migrations 00–17; evidence
+packs + Compliance Operations Center). This document remains the Stage-5 discovery baseline;
+the delivered design is documented in `phase97-architecture-and-plan.md` §12 and
+`phase97-operations-runbook.md`. Columns follow the mandated schema.
 
 ---
 

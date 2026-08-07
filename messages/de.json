@@ -7249,5 +7249,97 @@
       "getStarted": "Jetzt starten",
       "contactSales": "Vertrieb kontaktieren"
     }
+  },
+  "complianceCenter": {
+    "eyebrow": "Compliance-Betrieb",
+    "title": "Compliance-Leitstelle",
+    "lede": "Verwalten Sie Verarbeitungsverzeichnisse, Betroffenenanfragen, Aufbewahrung, rechtliche Sperren, Unterauftragsverarbeiter, Übermittlungen, Vorfälle und verbindliche Nachweise — ausschließlich für Ihre Organisation.",
+    "notLegalAdvice": "Diese Software ist ein Betriebswerkzeug. Sie stellt keine Rechtsberatung dar und bescheinigt keine Konformität. Der Nachweisstatus „Bereit“ bedeutet, dass ein Manifest konsistent erzeugt wurde — nicht mehr.",
+    "refresh": "Aktualisieren",
+    "states": {
+      "loading": "Wird geladen…",
+      "empty": "Noch nichts anzuzeigen.",
+      "error": "Diese Daten konnten nicht geladen werden.",
+      "unauthorized": "Sie sind nicht berechtigt, diesen Bereich anzusehen.",
+      "configurationRequired": "Konfiguration erforderlich",
+      "legalReviewRequired": "Rechtliche Prüfung erforderlich"
+    },
+    "nav": {
+      "overview": "Überblick",
+      "processingActivities": "Verarbeitungstätigkeiten",
+      "privacyRequests": "Betroffenenanfragen",
+      "legalDocuments": "Rechtsdokumente",
+      "retention": "Aufbewahrung",
+      "legalHolds": "Rechtliche Sperren",
+      "subprocessors": "Unterauftragsverarbeiter",
+      "dataTransfers": "Datenübermittlungen",
+      "incidents": "Vorfälle",
+      "evidencePacks": "Nachweispakete"
+    },
+    "readiness": {
+      "COMPLETE": "Vollständig",
+      "REVIEW_REQUIRED": "Prüfung erforderlich",
+      "CONFIGURATION_REQUIRED": "Konfiguration erforderlich",
+      "INSUFFICIENT_EVIDENCE": "Unzureichende Nachweise"
+    },
+    "lifecycle": {
+      "REQUESTED": "Angefordert",
+      "GENERATING": "Wird erzeugt",
+      "READY": "Bereit",
+      "FAILED": "Fehlgeschlagen",
+      "REVOKED": "Widerrufen",
+      "EXPIRED": "Abgelaufen"
+    },
+    "columns": {
+      "identifier": "Kennung",
+      "status": "Status",
+      "lifecycle": "Lebenszyklus",
+      "readiness": "Bereitschaft",
+      "scope": "Geltungsbereich",
+      "type": "Typ",
+      "updated": "Aktualisiert",
+      "items": "Einträge",
+      "manifestHash": "Manifest-Prüfsumme"
+    },
+    "evidence": {
+      "title": "Nachweispakete",
+      "lede": "Erzeugen Sie eine verbindliche, organisationseigene Momentaufnahme Ihrer Governance-Nachweise. Manifeste sind nach Fertigstellung unveränderlich; ein Widerruf bewahrt den Datensatz.",
+      "generate": "Nachweispaket erzeugen",
+      "scope": "Geltungsbereich",
+      "targetId": "Zielkennung",
+      "targetHint": "Erforderlich für die Bereiche Vorfall, Verarbeitungstätigkeit und Betroffenenanfrage.",
+      "submit": "Erzeugen",
+      "generating": "Wird erzeugt…",
+      "itemCount": "Nachweiseinträge",
+      "manifestHash": "Manifest-Prüfsumme",
+      "snapshotAt": "Zeitpunkt der Momentaufnahme",
+      "generatedAt": "Erzeugt",
+      "view": "Paket ansehen",
+      "manifest": "Manifest",
+      "verify": "Manifest prüfen",
+      "verifyValid": "Das Manifest stimmt mit seiner hinterlegten Prüfsumme überein.",
+      "verifyInvalid": "Das Manifest stimmt nicht mit seiner hinterlegten Prüfsumme überein.",
+      "revoke": "Widerrufen",
+      "revokeConfirm": "Dieses Nachweispaket widerrufen? Manifest und Einträge bleiben als historischer Nachweis erhalten und das Paket wird als widerrufen gekennzeichnet.",
+      "revoked": "Dieses Nachweispaket ist widerrufen. Es bleibt als historischer Nachweis lesbar.",
+      "readyMeaning": "Bereit bedeutet, dass das Manifest konsistent aus einer einzigen Datenbank-Momentaufnahme erzeugt wurde — es ist keine Aussage über rechtliche Konformität oder Zertifizierung.",
+      "noManifest": "Für dieses Paket wurde noch kein Manifest erzeugt.",
+      "itemsHeading": "Nachweiseinträge",
+      "itemEntity": "Datensatz",
+      "itemCode": "Nachweis",
+      "itemStatus": "Zustand"
+    },
+    "incidents": {
+      "title": "Compliance-Vorfälle",
+      "timeline": "Verlauf",
+      "actions": "Maßnahmen",
+      "decision": "Entscheidung",
+      "noSensitiveData": "Vertrauliche Vorfalldetails werden hier nie angezeigt und nie in Nachweise aufgenommen."
+    },
+    "actions": {
+      "confirm": "Bestätigen",
+      "cancel": "Abbrechen",
+      "close": "Schließen"
+    }
   }
 }

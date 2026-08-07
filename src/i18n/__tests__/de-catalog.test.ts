@@ -217,6 +217,8 @@ describe("de.json — Phase 86C1 translation audit", () => {
   const TRANSLATED_NS = new Set([
     "journal", "journalWriter", "journalEditorial",
     "adminOperations", "adminGovernance",
+    // PHASE 97 — the Compliance Operations Center (complianceCenter), genuinely German.
+    "complianceCenter",
     "industrialBrain",
     "assetOperations", "maintenanceOperations",
     "automationOperations", "enterpriseOperations",

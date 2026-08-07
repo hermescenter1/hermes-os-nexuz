@@ -525,3 +525,46 @@ export interface DbProcessingActivity {
   createdAt:             Date;
   updatedAt:             Date;
 }
+
+export interface DbComplianceEvidencePack {
+  id:                          string;
+  organizationId:             string;
+  lifecycle:                  string;
+  readiness:                  string;
+  scopeType:                  string;
+  schemaVersion:              string;
+  idempotencyKey:             string;
+  targetIncidentId:           string | null;
+  targetProcessingActivityId: string | null;
+  targetPrivacyRequestId:     string | null;
+  requestedBy:                string;
+  requestedAt:                Date;
+  snapshotAt:                 Date | null;
+  generatedBy:                string | null;
+  generatedAt:                Date | null;
+  manifestHash:               string | null;
+  manifestJson:               unknown;
+  itemCount:                  number;
+  failureCode:                string | null;
+  revokedBy:                  string | null;
+  revokedAt:                  Date | null;
+  expiresAt:                  Date | null;
+  createdAt:                  Date;
+  updatedAt:                  Date;
+}
+
+export interface DbComplianceEvidencePackItem {
+  id:              string;
+  organizationId:  string;
+  evidencePackId:  string;
+  sequence:        number;
+  entityType:      string;
+  entityId:        string | null;
+  evidenceCode:    string;
+  evidenceStatus:  string;
+  evidenceHash:    string;
+  sourceVersion:   string | null;
+  sourceUpdatedAt: Date | null;
+  safeMetadata:    unknown;
+  createdAt:       Date;
+}

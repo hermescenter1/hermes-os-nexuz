@@ -690,6 +690,7 @@ model Organization {
   subprocessors        Subprocessor[]
   dataTransfers        DataTransfer[]
   complianceIncidents  ComplianceIncident[]
+  complianceEvidencePacks ComplianceEvidencePack[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -2953,6 +2954,8 @@ model PrivacyRequest {
   @@index([email])
   @@index([organizationId, createdAt])
   @@index([organizationId, status])
+  // Tenant-safe target for a same-org composite FK (Phase 97 evidence packs).
+  @@unique([id, organizationId])
 }
 
 // ── LegalDocument ─────────────────────────────────────────────────────────────
@@ -3239,6 +3242,8 @@ model ProcessingActivity {
   @@index([organizationId, status])
   @@index([organizationId, approvalState])
   @@index([organizationId, updatedAt])
+  // Tenant-safe target for a same-org composite FK (Phase 97 evidence packs).
+  @@unique([id, organizationId])
 }
 
 // ── Phase 97 — Retention governance & Legal holds ─────────────────────────────
@@ -3530,6 +3535,77 @@ model ComplianceIncidentAction {
   @@index([status])
   @@index([priority])
   @@index([createdAt])
+}
+
+// ── Phase 97: Governed Compliance Evidence Packs ─────────────────────────────
+// An authoritative, tenant-owned snapshot of governance evidence. READY means the
+// canonical manifest was generated consistently from ONE database snapshot — it NEVER
+// means legal compliance or certification. Manifests/items are immutable once READY
+// (DB triggers, added migration-only); only a governed revocation transition may follow.
+// Every evidence value is a SAFE projection: identifiers, versions, timestamps, counts,
+// booleans, closed classifications and cryptographic hashes — never raw personal data,
+// bodies, contracts, secrets, provider config or an incident's sensitiveSummary.
+model ComplianceEvidencePack {
+  id             String    @id @default(cuid())
+  organizationId String
+  lifecycle      String    @default("REQUESTED") // REQUESTED | GENERATING | READY | FAILED | REVOKED | EXPIRED
+  readiness      String    @default("REVIEW_REQUIRED") // COMPLETE | REVIEW_REQUIRED | CONFIGURATION_REQUIRED | INSUFFICIENT_EVIDENCE
+  scopeType      String    // ORGANIZATION | INCIDENT | PROCESSING_ACTIVITY | PRIVACY_REQUEST
+  schemaVersion  String    @default("1.0")
+  idempotencyKey String
+  // Explicit nullable targets (never one polymorphic id). CHECK + composite same-org FKs
+  // added migration-only; scope/target consistency is DB-enforced.
+  targetIncidentId           String?
+  targetProcessingActivityId String?
+  targetPrivacyRequestId     String?
+  requestedBy    String
+  requestedAt    DateTime  @default(now())
+  snapshotAt     DateTime? // captured inside the REPEATABLE READ generation transaction
+  generatedBy    String?
+  generatedAt    DateTime?
+  manifestHash   String?   // lowercase SHA-256 of the canonical manifest (set on READY)
+  manifestJson   Json?     // canonical manifest — safe projections only (set on READY)
+  itemCount      Int       @default(0)
+  failureCode    String?
+  revokedBy      String?
+  revokedAt      DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([id, organizationId])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, lifecycle])
+  @@index([organizationId, scopeType])
+  @@index([organizationId, updatedAt])
+}
+
+// One immutable evidence item — a SAFE canonical projection of a single governed record.
+// Bound to its pack by a composite same-org FK (added migration-only); every item is
+// append-only (UPDATE/DELETE rejected by a DB trigger).
+model ComplianceEvidencePackItem {
+  id              String   @id @default(cuid())
+  organizationId  String
+  evidencePackId  String
+  sequence        Int
+  entityType      String   // closed classification of the source record kind
+  entityId        String?  // safe identifier where disclosing it is safe; null otherwise
+  evidenceCode    String   // closed evidence classification
+  evidenceStatus  String   // closed status/readiness classification for this item
+  evidenceHash    String   // lowercase SHA-256 of this item's safe canonical projection
+  sourceVersion   String?  // safe version identifier of the source record
+  sourceUpdatedAt DateTime?
+  safeMetadata    Json     // safe projected fields ONLY (ids/enums/counts/booleans/hashes)
+  createdAt       DateTime @default(now())
+
+  // Composite same-org parent binding (evidencePackId, organizationId) → pack, the
+  // Organization RESTRICT FK, immutability triggers: all added migration-only.
+  @@unique([evidencePackId, sequence])
+  @@unique([id, organizationId])
+  @@index([organizationId])
+  @@index([evidencePackId])
 }
 
 // ── Phase 64: Vendor Ecosystem Platform ──────────────────────────────────────

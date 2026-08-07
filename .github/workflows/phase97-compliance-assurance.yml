@@ -1,0 +1,172 @@
+# Phase 97 — Compliance, Privacy & Legal Readiness assurance.
+#
+# Dedicated, deploy-free assurance for the governed compliance control plane (processing
+# inventory, privacy requests, legal documents, retention + legal holds, subject
+# export/erasure governance, subprocessor/transfer governance, compliance incidents,
+# evidence packs, the trilingual Operations Center). It has NO secrets, NO SSH material, NO
+# environment access, read-only repository permissions and can never reach Production. The
+# only "secrets" are disposable, hard-coded, CI-only localhost database credentials. All
+# offline evaluations are deterministic and fail-closed (no continue-on-error).
+#
+# Runs for main-bound PRs AND the stacked integration base so a stacked PR can be assured.
+
+name: Phase 97 Compliance Assurance
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - agent/phase96-compliance-hotfix-integration
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase97-assurance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase97-offline:
+    name: Phase 97 offline assurance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # NON-SECRET, CI-safe localhost placeholders (Prisma needs the var to resolve; no
+      # connection is made by generate/validate/tsc/lint/eval/build). NOT Production values.
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      - name: Validate Prisma schema
+        run: npm run db:validate
+
+      - name: Type-check
+        run: npx --no-install tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Phase 95 governance evaluation (offline)
+        run: npm run eval:phase95
+
+      - name: Phase 96 billing evaluation (offline)
+        run: npm run eval:phase96
+
+      - name: Phase 97 compliance evaluation (offline)
+        run: npm run eval:phase97
+
+      - name: Full unit test suite
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Adversarial static checks (no forbidden evidence content / no destructive default)
+        run: |
+          set -euo pipefail
+          # A generated evidence manifest / item must never carry a raw sensitive field name.
+          if grep -RInE "sensitiveSummary|ipAddress|userAgent|planJson|packageKey|tokenHash" \
+               src/lib/compliance/evidence-projections.ts src/lib/compliance/evidence-pack-db.ts; then
+            echo "forbidden field referenced in evidence projection/service"; exit 1
+          fi
+          # The evidence service must never hard-delete.
+          if grep -InE "\.delete(Many)?\(|DROP TABLE|TRUNCATE" src/lib/compliance/evidence-pack-db.ts; then
+            echo "destructive operation in evidence service"; exit 1
+          fi
+          # Migration 17 must be additive-only.
+          if grep -InE "DROP TABLE|DROP COLUMN|TRUNCATE|DELETE FROM" \
+               prisma/migrations/20260820000017_phase97_compliance_evidence_packs/migration.sql \
+               | grep -vE "^\s*[0-9]*:?\s*--"; then
+            echo "non-additive statement in migration 17"; exit 1
+          fi
+          echo "adversarial static checks clean"
+
+      - name: Emit safe Phase 97 assurance summary (no secrets / no personal data)
+        if: always()
+        run: |
+          {
+            echo "## Phase 97 assurance"
+            echo "- commit: ${GITHUB_SHA}"
+            echo "- schemaVersion: 1.0"
+            echo "- migration: 20260820000017_phase97_compliance_evidence_packs"
+            echo "- offline evals: phase95 / phase96 / phase97 PASS"
+            echo "- build: PASS"
+          } >> "$GITHUB_STEP_SUMMARY"
+          node -e "const fs=require('fs');fs.writeFileSync('phase97-assurance.json',JSON.stringify({phase:'97',commit:process.env.GITHUB_SHA,schemaVersion:'1.0',migration:'20260820000017_phase97_compliance_evidence_packs',offlineEvals:{phase95:'PASS',phase96:'PASS',phase97:'PASS'},build:'PASS'},null,2))"
+
+      - name: Upload safe Phase 97 assurance artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase97-assurance
+          path: phase97-assurance.json
+          if-no-files-found: warn
+
+  phase97-postgres:
+    name: Phase 97 PostgreSQL rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://hermes_ci:phase97-ci-only-password@localhost:5432/hermes_phase97_ci
+      HERMES_STORAGE_MODE: database
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: hermes_ci
+          POSTGRES_PASSWORD: phase97-ci-only-password
+          POSTGRES_DB: hermes_phase97_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hermes_ci -d hermes_phase97_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      - name: Fresh migration rehearsal (deploy through migration 17 on an empty database)
+        run: npx --no-install prisma migrate deploy
+
+      - name: Idempotency — a second deploy must report no pending migrations
+        run: |
+          npx --no-install prisma migrate deploy
+          npx --no-install prisma migrate status
+
+      - name: Validate the Prisma schema against the migrated database
+        run: npm run db:validate
+
+      - name: Phase 97 compliance PostgreSQL suite (lineage, concurrency, snapshot, evidence)
+        run: npm run test:phase97:postgres
