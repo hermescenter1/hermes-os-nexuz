@@ -7249,5 +7249,97 @@
       "getStarted": "Get started",
       "contactSales": "Contact sales"
     }
+  },
+  "complianceCenter": {
+    "eyebrow": "Compliance operations",
+    "title": "Compliance Operations Center",
+    "lede": "Govern processing records, privacy requests, retention, legal holds, subprocessors, transfers, incidents and authoritative evidence — for your organization only.",
+    "notLegalAdvice": "This software is an operational tool. It is not legal advice and does not certify compliance. READY evidence means a manifest generated consistently — nothing more.",
+    "refresh": "Refresh",
+    "states": {
+      "loading": "Loading…",
+      "empty": "Nothing to show yet.",
+      "error": "Could not load this data.",
+      "unauthorized": "You do not have permission to view this section.",
+      "configurationRequired": "Configuration required",
+      "legalReviewRequired": "Legal review required"
+    },
+    "nav": {
+      "overview": "Overview",
+      "processingActivities": "Processing activities",
+      "privacyRequests": "Privacy requests",
+      "legalDocuments": "Legal documents",
+      "retention": "Retention",
+      "legalHolds": "Legal holds",
+      "subprocessors": "Subprocessors",
+      "dataTransfers": "Data transfers",
+      "incidents": "Incidents",
+      "evidencePacks": "Evidence packs"
+    },
+    "readiness": {
+      "COMPLETE": "Complete",
+      "REVIEW_REQUIRED": "Review required",
+      "CONFIGURATION_REQUIRED": "Configuration required",
+      "INSUFFICIENT_EVIDENCE": "Insufficient evidence"
+    },
+    "lifecycle": {
+      "REQUESTED": "Requested",
+      "GENERATING": "Generating",
+      "READY": "Ready",
+      "FAILED": "Failed",
+      "REVOKED": "Revoked",
+      "EXPIRED": "Expired"
+    },
+    "columns": {
+      "identifier": "Identifier",
+      "status": "Status",
+      "lifecycle": "Lifecycle",
+      "readiness": "Readiness",
+      "scope": "Scope",
+      "type": "Type",
+      "updated": "Updated",
+      "items": "Items",
+      "manifestHash": "Manifest hash"
+    },
+    "evidence": {
+      "title": "Evidence packs",
+      "lede": "Generate an authoritative, tenant-owned snapshot of your governance evidence. Manifests are immutable once ready; revoke preserves the record.",
+      "generate": "Generate evidence pack",
+      "scope": "Scope",
+      "targetId": "Target identifier",
+      "targetHint": "Required for incident, processing-activity and privacy-request scopes.",
+      "submit": "Generate",
+      "generating": "Generating…",
+      "itemCount": "Evidence items",
+      "manifestHash": "Manifest hash",
+      "snapshotAt": "Snapshot time",
+      "generatedAt": "Generated",
+      "view": "View pack",
+      "manifest": "Manifest",
+      "verify": "Verify manifest",
+      "verifyValid": "The manifest matches its recorded hash.",
+      "verifyInvalid": "The manifest does not match its recorded hash.",
+      "revoke": "Revoke",
+      "revokeConfirm": "Revoke this evidence pack? The manifest and items are preserved as historical evidence and the pack is marked revoked.",
+      "revoked": "This evidence pack is revoked. It remains readable as historical evidence.",
+      "readyMeaning": "Ready means the manifest generated consistently from one database snapshot — it is not a claim of legal compliance or certification.",
+      "noManifest": "No manifest has been generated for this pack yet.",
+      "itemsHeading": "Evidence items",
+      "itemEntity": "Record",
+      "itemCode": "Evidence",
+      "itemStatus": "State"
+    },
+    "incidents": {
+      "title": "Compliance incidents",
+      "timeline": "Timeline",
+      "actions": "Actions",
+      "decision": "Decision",
+      "noSensitiveData": "Sensitive incident detail is never shown here or included in evidence."
+    },
+    "actions": {
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "close": "Close"
+    }
   }
 }

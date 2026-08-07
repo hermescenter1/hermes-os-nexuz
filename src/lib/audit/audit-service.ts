@@ -167,6 +167,74 @@ export const MULTI_SITE_AUDIT = {
  */
 export const COMPLIANCE_AUDIT = {
   PRIVACY_REQUEST_STATUS_CHANGED: "compliance.privacy_request.status_changed",
+  // Phase 97 — Processing Inventory (Article 30 RoPA).
+  PROCESSING_ACTIVITY_CREATED:    "compliance.processing_activity.created",
+  PROCESSING_ACTIVITY_UPDATED:    "compliance.processing_activity.updated",
+  // Phase 97 — PrivacyRequest lifecycle (platform triage assignment).
+  PRIVACY_REQUEST_ASSIGNED:       "compliance.privacy_request.assigned",
+  // Phase 97 — Retention governance & Legal holds.
+  RETENTION_POLICY_CREATED:       "compliance.retention_policy.created",
+  RETENTION_POLICY_UPDATED:       "compliance.retention_policy.updated",
+  LEGAL_HOLD_CREATED:             "compliance.legal_hold.created",
+  LEGAL_HOLD_UPDATED:             "compliance.legal_hold.updated",
+  // Phase 97 — Legal-document lifecycle & acceptance (identifiers + closed enums
+  // only; never document content, review notes, email, IP, UA or tokens).
+  LEGAL_DOCUMENT_CREATED:         "compliance.legal_document.created",
+  LEGAL_DOCUMENT_CONTENT_UPDATED: "compliance.legal_document.content_updated",
+  LEGAL_DOCUMENT_TRANSITIONED:    "compliance.legal_document.transitioned",
+  LEGAL_ACCEPTANCE_CREATED:       "compliance.legal_acceptance.created",
+  LEGAL_ACCEPTANCE_WITHDRAWN:     "compliance.legal_acceptance.withdrawn",
+  // Phase 97 Part G — governed subject data export (identifiers + closed enums +
+  // counts only; never package contents, field values, email, IP, UA, token or URL).
+  EXPORT_JOB_CREATED:             "compliance.export.job_created",
+  EXPORT_JOB_TRANSITIONED:        "compliance.export.job_transitioned",
+  EXPORT_TOKEN_ISSUED:            "compliance.export.token_issued",
+  EXPORT_DOWNLOADED:              "compliance.export.downloaded",
+  EXPORT_TOKEN_REPLAY_DENIED:     "compliance.export.token_replay_denied",
+  EXPORT_REVOKED:                 "compliance.export.revoked",
+  // Phase 97 Part H — governed subject data erasure (identifiers + closed
+  // classifications + counts only; never record contents, email, IP, UA, token,
+  // credentials, free-text personal data or the full planJson).
+  ERASURE_JOB_CREATED:            "compliance.erasure.job_created",
+  ERASURE_PLAN_GENERATED:         "compliance.erasure.plan_generated",
+  ERASURE_REVIEW_SUBMITTED:       "compliance.erasure.review_submitted",
+  ERASURE_APPROVED:               "compliance.erasure.approved",
+  ERASURE_REJECTED:               "compliance.erasure.rejected",
+  ERASURE_JOB_TRANSITIONED:       "compliance.erasure.job_transitioned",
+  ERASURE_EXECUTION_DENIED:       "compliance.erasure.execution_denied",
+  ERASURE_PLAN_STALE:             "compliance.erasure.plan_stale",
+  ERASURE_CANCELLED:              "compliance.erasure.cancelled",
+  ERASURE_MANUAL_RESOLVED:        "compliance.erasure.manual_resolved",
+  // Phase 97 Part I — subprocessor & data-transfer governance (identifiers +
+  // closed status codes only; never contract content, personal data,
+  // authentication material, provider secrets or request bodies).
+  SUBPROCESSOR_CREATED:           "compliance.subprocessor.created",
+  SUBPROCESSOR_UPDATED:           "compliance.subprocessor.updated",
+  SUBPROCESSOR_TRANSITIONED:      "compliance.subprocessor.transitioned",
+  SUBPROCESSOR_APPROVED:          "compliance.subprocessor.approved",
+  DATA_TRANSFER_CREATED:          "compliance.data_transfer.created",
+  DATA_TRANSFER_UPDATED:          "compliance.data_transfer.updated",
+  DATA_TRANSFER_TRANSITIONED:     "compliance.data_transfer.transitioned",
+  DATA_TRANSFER_APPROVED:         "compliance.data_transfer.approved",
+  // Phase 97 — governed compliance-incident management (identifiers + closed codes
+  // + correlationId + evidence hashes only; NEVER raw log/request/response bodies,
+  // personal data, credentials, free-form summary text or notification content).
+  INCIDENT_CREATED:               "compliance.incident.created",
+  INCIDENT_UPDATED:               "compliance.incident.updated",
+  INCIDENT_TRANSITIONED:          "compliance.incident.transitioned",
+  INCIDENT_ASSIGNED:              "compliance.incident.assigned",
+  INCIDENT_ASSESSMENT_RECORDED:   "compliance.incident.assessment_recorded",
+  INCIDENT_DECISION_RECORDED:     "compliance.incident.decision_recorded",
+  INCIDENT_REOPENED:              "compliance.incident.reopened",
+  INCIDENT_ACTION_CREATED:        "compliance.incident.action_created",
+  INCIDENT_ACTION_RESOLVED:       "compliance.incident.action_resolved",
+  INCIDENT_ACTION_CANCELLED:      "compliance.incident.action_cancelled",
+  // Phase 97 — governed compliance evidence packs (pack id + closed lifecycle/readiness
+  // + itemCount + lowercase SHA-256 manifest hash ONLY; NEVER manifest content, safe
+  // metadata bodies, personal data or secrets).
+  EVIDENCE_PACK_REQUESTED:        "compliance.evidence_pack.requested",
+  EVIDENCE_PACK_GENERATED:        "compliance.evidence_pack.generated",
+  EVIDENCE_PACK_REVOKED:          "compliance.evidence_pack.revoked",
 } as const;
 
 /** Organization management audit action identifiers (Phase 32). */

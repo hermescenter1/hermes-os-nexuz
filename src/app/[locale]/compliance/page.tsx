@@ -1,5 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { ComplianceDashboardClient }  from "@/components/compliance/ComplianceDashboardClient";
+import { ComplianceCenterClient }     from "@/components/compliance/ComplianceCenterClient";
 import { PageShell }                  from "@/components/PageShell";
 import { buildMetadata }              from "@/lib/seo/metadata";
 
@@ -20,6 +21,7 @@ export default async function CompliancePage({ params }: { params: Promise<{ loc
   const { locale } = await params;
   setRequestLocale(locale);
   const tg = await getTranslations("adminGovernance.compliance");
+  const tc = await getTranslations("complianceCenter");
   return (
     <PageShell ambient={2}>
       <div className="mx-auto max-w-screen-2xl px-6 sm:px-8 pb-20">
@@ -29,6 +31,10 @@ export default async function CompliancePage({ params }: { params: Promise<{ loc
           <p className="mt-2 type-secondary">{tg("lede")}</p>
         </div>
         <ComplianceDashboardClient view="overview" />
+        <div className="mt-10">
+          <h2 className="type-page-title text-xl mb-4">{tc("title")}</h2>
+          <ComplianceCenterClient view="overview" />
+        </div>
       </div>
     </PageShell>
   );

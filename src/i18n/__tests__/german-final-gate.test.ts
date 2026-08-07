@@ -360,7 +360,9 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     // - 3 metadata.pages.pricing leaves
     // - 18 top-level pricing leaves
     // 5592 + 21 = 5613
-    expect(allEn.length).toBe(5613);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing
+    // Phase 97: +74 complianceCenter leaves (the Compliance Operations Center, genuinely
+    //           German, zero English carryover) -> 5687
+    expect(allEn.length).toBe(5687);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -373,12 +375,12 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     expect(buckets.persianContamination.slice(0, 40)).toEqual([]);
   });
 
-  it("satisfies 5613 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 5687 = translations + identicals + tokens + numeric/unit", () => {
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
-    ).toBe(5613);
+    ).toBe(5687);
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);
   });

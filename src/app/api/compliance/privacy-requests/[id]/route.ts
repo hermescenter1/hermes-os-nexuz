@@ -7,25 +7,31 @@ import {
 import { requireComplianceOrgScope }  from "@/lib/compliance/authz";
 import { recordAuditEvent, COMPLIANCE_AUDIT } from "@/lib/audit/audit-service";
 import type { PrivacyRequestStatus }  from "@/lib/compliance/types";
+import {
+  ALL_PRIVACY_REQUEST_STATUSES,
+  canTransitionPrivacyRequest,
+} from "@/lib/compliance/privacy-request-lifecycle";
 
-const VALID_STATUSES: PrivacyRequestStatus[] = ["PENDING", "IN_REVIEW", "COMPLETED", "REJECTED"];
+const VALID_STATUSES: PrivacyRequestStatus[] = ALL_PRIVACY_REQUEST_STATUSES;
 
 /**
  * Transition a PrivacyRequest's status.
  *
- * SECURITY (compliance hotfix) — the actor's organization is resolved
+ * SECURITY (compliance hotfix + Phase 97) — the actor's organization is resolved
  * server-side and the mutation is tenant-scoped in the database (both the
  * request id AND the authoritative organization id are in the write predicate).
  * A request belonging to another tenant, or a random/unknown id, yields a
- * uniform 404 with no existence oracle. Only allow-listed identifiers and
- * closed-enum status values are audited — never request free text, response
- * notes, email, IP or user agent.
+ * uniform 404 with no existence oracle. The target status must be a member of the
+ * closed vocabulary AND the closed state machine must allow the current→target
+ * transition — an arbitrary or out-of-order status is rejected (409). Only
+ * allow-listed identifiers and closed-enum status values are audited — never
+ * request free text, response notes, email, IP or user agent.
  */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const scope = await requireComplianceOrgScope(req, "update_org", "compliance.privacy_request.update");
+  const scope = await requireComplianceOrgScope(req, "manage_privacy_requests", "compliance.privacy_request.update");
   if (!scope.ok) {
     return NextResponse.json({ error: scope.error, code: scope.code }, { status: scope.status });
   }
@@ -46,6 +52,15 @@ export async function PATCH(
   const existing = await getPrivacyRequestForOrg(id, scope.organizationId);
   if (!existing) {
     return NextResponse.json({ error: "Request not found", code: "NOT_FOUND" }, { status: 404 });
+  }
+
+  // Closed state-machine guard — reject any transition the machine does not allow
+  // (including no-op self transitions and transitions out of a terminal state).
+  if (!canTransitionPrivacyRequest(existing.status, newStatus)) {
+    return NextResponse.json(
+      { error: "Transition not allowed", code: "INVALID_TRANSITION" },
+      { status: 409 },
+    );
   }
 
   const { affected } = await updatePrivacyRequestStatusForOrg({

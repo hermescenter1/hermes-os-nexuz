@@ -18,7 +18,7 @@ import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
 type Member = { userId: string; organizationId: string; role: string; status: string };
 type LegalRow = {
   id: string; documentType: string; version: string; title: string; content: string;
-  locale: string; isPublished: boolean; publishedAt: Date | null; effectiveDate: Date | null;
+  locale: string; isPublished: boolean; lifecycle: string; publishedAt: Date | null; effectiveDate: Date | null;
   organizationId: string | null; createdBy: string | null; createdAt: Date; updatedAt: Date;
 };
 
@@ -92,12 +92,16 @@ afterEach(() => {
 });
 
 function row(overrides: Partial<LegalRow>): LegalRow {
-  return {
+  const base: LegalRow = {
     id: "d1", documentType: "PRIVACY_POLICY", version: "1.0", title: "T", content: "body",
-    locale: "en", isPublished: true, publishedAt: new Date("2026-01-01"), effectiveDate: new Date("2026-01-01"),
+    locale: "en", isPublished: true, lifecycle: "PUBLISHED", publishedAt: new Date("2026-01-01"), effectiveDate: new Date("2026-01-01"),
     organizationId: null, createdBy: "creator-user", createdAt: new Date("2026-01-01"), updatedAt: new Date("2026-01-01"),
     ...overrides,
   };
+  // Phase 97: lifecycle is authoritative. Derive it from isPublished unless the
+  // test set it explicitly, so a published row is PUBLISHED and a draft is DRAFT.
+  if (overrides.lifecycle === undefined) base.lifecycle = base.isPublished ? "PUBLISHED" : "DRAFT";
+  return base;
 }
 
 async function getCollection(withToken = true) {

@@ -2,40 +2,35 @@ import { NextResponse }          from "next/server";
 import type { NextRequest }       from "next/server";
 import { verifyAccessToken }      from "@/lib/auth/jwt";
 import { ACCESS_TOKEN_COOKIE }    from "@/lib/auth/config";
-import { getPrisma }              from "@/lib/db/prisma";
 import {
   createPrivacyRequest,
   getPrivacyRequests,
 } from "@/lib/compliance/db";
+import { requireComplianceOrgScope } from "@/lib/compliance/authz";
 import type { PrivacyRequestType } from "@/lib/compliance/types";
 
 const VALID_TYPES: PrivacyRequestType[] = [
   "DATA_EXPORT", "DATA_DELETION", "CONSENT_WITHDRAWAL",
-  "ACCESS_REQUEST", "CORRECTION_REQUEST",
+  "ACCESS_REQUEST", "CORRECTION_REQUEST", "RESTRICTION", "OBJECTION", "OTHER",
 ];
 
-async function resolveAdmin(req: NextRequest) {
-  const at = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!at) return null;
-  const payload = await verifyAccessToken(at);
-  if (!payload?.sub) return null;
-  if (!["admin", "superadmin"].includes(payload.role as string)) return null;
-  const db = await getPrisma();
-  if (!db) return null;
-  const memberModel = (db as Record<string, unknown>).organizationMember as {
-    findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
-  };
-  const member = await memberModel.findFirst({
-    where: { userId: payload.sub, status: "ACTIVE" },
-    orderBy: { createdAt: "asc" },
-  });
-  return member ? { userId: payload.sub, orgId: String(member.organizationId) } : null;
-}
-
+/**
+ * List the caller's organization's privacy requests.
+ *
+ * SECURITY (Phase 97) — replaces the legacy `resolveAdmin` helper (which trusted
+ * the JWT role claim and picked an arbitrary first org for a multi-org admin)
+ * with the authoritative `requireComplianceOrgScope`: the org is derived
+ * server-side, a multi-org actor fails closed (409) instead of leaking an
+ * arbitrary tenant, and `view_compliance` is enforced. UNASSIGNED requests
+ * (organizationId == null) are never returned here — they live in the platform
+ * triage queue and require the platform boundary.
+ */
 export async function GET(req: NextRequest) {
-  const ctx = await resolveAdmin(req);
-  if (!ctx) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
-  const requests = await getPrivacyRequests({ organizationId: ctx.orgId });
+  const scope = await requireComplianceOrgScope(req, "view_compliance", "compliance.privacy_request.list");
+  if (!scope.ok) {
+    return NextResponse.json({ error: scope.error, code: scope.code }, { status: scope.status });
+  }
+  const requests = await getPrivacyRequests({ organizationId: scope.organizationId });
   return NextResponse.json({ requests, total: requests.length });
 }
 

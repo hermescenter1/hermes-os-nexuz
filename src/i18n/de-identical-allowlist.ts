@@ -172,6 +172,8 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "brain.vendors.schneider": "vendor-or-thirdparty",
   "brain.vendors.siemens": "vendor-or-thirdparty",
   "caseExplorer.detail.problem": "german-word-identical",
+  "complianceCenter.columns.status": "german-word-identical",
+  "complianceCenter.evidence.manifest": "accepted-german-loanword",
   "contact.generalEmail": "contact-url-or-propernoun",
   "contact.githubLabel": "vendor-or-thirdparty",
   "contact.githubUrl": "contact-url-or-propernoun",
@@ -411,9 +413,9 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
 export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   "brand-or-product": 63,
   "contact-url-or-propernoun": 15,
-  "german-word-identical": 102,
+  "german-word-identical": 103,
   "non-linguistic": 19,
-  "accepted-german-loanword": 73,
+  "accepted-german-loanword": 74,
   "protocol-or-standard": 66,
   "vendor-or-thirdparty": 16,
   "brand-eyebrow": 8
