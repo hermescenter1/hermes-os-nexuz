@@ -21,17 +21,26 @@ import { POST } from "../analyze/route";
  *      Persian and English, whenever the user left impact unset.
  */
 
+// PHASE 99 — this endpoint is now rate limited (finding P99-INT-012). The
+// limiter keys on the client IP, which in tests would otherwise be the single
+// "unknown" bucket and would 429 after a dozen requests. Give every request its
+// own X-Real-IP so each lands in its own bucket, so these assertions exercise
+// the request contract rather than the limiter. A dedicated limiter test covers
+// the throttle itself.
+let ipCounter = 0;
+const uniqueIp = () => `203.0.113.${(ipCounter++ % 250) + 1}`;
+
 const json = (body: unknown) =>
   new Request("http://t/api/industrial-brain/analyze", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Real-IP": uniqueIp() },
     body: JSON.stringify(body),
   }) as unknown as Parameters<typeof POST>[0];
 
 const raw = (body: string) =>
   new Request("http://t/api/industrial-brain/analyze", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Real-IP": uniqueIp() },
     body,
   }) as unknown as Parameters<typeof POST>[0];
 

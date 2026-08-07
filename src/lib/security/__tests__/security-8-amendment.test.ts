@@ -47,6 +47,8 @@ const MOCKED_MODULES = [
   "@/lib/digital-twin/nodes", "@/lib/academy/db", "@/lib/auth/rbac-server",
   "@/lib/db/prisma", "@/lib/audit/audit-service",
   "@/lib/billing-governance/runtime/entitlement-store",
+  // PHASE 99: the industrial write path now authorises the target site.
+  "@/lib/site/context", "@/lib/site/rbac",
 ];
 
 // Phase 96: a determinable entitlement store so routes that now carry a separate
@@ -315,6 +317,14 @@ describe("Part 6 — industrial write requires industrial.write scope for API ke
       requirePlatformAuth: async () => ({ ctx: { userId: null, orgId: "org-A", authMethod, scopes } }),
     }));
     vi.doMock("@/lib/org/context", () => ({ requireOrgActor: async () => ({ ctx: { role: "ADMIN", userId: "u1", orgId: "org-A" } }) }));
+    // PHASE 99: the JWT path now also authorises the target SITE before writing
+    // (finding P99-INT-018). This block asserts the earlier SCOPE gate, so grant
+    // the site here; a dedicated site-scope test covers the site boundary itself.
+    vi.doMock("@/lib/site/context", () => ({
+      requireSiteActor: async () => ({ ctx: { role: "SITE_MANAGER", userId: "u1", orgId: "org-A", siteId: "s1" } }),
+      getAllowedSiteIds: async () => ["s1"],
+    }));
+    vi.doMock("@/lib/site/rbac", () => ({ requireSitePermission: () => ({ ok: true }) }));
     vi.doMock("@/lib/industrial/assets", () => ({ listAssets: async () => [], createAsset: async () => ({ id: "a1" }) }));
     // Phase 96: supply a determinable entitlement state so the separate
     // commercial-entitlement gate (which runs AFTER the scope gate) resolves

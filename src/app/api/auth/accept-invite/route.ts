@@ -3,7 +3,7 @@ import { z }            from "zod";
 import { passwordSchema }             from "@/lib/auth/password-policy";
 import { acceptAccessInvite }         from "@/lib/auth/access-invite";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
-import { resolveClientIp }            from "@/lib/security/request-guards";
+import { resolveClientIp, readBoundedJson, SMALL_JSON_BODY_BYTES } from "@/lib/security/request-guards";
 
 /**
  * Phase 81C: accept an admin-issued access invite. The only public path that
@@ -37,9 +37,13 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: unknown;
-  try { body = await req.json(); }
-  catch { return NextResponse.json({ ok: false, code: "invalid-input", error: "Invalid request body." }, { status: 400 }); }
+  // PHASE 99 — bounded read. A rate limit alone does not stop a permitted
+  // request from carrying an arbitrarily large body into the JSON parser, so
+  // this anonymous credential endpoint now has an explicit byte ceiling.
+  const read = await readBoundedJson(req, SMALL_JSON_BODY_BYTES);
+  if (read.status === "too_large") return NextResponse.json({ ok: false, code: "invalid-input", error: "Payload too large." }, { status: 413 });
+  if (read.status === "invalid") return NextResponse.json({ ok: false, code: "invalid-input", error: "Invalid request body." }, { status: 400 });
+  const body: unknown = read.value;
 
   const parsed = AcceptInviteSchema.safeParse(body);
   if (!parsed.success) {
