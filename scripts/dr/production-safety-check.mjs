@@ -44,19 +44,40 @@ function walk(dir, out) {
 
 const inScope = (rp) => SCAN_DIRS.some((d) => rp.startsWith(`${d}/`)) || SCAN_FILES.includes(rp);
 
-// Prefer the CHANGED-file set (the review scope). Fall back to a full scan of the
-// DR surface when git history is unavailable.
+// The Phase 98 CHANGED surface — the files this phase creates or modifies. Used as
+// the git-independent fallback so the checker NEVER over-scans pre-existing
+// operational files (e.g. the OpenBao/Gate-0D static checkers or earlier
+// rehearsals) which legitimately contain the scanned patterns as data. This is
+// what the git-diff scoping resolves to for this phase; the fallback keeps the
+// checker correct on a shallow CI checkout where the diff base is unreachable.
+const PHASE98_PREFIXES = ["scripts/dr/", "scripts/ci/phase98-", "scripts/ci/lib/", "deploy/rehearsal/", ".github/workflows/phase98-", "docs/release/phase98-", "docs/release/adr-phase98-"];
+const PHASE98_FILES = new Set([
+  "scripts/backup-postgres.sh",
+  "scripts/restore-postgres.sh",
+  "scripts/verify-backup.sh",
+  "docker-compose.prod.yml",
+  "DEPLOYMENT.md",
+  ".env.production.example",
+  "CHANGELOG.md",
+  "docs/release/disaster-recovery-runbook.md",
+  "docs/release/incident-response-runbook.md",
+]);
+const isPhase98 = (rp) => PHASE98_PREFIXES.some((p) => rp.startsWith(p)) || PHASE98_FILES.has(rp);
+
+// Prefer the precise git CHANGED-file set (the review scope). Fall back to the
+// Phase 98 path set when git history is unavailable (shallow CI checkout).
 let candidates = [];
 try {
-  const changed = execSync(`git diff --name-only --diff-filter=d ${DIFF_BASE}...HEAD`, { cwd: REPO, encoding: "utf8" });
-  const untracked = execSync("git ls-files --others --exclude-standard", { cwd: REPO, encoding: "utf8" });
+  const changed = execSync(`git diff --name-only --diff-filter=d ${DIFF_BASE}...HEAD`, { cwd: REPO, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  const untracked = execSync("git ls-files --others --exclude-standard", { cwd: REPO, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
   candidates = [...changed.split("\n"), ...untracked.split("\n")].map((s) => s.trim()).filter(Boolean);
   if (candidates.length === 0) throw new Error("empty diff");
 } catch {
+  // git-independent fallback: walk the DR surface, keep only Phase 98 paths.
   const all = [];
   for (const d of SCAN_DIRS) walk(join(REPO, d), all);
-  candidates = all;
-  for (const f of SCAN_FILES) if (existsSync(join(REPO, f))) candidates.push(f);
+  for (const f of SCAN_FILES) if (existsSync(join(REPO, f))) all.push(f);
+  candidates = all.filter(isPhase98);
 }
 
 const files = [...new Set(candidates)]
