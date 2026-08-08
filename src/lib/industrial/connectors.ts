@@ -32,7 +32,13 @@ export async function listConnectors(organizationId: string, opts?: {
   if (!prisma) return [];
   const where: Record<string, unknown> = { organizationId };
   if (opts?.gatewayId) where.gatewayId = opts.gatewayId;
-  if (!opts?.gatewayId && opts?.allowedSiteIds !== undefined) {
+  // PHASE 99.5 SECURITY (P99-INT-016 HIGH) — the site allow-list used to be
+  // skipped whenever a gatewayId was supplied, so naming a gateway that belongs
+  // to another site in the same organization returned that site's connector
+  // rows, whose `config` carries OPC UA / MQTT endpoint and connection material.
+  // The gateway filter and the site allow-list are independent predicates:
+  // apply BOTH.
+  if (opts?.allowedSiteIds !== undefined) {
     where.siteId = { in: opts.allowedSiteIds };
   }
   const rows = await (prisma.industrialConnectorConfig as unknown as ConnectorModel).findMany({
