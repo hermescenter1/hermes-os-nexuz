@@ -5,7 +5,8 @@ import { hasScope } from "@/lib/api/scopes";
 import { requirePermission }            from "@/lib/org/rbac";
 import { listAssets, createAsset }      from "@/lib/industrial/assets";
 import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
-import { getAllowedSiteIds }              from "@/lib/site/context";
+import { getAllowedSiteIds, requireSiteActor } from "@/lib/site/context";
+import { requireSitePermission }           from "@/lib/site/rbac";
 import { enforceEntitlement }             from "@/lib/billing-governance/runtime/require-entitlement";
 
 export async function GET(req: NextRequest) {
@@ -57,6 +58,18 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { siteId, name } = body as Record<string, string>;
   if (!siteId || !name) return NextResponse.json({ error: "siteId and name are required" }, { status: 400 });
+
+  // PHASE 99 SECURITY — the target site came from the body with no site-level
+  // authorization, while PATCH /assets/[id] enforced both requireSiteActor and
+  // requireSitePermission. A member holding a grant for one site could therefore
+  // create assets on another site in the same organization (and then be unable
+  // to edit them). Authorise the target site with the update path's predicates.
+  if (ctx.authMethod === "jwt") {
+    const siteAuth = await requireSiteActor(req, ctx.orgId, siteId);
+    if ("error" in siteAuth) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+    const sitePerm = requireSitePermission(siteAuth.ctx.role, "manage_assets");
+    if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
+  }
 
   const asset = await createAsset({ ...body, organizationId: ctx.orgId });
   if (!asset) return NextResponse.json({ error: "Failed to create asset" }, { status: 503 });

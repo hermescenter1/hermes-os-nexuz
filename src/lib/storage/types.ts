@@ -180,4 +180,16 @@ export interface Repository<T, TCreate> {
   delete(id: string): Promise<boolean>;
   /** Phase 11B: find by exact title for duplicate prevention. */
   findByTitle?(title: string): Promise<T | null>;
+  /**
+   * PHASE 99 (finding P99-INT-011) — published-only listing with the predicate
+   * pushed into the query.
+   *
+   * `list()` returns everything and callers filter afterwards, which is correct
+   * for the authenticated surfaces that legitimately need drafts. The ANONYMOUS
+   * derived-graph endpoints do not: they were loading every row of every tenant,
+   * drafts included, into memory on each request only to discard all but the
+   * published ones. Optional so a repository that has no publication concept is
+   * unaffected; callers fall back to `list()` when it is absent.
+   */
+  listPublished?(): Promise<T[]>;
 }

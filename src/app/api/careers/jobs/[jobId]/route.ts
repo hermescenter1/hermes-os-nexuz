@@ -10,6 +10,17 @@ export async function GET(
 
   const dbJob = await getJobById(jobId);
   if (dbJob !== null) {
+    // PHASE 99 SECURITY — this is the PUBLIC careers surface. `getJobById` is a
+    // generic lookup shared with authenticated routes and filters only
+    // `deletedAt`, so without this gate a DRAFT/CLOSED or non-public posting —
+    // including its organizationId, internal requirements and salary bands —
+    // was returned to any anonymous caller holding the id. The sibling list
+    // endpoint already pins both predicates (`getPublicJobs`); mirror it here,
+    // and answer 404 rather than 403 so the endpoint reveals nothing about the
+    // existence of a posting the caller may not see.
+    if (dbJob.status !== "OPEN" || dbJob.isPublic !== true) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
     return NextResponse.json({ job: dbJob, source: "db" });
   }
 

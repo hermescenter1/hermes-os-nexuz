@@ -22,6 +22,7 @@
  * touches them and the private route never runs work before authenticating.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { NextRequest } from "next/server";
 import {
   mockNoUser,
   mockViewer,
@@ -366,8 +367,15 @@ describe("SECURITY-4/5 regressions remain intact", () => {
     vi.resetModules();
     mockNoUser();
     const { GET } = await import("../../../app/api/operations/overview/route");
-    const res = await GET();
+    // PHASE 99 (P99-INT-011): this endpoint now takes a request so it can be
+    // rate limited. The anonymous contract it asserts is unchanged — a caller
+    // with no session must still not be refused with 401 or 403.
+    const req = new NextRequest("https://app.example/api/operations/overview", {
+      headers: { "x-real-ip": "203.0.113.77" },
+    });
+    const res = await GET(req);
     expect(res.status).not.toBe(401);
     expect(res.status).not.toBe(403);
+    expect(res.status).not.toBe(429);
   });
 });

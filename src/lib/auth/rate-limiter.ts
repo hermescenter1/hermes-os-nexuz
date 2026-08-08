@@ -60,6 +60,26 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   "candidate-register": { max: 5, windowMs: 60 * 60 * 1000 },
   // Phase 86C4B2B1D-SECURITY-8 AMENDMENT — secret-gated IndexNow trigger.
   "indexnow":          { max: 10, windowMs: 60 * 1000 },
+  // PHASE 99 — anonymous vendor onboarding. Its direct analogue, the careers
+  // application, was already limited; this endpoint accepts two 3000-character
+  // description fields per anonymous insert and had no brake at all. Matched to
+  // the `careers-apply` budget: a genuine applicant needs a handful of attempts
+  // per hour, never more.
+  "vendor-apply":      { max: 5,  windowMs: 60 * 60 * 1000 },
+  // PHASE 99 — anonymous deterministic industrial analysis. Same public role as
+  // `copilot-demo-post`, so the same budget: enough for a real evaluator, not
+  // enough to use the endpoint as free CPU.
+  "industrial-brain-analyze": { max: 12, windowMs: 60 * 1000 },
+  // PHASE 99 — anonymous cookie-consent write. Generous, because a real visitor
+  // may legitimately change their mind a few times in a session, but bounded so
+  // the endpoint cannot be used to churn consent rows.
+  "cookie-consent":    { max: 30, windowMs: 60 * 1000 },
+  // PHASE 99 (P99-INT-011) — anonymous derived-graph views. Each rebuilds the
+  // engineering graph, so they are the most expensive unauthenticated reads in
+  // the product. Deliberately generous: the UI fetches each once on mount and
+  // polls nowhere, so a real visitor would have to reload roughly once a second
+  // to notice this.
+  "derived-graph":     { max: 60, windowMs: 60 * 1000 },
 };
 
 // ── Degradation state ─────────────────────────────────────────────────────────

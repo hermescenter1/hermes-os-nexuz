@@ -110,7 +110,14 @@ describe("PHASE 97 — compliance governance invariant groups", () => {
     const mig = resolve(ROOT, "prisma/migrations/20260820000017_phase97_compliance_evidence_packs/migration.sql");
     expect(existsSync(mig)).toBe(true);
     // Strip `--` comments (which legitimately NAME the forbidden operations) before scanning.
-    const sql = readFileSync(mig, "utf8").split("\n").map((l) => l.replace(/--.*$/, "")).join("\n");
+    // PHASE 99 (disclosed test-robustness fix; the assertion itself is unchanged):
+    // the `$` anchor made this CRLF-fragile. Without the `m` flag `$` matches only
+    // end-of-string, and `.` never matches the trailing `\r` that a Windows
+    // (core.autocrlf) checkout leaves on each split line — so the comment survived
+    // and its literal "DROP TABLE / DROP COLUMN / TRUNCATE / DELETE FROM" text
+    // tripped the additive-only check. Dropping the anchor strips the comment on
+    // both LF and CRLF checkouts.
+    const sql = readFileSync(mig, "utf8").split("\n").map((l) => l.replace(/--.*/, "")).join("\n");
     expect(/DROP TABLE|DROP COLUMN|TRUNCATE|DELETE FROM/i.test(sql)).toBe(false); // additive only
     expect(sql).toContain("compliance_evidence_pack_item_immutable"); // immutability trigger present
   });

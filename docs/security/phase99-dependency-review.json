@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "phase": "99",
+  "tool": "npm audit",
+  "note": "Sanitized dependency review for a PUBLIC repository. Advisory titles and URLs are already public; no exploit detail, no local paths, no credentials.",
+  "generatedFrom": "package-lock.json",
+  "totals": {
+    "all": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 5,
+      "LOW": 0,
+      "INFO": 0,
+      "UNKNOWN": 0
+    },
+    "productionOnly": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 5,
+      "LOW": 0,
+      "INFO": 0,
+      "UNKNOWN": 0
+    }
+  },
+  "packages": [
+    {
+      "package": "@hono/node-server",
+      "reportedSeverity": "moderate",
+      "severity": "MEDIUM",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        "https://github.com/advisories/GHSA-92pp-h63x-v22m",
+        "https://github.com/advisories/GHSA-frvp-7c67-39w9"
+      ],
+      "productionReachable": true,
+      "fixWithoutMajor": true
+    },
+    {
+      "package": "@prisma/dev",
+      "reportedSeverity": "moderate",
+      "severity": "MEDIUM",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [],
+      "productionReachable": true,
+      "fixWithoutMajor": true
+    },
+    {
+      "package": "hono",
+      "reportedSeverity": "moderate",
+      "severity": "MEDIUM",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        "https://github.com/advisories/GHSA-xgm2-5f3f-mvvc",
+        "https://github.com/advisories/GHSA-hvrm-45r6-mjfj",
+        "https://github.com/advisories/GHSA-w62v-xxxg-mg59",
+        "https://github.com/advisories/GHSA-8j4g-w8fx-2239",
+        "https://github.com/advisories/GHSA-f23p-vx2j-j53r",
+        "https://github.com/advisories/GHSA-79qm-7rj5-m7r9",
+        "https://github.com/advisories/GHSA-54fx-42gc-7vw4"
+      ],
+      "productionReachable": true,
+      "fixWithoutMajor": true
+    },
+    {
+      "package": "prisma",
+      "reportedSeverity": "moderate",
+      "severity": "MEDIUM",
+      "direct": true,
+      "fixAvailable": true,
+      "advisories": [],
+      "productionReachable": true,
+      "fixWithoutMajor": true
+    },
+    {
+      "package": "valibot",
+      "reportedSeverity": "moderate",
+      "severity": "MEDIUM",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        "https://github.com/advisories/GHSA-5qjj-4xww-7phc"
+      ],
+      "productionReachable": true,
+      "fixWithoutMajor": true
+    }
+  ]
+}

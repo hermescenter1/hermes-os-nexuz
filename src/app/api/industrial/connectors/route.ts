@@ -4,7 +4,8 @@ import { requireOrgActor }                  from "@/lib/org/context";
 import { hasScope } from "@/lib/api/scopes";
 import { requirePermission }                from "@/lib/org/rbac";
 import { listConnectors, createConnector }  from "@/lib/industrial/connectors";
-import { getAllowedSiteIds }                 from "@/lib/site/context";
+import { getAllowedSiteIds, requireSiteActor } from "@/lib/site/context";
+import { requireSitePermission }             from "@/lib/site/rbac";
 import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
 import { ALL_CONNECTOR_TYPES }              from "@/lib/industrial/types";
 import type { ConnectorType }               from "@/lib/industrial/types";
@@ -54,6 +55,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `connectorType must be one of: ${ALL_CONNECTOR_TYPES.join(", ")}` }, { status: 400 });
   }
   if (!name || typeof name !== "string") return NextResponse.json({ error: "name is required" }, { status: 400 });
+
+  // PHASE 99 SECURITY — the target site came from the body with no site-level
+  // authorization, while PATCH /connectors/[id] enforced requireSiteActor and
+  // requireSitePermission. Connector config carries OPC UA / MQTT connection
+  // material, so the write boundary matters as much as the read one.
+  if (ctx.authMethod === "jwt") {
+    const siteAuth = await requireSiteActor(req, ctx.orgId, siteId as string);
+    if ("error" in siteAuth) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+    const sitePerm = requireSitePermission(siteAuth.ctx.role, "manage_assets");
+    if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
+  }
 
   const connector = await createConnector({
     organizationId: ctx.orgId,

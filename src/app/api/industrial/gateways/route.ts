@@ -4,7 +4,8 @@ import { requireOrgActor }                from "@/lib/org/context";
 import { hasScope } from "@/lib/api/scopes";
 import { requirePermission }              from "@/lib/org/rbac";
 import { listGateways, createGateway }    from "@/lib/industrial/gateways";
-import { getAllowedSiteIds }               from "@/lib/site/context";
+import { getAllowedSiteIds, requireSiteActor } from "@/lib/site/context";
+import { requireSitePermission }           from "@/lib/site/rbac";
 import { recordAuditEvent, INDUSTRIAL_AUDIT } from "@/lib/audit/audit-service";
 import { enforceEntitlement }              from "@/lib/billing-governance/runtime/require-entitlement";
 
@@ -55,6 +56,16 @@ export async function POST(req: NextRequest) {
   if (!siteId || typeof siteId !== "string") return NextResponse.json({ error: "siteId is required" }, { status: 400 });
   if (!name   || typeof name   !== "string") return NextResponse.json({ error: "name is required" }, { status: 400 });
   if (!gatewayId || typeof gatewayId !== "string") return NextResponse.json({ error: "gatewayId (hardware identifier) is required" }, { status: 400 });
+
+  // PHASE 99 SECURITY — the target site came from the body with no site-level
+  // authorization, while PATCH /gateways/[id] enforced requireSiteActor and
+  // requireSitePermission. Authorise the target site the same way here.
+  if (ctx.authMethod === "jwt") {
+    const siteAuth = await requireSiteActor(req, ctx.orgId, siteId as string);
+    if ("error" in siteAuth) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+    const sitePerm = requireSitePermission(siteAuth.ctx.role, "manage_assets");
+    if (!sitePerm.ok) return NextResponse.json({ error: sitePerm.error }, { status: sitePerm.status });
+  }
 
   const gateway = await createGateway({
     organizationId: ctx.orgId,
