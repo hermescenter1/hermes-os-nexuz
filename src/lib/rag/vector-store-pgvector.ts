@@ -58,6 +58,26 @@ function toVectorLiteral(vector: number[]): string {
   return `[${vector.join(",")}]`;
 }
 
+/**
+ * PHASE 99 — metadata filter keys are the ONE part of this query that cannot be
+ * bound as a parameter: a JSON path key is SQL text, not a value. Until now the
+ * only thing standing between that interpolation and an injection was a comment
+ * asserting that callers pass developer-controlled keys. That is an assumption,
+ * not a control, and it would silently become a real injection the first time a
+ * caller forwarded a request-supplied filter object.
+ *
+ * The invariant is now enforced by code: a key must be a plain SQL identifier
+ * (letters, digits, underscore; not starting with a digit) and bounded in
+ * length. Anything else fails the search CLOSED rather than being dropped —
+ * silently ignoring a filter would widen the result set, which is the wrong
+ * direction for a tenant-scoped retrieval path.
+ */
+const SAFE_METADATA_KEY = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
+
+export function isSafeMetadataFilterKey(key: string): boolean {
+  return SAFE_METADATA_KEY.test(key);
+}
+
 export function createPgVectorStore(): VectorStore {
   return {
     async add(chunk: RagChunk, embedding: RagEmbedding): Promise<void> {
@@ -111,10 +131,12 @@ export function createPgVectorStore(): VectorStore {
         const whereClauses: string[] = [];
         if (filters) {
           for (const [key, value] of Object.entries(filters)) {
+            // Fail CLOSED on an unexpected key: dropping it would silently
+            // broaden the result set. See isSafeMetadataFilterKey above.
+            if (!isSafeMetadataFilterKey(key)) return [];
             params.push(value);
-            // Metadata filter values are bound as parameters; only the
-            // (developer-controlled, never user-controlled) key name is
-            // interpolated into the JSON path expression.
+            // Values are bound as parameters; only the key — now proven to be a
+            // bare SQL identifier — is interpolated into the JSON path.
             whereClauses.push(`metadata ->> '${key}' = $${params.length}`);
           }
         }

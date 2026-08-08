@@ -1,0 +1,8 @@
+{"name":"card number dropped","raw":{"organizationId":"org-1","cardNumber":"4242424242424242"},"forbidden":["cardNumber"]}
+{"name":"cvc dropped","raw":{"planKey":"TEAM","cvc":"123"},"forbidden":["cvc"]}
+{"name":"stripe secret dropped","raw":{"reason":"ok","stripeSecret":"sk_live_ABCDEFGHIJKLMNOPQR"},"forbidden":["stripeSecret"]}
+{"name":"webhook secret redacted in value","raw":{"reason":"leaked whsec_ABCDEFGHIJKLMNOPQR here"},"forbidden":[],"expectRedactedValueKey":"reason"}
+{"name":"billing address dropped","raw":{"organizationId":"org-1","billingAddress":"1 High St, London"},"forbidden":["billingAddress"]}
+{"name":"raw payload dropped","raw":{"eventType":"invoice.paid","rawPayload":{"a":1}},"forbidden":["rawPayload"]}
+{"name":"bank iban dropped","raw":{"provider":"manual","iban":"GB33BUKB20201555555555"},"forbidden":["iban"]}
+{"name":"PAN-like value redacted","raw":{"reason":"paid with 4242 4242 4242 4242"},"forbidden":[],"expectRedactedValueKey":"reason"}

@@ -46,6 +46,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # PHASE 99.6 — explicit, always-on dependency security gate.
+      #
+      # Phase 99 remediated every CRITICAL/HIGH advisory and Phase 99.5 forward-
+      # ported that remediation onto main, but nothing in CI FAILED on a new one:
+      # the Phase 99 workflow only publishes a sanitized audit artifact, and it
+      # does not run on every pull request. A HIGH advisory landing in a
+      # transitive dependency would therefore have gone unnoticed until the next
+      # manual review. `--audit-level=high` exits non-zero on any HIGH or
+      # CRITICAL finding and zero otherwise, so MODERATE and below stay visible
+      # in the artifact without blocking.
+      #
+      # Invariant: DEPENDENCY_CRITICAL=0 and DEPENDENCY_HIGH=0 on every PR.
+      #
+      # If this fails, remediate the advisory. Do NOT downgrade `sharp` to dodge
+      # its CPU requirement — the pinned 0.35.3 is deliberate (see
+      # docs/security/phase99-dependency-remediation.md).
+      - name: Dependency security gate (0 critical, 0 high)
+        run: npm audit --audit-level=high
+
       - name: Generate Prisma client
         env:
           # prisma.config.ts resolves env("DATABASE_URL") when the CLI loads it,
@@ -280,3 +299,146 @@ jobs:
 
       - name: Disaster-recovery restore rehearsal (backup → restore → integrity + RTO)
         run: node scripts/ci/phase93-dr-restore-rehearsal.mjs
+
+  # ---------------------------------------------------------------------------
+  # PHASE 95 — offline AI governance & model assurance evaluation.
+  #
+  # Deterministic, OFFLINE governance suite: model-registry static gate,
+  # tenant-provider policy (default-deny), prompt-injection screening, RAG
+  # provenance/poisoning, citation integrity, unsafe-output blocking, evidence
+  # sufficiency, deterministic-first routing, execution-trace redaction, plus the
+  # synthetic adversarial datasets with zero-tolerance safety/security budgets,
+  # and a secret-leak scan. It makes NO external provider call, needs no service
+  # container, no secrets and no Production access. No continue-on-error: any
+  # failed assertion or budget violation fails the job.
+  # ---------------------------------------------------------------------------
+  phase95-ai-governance:
+    name: Phase 95 AI governance evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+        run: npx --no-install prisma generate
+
+      - name: Offline AI-governance evaluation (deterministic, no provider calls)
+        run: node scripts/ci/phase95-ai-governance-eval.mjs
+
+  # ---------------------------------------------------------------------------
+  # PHASE 96 — offline commercial billing & entitlement governance evaluation.
+  #
+  # Deterministic, OFFLINE billing suite: fail-closed entitlement resolver,
+  # subscription state machine, Stripe→domain event mapper + offline signature
+  # proof, webhook idempotency/replay/out-of-order, money/refund bounds, audit
+  # redaction, wired-route entitlement gating, plus the synthetic adversarial
+  # datasets with zero-tolerance budgets, and a secret-leak scan. It makes NO
+  # external provider call, contacts NO payment provider, needs no service
+  # container, no secrets and no Production access. No continue-on-error: any
+  # failed assertion or budget violation fails the job.
+  # ---------------------------------------------------------------------------
+  phase96-billing-governance:
+    name: Phase 96 billing governance evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+        run: npx --no-install prisma generate
+
+      - name: Offline billing-governance evaluation (no provider calls)
+        run: node scripts/ci/phase96-billing-governance-eval.mjs
+
+  # ---------------------------------------------------------------------------
+  # PHASE 96 — billing migration rehearsal + seat-limit concurrency proof.
+  #
+  # A CI-local PostgreSQL 16 service (pgvector, matching production). Applies the
+  # additive Phase 96 migration on an empty database, proves idempotency (second
+  # deploy = no pending), validates the schema, and runs a real SERIALIZABLE
+  # concurrency rehearsal proving two simultaneous reservations cannot exceed a
+  # configured ceiling. Credentials are DISPOSABLE, CI-only, reach only a
+  # localhost service container, and cannot touch production or staging. No
+  # secrets, no SSH, read-only repo permissions (inherited), a job timeout, a DB
+  # health check, and NO continue-on-error.
+  # ---------------------------------------------------------------------------
+  phase96-postgres:
+    name: Phase 96 PostgreSQL rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://hermes_ci:phase96-ci-only-password@localhost:5432/hermes_phase96_ci
+      HERMES_STORAGE_MODE: database
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: hermes_ci
+          POSTGRES_PASSWORD: phase96-ci-only-password
+          POSTGRES_DB: hermes_phase96_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hermes_ci -d hermes_phase96_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      - name: Fresh migration rehearsal (prisma migrate deploy on an empty database)
+        run: npx --no-install prisma migrate deploy
+
+      - name: Idempotency — a second deploy must report no pending migrations
+        run: |
+          npx --no-install prisma migrate deploy
+          npx --no-install prisma migrate status
+
+      - name: Validate Prisma schema against the migrated database
+        run: npm run db:validate
+
+      - name: SERIALIZABLE seat-limit concurrency rehearsal
+        run: node scripts/ci/phase96-concurrency-rehearsal.mjs

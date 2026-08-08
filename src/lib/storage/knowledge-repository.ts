@@ -22,6 +22,9 @@ function createSessionKnowledgeRepo(): Repository<StoredArticle, ArticleCreate> 
     async list() {
       return [...buf];
     },
+    async listPublished() {
+      return buf.filter((a) => a.status === "published");
+    },
     async get(id) {
       return buf.find((a) => a.id === id) ?? null;
     },
@@ -99,6 +102,20 @@ function createDatabaseKnowledgeRepo(): Repository<StoredArticle, ArticleCreate>
         return (await m.findMany({ orderBy: { createdAt: "desc" } })).map(rowToArticle);
       } catch {
         return fallback.list();
+      }
+    },
+    async listPublished() {
+      const m = await model();
+      if (!m) return fallback.listPublished!();
+      try {
+        // PHASE 99 (P99-INT-011) — the predicate belongs in the query. The
+        // anonymous derived-graph endpoints previously read every row of every
+        // tenant, drafts included, and discarded all but the published ones in
+        // JavaScript. The returned set is identical; what changes is how much
+        // never leaves the database.
+        return (await m.findMany({ where: { status: "published" }, orderBy: { createdAt: "desc" } })).map(rowToArticle);
+      } catch {
+        return fallback.listPublished!();
       }
     },
     async get(id) {

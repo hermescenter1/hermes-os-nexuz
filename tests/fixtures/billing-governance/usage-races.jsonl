@@ -1,0 +1,5 @@
+{"name":"limit 1, two attempts","limit":1,"attempts":2,"expectSuccesses":1}
+{"name":"limit 3, five attempts","limit":3,"attempts":5,"expectSuccesses":3}
+{"name":"limit 0, one attempt","limit":0,"attempts":1,"expectSuccesses":0}
+{"name":"limit 10, ten attempts","limit":10,"attempts":10,"expectSuccesses":10}
+{"name":"limit 2, three attempts","limit":2,"attempts":3,"expectSuccesses":2}

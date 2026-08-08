@@ -554,6 +554,12 @@ enum SubscriptionStatus {
   PAST_DUE
   CANCELED
   EXPIRED
+  // Phase 96 — richer deterministic lifecycle (additive; existing values kept).
+  INCOMPLETE
+  PAYMENT_FAILED
+  GRACE_PERIOD
+  SUSPENDED
+  CANCEL_AT_PERIOD_END
 }
 
 enum InvoiceStatus {
@@ -597,6 +603,9 @@ model Organization {
   subscriptions        Subscription[]
   invoices             Invoice[]
   usageRecords         UsageRecord[]
+  // Phase 96: commercial entitlements
+  entitlementOverrides OrganizationEntitlementOverride[]
+  trial                OrganizationTrial?
   invitations          OrganizationInvitation[]
   departments          Department[]
   apiKeys              ApiKey[]
@@ -627,6 +636,9 @@ model Organization {
   // Phase 38: Industrial Copilot
   copilotConversations CopilotConversation[]
   copilotInsights      CopilotInsight[]
+  // Phase 95: AI governance & model assurance
+  aiProviderPolicies   AiProviderPolicy[]
+  aiExecutionTraces    AiExecutionTrace[]
   // Phase 39: Predictive Maintenance
   assetBaselines       AssetBaseline[]
   assetRiskScores      AssetRiskScore[]
@@ -673,6 +685,12 @@ model Organization {
   dataDeletionRequests DataDeletionRequest[]
   processingActivities ProcessingActivity[]
   consentRecords       ConsentRecord[]
+  retentionPolicies    RetentionPolicy[]
+  legalHolds           LegalHold[]
+  subprocessors        Subprocessor[]
+  dataTransfers        DataTransfer[]
+  complianceIncidents  ComplianceIncident[]
+  complianceEvidencePacks ComplianceEvidencePack[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -749,6 +767,10 @@ model Plan {
   features      Json           @default("[]")
   limits        Json           @default("{}")
   isActive      Boolean        @default(true)
+  // Phase 96: canonical commercial plan key (COMMUNITY|PROFESSIONAL|TEAM|
+  // ENTERPRISE). Nullable + owner-backfilled; the entitlement resolver denies
+  // (UNKNOWN_PLAN, fail closed) until a plan is mapped to a canonical key.
+  planKey       String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   subscriptions Subscription[]
@@ -767,6 +789,24 @@ model Subscription {
   autoRenew            Boolean @default(true)
   // Phase 48C: Stripe subscription reference
   stripeSubscriptionId String? @unique
+  // Phase 96 — deterministic lifecycle metadata (all additive, nullable or
+  // defaulted; the domain state machine is authoritative and maps to `status`).
+  trialStartedAt             DateTime?
+  trialEndsAt                DateTime?
+  currentPeriodStart         DateTime?
+  currentPeriodEnd           DateTime?
+  cancelAtPeriodEnd          Boolean   @default(false)
+  cancelledAt                DateTime?
+  graceEndsAt                DateTime?
+  suspendedAt                DateTime?
+  expiredAt                  DateTime?
+  // provider: "stripe" | "manual" (Enterprise manual contract).
+  provider                   String    @default("stripe")
+  providerSubscriptionId     String?
+  // Out-of-order / idempotency guard for provider events.
+  lastProviderEventCreatedAt DateTime?
+  lastProviderEventId        String?
+  stateVersion               Int       @default(0)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -811,6 +851,11 @@ model Payment {
   amount            Decimal       @db.Decimal(20, 4)
   currency          Currency
   status            PaymentStatus @default(PENDING)
+  // Phase 96 — manual, Billing-Admin-only, bounded, audited refunds. Additive.
+  refundedAmount    Decimal       @db.Decimal(20, 4) @default(0)
+  refundedAt        DateTime?
+  refundReason      String?
+  refundedById      String?       // userId (loose reference — no FK)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   invoice           Invoice       @relation(fields: [invoiceId], references: [id])
@@ -869,6 +914,79 @@ model UsageRecord {
   @@index([organizationId])
   @@index([metric])
   @@index([userId])
+}
+
+// ── Phase 96: Commercialisation, Billing & Entitlements ───────────────────────
+
+// Idempotency + replay + out-of-order store for signed provider webhooks. Stores
+// only the event envelope — NEVER the raw payload, card data, or a provider
+// secret. `objectReferenceHash` is a SHA-256 of the referenced object id, not
+// the object itself. The (provider, providerEventId) unique constraint is the
+// authoritative dedup / claim mechanism.
+model BillingWebhookEvent {
+  id                  String    @id @default(cuid())
+  provider            String    // "stripe"
+  providerEventId     String
+  providerCreatedAt   DateTime
+  eventType           String
+  objectReferenceHash String?
+  // "RECEIVED" | "PROCESSING" | "PROCESSED" | "IGNORED" | "FAILED"
+  status              String    @default("RECEIVED")
+  attemptCount        Int       @default(0)
+  receivedAt          DateTime  @default(now())
+  processingStartedAt DateTime?
+  processedAt         DateTime?
+  // Non-sensitive machine code only (e.g. "HANDLER_ERROR", "OUT_OF_ORDER").
+  failureCode         String?
+
+  @@unique([provider, providerEventId])
+  @@index([eventType])
+  @@index([status])
+}
+
+// Billing-Admin authorised, TIME-BOUNDED entitlement override. `expiresAt` is
+// REQUIRED (no permanent silent override); `reason` + `approvedBy` are required;
+// all lifecycle transitions are audited. Never changes tenant ownership.
+model OrganizationEntitlementOverride {
+  id             String    @id @default(cuid())
+  organizationId String
+  entitlementKey String
+  decision       String    // "GRANT" | "DENY"
+  limitOverride  Int?      // metered ceiling override; null on GRANT = unlimited
+  reason         String
+  approvedBy     String    // userId of the authorising Billing Admin
+  approvedAt     DateTime  @default(now())
+  effectiveFrom  DateTime  @default(now())
+  expiresAt      DateTime  // REQUIRED — enforced non-null at the DB level
+  revokedAt      DateTime?
+  revokedById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, entitlementKey])
+  @@index([expiresAt])
+}
+
+// Database-authoritative trial history. A UNIQUE organizationId guarantees at
+// most ONE automatic trial per organisation — a browser cannot reset or recreate
+// it. Trial expiry never deletes tenant data.
+model OrganizationTrial {
+  id             String    @id @default(cuid())
+  organizationId String    @unique
+  planKey        String
+  source         String    @default("AUTOMATIC") // "AUTOMATIC" | "ADMIN_GRANT"
+  startedAt      DateTime  @default(now())
+  endsAt         DateTime
+  grantedBy      String?   // userId for an admin-granted trial
+  convertedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([endsAt])
 }
 
 // ── Industrial Gateway Foundation — Phase 35 ─────────────────────────────────
@@ -2689,6 +2807,13 @@ enum PrivacyRequestType {
   CONSENT_WITHDRAWAL
   ACCESS_REQUEST
   CORRECTION_REQUEST
+  // Phase 97 additive — GDPR Articles 18 (restriction), 21 (objection) and a
+  // catch-all. The existing five remain the canonical repository names
+  // (ACCESS_REQUEST≈access, DATA_EXPORT≈portability, CORRECTION_REQUEST≈
+  // rectification, DATA_DELETION≈erasure).
+  RESTRICTION
+  OBJECTION
+  OTHER
 }
 
 enum PrivacyRequestStatus {
@@ -2696,6 +2821,20 @@ enum PrivacyRequestStatus {
   IN_REVIEW
   COMPLETED
   REJECTED
+  // Phase 97 additive — explicit lifecycle states. PENDING is retained as the
+  // legacy initial state (equivalent to RECEIVED) so existing rows and the public
+  // intake route keep working; the state machine treats PENDING and RECEIVED as
+  // interchangeable entry states.
+  RECEIVED
+  IDENTITY_VERIFICATION_REQUIRED
+  VERIFIED
+  TRIAGED
+  DATA_COLLECTION
+  LEGAL_REVIEW_REQUIRED
+  APPROVED
+  PARTIALLY_APPROVED
+  FULFILMENT_IN_PROGRESS
+  CANCELLED
 }
 
 enum LegalDocumentType {
@@ -2790,14 +2929,33 @@ model PrivacyRequest {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
+  // ── Phase 97 additive lifecycle / triage / policy-clock columns ─────────────
+  // organizationId == null means UNASSIGNED (platform triage queue). Assignment
+  // sets organizationId from null and records who/when. Deadline columns are only
+  // populated when an owner has configured a deadline policy; otherwise they stay
+  // null and the policy status is reported as CONFIGURATION_REQUIRED (no
+  // statutory duration is ever invented).
+  assignedById              String?
+  assignedAt                DateTime?
+  responsiblePersonId       String?
+  identityVerifiedAt        DateTime?
+  acknowledgementDueAt      DateTime?
+  identityVerificationDueAt DateTime?
+  responseDueAt             DateTime?
+  extensionDueAt            DateTime?
+
   user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   candidate      AtsCandidate?        @relation(fields: [candidateId], references: [id], onDelete: SetNull)
   organization   Organization?        @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  exportJobs     DataExportRequest[]  @relation("PrivacyRequestExports")
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
   @@index([email])
   @@index([organizationId, createdAt])
+  @@index([organizationId, status])
+  // Tenant-safe target for a same-org composite FK (Phase 97 evidence packs).
+  @@unique([id, organizationId])
 }
 
 // ── LegalDocument ─────────────────────────────────────────────────────────────
@@ -2822,12 +2980,28 @@ model LegalDocument {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
+  // ── Phase 97 governed lifecycle (additive) ──────────────────────────────────
+  // `lifecycle` is authoritative; `isPublished` is retained for compatibility and
+  // kept in lock-step with the PUBLISHED state. Existing rows are mapped
+  // isPublished→PUBLISHED else DRAFT by the migration. Owner-scoped version
+  // uniqueness and single-effective-version uniqueness are enforced by
+  // migration-only partial / NULLS-NOT-DISTINCT unique indexes (not expressible
+  // as a Prisma @@unique), so the previous global-only unique is dropped there.
+  lifecycle      String            @default("DRAFT") // DRAFT|IN_REVIEW|APPROVED|SCHEDULED|PUBLISHED|SUPERSEDED|WITHDRAWN|ARCHIVED
+  approvedBy     String?
+  approvedAt     DateTime?
+  publishedBy    String?
+  withdrawnAt    DateTime?
+  supersededById String?
+
   acceptances    LegalAcceptance[]
   organization   Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  supersededBy   LegalDocument?    @relation("LegalDocumentSupersession", fields: [supersededById], references: [id], onDelete: SetNull)
+  supersedes     LegalDocument[]   @relation("LegalDocumentSupersession")
 
-  @@unique([documentType, version, locale])
   @@index([documentType, isPublished, locale])
   @@index([organizationId, documentType])
+  @@index([organizationId, lifecycle])
 }
 
 // ── LegalAcceptance ───────────────────────────────────────────────────────────
@@ -2846,6 +3020,17 @@ model LegalAcceptance {
   locale          String        @default("en")
   createdAt       DateTime      @default(now())
 
+  // Phase 97 additive safe evidence. Bound to the immutable document version via
+  // legalDocumentId; the denormalized fields make the record self-describing and
+  // are NEVER rewritten when a new version is published. Withdrawal sets
+  // withdrawnAt (evidence preserved, never deleted). No raw IP/UA/JWT/cookie is
+  // added — the governed acceptance path leaves ipAddress/userAgent null.
+  documentType    String?
+  documentVersion String?
+  sourceClass     String?
+  correlationId   String?
+  withdrawnAt     DateTime?
+
   legalDocument   LegalDocument  @relation(fields: [legalDocumentId], references: [id])
   user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
@@ -2853,6 +3038,7 @@ model LegalAcceptance {
   @@index([legalDocumentId, createdAt])
   @@index([userId, legalDocumentId])
   @@index([candidateId, legalDocumentId])
+  @@index([legalDocumentId, userId])
 }
 
 // ── DataExportRequest ─────────────────────────────────────────────────────────
@@ -2876,12 +3062,66 @@ model DataExportRequest {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  // ── Phase 97 Part G — governed child export job ─────────────────────────────
+  // The authoritative parent is PrivacyRequest (privacyRequestId). `lifecycle`
+  // is the governed closed state machine; the legacy `status` is retained and
+  // mapped by the migration (FAILED→FAILED, otherwise the fail-closed
+  // REVIEW_REQUIRED — no approval is invented for legacy rows, and the legacy
+  // downloadUrl is NEVER an authoritative download capability). packageKey is an
+  // opaque server-generated storage key (never a public/provider URL). A DB
+  // CHECK bounds the lifecycle vocabulary and a partial unique index bounds one
+  // ACTIVE job per parent (all migration-only, see the Part G migration).
+  privacyRequestId String?
+  lifecycle        String   @default("REVIEW_REQUIRED")
+  subjectClass     String?  // USER | CANDIDATE (documented subject classification)
+  approvedBy       String?
+  approvedAt       DateTime?
+  schemaVersion    String?
+  packageKey       String?
+  contentHash      String?
+  // Full-envelope integrity hash (SHA-256 over the canonical package envelope,
+  // excluding only packageHash itself). Distinct from contentHash (subject content
+  // only); set when the package is completed. A DB CHECK enforces SHA-256 hex.
+  packageHash      String?
+  idempotencyKey   String?
+  revokedBy        String?
+  revokedAt        DateTime?
+  failureCode      String?
+
+  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  privacyRequest PrivacyRequest? @relation("PrivacyRequestExports", fields: [privacyRequestId], references: [id], onDelete: SetNull)
+  downloadTokens ExportDownloadToken[]
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([email])
+  @@index([organizationId, lifecycle])
+  @@index([privacyRequestId])
+}
+
+// ── ExportDownloadToken ───────────────────────────────────────────────────────
+//
+// A short-lived, single-use download capability for a READY export. Only the
+// SHA-256 hash is stored — the plaintext is returned once at issuance and never
+// persisted or logged. Bound to the export request + subject + org; atomically
+// consumed on redemption; cascades from the owning export job (evidence remains
+// represented by the export job itself, which is preserved).
+
+model ExportDownloadToken {
+  id              String    @id @default(cuid())
+  exportRequestId String
+  tokenHash       String    @unique
+  subjectUserId   String?
+  organizationId  String?
+  expiresAt       DateTime
+  usedAt          DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  exportRequest   DataExportRequest @relation(fields: [exportRequestId], references: [id], onDelete: Cascade)
+
+  @@index([exportRequestId])
 }
 
 // ── DataDeletionRequest ───────────────────────────────────────────────────────
@@ -2905,12 +3145,46 @@ model DataDeletionRequest {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  // ── Phase 97 Part H — governed child erasure job ────────────────────────────
+  // The authoritative parent is PrivacyRequest (privacyRequestId). `lifecycle` is
+  // the governed closed state machine; the legacy `status` is retained. planJson is
+  // a canonical, immutable plan SNAPSHOT (identifiers + closed classifications +
+  // reason codes only — never raw subject content). A composite parent-tuple FK
+  // (RESTRICT), a partial unique active-parent index, and lifecycle/governed/
+  // parentless/approval/plan-evidence/plan-hash CHECKs are migration-only (see the
+  // Part H migration). Production execution is disabled by default and fail-closed.
+  privacyRequestId        String?
+  lifecycle               String   @default("REVIEW_REQUIRED")
+  subjectClass            String?  // USER (governed jobs are USER-only)
+  idempotencyKey          String?
+  approvedBy              String?
+  approvedAt              DateTime?
+  // Approval binds to the EXACT approved snapshot: hash + version are set inside the
+  // approval transaction and DB CHECKs require them to equal planHash/planVersion for
+  // APPROVED and later states (see the erasure approval-binding migration).
+  approvedPlanHash        String?
+  approvedPlanVersion     Int?
+  planJson                Json?
+  planVersion             Int?
+  planHash                String?
+  plannedAt               DateTime?
+  plannedBy               String?
+  // Governed manual-review decisions (closed codes, server-attributed); applied by
+  // the planner on regeneration — never a client-supplied classification override.
+  reviewResolutions       Json?
+  executionIdempotencyKey String?
+  executionStartedAt      DateTime?
+  blockedReasonCode       String?
+  failureCode             String?
+
   user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([email])
+  @@index([organizationId, lifecycle])
+  @@index([privacyRequestId])
 }
 
 // ── ProcessingActivity ────────────────────────────────────────────────────────
@@ -2933,9 +3207,405 @@ model ProcessingActivity {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  // ── Phase 97 additive RoPA enrichment ────────────────────────────────────────
+  // All columns are additive and defaulted so existing Phase 61 rows survive an
+  // upgrade unchanged. Classification-style columns fail CLOSED by default
+  // (LEGAL_REVIEW_REQUIRED / REVIEW_REQUIRED / DRAFT / PENDING_REVIEW) so an
+  // un-reviewed activity never reads as "compliant" and is flagged incomplete in
+  // evidence generation. String classifications (not Postgres enums) match the
+  // existing `legalBasis` column style and keep the migration purely additive.
+  description             String?
+  dataSubjectCategories   Json      @default("[]")
+  sourceSystems           Json      @default("[]")
+  destinationSystems      Json      @default("[]")
+  internalRecipients      Json      @default("[]")
+  externalRecipients      Json      @default("[]")
+  subprocessors           Json      @default("[]")
+  storageLocations        Json      @default("[]")
+  retentionPolicyRef      String?
+  legalBasisStatus        String    @default("LEGAL_REVIEW_REQUIRED") // CONFIGURED | LEGAL_REVIEW_REQUIRED | CONFIGURATION_REQUIRED
+  specialCategory         Boolean   @default(false)
+  automatedDecision       Boolean   @default(false)
+  internationalTransfer   Boolean   @default(false)
+  riskClassification      String    @default("REVIEW_REQUIRED") // LOW | MEDIUM | HIGH | REVIEW_REQUIRED
+  dataOwner               String?
+  systemOwner             String?
+  status                  String    @default("DRAFT") // DRAFT | ACTIVE | UNDER_REVIEW | RETIRED
+  approvalState           String    @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | REJECTED
+  reviewDate              DateTime?
+  createdBy               String?
+  updatedBy               String?
+
   organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, isActive])
+  @@index([organizationId, status])
+  @@index([organizationId, approvalState])
+  @@index([organizationId, updatedAt])
+  // Tenant-safe target for a same-org composite FK (Phase 97 evidence packs).
+  @@unique([id, organizationId])
+}
+
+// ── Phase 97 — Retention governance & Legal holds ─────────────────────────────
+//
+// Both are organization-owned (organizationId required, no cross-tenant sharing).
+// organizationId is a plain indexed column (no Prisma relation) to keep the
+// change localized — tenant isolation is enforced in every query predicate, the
+// established security boundary. Durations and approvals are NEVER invented:
+// retentionDays null / approvalState PENDING_REVIEW / action REVIEW_REQUIRED all
+// read as CONFIGURATION_REQUIRED and produce no automated action. Retention is
+// dry-run by default and disabled by default; a legal hold overrides deletion.
+
+model RetentionPolicy {
+  id               String    @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+  dataClass        String
+  targetResource   String
+  retentionTrigger String    @default("REVIEW_REQUIRED") // CREATION | LAST_ACTIVITY | CASE_CLOSURE | REVIEW_REQUIRED
+  retentionDays    Int?      // null == CONFIGURATION_REQUIRED (no invented duration)
+  action           String    @default("REVIEW_REQUIRED") // DELETE | ANONYMISE | ARCHIVE | REVIEW_REQUIRED | NO_AUTOMATED_ACTION
+  reviewOwner      String?
+  approvalState    String    @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | REJECTED
+  legalHoldAware   Boolean   @default(true)
+  dryRunOnly       Boolean   @default(true)
+  enabled          Boolean   @default(false)
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Config-like org-owned data: Cascade follows the repository convention for
+  // required organization relations (OrganizationMember, ApiKey, Department …).
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, enabled])
+  @@index([organizationId, approvalState])
+  @@index([organizationId, updatedAt])
+}
+
+model LegalHold {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  name                 String
+  reasonClass          String    @default("REVIEW_REQUIRED") // classification only — never free legal reasoning in general logs
+  scopeType            String    // SUBJECT | RESOURCE | RESOURCE_TYPE | ORGANIZATION | INCIDENT | DATE_RANGE | PROCESSING_ACTIVITY
+  subjectId            String?
+  resourceType         String?
+  resourceId           String?
+  processingActivityId String?
+  incidentId           String?
+  rangeStart           DateTime?
+  rangeEnd             DateTime?
+  status               String    @default("PROPOSED") // PROPOSED | ACTIVE | RELEASED | CANCELLED
+  approvedBy           String?
+  approvedAt           DateTime?
+  startDate            DateTime?
+  reviewDate           DateTime?
+  releaseApprovedBy    String?
+  releasedAt           DateTime?
+  cancelledBy          String?   // set when a never-activated PROPOSED hold is CANCELLED (distinct from release)
+  cancelledAt          DateTime?
+  createdBy            String?
+  updatedBy            String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Legal evidence: fail-closed. Restrict prevents hard-deleting an organization
+  // that still holds a legal hold, so evidence is never silently orphaned. Do NOT
+  // change to Cascade/SetNull without an explicit legal deletion policy.
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, status])
+  @@index([organizationId, scopeType])
+  @@index([organizationId, subjectId])
+}
+
+// ── Phase 97 Part I: Subprocessor & Data-Transfer governance ─────────────────
+// Tenant compliance registers (NOT the Phase 64 public vendor marketplace). All
+// classification columns are strings with fail-closed quarantine defaults
+// (REVIEW_REQUIRED / LEGAL_REVIEW_REQUIRED / CONFIGURATION_REQUIRED) — no legal
+// mechanism, adequacy decision or approved country is ever invented. Closed
+// lifecycle/review/approval CHECKs plus the composite cross-tenant relation FKs
+// on DataTransfer (subprocessorId+organizationId, processingActivityId+
+// organizationId) are migration-only raw SQL (see the Part I migration). No
+// credentials, tokens, raw personal data, contract bodies or provider secrets
+// are ever stored here.
+
+model Subprocessor {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  name                 String
+  legalEntity          String?
+  providerRegistryId   String?   // optional link to the Phase 95 AI-provider registry
+  // Explicit CLOSED provider-governance scope (Phase 95 vocabularies), distinct from
+  // the free-form compliance labels below. Approval binds to the EXACT current Policy
+  // version + a SHA-256 hash of the canonical scope (see the provider-binding migration).
+  providerDataClasses  Json      @default("[]")
+  providerWorkflows    Json      @default("[]")
+  approvedProviderPolicyVersion String?
+  approvedProviderScopeHash     String?
+  providerPolicyEvaluatedAt     DateTime?
+  serviceCategory      String    @default("REVIEW_REQUIRED")
+  operatingCountries   Json      @default("[]")
+  processingCountries  Json      @default("[]")
+  dataCategories       Json      @default("[]")
+  subjectCategories    Json      @default("[]")
+  contractReviewStatus String    @default("REVIEW_REQUIRED") // REVIEW_REQUIRED | IN_REVIEW | APPROVED | REJECTED
+  privacyReviewStatus  String    @default("REVIEW_REQUIRED")
+  securityReviewStatus String    @default("REVIEW_REQUIRED")
+  lifecycle            String    @default("DRAFT") // DRAFT | UNDER_REVIEW | APPROVED | ACTIVE | SUSPENDED | RETIRED | REVIEW_REQUIRED
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  approvedBy           String?
+  approvedAt           DateTime?
+  nextReviewAt         DateTime?
+  createdBy            String?
+  updatedBy            String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Governance evidence: fail-closed. Restrict prevents hard-deleting an
+  // organization that still owns subprocessor evidence (LegalHold precedent).
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, lifecycle])
+  @@index([organizationId, updatedAt])
+}
+
+model DataTransfer {
+  id                      String    @id @default(cuid())
+  organizationId          String
+  // Plain indexed strings — the tenant-safe composite FKs (id+organizationId →
+  // Subprocessor / ProcessingActivity) are added migration-only, so a valid
+  // foreign-tenant identifier can never be linked at the database layer.
+  subprocessorId          String?
+  processingActivityId    String?
+  sourceJurisdiction      String    @default("CONFIGURATION_REQUIRED")
+  destinationJurisdiction String    @default("CONFIGURATION_REQUIRED")
+  transferCategory        String    @default("REVIEW_REQUIRED")
+  transferMechanismStatus String    @default("LEGAL_REVIEW_REQUIRED") // CONFIGURED | LEGAL_REVIEW_REQUIRED | CONFIGURATION_REQUIRED
+  legalReviewStatus       String    @default("REVIEW_REQUIRED")
+  riskReviewStatus        String    @default("REVIEW_REQUIRED")
+  lifecycle               String    @default("DRAFT")
+  reviewedBy              String?
+  reviewedAt              DateTime?
+  approvedBy              String?
+  approvedAt              DateTime?
+  createdBy               String?
+  updatedBy               String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, lifecycle])
+  @@index([organizationId, updatedAt])
+  @@index([subprocessorId])
+  @@index([processingActivityId])
+}
+
+// ── Phase 97 — Governed Compliance Incident Management ────────────────────────
+//
+// A tenant-owned governed assessment/evidence record for compliance incidents. The
+// runtime source of truth for cross-plane reconstruction remains the Phase 92
+// observability facilities (security ring, audit log, error fingerprints); this
+// record REFERENCES that timeline by correlationId only — it never copies raw log
+// bodies, request/response bodies, credentials, personal data or free-form
+// notification content. Closed vocabularies + fail-closed defaults live in
+// migration-only CHECK constraints; the append-only timeline is a separate child.
+model ComplianceIncident {
+  id                    String    @id @default(cuid())
+  organizationId        String
+  incidentType          String    @default("REVIEW_REQUIRED")
+  severity              String    @default("REVIEW_REQUIRED")
+  lifecycle             String    @default("OPEN")
+  assessmentStatus      String    @default("REVIEW_REQUIRED")
+  sourceClass           String    @default("REVIEW_REQUIRED")
+  // Reference to the observability incident-reconstruction timeline (never copied in).
+  correlationId         String?
+  detectedAt            DateTime  @default(now())
+  occurredAt            DateTime?
+  // Closed structured summary CODE (safe for audit); the free-form summary is a
+  // SEPARATE optional, bounded, explicitly-sensitive field never emitted to audit/
+  // metrics/logs.
+  summaryCode           String?
+  sensitiveSummary      String?
+  // Duplicate-creation protection (unique per organization).
+  idempotencyKey        String
+  // Tenant-safe governed-record references (composite FKs added migration-only).
+  processingActivityId  String?
+  subprocessorId        String?
+  dataTransferId        String?
+  // Unresolved blocking action items — closure is fail-closed while > 0.
+  openBlockerCount      Int       @default(0)
+  // Server-derived attribution only.
+  ownerId               String?
+  assignedToId          String?
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  // High-authority decision evidence. A decision state requires a SHA-256 evidence
+  // hash + a positive monotonic version; a non-decision state must clear the current
+  // hash/attribution (never retain seemingly-valid evidence). Enforced by DB CHECKs.
+  decisionBy            String?
+  decisionAt            DateTime?
+  decisionEvidenceHash  String?
+  decisionVersion       Int       @default(0)
+  decisionAssessmentStatus String?
+  resolvedBy            String?
+  resolvedAt            DateTime?
+  closedBy              String?
+  closedAt              DateTime?
+  reopenedBy            String?
+  reopenedAt            DateTime?
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  // Composite-FK target for the tenant-bound timeline / actions (added migration-only).
+  @@unique([id, organizationId])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, lifecycle])
+  @@index([organizationId, updatedAt])
+  @@index([correlationId])
+}
+
+// Append-only incident timeline / evidence. Identifiers, closed event codes, actor
+// attribution, timestamps and an optional evidence hash ONLY — never raw log bodies,
+// request/response bodies, personal data, credentials or free-form notification text.
+// Mutation/deletion is blocked at the database (migration-only trigger).
+model ComplianceIncidentEvent {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  complianceIncidentId String
+  sequence             Int
+  eventCode            String
+  // Actor attribution is mandatory: actorId NOT NULL + a closed actorClass
+  // (PLATFORM | ORGANIZATION_MEMBER). Server-derived; never client-controlled.
+  actorId              String
+  actorClass           String    @default("ORGANIZATION_MEMBER")
+  fromLifecycle        String?
+  toLifecycle          String?
+  fromAssessment       String?
+  toAssessment         String?
+  // Decision binding (DECISION_RECORDED / REOPENED): the event carries the same
+  // evidence hash + version + outcome as the incident's decision snapshot.
+  evidenceHash         String?
+  decisionVersion      Int?
+  decisionOutcome      String?
+  // Authoritative action reference (ACTION_CREATED / ACTION_RESOLVED / ACTION_CANCELLED).
+  actionId             String?
+  correlationId        String?
+  createdAt            DateTime  @default(now())
+
+  // Tenant-bound composite parent FK + append-only trigger added migration-only.
+  @@unique([complianceIncidentId, sequence])
+  @@index([organizationId, complianceIncidentId])
+  @@index([complianceIncidentId, createdAt])
+}
+
+// Authoritative unresolved-blocker / follow-up actions for a compliance incident.
+// The single source of truth for closure blocking; ComplianceIncident.openBlockerCount
+// is only a transactionally-reconciled cache of OPEN rows here.
+model ComplianceIncidentAction {
+  id                     String    @id @default(cuid())
+  organizationId         String
+  complianceIncidentId   String
+  priority               String    @default("MEDIUM")
+  status                 String    @default("OPEN")
+  actionCode             String
+  // Creator/updater are mandatory + bound to an authoritative same-org membership
+  // (FKs added migration-only).
+  createdBy              String
+  createdAt              DateTime  @default(now())
+  resolvedBy             String?
+  resolvedAt             DateTime?
+  resolutionEvidenceHash String?
+  updatedBy              String
+  updatedAt              DateTime  @updatedAt
+
+  // Authoritative organization ownership + tenant-bound parent FK added migration-only.
+  @@index([organizationId])
+  @@index([complianceIncidentId])
+  @@index([organizationId, complianceIncidentId, status])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+// ── Phase 97: Governed Compliance Evidence Packs ─────────────────────────────
+// An authoritative, tenant-owned snapshot of governance evidence. READY means the
+// canonical manifest was generated consistently from ONE database snapshot — it NEVER
+// means legal compliance or certification. Manifests/items are immutable once READY
+// (DB triggers, added migration-only); only a governed revocation transition may follow.
+// Every evidence value is a SAFE projection: identifiers, versions, timestamps, counts,
+// booleans, closed classifications and cryptographic hashes — never raw personal data,
+// bodies, contracts, secrets, provider config or an incident's sensitiveSummary.
+model ComplianceEvidencePack {
+  id             String    @id @default(cuid())
+  organizationId String
+  lifecycle      String    @default("REQUESTED") // REQUESTED | GENERATING | READY | FAILED | REVOKED | EXPIRED
+  readiness      String    @default("REVIEW_REQUIRED") // COMPLETE | REVIEW_REQUIRED | CONFIGURATION_REQUIRED | INSUFFICIENT_EVIDENCE
+  scopeType      String    // ORGANIZATION | INCIDENT | PROCESSING_ACTIVITY | PRIVACY_REQUEST
+  schemaVersion  String    @default("1.0")
+  idempotencyKey String
+  // Explicit nullable targets (never one polymorphic id). CHECK + composite same-org FKs
+  // added migration-only; scope/target consistency is DB-enforced.
+  targetIncidentId           String?
+  targetProcessingActivityId String?
+  targetPrivacyRequestId     String?
+  requestedBy    String
+  requestedAt    DateTime  @default(now())
+  snapshotAt     DateTime? // captured inside the REPEATABLE READ generation transaction
+  generatedBy    String?
+  generatedAt    DateTime?
+  manifestHash   String?   // lowercase SHA-256 of the canonical manifest (set on READY)
+  manifestJson   Json?     // canonical manifest — safe projections only (set on READY)
+  itemCount      Int       @default(0)
+  failureCode    String?
+  revokedBy      String?
+  revokedAt      DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([id, organizationId])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, lifecycle])
+  @@index([organizationId, scopeType])
+  @@index([organizationId, updatedAt])
+}
+
+// One immutable evidence item — a SAFE canonical projection of a single governed record.
+// Bound to its pack by a composite same-org FK (added migration-only); every item is
+// append-only (UPDATE/DELETE rejected by a DB trigger).
+model ComplianceEvidencePackItem {
+  id              String   @id @default(cuid())
+  organizationId  String
+  evidencePackId  String
+  sequence        Int
+  entityType      String   // closed classification of the source record kind
+  entityId        String?  // safe identifier where disclosing it is safe; null otherwise
+  evidenceCode    String   // closed evidence classification
+  evidenceStatus  String   // closed status/readiness classification for this item
+  evidenceHash    String   // lowercase SHA-256 of this item's safe canonical projection
+  sourceVersion   String?  // safe version identifier of the source record
+  sourceUpdatedAt DateTime?
+  safeMetadata    Json     // safe projected fields ONLY (ids/enums/counts/booleans/hashes)
+  createdAt       DateTime @default(now())
+
+  // Composite same-org parent binding (evidencePackId, organizationId) → pack, the
+  // Organization RESTRICT FK, immutability triggers: all added migration-only.
+  @@unique([evidencePackId, sequence])
+  @@unique([id, organizationId])
+  @@index([organizationId])
+  @@index([evidencePackId])
 }
 
 // ── Phase 64: Vendor Ecosystem Platform ──────────────────────────────────────
@@ -6437,4 +7107,65 @@ model EngineeringFinding {
   @@index([organizationId, projectId, severity])
   @@index([organizationId, status])
   @@index([projectId, humanApprovalRequired])
+}
+
+// Phase 95 — AI Governance & Model Assurance.
+//
+// Organisation-scoped external-provider approval. Fail-closed: no row = deny.
+// Stores ONLY the approval envelope — never a provider key or a raw prompt.
+model AiProviderPolicy {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  providerRegistryId String
+  enabled            Boolean   @default(false)
+  allowedDataClasses String[]
+  allowedWorkflows   String[]
+  approvedBy         String
+  approvedAt         DateTime  @default(now())
+  policyVersion      String
+  expiresAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, providerRegistryId])
+  @@index([organizationId])
+}
+
+// Privacy-preserving AI execution trace. Stores HASHES, identifiers,
+// classifications, versions and outcomes ONLY — never a raw prompt, raw provider
+// response, secret, or inaccessible source content.
+model AiExecutionTrace {
+  id                         String   @id @default(cuid())
+  traceId                    String   @unique
+  organizationId             String?
+  siteId                     String?
+  userId                     String?
+  workflow                   String
+  executionMode              String
+  providerRegistryId         String?
+  modelId                    String?
+  policyVersion              String?
+  deterministicResultVersion String
+  inputHash                  String
+  outputHash                 String
+  sourceReferenceIds         String[]
+  citationVerificationStatus String
+  evidenceSufficiency        String
+  confidence                 Float
+  safetyDecision             String
+  humanApprovalRequired      Boolean
+  fallbackReason             String?
+  providerAttempted          Boolean
+  providerSucceeded          Boolean
+  latencyMs                  Int?
+  inputTokenCount            Int?
+  outputTokenCount           Int?
+  createdAt                  DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([workflow, createdAt])
 }

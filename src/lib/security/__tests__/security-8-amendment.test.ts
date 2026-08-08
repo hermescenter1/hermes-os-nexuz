@@ -46,7 +46,28 @@ const MOCKED_MODULES = [
   "@/lib/org/context", "@/lib/org/invitations", "@/lib/industrial/assets",
   "@/lib/digital-twin/nodes", "@/lib/academy/db", "@/lib/auth/rbac-server",
   "@/lib/db/prisma", "@/lib/audit/audit-service",
+  "@/lib/billing-governance/runtime/entitlement-store",
+  // PHASE 99: the industrial write path now authorises the target site.
+  "@/lib/site/context", "@/lib/site/rbac",
 ];
+
+// Phase 96: a determinable entitlement store so routes that now carry a separate
+// commercial-entitlement gate resolve normally in this unit harness (which has
+// no database). Grants every requested entitlement with a high ceiling, so these
+// pre-Phase-96 security assertions (scope/role clamp) still exercise what they
+// intend. Does NOT weaken any check — it only satisfies the orthogonal gate.
+function mockEntitlementAllow() {
+  vi.doMock("@/lib/billing-governance/runtime/entitlement-store", () => ({
+    prismaEntitlementStore: () => ({
+      getSubscription: async () => ({ organisationId: "org-A", planKey: "ENTERPRISE", status: "ACTIVE", currentPeriodStart: null, currentPeriodEnd: null }),
+      getUsage: async () => 0,
+      getOverride: async (_org: string, key: string) => ({
+        organisationId: "org-A", entitlementKey: key, decision: "GRANT", limitOverride: 1000,
+        reason: "test", approvedBy: "t", effectiveFrom: new Date(0), expiresAt: new Date("2099-01-01T00:00:00.000Z"), revokedAt: null,
+      }),
+    }),
+  }));
+}
 
 afterEach(() => {
   for (const k of ENV_KEYS) {
@@ -203,6 +224,7 @@ describe("Part 4 — organization invitation role clamp", () => {
       requireOrgActor: async (_r: unknown, orgId: string) => ({ ctx: { role, userId: "u1", orgId, status: "ACTIVE" } }),
     }));
     vi.doMock("@/lib/org/invitations", () => ({ inviteMember: out, listInvitations: async () => [] }));
+    mockEntitlementAllow();
     return out;
   }
   const P = "../../../app/api/organizations/[orgId]/invitations/route";
@@ -295,7 +317,20 @@ describe("Part 6 — industrial write requires industrial.write scope for API ke
       requirePlatformAuth: async () => ({ ctx: { userId: null, orgId: "org-A", authMethod, scopes } }),
     }));
     vi.doMock("@/lib/org/context", () => ({ requireOrgActor: async () => ({ ctx: { role: "ADMIN", userId: "u1", orgId: "org-A" } }) }));
+    // PHASE 99: the JWT path now also authorises the target SITE before writing
+    // (finding P99-INT-018). This block asserts the earlier SCOPE gate, so grant
+    // the site here; a dedicated site-scope test covers the site boundary itself.
+    vi.doMock("@/lib/site/context", () => ({
+      requireSiteActor: async () => ({ ctx: { role: "SITE_MANAGER", userId: "u1", orgId: "org-A", siteId: "s1" } }),
+      getAllowedSiteIds: async () => ["s1"],
+    }));
+    vi.doMock("@/lib/site/rbac", () => ({ requireSitePermission: () => ({ ok: true }) }));
     vi.doMock("@/lib/industrial/assets", () => ({ listAssets: async () => [], createAsset: async () => ({ id: "a1" }) }));
+    // Phase 96: supply a determinable entitlement state so the separate
+    // commercial-entitlement gate (which runs AFTER the scope gate) resolves
+    // normally instead of fail-closing on the harness's absent database. This
+    // preserves the scope-gate assertion without weakening it.
+    mockEntitlementAllow();
   }
 
   it("API key WITHOUT industrial.write → 403", async () => {

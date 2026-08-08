@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { NextIntlClientProvider } from "next-intl";
 import { mount } from "@/components/ds/__tests__/_render";
 import en from "../../../../messages/en.json";
@@ -27,6 +27,22 @@ function withIntl(locale: keyof typeof messagesFor, ui: React.ReactNode) {
 }
 
 const strip = (c: HTMLElement) => c.querySelector("section > div")!;
+
+/**
+ * PHASE 99.6 — ProvenExpert is a NON-ESSENTIAL marketing third party and the
+ * Phase 97 compliance work gates its container behind explicit marketing
+ * consent (default DENIED). This strip test predates that gate and was written
+ * to pin badge geometry, uniqueness and ordering — not the consent decision.
+ * Granting consent in the fixture keeps it exercising the DOM it was written to
+ * protect; the consent default itself is pinned separately below so relaxing it
+ * here cannot hide a regression.
+ */
+const CONSENT_KEY = "hermes_cookie_consent";
+const grantMarketingConsent = () =>
+  window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ marketing: true }));
+
+beforeEach(grantMarketingConsent);
+afterEach(() => window.localStorage.removeItem(CONSENT_KEY));
 
 describe("trust strip — compact container", () => {
   it("is a single centred w-fit glass panel, not a full-width grid", async () => {
@@ -173,6 +189,32 @@ describe("trust strip — ProvenExpert containment", () => {
     expect(viewport.className).toContain("overflow-hidden");
     expect(viewport.className).toContain("h-[84px]");
     expect(viewport.className).toContain("w-[116px]");
+    await unmount();
+  });
+});
+
+describe("trust strip — ProvenExpert consent gate (PHASE 99.6)", () => {
+  it("renders no vendor container until marketing consent is granted", async () => {
+    window.localStorage.removeItem(CONSENT_KEY);
+    const { container, unmount } = await mount(withIntl("en", <TrustBadgesSection />));
+    expect(
+      container.querySelector("#proSealWidget"),
+      "the ProvenExpert container must not exist without marketing consent",
+    ).toBeNull();
+    await unmount();
+  });
+
+  it("renders no vendor container when marketing consent is explicitly denied", async () => {
+    window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ marketing: false }));
+    const { container, unmount } = await mount(withIntl("en", <TrustBadgesSection />));
+    expect(container.querySelector("#proSealWidget")).toBeNull();
+    await unmount();
+  });
+
+  it("renders the vendor container once marketing consent is granted", async () => {
+    grantMarketingConsent();
+    const { container, unmount } = await mount(withIntl("en", <TrustBadgesSection />));
+    expect(container.querySelector("#proSealWidget")).not.toBeNull();
     await unmount();
   });
 });

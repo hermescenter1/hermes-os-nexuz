@@ -2,23 +2,42 @@ import { NextResponse }       from "next/server";
 import type { NextRequest }    from "next/server";
 import { getAuthRole }         from "@/lib/auth/rbac-server";
 import { getCourseById, getCourseModules, getCourseLessons, getCourseQuizzes, updateCourse } from "@/lib/academy/db";
+import { resolveAcademyScope, canSeeUnpublishedAcademyContent } from "@/lib/academy/request-scope";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PHASE 99 SECURITY — this detail endpoint had no gate at all while the
+  // sibling list endpoint required authentication, resolved the caller's
+  // organization and served published courses only. An anonymous caller holding
+  // a course id therefore received another tenant's DRAFT course. Apply the same
+  // three predicates the list endpoint applies, and answer 404 (not 403) for a
+  // foreign or unpublished course so the response is not an existence oracle.
+  const role = await getAuthRole(req);
+  if (!role) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  const scope = await resolveAcademyScope(req);
+  if (!scope) {
+    return NextResponse.json({ error: "Course not found" }, { status: 404 });
+  }
+
   const { id } = await params;
 
-  const [course, modules, lessons, quizzes] = await Promise.all([
-    getCourseById(id),
+  const course = await getCourseById(id);
+  if (!course || course.organizationId !== scope.orgId) {
+    return NextResponse.json({ error: "Course not found" }, { status: 404 });
+  }
+  if (!course.isPublished && !canSeeUnpublishedAcademyContent(role)) {
+    return NextResponse.json({ error: "Course not found" }, { status: 404 });
+  }
+
+  const [modules, lessons, quizzes] = await Promise.all([
     getCourseModules(id),
     getCourseLessons(id),
     getCourseQuizzes(id),
   ]);
-
-  if (!course) {
-    return NextResponse.json({ error: "Course not found" }, { status: 404 });
-  }
 
   // Build module tree: modules → lessons
   const modulesWithLessons = (modules ?? []).map((mod) => ({
