@@ -17,7 +17,13 @@ BACKUP_FILE="${1:-}"
 CONTAINER="${2:-${POSTGRES_CONTAINER:-hermes-postgres-1}}"
 DB_USER="${3:-${POSTGRES_USER:-hermes}}"
 BACKUP_DIR="$(dirname "${BACKUP_FILE}")"
-VERIFICATION_STATE="${BACKUP_DIR}/.last-verification.json"
+# PHASE 98 — the durable verification record must live in the DURABLE backup
+# directory, not next to a transient plaintext dump. backup-postgres.sh now
+# creates the plaintext in a private temp dir and passes VERIFICATION_DIR so the
+# record still lands in the durable BACKUP_DIR (read by /api/admin/system).
+# Defaults to the dump's directory for standalone/direct invocation.
+VERIFICATION_DIR="${VERIFICATION_DIR:-${BACKUP_DIR}}"
+VERIFICATION_STATE="${VERIFICATION_DIR}/.last-verification.json"
 
 ESSENTIAL_TABLES=("Organization" "User" "IndustrialSite" "IndustrialAsset")
 

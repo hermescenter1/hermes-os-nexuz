@@ -12,6 +12,9 @@ import type {
   DbLegalAcceptance,
   DbDataExportRequest,
   DbDataDeletionRequest,
+  DbProcessingActivity,
+  DbRetentionPolicy,
+  DbLegalHold,
   ComplianceStats,
 } from "./types";
 
@@ -33,6 +36,9 @@ async function m() {
     export:     d.dataExportRequest   as AnyModel,
     deletion:   d.dataDeletionRequest as AnyModel,
     activity:   d.processingActivity  as AnyModel,
+    retention:  d.retentionPolicy     as AnyModel,
+    hold:       d.legalHold           as AnyModel,
+    member:     d.organizationMember  as AnyModel,
   };
 }
 
@@ -80,9 +86,9 @@ export async function upsertCookieConsent(data: {
       },
     } as unknown)) as DbCookieConsent;
   } catch (err) {
-    // PHASE 99.5 (P99-INT-002) — never log the consent subject identifier. It
-    // used to be the live authentication session token; even now that it is an
-    // opaque consent id it remains a subject identifier that must not reach logs.
+    // PHASE 99 / 99.5 (P99-INT-002) — never log the consent subject identifier. It used to be the live
+    // authentication session token; even now that it is an opaque consent id it
+    // remains a subject identifier that must not reach logs.
     console.error("[compliance/db] upsertCookieConsent failed:", err);
     return null;
   }
@@ -94,7 +100,7 @@ export async function getCookieConsent(sessionId: string): Promise<DbCookieConse
   try {
     return (await db.cookie.findUnique({ where: { sessionId } } as unknown)) as DbCookieConsent | null;
   } catch (err) {
-    // PHASE 99.5 — see upsertCookieConsent: the subject identifier stays out of logs.
+    // PHASE 99 / 99.5 — see upsertCookieConsent: the subject identifier stays out of logs.
     console.error("[compliance/db] getCookieConsent failed:", err);
     return null;
   }
@@ -224,6 +230,128 @@ export async function updatePrivacyRequestStatus(
   } catch { return null; }
 }
 
+/**
+ * SECURITY (compliance hotfix) — read a single PrivacyRequest ONLY within the
+ * caller's authoritative organization. Returns null for a foreign or unknown id
+ * without disclosing which case it is, so the route can answer a uniform 404.
+ */
+export async function getPrivacyRequestForOrg(
+  id: string,
+  organizationId: string,
+): Promise<DbPrivacyRequest | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.privacy.findFirst({
+      where: { id, organizationId },
+    } as unknown)) as DbPrivacyRequest | null;
+  } catch { return null; }
+}
+
+/**
+ * SECURITY (compliance hotfix) — status mutation whose database predicate is
+ * tenant-scoped: the `updateMany` filter carries BOTH the request id AND the
+ * authoritative organization id, so a request belonging to another tenant is
+ * never matched, let alone written. Returns the affected-row count; the caller
+ * asserts exactly one row changed and otherwise answers a non-disclosing 404.
+ * The tenant condition lives in the query, never in application code that could
+ * be bypassed.
+ */
+export async function updatePrivacyRequestStatusForOrg(params: {
+  id:             string;
+  organizationId: string;
+  status:         PrivacyRequestStatus;
+  reviewedBy:     string;
+  responseNote?:  string | null;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.privacy.updateMany({
+      where: { id: params.id, organizationId: params.organizationId },
+      data: {
+        status:       params.status,
+        reviewedBy:   params.reviewedBy,
+        reviewedAt:   new Date(),
+        completedAt:  params.status === "COMPLETED" ? new Date() : undefined,
+        responseNote: params.responseNote ?? null,
+        updatedAt:    new Date(),
+      },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
+/**
+ * SECURITY (Phase 97) — the platform TRIAGE queue: privacy requests that have no
+ * organization yet (`organizationId: null`). Reserved for the strict platform
+ * boundary. A tenant admin's queries always pin THEIR org id, so an unassigned
+ * request never appears in any tenant list — enforced by the predicate here and
+ * by every tenant-scoped read carrying a concrete organizationId.
+ */
+export async function listUnassignedPrivacyRequests(take = 200): Promise<DbPrivacyRequest[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.privacy.findMany({
+      where:   { organizationId: null },
+      orderBy: { createdAt: "asc" },
+      take,
+    } as unknown)) as DbPrivacyRequest[];
+  } catch { return []; }
+}
+
+/** Read a single UNASSIGNED privacy request (platform boundary only). */
+export async function getUnassignedPrivacyRequest(id: string): Promise<DbPrivacyRequest | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.privacy.findFirst({
+      where: { id, organizationId: null },
+    } as unknown)) as DbPrivacyRequest | null;
+  } catch { return null; }
+}
+
+/**
+ * SECURITY (Phase 97) — assign an UNASSIGNED request to an organization. The
+ * write predicate carries `organizationId: null`, so the assignment succeeds only
+ * while the request is still unassigned: an already-assigned request (belonging to
+ * any tenant) is never matched, so this can neither reassign nor hijack. Returns
+ * the affected-row count; the caller asserts exactly one row changed.
+ */
+export async function assignPrivacyRequestToOrg(params: {
+  id:             string;
+  organizationId: string;
+  assignedById:   string;
+  status?:        PrivacyRequestStatus;
+  deadlines?: {
+    acknowledgementDueAt:      Date | null;
+    identityVerificationDueAt: Date | null;
+    responseDueAt:             Date | null;
+    extensionDueAt:            Date | null;
+  };
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.privacy.updateMany({
+      where: { id: params.id, organizationId: null },
+      data: {
+        organizationId:            params.organizationId,
+        assignedById:              params.assignedById,
+        assignedAt:                new Date(),
+        status:                    params.status ?? "TRIAGED",
+        acknowledgementDueAt:      params.deadlines?.acknowledgementDueAt ?? undefined,
+        identityVerificationDueAt: params.deadlines?.identityVerificationDueAt ?? undefined,
+        responseDueAt:             params.deadlines?.responseDueAt ?? undefined,
+        extensionDueAt:            params.deadlines?.extensionDueAt ?? undefined,
+        updatedAt:                 new Date(),
+      },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
 // ── Legal Documents ───────────────────────────────────────────────────────────
 
 export async function getLatestLegalDocument(
@@ -242,12 +370,81 @@ export async function getLatestLegalDocument(
   } catch { return null; }
 }
 
+/**
+ * SECURITY (compliance hotfix) — the ONLY query behind the anonymous public
+ * legal-document endpoint. Every constraint is enforced IN THE DATABASE so no
+ * post-retrieval check can be bypassed:
+ *   - `organizationId: null` — platform-global templates ONLY; a published
+ *     tenant-owned document can never surface anonymously.
+ *   - `isPublished: true`   — drafts are never public.
+ *   - effective NOW         — `effectiveDate` is null OR already elapsed, so a
+ *     future-dated newer version is excluded from selection and the newest
+ *     CURRENTLY-EFFECTIVE version wins (no 404 while an older effective version
+ *     still exists).
+ * The organization scope is fixed to null here and never taken from the client.
+ */
+export async function getLatestPublicLegalDocument(
+  documentType: LegalDocumentType,
+  locale = "en",
+  now: Date = new Date(),
+): Promise<DbLegalDocument | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    const docs = (await db.legal.findMany({
+      where: {
+        documentType,
+        locale,
+        isPublished:    true,
+        lifecycle:      "PUBLISHED", // Phase 97: lifecycle is authoritative, never inferred from isPublished alone
+        organizationId: null,
+        OR: [{ effectiveDate: null }, { effectiveDate: { lte: now } }],
+      },
+      orderBy: { version: "desc" },
+      take:    1,
+    } as unknown)) as DbLegalDocument[];
+    return docs[0] ?? null;
+  } catch { return null; }
+}
+
 export async function getAllLegalDocuments(organizationId?: string): Promise<DbLegalDocument[]> {
   const db = await m();
   if (!db) return [];
   try {
     return (await db.legal.findMany({
       where:   organizationId ? { organizationId } : {},
+      orderBy: [{ documentType: "asc" }, { version: "desc" }],
+    } as unknown)) as DbLegalDocument[];
+  } catch { return []; }
+}
+
+/**
+ * SECURITY (compliance hotfix) — documents belonging to a SPECIFIC tenant only.
+ * The predicate pins `organizationId`, so a tenant administrator can never read
+ * another organization's documents (published or draft) through the admin API.
+ */
+export async function getLegalDocumentsForOrg(organizationId: string): Promise<DbLegalDocument[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.legal.findMany({
+      where:   { organizationId },
+      orderBy: [{ documentType: "asc" }, { version: "desc" }],
+    } as unknown)) as DbLegalDocument[];
+  } catch { return []; }
+}
+
+/**
+ * SECURITY (compliance hotfix) — platform-global legal templates only
+ * (`organizationId: null`). Reserved for the strictest platform-admin boundary;
+ * tenant administrators never receive these.
+ */
+export async function getGlobalLegalDocuments(): Promise<DbLegalDocument[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.legal.findMany({
+      where:   { organizationId: null },
       orderBy: [{ documentType: "asc" }, { version: "desc" }],
     } as unknown)) as DbLegalDocument[];
   } catch { return []; }
@@ -275,6 +472,7 @@ export async function createLegalDocument(data: {
         content:       data.content,
         locale:        data.locale ?? "en",
         isPublished:   false,
+        lifecycle:     "DRAFT", // Phase 97: a new document always starts as a DRAFT
         effectiveDate: data.effectiveDate ?? null,
         organizationId: data.organizationId ?? null,
         createdBy:     data.createdBy ?? null,
@@ -282,6 +480,127 @@ export async function createLegalDocument(data: {
       },
     } as unknown)) as DbLegalDocument;
   } catch { return null; }
+}
+
+// ── Phase 97 legal-document lifecycle (scope-aware) ───────────────────────────
+//
+// `organizationScope` is the AUTHORITATIVE scope: a concrete org id for tenant
+// documents, or null for platform-global templates. Every read/write predicate
+// carries it, so a tenant can never read or mutate a global template or another
+// tenant's document, and a global operation never touches tenant rows.
+
+export async function getLegalDocumentForScope(
+  id: string,
+  organizationScope: string | null,
+): Promise<DbLegalDocument | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.legal.findFirst({ where: { id, organizationId: organizationScope } } as unknown)) as DbLegalDocument | null;
+  } catch { return null; }
+}
+
+/** Update DRAFT-editable content within scope, only while the row is still DRAFT. */
+export async function updateLegalDocumentContentForScope(params: {
+  id: string; organizationScope: string | null; data: Record<string, unknown>;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const r = (await db.legal.updateMany({
+      where: { id: params.id, organizationId: params.organizationScope, lifecycle: "DRAFT" },
+      data:  { ...params.data, updatedAt: new Date() },
+    } as unknown)) as { count?: number };
+    return { affected: typeof r?.count === "number" ? r.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
+/**
+ * Non-publishing lifecycle transition. The predicate pins id + scope + the
+ * EXPECTED current lifecycle (optimistic guard), so a concurrent transition or a
+ * foreign/global row is never matched.
+ */
+export async function transitionLegalDocumentForScope(params: {
+  id: string; organizationScope: string | null;
+  fromLifecycle: string; toLifecycle: string; actorId: string;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  const data: Record<string, unknown> = { lifecycle: params.toLifecycle, updatedAt: new Date() };
+  if (params.toLifecycle === "APPROVED") { data.approvedBy = params.actorId; data.approvedAt = new Date(); }
+  if (params.toLifecycle === "WITHDRAWN") { data.withdrawnAt = new Date(); data.isPublished = false; }
+  try {
+    const r = (await db.legal.updateMany({
+      where: { id: params.id, organizationId: params.organizationScope, lifecycle: params.fromLifecycle },
+      data,
+    } as unknown)) as { count?: number };
+    return { affected: typeof r?.count === "number" ? r.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
+/**
+ * Publish transactionally. Within one transaction: assert the target is still
+ * APPROVED/SCHEDULED within scope, supersede any currently-effective version for
+ * the (documentType, locale, scope), then flip the target to PUBLISHED. The
+ * database partial-unique effective index is the concurrency backstop; this
+ * transaction guarantees the sequential case never leaves two effective versions.
+ * Returns { ok, code } — never throws.
+ */
+class PublishError extends Error {
+  constructor(public codeName: string) { super(codeName); this.name = "PublishError"; }
+}
+
+export async function publishLegalDocumentForScope(params: {
+  id: string; organizationScope: string | null; actorId: string;
+}): Promise<{ ok: boolean; code?: string }> {
+  const client = await getPrisma();
+  if (!client) return { ok: false, code: "UNAVAILABLE" };
+  const c = client as unknown as {
+    $transaction: <T>(fn: (tx: Record<string, AnyModel>) => Promise<T>) => Promise<T>;
+  };
+  const now = new Date();
+  try {
+    // Every failure inside the transaction THROWS, so Prisma rolls the whole
+    // transaction back — a failed replacement publication can never leave the
+    // previous document superseded (no current-effective gap).
+    await c.$transaction(async (tx) => {
+      const legal = tx.legalDocument as AnyModel;
+      const target = (await legal.findFirst({ where: { id: params.id, organizationId: params.organizationScope } })) as DbLegalDocument | null;
+      if (!target) throw new PublishError("NOT_FOUND");
+      if (target.lifecycle !== "APPROVED" && target.lifecycle !== "SCHEDULED") {
+        throw new PublishError("NOT_APPROVED"); // publishing requires an approved document
+      }
+      // Effective-date gate on the PERSISTED target, evaluated with the
+      // authoritative server clock (never a browser-supplied time). A future
+      // effectiveDate cannot publish — the current version is left untouched.
+      if (target.effectiveDate && new Date(target.effectiveDate as unknown as string).getTime() > now.getTime()) {
+        throw new PublishError("NOT_EFFECTIVE_YET");
+      }
+      // Supersede the current effective version in the same scope (if any).
+      await legal.updateMany({
+        where: {
+          documentType:   target.documentType,
+          locale:         target.locale,
+          organizationId: params.organizationScope,
+          isPublished:    true,
+          id:             { not: target.id },
+        },
+        data: { isPublished: false, lifecycle: "SUPERSEDED", supersededById: target.id, updatedAt: now },
+      });
+      // Flip the target to PUBLISHED.
+      const upd = (await legal.updateMany({
+        where: { id: target.id, organizationId: params.organizationScope, lifecycle: target.lifecycle },
+        data: { isPublished: true, lifecycle: "PUBLISHED", publishedBy: params.actorId, publishedAt: now, updatedAt: now },
+      })) as { count?: number };
+      if ((upd?.count ?? 0) !== 1) throw new PublishError("CONFLICT");
+    });
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof PublishError) return { ok: false, code: err.codeName };
+    // A unique-violation on the effective index (a concurrent publish won the
+    // race) surfaces here — the transaction rolled back, so fail closed.
+    return { ok: false, code: "EFFECTIVE_CONFLICT" };
+  }
 }
 
 export async function publishLegalDocument(id: string): Promise<DbLegalDocument | null> {
@@ -338,6 +657,102 @@ export async function hasAcceptedDocument(
     const row = await db.acceptance.findFirst({ where } as unknown);
     return row !== null;
   } catch { return false; }
+}
+
+// ── Phase 97 governed legal acceptance ────────────────────────────────────────
+//
+// Binds acceptance to an IMMUTABLE document version (legalDocumentId points at a
+// specific version row that never changes; publishing a NEW version creates a
+// NEW row, so historical acceptances are never rewritten). Stores ONLY safe
+// evidence — never raw IP, user agent, JWT, cookie or fingerprint.
+
+/** Read a PUBLISHED document by id (for the acceptance path), scope-agnostic. */
+export async function getPublishedDocumentById(id: string): Promise<DbLegalDocument | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.legal.findFirst({ where: { id, lifecycle: "PUBLISHED", isPublished: true } } as unknown)) as DbLegalDocument | null;
+  } catch { return null; }
+}
+
+/** Is the user an ACTIVE member of the organization? (acceptance of tenant docs) */
+export async function isActiveMemberOfOrg(userId: string, organizationId: string): Promise<boolean> {
+  const db = await m();
+  if (!db) return false;
+  try {
+    const row = await db.member.findFirst({ where: { userId, organizationId, status: "ACTIVE" } } as unknown);
+    return row !== null;
+  } catch { return false; }
+}
+
+export async function getActiveAcceptanceForUser(
+  legalDocumentId: string, userId: string,
+): Promise<DbLegalAcceptance | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.acceptance.findFirst({ where: { legalDocumentId, userId, withdrawnAt: null } } as unknown)) as DbLegalAcceptance | null;
+  } catch { return null; }
+}
+
+export type RecordAcceptanceResult =
+  | { ok: true; acceptance: DbLegalAcceptance }
+  | { ok: false; reason: "DUPLICATE" | "ERROR" };
+
+export async function recordGovernedAcceptance(data: {
+  legalDocumentId: string;
+  userId:          string;
+  organizationId?: string | null;
+  locale:          string;
+  documentType:    string;
+  documentVersion: string;
+  sourceClass:     string;
+  correlationId?:  string | null;
+}): Promise<RecordAcceptanceResult> {
+  const db = await m();
+  if (!db) return { ok: false, reason: "ERROR" };
+  try {
+    const acceptance = (await db.acceptance.create({
+      data: {
+        id:              randomUUID(),
+        legalDocumentId: data.legalDocumentId,
+        userId:          data.userId,
+        organizationId:  data.organizationId ?? null,
+        locale:          data.locale,
+        documentType:    data.documentType,
+        documentVersion: data.documentVersion,
+        sourceClass:     data.sourceClass,
+        correlationId:   data.correlationId ?? null,
+        // ipAddress / userAgent DELIBERATELY left null — governed evidence only.
+      },
+    } as unknown)) as DbLegalAcceptance;
+    return { ok: true, acceptance };
+  } catch (err) {
+    // The partial-unique active-governed index rejects a concurrent duplicate —
+    // this is the EXPECTED race, not a persistence failure.
+    if ((err as { code?: string })?.code === "P2002") return { ok: false, reason: "DUPLICATE" };
+    return { ok: false, reason: "ERROR" };
+  }
+}
+
+/**
+ * Withdraw a SPECIFIC acceptance row (by its id) belonging to the user, only
+ * while still active. Evidence is preserved (withdrawnAt set, row never deleted).
+ * The predicate carries id + userId + withdrawnAt:null so a foreign or already-
+ * withdrawn row is never touched.
+ */
+export async function withdrawAcceptanceById(params: {
+  acceptanceId: string; userId: string;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const r = (await db.acceptance.updateMany({
+      where: { id: params.acceptanceId, userId: params.userId, withdrawnAt: null },
+      data:  { withdrawnAt: new Date() },
+    } as unknown)) as { count?: number };
+    return { affected: typeof r?.count === "number" ? r.count : 0 };
+  } catch { return { affected: 0 }; }
 }
 
 // ── Data Export / Deletion Requests ──────────────────────────────────────────
@@ -413,6 +828,199 @@ export async function getDataRequests(organizationId?: string): Promise<{
       deletions: deletions as DbDataDeletionRequest[],
     };
   } catch { return { exports: [], deletions: [] }; }
+}
+
+// ── Processing Inventory (Article 30 RoPA) — Phase 97 ─────────────────────────
+//
+// SECURITY — every read and write is tenant-scoped IN THE DATABASE PREDICATE. A
+// single-row read uses `findFirst({ id, organizationId })` and a mutation uses
+// `updateMany({ where: { id, organizationId } })` + an affected-row assertion by
+// the caller, so a processing activity belonging to another tenant is never
+// matched, disclosed or written. The organizationId is always the server-derived
+// authoritative scope — never a client-supplied value.
+
+export async function listProcessingActivitiesForOrg(
+  organizationId: string,
+  take = 200,
+): Promise<DbProcessingActivity[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.activity.findMany({
+      where:   { organizationId },
+      orderBy: { updatedAt: "desc" },
+      take,
+    } as unknown)) as DbProcessingActivity[];
+  } catch { return []; }
+}
+
+export async function getProcessingActivityForOrg(
+  id: string,
+  organizationId: string,
+): Promise<DbProcessingActivity | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.activity.findFirst({
+      where: { id, organizationId },
+    } as unknown)) as DbProcessingActivity | null;
+  } catch { return null; }
+}
+
+export async function createProcessingActivityForOrg(params: {
+  organizationId: string;
+  createdBy:      string;
+  data:           Record<string, unknown>;
+}): Promise<DbProcessingActivity | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.activity.create({
+      data: {
+        id:             randomUUID(),
+        organizationId: params.organizationId, // authoritative scope, never from client
+        createdBy:      params.createdBy,
+        updatedBy:      params.createdBy,
+        updatedAt:      new Date(),
+        ...params.data,
+      },
+    } as unknown)) as DbProcessingActivity;
+  } catch { return null; }
+}
+
+export async function updateProcessingActivityForOrg(params: {
+  id:             string;
+  organizationId: string;
+  updatedBy:      string;
+  data:           Record<string, unknown>;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.activity.updateMany({
+      // tenant condition lives in the query — both id AND authoritative org id.
+      where: { id: params.id, organizationId: params.organizationId },
+      data: {
+        ...params.data,
+        // These are set server-side and can never be overridden by params.data
+        // because they follow the spread.
+        updatedBy: params.updatedBy,
+        updatedAt: new Date(),
+      },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
+// ── Retention Policies (Phase 97) — org-scoped, planning only ─────────────────
+
+export async function listRetentionPoliciesForOrg(organizationId: string, take = 200): Promise<DbRetentionPolicy[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.retention.findMany({ where: { organizationId }, orderBy: { updatedAt: "desc" }, take } as unknown)) as DbRetentionPolicy[];
+  } catch { return []; }
+}
+
+export async function getRetentionPolicyForOrg(id: string, organizationId: string): Promise<DbRetentionPolicy | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.retention.findFirst({ where: { id, organizationId } } as unknown)) as DbRetentionPolicy | null;
+  } catch { return null; }
+}
+
+export async function createRetentionPolicyForOrg(params: {
+  organizationId: string; createdBy: string; data: Record<string, unknown>;
+}): Promise<DbRetentionPolicy | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.retention.create({
+      data: {
+        id:             randomUUID(),
+        organizationId: params.organizationId,
+        createdBy:      params.createdBy,
+        updatedBy:      params.createdBy,
+        updatedAt:      new Date(),
+        ...params.data,
+      },
+    } as unknown)) as DbRetentionPolicy;
+  } catch { return null; }
+}
+
+export async function updateRetentionPolicyForOrg(params: {
+  id: string; organizationId: string; updatedBy: string; data: Record<string, unknown>;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.retention.updateMany({
+      where: { id: params.id, organizationId: params.organizationId },
+      data:  { ...params.data, updatedBy: params.updatedBy, updatedAt: new Date() },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
+}
+
+// ── Legal Holds (Phase 97) — org-scoped ───────────────────────────────────────
+
+export async function listLegalHoldsForOrg(organizationId: string, take = 200): Promise<DbLegalHold[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.hold.findMany({ where: { organizationId }, orderBy: { updatedAt: "desc" }, take } as unknown)) as DbLegalHold[];
+  } catch { return []; }
+}
+
+/** ACTIVE holds only — used by the (dry-run) retention planner. */
+export async function listActiveLegalHoldsForOrg(organizationId: string): Promise<DbLegalHold[]> {
+  const db = await m();
+  if (!db) return [];
+  try {
+    return (await db.hold.findMany({ where: { organizationId, status: "ACTIVE" }, take: 1000 } as unknown)) as DbLegalHold[];
+  } catch { return []; }
+}
+
+export async function getLegalHoldForOrg(id: string, organizationId: string): Promise<DbLegalHold | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.hold.findFirst({ where: { id, organizationId } } as unknown)) as DbLegalHold | null;
+  } catch { return null; }
+}
+
+export async function createLegalHoldForOrg(params: {
+  organizationId: string; createdBy: string; data: Record<string, unknown>;
+}): Promise<DbLegalHold | null> {
+  const db = await m();
+  if (!db) return null;
+  try {
+    return (await db.hold.create({
+      data: {
+        id:             randomUUID(),
+        organizationId: params.organizationId,
+        createdBy:      params.createdBy,
+        updatedBy:      params.createdBy,
+        updatedAt:      new Date(),
+        ...params.data,
+      },
+    } as unknown)) as DbLegalHold;
+  } catch { return null; }
+}
+
+export async function updateLegalHoldForOrg(params: {
+  id: string; organizationId: string; updatedBy: string; data: Record<string, unknown>;
+}): Promise<{ affected: number }> {
+  const db = await m();
+  if (!db) return { affected: 0 };
+  try {
+    const result = (await db.hold.updateMany({
+      where: { id: params.id, organizationId: params.organizationId },
+      data:  { ...params.data, updatedBy: params.updatedBy, updatedAt: new Date() },
+    } as unknown)) as { count?: number };
+    return { affected: typeof result?.count === "number" ? result.count : 0 };
+  } catch { return { affected: 0 }; }
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────

@@ -1,0 +1,436 @@
+{
+  "schemaVersion": 1,
+  "note": "Phase 99 synthetic UAT case set. Every case uses safe synthetic fixtures only (no real personal data, no real plant data, no real credentials). Every case starts NOT_RUN. Executing this file proves readiness against the current product contract in a non-production/isolated environment; it is NOT pilot acceptance and does not, by itself, mean a pilot has occurred or that a real industrial engineer used the product. See phase99-uat-matrix.md for method and phase99-acceptance-template.md for the actual acceptance record.",
+  "cases": [
+    {
+      "uatId": "UAT-001",
+      "title": "Authenticate with valid pilot credentials",
+      "persona": "engineer",
+      "precondition": "Pilot organization pilot-alpha provisioned; account hermes99test_engineer activated in a non-production environment.",
+      "inputFixture": "hermes99test_engineer",
+      "steps": [
+        "Navigate to the sign-in page.",
+        "Enter the fixture account's credentials.",
+        "Submit the sign-in form."
+      ],
+      "expectedResult": "A session is established, the user is redirected to the Dashboard, and the navigation reflects the Intelligence group appropriate to the engineer role.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-002",
+      "title": "Account activation for a newly invited pilot member",
+      "persona": "engineer (new invitee)",
+      "precondition": "An invitation was sent to hermes99test_invitee within pilot-alpha.",
+      "inputFixture": "hermes99test_invitee",
+      "steps": [
+        "Open the invitation link.",
+        "Set a password to activate the account.",
+        "Complete account activation."
+      ],
+      "expectedResult": "The account is activated, organization membership is established with the invited role, and first login lands on the Dashboard.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-003",
+      "title": "Forgot-password and reset flow",
+      "persona": "engineer",
+      "precondition": "Account hermes99test_engineer exists and its password is unknown to the executor.",
+      "inputFixture": "hermes99test_engineer",
+      "steps": [
+        "Request a password reset from the sign-in page.",
+        "Follow the reset link.",
+        "Set a new password.",
+        "Sign in with the new password."
+      ],
+      "expectedResult": "The reset flow completes, the previous password no longer authenticates, and the new password does.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-004",
+      "title": "Organization context switching for a multi-org member",
+      "persona": "engineer (member of pilot-alpha and a second sandbox org)",
+      "precondition": "Fixture account hermes99test_multiorg is a member of two organizations.",
+      "inputFixture": "hermes99test_multiorg",
+      "steps": [
+        "Sign in.",
+        "Open the organization switcher and select pilot-alpha.",
+        "Confirm the active organization.",
+        "Switch to the second organization.",
+        "Confirm the active organization has changed."
+      ],
+      "expectedResult": "The active organization context changes correctly each time, and only data scoped to the currently active organization is shown, with no cross-org bleed.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-005",
+      "title": "Site selection and site-scoped context",
+      "persona": "engineer",
+      "precondition": "pilot-alpha has at least two sites configured.",
+      "inputFixture": "pilot-alpha-site-1",
+      "steps": [
+        "Open Sites.",
+        "Select a site.",
+        "Confirm the site context is applied.",
+        "Navigate to Operations Center.",
+        "Confirm the data shown reflects the selected site."
+      ],
+      "expectedResult": "The selected site context persists across Sites, Operations Center, and Assets views.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-006",
+      "title": "Asset record creation and retrieval",
+      "persona": "engineer (authoring)",
+      "precondition": "Site context set to pilot-alpha-site-1.",
+      "inputFixture": "hermes99test-asset-001",
+      "steps": [
+        "Open Assets.",
+        "Create a new asset record with safe synthetic identifiers.",
+        "Save the record.",
+        "Reopen the asset record."
+      ],
+      "expectedResult": "The asset is created, associated with the correct site and organization, and retrievable with the entered fields intact.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-007",
+      "title": "Industrial Brain advisory fault analysis submission",
+      "persona": "engineer",
+      "precondition": "Signed in, site context set.",
+      "inputFixture": "synthetic fault scenario: pump-station vibration alarm, no live PLC connection",
+      "steps": [
+        "Open Industrial Brain.",
+        "Enter a synthetic fault scenario.",
+        "Submit for analysis.",
+        "Review the returned analysis."
+      ],
+      "expectedResult": "The analysis returns a structured, evidence-referenced result (likely causes, checklist, risk) produced deterministically from the input, with no fabricated telemetry.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-008",
+      "title": "Industrial Brain output is clearly advisory with no control action offered",
+      "persona": "engineer",
+      "precondition": "An analysis has been produced (follows UAT-007).",
+      "inputFixture": "same analysis as UAT-007",
+      "steps": [
+        "Review the analysis result and its surrounding UI text.",
+        "Attempt to locate any control, write, or actuation action tied to the result."
+      ],
+      "expectedResult": "The output is clearly presented as advisory guidance only; no control, write, or actuation action toward a PLC or SIS is offered anywhere in the flow.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-009",
+      "title": "Case creation from an Industrial Brain analysis with evidence attachment",
+      "persona": "engineer",
+      "precondition": "An Industrial Brain analysis exists.",
+      "inputFixture": "hermes99test-case-001",
+      "steps": [
+        "Create a case from the analysis.",
+        "Attach a synthetic evidence note or file.",
+        "Save the case."
+      ],
+      "expectedResult": "The case is created, linked to the originating analysis, and the evidence attachment is stored and retrievable.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-010",
+      "title": "Case status transition with audit trail",
+      "persona": "engineer / org admin",
+      "precondition": "Case hermes99test-case-001 exists.",
+      "inputFixture": "hermes99test-case-001",
+      "steps": [
+        "Change the case status through its lifecycle (for example open to in-review to resolved).",
+        "Open the case's history or audit trail."
+      ],
+      "expectedResult": "Each transition is recorded with actor, timestamp, and previous/new status; no transition is silently lost.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-011",
+      "title": "Author and publish a knowledge/journal article",
+      "persona": "engineer (authoring)",
+      "precondition": "Signed in with authoring capability.",
+      "inputFixture": "hermes99test-article-001",
+      "steps": [
+        "Open Journal.",
+        "Create a draft article with synthetic content.",
+        "Save the draft.",
+        "Publish the article."
+      ],
+      "expectedResult": "The draft is saved unpublished first; the publish action makes it visible; unpublished drafts are not visible to other roles.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-012",
+      "title": "Search and retrieve a published knowledge article",
+      "persona": "customer (pilot org member, non-authoring)",
+      "precondition": "The article from UAT-011 is published.",
+      "inputFixture": "hermes99test-article-001",
+      "steps": [
+        "Open Knowledge Base or Library.",
+        "Search for the published article.",
+        "Open the article."
+      ],
+      "expectedResult": "The published article is discoverable and readable; unpublished/draft content never appears to this role.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-013",
+      "title": "Compliance workflow: cookie consent and a privacy request",
+      "persona": "viewer (unauthenticated), then customer",
+      "precondition": "None for the consent step; signed in as hermes99test_customer for the privacy request.",
+      "inputFixture": "hermes99test_customer",
+      "steps": [
+        "Interact with the cookie-consent banner and record a choice.",
+        "Sign in.",
+        "Submit a data-subject privacy request with synthetic details."
+      ],
+      "expectedResult": "The consent choice is recorded and respected; the privacy request is created and tracked; no other tenant's data is exposed.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-014",
+      "title": "Admin observability dashboard access",
+      "persona": "admin",
+      "precondition": "Signed in as an admin-capable role.",
+      "inputFixture": "hermes99test_admin",
+      "steps": [
+        "Open Administration, then Observability / SRE Control Room.",
+        "Review dependency health, active alerts, and the metrics snapshot.",
+        "Attempt the same navigation as a non-admin role."
+      ],
+      "expectedResult": "The dashboard loads with real (not fabricated) data from the existing observability surfaces; a non-admin role cannot reach the same page.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-015",
+      "title": "Member invitation flow",
+      "persona": "org admin",
+      "precondition": "Signed in as an org-admin-capable role.",
+      "inputFixture": "hermes99test_invitee2",
+      "steps": [
+        "Open Members / Invitations.",
+        "Send an invitation with a role assignment.",
+        "Confirm the invitation appears pending."
+      ],
+      "expectedResult": "The invitation is created, scoped to the correct organization, with the intended role; the invitee cannot access the organization until acceptance.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-016",
+      "title": "Entitlement boundary: non-billing role denied billing administration",
+      "persona": "engineer (no billing_admin capability)",
+      "precondition": "Signed in as an engineer.",
+      "inputFixture": "hermes99test_engineer",
+      "steps": [
+        "Attempt to navigate directly to the Billing administration page."
+      ],
+      "expectedResult": "Access is denied, not silently allowed; no billing data is exposed to this role.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-017",
+      "title": "Entitlement boundary: plan/usage limit enforcement",
+      "persona": "org admin",
+      "precondition": "pilot-alpha has a defined plan limit for a metered feature.",
+      "inputFixture": "pilot-alpha",
+      "steps": [
+        "Exercise the metered feature up to its configured limit.",
+        "Exercise the metered feature one step beyond the limit."
+      ],
+      "expectedResult": "The product enforces the limit and communicates it clearly (or, if the plan is unlimited for this metric, that is reflected correctly) with no silent bypass.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-018",
+      "title": "Export a case as a document",
+      "persona": "engineer",
+      "precondition": "Case hermes99test-case-001 exists.",
+      "inputFixture": "hermes99test-case-001",
+      "steps": [
+        "Open the case.",
+        "Use the export action.",
+        "Download the exported document."
+      ],
+      "expectedResult": "The exported document contains only the case's real content, correctly scoped to the organization, with no other tenant's data.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-019",
+      "title": "EDMS controlled-document upload and retrieval",
+      "persona": "engineer (authoring)",
+      "precondition": "Signed in with authoring capability.",
+      "inputFixture": "hermes99test-document-001.pdf (synthetic placeholder file)",
+      "steps": [
+        "Open EDMS / Documents.",
+        "Upload a synthetic document.",
+        "Reopen and download it."
+      ],
+      "expectedResult": "The document is stored, associated with the correct organization, and retrievable with content intact; a user outside the organization cannot access it.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-020",
+      "title": "Locale switching: Persian (fa, RTL)",
+      "persona": "engineer",
+      "precondition": "Signed in.",
+      "inputFixture": "locale=fa",
+      "steps": [
+        "Switch the active locale to Persian.",
+        "Navigate through Dashboard, Industrial Brain, and Knowledge Base."
+      ],
+      "expectedResult": "Layout renders right-to-left, Persian text uses ی/ک (not ي/ك), no untranslated raw keys, no layout breakage.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-021",
+      "title": "Locale switching: English (en, LTR)",
+      "persona": "engineer",
+      "precondition": "Signed in.",
+      "inputFixture": "locale=en",
+      "steps": [
+        "Switch the active locale to English.",
+        "Navigate through the same pages as UAT-020."
+      ],
+      "expectedResult": "Layout renders left-to-right, all strings translated, no layout breakage.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-022",
+      "title": "Locale switching: German (de) parity check",
+      "persona": "engineer",
+      "precondition": "Signed in; de locale active for the pilot.",
+      "inputFixture": "locale=de",
+      "steps": [
+        "Switch the active locale to German.",
+        "Navigate through the same pages as UAT-020."
+      ],
+      "expectedResult": "Layout renders left-to-right, German strings are present and not silently falling back to English, no layout breakage.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-023",
+      "title": "Session logout and expiry security",
+      "persona": "engineer",
+      "precondition": "Signed in with an active session.",
+      "inputFixture": "hermes99test_engineer",
+      "steps": [
+        "Log out.",
+        "Attempt to reuse the previous session (e.g. browser back navigation or a retained cookie).",
+        "Separately, allow a session to expire and attempt an authenticated action."
+      ],
+      "expectedResult": "Logout invalidates the session so it cannot be reused; an expired or revoked session is rejected and the user is redirected to sign in.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    },
+    {
+      "uatId": "UAT-024",
+      "title": "Cross-tenant access attempt correctly denied",
+      "persona": "engineer (member of a second sandbox org, not pilot-alpha)",
+      "precondition": "Fixture account hermes99test_outsider has no membership in pilot-alpha.",
+      "inputFixture": "hermes99test_outsider",
+      "steps": [
+        "While authenticated as an account outside pilot-alpha, attempt to access a pilot-alpha-scoped resource directly (for example a case or asset identifier)."
+      ],
+      "expectedResult": "Access is denied (404 or 403) with no leak of the record's existence or content; the attempt is observable in the security/audit trail.",
+      "actualResult": null,
+      "status": "NOT_RUN",
+      "severity": null,
+      "releaseBlocker": false,
+      "evidenceReference": null
+    }
+  ]
+}

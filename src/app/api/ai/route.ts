@@ -8,6 +8,12 @@ export const dynamic = "force-dynamic";
 
 const AI_ACTION = "ai-complete";
 
+// PHASE 95: this generic BFF forwards caller-supplied chat messages to an
+// external provider with no tenant provider-policy check and no governance
+// envelope. It is therefore DISABLED BY DEFAULT and fails closed. Enable only
+// with an explicit, owner-reviewed flag once a public-provider policy exists.
+const PUBLIC_AI_ENABLED = process.env.HERMES_PUBLIC_AI_ENABLED === "1";
+
 const ERROR_STATUS: Record<string, number> = {
   no_provider: 503,
   validation: 400,
@@ -19,6 +25,13 @@ const ERROR_STATUS: Record<string, number> = {
 /** Generic AI Gateway BFF route — thin shell over the hardened gateway.
  *  Normalized errors and usage metadata pass through to the caller. */
 export async function POST(req: Request) {
+  // PHASE 95: fail closed unless the public-provider flag is explicitly set.
+  if (!PUBLIC_AI_ENABLED) {
+    return NextResponse.json(
+      { error: { code: "disabled", message: "AI completion is disabled" } },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   // Phase 86C4B2B1D-SECURITY-8: this route calls the PAID LLM gateway. It was
   // anonymous, allowing unauthenticated cost/DoS. Require the authoring
   // capability AND an IP-keyed rate limit BEFORE any body parse or model call.

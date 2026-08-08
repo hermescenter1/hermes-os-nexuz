@@ -5,6 +5,13 @@ import {
   applyFieldAliases,
   firstIssueField,
 } from "@/lib/industrial-brain/request-contract";
+import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
+import {
+  resolveClientIp,
+  isJsonContentType,
+  readBoundedTextBody,
+  securityError,
+} from "@/lib/security/request-guards";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +25,40 @@ export const dynamic = "force-dynamic";
  * legitimate normalisations (documented aliases, and `""` meaning "not stated"
  * for the optional impact selects).
  */
+/**
+ * PHASE 99 SECURITY — abuse controls for an anonymous analysis endpoint.
+ *
+ * The Zod schema bounds each FIELD, but only after `req.json()` has already
+ * parsed the whole body, so the parse itself was unbounded and there was no
+ * rate limit or media-type check at all. `POST /api/copilot/demo` — the same
+ * "public deterministic analysis" role — already carries all three; match it.
+ * The analysis itself reaches no database, provider or LLM, so this is a
+ * resource boundary, not an authorization one.
+ */
+const ANALYZE_ACTION = "industrial-brain-analyze";
+const MAX_BODY_BYTES = 32 * 1024;
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const ip = resolveClientIp(req);
+  if (!(await checkRateLimit(ANALYZE_ACTION, ip))) {
+    return securityError({ ok: false, error: "Too many requests. Please try again later." }, 429, {
+      "Retry-After": String(retryAfter(ANALYZE_ACTION, ip)),
+    });
+  }
+  if (!isJsonContentType(req)) {
+    return securityError({ ok: false, error: "unsupported media type" }, 415);
+  }
+  const read = await readBoundedTextBody(req, MAX_BODY_BYTES);
+  if (read.status === "too_large") {
+    return securityError({ ok: false, error: "payload too large" }, 413);
+  }
+  if (read.status === "error") {
+    return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+  }
+
   let body: unknown;
   try {
-    body = applyFieldAliases(await req.json());
+    body = applyFieldAliases(JSON.parse(read.text));
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
   }

@@ -164,50 +164,82 @@ Access Uptime Kuma at `http://your-server-ip:3001` and add a monitor for `https:
 
 ## 9. Backup and Restore
 
-### Manual Backup
+> **Phase 98 supersedes the earlier plaintext `.dump` flow.** Backups are now
+> AES-256-GCM ENCRYPTED artifacts (`.hbk`). The durable plaintext `hermes_<ts>.dump`
+> is no longer produced; plaintext exists only transiently in a private temp dir
+> during backup/restore and is removed afterwards. The encryption key is a FILE
+> (`HERMES_BACKUP_KEY_FILE`, owner-only 0600) identified by a non-secret
+> `HERMES_BACKUP_KEY_ID`; it is never committed, logged, or placed in a manifest.
+> Generate a key: `umask 077 && openssl rand -hex 32 > /secure/hermes-backup.key`.
+
+### Manual Backup (encrypted)
 
 ```bash
-# On the VPS
+# On the VPS. Fails closed if the key or the verifier is unavailable.
 POSTGRES_CONTAINER=hermes-postgres-1 \
 BACKUP_DIR=/opt/hermes-os/backups \
+HERMES_BACKUP_KEY_FILE=/secure/hermes-backup.key \
+HERMES_BACKUP_KEY_ID=hermes-backup-2026-08 \
 bash /opt/hermes-os/scripts/backup-postgres.sh
+```
+
+Also back up the durable upload surfaces (avatars + documents/exports):
+
+```bash
+node /opt/hermes-os/scripts/dr/backup-uploads.mjs \
+  --roots "public-uploads:/opt/hermes-os/uploads,data-documents:/opt/hermes-os/documents" \
+  --out /opt/hermes-os/backups/hermes_uploads_$(date +%Y%m%d_%H%M%S).hbk \
+  --key-file /secure/hermes-backup.key --key-id hermes-backup-2026-08
 ```
 
 ### Automated Daily Backups (cron)
 
 ```bash
-echo "0 3 * * * root POSTGRES_CONTAINER=hermes-postgres-1 BACKUP_DIR=/opt/hermes-os/backups bash /opt/hermes-os/scripts/backup-postgres.sh >> /var/log/hermes-backup.log 2>&1" \
+echo "0 3 * * * root POSTGRES_CONTAINER=hermes-postgres-1 BACKUP_DIR=/opt/hermes-os/backups HERMES_BACKUP_KEY_FILE=/secure/hermes-backup.key HERMES_BACKUP_KEY_ID=hermes-backup-2026-08 bash /opt/hermes-os/scripts/backup-postgres.sh >> /var/log/hermes-backup.log 2>&1" \
   | sudo tee /etc/cron.d/hermes-backup
 ```
 
-### Restore from Backup
+### Restore from an encrypted backup
 
 ```bash
-# backup-postgres.sh writes pg_dump custom-format artifacts named hermes_<TIMESTAMP>.dump.
-# Restore is FAIL-CLOSED: it refuses unless you confirm the exact target database,
-# interactively (type "restore <db>") or non-interactively via RESTORE_CONFIRM.
+# Restore consumes the ENCRYPTED .hbk artifact. It validates the envelope,
+# AUTHENTICATES + decrypts to a private temp file (GCM verified BEFORE the database
+# is touched), verifies the dump, then requires the exact target confirmation.
+# FAIL-CLOSED: refuses unless you confirm the target DB (interactively type
+# "restore <db>", or set RESTORE_CONFIRM).
 RESTORE_CONFIRM="restore hermes_db" \
-  bash /opt/hermes-os/scripts/restore-postgres.sh /opt/hermes-os/backups/hermes_20260101_030000.dump
+HERMES_BACKUP_KEY_FILE=/secure/hermes-backup.key \
+  bash /opt/hermes-os/scripts/restore-postgres.sh /opt/hermes-os/backups/hermes_postgres_20260101_030000.hbk
 ```
 
 **Warning:** restore drops and recreates the database. The app is stopped briefly during restore.
-Backups are written owner-only (umask 077, dumps chmod 600). If the backup predates a schema
-migration, run `npx prisma migrate deploy` after the restore.
+Artifacts are owner-only (umask 077, 0600) and retention never prunes the last verified copy
+(`BACKUP_MIN_VERIFIED_COPIES`). The removed temp plaintext is deleted, not cryptographically erased
+(SSD/CoW caveat). If the backup predates a schema migration, run `npx prisma migrate deploy` after restore.
 
-See `docs/release/disaster-recovery-runbook.md` for the full DR procedure, RPO/RTO, and the CI-proven backup→restore rehearsal.
+See `docs/release/disaster-recovery-runbook.md` for the full DR procedure, RPO/RTO, recovery ownership,
+and the CI-proven encrypted backup→restore + full-node recovery rehearsals.
 
 ---
 
 ## 10. Rollback
 
+> **Phase 98:** the release/rollback procedure is now documented in
+> `docs/release/phase98-release-engineering-runbook.md` (blue/green, app-only,
+> health-gated cutover, deterministic rollback). The app-only quick rollback below
+> remains valid for a release with NO schema change.
+
 ```bash
-# Roll back the app only: check out the previous commit and rebuild hermes-web.
-# Do NOT use `docker compose down` — postgres, redis and nginx must keep running.
-git checkout <previous-commit-hash>
+# Roll back the app only (NO schema change): check out the previous-good commit and
+# rebuild ONLY hermes-web. Do NOT use `docker compose down` — postgres, redis and
+# nginx must keep running. Always pin the canonical project with -p hermes.
+git checkout <previous-good-commit-sha>
 docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web
 ```
 
-If the schema changed, restore from a pre-migration backup rather than attempting a schema rollback.
+If the schema changed, follow the migration rollback classification: restore from a verified
+encrypted pre-migration backup rather than attempting a down-migration. The Production database is
+NEVER auto-restored by deployment automation — it is an explicit operator/incident decision.
 
 ---
 

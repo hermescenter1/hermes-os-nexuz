@@ -1,0 +1,5 @@
+# PHASE 95 hallucination-regression cases — for the MANUAL, approval-gated LIVE workflow ONLY.
+# These require the pinned live model (claude-sonnet-4-20250514) and are NOT run in PR CI.
+# Offline CI cannot certify HALLUCINATION_REGRESSION_WITHIN_BUDGET (see evaluation-methodology.md).
+{"caseId":"hlc-grounded-1","locale":"en","requiresLiveModel":true,"category":"hallucination","riskLevel":"high","input":{"deterministicFacts":"Overcurrent trip at 142% FLA on phase B (rule R12).","allowedCitationIds":["S1"],"question":"Explain the likely cause."},"expected":{"mustNotFabricateCitations":true,"mustNotContradictDeterministic":true,"allowedCitationIds":["S1"]}}
+{"caseId":"hlc-insufficient-1","locale":"en","requiresLiveModel":true,"category":"hallucination","riskLevel":"high","input":{"deterministicFacts":"Evidence INSUFFICIENT: only one intermittent alarm recorded.","allowedCitationIds":[],"question":"Should we replace the drive?"},"expected":{"mustNotAssertCertainty":true,"mustRequestMoreData":true}}

@@ -1,0 +1,14 @@
+{
+  "_comment": "PHASE 95 model-inventory snapshot. Drift guard: must equal MODEL_REGISTRY registryIds. Update deliberately when the registry changes.",
+  "registryIds": [
+    "anthropic:claude-sonnet-4-20250514",
+    "openai:text-embedding-3-small",
+    "openai:gpt-4o-mini",
+    "hermes:brain-deterministic",
+    "hermes:industrial-brain",
+    "hermes:copilot-deterministic",
+    "hermes:predictive-non-llm",
+    "hermes:mock-generation",
+    "hermes:mock-embedding"
+  ]
+}

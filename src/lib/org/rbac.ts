@@ -67,7 +67,58 @@ export type OrgPermission =
   | "view_engineering_project" // read projects, tags, alarms, network nodes, findings
   | "create_engineering_import"// submit a canonical engineering manifest
   | "run_engineering_analysis" // execute the deterministic rule engine
-  | "review_engineering_finding"; // transition a finding's workflow state
+  | "review_engineering_finding" // transition a finding's workflow state
+  // PHASE 97 — Compliance, Privacy & Legal readiness (org axis).
+  //
+  // `view_compliance` is the read gate for the tenant compliance operations
+  // center (processing inventory, and — in later Phase 97 slices — privacy
+  // requests, legal documents, retention, holds, incidents and evidence packs).
+  // `manage_processing_activities` is the write gate for the Article 30 Record of
+  // Processing Activities registry. Platform-global actions (e.g. assigning an
+  // unassigned public request to a tenant) are NOT org permissions — they go
+  // through `requirePlatformSuperadmin`, never a role in this map.
+  | "view_compliance"              // read the compliance operations center
+  | "manage_processing_activities" // create / update / approve RoPA entries
+  | "manage_privacy_requests"      // triage/transition a data-subject request
+  | "manage_retention"             // author/approve retention policies (dry-run)
+  | "manage_legal_hold"            // create/activate/release legal holds
+  // PHASE 97 Part D — legal-document lifecycle. Approval and publication are
+  // DELIBERATELY separate permissions so the two accountable actions cannot be
+  // performed by the same authority by default.
+  | "view_legal_documents"         // read the tenant legal-document register
+  | "manage_legal_documents"       // create/edit drafts, submit for review, schedule, withdraw, archive
+  | "approve_legal_documents"      // transition IN_REVIEW → APPROVED
+  | "publish_legal_documents"      // transition APPROVED/SCHEDULED → PUBLISHED (transactional supersession)
+  // PHASE 97 Part G — governed subject data export. Approval is separate from
+  // management so authorising a subject-data export is a distinct accountable act.
+  | "view_exports"                 // read the tenant export-job register
+  | "manage_exports"               // create/cancel/revoke export jobs, issue tokens
+  | "approve_exports"              // authorise an export job (REQUESTED → AUTHORISED)
+  // PHASE 97 Part H — governed subject data erasure. Approval is stricter than
+  // management, and execution is additionally gated behind a default-false flag.
+  | "view_erasures"                // read the tenant erasure-job register + plan
+  | "manage_erasures"              // create/plan/cancel/send-back erasure jobs
+  | "approve_erasures"             // approve/reject an erasure plan (binds to planHash)
+  | "execute_erasures"             // arm/execute an approved plan (behind the disabled gate)
+  // PHASE 97 Part I — subprocessor & data-transfer governance. Approval is a
+  // distinct accountable act reserved for the highest organization authority.
+  | "view_transfer_governance"     // read the subprocessor + transfer registers
+  | "manage_transfer_governance"   // create/edit/review draft + under-review records
+  | "approve_transfer_governance"  // approve/activate governed records (gated)
+  // PHASE 97 — governed compliance-incident management. Recording a high-authority
+  // legal / external-notification decision and closing/reopening an incident are
+  // DELIBERATELY separate, OWNER-only accountable acts, distinct from day-to-day
+  // triage/investigation (manage).
+  | "view_compliance_incidents"    // read the incident register + append-only timeline
+  | "manage_compliance_incidents"  // create/triage/investigate/resolve, adjust blockers, progress assessment
+  | "decide_compliance_incidents"  // record a legal / external-notification decision (evidence only)
+  | "close_compliance_incidents"   // close or reopen an incident
+  // Governed compliance evidence packs. Generating and revoking an authoritative
+  // evidence snapshot are accountable acts reserved to the OWNER; viewing is for the
+  // oversight roles. READY is a manifest state, never a legal-compliance claim.
+  | "view_compliance_evidence"     // read evidence packs + their manifests
+  | "generate_compliance_evidence" // request + generate a governed evidence pack
+  | "revoke_compliance_evidence";  // revoke a READY evidence pack (evidence preserved)
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -130,6 +181,44 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   // Reviewing a finding records an engineering judgement about a safety- or
   // production-relevant condition, so it stays with the accountable roles.
   review_engineering_finding: ["OWNER", "ADMIN", "MANAGER"],
+  // PHASE 97 — Compliance. READ is limited to the accountable oversight roles
+  // (compliance records describe how personal data is processed); ENGINEER /
+  // VIEWER / BILLING_ADMIN are default-denied. WRITE to the RoPA registry is
+  // narrower still — the org administrators who own the compliance record.
+  view_compliance:                ["OWNER", "ADMIN", "MANAGER"],
+  manage_processing_activities:   ["OWNER", "ADMIN"],
+  manage_privacy_requests:        ["OWNER", "ADMIN"],
+  manage_retention:               ["OWNER", "ADMIN"],
+  manage_legal_hold:              ["OWNER", "ADMIN"],
+  // Legal documents: read for the oversight roles; authoring for org admins.
+  // Approval and publication are the OWNER's by default (separable, accountable
+  // acts) — an ADMIN authors and submits but does not self-approve or publish.
+  view_legal_documents:           ["OWNER", "ADMIN", "MANAGER"],
+  manage_legal_documents:         ["OWNER", "ADMIN"],
+  approve_legal_documents:        ["OWNER"],
+  publish_legal_documents:        ["OWNER"],
+  // Export: read for oversight roles; management for org admins; approval (which
+  // releases a subject's personal data for packaging) reserved to the OWNER.
+  view_exports:                   ["OWNER", "ADMIN", "MANAGER"],
+  manage_exports:                 ["OWNER", "ADMIN"],
+  approve_exports:                ["OWNER"],
+  view_erasures:                  ["OWNER", "ADMIN", "MANAGER"],
+  manage_erasures:                ["OWNER", "ADMIN"],
+  approve_erasures:               ["OWNER"],
+  execute_erasures:               ["OWNER"],
+  view_transfer_governance:       ["OWNER", "ADMIN", "MANAGER"],
+  manage_transfer_governance:     ["OWNER", "ADMIN"],
+  approve_transfer_governance:    ["OWNER"],
+  // Compliance incidents: read for the oversight roles; triage/investigation for org
+  // admins; recording a legal/external-notification decision and closing/reopening
+  // are reserved to the OWNER (the highest accountable authority).
+  view_compliance_incidents:      ["OWNER", "ADMIN", "MANAGER"],
+  manage_compliance_incidents:    ["OWNER", "ADMIN"],
+  decide_compliance_incidents:    ["OWNER"],
+  close_compliance_incidents:     ["OWNER"],
+  view_compliance_evidence:       ["OWNER", "ADMIN", "MANAGER"],
+  generate_compliance_evidence:   ["OWNER"],
+  revoke_compliance_evidence:     ["OWNER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

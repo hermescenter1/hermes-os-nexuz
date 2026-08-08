@@ -110,6 +110,41 @@ export async function readBoundedTextBody(
   return { status: "ok", text: new TextDecoder().decode(buf) };
 }
 
+/** Result of a bounded JSON read. */
+export type BoundedJson<T> =
+  | { status: "ok"; value: T }
+  | { status: "too_large" }
+  | { status: "invalid" };
+
+/**
+ * PHASE 99 — read and parse a JSON body with a hard byte ceiling.
+ *
+ * `await req.json()` parses whatever arrives, so an anonymous endpoint that
+ * calls it directly has no resource boundary even when it is rate limited: a
+ * handful of permitted requests can each carry an arbitrarily large body. This
+ * wraps the existing bounded reader so a route gets the ceiling and the parse in
+ * one call, and so a caller cannot accidentally keep the unbounded form.
+ *
+ * `invalid` covers both a malformed stream and unparseable JSON — the caller
+ * answers 400 either way, and the distinction would only leak parser detail.
+ */
+export async function readBoundedJson<T = unknown>(
+  req: Request,
+  maxBytes: number,
+): Promise<BoundedJson<T>> {
+  const read = await readBoundedTextBody(req, maxBytes);
+  if (read.status === "too_large") return { status: "too_large" };
+  if (read.status === "error") return { status: "invalid" };
+  try {
+    return { status: "ok", value: JSON.parse(read.text) as T };
+  } catch {
+    return { status: "invalid" };
+  }
+}
+
+/** Byte ceiling for a small JSON body (credential flows, consent, forms). */
+export const SMALL_JSON_BODY_BYTES = 16 * 1024;
+
 /** The exact origins accepted for authenticated, state-changing requests. */
 function allowedOrigins(): Set<string> {
   const set = new Set<string>();

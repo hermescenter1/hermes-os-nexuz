@@ -5,7 +5,13 @@ import { createConsentRecord }    from "@/lib/compliance/db";
 import { CURRENT_CONSENT_VERSION } from "@/lib/compliance/types";
 import { verifyAccessToken }      from "@/lib/auth/jwt";
 import { ACCESS_TOKEN_COOKIE }    from "@/lib/auth/config";
-import { resolveClientIp }        from "@/lib/security/request-guards";
+import {
+  resolveClientIp,
+  readBoundedJson,
+  securityError,
+  SMALL_JSON_BODY_BYTES,
+} from "@/lib/security/request-guards";
+import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
 import {
   CONSENT_ID_COOKIE,
   consentCookieOptions,
@@ -16,9 +22,10 @@ import {
 /**
  * Public cookie-consent surface.
  *
- * PHASE 99.5 SECURITY (P99-INT-001 CRITICAL, P99-INT-002 HIGH) — this endpoint
- * is unauthenticated by necessity (consent is collected before login), which
- * makes three properties load-bearing:
+ * PHASE 99 / 99.5 SECURITY (P99-INT-001 CRITICAL, P99-INT-002 HIGH, and the
+ * P99-INT-019 bounded-body plus consent rate limit reconciled back in at 99.6) —
+ * this endpoint is unauthenticated by necessity (consent is collected before
+ * login), which makes three properties load-bearing:
  *
  *   - The subject is identified ONLY by `hermes_consent_id`, an opaque
  *     server-minted value. The authentication cookie is never read or written
@@ -67,25 +74,37 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ consent: publicConsentView(consent) });
 }
 
+/** Anonymous write, so it carries the same resource boundary as the other ones. */
+const CONSENT_ACTION = "cookie-consent";
+
 export async function POST(req: NextRequest) {
-  // An unparseable body is treated as "no preferences supplied", which resolves
-  // to the safe defaults below rather than an error — consent must never fail in
-  // a way that leaves analytics enabled.
-  const parsed = await req.json().catch(() => ({})) as unknown;
-  const body = (parsed && typeof parsed === "object" ? parsed : {}) as {
+  const ip = resolveClientIp(req);
+  if (!(await checkRateLimit(CONSENT_ACTION, ip))) {
+    return securityError({ error: "Too many requests. Please try again later." }, 429, {
+      "Retry-After": String(retryAfter(CONSENT_ACTION, ip)),
+    });
+  }
+
+  const read = await readBoundedJson<{
     necessary?:   boolean;
     analytics?:   boolean;
     marketing?:   boolean;
     preferences?: boolean;
-  };
+  }>(req, SMALL_JSON_BODY_BYTES);
+  if (read.status === "too_large") {
+    return securityError({ error: "payload too large" }, 413);
+  }
+  // An unparseable body is treated as "no preferences supplied", which resolves
+  // to the safe defaults below rather than an error — consent must never fail
+  // in a way that leaves analytics enabled.
+  const body = read.status === "ok" && read.value && typeof read.value === "object" ? read.value : {};
 
   // The subject identifier is NEVER taken from the body — only from a
   // well-formed cookie this server previously minted, or freshly minted here.
-  const existing  = req.cookies.get(CONSENT_ID_COOKIE)?.value;
+  const existing = req.cookies.get(CONSENT_ID_COOKIE)?.value;
   const consentId = isConsentId(existing) ? existing : newConsentId();
 
-  const clientIp  = resolveClientIp(req);
-  const ipAddress = clientIp === "unknown" ? undefined : clientIp;
+  const ipAddress = ip === "unknown" ? undefined : ip;
   const userAgent = req.headers.get("user-agent") ?? undefined;
   const locale    = req.headers.get("accept-language")?.split(",")[0]?.substring(0, 2) ?? "en";
 

@@ -1,0 +1,16 @@
+{"from":"INCOMPLETE","event":"START_TRIAL","expect":"TRIALING"}
+{"from":"INCOMPLETE","event":"ACTIVATE","expect":"ACTIVE"}
+{"from":"TRIALING","event":"ACTIVATE","expect":"ACTIVE"}
+{"from":"TRIALING","event":"PERIOD_ENDED","expect":"EXPIRED"}
+{"from":"ACTIVE","event":"PAYMENT_PAST_DUE","expect":"PAST_DUE"}
+{"from":"ACTIVE","event":"SCHEDULE_CANCELLATION","expect":"CANCEL_AT_PERIOD_END"}
+{"from":"PAST_DUE","event":"ENTER_GRACE","expect":"GRACE_PERIOD"}
+{"from":"GRACE_PERIOD","event":"ACTIVATE","expect":"ACTIVE"}
+{"from":"GRACE_PERIOD","event":"SUSPEND","expect":"SUSPENDED"}
+{"from":"SUSPENDED","event":"ACTIVATE","expect":"ACTIVE"}
+{"from":"CANCEL_AT_PERIOD_END","event":"RESUME","expect":"ACTIVE"}
+{"from":"CANCEL_AT_PERIOD_END","event":"PERIOD_ENDED","expect":"CANCELED"}
+{"from":"CANCELED","event":"EXPIRE","expect":"EXPIRED"}
+{"from":"EXPIRED","event":"ACTIVATE","expect":null}
+{"from":"ACTIVE","event":"START_TRIAL","expect":null}
+{"from":"SUSPENDED","event":"SCHEDULE_CANCELLATION","expect":null}

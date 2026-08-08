@@ -1,28 +1,12 @@
 import { NextResponse }       from "next/server";
 import type { NextRequest }    from "next/server";
 import { getAuthRole }         from "@/lib/auth/rbac-server";
-import { verifyAccessToken }   from "@/lib/auth/jwt";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
-import { getPrisma }           from "@/lib/db/prisma";
 import { getPublishedCourses, getAllCourses, createCourse, getAcademyStats } from "@/lib/academy/db";
 import { getUserEnrollments }  from "@/lib/academy/db";
-
-async function resolveUser(req: NextRequest) {
-  const db = await getPrisma();
-  if (!db) return null;
-  const at = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!at) return null;
-  const payload = await verifyAccessToken(at);
-  if (!payload?.sub) return null;
-  const memberModel = (db as Record<string, unknown>).organizationMember as {
-    findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
-  };
-  const row = await memberModel.findFirst({
-    where: { userId: payload.sub, status: "ACTIVE" },
-    orderBy: { createdAt: "asc" },
-  });
-  return row ? { userId: payload.sub, orgId: String(row.organizationId) } : null;
-}
+// PHASE 99 — the scope resolution that used to be inline here now lives in
+// `@/lib/academy/request-scope` so the `[id]` detail endpoints, which had no
+// tenant predicate at all, resolve the caller exactly the same way.
+import { resolveAcademyScope } from "@/lib/academy/request-scope";
 
 export async function GET(req: NextRequest) {
   const role = await getAuthRole(req);
@@ -30,7 +14,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
-  const ctx = await resolveUser(req);
+  const ctx = await resolveAcademyScope(req);
   if (!ctx) return NextResponse.json({ courses: [], total: 0 });
 
   const { searchParams } = new URL(req.url);
@@ -64,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
   }
 
-  const ctx = await resolveUser(req);
+  const ctx = await resolveAcademyScope(req);
   if (!ctx) return NextResponse.json({ error: "Could not resolve organization" }, { status: 400 });
 
   const body = await req.json() as {
