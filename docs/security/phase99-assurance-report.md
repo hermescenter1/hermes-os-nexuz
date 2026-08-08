@@ -99,13 +99,22 @@ external API security review should perform.
 | --- | --- |
 | `npx tsc --noEmit` | exit 0 |
 | `npm run lint` | exit 0 (pre-existing warnings only) |
-| `npm test` | **6057 passed, 0 failed, 122 skipped** (317 files), stable across two consecutive runs |
+| `npm test` | **6073 passed, 0 failed, 122 skipped** — see the flakiness note below |
 | `npm run build` | exit 0, standalone output produced |
 | `npm run eval:phase95/96/97/98` | PASS |
-| `npm run eval:phase99:readiness` | 0 FAIL, 7 BLOCKED_OWNER |
+| `npm run eval:phase99:readiness` | 0 FAIL, **5** BLOCKED_OWNER (all pilot groups) |
 | `npm run eval:phase99:closure` | **BLOCKED (exit 1)** — correct |
 | `npm run rehearse:phase99:incident` | PASS |
-| `npm run security:phase99:deps` | 0 CRITICAL, 7 HIGH |
+| `npm run security:phase99:deps` | **0 CRITICAL, 0 HIGH**, 5 MEDIUM |
+| Disposable standalone-image rehearsal | 13/13 PASS |
+
+**Suite flakiness, disclosed.** Full-suite runs on the Windows development
+machine intermittently report unrelated failures under parallel load — 11 in one
+run, 1 in the next, 0 in others. This was confirmed **pre-existing** by running
+the untouched Phase 98 base three times: 13 failures, then 0, then 0. It is an
+environment artefact of parallel execution on that host, not a Phase 99
+regression; every suite passes in isolation, and CI, which runs on Linux, has
+been consistently green.
 
 ---
 
@@ -121,8 +130,22 @@ Phase 99's internal review found and confirmed real defects. They are recorded i
 | MEDIUM | 14 | 5 | the 5 remaining MEDIUM dependency advisories; none is a release blocker |
 | LOW | 4 | 0 | |
 
-`RELEASE_BLOCKERS=0`. Every HIGH closed through a fix with retest evidence;
-**no risk acceptance was created**, by an agent or otherwise.
+Every HIGH closed through a fix with retest evidence; **no risk acceptance was
+created**, by an agent or otherwise.
+
+**Two different counters share the name `RELEASE_BLOCKERS`, and only one of them
+is the official figure.** The finding register contributes **0** — no entry
+carries `releaseBlocker: true`. The official closure evaluator adds the missing
+pilot acceptance to that, so the authoritative output is:
+
+```
+RELEASE_BLOCKERS=1   (0 open finding blockers + PILOT_ACCEPTANCE_MISSING)
+```
+
+Wherever this report says the finding-derived count is 0, that is the register,
+not the gate. The gate is **1**, and it stays 1 until a real pilot acceptance
+exists. Earlier revisions printed a bare `RELEASE_BLOCKERS=0` here, which read as
+the official figure and was wrong.
 
 ### The critical finding
 
@@ -251,7 +274,9 @@ current, so the retest asserts their presence explicitly.
 **Remaining:** 5 MEDIUM advisories (`@hono/node-server`, `@prisma/dev`, `hono`,
 `prisma`, `valibot`), all recorded as open findings. None is a release blocker.
 
-`RELEASE_BLOCKERS=0`.
+No dependency advisory is a release blocker: the finding-derived count is 0. The
+official gate remains `RELEASE_BLOCKERS=1` for the missing pilot acceptance —
+see §2.
 
 ### Platform compatibility — closed by owner-supplied evidence
 
@@ -294,8 +319,20 @@ in `docs/security/phase99-dependency-remediation.md`.
 | EXTERNAL_APPLICATION_SECURITY_REVIEW | BLOCKED_EXTERNAL |
 | EXTERNAL_API_SECURITY_REVIEW | BLOCKED_EXTERNAL |
 | PILOT_CUSTOMER_SELECTED | BLOCKED_OWNER |
+| PILOT_UAT | BLOCKED |
+| PILOT_WORKFLOW_VALIDATION | BLOCKED |
 | INDUSTRIAL_ENGINEER_FEEDBACK | BLOCKED_EXTERNAL |
+| PILOT_PERFORMANCE_OBSERVATION | BLOCKED |
+| PILOT_INCIDENT_SIMULATION | BLOCKED |
+| PILOT_ONBOARDING | BLOCKED |
+| PILOT_SUPPORT_PROCESS | BLOCKED |
 | PILOT_ACCEPTANCE_RECORDED | False |
+| **RELEASE_BLOCKERS_ZERO** | **FAIL** — `RELEASE_BLOCKERS=1` (`PILOT_ACCEPTANCE_MISSING`) |
+
+`RELEASE_BLOCKERS_ZERO` is the only gate in the closure evaluation that reports
+`FAIL` rather than `BLOCKED`, because a missing pilot acceptance is a definite
+release blocker rather than merely unproven evidence. It is listed here so the
+table matches the evaluator exactly.
 
 `npm run eval:phase99:closure` exits non-zero and will continue to do so until
 authentic external evidence is supplied and validated. The contract is enforced
@@ -328,7 +365,14 @@ NOTIFICATION_SENT=False
 
 All active testing ran against this repository's source, its unit suite, and
 disposable CI resources named `hermes99test*`. No production host, customer
-system, industrial device or third-party service was contacted.
+system, industrial device or third-party service was contacted **by this phase's
+tooling or by any agent**.
+
+One piece of evidence in this report did come from the deployment host: the
+owner's read-only CPU-capability observation recorded in §3.1. The owner made it
+themselves, it changed nothing on the host, and no agent inspected it. It is
+called out here so this section cannot be read as claiming that no production
+information entered the evidence base at all.
 
 ---
 
@@ -370,7 +414,9 @@ written and validated, but a pilot cannot be executed against a customer the
 owner has not yet selected.
 
 What changed with this revision: every security group and the dependency review
-now PASS, and `RELEASE_BLOCKERS` went from 8 to **0**. What did not change: the
+now PASS, and the official `RELEASE_BLOCKERS` went from 8 to **1** — the seven
+open HIGH dependency findings are gone, leaving only `PILOT_ACCEPTANCE_MISSING`,
+which no engineering work can clear. What did not change: the
 external gates. An independent penetration test, external application and API
 security reviews, and a pilot acceptance remain `BLOCKED`, and
 `eval:phase99:closure` still exits non-zero. Converting any of them to PASS would

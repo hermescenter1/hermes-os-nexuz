@@ -239,4 +239,6 @@ Five MEDIUM advisories are open and recorded as findings P99-DEP-008..012
 release blocker. They belong to a routine dependency pass rather than a
 security-review branch.
 
-`RELEASE_BLOCKERS=0`.
+No dependency advisory is a release blocker — the finding-derived count is 0.
+The official closure gate is `RELEASE_BLOCKERS=1`, which is
+`PILOT_ACCEPTANCE_MISSING` alone and unrelated to dependencies.

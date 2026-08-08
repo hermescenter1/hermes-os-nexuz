@@ -34,7 +34,7 @@ checked by the `EXTERNAL_REVIEW_PACKAGE` group of
 
 | Artefact | Proves |
 |---|---|
-| `phase99-remediation.test.ts` | Reproduces each internal finding (`P99-INT-001` through `P99-INT-013`, excluding the two not remediated in Phase 99) against the shape that existed on the Phase 98 head, and proves the fix. Referenced as `retestReference` by the matching entries in `phase99-findings.json`; `evidenceHash` on those entries is the SHA-256 of this file (LF-normalised) at the moment the finding was closed, and is re-verified on every readiness run. |
+| `phase99-remediation.test.ts` | Reproduces each internal finding against the shape that existed on the Phase 98 head, and proves the fix. Every `P99-INT-*` finding — 001 through 019 — is now `VERIFIED_FIXED`; the last two to close were `P99-INT-011` (bounded in a later revision, retested by `src/lib/eng-graph/__tests__/phase99-derived-graph-bounds.test.ts`) and the dependency set (retested by `scripts/__tests__/phase99-dependency-remediation.test.ts`). Referenced as `retestReference` by the matching entries in `phase99-findings.json`; `evidenceHash` on those entries is the SHA-256 of this file (LF-normalised) at the moment the finding was closed, and is re-verified on every readiness run. |
 | `phase99-static-invariants.test.ts` | Locks in the static invariants (no unsafe raw SQL, no user-controlled outbound sink, no unsanitised raw-HTML sink, every upload route bounded, the CSRF cookie/GET-mutation contract, zero `UNKNOWN` route classifications, every webhook authenticated, the infrastructure baseline) and the remediation *shapes* that are code-structure facts rather than response values (`P99-INT-008`, `P99-INT-009`/`P99-INT-012`, `P99-INT-013`, `P99-INT-001`/`P99-INT-002`). |
 
 ## Evaluators and their composed modules (`scripts/ci/`, `scripts/security/phase99/`)
@@ -57,10 +57,15 @@ produces the dependency snapshot.
 These do not exist yet, and their absence is expected and correctly reported
 as `BLOCKED` rather than `FAIL` or a fabricated `PASS`:
 
+**These paths are exact.** `eval:phase99:closure` reads these filenames and no
+others, and it cannot tell "filed under a different name" from "never supplied" —
+both stay `BLOCKED`. Copy them literally.
+
 | Placeholder artefact | Would prove | Schema |
 |---|---|---|
-| `docs/security/phase99-external-attestation.json` (not yet created) | That an independent, human-attributed security review actually happened against a specific commit and scope, with sanitized severity counts and a hash-referenced raw report. | `phase99-external-review-intake.md`; validated by `validateExternalAttestation` in `external-evidence.mjs`. |
-| `docs/pilot/phase99-acceptance.json` (not yet created; the wider `docs/pilot/` package itself does not exist yet) | That a real prospective customer operated the platform end to end and formally accepted or rejected the result. | Validated by `validatePilotAcceptance` in `external-evidence.mjs`. |
+| `docs/security/phase99-external-attestations.json` (not yet created — note the plural) | That an independent, human-attributed security review actually happened against a specific commit and scope, with sanitized severity counts and a hash-referenced raw report. Holds an `attestations` array, so one file covers the penetration test and the application and API reviews. | `phase99-external-review-intake.md`; validated by `validateExternalAttestation` in `external-evidence.mjs`. |
+| `docs/pilot/phase99-pilot-acceptance.json` (not yet created) | That a real prospective customer operated the platform end to end and formally accepted or rejected the result. A single object, not an array. The surrounding `docs/pilot/` package — plan, UAT cases, workflow validation, SLA draft and the acceptance template — already exists and is validated by the readiness evaluator. | Validated by `validatePilotAcceptance` in `external-evidence.mjs`. |
+| `docs/security/phase99-risk-acceptances.json` (not yet created) | That a named owner-authorised human formally accepted a specific remaining HIGH. Not currently needed: every HIGH is fixed, so nothing is awaiting acceptance. | Holds an `acceptances` map keyed by `findingId`; validated by `validateRiskAcceptance` in `external-evidence.mjs`. |
 
 Both validators reject a record marked `SYNTHETIC_TEST_FIXTURE` and reject a
 reviewer/acceptance role that names an agent or automation rather than a
