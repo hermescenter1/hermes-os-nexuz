@@ -625,6 +625,26 @@
       "riskAcceptanceReference": null,
       "riskAcceptanceExpiresAt": null,
       "evidenceHash": "1f4445b457736c23ec40191488a2860aa329ca20d0959d2ddb38af1393be0863"
+    },
+    {
+      "findingId": "P99-INT-020",
+      "title": "Compliance evidence recorded a client-controlled IP address as consent and privacy-request provenance",
+      "source": "INTERNAL_REVIEW",
+      "sourceReference": "docs/security/phase99-test-matrix.md#rate-limiting",
+      "severity": "MEDIUM",
+      "category": "BUSINESS_LOGIC",
+      "affectedSurface": "POST /api/compliance/{consents,data-deletion,data-export,privacy-requests}",
+      "firstObservedAt": "2026-08-08",
+      "status": "VERIFIED_FIXED",
+      "description": "Surfaced by the Phase 99.6 reconciliation: four Phase 97 compliance routes derived the stored ipAddress from the left-most X-Forwarded-For entry, the same client-controlled header P99-INT-009 removed from the rate-limit key path. nginx APPENDS to XFF, so its left-most element is attacker-chosen. That value is not used for access control here; it is persisted as the provenance of a GDPR consent record, an erasure request and a data-export request.",
+      "impact": "Forgeable compliance evidence: a subject or an attacker acting in their name can choose the IP address attested against a consent grant or an erasure request, weakening the evidentiary value of the records Phase 97 exists to produce.",
+      "remediationReference": "src/app/api/compliance/consents/route.ts; src/app/api/compliance/data-deletion/route.ts; src/app/api/compliance/data-export/route.ts; src/app/api/compliance/privacy-requests/route.ts",
+      "remediationSummary": "All four routes now derive the address via resolveClientIp, which trusts only X-Real-IP (overwritten by nginx with the real peer and therefore un-spoofable). An unresolvable address is stored as absent rather than as the literal \"unknown\", so a missing value is never recorded as a fact.",
+      "retestReference": "src/lib/security/__tests__/phase996-reconciliation.test.ts",
+      "releaseBlocker": false,
+      "riskAcceptanceReference": null,
+      "riskAcceptanceExpiresAt": null,
+      "evidenceHash": "1ec0061b6d4bb3a785b76cfe254f6b8c2e3b48f3c18420fb5817450f081cf613"
     }
   ]
 }

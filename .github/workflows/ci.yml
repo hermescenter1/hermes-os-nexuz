@@ -46,6 +46,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # PHASE 99.6 — explicit, always-on dependency security gate.
+      #
+      # Phase 99 remediated every CRITICAL/HIGH advisory and Phase 99.5 forward-
+      # ported that remediation onto main, but nothing in CI FAILED on a new one:
+      # the Phase 99 workflow only publishes a sanitized audit artifact, and it
+      # does not run on every pull request. A HIGH advisory landing in a
+      # transitive dependency would therefore have gone unnoticed until the next
+      # manual review. `--audit-level=high` exits non-zero on any HIGH or
+      # CRITICAL finding and zero otherwise, so MODERATE and below stay visible
+      # in the artifact without blocking.
+      #
+      # Invariant: DEPENDENCY_CRITICAL=0 and DEPENDENCY_HIGH=0 on every PR.
+      #
+      # If this fails, remediate the advisory. Do NOT downgrade `sharp` to dodge
+      # its CPU requirement — the pinned 0.35.3 is deliberate (see
+      # docs/security/phase99-dependency-remediation.md).
+      - name: Dependency security gate (0 critical, 0 high)
+        run: npm audit --audit-level=high
+
       - name: Generate Prisma client
         env:
           # prisma.config.ts resolves env("DATABASE_URL") when the CLI loads it,

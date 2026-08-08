@@ -8,6 +8,7 @@ import {
 } from "@/lib/compliance/db";
 import { requireComplianceOrgScope } from "@/lib/compliance/authz";
 import type { PrivacyRequestType } from "@/lib/compliance/types";
+import { resolveClientIp }          from "@/lib/security/request-guards";
 
 const VALID_TYPES: PrivacyRequestType[] = [
   "DATA_EXPORT", "DATA_DELETION", "CONSENT_WITHDRAWAL",
@@ -49,7 +50,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid requestType" }, { status: 400 });
   }
 
-  const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined;
+  // PHASE 99.6 (P99-INT-020) — this IP is persisted as compliance EVIDENCE
+  // (consent proof / privacy-request provenance). The left-most X-Forwarded-For
+  // entry is client-controlled because nginx APPENDS to XFF, so a caller could
+  // choose the address recorded against their own consent or erasure request,
+  // making the evidence forgeable. resolveClientIp reads only X-Real-IP, which
+  // the proxy overwrites with the real peer. "unknown" is stored as absent
+  // rather than as a literal, so a missing value is never mistaken for a fact.
+  const resolvedIp = resolveClientIp(req);
+  const ipAddress  = resolvedIp === "unknown" ? undefined : resolvedIp;
   const userAgent = req.headers.get("user-agent") ?? undefined;
 
   // Resolve userId if authenticated
