@@ -253,6 +253,37 @@ current, so the retest asserts their presence explicitly.
 
 `RELEASE_BLOCKERS=0`.
 
+### Platform compatibility — closed by owner-supplied evidence
+
+```
+PRODUCTION_CPU_SSE4_2=PASS
+SHARP_0_35_3_CPU_COMPATIBILITY=PASS
+SHARP_PLATFORM_BLOCKER=CLOSED
+```
+
+The `sharp` upgrade carried one condition Phase 99 could not settle from the
+inside. `sharp@0.34.5` applied its x86-64-v2 gate only to the glibc specifier
+`@img/sharp-linux-x64`, which does not match Alpine's `@img/sharp-linuxmusl-x64`,
+so musl was exempt; `sharp@0.35.3` gates both. The upgrade therefore introduced a
+**new SSE4.2 requirement on the only runtime platform this project has**, and
+verifying it meant looking at the deployment host — which Phase 99 must not do.
+
+**The owner has supplied that evidence.** They observed the CPU capability
+directly on the deployment host and reported `PRODUCTION_CPU_SSE4_2=PASS`. The
+observation was read-only and made no configuration, deployment, restart,
+package, container or service change. No agent inspected the host. Only the
+conclusion is recorded — no host identifier, no address, no `/proc/cpuinfo`
+contents.
+
+This is **owner-supplied operational evidence**, deliberately kept distinct from
+the external-review and pilot-acceptance evidence contracts. It attests to a
+deployment-platform capability, not to a security review, and it is recorded in
+prose rather than through the attestation schema for exactly that reason: nothing
+here should be capable of satisfying an external gate. No external gate moved.
+
+Full detail, including the failure mode and the re-check for any future host, is
+in `docs/security/phase99-dependency-remediation.md`.
+
 ---
 
 ## 4. External gates — BLOCKED, not passed
@@ -353,6 +384,9 @@ make this report false.
 | Provision a non-production target, set `PENTEST_TARGET` | Owner |
 | Engage an authorised security firm against the final candidate commit | Owner |
 | 5 MEDIUM dependency advisories | routine dependency pass |
+
+Discharged since the previous revision: the production-host CPU capability
+(`SHARP_PLATFORM_BLOCKER=CLOSED`), by owner-supplied operational evidence.
 
 The external penetration test must test the FINAL candidate commit, which is why
 dependency remediation was completed first.

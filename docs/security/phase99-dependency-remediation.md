@@ -81,7 +81,9 @@ range and React compatibility, middleware and the CSP nonce path, standalone
 output and the Docker runtime, App Router route semantics and next-intl, image
 and CSS build pipelines, and redirects/rewrites/build-time environment.
 
-The adversarial pass produced four blockers. Three were discharged empirically.
+The adversarial pass produced four blockers. Three were discharged empirically in
+a disposable environment; the fourth needed the deployment host and was
+discharged by owner-supplied evidence. **All four are now closed.**
 
 ### Discharged — sharp packaging on Alpine/musl
 
@@ -125,9 +127,32 @@ browser across all three locales (fa, en, de) and performing a client-side
 navigation. Console output: no `Invalid reference.`, no React hydration error
 #418 or #423, no errors at all.
 
-### NOT discharged — production host CPU capability
+### Discharged — production host CPU capability (owner-supplied evidence)
 
-**This is an owner deployment precondition, not a code defect.**
+```
+PRODUCTION_CPU_SSE4_2=PASS
+SHARP_0_35_3_CPU_COMPATIBILITY=PASS
+SHARP_PLATFORM_BLOCKER=CLOSED
+```
+
+This was the one item Phase 99 could not settle from the inside, because
+inspecting it required looking at the deployment host and Phase 99 must not
+contact Production. **The owner has now supplied it.**
+
+**Provenance — this is owner-supplied operational evidence, not an agent
+observation.** The owner observed the CPU capability directly on the deployment
+host and reported `PRODUCTION_CPU_SSE4_2=PASS`. The observation was read-only: it
+made no configuration, deployment, restart, package, container or service change.
+No agent inspected the host, before or after. Only the pass/fail conclusion is
+recorded here — no host identifier, no address, and no `/proc/cpuinfo` contents.
+
+What this discharges, precisely: the deployment host advertises SSE4.2, so the
+x86-64-v2 gate that `sharp@0.35.3` newly applies to `linuxmusl-x64` is satisfied
+there, and `sharp` will load. It does **not** discharge anything about a
+*different* host — the check belongs in the deployment runbook for any future
+host or CPU-model change, because the failure mode below stays quiet.
+
+The rest of this section is retained as the record of why the check was required.
 
 `sharp@0.34.5` applied its x86-64-v2 microarchitecture gate only to the glibc
 specifier:
@@ -143,36 +168,39 @@ if (sharp && path.startsWith('@img/sharp-linux-x64') && !sharp._isUsingX64V2())
 if (sharp && ["linux-x64", "linuxmusl-x64"].includes(runtimePlatform) && !sharp._isUsingX64V2())
 ```
 
-So the upgrade newly requires **x86-64-v2 (SSE4.2)** on the production runtime
-platform. The check passed on the build/test machine, but that says nothing about
-the deployment host: Phase 99 must not contact Production, so the production CPU
-has not been and will not be inspected here.
+So the upgrade newly required **x86-64-v2 (SSE4.2)** on the production runtime
+platform — a requirement that did not exist before this upgrade, on the only
+runtime platform this project has. Passing on the build/test machine said nothing
+about the deployment host, which is why owner evidence was needed rather than an
+agent assertion.
 
-x86-64-v2 has been standard on server silicon since roughly 2009, so this is
-unlikely to bite. The realistic exposure is a hypervisor presenting a masked CPU
-model (`qemu64` / `kvm64` defaults on some VPS platforms).
+x86-64-v2 has been standard on server silicon since roughly 2009. The realistic
+exposure was always a hypervisor presenting a masked CPU model (`qemu64` /
+`kvm64` defaults on some VPS platforms) — which is what the owner check ruled
+out.
 
-**Failure mode if it does bite:** `sharp` sets itself to `null` with
+**Failure mode, had it not held:** `sharp` sets itself to `null` with
 `code: "Unsupported CPU"`. The container still starts and `/api/health` still
 returns 200, so the Compose healthcheck stays green and nothing rolls back —
 while `/_next/image` fails and the public site's hero imagery breaks. It fails
-quietly, which is what makes it worth stating plainly.
+quietly, which is why it was worth gating on explicitly.
 
-**Owner check, to run on the deployment host before this branch is deployed:**
+**Re-run this check on any future deployment host, or after any CPU-model change:**
 
 ```bash
 grep -o 'sse4_2' /proc/cpuinfo | head -1
 ```
 
-Empty output means the host does not advertise SSE4.2 and this upgrade must not
-be deployed until the CPU model is corrected.
+Empty output means that host does not advertise SSE4.2 and this dependency set
+must not be deployed there until the CPU model is corrected.
 
-**Do not resolve this by reverting sharp.** `GHSA-f88m-g3jw-g9cj` (libvips
-CVE-2026-33327 / 33328 / 35590 / 35591, vulnerable `<0.35.0`, with no patch on
-the 0.34.x line) is the one genuinely reachable vulnerability in this batch:
-`/_next/image` decodes local files, including the `/app/public/uploads` volume,
-at request time. Reverting trades a hypothetical CPU-capability issue for a real
-image-decoder vulnerability.
+**Do not resolve a future failure of this check by reverting sharp.**
+`GHSA-f88m-g3jw-g9cj` (libvips CVE-2026-33327 / 33328 / 35590 / 35591, vulnerable
+`<0.35.0`, with no patch on the 0.34.x line) is the one genuinely reachable
+vulnerability in this batch: `/_next/image` decodes local files, including the
+`/app/public/uploads` volume, at request time. Reverting would trade a
+CPU-capability issue for a real image-decoder vulnerability. Correct the CPU
+model instead.
 
 ---
 
