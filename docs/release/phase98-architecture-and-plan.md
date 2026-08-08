@@ -29,9 +29,10 @@ checklist; version tags; changelog; incident runbooks; RPO; RTO; recovery owners
   directory `/opt/hermes-os-nexuz`, every Production command pins `-p hermes`.
 - No Production rehearsal/backup/restore/migration/deploy executed; no Production
   secret rotated; no OpenBao change; no provider/customer/regulator contact.
-- No destructive Production command is introduced: `down -v`, `docker volume rm`
-  and `system prune` appear ONLY inside disposable rehearsals whose project/volume
-  names begin with `hermes98`/`hermes98test_` and are guarded at runtime.
+- No destructive Production command is introduced. Volume-destroying teardown and
+  image/system pruning must never appear as Production operator instructions; they
+  are used ONLY inside disposable rehearsals whose project/volume names begin with
+  `hermes98`/`hermes98test_`, and are guarded at runtime.
 - Deployment stays manual-only (`workflow_dispatch`, protected `production`
   environment, pinned 40-hex SHA, pinned known_hosts, non-root operator).
 
