@@ -35,10 +35,16 @@ export async function listGateways(
   const prisma = await getPrisma();
   if (!prisma) return [];
   const where: Record<string, unknown> = { organizationId };
-  if (siteId) {
+  // PHASE 99.5 SECURITY (P99-INT-015 HIGH) — see listAssets: this `if/else` let
+  // an explicit siteId REPLACE the Phase 43 allow-list rather than narrow it, so
+  // a caller granted one site could enumerate another site's gateways —
+  // including apiKeyId and metadata — simply by naming that site in the query
+  // string.
+  if (allowedSiteIds !== undefined) {
+    if (siteId && !allowedSiteIds.includes(siteId)) return [];
+    where.siteId = siteId ?? { in: allowedSiteIds };
+  } else if (siteId) {
     where.siteId = siteId;
-  } else if (allowedSiteIds !== undefined) {
-    where.siteId = { in: allowedSiteIds };
   }
   const rows = await (prisma.industrialGateway as unknown as GatewayModel).findMany({
     where,
