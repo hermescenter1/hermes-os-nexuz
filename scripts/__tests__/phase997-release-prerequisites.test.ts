@@ -79,7 +79,9 @@ describe("PHASE997_BACKUP_PREREQUISITE", () => {
     }
   });
 
-  it.each(BACKUP_REQUIREMENTS.map(([code]) => code))("blocks the release when %s", (code) => {
+  const REQUIREMENT_CODES: string[] = BACKUP_REQUIREMENTS.map((entry) => entry[0] as string);
+
+  it.each(REQUIREMENT_CODES)("blocks the release when %s", (code) => {
     // Rebuild the failing state for this specific requirement.
     const broken: Record<string, unknown> = goodBackup();
     const breakers: Record<string, () => void> = {

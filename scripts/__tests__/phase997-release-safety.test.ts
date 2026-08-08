@@ -158,7 +158,8 @@ describe("PHASE997_OPENBAO_ISOLATION", () => {
     const { resolveSecretBackendComposition } = await import("../../src/lib/ot-edge/secret-backend");
     const composition = resolveSecretBackendComposition();
     expect(composition.available).toBe(false);
-    expect(composition.reason).toBe("DISABLED");
+    // Narrow the discriminated union before reading the disabled-only field.
+    if (!composition.available) expect(composition.reason).toBe("DISABLED");
   });
 
   it("stays disabled for any value other than the exact string 'openbao'", async () => {
@@ -169,7 +170,7 @@ describe("PHASE997_OPENBAO_ISOLATION", () => {
       process.env.OT_SECRET_BACKEND = value;
       const composition = resolveSecretBackendComposition();
       expect(composition.available, `value "${value}" must not enable the backend`).toBe(false);
-      expect(composition.reason).toBe("DISABLED");
+      if (!composition.available) expect(composition.reason).toBe("DISABLED");
     }
   });
 

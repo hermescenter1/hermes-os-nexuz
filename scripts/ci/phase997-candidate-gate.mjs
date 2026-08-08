@@ -118,6 +118,11 @@ async function main() {
   const pgPassword = `disposable_${randomBytes(9).toString("hex")}`;
   const redisPassword = `disposable_${randomBytes(9).toString("hex")}`;
 
+  // Built once, never re-embedded inline: the password is a disposable runtime
+  // value and must not appear in a second literal that could be logged.
+  const databaseHost = "postgres"; // the disposable Compose service, never a routable host
+  const databaseUrl = `postgresql://hermes:${pgPassword}@${databaseHost}:5432/hermes_db`;
+
   const appImage = process.env.HERMES_APP_IMAGE?.trim();
   const composeFiles = ["-f", "docker-compose.prod.yml", "-f", "deploy/rehearsal/docker-compose.rehearsal.yml"];
   if (appImage) {
@@ -134,7 +139,7 @@ async function main() {
       `POSTGRES_PASSWORD=${pgPassword}`,
       `REDIS_PASSWORD=${redisPassword}`,
       // The candidate is validated against the DISPOSABLE compose database only.
-      `DATABASE_URL=postgresql://hermes:${pgPassword}@postgres:5432/hermes_db`,
+      `DATABASE_URL=${databaseUrl}`,
       `REDIS_URL=redis://:${redisPassword}@redis:6379`,
       `JWT_ACCESS_SECRET=${randomBytes(48).toString("hex")}`,
       `JWT_REFRESH_SECRET=${randomBytes(48).toString("hex")}`,
@@ -252,10 +257,19 @@ async function main() {
     check("CANDIDATE_NO_SEVERE_LOGS", severe.length === 0, severe.join(" | "));
 
     // ── The candidate never dialed a live production database ────────────────
+    // Read the host the container is actually configured to reach. `postgres`
+    // resolves only on this disposable project's private Compose network, so a
+    // routable hostname here would mean the candidate had been pointed at a real
+    // database. The value is split at the credential separator so no password
+    // can reach the log.
+    const containerDbHost = docker(["exec", webContainer, "sh", "-c", "printenv DATABASE_URL || true"])
+      .trim()
+      .split("@")
+      .pop();
     check(
       "CANDIDATE_DATABASE_IS_DISPOSABLE",
-      /@postgres:5432\//.test(`postgresql://hermes:${pgPassword}@postgres:5432/hermes_db`),
-      "the candidate must be validated against the disposable compose database",
+      containerDbHost === `${databaseHost}:5432/hermes_db`,
+      `the candidate must be validated against the disposable compose database, not "${containerDbHost}"`,
     );
 
     console.log(`RESULT CANDIDATE_LOCALES_OK=${localesOk}`);

@@ -1,0 +1,144 @@
+# Phase 99.7 — Production Completion & Deployment Assurance.
+#
+# Deploy-free, Production-free assurance for the Phase 94 -> Phase 99.6 cutover.
+# NO secrets, NO SSH, NO production host contact, NO OpenBao contact, read-only
+# repository permissions. Every gate is hard (no continue-on-error).
+#
+# Docker rehearsals self-manage DISPOSABLE containers, volumes and Compose
+# projects whose names begin with `hermes997`/`hermes997test_`/`hermes98_`, so
+# they can never name — let alone destroy — the canonical Production project
+# `hermes`. All fixture data is SYNTHETIC; no production document or row is ever
+# read.
+#
+# The migration integrity gate needs real git history (it reads the Phase 94
+# baseline commit), hence `fetch-depth: 0` on that job.
+
+name: Phase 99.7 Production Completion Assurance
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase997-assurance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase997-offline:
+    name: Phase 99.7 offline release assurance
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # NON-SECRET CI placeholder so Prisma can resolve the var. No connection is
+      # made by generate/validate/tsc/lint/test. NOT a production value.
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit (full history)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # The migration integrity gate reads the Phase 94 baseline commit.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      - name: Migration integrity gate (49 -> 69, zero historical mutation)
+        run: npm run gate:phase997:migrations
+
+      - name: Adversarial release-surface static review
+        run: npm run gate:phase997:safety
+
+      - name: sharp runtime gate (host)
+        run: node scripts/dr/sharp-runtime-gate.mjs
+
+      - name: Focused Phase 99.7 tests
+        run: npx --no-install vitest run scripts/__tests__/phase997-*.test.ts
+
+      - name: Full unit test suite
+        run: npm test
+
+  phase997-migration-rehearsal:
+    name: Phase 99.7 baseline-to-target migration rehearsal (real pg16)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit (full history)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      # Applies the 49 deployed-baseline migrations, seeds SYNTHETIC rows, runs
+      # the 20 new migrations, proves the result equals a fresh deploy, proves no
+      # row was lost, proves a second deploy is idempotent, and drops everything.
+      - name: Deployed-baseline -> target upgrade rehearsal
+        run: npm run rehearse:phase997:migrations
+
+      - name: documents_data adoption rehearsal (disposable volumes)
+        run: npm run rehearse:phase997:documents
+
+  phase997-candidate:
+    name: Phase 99.7 release candidate gate (real standalone image)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      - name: Build the candidate image (disposable, hermes997test)
+        run: docker build -t hermes997test-app:${{ github.sha }} .
+
+      # Health, readiness, /fa /en /de, anonymous denial, error hygiene, the
+      # sharp runtime gate INSIDE the container, severe-log scan, restart count
+      # and OpenBao left disabled — against a DISPOSABLE database, never the
+      # live production one.
+      - name: Candidate validation against a disposable stack
+        env:
+          HERMES_APP_IMAGE: hermes997test-app:${{ github.sha }}
+          PHASE997_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: npm run gate:phase997:candidate
