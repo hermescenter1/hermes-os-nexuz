@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z }                         from "zod";
 import { createHash }                from "crypto";
 import { getPrisma }                 from "@/lib/db/prisma";
+import { resolveClientIp, readBoundedJson, SMALL_JSON_BODY_BYTES }           from "@/lib/security/request-guards";
 
 // ── Simple in-memory rate limiter (per hashed IP, fixed window) ──────────────
 // Not suitable for multi-instance; acceptable for early sales traffic.
@@ -46,11 +47,15 @@ const LeadSchema = z.object({
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  // IP hash for rate limiting only — never stored in plain text
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-           ?? req.headers.get("x-real-ip")
-           ?? "unknown";
-  const ipHash = createHash("sha256").update(ip + process.env.JWT_ACCESS_SECRET).digest("hex").slice(0, 16);
+  // IP hash for rate limiting only — never stored in plain text.
+  //
+  // PHASE 99 SECURITY — this used to read the left-most X-Forwarded-For entry
+  // first. nginx APPENDS to that header, so its left-most entry is whatever the
+  // client sent: rotating it per request gave every request its own bucket and
+  // defeated the 5-per-10-minutes cap entirely. `resolveClientIp` trusts only
+  // X-Real-IP, which the proxy overwrites with the real peer — the same fix
+  // Phase 93 applied to the authentication routes.
+  const ipHash = createHash("sha256").update(resolveClientIp(req) + process.env.JWT_ACCESS_SECRET).digest("hex").slice(0, 16);
 
   if (!checkRateLimit(ipHash)) {
     return NextResponse.json(
@@ -59,12 +64,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
+  // PHASE 99 — bounded read. A rate limit alone does not stop a permitted
+  // request from carrying an arbitrarily large body into the JSON parser, so
+  // this anonymous public endpoint now has an explicit byte ceiling.
+  const read = await readBoundedJson(req, SMALL_JSON_BODY_BYTES);
+  if (read.status === "too_large") {
+    return NextResponse.json({ ok: false, error: "Payload too large." }, { status: 413 });
+  }
+  if (read.status === "invalid") {
     return NextResponse.json({ ok: false, error: "Invalid request body." }, { status: 400 });
   }
+  const body: unknown = read.value;
 
   const parsed = LeadSchema.safeParse(body);
   if (!parsed.success) {

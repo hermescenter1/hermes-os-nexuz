@@ -101,6 +101,10 @@ function runBackup(work: string, extraEnv: Record<string, string> = {}): RunResu
         POSTGRES_USER: "hermes",
         POSTGRES_DB: "hermes_db",
         FAKE_DOCKER_LOG: log,
+        // PHASE 98 — the upgraded script encrypts the backup; supply an owner-only
+        // key file + non-secret key id (fail-closed without them).
+        HERMES_BACKUP_KEY_FILE: join(work, "key.hex"),
+        HERMES_BACKUP_KEY_ID: "p931-test-key",
         ...extraEnv,
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -123,6 +127,10 @@ function newWork(): string {
   const docker = join(bin, "docker");
   writeFileSync(docker, FAKE_DOCKER);
   chmodSync(docker, 0o755);
+  // Owner-only backup key (0600) for the encrypted-backup flow (Phase 98).
+  const key = join(work, "key.hex");
+  writeFileSync(key, "a".repeat(64) + "\n", { mode: 0o600 });
+  chmodSync(key, 0o600);
   return work;
 }
 
@@ -138,7 +146,9 @@ describe.skipIf(!POSIX)("PHASE 93.1 — backup verifier stdin hotfix (real shell
     work = newWork();
     res = runBackup(work);
     const backups = join(work, "backups");
-    const dumps = existsSync(backups) ? readdirSync(backups).filter((f) => f.endsWith(".dump")) : [];
+    // PHASE 98 — the DURABLE artifact is now the encrypted .hbk (plaintext .dump
+    // lives only transiently in a private temp dir and is removed).
+    const dumps = existsSync(backups) ? readdirSync(backups).filter((f) => f.endsWith(".hbk")) : [];
     dumpFile = dumps.length ? join(backups, dumps[0]) : "";
     dockerLog = join(work, "docker.log");
   });

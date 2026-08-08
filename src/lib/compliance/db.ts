@@ -86,7 +86,10 @@ export async function upsertCookieConsent(data: {
       },
     } as unknown)) as DbCookieConsent;
   } catch (err) {
-    console.error("[compliance/db] upsertCookieConsent failed for sessionId=" + data.sessionId + ":", err);
+    // PHASE 99 — never log the consent subject identifier. It used to be the live
+    // authentication session token; even now that it is an opaque consent id it
+    // remains a subject identifier that must not reach logs.
+    console.error("[compliance/db] upsertCookieConsent failed:", err);
     return null;
   }
 }
@@ -97,7 +100,8 @@ export async function getCookieConsent(sessionId: string): Promise<DbCookieConse
   try {
     return (await db.cookie.findUnique({ where: { sessionId } } as unknown)) as DbCookieConsent | null;
   } catch (err) {
-    console.error("[compliance/db] getCookieConsent failed for sessionId=" + sessionId + ":", err);
+    // PHASE 99 — see upsertCookieConsent: the subject identifier stays out of logs.
+    console.error("[compliance/db] getCookieConsent failed:", err);
     return null;
   }
 }

@@ -36,11 +36,18 @@ export async function listAssets(organizationId: string, opts?: {
   const prisma = await getPrisma();
   if (!prisma) return [];
   const where: Record<string, unknown> = { organizationId };
-  if (opts?.siteId)    where.siteId    = opts.siteId;
   if (opts?.gatewayId) where.gatewayId = opts.gatewayId;
-  // Phase 43: if no specific siteId filter, scope to allowed sites
-  if (!opts?.siteId && opts?.allowedSiteIds !== undefined) {
-    where.siteId = { in: opts.allowedSiteIds };
+  // PHASE 99 SECURITY — a requested site NARROWS the caller's permitted set; it
+  // must never replace it. The Phase 43 allow-list used to be applied only when
+  // no siteId was supplied, so `?siteId=<another site in my org>` skipped the
+  // allow-list entirely and returned that site's assets to a caller holding no
+  // UserSite grant for it. The item route (assets/[id]) enforced the boundary
+  // correctly, so the control was defeated purely by choosing a different URL.
+  if (opts?.allowedSiteIds !== undefined) {
+    if (opts.siteId && !opts.allowedSiteIds.includes(opts.siteId)) return [];
+    where.siteId = opts.siteId ?? { in: opts.allowedSiteIds };
+  } else if (opts?.siteId) {
+    where.siteId = opts.siteId;
   }
   const rows = await (prisma.industrialAsset as unknown as AssetModel).findMany({
     where,

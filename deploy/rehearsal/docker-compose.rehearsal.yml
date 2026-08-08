@@ -1,0 +1,30 @@
+# Hermes OS — Phase 98 full-node recovery REHEARSAL override.
+#
+# Used ONLY by scripts/ci/phase98-full-node-recovery.mjs against a DISPOSABLE
+# Compose project whose name begins with `hermes98test_` — NEVER the canonical
+# Production project `hermes`. It publishes hermes-web on an ephemeral loopback
+# port for the health probe and mounts the additive documents_data volume so the
+# rehearsal exercises BOTH durable upload surfaces. nginx is intentionally not
+# started by the rehearsal (it would bind host 80/443); the harness brings up
+# only postgres, redis and hermes-web.
+#
+# This file changes nothing about Production: it is a separate override applied
+# on top of docker-compose.prod.yml with an explicit disposable -p project.
+
+services:
+  postgres:
+    # Ephemeral loopback port so the rehearsal harness can run `prisma migrate
+    # deploy` from the host (the runner image ships the Prisma runtime but not the
+    # `prisma` CLI). Production publishes NO postgres port — this is rehearsal-only.
+    ports:
+      - "127.0.0.1::5432"
+
+  hermes-web:
+    ports:
+      - "127.0.0.1::3000"
+    volumes:
+      - uploads_data:/app/public/uploads
+      - documents_data:/app/.data/documents
+
+volumes:
+  documents_data:

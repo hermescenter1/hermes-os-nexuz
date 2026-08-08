@@ -5,6 +5,8 @@
  * Returns documented incidents (critical alarm → case → root cause → resolution)
  * sorted by impact score. All data from the engineering knowledge base — no AI.
  */
+import type { NextRequest } from "next/server";
+import { guardDerivedGraphRequest } from "@/lib/eng-graph/public-guard";
 import { NextResponse }  from "next/server";
 import { buildEngGraph } from "@/lib/eng-graph/builder";
 import type { WarRoomData, WarRoomIncident, AlertSeverity } from "@/lib/operations/types";
@@ -23,7 +25,11 @@ function alarmSeverity(category: string): AlertSeverity {
   return "info";
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // PHASE 99 (P99-INT-011) — bound this anonymous graph rebuild.
+  const limited = await guardDerivedGraphRequest(req);
+  if (limited) return limited;
+
   try {
     const { nodes, edges } = await buildEngGraph();
 

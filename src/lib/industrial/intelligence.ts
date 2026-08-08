@@ -210,38 +210,63 @@ export interface AssetAnalytics {
   avgRiskScore:   number | null;
 }
 
+const EMPTY_ANALYTICS: AssetAnalytics = {
+  totalAssets: 0, byType: [], byStatus: [], withRiskScore: 0, withHealthData: 0, avgRiskScore: null,
+};
+
 export async function getAssetAnalytics(
   organizationId: string,
-  siteId?: string
+  siteId?: string,
+  allowedSiteIds?: string[],
 ): Promise<AssetAnalytics> {
   const db = await getPrisma();
-  if (!db) {
-    return { totalAssets: 0, byType: [], byStatus: [], withRiskScore: 0, withHealthData: 0, avgRiskScore: null };
-  }
+  if (!db) return EMPTY_ANALYTICS;
 
   const r = db as Record<string, unknown>;
 
-  const where: Record<string, unknown> = { organizationId };
-  if (siteId) where.siteId = siteId;
+  // PHASE 99 SECURITY — this aggregate applied no site allow-list at all, so a
+  // caller granted one site could read another site's asset counts, status
+  // distribution and average risk score. A requested site now NARROWS the
+  // permitted set and can never replace it, matching listAssets.
+  const assetWhere: Record<string, unknown> = { organizationId };
+  if (allowedSiteIds !== undefined) {
+    if (allowedSiteIds.length === 0) return EMPTY_ANALYTICS;
+    if (siteId && !allowedSiteIds.includes(siteId)) return EMPTY_ANALYTICS;
+    assetWhere.siteId = siteId ?? { in: allowedSiteIds };
+  } else if (siteId) {
+    assetWhere.siteId = siteId;
+  }
+
+  // PHASE 99 CORRECTNESS — AssetRiskScore and AssetHealthHistory carry NO siteId
+  // column, so reusing the asset predicate made Prisma reject those two queries
+  // and the route answer an unhandled 500 for every `?siteId=` request. They are
+  // scoped by organization and then intersected with the visible assets below,
+  // which is also what keeps the aggregate site-correct.
+  const scoreWhere: Record<string, unknown> = { organizationId };
 
   const [assets, riskScores, healthEntries] = await Promise.all([
     (r.industrialAsset as FindManyModel).findMany({
-      where,
+      where: assetWhere,
       select: { id: true, assetType: true, status: true },
     }) as Promise<Record<string, unknown>[]>,
 
     (r.assetRiskScore as FindManyModel).findMany({
-      where,
+      where: scoreWhere,
       orderBy: { createdAt: "desc" },
       select: { assetId: true, riskScore: true },
     }) as Promise<Record<string, unknown>[]>,
 
     (r.assetHealthHistory as FindManyModel).findMany({
-      where,
+      where: scoreWhere,
       select: { assetId: true },
       orderBy: { createdAt: "desc" },
     }) as Promise<Record<string, unknown>[]>,
   ]);
+
+  // Only rows belonging to an asset this caller may actually see may contribute
+  // to the aggregate — otherwise the org-scoped score query would leak counts
+  // back across the site boundary the asset query just enforced.
+  const visibleAssetIds = new Set(assets.map((a) => String(a.id)));
 
   // Type distribution
   const typeCounts = new Map<string, number>();
@@ -259,6 +284,7 @@ export async function getAssetAnalytics(
   let riskCount = 0;
   for (const rs of riskScores) {
     const aid = rs.assetId as string;
+    if (!visibleAssetIds.has(aid)) continue;
     if (!seenAssets.has(aid)) {
       seenAssets.add(aid);
       riskSum   += (rs.riskScore as number) ?? 0;
@@ -266,7 +292,9 @@ export async function getAssetAnalytics(
     }
   }
 
-  const assetsWithHealth = new Set((healthEntries).map((h) => h.assetId as string));
+  const assetsWithHealth = new Set(
+    healthEntries.map((h) => h.assetId as string).filter((aid) => visibleAssetIds.has(aid)),
+  );
 
   return {
     totalAssets:    assets.length,

@@ -3,20 +3,27 @@ import { requirePlatformAuth }        from "@/lib/api/auth";
 import { requireOrgActor }            from "@/lib/org/context";
 import { requirePermission }          from "@/lib/org/rbac";
 import { getAssetAnalytics }          from "@/lib/industrial/intelligence";
+import { getAllowedSiteIds }          from "@/lib/site/context";
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { ctx } = auth;
 
+  let userId: string | undefined;
   if (ctx.authMethod === "jwt") {
     const member = await requireOrgActor(req, ctx.orgId);
     if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
     const perm = requirePermission(member.ctx.role, "view_industrial");
     if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+    userId = member.ctx.userId;
   }
 
   const siteId = req.nextUrl.searchParams.get("siteId") ?? undefined;
-  const analytics = await getAssetAnalytics(ctx.orgId, siteId);
+  // PHASE 99 SECURITY — this was the only route under /api/industrial that never
+  // resolved the caller's permitted sites, so its aggregate crossed the site
+  // boundary its siblings enforce. Same resolution as GET /api/industrial/assets.
+  const allowedSiteIds = userId ? await getAllowedSiteIds(userId, ctx.orgId) : undefined;
+  const analytics = await getAssetAnalytics(ctx.orgId, siteId, allowedSiteIds);
   return NextResponse.json({ analytics });
 }

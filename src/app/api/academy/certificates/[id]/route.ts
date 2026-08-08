@@ -45,6 +45,12 @@ export async function GET(
       instructorName: course.instructorName,
     } : null,
     userName,
-    valid: true,
+    // PHASE 99 — this is a VERIFICATION endpoint, and it answered `valid: true`
+    // unconditionally: a certificate whose expiry passed still verified as good
+    // (with the holder's real name attached). `expiresAt` was echoed but never
+    // compared. A null expiry means "does not expire" and stays valid.
+    valid: cert.expiresAt === null || cert.expiresAt === undefined
+      ? true
+      : new Date(cert.expiresAt).getTime() > Date.now(),
   });
 }

@@ -407,7 +407,12 @@ export async function buildEngGraph(): Promise<EngGraphSnapshot> {
 
   // ── 7. Dynamic enrichment: knowledge articles ──────────────────────────────
   try {
-    const articles = await knowledgeRepository().list();
+    // PHASE 99 (P99-INT-011) — ask the repository for published articles rather
+    // than reading every row and filtering here. This graph is served by nine
+    // ANONYMOUS endpoints, so the previous shape meant one unbounded read of
+    // every tenant's drafts per request. The resulting node set is unchanged.
+    const repo = knowledgeRepository();
+    const articles = repo.listPublished ? await repo.listPublished() : (await repo.list()).filter(x => x.status === "published");
     for (const a of articles.filter(x => x.status === "published")) {
       const artId = `article-${a.id}`;
       addNode(node(artId, "KNOWLEDGE_ARTICLE",

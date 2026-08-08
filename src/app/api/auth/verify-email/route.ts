@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z }            from "zod";
 import { verifyEmail }  from "@/lib/auth/verification";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
-import { resolveClientIp }            from "@/lib/security/request-guards";
+import { resolveClientIp, readBoundedJson, SMALL_JSON_BODY_BYTES }            from "@/lib/security/request-guards";
 
 const schema = z.object({ token: z.string().min(1, "Token required") });
 
@@ -18,9 +18,13 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: unknown;
-  try { body = await req.json(); }
-  catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  // PHASE 99 — bounded read. A rate limit alone does not stop a permitted
+  // request from carrying an arbitrarily large body into the JSON parser, so
+  // this anonymous credential endpoint now has an explicit byte ceiling.
+  const read = await readBoundedJson(req, SMALL_JSON_BODY_BYTES);
+  if (read.status === "too_large") return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  if (read.status === "invalid") return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  const body: unknown = read.value;
 
   const parsed = schema.safeParse(body);
   if (!parsed.success) {

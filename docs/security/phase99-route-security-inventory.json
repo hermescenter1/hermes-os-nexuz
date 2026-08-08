@@ -1,0 +1,6677 @@
+{
+  "schemaVersion": 1,
+  "phase": "99",
+  "note": "Machine-readable route-security inventory. Derived from the source tree by scripts/security/phase99/route-inventory.mjs; regenerate with `node scripts/security/phase99/generate-inventory.mjs`. Contains no secrets, no request data and no customer information.",
+  "classificationSet": [
+    "PUBLIC_READ",
+    "PUBLIC_WRITE",
+    "AUTHENTICATED_USER",
+    "TENANT_MEMBER",
+    "TENANT_ADMIN",
+    "OWNER_ONLY",
+    "PLATFORM_ADMIN",
+    "WEBHOOK",
+    "INTERNAL_HEALTH",
+    "UNKNOWN"
+  ],
+  "summary": {
+    "routeFiles": 355,
+    "handlers": 497,
+    "byClassification": {
+      "PUBLIC_READ": 36,
+      "PUBLIC_WRITE": 13,
+      "AUTHENTICATED_USER": 210,
+      "TENANT_MEMBER": 119,
+      "TENANT_ADMIN": 0,
+      "OWNER_ONLY": 0,
+      "PLATFORM_ADMIN": 115,
+      "WEBHOOK": 2,
+      "INTERNAL_HEALTH": 2,
+      "UNKNOWN": 0
+    },
+    "unknown": 0,
+    "tenantBoundHandlers": 119,
+    "stateChangingGetHandlers": 0,
+    "unauthenticatedWebhooks": 0
+  },
+  "tenantCoverage": {
+    "TENANT_BOUND_HANDLERS_TOTAL": 234,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 234,
+    "TENANT_IDENTITY_SERVER_DERIVED": 234,
+    "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
+    "OBJECT_SCOPED_HANDLERS": 234,
+    "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
+    "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
+    "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
+  },
+  "routes": [
+    {
+      "apiPath": "/api/academy/certificates",
+      "method": "GET",
+      "file": "src/app/api/academy/certificates/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/certificates/[id]",
+      "method": "GET",
+      "file": "src/app/api/academy/certificates/[id]/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/courses",
+      "method": "GET",
+      "file": "src/app/api/academy/courses/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/courses",
+      "method": "POST",
+      "file": "src/app/api/academy/courses/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/courses/[id]",
+      "method": "GET",
+      "file": "src/app/api/academy/courses/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/courses/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/academy/courses/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/courses/[id]/enroll",
+      "method": "POST",
+      "file": "src/app/api/academy/courses/[id]/enroll/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/courses/[id]/progress",
+      "method": "GET",
+      "file": "src/app/api/academy/courses/[id]/progress/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/overview",
+      "method": "GET",
+      "file": "src/app/api/academy/overview/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole",
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/progress",
+      "method": "POST",
+      "file": "src/app/api/academy/progress/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/quizzes/[id]",
+      "method": "GET",
+      "file": "src/app/api/academy/quizzes/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/academy/quizzes/[id]/attempt",
+      "method": "POST",
+      "file": "src/app/api/academy/quizzes/[id]/attempt/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/access-requests/[id]/approve",
+      "method": "POST",
+      "file": "src/app/api/admin/access-requests/[id]/approve/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/access-requests/[id]/reject",
+      "method": "POST",
+      "file": "src/app/api/admin/access-requests/[id]/reject/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/audit",
+      "method": "GET",
+      "file": "src/app/api/admin/audit/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/customers",
+      "method": "GET",
+      "file": "src/app/api/admin/customers/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/customers",
+      "method": "POST",
+      "file": "src/app/api/admin/customers/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/customers/[id]",
+      "method": "GET",
+      "file": "src/app/api/admin/customers/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/customers/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/admin/customers/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/observability",
+      "method": "GET",
+      "file": "src/app/api/admin/observability/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/system",
+      "method": "GET",
+      "file": "src/app/api/admin/system/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/vendors",
+      "method": "GET",
+      "file": "src/app/api/admin/vendors/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/vendors/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/admin/vendors/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/vendors/[id]/approve",
+      "method": "POST",
+      "file": "src/app/api/admin/vendors/[id]/approve/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/vendors/[id]/reject",
+      "method": "POST",
+      "file": "src/app/api/admin/vendors/[id]/reject/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ai",
+      "method": "POST",
+      "file": "src/app/api/ai/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/analysis",
+      "method": "GET",
+      "file": "src/app/api/analysis/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "hasAuthoring",
+        "resolveBrainOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/analysis",
+      "method": "POST",
+      "file": "src/app/api/analysis/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAuthoring",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles",
+      "method": "GET",
+      "file": "src/app/api/articles/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/[id]",
+      "method": "GET",
+      "file": "src/app/api/articles/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/author-profile/avatar",
+      "method": "DELETE",
+      "file": "src/app/api/articles/author-profile/avatar/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/author-profile/avatar",
+      "method": "POST",
+      "file": "src/app/api/articles/author-profile/avatar/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/authors",
+      "method": "GET",
+      "file": "src/app/api/articles/authors/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/feed",
+      "method": "GET",
+      "file": "src/app/api/articles/feed/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/follow",
+      "method": "DELETE",
+      "file": "src/app/api/articles/follow/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/follow",
+      "method": "POST",
+      "file": "src/app/api/articles/follow/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/moderation",
+      "method": "GET",
+      "file": "src/app/api/articles/moderation/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/my",
+      "method": "GET",
+      "file": "src/app/api/articles/my/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/reactions",
+      "method": "DELETE",
+      "file": "src/app/api/articles/reactions/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/reactions",
+      "method": "POST",
+      "file": "src/app/api/articles/reactions/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/reports",
+      "method": "GET",
+      "file": "src/app/api/articles/reports/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/reports",
+      "method": "POST",
+      "file": "src/app/api/articles/reports/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/review/[id]/approve",
+      "method": "POST",
+      "file": "src/app/api/articles/review/[id]/approve/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/review/[id]/reject",
+      "method": "POST",
+      "file": "src/app/api/articles/review/[id]/reject/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/saved",
+      "method": "DELETE",
+      "file": "src/app/api/articles/saved/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/saved",
+      "method": "GET",
+      "file": "src/app/api/articles/saved/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/saved",
+      "method": "POST",
+      "file": "src/app/api/articles/saved/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/submit",
+      "method": "POST",
+      "file": "src/app/api/articles/submit/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/trending",
+      "method": "GET",
+      "file": "src/app/api/articles/trending/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/assets",
+      "method": "GET",
+      "file": "src/app/api/assets/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/assets/[id]",
+      "method": "GET",
+      "file": "src/app/api/assets/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/assets/dashboard",
+      "method": "GET",
+      "file": "src/app/api/assets/dashboard/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/assets/hierarchy",
+      "method": "GET",
+      "file": "src/app/api/assets/hierarchy/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/analytics",
+      "method": "GET",
+      "file": "src/app/api/ats/analytics/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/applications/[id]/status",
+      "method": "PATCH",
+      "file": "src/app/api/ats/applications/[id]/status/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getAuthRole",
+        "requireOrgActor",
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/candidates",
+      "method": "GET",
+      "file": "src/app/api/ats/candidates/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/candidates",
+      "method": "POST",
+      "file": "src/app/api/ats/candidates/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/interviews",
+      "method": "GET",
+      "file": "src/app/api/ats/interviews/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole",
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/interviews",
+      "method": "POST",
+      "file": "src/app/api/ats/interviews/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getAuthRole",
+        "requireOrgActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs",
+      "method": "GET",
+      "file": "src/app/api/ats/jobs/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs",
+      "method": "POST",
+      "file": "src/app/api/ats/jobs/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/overview",
+      "method": "GET",
+      "file": "src/app/api/ats/overview/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/pipeline",
+      "method": "GET",
+      "file": "src/app/api/ats/pipeline/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/score",
+      "method": "POST",
+      "file": "src/app/api/ats/score/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getAuthRole"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth",
+      "method": "GET",
+      "file": "src/app/api/auth/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth",
+      "method": "POST",
+      "file": "src/app/api/auth/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken",
+        "verifySession"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/accept-invite",
+      "method": "POST",
+      "file": "src/app/api/auth/accept-invite/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/access-request",
+      "method": "POST",
+      "file": "src/app/api/auth/access-request/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/forgot-password",
+      "method": "POST",
+      "file": "src/app/api/auth/forgot-password/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/refresh",
+      "method": "POST",
+      "file": "src/app/api/auth/refresh/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "rotateRefreshToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/register",
+      "method": "POST",
+      "file": "src/app/api/auth/register/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/reset-password",
+      "method": "POST",
+      "file": "src/app/api/auth/reset-password/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/sessions",
+      "method": "GET",
+      "file": "src/app/api/auth/sessions/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "resolveRequestSession"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/sessions",
+      "method": "POST",
+      "file": "src/app/api/auth/sessions/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireRecentAuth",
+        "resolveRequestSession"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/sessions/[id]",
+      "method": "DELETE",
+      "file": "src/app/api/auth/sessions/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "resolveRequestSession"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/auth/verify-email",
+      "method": "POST",
+      "file": "src/app/api/auth/verify-email/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/executions",
+      "method": "GET",
+      "file": "src/app/api/automation/executions/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/executions/[id]",
+      "method": "GET",
+      "file": "src/app/api/automation/executions/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/overview",
+      "method": "GET",
+      "file": "src/app/api/automation/overview/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/templates",
+      "method": "GET",
+      "file": "src/app/api/automation/templates/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/templates/[id]",
+      "method": "GET",
+      "file": "src/app/api/automation/templates/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/templates/[id]/create-workflow",
+      "method": "POST",
+      "file": "src/app/api/automation/templates/[id]/create-workflow/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/webhooks",
+      "method": "GET",
+      "file": "src/app/api/automation/webhooks/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/webhooks",
+      "method": "POST",
+      "file": "src/app/api/automation/webhooks/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/workflows",
+      "method": "GET",
+      "file": "src/app/api/automation/workflows/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/workflows",
+      "method": "POST",
+      "file": "src/app/api/automation/workflows/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/workflows/[id]",
+      "method": "DELETE",
+      "file": "src/app/api/automation/workflows/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/workflows/[id]",
+      "method": "GET",
+      "file": "src/app/api/automation/workflows/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/workflows/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/automation/workflows/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/workflows/[id]/activate",
+      "method": "POST",
+      "file": "src/app/api/automation/workflows/[id]/activate/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/workflows/[id]/pause",
+      "method": "POST",
+      "file": "src/app/api/automation/workflows/[id]/pause/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/workflows/[id]/run",
+      "method": "POST",
+      "file": "src/app/api/automation/workflows/[id]/run/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/automation/workflows/[id]/simulate",
+      "method": "POST",
+      "file": "src/app/api/automation/workflows/[id]/simulate/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/checkout",
+      "method": "POST",
+      "file": "src/app/api/billing/checkout/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/invoices",
+      "method": "GET",
+      "file": "src/app/api/billing/invoices/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/organizations",
+      "method": "GET",
+      "file": "src/app/api/billing/organizations/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/organizations",
+      "method": "POST",
+      "file": "src/app/api/billing/organizations/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/overrides",
+      "method": "GET",
+      "file": "src/app/api/billing/overrides/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/overrides",
+      "method": "POST",
+      "file": "src/app/api/billing/overrides/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/overrides/[id]",
+      "method": "DELETE",
+      "file": "src/app/api/billing/overrides/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/payments",
+      "method": "GET",
+      "file": "src/app/api/billing/payments/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/payments",
+      "method": "POST",
+      "file": "src/app/api/billing/payments/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/payments/[id]/refund",
+      "method": "POST",
+      "file": "src/app/api/billing/payments/[id]/refund/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/plans",
+      "method": "GET",
+      "file": "src/app/api/billing/plans/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/portal",
+      "method": "POST",
+      "file": "src/app/api/billing/portal/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/subscription",
+      "method": "DELETE",
+      "file": "src/app/api/billing/subscription/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/subscription",
+      "method": "GET",
+      "file": "src/app/api/billing/subscription/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/subscription",
+      "method": "PATCH",
+      "file": "src/app/api/billing/subscription/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/subscription",
+      "method": "POST",
+      "file": "src/app/api/billing/subscription/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/subscription",
+      "method": "PUT",
+      "file": "src/app/api/billing/subscription/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/usage",
+      "method": "GET",
+      "file": "src/app/api/billing/usage/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/usage",
+      "method": "POST",
+      "file": "src/app/api/billing/usage/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgContext",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/billing/webhooks/stripe",
+      "method": "POST",
+      "file": "src/app/api/billing/webhooks/stripe/route.ts",
+      "classification": "WEBHOOK",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": true
+    },
+    {
+      "apiPath": "/api/brain",
+      "method": "GET",
+      "file": "src/app/api/brain/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAuthoring",
+        "resolveBrainOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/brain",
+      "method": "POST",
+      "file": "src/app/api/brain/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAuthoring",
+        "resolveBrainOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/candidate/applications",
+      "method": "GET",
+      "file": "src/app/api/candidate/applications/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getTokenUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/candidate/profile",
+      "method": "GET",
+      "file": "src/app/api/candidate/profile/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getTokenUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/candidate/profile",
+      "method": "PUT",
+      "file": "src/app/api/candidate/profile/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getTokenUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/candidate/register",
+      "method": "POST",
+      "file": "src/app/api/candidate/register/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/careers/apply",
+      "method": "POST",
+      "file": "src/app/api/careers/apply/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/careers/jobs",
+      "method": "GET",
+      "file": "src/app/api/careers/jobs/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/careers/jobs/[jobId]",
+      "method": "GET",
+      "file": "src/app/api/careers/jobs/[jobId]/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cases",
+      "method": "DELETE",
+      "file": "src/app/api/cases/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAuthoring",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cases",
+      "method": "GET",
+      "file": "src/app/api/cases/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "resolveBrainOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cases",
+      "method": "PATCH",
+      "file": "src/app/api/cases/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAuthoring",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cases",
+      "method": "POST",
+      "file": "src/app/api/cases/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAuthoring",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/calendar",
+      "method": "GET",
+      "file": "src/app/api/cmms/calendar/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/checklists",
+      "method": "GET",
+      "file": "src/app/api/cmms/checklists/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/costs",
+      "method": "GET",
+      "file": "src/app/api/cmms/costs/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/dashboard",
+      "method": "GET",
+      "file": "src/app/api/cmms/dashboard/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/downtime",
+      "method": "GET",
+      "file": "src/app/api/cmms/downtime/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/downtime",
+      "method": "POST",
+      "file": "src/app/api/cmms/downtime/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/failures",
+      "method": "GET",
+      "file": "src/app/api/cmms/failures/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/failures",
+      "method": "POST",
+      "file": "src/app/api/cmms/failures/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/failures/[id]",
+      "method": "GET",
+      "file": "src/app/api/cmms/failures/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/history",
+      "method": "GET",
+      "file": "src/app/api/cmms/history/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/kpis",
+      "method": "GET",
+      "file": "src/app/api/cmms/kpis/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/plans",
+      "method": "GET",
+      "file": "src/app/api/cmms/plans/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/plans",
+      "method": "POST",
+      "file": "src/app/api/cmms/plans/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/plans/[id]",
+      "method": "GET",
+      "file": "src/app/api/cmms/plans/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/reports",
+      "method": "GET",
+      "file": "src/app/api/cmms/reports/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/schedules",
+      "method": "GET",
+      "file": "src/app/api/cmms/schedules/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/spares",
+      "method": "GET",
+      "file": "src/app/api/cmms/spares/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/tasks",
+      "method": "GET",
+      "file": "src/app/api/cmms/tasks/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/tasks",
+      "method": "POST",
+      "file": "src/app/api/cmms/tasks/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/tasks/[id]",
+      "method": "GET",
+      "file": "src/app/api/cmms/tasks/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/cmms/tasks/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/cmms/tasks/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/consents",
+      "method": "GET",
+      "file": "src/app/api/compliance/consents/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/consents",
+      "method": "POST",
+      "file": "src/app/api/compliance/consents/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/cookie-consent",
+      "method": "GET",
+      "file": "src/app/api/compliance/cookie-consent/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/cookie-consent",
+      "method": "POST",
+      "file": "src/app/api/compliance/cookie-consent/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/data-deletion",
+      "method": "POST",
+      "file": "src/app/api/compliance/data-deletion/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/data-export",
+      "method": "POST",
+      "file": "src/app/api/compliance/data-export/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/erasures",
+      "method": "GET",
+      "file": "src/app/api/compliance/erasures/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/erasures",
+      "method": "POST",
+      "file": "src/app/api/compliance/erasures/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/erasures/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/erasures/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/erasures/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/erasures/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/erasures/[id]/execute",
+      "method": "POST",
+      "file": "src/app/api/compliance/erasures/[id]/execute/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/erasures/[id]/plan",
+      "method": "POST",
+      "file": "src/app/api/compliance/erasures/[id]/plan/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/erasures/[id]/resolutions",
+      "method": "POST",
+      "file": "src/app/api/compliance/erasures/[id]/resolutions/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/evidence-packs",
+      "method": "GET",
+      "file": "src/app/api/compliance/evidence-packs/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/evidence-packs",
+      "method": "POST",
+      "file": "src/app/api/compliance/evidence-packs/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/evidence-packs/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/evidence-packs/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/evidence-packs/[id]/manifest",
+      "method": "GET",
+      "file": "src/app/api/compliance/evidence-packs/[id]/manifest/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/evidence-packs/[id]/revoke",
+      "method": "POST",
+      "file": "src/app/api/compliance/evidence-packs/[id]/revoke/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/exports",
+      "method": "GET",
+      "file": "src/app/api/compliance/exports/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/exports",
+      "method": "POST",
+      "file": "src/app/api/compliance/exports/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/exports/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/exports/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/exports/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/exports/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/exports/[id]/download",
+      "method": "POST",
+      "file": "src/app/api/compliance/exports/[id]/download/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/exports/[id]/token",
+      "method": "POST",
+      "file": "src/app/api/compliance/exports/[id]/token/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents",
+      "method": "GET",
+      "file": "src/app/api/compliance/incidents/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents",
+      "method": "POST",
+      "file": "src/app/api/compliance/incidents/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/incidents/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/incidents/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents/[id]/actions",
+      "method": "GET",
+      "file": "src/app/api/compliance/incidents/[id]/actions/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents/[id]/actions",
+      "method": "POST",
+      "file": "src/app/api/compliance/incidents/[id]/actions/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents/[id]/actions/[actionId]",
+      "method": "POST",
+      "file": "src/app/api/compliance/incidents/[id]/actions/[actionId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents/[id]/assessment",
+      "method": "POST",
+      "file": "src/app/api/compliance/incidents/[id]/assessment/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents/[id]/assignment",
+      "method": "POST",
+      "file": "src/app/api/compliance/incidents/[id]/assignment/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/incidents/[id]/timeline",
+      "method": "GET",
+      "file": "src/app/api/compliance/incidents/[id]/timeline/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-documents",
+      "method": "GET",
+      "file": "src/app/api/compliance/legal-documents/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePlatformSuperadmin",
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-documents",
+      "method": "POST",
+      "file": "src/app/api/compliance/legal-documents/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePlatformSuperadmin",
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-documents/[type]",
+      "method": "GET",
+      "file": "src/app/api/compliance/legal-documents/[type]/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-documents/entries/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/legal-documents/entries/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePlatformSuperadmin",
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-documents/entries/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/legal-documents/entries/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePermission",
+        "requirePlatformSuperadmin",
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-documents/entries/[id]/accept",
+      "method": "DELETE",
+      "file": "src/app/api/compliance/legal-documents/entries/[id]/accept/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-documents/entries/[id]/accept",
+      "method": "POST",
+      "file": "src/app/api/compliance/legal-documents/entries/[id]/accept/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-holds",
+      "method": "GET",
+      "file": "src/app/api/compliance/legal-holds/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-holds",
+      "method": "POST",
+      "file": "src/app/api/compliance/legal-holds/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-holds/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/legal-holds/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/legal-holds/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/legal-holds/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/overview",
+      "method": "GET",
+      "file": "src/app/api/compliance/overview/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/privacy-requests",
+      "method": "GET",
+      "file": "src/app/api/compliance/privacy-requests/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/privacy-requests",
+      "method": "POST",
+      "file": "src/app/api/compliance/privacy-requests/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "verifyAccessToken"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/privacy-requests/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/privacy-requests/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/privacy-requests/[id]/assign",
+      "method": "POST",
+      "file": "src/app/api/compliance/privacy-requests/[id]/assign/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requirePlatformSuperadmin"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/privacy-requests/unassigned",
+      "method": "GET",
+      "file": "src/app/api/compliance/privacy-requests/unassigned/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requirePlatformSuperadmin"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/processing-activities",
+      "method": "GET",
+      "file": "src/app/api/compliance/processing-activities/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/processing-activities",
+      "method": "POST",
+      "file": "src/app/api/compliance/processing-activities/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/processing-activities/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/processing-activities/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/processing-activities/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/processing-activities/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/retention-policies",
+      "method": "GET",
+      "file": "src/app/api/compliance/retention-policies/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/retention-policies",
+      "method": "POST",
+      "file": "src/app/api/compliance/retention-policies/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/retention-policies/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/retention-policies/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/retention-policies/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/retention-policies/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/retention-policies/[id]/dry-run",
+      "method": "POST",
+      "file": "src/app/api/compliance/retention-policies/[id]/dry-run/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/subprocessors",
+      "method": "GET",
+      "file": "src/app/api/compliance/subprocessors/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/subprocessors",
+      "method": "POST",
+      "file": "src/app/api/compliance/subprocessors/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/subprocessors/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/subprocessors/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/subprocessors/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/subprocessors/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/transfers",
+      "method": "GET",
+      "file": "src/app/api/compliance/transfers/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/transfers",
+      "method": "POST",
+      "file": "src/app/api/compliance/transfers/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/transfers/[id]",
+      "method": "GET",
+      "file": "src/app/api/compliance/transfers/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/compliance/transfers/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/compliance/transfers/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireComplianceOrgScope",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/conversations",
+      "method": "GET",
+      "file": "src/app/api/copilot/conversations/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/conversations",
+      "method": "POST",
+      "file": "src/app/api/copilot/conversations/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/conversations/[id]",
+      "method": "GET",
+      "file": "src/app/api/copilot/conversations/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/conversations/[id]",
+      "method": "POST",
+      "file": "src/app/api/copilot/conversations/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/demo",
+      "method": "GET",
+      "file": "src/app/api/copilot/demo/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/demo",
+      "method": "POST",
+      "file": "src/app/api/copilot/demo/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/query",
+      "method": "POST",
+      "file": "src/app/api/copilot/query/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/accounts",
+      "method": "GET",
+      "file": "src/app/api/crm/accounts/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/accounts/[id]",
+      "method": "GET",
+      "file": "src/app/api/crm/accounts/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/customer-success",
+      "method": "GET",
+      "file": "src/app/api/crm/customer-success/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/dashboard",
+      "method": "GET",
+      "file": "src/app/api/crm/dashboard/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/leads",
+      "method": "GET",
+      "file": "src/app/api/crm/leads/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/leads",
+      "method": "POST",
+      "file": "src/app/api/crm/leads/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/leads/[id]",
+      "method": "GET",
+      "file": "src/app/api/crm/leads/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/leads/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/crm/leads/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/opportunities",
+      "method": "GET",
+      "file": "src/app/api/crm/opportunities/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/opportunities",
+      "method": "POST",
+      "file": "src/app/api/crm/opportunities/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/opportunities/[id]",
+      "method": "GET",
+      "file": "src/app/api/crm/opportunities/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/crm/opportunities/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/crm/opportunities/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/account",
+      "method": "GET",
+      "file": "src/app/api/customer/account/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/account",
+      "method": "PATCH",
+      "file": "src/app/api/customer/account/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/activity",
+      "method": "GET",
+      "file": "src/app/api/customer/activity/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/documents",
+      "method": "GET",
+      "file": "src/app/api/customer/documents/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/overview",
+      "method": "GET",
+      "file": "src/app/api/customer/overview/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/projects",
+      "method": "GET",
+      "file": "src/app/api/customer/projects/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/projects/[id]",
+      "method": "GET",
+      "file": "src/app/api/customer/projects/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/settings",
+      "method": "GET",
+      "file": "src/app/api/customer/settings/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/settings",
+      "method": "PATCH",
+      "file": "src/app/api/customer/settings/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/subscription",
+      "method": "GET",
+      "file": "src/app/api/customer/subscription/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/support",
+      "method": "GET",
+      "file": "src/app/api/customer/support/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/support",
+      "method": "POST",
+      "file": "src/app/api/customer/support/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/support/[id]",
+      "method": "GET",
+      "file": "src/app/api/customer/support/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/support/[id]/messages",
+      "method": "POST",
+      "file": "src/app/api/customer/support/[id]/messages/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customer/training",
+      "method": "GET",
+      "file": "src/app/api/customer/training/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customers/accounts",
+      "method": "GET",
+      "file": "src/app/api/customers/accounts/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customers/health",
+      "method": "GET",
+      "file": "src/app/api/customers/health/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customers/overview",
+      "method": "GET",
+      "file": "src/app/api/customers/overview/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customers/risks",
+      "method": "GET",
+      "file": "src/app/api/customers/risks/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customers/success-plans",
+      "method": "GET",
+      "file": "src/app/api/customers/success-plans/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/customers/usage",
+      "method": "GET",
+      "file": "src/app/api/customers/usage/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/dashboard",
+      "method": "GET",
+      "file": "src/app/api/dashboard/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/graph",
+      "method": "GET",
+      "file": "src/app/api/digital-twin/graph/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/layout",
+      "method": "GET",
+      "file": "src/app/api/digital-twin/layout/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/layout",
+      "method": "POST",
+      "file": "src/app/api/digital-twin/layout/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/nodes",
+      "method": "GET",
+      "file": "src/app/api/digital-twin/nodes/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/nodes",
+      "method": "POST",
+      "file": "src/app/api/digital-twin/nodes/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/nodes/[id]",
+      "method": "GET",
+      "file": "src/app/api/digital-twin/nodes/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/nodes/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/digital-twin/nodes/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/relations",
+      "method": "GET",
+      "file": "src/app/api/digital-twin/relations/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/relations",
+      "method": "POST",
+      "file": "src/app/api/digital-twin/relations/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/relations/[id]",
+      "method": "GET",
+      "file": "src/app/api/digital-twin/relations/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/relations/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/digital-twin/relations/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/tags",
+      "method": "GET",
+      "file": "src/app/api/digital-twin/tags/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/tags",
+      "method": "POST",
+      "file": "src/app/api/digital-twin/tags/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/tags/[id]",
+      "method": "GET",
+      "file": "src/app/api/digital-twin/tags/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/digital-twin/tags/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/digital-twin/tags/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/documents",
+      "method": "GET",
+      "file": "src/app/api/documents/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAdmin"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/documents",
+      "method": "POST",
+      "file": "src/app/api/documents/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAdmin"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/documents/[id]",
+      "method": "DELETE",
+      "file": "src/app/api/documents/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAdmin"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/documents/[id]",
+      "method": "GET",
+      "file": "src/app/api/documents/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAdmin"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/documents/[id]/process",
+      "method": "POST",
+      "file": "src/app/api/documents/[id]/process/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/documents/dashboard",
+      "method": "GET",
+      "file": "src/app/api/documents/dashboard/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/documents/search",
+      "method": "POST",
+      "file": "src/app/api/documents/search/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/domains",
+      "method": "GET",
+      "file": "src/app/api/domains/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "hasAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/domains/[name]",
+      "method": "GET",
+      "file": "src/app/api/domains/[name]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "hasAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/approvals",
+      "method": "GET",
+      "file": "src/app/api/edms/approvals/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/approvals/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/edms/approvals/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/audit",
+      "method": "GET",
+      "file": "src/app/api/edms/audit/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/categories",
+      "method": "GET",
+      "file": "src/app/api/edms/categories/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/checkouts",
+      "method": "GET",
+      "file": "src/app/api/edms/checkouts/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/checkouts",
+      "method": "POST",
+      "file": "src/app/api/edms/checkouts/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/comments",
+      "method": "GET",
+      "file": "src/app/api/edms/comments/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/comments",
+      "method": "POST",
+      "file": "src/app/api/edms/comments/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/dashboard",
+      "method": "GET",
+      "file": "src/app/api/edms/dashboard/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/documents",
+      "method": "GET",
+      "file": "src/app/api/edms/documents/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/documents",
+      "method": "POST",
+      "file": "src/app/api/edms/documents/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/documents/[id]",
+      "method": "DELETE",
+      "file": "src/app/api/edms/documents/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/documents/[id]",
+      "method": "GET",
+      "file": "src/app/api/edms/documents/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/documents/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/edms/documents/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/favorites",
+      "method": "GET",
+      "file": "src/app/api/edms/favorites/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/favorites",
+      "method": "POST",
+      "file": "src/app/api/edms/favorites/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/folders",
+      "method": "GET",
+      "file": "src/app/api/edms/folders/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/folders",
+      "method": "POST",
+      "file": "src/app/api/edms/folders/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/metadata",
+      "method": "GET",
+      "file": "src/app/api/edms/metadata/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/metadata",
+      "method": "PATCH",
+      "file": "src/app/api/edms/metadata/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/retention",
+      "method": "GET",
+      "file": "src/app/api/edms/retention/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/revisions",
+      "method": "GET",
+      "file": "src/app/api/edms/revisions/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/revisions",
+      "method": "POST",
+      "file": "src/app/api/edms/revisions/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/search",
+      "method": "GET",
+      "file": "src/app/api/edms/search/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/shares",
+      "method": "GET",
+      "file": "src/app/api/edms/shares/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/shares",
+      "method": "POST",
+      "file": "src/app/api/edms/shares/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/edms/templates",
+      "method": "GET",
+      "file": "src/app/api/edms/templates/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/eng-graph",
+      "method": "GET",
+      "file": "src/app/api/eng-graph/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/eng-graph/edges",
+      "method": "GET",
+      "file": "src/app/api/eng-graph/edges/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/eng-graph/node/[id]",
+      "method": "GET",
+      "file": "src/app/api/eng-graph/node/[id]/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/eng-graph/nodes",
+      "method": "GET",
+      "file": "src/app/api/eng-graph/nodes/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/eng-graph/stats",
+      "method": "GET",
+      "file": "src/app/api/eng-graph/stats/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/findings/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/engineering/findings/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/imports",
+      "method": "POST",
+      "file": "src/app/api/engineering/imports/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/imports/[id]",
+      "method": "GET",
+      "file": "src/app/api/engineering/imports/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/projects",
+      "method": "GET",
+      "file": "src/app/api/engineering/projects/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/projects/[id]",
+      "method": "GET",
+      "file": "src/app/api/engineering/projects/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/projects/[id]/alarms",
+      "method": "GET",
+      "file": "src/app/api/engineering/projects/[id]/alarms/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/projects/[id]/analyze",
+      "method": "POST",
+      "file": "src/app/api/engineering/projects/[id]/analyze/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/projects/[id]/findings",
+      "method": "GET",
+      "file": "src/app/api/engineering/projects/[id]/findings/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/projects/[id]/network",
+      "method": "GET",
+      "file": "src/app/api/engineering/projects/[id]/network/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/engineering/projects/[id]/tags",
+      "method": "GET",
+      "file": "src/app/api/engineering/projects/[id]/tags/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/approvals",
+      "method": "GET",
+      "file": "src/app/api/erp/approvals/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/approvals/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/erp/approvals/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/inventory",
+      "method": "GET",
+      "file": "src/app/api/erp/inventory/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/inventory",
+      "method": "POST",
+      "file": "src/app/api/erp/inventory/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/inventory/[id]",
+      "method": "GET",
+      "file": "src/app/api/erp/inventory/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/inventory/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/erp/inventory/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/kpis",
+      "method": "GET",
+      "file": "src/app/api/erp/kpis/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/overview",
+      "method": "GET",
+      "file": "src/app/api/erp/overview/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/projects",
+      "method": "GET",
+      "file": "src/app/api/erp/projects/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/projects",
+      "method": "POST",
+      "file": "src/app/api/erp/projects/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/projects/[id]",
+      "method": "GET",
+      "file": "src/app/api/erp/projects/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/projects/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/erp/projects/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/resources",
+      "method": "GET",
+      "file": "src/app/api/erp/resources/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/resources",
+      "method": "POST",
+      "file": "src/app/api/erp/resources/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/tasks",
+      "method": "GET",
+      "file": "src/app/api/erp/tasks/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/tasks",
+      "method": "POST",
+      "file": "src/app/api/erp/tasks/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/tasks/[id]",
+      "method": "GET",
+      "file": "src/app/api/erp/tasks/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/tasks/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/erp/tasks/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/teams",
+      "method": "GET",
+      "file": "src/app/api/erp/teams/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/teams",
+      "method": "POST",
+      "file": "src/app/api/erp/teams/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/teams/[id]",
+      "method": "GET",
+      "file": "src/app/api/erp/teams/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/work-orders",
+      "method": "GET",
+      "file": "src/app/api/erp/work-orders/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/work-orders",
+      "method": "POST",
+      "file": "src/app/api/erp/work-orders/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/work-orders/[id]",
+      "method": "GET",
+      "file": "src/app/api/erp/work-orders/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/work-orders/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/erp/work-orders/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/health",
+      "method": "GET",
+      "file": "src/app/api/health/route.ts",
+      "classification": "INTERNAL_HEALTH",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/health/ready",
+      "method": "GET",
+      "file": "src/app/api/health/ready/route.ts",
+      "classification": "INTERNAL_HEALTH",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-brain/analyze",
+      "method": "POST",
+      "file": "src/app/api/industrial-brain/analyze/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-brain/save-case",
+      "method": "POST",
+      "file": "src/app/api/industrial-brain/save-case/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-graph",
+      "method": "GET",
+      "file": "src/app/api/industrial-graph/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-graph/assets/[assetId]",
+      "method": "GET",
+      "file": "src/app/api/industrial-graph/assets/[assetId]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-graph/failures/[failureModeId]",
+      "method": "GET",
+      "file": "src/app/api/industrial-graph/failures/[failureModeId]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-graph/path",
+      "method": "GET",
+      "file": "src/app/api/industrial-graph/path/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-graph/procedures/[procedureId]",
+      "method": "GET",
+      "file": "src/app/api/industrial-graph/procedures/[procedureId]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-graph/rebuild",
+      "method": "POST",
+      "file": "src/app/api/industrial-graph/rebuild/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-graph/root-causes/[rootCauseId]",
+      "method": "GET",
+      "file": "src/app/api/industrial-graph/root-causes/[rootCauseId]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/alerts",
+      "method": "GET",
+      "file": "src/app/api/industrial/alerts/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets",
+      "method": "GET",
+      "file": "src/app/api/industrial/assets/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets",
+      "method": "POST",
+      "file": "src/app/api/industrial/assets/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets/[id]",
+      "method": "GET",
+      "file": "src/app/api/industrial/assets/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/industrial/assets/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets/[id]/alerts",
+      "method": "GET",
+      "file": "src/app/api/industrial/assets/[id]/alerts/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets/[id]/alerts/[alertId]",
+      "method": "PATCH",
+      "file": "src/app/api/industrial/assets/[id]/alerts/[alertId]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets/[id]/intelligence",
+      "method": "GET",
+      "file": "src/app/api/industrial/assets/[id]/intelligence/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets/[id]/maintenance",
+      "method": "GET",
+      "file": "src/app/api/industrial/assets/[id]/maintenance/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets/[id]/maintenance",
+      "method": "PATCH",
+      "file": "src/app/api/industrial/assets/[id]/maintenance/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets/[id]/trends",
+      "method": "GET",
+      "file": "src/app/api/industrial/assets/[id]/trends/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/assets/analytics",
+      "method": "GET",
+      "file": "src/app/api/industrial/assets/analytics/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/automation/run",
+      "method": "POST",
+      "file": "src/app/api/industrial/automation/run/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/connectors",
+      "method": "GET",
+      "file": "src/app/api/industrial/connectors/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/connectors",
+      "method": "POST",
+      "file": "src/app/api/industrial/connectors/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/connectors/[id]",
+      "method": "GET",
+      "file": "src/app/api/industrial/connectors/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/connectors/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/industrial/connectors/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/gateways",
+      "method": "GET",
+      "file": "src/app/api/industrial/gateways/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/gateways",
+      "method": "POST",
+      "file": "src/app/api/industrial/gateways/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/gateways/[id]",
+      "method": "DELETE",
+      "file": "src/app/api/industrial/gateways/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/gateways/[id]",
+      "method": "GET",
+      "file": "src/app/api/industrial/gateways/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/gateways/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/industrial/gateways/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/gateways/[id]/heartbeat",
+      "method": "POST",
+      "file": "src/app/api/industrial/gateways/[id]/heartbeat/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/sites",
+      "method": "GET",
+      "file": "src/app/api/industrial/sites/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/sites",
+      "method": "POST",
+      "file": "src/app/api/industrial/sites/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/sites/[id]",
+      "method": "GET",
+      "file": "src/app/api/industrial/sites/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/sites/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/industrial/sites/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/telemetry",
+      "method": "GET",
+      "file": "src/app/api/industrial/telemetry/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/telemetry",
+      "method": "POST",
+      "file": "src/app/api/industrial/telemetry/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/intelligence",
+      "method": "GET",
+      "file": "src/app/api/intelligence/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/intelligence/agents",
+      "method": "GET",
+      "file": "src/app/api/intelligence/agents/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/invitations/respond",
+      "method": "POST",
+      "file": "src/app/api/invitations/respond/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getUserIdFromRequest"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge",
+      "method": "DELETE",
+      "file": "src/app/api/knowledge/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge",
+      "method": "GET",
+      "file": "src/app/api/knowledge/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge",
+      "method": "PATCH",
+      "file": "src/app/api/knowledge/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge",
+      "method": "POST",
+      "file": "src/app/api/knowledge/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge-graph",
+      "method": "GET",
+      "file": "src/app/api/knowledge-graph/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "hasAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge-graph/analytics",
+      "method": "GET",
+      "file": "src/app/api/knowledge-graph/analytics/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "hasAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge-graph/neighbors/[id]",
+      "method": "GET",
+      "file": "src/app/api/knowledge-graph/neighbors/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "hasAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge-graph/node/[id]",
+      "method": "GET",
+      "file": "src/app/api/knowledge-graph/node/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "hasAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge-graph/path",
+      "method": "GET",
+      "file": "src/app/api/knowledge-graph/path/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "hasAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/articles",
+      "method": "GET",
+      "file": "src/app/api/knowledge/articles/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/articles",
+      "method": "POST",
+      "file": "src/app/api/knowledge/articles/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/articles/[id]",
+      "method": "GET",
+      "file": "src/app/api/knowledge/articles/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/articles/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/knowledge/articles/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/cases",
+      "method": "GET",
+      "file": "src/app/api/knowledge/cases/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/cases",
+      "method": "POST",
+      "file": "src/app/api/knowledge/cases/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/cases/[id]",
+      "method": "GET",
+      "file": "src/app/api/knowledge/cases/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/cases/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/knowledge/cases/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/failures",
+      "method": "GET",
+      "file": "src/app/api/knowledge/failures/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/failures",
+      "method": "POST",
+      "file": "src/app/api/knowledge/failures/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/failures/[id]",
+      "method": "GET",
+      "file": "src/app/api/knowledge/failures/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/failures/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/knowledge/failures/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/procedures",
+      "method": "GET",
+      "file": "src/app/api/knowledge/procedures/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/procedures",
+      "method": "POST",
+      "file": "src/app/api/knowledge/procedures/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/procedures/[id]",
+      "method": "GET",
+      "file": "src/app/api/knowledge/procedures/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/procedures/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/knowledge/procedures/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/knowledge/search",
+      "method": "GET",
+      "file": "src/app/api/knowledge/search/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/memory",
+      "method": "GET",
+      "file": "src/app/api/memory/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "hasAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/memory",
+      "method": "POST",
+      "file": "src/app/api/memory/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAuthoring",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/memory/[id]",
+      "method": "GET",
+      "file": "src/app/api/memory/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/memory/[id]/feedback",
+      "method": "POST",
+      "file": "src/app/api/memory/[id]/feedback/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAuthoring",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/memory/search",
+      "method": "POST",
+      "file": "src/app/api/memory/search/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/metrics",
+      "method": "GET",
+      "file": "src/app/api/metrics/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/multi-site/benchmarks",
+      "method": "GET",
+      "file": "src/app/api/multi-site/benchmarks/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/multi-site/benchmarks",
+      "method": "POST",
+      "file": "src/app/api/multi-site/benchmarks/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/multi-site/failure-patterns",
+      "method": "GET",
+      "file": "src/app/api/multi-site/failure-patterns/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/multi-site/knowledge-coverage",
+      "method": "GET",
+      "file": "src/app/api/multi-site/knowledge-coverage/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/multi-site/kpis",
+      "method": "GET",
+      "file": "src/app/api/multi-site/kpis/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/multi-site/risk",
+      "method": "GET",
+      "file": "src/app/api/multi-site/risk/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/multi-site/summary",
+      "method": "GET",
+      "file": "src/app/api/multi-site/summary/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/notifications",
+      "method": "GET",
+      "file": "src/app/api/notifications/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/notifications/[id]",
+      "method": "DELETE",
+      "file": "src/app/api/notifications/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/notifications/[id]/read",
+      "method": "PATCH",
+      "file": "src/app/api/notifications/[id]/read/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/notifications/read-all",
+      "method": "PATCH",
+      "file": "src/app/api/notifications/read-all/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/notifications/unread-count",
+      "method": "GET",
+      "file": "src/app/api/notifications/unread-count/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/operations/alerts",
+      "method": "GET",
+      "file": "src/app/api/operations/alerts/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/operations/intelligence",
+      "method": "GET",
+      "file": "src/app/api/operations/intelligence/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/operations/overview",
+      "method": "GET",
+      "file": "src/app/api/operations/overview/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/operations/sites",
+      "method": "GET",
+      "file": "src/app/api/operations/sites/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/operations/war-room",
+      "method": "GET",
+      "file": "src/app/api/operations/war-room/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations",
+      "method": "POST",
+      "file": "src/app/api/organizations/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getUserIdFromRequest"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]",
+      "method": "GET",
+      "file": "src/app/api/organizations/[orgId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]",
+      "method": "PATCH",
+      "file": "src/app/api/organizations/[orgId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/departments",
+      "method": "GET",
+      "file": "src/app/api/organizations/[orgId]/departments/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/departments",
+      "method": "POST",
+      "file": "src/app/api/organizations/[orgId]/departments/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/departments/[deptId]",
+      "method": "PATCH",
+      "file": "src/app/api/organizations/[orgId]/departments/[deptId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/invitations",
+      "method": "GET",
+      "file": "src/app/api/organizations/[orgId]/invitations/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/invitations",
+      "method": "POST",
+      "file": "src/app/api/organizations/[orgId]/invitations/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/invitations/[invId]",
+      "method": "DELETE",
+      "file": "src/app/api/organizations/[orgId]/invitations/[invId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/invitations/[invId]",
+      "method": "PATCH",
+      "file": "src/app/api/organizations/[orgId]/invitations/[invId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/members",
+      "method": "GET",
+      "file": "src/app/api/organizations/[orgId]/members/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/members/[memberId]",
+      "method": "DELETE",
+      "file": "src/app/api/organizations/[orgId]/members/[memberId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/members/[memberId]",
+      "method": "PATCH",
+      "file": "src/app/api/organizations/[orgId]/members/[memberId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/devices",
+      "method": "GET",
+      "file": "src/app/api/ot/devices/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/devices",
+      "method": "POST",
+      "file": "src/app/api/ot/devices/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/devices/[id]",
+      "method": "GET",
+      "file": "src/app/api/ot/devices/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/devices/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/ot/devices/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/gateways",
+      "method": "GET",
+      "file": "src/app/api/ot/gateways/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/gateways",
+      "method": "POST",
+      "file": "src/app/api/ot/gateways/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/gateways/[id]",
+      "method": "GET",
+      "file": "src/app/api/ot/gateways/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/gateways/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/ot/gateways/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/gateways/[id]/enrollment",
+      "method": "DELETE",
+      "file": "src/app/api/ot/gateways/[id]/enrollment/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/gateways/[id]/enrollment",
+      "method": "POST",
+      "file": "src/app/api/ot/gateways/[id]/enrollment/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/gateways/[id]/enrollment/revoke",
+      "method": "POST",
+      "file": "src/app/api/ot/gateways/[id]/enrollment/revoke/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/gateways/[id]/enrollment/rotate",
+      "method": "POST",
+      "file": "src/app/api/ot/gateways/[id]/enrollment/rotate/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "withOtRoute"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ot/gateways/[id]/envelopes",
+      "method": "POST",
+      "file": "src/app/api/ot/gateways/[id]/envelopes/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "authenticateGateway"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/platform/keys",
+      "method": "GET",
+      "file": "src/app/api/platform/keys/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizePlatformActor",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/platform/keys",
+      "method": "POST",
+      "file": "src/app/api/platform/keys/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizePlatformActor",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/platform/keys/[id]",
+      "method": "DELETE",
+      "file": "src/app/api/platform/keys/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizePlatformActor",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/platform/keys/[id]/rotate",
+      "method": "POST",
+      "file": "src/app/api/platform/keys/[id]/rotate/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizePlatformActor",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/platform/rate-limits",
+      "method": "GET",
+      "file": "src/app/api/platform/rate-limits/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizePlatformActor",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/platform/usage",
+      "method": "GET",
+      "file": "src/app/api/platform/usage/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizePlatformActor",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/predictive/baselines",
+      "method": "GET",
+      "file": "src/app/api/predictive/baselines/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/predictive/baselines",
+      "method": "POST",
+      "file": "src/app/api/predictive/baselines/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/predictive/failure",
+      "method": "GET",
+      "file": "src/app/api/predictive/failure/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/predictive/recommendations",
+      "method": "GET",
+      "file": "src/app/api/predictive/recommendations/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/predictive/risk",
+      "method": "GET",
+      "file": "src/app/api/predictive/risk/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/predictive/rul",
+      "method": "GET",
+      "file": "src/app/api/predictive/rul/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/projects",
+      "method": "GET",
+      "file": "src/app/api/projects/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "hasAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/projects",
+      "method": "POST",
+      "file": "src/app/api/projects/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAuthoring",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/projects/[id]",
+      "method": "GET",
+      "file": "src/app/api/projects/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/projects/[id]/risk-history",
+      "method": "GET",
+      "file": "src/app/api/projects/[id]/risk-history/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/projects/[id]/timeline",
+      "method": "GET",
+      "file": "src/app/api/projects/[id]/timeline/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/projects/analytics",
+      "method": "GET",
+      "file": "src/app/api/projects/analytics/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/projects/benchmark",
+      "method": "GET",
+      "file": "src/app/api/projects/benchmark/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireAuthoring"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/realtime/events",
+      "method": "GET",
+      "file": "src/app/api/realtime/events/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/sales/leads",
+      "method": "POST",
+      "file": "src/app/api/sales/leads/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/seo/indexnow",
+      "method": "GET",
+      "file": "src/app/api/seo/indexnow/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/seo/indexnow",
+      "method": "POST",
+      "file": "src/app/api/seo/indexnow/route.ts",
+      "classification": "WEBHOOK",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": true
+    },
+    {
+      "apiPath": "/api/telemetry",
+      "method": "GET",
+      "file": "src/app/api/telemetry/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/unknown",
+      "method": "GET",
+      "file": "src/app/api/unknown/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "hasAuthoring",
+        "resolveBrainOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/unknown",
+      "method": "PATCH",
+      "file": "src/app/api/unknown/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAuthoring",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/unknown",
+      "method": "POST",
+      "file": "src/app/api/unknown/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAuthoring",
+        "requireWritableOwner"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/vendor/profile",
+      "method": "GET",
+      "file": "src/app/api/vendor/profile/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/vendor/profile",
+      "method": "PATCH",
+      "file": "src/app/api/vendor/profile/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/vendors",
+      "method": "GET",
+      "file": "src/app/api/vendors/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/vendors/[id]",
+      "method": "GET",
+      "file": "src/app/api/vendors/[id]/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/vendors/apply",
+      "method": "POST",
+      "file": "src/app/api/vendors/apply/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    }
+  ]
+}

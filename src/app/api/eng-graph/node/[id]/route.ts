@@ -4,15 +4,21 @@
  * Returns a single node with its inbound edges, outbound edges,
  * and connected neighbour nodes.
  */
+import type { NextRequest } from "next/server";
+import { guardDerivedGraphRequest } from "@/lib/eng-graph/public-guard";
 import { NextResponse }  from "next/server";
 import { buildEngGraph } from "@/lib/eng-graph/builder";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req:     Request,
+  req:      NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // PHASE 99 (P99-INT-011) — bound this anonymous graph rebuild.
+  const limited = await guardDerivedGraphRequest(req);
+  if (limited) return limited;
+
   const { id } = await params;
 
   try {
