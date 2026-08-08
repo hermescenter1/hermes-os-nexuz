@@ -26,7 +26,10 @@
  * generated in memory from raw pixels.
  */
 
+import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 /** The x86-64-v2 flag `sharp`'s prebuilt linux binaries require. */
 export const REQUIRED_CPU_FLAG = "sse4_2";
@@ -98,6 +101,50 @@ export function classifyHostCpuPrerequisite() {
  */
 
 /**
+ * Load `sharp` the way the production runtime actually loads it.
+ *
+ * This matters more than it looks. Next's standalone output traces only the
+ * module paths Next itself uses, and Next `require`s sharp — so the standalone
+ * image ships sharp's CommonJS entry and NOT its ESM entry (`dist/index.mjs`).
+ * A gate that probed with `import("sharp")` would therefore report
+ * ERR_MODULE_NOT_FOUND inside a perfectly healthy image: a false alarm on the
+ * exact check that is supposed to be trustworthy.
+ *
+ * So: try the CJS path first (what production does), and fall back to the ESM
+ * specifier for environments that ship only that. A failure of BOTH is a real
+ * native-load failure.
+ *
+ * @param {SharpRuntimeResult} result mutated with the outcome
+ * @returns {Promise<any|null>}
+ */
+async function loadSharp(result) {
+  const errors = [];
+  try {
+    const require = createRequire(import.meta.url);
+    const mod = require("sharp");
+    const sharp = mod?.default ?? mod;
+    result.imported = true;
+    result.sharpVersion = sharp?.versions?.sharp ?? null;
+    return sharp;
+  } catch (err) {
+    errors.push(`cjs:${String(err?.code ?? err?.message ?? err).slice(0, 120)}`);
+  }
+  try {
+    const mod = await import("sharp");
+    const sharp = mod.default ?? mod;
+    result.imported = true;
+    result.sharpVersion = sharp?.versions?.sharp ?? null;
+    return sharp;
+  } catch (err) {
+    errors.push(`esm:${String(err?.code ?? err?.message ?? err).slice(0, 120)}`);
+  }
+  // A native-load failure lands here. Report the classifiable cause without
+  // echoing a full stack trace into CI output.
+  result.error = `SHARP_IMPORT_FAILED: ${errors.join(" | ")}`;
+  return null;
+}
+
+/**
  * Really exercise `sharp`: import it, encode a synthetic raw image, DECODE that
  * encoded buffer back, transform it, and verify the output is a real image of
  * the requested size.
@@ -122,18 +169,8 @@ export async function runSharpRuntimeSmoke() {
     error: null,
   };
 
-  let sharp;
-  try {
-    const mod = await import("sharp");
-    sharp = mod.default ?? mod;
-    result.imported = true;
-    result.sharpVersion = sharp?.versions?.sharp ?? null;
-  } catch (err) {
-    // A native-load failure lands here. Report the classifiable cause without
-    // echoing a full stack trace into CI output.
-    result.error = `SHARP_IMPORT_FAILED: ${String(err?.code ?? err?.message ?? err).slice(0, 200)}`;
-    return result;
-  }
+  const sharp = await loadSharp(result);
+  if (!sharp) return result;
 
   try {
     // 1. Synthetic source: 16x16 raw RGB pixels generated in memory.
@@ -176,3 +213,32 @@ export async function runSharpRuntimeSmoke() {
   if (!result.ok && !result.error) result.error = `CPU_PREREQUISITE_${cpu.classification}`;
   return result;
 }
+
+/**
+ * CLI form. This file is deliberately dependency-free apart from `sharp` itself
+ * so it can be copied INTO the running candidate container (which ships the
+ * standalone `node_modules`, not this repository) and executed there:
+ *
+ *   docker cp scripts/dr/sharp-runtime-gate.mjs <container>:/app/
+ *   docker exec <container> node /app/sharp-runtime-gate.mjs
+ *
+ * Running it inside the container is the point: the host's `sharp` is a
+ * different build on a different libc, so a host-side pass says nothing about
+ * the image that will actually serve production traffic.
+ */
+async function cli() {
+  const r = await runSharpRuntimeSmoke();
+  console.log(`RESULT SHARP_CPU_PREREQUISITE=${r.cpuClassification}`);
+  console.log(`  - ${r.cpuReason}`);
+  console.log(`RESULT SHARP_IMPORTED=${r.imported}`);
+  console.log(`RESULT SHARP_VERSION=${r.sharpVersion ?? "UNKNOWN"}`);
+  console.log(`RESULT SHARP_DECODED=${r.decoded}`);
+  console.log(`RESULT SHARP_TRANSFORMED=${r.transformed}`);
+  if (r.error) console.log(`RESULT SHARP_ERROR=${r.error}`);
+  console.log(`RESULT sharp_runtime_gate=${r.ok ? "PASS" : "FAIL"}`);
+  process.exit(r.ok ? 0 : 1);
+}
+
+const invokedDirectly =
+  typeof process.argv[1] === "string" && pathToFileURL(resolve(process.argv[1])).href === import.meta.url;
+if (invokedDirectly) cli();

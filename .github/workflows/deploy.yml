@@ -18,6 +18,32 @@
 #   "-p hermes" (Gate 0D-A): the project name must never be derived from the
 #   checkout directory, which once created a second empty "hermes-os-nexuz"
 #   stack beside the real one.
+#
+# PHASE 99.7 — migration-bearing releases are gated, not merely documented.
+#
+# Until Phase 99.7 this workflow rebuilt hermes-web and nothing else. That is
+# correct for an app-only release and DANGEROUS for a release that carries
+# schema migrations: `prisma migrate deploy` runs on first boot against the live
+# database with no proof that a restorable backup exists. The Phase 94 -> Phase
+# 99.6 cutover carries 20 migrations, so that gap had to close.
+#
+# What is now enforced, fail-closed, WITHOUT adding any automatic deployment and
+# without granting this workflow any access it did not already have:
+#   - the operator must declare the SHA currently running in Production
+#     (`deployed_sha`), and it must be an ancestor of the target;
+#   - the runner computes the migration delta between the two commits from the
+#     repository alone and refuses on historical mutation or an unclassifiable
+#     migration;
+#   - when migrations DO ship, the deploy refuses unless the operator supplies
+#     the second confirmation phrase AND the production host itself proves, with
+#     POSIX tools only, that the newest encrypted backup is complete, verified
+#     and hash-intact, and that the documents_data adoption evidence exists;
+#   - the currently-running hermes-web image is tagged as the rollback target
+#     BEFORE anything is rebuilt, so a previous-good image always exists.
+#
+# What is deliberately NOT done here: no database restore, ever. Rolling the
+# application back and recovering the database are separate, human-decided
+# operations (see docs/release/phase99.7-production-cutover-contract.md).
 
 name: Production Deploy
 
@@ -28,9 +54,18 @@ on:
         description: "Exact 40-character commit SHA on main to deploy"
         required: true
         type: string
+      deployed_sha:
+        description: "Exact 40-character commit SHA currently running in production"
+        required: true
+        type: string
       confirm:
         description: 'Type "deploy-to-production" to confirm'
         required: true
+        type: string
+      migration_prerequisites:
+        description: 'Required ONLY when the release carries migrations: type "migration-prerequisites-verified"'
+        required: false
+        default: ""
         type: string
 
 permissions:
@@ -48,6 +83,7 @@ jobs:
     environment: production
     env:
       TARGET_SHA: ${{ inputs.commit_sha }}
+      DEPLOYED_SHA: ${{ inputs.deployed_sha }}
     steps:
       - name: Require explicit confirmation
         env:
@@ -62,16 +98,20 @@ jobs:
         run: |
           # Whole-string check (not line-based): rejects any non-hex byte,
           # including whitespace and newlines, and enforces exact length 40.
-          case "$TARGET_SHA" in
-            *[!0-9a-f]*|'')
-              echo "commit_sha must be an exact 40-character lowercase hex SHA." >&2
+          for pair in "commit_sha:$TARGET_SHA" "deployed_sha:$DEPLOYED_SHA"; do
+            name="${pair%%:*}"
+            value="${pair#*:}"
+            case "$value" in
+              *[!0-9a-f]*|'')
+                echo "${name} must be an exact 40-character lowercase hex SHA." >&2
+                exit 1
+                ;;
+            esac
+            if [ "${#value}" -ne 40 ]; then
+              echo "${name} must be an exact 40-character lowercase hex SHA." >&2
               exit 1
-              ;;
-          esac
-          if [ "${#TARGET_SHA}" -ne 40 ]; then
-            echo "commit_sha must be an exact 40-character lowercase hex SHA." >&2
-            exit 1
-          fi
+            fi
+          done
 
       - name: Check out main history (read-only)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -88,6 +128,47 @@ jobs:
           fi
           if ! git merge-base --is-ancestor "$TARGET_SHA" HEAD; then
             echo "Refusing: ${TARGET_SHA} is not an ancestor of main." >&2
+            exit 1
+          fi
+          if ! git cat-file -e "${DEPLOYED_SHA}^{commit}"; then
+            echo "Refusing: deployed_sha ${DEPLOYED_SHA} is not a commit in this repository." >&2
+            exit 1
+          fi
+          # Deploying "forward" means the currently-running commit is an
+          # ancestor of the target. Anything else is a rollback or a divergent
+          # history and must not go through this path.
+          if ! git merge-base --is-ancestor "$DEPLOYED_SHA" "$TARGET_SHA"; then
+            echo "Refusing: deployed_sha ${DEPLOYED_SHA} is not an ancestor of the target ${TARGET_SHA}." >&2
+            exit 1
+          fi
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+
+      # Repository-only computation: reads two commits out of git history and
+      # classifies the migration delta. No install, no network, no host contact.
+      - name: Classify the migration delta this release carries
+        id: migration
+        run: node scripts/dr/deploy-migration-gate.mjs
+
+      # The evidence requirement is derived from the classification above, so an
+      # operator cannot opt out of it by leaving the input blank.
+      - name: Require migration prerequisites when the release carries migrations
+        env:
+          MIGRATION_PREREQUISITES: ${{ inputs.migration_prerequisites }}
+          BACKUP_REQUIRED: ${{ steps.migration.outputs.pre_migration_backup_required }}
+        run: |
+          if [ "$BACKUP_REQUIRED" != "true" ]; then
+            echo "No migration ships with this release — the pre-migration evidence gate does not apply."
+            exit 0
+          fi
+          if [ "$MIGRATION_PREREQUISITES" != "migration-prerequisites-verified" ]; then
+            echo "Refusing: this release carries migrations." >&2
+            echo "Complete the Phase 99.7 cutover contract (verified encrypted backup," >&2
+            echo "documents_data adoption, migration rehearsal, candidate gate) and re-run" >&2
+            echo 'with migration_prerequisites = "migration-prerequisites-verified".' >&2
             exit 1
           fi
 
@@ -146,6 +227,7 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
+          BACKUP_REQUIRED: ${{ steps.migration.outputs.pre_migration_backup_required }}
         run: |
           PORT="${SSH_PORT:-22}"
           ssh -i ~/.ssh/id_deploy \
@@ -155,7 +237,7 @@ jobs:
               -o ConnectTimeout=20 \
               -o StrictHostKeyChecking=yes \
               "${SERVER_USER}@${SERVER_IP}" \
-              "TARGET_SHA=${TARGET_SHA} bash -s" <<'REMOTE'
+              "TARGET_SHA=${TARGET_SHA} BACKUP_REQUIRED=${BACKUP_REQUIRED} bash -s" <<'REMOTE'
           set -euo pipefail
           unset DOCKER_HOST
 
@@ -174,6 +256,71 @@ jobs:
           if ! git merge-base --is-ancestor "$TARGET_SHA" origin/main; then
             echo "Refusing: ${TARGET_SHA} is not on origin/main." >&2
             exit 1
+          fi
+
+          # ── PHASE 99.7 pre-migration evidence gate (POSIX tools only) ────────
+          # Runs on the host that owns the data, BEFORE anything is rebuilt.
+          # Read-only: it inspects the backup directory and never writes,
+          # rotates, prunes or decrypts anything, and never prints key material.
+          if [ "${BACKUP_REQUIRED}" = "true" ]; then
+            BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
+            ADOPTION_EVIDENCE="${BACKUP_DIR}/documents-adoption.json"
+
+            NEWEST_BACKUP="$(ls -1t "${BACKUP_DIR}"/*.hbk 2>/dev/null | head -n 1 || true)"
+            if [ -z "${NEWEST_BACKUP}" ]; then
+              echo "Refusing: no encrypted backup (.hbk) found in ${BACKUP_DIR}." >&2
+              exit 1
+            fi
+            if [ -e "${NEWEST_BACKUP}.partial" ]; then
+              echo "Refusing: ${NEWEST_BACKUP} has a .partial sibling — the atomic publish never completed." >&2
+              exit 1
+            fi
+
+            META="${NEWEST_BACKUP}.meta.json"
+            if [ ! -f "${META}" ]; then
+              echo "Refusing: no verification record beside ${NEWEST_BACKUP}." >&2
+              exit 1
+            fi
+            # The record is a single-line JSON document written by
+            # scripts/backup-postgres.sh; match the exact literal fields.
+            grep -q '"verified":true'  "${META}" || { echo "Refusing: newest backup is not marked verified." >&2; exit 1; }
+            grep -q '"partial":false'  "${META}" || { echo "Refusing: newest backup is not marked complete." >&2; exit 1; }
+            grep -q '"encrypted":true' "${META}" || { echo "Refusing: newest backup is not marked encrypted." >&2; exit 1; }
+
+            RECORDED_SHA="$(sed -n 's/.*"transportSha256":"\([0-9a-f]\{64\}\)".*/\1/p' "${META}")"
+            if [ -z "${RECORDED_SHA}" ]; then
+              echo "Refusing: verification record carries no transport SHA-256." >&2
+              exit 1
+            fi
+            ACTUAL_SHA="$(sha256sum "${NEWEST_BACKUP}" | cut -d' ' -f1)"
+            if [ "${ACTUAL_SHA}" != "${RECORDED_SHA}" ]; then
+              echo "Refusing: backup integrity check failed for ${NEWEST_BACKUP}." >&2
+              exit 1
+            fi
+
+            # documents_data adoption evidence (written by
+            # scripts/dr/adopt-documents.mjs --manifest-out).
+            if [ ! -f "${ADOPTION_EVIDENCE}" ]; then
+              echo "Refusing: no documents_data adoption evidence at ${ADOPTION_EVIDENCE}." >&2
+              exit 1
+            fi
+            grep -q '"integrityVerified": *true' "${ADOPTION_EVIDENCE}" || {
+              echo "Refusing: documents_data adoption evidence does not prove integrity." >&2
+              exit 1
+            }
+
+            echo "Pre-migration evidence verified: $(basename "${NEWEST_BACKUP}") complete, verified and hash-intact."
+          fi
+
+          # ── Preserve the previous-good image BEFORE rebuilding ───────────────
+          # A rollback target must exist before the thing being rolled back from
+          # is created. Tagging is additive: no image is removed or pruned.
+          PREVIOUS_IMAGE="$(docker compose -p hermes -f docker-compose.prod.yml images -q hermes-web 2>/dev/null | head -n 1 || true)"
+          if [ -n "${PREVIOUS_IMAGE}" ]; then
+            docker image tag "${PREVIOUS_IMAGE}" "hermes-web:previous-good"
+            echo "Previous-good image preserved as hermes-web:previous-good (${PREVIOUS_IMAGE})."
+          else
+            echo "WARNING: no running hermes-web image found to preserve as a rollback target." >&2
           fi
 
           git checkout --detach "$TARGET_SHA"
