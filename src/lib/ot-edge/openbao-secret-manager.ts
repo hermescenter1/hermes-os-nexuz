@@ -44,7 +44,26 @@ export interface OpenBaoSecretManagerConfig {
   randomBytes: (n: number) => Uint8Array;
   /** Permit http ONLY for 127.0.0.1/localhost/[::1] — for local integration. */
   allowInsecureLoopback?: boolean;
+  /**
+   * Bound EVERY request with an abort timeout (ms). A slow/hung OpenBao can
+   * never stall a request indefinitely. Defaults to {@link DEFAULT_TIMEOUT_MS};
+   * an out-of-range value fails closed.
+   */
+  timeoutMs?: number;
+  /**
+   * Reject any response whose declared `Content-Length` exceeds this many bytes
+   * (PHASE 95). KV v2 responses are tiny; a huge body is a fault or an attack.
+   * Defaults to {@link DEFAULT_MAX_RESPONSE_BYTES}; an out-of-range value fails
+   * closed. The request timeout bounds the (rare) chunked/no-length case.
+   */
+  maxResponseBytes?: number;
 }
+
+/** PHASE 95 bounded-client defaults and hard ceilings. */
+const DEFAULT_TIMEOUT_MS = 5_000;
+const MAX_TIMEOUT_MS = 120_000;
+const DEFAULT_MAX_RESPONSE_BYTES = 65_536;
+const MAX_RESPONSE_CEILING = 1_048_576;
 
 const REFERENCE_PREFIX = "bao:v1:";
 const PATH_ID_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
@@ -65,6 +84,19 @@ function decodeBytes(encoded: unknown): Uint8Array {
   const buffer = Buffer.from(encoded, "base64url");
   if (buffer.toString("base64url") !== encoded) throw new SecretManagerError("PROVIDER_UNAVAILABLE");
   return new Uint8Array(buffer);
+}
+
+/**
+ * A positive-integer bound with a default and a hard ceiling (PHASE 95).
+ * `undefined` uses the default; anything else must be an integer in
+ * `[1, ceiling]` or it fails closed — never silently clamped.
+ */
+function boundedInt(value: number | undefined, fallback: number, ceiling: number): number {
+  if (value === undefined) return fallback;
+  if (!Number.isInteger(value) || value < 1 || value > ceiling) {
+    throw new SecretManagerError("PROVIDER_UNAVAILABLE");
+  }
+  return value;
 }
 
 /* ── Adapter ────────────────────────────────────────────────────────────── */
@@ -89,6 +121,11 @@ export function createOpenBaoSecretManager(config: OpenBaoSecretManagerConfig): 
     }
   }
 
+  // PHASE 95 — validate the client bounds up front. An explicitly provided but
+  // out-of-range value fails closed rather than silently clamping.
+  const timeoutMs = boundedInt(config.timeoutMs, DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
+  const maxResponseBytes = boundedInt(config.maxResponseBytes, DEFAULT_MAX_RESPONSE_BYTES, MAX_RESPONSE_CEILING);
+
   function urlFor(kind: "data" | "metadata", pathId: string): string {
     const built = `${origin}/v1/${mount}/${kind}/${prefix}/${pathId}`;
     if (new URL(built).origin !== origin) throw new SecretManagerError("PROVIDER_UNAVAILABLE");
@@ -111,12 +148,35 @@ export function createOpenBaoSecretManager(config: OpenBaoSecretManagerConfig): 
     return h;
   }
 
+  /**
+   * Reject a response that DECLARES more bytes than the bound (PHASE 95).
+   * Null-safe: a response without a `Content-Length` header (or a mock without
+   * `headers`) is bounded instead by the request timeout below.
+   */
+  function assertResponseSize(response: Response): void {
+    const headers = (response as { headers?: { get?: (name: string) => string | null } }).headers;
+    const declared = headers?.get?.("content-length");
+    if (declared == null) return;
+    const n = Number(declared);
+    if (Number.isFinite(n) && n > maxResponseBytes) throw new SecretManagerError("PROVIDER_UNAVAILABLE");
+  }
+
   async function send(url: string, init: RequestInit): Promise<Response> {
+    // PHASE 95 — every request is bounded by an abort timeout, and a 3xx is
+    // REJECTED (redirect: "error") rather than followed, so the X-Vault-Token
+    // can never be bounced to a redirect target on another origin.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let response: Response;
     try {
-      return await config.fetchImpl(url, init);
+      response = await config.fetchImpl(url, { ...init, redirect: "error", signal: controller.signal });
     } catch {
       throw new SecretManagerError("PROVIDER_UNAVAILABLE");
+    } finally {
+      clearTimeout(timer);
     }
+    assertResponseSize(response);
+    return response;
   }
 
   async function parseBody(response: Response): Promise<Record<string, unknown> | null> {

@@ -178,6 +178,15 @@ jobs:
 
           git checkout --detach "$TARGET_SHA"
 
-          docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web
-          docker compose -p hermes -f docker-compose.prod.yml ps hermes-web
+          # PHASE 95: the OpenBao activation + rollback contract is verifiable and lives
+          # in a dedicated, unit-tested script (scripts/deploy/openbao-activate.sh).
+          # Passwordless sudo is REQUIRED so the NON-ROOT deploy user can VALIDATE
+          # (read-only) the root-owned activation marker and credential copies without
+          # joining the runtime secret group. The script fails closed and rolls back to
+          # base compose (proving the backend disabled) on any error.
+          if ! sudo -n true 2>/dev/null; then
+            echo "Refusing: passwordless sudo (sudo -n) is unavailable on the deploy host." >&2
+            exit 1
+          fi
+          bash scripts/deploy/openbao-activate.sh
           REMOTE

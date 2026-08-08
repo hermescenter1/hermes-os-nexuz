@@ -33,6 +33,7 @@ import { reconstructIncident } from "@/lib/observability/incident";
 import { filterAuditEvents } from "@/lib/audit/audit-service";
 import { isRateLimiterDegraded } from "@/lib/api/rate-limit";
 import { isAuthLimiterDegraded } from "@/lib/auth/rate-limiter";
+import { readSecretBackendReadiness } from "@/lib/ot-edge/secret-backend-health";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,6 +81,9 @@ export async function GET(req: NextRequest) {
       generatedAt: new Date().toISOString(),
       health: {
         rateLimiter: { apiDegraded: isRateLimiterDegraded(), authDegraded: isAuthLimiterDegraded() },
+        // PHASE 95 — OT secret-backend readiness (network-free, config-derived).
+        // Never `healthy` here: no live probe runs on this admin snapshot.
+        secretBackend: readSecretBackendReadiness(),
       },
       alerts: getActiveAlerts(),
       security: {

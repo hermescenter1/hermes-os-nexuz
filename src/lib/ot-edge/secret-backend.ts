@@ -20,11 +20,12 @@
 // private transport (WireGuard/mTLS) and the AppRole credential files below.
 
 import { randomBytes as nodeRandomBytes } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { lstat, readFile } from "node:fs/promises";
 import {
   createOpenBaoRuntimeComposition,
   type OpenBaoRuntimeComposition,
 } from "./openbao-runtime-composition";
+import { SECRET_BACKEND_ENV } from "./secret-backend-env";
 import {
   SecretManagerError,
   type SecretReference,
@@ -51,16 +52,30 @@ function trimmedEnv(name: string): string | null {
 /**
  * Read an AppRole credential from a file at LOGIN time (not at import time), so
  * a role/secret id never sits in the process environment or a config literal.
- * A missing/empty file fails closed: the read throws, the AppRole login fails,
- * and no envelope can be verified against the writable backend.
+ *
+ * PHASE 95 hardening — before reading, `lstat` the path and REFUSE anything that
+ * is not a plain regular file: a SYMLINK could redirect the read to an
+ * attacker-controlled target, and a directory/device is never a credential. A
+ * missing/empty file fails closed: the read throws, the AppRole login fails, and
+ * no envelope can be verified against the writable backend. (File MODE is
+ * enforced host-side — the operator tooling writes 0600 and the runbook mandates
+ * 0400; a container-mounted Docker file-secret is intentionally 0444, so the
+ * runtime does not additionally reject on world-readability, which would break
+ * the documented deployment.)
  */
+export async function readCredentialFile(path: string): Promise<string> {
+  const info = await lstat(path).catch(() => null);
+  if (!info || info.isSymbolicLink() || !info.isFile()) {
+    throw new SecretManagerError("PROVIDER_UNAVAILABLE");
+  }
+  const raw = await readFile(path, "utf8");
+  const value = raw.trim();
+  if (!value) throw new SecretManagerError("PROVIDER_UNAVAILABLE");
+  return value;
+}
+
 function fileReader(path: string): () => Promise<string> {
-  return async () => {
-    const raw = await readFile(path, "utf8");
-    const value = raw.trim();
-    if (!value) throw new SecretManagerError("PROVIDER_UNAVAILABLE");
-    return value;
-  };
+  return () => readCredentialFile(path);
 }
 
 /**
@@ -71,7 +86,7 @@ function fileReader(path: string): () => Promise<string> {
  * through the memoised `getSecretBackend`.
  */
 export function resolveSecretBackendComposition(): OpenBaoRuntimeComposition {
-  if (trimmedEnv("OT_SECRET_BACKEND") !== "openbao") {
+  if (trimmedEnv(SECRET_BACKEND_ENV.toggle) !== "openbao") {
     return { available: false, reason: "DISABLED" };
   }
 
@@ -93,6 +108,12 @@ export function resolveSecretBackendComposition(): OpenBaoRuntimeComposition {
     throw new SecretManagerError("PROVIDER_UNAVAILABLE");
   }
 
+  // PHASE 95 — optional bounded-client tuning. Unset uses the adapter defaults;
+  // a present-but-non-positive-integer value fails closed (the runtime factory
+  // additionally enforces the hard ceilings).
+  const timeoutMs = optionalPositiveIntEnv("OPENBAO_REQUEST_TIMEOUT_MS");
+  const maxResponseBytes = optionalPositiveIntEnv("OPENBAO_MAX_RESPONSE_BYTES");
+
   return createOpenBaoRuntimeComposition({
     enabled: true,
     endpoint,
@@ -105,9 +126,24 @@ export function resolveSecretBackendComposition(): OpenBaoRuntimeComposition {
     clock: () => Date.now(),
     randomBytes: (n) => new Uint8Array(nodeRandomBytes(n)),
     expirySkewSeconds,
+    timeoutMs,
+    maxResponseBytes,
     // http is permitted ONLY for an explicit loopback lab; production is TLS.
     allowInsecureLoopback: trimmedEnv("OPENBAO_ALLOW_INSECURE_LOOPBACK") === "1",
   });
+}
+
+/**
+ * Parse an OPTIONAL positive-integer environment value (PHASE 95). Unset (or
+ * whitespace) yields `undefined` so the adapter default applies; a present but
+ * non-positive-integer value fails closed.
+ */
+function optionalPositiveIntEnv(name: string): number | undefined {
+  const raw = trimmedEnv(name);
+  if (raw === null) return undefined;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1) throw new SecretManagerError("PROVIDER_UNAVAILABLE");
+  return value;
 }
 
 let cached: ResolvedSecretBackend | null = null;

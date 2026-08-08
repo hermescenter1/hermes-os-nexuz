@@ -29,6 +29,11 @@ import { getStartupResults } from "@/lib/startup/validate";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { getPrisma } from "@/lib/db/prisma";
 import { getRedis } from "@/lib/redis/client";
+import {
+  readSecretBackendReadiness,
+  type SecretBackendHealthReason,
+  type SecretBackendHealthStatus,
+} from "@/lib/ot-edge/secret-backend-health";
 
 /** A live dependency probe result. `up === null` = not probed / not configured. */
 export interface DependencyProbe {
@@ -71,6 +76,24 @@ export interface NotInstrumented {
   observedAt: string;
 }
 
+/**
+ * PHASE 95 — the OT machine-credential secret backend (OpenBao) readiness panel.
+ *
+ * CONFIGURATION-derived and network-free: `disabled` when the backend is off,
+ * `configured_not_checked` when fully configured (NEVER `healthy` here — the
+ * console runs no live probe, so it must not claim health it hasn't observed),
+ * `degraded` when enabled but incompletely configured. The reachable/authenticated
+ * states come only from real credential operations elsewhere.
+ */
+export interface SecretBackendPanel {
+  status: SecretBackendHealthStatus;
+  reason: SecretBackendHealthReason;
+  /** True only when a real OpenBao call informed this status (never here). */
+  checked: boolean;
+  observedAt: string;
+  source: string;
+}
+
 export interface OperatorConsole {
   generatedAt: string;
   dependencies: DependencyProbe[];
@@ -88,6 +111,8 @@ export interface OperatorConsole {
   metrics: Record<string, unknown>;
   incident: IncidentTimeline | null;
   notInstrumented: NotInstrumented[];
+  /** PHASE 95 — OT secret-backend (OpenBao) readiness; network-free. */
+  secretBackend: SecretBackendPanel;
   /** True when the audit/security assembly failed and the panel should error-state. */
   degraded: { audit: boolean };
 }
@@ -181,6 +206,21 @@ function summarizeSecurity(events: { event: string }[]): Record<string, number> 
  * risky probe/getter is isolated so one failing source degrades its own panel
  * rather than the whole page.
  */
+/**
+ * PHASE 95 — the OT secret-backend readiness panel. Network-free (reads
+ * configuration only) and isolated: any unexpected failure degrades ONLY this
+ * panel to a truthful `degraded/provider`, never the whole console.
+ */
+function probeSecretBackend(now: string): SecretBackendPanel {
+  const base = { observedAt: now, source: "configuration" as const };
+  try {
+    const health = readSecretBackendReadiness();
+    return { ...health, ...base };
+  } catch {
+    return { status: "degraded", reason: "provider", checked: false, ...base };
+  }
+}
+
 export async function assembleOperatorConsole(
   opts: { correlationId?: string | null; auditLimit?: number; securityLimit?: number } = {},
 ): Promise<OperatorConsole> {
@@ -250,6 +290,7 @@ export async function assembleOperatorConsole(
       { key: "httpRequestRate", metric: "http_requests_total", source: "prometheus", observedAt: now },
       { key: "httpRequestLatency", metric: "http_request_duration_ms", source: "prometheus", observedAt: now },
     ],
+    secretBackend: probeSecretBackend(now),
     degraded: { audit: auditDegraded },
   };
 }

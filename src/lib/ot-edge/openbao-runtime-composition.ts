@@ -62,6 +62,10 @@ export interface OpenBaoRuntimeConfig {
   expirySkewSeconds: number;
   /** Permit http ONLY for loopback hosts — local integration only. */
   allowInsecureLoopback?: boolean;
+  /** PHASE 95 — per-request abort timeout (ms) for both login and KV calls. */
+  timeoutMs?: number;
+  /** PHASE 95 — declared-response-size bound (bytes) for both login and KV. */
+  maxResponseBytes?: number;
 }
 
 /** The runtime is available: a writable secret manager plus a cache-clear hook. */
@@ -132,6 +136,8 @@ export function createOpenBaoRuntimeComposition(config: OpenBaoRuntimeConfig): O
     clock: config.clock,
     expirySkewSeconds: config.expirySkewSeconds,
     allowInsecureLoopback: config.allowInsecureLoopback,
+    timeoutMs: config.timeoutMs,
+    maxResponseBytes: config.maxResponseBytes,
   });
 
   const secretManager = createOpenBaoSecretManager({
@@ -145,6 +151,8 @@ export function createOpenBaoRuntimeComposition(config: OpenBaoRuntimeConfig): O
     fetchImpl: config.fetchImpl,
     randomBytes: config.randomBytes,
     allowInsecureLoopback: config.allowInsecureLoopback,
+    timeoutMs: config.timeoutMs,
+    maxResponseBytes: config.maxResponseBytes,
   });
 
   return {

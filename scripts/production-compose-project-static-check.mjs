@@ -10,7 +10,11 @@
 //
 //   Tier 1 — the deploy pipeline. `docker-compose.prod.yml` and
 //     `.github/workflows/deploy.yml` are held to the strict production contract
-//     (top-level name, exact up/ps commands, Gate 0A protections).
+//     (top-level name; only targeted `up`, quiet single-service `ps -q`, and a
+//     validation-only `config` of the base + OpenBao overlay; the stable
+//     marker-gated activation with automatic rollback; Gate 0A protections).
+//     Destructive subcommands (down/stop/restart/rm/kill/exec/run) and profiles
+//     remain forbidden.
 //
 //   Tier 2 — the operator surface. Every runbook, checklist and shell script
 //     under docs/, deploy/ and scripts/ (plus root DEPLOYMENT.md) is scanned for
@@ -50,6 +54,17 @@ const readNormalized = (path) =>
 
 const composeFile = readNormalized("docker-compose.prod.yml");
 const deployWorkflow = readNormalized(".github/workflows/deploy.yml");
+// PHASE 95: the marker-gated activation + rollback logic lives in a dedicated,
+// unit-tested script that the workflow invokes. It is part of the Tier 1 deploy
+// pipeline and is held to the SAME compose/marker/rollback contract.
+const activateScript = (() => {
+  try {
+    return readNormalized("scripts/deploy/openbao-activate.sh");
+  } catch {
+    return "";
+  }
+})();
+const pipelineText = `${deployWorkflow}\n${activateScript}`;
 
 // ── Logical lines ────────────────────────────────────────────────────────────
 // A shell joins backslash-newline continuations before parsing, so all
@@ -80,7 +95,9 @@ function toLogicalLines(text) {
   return logical;
 }
 
-const deployLogical = toLogicalLines(deployWorkflow);
+// Compose/marker/rollback contract runs over the WHOLE pipeline (workflow +
+// activation script); Gate 0A on/permissions checks stay on deploy.yml alone.
+const deployLogical = toLogicalLines(pipelineText);
 // Executable lines: non-empty, not a full-line comment.
 const executableLines = deployLogical.filter(
   ({ line }) => line.trim() !== "" && !/^\s*#/.test(line),
@@ -105,7 +122,10 @@ gate(
 // ── Compose invocation model ─────────────────────────────────────────────────
 // Matches `docker compose` (one or more spaces) OR the legacy `docker-compose`
 // binary as a command word (not the `-f docker-compose.prod.yml` file arg).
-const COMPOSE_INVOCATION = /(^|\s)docker(?:\s+|-)compose(\s|$)/;
+// The leading boundary accepts a preceding space OR `(` / backtick so a compose
+// command inside a `cid=$(docker compose … )` command substitution is still
+// detected and held to the full contract.
+const COMPOSE_INVOCATION = /(^|[\s(`])docker(?:\s+|-)compose(\s|$)/;
 const LEGACY_BINARY = /(^|\s)docker-compose(\s|$)/;
 
 // Extract the compose subcommand (first bare token after `docker compose` and
@@ -146,7 +166,7 @@ gate(
   "DEPLOY_COMPOSE_PRESENT",
   "expected at least the targeted `up` and the `ps` Compose commands",
 );
-const ALLOWED_SUBCOMMANDS = new Set(["up", "ps"]);
+const ALLOWED_SUBCOMMANDS = new Set(["up", "ps", "config"]);
 for (const { line, lineNumber } of composeInvocations) {
   const at = `deploy.yml line ${lineNumber}`;
   gate(!LEGACY_BINARY.test(line), "DEPLOY_COMPOSE_V2", `${at}: use \`docker compose\` (v2), not \`docker-compose\``);
@@ -162,11 +182,28 @@ for (const { line, lineNumber } of composeInvocations) {
   // Only up / ps are permitted in the deploy workflow. This inherently blocks
   // down, stop, restart, exec, run, rm, kill and any migration-via-exec.
   const sub = composeSubcommand(line);
-  gate(sub !== null && ALLOWED_SUBCOMMANDS.has(sub), "DEPLOY_SUBCOMMAND_ALLOWLIST", `${at}: Compose subcommand \`${sub}\` not allowed (only up/ps)`);
+  // Only up / ps / config are permitted. This inherently blocks down, stop,
+  // restart, exec, run, rm, kill and any migration-via-exec.
+  gate(sub !== null && ALLOWED_SUBCOMMANDS.has(sub), "DEPLOY_SUBCOMMAND_ALLOWLIST", `${at}: Compose subcommand \`${sub}\` not allowed (only up/ps/config)`);
   // Any `up` must stay targeted: never recreate postgres/redis/nginx.
   if (sub === "up") {
     gate(/--no-deps/.test(line), "DEPLOY_UP_NO_DEPS", `${at}: \`up\` must pass \`--no-deps\` (never recreate postgres/redis/nginx)`);
     gate(/\bhermes-web\b/.test(line), "DEPLOY_UP_TARGET", `${at}: \`up\` must target the \`hermes-web\` service only`);
+  }
+  // Any `ps` must be a quiet, single-service status probe (never the whole
+  // stack). It may appear inside a `cid=$(… )` command substitution.
+  if (sub === "ps") {
+    gate(/(^|\s)-q(\s|$)/.test(line), "DEPLOY_PS_QUIET", `${at}: \`ps\` must pass \`-q\``);
+    gate(/\bhermes-web\b/.test(line), "DEPLOY_PS_TARGET", `${at}: \`ps\` must target the \`hermes-web\` service only (never the whole stack)`);
+  }
+  // `config` is validation-only for the merged OpenBao activation. It MUST carry
+  // the base file, the OpenBao overlay, the production env-file, and discard its
+  // output — and never a profile (which could pull in extra services).
+  if (sub === "config") {
+    gate(/\s-f\s+docker-compose\.prod\.openbao\.yml(?=\s|$)/.test(line), "DEPLOY_CONFIG_OVERLAY", `${at}: \`config\` must include \`-f docker-compose.prod.openbao.yml\``);
+    gate(/--env-file\s+\.env\.production(?=\s|$)/.test(line), "DEPLOY_CONFIG_ENVFILE", `${at}: \`config\` must pass \`--env-file .env.production\``);
+    gate(/>\s*\/dev\/null/.test(line), "DEPLOY_CONFIG_QUIET", `${at}: \`config\` must be validation-only (redirect stdout to /dev/null)`);
+    gate(!/--profiles?\b/.test(line), "DEPLOY_CONFIG_NO_PROFILE", `${at}: \`config\` must not enable a --profile`);
   }
 }
 
@@ -178,13 +215,84 @@ gate(
   "DEPLOY_TARGETED_UP",
   "missing `docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web`",
 );
+// Base status probe (may be wrapped in a `cid=$(… )` command substitution).
 gate(
   composeInvocations.some(({ line }) =>
-    /^docker compose -p hermes -f docker-compose\.prod\.yml ps hermes-web$/.test(line.trim()),
+    /docker compose -p hermes -f docker-compose\.prod\.yml ps -q hermes-web/.test(line),
   ),
   "DEPLOY_STATUS_PS",
-  "missing `docker compose -p hermes -f docker-compose.prod.yml ps hermes-web`",
+  "missing a base `docker compose -p hermes -f docker-compose.prod.yml ps -q hermes-web`",
 );
+// Active-overlay deploy form: BOTH compose files + production env-file, targeted.
+gate(
+  composeInvocations.some(({ line }) =>
+    /docker compose -p hermes -f docker-compose\.prod\.yml -f docker-compose\.prod\.openbao\.yml --env-file \.env\.production up -d --build --no-deps hermes-web/.test(line),
+  ),
+  "DEPLOY_ACTIVE_UP",
+  "missing the active-overlay `up` (base + OpenBao overlay + --env-file .env.production)",
+);
+
+// ── 3b. Marker-gated activation contract (runtime-verifiable, fail-closed) ────
+gate(
+  pipelineText.includes("/etc/hermes-openbao/activation.env"),
+  "DEPLOY_MARKER_PATH",
+  "deploy pipeline must reference the marker `/etc/hermes-openbao/activation.env`",
+);
+// Passwordless sudo is required so the non-root deploy user can VALIDATE the
+// root-owned marker + credentials — proven up front so a `sudo -n test` failure
+// cannot be misread as "marker absent".
+gate(/sudo -n true/.test(pipelineText), "DEPLOY_SUDO_REQUIRED", "deploy must assert `sudo -n true` before reading root-owned activation state");
+// Marker existence/reads MUST be privileged; a bare (unprivileged) `-e "$MARKER"`
+// is permission-ambiguous and is forbidden.
+gate(/sudo -n test -e "\$MARKER"/.test(pipelineText), "DEPLOY_MARKER_PRIVILEGED_E", "marker existence must be probed with `sudo -n test -e \"$MARKER\"`");
+gate(!/\[\s+(?:!\s+)?-e\s+"\$MARKER"\s*\]/.test(pipelineText), "DEPLOY_MARKER_NO_BARE_E", "forbidden unprivileged/ambiguous bracket test `[ -e \"$MARKER\" ]`");
+gate(/sudo -n stat /.test(pipelineText) && /sudo -n cat -- "\$MARKER"/.test(pipelineText), "DEPLOY_MARKER_PRIVILEGED_READ", "marker stat/read must use `sudo -n stat` / `sudo -n cat`");
+// The marker must never be executed.
+gate(!/\bsource\s+[^\n]*\$MARKER/.test(pipelineText) && !/\beval\s+[^\n]*\$MARKER/.test(pipelineText) && !/^\s*\.\s+"?\$MARKER/m.test(pipelineText), "DEPLOY_MARKER_NO_SOURCE", "the marker must not be `source`d/`eval`d");
+gate(
+  composeInvocations.some(
+    ({ line }) => composeSubcommand(line) === "config" && /docker-compose\.prod\.openbao\.yml/.test(line),
+  ),
+  "DEPLOY_MARKER_CONFIG",
+  "marker-present path must `config` the base + OpenBao overlay before deploying",
+);
+// GAP 2 — the active `up` runs under explicit control (activation_failed), and
+// its own failure funnels into the rollback.
+gate(/activation_failed/.test(pipelineText), "DEPLOY_ACTIVE_UP_GUARDED", "active `up` must be guarded by explicit error handling (`activation_failed`), never a bare set -e abort");
+gate(/if ! docker compose -p hermes -f docker-compose\.prod\.yml -f docker-compose\.prod\.openbao\.yml --env-file \.env\.production up /.test(pipelineText), "DEPLOY_ACTIVE_UP_IF", "the active `up` must be invoked inside an `if ! …` guard");
+// GAP 3 — rollback must PROVE the backend is disabled (env + all three mounts
+// absent), and only claim success after that proof.
+gate(/verify_base_disabled/.test(pipelineText), "DEPLOY_ROLLBACK_PROVES_DISABLED", "rollback must call the `verify_base_disabled` proof");
+gate(/OT_SECRET_BACKEND[^\n]*!= "?openbao/.test(pipelineText), "DEPLOY_ROLLBACK_ENV", "rollback/base proof must assert OT_SECRET_BACKEND != openbao");
+for (const name of ["openbao_role_id", "openbao_secret_id", "openbao_ca"]) {
+  gate(new RegExp(`! -e /run/secrets/${name}`).test(pipelineText), "DEPLOY_ROLLBACK_MOUNTS_ABSENT", `rollback must assert /run/secrets/${name} is absent`);
+}
+gate(/ROLLBACK_UNVERIFIED/.test(pipelineText), "DEPLOY_ROLLBACK_UNVERIFIED", "an unprovable rollback must report ROLLBACK_UNVERIFIED (never claim disabled)");
+// GAP 4 — host mapping must be checked EXACTLY against the private IP, not by a
+// mere `openbao` word match.
+gate(!/grep -qw openbao \/etc\/hosts/.test(pipelineText), "DEPLOY_HOST_MAPPING_NOT_WORDONLY", "host mapping must not be a bare `grep -qw openbao /etc/hosts`");
+gate(/verify_host_mapping/.test(pipelineText) && /awk -v ip="\$PRIVATE_IP"/.test(pipelineText), "DEPLOY_HOST_MAPPING_EXACT", "host mapping must prove `openbao` resolves to exactly $PRIVATE_IP");
+
+// ── 3c. Credential/state integrity invariants (runtime-verifiable) ───────────
+// The script must run as the non-root deploy user and prove the deploy user is
+// NOT in the runtime secret group.
+gate(/\[ "\$\(id -u\)" -eq 0 \]/.test(pipelineText), "DEPLOY_NONROOT_SELF", "the activation script must refuse to run as root");
+gate(/member of the runtime secret group/.test(pipelineText) && /id -G/.test(pipelineText), "DEPLOY_GROUP_ISOLATION", "must reject a deploy user that belongs to the runtime GID (via id -G)");
+// Marker-absent must also PROVE the base container is disabled (shared helper).
+gate(/verify_base_disabled/.test(pipelineText), "DEPLOY_BASE_PROOF_HELPER", "a shared `verify_base_disabled` must prove the disabled base state");
+gate(/deploy_and_prove_base/.test(pipelineText) && /BASE_STATE_UNVERIFIED/.test(pipelineText), "DEPLOY_MARKER_ABSENT_PROVEN", "marker-absent path must deploy AND prove the base is disabled (BASE_STATE_UNVERIFIED on failure)");
+// Source paths canonicalised (no symlink/`..`) via realpath -e.
+gate(/sudo -n realpath -e -- /.test(pipelineText), "DEPLOY_REALPATH", "source paths must be canonicalised with `sudo -n realpath -e --` and compared to the input");
+// Runtime directory root:root 0710.
+gate(/runtime directory mode is not exactly 0710/.test(pipelineText) && /runtime directory is not root:root/.test(pipelineText), "DEPLOY_RUNTIME_DIR", "the shared runtime directory must be enforced root:root 0710");
+// Runtime copies byte-identical to the canonical AppRole credentials.
+gate(/sudo -n cmp -s -- /.test(pipelineText) && /does not match the canonical/.test(pipelineText), "DEPLOY_CANONICAL_CMP", "runtime copies must be `cmp -s` byte-identical to the canonical credentials");
+// CA root ownership + PEM parse (openssl existence fail-closed).
+gate(/CA file is not owned root:root/.test(pipelineText) && /openssl x509/.test(pipelineText) && /parseable PEM/.test(pipelineText), "DEPLOY_CA_TRUST", "the CA must be root-owned and a parseable PEM (openssl checked fail-closed)");
+// Active proof: read-only mounts (RW=false) sourced from the runtime paths, and
+// the container UID/GID.
+gate(/=false=/.test(pipelineText) && /verify_active_mount/.test(pipelineText), "DEPLOY_ACTIVE_MOUNTS_RO", "active verification must prove all three mounts are read-only (RW=false) from the runtime sources");
+gate(/docker exec "\$cid" id -u/.test(pipelineText) && /docker exec "\$cid" id -g/.test(pipelineText), "DEPLOY_ACTIVE_IDS", "active verification must prove the container UID=1001 and GID=runtime GID");
 
 // ── 4. Forbidden executable patterns must never (re)appear ───────────────────
 const forbiddenPatterns = [
@@ -192,6 +300,7 @@ const forbiddenPatterns = [
   [/docker\s+system\s+prune/, "FORBIDDEN_SYSTEM_PRUNE"],
   [/docker\s+volume\s+rm/, "FORBIDDEN_VOLUME_RM"],
   [/--remove-orphans/, "FORBIDDEN_REMOVE_ORPHANS"],
+  [/--profiles?\b/, "FORBIDDEN_PROFILE"],
   [/\bgit\s+pull\b/, "FORBIDDEN_GIT_PULL"],
   [/\bssh-keyscan\b/, "FORBIDDEN_SSH_KEYSCAN"],
   [/-p\s+hermes-os-nexuz\b/, "FORBIDDEN_DERIVED_PROJECT"],

@@ -42,6 +42,37 @@ export interface OpenBaoAppRoleTokenProviderConfig {
   expirySkewSeconds: number;
   /** Permit http ONLY for 127.0.0.1/localhost/[::1] — for local integration. */
   allowInsecureLoopback?: boolean;
+  /**
+   * Bound the login request with an abort timeout (ms) — a hung OpenBao can
+   * never stall a login indefinitely (PHASE 95). Defaults to
+   * {@link DEFAULT_TIMEOUT_MS}; an out-of-range value fails closed.
+   */
+  timeoutMs?: number;
+  /**
+   * Reject a login response whose declared `Content-Length` exceeds this many
+   * bytes (PHASE 95). An auth response is tiny. Defaults to
+   * {@link DEFAULT_MAX_RESPONSE_BYTES}; an out-of-range value fails closed.
+   */
+  maxResponseBytes?: number;
+}
+
+/** PHASE 95 bounded-client defaults and hard ceilings. */
+const DEFAULT_TIMEOUT_MS = 5_000;
+const MAX_TIMEOUT_MS = 120_000;
+const DEFAULT_MAX_RESPONSE_BYTES = 65_536;
+const MAX_RESPONSE_CEILING = 1_048_576;
+
+/**
+ * A positive-integer bound with a default and a hard ceiling (PHASE 95).
+ * `undefined` uses the default; anything else must be an integer in
+ * `[1, ceiling]` or it fails closed — never silently clamped.
+ */
+function boundedInt(value: number | undefined, fallback: number, ceiling: number): number {
+  if (value === undefined) return fallback;
+  if (!Number.isInteger(value) || value < 1 || value > ceiling) {
+    throw new SecretManagerError("PROVIDER_UNAVAILABLE");
+  }
+  return value;
 }
 
 export interface OpenBaoAppRoleTokenProvider {
@@ -81,6 +112,10 @@ export function createOpenBaoAppRoleTokenProvider(
     throw new SecretManagerError("PROVIDER_UNAVAILABLE");
   }
 
+  // PHASE 95 — validate client bounds up front (fail closed on out-of-range).
+  const timeoutMs = boundedInt(config.timeoutMs, DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
+  const maxResponseBytes = boundedInt(config.maxResponseBytes, DEFAULT_MAX_RESPONSE_BYTES, MAX_RESPONSE_CEILING);
+
   const loginUrl = `${origin}/v1/auth/${authMount}/login`;
   if (new URL(loginUrl).origin !== origin) throw new SecretManagerError("PROVIDER_UNAVAILABLE");
 
@@ -89,12 +124,30 @@ export function createOpenBaoAppRoleTokenProvider(
   let cached: { token: string; expiresAtMs: number } | null = null;
   let inflight: Promise<string> | null = null;
 
+  function assertResponseSize(response: Response): void {
+    const headers = (response as { headers?: { get?: (name: string) => string | null } }).headers;
+    const declared = headers?.get?.("content-length");
+    if (declared == null) return;
+    const n = Number(declared);
+    if (Number.isFinite(n) && n > maxResponseBytes) throw new SecretManagerError("PROVIDER_UNAVAILABLE");
+  }
+
   async function send(init: RequestInit): Promise<Response> {
+    // PHASE 95 — bound the login with an abort timeout and REJECT any 3xx
+    // (redirect: "error"); a login must never follow a redirect that could
+    // ship role_id/secret_id to another origin.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let response: Response;
     try {
-      return await config.fetchImpl(loginUrl, init);
+      response = await config.fetchImpl(loginUrl, { ...init, redirect: "error", signal: controller.signal });
     } catch {
       throw new SecretManagerError("PROVIDER_UNAVAILABLE");
+    } finally {
+      clearTimeout(timer);
     }
+    assertResponseSize(response);
+    return response;
   }
 
   async function parseBody(response: Response): Promise<Record<string, unknown> | null> {
