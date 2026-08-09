@@ -13,9 +13,18 @@
  *
  * Pure filesystem reads. No database, no network, no Docker.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+
+// PHASE 99.7 — these invariants scan ~1850 source files. Their cost is real
+// work, not a hang, and it varies several-fold with machine load: under a
+// concurrent Docker build the same passing assertions intermittently blew
+// vitest's 5s default and were reported as timeouts. A red result that says
+// nothing about the invariant is worse than a slow one, so the budget is
+// explicit. No assertion is relaxed — a genuinely violated invariant still
+// fails, just not on a stopwatch that was never part of the contract.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
 import {
   rawSqlInventory,

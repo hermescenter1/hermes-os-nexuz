@@ -15,6 +15,24 @@ export default defineConfig({
     // Default environment stays `node` for the whole existing suite; the runtime
     // interaction tests opt into jsdom per-file via `// @vitest-environment jsdom`.
     environment: "node",
+    // PHASE 99.7 — make the RESULT deterministic, not the runtime.
+    //
+    // Vitest's 5s default was never a property of this repository's contracts.
+    // Many suites here do real work whose wall-clock scales with the machine:
+    // repository-wide static gates read ~1850 source files, and several route
+    // suites dynamically import heavy modules. Running 331 files in parallel on
+    // a loaded machine, that work intermittently crossed 5s and was reported as
+    // a TIMEOUT — a red result carrying no information about the assertion,
+    // observed flipping between 0 and 21 failures across consecutive runs of an
+    // unchanged tree. A test suite whose verdict depends on CPU contention is
+    // not a gate; it teaches people to re-run until green.
+    //
+    // 30s is far above the slowest legitimate suite and far below anything that
+    // could hide a genuine hang (CI job timeouts of 40-60 min still bound that).
+    // No assertion is relaxed — a real failure fails exactly as before. The
+    // heaviest whole-tree scanners additionally set 60s via `vi.setConfig`.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     // Never run tests out of the Next build output — `.next/standalone`
     // contains stale duplicate copies of these route tests (Phase 82C.1).
     //

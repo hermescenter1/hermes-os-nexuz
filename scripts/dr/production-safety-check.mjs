@@ -27,7 +27,15 @@ const DIFF_BASE = process.env.PHASE98_DIFF_BASE || "63a4b4875660ffac11a35dd69d6a
 
 // Pattern-DEFINING files legitimately contain the dangerous tokens as data (regex
 // patterns / classification strings they search for), not as executable commands.
-const EXEMPT = new Set(["scripts/dr/production-safety-check.mjs", "scripts/dr/migration-sql-classify.mjs"]);
+const EXEMPT = new Set([
+  "scripts/dr/production-safety-check.mjs",
+  "scripts/dr/migration-sql-classify.mjs",
+  // Gate 0D-A's checker is the same kind of file: it holds `docker volume rm`,
+  // `system prune` and `-p hermes` as the PATTERNS it forbids, never as
+  // commands. It escaped this list until Phase 99.7 only because it had not
+  // been modified inside the diff window being scanned.
+  "scripts/production-compose-project-static-check.mjs",
+]);
 
 const violations = [];
 const flag = (gate, file, msg) => violations.push({ gate, file, msg });

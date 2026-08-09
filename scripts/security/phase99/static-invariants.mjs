@@ -12,22 +12,86 @@
  * a silent escape hatch.
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 import { stripComments } from "./route-inventory.mjs";
 
 const SRC_EXT = /\.(ts|tsx)$/;
 
-/** Walk a directory, skipping tests, build output and vendor trees. */
-export function walkSource(dir, out = []) {
-  if (!existsSync(dir)) return out;
-  for (const name of readdirSync(dir).sort()) {
-    if (name === "node_modules" || name === ".next" || name === "__tests__") continue;
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) walkSource(full, out);
-    else if (SRC_EXT.test(name) && !/\.test\.tsx?$/.test(name)) out.push(full);
+// PHASE 99.7 — deterministic scan cost.
+//
+// Every exported reviewer below independently walked the tree and re-read (and
+// re-stripped) every file. With ~1850 source files and a suite that calls a
+// dozen reviewers, the same bytes were read and parsed roughly a dozen times,
+// making each assertion's WALL-CLOCK cost depend on machine load rather than on
+// the repository. Under contention those suites intermittently blew vitest's
+// 5s default and failed as timeouts — a red result that said nothing about the
+// invariant being asserted.
+//
+// These caches are process-lifetime and keyed by absolute path. They are sound
+// because this module is a READ-ONLY static reviewer: nothing it is pointed at
+// is mutated while it runs, and no caller writes source files between calls.
+// A long-lived process that needed to observe edits would call resetScanCaches().
+const dirCache = new Map();
+const textCache = new Map();
+const strippedCache = new Map();
+
+/** Drop every cached traversal/read. Only needed if the tree changes in-process. */
+export function resetScanCaches() {
+  dirCache.clear();
+  textCache.clear();
+  strippedCache.clear();
+}
+
+/** Read a source file once per process. */
+export function readSource(file) {
+  let text = textCache.get(file);
+  if (text === undefined) {
+    text = readFileSync(file, "utf8");
+    textCache.set(file, text);
   }
+  return text;
+}
+
+/** Read a source file with comments removed, stripping at most once per process. */
+export function readSourceCode(file) {
+  let text = strippedCache.get(file);
+  if (text === undefined) {
+    text = stripComments(readSource(file));
+    strippedCache.set(file, text);
+  }
+  return text;
+}
+
+/**
+ * Walk a directory, skipping tests, build output and vendor trees.
+ *
+ * Results are memoised per directory, and entries are typed via `withFileTypes`
+ * so the walk costs one readdir per directory instead of an extra `statSync`
+ * syscall per entry (which dominates on Windows).
+ *
+ * The returned array is a defensive copy, so a caller that sorts or splices it
+ * cannot corrupt the cache for the next caller.
+ */
+export function walkSource(dir, out = []) {
+  const cached = dirCache.get(dir);
+  if (cached) {
+    out.push(...cached);
+    return out;
+  }
+  const collected = [];
+  if (existsSync(dir)) {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+      const name = entry.name;
+      if (name === "node_modules" || name === ".next" || name === "__tests__") continue;
+      const full = join(dir, name);
+      if (entry.isDirectory()) walkSource(full, collected);
+      else if (SRC_EXT.test(name) && !/\.test\.tsx?$/.test(name)) collected.push(full);
+    }
+  }
+  dirCache.set(dir, collected);
+  out.push(...collected);
   return out;
 }
 
@@ -48,7 +112,7 @@ export function rawSqlInventory(repoRoot, allowlist = RAW_SQL_ALLOWLIST) {
   validateSqlAllowlist(allowlist);
   const items = [];
   for (const file of walkSource(join(repoRoot, "src"))) {
-    const text = stripComments(readFileSync(file, "utf8"));
+    const text = readSourceCode(file);
     const rel = relPath(repoRoot, file);
     const re = /\$(queryRaw|executeRaw)(Unsafe)?\s*(\(|`)/g;
     let m;
@@ -178,7 +242,7 @@ export function outboundSinkInventory(repoRoot, allowlist = SSRF_SINK_ALLOWLIST)
   const roots = [join(repoRoot, "src", "lib"), join(repoRoot, "src", "app")];
   for (const root of roots) {
     for (const file of walkSource(root)) {
-      const raw = readFileSync(file, "utf8");
+      const raw = readSource(file);
       if (isClientModule(raw)) continue;
       const text = stripComments(raw);
       const rel = relPath(repoRoot, file);
@@ -267,7 +331,7 @@ export function userControlledSinkScan(repoRoot) {
   const REQUEST_TOKENS = /\b(?:req|request)\b|searchParams|params|body|payload|await\s+req\.json/;
   for (const file of walkSource(apiRoot)) {
     if (!/route\.tsx?$/.test(file)) continue;
-    const text = stripComments(readFileSync(file, "utf8"));
+    const text = readSourceCode(file);
     const re = /\bfetch\s*\(/g;
     let m;
     while ((m = re.exec(text))) {
@@ -329,7 +393,7 @@ export const SSRF_SINK_ALLOWLIST = [
 export function htmlSinkInventory(repoRoot) {
   const items = [];
   for (const file of walkSource(join(repoRoot, "src"))) {
-    const text = stripComments(readFileSync(file, "utf8"));
+    const text = readSourceCode(file);
     const rel = relPath(repoRoot, file);
     for (const [token, kind] of [["dangerouslySetInnerHTML", "REACT_RAW_HTML"], [".innerHTML", "DOM_RAW_HTML"], [".outerHTML", "DOM_RAW_HTML"], ["document.write", "DOM_WRITE"]]) {
       let idx = text.indexOf(token);
@@ -383,7 +447,7 @@ export function uploadSurfaceInventory(repoRoot) {
   const apiRoot = join(repoRoot, "src", "app", "api");
   for (const file of walkSource(apiRoot)) {
     if (!/route\.tsx?$/.test(file)) continue;
-    const text = stripComments(readFileSync(file, "utf8"));
+    const text = readSourceCode(file);
     if (!/\.formData\s*\(/.test(text)) continue;
     items.push({
       file: relPath(repoRoot, file),
@@ -466,7 +530,7 @@ export function errorHygieneReview(repoRoot) {
   ];
   for (const file of walkSource(apiRoot)) {
     if (!/route\.tsx?$/.test(file)) continue;
-    const text = stripComments(readFileSync(file, "utf8"));
+    const text = readSourceCode(file);
     for (const leak of LEAKS) {
       if (leak.re.test(text)) {
         const line = text.slice(0, leak.re.exec(text).index).split("\n").length;
@@ -545,7 +609,7 @@ export function infrastructureReview(repoRoot) {
 
   // CORS: a wildcard origin must never be paired with credentials.
   for (const file of walkSource(join(repoRoot, "src"))) {
-    const text = stripComments(readFileSync(file, "utf8"));
+    const text = readSourceCode(file);
     if (/Access-Control-Allow-Origin["']?\s*[,:]\s*["']\*/.test(text) && /Access-Control-Allow-Credentials["']?\s*[,:]\s*["']true/.test(text)) {
       findings.push(`${relPath(repoRoot, file)}: CORS wildcard origin with credentials`);
       counters.CORS_WILDCARD_WITH_CREDENTIALS += 1;
