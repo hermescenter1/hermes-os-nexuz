@@ -31,20 +31,35 @@ export interface AcademyScope {
  * taken from the membership row, never from the request.
  */
 export async function resolveAcademyScope(req: NextRequest): Promise<AcademyScope | null> {
-  const db = await getPrisma();
-  if (!db) return null;
   const at = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   if (!at) return null;
   const payload = await verifyAccessToken(at);
   if (!payload?.sub) return null;
+  const orgId = await resolveActiveOrgIdForUser(payload.sub);
+  return orgId ? { userId: payload.sub, orgId } : null;
+}
+
+/**
+ * The single "which organization is this user in" query.
+ *
+ * Extracted so the API routes and the PUBLIC Academy course PAGE
+ * (`@/lib/academy/page-access`) resolve the caller's organization identically —
+ * a page that computed the org differently from the endpoint it renders against
+ * would drift into either a broken shell or, worse, a second authorization
+ * opinion. Returns null when there is no client or no ACTIVE membership;
+ * callers must treat that as "no access", never as "no filter".
+ */
+export async function resolveActiveOrgIdForUser(userId: string): Promise<string | null> {
+  const db = await getPrisma();
+  if (!db) return null;
   const memberModel = (db as Record<string, unknown>).organizationMember as {
     findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
   };
   const row = await memberModel.findFirst({
-    where: { userId: payload.sub, status: "ACTIVE" },
+    where: { userId, status: "ACTIVE" },
     orderBy: { createdAt: "asc" },
   });
-  return row ? { userId: payload.sub, orgId: String(row.organizationId) } : null;
+  return row ? String(row.organizationId) : null;
 }
 
 /** Roles allowed to see unpublished Academy content within their own org. */
