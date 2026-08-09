@@ -184,6 +184,17 @@ export async function createCourse(data: {
   } catch { return null; }
 }
 
+/**
+ * TENANT ISOLATION — `scope` is REQUIRED, not optional.
+ *
+ * This function used to update by primary key alone, so `PATCH
+ * /api/academy/courses/[id]` let an admin of any organization retitle,
+ * unpublish or republish any other organization's course. The predicate lives
+ * in the query rather than in the caller so there is no read-then-write window
+ * and no way to forget it: a caller that cannot name an organization cannot
+ * call this at all. A non-matching organization (or a soft-deleted row) makes
+ * Prisma raise P2025, which is caught below and surfaces as null → 404.
+ */
 export async function updateCourse(
   id: string,
   data: Partial<{
@@ -192,12 +203,16 @@ export async function updateCourse(
     certificateEnabled: boolean; passingScore: number;
     instructorName: string; instructorBio: string; thumbnailUrl: string;
     enrollmentType: string;
-  }>
+  }>,
+  scope: { organizationId: string }
 ): Promise<DbAcademyCourse | null> {
   const db = await m();
   if (!db) return null;
   try {
-    return await db.course.update({ where: { id }, data });
+    return await db.course.update({
+      where: { id, organizationId: scope.organizationId, deletedAt: null },
+      data,
+    });
   } catch { return null; }
 }
 

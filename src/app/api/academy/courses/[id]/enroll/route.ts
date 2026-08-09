@@ -1,40 +1,33 @@
 import { NextResponse }       from "next/server";
 import type { NextRequest }    from "next/server";
-import { verifyAccessToken }   from "@/lib/auth/jwt";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
-import { getPrisma }           from "@/lib/db/prisma";
 import { getCourseById, getEnrollment, enrollUser } from "@/lib/academy/db";
-
-async function resolveUser(req: NextRequest) {
-  const db = await getPrisma();
-  if (!db) return null;
-  const at = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!at) return null;
-  const payload = await verifyAccessToken(at);
-  if (!payload?.sub) return null;
-  const memberModel = (db as Record<string, unknown>).organizationMember as {
-    findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
-  };
-  const row = await memberModel.findFirst({
-    where: { userId: payload.sub, status: "ACTIVE" },
-    orderBy: { createdAt: "asc" },
-  });
-  return row ? { userId: payload.sub, orgId: String(row.organizationId) } : null;
-}
+// The inline scope resolver this route used to carry was a byte-identical copy
+// of resolveAcademyScope. Copies are how the tenant predicate went missing here
+// while the sibling detail endpoint had it, so the copy is gone.
+import { resolveAcademyScope } from "@/lib/academy/request-scope";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const ctx = await resolveUser(req);
+  const ctx = await resolveAcademyScope(req);
   if (!ctx) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
   const { id: courseId } = await params;
 
+  // TENANT ISOLATION — this route gated on `isPublished` alone, with no
+  // organization predicate, while the sibling GET /api/academy/courses/[id]
+  // applies `course.organizationId !== scope.orgId`. A member of org B could
+  // therefore enroll in org A's published course, writing an enrollment row
+  // owned by B but pointing at A's course. That row is the key to the rest of
+  // the surface: POST /api/academy/progress accepts any enrollment and feeds
+  // `course.title` into issueCertificate, so A's course title came back to B on
+  // a certificate. 404 rather than 403 — a foreign course id must not be an
+  // existence oracle, exactly as the detail endpoint decided.
   const course = await getCourseById(courseId);
-  if (!course || !course.isPublished) {
+  if (!course || course.organizationId !== ctx.orgId || !course.isPublished) {
     return NextResponse.json({ error: "Course not found or not available" }, { status: 404 });
   }
 

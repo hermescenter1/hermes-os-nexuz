@@ -62,6 +62,12 @@ export const GUARD_TOKENS = [
   { token: "resolveOwnerScope", scope: "tenant" },
   { token: "requireActor", scope: "tenant" },
   { token: "resolveOrgScope", scope: "tenant" },
+  // Academy: returns null unless the access token verifies AND the caller holds
+  // an ACTIVE OrganizationMember row; the organization is read from that row,
+  // never from the request. Same contract as resolveOrgScope/resolveOwnerScope.
+  // It went unregistered because every route using it also called getAuthRole,
+  // so `user` scope masked it until a route relied on it alone.
+  { token: "resolveAcademyScope", scope: "tenant" },
   { token: "resolveBrainOwner", scope: "tenant" },
   { token: "getOrgActorContext", scope: "tenant" },
   { token: "getSiteActorContext", scope: "tenant" },

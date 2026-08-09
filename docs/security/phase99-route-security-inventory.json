@@ -20,8 +20,8 @@
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 13,
-      "AUTHENTICATED_USER": 210,
-      "TENANT_MEMBER": 119,
+      "AUTHENTICATED_USER": 204,
+      "TENANT_MEMBER": 125,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 115,
@@ -30,16 +30,16 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 119,
+    "tenantBoundHandlers": 125,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 234,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 234,
-    "TENANT_IDENTITY_SERVER_DERIVED": 234,
+    "TENANT_BOUND_HANDLERS_TOTAL": 240,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 240,
+    "TENANT_IDENTITY_SERVER_DERIVED": 240,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 234,
+    "OBJECT_SCOPED_HANDLERS": 240,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -73,12 +73,13 @@
       "apiPath": "/api/academy/courses",
       "method": "GET",
       "file": "src/app/api/academy/courses/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getAuthRole"
+        "getAuthRole",
+        "resolveAcademyScope"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -86,12 +87,13 @@
       "apiPath": "/api/academy/courses",
       "method": "POST",
       "file": "src/app/api/academy/courses/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getAuthRole"
+        "getAuthRole",
+        "resolveAcademyScope"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -99,12 +101,13 @@
       "apiPath": "/api/academy/courses/[id]",
       "method": "GET",
       "file": "src/app/api/academy/courses/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getAuthRole"
+        "getAuthRole",
+        "resolveAcademyScope"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -112,12 +115,13 @@
       "apiPath": "/api/academy/courses/[id]",
       "method": "PATCH",
       "file": "src/app/api/academy/courses/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getAuthRole"
+        "getAuthRole",
+        "resolveAcademyScope"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -125,12 +129,12 @@
       "apiPath": "/api/academy/courses/[id]/enroll",
       "method": "POST",
       "file": "src/app/api/academy/courses/[id]/enroll/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "verifyAccessToken"
+        "resolveAcademyScope"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -178,12 +182,13 @@
       "apiPath": "/api/academy/quizzes/[id]",
       "method": "GET",
       "file": "src/app/api/academy/quizzes/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getAuthRole"
+        "getAuthRole",
+        "resolveAcademyScope"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
