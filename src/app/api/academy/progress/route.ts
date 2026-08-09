@@ -12,6 +12,7 @@ import {
   hasPassed,
   issueCertificate,
   getCourseById,
+  getLessonById,
   updateEnrollmentProgress,
 } from "@/lib/academy/db";
 
@@ -46,6 +47,30 @@ export async function POST(req: NextRequest) {
 
   if (!body.courseId || !body.lessonId) {
     return NextResponse.json({ error: "courseId and lessonId are required" }, { status: 400 });
+  }
+
+  // PHASE 99 SECURITY — the enrollment lookup below is keyed on (courseId,
+  // userId) only and carries no organization predicate, so a caller who held an
+  // enrollment row against a foreign course — the row the sibling enroll
+  // endpoint used to let a foreign tenant create — drove progress against that
+  // course and read its title back out through the certificate issued a few
+  // lines down. Bind the course to the caller's organization before anything
+  // else touches it, and answer 404 for both an unknown and a foreign id so the
+  // two cases stay indistinguishable. The course is resolved once here and
+  // reused by the certificate branch, which used to re-read it.
+  const course = await getCourseById(body.courseId);
+  if (!course || course.organizationId !== ctx.orgId) {
+    return NextResponse.json({ error: "Course not found" }, { status: 404 });
+  }
+
+  // The lesson was never checked against the course either, so any lesson id at
+  // all — including one belonging to another course or another tenant — could
+  // be written into this caller's progress. It never inflated the completion
+  // count, which is computed from the course's own lesson set, but it did write
+  // an unrelated foreign identifier into a tenant-owned row. Bind it here.
+  const lesson = await getLessonById(body.lessonId);
+  if (!lesson || lesson.courseId !== body.courseId) {
+    return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
   }
 
   const enrollment = await getEnrollment(body.courseId, ctx.userId);
@@ -89,8 +114,7 @@ export async function POST(req: NextRequest) {
 
     if (allQuizzesPassed) {
       await updateEnrollmentProgress(enrollment.id, 100, true);
-      const course = await getCourseById(body.courseId);
-      if (course?.certificateEnabled) {
+      if (course.certificateEnabled) {
         certificate = await issueCertificate({
           organizationId: ctx.orgId,
           courseId:       body.courseId,
