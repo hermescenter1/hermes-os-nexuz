@@ -429,3 +429,11 @@ jobs:
           docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d --no-deps hermes-web
           docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production ps hermes-web
           REMOTE
+
+      # Gate 0D-A (scripts/production-compose-project-static-check.mjs) is the
+      # authority on the shape of every command above. Running it here as well
+      # means a change to this workflow cannot reach a deploy attempt without
+      # first satisfying the same static contract CI enforces on pull requests.
+      - name: Re-assert the production Compose contract (Gate 0D-A)
+        if: always()
+        run: node scripts/production-compose-project-static-check.mjs

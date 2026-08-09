@@ -244,6 +244,85 @@ describe("PHASE997_MIGRATOR_STAGE", () => {
   });
 });
 
+describe("PHASE997_GATE_0D_A_CONTRACT", () => {
+  const checker = readFileSync(join(REPO, "scripts", "production-compose-project-static-check.mjs"), "utf8");
+
+  it("recognises a Compose invocation inside a command substitution", () => {
+    // With a whitespace-only boundary, `X="$(docker compose … )"` was not seen
+    // as an invocation at all, so an UNPINNED command wrapped in `$( )` skipped
+    // every Tier 1 check. Re-derive the regex from the source and prove it.
+    const match = /const COMPOSE_INVOCATION = (\/.*\/);/.exec(checker);
+    expect(match, "COMPOSE_INVOCATION not found").not.toBeNull();
+    const src = match![1];
+    const body = src.slice(1, src.lastIndexOf("/"));
+    const re = new RegExp(body);
+
+    expect(re.test('APPLIED="$(docker compose -p hermes -f docker-compose.prod.yml ps -q hermes-web)"')).toBe(true);
+    expect(re.test("docker compose -p hermes -f docker-compose.prod.yml ps hermes-web")).toBe(true);
+    expect(re.test("  docker compose -p hermes up -d")).toBe(true);
+    // The bare filename in prose is still NOT an invocation.
+    expect(re.test("see docker-compose.prod.yml for the service list")).toBe(false);
+  });
+
+  it("still forbids destructive and unpinned migration tooling", () => {
+    expect(checker).toContain("FORBIDDEN_DESTRUCTIVE_MIGRATION");
+    expect(checker).toContain("FORBIDDEN_UNPINNED_CLI");
+    expect(checker).toContain("FORBIDDEN_DB_PUSH");
+    // The blanket ban that made the required migrator impossible is gone, but
+    // only the safe subcommands are permitted.
+    expect(checker).toMatch(/prisma\\s\+migrate\\s\+\(dev\|reset\|resolve\|diff\)/);
+  });
+
+  it("constrains every newly-permitted subcommand", () => {
+    for (const code of [
+      "DEPLOY_BUILD_TARGET",
+      "DEPLOY_BUILD_NEVER_DATA_SERVICE",
+      "DEPLOY_RUN_MIGRATOR_ONLY",
+      "DEPLOY_RUN_EPHEMERAL",
+      "DEPLOY_RUN_PROFILE_GATED",
+      "DEPLOY_EXEC_TARGET",
+      "DEPLOY_EXEC_NON_INTERACTIVE",
+      "DEPLOY_EXEC_READ_ONLY",
+      "DEPLOY_EXEC_IS_QUERY",
+      "DEPLOY_UP_NEVER_MIGRATOR",
+      "DEPLOY_ENV_FILE",
+    ]) {
+      expect(checker, `${code} missing from Gate 0D-A`).toContain(code);
+    }
+  });
+
+  it("positively requires the migration contract, in order", () => {
+    for (const code of [
+      "DEPLOY_MIGRATOR_PRESENT",
+      "DEPLOY_MIGRATION_STATUS_VERIFIED",
+      "DEPLOY_MIGRATION_COUNT_VERIFIED",
+      "DEPLOY_MIGRATE_BEFORE_CUTOVER",
+      "DEPLOY_VERIFY_BEFORE_CUTOVER",
+    ]) {
+      expect(checker, `${code} missing from Gate 0D-A`).toContain(code);
+    }
+  });
+
+  it("keeps every original safety property", () => {
+    for (const code of [
+      "COMPOSE_TOP_LEVEL_NAME",
+      "DEPLOY_PROJECT_PIN",
+      "DEPLOY_SINGLE_PROJECT_FLAG",
+      "DEPLOY_UP_NO_DEPS",
+      "DEPLOY_UP_TARGET",
+      "FORBIDDEN_COMPOSE_DOWN",
+      "FORBIDDEN_VOLUME_RM",
+      "FORBIDDEN_SYSTEM_PRUNE",
+      "FORBIDDEN_GIT_PULL",
+      "FORBIDDEN_DERIVED_PROJECT",
+      "GATE0A_READ_ONLY_PERMISSIONS",
+      "GATE0A_STRICT_HOST_KEY",
+    ]) {
+      expect(checker, `${code} was removed from Gate 0D-A`).toContain(code);
+    }
+  });
+});
+
 describe("PHASE997_PINNED_BUILD_TOOLING", () => {
   const dockerfile = readFileSync(join(REPO, "Dockerfile"), "utf8");
   const compose = readFileSync(join(REPO, "docker-compose.prod.yml"), "utf8");
