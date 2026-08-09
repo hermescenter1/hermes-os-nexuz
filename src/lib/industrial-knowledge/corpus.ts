@@ -19,6 +19,9 @@
 
 import { buildIndex, type KnowledgeIndex } from "./graph";
 import { extractScl } from "./extractors/scl";
+import { extractScadaJs } from "./extractors/scada-js";
+import { extractHmi } from "./extractors/hmi";
+import { emptyExtraction, type ArtifactLanguage, type ExtractionResult } from "./source-artifacts";
 import type { KnowledgeNode, KnowledgeRelation, ReferenceSystem } from "./types";
 import { REFERENCE_SYSTEMS } from "./reference";
 
@@ -74,30 +77,91 @@ export function resolveSymbol(
 /* ── Source ⇄ graph agreement ─────────────────────────────────────────────── */
 
 export interface AgreementIssue {
-  code: "UNRESOLVED_SYMBOL" | "MISSING_EDGE";
+  code: "UNRESOLVED_SYMBOL" | "MISSING_EDGE" | "UNMAPPED_RELATION";
   systemId: string;
   artifact: string;
   detail: string;
 }
 
-const RELATION_OF: Record<"READS" | "WRITES" | "CALLS", KnowledgeRelation> = {
-  READS: "READS",
-  WRITES: "WRITES",
-  CALLS: "CALLS",
-};
+type ExtractedRelationKind = "READS" | "WRITES" | "CALLS";
 
 /**
- * Verify that every relationship stated by a system's SCL source exists in its
- * graph. Returns an empty array when the two agree.
+ * How each language's canonical triple maps onto the graph vocabulary.
+ *
+ * Extractors can only report what a source text states about a symbol — that it
+ * is read, written or invoked. What that MEANS differs by layer, and stating
+ * the difference in one table keeps it auditable: an HMI object "reading" a tag
+ * is displaying it, and "writing" one is declaring an operator command, not
+ * performing a device write.
  */
-export function verifySourceAgreement(system: ReferenceSystem): AgreementIssue[] {
+const RELATION_MAPPING: Partial<
+  Record<ArtifactLanguage, Record<ExtractedRelationKind, KnowledgeRelation>>
+> = {
+  SCL: { READS: "READS", WRITES: "WRITES", CALLS: "CALLS" },
+  JAVASCRIPT: { READS: "READS", WRITES: "WRITES", CALLS: "NAVIGATES_TO" },
+  HMI_JSON: { READS: "DISPLAYS", WRITES: "COMMANDS", CALLS: "NAVIGATES_TO" },
+};
+
+/** Extractor for each language the agreement gate understands. */
+function extractionFor(language: ArtifactLanguage, content: string): ExtractionResult {
+  switch (language) {
+    case "SCL":
+      return extractScl(content);
+    case "JAVASCRIPT":
+      return extractScadaJs(content);
+    case "HMI_JSON":
+      return extractHmi(content);
+    default:
+      // LAD_XML, FBD_XML, SCADA_JSON and CPP are carried for engineering
+      // fidelity but are not parsed for relationships. Returning an empty
+      // extraction is honest; pretending to have checked them would not be.
+      return emptyExtraction();
+  }
+}
+
+/** An artefact the gate did not check, and why. */
+export interface SkippedArtifact {
+  artifact: string;
+  language: ArtifactLanguage;
+  reason: "NO_RELATION_MAPPING";
+}
+
+export interface SourceAgreementReport {
+  issues: AgreementIssue[];
+  /** Artefact locals whose relationships were extracted and checked. */
+  checked: string[];
+  /**
+   * Artefacts carried for engineering fidelity but NOT checked, because this
+   * build declares no relation mapping for their language. Reported rather
+   * than dropped: a gate that silently ignores half the corpus reads as a
+   * clean pass when it is really an unmeasured one.
+   */
+  skipped: SkippedArtifact[];
+}
+
+/**
+ * Verify that every relationship stated by a system's engineering source exists
+ * in its graph, and report which artefacts were checked and which were not.
+ */
+export function sourceAgreementReport(system: ReferenceSystem): SourceAgreementReport {
   const issues: AgreementIssue[] = [];
+  const checked: string[] = [];
+  const skipped: SkippedArtifact[] = [];
   const edgeKeys = new Set(system.edges.map((e) => `${e.relation}|${e.source}|${e.target}`));
 
   for (const artifact of system.artifacts) {
-    if (artifact.language !== "SCL") continue;
+    const mapping = RELATION_MAPPING[artifact.language];
+    if (!mapping) {
+      skipped.push({
+        artifact: artifact.local,
+        language: artifact.language,
+        reason: "NO_RELATION_MAPPING",
+      });
+      continue;
+    }
+    checked.push(artifact.local);
 
-    const extraction = extractScl(artifact.content);
+    const extraction = extractionFor(artifact.language, artifact.content);
     for (const unit of extraction.units) {
       const owner = resolveSymbol(system, unit.name);
       if (!owner) {
@@ -121,7 +185,21 @@ export function verifySourceAgreement(system: ReferenceSystem): AgreementIssue[]
           });
           continue;
         }
-        const key = `${RELATION_OF[relation.relation]}|${owner.id}|${target.id}`;
+        // Fail closed. A relation kind this language has no declared mapping
+        // for is reported, never guessed at: falling back to the identity
+        // mapping would silently assert that an HMI "write" is a device write.
+        const graphRelation = mapping[relation.relation];
+        if (!graphRelation) {
+          issues.push({
+            code: "UNMAPPED_RELATION",
+            systemId: system.id,
+            artifact: artifact.local,
+            detail: `${artifact.language} declares no graph relation for ${relation.relation} (line ${relation.line})`,
+          });
+          continue;
+        }
+
+        const key = `${graphRelation}|${owner.id}|${target.id}`;
         if (!edgeKeys.has(key)) {
           issues.push({
             code: "MISSING_EDGE",
@@ -134,7 +212,15 @@ export function verifySourceAgreement(system: ReferenceSystem): AgreementIssue[]
     }
   }
 
-  return issues;
+  return { issues, checked, skipped };
+}
+
+/**
+ * The agreement gate itself: the issues only, so a test can assert `[]`.
+ * Use `sourceAgreementReport` when the checked/skipped split matters.
+ */
+export function verifySourceAgreement(system: ReferenceSystem): AgreementIssue[] {
+  return sourceAgreementReport(system).issues;
 }
 
 /** Corpus-wide counts, for reports and the command centre header. */
