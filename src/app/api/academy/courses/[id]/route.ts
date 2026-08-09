@@ -64,6 +64,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
   }
 
+  // TENANT ISOLATION — the role check above proves the caller is AN admin, not
+  // an admin OF THIS COURSE'S organization. Without an organization predicate
+  // any admin (or superadmin) could retitle, unpublish or republish any other
+  // tenant's course by id. Resolve the caller's organization the same way the
+  // GET above does and hand it to updateCourse, which carries the predicate
+  // into the UPDATE itself. superadmin is deliberately NOT exempt: the GET on
+  // this very route already answers 404 to a superadmin for a foreign course,
+  // so granting cross-tenant WRITE where READ is denied would be incoherent.
+  const scope = await resolveAcademyScope(req);
+  if (!scope) {
+    return NextResponse.json({ error: "Course not found" }, { status: 404 });
+  }
+
   const { id } = await params;
   // Phase SECURITY-8 amendment: explicit field allow-list — the raw body was
   // cast straight into Prisma `data`, letting a client inject id/createdAt/
@@ -85,7 +98,7 @@ export async function PATCH(
     enrollmentType:     raw.enrollmentType,
   } as Parameters<typeof updateCourse>[1];
 
-  const course = await updateCourse(id, data);
+  const course = await updateCourse(id, data, { organizationId: scope.orgId });
   if (!course) {
     return NextResponse.json({ error: "Course not found or update failed" }, { status: 404 });
   }
