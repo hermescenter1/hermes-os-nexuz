@@ -85,12 +85,12 @@ describe("PHASE997_DEPLOY_WORKFLOW", () => {
     expect(deploy).toContain("migration-prerequisites-verified");
   });
 
-  it("proves the backup on the host before rebuilding anything", () => {
+  it("proves the backup on the host before building anything", () => {
     const evidenceAt = deploy.indexOf("transportSha256");
-    const rebuildAt = deploy.indexOf("up -d --build --no-deps hermes-web");
+    const buildAt = deploy.indexOf("build hermes-web");
     expect(evidenceAt).toBeGreaterThan(-1);
-    expect(rebuildAt).toBeGreaterThan(-1);
-    expect(evidenceAt).toBeLessThan(rebuildAt);
+    expect(buildAt).toBeGreaterThan(-1);
+    expect(evidenceAt).toBeLessThan(buildAt);
     for (const claim of ['"verified":true', '"partial":false', '"encrypted":true']) {
       expect(deploy).toContain(claim);
     }
@@ -101,16 +101,90 @@ describe("PHASE997_DEPLOY_WORKFLOW", () => {
     expect(deploy).toContain('"integrityVerified": *true');
   });
 
-  it("preserves a previous-good image before the rebuild", () => {
+  it("fails closed on a dirty server worktree BEFORE checkout", () => {
+    const dirtyAt = deploy.indexOf("the server worktree at /opt/hermes-os-nexuz is dirty");
+    const checkoutAt = deploy.indexOf('git checkout --detach "$TARGET_SHA"');
+    expect(dirtyAt).toBeGreaterThan(-1);
+    expect(checkoutAt).toBeGreaterThan(-1);
+    expect(dirtyAt).toBeLessThan(checkoutAt);
+    expect(deploy).toContain("git status --porcelain");
+  });
+
+  it("proves the build context is exactly TARGET_SHA after checkout, before build", () => {
+    const checkoutAt = deploy.indexOf('git checkout --detach "$TARGET_SHA"');
+    const headProofAt = deploy.indexOf("post-checkout HEAD does not equal TARGET_SHA");
+    const postCleanAt = deploy.indexOf("dirty after checkout");
+    const buildAt = deploy.indexOf("build hermes-web");
+    expect(headProofAt).toBeGreaterThan(checkoutAt);
+    expect(postCleanAt).toBeGreaterThan(checkoutAt);
+    expect(headProofAt).toBeLessThan(buildAt);
+    expect(postCleanAt).toBeLessThan(buildAt);
+    expect(deploy).toContain("git rev-parse HEAD");
+  });
+
+  it("treats a missing previous-good image as a HARD failure, never a warning", () => {
+    expect(deploy).toContain("no running hermes-web container found");
+    expect(deploy).not.toContain("WARNING: no running hermes-web");
+    // The refusal is a real exit, inside the previous-good block.
+    const block = deploy.slice(deploy.indexOf("Preserve the previous-good image"), deploy.indexOf('git checkout --detach "$TARGET_SHA"'));
+    expect(block).toContain("no previous-good rollback target exists");
+    expect(block.match(/exit 1/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+  });
+
+  it("verifies the preserved tag resolves to exactly the pre-cutover image ID", () => {
+    expect(deploy).toContain("docker inspect -f '{{.Image}}'");
+    expect(deploy).toContain("docker image inspect -f '{{.Id}}'");
+    expect(deploy).toContain("does not resolve to the pre-cutover image");
     const preserveAt = deploy.indexOf("hermes-web:previous-good");
-    const rebuildAt = deploy.indexOf("up -d --build --no-deps hermes-web");
+    const buildAt = deploy.indexOf("build hermes-web");
     expect(preserveAt).toBeGreaterThan(-1);
-    expect(preserveAt).toBeLessThan(rebuildAt);
+    expect(preserveAt).toBeLessThan(buildAt);
+  });
+
+  it("applies migrations explicitly with the pinned migrator BEFORE replacing hermes-web", () => {
+    const buildWebAt = deploy.indexOf("build hermes-web");
+    const migrateRunAt = deploy.indexOf("--profile migrate run --rm -T hermes-migrate");
+    const upAt = deploy.indexOf("up -d --no-deps hermes-web");
+    expect(buildWebAt).toBeGreaterThan(-1);
+    expect(migrateRunAt).toBeGreaterThan(-1);
+    expect(upAt).toBeGreaterThan(-1);
+    // build web -> migrate -> replace web, strictly in that order.
+    expect(buildWebAt).toBeLessThan(migrateRunAt);
+    expect(migrateRunAt).toBeLessThan(upAt);
+    // The migrator is the pinned target-derived stage, not a network-fetched CLI.
+    expect(deploy).toContain("--profile migrate build hermes-migrate");
+    expect(deploy).not.toMatch(/npx\s+prisma/);
+  });
+
+  it("verifies the migration outcome before replacing hermes-web", () => {
+    const statusAt = deploy.indexOf("migrate status");
+    const countAt = deploy.indexOf("_prisma_migrations");
+    const upAt = deploy.indexOf("up -d --no-deps hermes-web");
+    expect(statusAt).toBeGreaterThan(-1);
+    expect(countAt).toBeGreaterThan(-1);
+    expect(statusAt).toBeLessThan(upAt);
+    expect(countAt).toBeLessThan(upAt);
+    // The expected count is wired from the runner's git-only classification and
+    // validated as an integer before it crosses the SSH boundary.
+    expect(deploy).toContain("TARGET_MIGRATION_COUNT: ${{ steps.migration.outputs.target_migration_count }}");
+    expect(deploy).toContain('case "$TARGET_MIGRATION_COUNT" in');
+    expect(deploy).toContain("applied migration count");
+    expect(deploy).toContain("unfinished or rolled back");
   });
 
   it("recreates ONLY hermes-web — postgres, redis and nginx are never touched", () => {
-    expect(deploy).toContain("--no-deps hermes-web");
-    expect(deploy).not.toMatch(/up\s+-d[^\n]*\b(postgres|redis|nginx)\b/);
+    expect(deploy).toContain("up -d --no-deps hermes-web");
+    expect(deploy).not.toMatch(/up\s+-d[^\n]*\b(postgres|redis|nginx|hermes-migrate)\b/);
+  });
+
+  it("passes the canonical env file to EVERY compose invocation (NEXT_PUBLIC interpolation)", () => {
+    // Without --env-file, the NEXT_PUBLIC_* build args silently interpolate to
+    // empty strings — the exact regression this test exists to prevent.
+    const composeCalls = deploy.split("\n").filter((l) => /docker compose/.test(l));
+    expect(composeCalls.length).toBeGreaterThan(0);
+    for (const line of composeCalls) expect(line, line.trim()).toContain("--env-file .env.production");
+    // And the file's existence is a precondition on the host.
+    expect(deploy).toContain(".env.production is missing");
   });
 
   it("never restores a database and never destroys a volume", () => {
@@ -126,6 +200,95 @@ describe("PHASE997_DEPLOY_WORKFLOW", () => {
 
   it("does not enable shell tracing, which would echo secrets", () => {
     expect(deploy).not.toMatch(/^\s*set\s+-[a-wyz]*x/m);
+  });
+});
+
+describe("PHASE997_MIGRATOR_STAGE", () => {
+  const dockerfile = readFileSync(join(REPO, "Dockerfile"), "utf8");
+  const compose = readFileSync(join(REPO, "docker-compose.prod.yml"), "utf8");
+
+  it("the Dockerfile has a pinned migrator stage with the Prisma CLI", () => {
+    expect(dockerfile).toMatch(/FROM node:20-alpine AS migrator/);
+    // The CLI comes from the checkout's own lockfile install (deps stage), so
+    // the migrator can never be a network-fetched `npx prisma@latest`.
+    expect(dockerfile).toContain("COPY --from=deps /app/node_modules ./node_modules");
+    expect(dockerfile).toContain('CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]');
+  });
+
+  it("the runner remains the LAST stage, so a bare docker build still targets it", () => {
+    const stages = [...dockerfile.matchAll(/^FROM\s+\S+\s+AS\s+(\S+)/gm)].map((m) => m[1]);
+    expect(stages[stages.length - 1]).toBe("runner");
+    expect(stages).toContain("migrator");
+  });
+
+  it("the runner never migrates on boot — its CMD is the server only", () => {
+    const runnerStage = dockerfile.slice(dockerfile.indexOf("AS runner"));
+    expect(runnerStage).toContain('CMD ["node", "server.js"]');
+    expect(runnerStage).not.toContain("migrate deploy");
+  });
+
+  it("hermes-migrate is profile-gated in the production compose — `up -d` never starts it", () => {
+    // Slice from the service definition to the NEXT top-level service after it
+    // ("postgres:" also appears earlier inside hermes-web's depends_on).
+    const start = compose.indexOf("\n  hermes-migrate:");
+    expect(start).toBeGreaterThan(-1);
+    const service = compose.slice(start, compose.indexOf("\n  postgres:", start));
+    expect(service).toContain('profiles: ["migrate"]');
+    expect(service).toContain("target: migrator");
+    expect(service).toContain("env_file: .env.production");
+    expect(service).toContain("hermes_internal");
+    expect(service).toContain("service_healthy");
+    // No published ports, no restart policy that could resurrect it.
+    expect(service).not.toContain("ports:");
+    expect(service).not.toContain("restart:");
+  });
+});
+
+describe("PHASE997_PINNED_BUILD_TOOLING", () => {
+  const dockerfile = readFileSync(join(REPO, "Dockerfile"), "utf8");
+  const compose = readFileSync(join(REPO, "docker-compose.prod.yml"), "utf8");
+
+  it("no build step can fall back to a network-resolved CLI", () => {
+    // `npx` is correct when resolution succeeds and dangerous when it fails: an
+    // observed build on a degraded layer cache logged npm about to install
+    // prisma@7.9.1 while this repository pins 7.8.0. The image version must be
+    // an artifact of package-lock.json, never of what the registry served.
+    const npxRunLines = dockerfile.split("\n").filter((l) => /^\s*RUN\b/.test(l) && /\bnpx\b/.test(l));
+    expect(npxRunLines, `RUN steps using npx: ${npxRunLines.join(" | ")}`).toEqual([]);
+  });
+
+  it("generates the Prisma client with the pinned local CLI", () => {
+    expect(dockerfile).toContain("node node_modules/prisma/build/index.js generate");
+  });
+
+  it("ships a dedicated migrator stage, and runner remains the final stage", () => {
+    expect(dockerfile).toMatch(/FROM\s+\S+\s+AS\s+migrator/i);
+    const stages = [...dockerfile.matchAll(/^FROM\s+\S+\s+AS\s+(\S+)/gim)].map((m) => m[1]);
+    // A bare `docker build .` and the compose build both target the LAST stage.
+    expect(stages[stages.length - 1]).toBe("runner");
+  });
+
+  it("the migrator applies migrations with the pinned local CLI", () => {
+    const migratorBlock = dockerfile.slice(dockerfile.search(/FROM\s+\S+\s+AS\s+migrator/i), dockerfile.search(/FROM\s+\S+\s+AS\s+runner/i));
+    expect(migratorBlock).toContain("node_modules/prisma/build/index.js");
+    expect(migratorBlock).toMatch(/"migrate",\s*"deploy"/);
+    // It must not run as root.
+    expect(migratorBlock).toMatch(/USER\s+migrator/);
+  });
+
+  it("the runner image never migrates on boot", () => {
+    const runnerBlock = dockerfile.slice(dockerfile.search(/FROM\s+\S+\s+AS\s+runner/i));
+    expect(runnerBlock).toContain('CMD ["node", "server.js"]');
+    expect(runnerBlock).not.toMatch(/migrate\s+deploy/);
+  });
+
+  it("the migrator compose service is profile-gated so `up -d` never starts it", () => {
+    expect(compose).toMatch(/^ {2}hermes-migrate:/m);
+    const svc = compose.slice(compose.search(/^ {2}hermes-migrate:/m), compose.search(/^ {2}postgres:/m));
+    expect(svc).toMatch(/profiles:\s*\["migrate"\]/);
+    expect(svc).toContain("target: migrator");
+    // It must hold no published port.
+    expect(svc).not.toMatch(/^\s+ports:/m);
   });
 });
 

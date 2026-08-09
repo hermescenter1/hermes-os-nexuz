@@ -17,8 +17,25 @@ export default defineConfig({
     environment: "node",
     // Never run tests out of the Next build output — `.next/standalone`
     // contains stale duplicate copies of these route tests (Phase 82C.1).
+    //
+    // Phase 99.7: also never run tests out of an agent worktree. Claude Code
+    // creates task worktrees under `.claude/worktrees/<name>/`, which is a FULL
+    // second checkout inside this directory. Without this exclusion the suite
+    // collected every test twice (331 real files -> 656 collected) and reported
+    // failures from the other branch's code as if they were this branch's. CI
+    // never sees it — a CI checkout has no worktrees — which is exactly what
+    // makes it dangerous locally: it makes a clean branch look broken, and
+    // could equally make a broken one look fine.
+    //
     // Phase 91: `*.pg.test.ts` require a live PostgreSQL database and run only
     // under vitest.phase91-postgres.config.ts in CI — never in the unit run.
-    exclude: [...configDefaults.exclude, "**/.next/**", "**/*.pg.test.ts"],
+    exclude: [
+      ...configDefaults.exclude,
+      ".next/**",
+      "**/.next/**",
+      ".claude/**",
+      "**/.claude/**",
+      "**/*.pg.test.ts",
+    ],
   },
 });

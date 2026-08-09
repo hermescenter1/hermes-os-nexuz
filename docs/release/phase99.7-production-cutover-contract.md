@@ -1,7 +1,8 @@
 # Phase 99.7 — Production cutover & rollback contract
 
 The binding, ordered contract for moving Production from the deployed Phase 94
-baseline to the reconciled Phase 99.6 release.
+baseline to the reconciled Phase 99.6 release, and for every migration-bearing
+release after it.
 
 **This document does not perform a deployment.** Nothing in Phase 99.7 contacted
 Production, the OpenBao host, or any pentest host. Every step below is executed
@@ -9,14 +10,23 @@ by the owner, and the automated parts refuse to proceed on missing evidence.
 
 | Fact | Value |
 |---|---|
-| Deployed baseline commit | `911a2d7d2c92e275deb39ad24f298f9b4ffaa60f` |
+| Rehearsal baseline commit (historical) | `911a2d7d2c92e275deb39ad24f298f9b4ffaa60f` |
 | Release target commit | `cbfa2923318827ee42614c07f2e3861a3db8ed99` |
-| Migration count | 49 → 69 |
-| New migrations | 20 (append-only) |
+| Migration count rehearsed | 49 → 69 |
+| New migrations rehearsed | 20 (append-only) |
 | Historical migration mutations | 0 |
 | Migration classification | `FORWARD_ONLY_REQUIRES_BACKUP` |
 | Pre-migration backup | **required** |
 | Rollback strategy | Application-only (`hermes-web`); database recovery is a separate decision |
+
+> **Owner deployment evidence (recorded 2026-08-08, supplied outside CI):** the
+> owner has since completed this cutover — Production is established at
+> `cbfa2923318827ee42614c07f2e3861a3db8ed99` with **69 completed migrations**.
+> The 49 → 69 figures above are retained unchanged as the historical record of
+> what this phase rehearsed and proved; they are not rewritten to match the new
+> deployed state. For the next release, `deployed_sha` is `cbfa2923…` and the
+> migration delta is computed from there by the deploy workflow. See
+> [§4 Post-authoring owner evidence](#4-post-authoring-owner-evidence).
 
 ---
 
@@ -43,12 +53,15 @@ Must report `phase997_migration_integrity=PASS`, including
 `/opt/hermes-os-nexuz` must have no local modifications; the deploy performs a
 detached checkout of the pinned SHA and must not have to reconcile anything.
 
-### 3. Previous-good image preserved
+### 3. Previous-good image preserved (hard gate)
 
-`deploy.yml` tags the currently-running image as `hermes-web:previous-good`
-before the rebuild. Tagging is additive — no image is removed or pruned. If no
-running image is found the deploy warns loudly; treat that as a stop and
-establish a rollback target manually.
+`deploy.yml` resolves the running `hermes-web` container's exact image ID, tags
+it `hermes-web:previous-good`, and verifies the tag resolves back to that exact
+ID. Tagging is additive — no image is removed or pruned. **A missing running
+image is a refusal, not a warning**: a deploy with no rollback target never
+proceeds through the workflow. If Production genuinely has no running
+`hermes-web` (first bring-up, disaster recovery), that is not a routine release
+— follow the DR runbook instead.
 
 ### 4. Encrypted, verified backup
 
@@ -130,18 +143,46 @@ Health, readiness, `/fa` `/en` `/de`, anonymous denial, error hygiene, the
 and `OT_SECRET_BACKEND` unset. The candidate is validated against a **disposable**
 database and never dials the live production database.
 
-### 8. Production migration
+### 8. Production migration (explicit, pinned migrator)
 
-Migrations are applied by the application's own startup path against the live
-database. Step 4 is what makes this reversible.
+**Nothing migrates on boot.** The runner image's CMD is `node server.js` and it
+deliberately ships only the Prisma runtime, not the CLI. Migrations are an
+explicit step, executed by the profile-gated `hermes-migrate` service — the
+Dockerfile `migrator` stage, built from the same pinned checkout as the release,
+so both the migration set and the CLI version come from the target commit's own
+lockfile (never a network-fetched `npx prisma@latest`):
+
+```bash
+docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production build hermes-web
+docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate build hermes-migrate
+docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate run --rm -T hermes-migrate
+```
+
+Then verify, before anything is replaced:
+
+```bash
+# Exits non-zero while ANY migration is pending.
+docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate run --rm -T hermes-migrate \
+  node node_modules/prisma/build/index.js migrate status
+# Applied count must equal the target commit's migration count; zero failed rows.
+docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production exec -T postgres \
+  sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL"'
+```
+
+`deploy.yml` performs exactly this sequence and refuses to replace `hermes-web`
+on any mismatch. A migration failure here stops the deploy with the previous
+release still serving traffic — it is **never** answered by an automatic
+database restore (step 4 is what makes a human-decided recovery possible).
 
 ### 9. Replace ONLY `hermes-web`
 
 ```bash
-docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web
+docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d --no-deps hermes-web
 ```
 
-`--no-deps` and the explicit service name are load-bearing.
+`--no-deps`, the explicit service name, and `--env-file .env.production` are all
+load-bearing — the last one because the `NEXT_PUBLIC_*` build args interpolate
+from the canonical env file and silently bake empty values without it.
 
 ### 10. Preserve `nginx`, `postgres`, `redis` and Stalwart identities
 
@@ -192,9 +233,9 @@ the previous application does not read the new columns, so it runs forward
 against the new schema.
 
 ```bash
-docker compose -p hermes -f docker-compose.prod.yml stop hermes-web
+docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production stop hermes-web
 docker tag hermes-web:previous-good <the image tag compose expects>
-docker compose -p hermes -f docker-compose.prod.yml up -d --no-deps hermes-web
+docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d --no-deps hermes-web
 ```
 
 The database is left exactly as it is. Data written since the cutover is kept.
@@ -215,9 +256,30 @@ destroys everything written since the backup.
 
 ## 3. What Phase 99.7 does **not** claim
 
-- Production was **not** deployed, contacted or modified.
+- Phase 99.7 itself did **not** deploy, contact or modify Production. (The
+  owner's own deployment, recorded in §4, is separately supplied evidence — not
+  something this phase performed or can verify from CI.)
 - OpenBao was **not** contacted or changed; `OT_SECRET_BACKEND` remains disabled
   by default and enabled-but-underconfigured still fails closed.
 - Green CI proves the tooling and the rehearsals. It does not prove the
   production cutover, and it does not substitute for any external or owner gate
   listed in `docs/release/phase99.7-existing-state-matrix.md` §9.
+
+---
+
+## 4. Post-authoring owner evidence
+
+Facts supplied by the owner after this contract was authored, recorded
+2026-08-08. They are **owner-supplied operational evidence**, deliberately kept
+distinct from anything this repository or its CI can observe or assert. Where a
+gate below also carries the CI-side status `OWNER_CONFIGURATION_BLOCKED`, that
+status describes what *CI can prove* and is not contradicted by the owner
+evidence standing beside it.
+
+| Item | Owner evidence | CI-side status |
+|---|---|---|
+| Production deployment | Established at `cbfa2923318827ee42614c07f2e3861a3db8ed99` with 69 completed migrations | Not observable from CI |
+| Production CPU SSE4.2 / `sharp` runtime | Operational evidence supplied (consistent with Phase 99 `PRODUCTION_CPU_SSE4_2=PASS`); re-check on any host change | Candidate gate proves the *image*, not the production host |
+| Off-host JIT backup copy | Owner evidence supplied | `OWNER_CONFIGURATION_BLOCKED` (CI cannot observe replication) |
+| Host-to-OpenBao WireGuard/TLS transport | Prior owner evidence exists | Not observable from CI |
+| Application-container-to-OpenBao connectivity / backend enablement | **No evidence — unproven.** `OT_SECRET_BACKEND` remains unset/disabled and enabled-but-invalid still fails closed | `DISABLED` (proven by tests) |

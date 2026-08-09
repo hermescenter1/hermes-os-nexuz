@@ -62,21 +62,37 @@ describe("PHASE997_SHARP_CPU_CLASSIFICATION", () => {
 });
 
 describe("PHASE997_SHARP_RUNTIME_SMOKE", () => {
-  it("imports sharp, decodes and transforms a synthetic image", async () => {
-    const r = await runSharpRuntimeSmoke();
-    expect(r.error).toBeNull();
-    expect(r.imported).toBe(true);
-    expect(r.decoded).toBe(true);
-    expect(r.transformed).toBe(true);
-    expect(r.ok).toBe(true);
-  });
+  // These two tests do REAL work: they load a native addon and run three image
+  // codec operations. On a loaded machine (a concurrent Docker build, a busy CI
+  // runner) the first native load alone can exceed vitest's 5 s default, which
+  // made the suite flaky. The budget is explicit and generous; not one
+  // assertion is relaxed — a genuinely broken sharp still fails, just not on a
+  // stopwatch that was never about correctness.
+  const RUNTIME_TIMEOUT_MS = 30_000;
 
-  it("reports the resolved sharp version, which must stay on the pinned 0.35 line", async () => {
-    const r = await runSharpRuntimeSmoke();
-    // The pin is the Phase 99 remediation; a downgrade would reintroduce the
-    // advisory this repository already closed.
-    expect(r.sharpVersion).toMatch(/^0\.35\./);
-  });
+  it(
+    "imports sharp, decodes and transforms a synthetic image",
+    async () => {
+      const r = await runSharpRuntimeSmoke();
+      expect(r.error).toBeNull();
+      expect(r.imported).toBe(true);
+      expect(r.decoded).toBe(true);
+      expect(r.transformed).toBe(true);
+      expect(r.ok).toBe(true);
+    },
+    RUNTIME_TIMEOUT_MS,
+  );
+
+  it(
+    "reports the resolved sharp version, which must stay on the pinned 0.35 line",
+    async () => {
+      const r = await runSharpRuntimeSmoke();
+      // The pin is the Phase 99 remediation; a downgrade would reintroduce the
+      // advisory this repository already closed.
+      expect(r.sharpVersion).toMatch(/^0\.35\./);
+    },
+    RUNTIME_TIMEOUT_MS,
+  );
 
   it("the pinned override in package.json is not weakened", () => {
     const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));

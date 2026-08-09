@@ -153,12 +153,113 @@ if (!deploy) {
   if (!/hermes-web:previous-good/.test(deploy)) {
     flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the previous-good image is no longer preserved");
   }
+  // Blocker 4: previous-good must be a HARD gate with the tag verified against
+  // the exact pre-cutover image ID — never a warning.
+  if (/WARNING: no running hermes-web/.test(deploy)) {
+    flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "a missing previous-good image degraded back into a warning");
+  }
+  if (!/no previous-good rollback target exists/.test(deploy) || !/docker image inspect -f '\{\{\.Id\}\}'/.test(deploy)) {
+    flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the previous-good hard failure / exact-ID verification was removed");
+  }
+  // Blocker 3: dirty-worktree refusal must precede checkout, and the build
+  // context must be proven to be TARGET_SHA before any build.
+  {
+    const dirtyAt = deploy.indexOf("is dirty");
+    const checkoutAt = deploy.indexOf('git checkout --detach "$TARGET_SHA"');
+    if (dirtyAt < 0 || checkoutAt < 0 || dirtyAt > checkoutAt) {
+      flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the pre-checkout dirty-worktree refusal was removed or reordered");
+    }
+    if (!/post-checkout HEAD does not equal TARGET_SHA/.test(deploy)) {
+      flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the post-checkout build-context proof was removed");
+    }
+  }
+  // Blocker 1: migrations must be applied by the pinned migrator BEFORE
+  // hermes-web is replaced, and the outcome must be verified.
+  {
+    const buildWebAt = deploy.indexOf("build hermes-web");
+    const migrateAt = deploy.indexOf("--profile migrate run --rm -T hermes-migrate");
+    const upAt = deploy.indexOf("up -d --no-deps hermes-web");
+    if (migrateAt < 0 || upAt < 0 || buildWebAt < 0 || !(buildWebAt < migrateAt && migrateAt < upAt)) {
+      flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the explicit migrator step is missing or no longer precedes the hermes-web replacement");
+    }
+    if (!/migrate status/.test(deploy) || !/_prisma_migrations/.test(deploy) || !/TARGET_MIGRATION_COUNT/.test(deploy)) {
+      flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the migration outcome verification (status + applied count) was removed");
+    }
+    if (/npx\s+prisma/.test(deploy)) {
+      flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the deploy invokes a network-resolved prisma CLI instead of the pinned migrator");
+    }
+  }
+  // Blocker 5: every compose invocation must carry the canonical env file, or
+  // the NEXT_PUBLIC_* build args silently interpolate to empty defaults.
+  for (const line of deploy.split("\n").filter((l) => /docker compose/.test(l))) {
+    if (!line.includes("--env-file .env.production")) {
+      flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, `compose invocation without --env-file .env.production: ${line.trim().slice(0, 100)}`);
+    }
+    if (!line.includes("-p hermes")) {
+      flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, `compose invocation without the canonical -p hermes project: ${line.trim().slice(0, 100)}`);
+    }
+  }
   // Only hermes-web may be recreated; the data services must survive.
-  if (/up\s+-d[^\n]*\b(postgres|redis|nginx)\b/.test(deploy)) {
-    flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the deploy recreates a data or proxy service");
+  if (/up\s+-d[^\n]*\b(postgres|redis|nginx|hermes-migrate)\b/.test(deploy)) {
+    flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the deploy recreates a data/proxy service or auto-starts the migrator");
   }
   if (/(down\s+-v|volume\s+rm|system\s+prune)/.test(deploy)) {
     flag("AUTO_DATABASE_ROLLBACK", DEPLOY_WF, "the deploy contains a destructive volume operation");
+  }
+}
+
+// ── Pinned build tooling (Phase 99.7) ───────────────────────────────────────
+// The release image must never be produced by a CLI resolved from the network
+// at build time. An observed build logged npm silently installing prisma@7.9.1
+// while this repository pins 7.8.0, then failing — the same unpinned-tooling
+// risk the migration contract forbids.
+{
+  const dockerfilePath = join(REPO, "Dockerfile");
+  if (existsSync(dockerfilePath)) {
+    const dockerfile = readFileSync(dockerfilePath, "utf8");
+    for (const line of dockerfile.split("\n")) {
+      if (/^\s*RUN\b/.test(line) && /\bnpx\b/.test(line)) {
+        flag("UNPINNED_BUILD_TOOLING", "Dockerfile", `RUN uses npx (network-resolvable): ${line.trim().slice(0, 100)}`);
+      }
+    }
+    // The migrator stage is what applies production migrations; it must exist
+    // and must invoke the local CLI.
+    if (!/AS migrator\b/.test(dockerfile)) {
+      flag("UNPINNED_BUILD_TOOLING", "Dockerfile", "the pinned `migrator` stage is missing");
+    }
+    if (!/node_modules\/prisma\/build\/index\.js/.test(dockerfile)) {
+      flag("UNPINNED_BUILD_TOOLING", "Dockerfile", "the pinned local Prisma CLI invocation is missing");
+    }
+    // `runner` must stay the final stage: a bare `docker build .` targets it.
+    const stages = [...dockerfile.matchAll(/^FROM\s+\S+\s+AS\s+(\S+)/gim)].map((m) => m[1]);
+    if (stages.length > 0 && stages[stages.length - 1] !== "runner") {
+      flag("UNPINNED_BUILD_TOOLING", "Dockerfile", `the final stage must be "runner", found "${stages[stages.length - 1]}"`);
+    }
+  } else {
+    flag("UNPINNED_BUILD_TOOLING", "Dockerfile", "Dockerfile is missing");
+  }
+}
+
+// ── Candidate-gate isolation invariant (owner-review blocker 2) ──────────────
+// The candidate gate must never derive an env-file path from the repository.
+{
+  const candidatePath = join(REPO, "scripts", "ci", "phase997-candidate-gate.mjs");
+  if (existsSync(candidatePath)) {
+    const candidate = readFileSync(candidatePath, "utf8");
+    if (/join\(\s*REPO\s*,\s*["']\.env\.production["']\s*\)/.test(candidate)) {
+      flag("REPO_ENV_FILE_MUTATION", "scripts/ci/phase997-candidate-gate.mjs", "derives an env-file path from the repository");
+    }
+    // Isolation is enforced by an `env_file: !override` pointing at the
+    // temporary workspace. `!override` REPLACES the value, so no service can
+    // still resolve the repository's own `.env.production`.
+    if (!/env_file: !override/.test(candidate)) {
+      flag("REPO_ENV_FILE_MUTATION", "scripts/ci/phase997-candidate-gate.mjs", "the env_file !override isolation was removed");
+    }
+    if (!/--env-file/.test(candidate)) {
+      flag("REPO_ENV_FILE_MUTATION", "scripts/ci/phase997-candidate-gate.mjs", "the isolated --env-file was removed");
+    }
+  } else {
+    flag("REPO_ENV_FILE_MUTATION", "scripts/ci/phase997-candidate-gate.mjs", "candidate gate is missing");
   }
 }
 
@@ -170,6 +271,8 @@ const GATES = [
   "AUTO_PRODUCTION_DEPLOY_TRIGGER",
   "AUTO_DATABASE_ROLLBACK",
   "UNGATED_MIGRATION_DEPLOY",
+  "UNPINNED_BUILD_TOOLING",
+  "REPO_ENV_FILE_MUTATION",
   "SHELL_TRACE_ENABLED",
   "FAIL_OPEN_RELEASE_GATE",
 ];

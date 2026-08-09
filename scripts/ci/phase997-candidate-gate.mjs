@@ -29,16 +29,118 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SHARP_GATE = join(REPO, "scripts", "dr", "sharp-runtime-gate.mjs");
 const PROJECT_PREFIX = "hermes997test_";
 const LOCALES = ["fa", "en", "de"];
+
+/**
+ * Services in docker-compose.prod.yml that declare `env_file: .env.production`
+ * AND are started by this gate.
+ *
+ * `redis` is deliberately absent: it declares no `env_file` and takes its
+ * password purely through `${REDIS_PASSWORD}` interpolation, which the isolated
+ * `--env-file` already supplies. `hermes-migrate` is absent because it is
+ * profile-gated and never started here. The companion test derives this set from
+ * the compose file itself, so a new service picking up `.env.production` cannot
+ * silently escape the override.
+ */
+export const ENV_FILE_SERVICES = Object.freeze(["hermes-web", "postgres"]);
+
+/**
+ * Build the Compose invocation for a candidate run so that the REPOSITORY's
+ * `.env.production` is never created, read, replaced or deleted.
+ *
+ * Two mechanisms, because one is not enough:
+ *
+ *  1. `--env-file <workDir>/.env.production` — controls `${VAR}` interpolation.
+ *  2. a generated override that sets `env_file: !override [<abs temp path>]` on
+ *     every service which declares one. Compose's `!override` tag REPLACES the
+ *     value rather than merging it, so no service can still resolve the
+ *     repository's own file.
+ *
+ * An earlier revision instead pointed `--project-directory` at the temp dir.
+ * That does redirect `env_file: .env.production`, but it also re-roots EVERY
+ * other relative path in the compose files — `nginx`'s `./deploy/nginx/…` bind
+ * mounts and the build contexts — at a directory that contains none of them, so
+ * Compose failed to load the project at all. Keeping the project directory in
+ * the repository preserves those paths; the override handles the env file.
+ *
+ * Exported for the isolation regression test.
+ *
+ * @param {{ repoDir: string, workDir: string }} opts
+ * @returns {{ envFile: string, envOverrideFile: string, composeArgs: string[] }}
+ */
+export function buildCandidateComposeArgs({ repoDir, workDir }) {
+  const envFile = join(workDir, ".env.production");
+  const envOverrideFile = join(workDir, "env-override.yml");
+
+  // Written here (not by the caller) so the override can never drift from the
+  // env file it is meant to redirect. Compose reads YAML with forward slashes
+  // on every platform.
+  const envFileYaml = envFile.split("\\").join("/");
+  writeFileSync(
+    envOverrideFile,
+    ["services:", ...ENV_FILE_SERVICES.flatMap((svc) => [`  ${svc}:`, `    env_file: !override`, `      - ${envFileYaml}`]), ""].join("\n"),
+  );
+
+  return {
+    envFile,
+    envOverrideFile,
+    composeArgs: [
+      "--env-file", envFile,
+      "-f", join(repoDir, "docker-compose.prod.yml"),
+      "-f", join(repoDir, "deploy", "rehearsal", "docker-compose.rehearsal.yml"),
+      "-f", envOverrideFile,
+    ],
+  };
+}
+
+/**
+ * Write the candidate's synthetic env file into the isolated workspace.
+ * Never writes anywhere but `envFile` (which the caller derives from workDir).
+ * Exported for the isolation regression test.
+ *
+ * @param {Object} opts
+ * @param {string} opts.envFile
+ * @param {string} opts.pgPassword
+ * @param {string} opts.redisPassword
+ * @param {string} opts.jwtAccess
+ * @param {string} opts.jwtRefresh
+ * @param {string} opts.databaseUrl
+ * @param {string} opts.redisUrl
+ * @returns {string} the envFile path
+ */
+export function writeCandidateEnv({ envFile, pgPassword, redisPassword, jwtAccess, jwtRefresh, databaseUrl, redisUrl }) {
+  writeFileSync(
+    envFile,
+    [
+      `POSTGRES_USER=hermes`,
+      `POSTGRES_DB=hermes_db`,
+      `POSTGRES_PASSWORD=${pgPassword}`,
+      `REDIS_PASSWORD=${redisPassword}`,
+      // The candidate is validated against the DISPOSABLE compose database only.
+      `DATABASE_URL=${databaseUrl}`,
+      `REDIS_URL=${redisUrl}`,
+      `JWT_ACCESS_SECRET=${jwtAccess}`,
+      `JWT_REFRESH_SECRET=${jwtRefresh}`,
+      `NODE_ENV=production`,
+      `HERMES_STORAGE_MODE=database`,
+      `NEXT_PUBLIC_APP_URL=http://localhost:3000`,
+      `APP_URL=http://localhost:3000`,
+      // OT_SECRET_BACKEND is deliberately ABSENT: the OpenBao credential plane
+      // must stay disabled by default, and this run must contact no OpenBao.
+      "",
+    ].join("\n"),
+  );
+  return envFile;
+}
 
 let failed = false;
 const check = (label, cond, detail) => {
@@ -47,7 +149,26 @@ const check = (label, cond, detail) => {
   if (!cond) failed = true;
 };
 
-const docker = (args, opts = {}) => execFileSync("docker", args, { encoding: "utf8", ...opts });
+/**
+ * Run docker, surfacing the REAL failure.
+ *
+ * `execFileSync` throws with a message that is just the (truncated) command
+ * line — the actual reason lives in `err.stderr` and is otherwise lost. A gate
+ * whose failures are undiagnosable is a gate people learn to ignore, so the
+ * cause is re-thrown with the command.
+ */
+const docker = (args, opts = {}) => {
+  try {
+    return execFileSync("docker", args, { encoding: "utf8", ...opts });
+  } catch (err) {
+    const stderr = String(err?.stderr ?? "").trim();
+    const stdout = String(err?.stdout ?? "").trim();
+    const detail = [stderr, stdout].filter(Boolean).join("\n").slice(0, 1200);
+    const wrapped = new Error(`docker ${args.slice(0, 3).join(" ")} … failed${detail ? `:\n${detail}` : ""}`);
+    wrapped.cause = err;
+    throw wrapped;
+  }
+};
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchNoThrow(url, opts) {
@@ -113,8 +234,13 @@ async function main() {
   const sha = parseSha(process.argv.slice(2));
   check("CANDIDATE_SHA_PINNED", /^[0-9a-f]{40}$/.test(sha), `candidate sha must be an exact 40-character lowercase hex commit, got "${sha}"`);
 
+  // Isolated workspace: the env file, the image override and every other
+  // artifact of this run live here — NEVER in the repository. In particular the
+  // repository's own `.env.production` (if one exists on this machine) is never
+  // created, read, truncated, replaced or deleted by this gate.
   const work = mkdtempSync(join(tmpdir(), "hermes-p997-cand-"));
-  const envFile = join(REPO, ".env.production"); // gitignored; synthetic; removed in finally
+  const { envFile, composeArgs } = buildCandidateComposeArgs({ repoDir: REPO, workDir: work });
+
   const pgPassword = `disposable_${randomBytes(9).toString("hex")}`;
   const redisPassword = `disposable_${randomBytes(9).toString("hex")}`;
 
@@ -123,38 +249,37 @@ async function main() {
   const databaseHost = "postgres"; // the disposable Compose service, never a routable host
   const databaseUrl = `postgresql://hermes:${pgPassword}@${databaseHost}:5432/hermes_db`;
 
-  const appImage = process.env.HERMES_APP_IMAGE?.trim();
-  const composeFiles = ["-f", "docker-compose.prod.yml", "-f", "deploy/rehearsal/docker-compose.rehearsal.yml"];
-  if (appImage) {
-    const override = join(work, "image-override.yml");
-    writeFileSync(override, `services:\n  hermes-web:\n    image: ${appImage}\n    build: null\n`);
-    composeFiles.push("-f", override);
+  // The candidate is ALWAYS run as an explicit image override. When the caller
+  // did not supply one, build it here from the checkout — one code path, and
+  // the compose build context can never be silently wrong.
+  let appImage = process.env.HERMES_APP_IMAGE?.trim();
+  let builtFallbackImage = null;
+  if (!appImage) {
+    appImage = `hermes997test-app:${rid}`;
+    builtFallbackImage = appImage;
+    console.log(`[candidate] HERMES_APP_IMAGE not set — building ${appImage} from the checkout`);
+    docker(["build", "-t", appImage, REPO], { stdio: "inherit" });
   }
+  // `build: !reset null` REMOVES the build section in the merge (a plain
+  // `build: null` does not — newer Compose still tries to build, and with the
+  // isolated --project-directory the context would have no Dockerfile).
+  const override = join(work, "image-override.yml");
+  writeFileSync(override, `services:\n  hermes-web:\n    image: ${appImage}\n    build: !reset null\n`);
+  composeArgs.push("-f", override);
 
-  writeFileSync(
+  writeCandidateEnv({
     envFile,
-    [
-      `POSTGRES_USER=hermes`,
-      `POSTGRES_DB=hermes_db`,
-      `POSTGRES_PASSWORD=${pgPassword}`,
-      `REDIS_PASSWORD=${redisPassword}`,
-      // The candidate is validated against the DISPOSABLE compose database only.
-      `DATABASE_URL=${databaseUrl}`,
-      `REDIS_URL=redis://:${redisPassword}@redis:6379`,
-      `JWT_ACCESS_SECRET=${randomBytes(48).toString("hex")}`,
-      `JWT_REFRESH_SECRET=${randomBytes(48).toString("hex")}`,
-      `NODE_ENV=production`,
-      `HERMES_STORAGE_MODE=database`,
-      `NEXT_PUBLIC_APP_URL=http://localhost:3000`,
-      `APP_URL=http://localhost:3000`,
-      // OT_SECRET_BACKEND is deliberately ABSENT: the OpenBao credential plane
-      // must stay disabled by default, and this run must contact no OpenBao.
-      "",
-    ].join("\n"),
-  );
+    pgPassword,
+    redisPassword,
+    jwtAccess: randomBytes(48).toString("hex"),
+    jwtRefresh: randomBytes(48).toString("hex"),
+    databaseUrl,
+    redisUrl: `redis://:${redisPassword}@redis:6379`,
+  });
 
-  const compose = (args, opts = {}) => docker(["compose", "-p", project, ...composeFiles, ...args], { cwd: REPO, ...opts });
+  const compose = (args, opts = {}) => docker(["compose", "-p", project, ...composeArgs, ...args], { cwd: REPO, ...opts });
   let webContainer = null;
+  let migratorImage = null;
 
   try {
     compose(["up", "-d", "postgres", "redis"], { stdio: "inherit" });
@@ -244,6 +369,30 @@ async function main() {
     }
     check("CANDIDATE_OPENBAO_DISABLED", backendEnv === "", `OT_SECRET_BACKEND is set to "${backendEnv}" in the candidate`);
 
+    // ── The pinned migrator stage really works ────────────────────────────────
+    // Production applies migrations via the Dockerfile `migrator` stage (the
+    // runner never migrates on boot). Prove here that the stage builds from
+    // this exact checkout and that its own Prisma CLI can read the migration
+    // history: after the host-side deploy above, `migrate status` run INSIDE
+    // the disposable network must exit zero and report an up-to-date schema.
+    migratorImage = `hermes997test-migrator:${rid}`;
+    let migratorOut = "";
+    let migratorOk = false;
+    try {
+      docker(["build", "--target", "migrator", "-t", migratorImage, REPO], { stdio: "inherit" });
+      migratorOut = docker([
+        "run", "--rm",
+        "--network", `${project}_hermes_internal`,
+        "-e", `DATABASE_URL=${databaseUrl}`,
+        migratorImage,
+        "node", "node_modules/prisma/build/index.js", "migrate", "status",
+      ]);
+      migratorOk = /database schema is up to date/i.test(migratorOut);
+    } catch (err) {
+      migratorOut = `${String(err.stdout ?? "")}\n${String(err.stderr ?? err.message ?? err)}`;
+    }
+    check("CANDIDATE_MIGRATOR_STAGE", migratorOk, migratorOut.split("\n").filter(Boolean).slice(-4).join(" / "));
+
     // ── Container stability ───────────────────────────────────────────────────
     await sleep(5000);
     const restarts = docker(["inspect", "-f", "{{.RestartCount}}", webContainer]).trim();
@@ -283,8 +432,19 @@ async function main() {
     } catch {
       /* best effort */
     }
-    if (existsSync(envFile)) rmSync(envFile, { force: true });
+    // The workspace (env file, image override) lives entirely under `work`;
+    // removing it is the WHOLE cleanup. Nothing in the repository is touched.
     rmSync(work, { recursive: true, force: true });
+    // Best-effort removal of images this run itself built (never a caller-
+    // supplied HERMES_APP_IMAGE).
+    for (const image of [builtFallbackImage, migratorImage]) {
+      if (!image) continue;
+      try {
+        docker(["rmi", image], { stdio: "pipe" });
+      } catch {
+        /* best effort */
+      }
+    }
   }
 
   console.log(`RESULT phase997_candidate_sha=${sha}`);
@@ -294,7 +454,14 @@ async function main() {
   process.exit(failed ? 1 : 0);
 }
 
-main().catch((err) => {
-  console.error(`RESULT phase997_candidate=FAIL (${String(err?.message ?? err).slice(0, 200)})`);
-  process.exit(1);
-});
+// Only run the gate when this file is the process entry point — the isolation
+// regression test imports the workspace helpers above, and importing must never
+// start Docker or exit the process.
+const invokedDirectly =
+  typeof process.argv[1] === "string" && pathToFileURL(resolve(process.argv[1])).href === import.meta.url;
+if (invokedDirectly) {
+  main().catch((err) => {
+    console.error(`RESULT phase997_candidate=FAIL (${String(err?.message ?? err).slice(0, 200)})`);
+    process.exit(1);
+  });
+}

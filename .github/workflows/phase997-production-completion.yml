@@ -133,12 +133,26 @@ jobs:
       - name: Build the candidate image (disposable, hermes997test)
         run: docker build -t hermes997test-app:${{ github.sha }} .
 
+      # Owner-review blocker 2 regression proof: a pre-existing repository
+      # `.env.production` must survive the candidate gate byte for byte. The
+      # sentinel is synthetic (never a real credential) and removed afterwards.
+      - name: Plant a sentinel .env.production
+        run: |
+          printf 'SENTINEL=phase997-do-not-touch\r\nUNICODE=آزمایشی\n' > .env.production
+          sha256sum .env.production > /tmp/phase997-sentinel.sha256
+
       # Health, readiness, /fa /en /de, anonymous denial, error hygiene, the
-      # sharp runtime gate INSIDE the container, severe-log scan, restart count
-      # and OpenBao left disabled — against a DISPOSABLE database, never the
-      # live production one.
+      # sharp runtime gate INSIDE the container, the pinned migrator stage, a
+      # severe-log scan, restart count and OpenBao left disabled — against a
+      # DISPOSABLE database, never the live production one.
       - name: Candidate validation against a disposable stack
         env:
           HERMES_APP_IMAGE: hermes997test-app:${{ github.sha }}
           PHASE997_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: npm run gate:phase997:candidate
+
+      - name: Sentinel .env.production survived byte-for-byte
+        if: always()
+        run: |
+          sha256sum -c /tmp/phase997-sentinel.sha256
+          rm -f .env.production

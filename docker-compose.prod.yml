@@ -12,9 +12,17 @@
 # With monitoring (ideally on a separate host — see deploy/monitoring/README.md):
 #   docker compose -p hermes -f docker-compose.prod.yml --profile monitoring up -d
 #
-# First run — apply migrations before starting the app:
-#   docker compose -p hermes -f docker-compose.prod.yml run --rm hermes-web \
-#     node -e "const {execSync}=require('child_process'); execSync('npx prisma migrate deploy', {stdio:'inherit'})"
+# Migrations (first run AND every migration-bearing release) — the hermes-web
+# image ships only the Prisma runtime, not the CLI, and its CMD never applies
+# migrations. Use the profile-gated migrator service (Phase 99.7), which is
+# built from the same pinned checkout as the release:
+#   docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production \
+#     --profile migrate build hermes-migrate
+#   docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production \
+#     --profile migrate run --rm -T hermes-migrate
+# Verify afterwards (exits non-zero while any migration is pending):
+#   docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production \
+#     --profile migrate run --rm -T hermes-migrate node node_modules/prisma/build/index.js migrate status
 #
 # Required in .env.production:
 #   NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX   (client bundle — baked at build time)
@@ -73,6 +81,24 @@ services:
       options:
         max-size: "20m"
         max-file: "5"
+
+  # Phase 99.7 — explicit, profile-gated migration runner. NEVER started by
+  # `up -d` (the "migrate" profile is off by default), holds no ports, and is
+  # only ever invoked as `--profile migrate run --rm hermes-migrate` by the
+  # deploy workflow / operator. Built from the pinned release checkout, so the
+  # applied migration set is exactly the target commit's.
+  hermes-migrate:
+    profiles: ["migrate"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    env_file: .env.production
+    networks:
+      - hermes_internal
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: pgvector/pgvector:pg16

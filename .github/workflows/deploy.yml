@@ -19,13 +19,14 @@
 #   checkout directory, which once created a second empty "hermes-os-nexuz"
 #   stack beside the real one.
 #
-# PHASE 99.7 — migration-bearing releases are gated, not merely documented.
+# PHASE 99.7 — migration-bearing releases are gated AND explicitly migrated.
 #
 # Until Phase 99.7 this workflow rebuilt hermes-web and nothing else. That is
-# correct for an app-only release and DANGEROUS for a release that carries
-# schema migrations: `prisma migrate deploy` runs on first boot against the live
-# database with no proof that a restorable backup exists. The Phase 94 -> Phase
-# 99.6 cutover carries 20 migrations, so that gap had to close.
+# correct for an app-only release and DANGEROUS for one carrying schema
+# migrations, because NOTHING applies them: the runner image's CMD is only
+# `node server.js` (no on-boot migration), and docker-compose.prod.yml documents
+# migrations as a separate pre-start operation. A migration-bearing release
+# deployed by the old workflow would boot new code against the old schema.
 #
 # What is now enforced, fail-closed, WITHOUT adding any automatic deployment and
 # without granting this workflow any access it did not already have:
@@ -38,8 +39,19 @@
 #     the second confirmation phrase AND the production host itself proves, with
 #     POSIX tools only, that the newest encrypted backup is complete, verified
 #     and hash-intact, and that the documents_data adoption evidence exists;
-#   - the currently-running hermes-web image is tagged as the rollback target
-#     BEFORE anything is rebuilt, so a previous-good image always exists.
+#   - the server worktree must be CLEAN before checkout, and after checkout the
+#     build context is proven to be exactly TARGET_SHA (HEAD match + clean);
+#   - a missing previous-good image is a HARD failure, and the preserved
+#     `hermes-web:previous-good` tag is verified to resolve to exactly the
+#     pre-cutover image ID before anything is rebuilt;
+#   - every Compose invocation passes `--env-file .env.production`, so the
+#     NEXT_PUBLIC_* build args interpolate from the canonical env file instead
+#     of silently falling back to empty defaults;
+#   - migrations are applied EXPLICITLY, before hermes-web is replaced, by the
+#     pinned target-derived migrator (`--profile migrate run hermes-migrate`,
+#     built from the same checkout via the Dockerfile `migrator` stage — never
+#     a network-fetched CLI), then verified: `migrate status` must exit clean
+#     and the applied-migration count must equal the target commit's count.
 #
 # What is deliberately NOT done here: no database restore, ever. Rolling the
 # application back and recovering the database are separate, human-decided
@@ -222,13 +234,22 @@ jobs:
           # runtime scanning. Use "[host]:port" entries for a non-default port.
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
-      - name: Deploy the pinned commit (targeted hermes-web rebuild)
+      - name: Deploy the pinned commit (migrate, then targeted hermes-web rebuild)
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
           BACKUP_REQUIRED: ${{ steps.migration.outputs.pre_migration_backup_required }}
+          TARGET_MIGRATION_COUNT: ${{ steps.migration.outputs.target_migration_count }}
         run: |
+          # The expected applied-migration count comes from the runner's git-only
+          # classification step; refuse to proceed without a sane integer.
+          case "$TARGET_MIGRATION_COUNT" in
+            *[!0-9]*|'')
+              echo "TARGET_MIGRATION_COUNT must be a non-negative integer (fail closed)." >&2
+              exit 1
+              ;;
+          esac
           PORT="${SSH_PORT:-22}"
           ssh -i ~/.ssh/id_deploy \
               -p "$PORT" \
@@ -237,7 +258,7 @@ jobs:
               -o ConnectTimeout=20 \
               -o StrictHostKeyChecking=yes \
               "${SERVER_USER}@${SERVER_IP}" \
-              "TARGET_SHA=${TARGET_SHA} BACKUP_REQUIRED=${BACKUP_REQUIRED} bash -s" <<'REMOTE'
+              "TARGET_SHA=${TARGET_SHA} BACKUP_REQUIRED=${BACKUP_REQUIRED} TARGET_MIGRATION_COUNT=${TARGET_MIGRATION_COUNT} bash -s" <<'REMOTE'
           set -euo pipefail
           unset DOCKER_HOST
 
@@ -248,6 +269,14 @@ jobs:
 
           cd /opt/hermes-os-nexuz
 
+          # The canonical env file drives both container runtime env AND compose
+          # ${VAR} interpolation (NEXT_PUBLIC_* build args). Refuse without it —
+          # a build without it would silently bake empty analytics/SEO values.
+          if [ ! -f .env.production ]; then
+            echo "Refusing: /opt/hermes-os-nexuz/.env.production is missing." >&2
+            exit 1
+          fi
+
           git fetch --prune origin
           if ! git cat-file -e "${TARGET_SHA}^{commit}"; then
             echo "Refusing: ${TARGET_SHA} is unknown on the server after fetch." >&2
@@ -255,6 +284,17 @@ jobs:
           fi
           if ! git merge-base --is-ancestor "$TARGET_SHA" origin/main; then
             echo "Refusing: ${TARGET_SHA} is not on origin/main." >&2
+            exit 1
+          fi
+
+          # ── Fail closed on a dirty server worktree BEFORE checkout/build ─────
+          # Local modifications would silently leak into the build context and
+          # the deployed image would no longer correspond to TARGET_SHA.
+          # (.env.production and backups are gitignored / outside the repo, so
+          # they never appear here.)
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Refusing: the server worktree at /opt/hermes-os-nexuz is dirty:" >&2
+            git status --porcelain >&2
             exit 1
           fi
 
@@ -312,19 +352,80 @@ jobs:
             echo "Pre-migration evidence verified: $(basename "${NEWEST_BACKUP}") complete, verified and hash-intact."
           fi
 
-          # ── Preserve the previous-good image BEFORE rebuilding ───────────────
+          # ── Preserve the previous-good image BEFORE rebuilding (HARD gate) ───
           # A rollback target must exist before the thing being rolled back from
-          # is created. Tagging is additive: no image is removed or pruned.
-          PREVIOUS_IMAGE="$(docker compose -p hermes -f docker-compose.prod.yml images -q hermes-web 2>/dev/null | head -n 1 || true)"
-          if [ -n "${PREVIOUS_IMAGE}" ]; then
-            docker image tag "${PREVIOUS_IMAGE}" "hermes-web:previous-good"
-            echo "Previous-good image preserved as hermes-web:previous-good (${PREVIOUS_IMAGE})."
-          else
-            echo "WARNING: no running hermes-web image found to preserve as a rollback target." >&2
+          # is created. Tagging is additive: no image is removed or pruned. A
+          # missing running image is a REFUSAL, not a warning — a deploy with no
+          # rollback target must never proceed through this workflow.
+          RUNNING_WEB="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production ps -q hermes-web | head -n 1 || true)"
+          if [ -z "${RUNNING_WEB}" ]; then
+            echo "Refusing: no running hermes-web container found — no previous-good rollback target exists." >&2
+            exit 1
           fi
+          PREVIOUS_IMAGE_ID="$(docker inspect -f '{{.Image}}' "${RUNNING_WEB}")"
+          if [ -z "${PREVIOUS_IMAGE_ID}" ]; then
+            echo "Refusing: could not resolve the running hermes-web image ID." >&2
+            exit 1
+          fi
+          docker image tag "${PREVIOUS_IMAGE_ID}" "hermes-web:previous-good"
+          PRESERVED_ID="$(docker image inspect -f '{{.Id}}' "hermes-web:previous-good")"
+          if [ "${PRESERVED_ID}" != "${PREVIOUS_IMAGE_ID}" ]; then
+            echo "Refusing: hermes-web:previous-good (${PRESERVED_ID}) does not resolve to the pre-cutover image (${PREVIOUS_IMAGE_ID})." >&2
+            exit 1
+          fi
+          echo "Previous-good image preserved and verified: hermes-web:previous-good -> ${PREVIOUS_IMAGE_ID}"
 
           git checkout --detach "$TARGET_SHA"
 
-          docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web
-          docker compose -p hermes -f docker-compose.prod.yml ps hermes-web
+          # ── Prove the build context IS the pinned target ─────────────────────
+          if [ "$(git rev-parse HEAD)" != "${TARGET_SHA}" ]; then
+            echo "Refusing: post-checkout HEAD does not equal TARGET_SHA." >&2
+            exit 1
+          fi
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Refusing: the worktree is dirty after checkout — the build context would not be ${TARGET_SHA}." >&2
+            exit 1
+          fi
+
+          # ── Build the release from the proven context ────────────────────────
+          # --env-file .env.production is REQUIRED here: the NEXT_PUBLIC_* build
+          # args interpolate from it; omitting it silently bakes empty values.
+          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production build hermes-web
+
+          # ── Apply migrations EXPLICITLY, before replacing hermes-web ─────────
+          # The runner image never migrates (CMD is `node server.js`), so a
+          # migration-bearing release must run the pinned target-derived
+          # migrator: the Dockerfile `migrator` stage, built from this exact
+          # checkout, whose Prisma CLI version comes from this checkout's own
+          # lockfile. Profile-gated: `up -d` never starts it.
+          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate build hermes-migrate
+          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate run --rm -T hermes-migrate
+
+          # ── Verify the migration outcome (fail closed) ───────────────────────
+          # 1. `migrate status` exits non-zero while ANY migration is pending.
+          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate run --rm -T hermes-migrate \
+            node node_modules/prisma/build/index.js migrate status
+          # 2. The applied count must equal the target commit's migration count
+          #    (computed on the runner from git), and no row may be unfinished
+          #    or rolled back.
+          APPLIED_COUNT="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production exec -T postgres \
+            sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL"' | tr -d '[:space:]')"
+          FAILED_COUNT="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production exec -T postgres \
+            sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NULL OR rolled_back_at IS NOT NULL"' | tr -d '[:space:]')"
+          if [ "${APPLIED_COUNT}" != "${TARGET_MIGRATION_COUNT}" ]; then
+            echo "Refusing to replace hermes-web: applied migration count ${APPLIED_COUNT} != expected ${TARGET_MIGRATION_COUNT}." >&2
+            exit 1
+          fi
+          if [ "${FAILED_COUNT}" != "0" ]; then
+            echo "Refusing to replace hermes-web: ${FAILED_COUNT} migration row(s) are unfinished or rolled back." >&2
+            exit 1
+          fi
+          echo "Migrations verified: ${APPLIED_COUNT}/${TARGET_MIGRATION_COUNT} applied, 0 failed."
+          # NOTE: a migration failure above stops the deploy with the previous
+          # release still serving traffic. It is NEVER answered by an automatic
+          # database restore — recovery is a separate human-decided operation.
+
+          # ── Replace ONLY hermes-web (image already built above) ──────────────
+          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d --no-deps hermes-web
+          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production ps hermes-web
           REMOTE
