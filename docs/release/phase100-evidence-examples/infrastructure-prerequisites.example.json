@@ -1,0 +1,59 @@
+{
+  "EXAMPLE_ONLY": true,
+  "SYNTHETIC_TEST_FIXTURE": true,
+  "NOT_EXTERNAL_ATTESTATION": true,
+  "_readme": "SHAPE REFERENCE ONLY. Rejected by construction. These are facts about the production host and the OpenBao deployment that CI cannot observe and must never try to: Phase 100 does not contact Production or OpenBao. SECRET_BACKEND_ACTIVATION_DECISION accepts backend=DISABLED as a legitimate owner decision, because the platform is proven to fail closed without it — what is never acceptable is the absence of a decision. Never record a token, unseal key or AppRole secret here.",
+  "schemaVersion": 1,
+  "evidenceType": "INFRASTRUCTURE_PREREQUISITES",
+  "testedCommitSha": "0000000000000000000000000000000000000000",
+  "recordedAt": "2026-01-01T00:00:00.000Z",
+  "signedOrOwnerVerified": true,
+  "privateTransport": {
+    "transport": "WIREGUARD",
+    "publiclyReachable": false,
+    "confirmedAt": "2026-01-01",
+    "confirmedByRole": "Platform Operations Lead",
+    "evidenceReference": "private-channel/ops/private-transport-confirmation",
+    "evidenceSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "secretBackend": {
+    "backend": "DISABLED",
+    "decision": "DECIDED",
+    "ownerAuthorityRole": "Managing Director",
+    "decidedAt": "2026-01-01",
+    "failClosedWhenUnavailable": true,
+    "privateTransportRequired": true,
+    "rationale": "Shape reference only; a real record must state why the chosen backend is correct for this release."
+  },
+  "credentialOwnership": {
+    "credentialOwnerRole": "Platform Operations Lead",
+    "recoveryOwnerRole": "Managing Director",
+    "unsealCustodyModel": "SEALED_ENVELOPE_OFFLINE",
+    "confirmedAt": "2026-01-01",
+    "runbookReference": "ops/openbao/staging/RUNBOOK.md",
+    "runbookSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "prerequisites": [
+    {
+      "id": "TLS_CERTIFICATES_VALID",
+      "description": "Production TLS certificates issued and renewal automation verified",
+      "status": "COMPLETE",
+      "verifiedAt": "2026-01-01",
+      "verifiedByRole": "Platform Operations Lead"
+    },
+    {
+      "id": "REVERSE_PROXY_ROUTING",
+      "description": "Reverse-proxy routing and security headers verified against the production domain",
+      "status": "COMPLETE",
+      "verifiedAt": "2026-01-01",
+      "verifiedByRole": "Platform Operations Lead"
+    },
+    {
+      "id": "MIGRATION_PREREQUISITES",
+      "description": "Phase 99.7 cutover prerequisites executed and the migration ledger reconciled",
+      "status": "COMPLETE",
+      "verifiedAt": "2026-01-01",
+      "verifiedByRole": "Database Recovery Owner"
+    }
+  ]
+}
