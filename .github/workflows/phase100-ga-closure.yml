@@ -104,9 +104,14 @@ jobs:
       - name: Assert the published summary carries no secret-shaped value
         run: node scripts/ci/phase100-summary-hygiene.mjs
 
+      # Pinned to a full commit SHA, not a moving tag. `@v4` is a mutable ref: a
+      # compromise of the action repository, or of anyone able to move that tag,
+      # would silently change what runs inside the job that publishes this
+      # release verdict. The SHA below is actions/upload-artifact v4.6.2,
+      # resolved from refs/tags/v4.6.2 in the official repository.
       - name: Upload the Phase 100 GA closure summary
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: phase100-ga-closure
           path: |

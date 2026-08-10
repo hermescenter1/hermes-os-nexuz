@@ -277,11 +277,41 @@ residualAcceptances["P99-DEP-008"]
   .compensatingControls[]              non-empty
   .acceptedAt                          ISO date
   .expiresAt                           ISO date, REQUIRED, must be in the future
+  .remediationOwnerRole                human authority role — who will fix it
+  .remediationPlanReference            reference to the plan
+  .targetRemediationDate               ISO date; must be in the future,
+                                       >= acceptedAt and <= expiresAt
   .evidenceReference / .evidenceSha256
 ```
 
 One entry per unresolved lower-severity finding. Gate:
 `RESIDUAL_FINDING_RISK_ACCEPTED`.
+
+**A temporary acceptance must be genuinely temporary.** An acceptance carrying
+an expiry but no remediation plan is not a deferral — it is a permanent waiver
+with a date on it. So the record must also name *who* will fix the finding,
+*what* the fix is, and *when*; and the timing must be coherent. A
+`targetRemediationDate` after `expiresAt` means the acceptance lapses before the
+fix is due; one before `acceptedAt`, or already in the past, means the
+remediation is overdue rather than planned. All three are
+`INVALID_REMEDIATION_TIMING`.
+
+**Blanket acceptance is rejected.** An acceptance names exactly one finding.
+`appliesToAll`, `blanket`, a `findingIds` list, and a wildcard or catch-all
+`findingId` are all `BLANKET_ACCEPTANCE` — a decision to stop looking is not an
+owner decision about a known risk.
+
+Neither an agent nor any automation can hold `ownerAuthorityRole` or
+`remediationOwnerRole`, and a record marked as an example fixture can never
+accept anything.
+
+### Current state
+
+The five unresolved MEDIUM findings — `P99-DEP-008` through `P99-DEP-012` — have
+**no** acceptance, so `RESIDUAL_FINDING_RISK_ACCEPTED` is `BLOCKED`. That is
+correct and deliberate: creating an acceptance is an owner act. No acceptance
+was fabricated to clear this gate, and the test suite asserts the residual
+acceptance set stays empty.
 
 ---
 

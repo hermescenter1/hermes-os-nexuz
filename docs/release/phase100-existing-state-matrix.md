@@ -158,3 +158,36 @@ is translated article content).
    `PHASE100_CLOSURE=BLOCKED`. That result is *derived*, never hard-coded — the
    adversarial suite proves the evaluator flips to `PASS` when, and only when,
    fully valid evidence is supplied for every gate.
+
+## 8. Pre-existing hardening debt (NOT changed by Phase 100)
+
+Phase 100 pins its own workflow to a full commit SHA:
+
+```
+actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+```
+
+The SHA was resolved from `refs/tags/v4.6.2` in the official
+`actions/upload-artifact` repository at pin time.
+
+Three **pre-existing** uses of the same action remain on the mutable `@v4` tag.
+They are recorded here as debt rather than fixed in this pull request, so the
+Phase 100 diff stays reviewable as a release-gate change and does not silently
+become a CI-wide supply-chain change:
+
+| Workflow | Line | Current | Class |
+|---|---|---|---|
+| `.github/workflows/phase97-compliance-assurance.yml` | 118 | `actions/upload-artifact@v4` | `PRE_EXISTING_DEBT` |
+| `.github/workflows/phase98-dr-release-assurance.yml` | 79 | `actions/upload-artifact@v4` | `PRE_EXISTING_DEBT` |
+| `.github/workflows/phase99-security-pilot-readiness.yml` | 84 | `actions/upload-artifact@v4` | `PRE_EXISTING_DEBT` |
+
+**Why this is debt and not merely a style preference.** A tag is a mutable ref.
+Anyone able to move `v4` — including an attacker who compromises the action
+repository — changes what executes inside those jobs, with the job's token, on
+the next run. Pinning to a SHA removes that entirely; the trade is that
+`dependabot`/`renovate` must bump the pin for legitimate upgrades.
+
+**Recommended follow-up:** a single dedicated change that pins all three, run
+against a real workflow execution so an incorrect SHA is caught by CI rather
+than at release time. That change touches Phase 97, 98 and 99 assurance
+pipelines and should be reviewed as its own unit of work.

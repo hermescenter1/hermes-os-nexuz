@@ -46,7 +46,50 @@ aggregation, so no blocker can be hidden behind another.
 | Gate | Source |
 |---|---|
 | `PHASE100_IMPLEMENTATION` | Self-check: required artifacts present, the Phase 99 CLI still delegates to the shared engine, and every shipped example is rejected by its own contract. |
-| `PHASE100_INTERNAL_TECHNICAL_READINESS` | The Phase 99 readiness evaluator, run as a child process and consumed verbatim. |
+| `PHASE100_EVIDENCE_ROOT_LIFECYCLE` | The evidence mode resolved safely. See *Where evidence lives*. |
+| `PHASE100_EVIDENCE_NOT_COMMITTED` | No owner or external evidence document exists in the repository tree. |
+| `PHASE100_EVIDENCE_SOURCE_INTEGRITY` | Every supplied evidence document could actually be read. |
+| `PHASE100_REPOSITORY_SOURCE_INTEGRITY` | Every repository-owned input is readable and correctly shaped. |
+| `PHASE100_READINESS_ATTRIBUTION` | No blocker is counted twice, and none has stopped being counted. |
+| `PHASE100_INTERNAL_TECHNICAL_READINESS` | The Phase 99 readiness evaluator, **attributed** — see below. |
+
+Every gate in this group is a repository-owned fact about the closure mechanism
+itself. None can be pending on an owner, so anything short of `PASS` fails the
+build rather than blocking the release.
+
+#### Internal technical readiness is attributed, not aggregated
+
+Internal technical readiness answers exactly one question: **is the work this
+repository owns complete?**
+
+The Phase 99 readiness evaluator reports five groups — `PILOT_UAT_READINESS`,
+`PILOT_WORKFLOW_READINESS`, `PILOT_INCIDENT_READINESS`, `PILOT_ONBOARDING` and
+`PILOT_SUPPORT` — as `BLOCKED_OWNER`. All five are blocked for one reason, which
+the evaluator states itself: no pilot customer has been selected. They are not
+five engineering deficits; they are one owner decision observed five times, and
+Phase 100 **already** reports that decision individually as
+`PILOT_CUSTOMER_SELECTED` plus nine sibling pilot gates.
+
+Rolling that verdict up into a single `PHASE100_INTERNAL_TECHNICAL_READINESS`
+blocker therefore carried no identity of its own — every fact inside it was
+already named elsewhere in the matrix — and it **mislabelled** the blocker.
+"Internal technical readiness is BLOCKED" reads as "the engineering is
+unfinished". The engineering is not unfinished: all twenty repository-owned
+technical groups are `PASS`. The blocker is commercial.
+
+So each owner-blocked readiness group is attributed to the Phase 100 gate that
+already owns it, and is not counted again. This is **not** "ignore the blocked
+groups": attribution uses a closed map, and is honoured only when the inheriting
+gate is genuinely present in the ledger and genuinely not `PASS`. An
+unrecognised blocked group — or a recognised one whose covering gate has
+vanished or turned `PASS` — leaves this gate `BLOCKED` and names itself, because
+a blocker counted **nowhere** is worse than one counted twice.
+
+`RELEASE_BLOCKERS_ZERO` is excluded from the counted set for the same reason: it
+is a Phase 99 aggregate that sums the open finding blockers and the pilot
+absence into one number and calls the result a `FAIL`, which both double-counts
+the pilot and mislabels an absence. It is still reported, under
+`PHASE99_AGGREGATE`, for continuity.
 
 ### External security — `EXTERNAL_SECURITY_GATES`
 
@@ -128,15 +171,45 @@ Evidence: `docs/release/phase100-commercial-decisions.json`.
 | Gate | Requires |
 |---|---|
 | `PRICING_DECISION` | An owner decision, a priced plan registry digest, currencies, and `unresolvedPlanLimitCount: 0`. |
-| `PAYMENT_PROVIDER_DECISION` | A provider and mode; naming `STRIPE` requires `LIVE` mode plus configured webhook endpoint and signing secret. |
+| `PAYMENT_PROVIDER_DECISION` | Provider `STRIPE`, mode `LIVE`, and a configured webhook endpoint **and** signing secret. |
 | `TAX_CURRENCY_REFUND_DECISION` | A tax model, settlement currencies and a refund policy digest + window. |
-| `PRODUCTION_BILLING_ACTIVATION` | An explicit `ACTIVATED` decision with `separatedFromCodeReadiness: true`. |
+| `PRODUCTION_BILLING_ACTIVATION` | An explicit `ACTIVATED` decision with `separatedFromCodeReadiness: true` and valid activation evidence. |
+| `PHASE100_COMMERCIAL_GA_COHERENCE` | The sections above must not contradict each other. |
+
+**Owner decision: Hermes GA is a paid commercial GA.** That settles what had
+been ambiguous, and the ambiguity was dangerous. The schema recognised
+`provider: NONE`, `mode: TEST` and `activationDecision: DEFERRED`, and nothing
+cross-checked them against each other — so a document could declare `NONE`/`TEST`
+and still satisfy `PAYMENT_PROVIDER_DECISION`, or declare billing `ACTIVATED`
+beside a provider of `NONE`: a paid GA with no way to take payment, reported as
+a passing gate.
+
+Those values remain **recognised, for diagnostics** — an owner who has genuinely
+deferred billing gets a precise reading of their document rather than a schema
+error. What changed is that none of them can **pass** a commercial GA. The
+GA-passing combination is exactly one:
+
+| Field | Required for GA |
+|---|---|
+| `paymentProvider.provider` | `STRIPE` |
+| `paymentProvider.mode` | `LIVE` |
+| `paymentProvider.webhookEndpointConfigured` | `true` |
+| `paymentProvider.webhookSigningSecretConfigured` | `true` |
+| `productionBillingActivation.activationDecision` | `ACTIVATED` |
+| `productionBillingActivation.activationEvidence*` | present and valid |
 
 **Production billing activation is deliberately a separate gate.** Phase 96
 proves the billing code is correct; no CI result can decide a price or switch
-live billing on, and the two must never be conflated. A `DEFERRED` activation
-decision therefore does not pass this gate — it is reported by name so the owner
-can see exactly what is outstanding.
+live billing on, and the two must never be conflated.
+
+`PHASE100_COMMERCIAL_GA_COHERENCE` exists because each section is validated on
+its own, so a document can be built entirely from individually valid sections
+that together describe something impossible — billing `ACTIVATED` with no
+provider, a `LIVE` provider beside `DEFERRED` billing, or plans priced in a
+currency that is never settled. Those are the failures that reach production,
+because every individual gate reported green. An **absent** document is not a
+contradiction: its absence is already counted once by the four gates above, and
+counting it again would be double-counting.
 
 ### OpenBao and production prerequisites — `OPENBAO_PRODUCTION_PREREQUISITES`
 
@@ -177,19 +250,73 @@ Every Phase 100 evidence document is rejected, fail-closed, when it is:
 - carrying a credential, private key, token, JWT, IP address, e-mail address or
   exploit payload.
 
+## Where evidence lives
+
+Evidence is **never committed to this repository.** The repository is public;
+attestations, pilot acceptances and authorizations are owner-controlled records,
+and a file that is one `git add` away from publication is not a safe place for
+them. The evaluator enforces this itself, not only in a test:
+`PHASE100_EVIDENCE_NOT_COMMITTED` fails the build if any of the eight documents
+appears in the tree.
+
+There are exactly two evidence modes.
+
+| Mode | When | Behaviour |
+|---|---|---|
+| `CONTRACT_TEST` | Default; **the only mode CI ever uses** | No evidence root is configured. The eight documents are looked for at their repository paths, where they are absent by design. Every evidence gate is `BLOCKED`, GA is correctly withheld, and the run proves the **contract** — that the gate rejects what it must. |
+| `OWNER_CLOSURE` | Offline, owner-run, never in CI | `PHASE100_EVIDENCE_ROOT` points at a directory **outside** the repository holding the real evidence, laid out with the same relative paths. Nothing is copied in and nothing is committed. |
+
+This replaces an earlier instruction to copy the examples to their repository
+paths. That instruction contradicted the test suite, which permanently asserts
+those paths must not exist — so following it broke the build, and the only way
+to supply real evidence would have been to edit the tests first. **No source
+file and no test changes when real evidence arrives; only the environment
+variable does.**
+
+`PHASE100_EVIDENCE_ROOT` must be an absolute path, must contain no `..` segment,
+must be a directory, and must resolve — after symlink/junction resolution — to a
+location outside the repository working tree. A document whose real path escapes
+the root is `PATH_ESCAPES_EVIDENCE_ROOT`, which is a failure, not an absence. If
+the variable is set but cannot be honoured safely, the evaluator fails; it never
+falls back to `CONTRACT_TEST`, because reporting "no evidence" for evidence the
+owner believes they supplied is the same class of lie this phase exists to remove.
+
+Three inputs never move, because they are what evidence is judged **against**
+rather than evidence themselves: `docs/security/phase99-findings.json`,
+`docs/security/phase99-external-review-scope.md` and
+`docs/pilot/phase99-pilot-plan.md`. Reading a scope document from an
+owner-supplied directory would let the owner choose the scope their own
+attestation is measured against, which is not a gate at all.
+
 ## Supplying evidence
 
-1. Copy the relevant file from `docs/release/phase100-evidence-examples/` to the
-   path named in the table above.
-2. **Remove the `EXAMPLE_ONLY`, `SYNTHETIC_TEST_FIXTURE` and
+1. Create an evidence root outside the repository and set
+   `PHASE100_EVIDENCE_ROOT` to its absolute path.
+2. Use `docs/release/phase100-evidence-examples/` as the shape reference and
+   create each document under the evidence root at the relative path named in
+   the table above.
+3. **Remove the `EXAMPLE_ONLY`, `SYNTHETIC_TEST_FIXTURE` and
    `NOT_EXTERNAL_ATTESTATION` keys.** While any of them is present the document
    can never satisfy a gate — that is deliberate, so a shipped example can never
    become the repository's own approval.
-3. Fill every field from evidence that actually exists. Set `testedCommitSha` to
+4. Fill every field from evidence that actually exists. Set `testedCommitSha` to
    the release commit.
-4. Run `npm run eval:phase100:closure` and read the blocker matrix.
+5. Run `npm run eval:phase100:closure` and read the blocker matrix.
 
 Field-by-field definitions: `docs/release/phase100-evidence-schemas.md`.
+
+### How a supplied document can fail
+
+A document that is present but unusable is a **`FAIL`**, never a `BLOCKED`.
+Absence is the only thing that is blocked. The classification is drawn from a
+closed vocabulary and never quotes the file: `EMPTY_FILE`, `NOT_UTF8_TEXT`,
+`JSON_SYNTAX_ERROR`, `NOT_A_JSON_OBJECT`, `MALFORMED_DOCUMENT_SHAPE`,
+`PATH_IS_A_DIRECTORY`, `PATH_NOT_A_REGULAR_FILE`, `FILE_TOO_LARGE`,
+`PATH_ESCAPES_EVIDENCE_ROOT`, `UNREADABLE_PATH`.
+
+The parser's own error message is deliberately discarded. `SyntaxError.message`
+echoes file bytes and an attacker-chosen offset, so quoting it would let whoever
+writes the evidence file choose what the release log says.
 
 ## What Phase 100 never does
 
