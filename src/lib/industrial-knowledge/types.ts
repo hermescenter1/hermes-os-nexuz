@@ -98,13 +98,38 @@ export const KNOWLEDGE_NODE_KINDS = [
   "SCADA_VIEW",
   "HMI_SCREEN",
   "HMI_OBJECT",
+  /** A named supervisory / operator-interface routine, in its own language. */
+  "SCRIPT",
   "RECIPE",
   "KPI",
   "EVIDENCE_SOURCE",
   "FAULT_MODE",
   "SAFE_ACTION",
+  /** Operator authorisation a human-invokable script demands. Governance only. */
+  "ROLE",
+  /** Class of audit record a script declares it emits. Governance only. */
+  "AUDIT_EVENT_TYPE",
 ] as const;
 export type KnowledgeNodeKind = (typeof KNOWLEDGE_NODE_KINDS)[number];
+
+/**
+ * Kinds that describe the GOVERNANCE surround of a system rather than the plant.
+ *
+ * A role and an audit-event class say who may invoke a routine and what record
+ * that invocation leaves. Neither is a physical or logical object a fault can
+ * propagate through, so neither may ever appear on a diagnostic path: an
+ * operator role is not evidence, and reaching a fault mode "via" a role would be
+ * a citation an engineer could not audit. `graph.ts` therefore removes these
+ * kinds while building neighbours and never admits them to a traversal frontier.
+ */
+export const NON_DIAGNOSTIC_NODE_KINDS: readonly KnowledgeNodeKind[] = [
+  "ROLE",
+  "AUDIT_EVENT_TYPE",
+];
+
+export function isNonDiagnosticKind(kind: KnowledgeNodeKind): boolean {
+  return NON_DIAGNOSTIC_NODE_KINDS.includes(kind);
+}
 
 /** How two engineering objects relate. Direction is always source → target. */
 export const KNOWLEDGE_RELATIONS = [
@@ -148,8 +173,27 @@ export const KNOWLEDGE_RELATIONS = [
   "DERIVED_FROM",
   /** navigation between HMI screens */
   "NAVIGATES_TO",
+  /** a human-invokable script demands an operator role (declared, never checked here) */
+  "REQUIRES_ROLE",
+  /** a script declares that invoking it emits an audit event of this class */
+  "EMITS",
 ] as const;
 export type KnowledgeRelation = (typeof KNOWLEDGE_RELATIONS)[number];
+
+/**
+ * Relations that state a governance fact rather than an engineering one.
+ *
+ * `REQUIRES_ROLE` and `EMITS` describe the authorisation and the audit trail a
+ * routine declares. They carry no diagnostic signal — a missing role does not
+ * make a bearing fail — so they are deliberately absent from
+ * `DIAGNOSTIC_RELATIONS` and are listed here so a surface that wants the
+ * governance view asks for it explicitly instead of discovering it by accident.
+ */
+export const STRUCTURAL_RELATIONS: readonly KnowledgeRelation[] = ["REQUIRES_ROLE", "EMITS"];
+
+export function isStructuralRelation(relation: KnowledgeRelation): boolean {
+  return STRUCTURAL_RELATIONS.includes(relation);
+}
 
 /** Subsystem the phase brief scores "correct subsystem identification" against. */
 export const SUBSYSTEMS = [
@@ -266,6 +310,17 @@ export interface NodeAttributes {
   requiredPermission?: string;
   /** TRUE when an HMI command must be confirmed by the operator. */
   requiresConfirmation?: boolean;
+  /**
+   * TRUE when a SCRIPT is declared to be started BY A HUMAN — an operator
+   * pressing a button, an engineer running a routine — rather than by the
+   * runtime on a schedule, a tag change or an alarm.
+   *
+   * Explicit and fail-closed: only the literal value `true` counts. An absent
+   * or undefined field means "not human-invokable", because the safe reading of
+   * an undeclared routine is that no operator is standing behind it. Read it
+   * through `isHumanInvokable`, never as a bare truthiness test.
+   */
+  humanInvokable?: boolean;
   /** Fault class a FAULT_MODE node belongs to. */
   faultClass?: FaultClass;
   /** Subsystem a FAULT_MODE node attributes the fault to. */
@@ -428,6 +483,20 @@ export interface ReferenceSystem extends ReferenceSystemHeader {
  */
 export function isReviewOnly(safetyClass: SafetyClass): boolean {
   return safetyClass !== "NON_SAFETY";
+}
+
+/**
+ * TRUE only when a node EXPLICITLY declares that a human invokes it.
+ *
+ * Fail-closed by construction. Every other value — `false`, `undefined`, an
+ * attribute bag that never mentions the field, a node kind that cannot be
+ * invoked at all — reports `false`. The asymmetry is deliberate: treating an
+ * undeclared routine as operator-driven would let an automatic script inherit
+ * the authorisation story of a manual one, and `validateAuthoredSystem`
+ * rejects a `REQUIRES_ROLE` edge whose source does not pass this check.
+ */
+export function isHumanInvokable(node: { attributes?: NodeAttributes }): boolean {
+  return node.attributes?.humanInvokable === true;
 }
 
 /** Node kinds that may never be presented as an executable step. */

@@ -23,6 +23,7 @@
 // checksums answer the same question about the same kind of artefact.
 
 import { createHash } from "node:crypto";
+import { isHumanInvokable, isNonDiagnosticKind, isStructuralRelation } from "./types";
 import type {
   AuthoredEdge,
   AuthoredNode,
@@ -73,6 +74,12 @@ const ATTRIBUTE_ORDER: readonly (keyof NodeAttributes)[] = [
   "subsystem",
   "expectedState",
   "formula",
+  // Appended, not inserted. A new attribute goes at the END of this list so it
+  // cannot move any existing node's position in the canonical form; only nodes
+  // that actually declare it see their checksum change. `humanInvokable` is in
+  // here on purpose: whether a routine is operator-driven is part of the
+  // engineering content, so flipping it must change the system's identity.
+  "humanInvokable",
 ];
 
 function canonicalAttributes(attrs: NodeAttributes | undefined): Array<[string, unknown]> {
@@ -206,7 +213,11 @@ export interface ValidationIssue {
     | "EMPTY_LABEL"
     | "DUPLICATE_ARTIFACT_LOCAL"
     | "ARTIFACT_DECLARES_UNKNOWN_NODE"
-    | "EMPTY_ARTIFACT";
+    | "EMPTY_ARTIFACT"
+    | "ROLE_ON_AUTOMATIC_SCRIPT"
+    | "REQUIRES_ROLE_TARGET_NOT_ROLE"
+    | "EMITS_TARGET_NOT_AUDIT_EVENT"
+    | "GOVERNANCE_NODE_ON_DIAGNOSTIC_RELATION";
   /** The offending object's id — never its content. */
   ref: string;
   detail?: string;
@@ -265,6 +276,57 @@ export function validateAuthoredSystem(system: AuthoredReferenceSystem): Validat
     }
     if (!nodesById.has(edge.target)) {
       issues.push({ code: "DANGLING_EDGE_TARGET", ref: key, detail: edge.target });
+    }
+
+    /* Governance slice — fail closed on every dimension.
+     *
+     * These four rules are what make the traversal exclusion in `graph.ts` a
+     * guarantee rather than a hope. A ROLE or an AUDIT_EVENT_TYPE can only ever
+     * sit at the far end of its own structural relation, so removing those
+     * kinds from a diagnostic walk cannot silently remove anything else with
+     * them — and no engineering relation can be authored onto a governance node
+     * to sneak one back onto a diagnostic path. */
+    const sourceNode = nodesById.get(edge.source);
+    const targetNode = nodesById.get(edge.target);
+
+    if (edge.relation === "REQUIRES_ROLE") {
+      // An automatic routine has no operator to authorise. Attaching a role to
+      // one would state that a human stands behind an action no human takes —
+      // exactly the claim an audit trail must never be able to make.
+      if (sourceNode && !isHumanInvokable(sourceNode)) {
+        issues.push({
+          code: "ROLE_ON_AUTOMATIC_SCRIPT",
+          ref: key,
+          detail: `${edge.source} does not declare humanInvokable: true`,
+        });
+      }
+      if (targetNode && targetNode.kind !== "ROLE") {
+        issues.push({
+          code: "REQUIRES_ROLE_TARGET_NOT_ROLE",
+          ref: key,
+          detail: `${edge.target} is a ${targetNode.kind}`,
+        });
+      }
+    }
+
+    if (edge.relation === "EMITS" && targetNode && targetNode.kind !== "AUDIT_EVENT_TYPE") {
+      issues.push({
+        code: "EMITS_TARGET_NOT_AUDIT_EVENT",
+        ref: key,
+        detail: `${edge.target} is a ${targetNode.kind}`,
+      });
+    }
+
+    if (!isStructuralRelation(edge.relation)) {
+      for (const endpoint of [sourceNode, targetNode]) {
+        if (endpoint && isNonDiagnosticKind(endpoint.kind)) {
+          issues.push({
+            code: "GOVERNANCE_NODE_ON_DIAGNOSTIC_RELATION",
+            ref: key,
+            detail: `${endpoint.id} is a ${endpoint.kind} and may only carry ${["REQUIRES_ROLE", "EMITS"].join("/")}`,
+          });
+        }
+      }
     }
   }
 

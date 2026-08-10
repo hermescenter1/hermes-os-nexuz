@@ -10,6 +10,7 @@
 // the Phase 101 benchmark meaningful and what keeps a reasoning trace
 // reproducible months after the fact.
 
+import { isNonDiagnosticKind } from "./types";
 import type {
   KnowledgeEdge,
   KnowledgeNode,
@@ -99,9 +100,18 @@ export type TraversalDirection = "out" | "in" | "both";
 export interface NeighbourQuery {
   /** Restrict to these relations. Omitted ⇒ every relation. */
   relations?: readonly KnowledgeRelation[];
-  /** Restrict to neighbours of these kinds. Omitted ⇒ every kind. */
+  /** Restrict to neighbours of these kinds. Omitted ⇒ every DIAGNOSTIC kind. */
   kinds?: readonly KnowledgeNodeKind[];
   direction?: TraversalDirection;
+  /**
+   * Admit `NON_DIAGNOSTIC_NODE_KINDS` (ROLE, AUDIT_EVENT_TYPE) to the result.
+   *
+   * Off by default so no reasoning path can wander into the governance layer
+   * without saying so. A governance surface — "which role may invoke this
+   * script?" — opts in explicitly; `traverse` ignores the flag entirely, so
+   * opting in here can never widen a multi-hop walk.
+   */
+  includeNonDiagnostic?: boolean;
 }
 
 export interface Neighbour {
@@ -111,7 +121,13 @@ export interface Neighbour {
   via: "out" | "in";
 }
 
-/** Immediate neighbours of a node, in stable order. */
+/**
+ * Immediate neighbours of a node, in stable order.
+ *
+ * Governance nodes are removed HERE rather than at each call site, so every
+ * consumer — `traverse`, `reachableFaultModes`, `safeActionsFor`, anything
+ * written later — inherits the exclusion instead of having to remember it.
+ */
 export function neighbours(
   index: KnowledgeIndex,
   nodeId: string,
@@ -120,6 +136,7 @@ export function neighbours(
   const direction = query.direction ?? "out";
   const relations = query.relations ? new Set(query.relations) : null;
   const kinds = query.kinds ? new Set(query.kinds) : null;
+  const includeNonDiagnostic = query.includeNonDiagnostic === true;
   const result: Neighbour[] = [];
 
   const collect = (edges: readonly KnowledgeEdge[] | undefined, via: "out" | "in") => {
@@ -128,6 +145,7 @@ export function neighbours(
       const otherId = via === "out" ? edge.target : edge.source;
       const node = index.nodes.get(otherId);
       if (!node) continue; // unreachable: sealing rejects dangling edges
+      if (!includeNonDiagnostic && isNonDiagnosticKind(node.kind)) continue;
       if (kinds && !kinds.has(node.kind)) continue;
       result.push({ edge, node, via });
     }
@@ -161,6 +179,13 @@ export interface ReachedNode {
  * two hops from the symptom is more relevant than the same object reached by a
  * six-hop detour, and without this rule the ranking would depend on edge
  * insertion order.
+ *
+ * Governance nodes are excluded unconditionally: `includeNonDiagnostic` is
+ * stripped from the neighbour query before the walk starts, so a ROLE or an
+ * AUDIT_EVENT_TYPE can neither be returned nor enter the frontier no matter
+ * what the caller asked for. A one-hop governance lookup is a `neighbours`
+ * call; a multi-hop walk THROUGH a role would be a path an engineer cannot
+ * audit, and there is no option that turns it on.
  */
 export function traverse(
   index: KnowledgeIndex,
@@ -169,6 +194,7 @@ export function traverse(
 ): ReachedNode[] {
   const maxDepth = options.maxDepth ?? 3;
   const maxNodes = options.maxNodes ?? 2_000;
+  const query: NeighbourQuery = { ...options, includeNonDiagnostic: false };
 
   const seen = new Set<string>(origins);
   const result: ReachedNode[] = [];
@@ -179,8 +205,11 @@ export function traverse(
   for (let depth = 1; depth <= maxDepth && frontier.length > 0; depth += 1) {
     const next: Array<{ id: string; path: string[] }> = [];
     for (const current of frontier) {
-      for (const n of neighbours(index, current.id, options)) {
+      for (const n of neighbours(index, current.id, query)) {
         if (seen.has(n.node.id)) continue;
+        // Belt and braces: `query` already excludes these, but the frontier is
+        // the invariant that actually matters, so it is enforced where it lives.
+        if (isNonDiagnosticKind(n.node.kind)) continue;
         seen.add(n.node.id);
         const path = [...current.path, n.edge.id];
         result.push({ node: n.node, depth, path });
@@ -315,6 +344,38 @@ export function safeActionsFor(index: KnowledgeIndex, faultModeId: string): Know
     .map((n) => n.node)
     .filter((node, i, all) => all.findIndex((o) => o.id === node.id) === i)
     .sort((a, b) => byString(a.id, b.id));
+}
+
+/* ── Governance projections ───────────────────────────────────────────────── */
+
+/**
+ * The one-hop governance view of a script: the roles it demands and the audit
+ * event classes it declares it emits.
+ *
+ * Deliberately one hop and deliberately opt-in. This is the only supported way
+ * to see a ROLE or an AUDIT_EVENT_TYPE, and what it returns is what the design
+ * DECLARES — Hermes enforces no role here, issues no audit record, and has no
+ * runtime in which either could happen.
+ */
+export function governanceFor(
+  index: KnowledgeIndex,
+  scriptId: string,
+): { roles: KnowledgeNode[]; auditEventTypes: KnowledgeNode[] } {
+  const pick = (relation: KnowledgeRelation, kind: KnowledgeNodeKind): KnowledgeNode[] =>
+    neighbours(index, scriptId, {
+      relations: [relation],
+      kinds: [kind],
+      direction: "out",
+      includeNonDiagnostic: true,
+    })
+      .map((n) => n.node)
+      .filter((node, i, all) => all.findIndex((o) => o.id === node.id) === i)
+      .sort((a, b) => byString(a.id, b.id));
+
+  return {
+    roles: pick("REQUIRES_ROLE", "ROLE"),
+    auditEventTypes: pick("EMITS", "AUDIT_EVENT_TYPE"),
+  };
 }
 
 /** Evidence nodes declared as relevant to a fault mode, in stable order. */

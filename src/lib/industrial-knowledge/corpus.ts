@@ -126,7 +126,29 @@ export interface SkippedArtifact {
   reason: "NO_RELATION_MAPPING";
 }
 
+/**
+ * Verdict of the agreement gate, as a single value a caller cannot misread.
+ *
+ * The four states exist because "no issues" is not one fact but three very
+ * different ones, and collapsing them would let the weakest of them be reported
+ * as the strongest:
+ *
+ *   FAIL     — at least one issue. Any disagreement, any unresolved symbol, any
+ *              UNMAPPED_RELATION. A relation this build cannot translate is a
+ *              failure, not an omission: the alternative is guessing what an
+ *              operator command means.
+ *   BLOCKED  — nothing was checked at all. A system with no artefacts, or none
+ *              whose language this build can parse, has an UNMEASURED graph. It
+ *              is not clean; it is unexamined, and saying so is the whole point.
+ *   PARTIAL  — some artefacts checked, some skipped, and no issue in what was
+ *              checked. An honest positive result over an incomplete surface.
+ *   PASS     — every artefact checked, no issue. The only state that entitles
+ *              anyone to say the graph agrees with the source.
+ */
+export type SourceAgreementStatus = "PASS" | "PARTIAL" | "BLOCKED" | "FAIL";
+
 export interface SourceAgreementReport {
+  status: SourceAgreementStatus;
   issues: AgreementIssue[];
   /** Artefact locals whose relationships were extracted and checked. */
   checked: string[];
@@ -212,7 +234,24 @@ export function sourceAgreementReport(system: ReferenceSystem): SourceAgreementR
     }
   }
 
-  return { issues, checked, skipped };
+  return { status: agreementStatus(issues, checked, skipped), issues, checked, skipped };
+}
+
+/**
+ * Resolve the four states in strict precedence: a defect outranks an absence,
+ * and an absence outranks an incomplete pass. Evaluated in that order so a
+ * system that is both unmeasured and defective is reported as FAIL — the
+ * stronger warning — rather than as merely unexamined.
+ */
+function agreementStatus(
+  issues: readonly AgreementIssue[],
+  checked: readonly string[],
+  skipped: readonly SkippedArtifact[],
+): SourceAgreementStatus {
+  if (issues.length > 0) return "FAIL";
+  if (checked.length === 0) return "BLOCKED";
+  if (skipped.length > 0) return "PARTIAL";
+  return "PASS";
 }
 
 /**
