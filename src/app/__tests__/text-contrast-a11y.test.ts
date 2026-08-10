@@ -20,7 +20,13 @@
  * src/**), and a bare literal here would make Tailwind re-emit the very utility
  * we are trying to keep out of the production bundle.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// PHASE 99.7 — this gate walks and reads the whole `src` tree. That cost is
+// real work whose wall-clock varies several-fold with machine load, and under
+// contention the passing assertion was reported as a 5s timeout. The budget is
+// explicit so the result reflects the invariant, not the load.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
