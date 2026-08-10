@@ -140,7 +140,14 @@ export function evaluatorFailures(ledger, contradictions = []) {
   const gateIndex = new Map(ledger.map((g) => [g.name, g]));
   const failures = [];
 
-  if (gateIndex.get("PHASE100_IMPLEMENTATION")?.state !== "PASS") failures.push("PHASE100_IMPLEMENTATION");
+  // Every IMPLEMENTATION gate is a repository-owned fact about the closure
+  // mechanism itself — the self-check, the evidence lifecycle, the source
+  // classification, the attribution proof. None of them can be pending on an
+  // owner, so anything short of PASS is a broken mechanism and fails the build.
+  for (const g of ledger) {
+    if (g.group === "IMPLEMENTATION" && g.state !== "PASS") failures.push(g.name);
+  }
+  if (!gateIndex.has("PHASE100_IMPLEMENTATION")) failures.push("PHASE100_IMPLEMENTATION");
   if (gateIndex.get("PHASE100_INTERNAL_TECHNICAL_READINESS")?.state === "FAIL") {
     failures.push("PHASE100_INTERNAL_TECHNICAL_READINESS");
   }

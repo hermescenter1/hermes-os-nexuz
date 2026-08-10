@@ -42,7 +42,7 @@
  * only `phase100-ga-closure.json`.
  */
 
-import { readFileSync, existsSync, writeFileSync, readdirSync } from "node:fs";
+import { existsSync, writeFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -55,17 +55,36 @@ import {
   liveModelEvaluationGateInput,
   backupOperationalGateInputs,
   commercialGateInputs,
+  commercialCoherenceViolations,
   infrastructurePrerequisiteGateInputs,
   gaAuthorizationGateInput,
   validateResidualRiskAcceptance,
   isNonProductionFixture,
 } from "../security/phase100/ga-evidence.mjs";
-import { createLedger, aggregate, assembleVerdict, evaluatorFailures } from "../security/phase100/verdict.mjs";
+import {
+  EVIDENCE_DOCUMENTS,
+  EVIDENCE_ROOT_ENV,
+  REPOSITORY_SOURCES,
+  createEvidenceReader,
+  evidenceRepositoryViolations,
+  resolveEvidenceRoot,
+} from "../security/phase100/evidence-root.mjs";
+import { malformedReason, malformedGateError } from "../security/phase100/evidence-source.mjs";
+import { attributeInternalReadiness, attributionViolations } from "../security/phase100/readiness-attribution.mjs";
+import { createLedger, aggregate, assembleVerdict, evaluatorFailures, INFORMATIONAL_GROUP } from "../security/phase100/verdict.mjs";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const rel = (p) => join(REPO, ...p.split("/"));
-const read = (p) => (existsSync(rel(p)) ? readFileSync(rel(p), "utf8") : null);
-const readJson = (p) => { const t = read(p); if (!t) return null; try { return JSON.parse(t); } catch { return null; } };
+
+// ── Evidence lifecycle ────────────────────────────────────────────────────────
+//
+// Reading is a CLASSIFICATION, not a coercion. `readEvidenceSource` distinguishes
+// absent (BLOCKED, correct) from supplied-but-unusable (FAIL, fails the build),
+// and it never lets a directory, a device node, an oversized blob or a
+// `JSON.parse` message reach either the evaluator's control flow or its output.
+const evidenceRoot = resolveEvidenceRoot({ repoRoot: REPO });
+const reader = createEvidenceReader({ repoRoot: REPO, mode: evidenceRoot.mode, root: evidenceRoot.root });
+const { readDocument, readRepositorySource, readText: read, readJson } = reader;
 
 const NOW_MS = Date.now();
 
@@ -105,6 +124,37 @@ function recordEvidenceGate(group, { gate, evidence, validator }) {
   return record(gate, group, resolved.state, reason, resolved.errors, supplied);
 }
 
+/**
+ * Record every gate derived from one evidence document.
+ *
+ * A MALFORMED document fails ALL of its gates individually and identically. It
+ * must never be reported as a set of unrelated absences: "no evidence recorded"
+ * beside a file that exists on disk is the specific lie this phase removes, and
+ * it is the difference between a BLOCKED build (expected) and a FAILED one
+ * (someone supplied evidence that cannot be used).
+ *
+ * The recorded text carries the classification and the byte length only — never
+ * a parser message, never a fragment of the file.
+ */
+function recordDocumentGates(group, documentId, buildInputs) {
+  const source = readDocument(documentId);
+  const inputs = buildInputs(source.status === "VALID" ? source.document : null);
+  for (const input of inputs) {
+    if (source.status === "MALFORMED") {
+      record(
+        input.gate,
+        group,
+        "FAIL",
+        malformedReason(documentId, source.classification),
+        [malformedGateError(input.gate, documentId, source)],
+        true,
+      );
+    } else {
+      recordEvidenceGate(group, input);
+    }
+  }
+}
+
 // ── 1. Phase 100 implementation self-check ────────────────────────────────────
 //
 // "Is the closure MECHANISM built?" is a separate question from "may we ship?",
@@ -113,6 +163,9 @@ function recordEvidenceGate(group, { gate, evidence, validator }) {
 const REQUIRED_ARTIFACTS = [
   "scripts/security/phase99/closure-core.mjs",
   "scripts/security/phase100/ga-evidence.mjs",
+  "scripts/security/phase100/evidence-source.mjs",
+  "scripts/security/phase100/evidence-root.mjs",
+  "scripts/security/phase100/readiness-attribution.mjs",
   "scripts/ci/phase100-ga-closure-eval.mjs",
   ".github/workflows/phase100-ga-closure.yml",
   "docs/release/phase100-ga-closure-contract.md",
@@ -161,6 +214,77 @@ record(
   true,
 );
 
+// ── 1b. Evidence lifecycle ────────────────────────────────────────────────────
+//
+// Four repository-owned facts about HOW evidence was read. They are gates rather
+// than assertions because they must appear in the published verdict: a run that
+// silently read a malformed file, or read evidence from a path that escaped its
+// root, would otherwise look identical to a clean run.
+
+record(
+  "PHASE100_EVIDENCE_ROOT_LIFECYCLE",
+  "IMPLEMENTATION",
+  evidenceRoot.errors.length === 0 ? "PASS" : "FAIL",
+  evidenceRoot.errors.length === 0
+    ? `evidence mode ${evidenceRoot.mode}` +
+      (evidenceRoot.mode === "CONTRACT_TEST"
+        ? ` — no ${EVIDENCE_ROOT_ENV} configured, so the eight owner/external documents are looked for at their repository paths, where they are absent by design`
+        : " — evidence root resolved outside the repository working tree")
+    : `${EVIDENCE_ROOT_ENV} was set but could not be honoured safely`,
+  evidenceRoot.errors,
+  evidenceRoot.mode === "OWNER_CLOSURE",
+);
+
+const committedEvidence = evidenceRepositoryViolations({ repoRoot: REPO });
+record(
+  "PHASE100_EVIDENCE_NOT_COMMITTED",
+  "IMPLEMENTATION",
+  committedEvidence.length === 0 ? "PASS" : "FAIL",
+  committedEvidence.length === 0
+    ? "no owner or external evidence document is committed to the repository"
+    : "owner/external evidence is committed to a public tree",
+  committedEvidence,
+  true,
+);
+
+// Every registered evidence document, classified. ABSENT is expected; VALID is
+// judged by the gates below; MALFORMED is a build failure recorded here AND on
+// each gate the document feeds.
+const documentSources = Object.fromEntries(Object.keys(EVIDENCE_DOCUMENTS).map((id) => [id, readDocument(id)]));
+const malformedDocuments = Object.values(documentSources).filter((s) => s.status === "MALFORMED");
+record(
+  "PHASE100_EVIDENCE_SOURCE_INTEGRITY",
+  "IMPLEMENTATION",
+  malformedDocuments.length === 0 ? "PASS" : "FAIL",
+  malformedDocuments.length === 0
+    ? `${Object.keys(documentSources).length} evidence document(s) classified: ` +
+      `${Object.values(documentSources).filter((s) => s.status === "ABSENT").length} absent, ` +
+      `${Object.values(documentSources).filter((s) => s.status === "VALID").length} valid`
+    : `${malformedDocuments.length} supplied evidence document(s) cannot be read`,
+  malformedDocuments.map((s) => malformedReason(s.documentId, s.classification)),
+  malformedDocuments.length > 0,
+);
+
+// The inputs evidence is judged AGAINST. These always come from the repository,
+// and a malformed one is an engineering failure, not a pending decision.
+const repositorySourceErrors = [];
+for (const relPath of Object.keys(REPOSITORY_SOURCES)) {
+  const source = readRepositorySource(relPath);
+  if (source.status === "MALFORMED") {
+    repositorySourceErrors.push(`${relPath}: SUPPLIED but ${source.classification} — no field of it was read`);
+  }
+}
+record(
+  "PHASE100_REPOSITORY_SOURCE_INTEGRITY",
+  "IMPLEMENTATION",
+  repositorySourceErrors.length === 0 ? "PASS" : "FAIL",
+  repositorySourceErrors.length === 0
+    ? "every repository-owned input is readable and correctly shaped"
+    : "a repository-owned input could not be read",
+  repositorySourceErrors,
+  true,
+);
+
 // ── 2. Internal technical readiness (reuses the Phase 99 readiness evaluator) ──
 
 let readinessState = "UNAVAILABLE";
@@ -182,18 +306,9 @@ try {
   readinessBlockedOn = (/RESULT phase99_blocked_on_owner=(\S+)/.exec(out)?.[1] ?? "").split(",").filter(Boolean);
 }
 
-record(
-  "PHASE100_INTERNAL_TECHNICAL_READINESS",
-  "INTERNAL_READINESS",
-  readinessState === "PASS" ? "PASS" : readinessState === "UNAVAILABLE" ? "FAIL" : readinessState === "FAIL" ? "FAIL" : "BLOCKED",
-  readinessState === "UNAVAILABLE"
-    ? "the Phase 99 readiness evaluator could not be run — its verdict cannot be assumed"
-    : readinessState === "PASS"
-      ? null
-      : `phase99_readiness=${readinessState}${readinessBlockedOn.length ? ` (blocked on: ${readinessBlockedOn.join(",")})` : ""}`,
-  [],
-  true,
-);
+// The readiness GATE is recorded after the Phase 99 gates below, because
+// attribution can only be decided once the gates that would inherit each
+// owner-blocked fact are actually in the ledger.
 
 // ── 3. Phase 99 closure gates (external security + pilot), reused verbatim ─────
 
@@ -225,16 +340,53 @@ const PILOT_MEMBERS = [
   "INDUSTRIAL_ENGINEER_FEEDBACK",
 ];
 
+// A malformed attestation or pilot document reaches the shared Phase 99 engine
+// as `null`, which is correct FOR THAT ENGINE — Phase 100 has already classified
+// the same path. But `null` renders as BLOCKED, and a supplied-but-unusable
+// document is a FAIL. The classification therefore overrides the state here, on
+// exactly the gates that document feeds.
+const malformedGateOverride = new Map();
+for (const [documentId, source] of Object.entries(documentSources)) {
+  if (source.status !== "MALFORMED") continue;
+  for (const gate of EVIDENCE_DOCUMENTS[documentId].gates) malformedGateOverride.set(gate, source);
+}
+
 for (const ev of phase99.events) {
   const group = EXTERNAL_SECURITY_MEMBERS.includes(ev.name)
     ? "EXTERNAL_SECURITY"
     : PILOT_MEMBERS.includes(ev.name)
       ? "PILOT_ACCEPTANCE"
       : "PHASE99_AGGREGATE";
+
+  const override = malformedGateOverride.get(ev.name);
+  if (override) {
+    record(
+      ev.name,
+      group,
+      "FAIL",
+      malformedReason(override.documentId, override.classification),
+      [malformedGateError(ev.name, override.documentId, override)],
+      true,
+    );
+    continue;
+  }
+
   // INDUSTRIAL_ENGINEER_FEEDBACK's success state is RECORDED, not PASS.
   const state = ev.name === "INDUSTRIAL_ENGINEER_FEEDBACK" && ev.state === "RECORDED" ? "PASS" : ev.state;
   record(ev.name, group, state, ev.reason, ev.errors, ev.state !== "BLOCKED");
 }
+
+// Internal technical readiness, attributed. Every Phase 99 readiness group that
+// is blocked purely on an owner/pilot decision is counted ONCE, as the Phase 100
+// gate that already owns that decision — not a second time here under an
+// engineering label. An unrecognised blocked group keeps this gate BLOCKED and
+// names itself, so nothing can go uncounted.
+const attribution = attributeInternalReadiness({
+  readinessState,
+  blockedOn: readinessBlockedOn,
+  gateStateOf: (gate) => gateIndex.get(gate)?.state ?? null,
+});
+record("PHASE100_INTERNAL_TECHNICAL_READINESS", "INTERNAL_READINESS", attribution.state, attribution.reason, attribution.errors, true);
 
 // `RELEASE_BLOCKERS_ZERO` is a Phase 99 AGGREGATE: it folds the missing pilot
 // acceptance into the finding-register blocker count and reports the sum as
@@ -264,7 +416,11 @@ record(
 
 const registryDoc = readJson("docs/security/phase99-findings.json");
 const residualAcceptances = readJson("docs/security/phase99-risk-acceptances.json")?.residualAcceptances ?? {};
-const unresolvedResidual = (registryDoc?.findings ?? []).filter(
+// Never coerce a non-array to an empty list: "no findings" and "the findings
+// could not be read" are different facts, and the register-integrity gate above
+// has already failed the build for the second one.
+const registryFindings = Array.isArray(registryDoc?.findings) ? registryDoc.findings : [];
+const unresolvedResidual = registryFindings.filter(
   (f) => ["MEDIUM", "LOW", "INFO"].includes(f?.severity) && !RESOLVED_STATUSES.includes(f?.status),
 );
 
@@ -294,41 +450,73 @@ if (unresolvedResidual.length === 0) {
 
 // ── 5. Legal and privacy ──────────────────────────────────────────────────────
 
-const legalDoc = readJson("docs/legal/phase100-legal-privacy-approvals.json");
-for (const input of legalPrivacyGateInputs(legalDoc, { expectedCommitSha, nowMs: NOW_MS })) {
-  recordEvidenceGate("LEGAL_PRIVACY", input);
-}
+const evidenceCtx = { expectedCommitSha, nowMs: NOW_MS };
+
+recordDocumentGates("LEGAL_PRIVACY", "LEGAL_PRIVACY", (doc) => legalPrivacyGateInputs(doc, evidenceCtx));
 
 // ── 6. Live model evaluation ──────────────────────────────────────────────────
 
-const liveEvalDoc = readJson("docs/ai-governance/phase100-live-model-evaluation.json");
-recordEvidenceGate("LIVE_MODEL_EVALUATION", liveModelEvaluationGateInput(liveEvalDoc, { expectedCommitSha, nowMs: NOW_MS }));
+recordDocumentGates("LIVE_MODEL_EVALUATION", "LIVE_MODEL_EVALUATION", (doc) => [liveModelEvaluationGateInput(doc, evidenceCtx)]);
 
 // ── 7. Backup and disaster-recovery operations ────────────────────────────────
 
-const backupDoc = readJson("docs/release/phase100-backup-operations.json");
-for (const input of backupOperationalGateInputs(backupDoc, { expectedCommitSha, nowMs: NOW_MS })) {
-  recordEvidenceGate("BACKUP_OPERATIONAL", input);
-}
+recordDocumentGates("BACKUP_OPERATIONAL", "BACKUP_OPERATIONS", (doc) => backupOperationalGateInputs(doc, evidenceCtx));
 
 // ── 8. Commercial owner decisions ─────────────────────────────────────────────
 
-const commercialDoc = readJson("docs/release/phase100-commercial-decisions.json");
-for (const input of commercialGateInputs(commercialDoc, { expectedCommitSha, nowMs: NOW_MS })) {
-  recordEvidenceGate("COMMERCIAL_OWNER", input);
-}
+recordDocumentGates("COMMERCIAL_OWNER", "COMMERCIAL_DECISIONS", (doc) => commercialGateInputs(doc, evidenceCtx));
+
+// Cross-field coherence. Each commercial section is validated on its own, so a
+// document can be built entirely from individually-valid sections that together
+// describe something impossible — billing ACTIVATED with no payment provider, a
+// LIVE provider beside DEFERRED billing, prices in a currency that is never
+// settled. Absence is not a contradiction and is already counted once by the
+// four gates above, so this gate PASSes on an absent document and can only ever
+// FAIL on a supplied one.
+const commercialSource = documentSources.COMMERCIAL_DECISIONS;
+const coherenceViolations =
+  commercialSource.status === "VALID" ? commercialCoherenceViolations(commercialSource.document) : [];
+record(
+  "PHASE100_COMMERCIAL_GA_COHERENCE",
+  "COMMERCIAL_OWNER",
+  coherenceViolations.length === 0 ? "PASS" : "FAIL",
+  coherenceViolations.length === 0
+    ? commercialSource.status === "VALID"
+      ? "the commercial decision document is internally coherent for a paid GA"
+      : "no commercial decision document to contradict itself"
+    : "the commercial decision document contradicts itself",
+  coherenceViolations,
+  commercialSource.status !== "ABSENT",
+);
 
 // ── 9. OpenBao / production infrastructure prerequisites ──────────────────────
 
-const infraDoc = readJson("docs/release/phase100-infrastructure-prerequisites.json");
-for (const input of infrastructurePrerequisiteGateInputs(infraDoc, { expectedCommitSha, nowMs: NOW_MS })) {
-  recordEvidenceGate("OPENBAO_PRODUCTION_PREREQUISITES", input);
-}
+recordDocumentGates("OPENBAO_PRODUCTION_PREREQUISITES", "INFRASTRUCTURE_PREREQUISITES", (doc) =>
+  infrastructurePrerequisiteGateInputs(doc, evidenceCtx),
+);
 
 // ── 10. Final GA authorization ────────────────────────────────────────────────
 
-const gaDoc = readJson("docs/release/phase100-ga-authorization.json");
-recordEvidenceGate("GA_AUTHORIZATION", gaAuthorizationGateInput(gaDoc, { expectedCommitSha, nowMs: NOW_MS }));
+recordDocumentGates("GA_AUTHORIZATION", "GA_AUTHORIZATION", (doc) => [gaAuthorizationGateInput(doc, evidenceCtx)]);
+
+// ── 11. Attribution self-check ────────────────────────────────────────────────
+//
+// The ledger is now complete, so the uniqueness properties it depends on can be
+// proven rather than assumed: no gate identity appears twice, no Phase 99
+// aggregate sits inside the counted set, and every fact attributed away from
+// internal readiness is still counted by the gate that inherited it.
+
+const attributionErrors = attributionViolations(ledger, INFORMATIONAL_GROUP, { attributedTo: attribution.attributedTo });
+record(
+  "PHASE100_READINESS_ATTRIBUTION",
+  "IMPLEMENTATION",
+  attributionErrors.length === 0 ? "PASS" : "FAIL",
+  attributionErrors.length === 0
+    ? `${ledger.length} gate(s) recorded, each blocker attributed exactly once`
+    : "a release blocker is counted twice or not at all",
+  attributionErrors,
+  true,
+);
 
 // ── Verdict ───────────────────────────────────────────────────────────────────
 
@@ -354,6 +542,9 @@ const summary = {
   schemaVersion: 1,
   kind: "OFFICIAL_GA_CLOSURE",
   expectedCommitSha,
+  // The MODE only. Never the root path: in OWNER_CLOSURE it is an absolute
+  // location on the owner's machine, and this summary is published as an artifact.
+  evidenceMode: evidenceRoot.mode,
   officialOutputs,
   gates: Object.fromEntries(ledger.map((g) => [g.name, g.state])),
   reasons: Object.fromEntries(ledger.filter((g) => g.reason).map((g) => [g.name, g.reason])),
