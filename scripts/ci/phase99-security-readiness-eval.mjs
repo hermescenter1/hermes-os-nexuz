@@ -276,18 +276,25 @@ group("FINDING_GOVERNANCE", ({ check, blockOwner, note }) => {
   for (const [k, v] of Object.entries(result.counters)) check(v === 0, `${k}=${v}`);
   // Evidence integrity: a closed finding's retest artifact must still be the one
   // that was hashed when it was closed.
-  for (const f of reg.findings) {
-    if (!f.retestReference || !f.evidenceHash) continue;
+  for (const f of Array.isArray(reg.findings) ? reg.findings : []) {
+    if (!f?.retestReference || !f?.evidenceHash) continue;
     const body = read(f.retestReference);
     check(body !== null, `${f.findingId}: retest artifact ${f.retestReference} is missing`);
     if (body === null) continue;
     const actual = sha256(body.replace(/\r\n/g, "\n"));
     check(actual === f.evidenceHash, `${f.findingId}: retest evidence changed since it was recorded (hash mismatch)`);
   }
-  if (result.summary.highOpen > 0) {
-    blockOwner(`${result.summary.highOpen} HIGH finding(s) open with no formal owner risk acceptance; RELEASE_BLOCKERS=${result.summary.releaseBlockers}`);
+  // A register that could not be read reports NULL counters, not zeroes. Unknown
+  // is a FAIL here, never a silent pass and never an owner block: nobody can
+  // decide about findings that could not be enumerated.
+  if (result.summary.registerReadable === false) {
+    check(false, "finding register is unreadable — its counters are UNKNOWN and cannot be treated as zero");
+  } else {
+    if (result.summary.highOpen > 0) {
+      blockOwner(`${result.summary.highOpen} HIGH finding(s) open with no formal owner risk acceptance; RELEASE_BLOCKERS=${result.summary.releaseBlockers}`);
+    }
+    check(result.summary.criticalOpen === 0, `CRITICAL findings still open: ${result.summary.criticalOpen}`);
   }
-  check(result.summary.criticalOpen === 0, `CRITICAL findings still open: ${result.summary.criticalOpen}`);
 });
 
 // ── 17. External review package ───────────────────────────────────────────────

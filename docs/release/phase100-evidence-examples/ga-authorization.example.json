@@ -1,0 +1,22 @@
+{
+  "EXAMPLE_ONLY": true,
+  "SYNTHETIC_TEST_FIXTURE": true,
+  "NOT_EXTERNAL_ATTESTATION": true,
+  "_readme": "SHAPE REFERENCE ONLY. Rejected by construction. This is the LAST gate, never the first. acknowledgedBlockerCount must be 0, so an authorization signed while any blocker remains is itself invalid — an owner signature can never be used to paper over gates that never passed. Supply this only after every other Phase 100 gate already reports PASS.",
+  "schemaVersion": 1,
+  "evidenceType": "GA_AUTHORIZATION",
+  "testedCommitSha": "0000000000000000000000000000000000000000",
+  "recordedAt": "2026-01-01T00:00:00.000Z",
+  "signedOrOwnerVerified": true,
+  "authorization": {
+    "decision": "AUTHORIZED",
+    "releaseVersion": "v1.0.0",
+    "ownerAuthorityRole": "Managing Director",
+    "authorizedAt": "2026-01-01",
+    "authorizationEvidenceReference": "private-channel/release/ga-authorization",
+    "authorizationEvidenceSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "acknowledgedBlockerCount": 0,
+    "allPrecedingGatesReviewed": true,
+    "validityExpiresAt": "2027-01-01"
+  }
+}

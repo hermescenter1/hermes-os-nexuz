@@ -62,11 +62,34 @@ explicitly waived by the owner with a recorded reason. Companion:
 - [ ] Deploy rebuilds `--no-deps hermes-web` only; data services/volumes untouched
 - [ ] Rollback steps confirmed (`DEPLOYMENT.md §10`)
 
-## G. Sign-off
+## G. GA closure gate (Phase 100 — authoritative)
 
-- [ ] Owner reviews the go/no-go matrix and records **GO** / **NO-GO**
-- [ ] Release commit SHA recorded
+Sections A–F are necessary and **not sufficient**. They prove the engineering
+work; they cannot prove that an external reviewer, a pilot customer, external
+counsel or the owner has decided anything. That is what this section is for, and
+it is the only section whose verdict is machine-generated.
+
+- [ ] `npm run eval:phase100:closure` run on the release commit
+- [ ] `PHASE100_IMPLEMENTATION=PASS`
+- [ ] `RELEASE_BLOCKER_COUNT=0` — every gate named in the blocker matrix cleared
+- [ ] `GA_RELEASE_READY=YES`
+- [ ] `PHASE100_CLOSURE=PASS`
+
+Any box above that cannot be ticked from a real run of the evaluator is a
+**NO-GO**. Do not tick it from a document, a previous run, or a green CI badge:
+the Phase 100 workflow succeeds while `PHASE100_CLOSURE=BLOCKED` by design.
+Contract: [`phase100-ga-closure-contract.md`](phase100-ga-closure-contract.md).
+
+## H. Sign-off
+
+- [ ] Owner reviews the Phase 100 blocker matrix and records **GO** / **NO-GO**
+- [ ] Release commit SHA recorded, and it is the `testedCommitSha` in every
+      supplied evidence document
 - [ ] Post-deploy verification plan agreed (health, key flows, SLIs for 15 min)
+
+> `go-no-go-matrix.md` is a **historical Phase 93 record**, not a release
+> authority. Its `V1_RELEASE_READY` line has been superseded — see the Phase 100
+> correction in that file.
 
 > Deferred items in D are **DEFERRED_OWNER_CONFIGURATION**: they require an owner
 > destination/credential and are safe to defer for v1 launch, with detection
