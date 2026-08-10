@@ -293,6 +293,12 @@ const residualAcceptance = () => ({
   compensatingControls: ["not reachable from any authenticated route"],
   acceptedAt: "2026-08-01",
   expiresAt: FUTURE,
+  // An acceptance with an expiry but no remediation plan is a permanent waiver
+  // with a date on it, so the contract requires an owner, a plan and a target
+  // date that falls inside the acceptance window.
+  remediationOwnerRole: "Platform Engineering Lead",
+  remediationPlanReference: "private-channel/security/remediation/P99-DEP-008",
+  targetRemediationDate: "2026-12-01",
   evidenceReference: "private-channel/security/residual-008",
   evidenceSha256: DIGEST,
 });
