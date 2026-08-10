@@ -224,6 +224,37 @@ export function validateRiskAcceptance(a, { nowMs = Date.now() } = {}) {
  * `acceptances` is keyed by findingId.
  */
 /**
+ * The named failure for a register whose `findings` key is not an array.
+ *
+ * This used to be coerced with `Array.isArray(findings) ? findings : []`, which
+ * is fail-OPEN in the most dangerous possible way: a register of `"x"`, `{}`,
+ * `42` or `null` read as a register of ZERO findings, so `criticalOpen`,
+ * `highOpen` and `releaseBlockers` were all 0 and every counter stayed clean.
+ * FINDING_REGISTER, CRITICAL_FINDINGS_ZERO, HIGH_FINDINGS_RESOLVED and
+ * OPEN_RELEASE_BLOCKING_FINDINGS_ZERO all turned GREEN on a corrupt register —
+ * the four gates that exist precisely to stop that.
+ *
+ * "No findings" and "the findings could not be read" are different facts, and
+ * only one of them is safe. An unreadable register yields NULL counters, never
+ * zeroes: every consumer already coalesces a null counter to a blocking value.
+ */
+export const FINDING_REGISTER_NOT_AN_ARRAY =
+  "FINDING_REGISTER_NOT_AN_ARRAY: 'findings' must be an array — an unreadable register is never an empty register";
+
+/** Counters for a register that could not be read. Unknown, never zero. */
+function unreadableRegisterSummary() {
+  return {
+    total: null,
+    bySeverity: Object.fromEntries(SEVERITIES.map((s) => [s, null])),
+    criticalOpen: null,
+    highOpen: null,
+    highFormallyAccepted: null,
+    releaseBlockers: null,
+    registerReadable: false,
+  };
+}
+
+/**
  * @param {unknown[]} findings
  * @param {Record<string, unknown>} [acceptances]
  * @param {{ nowMs?: number }} [options]
@@ -241,7 +272,17 @@ export function evaluateRegistry(findings, acceptances = {}, { nowMs = Date.now(
     AGENT_SELF_RISK_ACCEPTANCE: 0,
   };
 
-  const list = Array.isArray(findings) ? findings : [];
+  // Fail CLOSED, never coerce. See FINDING_REGISTER_NOT_AN_ARRAY.
+  if (!Array.isArray(findings)) {
+    return {
+      ok: false,
+      errors: [FINDING_REGISTER_NOT_AN_ARRAY],
+      counters,
+      summary: unreadableRegisterSummary(),
+    };
+  }
+
+  const list = findings;
   const seenIds = new Set();
 
   for (const f of list) {
@@ -283,6 +324,7 @@ export function evaluateRegistry(findings, acceptances = {}, { nowMs = Date.now(
     highOpen: openBlocking.filter((f) => f?.severity === "HIGH").length,
     highFormallyAccepted: list.filter((f) => f?.severity === "HIGH" && f?.status === "RISK_ACCEPTED").length,
     releaseBlockers: list.filter((f) => f?.releaseBlocker === true && !RESOLVED_STATUSES.includes(f?.status)).length,
+    registerReadable: true,
   };
 
   const ok = errors.length === 0 && Object.values(counters).every((n) => n === 0);

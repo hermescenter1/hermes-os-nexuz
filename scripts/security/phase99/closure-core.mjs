@@ -21,6 +21,12 @@ import {
 } from "./external-evidence.mjs";
 import { evaluateRegistry } from "./finding-contract.mjs";
 
+/** Named, content-free failures for a supplied document of the wrong shape. */
+export const MALFORMED_ATTESTATIONS =
+  "MALFORMED_EXTERNAL_ATTESTATIONS: 'attestations' must be an array — a supplied document of the wrong shape is a FAILURE, not an absence";
+export const MALFORMED_ACCEPTANCES =
+  "MALFORMED_RISK_ACCEPTANCES: 'acceptances' must be an object keyed by findingId";
+
 /** Gate name per external review type. Kept explicit rather than derived. */
 export const GATE_FOR_TYPE = {
   INDEPENDENT_PENETRATION_TEST: "INDEPENDENT_PENETRATION_TEST",
@@ -61,10 +67,22 @@ export function evaluatePhase99Closure({ readText, readJson, expectedCommitSha, 
   const expectedScopeHash = computeScopeHash(readText("docs/security/phase99-external-review-scope.md") ?? "");
   const expectedPilotScopeHash = computeScopeHash(readText("docs/pilot/phase99-pilot-plan.md") ?? "");
 
-  const attestations = readJson("docs/security/phase99-external-attestations.json")?.attestations ?? [];
+  // `?? []` only fires for null/undefined, so `{"attestations":{}}` used to slip
+  // through as an object and reach `.find()` below — a TypeError that killed the
+  // whole evaluator, turning "someone supplied a malformed attestation file"
+  // into "the release gate crashed". A wrong shape is a named, safe failure.
+  const attestationsRaw = readJson("docs/security/phase99-external-attestations.json")?.attestations;
+  const attestationsMalformed = attestationsRaw !== null && attestationsRaw !== undefined && !Array.isArray(attestationsRaw);
+  const attestations = Array.isArray(attestationsRaw) ? attestationsRaw : [];
+
   const pilotAcceptance = readJson("docs/pilot/phase99-pilot-acceptance.json");
   const registry = readJson("docs/security/phase99-findings.json");
-  const acceptances = readJson("docs/security/phase99-risk-acceptances.json")?.acceptances ?? {};
+
+  // Same shape hazard: a non-object `acceptances` would be indexed as one.
+  const acceptancesRaw = readJson("docs/security/phase99-risk-acceptances.json")?.acceptances;
+  const acceptancesMalformed =
+    acceptancesRaw !== null && acceptancesRaw !== undefined && (typeof acceptancesRaw !== "object" || Array.isArray(acceptancesRaw));
+  const acceptances = acceptancesMalformed || !acceptancesRaw ? {} : acceptancesRaw;
 
   const gates = {};
   const reasons = {};
@@ -81,6 +99,12 @@ export function evaluatePhase99Closure({ readText, readJson, expectedCommitSha, 
   const externalCounts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
 
   for (const type of EXTERNAL_REVIEW_TYPES) {
+    if (attestationsMalformed) {
+      // Supplied and unusable is a FAILURE, never an absence: the file exists,
+      // so reporting "no evidence recorded" would be a lie about what is there.
+      setGate(GATE_FOR_TYPE[type], "FAIL", MALFORMED_ATTESTATIONS, [MALFORMED_ATTESTATIONS]);
+      continue;
+    }
     const evidence = attestations.find((a) => a?.reviewType === type) ?? null;
     const gate = resolveGate(evidence, (a) => validateExternalAttestation(a, { expectedCommitSha, expectedScopeHash }));
     setGate(
@@ -105,23 +129,34 @@ export function evaluatePhase99Closure({ readText, readJson, expectedCommitSha, 
   } else {
     const result = evaluateRegistry(registry.findings, acceptances, { nowMs });
     registrySummary = result.summary;
-    if (!result.ok) {
-      setGate("FINDING_REGISTER", "FAIL", "finding register failed its own invariants", result.errors);
+    const errors = acceptancesMalformed ? [MALFORMED_ACCEPTANCES, ...result.errors] : result.errors;
+    if (!result.ok || acceptancesMalformed) {
+      setGate("FINDING_REGISTER", "FAIL", "finding register failed its own invariants", errors);
     } else {
       setGate("FINDING_REGISTER", "PASS");
     }
   }
 
+  // An unreadable register yields NULL counters. `?? 1` keeps every derived gate
+  // fail-closed, and `registerUnknown` keeps the REASON honest: the count is not
+  // "one", it is unknown, and unknown is what makes the gate fail.
+  const registerUnknown = registrySummary === null || registrySummary?.registerReadable === false;
   const criticalOpen = (registrySummary?.criticalOpen ?? 1) + externalCounts.critical;
   const highOpen = registrySummary?.highOpen ?? 1;
   const highAccepted = registrySummary?.highFormallyAccepted ?? 0;
   const releaseBlockers = registrySummary?.releaseBlockers ?? 1;
 
-  setGate("CRITICAL_FINDINGS_ZERO", criticalOpen === 0 ? "PASS" : "FAIL", `CRITICAL_FINDINGS=${criticalOpen}`);
+  setGate(
+    "CRITICAL_FINDINGS_ZERO",
+    criticalOpen === 0 ? "PASS" : "FAIL",
+    registerUnknown ? "CRITICAL_FINDINGS=UNKNOWN — the finding register could not be read" : `CRITICAL_FINDINGS=${criticalOpen}`,
+  );
   setGate(
     "HIGH_FINDINGS_RESOLVED",
     highOpen === 0 ? "PASS" : "FAIL",
-    `HIGH_FINDINGS=${highOpen} open, ${highAccepted} formally accepted — each remaining HIGH needs a fix with retest evidence or a valid, unexpired owner risk acceptance`,
+    registerUnknown
+      ? "HIGH_FINDINGS=UNKNOWN — the finding register could not be read"
+      : `HIGH_FINDINGS=${highOpen} open, ${highAccepted} formally accepted — each remaining HIGH needs a fix with retest evidence or a valid, unexpired owner risk acceptance`,
   );
 
   // ── Pilot ───────────────────────────────────────────────────────────────────
@@ -212,6 +247,9 @@ export function evaluatePhase99Closure({ readText, readJson, expectedCommitSha, 
     gates,
     reasons,
     registrySummary,
+    registerReadable: !registerUnknown,
+    attestationsMalformed,
+    acceptancesMalformed,
     registry,
     officialOutputs,
     externalCounts,
