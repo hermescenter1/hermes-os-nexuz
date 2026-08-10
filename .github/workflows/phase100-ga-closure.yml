@@ -59,11 +59,14 @@ jobs:
 
       # The evidence contracts and the closure evaluator are proven BEFORE the
       # evaluator's verdict is consulted. An evaluator whose own contract tests
-      # fail has no verdict worth reading.
+      # fail has no verdict worth reading. The integrity suite runs here, before
+      # any evaluator step has written `phase100-ga-closure.json`, precisely
+      # because it must hold on a runner that has no generated artifact at all.
       - name: Phase 100 evidence-contract and closure suites
         run: >-
           npx --no-install vitest run
           scripts/__tests__/phase100-ga-evidence.test.ts
+          scripts/__tests__/phase100-evidence-integrity.test.ts
           scripts/__tests__/phase100-closure-eval.test.ts
           scripts/__tests__/phase99-governance.test.ts
 

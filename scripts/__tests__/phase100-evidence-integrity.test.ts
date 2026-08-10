@@ -18,7 +18,7 @@
  * call. No real evidence document is created anywhere in the repository tree.
  */
 import { describe, it, expect, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, chmodSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, symlinkSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 
@@ -47,6 +47,7 @@ import {
 } from "../security/phase100/readiness-attribution.mjs";
 import { commercialCoherenceViolations, validateResidualRiskAcceptance } from "../security/phase100/ga-evidence.mjs";
 import { assembleVerdict, INFORMATIONAL_GROUP } from "../security/phase100/verdict.mjs";
+import { evaluatePhase100GaClosure, serializeClosureSummary } from "../security/phase100/closure-evaluation.mjs";
 
 const temps: string[] = [];
 function tempDir(): string {
@@ -538,42 +539,111 @@ describe("E. every actionable blocker has exactly one identity", () => {
     expect(v.join(" ")).toMatch(/LOST_BLOCKER/);
   });
 
-  it("removing exactly one absence reduces the blocker count by exactly one", () => {
-    // Derived from the REAL published ledger, so the property is proven about
-    // the shipped verdict rather than about a hand-built fixture.
-    const summary = require(join(__dirname, "..", "..", "phase100-ga-closure.json"));
-    const ledger = Object.entries(summary.gates as Record<string, string>).map(([name, state]) => ({
-      name,
-      group: summary.releaseBlockerMatrix.find((b: any) => b.gate === name)?.group ?? groupOf(name, summary),
-      state,
-      reason: null,
-      errors: [],
-      evidenceSupplied: false,
-    }));
+});
 
-    const before = assembleVerdict(ledger).releaseBlockerCount;
+// ── H. The shipped verdict, proven in memory ─────────────────────────────────
+//
+// These properties used to be asserted against `phase100-ga-closure.json` at
+// the repository root. That file is a gitignored BUILD PRODUCT: it exists only
+// after an evaluator run, so a clean CI runner failed with MODULE_NOT_FOUND,
+// and a developer machine proved the properties against whatever stale artifact
+// a previous run had left behind. The suite now calls the canonical evaluation
+// — the same function whose output the CLI serializes — so the ledger under
+// test IS the shipped verdict, with no artifact on disk involved.
+
+describe("H. the shipped verdict, proven from the canonical evaluation in memory", () => {
+  const REPO_ROOT = join(__dirname, "..", "..");
+  // Fixed inputs so two evaluations of the same tree are byte-comparable.
+  const FIXED_NOW = Date.parse("2026-08-10T00:00:00Z");
+  const FIXED_SHA = "f".repeat(40);
+
+  type ClosureEvaluation = {
+    ledger: { name: string; group: string; state: string; reason: string | null; errors: string[]; evidenceSupplied: boolean }[];
+    verdict: { blockers: { name: string }[]; releaseBlockerCount: number };
+    summary: { gates: Record<string, string>; gaReleaseReady: boolean };
+    failures: string[];
+  };
+
+  const evaluate = (): ClosureEvaluation =>
+    evaluatePhase100GaClosure({
+      repoRoot: REPO_ROOT,
+      env: envWithout(),
+      nowMs: FIXED_NOW,
+      expectedCommitSha: FIXED_SHA,
+    }) as ClosureEvaluation;
+
+  // One real evaluation shared by the tests below — it spawns the Phase 99
+  // readiness evaluator, so it is not free.
+  let cached: ClosureEvaluation | null = null;
+  const realEvaluation = () => (cached ??= evaluate());
+
+  it("removing exactly one absence reduces the blocker count by exactly one", () => {
+    // Proven on the REAL ledger of this tree, so the property holds for the
+    // shipped verdict rather than for a hand-built fixture.
+    const { ledger, verdict } = realEvaluation();
+    const before = verdict.releaseBlockerCount;
     expect(before).toBeGreaterThan(0);
 
-    for (const blocker of assembleVerdict(ledger).blockers) {
+    for (const blocker of verdict.blockers) {
       const mutated = ledger.map((g) => (g.name === blocker.name ? { ...g, state: "PASS" } : g));
       const after = assembleVerdict(mutated).releaseBlockerCount;
       expect(after, `${blocker.name} must account for exactly one blocker`).toBe(before - 1);
     }
-  });
+  }, 120_000);
 
-  it("the published ledger contains no duplicate identity", () => {
-    const summary = require(join(__dirname, "..", "..", "phase100-ga-closure.json"));
+  it("the shipped ledger contains no duplicate identity and a proven attribution", () => {
+    const { summary } = realEvaluation();
     const names = Object.keys(summary.gates);
     expect(new Set(names).size).toBe(names.length);
     expect(summary.gates.PHASE100_READINESS_ATTRIBUTION).toBe("PASS");
+  }, 120_000);
+
+  it("the in-memory summary and its serialized artifact form are identical", () => {
+    // The CLI writes serializeClosureSummary(summary) verbatim, and the
+    // evaluation's own implementation gate fails the build if the CLI stops
+    // delegating — so round-trip identity here is identity with the artifact.
+    const { summary, failures } = realEvaluation();
+    expect(JSON.parse(serializeClosureSummary(summary))).toEqual(summary);
+    expect(failures).toEqual([]);
+
+    const cli = readFileSync(join(REPO_ROOT, "scripts", "ci", "phase100-ga-closure-eval.mjs"), "utf8");
+    // Structural, not textual: the import statement and the write call itself,
+    // so a mention in a comment cannot satisfy either assertion.
+    expect(cli).toMatch(/from "\.\.\/security\/phase100\/closure-evaluation\.mjs"/);
+    expect(cli).toMatch(/writeFileSync\([^\n]*phase100-ga-closure\.json[^\n]*serializeClosureSummary\(/);
+  }, 120_000);
+
+  it("a rerun over the same tree reproduces the summary byte for byte", () => {
+    const first = serializeClosureSummary(realEvaluation().summary);
+    const second = serializeClosureSummary(evaluate().summary);
+    expect(second).toBe(first);
+  }, 240_000);
+
+  it("no evaluation module reads the generated artifact — absent or forged, it is inert", () => {
+    // A clean runner has no `phase100-ga-closure.json`; a developer machine may
+    // carry a stale or hand-edited one. Neither can matter: the only file that
+    // names the artifact is the CLI, which WRITES it. Nothing may read it back.
+    const chain = [
+      "scripts/security/phase100/closure-evaluation.mjs",
+      "scripts/security/phase100/verdict.mjs",
+      "scripts/security/phase100/ga-evidence.mjs",
+      "scripts/security/phase100/evidence-root.mjs",
+      "scripts/security/phase100/evidence-source.mjs",
+      "scripts/security/phase100/readiness-attribution.mjs",
+      "scripts/security/phase99/closure-core.mjs",
+      "scripts/__tests__/phase100-evidence-integrity.test.ts",
+    ];
+    const reads = /(require\(|readFileSync\(|readEvidenceSource\(|import\()[^\n]*phase100-ga-closure\.json/;
+    for (const path of chain) {
+      const text = readFileSync(join(REPO_ROOT, ...path.split("/")), "utf8");
+      expect(reads.test(text), `${path} must not read the generated artifact`).toBe(false);
+    }
+    // ...and the artifact name appears in the CLI only beside its single write.
+    const cli = readFileSync(join(REPO_ROOT, "scripts", "ci", "phase100-ga-closure-eval.mjs"), "utf8");
+    expect(reads.test(cli)).toBe(false);
+    expect(cli).toMatch(/writeFileSync\([^\n]*phase100-ga-closure\.json/);
   });
 });
-
-/** The group a gate belongs to, for gates that are not in the blocker matrix. */
-function groupOf(name: string, summary: any): string {
-  if (summary.groups && name in summary.groups) return name;
-  return name === "RELEASE_BLOCKERS_ZERO" ? INFORMATIONAL_GROUP : "IMPLEMENTATION";
-}
 
 // ── F. Commercial coherence ──────────────────────────────────────────────────
 

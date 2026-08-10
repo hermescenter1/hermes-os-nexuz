@@ -315,6 +315,7 @@ describe("the closure mechanism itself", () => {
   it("the evaluator makes no network call and names no production host", () => {
     const sources = [
       join(REPO, "scripts", "ci", "phase100-ga-closure-eval.mjs"),
+      join(REPO, "scripts", "security", "phase100", "closure-evaluation.mjs"),
       join(REPO, "scripts", "security", "phase100", "ga-evidence.mjs"),
       join(REPO, "scripts", "security", "phase100", "verdict.mjs"),
       join(REPO, "scripts", "ci", "phase100-summary-hygiene.mjs"),
