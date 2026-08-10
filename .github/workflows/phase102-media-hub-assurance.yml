@@ -1,0 +1,168 @@
+name: Phase 102 Media & Video Hub assurance
+
+# Phase 102 builds a media/video domain on top of an object-storage seam that has
+# no streaming primitive, behind an nginx body cap, with no background job runner.
+# The design decisions and the deliberate non-goals are recorded in
+# docs/phase102/architecture.md — this workflow proves the parts that ARE built.
+#
+# Two jobs, deliberately split:
+#   * phase102-offline  — everything provable without a database
+#   * phase102-postgres — the disposable migration rehearsal on a real PostgreSQL
+#
+# The rehearsal runs `prisma migrate deploy` TWICE. The second run must report no
+# pending migrations: that is the idempotency proof, and it is the reason the job
+# exists at all rather than trusting `prisma validate` alone.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "prisma/**"
+      - "src/lib/media/**"
+      - "src/components/media/**"
+      - "src/app/api/media/**"
+      - "src/app/[locale]/videos/**"
+      - "messages/**"
+      - "docs/phase102/**"
+      - ".github/workflows/phase102-media-hub-assurance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase102-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase102-offline:
+    name: Phase 102 offline assurance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # The datasource block in prisma/schema.prisma carries no `url` — it comes
+      # only from prisma.config.ts, which resolves env() at CLI load time. So even
+      # `prisma validate`, which never dials the database, needs this set.
+      DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `npm ci` runs with allow-scripts, which blocks package install scripts —
+      # so the Prisma client is NOT generated as a side effect and must be built
+      # explicitly before anything type-checks against it.
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      - name: Validate the Prisma schema
+        run: npx --no-install prisma validate
+
+      - name: Lint
+        run: npm run lint
+
+      # Never run tsc concurrently with `next build` — they contend over the same
+      # incremental output and produce spurious failures.
+      - name: TypeScript (no emit)
+        run: npx tsc --noEmit
+
+      - name: Phase 102 migration safety (tenant invariants, additive-only, stamp ordering)
+        run: npx --no-install vitest run prisma/__tests__/phase102-migration-safety.test.ts
+
+      - name: Phase 102 media domain suites
+        run: npx --no-install vitest run src/lib/media src/components/media
+
+      - name: Phase 102 media API route suites
+        run: npx --no-install vitest run src/app/api/media
+
+      # A new top-level i18n namespace trips a surprising number of gates: the
+      # german-final-gate leaf-count pin (asserted twice), TRANSLATED_NS
+      # registration, order-sensitive key equality, the bidirectional
+      # identical-allowlists with their asserted tallies, and three catalog-wide
+      # carryover suites in misleadingly-named files. Run the whole directory.
+      - name: i18n catalogue gates (fa / en / de parity, carryover, allowlists)
+        run: npx --no-install vitest run src/i18n/__tests__/
+
+      # Every new API route changes docs/security/phase99-route-security-inventory.json.
+      # A stale artifact fails this check — regenerate it when routes change.
+      - name: Route security inventory is current
+        run: npm run security:phase99:inventory:check
+
+      - name: Phase 99 security readiness (upload-surface + SSRF static invariants)
+        run: npm run eval:phase99:readiness
+
+      - name: Production build
+        run: npm run build
+
+  phase102-postgres:
+    name: Phase 102 PostgreSQL migration rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://hermes_ci:phase102-ci-only-password@localhost:5432/hermes_phase102_ci
+      HERMES_STORAGE_MODE: database
+    services:
+      postgres:
+        # pgvector, not plain postgres: the schema declares three
+        # Unsupported("vector(1536)") columns and a plain image cannot apply them.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: hermes_ci
+          POSTGRES_PASSWORD: phase102-ci-only-password
+          POSTGRES_DB: hermes_phase102_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hermes_ci -d hermes_phase102_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      # Bare `prisma migrate deploy` — never pass --schema. prisma.config.ts
+      # supplies the datasource, and --schema can make the CLI resolve the schema
+      # without it and fail with no URL.
+      - name: Fresh migration rehearsal on an empty database
+        run: npx --no-install prisma migrate deploy
+
+      - name: Idempotency — a second deploy must report no pending migrations
+        run: |
+          npx --no-install prisma migrate deploy
+          npx --no-install prisma migrate status
+
+      - name: Validate the Prisma schema against the migrated database
+        run: npm run db:validate
+
+      # Legacy-row safety: the Phase 102 tables are new, but the migration runs
+      # against a database that already contains 69 earlier migrations. Proving a
+      # clean apply on top of the full history is the point of the rehearsal.
+      - name: Confirm the Phase 102 migration applied in order
+        run: |
+          npx --no-install prisma migrate status | tee migrate-status.txt
+          grep -q "20260821000000_phase102_media_video_hub" migrate-status.txt

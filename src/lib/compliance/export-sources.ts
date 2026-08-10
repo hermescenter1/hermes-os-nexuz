@@ -150,6 +150,48 @@ export const EXPORT_SOURCES: SourceDefinition[] = [
         orderBy: [{ createdAt: "asc" }, { consentType: "asc" }],
       })),
   },
+  {
+    // PHASE 102 §8 — the subject's favourited media.
+    //
+    // Note the deliberate contrast with the `media_saves` ERASURE target, which
+    // excludes `mediaAssetId` from its evidence. The two are not inconsistent: an
+    // erasure evidence record is retained BY THE CONTROLLER after execution, so it
+    // must not preserve the very preference being erased. A subject-access export is
+    // delivered TO THE SUBJECT, and withholding which videos they saved would defeat
+    // the purpose of the request. Same field, opposite direction, opposite answer.
+    name: "media_saves",
+    schemaVersion: "1.0",
+    scope: "CURRENT_ORGANIZATION",
+    includedFields: ["mediaAssetId", "createdAt"],
+    excludedFields: ["id", "organizationId", "userId"],
+    redactionRules: ["safe-projection", "internal-identifiers-excluded"],
+    collect: (db, subject) => emptyIfNoUser(subject, () =>
+      db.mediaSave.findMany({
+        where: { userId: subject.userId, organizationId: subject.organizationId },
+        select: { mediaAssetId: true, createdAt: true },
+        orderBy: [{ createdAt: "asc" }, { mediaAssetId: "asc" }],
+      })),
+  },
+  {
+    // PHASE 102 §8 — the subject's private watch history. Position, progress and
+    // completion are the substance of the request, so they are included; only the
+    // internal row/tenant identifiers are withheld.
+    name: "media_watch_progress",
+    schemaVersion: "1.0",
+    scope: "CURRENT_ORGANIZATION",
+    includedFields: ["mediaAssetId", "positionSeconds", "progressPct", "completedAt", "lastWatchedAt", "createdAt"],
+    excludedFields: ["id", "organizationId", "userId"],
+    redactionRules: ["safe-projection", "internal-identifiers-excluded"],
+    collect: (db, subject) => emptyIfNoUser(subject, () =>
+      db.mediaWatchProgress.findMany({
+        where: { userId: subject.userId, organizationId: subject.organizationId },
+        select: {
+          mediaAssetId: true, positionSeconds: true, progressPct: true,
+          completedAt: true, lastWatchedAt: true, createdAt: true,
+        },
+        orderBy: [{ createdAt: "asc" }, { mediaAssetId: "asc" }],
+      })),
+  },
 ];
 
 /**

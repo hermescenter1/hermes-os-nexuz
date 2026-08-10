@@ -1,0 +1,169 @@
+{
+  "plugin": "Hermes Phase 102 Media Hub Builder",
+  "builtFrom": [
+    {
+      "id": "constants",
+      "file": "src/lib/constants.js",
+      "sha256": "2ce9977c18437334"
+    },
+    {
+      "id": "util",
+      "file": "src/lib/util.js",
+      "sha256": "c884cbf2f9cc95b3"
+    },
+    {
+      "id": "tokens",
+      "file": "src/lib/tokens.js",
+      "sha256": "feae0416fa3c0cef"
+    },
+    {
+      "id": "rtl",
+      "file": "src/lib/rtl.js",
+      "sha256": "6fdce155bd9a83cb"
+    },
+    {
+      "id": "presets",
+      "file": "src/lib/presets.js",
+      "sha256": "c5befe146cd70cce"
+    },
+    {
+      "id": "components",
+      "file": "src/lib/components.js",
+      "sha256": "308cd0a59fa4a189"
+    },
+    {
+      "id": "locale-strings",
+      "file": "src/lib/locale-strings.js",
+      "sha256": "d7d3a737267650ac"
+    },
+    {
+      "id": "screens",
+      "file": "src/lib/screens.js",
+      "sha256": "ca17b91c17a8edeb"
+    },
+    {
+      "id": "docs",
+      "file": "src/lib/docs.js",
+      "sha256": "7cafa904102957e6"
+    },
+    {
+      "id": "validate",
+      "file": "src/lib/validate.js",
+      "sha256": "9a833560ad8c0694"
+    },
+    {
+      "id": "pages",
+      "file": "src/lib/pages.js",
+      "sha256": "ccf6884a624639ac"
+    },
+    {
+      "id": "starter",
+      "file": "src/lib/starter.js",
+      "sha256": "b30a604a067df415"
+    },
+    {
+      "id": "spec",
+      "file": "src/lib/spec.js",
+      "sha256": "3874271666a34272"
+    },
+    {
+      "id": "plan",
+      "file": "src/lib/plan.js",
+      "sha256": "86178c18753965b7"
+    },
+    {
+      "id": "figma-exec",
+      "file": "src/lib/figma-exec.js",
+      "sha256": "42502c06ede83f92"
+    },
+    {
+      "id": "main",
+      "file": "src/main.js",
+      "sha256": "56c88196f7864b6d"
+    }
+  ],
+  "bundleSha256": "965b052dcc0e64f1",
+  "uiSha256": "78bc5d606f6e1842",
+  "counts": {
+    "collections": 4,
+    "variables": 67,
+    "paintStyles": 49,
+    "textStyles": 8,
+    "effectStyles": 5,
+    "docs": 5,
+    "families": 23,
+    "components": 153,
+    "screens": 54,
+    "sections": 3,
+    "total": 218
+  },
+  "planFresh": {
+    "create": 218,
+    "update": 0,
+    "skip": 0,
+    "prune": 0,
+    "total": 218
+  },
+  "freshFilePagePlan": {
+    "ok": true,
+    "actions": [
+      {
+        "name": "01 Foundations",
+        "action": "create"
+      },
+      {
+        "name": "02 Components",
+        "action": "create"
+      },
+      {
+        "name": "03 Screens",
+        "action": "create"
+      }
+    ],
+    "finalPageCount": 3
+  },
+  "typicalPagePlan": {
+    "ok": true,
+    "actions": [
+      {
+        "name": "01 Foundations",
+        "action": "rename",
+        "fromName": "Page 1",
+        "idx": 0
+      },
+      {
+        "name": "02 Components",
+        "action": "create"
+      },
+      {
+        "name": "03 Screens",
+        "action": "create"
+      }
+    ],
+    "finalPageCount": 3
+  },
+  "starterSupported": [
+    "Local variables & variable collections",
+    "Local Paint / Text / Effect styles",
+    "Components, Component Sets & Variants",
+    "Component Properties (BOOLEAN / TEXT / INSTANCE_SWAP / VARIANT)",
+    "Auto Layout",
+    "Sections",
+    "Variable → Paint style binding",
+    "Single default variable mode (\"Value\") per collection"
+  ],
+  "starterDeferred": [
+    {
+      "capability": "Multiple variable modes (light/dark, per-breakpoint or per-locale modes)",
+      "code": "DEFERRED_REQUIRES_FIGMA_PROFESSIONAL"
+    },
+    {
+      "capability": "A 4th page (or more)",
+      "code": "DEFERRED_REQUIRES_FIGMA_PROFESSIONAL"
+    },
+    {
+      "capability": "Publishing variables/styles/components as a shared Team Library",
+      "code": "DEFERRED_REQUIRES_FIGMA_PROFESSIONAL"
+    }
+  ]
+}

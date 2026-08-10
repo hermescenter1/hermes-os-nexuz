@@ -34,7 +34,8 @@
     "security:phase99:deps": "node scripts/ci/phase99-dependency-review.mjs",
     "security:phase99:inventory": "node scripts/security/phase99/generate-inventory.mjs",
     "security:phase99:inventory:check": "node scripts/security/phase99/generate-inventory.mjs --check",
-    "rehearse:phase99:incident": "node scripts/ci/phase99-pilot-incident-rehearsal.mjs"
+    "rehearse:phase99:incident": "node scripts/ci/phase99-pilot-incident-rehearsal.mjs",
+    "media:processing": "node scripts/media/phase102-media-processing.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

@@ -27,8 +27,18 @@ export const ERASURE_CLASSIFICATIONS: ErasureClassification[] = [
 export type ExecutionStrategy = "DELETE" | "ANONYMISE" | "NONE";
 
 /** The closed registry version — part of the execution preflight (a registry change
- *  after approval makes an approved plan stale). Bump on any target-set change. */
-export const ERASURE_REGISTRY_VERSION = "1.0";
+ *  after approval makes an approved plan stale). Bump on any target-set change.
+ *
+ *  1.0 -> 1.1 (Phase 102 §8): added `media_saves` + `media_watch_progress` — the two
+ *  new subject-attributable Media tables. This is a DELIBERATE, consequential bump:
+ *  `runErasurePreflight` (erasure-executor.ts) compares this value against every
+ *  job's `registryVersion` and fails closed with ERASURE_REGISTRY_MISMATCH on any
+ *  difference, so the bump immediately invalidates every erasure plan that was
+ *  approved before these tables existed. That is the CORRECT outcome, not a bug: a
+ *  plan approved under registry 1.0 cannot honestly claim to have accounted for
+ *  media favourites/watch history, so it must be re-planned and re-approved under
+ *  1.1 before it may execute. */
+export const ERASURE_REGISTRY_VERSION = "1.1";
 
 export interface ErasureSubject {
   userId:         string | null;
@@ -217,6 +227,71 @@ export const ERASURE_TARGET_REGISTRY: ErasureTargetDefinition[] = [
         recordId: String(r.id),
         ownedByUserId: s.userId, ownedByOrganizationId: s.organizationId,
         holdInputs: { subjectId: s.userId, resourceType: "privacy_request", resourceId: String(r.id), timestamp: (r.createdAt as Date) ?? null },
+        dependency: { blocked: false, codes: [] },
+        evidence: { recordId: String(r.id) },
+      }));
+    }),
+  },
+  {
+    // PHASE 102 §8 — a subject's favourited media. Subject-owned and org-scoped.
+    // There is no legal basis to retain someone's favourites list, and nothing else
+    // depends on it operationally, so DELETE is the honest action.
+    //
+    // `mediaAssetId` is excluded from evidence deliberately: WHICH videos a person
+    // saved is the sensitive fact here, not that a row existed. An erasure evidence
+    // record is retained after execution, so copying the asset linkage into it would
+    // preserve exactly the viewing preference the subject asked to have erased.
+    name: "media_saves",
+    schemaVersion: "1.0",
+    dataCategory: "media_engagement",
+    scope: "CURRENT_ORGANIZATION",
+    defaultClassification: "DELETE_ALLOWED",
+    primaryIdField: "id",
+    allowedExecutionStrategy: "DELETE",
+    excludedSensitiveFields: ["mediaAssetId"],
+    retentionLookup: { dataClass: "media_engagement", targetResource: "media_saves" },
+    collect: (db, s) => emptyIfNoUser(s, async () => {
+      const rows = await db.mediaSave.findMany({
+        where: { userId: s.userId, organizationId: s.organizationId },
+        select: { id: true, createdAt: true },
+        orderBy: { id: "asc" },
+      });
+      return rows.map((r) => ({
+        recordId: String(r.id),
+        ownedByUserId: s.userId, ownedByOrganizationId: s.organizationId,
+        holdInputs: { subjectId: s.userId, resourceType: "media_save", resourceId: String(r.id), timestamp: (r.createdAt as Date) ?? null },
+        dependency: { blocked: false, codes: [] },
+        evidence: { recordId: String(r.id) },
+      }));
+    }),
+  },
+  {
+    // PHASE 102 §8 — a subject's private watch history (position, progress, completion).
+    // Behavioural data with no retention basis; the history is meant to die with the
+    // account, which is why MediaWatchProgress.userId cascades rather than nulling.
+    //
+    // Every behavioural column is excluded from evidence: position/progress/completion
+    // and the asset linkage together reconstruct what a person watched and how far they
+    // got. Only the opaque row id and its timestamp may appear.
+    name: "media_watch_progress",
+    schemaVersion: "1.0",
+    dataCategory: "media_engagement",
+    scope: "CURRENT_ORGANIZATION",
+    defaultClassification: "DELETE_ALLOWED",
+    primaryIdField: "id",
+    allowedExecutionStrategy: "DELETE",
+    excludedSensitiveFields: ["mediaAssetId", "positionSeconds", "progressPct", "completedAt", "lastWatchedAt"],
+    retentionLookup: { dataClass: "media_engagement", targetResource: "media_watch_progress" },
+    collect: (db, s) => emptyIfNoUser(s, async () => {
+      const rows = await db.mediaWatchProgress.findMany({
+        where: { userId: s.userId, organizationId: s.organizationId },
+        select: { id: true, createdAt: true },
+        orderBy: { id: "asc" },
+      });
+      return rows.map((r) => ({
+        recordId: String(r.id),
+        ownedByUserId: s.userId, ownedByOrganizationId: s.organizationId,
+        holdInputs: { subjectId: s.userId, resourceType: "media_watch_progress", resourceId: String(r.id), timestamp: (r.createdAt as Date) ?? null },
         dependency: { blocked: false, codes: [] },
         evidence: { recordId: String(r.id) },
       }));
