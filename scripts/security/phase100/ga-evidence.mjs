@@ -536,10 +536,49 @@ export function backupOperationalGateInputs(document, { expectedCommitSha, nowMs
 
 // ── Commercial owner decisions ────────────────────────────────────────────────
 
+/**
+ * Every provider/mode/activation value the schema RECOGNISES. Recognising a
+ * value and accepting it for GA are different things — see below.
+ */
 export const PAYMENT_PROVIDERS = ["STRIPE", "NONE"];
 export const PAYMENT_MODES = ["LIVE", "TEST"];
 export const TAX_HANDLING_MODELS = ["PROVIDER_AUTOMATIC_TAX", "MANUAL_TAX_TABLE", "OUT_OF_SCOPE_B2B_REVERSE_CHARGE", "NOT_APPLICABLE"];
 export const BILLING_ACTIVATION_DECISIONS = ["ACTIVATED", "DEFERRED"];
+
+/**
+ * ── The owner's commercial decision, made explicit ───────────────────────────
+ *
+ * Hermes GA is a PAID commercial general availability. That single fact settles
+ * what had been left ambiguous, and the ambiguity was dangerous: the schema
+ * recognised `provider: NONE`, `mode: TEST` and `activationDecision: DEFERRED`,
+ * and nothing cross-checked them against each other. A document could therefore
+ * declare `NONE`/`TEST` and still satisfy PAYMENT_PROVIDER_DECISION, or declare
+ * billing ACTIVATED beside a provider of NONE — a paid GA with no way to take
+ * payment, reported as a passing gate.
+ *
+ * So the values stay recognised, for diagnostics: an owner who has genuinely
+ * deferred billing gets a precise, honest reading of their document rather than
+ * a schema error. What changes is that none of them can PASS a commercial GA.
+ *
+ * The GA-passing combination is exactly one, and it must be coherent ACROSS
+ * sections, because each half is useless alone: a LIVE Stripe configuration
+ * nobody switched on takes no money, and an ACTIVATED flag with no configured
+ * provider takes no money either.
+ */
+export const GA_COMMERCIAL_REQUIREMENTS = {
+  provider: "STRIPE",
+  mode: "LIVE",
+  webhookEndpointConfigured: true,
+  webhookSigningSecretConfigured: true,
+  activationDecision: "ACTIVATED",
+};
+
+/** Values recognised by the schema that can never satisfy a commercial GA. */
+export const NON_GA_COMMERCIAL_VALUES = {
+  provider: ["NONE"],
+  mode: ["TEST"],
+  activationDecision: ["DEFERRED"],
+};
 
 function ownerDecisionFields(s, errors) {
   if (s.decision !== "APPROVED") errors.push(`decision must be exactly APPROVED, got '${s.decision}'`);
@@ -564,11 +603,23 @@ function validatePricingDecision(s, errors) {
 
 function validatePaymentProviderDecision(s, errors) {
   ownerDecisionFields(s, errors);
+
   if (!PAYMENT_PROVIDERS.includes(s.provider)) errors.push(`unknown provider '${s.provider}'`);
-  if (!PAYMENT_MODES.includes(s.mode)) errors.push(`unknown mode '${s.mode}'`);
-  if (s.provider === "STRIPE" && s.mode !== "LIVE") {
-    errors.push("a GA payment-provider decision naming STRIPE must be in LIVE mode");
+  else if (s.provider !== GA_COMMERCIAL_REQUIREMENTS.provider) {
+    errors.push(
+      `COMMERCIAL_GA_REQUIRES_PAYMENT_PROVIDER: provider='${s.provider}' cannot support a paid GA — ` +
+      `a commercial general availability requires ${GA_COMMERCIAL_REQUIREMENTS.provider}`,
+    );
   }
+
+  if (!PAYMENT_MODES.includes(s.mode)) errors.push(`unknown mode '${s.mode}'`);
+  else if (s.mode !== GA_COMMERCIAL_REQUIREMENTS.mode) {
+    errors.push(
+      `COMMERCIAL_GA_REQUIRES_LIVE_MODE: mode='${s.mode}' takes no real payment — ` +
+      "a paid GA cannot ship against a test-mode payment configuration",
+    );
+  }
+
   if (s.webhookEndpointConfigured !== true) errors.push("webhookEndpointConfigured must be true");
   if (s.webhookSigningSecretConfigured !== true) errors.push("webhookSigningSecretConfigured must be true");
   requireText(s.configurationEvidenceReference, "configurationEvidenceReference", errors);
@@ -605,6 +656,79 @@ function validateBillingActivation(s, errors) {
   }
   requireText(s.activationEvidenceReference, "activationEvidenceReference", errors);
   requireDigest(s.activationEvidenceSha256, "activationEvidenceSha256", errors);
+}
+
+/**
+ * Contradictions no single section can see.
+ *
+ * Each section validator judges its own fields, so a document can be composed
+ * entirely of individually-valid sections that together describe something
+ * impossible — billing switched ON with no payment provider, a LIVE Stripe
+ * configuration with billing DEFERRED, prices quoted in a currency that is never
+ * settled. Those are the failures that reach production, because every
+ * individual gate reported green.
+ *
+ * Absence is NOT a contradiction: a missing document has nothing to contradict,
+ * and its absence is already counted once by the four commercial gates. Adding a
+ * second blocker for the same absence is the double-counting this phase removes.
+ *
+ * @returns {string[]} one message per contradiction; empty when coherent
+ */
+export function commercialCoherenceViolations(document) {
+  if (!document || typeof document !== "object") return [];
+
+  const pay = document.paymentProvider;
+  const act = document.productionBillingActivation;
+  const pricing = document.pricing;
+  const tax = document.taxCurrencyRefund;
+  const violations = [];
+  const isObj = (v) => v !== null && typeof v === "object";
+
+  const provider = isObj(pay) ? pay.provider : undefined;
+  const mode = isObj(pay) ? pay.mode : undefined;
+  const activation = isObj(act) ? act.activationDecision : undefined;
+
+  if (activation === "ACTIVATED" && provider !== undefined && provider !== GA_COMMERCIAL_REQUIREMENTS.provider) {
+    violations.push(
+      `COMMERCIAL_INCOHERENCE: production billing is ACTIVATED while the payment provider is '${provider}' — ` +
+      "billing cannot be active with no provider able to take payment",
+    );
+  }
+  if (activation === "ACTIVATED" && mode !== undefined && mode !== GA_COMMERCIAL_REQUIREMENTS.mode) {
+    violations.push(
+      `COMMERCIAL_INCOHERENCE: production billing is ACTIVATED while the payment mode is '${mode}' — ` +
+      "a test-mode configuration cannot carry live revenue",
+    );
+  }
+  if (activation === "DEFERRED" && provider === GA_COMMERCIAL_REQUIREMENTS.provider && mode === GA_COMMERCIAL_REQUIREMENTS.mode) {
+    violations.push(
+      "COMMERCIAL_INCOHERENCE: a LIVE payment provider is configured while production billing activation is DEFERRED — " +
+      "a paid GA cannot ship with billing switched off",
+    );
+  }
+  if (activation === "ACTIVATED" && isObj(pay)) {
+    if (pay.webhookEndpointConfigured !== true) {
+      violations.push("COMMERCIAL_INCOHERENCE: production billing is ACTIVATED with no configured webhook endpoint");
+    }
+    if (pay.webhookSigningSecretConfigured !== true) {
+      violations.push(
+        "COMMERCIAL_INCOHERENCE: production billing is ACTIVATED with no configured webhook signing secret — " +
+        "unverified webhooks cannot be trusted to move money",
+      );
+    }
+  }
+
+  // A price nobody can settle is not a price.
+  if (isObj(pricing) && isObj(tax) && Array.isArray(pricing.currencies) && Array.isArray(tax.settlementCurrencies)) {
+    const settled = new Set(tax.settlementCurrencies.map((c) => String(c)));
+    for (const c of pricing.currencies) {
+      if (!settled.has(String(c))) {
+        violations.push(`COMMERCIAL_INCOHERENCE: plans are priced in ${String(c)} but it is not a settlement currency`);
+      }
+    }
+  }
+
+  return violations;
 }
 
 export function commercialGateInputs(document, { expectedCommitSha, nowMs }) {
@@ -754,6 +878,47 @@ export function validateResidualRiskAcceptance(a, { nowMs = Date.now(), expected
   checkExpiry(a.expiresAt, "expiresAt", nowMs, errors, { required: true });
   requireText(a.evidenceReference, "evidenceReference", errors);
   requireDigest(a.evidenceSha256, "evidenceSha256", errors);
+
+  // ── A temporary acceptance must be genuinely temporary ────────────────────
+  //
+  // An acceptance with an expiry but no remediation plan is not a deferral, it
+  // is a silent permanent waiver with a date on it. So the record must also name
+  // who will fix it, what the fix is, and when — and the timing must actually
+  // make sense relative to the acceptance window.
+  requireHumanRole(a.remediationOwnerRole, "remediationOwnerRole", errors);
+  requireText(a.remediationPlanReference, "remediationPlanReference", errors);
+  requireIsoDate(a.targetRemediationDate, "targetRemediationDate", errors);
+
+  const accepted = ISO_DATE.test(String(a.acceptedAt ?? "")) ? Date.parse(String(a.acceptedAt)) : null;
+  const expires = ISO_DATE.test(String(a.expiresAt ?? "")) ? Date.parse(String(a.expiresAt)) : null;
+  const target = ISO_DATE.test(String(a.targetRemediationDate ?? "")) ? Date.parse(String(a.targetRemediationDate)) : null;
+
+  if (target !== null && expires !== null && target > expires) {
+    errors.push(
+      "INVALID_REMEDIATION_TIMING: targetRemediationDate is after expiresAt — the acceptance would lapse before the fix is due",
+    );
+  }
+  if (target !== null && accepted !== null && target < accepted) {
+    errors.push("INVALID_REMEDIATION_TIMING: targetRemediationDate precedes acceptedAt");
+  }
+  if (target !== null && target <= nowMs) {
+    errors.push("INVALID_REMEDIATION_TIMING: targetRemediationDate has already passed — the remediation is overdue, not planned");
+  }
+
+  // ── Blanket acceptance ────────────────────────────────────────────────────
+  //
+  // An acceptance is per-finding. A record that claims to cover a class, a
+  // wildcard or "all remaining" findings is not an owner decision about a known
+  // risk — it is a decision to stop looking.
+  if (a.appliesToAll === true || a.blanket === true) {
+    errors.push("BLANKET_ACCEPTANCE: an acceptance must name exactly one findingId, never a class of findings");
+  }
+  if (Array.isArray(a.findingIds) || Array.isArray(a.findingId)) {
+    errors.push("BLANKET_ACCEPTANCE: findingId must be a single finding identifier, not a list");
+  }
+  if (typeof a.findingId === "string" && /[*?]|\ball\b/i.test(a.findingId)) {
+    errors.push("BLANKET_ACCEPTANCE: findingId must not be a wildcard or a catch-all");
+  }
 
   assertNoSensitiveEvidence(a, errors);
   assertNoPlaceholderDecision(a, errors);
