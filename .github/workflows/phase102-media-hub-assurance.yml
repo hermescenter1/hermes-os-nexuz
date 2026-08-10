@@ -24,6 +24,9 @@ on:
       - "src/app/[locale]/videos/**"
       - "messages/**"
       - "docs/phase102/**"
+      - "docs/release/phase102-migration-ledger.json"
+      - "scripts/ci/phase102-migration-integrity.mjs"
+      - "scripts/__tests__/phase102-migration-integrity.test.ts"
       - ".github/workflows/phase102-media-hub-assurance.yml"
   workflow_dispatch:
 
@@ -45,9 +48,13 @@ jobs:
       # `prisma validate`, which never dials the database, needs this set.
       DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
     steps:
-      - name: Check out the pull request merge commit
+      - name: Check out the pull request merge commit (full history)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          # The Phase 102 migration integrity gate reads the deployed baseline
+          # commit (cbfa292…) and resolves the migration's introducing commit
+          # from history, so a shallow clone would fail closed.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node.js 20
@@ -58,6 +65,20 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # 69 -> 70, exactly one append-only migration, zero historical mutation,
+      # provenance bound to the introducing commit plus a deterministic set
+      # digest. The Phase 99.7 historical contract stays byte-for-byte untouched
+      # and is additionally re-proven right after, so a Phase 102 change can
+      # never silently weaken it.
+      - name: Phase 102 migration integrity gate (69 -> 70, zero historical mutation)
+        run: npm run gate:phase102:migrations
+
+      - name: Phase 99.7 historical migration contract still holds
+        run: npm run gate:phase997:migrations
+
+      - name: Migration integrity mutation/regression suites
+        run: npx --no-install vitest run scripts/__tests__/phase997-migration-integrity.test.ts scripts/__tests__/phase102-migration-integrity.test.ts
 
       # `npm ci` runs with allow-scripts, which blocks package install scripts —
       # so the Prisma client is NOT generated as a side effect and must be built

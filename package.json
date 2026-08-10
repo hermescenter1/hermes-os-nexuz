@@ -36,6 +36,7 @@
     "security:phase99:inventory:check": "node scripts/security/phase99/generate-inventory.mjs --check",
     "rehearse:phase99:incident": "node scripts/ci/phase99-pilot-incident-rehearsal.mjs",
     "gate:phase997:migrations": "node scripts/ci/phase997-migration-integrity.mjs",
+    "gate:phase102:migrations": "node scripts/ci/phase102-migration-integrity.mjs",
     "gate:phase997:safety": "node scripts/ci/phase997-release-safety-check.mjs",
     "gate:phase997:candidate": "node scripts/ci/phase997-candidate-gate.mjs",
     "rehearse:phase997:migrations": "node scripts/ci/phase997-migration-rehearsal.mjs",
