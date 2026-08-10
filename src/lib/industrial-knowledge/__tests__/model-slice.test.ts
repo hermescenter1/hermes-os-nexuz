@@ -260,15 +260,24 @@ describe("PHASE 101 — ranking is unaffected by the governance slice", () => {
     expect(result.safeVerificationActions.map((a) => a.nodeId)).toEqual([ACTION]);
   });
 
-  it("keeps every shipped corpus diagnosis byte-identical to its pinned digest", () => {
+  it("keeps the pre-existing corpus diagnoses byte-identical to their pinned digest", () => {
     // The pin is a SHA-256 over the serialised diagnosis of every scenario in
-    // the corpus, in corpus order. It was computed against the code as it stood
-    // before this slice existed (commit 942a9c3) and is unchanged by it. Any
-    // future edit that moves a hypothesis, a score, a citation or an escalation
-    // line moves this digest, which is exactly the alarm that should ring.
+    // TIA-01 and TIA-02, in corpus order. It was computed against the code as
+    // it stood before this slice existed (commit 942a9c3) and is unchanged by
+    // it. Any future edit that moves a hypothesis, a score, a citation or an
+    // escalation line in those two systems moves this digest — which is exactly
+    // the alarm that should ring.
+    //
+    // Scoped to those two systems BY ID on purpose. Registering a new reference
+    // system is meant to add scenarios; if the pin covered the whole corpus it
+    // would have to be re-pinned every time one was added, and a value that is
+    // routinely rewritten guards nothing.
+    const PINNED_SYSTEMS = ["TIA-01", "TIA-02"];
     const index = corpusIndex();
     const hash = createHash("sha256");
-    for (const system of CORPUS) {
+    const pinned = CORPUS.filter((s) => PINNED_SYSTEMS.includes(s.id));
+    expect(pinned.map((s) => s.id)).toEqual(PINNED_SYSTEMS);
+    for (const system of pinned) {
       for (const scenario of system.scenarios) {
         hash.update(
           JSON.stringify(diagnose(index, { observations: scenario.observations, locale: "en" })),
