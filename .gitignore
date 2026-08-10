@@ -39,3 +39,9 @@ deploy/ssl/certs/
 # docs/security/ — these two are run results, not source.
 /phase99-readiness.json
 /phase99-closure.json
+
+# Phase 100 — the canonical GA closure verdict (npm run eval:phase100:closure),
+# uploaded by CI as a build artifact. It is a RUN RESULT, deliberately not
+# committed: a checked-in verdict is a verdict that goes stale, which is exactly
+# how docs/release/go-no-go-matrix.md came to assert V1_RELEASE_READY: YES.
+/phase100-ga-closure.json
