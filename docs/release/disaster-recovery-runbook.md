@@ -241,21 +241,51 @@ host** to copy any data currently sitting on the running container's
 writable layer into the new volume before the next `hermes-web` recreation
 (otherwise that data is left behind on the old writable layer and is lost):
 
+**Phase 99.7 replaced the illustrative copy sequence that used to sit here with
+a real, verifiable mechanism.** A hand-typed `docker cp` pair has no proof of
+completeness, no collision refusal, and no way to distinguish "there was nothing
+to copy" from "the copy silently did nothing" — not acceptable for customer
+documents. Use `scripts/dr/adopt-documents.mjs`:
+
 ```bash
-# On the Production host, BEFORE recreating hermes-web with the new compose file:
-docker compose -p hermes -f docker-compose.prod.yml up -d documents_data-placeholder 2>/dev/null || true
-docker cp hermes-hermes-web-1:/app/.data/documents/. /tmp/hermes-documents-migrate/
-# ... bring up the new compose definition (creates the documents_data volume) ...
+# On the Production host, BEFORE recreating hermes-web with the new compose file.
+mkdir -p /tmp/hermes-doc-legacy /tmp/hermes-doc-volume
+docker cp hermes-hermes-web-1:/app/.data/documents/. /tmp/hermes-doc-legacy/
+
+# 1. Survey and decide — writes nothing.
+node scripts/dr/adopt-documents.mjs \
+  --source /tmp/hermes-doc-legacy \
+  --dest   /tmp/hermes-doc-volume \
+  --destination-classification EXPECTED_EMPTY \
+  --plan-only
+
+# 2. Adopt, emitting the evidence the deploy gate requires.
+node scripts/dr/adopt-documents.mjs \
+  --source /tmp/hermes-doc-legacy \
+  --dest   /tmp/hermes-doc-volume \
+  --destination-classification EXPECTED_EMPTY \
+  --manifest-out /backups/postgres/documents-adoption.json
+
+# 3. Bring up the new compose definition (creates the documents_data volume),
+#    then place the adopted tree into it.
 docker compose -p hermes -f docker-compose.prod.yml up -d --no-deps hermes-web
-docker cp /tmp/hermes-documents-migrate/. hermes-hermes-web-1:/app/.data/documents/
+docker cp /tmp/hermes-doc-volume/. hermes-hermes-web-1:/app/.data/documents/
+docker exec hermes-hermes-web-1 find /app/.data/documents -type f | wc -l
 ```
 
-Adjust the exact copy sequence to whatever data is actually present on the
-host — the two `docker cp` invocations above are illustrative of the
-copy-out/copy-in pattern, not a literal one-size script. Confirm the
-migrated content with `docker exec hermes-hermes-web-1 find /app/.data/documents -type f | wc -l`
-before and after. This step has **not** been run against Production by this
-change; it is scheduled, owner-operated work.
+The tool proves the source and destination exist and are real directories before
+any write, refuses an unclassified non-empty destination, never overwrites an
+existing file, never deletes the source (so the legacy container stays a complete
+fallback), refuses symlinks and path traversal, and verifies a count +
+total-bytes + per-file SHA-256 manifest after the copy. An empty legacy tree is
+reported as `ZERO_DOCUMENTS` rather than passing silently.
+
+Keep `/tmp/hermes-doc-legacy` and the old container until after the release soak
+window — they are part of the rollback path.
+
+This step has **not** been run against Production by this change; it is
+scheduled, owner-operated work. See
+[the Phase 99.7 cutover contract](phase99.7-production-cutover-contract.md) §1.5.
 
 ---
 

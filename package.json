@@ -34,7 +34,13 @@
     "security:phase99:deps": "node scripts/ci/phase99-dependency-review.mjs",
     "security:phase99:inventory": "node scripts/security/phase99/generate-inventory.mjs",
     "security:phase99:inventory:check": "node scripts/security/phase99/generate-inventory.mjs --check",
-    "rehearse:phase99:incident": "node scripts/ci/phase99-pilot-incident-rehearsal.mjs"
+    "rehearse:phase99:incident": "node scripts/ci/phase99-pilot-incident-rehearsal.mjs",
+    "gate:phase997:migrations": "node scripts/ci/phase997-migration-integrity.mjs",
+    "gate:phase997:safety": "node scripts/ci/phase997-release-safety-check.mjs",
+    "gate:phase997:candidate": "node scripts/ci/phase997-candidate-gate.mjs",
+    "rehearse:phase997:migrations": "node scripts/ci/phase997-migration-rehearsal.mjs",
+    "rehearse:phase997:documents": "node scripts/ci/phase997-documents-adoption-rehearsal.mjs",
+    "dr:adopt-documents": "node scripts/dr/adopt-documents.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
