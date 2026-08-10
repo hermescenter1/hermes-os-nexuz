@@ -65,6 +65,19 @@
  *   otherwise malformed → 200 with the whole representation, per the RFC's
  *                         "ignore an unparsable Range" rule. Answering 416 to a
  *                         syntactically broken header breaks ordinary clients.
+ *
+ * THE OUTBOUND CONTENT IS VERIFIED, NOT MERELY THE KEY (changed — read this)
+ * ----------------------------------------------------------------------
+ * A server-generated-shaped storage key and an allow-listed `contentType`
+ * column are both claims about the object — neither is evidence about the
+ * bytes actually on disk. `poster` and `subtitles` already re-run the media
+ * allow-list on the way out; this route now does the same: it reads a small,
+ * BOUNDED leading window off the SAME descriptor the body will stream from —
+ * never a second open, never the whole object — and refuses with the uniform
+ * `404` if the container signature does not match. And the `Content-Type` this
+ * route sends is ALWAYS the canonical value from `MEDIA_TYPE_RULES`, resolved
+ * through the stored key's extension — never `MediaAsset.contentType` echoed
+ * verbatim (see `byte-serving-auth.ts`'s contract on {@link ByteServingHeaderInput.contentType}).
  */
 
 import { Readable } from "node:stream";
@@ -85,11 +98,40 @@ import {
   openMediaObject,
   parseRangeHeader,
 } from "@/lib/media/storage";
-import { canonicalExtensionFor } from "@/lib/media/validation";
+import {
+  MEDIA_ACCEPTED_CONTENT_TYPES,
+  MEDIA_MAGIC_SNIFF_BYTES,
+  canonicalExtensionFor,
+  mediaExtensionsFor,
+  validateMediaUpload,
+} from "@/lib/media/validation";
 import { requirePermission } from "@/lib/org/rbac";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const VIDEO_EXTENSIONS: ReadonlySet<string> = new Set(mediaExtensionsFor("video"));
+
+/**
+ * canonical extension → canonical content type, for VIDEO rules only.
+ *
+ * Derived from the allow-list rather than restated — mirrors the poster
+ * route's `POSTER_CONTENT_TYPE_BY_EXTENSION` — so a rule added to or removed
+ * from `validation.ts` is reflected here automatically. The response
+ * `Content-Type` is ALWAYS looked up through this map, never taken from
+ * `MediaAsset.contentType`: `video/x-m4v`, `Video/MP4` and a
+ * header-injection-shaped stored value all resolve to the one fixed,
+ * server-controlled string their rule declares.
+ */
+const VIDEO_CONTENT_TYPE_BY_EXTENSION: ReadonlyMap<string, string> = new Map(
+  MEDIA_ACCEPTED_CONTENT_TYPES.flatMap((contentType) => {
+    const extension = canonicalExtensionFor(contentType);
+    if (extension === null || !VIDEO_EXTENSIONS.has(extension)) return [];
+    return [[extension, contentType] as [string, string]];
+  }),
+);
 
 // ── Helpers (declared before the handler: the Phase 99 static analysers slice a
 //    handler body from its `export` to the next one) ─────────────────────────
@@ -112,6 +154,34 @@ async function release(file: SecureFile): Promise<void> {
   await file.close();
 }
 
+/**
+ * Re-run the media allow-list over the STORED bytes, on egress.
+ *
+ * The filename and MIME handed in are the server-derived canonical values, so
+ * the resolution can only ever reach the rule this key's extension claims;
+ * what is actually being judged is the byte signature read off the descriptor.
+ * A key whose bytes are not that container — corrupt, truncated, or simply not
+ * what the row claims — is refused, exactly as `poster` already refuses a
+ * `.webp` key whose bytes are a PNG.
+ */
+function isServableVideo(params: {
+  head: Buffer;
+  sizeBytes: number;
+  contentType: string;
+  extension: string;
+}): boolean {
+  const validated = validateMediaUpload({
+    filename: `media.${params.extension}`,
+    declaredMimeType: params.contentType,
+    sizeBytes: params.sizeBytes,
+    head: params.head,
+  });
+  if (!validated.ok) return false;
+  if (validated.kind !== "video") return false;
+  // The type the bytes proved must be the type this response is going to assert.
+  return validated.contentType === params.contentType;
+}
+
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 export async function GET(
@@ -132,7 +202,7 @@ export async function GET(
 
   const { asset, assetId, servedPublicly } = gate;
 
-  // ── 2. The stored key and type, validated rather than repaired ────────────
+  // ── 2. The stored key, resolved to a CANONICAL type — never echoed ────────
   const storageKey = asset.storageKey;
   const storedContentType = asset.contentType;
   if (!storageKey || !storedContentType) return byteServingNotFound();
@@ -140,13 +210,16 @@ export async function GET(
   // reach the filesystem resolver at all.
   if (!isMediaStorageKey(storageKey)) return byteServingNotFound();
 
-  // The stored type is re-checked against the allow-list on every read: a row
-  // written by an older or buggier writer can never make this route assert a
-  // Content-Type it does not serve.
+  // The stored type is used ONLY to look up an extension — the string itself
+  // never reaches a response header. A row written by an older or buggier
+  // writer can never make this route assert a Content-Type it does not serve.
   const extension = canonicalExtensionFor(storedContentType);
   if (extension === null) return byteServingNotFound();
+  const contentType = VIDEO_CONTENT_TYPE_BY_EXTENSION.get(extension);
+  if (contentType === undefined) return byteServingNotFound();
 
-  // ── 3. ONE open. Size, range decision and body all come from it ───────────
+  // ── 3. ONE open. Size, the outbound content proof, range decision and body
+  //      all come from it ─────────────────────────────────────────────────────
   let file: SecureFile | null;
   try {
     file = await openMediaObject(storageKey);
@@ -163,9 +236,48 @@ export async function GET(
   // a row can be stale or forged, and neither is evidence about the bytes on
   // disk right now.
   const sizeBytes = open.sizeBytes;
+  if (sizeBytes <= 0) {
+    await release(open);
+    return byteServingNotFound();
+  }
+
+  // A client that navigates away must not leave a file descriptor alive on the
+  // server. Registered BEFORE any further await on this descriptor and BEFORE
+  // the stream is created — an already-aborted signal never replays its event
+  // to a listener added afterwards, so that case is handled explicitly below
+  // rather than relied on to fire. The same handler tracks whichever object
+  // currently owns the bytes: the descriptor itself until a stream claims it,
+  // the stream afterwards (closing the descriptor twice is a no-op by
+  // contract, so this never double-closes).
+  let body: Readable | null = null;
+  const onAbort = (): void => {
+    if (body) body.destroy();
+    else void release(open);
+  };
+  if (req.signal.aborted) {
+    onAbort();
+    return byteServingNotFound();
+  }
+  req.signal.addEventListener("abort", onAbort, { once: true });
+
+  // The outbound content check, on the SAME descriptor: a corrupt or foreign
+  // object under a valid-looking key must never be asserted as this content
+  // type, whatever the row and the key both claim. Bounded to a small leading
+  // read — never the whole object.
+  let head: Buffer;
+  try {
+    head = await open.read({ start: 0, end: Math.min(MEDIA_MAGIC_SNIFF_BYTES, sizeBytes) - 1 });
+  } catch {
+    await release(open);
+    return byteServingNotFound();
+  }
+  if (!isServableVideo({ head, sizeBytes, contentType, extension })) {
+    await release(open);
+    return byteServingNotFound();
+  }
 
   const headers = byteServingHeaders({
-    contentType: storedContentType,
+    contentType,
     filename: `media-${assetId}.${extension}`,
     isPublic: servedPublicly,
     acceptRanges: true,
@@ -188,23 +300,21 @@ export async function GET(
   const window =
     range.outcome === "satisfiable" ? { start: range.start, end: range.end } : undefined;
 
-  let body: Readable;
+  let stream: Readable;
   try {
-    body = open.createReadStream(window);
+    stream = open.createReadStream(window);
   } catch {
     // An empty object, or a window the descriptor cannot satisfy. Both are the
     // same uniform outcome, and the descriptor must not leak on the way out.
     await release(open);
     return byteServingNotFound();
   }
-
-  // A client that navigates away mid-playback must not leave a file descriptor
-  // and a read stream alive on the server. Destroying the stream closes the
-  // descriptor it took ownership of.
-  req.signal.addEventListener("abort", () => body.destroy(), { once: true });
+  // Ownership has now passed to the stream; `onAbort` (already armed above)
+  // destroys it instead of closing the (now stream-owned) descriptor directly.
+  body = stream;
 
   if (range.outcome === "satisfiable") {
-    return new NextResponse(toResponseStream(body), {
+    return new NextResponse(toResponseStream(stream), {
       status: 206,
       headers: {
         ...headers,
@@ -218,7 +328,7 @@ export async function GET(
     });
   }
 
-  return new NextResponse(toResponseStream(body), {
+  return new NextResponse(toResponseStream(stream), {
     status: 200,
     headers: { ...headers, "Content-Length": String(sizeBytes) },
   });

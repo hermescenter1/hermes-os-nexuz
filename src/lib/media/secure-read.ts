@@ -324,20 +324,24 @@ export interface OpenSecureFileInput {
    * test and taken on faith inside `openSecureFile` itself. With it, a test can
    * drive the real function down the Linux path and observe that it refuses.
    *
-   * It is IGNORED when `NODE_ENV === "production"`, so it cannot weaken — or
-   * strengthen into a false pass — anything in a deployed process, whatever a
-   * caller passes.
+   * It is HONOURED ONLY when `NODE_ENV === "test"` — not merely "not
+   * production" — so it cannot weaken, or strengthen into a false pass,
+   * anything in a deployed process, and it also cannot be reached on a
+   * `development`-mode host (e.g. a Linux staging box), where a caller passing
+   * `requiresStrongPrimitives: false` would otherwise silently downgrade to the
+   * portable-only path. No production caller passes it, and this is what makes
+   * that true beyond "no caller happens to."
    */
   readonly __testPlatformCapabilities?: SecureReadPlatformCapabilities;
 }
 
 /**
- * The capability record a single call runs under. Production always uses the
- * real host's; only a non-production process honours the test seam.
+ * The capability record a single call runs under. Every environment except the
+ * test runner uses the real host's; only `NODE_ENV === "test"` honours the seam.
  */
 function effectiveCapabilities(input: OpenSecureFileInput): SecureReadPlatformCapabilities {
   const override = input.__testPlatformCapabilities;
-  if (override !== undefined && process.env.NODE_ENV !== "production") return override;
+  if (override !== undefined && process.env.NODE_ENV === "test") return override;
   return SECURE_READ_PLATFORM;
 }
 

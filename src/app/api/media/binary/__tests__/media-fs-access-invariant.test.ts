@@ -141,21 +141,45 @@ describe("no media API route touches the filesystem", () => {
     }
   });
 
+  /**
+   * The exact ingredients of the pattern the primitive replaced — a resolved
+   * pathname, a prefix test, a re-open by pathname — PLUS the one route it is
+   * cheapest to reach for instead: the document object-storage seam.
+   * `getDocumentObjectStorage().get(key)` looks like a legitimate accessor —
+   * it even validates the key shape via `storage.ts` — but on the `local`
+   * provider its `get` is a bare `fs.readFile(path.join(root, key))`
+   * (`src/lib/documents/object-storage.ts`): it FOLLOWS SYMLINKS, performs no
+   * `lstat`, no `O_NOFOLLOW` and no descriptor identity check. A media route
+   * reaching for it would pass every OTHER rule in this file while
+   * reintroducing exactly the class of bug this suite exists to close.
+   */
+  const FORBIDDEN_STORAGE_ACCESS_TOKENS: readonly string[] = [
+    "getLocalDocumentStorageDir",
+    "resolvePath(",
+    "startsWith(root",
+    "statMediaObject(",
+    "openMediaByteRange(",
+    "getDocumentObjectStorage",
+  ];
+
   it("no route re-derives a storage path or re-opens by pathname", () => {
     for (const file of sourceFilesUnder(MEDIA_API_ROOT)) {
       const code = liveCode(file);
-      // These are the exact ingredients of the pattern the primitive replaced:
-      // resolve a pathname, prefix-test it, then open that pathname again.
-      for (const forbidden of [
-        "getLocalDocumentStorageDir",
-        "resolvePath(",
-        "startsWith(root",
-        "statMediaObject(",
-        "openMediaByteRange(",
-      ]) {
+      for (const forbidden of FORBIDDEN_STORAGE_ACCESS_TOKENS) {
         expect(code, `${file} :: ${forbidden}`).not.toContain(forbidden);
       }
     }
+  });
+
+  it("the forbidden-token rule actually FIRES on the reintroduction it exists to catch", () => {
+    // Not a claim that the token is merely present in the list — a proof that
+    // the exact snippet a future route could plausibly write is flagged by it.
+    const reintroduction = [
+      'import { getDocumentObjectStorage } from "@/lib/documents/object-storage";',
+      "const bytes = await getDocumentObjectStorage().get(asset.storageKey);",
+    ].join("\n");
+    const fired = FORBIDDEN_STORAGE_ACCESS_TOKENS.some((token) => reintroduction.includes(token));
+    expect(fired, "the reintroduction snippet must trip at least one forbidden token").toBe(true);
   });
 });
 

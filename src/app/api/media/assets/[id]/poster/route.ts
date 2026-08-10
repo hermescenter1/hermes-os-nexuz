@@ -194,6 +194,25 @@ export async function GET(
   if (file === null) return byteServingNotFound();
   const open = file;
 
+  // A client that navigates away must not leave a file descriptor alive on the
+  // server. Registered BEFORE any further await on this descriptor and BEFORE
+  // the stream is created — an already-aborted signal never replays its event
+  // to a listener added afterwards, so that case is handled explicitly below
+  // rather than relied on to fire. The same handler tracks whichever object
+  // currently owns the bytes: the descriptor itself until a stream claims it,
+  // the stream afterwards (closing the descriptor twice is a no-op by
+  // contract, so this never double-closes).
+  let body: Readable | null = null;
+  const onAbort = (): void => {
+    if (body) body.destroy();
+    else void release(open);
+  };
+  if (req.signal.aborted) {
+    onAbort();
+    return byteServingNotFound();
+  }
+  req.signal.addEventListener("abort", onAbort, { once: true });
+
   // Judged on what is ACTUALLY on disk, so a stale or forged column cannot make
   // this route serve something far larger than a still frame.
   const sizeBytes = open.sizeBytes;
@@ -216,19 +235,18 @@ export async function GET(
   }
 
   // ── 5. Stream the object off that same descriptor ─────────────────────────
-  let body: Readable;
+  let stream: Readable;
   try {
-    body = open.createReadStream();
+    stream = open.createReadStream();
   } catch {
     await release(open);
     return byteServingNotFound();
   }
+  // Ownership has now passed to the stream; `onAbort` (already armed above)
+  // destroys it instead of closing the (now stream-owned) descriptor directly.
+  body = stream;
 
-  // A client that navigates away must not leave a file descriptor and a read
-  // stream alive on the server.
-  req.signal.addEventListener("abort", () => body.destroy(), { once: true });
-
-  return new NextResponse(toResponseStream(body), {
+  return new NextResponse(toResponseStream(stream), {
     status: 200,
     headers: {
       ...byteServingHeaders({

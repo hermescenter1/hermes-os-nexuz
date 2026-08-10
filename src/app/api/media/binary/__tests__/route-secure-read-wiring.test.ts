@@ -382,13 +382,23 @@ describe("a real request reaches openSecureFile with the canonical root", () => 
 
 // ── 2. An escape is refused AT THE ROUTE ─────────────────────────────────────
 
-describe.skipIf(!SYMLINK.supported)("a key resolving outside the root is refused at the route", () => {
-  it("asserts the symlink cases really ran on this host", () => {
-    // Guards against the skip silently becoming permanent: if the describe body
-    // executes at all, the capability must genuinely be present.
-    expect(SYMLINK.supported, SYMLINK.skipReason).toBe(true);
-  });
+// Asserted OUTSIDE the `skipIf` below — a guard placed INSIDE a skipped
+// `describe` never runs when skipped, so a Linux CI runner that silently lost
+// symlink capability would report the suite green instead of failing red.
+it("declares the symlink capability explicitly and never skips silently", () => {
+  if (SYMLINK.supported) {
+    expect(SYMLINK.skipReason).toBe("");
+    return;
+  }
+  expect(SYMLINK.skipReason).toMatch(/^SKIPPED: real symlinks cannot be created/);
+  expect(SYMLINK.skipReason).toContain(os.platform());
+  expect(SYMLINK.skipReason).toMatch(/MUST run on Linux/);
+  // A Linux host that cannot create a symlink is a broken CI runner, not a
+  // reason to skip the suite below. Fail loudly rather than report green.
+  expect(process.platform).not.toBe("linux");
+});
 
+describe.skipIf(!SYMLINK.supported)("a key resolving outside the root is refused at the route", () => {
   for (const surface of SURFACES) {
     it(`${surface.name} — final component is a symlink to a file outside the root`, async () => {
       const target = path.join(outside, "stolen.bin");
@@ -579,6 +589,21 @@ describe("the descriptor is accounted for on every exit path", () => {
     expect(h.closeCalls).toBe(1);
   });
 
+  it("a content-policy refusal after the open still closes — stream magic mismatch", async () => {
+    // The exact adversarial reproduction (Blocker-2 Finding 2): 64 bytes of
+    // 0x01 at a key whose row claims video/mp4. This used to answer 200 with
+    // Content-Type: video/mp4; it must now converge on the same uniform 404
+    // as poster and subtitles, and the descriptor must still be released.
+    await writeAtKey(VIDEO_KEY, Buffer.alloc(64, 0x01));
+    const { GET } = await import("../../assets/[id]/stream/route");
+    const res = await GET(getRequest(`http://hermes.test/api/media/assets/${ASSET_ID}/stream`), {
+      params: Promise.resolve({ id: ASSET_ID }),
+    });
+    expect(res.status).toBe(404);
+    expect(h.granted).toBe(1);
+    expect(h.closeCalls).toBe(1);
+  });
+
   it("subtitles close the descriptor exactly once on the success path", async () => {
     // This route reads into memory (a 2 MB-capped WebVTT track) rather than
     // streaming, so IT owns the close and must perform exactly one.
@@ -672,9 +697,12 @@ describe("stream — a real Range is satisfied from the verified descriptor", ()
 
     // THE regression this guards (ADR §4): "simplify to readFile" keeps every
     // Range assertion green while memory per viewer becomes the whole file.
-    // The buffered path must be untouched, and the stream must have been asked
-    // for EXACTLY the requested window — not the whole object.
-    expect(h.readWindows, "the stream route must not buffer").toEqual([]);
+    // The ONLY buffered read is the bounded magic-byte sniff (Blocker-2
+    // Finding 2) — never the Range itself — and the stream must have been
+    // asked for EXACTLY the requested window, not the whole object.
+    expect(h.readWindows, "only the bounded magic-byte sniff, never the Range").toEqual([
+      { start: 0, end: 63 },
+    ]);
     expect(h.streamWindows).toEqual([{ start: 10, end: 19 }]);
   });
 
@@ -685,7 +713,7 @@ describe("stream — a real Range is satisfied from the verified descriptor", ()
     });
     expect(res.status).toBe(200);
     await bodyOf(res);
-    expect(h.readWindows).toEqual([]);
+    expect(h.readWindows).toEqual([{ start: 0, end: 63 }]);
     expect(h.streamWindows).toHaveLength(1);
   });
 

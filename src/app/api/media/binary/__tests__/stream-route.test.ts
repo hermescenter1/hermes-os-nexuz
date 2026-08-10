@@ -26,25 +26,49 @@ import {
   buildPublicReadyAsset,
   emptyStore,
   getRequest,
+  mp4Bytes,
   routeParams,
   type FakeStore,
 } from "./harness";
 
 const OBJECT_SIZE = 1000;
 
+/**
+ * A real, structurally valid MP4 header. Required now that the route
+ * re-verifies the container's magic bytes on egress (Blocker-2 Finding 2) —
+ * synthetic pattern bytes at the head of the object would fail that check and
+ * turn every "200"/"206" assertion below into a false 404.
+ */
+const OBJECT_HEADER = mp4Bytes();
+
+/** Real header, then a deterministic pattern so an arbitrary slice can still
+ *  be checked precisely. */
+function objectBytes(sizeBytes: number): Buffer {
+  const out = Buffer.alloc(sizeBytes);
+  OBJECT_HEADER.copy(out, 0, 0, Math.min(OBJECT_HEADER.length, sizeBytes));
+  for (let i = OBJECT_HEADER.length; i < sizeBytes; i += 1) out[i] = i % 251;
+  return out;
+}
+
 const h = vi.hoisted(() => ({
   store: { assets: [], subtitles: [] } as FakeStore,
   session: null as null | { userId: string; orgId: string; role: string },
   actorCalls: 0,
   objectSize: 1000 as number | null,
+  /** When set, REPLACES the generated object bytes entirely — used to prove a
+   *  corrupt or foreign object under a valid-looking key is refused. */
+  contentOverride: null as Buffer | null,
   /** Every window a STREAM was actually created over. */
   opened: [] as Array<{ key: string; range?: { start: number; end: number } }>,
   /** Every key a DESCRIPTOR was opened for — at most one per request. */
   descriptors: [] as string[],
   /** How many descriptors were explicitly released without being streamed. */
   closed: 0,
-  /** Buffered reads off the descriptor. The stream route must never do one. */
+  /** Buffered reads off the descriptor. Now exactly one per request — the
+   *  bounded magic-byte sniff — and never a buffered Range. */
   bufferedReads: 0,
+  /** The windows handed to the buffered `read()` path. */
+  readWindows: [] as Array<{ start: number; end: number }>,
   wholeObjectReads: 0,
 }));
 
@@ -100,21 +124,19 @@ vi.mock("@/lib/media/storage", async (importOriginal) => {
       actual.assertMediaStorageKey(key);
       if (h.objectSize === null) return null;
       const sizeBytes = h.objectSize;
+      const content = h.contentOverride ?? objectBytes(sizeBytes);
       h.descriptors.push(key);
       let released = false;
       let closed = false;
-      // A deterministic body: byte i holds (i % 251), so a slice can be checked.
-      const sliceOf = (start: number, length: number): Buffer => {
-        const out = Buffer.alloc(length);
-        for (let i = 0; i < length; i += 1) out[i] = (start + i) % 251;
-        return out;
-      };
+      const sliceOf = (start: number, length: number): Buffer =>
+        content.subarray(start, start + length);
       return {
         sizeBytes,
         async read(range?: { start: number; end: number }) {
           if (released || closed) throw new Error("descriptor released");
           const window = range ?? { start: 0, end: sizeBytes - 1 };
           h.bufferedReads += 1;
+          h.readWindows.push(window);
           return sliceOf(window.start, window.end - window.start + 1);
         },
         createReadStream(range?: { start: number; end: number }) {
@@ -152,10 +174,12 @@ beforeEach(() => {
   h.session = null;
   h.actorCalls = 0;
   h.objectSize = OBJECT_SIZE;
+  h.contentOverride = null;
   h.opened = [];
   h.descriptors = [];
   h.closed = 0;
   h.bufferedReads = 0;
+  h.readWindows = [];
   h.wholeObjectReads = 0;
   vi.resetModules();
 });
@@ -189,8 +213,10 @@ describe("stream — Range handling", () => {
     expect(res.headers.get("Accept-Ranges")).toBe("bytes");
     const payload = await bodyOf(res);
     expect(payload.byteLength).toBe(10);
-    expect(payload[0]).toBe(0);
-    expect(payload[9]).toBe(9);
+    // Bytes 0-9 of this object are the real MP4 header the magic-byte check
+    // reads — checked against the same source, not restated as literals.
+    expect(payload[0]).toBe(OBJECT_HEADER[0]);
+    expect(payload[9]).toBe(OBJECT_HEADER[9]);
   });
 
   it("answers 206 for an open-ended range and streams to the last byte", async () => {
@@ -272,6 +298,45 @@ describe("stream — Range handling", () => {
   });
 });
 
+// ── Egress content verification (Blocker-2 Finding 2) ───────────────────────
+
+describe("stream — the outbound content is verified, not merely the stored key", () => {
+  it("refuses a corrupt or foreign object stored under a valid-looking key", async () => {
+    // The exact adversarial reproduction: 64 bytes of 0x01 under a key whose
+    // row claims video/mp4. Poster and subtitles already refuse the equivalent
+    // case; this proves stream now converges on the same uniform 404 instead
+    // of asserting Content-Type: video/mp4 over bytes that are not MP4.
+    h.contentOverride = Buffer.alloc(64, 0x01);
+    h.objectSize = 64;
+    const { GET } = await route();
+    const res = await GET(getRequest(URL_STREAM), routeParams(ASSET_ID));
+
+    expect(res.status).toBe(404);
+    expect(h.opened).toHaveLength(0);
+  });
+
+  it("verifies the container with a BOUNDED leading read, never the whole object", async () => {
+    const { GET } = await route();
+    const res = await GET(getRequest(URL_STREAM), routeParams(ASSET_ID));
+
+    expect(res.status).toBe(200);
+    // Exactly one buffered read — the magic-byte sniff — bounded to the sniff
+    // window, never the 1000-byte object.
+    expect(h.bufferedReads).toBe(1);
+    expect(h.readWindows).toEqual([{ start: 0, end: 63 }]);
+  });
+
+  it("still verifies the container on a Range request, before deciding the range", async () => {
+    h.contentOverride = Buffer.alloc(64, 0x01);
+    h.objectSize = 64;
+    const { GET } = await route();
+    const res = await GET(getRequest(URL_STREAM, { range: "bytes=0-9" }), routeParams(ASSET_ID));
+
+    expect(res.status).toBe(404);
+    expect(h.opened).toHaveLength(0);
+  });
+});
+
 // ── Response hardening ───────────────────────────────────────────────────────
 
 describe("stream — response headers", () => {
@@ -315,6 +380,32 @@ describe("stream — response headers", () => {
     const res = await GET(getRequest(URL_STREAM), routeParams(ASSET_ID));
     expect(res.status).toBe(404);
     expect(h.opened).toHaveLength(0);
+  });
+
+  it("NEVER echoes the stored content type — a header-injection-shaped value still yields the canonical type, cleanly", async () => {
+    // A row is untrusted input: this is the shape a broken or hostile writer
+    // could persist. `byte-serving-auth.ts` requires the header to ALWAYS be a
+    // server-side allow-list constant — never a string echoed from a row.
+    h.store.assets[0].contentType = 'video/mp4;\r\nX-Injected: evil';
+    const { GET } = await route();
+    const res = await GET(getRequest(URL_STREAM), routeParams(ASSET_ID));
+
+    // A clean response, not an unhandled 500 from constructing a Headers
+    // object with a raw CRLF-bearing value.
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("video/mp4");
+    expect(res.headers.get("X-Injected")).toBeNull();
+  });
+
+  it("resolves aliases and stray codec parameters to the same canonical type, never the raw stored string", async () => {
+    for (const stored of ["video/x-m4v", "Video/MP4", 'video/mp4; codecs="evil"']) {
+      vi.resetModules();
+      h.store.assets[0].contentType = stored;
+      const { GET } = await route();
+      const res = await GET(getRequest(URL_STREAM), routeParams(ASSET_ID));
+      expect(res.status, stored).toBe(200);
+      expect(res.headers.get("Content-Type"), stored).toBe("video/mp4");
+    }
   });
 });
 

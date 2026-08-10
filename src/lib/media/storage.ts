@@ -387,8 +387,11 @@ function parseRangeNumber(raw: string): number | null {
  * Multi-range (`bytes=0-9,20-29`) is deliberately NOT implemented: answering it
  * correctly requires a `multipart/byteranges` body, and a half-implementation
  * that silently returns only the first part would be a correctness bug in every
- * client that asked. It is reported as malformed so the caller serves the whole
- * object, which is always a valid response.
+ * client that asked. It is reported as `malformed` with `reason: "multi_range"`
+ * — a distinct reason from an ordinary parse failure — so the `stream` route can
+ * tell the two apart: it treats multi-range as a refusal and answers `416`,
+ * rather than silently honouring only the first part OR serving the whole
+ * object.
  */
 export function parseRangeHeader(
   header: string | null | undefined,

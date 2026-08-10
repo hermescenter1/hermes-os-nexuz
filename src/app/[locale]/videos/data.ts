@@ -58,20 +58,18 @@ import type {
   MediaPlaybackView,
 } from "@/components/media/view-model";
 import { DEFAULT_LOCALE } from "@/i18n/locales";
+import {
+  VIDEO_HUB_ORG_PARAM,
+  VIDEO_HUB_PAGE_SIZE,
+} from "@/lib/media/video-library-params";
 
 // ── Public contract of the route ─────────────────────────────────────────────
-
-/** The organization namespace selector, mirroring the anonymous media API. */
-export const VIDEO_HUB_ORG_PARAM = "org";
-/** The category filter, expressed as a public category SLUG (never an id). */
-export const VIDEO_HUB_CATEGORY_PARAM = "category";
-/** The skill-level filter. */
-export const VIDEO_HUB_LEVEL_PARAM = "level";
-/** 1-based page number. */
-export const VIDEO_HUB_PAGE_PARAM = "page";
-
-/** Kept below the repository's own maximum so one page is one bounded query. */
-export const VIDEO_HUB_PAGE_SIZE = 12;
+//
+// The URL parameter names now live in `@/lib/media/video-library-params`, a
+// dependency-free module. They are NOT re-exported from here on purpose: this
+// file reaches Prisma, so a client component that imported them from here would
+// pull `pg` (and `node:tls`) into the browser bundle — the exact failure this
+// split fixes. Client code must import them from the pure module.
 
 /** How many "more like this" cards the watch page asks for. */
 const RELATED_LIMIT = 3;

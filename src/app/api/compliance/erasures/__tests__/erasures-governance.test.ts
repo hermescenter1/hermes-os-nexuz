@@ -77,6 +77,11 @@ function makeDb() {
     user:                coll(() => users),
     legalHold:           coll(() => holds),
     retentionPolicy:     coll(() => policies),
+    // Phase 102 §8 — MediaSave and MediaWatchProgress joined the closed erasure
+    // registry at ERASURE_REGISTRY_VERSION 1.1, so the double must model them or
+    // collection throws before any assertion runs.
+    mediaSave:           coll(() => [] as Row[]),
+    mediaWatchProgress:  coll(() => [] as Row[]),
   };
   db.$queryRawUnsafe = async (sql: string, ...vals: unknown[]) => {
     if (/FOR UPDATE/i.test(sql) && /"DataDeletionRequest"/i.test(sql)) {

@@ -4,10 +4,12 @@ import { useCallback, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CategoryChips } from "@/components/media";
 import type { MediaCategoryView } from "@/components/media/view-model";
+// Deliberately NOT from "./data": that module reaches Prisma, and importing it
+// here pulls `pg` -> `node:tls` into the client bundle and fails `next build`.
 import {
   VIDEO_HUB_CATEGORY_PARAM,
   VIDEO_HUB_PAGE_PARAM,
-} from "./data";
+} from "@/lib/media/video-library-params";
 
 /**
  * PHASE 102 — the ONE interactive island on the public library page.

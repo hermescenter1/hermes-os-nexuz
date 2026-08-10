@@ -564,6 +564,22 @@ describe("every read goes through the hardened primitive", () => {
   });
 });
 
+// Asserted OUTSIDE the `skipIf` below — a guard placed INSIDE a skipped
+// `describe` never runs when skipped, so a Linux CI runner that silently lost
+// symlink capability would report the suite green instead of failing red.
+it("declares the symlink capability explicitly and never skips silently", () => {
+  if (SYMLINK.supported) {
+    expect(SYMLINK.skipReason).toBeNull();
+    return;
+  }
+  expect(SYMLINK.skipReason).toMatch(/^SKIPPED: real symlinks cannot be created/);
+  expect(SYMLINK.skipReason).toContain(os.platform());
+  expect(SYMLINK.skipReason).toMatch(/MUST run on/);
+  // A Linux host that cannot create a symlink is a broken CI runner, not a
+  // reason to skip the suite below. Fail loudly rather than report green.
+  expect(process.platform).not.toBe("linux");
+});
+
 describe.skipIf(!SYMLINK.supported)("symlinked objects are refused by the storage layer", () => {
   it("refuses a key whose object is a symlink pointing outside the storage root", async () => {
     const outside = await fs.mkdtemp(path.join(os.tmpdir(), "hermes-media-outside-"));

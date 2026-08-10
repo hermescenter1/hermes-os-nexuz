@@ -7,12 +7,10 @@ import {
   MediaSkillLevelBadge,
   RelatedVideos,
 } from "@/components/media";
+import { formatDate } from "@/lib/i18n/format";
 import { buildMetadata } from "@/lib/seo/metadata";
-import {
-  VIDEO_HUB_ORG_PARAM,
-  loadVideoWatch,
-  resolveVideoHubScope,
-} from "../data";
+import { VIDEO_HUB_ORG_PARAM } from "@/lib/media/video-library-params";
+import { loadVideoWatch, resolveVideoHubScope } from "../data";
 
 /**
  * PHASE 102 — `/[locale]/videos/[slug]`: the PUBLIC watch page.
@@ -101,7 +99,11 @@ export default async function VideoWatchPage({
   const publishedLabel =
     view.publishedAt !== null
       ? t("watch.publishedOn", {
-          date: new Date(view.publishedAt).toLocaleDateString(locale),
+          // The shared formatter, not toLocaleDateString: it pins the timezone
+          // to UTC and maps the locale through INTL_LOCALE_TAG, so a published
+          // date cannot shift a day across server timezones or render with the
+          // wrong calendar for fa.
+          date: formatDate(view.publishedAt, locale),
         })
       : null;
 
