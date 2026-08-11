@@ -73,10 +73,11 @@ import {
   validateMediaUpload,
   type MediaValidationReason,
 } from "@/lib/media/validation";
+import { requirePlatformAuth } from "@/lib/api/auth";
 import { requireOrgActor } from "@/lib/org/context";
 import { can, requirePermission, type OrgPermission } from "@/lib/org/rbac";
 import type { OrgRole } from "@/lib/org/types";
-import { resolveClientIp } from "@/lib/security/request-guards";
+import { requireTrustedOrigin, resolveClientIp } from "@/lib/security/request-guards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,11 +90,15 @@ export const dynamic = "force-dynamic";
  *
  * The IDENTIFIER is namespaced (`media-upload:<ip>`), so media uploads get their
  * OWN Redis counter and never consume, or get blocked by, the engineering-import
- * budget of the same caller. Only the max/window policy is shared. A dedicated
- * bucket belongs in `LIMITS` in src/lib/auth/rate-limiter.ts, which this surface
- * does not own; borrowing a configured policy is deliberate, because a bucket
- * name absent from `LIMITS` makes `checkRateLimit` return `true` unconditionally
- * — a rate limit that silently does nothing is worse than none at all.
+ * budget of the same caller. Only the max/window policy is shared.
+ *
+ * Borrowing was originally defensive: an undeclared bucket used to make
+ * `checkRateLimit` return `true` unconditionally, so naming a bucket that was
+ * not in `LIMITS` was worse than not limiting at all. That fail-open is gone —
+ * the limiter's action type is derived from `LIMITS`, so an undeclared bucket is
+ * now a compile error and refuses at runtime. This route keeps the shared policy
+ * because 10 requests / 60 s is the right budget for an expensive byte upload,
+ * not because it has to.
  */
 const UPLOAD_LIMIT_BUCKET = "engineering-import";
 const UPLOAD_LIMIT_KEY_PREFIX = "media-upload";
@@ -134,12 +139,24 @@ function deny(status: number, code: string, extraHeaders?: Record<string, string
 }
 
 /**
- * An unauthenticated caller gets 401 (that discloses nothing). Anything else —
- * not a member, suspended membership — gets 404, because confirming that an
- * asset id exists inside a tenant the caller cannot reach is itself a leak.
+ * THE UNIFORM REFUSAL FOR EVERYTHING DECIDED AFTER THE UN-SCOPED LOOKUP.
+ *
+ * This used to map `requireOrgActor`'s 401 straight through, which made the
+ * status an existence oracle: the un-scoped `resolveOwningOrganizationId` ran
+ * BEFORE any authentication, so an anonymous caller got `401` for an id that
+ * existed in ANY tenant and `404` for one that did not, and could enumerate
+ * every `MediaAsset` id in the product with no credentials at all.
+ *
+ * Authentication now happens BEFORE that lookup, so an honest `401` is still
+ * available to a caller with no session — and it is returned identically for
+ * every id, because no row has been read at that point. Once the lookup HAS
+ * run, every remaining refusal collapses to `404`: not a member, membership no
+ * longer active, session revoked between the two checks. This mirrors the
+ * disclosure policy the byte-serving chain already enforces
+ * (src/lib/media/byte-serving-auth.ts).
  */
-function denyFromActor(status: number): NextResponse {
-  return status === 401 ? deny(401, "authentication_required") : deny(404, "not_found");
+function denyAfterLookup(): NextResponse {
+  return deny(404, "not_found");
 }
 
 /**
@@ -264,18 +281,30 @@ export async function POST(
     return deny(413, "file_too_large");
   }
 
-  // ── 2. Tenancy, then authorization ─────────────────────────────────────────
+  // ── 2. Authentication, BEFORE the un-scoped lookup ─────────────────────────
+  // This ordering is the whole point. `resolveOwningOrganizationId` below is
+  // necessarily un-scoped, so anything that runs AFTER it and varies with the
+  // outcome describes the row. Proving the caller is authenticated first is
+  // id-independent — the same 401 for an id that exists and one that does not.
+  const auth = await requirePlatformAuth(req);
+  if ("error" in auth) return deny(401, "authentication_required");
+
+  // ── 3. Same-origin, for cookie-authenticated writes ────────────────────────
+  const originGate = requireTrustedOrigin(req, auth.ctx.authMethod);
+  if (!originGate.ok) return deny(403, "forbidden");
+
+  // ── 4. Tenancy, then authorization ─────────────────────────────────────────
   const organizationId = await resolveOwningOrganizationId(assetId);
-  if (!organizationId) return deny(404, "not_found");
+  if (!organizationId) return denyAfterLookup();
 
   const actor = await requireOrgActor(req, organizationId);
-  if ("error" in actor) return denyFromActor(actor.status);
+  if ("error" in actor) return denyAfterLookup();
   const { ctx } = actor;
 
   const permitted = requirePermission(ctx.role, "manage_media");
   if (!permitted.ok) return deny(403, "forbidden");
 
-  // ── 3. Abuse brake, keyed ONLY on the proxy-controlled X-Real-IP ───────────
+  // ── 5. Abuse brake, keyed ONLY on the proxy-controlled X-Real-IP ───────────
   // `resolveClientIp` reads X-Real-IP and nothing else, by design: nginx
   // overwrites that header but merely APPENDS to the forwarded-for chain, so
   // keying on the forwarded chain would let a caller rotate buckets per request
@@ -288,7 +317,7 @@ export async function POST(
     });
   }
 
-  // ── 4. Commercial entitlement, AFTER the RBAC decision ────────────────────
+  // ── 6. Commercial entitlement, AFTER the RBAC decision ────────────────────
   const entitlement = await enforceEntitlement({
     organisationId: organizationId,
     entitlementKey: "video_hub",
@@ -297,7 +326,7 @@ export async function POST(
   });
   if (!entitlement.ok) return entitlement.response;
 
-  // ── 5. The asset itself, through the org-scoped repository gate ───────────
+  // ── 7. The asset itself, through the org-scoped repository gate ───────────
   const permissions = heldMediaPermissions(ctx.role);
   const loaded = await getMediaAssetById({
     organizationId,
@@ -324,7 +353,7 @@ export async function POST(
   });
   if (!edge.ok) return deny(403, "forbidden");
 
-  // ── 6. Multipart body ─────────────────────────────────────────────────────
+  // ── 8. Multipart body ─────────────────────────────────────────────────────
   let form: FormData;
   try {
     form = await req.formData();
@@ -347,7 +376,7 @@ export async function POST(
   if (bytes.byteLength <= 0) return deny(400, "file_empty");
   if (bytes.byteLength > MAX_MEDIA_UPLOAD_BYTES) return deny(413, "file_too_large");
 
-  // ── 7. Allow-list + magic-byte verification ───────────────────────────────
+  // ── 9. Allow-list + magic-byte verification ───────────────────────────────
   const validated = validateMediaUpload({
     filename: filename.value,
     declaredMimeType: file.type,
@@ -382,7 +411,7 @@ export async function POST(
     return deny(415, "unsupported_media_type");
   }
 
-  // ── 8. Persist bytes under a SERVER-GENERATED key ─────────────────────────
+  // ── 10. Persist bytes under a SERVER-GENERATED key ─────────────────────────
   let storageKey: string;
   try {
     storageKey = buildMediaStorageKey({
@@ -400,7 +429,7 @@ export async function POST(
 
   const checksum = createHash("sha256").update(bytes).digest("hex");
 
-  // ── 9. Compare-and-swap the row, carrying the byte metadata atomically ────
+  // ── 11. Compare-and-swap the row, carrying the byte metadata atomically ────
   // `transitionMediaProcessingState` cannot express the storage columns, so the
   // predicate form is applied here directly: the expected state is pinned in the
   // `where` clause, and `count !== 1` means another replica won the race.

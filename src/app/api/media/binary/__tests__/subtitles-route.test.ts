@@ -28,6 +28,8 @@ import {
 const h = vi.hoisted(() => ({
   store: { assets: [], subtitles: [] } as FakeStore,
   session: null as null | { userId: string; orgId: string; role: string },
+  /** How the caller authenticated. The origin gate applies to `jwt` only. */
+  authMethod: "jwt" as "jwt" | "apikey",
   actorOrgIds: [] as string[],
   rateLimited: false,
   rateLimitKeys: [] as Array<{ bucket: string; key: string }>,
@@ -42,6 +44,17 @@ vi.mock("@/lib/db/prisma", () => ({
     const { createFakePrisma } = await import("./harness");
     return createFakePrisma(h.store);
   },
+}));
+
+vi.mock("@/lib/api/auth", () => ({
+  // Authentication now runs BEFORE the un-scoped owner lookup, so that a 401
+  // cannot be used to probe whether an asset id exists. It mirrors `h.session`:
+  // the same fixture drives both gates, so a suite cannot accidentally
+  // authenticate at one and not the other.
+  requirePlatformAuth: async () =>
+    h.session
+      ? { ctx: { userId: h.session.userId, orgId: h.session.orgId, authMethod: h.authMethod, scopes: [] } }
+      : { error: "Authentication required", status: 401 },
 }));
 
 vi.mock("@/lib/org/context", () => ({
@@ -132,6 +145,7 @@ beforeEach(() => {
   h.store = emptyStore();
   h.store.assets.push(buildAsset({ processingState: "READY", contentType: "video/mp4" }));
   h.session = { userId: "user-1", orgId: ORG_A, role: "ENGINEER" };
+  h.authMethod = "jwt";
   h.actorOrgIds = [];
   h.rateLimited = false;
   h.rateLimitKeys = [];

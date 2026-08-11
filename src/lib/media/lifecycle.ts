@@ -104,6 +104,52 @@ export const MEDIA_EDITORIAL_TRANSITIONS: Readonly<
   ARCHIVED: [{ to: "DRAFT", action: "RESTORE", permission: "manage_media" }],
 } as const;
 
+/**
+ * PHASE 102 — which editorial actions the `video_hub` entitlement gates.
+ *
+ * THE PROBLEM THE EXCEPTION SOLVES
+ * A tenant whose `video_hub` entitlement has lapsed must not be able to keep
+ * authoring or to publish anything new. But refusing EVERY transition would be
+ * worse than useless: it would freeze already-published material on the public
+ * site with no way to take it down, and it would strand assets mid-review with
+ * no exit — `SUBMITTED` and `IN_REVIEW` lead only to `PUBLISHED` or `REJECTED`,
+ * so gating both leaves nothing reachable. A commercial gate that traps a
+ * customer's content in public view is not a commercial gate, it is a hostage.
+ *
+ * THE RULE
+ * An action is exempt if and only if it CANNOT increase exposure and is the
+ * customer's way to reduce it or tidy up:
+ *
+ *   ARCHIVE — the unpublish/cleanup edge. `PUBLISHED → ARCHIVED` is exactly how
+ *             live material is withdrawn; `DRAFT → ARCHIVED` and
+ *             `REJECTED → ARCHIVED` are cleanup.
+ *   REJECT  — refuses publication outright, and it is the ONLY exit from
+ *             `SUBMITTED` / `IN_REVIEW` that does not publish. Without it those
+ *             two states have no non-publishing exit at all.
+ *
+ * Everything else is gated, because each either publishes or resumes authoring:
+ * `SUBMIT`, `START_REVIEW`, `PUBLISH`, and `RESTORE` (which returns an archived
+ * asset to `DRAFT` — the start of the authoring loop).
+ *
+ * The exemption is deliberately stated as a closed set over the action
+ * vocabulary rather than as a predicate over states, so adding a new action
+ * without classifying it fails the exhaustiveness test rather than defaulting to
+ * exempt.
+ */
+export const MEDIA_EXPOSURE_REDUCING_ACTIONS: readonly MediaEditorialAction[] = [
+  "ARCHIVE",
+  "REJECT",
+] as const;
+
+/**
+ * Whether traversing this edge requires an active `video_hub` entitlement.
+ *
+ * Fails CLOSED: anything not explicitly listed as exposure-reducing is gated.
+ */
+export function editorialActionRequiresEntitlement(action: MediaEditorialAction): boolean {
+  return !MEDIA_EXPOSURE_REDUCING_ACTIONS.includes(action);
+}
+
 /** The state a newly created asset starts in. Matches the schema default. */
 export const MEDIA_INITIAL_STATUS: MediaLifecycleStatus = "DRAFT";
 

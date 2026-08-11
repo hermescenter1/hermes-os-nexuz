@@ -13,6 +13,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { BASE_URL } from "@/lib/seo/config";
 
 // ── Prisma double ────────────────────────────────────────────────────────────
 
@@ -214,21 +215,48 @@ export const VALID_WEBVTT = [
 
 // ── Request builders ─────────────────────────────────────────────────────────
 
-/** The three headers that matter for these routes, all optional. */
+/**
+ * The origin a real same-origin browser write carries. DERIVED from the same
+ * `BASE_URL` the guard reads, so the harness cannot drift away from the policy
+ * it is exercising.
+ */
+export const ALLOWED_ORIGIN = new URL(BASE_URL).origin;
+
+/** A cross-site origin. Every cookie-authenticated write must refuse it. */
+export const FOREIGN_ORIGIN = "https://attacker.example";
+
+/**
+ * A suffix-spoof of the canonical host. `isAllowedOrigin` matches the exact
+ * origin, so this must be refused too — it is the classic bypass of a
+ * `startsWith`/`endsWith` check.
+ */
+export const LOOKALIKE_ORIGIN = `${ALLOWED_ORIGIN}.attacker.example`;
+
+/** The headers that matter for these routes, all optional. */
 export interface RequestHeaders {
   realIp?: string;
   /** Deliberately spoofable. Present only so a test can prove it is IGNORED. */
   forwardedFor?: string;
   range?: string;
   cookie?: string;
+  /**
+   * `undefined` sends the allowed same-origin value — what a browser does on a
+   * legitimate write. `null` sends NO `Origin` header at all, which is what a
+   * form-post CSRF and a non-browser client look like.
+   */
+  origin?: string | null;
 }
 
-function headerBag(headers: RequestHeaders): Record<string, string> {
+function headerBag(headers: RequestHeaders, withOrigin: boolean): Record<string, string> {
   const bag: Record<string, string> = {};
   if (headers.realIp) bag["x-real-ip"] = headers.realIp;
   if (headers.forwardedFor) bag["x-forwarded-for"] = headers.forwardedFor;
   if (headers.range) bag.range = headers.range;
   if (headers.cookie) bag.cookie = headers.cookie;
+  if (withOrigin) {
+    const origin = headers.origin === undefined ? ALLOWED_ORIGIN : headers.origin;
+    if (origin !== null) bag.origin = origin;
+  }
   return bag;
 }
 
@@ -241,7 +269,9 @@ export function multipartRequest(
   form: FormData,
   headers: RequestHeaders = {},
 ): NextRequest {
-  return new NextRequest(new Request(url, { method: "POST", body: form, headers: headerBag(headers) }));
+  return new NextRequest(
+    new Request(url, { method: "POST", body: form, headers: headerBag(headers, true) }),
+  );
 }
 
 /** A POST with no body at all — used to prove the pre-parse Content-Length brake. */
@@ -258,7 +288,8 @@ export function emptyMultipartRequest(
 }
 
 export function getRequest(url: string, headers: RequestHeaders = {}): NextRequest {
-  return new NextRequest(new Request(url, { method: "GET", headers: headerBag(headers) }));
+  // A GET carries no CSRF risk, so the origin gate does not apply to reads.
+  return new NextRequest(new Request(url, { method: "GET", headers: headerBag(headers, false) }));
 }
 
 export function routeParams(id: string): { params: Promise<{ id: string }> } {

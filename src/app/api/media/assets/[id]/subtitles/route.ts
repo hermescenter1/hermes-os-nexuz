@@ -58,10 +58,11 @@ import {
   validateMediaUpload,
   type MediaValidationReason,
 } from "@/lib/media/validation";
+import { requirePlatformAuth } from "@/lib/api/auth";
 import { requireOrgActor } from "@/lib/org/context";
 import { can, requirePermission, type OrgPermission } from "@/lib/org/rbac";
 import type { OrgRole } from "@/lib/org/types";
-import { resolveClientIp } from "@/lib/security/request-guards";
+import { requireTrustedOrigin, resolveClientIp } from "@/lib/security/request-guards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -146,8 +147,18 @@ function deny(status: number, code: string, extraHeaders?: Record<string, string
   );
 }
 
-function denyFromActor(status: number): NextResponse {
-  return status === 401 ? deny(401, "authentication_required") : deny(404, "not_found");
+/**
+ * THE UNIFORM REFUSAL FOR EVERYTHING DECIDED AFTER THE UN-SCOPED LOOKUP.
+ *
+ * See ../upload/route.ts for the full rationale. In short: the un-scoped
+ * `resolveOwningOrganizationId` used to run before any authentication, so
+ * mapping `requireOrgActor`'s 401 straight through turned the status into a
+ * cross-tenant existence oracle for `MediaAsset` ids, readable with no
+ * credentials at all. Authentication now runs BEFORE that lookup — where a 401
+ * is id-independent — and every refusal decided after it collapses to 404.
+ */
+function denyAfterLookup(): NextResponse {
+  return deny(404, "not_found");
 }
 
 /**
@@ -321,12 +332,23 @@ export async function POST(
     return deny(413, "file_too_large");
   }
 
+  // ── Authentication, BEFORE the un-scoped lookup ───────────────────────────
+  // Ordering is the control: everything that runs after the un-scoped lookup
+  // and varies with its outcome describes the row. Proving the caller is
+  // authenticated first is id-independent.
+  const auth = await requirePlatformAuth(req);
+  if ("error" in auth) return deny(401, "authentication_required");
+
+  // ── Same-origin, for cookie-authenticated writes ──────────────────────────
+  const originGate = requireTrustedOrigin(req, auth.ctx.authMethod);
+  if (!originGate.ok) return deny(403, "forbidden");
+
   // ── Tenancy, then authorization ───────────────────────────────────────────
   const organizationId = await resolveOwningOrganizationId(assetId);
-  if (!organizationId) return deny(404, "not_found");
+  if (!organizationId) return denyAfterLookup();
 
   const actor = await requireOrgActor(req, organizationId);
-  if ("error" in actor) return denyFromActor(actor.status);
+  if ("error" in actor) return denyAfterLookup();
   const { ctx } = actor;
 
   const permitted = requirePermission(ctx.role, "manage_media");

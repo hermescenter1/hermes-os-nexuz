@@ -28,11 +28,16 @@ import { requireOrgActor } from "@/lib/org/context";
 import { can, requirePermission, type OrgPermission } from "@/lib/org/rbac";
 import type { OrgRole } from "@/lib/org/types";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
-import { isJsonContentType, readBoundedTextBody } from "@/lib/security/request-guards";
+import {
+  isJsonContentType,
+  readBoundedTextBody,
+  requireTrustedOrigin,
+} from "@/lib/security/request-guards";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 import { z } from "zod";
+import { enforceEntitlement } from "@/lib/billing-governance/runtime/require-entitlement";
 import { getMediaAssetById, transitionMediaAssetStatus } from "@/lib/media/db";
-import { findEditorialTransition } from "@/lib/media/lifecycle";
+import { editorialActionRequiresEntitlement, findEditorialTransition } from "@/lib/media/lifecycle";
 import {
   MEDIA_LIFECYCLE_STATUSES,
   isMediaLifecycleStatus,
@@ -75,6 +80,11 @@ const transitionSchema = z
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) return json({ error: auth.error, code: "AUTHENTICATION_REQUIRED" }, auth.status);
+
+  // Same-origin, for cookie-authenticated writes only. Runs before the id is
+  // read, so the refusal is identical for every id.
+  const originGate = requireTrustedOrigin(req, auth.ctx.authMethod);
+  if (!originGate.ok) return json({ error: "Forbidden", code: "FORBIDDEN" }, 403);
 
   const member = await requireOrgActor(req, auth.ctx.orgId);
   if ("error" in member) return json({ error: member.error, code: "ORGANIZATION_SCOPE_REQUIRED" }, member.status);
@@ -164,6 +174,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // The edge's own permission, checked with the real RBAC table.
   const edgePerm = requirePermission(member.ctx.role, edge.permission);
   if (!edgePerm.ok) return json({ error: edgePerm.error, code: "INSUFFICIENT_PERMISSION" }, edgePerm.status);
+
+  // Commercial gate, AFTER RBAC and AFTER the edge is known — the action decides
+  // whether it applies at all. A tenant without `video_hub` may not submit,
+  // start a review, publish or restore; it may always ARCHIVE (withdraw live
+  // material, tidy up) and REJECT (refuse publication), because a gate that
+  // trapped published content in public view with no way to take it down would
+  // be a hostage, not a gate. See `MEDIA_EXPOSURE_REDUCING_ACTIONS`.
+  //
+  // `requestedUnits: 0` asks whether the capability is AVAILABLE rather than
+  // metering another unit — a state change is not a new asset.
+  if (editorialActionRequiresEntitlement(edge.action)) {
+    const entitlement = await enforceEntitlement({
+      organisationId: organizationId,
+      entitlementKey: "video_hub",
+      requestedUnits: 0,
+      userId: actorUserId,
+    });
+    if (!entitlement.ok) return entitlement.response;
+  }
 
   // The repository re-evaluates the table, re-reads the status inside the
   // transaction, pins `processingState` on the publish edge, writes the

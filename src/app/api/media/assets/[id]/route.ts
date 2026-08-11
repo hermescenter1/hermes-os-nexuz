@@ -25,7 +25,12 @@ import { requireOrgActor } from "@/lib/org/context";
 import { can, requirePermission, type OrgPermission } from "@/lib/org/rbac";
 import type { OrgRole } from "@/lib/org/types";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
-import { isJsonContentType, readBoundedTextBody } from "@/lib/security/request-guards";
+import { enforceEntitlement } from "@/lib/billing-governance/runtime/require-entitlement";
+import {
+  isJsonContentType,
+  readBoundedTextBody,
+  requireTrustedOrigin,
+} from "@/lib/security/request-guards";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 import { getPrisma } from "@/lib/db/prisma";
 import { z } from "zod";
@@ -174,7 +179,17 @@ function toTranslationDto(row: TranslationRow) {
  * under `src/app/api` in this repository is a `route` module, and Next.js
  * validates the export surface of one.
  */
-type Actor = { organizationId: string; userId: string; role: OrgRole };
+type Actor = {
+  organizationId: string;
+  userId: string;
+  role: OrgRole;
+  /**
+   * HOW the caller authenticated. Mutations use it to decide whether a
+   * same-origin `Origin` header is required — see `requireTrustedOrigin`. Reads
+   * ignore it: a GET carries no CSRF risk and the hub fetches these server-side.
+   */
+  authMethod: "jwt" | "apikey";
+};
 
 async function resolveActor(
   req: NextRequest,
@@ -194,7 +209,12 @@ async function resolveActor(
   }
   return {
     ok: true,
-    actor: { organizationId: member.ctx.orgId, userId: member.ctx.userId, role: member.ctx.role },
+    actor: {
+      organizationId: member.ctx.orgId,
+      userId: member.ctx.userId,
+      role: member.ctx.role,
+      authMethod: auth.ctx.authMethod,
+    },
   };
 }
 
@@ -321,7 +341,12 @@ async function referenceBelongsToOrg(
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const resolved = await resolveActor(req, "manage_media");
   if (!resolved.ok) return resolved.response;
-  const { organizationId, userId, role } = resolved.actor;
+  const { organizationId, userId, role, authMethod } = resolved.actor;
+
+  // Same-origin, for cookie-authenticated writes only. Runs before the id is
+  // read, so the refusal is identical for every id and cannot be probed.
+  const originGate = requireTrustedOrigin(req, authMethod);
+  if (!originGate.ok) return json({ error: "Forbidden", code: "FORBIDDEN" }, 403);
 
   const { id } = await params;
   if (!ID_PATTERN.test(id)) return json({ error: "Not found", code: "NOT_FOUND" }, 404);
@@ -332,6 +357,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       "Retry-After": String(retryAfter(MEDIA_WRITE_LIMIT, limitKey)),
     });
   }
+
+  // Commercial gate, AFTER RBAC — the same order the collection POST uses.
+  // Editing an asset's metadata is authoring work, so a tenant without the
+  // `video_hub` entitlement may not do it. `requestedUnits: 0` asks whether the
+  // capability is AVAILABLE rather than metering another unit: the unit was
+  // already consumed when the asset was created, and an edit is not a second
+  // asset.
+  const entitlement = await enforceEntitlement({
+    organisationId: organizationId,
+    entitlementKey: "video_hub",
+    requestedUnits: 0,
+    userId,
+  });
+  if (!entitlement.ok) return entitlement.response;
 
   if (!isJsonContentType(req)) {
     return json({ error: "JSON request body required", code: "UNSUPPORTED_MEDIA_TYPE" }, 415);

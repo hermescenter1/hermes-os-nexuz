@@ -33,7 +33,11 @@ import { can, requirePermission, type OrgPermission } from "@/lib/org/rbac";
 import type { OrgRole } from "@/lib/org/types";
 import { enforceEntitlement } from "@/lib/billing-governance/runtime/require-entitlement";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
-import { isJsonContentType, readBoundedTextBody } from "@/lib/security/request-guards";
+import {
+  isJsonContentType,
+  readBoundedTextBody,
+  requireTrustedOrigin,
+} from "@/lib/security/request-guards";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 import { getPrisma } from "@/lib/db/prisma";
 import { z } from "zod";
@@ -363,6 +367,13 @@ async function referenceBelongsToOrg(
 export async function POST(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) return json({ error: auth.error, code: "AUTHENTICATION_REQUIRED" }, auth.status);
+
+  // Same-origin, for cookie-authenticated writes only. A CSRF works because the
+  // BROWSER attaches the session cookie unbidden; an API key must be set
+  // deliberately on every request and no browser will attach one, so requiring
+  // an Origin from key clients would break real integrations and buy nothing.
+  const originGate = requireTrustedOrigin(req, auth.ctx.authMethod);
+  if (!originGate.ok) return json({ error: "Forbidden", code: "FORBIDDEN" }, 403);
 
   const member = await requireOrgActor(req, auth.ctx.orgId);
   if ("error" in member) return json({ error: member.error, code: "ORGANIZATION_SCOPE_REQUIRED" }, member.status);

@@ -21,16 +21,16 @@
       "PUBLIC_READ": 38,
       "PUBLIC_WRITE": 14,
       "AUTHENTICATED_USER": 210,
-      "TENANT_MEMBER": 124,
+      "TENANT_MEMBER": 122,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
-      "PLATFORM_ADMIN": 125,
+      "PLATFORM_ADMIN": 127,
       "WEBHOOK": 2,
       "INTERNAL_HEALTH": 2,
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 124,
+    "tenantBoundHandlers": 122,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
@@ -5687,13 +5687,14 @@
       "apiPath": "/api/media/assets/[id]/subtitles",
       "method": "POST",
       "file": "src/app/api/media/assets/[id]/subtitles/route.ts",
-      "classification": "TENANT_MEMBER",
+      "classification": "PLATFORM_ADMIN",
       "authEvidence": [
         "requireOrgActor",
-        "requirePermission"
+        "requirePermission",
+        "requirePlatformAuth"
       ],
       "declaredSurface": false,
-      "tenantScoped": true,
+      "tenantScoped": false,
       "mutates": true,
       "senderAuthenticated": null
     },
@@ -5729,13 +5730,14 @@
       "apiPath": "/api/media/assets/[id]/upload",
       "method": "POST",
       "file": "src/app/api/media/assets/[id]/upload/route.ts",
-      "classification": "TENANT_MEMBER",
+      "classification": "PLATFORM_ADMIN",
       "authEvidence": [
         "requireOrgActor",
-        "requirePermission"
+        "requirePermission",
+        "requirePlatformAuth"
       ],
       "declaredSurface": false,
-      "tenantScoped": true,
+      "tenantScoped": false,
       "mutates": true,
       "senderAuthenticated": null
     },

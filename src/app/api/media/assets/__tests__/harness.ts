@@ -13,6 +13,7 @@
 import { vi } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
+import { BASE_URL } from "@/lib/seo/config";
 
 export type Row = Record<string, unknown>;
 
@@ -356,22 +357,51 @@ export function seedTranslation(
 
 const BASE = "http://localhost/api/media/assets";
 
+/**
+ * The origin a real same-origin browser write carries. DERIVED from the same
+ * `BASE_URL` that `isAllowedOrigin` reads, so this harness cannot drift away
+ * from the policy it exercises.
+ */
+export const ALLOWED_ORIGIN = new URL(BASE_URL).origin;
+
+/** A cross-site origin. Every cookie-authenticated write must refuse it. */
+export const FOREIGN_ORIGIN = "https://attacker.example";
+
+/**
+ * A suffix-spoof of the canonical host — the classic bypass of a
+ * `startsWith`/`endsWith` origin check. Must be refused.
+ */
+export const LOOKALIKE_ORIGIN = `${ALLOWED_ORIGIN}.attacker.example`;
+
 export function getRequest(query = ""): NextRequest {
+  // Reads carry no CSRF risk and deliberately send no Origin, which also proves
+  // the gate was not accidentally applied to GET.
   return new NextRequest(`${BASE}${query}`, {
     method: "GET",
     headers: { cookie: `${ACCESS_TOKEN_COOKIE}=fake-token` },
   });
 }
 
+/**
+ * @param origin `undefined` sends the allowed same-origin value — what a browser
+ *   does on a legitimate write. `null` sends NO `Origin` header, which is what a
+ *   cross-site form post and a non-browser client both look like.
+ */
 export function jsonRequest(
   method: "POST" | "PATCH",
   body: unknown,
   path = "",
   contentType = "application/json",
+  origin: string | null = ALLOWED_ORIGIN,
 ): NextRequest {
+  const headers: Record<string, string> = {
+    cookie: `${ACCESS_TOKEN_COOKIE}=fake-token`,
+    "content-type": contentType,
+  };
+  if (origin !== null) headers.origin = origin;
   return new NextRequest(`${BASE}${path}`, {
     method,
-    headers: { cookie: `${ACCESS_TOKEN_COOKIE}=fake-token`, "content-type": contentType },
+    headers,
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
