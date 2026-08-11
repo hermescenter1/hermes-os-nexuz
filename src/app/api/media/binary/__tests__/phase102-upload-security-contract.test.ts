@@ -1,6 +1,6 @@
 /**
  * PHASE 102 / RELEASE BLOCKERS 3 and 9 — the cross-site gate and the existence
- * oracle on the two multipart upload surfaces.
+ * oracle on the multipart upload surfaces (video, captions, poster).
  *
  * BLOCKER 9 — THE ORACLE
  * `POST …/upload` and `POST …/subtitles` both resolved the OWNING organization
@@ -153,6 +153,19 @@ function subtitleForm(): FormData {
   return form;
 }
 
+/** A structurally valid PNG — the poster surface reads the real magic bytes. */
+function posterForm(): FormData {
+  const png = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    Buffer.from([0x00, 0x00, 0x00, 0x0d]),
+    Buffer.from("IHDR", "latin1"),
+    Buffer.alloc(48),
+  ]);
+  const form = new FormData();
+  form.append("file", new File([new Uint8Array(png)], "cover.png", { type: "image/png" }));
+  return form;
+}
+
 type Surface = {
   readonly name: string;
   readonly segment: string;
@@ -172,6 +185,15 @@ const SURFACES: readonly Surface[] = [
     segment: "subtitles",
     form: subtitleForm,
     handler: async () => (await import("../../assets/[id]/subtitles/route")).POST as never,
+  },
+  {
+    // The poster surface is new in this change set. It inherits the same chain
+    // in the same order, so it is held to the same contract from day one rather
+    // than acquiring one later.
+    name: "POST …/poster/upload",
+    segment: "poster/upload",
+    form: posterForm,
+    handler: async () => (await import("../../assets/[id]/poster/upload/route")).POST as never,
   },
 ];
 

@@ -367,12 +367,74 @@ describe("GET /api/media/public/videos/[slug]", () => {
     expect(body.video.chapters).toEqual([
       { orderIndex: 0, startSeconds: 0, endSeconds: 120, title: "Introduction" },
     ]);
+    // The track carries the handle AND the address a <track> element needs.
+    // This used to be metadata only, with a companion assertion that the body
+    // contained no ".vtt" at all — which pinned the defect rather than the
+    // contract: a caller was told a caption file existed and given no way to
+    // fetch it. `trackId` is an opaque handle the byte route re-authorizes on
+    // every request; `storageKey` remains absent, and the two are not
+    // interchangeable.
     expect(body.video.subtitleTracks).toEqual([
-      { locale: "en", label: "English", format: "vtt", isDefault: true },
+      {
+        trackId: "sub-1",
+        locale: "en",
+        label: "English",
+        format: "vtt",
+        isDefault: true,
+        src: "/api/media/assets/a-public/subtitles/sub-1",
+      },
     ]);
+    // The poster address, for the same reason. `hasPoster` is retained.
+    expect(body.video.hasPoster).toBe(true);
+    expect(body.video.posterUrl).toBe("/api/media/assets/a-public/poster");
+
     assertNoForbiddenKeys(body);
-    expect(JSON.stringify(body)).not.toContain(".vtt");
+    // The INTERNAL object key must still never appear — neither the media/…
+    // path nor the stored filename it ends in.
     expect(JSON.stringify(body)).not.toContain("media/org-A");
+    expect(JSON.stringify(body)).not.toContain("a-public.en.vtt");
+    expect(JSON.stringify(body)).not.toContain("storageKey");
+  });
+
+  it("omits the poster address entirely when the asset has no poster", async () => {
+    // Guards the guard: a URL minted unconditionally would advertise a poster
+    // for every asset and 404 for most of them.
+    db.tables.mediaAsset.find((a: Record<string, unknown>) => a.id === "a-public")!.posterStorageKey =
+      null;
+
+    const { GET } = await loadRoute(DETAIL_ROUTE);
+    const res = await GET(
+      get("http://localhost/api/media/public/videos/plc-basics?org=hermes-a&locale=en"),
+      params("plc-basics"),
+    );
+    const body = await res.json();
+
+    expect(body.video.hasPoster).toBe(false);
+    expect(body.video.posterUrl).toBeNull();
+  });
+
+  it("mints no caption address for another tenant's track row", async () => {
+    db.tables.mediaSubtitleTrack.push({
+      id: "sub-leak",
+      organizationId: "org-B",
+      mediaAssetId: "a-public",
+      locale: "de",
+      label: "Leaked",
+      storageKey: "media/org-B/a-public.de.vtt",
+      format: "vtt",
+      isDefault: false,
+    });
+
+    const { GET } = await loadRoute(DETAIL_ROUTE);
+    const res = await GET(
+      get("http://localhost/api/media/public/videos/plc-basics?org=hermes-a&locale=en"),
+      params("plc-basics"),
+    );
+    const body = await res.json();
+
+    expect(JSON.stringify(body)).not.toContain("sub-leak");
+    expect(JSON.stringify(body)).not.toContain("Leaked");
+    expect(body.video.subtitleTracks).toHaveLength(1);
   });
 
   it("answers the SAME 404 for a draft, an org-only asset, unvalidated bytes, another tenant and an unknown org", async () => {

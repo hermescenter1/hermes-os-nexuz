@@ -81,6 +81,7 @@ interface ChapterRow {
 }
 
 interface SubtitleRow {
+  id: string;
   locale: string;
   label: string | null;
   format: string;
@@ -168,9 +169,12 @@ async function loadSubtitleTracks(
   try {
     const raw = await db.mediaSubtitleTrack.findMany({
       where: { organizationId, mediaAssetId },
-      // `storageKey` is deliberately NOT selected. A viewer learns that a track
-      // exists and in which language; the object key stays server-side.
-      select: { locale: true, label: true, format: true, isDefault: true },
+      // `storageKey` is deliberately NOT selected. The track's own id IS
+      // selected, because without it the response names a caption file the
+      // caller has no way to fetch: `/subtitles/[trackId]` is addressed by id.
+      // The two are not interchangeable — the id is an opaque handle the route
+      // re-authorizes on every request, the key is the internal object layout.
+      select: { id: true, locale: true, label: true, format: true, isDefault: true },
       take: MAX_SUBTITLE_TRACKS,
     });
     return Array.isArray(raw) ? (raw as SubtitleRow[]) : [];
@@ -264,6 +268,16 @@ export async function GET(
         contentType: asset.contentType,
         hasPoster:
           typeof asset.posterStorageKey === "string" && asset.posterStorageKey.length > 0,
+        // The fetchable address, or null when there is no poster. Every asset
+        // this route can reach is PUBLISHED + PUBLIC + READY, which is exactly
+        // the class the byte route serves anonymously, so the URL works for the
+        // caller that received it. `hasPoster` is retained: it is the existing
+        // contract, and a client that only needs to know whether to reserve
+        // layout space should not have to parse a URL to find out.
+        posterUrl:
+          typeof asset.posterStorageKey === "string" && asset.posterStorageKey.length > 0
+            ? `/api/media/assets/${encodeURIComponent(asset.id)}/poster`
+            : null,
         hasVideo: typeof asset.storageKey === "string" && asset.storageKey.length > 0,
         viewCount: asset.viewCount,
         publishedAt: iso(asset.publishedAt),
@@ -273,11 +287,15 @@ export async function GET(
           endSeconds: c.endSeconds,
           title: c.title,
         })),
+        // `trackId` + `src` are what turn this from an inventory into something
+        // a <track> element can consume. `storageKey` still never appears.
         subtitleTracks: subtitleTracks.map((s) => ({
+          trackId: s.id,
           locale: s.locale,
           label: s.label,
           format: s.format,
           isDefault: s.isDefault,
+          src: `/api/media/assets/${encodeURIComponent(asset.id)}/subtitles/${encodeURIComponent(s.id)}`,
         })),
       },
     },

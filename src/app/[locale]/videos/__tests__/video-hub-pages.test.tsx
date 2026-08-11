@@ -99,7 +99,14 @@ function seed(): Double {
   return createMediaPrismaDouble({
     organization: [{ ...ORG_A }, { ...ORG_B }],
     mediaAsset: [
-      asset("a-public", ORG_A.id, "plc-basics", { categoryId: "cat-1", instructorId: "ins-1" }),
+      asset("a-public", ORG_A.id, "plc-basics", {
+        categoryId: "cat-1",
+        instructorId: "ins-1",
+        // A REAL poster key in the server-minted shape. The loader keys the URL
+        // off this column, so without it the poster assertions below would pass
+        // for the wrong reason.
+        posterStorageKey: `media/${ORG_A.id}/a-public/11111111-2222-4333-8444-555555555555.png`,
+      }),
       asset("a-draft", ORG_A.id, "secret-draft", {
         status: "DRAFT",
         visibility: "PRIVATE",
@@ -116,6 +123,43 @@ function seed(): Double {
       translation("a-public", ORG_A.id, "en", "PLC Basics"),
       translation("a-draft", ORG_A.id, "en", "Unreleased Draft"),
       translation("a-internal", ORG_A.id, "en", "Internal Only"),
+    ],
+    mediaSubtitleTrack: [
+      {
+        id: "trk-en",
+        organizationId: ORG_A.id,
+        mediaAssetId: "a-public",
+        locale: "en",
+        label: "English",
+        storageKey: `media/${ORG_A.id}/a-public/22222222-2222-4333-8444-555555555555.vtt`,
+        format: "vtt",
+        byteSize: 128,
+        isDefault: true,
+      },
+      {
+        id: "trk-fa",
+        organizationId: ORG_A.id,
+        mediaAssetId: "a-public",
+        locale: "fa",
+        label: "فارسی",
+        storageKey: `media/${ORG_A.id}/a-public/33333333-2222-4333-8444-555555555555.vtt`,
+        format: "vtt",
+        byteSize: 96,
+        isDefault: false,
+      },
+      // Another tenant's track on an id-shaped collision. The loader is
+      // organization-scoped, so this must never appear.
+      {
+        id: "trk-b",
+        organizationId: ORG_B.id,
+        mediaAssetId: "a-public",
+        locale: "en",
+        label: "Leaked",
+        storageKey: `media/${ORG_B.id}/a-public/44444444-2222-4333-8444-555555555555.vtt`,
+        format: "vtt",
+        byteSize: 64,
+        isDefault: true,
+      },
     ],
     mediaChapter: [
       {
@@ -302,7 +346,7 @@ describe("B — the watch page calls notFound() for anything not PUBLISHED + PUB
 // ── C. The published asset does render, honestly ─────────────────────────────
 
 describe("C — a published, public, validated asset reaches the player", () => {
-  it("mints a same-origin Range URL and invents no poster, captions or progress", async () => {
+  it("mints same-origin URLs for the stream, the poster and every caption track", async () => {
     const tree = await renderWatch("plc-basics", { org: ORG_A.slug });
     const player = findElement(tree, MediaPlayer);
     expect(player, "the watch page must render MediaPlayer").not.toBeNull();
@@ -311,13 +355,80 @@ describe("C — a published, public, validated asset reaches the player", () => 
     expect(media.src).toBe("/api/media/assets/a-public/stream");
     expect(media.slug).toBe("plc-basics");
     expect(media.processingState).toBe("READY");
-    // Honest absences (ADR §9): no route serves posters or .vtt in this phase, and
-    // an anonymous visitor has no watch progress to resume.
-    expect(media.posterUrl).toBeNull();
-    expect(media.subtitleTracks).toEqual([]);
+
+    // POSTER. This used to be pinned at `null` on the grounds that no route
+    // served the bytes. `GET …/poster` exists and serves exactly this class of
+    // asset — PUBLISHED + PUBLIC + READY — so a constant null was no longer an
+    // honest absence, it was a product defect.
+    expect(media.posterUrl).toBe("/api/media/assets/a-public/poster");
+
+    // CAPTIONS. Same story, and each track is addressed by its OWN id because
+    // that is what `/subtitles/[trackId]` takes. The default track sorts first.
+    expect(media.subtitleTracks).toEqual([
+      {
+        id: "trk-en",
+        locale: "en",
+        label: "English",
+        src: "/api/media/assets/a-public/subtitles/trk-en",
+        isDefault: true,
+      },
+      {
+        id: "trk-fa",
+        locale: "fa",
+        label: "فارسی",
+        src: "/api/media/assets/a-public/subtitles/trk-fa",
+        isDefault: false,
+      },
+    ]);
+
+    // Still an honest absence: an anonymous visitor has no progress to resume.
     expect(media.progress).toBeNull();
     // Chapters DO exist and are passed through, resolved for the route locale.
     expect((media.chapters as unknown[]).length).toBe(1);
+  });
+
+  it("never mints a URL from another tenant's track row", async () => {
+    const tree = await renderWatch("plc-basics", { org: ORG_A.slug });
+    const player = findElement(tree, MediaPlayer);
+    const media = (player as unknown as Visited).props.media as Record<string, unknown>;
+
+    const tracks = media.subtitleTracks as Array<{ id: string; src: string }>;
+    expect(tracks.map((t) => t.id)).not.toContain("trk-b");
+    expect(JSON.stringify(tracks)).not.toContain("Leaked");
+    expect(JSON.stringify(tracks)).not.toContain(ORG_B.id);
+  });
+
+  it("reports posterUrl null for an asset that carries no poster key", async () => {
+    // Guards the guard: if `posterSrc` returned a URL unconditionally, the
+    // assertion above would pass while the product invented a 404 for every
+    // asset without a poster.
+    const { loadVideoWatch } = await import("../data");
+    const view = await loadVideoWatch({
+      scope: { organizationId: ORG_A.id, orgSlug: ORG_A.slug },
+      slug: "plc-basics",
+      routeLocale: "en",
+    });
+    expect(view?.playback.posterUrl).toBe("/api/media/assets/a-public/poster");
+
+    // Same loader, an asset whose poster column is empty.
+    db.tables.mediaAsset[0].posterStorageKey = null;
+    const without = await loadVideoWatch({
+      scope: { organizationId: ORG_A.id, orgSlug: ORG_A.slug },
+      slug: "plc-basics",
+      routeLocale: "en",
+    });
+    expect(without?.playback.posterUrl).toBeNull();
+  });
+
+  it("reports an empty track list for an asset with no caption rows", async () => {
+    const { loadVideoWatch } = await import("../data");
+    db.tables.mediaSubtitleTrack.length = 0;
+    const view = await loadVideoWatch({
+      scope: { organizationId: ORG_A.id, orgSlug: ORG_A.slug },
+      slug: "plc-basics",
+      routeLocale: "en",
+    });
+    expect(view?.playback.subtitleTracks).toEqual([]);
   });
 
   it("renders exactly one h1 and leaks no storage key or organization id", async () => {

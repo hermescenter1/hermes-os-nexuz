@@ -213,6 +213,37 @@ export function createMediaPrismaDouble(seed: Record<string, Row[]>): Double {
         }
         return { count };
       },
+      /**
+       * Compound-unique upsert, as the subtitle route uses it.
+       *
+       * Prisma spells a compound unique as a single nested key —
+       * `where: { mediaAssetId_locale: { mediaAssetId, locale } }` — so the
+       * predicate is the INNER object. Flattening it is what makes this behave
+       * like the real thing: an upsert whose predicate were dropped would
+       * silently update the first row of the table, which is exactly the bug a
+       * tenant-isolation test must be able to catch.
+       */
+      upsert: async (args?: unknown) => {
+        record("upsert", args);
+        const a = (args ?? {}) as Record<string, unknown>;
+        const where = (a.where ?? {}) as Record<string, unknown>;
+        const entries = Object.entries(where);
+        const predicate =
+          entries.length === 1 && entries[0][1] !== null && typeof entries[0][1] === "object"
+            ? (entries[0][1] as Record<string, unknown>)
+            : where;
+
+        const list = rows();
+        const index = list.findIndex((r) => matches(name, r, predicate));
+        if (index !== -1) {
+          list[index] = applyData(list[index], a.update as Record<string, unknown>);
+          return { ...list[index] };
+        }
+        sequence += 1;
+        const row: Row = { id: `${name}-gen-${sequence}`, ...(a.create as Row) };
+        list.push(row);
+        return { ...row };
+      },
       deleteMany: async (args?: unknown) => {
         record("deleteMany", args);
         const a = (args ?? {}) as Record<string, unknown>;

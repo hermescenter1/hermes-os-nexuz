@@ -27,14 +27,31 @@
  * nothing published — an empty library, a 404 on a watch page — so a probe cannot
  * use these pages to enumerate tenants.
  *
- * WHAT IS HONESTLY ABSENT
- * -----------------------
- * Poster images, subtitle tracks and attachments all exist as columns, but Phase
- * 102 ships no GET route that serves those bytes (only the video stream route
- * answers Range requests). Rather than mint URLs that would 404, this module
- * reports `posterUrl: null`, `subtitleTracks: []` and no attachments — the
- * components are built to render that absence honestly (ADR §9), and a fabricated
- * URL would be worse than a missing one.
+ * POSTERS AND CAPTIONS — WHY THESE URLS ARE REAL NOW
+ * --------------------------------------------------
+ * This module used to report `posterUrl: null` and `subtitleTracks: []`
+ * unconditionally, on the stated grounds that Phase 102 shipped no GET route
+ * serving those bytes. That was true when it was written and is no longer:
+ * `GET /api/media/assets/[id]/poster` and
+ * `GET /api/media/assets/[id]/subtitles/[trackId]` both exist, both run the
+ * shared byte-serving chain, and both serve an anonymous caller exactly when the
+ * asset is PUBLISHED + PUBLIC + READY — which is the only asset this file can
+ * ever see, because every read here uses the default published-only audience.
+ * The constant nulls had stopped being an honest absence and become a product
+ * defect: the player, the card and the hero all render a poster and a `<track>`
+ * when given one, and were being handed nothing.
+ *
+ * Both URL shapes address the asset by its real id, because that is what the
+ * byte routes take. That id is not a new disclosure: the watch page already
+ * mints `/api/media/assets/<id>/stream` into its own markup for the same
+ * assets, the byte routes re-authorize every request, and an id only ever
+ * reaches this file for material that is already published and public. A key
+ * whose bytes are NOT public stays unreachable whether or not its id is known.
+ *
+ * WHAT IS STILL HONESTLY ABSENT
+ * -----------------------------
+ * Attachments. The column exists; no GET route serves those bytes, so no URL is
+ * minted for them (ADR §9) — a fabricated URL is worse than a missing one.
  */
 
 import { getPrisma } from "@/lib/db/prisma";
@@ -56,6 +73,7 @@ import type {
   MediaChapterView,
   MediaInstructorView,
   MediaPlaybackView,
+  MediaSubtitleTrackView,
 } from "@/components/media/view-model";
 import { DEFAULT_LOCALE } from "@/i18n/locales";
 import {
@@ -75,6 +93,8 @@ import {
 const RELATED_LIMIT = 3;
 /** A hostile or broken import cannot turn one anonymous read into a table scan. */
 const MAX_CHAPTERS = 200;
+/** One track per platform locale is the design; the cap is the same brake. */
+const MAX_SUBTITLE_TRACKS = 8;
 
 /** The same shape the anonymous API accepts — lowercase, hyphen separated. */
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -125,6 +145,13 @@ interface ChapterRow {
 interface TranscriptRow {
   locale: string;
   body: string;
+}
+
+interface SubtitleTrackRow {
+  id: string;
+  locale: string;
+  label: string | null;
+  isDefault: boolean;
 }
 
 // ── Small helpers ────────────────────────────────────────────────────────────
@@ -193,6 +220,19 @@ function watchHref(locale: string, orgSlug: string, slug: string): string {
 function streamSrc(row: MediaAssetRow): string | null {
   if (typeof row.storageKey !== "string" || row.storageKey.length === 0) return null;
   return `/api/media/assets/${encodeURIComponent(row.id)}/stream`;
+}
+
+/**
+ * The same-origin poster URL, or `null` when the asset carries no poster.
+ *
+ * Presence is decided by the COLUMN, never guessed: an asset with no
+ * `posterStorageKey` gets `null` and the components render their own placeholder,
+ * exactly as before. The route re-authorizes and re-proves the bytes, so this is
+ * an address, not a grant.
+ */
+function posterSrc(row: MediaAssetRow): string | null {
+  if (typeof row.posterStorageKey !== "string" || row.posterStorageKey.length === 0) return null;
+  return `/api/media/assets/${encodeURIComponent(row.id)}/poster`;
 }
 
 // ── Scope resolution ─────────────────────────────────────────────────────────
@@ -362,7 +402,7 @@ function toCardView(
     href: watchHref(routeLocale, orgSlug, row.slug),
     title: translation?.title ?? row.slug,
     summary: translation?.summary ?? null,
-    posterUrl: null,
+    posterUrl: posterSrc(row),
     durationSeconds: row.durationSeconds,
     skillLevel: isMediaSkillLevel(row.skillLevel) ? row.skillLevel : null,
     status: isMediaLifecycleStatus(row.status) ? row.status : "PUBLISHED",
@@ -578,10 +618,11 @@ export async function loadVideoWatch(params: {
   const db = await prisma();
   if (!db) return null;
 
-  const [translations, chapters, transcripts] = await Promise.all([
+  const [translations, chapters, transcripts, subtitleTracks] = await Promise.all([
     loadTranslations(db, params.scope.organizationId, [asset.id]),
     loadChapters(db, params.scope.organizationId, asset.id, locale),
     loadTranscripts(db, params.scope.organizationId, asset.id),
+    loadSubtitleTracks(db, params.scope.organizationId, asset.id),
   ]);
 
   const translation = pickTranslation(translations.get(asset.id), locale, asset.primaryLocale);
@@ -606,15 +647,13 @@ export async function loadVideoWatch(params: {
       title: translation?.title ?? asset.slug,
       src: streamSrc(asset),
       contentType: asset.contentType,
-      posterUrl: null,
+      posterUrl: posterSrc(asset),
       durationSeconds: asset.durationSeconds,
       processingState: isMediaProcessingState(asset.processingState)
         ? asset.processingState
         : "READY",
       chapters,
-      // No GET route serves a `.vtt` in this phase, so there is no same-origin
-      // caption URL to hand the player. An empty list is the honest answer.
-      subtitleTracks: [],
+      subtitleTracks,
       // Anonymous surface: there is no viewer whose progress could be read, and
       // one is never invented.
       progress: null,
@@ -635,6 +674,45 @@ export async function loadVideoWatch(params: {
     libraryHref: `/${params.routeLocale}/videos?${VIDEO_HUB_ORG_PARAM}=${encodeURIComponent(params.scope.orgSlug)}`,
     canonicalPath: `/videos/${asset.slug}`,
   };
+}
+
+/**
+ * The caption tracks the player can actually fetch.
+ *
+ * Every track is addressed by its OWN id through
+ * `/api/media/assets/<assetId>/subtitles/<trackId>`, which is the route that
+ * exists; `storageKey` is deliberately not selected, so an internal object key
+ * cannot reach the document even by accident.
+ *
+ * Bounded like every other join here: a hostile or broken import cannot turn one
+ * anonymous page render into an unbounded read.
+ */
+async function loadSubtitleTracks(
+  db: PrismaLike,
+  organizationId: string,
+  mediaAssetId: string,
+): Promise<MediaSubtitleTrackView[]> {
+  try {
+    const raw = await db.mediaSubtitleTrack.findMany({
+      where: { organizationId, mediaAssetId },
+      select: { id: true, locale: true, label: true, isDefault: true },
+      orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
+      take: MAX_SUBTITLE_TRACKS,
+    });
+    return ((Array.isArray(raw) ? raw : []) as SubtitleTrackRow[])
+      // A row whose locale is outside the platform set would render a `<track
+      // srclang>` the browser cannot match. Dropping it is the honest answer.
+      .filter((row) => isMediaLocale(row.locale))
+      .map((row) => ({
+        id: row.id,
+        locale: row.locale as MediaLocale,
+        label: row.label ?? row.locale,
+        src: `/api/media/assets/${encodeURIComponent(mediaAssetId)}/subtitles/${encodeURIComponent(row.id)}`,
+        isDefault: row.isDefault === true,
+      }));
+  } catch {
+    return [];
+  }
 }
 
 async function loadChapters(
