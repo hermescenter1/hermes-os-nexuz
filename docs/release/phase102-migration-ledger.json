@@ -2,18 +2,20 @@
   "phase": "102",
   "baselineSha": "cbfa2923318827ee42614c07f2e3861a3db8ed99",
   "baselineMigrationCount": 69,
-  "targetMigrationCount": 70,
-  "newMigrationCount": 1,
+  "targetMigrationCount": 71,
+  "newMigrationCount": 2,
   "historicalMutationCount": 0,
   "migrationClassification": "FORWARD_ONLY_REQUIRES_BACKUP",
   "preMigrationBackupRequired": true,
   "newMigrations": [
-    "20260821000000_phase102_media_video_hub"
+    "20260821000000_phase102_media_video_hub",
+    "20260822000000_phase102_tenant_composite_foreign_keys"
   ],
   "sourceCommits": {
-    "20260821000000_phase102_media_video_hub": "16fd11adf14d8afcfbf046c17dce91e84d4bcbd1"
+    "20260821000000_phase102_media_video_hub": "16fd11adf14d8afcfbf046c17dce91e84d4bcbd1",
+    "20260822000000_phase102_tenant_composite_foreign_keys": "3ac287dcd497c55256198f07f7a70b3312cf2ed7"
   },
-  "migrationSetSha256": "11bf57af0c33620f29bbe43059eff76ee92be2141e594f108831f74f57eac069",
+  "migrationSetSha256": "bb3ddb2d54d74ba5f5bfd0991e1a2af4af8264ae8081131c0792cff6ecc17b6d",
   "migrationChecksums": {
     "20260615000000_init": "483dfc1d761a3870470e472d206618cf78d6d00410517201a8eb56bfcfc9af20",
     "20260615010000_auth": "40ead7464af8e868e330c2272de1f173d68e0c49dbed31f5c8180e4c00682af7",
@@ -84,7 +86,8 @@
     "20260820000015_phase97_incident_evidence_integrity": "9313045737e69eb799330f53c2a35e5f651c89c95866676062dfcd65d527f77b",
     "20260820000016_phase97_incident_lineage_integrity": "8593755a099257762e853163678b71b1651e2423d928ccaecf1c1a4d4cbf8cb0",
     "20260820000017_phase97_compliance_evidence_packs": "6d8cc651128ad4fd55e2789b9480d2a2f98027a66ea8d113d2ea617317eaa347",
-    "20260821000000_phase102_media_video_hub": "30a328ac94f3922c938026ffc2cf95b7d63a39fe0d40057e8fefa093bf8bb1c1"
+    "20260821000000_phase102_media_video_hub": "30a328ac94f3922c938026ffc2cf95b7d63a39fe0d40057e8fefa093bf8bb1c1",
+    "20260822000000_phase102_tenant_composite_foreign_keys": "d9bb6b5035057dfa70643e8bd761911fbd2ed48bd94fad7aae1439eb61354d82"
   },
-  "ledgerSha256": "dd427036ee3cd3183f0fa6df26b34aad52f0892cbc083e85318bd47ae841128f"
+  "ledgerSha256": "e1f30e37b8adc66ed727d0b6f1cdec4a3dfb65b7d3f511a96867b760827bd8c9"
 }

@@ -210,14 +210,31 @@ describe("PHASE102_MUTATION_REGRESSION", () => {
     expect(migrationSetDigest(mutated)).not.toBe(ledger.migrationSetSha256);
     expect(ledger.migrationChecksums[phase102Name]).not.toBe(mutated[phase102Name]);
 
-    const removed: Record<string, string> = { ...diskChecksums };
-    delete removed[phase102Name];
-    const gate = gateOver(removed);
-    // With the migration gone the delta collapses to zero — the exact-set pin
-    // (newMigrations === [phase102Name]) can no longer hold.
-    expect(gate.newMigrations).toEqual([]);
-    expect(gate.newMigrations).not.toEqual(EXPECTED_NEW_MIGRATIONS);
-    expect(migrationSetDigest(removed)).not.toBe(ledger.migrationSetSha256);
+    // Removing ANY declared migration must break the exact-set pin — checking
+    // only the first would let a later one be deleted unnoticed, which is
+    // exactly the hole the contract grew when it went from one to two.
+    for (const victimName of EXPECTED_NEW_MIGRATIONS) {
+      const removed: Record<string, string> = { ...diskChecksums };
+      delete removed[victimName];
+      const gate = gateOver(removed);
+
+      expect(gate.newMigrations, victimName).not.toContain(victimName);
+      expect(gate.newMigrations, victimName).toHaveLength(EXPECTED_DELTA - 1);
+      expect(gate.newMigrations, victimName).not.toEqual(EXPECTED_NEW_MIGRATIONS);
+      expect(migrationSetDigest(removed), victimName).not.toBe(ledger.migrationSetSha256);
+    }
+  });
+
+  it("fails closed when the tenant-integrity migration is mutated", () => {
+    // The composite foreign keys are the whole of release blocker 6; a silent
+    // edit to that file must be as loud as an edit to the Phase 102 migration.
+    const tenantMigration = "20260822000000_phase102_tenant_composite_foreign_keys";
+    expect(EXPECTED_NEW_MIGRATIONS).toContain(tenantMigration);
+
+    const mutated = { ...diskChecksums, [tenantMigration]: "f".repeat(64) };
+    expect(migrationSetDigest(mutated)).not.toBe(ledger.migrationSetSha256);
+    expect(ledger.migrationChecksums[tenantMigration]).not.toBe(mutated[tenantMigration]);
+    expect(ledger.migrationChecksums[tenantMigration]).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("fails closed on an interleaved or backdated migration", () => {
@@ -225,9 +242,9 @@ describe("PHASE102_MUTATION_REGRESSION", () => {
     const preservation = verifyHistoricalPreservation(historical, interleaved);
     expect(preservation.ok).toBe(false);
     expect(preservation.interleaved).toEqual(["20260820000009_backdated_intruder"]);
-    // And the exact-set pin also breaks: two new migrations instead of one.
+    // And the exact-set pin also breaks: one MORE new migration than contracted.
     const gate = gateOver(interleaved);
-    expect(gate.newMigrations).toHaveLength(2);
+    expect(gate.newMigrations).toHaveLength(EXPECTED_DELTA + 1);
     expect(gate.newMigrations).not.toEqual(EXPECTED_NEW_MIGRATIONS);
   });
 
