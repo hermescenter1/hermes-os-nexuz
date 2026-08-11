@@ -82,6 +82,7 @@ function makeDb() {
     // collection throws before any assertion runs.
     mediaSave:           coll(() => [] as Row[]),
     mediaWatchProgress:  coll(() => [] as Row[]),
+    mediaViewEvent:      coll(() => [] as Row[]),
   };
   db.$queryRawUnsafe = async (sql: string, ...vals: unknown[]) => {
     if (/FOR UPDATE/i.test(sql) && /"DataDeletionRequest"/i.test(sql)) {

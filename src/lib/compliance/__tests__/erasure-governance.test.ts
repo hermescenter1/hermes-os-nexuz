@@ -107,6 +107,7 @@ function selectingDb(store: Record<string, Record<string, unknown>[]>): ErasureP
     // Phase 102 §8 — the two subject-attributable media tables joined the closed
     // registry at ERASURE_REGISTRY_VERSION 1.1, so the stub must model them too.
     mediaSave: make("mediaSave"), mediaWatchProgress: make("mediaWatchProgress"),
+    mediaViewEvent: make("mediaViewEvent"),
   } as ErasurePrisma;
 }
 

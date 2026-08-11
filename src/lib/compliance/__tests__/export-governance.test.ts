@@ -66,7 +66,7 @@ describe("source scope (Finding 1) — tenant-bearing sources declare + enforce 
     for (const s of EXPORT_SOURCES) {
       if (!TENANT_BEARING_SCOPES.includes(s.scope)) continue;
       const captured: Array<Record<string, unknown>> = [];
-      const db = { user: cap(captured), organizationMember: cap(captured), privacyRequest: cap(captured), legalAcceptance: cap(captured), consentRecord: cap(captured), mediaSave: cap(captured), mediaWatchProgress: cap(captured) };
+      const db = { user: cap(captured), organizationMember: cap(captured), privacyRequest: cap(captured), legalAcceptance: cap(captured), consentRecord: cap(captured), mediaSave: cap(captured), mediaWatchProgress: cap(captured), mediaViewEvent: cap(captured) };
       await s.collect(db as never, { userId: "u1", candidateId: null, organizationId: "org-A" });
       const where = captured[0] as { organizationId?: unknown; OR?: unknown };
       const hasOrgPredicate = where.organizationId !== undefined || Array.isArray(where.OR);
@@ -111,7 +111,7 @@ function selectingDb(store: Record<string, Record<string, unknown>[]>): ExportPr
       return rows.map((r) => Object.fromEntries(keys.map((k) => [k, r[k]])));
     },
   });
-  const db: ExportPrisma = { user: make("user"), organizationMember: make("organizationMember"), privacyRequest: make("privacyRequest"), legalAcceptance: make("legalAcceptance"), consentRecord: make("consentRecord"), mediaSave: make("mediaSave"), mediaWatchProgress: make("mediaWatchProgress") };
+  const db: ExportPrisma = { user: make("user"), organizationMember: make("organizationMember"), privacyRequest: make("privacyRequest"), legalAcceptance: make("legalAcceptance"), consentRecord: make("consentRecord"), mediaSave: make("mediaSave"), mediaWatchProgress: make("mediaWatchProgress"), mediaViewEvent: make("mediaViewEvent") };
   (db as unknown as { __captured: typeof captured }).__captured = captured;
   return db;
 }

@@ -37,8 +37,16 @@ export type ExecutionStrategy = "DELETE" | "ANONYMISE" | "NONE";
  *  approved before these tables existed. That is the CORRECT outcome, not a bug: a
  *  plan approved under registry 1.0 cannot honestly claim to have accounted for
  *  media favourites/watch history, so it must be re-planned and re-approved under
- *  1.1 before it may execute. */
-export const ERASURE_REGISTRY_VERSION = "1.1";
+ *  1.1 before it may execute.
+ *
+ *  1.1 -> 1.2 (Phase 102 release blocker 5): added `media_view_events`. It was
+ *  omitted on the reading that the table is "privacy-aware" because `userId` is
+ *  nullable and the IP is hashed — but a signed-in viewer's play/progress/complete
+ *  beacon writes that user id, so the table holds a record of what a named person
+ *  watched. The registry is CLOSED: a table nobody enumerated is a table nobody
+ *  erases. Same consequential bump, same correct outcome — a plan approved under
+ *  1.1 cannot claim to have accounted for view events. */
+export const ERASURE_REGISTRY_VERSION = "1.2";
 
 export interface ErasureSubject {
   userId:         string | null;
@@ -292,6 +300,56 @@ export const ERASURE_TARGET_REGISTRY: ErasureTargetDefinition[] = [
         recordId: String(r.id),
         ownedByUserId: s.userId, ownedByOrganizationId: s.organizationId,
         holdInputs: { subjectId: s.userId, resourceType: "media_watch_progress", resourceId: String(r.id), timestamp: (r.createdAt as Date) ?? null },
+        dependency: { blocked: false, codes: [] },
+        evidence: { recordId: String(r.id) },
+      }));
+    }),
+  },
+  {
+    // PHASE 102 §8 — the subject's media VIEW events.
+    //
+    // WHY THIS WAS MISSING, AND WHY THAT WAS WRONG
+    // `MediaViewEvent` was left out of both registries on the reading that it is
+    // "privacy-aware": the `userId` is nullable and the IP is stored hashed. But
+    // nullable is not absent. Whenever a signed-in viewer plays, progresses or
+    // completes a video, the beacon writes a row carrying THEIR user id, and that
+    // row records what a named person watched and when. The registry is CLOSED,
+    // so a table nobody enumerated is a table nobody erases.
+    //
+    // WHY ANONYMISE AND NOT DELETE — and why that differs from watch progress
+    // `MediaWatchProgress` is the subject's own resumable state: it means nothing
+    // without them, so it cascades and is DELETED. A view event is an aggregate
+    // analytics fact — the asset's view count is derived from this table — and it
+    // remains true and useful with the subject link removed. The schema already
+    // says so: `MediaViewEvent.userId` is `onDelete: SetNull`, not Cascade.
+    // Severing the link erases the personal data while leaving the tenant's
+    // counts intact, which is the outcome both parties are entitled to.
+    //
+    // Every behavioural column is excluded from evidence. `mediaAssetId`,
+    // `eventType`, `positionSeconds` and `locale` together reconstruct what a
+    // person watched and how far they got, and an erasure evidence record is
+    // RETAINED after execution — copying them into it would preserve exactly what
+    // was erased. `ipHash` is excluded for the same reason: it is the correlation
+    // handle that would let the anonymised rows be re-attributed.
+    name: "media_view_events",
+    schemaVersion: "1.0",
+    dataCategory: "media_engagement",
+    scope: "CURRENT_ORGANIZATION",
+    defaultClassification: "ANONYMISE_REQUIRED",
+    primaryIdField: "id",
+    allowedExecutionStrategy: "ANONYMISE",
+    excludedSensitiveFields: ["mediaAssetId", "eventType", "positionSeconds", "locale", "ipHash"],
+    retentionLookup: { dataClass: "media_engagement", targetResource: "media_view_events" },
+    collect: (db, s) => emptyIfNoUser(s, async () => {
+      const rows = await db.mediaViewEvent.findMany({
+        where: { userId: s.userId, organizationId: s.organizationId },
+        select: { id: true, createdAt: true },
+        orderBy: { id: "asc" },
+      });
+      return rows.map((r) => ({
+        recordId: String(r.id),
+        ownedByUserId: s.userId, ownedByOrganizationId: s.organizationId,
+        holdInputs: { subjectId: s.userId, resourceType: "media_view_event", resourceId: String(r.id), timestamp: (r.createdAt as Date) ?? null },
         dependency: { blocked: false, codes: [] },
         evidence: { recordId: String(r.id) },
       }));
