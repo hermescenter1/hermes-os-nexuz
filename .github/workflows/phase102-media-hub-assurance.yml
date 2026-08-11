@@ -26,7 +26,9 @@ on:
       - "docs/phase102/**"
       - "docs/release/phase102-migration-ledger.json"
       - "scripts/ci/phase102-migration-integrity.mjs"
+      - "scripts/ci/phase102-applied-migration-check.mjs"
       - "scripts/__tests__/phase102-migration-integrity.test.ts"
+      - "scripts/__tests__/phase102-applied-migration-check.test.ts"
       - ".github/workflows/phase102-media-hub-assurance.yml"
   workflow_dispatch:
 
@@ -78,7 +80,7 @@ jobs:
         run: npm run gate:phase997:migrations
 
       - name: Migration integrity mutation/regression suites
-        run: npx --no-install vitest run scripts/__tests__/phase997-migration-integrity.test.ts scripts/__tests__/phase102-migration-integrity.test.ts
+        run: npx --no-install vitest run scripts/__tests__/phase997-migration-integrity.test.ts scripts/__tests__/phase102-migration-integrity.test.ts scripts/__tests__/phase102-applied-migration-check.test.ts
 
       # `npm ci` runs with allow-scripts, which blocks package install scripts —
       # so the Prisma client is NOT generated as a side effect and must be built
@@ -183,7 +185,11 @@ jobs:
       # Legacy-row safety: the Phase 102 tables are new, but the migration runs
       # against a database that already contains 69 earlier migrations. Proving a
       # clean apply on top of the full history is the point of the rehearsal.
-      - name: Confirm the Phase 102 migration applied in order
-        run: |
-          npx --no-install prisma migrate status | tee migrate-status.txt
-          grep -q "20260821000000_phase102_media_video_hub" migrate-status.txt
+      #
+      # Proven from `_prisma_migrations`, never by grepping `prisma migrate
+      # status`: that command prints migration NAMES only in its PENDING branch,
+      # so a name-grep passes exactly when the migration has NOT been applied.
+      # Set membership and ordering are proven separately, from git, by
+      # `gate:phase102:migrations` in the offline job.
+      - name: Confirm the Phase 102 migration applied (PostgreSQL truth)
+        run: npm run gate:phase102:applied-migrations
