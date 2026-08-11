@@ -637,17 +637,23 @@ describe("PHASE 101 — registering SCADA-04 changes nothing that came before", 
       },
     };
 
+    // Selected by the pinned ids themselves rather than by "everything except
+    // SCADA-04", so registering a later reference cannot make this test look
+    // like a failure of the five it actually froze.
+    const frozenIds = Object.keys(FROZEN);
+    const selected = CORPUS.filter((s) => frozenIds.includes(s.id));
+    expect(selected.map((s) => s.id).sort()).toEqual([...frozenIds].sort());
+
     const actual = Object.fromEntries(
-      CORPUS.filter((s) => s.id !== "SCADA-04").map((s) => [
-        s.id,
-        { checksum: s.checksum, scenarios: s.scenarios.length },
-      ]),
+      selected.map((s) => [s.id, { checksum: s.checksum, scenarios: s.scenarios.length }]),
     );
     expect(actual).toEqual(FROZEN);
   });
 
   it("satisfies the AT_LEAST_6 scenario contract on every registered system", () => {
-    expect(CORPUS.length).toBe(6);
+    // Exact, not "at least": the corpus size is a fact worth pinning, and a
+    // system appearing or disappearing should fail a test rather than pass one.
+    expect(CORPUS.length).toBe(7);
     for (const s of CORPUS) {
       expect(s.scenarios.length, `${s.id} must carry at least six scenarios`).toBeGreaterThanOrEqual(
         6,
