@@ -284,7 +284,7 @@ export async function resolve(specifier, context, next) {
       resolveMediaType: validation.resolveMediaType,
       validateMediaSize: validation.validateMediaSize,
       verifyMediaMagicBytes: validation.verifyMediaMagicBytes,
-      isMediaStorageKey: storage.isMediaStorageKey,
+      isStorageKeyBoundTo: storage.isStorageKeyBoundTo,
       statMediaObject: storage.statMediaObject,
       readMediaByteRange: storage.readMediaByteRange,
     };
@@ -313,7 +313,16 @@ function failureCodeFor(reason) {
  * reads bytes and decides, it never writes.
  */
 export async function verifyStoredBytes(row, media) {
-  if (!media.isMediaStorageKey(row.storageKey)) {
+  // Shape AND tenancy. A shape-only check proves the key is well-formed, never
+  // WHOSE it is - and this tool runs with no request context to fall back on,
+  // so a row whose key names another organization or another asset would
+  // otherwise have its bytes read and its verdict written under the wrong
+  // tenant. The row is the authority for both segments, so a key that
+  // disagrees with its own row is refused rather than trusted.
+  if (!media.isStorageKeyBoundTo(row.storageKey, {
+    organizationId: row.organizationId,
+    assetId: row.id,
+  })) {
     return { to: "FAILED", failureCode: "STORAGE_KEY_INVALID" };
   }
   const declared = typeof row.contentType === "string" ? row.contentType.trim() : "";

@@ -13,7 +13,7 @@ import {
 } from "@/lib/media/validation";
 import {
   buildMediaStorageKey,
-  isMediaStorageKey,
+  isStorageKeyBoundTo,
   putMediaObject,
   readMediaByteRange,
   statMediaObject,
@@ -60,7 +60,7 @@ const media = {
   resolveMediaType,
   validateMediaSize,
   verifyMediaMagicBytes,
-  isMediaStorageKey,
+  isStorageKeyBoundTo,
   statMediaObject,
   readMediaByteRange,
 };
@@ -385,17 +385,74 @@ describe("PHASE 102 CLI — quarantine on a magic-byte mismatch", () => {
 
   it("verifyStoredBytes refuses a row with no usable storage key or content type", async () => {
     await expect(
-      verifyStoredBytes({ storageKey: null, contentType: "video/mp4" }, media),
+      verifyStoredBytes(
+        { id: "assetnokey000000001", organizationId: ORG_ID, storageKey: null, contentType: "video/mp4" },
+        media,
+      ),
     ).resolves.toEqual({ to: "FAILED", failureCode: "STORAGE_KEY_INVALID" });
 
     await expect(
-      verifyStoredBytes({ storageKey: "../../etc/passwd", contentType: "video/mp4" }, media),
+      verifyStoredBytes(
+        {
+          id: "assettrav0000000001",
+          organizationId: ORG_ID,
+          storageKey: "../../etc/passwd",
+          contentType: "video/mp4",
+        },
+        media,
+      ),
     ).resolves.toEqual({ to: "FAILED", failureCode: "STORAGE_KEY_INVALID" });
 
     const key = await storeObject("assetnotype0000001", realMp4Bytes());
-    await expect(verifyStoredBytes({ storageKey: key, contentType: null }, media)).resolves.toEqual(
-      { to: "FAILED", failureCode: "CONTENT_TYPE_MISSING" },
-    );
+    await expect(
+      verifyStoredBytes(
+        { id: "assetnotype0000001", organizationId: ORG_ID, storageKey: key, contentType: null },
+        media,
+      ),
+    ).resolves.toEqual({ to: "FAILED", failureCode: "CONTENT_TYPE_MISSING" });
+  });
+
+  /**
+   * PHASE 102 / RELEASE BLOCKER 4 — this tool has no request context to fall
+   * back on, so the row is the only authority for whose bytes these are. A key
+   * that disagrees with its own row is refused rather than read.
+   */
+  it("refuses a stored key that names another organization", async () => {
+    const key = buildMediaStorageKey({
+      organizationId: OTHER_ORG_ID,
+      assetId: "assetposioned00001",
+      extension: "mp4",
+    });
+    await putMediaObject({ key, body: realMp4Bytes(), contentType: "video/mp4" });
+
+    await expect(
+      verifyStoredBytes(
+        { id: "assetposioned00001", organizationId: ORG_ID, storageKey: key, contentType: "video/mp4" },
+        media,
+      ),
+    ).resolves.toEqual({ to: "FAILED", failureCode: "STORAGE_KEY_INVALID" });
+  });
+
+  it("refuses a stored key that names another asset in the SAME organization", async () => {
+    const key = await storeObject("assetneighbour00001", realMp4Bytes());
+
+    await expect(
+      verifyStoredBytes(
+        { id: "assetvictim00000001", organizationId: ORG_ID, storageKey: key, contentType: "video/mp4" },
+        media,
+      ),
+    ).resolves.toEqual({ to: "FAILED", failureCode: "STORAGE_KEY_INVALID" });
+  });
+
+  it("accepts the matching key — the binding is not simply always closed", async () => {
+    const key = await storeObject("assetmatching000001", realMp4Bytes());
+
+    await expect(
+      verifyStoredBytes(
+        { id: "assetmatching000001", organizationId: ORG_ID, storageKey: key, contentType: "video/mp4" },
+        media,
+      ),
+    ).resolves.toMatchObject({ to: "READY" });
   });
 });
 

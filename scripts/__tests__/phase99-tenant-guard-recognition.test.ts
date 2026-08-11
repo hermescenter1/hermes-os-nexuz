@@ -280,9 +280,43 @@ describe("authorizeByteServing keeps the predicates the recognition vouches for"
   });
 
   it("authorization runs before storage: the guard module never touches the filesystem or storage layer", () => {
-    for (const forbidden of ['from "node:fs"', 'from "fs"', "@/lib/media/storage", "openMediaObject", "createReadStream"]) {
+    // The specifiers are matched WITH their closing quote. `@/lib/media/storage`
+    // as a bare substring also matches `@/lib/media/storage-key`, which is pure
+    // string algebra over a key's own segments and imports no I/O at all — the
+    // module exists precisely so this chain can answer a tenancy question
+    // without pulling in a filesystem. Matching loosely would forbid the thing
+    // that keeps the invariant true.
+    for (const forbidden of [
+      'from "node:fs"',
+      'from "fs"',
+      'from "@/lib/media/storage"',
+      'from "./storage"',
+      "openMediaObject",
+      "createReadStream",
+    ]) {
       expect(guard, forbidden).not.toContain(forbidden);
     }
+  });
+
+  it("the storage-key module it DOES import pulls in no I/O of its own", () => {
+    // Guards the exemption above: if `storage-key` ever grew a filesystem or
+    // object-storage import, the guard module would reach storage transitively
+    // and the invariant would be false while still reading as true.
+    const keyModule = live("src/lib/media/storage-key.ts");
+    for (const forbidden of [
+      'from "node:fs"',
+      'from "fs"',
+      'from "crypto"',
+      '"@/lib/documents/config"',
+      '"@/lib/documents/object-storage"',
+      './secure-read"',
+      './storage"',
+    ]) {
+      expect(keyModule, forbidden).not.toContain(forbidden);
+    }
+    // And it really is what the guard uses for the tenancy decision.
+    expect(guard).toContain('from "@/lib/media/storage-key"');
+    expect(guard).toContain("isStorageKeyBoundTo");
   });
 
   it("both byte-serving handlers await the guard before any storage call", () => {

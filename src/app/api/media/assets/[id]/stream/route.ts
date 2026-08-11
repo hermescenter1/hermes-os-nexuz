@@ -83,6 +83,7 @@
 import { Readable } from "node:stream";
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  boundStorageKey,
   MEDIA_BYTE_SERVING_PERMISSION,
   authorizeByteServing,
   byteServingHeaders,
@@ -94,7 +95,6 @@ import type { SecureFile } from "@/lib/media/secure-read";
 import {
   formatContentRange,
   formatUnsatisfiedContentRange,
-  isMediaStorageKey,
   openMediaObject,
   parseRangeHeader,
 } from "@/lib/media/storage";
@@ -206,9 +206,11 @@ export async function GET(
   const storageKey = asset.storageKey;
   const storedContentType = asset.contentType;
   if (!storageKey || !storedContentType) return byteServingNotFound();
-  // Anything that is not the server-generated shape is refused before it can
-  // reach the filesystem resolver at all.
-  if (!isMediaStorageKey(storageKey)) return byteServingNotFound();
+  // Shape AND tenancy, both decided by the shared chain. A shape check alone
+  // proves the key is well-formed, never WHOSE it is, and nothing in the
+  // database stops a row from carrying a key that points into another tenant.
+  const boundKey = boundStorageKey(gate, storageKey);
+  if (boundKey === null) return byteServingNotFound();
 
   // The stored type is used ONLY to look up an extension — the string itself
   // never reaches a response header. A row written by an older or buggier

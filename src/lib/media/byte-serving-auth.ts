@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { getPrisma } from "@/lib/db/prisma";
 import { PUBLIC_AUDIENCE, getMediaAssetById, type MediaAssetRow } from "@/lib/media/db";
+import { isStorageKeyBoundTo } from "@/lib/media/storage-key";
 import { isPubliclyReadable, isServable } from "@/lib/media/types";
 import { requireOrgActor } from "@/lib/org/context";
 import { can, requirePermission, type OrgPermission } from "@/lib/org/rbac";
@@ -276,6 +277,39 @@ export async function authorizeByteServing(
   if (!isServable(asset)) return notFound;
 
   return { ok: true, asset, assetId, organizationId, servedPublicly: false, actorRole: ctx.role };
+}
+
+// ── Stored-key tenancy ───────────────────────────────────────────────────────
+
+/**
+ * PHASE 102 / RELEASE BLOCKER 4 — bind a stored key to the grant that
+ * authorized this request.
+ *
+ * Every byte route used to read its key off the row and serve it after a SHAPE
+ * check only. `isMediaStorageKey` proves a key is well-formed; it says nothing
+ * about WHOSE it is. The tenant binding therefore rested entirely on the
+ * assumption that a row's key names that row's own organization and asset — an
+ * assumption nothing in the database enforces. A key naming another tenant can
+ * reach a row through a legacy import, a restore, a mis-scoped backfill or any
+ * writer that bypassed `buildMediaStorageKey`, and the read would succeed with
+ * every RBAC check passing, because the ROW was legitimately reachable.
+ *
+ * Re-deriving the tenancy from the key and requiring it to equal the authorized
+ * organization AND asset closes that. It lives here, next to the chain that
+ * established the grant, for the reason stated at the top of this file: three
+ * copies of a check do not stay identical, and the handlers must not have to
+ * name a scope identifier themselves.
+ *
+ * Fails closed on a malformed, absent or non-string key, so it is safe as the
+ * only key check on a read path. Traversal and symlink escape stay with the
+ * storage seam and `openSecureFile`; this is the tenancy layer above them.
+ *
+ * @returns the key when it belongs to the grant, `null` otherwise.
+ */
+export function boundStorageKey(grant: ByteServingGrant, key: unknown): string | null {
+  return isStorageKeyBoundTo(key, { organizationId: grant.organizationId, assetId: grant.assetId })
+    ? (key as string)
+    : null;
 }
 
 // ── Shared response headers ──────────────────────────────────────────────────

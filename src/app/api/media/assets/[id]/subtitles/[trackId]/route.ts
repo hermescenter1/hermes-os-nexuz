@@ -57,6 +57,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getPrisma } from "@/lib/db/prisma";
 import {
+  boundStorageKey,
   MEDIA_BYTE_SERVING_PERMISSION,
   authorizeByteServing,
   byteServingHeaders,
@@ -66,7 +67,7 @@ import {
   parseMediaIdentifier,
 } from "@/lib/media/byte-serving-auth";
 import type { SecureFile } from "@/lib/media/secure-read";
-import { isMediaStorageKey, openMediaObject } from "@/lib/media/storage";
+import { openMediaObject } from "@/lib/media/storage";
 import { MEDIA_SUBTITLE_FORMATS } from "@/lib/media/types";
 import {
   MAX_MEDIA_SUBTITLE_BYTES,
@@ -204,10 +205,13 @@ export async function GET(
   if (track.value.format !== SUBTITLE_FORMAT) return byteServingNotFound();
 
   const storageKey = track.value.storageKey;
-  // A key that is not the server-generated shape is refused rather than
-  // repaired, and never reaches the filesystem resolver at all.
-  if (!isMediaStorageKey(storageKey)) return byteServingNotFound();
-  if (!storageKey.toLowerCase().endsWith(`.${SUBTITLE_EXTENSION}`)) return byteServingNotFound();
+  // Shape AND tenancy, both decided by the shared chain — see `boundStorageKey`.
+  // The track row was already loaded with all three predicates pinned, but the
+  // KEY it carries is a separate assertion nothing in the database constrains,
+  // so it is proven against the authorized scope in its own right.
+  const boundKey = boundStorageKey(gate, storageKey);
+  if (boundKey === null) return byteServingNotFound();
+  if (!boundKey.toLowerCase().endsWith(`.${SUBTITLE_EXTENSION}`)) return byteServingNotFound();
 
   // ── 3. ONE open. Size and bytes both come from it ─────────────────────────
   let file: SecureFile | null;

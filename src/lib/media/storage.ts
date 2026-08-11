@@ -9,6 +9,7 @@ import {
   type OpenSecureFileInput,
   type SecureFile,
 } from "./secure-read";
+import { KEY_SEGMENT_PATTERN, MEDIA_KEY_PREFIX, isMediaStorageKey } from "./storage-key";
 import { MAX_MEDIA_UPLOAD_BYTES, isAllowedMediaExtension } from "./validation";
 
 /**
@@ -84,6 +85,13 @@ export const MEDIA_STORAGE_ERROR_CODES = [
   "range_too_large",
   /** An organization/asset identifier was not usable as a key segment. */
   "invalid_key_segment",
+  /**
+   * A stored key names a different organization or asset than the request
+   * authorized. Phase 102 / release blocker 4: shape validation proves a key is
+   * well-formed, never whose it is, and nothing in the database stops a row from
+   * carrying a key that points into another tenant.
+   */
+  "storage_key_tenant_mismatch",
   /** An extension outside the media allow-list was proposed for a key. */
   "invalid_key_extension",
 ] as const;
@@ -107,36 +115,20 @@ export class MediaStorageError extends Error {
 
 // ── Keys ─────────────────────────────────────────────────────────────────────
 
-/** Top-level namespace inside the durable `documents_data` volume (ADR §7). */
-export const MEDIA_KEY_PREFIX = "media";
-
 /**
- * Identifier segments are cuids in this schema. The pattern is deliberately
- * narrower than "anything a cuid could be" so that a future id format change
- * fails a test rather than silently widening what may appear in a path.
+ * The key SHAPE and the tenancy it carries live in `./storage-key`, which is
+ * pure string algebra with no I/O. They are re-exported here so every existing
+ * caller of this module is unaffected; the split exists so the byte-serving
+ * authorization chain can answer "does this key belong to this tenant?" without
+ * importing a filesystem — an invariant its own test enforces.
  */
-const KEY_SEGMENT_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
-
-/**
- * The ONLY key shape this module will read or write:
- *   media/<organizationId>/<assetId>/<uuid-v4>.<ext>
- *
- * The filename component is a server-generated UUID — never derived from a
- * client filename (ADR §7). Anything else is refused outright, which is what
- * makes the path resolution below safe without a second sanitiser.
- */
-const MEDIA_KEY_PATTERN =
-  /^media\/[A-Za-z0-9_-]{1,64}\/[A-Za-z0-9_-]{1,64}\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[A-Za-z0-9]{1,8}$/;
-
-export function isMediaStorageKey(key: unknown): key is string {
-  if (typeof key !== "string") return false;
-  if (!MEDIA_KEY_PATTERN.test(key)) return false;
-  // The extension is re-checked against the media allow-list on every read as
-  // well as on mint, so a key persisted by an older or buggier writer can never
-  // cause the server to hand back bytes under an extension it does not serve.
-  const extension = key.slice(key.lastIndexOf(".") + 1);
-  return isAllowedMediaExtension(extension);
-}
+export {
+  MEDIA_KEY_PREFIX,
+  isMediaStorageKey,
+  isStorageKeyBoundTo,
+  parseMediaStorageKey,
+  type MediaStorageKeyScope,
+} from "./storage-key";
 
 export function assertMediaStorageKey(key: unknown): asserts key is string {
   if (!isMediaStorageKey(key)) {

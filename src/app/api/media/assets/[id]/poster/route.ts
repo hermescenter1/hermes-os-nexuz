@@ -63,6 +63,7 @@
 import { Readable } from "node:stream";
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  boundStorageKey,
   MEDIA_BYTE_SERVING_PERMISSION,
   authorizeByteServing,
   byteServingHeaders,
@@ -71,7 +72,7 @@ import {
   byteServingUnavailable,
 } from "@/lib/media/byte-serving-auth";
 import type { SecureFile } from "@/lib/media/secure-read";
-import { isMediaStorageKey, openMediaObject } from "@/lib/media/storage";
+import { openMediaObject } from "@/lib/media/storage";
 import {
   MAX_MEDIA_POSTER_BYTES,
   MEDIA_ACCEPTED_CONTENT_TYPES,
@@ -175,9 +176,11 @@ export async function GET(
   // ── 2. The poster key, validated rather than repaired ─────────────────────
   const storageKey = asset.posterStorageKey;
   if (!storageKey) return byteServingNotFound();
-  // Anything that is not the server-generated shape is refused before it can
-  // reach the filesystem resolver at all.
-  if (!isMediaStorageKey(storageKey)) return byteServingNotFound();
+  // Shape AND tenancy, both decided by the shared chain — see `boundStorageKey`.
+  // A well-formed key naming a different tenant or asset is refused, so a
+  // poisoned row cannot make this route serve someone else's bytes.
+  const boundKey = boundStorageKey(gate, storageKey);
+  if (boundKey === null) return byteServingNotFound();
 
   const contentType = posterContentTypeFor(storageKey);
   if (contentType === null) return byteServingNotFound();
