@@ -1,7 +1,29 @@
 # Hermes OS — v1.0 Go / No-Go Matrix (Phase 93)
 
+> **SUPERSEDED FOR RELEASE DECISIONS — PHASE 100.**
+>
+> This document is a **historical record of the Phase 93 assessment**. It is no
+> longer an authority on whether Hermes OS may be released, and must not be
+> quoted as one.
+>
+> The canonical release verdict is `phase100-ga-closure.json`, produced by
+> `npm run eval:phase100:closure` and described in
+> [`phase100-ga-closure-contract.md`](phase100-ga-closure-contract.md). Read the
+> verdict; do not read a claim about the verdict.
+>
+> Why this banner exists: the FINAL REPORT below recorded
+> `V1_RELEASE_READY: YES` beside three unfilled `<finalized after …>`
+> placeholders, and that line survived five subsequent phases while Phase 99
+> reported `RELEASE_BLOCKERS=1` and three `BLOCKED_EXTERNAL` security gates. A
+> hand-maintained readiness claim goes stale silently; a generated one cannot.
+
 Decision rule: **GO** only if every row below is GO or an explicitly owner-waived
 DEFER. Any single NO-GO blocks the release.
+
+The rows below describe the state **as assessed in Phase 93**. They were accurate
+about the dimensions Phase 93 examined and say nothing about the external
+security, pilot, legal, live-model, backup-operations, commercial and GA
+authorization gates that Phase 99 and Phase 100 added.
 
 | Dimension | Criterion | Status | Verdict |
 |---|---|---|---|
@@ -35,7 +57,11 @@ DEFER. Any single NO-GO blocks the release.
 
 ---
 
-## FINAL REPORT
+## FINAL REPORT (Phase 93, historical)
+
+The block below is reproduced **as it was written in Phase 93**, including the
+placeholders it never had filled in. It is preserved as a record, not as a
+statement about the current release. See the correction that follows it.
 
 ```
 PHASE:                 93 — Production Acceptance, Disaster Recovery & v1.0 Release Gate
@@ -80,6 +106,35 @@ BLOCKERS:              none open (HIGH fixed).
 DEFERRED_OWNER_CONFIGURATION: ALERT_WEBHOOK_URL/ALERTS_ENABLED, METRICS_TOKEN,
                        audit-retention cron, Prometheus/Alertmanager scrape.
 V1_RELEASE_READY:      YES (conditional on owner accepting the 3 GO conditions above)
+                       [PHASE 93 CONCLUSION — SUPERSEDED BY PHASE 100; NOT A CURRENT
+                        RELEASE CLAIM. See the correction below.]
 NEXT_SAFE_ACTION:      Owner review of this Draft PR after CI is green; then decide
                        on DEFERRED config + manual a11y sweep before promoting.
 ```
+
+---
+
+## Phase 100 correction
+
+The Phase 93 conclusion above is **not** the current release state, and the
+`<finalized after …>` placeholders in that block were never filled.
+
+Since Phase 93 was written, the release bar has grown gates Phase 93 did not and
+could not assess: three external security reviews, a pilot customer's acceptance,
+external legal and privacy approval, live model-evaluation evidence, proof that
+the production backup scheduler has actually executed, owner commercial
+decisions, infrastructure prerequisites and a final GA authorization.
+
+**Read the verdict, not this file:**
+
+```bash
+npm run eval:phase100:closure
+```
+
+At the Phase 100 base commit that verdict is `PHASE100_IMPLEMENTATION=PASS`,
+`GA_RELEASE_READY=NO`, `PHASE100_CLOSURE=BLOCKED`, with every outstanding gate
+named individually in the blocker matrix. Nothing in this document changes that,
+and no document should ever restate it — a readiness claim maintained by hand is
+a readiness claim that goes stale.
+
+Contract: [`phase100-ga-closure-contract.md`](phase100-ga-closure-contract.md).

@@ -1,0 +1,76 @@
+{
+  "EXAMPLE_ONLY": true,
+  "SYNTHETIC_TEST_FIXTURE": true,
+  "NOT_EXTERNAL_ATTESTATION": true,
+  "_readme": "SHAPE REFERENCE ONLY. This document is rejected by the Phase 100 evaluator by construction and can never satisfy a gate. To supply real evidence, copy this shape to docs/legal/phase100-legal-privacy-approvals.json, remove the three marker keys, and fill every field from evidence actually issued by an independent external reviewer. Never invent a reviewer, an alias, a date or a digest.",
+  "schemaVersion": 1,
+  "evidenceType": "LEGAL_PRIVACY",
+  "testedCommitSha": "0000000000000000000000000000000000000000",
+  "recordedAt": "2026-01-01T00:00:00.000Z",
+  "signedOrOwnerVerified": true,
+  "reviews": [
+    {
+      "reviewType": "EXTERNAL_LEGAL_REVIEW",
+      "reviewerOrganizationAlias": "external-counsel-alias-1",
+      "reviewerRole": "External Legal Counsel",
+      "independentReviewer": true,
+      "reviewDate": "2026-01-01",
+      "reportReference": "private-channel/legal/review-report",
+      "reportSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "outcome": "APPROVED",
+      "validityExpiresAt": "2027-01-01"
+    },
+    {
+      "reviewType": "EXTERNAL_PRIVACY_REVIEW",
+      "reviewerOrganizationAlias": "external-dpo-alias-1",
+      "reviewerRole": "External Data Protection Officer",
+      "independentReviewer": true,
+      "reviewDate": "2026-01-01",
+      "reportReference": "private-channel/privacy/gdpr-review-report",
+      "reportSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "outcome": "APPROVED",
+      "validityExpiresAt": "2027-01-01"
+    }
+  ],
+  "approvedDocuments": [
+    {
+      "documentId": "PRIVACY_POLICY",
+      "version": "1.0",
+      "approvedAt": "2026-01-01",
+      "documentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "approvedByRole": "External Legal Counsel"
+    },
+    {
+      "documentId": "TERMS_OF_SERVICE",
+      "version": "1.0",
+      "approvedAt": "2026-01-01",
+      "documentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "approvedByRole": "External Legal Counsel"
+    },
+    {
+      "documentId": "DPA",
+      "version": "1.0",
+      "approvedAt": "2026-01-01",
+      "documentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "approvedByRole": "External Legal Counsel"
+    }
+  ],
+  "subprocessorGovernance": {
+    "registerReference": "private-channel/legal/subprocessor-register",
+    "registerSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "subprocessorCount": 0,
+    "transferMechanisms": ["NO_INTERNATIONAL_TRANSFER"],
+    "reviewedAt": "2026-01-01",
+    "reviewedByRole": "External Data Protection Officer"
+  },
+  "residualLegalRiskAcceptance": {
+    "decision": "ACCEPT",
+    "ownerAuthorityRole": "Managing Director",
+    "reason": "Shape reference only; a real acceptance must state the specific residual risks and why they are tolerable for this release.",
+    "residualRiskCount": 0,
+    "acceptedAt": "2026-01-01",
+    "expiresAt": "2027-01-01",
+    "evidenceReference": "private-channel/legal/residual-risk-acceptance",
+    "evidenceSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

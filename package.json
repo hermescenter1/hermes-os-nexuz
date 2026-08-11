@@ -41,6 +41,8 @@
     "gate:phase997:candidate": "node scripts/ci/phase997-candidate-gate.mjs",
     "rehearse:phase997:migrations": "node scripts/ci/phase997-migration-rehearsal.mjs",
     "rehearse:phase997:documents": "node scripts/ci/phase997-documents-adoption-rehearsal.mjs",
+    "eval:phase100:closure": "node scripts/ci/phase100-ga-closure-eval.mjs",
+    "eval:phase100:hygiene": "node scripts/ci/phase100-summary-hygiene.mjs",
     "dr:adopt-documents": "node scripts/dr/adopt-documents.mjs",
     "media:processing": "node scripts/media/phase102-media-processing.mjs"
   },

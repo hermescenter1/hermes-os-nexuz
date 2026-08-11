@@ -1,0 +1,26 @@
+{
+  "EXAMPLE_ONLY": true,
+  "SYNTHETIC_TEST_FIXTURE": true,
+  "NOT_EXTERNAL_ATTESTATION": true,
+  "_readme": "SHAPE REFERENCE ONLY. Rejected by construction. Phase 99 already owns the `acceptances` key of docs/security/phase99-risk-acceptances.json for HIGH findings; Phase 100 adds a SEPARATE `residualAcceptances` key for unresolved MEDIUM/LOW/INFO findings so Phase 99 semantics are untouched. One entry per finding id: a residual accepted in bulk is a residual nobody read. Every entry needs its own marker removed and its own substantive reason.",
+  "schemaVersion": 1,
+  "evidenceType": "RESIDUAL_FINDING_RISK",
+  "residualAcceptances": {
+    "P99-DEP-008": {
+      "EXAMPLE_ONLY": true,
+      "findingId": "P99-DEP-008",
+      "severity": "MEDIUM",
+      "decision": "ACCEPT",
+      "ownerAuthorityRole": "Managing Director",
+      "reason": "Shape reference only; a real acceptance must state why this specific residual is tolerable and what limits its blast radius.",
+      "compensatingControls": [
+        "the affected path is unreachable from any authenticated route",
+        "monitored by the Phase 92 security event stream"
+      ],
+      "acceptedAt": "2026-01-01",
+      "expiresAt": "2027-01-01",
+      "evidenceReference": "private-channel/security/residual-acceptance-dep-008",
+      "evidenceSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  }
+}

@@ -135,3 +135,9 @@ Docs: this file + `slo-sli-contract.md`, `disaster-recovery-runbook.md`,
 
 See `go-no-go-matrix.md` for the consolidated FINAL REPORT block and the
 V1_RELEASE_READY determination.
+
+> **PHASE 100 NOTE.** That determination is a **Phase 93 conclusion** and has
+> been superseded. The canonical release verdict is `phase100-ga-closure.json`
+> (`npm run eval:phase100:closure`), contract in
+> [`phase100-ga-closure-contract.md`](phase100-ga-closure-contract.md). This
+> document remains accurate about the Phase 93 acceptance work it describes.

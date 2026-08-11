@@ -1,0 +1,50 @@
+{
+  "EXAMPLE_ONLY": true,
+  "SYNTHETIC_TEST_FIXTURE": true,
+  "NOT_EXTERNAL_ATTESTATION": true,
+  "_readme": "SHAPE REFERENCE ONLY. Rejected by construction. Phase 96 proves the billing CODE is correct; it cannot decide a price, choose a provider or switch live billing on. Those are owner decisions, and PRODUCTION_BILLING_ACTIVATION is deliberately a separate gate so it can never be inferred from a green build. Never record a provider key, webhook secret or account identifier here — only that the configuration exists.",
+  "schemaVersion": 1,
+  "evidenceType": "COMMERCIAL_DECISIONS",
+  "testedCommitSha": "0000000000000000000000000000000000000000",
+  "recordedAt": "2026-01-01T00:00:00.000Z",
+  "signedOrOwnerVerified": true,
+  "pricing": {
+    "decision": "APPROVED",
+    "ownerAuthorityRole": "Managing Director",
+    "decidedAt": "2026-01-01",
+    "planRegistryReference": "docs/billing/plan-and-entitlement-registry.md",
+    "planRegistrySha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "pricedPlanCount": 3,
+    "currencies": ["EUR"],
+    "unresolvedPlanLimitCount": 0
+  },
+  "paymentProvider": {
+    "decision": "APPROVED",
+    "ownerAuthorityRole": "Managing Director",
+    "decidedAt": "2026-01-01",
+    "provider": "STRIPE",
+    "mode": "LIVE",
+    "webhookEndpointConfigured": true,
+    "webhookSigningSecretConfigured": true,
+    "configurationEvidenceReference": "private-channel/commercial/provider-configuration",
+    "configurationEvidenceSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "taxCurrencyRefund": {
+    "decision": "APPROVED",
+    "ownerAuthorityRole": "Managing Director",
+    "decidedAt": "2026-01-01",
+    "taxHandling": "PROVIDER_AUTOMATIC_TAX",
+    "settlementCurrencies": ["EUR"],
+    "refundPolicyReference": "private-channel/commercial/refund-policy",
+    "refundPolicySha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "refundWindowDays": 14
+  },
+  "productionBillingActivation": {
+    "activationDecision": "ACTIVATED",
+    "ownerAuthorityRole": "Managing Director",
+    "decidedAt": "2026-01-01",
+    "separatedFromCodeReadiness": true,
+    "activationEvidenceReference": "private-channel/commercial/billing-activation",
+    "activationEvidenceSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}
