@@ -653,7 +653,7 @@ describe("PHASE 101 — registering SCADA-04 changes nothing that came before", 
   it("satisfies the AT_LEAST_6 scenario contract on every registered system", () => {
     // Exact, not "at least": the corpus size is a fact worth pinning, and a
     // system appearing or disappearing should fail a test rather than pass one.
-    expect(CORPUS.length).toBe(7);
+    expect(CORPUS.length).toBe(8);
     for (const s of CORPUS) {
       expect(s.scenarios.length, `${s.id} must carry at least six scenarios`).toBeGreaterThanOrEqual(
         6,

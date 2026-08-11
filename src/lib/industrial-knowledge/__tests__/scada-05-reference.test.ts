@@ -750,10 +750,11 @@ describe("PHASE 101 — the SCADA corpus is complete and everything before it is
     expect(actual).toEqual(FROZEN);
   });
 
-  it("registers all seven reference systems, each satisfying the AT_LEAST_6 contract", () => {
+  it("registers every reference system, each satisfying the AT_LEAST_6 contract", () => {
     expect(CORPUS.map((s) => s.id)).toEqual([
       "TIA-01",
       "TIA-02",
+      "TIA-03",
       "SCADA-01",
       "SCADA-02",
       "SCADA-03",
