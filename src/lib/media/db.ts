@@ -796,10 +796,11 @@ const progressInput = z.object({
 /**
  * Record ONE user's position in ONE asset.
  *
- * `completionCount` is incremented only on the FIRST transition of this user's row
- * into a completed state, which is why the existing row is read (under a `userId`
- * predicate) before the write. Replaying the same progress event does not inflate
- * the counter.
+ * `completionCount` is incremented only when this user's row ACTUALLY transitions
+ * into a completed state — proven by a compare-and-swap on `completedAt: null`
+ * inside the transaction, never inferred from a prior read. Replaying the same
+ * progress event does not inflate the counter, and neither do two concurrent
+ * requests for the same viewer: exactly one of them can observe `count: 1`.
  */
 export async function recordWatchProgressForUser(params: {
   organizationId: string;
@@ -841,27 +842,85 @@ export async function recordWatchProgressForUser(params: {
         },
       })) as MediaWatchProgressRow | null;
 
-      const firstCompletion = completed && !existing?.completedAt;
       const shared: Record<string, unknown> = {
         positionSeconds: parsed.data.positionSeconds,
         progressPct: parsed.data.progressPct,
         lastWatchedAt: now,
         updatedAt: now,
       };
-      if (firstCompletion) shared.completedAt = now;
+
+      /**
+       * PHASE 102 / RELEASE BLOCKER 8 — the completion counter is claimed by a
+       * COMPARE-AND-SET, not decided from a prior read.
+       *
+       * The previous shape was `firstCompletion = completed && !existing?.completedAt`
+       * — a read, a decision in application memory, then an UNCONDITIONAL write.
+       * Two concurrent requests for the same viewer both read `completedAt` as
+       * null, both concluded they were first, both wrote, and both incremented:
+       * one viewer, two completions, on a counter the product presents as
+       * "how many people finished this". Nothing prevented it. The update's
+       * predicate named the row and its owner but never the state being changed,
+       * and the increment was conditioned on the in-memory verdict rather than on
+       * anything the database had agreed to.
+       *
+       * The predicate now includes `completedAt: null`, which is the fact being
+       * claimed. Under PostgreSQL's READ COMMITTED — the default for Prisma's
+       * interactive transactions — the second writer blocks on the row lock and,
+       * when the first commits, re-evaluates its predicate against the NEW row
+       * version. `completedAt` is no longer null, so it matches nothing and
+       * reports `count: 0`. Exactly one writer can ever see `count: 1`, and only
+       * that writer increments.
+       *
+       * `affected === 1` is therefore evidence from the database, not a guess.
+       */
+      let firstCompletion = false;
 
       if (existing) {
-        // The `userId` predicate is repeated on the update: the row id alone would
-        // be enough for Prisma, but not enough to prove ownership at the database.
-        await tx.mediaWatchProgress.updateMany({
-          where: {
-            id: existing.id,
-            organizationId: params.organizationId,
-            userId: params.userId,
-          },
-          data: shared,
-        });
+        if (completed && !existing.completedAt) {
+          // Claim the null → now transition. The `userId` predicate is repeated
+          // because the row id alone would satisfy Prisma but would not prove
+          // ownership at the database.
+          // `getPrisma()` is deliberately untyped here (see the module header),
+          // so the affected-row count is asserted the same way every other
+          // compare-and-swap in this file does it.
+          const claimed = (await tx.mediaWatchProgress.updateMany({
+            where: {
+              id: existing.id,
+              organizationId: params.organizationId,
+              userId: params.userId,
+              completedAt: null,
+            },
+            data: { ...shared, completedAt: now },
+          })) as { count?: number };
+          firstCompletion = (claimed?.count ?? 0) === 1;
+
+          if (!firstCompletion) {
+            // Another writer claimed the completion. This request's position and
+            // progress are still real and must still be recorded — losing the
+            // claim is not a reason to drop the viewer's place in the video.
+            await tx.mediaWatchProgress.updateMany({
+              where: {
+                id: existing.id,
+                organizationId: params.organizationId,
+                userId: params.userId,
+              },
+              data: shared,
+            });
+          }
+        } else {
+          await tx.mediaWatchProgress.updateMany({
+            where: {
+              id: existing.id,
+              organizationId: params.organizationId,
+              userId: params.userId,
+            },
+            data: shared,
+          });
+        }
       } else {
+        // No row yet. `@@unique([userId, mediaAssetId])` is the compare-and-set
+        // here: a concurrent creator loses with a unique violation, which the
+        // catch below turns into CONFLICT rather than a second increment.
         await tx.mediaWatchProgress.create({
           data: {
             organizationId: params.organizationId,
@@ -869,8 +928,10 @@ export async function recordWatchProgressForUser(params: {
             mediaAssetId: params.mediaAssetId,
             createdAt: now,
             ...shared,
+            ...(completed ? { completedAt: now } : {}),
           },
         });
+        firstCompletion = completed;
       }
 
       if (firstCompletion) {

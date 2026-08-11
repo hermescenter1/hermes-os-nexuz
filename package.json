@@ -26,6 +26,7 @@
     "eval:phase96": "node scripts/ci/phase96-billing-governance-eval.mjs",
     "eval:phase97": "node scripts/ci/phase97-compliance-governance-eval.mjs",
     "test:phase97:postgres": "vitest run --config vitest.phase97-postgres.config.ts",
+  "test:phase102:postgres": "vitest run --config vitest.phase102-postgres.config.ts",
     "eval:phase98": "node scripts/ci/phase98-dr-release-eval.mjs",
     "config:inventory": "node scripts/dr/generate-config-inventory.mjs",
     "config:inventory:check": "node scripts/dr/generate-config-inventory.mjs --check",

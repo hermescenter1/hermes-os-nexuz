@@ -193,3 +193,13 @@ jobs:
       # `gate:phase102:migrations` in the offline job.
       - name: Confirm the Phase 102 migration applied (PostgreSQL truth)
         run: npm run gate:phase102:applied-migrations
+
+      # The completion counter is a compare-and-swap, and a compare-and-swap can
+      # only be proven where there is real isolation, a real row lock and a
+      # second connection. Every media unit harness stubs `$transaction` as a
+      # pass-through, so the lost-update race is not merely undetected there — it
+      # is unrepresentable. These run against the database this job just
+      # migrated, and their barrier OBSERVES the blocked writer in
+      # `pg_stat_activity` rather than assuming it after a sleep.
+      - name: Media concurrency regression tests (real PostgreSQL)
+        run: npm run test:phase102:postgres
