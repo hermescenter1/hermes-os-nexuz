@@ -39,6 +39,7 @@
     "gate:phase997:migrations": "node scripts/ci/phase997-migration-integrity.mjs",
     "gate:phase102:migrations": "node scripts/ci/phase102-migration-integrity.mjs",
     "gate:phase102:applied-migrations": "node scripts/ci/phase102-applied-migration-check.mjs",
+  "rehearse:phase102:tenant-integrity": "node scripts/ci/phase102-tenant-integrity-rehearsal.mjs",
     "gate:phase997:safety": "node scripts/ci/phase997-release-safety-check.mjs",
     "gate:phase997:candidate": "node scripts/ci/phase997-candidate-gate.mjs",
     "rehearse:phase997:migrations": "node scripts/ci/phase997-migration-rehearsal.mjs",

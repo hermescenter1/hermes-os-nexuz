@@ -56,6 +56,14 @@ import {
 
 /** The migration this release adds, taken from the canonical Phase 102 contract. */
 export const PHASE102_MIGRATION = EXPECTED_NEW_MIGRATIONS[0];
+
+/**
+ * EVERY migration this release adds. Phase 102 shipped one; release blocker 6
+ * appends the composite tenant foreign keys, so the gate must prove both landed
+ * rather than only the first. Checking `[0]` while the contract listed two would
+ * have let the second fail silently and still report PASS.
+ */
+export const PHASE102_MIGRATIONS = EXPECTED_NEW_MIGRATIONS;
 /** Completed migrations a Phase 102 database must report (69 historical + 1). */
 export const EXPECTED_COMPLETED_MIGRATIONS = EXPECTED_TARGET_COUNT;
 
@@ -152,7 +160,7 @@ export function assertDisposableDatabase(raw) {
  */
 export function evaluateAppliedMigrations({
   rows,
-  expectedMigration = PHASE102_MIGRATION,
+  expectedMigrations = PHASE102_MIGRATIONS,
   expectedTotal = EXPECTED_COMPLETED_MIGRATIONS,
 }) {
   /** @type {{label: string, ok: boolean, detail: string}[]} */
@@ -164,28 +172,36 @@ export function evaluateAppliedMigrations({
   const isRolledBack = (r) => r.rolled_back_at !== null && r.rolled_back_at !== undefined;
   const isCompleted = (r) => isFinished(r) && !isRolledBack(r);
 
-  const matching = all.filter((r) => r.migration_name === expectedMigration);
+  // Aggregated across EVERY expected migration. The labels are unchanged so the
+  // CI contract and its regression suite still read the same, but the detail
+  // names exactly which migration failed — a per-migration label set would grow
+  // with the contract and make a missing check invisible.
+  const notUnique = [];
+  const unfinished = [];
+  const rolledBack = [];
+
+  for (const name of expectedMigrations) {
+    const matching = all.filter((r) => r.migration_name === name);
+    if (matching.length !== 1) {
+      notUnique.push(`${name} (${matching.length} rows)`);
+      // A row that is absent or duplicated cannot be inspected further, and
+      // reporting it as "finished" would be worse than reporting it twice.
+      unfinished.push(`${name} (no unique row)`);
+      rolledBack.push(`${name} (no unique row)`);
+      continue;
+    }
+    const row = matching[0];
+    if (!isFinished(row)) unfinished.push(`${name} (finished_at is NULL)`);
+    if (isRolledBack(row)) rolledBack.push(`${name} (rolled_back_at is set)`);
+  }
 
   add(
     "PHASE102_MIGRATION_ROW_UNIQUE",
-    matching.length === 1,
-    matching.length === 0
-      ? `no _prisma_migrations row for ${expectedMigration}`
-      : `${matching.length} rows for ${expectedMigration} — the migration history is corrupt`,
+    notUnique.length === 0,
+    `expected exactly one _prisma_migrations row each for ${expectedMigrations.length} migration(s); wrong: ${notUnique.join(", ")}`,
   );
-
-  // Guarded so a missing row reports "absent" once rather than throwing here.
-  const row = matching.length === 1 ? matching[0] : null;
-  add(
-    "PHASE102_MIGRATION_FINISHED",
-    row !== null && isFinished(row),
-    row === null ? "no unique row to inspect" : `finished_at is NULL for ${expectedMigration}`,
-  );
-  add(
-    "PHASE102_MIGRATION_NOT_ROLLED_BACK",
-    row !== null && !isRolledBack(row),
-    row === null ? "no unique row to inspect" : `rolled_back_at is set for ${expectedMigration}`,
-  );
+  add("PHASE102_MIGRATION_FINISHED", unfinished.length === 0, unfinished.join(", "));
+  add("PHASE102_MIGRATION_NOT_ROLLED_BACK", rolledBack.length === 0, rolledBack.join(", "));
 
   const broken = all.filter((r) => !isCompleted(r)).map((r) => r.migration_name);
   add(
@@ -249,7 +265,7 @@ async function main() {
   const verdict = evaluateAppliedMigrations({ rows });
   for (const c of verdict.checks) emit(c.label, c.ok, c.detail);
   console.log(`RESULT PHASE102_COMPLETED_MIGRATIONS=${verdict.completedCount}`);
-  console.log(`RESULT PHASE102_MIGRATION_VERIFIED=${PHASE102_MIGRATION}`);
+  console.log(`RESULT PHASE102_MIGRATION_VERIFIED=${PHASE102_MIGRATIONS.join(",")}`);
 
   return finish(failed);
 

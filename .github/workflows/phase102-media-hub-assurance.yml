@@ -194,6 +194,14 @@ jobs:
       - name: Confirm the Phase 102 migration applied (PostgreSQL truth)
         run: npm run gate:phase102:applied-migrations
 
+      # Structural tenant integrity. Reads the constraints back out of
+      # `pg_constraint` rather than trusting the migration text, proves every one
+      # of the fourteen child relations REJECTS a cross-tenant parent and ACCEPTS
+      # a same-tenant one, and rehearses the migration's own preflight against a
+      # deliberately inconsistent seed. Everything it writes is rolled back.
+      - name: Cross-tenant integrity rehearsal (real PostgreSQL)
+        run: npm run rehearse:phase102:tenant-integrity
+
       # The completion counter is a compare-and-swap, and a compare-and-swap can
       # only be proven where there is real isolation, a real row lock and a
       # second connection. Every media unit harness stubs `$transaction` as a

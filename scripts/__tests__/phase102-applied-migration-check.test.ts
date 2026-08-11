@@ -27,6 +27,7 @@ import { join } from "node:path";
 import {
   EXPECTED_COMPLETED_MIGRATIONS,
   PHASE102_MIGRATION,
+  PHASE102_MIGRATIONS,
   assertDisposableDatabase,
   evaluateAppliedMigrations,
 } from "../ci/phase102-applied-migration-check.mjs";
@@ -46,17 +47,23 @@ type Row = { migration_name: string; finished_at: Date | null; rolled_back_at: D
 
 const FINISHED = new Date("2026-08-21T00:00:00.000Z");
 
-/** A healthy 70-row `_prisma_migrations` table: 69 historical + Phase 102. */
+/**
+ * A healthy `_prisma_migrations` table: 69 historical rows plus every migration
+ * the Phase 102 contract declares. The historical count is DERIVED, so the
+ * fixture cannot drift out of step with the contract when it evolves.
+ */
 function healthyRows(): Row[] {
   const rows: Row[] = [];
-  for (let i = 0; i < EXPECTED_TARGET_COUNT - 1; i += 1) {
+  for (let i = 0; i < EXPECTED_TARGET_COUNT - PHASE102_MIGRATIONS.length; i += 1) {
     rows.push({
       migration_name: `2026081${String(i).padStart(7, "0")}_historical_${i}`,
       finished_at: FINISHED,
       rolled_back_at: null,
     });
   }
-  rows.push({ migration_name: PHASE102_MIGRATION, finished_at: FINISHED, rolled_back_at: null });
+  for (const name of PHASE102_MIGRATIONS) {
+    rows.push({ migration_name: name, finished_at: FINISHED, rolled_back_at: null });
+  }
   return rows;
 }
 
@@ -68,7 +75,14 @@ const labelsOf = (verdict: ReturnType<typeof evaluateAppliedMigrations>) =>
 describe("PHASE102_APPLIED_CONTRACT", () => {
   it("expects the canonical migration and the canonical total", () => {
     expect(PHASE102_MIGRATION).toBe("20260821000000_phase102_media_video_hub");
-    expect(EXPECTED_COMPLETED_MIGRATIONS).toBe(70);
+    // Release blocker 6 appends a second migration; the gate must prove BOTH
+    // landed. Checking only `[0]` while the contract lists two would let the
+    // second fail silently and still report PASS.
+    expect(PHASE102_MIGRATIONS).toEqual([
+      "20260821000000_phase102_media_video_hub",
+      "20260822000000_phase102_tenant_composite_foreign_keys",
+    ]);
+    expect(EXPECTED_COMPLETED_MIGRATIONS).toBe(71);
     // Derived from the Phase 102 integrity contract, never restated.
     expect(EXPECTED_COMPLETED_MIGRATIONS).toBe(EXPECTED_TARGET_COUNT);
     expect(liveCheckSource).toMatch(
@@ -125,7 +139,7 @@ describe("PHASE102_APPLIED_EVALUATOR", () => {
     const verdict = evaluateAppliedMigrations({ rows: healthyRows() });
     expect(verdict.checks.filter((c) => !c.ok)).toEqual([]);
     expect(verdict.ok).toBe(true);
-    expect(verdict.completedCount).toBe(70);
+    expect(verdict.completedCount).toBe(71);
   });
 
   it("fails when the Phase 102 migration is absent", () => {
@@ -135,7 +149,7 @@ describe("PHASE102_APPLIED_EVALUATOR", () => {
     const labels = labelsOf(verdict);
     expect(labels.PHASE102_MIGRATION_ROW_UNIQUE).toBe(false);
     expect(labels.PHASE102_MIGRATION_FINISHED).toBe(false);
-    // And the total no longer reaches 70, so the count check fails too.
+    // And the total no longer reaches the expected count, so that check fails too.
     expect(labels.PHASE102_COMPLETED_MIGRATION_COUNT).toBe(false);
   });
 
@@ -148,7 +162,8 @@ describe("PHASE102_APPLIED_EVALUATOR", () => {
     const labels = labelsOf(verdict);
     expect(labels.PHASE102_MIGRATION_FINISHED).toBe(false);
     expect(labels.PHASE102_NO_FAILED_MIGRATION).toBe(false);
-    expect(verdict.completedCount).toBe(69);
+    // One of the expected migrations is unfinished, so it does not count.
+    expect(verdict.completedCount).toBe(EXPECTED_TARGET_COUNT - 1);
   });
 
   it("fails when the Phase 102 migration was rolled back", () => {
@@ -170,7 +185,7 @@ describe("PHASE102_APPLIED_EVALUATOR", () => {
     const labels = labelsOf(verdict);
     expect(labels.PHASE102_MIGRATION_ROW_UNIQUE).toBe(false);
     expect(labels.PHASE102_MIGRATION_NAMES_UNIQUE).toBe(false);
-    // A duplicate must never be laundered into "71 applied, close enough".
+    // A duplicate must never be laundered into "one more applied, close enough".
     expect(labels.PHASE102_COMPLETED_MIGRATION_COUNT).toBe(false);
   });
 
@@ -182,8 +197,8 @@ describe("PHASE102_APPLIED_EVALUATOR", () => {
     expect(labelsOf(evaluateAppliedMigrations({ rows: rolledBack })).PHASE102_NO_FAILED_MIGRATION).toBe(false);
   });
 
-  it("fails on any completed total other than 70", () => {
-    const short = healthyRows().slice(0, 69);
+  it("fails on any completed total other than the contracted one", () => {
+    const short = healthyRows().slice(0, EXPECTED_TARGET_COUNT - 1);
     expect(labelsOf(evaluateAppliedMigrations({ rows: short })).PHASE102_COMPLETED_MIGRATION_COUNT).toBe(false);
 
     const long = [
@@ -192,7 +207,7 @@ describe("PHASE102_APPLIED_EVALUATOR", () => {
     ];
     const verdict = evaluateAppliedMigrations({ rows: long });
     expect(labelsOf(verdict).PHASE102_COMPLETED_MIGRATION_COUNT).toBe(false);
-    expect(verdict.completedCount).toBe(71);
+    expect(verdict.completedCount).toBe(EXPECTED_TARGET_COUNT + 1);
   });
 
   it("fails closed on an empty or non-array result", () => {

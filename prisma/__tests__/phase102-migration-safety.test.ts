@@ -375,30 +375,87 @@ describe("102 — migration ordering", () => {
       .filter((d) => /^\d{14}_/.test(d))
       .sort();
 
-  it("the Phase 102 migration exists and is the newest stamp", () => {
+  /**
+   * Release blocker 6 appends `20260822000000_phase102_tenant_composite_foreign_keys`,
+   * which adds composite tenant foreign keys ON the tables this migration
+   * created. It therefore legitimately references them, and it sits AFTER this
+   * migration. The assertions below are about append-only history, so they are
+   * stated against "everything before MIGRATION" rather than "everything except
+   * MIGRATION" — otherwise a later, correctly-ordered migration reads as a
+   * rewrite of history.
+   */
+  const PHASE102_FOLLOW_UPS = ["20260822000000_phase102_tenant_composite_foreign_keys"];
+
+  it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {
     const all = dirs();
     expect(all).toContain(MIGRATION);
-    expect(all[all.length - 1]).toBe(MIGRATION);
+
+    const after = all.slice(all.indexOf(MIGRATION) + 1);
+    // Pinned exactly: a new migration appearing after this one must be a
+    // deliberate contract change, visible here, not an accident.
+    expect(after).toEqual(PHASE102_FOLLOW_UPS);
   });
 
   it("its stamp is strictly greater than every migration that precedes it", () => {
     const all = dirs();
     const mine = MIGRATION.slice(0, 14);
-    for (const d of all.filter((x) => x !== MIGRATION)) {
+    const before = all.slice(0, all.indexOf(MIGRATION));
+    expect(before.length).toBeGreaterThan(0);
+    for (const d of before) {
       expect(
         d.slice(0, 14) < mine,
         `${d} must sort strictly before ${MIGRATION}`,
       ).toBe(true);
     }
+    // And every follow-up sorts strictly after, so the history stays append-only.
+    for (const d of PHASE102_FOLLOW_UPS) {
+      expect(d.slice(0, 14) > mine, `${d} must sort strictly after ${MIGRATION}`).toBe(true);
+    }
   });
 
-  it("no earlier migration was rewritten to reference a Phase 102 table", () => {
-    const all = dirs().filter((d) => d !== MIGRATION);
-    for (const d of all) {
+  it("no migration that PRECEDES this one references a Phase 102 table", () => {
+    const all = dirs();
+    const before = all.slice(0, all.indexOf(MIGRATION));
+    expect(before.length).toBeGreaterThan(0);
+    for (const d of before) {
       const earlier = readFileSync(join(REPO, "prisma/migrations", d, "migration.sql"), "utf8");
       for (const t of NEW_TABLES) {
         expect(earlier, `${d} must not mention ${t}`).not.toContain(`"${t}"`);
       }
+    }
+  });
+
+  it("the follow-up migration only ADDS constraints and changes no data", () => {
+    // The whole basis for classifying it as additive. A DML statement here would
+    // make it a data migration with an entirely different risk profile, and the
+    // ledger's FORWARD_ONLY_REQUIRES_BACKUP classification would be a claim
+    // nobody had checked.
+    for (const d of PHASE102_FOLLOW_UPS) {
+      const sql = readFileSync(join(REPO, "prisma/migrations", d, "migration.sql"), "utf8");
+      const statements = sql
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0 && !line.startsWith("--"));
+
+      const dml = statements.filter((line) =>
+        /^(INSERT|UPDATE|DELETE|TRUNCATE|DROP\s+TABLE|ALTER\s+TABLE\s+"?\w+"?\s+DROP\s+COLUMN)\b/i.test(line),
+      );
+      expect(dml, `${d} must not modify data`).toEqual([]);
+
+      // Every ALTER TABLE either drops a constraint it immediately replaces or
+      // adds one. Nothing else.
+      const alters = statements.filter((line) => /^ALTER\s+TABLE/i.test(line));
+      expect(alters.length).toBeGreaterThan(0);
+      for (const line of alters) {
+        expect(
+          /\b(ADD\s+CONSTRAINT|DROP\s+CONSTRAINT)\b/i.test(line),
+          `${d}: unexpected ALTER TABLE — ${line}`,
+        ).toBe(true);
+      }
+
+      // And it refuses to run at all on an inconsistent database.
+      expect(sql).toContain("PHASE102_CROSS_TENANT_ROWS_PRESENT");
+      expect(sql).toContain("RAISE EXCEPTION");
     }
   });
 });

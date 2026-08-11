@@ -62,9 +62,17 @@ const LEDGER = join(REPO, "docs", "release", "phase102-migration-ledger.json");
  */
 export const BASELINE_SHA = "cbfa2923318827ee42614c07f2e3861a3db8ed99";
 export const EXPECTED_BASELINE_COUNT = 69;
-export const EXPECTED_TARGET_COUNT = 70;
-export const EXPECTED_DELTA = 1;
-export const EXPECTED_NEW_MIGRATIONS = ["20260821000000_phase102_media_video_hub"];
+export const EXPECTED_TARGET_COUNT = 71;
+export const EXPECTED_DELTA = 2;
+export const EXPECTED_NEW_MIGRATIONS = [
+  "20260821000000_phase102_media_video_hub",
+  // Release blocker 6: composite tenant foreign keys. Additive and append-only —
+  // it adds constraints and changes no data, and refuses to run at all while a
+  // cross-tenant row exists. Both numbers above are DERIVED from the real
+  // migration set, not assumed: the Phase 99.7 target cbfa292 carries 69
+  // directories and the working tree carries 71, so the delta is 2.
+  "20260822000000_phase102_tenant_composite_foreign_keys",
+];
 export const EXPECTED_CLASSIFICATION = "FORWARD_ONLY_REQUIRES_BACKUP";
 
 const WRITE = process.argv.includes("--write");
@@ -154,9 +162,11 @@ function main() {
   });
 
   check(
-    "MIGRATION_DELTA_EXACTLY_1",
+    // The name carries the number so a silent widening of the contract is
+    // visible in the CI log, not only in this file.
+    `MIGRATION_DELTA_EXACTLY_${EXPECTED_DELTA}`,
     gate.newMigrations.length === EXPECTED_DELTA,
-    `expected ${EXPECTED_DELTA} new migration, found ${gate.newMigrations.length}: ${gate.newMigrations.join(", ")}`,
+    `expected ${EXPECTED_DELTA} new migrations, found ${gate.newMigrations.length}: ${gate.newMigrations.join(", ")}`,
   );
   check(
     "NEW_MIGRATION_SET_EXACT",

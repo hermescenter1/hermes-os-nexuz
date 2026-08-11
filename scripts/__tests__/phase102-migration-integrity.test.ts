@@ -3,7 +3,7 @@
  *
  * Phase 102 ships exactly one migration (the Media & Video Hub schema) on top of
  * the deployed Phase 99.7 baseline (cbfa292…, 69 migrations). This suite pins
- * the contract an operator is asked to trust — 69 -> 70, the single new
+ * the contract an operator is asked to trust — 69 -> 71, the two new
  * migration is exactly `20260821000000_phase102_media_video_hub`, it appends
  * strictly after all history, nothing historical moved, and provenance is bound
  * to the stable introducing commit plus a deterministic set digest — and drives
@@ -74,17 +74,25 @@ describe("PHASE102_MIGRATION_CONTRACT", () => {
     expect(EXPECTED_BASELINE_COUNT + EXPECTED_DELTA).toBe(EXPECTED_TARGET_COUNT);
   });
 
-  it("asserts a 69 -> 70 delta of exactly one named migration", () => {
+  it("asserts a 69 -> 71 delta of exactly two named migrations", () => {
     expect(EXPECTED_BASELINE_COUNT).toBe(69);
-    expect(EXPECTED_TARGET_COUNT).toBe(70);
-    expect(EXPECTED_DELTA).toBe(1);
-    expect(EXPECTED_NEW_MIGRATIONS).toEqual(["20260821000000_phase102_media_video_hub"]);
+    // Release blocker 6 appends the composite tenant foreign keys, so the
+    // contract EVOLVES 70 -> 71 / delta 1 -> 2. Both numbers are derived from
+    // the real migration set - the Phase 99.7 target carries 69 directories and
+    // the working tree carries 71 - and the assertion below re-derives the
+    // target from disk rather than trusting these literals.
+    expect(EXPECTED_TARGET_COUNT).toBe(71);
+    expect(EXPECTED_DELTA).toBe(2);
+    expect(EXPECTED_NEW_MIGRATIONS).toEqual([
+      "20260821000000_phase102_media_video_hub",
+      "20260822000000_phase102_tenant_composite_foreign_keys",
+    ]);
     expect(EXPECTED_CLASSIFICATION).toBe("FORWARD_ONLY_REQUIRES_BACKUP");
   });
 
   it("the working tree holds exactly the 70-migration target set", () => {
     expect(migrationNames.length).toBe(EXPECTED_TARGET_COUNT);
-    expect(migrationNames).toContain(EXPECTED_NEW_MIGRATIONS[0]);
+    for (const name of EXPECTED_NEW_MIGRATIONS) expect(migrationNames).toContain(name);
     expect(verifyDeterministicOrdering(migrationNames).ok).toBe(true);
   });
 
@@ -107,10 +115,12 @@ describe("PHASE102_MIGRATION_LEDGER", () => {
     expect(phase997Ledger.baselineMigrationCount).toBe(49);
     expect(phase997Ledger.targetMigrationCount).toBe(69);
     expect(phase997Ledger.newMigrationCount).toBe(20);
-    expect(Object.keys(phase997Ledger.migrationChecksums)).not.toContain(EXPECTED_NEW_MIGRATIONS[0]);
+    for (const name of EXPECTED_NEW_MIGRATIONS) {
+      expect(Object.keys(phase997Ledger.migrationChecksums)).not.toContain(name);
+    }
   });
 
-  it("pins the 69 -> 70 forward-only contract", () => {
+  it("pins the 69 -> 71 forward-only contract", () => {
     expect(ledger.baselineMigrationCount).toBe(EXPECTED_BASELINE_COUNT);
     expect(ledger.targetMigrationCount).toBe(EXPECTED_TARGET_COUNT);
     expect(ledger.newMigrationCount).toBe(EXPECTED_DELTA);
@@ -121,6 +131,9 @@ describe("PHASE102_MIGRATION_LEDGER", () => {
   });
 
   it("binds provenance to a stable introducing commit, not a transient merge HEAD", () => {
+    for (const name of EXPECTED_NEW_MIGRATIONS) {
+      expect(ledger.sourceCommits[name], `${name} has no source commit`).toMatch(/^[0-9a-f]{40}$/);
+    }
     const source = ledger.sourceCommits[EXPECTED_NEW_MIGRATIONS[0]];
     expect(source).toMatch(/^[0-9a-f]{40}$/);
     // The transient Phase 102 integration merge must never be the provenance pin.
