@@ -755,6 +755,7 @@ describe("PHASE 101 — the SCADA corpus is complete and everything before it is
       "TIA-01",
       "TIA-02",
       "TIA-03",
+      "TIA-04",
       "SCADA-01",
       "SCADA-02",
       "SCADA-03",

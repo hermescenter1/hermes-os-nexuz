@@ -565,6 +565,7 @@ describe("PHASE 101 — registering TIA-03 changes nothing that came before", ()
       "TIA-01",
       "TIA-02",
       "TIA-03",
+      "TIA-04",
       "SCADA-01",
       "SCADA-02",
       "SCADA-03",
