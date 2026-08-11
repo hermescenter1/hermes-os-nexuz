@@ -80,32 +80,43 @@ const check = (label, cond, detail) => {
   if (!cond) failed = true;
 };
 
-const git = (args) => execFileSync("git", args, { cwd: REPO, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+const git = (args, cwd = REPO) => execFileSync("git", args, { cwd, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 
 /**
  * Materialise a commit's Prisma schema + migration set into a temp directory so
  * the CLI can be pointed at it with `--schema`. Contents come from git blobs, so
  * they are byte-identical to what a Linux production checkout would contain.
  *
+ * `repoRoot` defaults to THIS repository, which is the only value the rehearsal
+ * itself ever passes — the production path is unchanged. It exists so the
+ * contract tests can exercise this function against a synthetic repository they
+ * build themselves, instead of depending on the enclosing checkout having deep
+ * history. That dependency is what broke four unrelated CI jobs: the generic
+ * `npm test` runs under a default (shallow) checkout in workflows that have no
+ * reason to fetch history, so a unit test must never reach for a historical
+ * commit. Real-history proof belongs to `gate:phase997:migrations` and to this
+ * rehearsal, both of which run only under `fetch-depth: 0`.
+ *
  * @param {string} ref
  * @param {string} destRoot
+ * @param {{ repoRoot?: string }} [options]
  * @returns {{ schemaPath: string, migrationNames: string[] }}
  */
-export function materializeMigrationSet(ref, destRoot) {
+export function materializeMigrationSet(ref, destRoot, { repoRoot = REPO } = {}) {
   const prismaDir = join(destRoot, "prisma");
   const migrationsDir = join(prismaDir, "migrations");
   mkdirSync(migrationsDir, { recursive: true });
 
-  writeFileSync(join(prismaDir, "schema.prisma"), git(["show", `${ref}:prisma/schema.prisma`]), "utf8");
-  writeFileSync(join(migrationsDir, "migration_lock.toml"), git(["show", `${ref}:prisma/migrations/migration_lock.toml`]), "utf8");
+  writeFileSync(join(prismaDir, "schema.prisma"), git(["show", `${ref}:prisma/schema.prisma`], repoRoot), "utf8");
+  writeFileSync(join(migrationsDir, "migration_lock.toml"), git(["show", `${ref}:prisma/migrations/migration_lock.toml`], repoRoot), "utf8");
 
   const names = [];
-  for (const line of git(["ls-tree", "-r", "--name-only", ref, "prisma/migrations/"]).split("\n")) {
+  for (const line of git(["ls-tree", "-r", "--name-only", ref, "prisma/migrations/"], repoRoot).split("\n")) {
     const m = /^prisma\/migrations\/([^/]+)\/migration\.sql$/.exec(line.trim());
     if (!m) continue;
     const name = m[1];
     mkdirSync(join(migrationsDir, name), { recursive: true });
-    writeFileSync(join(migrationsDir, name, "migration.sql"), git(["show", `${ref}:prisma/migrations/${name}/migration.sql`]), "utf8");
+    writeFileSync(join(migrationsDir, name, "migration.sql"), git(["show", `${ref}:prisma/migrations/${name}/migration.sql`], repoRoot), "utf8");
     names.push(name);
   }
   names.sort();
