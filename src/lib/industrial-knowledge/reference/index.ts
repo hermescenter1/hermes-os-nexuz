@@ -18,12 +18,14 @@ import { TIA_01_STEEL_ROLLING } from "./tia-01-steel-rolling";
 import { TIA_02_BOTTLING_PACKAGING } from "./tia-02-bottling-packaging";
 import { TIA_03_WATER_TREATMENT } from "./tia-03-water-treatment";
 import { TIA_04_HEAT_TREATMENT } from "./tia-04-heat-treatment";
+import { TIA_05_BODY_SHOP_WELDING } from "./tia-05-body-shop-welding";
 
 export const REFERENCE_SYSTEMS: readonly ReferenceSystem[] = [
   defineReferenceSystem(TIA_01_STEEL_ROLLING),
   defineReferenceSystem(TIA_02_BOTTLING_PACKAGING),
   defineReferenceSystem(TIA_03_WATER_TREATMENT),
   defineReferenceSystem(TIA_04_HEAT_TREATMENT),
+  defineReferenceSystem(TIA_05_BODY_SHOP_WELDING),
   defineReferenceSystem(SCADA_01_WATER_DISTRIBUTION),
   defineReferenceSystem(SCADA_02_STEEL_ROLLING),
   defineReferenceSystem(SCADA_03_PETROCHEMICAL),

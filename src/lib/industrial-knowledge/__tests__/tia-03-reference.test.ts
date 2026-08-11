@@ -560,12 +560,13 @@ describe("PHASE 101 — registering TIA-03 changes nothing that came before", ()
     expect(actual).toEqual(FROZEN);
   });
 
-  it("registers eight reference systems: three TIA and five SCADA", () => {
+  it("registers ten reference systems: five TIA and five SCADA", () => {
     expect(CORPUS.map((s) => s.id)).toEqual([
       "TIA-01",
       "TIA-02",
       "TIA-03",
       "TIA-04",
+      "TIA-05",
       "SCADA-01",
       "SCADA-02",
       "SCADA-03",
