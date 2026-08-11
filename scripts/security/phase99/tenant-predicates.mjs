@@ -62,6 +62,13 @@ const SITE_AUTHORIZATION_TOKENS = [
   "siteIds.includes",
   "accessibleSiteIds",
   "resolveSiteScope",
+  // Proves an optional foreign key (industrial site, category, instructor)
+  // belongs to the ACTOR's organization before any write:
+  // findFirst({ where: { id, organizationId } }) with the server-derived
+  // organization, fail-closed to "invalid reference". Used by the Phase 102
+  // media write routes; its predicate is locked by
+  // scripts/__tests__/phase99-tenant-guard-recognition.test.ts.
+  "referenceBelongsToOrg(",
 ];
 
 /** Evidence that an assigned role is clamped to a closed set. */
@@ -105,6 +112,118 @@ const SERVER_SCOPE_TOKENS = [
   "ownerScope",
   "ownerAttribution",
 ];
+
+/**
+ * Canonical DELEGATED tenant-scope guards.
+ *
+ * Each entry names ONE helper whose whole contract is "the tenant boundary
+ * lives inside me": it validates the object id, resolves the OWNING
+ * organization on the server, applies the { id, organizationId } predicate
+ * inside the database query, and refuses with a uniform 404 before any
+ * storage or filesystem access. A handler that AWAITS the helper and RETURNS
+ * on its refusal has bound its path parameter to the tenant scope even though
+ * no scope identifier appears lexically in its own body — the Phase 102
+ * byte-serving surfaces are exactly this shape.
+ *
+ * Recognition is structural, not lexical — see
+ * {@link delegatesScopeToCanonicalGuard}. The helper's RUNTIME contract is
+ * locked behaviourally by the cross-tenant matrix in
+ * `src/app/api/media/binary/__tests__/byte-serving-auth-contract.test.ts`, and
+ * the recognizer itself by
+ * `scripts/__tests__/phase99-tenant-guard-recognition.test.ts`. An entry added
+ * here without both locks is a hole, not a vocabulary extension.
+ */
+export const DELEGATED_SCOPE_GUARDS = [
+  {
+    helper: "authorizeByteServing",
+    importPath: "@/lib/media/byte-serving-auth",
+    mechanism:
+      "Validates the asset id shape, resolves the owning organization server-side, re-reads the row through getMediaAssetById({ organizationId, id, audience }) so the tenant predicate applies inside the database query, requires membership plus view_media for any non-public read, and maps every refusal to one uniform 404 before storage is touched.",
+  },
+];
+
+/**
+ * Erase string and template literal CONTENT so a helper name inside a string
+ * can never look like a call. Comments are handled separately by
+ * `stripComments`.
+ */
+export function stripStringLiterals(src) {
+  return src
+    .replace(/`(?:\\[\s\S]|[^\\`])*`/g, '""')
+    .replace(/"(?:\\.|[^"\\\n])*"/g, '""')
+    .replace(/'(?:\\.|[^'\\\n])*'/g, '""');
+}
+
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+
+/**
+ * Does this handler delegate its tenant boundary to a canonical guard?
+ *
+ * Returns the recognised guard's helper name, or `null`. Every clause below is
+ * a mutation the recogniser must refuse, and each is pinned by a test:
+ *
+ *   1. the module must import the helper BY NAME from its exact defining
+ *      module — a runtime import, not `import type`, not an alias, and not a
+ *      name mentioned in a comment (the source arrives comment-stripped);
+ *   2. the module must not re-declare the helper name locally, so a shadowing
+ *      stand-in cannot impersonate the guard;
+ *   3. the handler body — comments already gone, string/template literals
+ *      erased here — must await the helper into a binding at the handler's own
+ *      top level (net brace depth exactly 1), with no top-level `return`
+ *      before it, so a call parked in nested, dead or decorative code proves
+ *      nothing;
+ *   4. the binding's refusal branch must `return`.
+ *
+ * @param {string} handlerBody comment-stripped handler slice
+ * @param {string} moduleSource comment-stripped FULL module source
+ * @returns {string|null}
+ */
+export function delegatesScopeToCanonicalGuard(handlerBody, moduleSource) {
+  for (const guard of DELEGATED_SCOPE_GUARDS) {
+    // ── 1. Real runtime import from the exact module ─────────────────────────
+    const importMatch = new RegExp(
+      `import\\s*\\{([^}]*)\\}\\s*from\\s*["']${escapeRe(guard.importPath)}["']`,
+    ).exec(moduleSource);
+    if (!importMatch) continue;
+    const importedNames = importMatch[1].split(",").map((n) => n.trim());
+    // Exact name only: `type authorizeByteServing` is erased at runtime and
+    // `authorizeByteServing as x` binds a different name than the call below.
+    if (!importedNames.includes(guard.helper)) continue;
+
+    // ── 2. No local shadow of the guard name ─────────────────────────────────
+    const moduleNoStrings = stripStringLiterals(moduleSource);
+    if (new RegExp(`\\b(?:const|let|var|function|class)\\s+${guard.helper}\\b`).test(moduleNoStrings)) continue;
+
+    // ── 3. Awaited into a binding at the handler's top level ─────────────────
+    const body = stripStringLiterals(handlerBody);
+    const call = new RegExp(
+      `\\b(?:const|let)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*await\\s+${guard.helper}\\s*\\(`,
+    ).exec(body);
+    if (!call) continue;
+
+    const before = body.slice(0, call.index);
+    let depth = 0;
+    let unreachable = false;
+    const token = /[{}]|\breturn\b/g;
+    let t;
+    while ((t = token.exec(before)) !== null) {
+      if (t[0] === "{") depth += 1;
+      else if (t[0] === "}") depth -= 1;
+      else if (depth <= 1) unreachable = true; // top-level return before the guard
+    }
+    // depth 1 = directly inside the handler's block (the signature's own
+    // destructuring/type braces are balanced pairs and net to zero).
+    if (depth !== 1 || unreachable) continue;
+
+    // ── 4. The refusal branch returns ────────────────────────────────────────
+    const binding = call[1].replace(/\$/g, "\\$");
+    const refusal = new RegExp(`if\\s*\\(\\s*!${binding}\\.ok\\s*\\)\\s*\\{?\\s*return\\b`);
+    if (!refusal.test(body.slice(call.index))) continue;
+
+    return guard.helper;
+  }
+  return null;
+}
 
 function handlerBodies(source) {
   const src = stripComments(source);
@@ -379,7 +498,12 @@ export function analyzeTenantPredicates({ repoRoot = REPO_ROOT, reviews = TENANT
   const routes = buildRouteInventory({ repoRoot });
   const sourceCache = new Map();
   const readSource = (file) => {
-    if (!sourceCache.has(file)) sourceCache.set(file, handlerBodies(readFileSync(join(repoRoot, file), "utf8")));
+    if (!sourceCache.has(file)) {
+      const raw = readFileSync(join(repoRoot, file), "utf8");
+      // The recogniser for delegated guards needs the whole module (imports
+      // live outside the handler slice), comment-stripped like everything else.
+      sourceCache.set(file, { bodies: handlerBodies(raw), moduleSource: stripComments(raw) });
+    }
     return sourceCache.get(file);
   };
 
@@ -388,10 +512,12 @@ export function analyzeTenantPredicates({ repoRoot = REPO_ROOT, reviews = TENANT
 
   for (const r of routes) {
     if (!TENANT_CLASSES.has(r.classification)) continue;
-    const body = readSource(r.file)[r.method] ?? "";
+    const src = readSource(r.file);
+    const body = src.bodies[r.method] ?? "";
     const clientIdentity = readsClientSuppliedIdentity(body);
     const hasParam = usesPathParameter(body);
     const serverScope = referencesServerScope(body);
+    const delegatedGuard = delegatesScopeToCanonicalGuard(body, src.moduleSource);
     const site = siteFilterAuthorised(body);
     const role = roleAssignmentClamped(body);
     results.push({
@@ -402,11 +528,14 @@ export function analyzeTenantPredicates({ repoRoot = REPO_ROOT, reviews = TENANT
       clientSuppliedIdentity: clientIdentity,
       usesPathParameter: hasParam,
       referencesServerScope: serverScope,
+      delegatedScopeGuard: delegatedGuard,
       siteFilter: site,
       roleAssignment: role,
       // A path-parameter lookup with no tenant identifier anywhere in the handler
-      // is an unscoped direct object reference until a review says otherwise.
-      objectScoped: !hasParam || serverScope,
+      // is an unscoped direct object reference — unless the handler provably
+      // delegates the boundary to a canonical guard — until a review says
+      // otherwise.
+      objectScoped: !hasParam || serverScope || delegatedGuard !== null,
     });
   }
 
