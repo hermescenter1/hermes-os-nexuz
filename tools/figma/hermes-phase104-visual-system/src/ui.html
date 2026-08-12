@@ -1,0 +1,151 @@
+<!doctype html>
+<meta charset="utf-8" />
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 16px;
+    font: 12px/1.5 "Inter", -apple-system, system-ui, sans-serif;
+    background: #071018; color: #EDF7FA;
+  }
+  h1 { font-size: 13px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.1px; }
+  .sub { color: #708694; font-size: 11px; margin-bottom: 10px; }
+
+  /* The build fingerprint is the first thing on screen, deliberately.
+     Running the wrong plugin must be impossible to miss. */
+  .fp {
+    border: 1px solid #203743; border-left: 3px solid #16D9E3; border-radius: 6px;
+    background: #040A0F; padding: 8px 10px; margin-bottom: 12px;
+    font: 10px/1.6 "Roboto Mono", ui-monospace, monospace; color: #A9BAC6;
+  }
+  .fp b { color: #16D9E3; font-weight: 600; }
+  .fp .dirty { color: #F5B942; }
+  .fp .id { color: #708694; word-break: break-all; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .stat { background: #0C1720; border: 1px solid #203743; border-radius: 8px; padding: 8px 10px; }
+  .stat b { display: block; font-size: 15px; font-weight: 600; color: #16D9E3; }
+  .stat span { color: #708694; font-size: 9px; text-transform: uppercase; letter-spacing: .4px; }
+
+  .row { display: flex; gap: 6px; margin-bottom: 8px; }
+  button {
+    flex: 1; cursor: pointer; border-radius: 6px; padding: 9px 10px;
+    font: inherit; font-weight: 500; transition: background 140ms cubic-bezier(.4,0,.2,1);
+  }
+  button:focus-visible { outline: 2px solid #16D9E3; outline-offset: 2px; }
+  button[disabled] { opacity: .45; cursor: not-allowed; }
+  .primary { background: #16D9E3; color: #071018; border: 1px solid #16D9E3; }
+  .primary:hover:not([disabled]) { background: #8BF4F8; }
+  .ghost { background: transparent; color: #A9BAC6; border: 1px solid #203743; }
+  .ghost:hover { background: #152A36; }
+  .danger { background: transparent; color: #F05D68; border: 1px solid #F05D68; }
+  .danger:hover { background: rgba(240,93,104,.12); }
+
+  pre {
+    background: #040A0F; border: 1px solid #203743; border-radius: 8px;
+    padding: 10px; max-height: 280px; overflow: auto; white-space: pre-wrap;
+    font: 11px/1.5 "Roboto Mono", ui-monospace, monospace; color: #A9BAC6; margin: 0;
+  }
+  .err { color: #FF7C86; }
+</style>
+
+<h1>Hermes Phase 104 — Visual System</h1>
+<div class="sub" id="ctx">reading file…</div>
+
+<div class="fp" id="fp" data-fingerprint="__BUILD_FINGERPRINT__">loading build fingerprint…</div>
+
+<div class="grid">
+  <div class="stat"><b id="c-total">-</b><span>appliable</span></div>
+  <div class="stat"><b id="c-variants">-</b><span>variants</span></div>
+  <div class="stat"><b id="c-owned">-</b><span>owned here</span></div>
+</div>
+
+<div class="row">
+  <button class="ghost" id="dry">Dry Run</button>
+  <button class="primary" id="apply" disabled title="Run a Dry Run first">Apply</button>
+</div>
+<div class="row">
+  <button class="danger" id="rollback">Rollback (this plugin's assets only)</button>
+</div>
+
+<pre id="out">Dry Run makes no changes. Apply unlocks only after a Dry Run whose fingerprint
+and asset contract match Phase 104 exactly.
+
+If the panel above does not say "Hermes Phase 104 Visual System", you have the
+wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
+
+<script>
+  var $ = function (id) { return document.getElementById(id) }
+  var send = function (type) { parent.postMessage({ pluginMessage: { type: type } }, '*') }
+
+  // Render the build fingerprint immediately, from the value baked in at build time.
+  var fp = null
+  try { fp = JSON.parse($('fp').dataset.fingerprint) } catch (e) { fp = null }
+  if (fp && fp.pluginId) {
+    $('fp').innerHTML =
+      '<b>' + fp.plugin + '</b><br>' +
+      '<span class="id">' + fp.pluginId + '</span><br>' +
+      'HEAD ' + fp.headShaShort + ' (' + fp.branch + ')' +
+      (fp.dirty ? ' <span class="dirty">- uncommitted</span>' : '') + '<br>' +
+      'sources ' + fp.sourcesShaShort + ' - contract ' + fp.expectedTotal + ' assets'
+  } else {
+    $('fp').innerHTML = '<span class="dirty">NO FINGERPRINT - this bundle was not produced by build.mjs. Rebuild before use.</span>'
+  }
+
+  $('dry').onclick = function () { $('out').textContent = 'running dry run...'; send('dry-run') }
+  $('apply').onclick = function () { $('out').textContent = 'applying...'; send('apply') }
+  $('rollback').onclick = function () {
+    if (confirm('Delete every asset this plugin created in this file?')) {
+      $('out').textContent = 'rolling back...'; send('rollback')
+    }
+  }
+
+  onmessage = function (e) {
+    var m = e.data.pluginMessage
+    if (!m) return
+
+    if (m.type === 'ready') {
+      $('ctx').textContent = m.fileName + ' - ' + m.pageCount + ' page(s)'
+      $('c-total').textContent = m.counts.appliableTotal
+      $('c-variants').textContent = m.counts.componentVariants
+      $('c-owned').textContent = m.ownedInFile
+    }
+
+    if (m.type === 'result') {
+      var r = m.result
+      var lines = ['-- ' + m.mode + ' --']
+      if (fp) lines.push('build ' + fp.headShaShort + ' / sources ' + fp.sourcesShaShort)
+      if (r.removed) lines.push('removed: ' + r.removed.length)
+      lines.push('created: ' + r.created.length + '   updated: ' + r.updated.length + '   skipped: ' + r.skipped.length)
+      lines.push('errors:  ' + r.errors.length)
+      if (r.fontSubstitutions && r.fontSubstitutions.length) {
+        lines.push('')
+        lines.push('font substitutions:')
+        for (var i = 0; i < r.fontSubstitutions.length; i++) lines.push('  ~ ' + r.fontSubstitutions[i])
+      }
+      if (r.errors.length) {
+        lines.push('')
+        for (var j = 0; j < r.errors.length; j++) lines.push('  x ' + r.errors[j])
+      }
+      var sample = (r.created.length ? r.created : r.updated).slice(0, 60)
+      if (sample.length) {
+        lines.push('')
+        for (var k = 0; k < sample.length; k++) lines.push('  - ' + sample[k])
+      }
+      if ((r.created.length + r.updated.length) > 60) lines.push('  ... and more')
+      $('out').textContent = lines.join('\n')
+      // Apply unlocks only after a clean Dry Run on this exact build.
+      if (m.mode === 'Dry Run' && r.errors.length === 0) {
+        $('apply').disabled = false
+        $('apply').title = ''
+      }
+      send('init')
+    }
+
+    if (m.type === 'error') {
+      $('apply').disabled = true
+      $('out').innerHTML = '<span class="err">' + String(m.message).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>'
+    }
+  }
+
+  send('init')
+</script>
