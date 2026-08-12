@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "lib": ["ES2020", "DOM"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": []
+  },
+  "//": "build.mjs is a Node ESM script (needs @types/node); it is intentionally excluded so this tool stays dependency-free. It is validated by `node --check` on its output instead.",
+  "include": [
+    "src/**/*.js",
+    "src/**/*.d.ts"
+  ]
+}

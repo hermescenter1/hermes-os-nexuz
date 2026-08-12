@@ -77,6 +77,30 @@ export const PUBLIC_SURFACE = [
     justification: "Public trending list. PUBLISHED and PUBLIC only, limit clamped to 50.",
   },
   {
+    path: "/api/media/public/videos",
+    methods: ["GET"],
+    justification:
+      "Public video library (Phase 102). The PUBLISHED + PUBLIC + processingState READY predicate is applied by the repository default in src/lib/media/db.ts, not by the route, so no caller can forget it; the editorial opt-out is a separate typed argument this route never passes. Page size is clamped and the projection is an explicit whitelist that omits organizationId, storage keys and every editorial field.",
+  },
+  {
+    path: "/api/media/public/videos/[slug]",
+    methods: ["GET"],
+    justification:
+      "Public video detail (Phase 102). Same repository-enforced PUBLISHED + PUBLIC + READY predicate as the library. A draft, archived, quarantined or other-tenant slug answers 404 rather than 403, so the endpoint is not an existence oracle. Bytes are never served here — playback goes through the separately-gated /api/media/assets/[id]/stream route.",
+  },
+  {
+    // Declared explicitly because the derived classification UNDERSTATES it.
+    // The handler calls `getUserIdFromRequest`, which the classifier reads as a
+    // user-scope token and labels AUTHENTICATED_USER — but that helper returns
+    // null for an anonymous caller and the view is still recorded. This is a
+    // genuine anonymous WRITE surface, and an inventory that hides that defeats
+    // the artifact's purpose.
+    path: "/api/media/public/videos/[slug]/view",
+    methods: ["POST"],
+    justification:
+      "Anonymous playback beacon (Phase 102). Deliberately accepts unauthenticated writes: identity is read from the caller's own cookie or is null, and the Zod body schema carries no subject field, so a hostile client can only attribute a view to itself. Reaches only PUBLISHED + PUBLIC + READY assets via the same repository predicate. Stores ipHash only — never a raw IP. Rate-limited on resolveClientIp (X-Real-IP), body bounded, non-JSON content types refused.",
+  },
+  {
     path: "/api/vendors",
     methods: ["GET"],
     justification: "Public vendor directory. Pinned to APPROVED, active, not-deleted rows and clamped to 100.",

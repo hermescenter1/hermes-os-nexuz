@@ -10,7 +10,25 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
 RUN npm ci --legacy-peer-deps
-RUN npx prisma generate
+
+# Phase 99.7: invoke the PINNED, locally-installed Prisma CLI — never `npx`.
+#
+# With a healthy dependency layer `npx prisma generate` resolves the local CLI
+# and is correct. The problem is what it does when that resolution FAILS: it
+# silently falls back to the network. An observed build on a degraded layer
+# cache logged
+#   "npm warn exec The following package was not found and will be installed: prisma@7.9.1"
+# — i.e. it was about to generate the client with a DIFFERENT Prisma version
+# than this repository pins (7.8.0), chosen at build time by whatever the
+# registry served, and only failed afterwards on "Could not resolve
+# @prisma/client". A build that quietly substitutes unpinned tooling is exactly
+# what the release contract forbids for migrations; it must not be possible for
+# client generation either.
+#
+# Calling the CLI through this checkout's own node_modules makes the version an
+# artifact of package-lock.json, and turns "the dependency is missing" into a
+# loud, immediate failure instead of a silent network substitution.
+RUN node node_modules/prisma/build/index.js generate
 
 # ── Stage 2: builder ──────────────────────────────────────────────────────────
 # Full Next.js build. Dummy env values are used so the build completes without
@@ -46,8 +64,40 @@ ENV HERMES_STORAGE_MODE="session"
 
 RUN npm run build
 
-# ── Stage 3: runner ───────────────────────────────────────────────────────────
+# ── Stage 3: migrator (Phase 99.7) ────────────────────────────────────────────
+# Pinned, target-derived migration runner. The runner image deliberately ships
+# only the Prisma RUNTIME (client + engines), not the CLI, and its CMD is
+# `node server.js` — nothing applies migrations on boot. Production migrations
+# are therefore an EXPLICIT step, and this stage is the thing that runs it:
+# built from the same pinned checkout as the release (so the migration set and
+# the CLI version come from the target commit's own lockfile), never from a
+# network-fetched `npx prisma@latest`.
+#
+# Invoked ONLY via the profile-gated `hermes-migrate` compose service (see
+# docker-compose.prod.yml); `docker compose up` never starts it. Read-only over
+# the filesystem; run as a non-root user.
+FROM node:20-alpine AS migrator
+WORKDIR /app
+
+RUN addgroup -g 1001 -S nodejs && adduser -S migrator -u 1001
+
+# Full node_modules from deps: the Prisma CLI (devDependency), its engines, and
+# dotenv (required by prisma.config.ts). Root-owned and read-only to the
+# non-root user — `migrate deploy` only reads these files.
+COPY --from=deps /app/node_modules ./node_modules
+COPY prisma ./prisma
+COPY prisma.config.ts package.json ./
+
+USER migrator
+
+# `migrate deploy` applies pending migrations and exits non-zero on failure.
+# Override the command with `... migrate status` to verify without writing.
+CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+
+# ── Stage 4: runner ───────────────────────────────────────────────────────────
 # Minimal production image using Next.js standalone output.
+# NOTE: runner MUST remain the LAST stage — a bare `docker build .` (and the
+# production compose build) targets the final stage.
 FROM node:20-alpine AS runner
 WORKDIR /app
 
@@ -61,7 +111,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Prisma files needed at runtime for migrations + client
+# Prisma RUNTIME files (client + engines). The runner never applies migrations —
+# that is the migrator stage's job (Phase 99.7); these stay for the query client.
 COPY --from=builder --chown=nextjs:nodejs /app/prisma           ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/.prisma  ./node_modules/.prisma
@@ -69,7 +120,7 @@ COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/@prisma  ./node_modu
 COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/pg       ./node_modules/pg
 COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/pg-types ./node_modules/pg-types
 COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/pgpass   ./node_modules/pgpass
-# dotenv is required by prisma.config.ts during `npx prisma migrate deploy`
+# dotenv is required whenever prisma.config.ts is loaded (Prisma tooling)
 COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/dotenv   ./node_modules/dotenv
 
 # Phase 76: Ensure upload directory exists and is owned by the runtime user.

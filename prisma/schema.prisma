@@ -374,6 +374,12 @@ model User {
   // Phase 94: OT Edge & automation engineering (uploader / reviewer attribution)
   engineeringImports  EngineeringImport[]
   engineeringFindings EngineeringFinding[] @relation("FindingReviewer")
+  // Phase 102: Media & Video Hub. Save/progress are subject-attributable and
+  // cascade with the account; instructor authorship and view events survive it.
+  mediaInstructorProfiles MediaInstructor[]
+  mediaSaves           MediaSave[]
+  mediaWatchProgress   MediaWatchProgress[]
+  mediaViewEvents      MediaViewEvent[]
 }
 
 model AuthSession {
@@ -691,6 +697,21 @@ model Organization {
   dataTransfers        DataTransfer[]
   complianceIncidents  ComplianceIncident[]
   complianceEvidencePacks ComplianceEvidencePack[]
+  // Phase 102: Media & Video Hub
+  mediaAssets             MediaAsset[]
+  mediaAssetTranslations  MediaAssetTranslation[]
+  mediaChapters           MediaChapter[]
+  mediaSubtitleTracks     MediaSubtitleTrack[]
+  mediaTranscripts        MediaTranscript[]
+  mediaAttachments        MediaAttachment[]
+  mediaCategories         MediaCategory[]
+  mediaTags               MediaTag[]
+  mediaTagLinks           MediaTagOnAsset[]
+  mediaInstructors        MediaInstructor[]
+  mediaSaves              MediaSave[]
+  mediaWatchProgress      MediaWatchProgress[]
+  mediaViewEvents         MediaViewEvent[]
+  mediaEditorialEvents    MediaEditorialEvent[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -1080,6 +1101,9 @@ model IndustrialSite {
   // Phase 94: OT Edge & automation engineering
   engineeringProjects EngineeringProject[]
   engineeringImports  EngineeringImport[]
+  // Phase 102: optional site scoping for media assets (SetNull — removing a site
+  // must not delete the training material recorded under it).
+  mediaAssets         MediaAsset[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -7168,4 +7192,395 @@ model AiExecutionTrace {
 
   @@index([organizationId, createdAt])
   @@index([workflow, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 102 — Hermes Media & Video Hub
+// Design authority: docs/phase102/architecture.md (§3 tenancy, §6 String+CHECK,
+// §10 data model, §11 editorial workflow).
+//
+// TENANCY (§3). Every model below carries a non-null `organizationId` with an
+// `onDelete: Cascade` relation and an organizationId-leading index, matching the
+// Phase 94–97 convention that prisma/__tests__/*-migration-safety.test.ts enforce.
+// Optional parents (site, category, instructor, anonymous viewer) are nullable and
+// `onDelete: SetNull`, so losing a parent never destroys the media record.
+// `MediaSave.userId` / `MediaWatchProgress.userId` are the deliberate exception:
+// they are REQUIRED (the row has no meaning without its subject) and therefore
+// Cascade — deleting a user must remove their private viewing history, not orphan it.
+//
+// VOCABULARIES (§6). Lifecycle / visibility / locale sets are `String` plus an
+// inline `// A | B | C` comment and a hand-written CHECK constraint in
+// 20260821000000_phase102_media_video_hub. They are NOT Prisma enums: Phases 96/97
+// stopped declaring enums because `ALTER TYPE … DROP` is classified
+// BREAKING_OR_UNKNOWN by scripts/dr/migration-sql-classify.mjs and blocks a deploy.
+// The single source of truth for the TypeScript side is src/lib/media/types.ts.
+//
+// SOFT REFERENCES. Actor attribution (`createdBy`, `updatedBy`, `actorUserId`) and
+// the cross-context links (`linkedIndustrialAssetId`, `linkedProjectId`,
+// `linkedArticleId`) are loose references with NO foreign key, following the
+// Phase 97 `requestedBy` / `generatedBy` precedent: an editorial audit trail must
+// survive the deletion of the user who performed the act, and media publication
+// must not be gated by records owned by another bounded context.
+//
+// STORAGE. `storageKey` is ALWAYS server-generated (randomUUID) and routed through
+// getDocumentObjectStorage() so the existing sanitizeKey path-traversal guard
+// applies. It is never derived from a client-supplied filename, and media bytes are
+// never written under public/uploads/ (§7).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Core media record. Publicly readable only when
+/// `status = PUBLISHED AND visibility = PUBLIC` — publication is an explicit,
+/// audited act (§3, §11), never the absence of scoping.
+model MediaAsset {
+  id                      String   @id @default(cuid())
+  organizationId          String
+  siteId                  String?
+  categoryId              String?
+  instructorId            String?
+  slug                    String
+  primaryLocale           String   @default("en") // fa | en | de
+  status                  String   @default("DRAFT") // DRAFT | SUBMITTED | IN_REVIEW | PUBLISHED | REJECTED | ARCHIVED
+  visibility              String   @default("PRIVATE") // PRIVATE | ORGANIZATION | PUBLIC
+  processingState         String   @default("PENDING_UPLOAD") // PENDING_UPLOAD | UPLOADED | VALIDATING | READY | FAILED | QUARANTINED
+  skillLevel              String? // BEGINNER | INTERMEDIATE | ADVANCED | EXPERT
+  // Server-generated object-storage key (never a client filename). NULL until the
+  // bytes land; QUARANTINED means the bytes exist but nothing may serve them.
+  storageKey              String?
+  storageProvider         String   @default("local") // local | s3 | minio
+  contentType             String?
+  byteSize                Int?
+  checksumSha256          String?
+  // Declared by the uploader; there is no probe (no ffmpeg — ADR §9), so it stays
+  // nullable rather than being fabricated.
+  durationSeconds         Int?
+  posterStorageKey        String?
+  // Industrial association reuses the existing platform taxonomy rather than
+  // inventing a parallel one (§10).
+  industrialDomain        String?
+  linkedAssetType         IndustrialAssetType?
+  linkedProtocol          IndustrialProtocol?
+  linkedIndustrialAssetId String?
+  linkedProjectId         String?
+  linkedArticleId         String?
+  // Denormalised counters, exactly as Article does (§8).
+  viewCount               Int      @default(0)
+  saveCount               Int      @default(0)
+  completionCount         Int      @default(0)
+  canonicalUrl            String?
+  noIndex                 Boolean  @default(false)
+  submittedAt             DateTime?
+  reviewedAt              DateTime?
+  // Stamped once, immutably, by the publication transition (§11).
+  publishedAt             DateTime?
+  archivedAt              DateTime?
+  rejectionReason         String?
+  processingFailureCode   String?
+  createdBy               String
+  updatedBy               String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site            IndustrialSite?       @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  category        MediaCategory?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  instructor      MediaInstructor?      @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  translations    MediaAssetTranslation[]
+  chapters        MediaChapter[]
+  subtitleTracks  MediaSubtitleTrack[]
+  transcripts     MediaTranscript[]
+  attachments     MediaAttachment[]
+  tagLinks        MediaTagOnAsset[]
+  saves           MediaSave[]
+  watchProgress   MediaWatchProgress[]
+  viewEvents      MediaViewEvent[]
+  editorialEvents MediaEditorialEvent[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, status, visibility])
+  @@index([organizationId, processingState])
+  @@index([organizationId, publishedAt])
+  @@index([organizationId, categoryId])
+  @@index([organizationId, instructorId])
+  @@index([siteId])
+}
+
+/// Per-locale editorial copy and SEO fields. `fa` / `en` / `de` — the platform
+/// locale set, NOT ArtLanguage (which is EN|FA only and has no DE) (§10).
+model MediaAssetTranslation {
+  id             String   @id @default(cuid())
+  organizationId String
+  mediaAssetId   String
+  locale         String // fa | en | de
+  title          String
+  summary        String?
+  description    String?  @db.Text
+  seoTitle       String?
+  seoDescription String?
+  keywords       String[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaAssetId, locale])
+  @@index([organizationId, locale])
+  @@index([organizationId, mediaAssetId])
+}
+
+/// Ordered chapter marks. Rows are per-locale (the ADR's "title per locale via
+/// translation rows") so a chapter list can be authored independently in each
+/// language without introducing a fifteenth table.
+model MediaChapter {
+  id             String   @id @default(cuid())
+  organizationId String
+  mediaAssetId   String
+  locale         String // fa | en | de
+  orderIndex     Int
+  startSeconds   Int
+  endSeconds     Int?
+  title          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaAssetId, locale, orderIndex])
+  @@index([organizationId, mediaAssetId])
+}
+
+/// WebVTT subtitle track, stored through the object-storage seam (§7). The bytes
+/// never live in the database and the key is server-generated.
+model MediaSubtitleTrack {
+  id             String   @id @default(cuid())
+  organizationId String
+  mediaAssetId   String
+  locale         String // fa | en | de
+  label          String?
+  storageKey     String
+  format         String   @default("vtt") // vtt
+  byteSize       Int?
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaAssetId, locale])
+  @@index([organizationId, mediaAssetId])
+}
+
+/// Per-locale transcript text. `source` is MANUAL or IMPORTED — there is no
+/// speech-to-text engine in this platform, so no value claims machine generation.
+model MediaTranscript {
+  id             String   @id @default(cuid())
+  organizationId String
+  mediaAssetId   String
+  locale         String // fa | en | de
+  body           String   @db.Text
+  wordCount      Int?
+  source         String   @default("MANUAL") // MANUAL | IMPORTED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaAssetId, locale])
+  @@index([organizationId, mediaAssetId])
+}
+
+/// Downloadable engineering attachment (datasheet, drawing, sample program).
+model MediaAttachment {
+  id             String   @id @default(cuid())
+  organizationId String
+  mediaAssetId   String
+  locale         String? // fa | en | de — NULL means locale-neutral
+  title          String
+  storageKey     String
+  contentType    String
+  byteSize       Int
+  checksumSha256 String?
+  downloadCount  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, mediaAssetId])
+}
+
+/// Org-scoped category taxonomy. Self-parenting with SetNull so removing a parent
+/// promotes its children instead of deleting a branch of the library.
+model MediaCategory {
+  id             String   @id @default(cuid())
+  organizationId String
+  parentId       String?
+  slug           String
+  nameFa         String
+  nameEn         String
+  nameDe         String
+  orderIndex     Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent       MediaCategory?  @relation("MediaCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children     MediaCategory[] @relation("MediaCategoryTree")
+  assets       MediaAsset[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, parentId])
+}
+
+/// Free tag vocabulary, scoped to a tenant.
+model MediaTag {
+  id              String   @id @default(cuid())
+  organizationId  String
+  slug            String
+  label           String
+  normalizedLabel String
+  usageCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assetLinks   MediaTagOnAsset[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, normalizedLabel])
+  @@index([organizationId])
+}
+
+/// Tag ↔ asset join. Carries `organizationId` so a tenant deletion cascades
+/// cleanly and tag analytics stay tenant-bounded.
+model MediaTagOnAsset {
+  id             String   @id @default(cuid())
+  organizationId String
+  mediaAssetId   String
+  tagId          String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  tag          MediaTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaAssetId, tagId])
+  @@index([organizationId, tagId])
+  @@index([organizationId, mediaAssetId])
+}
+
+/// Instructor profile. `userId` is OPTIONAL and SetNull: a course keeps its
+/// authorship record after the account behind it is removed.
+model MediaInstructor {
+  id               String   @id @default(cuid())
+  organizationId   String
+  userId           String?
+  slug             String
+  displayName      String
+  headline         String?
+  bioFa            String?  @db.Text
+  bioEn            String?  @db.Text
+  bioDe            String?  @db.Text
+  avatarStorageKey String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assets       MediaAsset[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, userId])
+  @@index([organizationId, isActive])
+  @@index([userId])
+}
+
+/// Favourite. Subject-attributable (§8): reads MUST filter by the authenticated
+/// userId at the query level, never by post-filtering in application code.
+model MediaSave {
+  id             String   @id @default(cuid())
+  organizationId String
+  mediaAssetId   String
+  userId         String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaAssetId])
+  @@index([organizationId, userId])
+  @@index([organizationId, mediaAssetId])
+}
+
+/// Continue-watching position. Subject-attributable (§8) — same query-level
+/// ownership rule as MediaSave.
+model MediaWatchProgress {
+  id              String   @id @default(cuid())
+  organizationId  String
+  mediaAssetId    String
+  userId          String
+  positionSeconds Int      @default(0)
+  progressPct     Int      @default(0)
+  completedAt     DateTime?
+  lastWatchedAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaAssetId])
+  @@index([organizationId, userId])
+  @@index([organizationId, mediaAssetId])
+}
+
+/// Privacy-aware play/completion event, mirroring ArticleView (§8): it stores an
+/// `ipHash` and NEVER a raw IP address, and `userId` is nullable so an anonymous
+/// play is recorded without inventing an identity.
+model MediaViewEvent {
+  id              String   @id @default(cuid())
+  organizationId  String
+  mediaAssetId    String
+  userId          String?
+  ipHash          String?
+  eventType       String // PLAY | PROGRESS | COMPLETE
+  positionSeconds Int?
+  locale          String? // fa | en | de
+  createdAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, mediaAssetId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, eventType, createdAt])
+}
+
+/// Append-only record of every editorial transition (§11). `actorUserId` is a
+/// loose reference on purpose: the accountability record must outlive the account.
+model MediaEditorialEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  mediaAssetId   String
+  fromStatus     String? // DRAFT | SUBMITTED | IN_REVIEW | PUBLISHED | REJECTED | ARCHIVED
+  toStatus       String // DRAFT | SUBMITTED | IN_REVIEW | PUBLISHED | REJECTED | ARCHIVED
+  action         String // SUBMIT | START_REVIEW | PUBLISH | REJECT | ARCHIVE | RESTORE
+  actorUserId    String
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, mediaAssetId, createdAt])
+  @@index([organizationId, toStatus, createdAt])
 }

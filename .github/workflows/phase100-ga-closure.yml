@@ -1,0 +1,123 @@
+# Phase 100 — GA / v1.0.0 release closure assurance.
+#
+# This workflow proves that the GA closure GATE works. It does not, and cannot,
+# assert that GA was approved: the evidence that would approve it is issued by
+# an independent penetration tester, external counsel, a pilot customer and the
+# project owner — none of whom are this repository.
+#
+# So a green run here reports `PHASE100_GA_CLOSURE=BLOCKED` for as long as that
+# evidence is genuinely absent, and that is the CORRECT result. The job fails
+# only when the evaluator cannot do its job, when evidence WAS supplied and did
+# not validate, or when a repository-owned engineering gate fails.
+#
+# NO secrets, NO SSH, NO production host contact, NO OpenBao contact, NO payment
+# provider contact, NO model provider contact, NO customer contact. Read-only
+# repository permissions, SHA-pinned actions, bounded timeout. Every step below
+# reads repository files and runs offline Node scripts.
+
+name: Phase 100 GA Release Closure
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase100-ga-closure-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase100-ga-closure:
+    name: Phase 100 GA closure evaluation (offline, fail-closed)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # NON-SECRET CI placeholder so Prisma can resolve the var. No connection is
+      # made by generate/validate/test/eval. NOT a production value.
+      DATABASE_URL: postgresql://hermes:changeme@localhost:5432/hermes_db
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      # The evidence contracts and the closure evaluator are proven BEFORE the
+      # evaluator's verdict is consulted. An evaluator whose own contract tests
+      # fail has no verdict worth reading. The integrity suite runs here, before
+      # any evaluator step has written `phase100-ga-closure.json`, precisely
+      # because it must hold on a runner that has no generated artifact at all.
+      - name: Phase 100 evidence-contract and closure suites
+        run: >-
+          npx --no-install vitest run
+          scripts/__tests__/phase100-ga-evidence.test.ts
+          scripts/__tests__/phase100-evidence-integrity.test.ts
+          scripts/__tests__/phase100-closure-eval.test.ts
+          scripts/__tests__/phase99-governance.test.ts
+
+      # Phase 99 closure must still behave exactly as it did before Phase 100
+      # extracted its engine. It exits non-zero while blocked, which is its own
+      # documented contract, so the step tolerates that and asserts the verdict.
+      - name: Phase 99 closure evaluator still reports its own verdict
+        run: |
+          set +e
+          out="$(node scripts/ci/phase99-closure-eval.mjs)"
+          status=$?
+          set -e
+          printf '%s\n' "$out"
+          if ! printf '%s' "$out" | grep -qE 'RESULT phase99_closure=(PASS|BLOCKED)'; then
+            echo "::error::phase99 closure evaluator did not emit a verdict"
+            exit 1
+          fi
+          echo "phase99 closure evaluator exit status: ${status} (non-zero while blocked is its contract)"
+
+      - name: Phase 100 GA closure evaluation
+        run: npm run eval:phase100:closure
+
+      # Determinism is part of the contract: the same tree must produce the same
+      # verdict. A gate whose answer moves between runs is not a gate.
+      - name: Deterministic rerun (same tree must produce the same verdict)
+        run: |
+          cp phase100-ga-closure.json /tmp/phase100-first.json
+          npm run eval:phase100:closure > /dev/null
+          if ! diff -u /tmp/phase100-first.json phase100-ga-closure.json; then
+            echo "::error::Phase 100 closure evaluation is not deterministic"
+            exit 1
+          fi
+          echo "Phase 100 closure evaluation is deterministic across reruns."
+
+      # The published artifact is a verdict summary: gate states, reasons and a
+      # blocker matrix. It carries no evidence bodies, no secrets and no
+      # customer or reviewer identities.
+      - name: Assert the published summary carries no secret-shaped value
+        run: node scripts/ci/phase100-summary-hygiene.mjs
+
+      # Pinned to a full commit SHA, not a moving tag. `@v4` is a mutable ref: a
+      # compromise of the action repository, or of anyone able to move that tag,
+      # would silently change what runs inside the job that publishes this
+      # release verdict. The SHA below is actions/upload-artifact v4.6.2,
+      # resolved from refs/tags/v4.6.2 in the official repository.
+      - name: Upload the Phase 100 GA closure summary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: phase100-ga-closure
+          path: |
+            phase100-ga-closure.json
+            phase99-closure.json
+          if-no-files-found: warn

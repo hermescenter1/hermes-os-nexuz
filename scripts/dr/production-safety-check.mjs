@@ -27,7 +27,15 @@ const DIFF_BASE = process.env.PHASE98_DIFF_BASE || "63a4b4875660ffac11a35dd69d6a
 
 // Pattern-DEFINING files legitimately contain the dangerous tokens as data (regex
 // patterns / classification strings they search for), not as executable commands.
-const EXEMPT = new Set(["scripts/dr/production-safety-check.mjs", "scripts/dr/migration-sql-classify.mjs"]);
+const EXEMPT = new Set([
+  "scripts/dr/production-safety-check.mjs",
+  "scripts/dr/migration-sql-classify.mjs",
+  // Gate 0D-A's checker is the same kind of file: it holds `docker volume rm`,
+  // `system prune` and `-p hermes` as the PATTERNS it forbids, never as
+  // commands. It escaped this list until Phase 99.7 only because it had not
+  // been modified inside the diff window being scanned.
+  "scripts/production-compose-project-static-check.mjs",
+]);
 
 const violations = [];
 const flag = (gate, file, msg) => violations.push({ gate, file, msg });
@@ -86,9 +94,24 @@ const files = [...new Set(candidates)]
   .filter((rp) => existsSync(join(REPO, rp)))
   .map((rp) => join(REPO, rp));
 
-const isRehearsal = (rp) => rp.startsWith("scripts/ci/phase98-") || rp.includes("scripts/ci/lib/disposable-pg");
+// Phases 99 and 99.7 added guarded rehearsals of the same shape as Phase 98's
+// (disposable Compose projects / volumes / databases prefixed `hermes99test_`,
+// `hermes997test_`, `hermes997_`). They must be recognised as rehearsals,
+// otherwise their legitimate teardown reads as a production destruction path.
+//
+// This RELAXES nothing. A recognised rehearsal must still carry a disposable
+// guard AND must still never pin `-p hermes`; both rules are applied below. Only
+// the git-diff-scoped local run reaches the Phase 99/99.7 files at all — on a
+// shallow CI checkout the Phase 98 fallback path never listed them, which is why
+// the false positive was invisible in CI.
+const isRehearsal = (rp) =>
+  rp.startsWith("scripts/ci/phase98-") ||
+  rp.startsWith("scripts/ci/phase99-") ||
+  rp.startsWith("scripts/ci/phase997-") ||
+  rp.includes("scripts/ci/lib/disposable-pg");
 const isDoc = (rp) => rp.endsWith(".md");
-const hasDisposableGuard = (c) => /hermes98test_|hermes98_|DISPOSABLE_PREFIX|DISPOSABLE_PROJECT_GUARD|guardVol|guard\(/.test(c);
+const hasDisposableGuard = (c) =>
+  /hermes98test_|hermes98_|hermes99test_|hermes997test_|hermes997_|DISPOSABLE_PREFIX|DISPOSABLE_PROJECT_GUARD|DISPOSABLE_GUARD|guardVol|guard\(/.test(c);
 
 for (const abs of files) {
   const rp = relative(REPO, abs).split("\\").join("/");

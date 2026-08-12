@@ -118,7 +118,18 @@ export type OrgPermission =
   // oversight roles. READY is a manifest state, never a legal-compliance claim.
   | "view_compliance_evidence"     // read evidence packs + their manifests
   | "generate_compliance_evidence" // request + generate a governed evidence pack
-  | "revoke_compliance_evidence";  // revoke a READY evidence pack (evidence preserved)
+  | "revoke_compliance_evidence"   // revoke a READY evidence pack (evidence preserved)
+  // PHASE 102 — Media & Video Hub. A view_/manage_/review_ triple, following the
+  // Phase 97 precedent of separating the accountable act from day-to-day authoring:
+  // publishing media makes it readable outside the editorial surface (and, at
+  // visibility PUBLIC, outside the tenant), so it is not the author's own decision.
+  // Deliberately separate from `manage_knowledge`: a knowledge article is text a
+  // reviewer can read in full, whereas a media asset is opaque bytes served from
+  // object storage, and from `view_industrial`, which governs plant data rather
+  // than published training material.
+  | "view_media"                   // read the org media library (incl. drafts)
+  | "manage_media"                 // create/edit drafts, submit for review, archive/restore
+  | "review_media";                // SUBMITTED/IN_REVIEW → PUBLISHED or REJECTED
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -219,6 +230,14 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_compliance_evidence:       ["OWNER", "ADMIN", "MANAGER"],
   generate_compliance_evidence:   ["OWNER"],
   revoke_compliance_evidence:     ["OWNER"],
+  // PHASE 102 — Media & Video Hub. READ mirrors `view_knowledge` so the whole
+  // organization can use the library. AUTHORING mirrors `manage_knowledge`: an
+  // ENGINEER writes the training material, a BILLING_ADMIN never does. REVIEW —
+  // the transition that publishes — stays with the accountable roles, exactly as
+  // `review_engineering_finding` does, so an author cannot self-publish by default.
+  view_media:                     ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  manage_media:                   ["OWNER", "ADMIN", "MANAGER", "ENGINEER"],
+  review_media:                   ["OWNER", "ADMIN", "MANAGER"],
 };
 
 export function can(role: OrgRole, permission: OrgPermission): boolean {

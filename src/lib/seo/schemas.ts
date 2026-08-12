@@ -26,8 +26,14 @@ const SCHEMA_LOCALE_TAG: Record<ActiveLocale, string> = {
   de: "de-DE",
 };
 
-/** BCP-47 tag for a page locale; unknown values fall back to DEFAULT_LOCALE. */
-function schemaLanguageTag(locale: string): string {
+/**
+ * BCP-47 tag for a page locale; unknown values fall back to DEFAULT_LOCALE.
+ *
+ * PHASE 102: exported so the media `VideoObject` builder derives `inLanguage`
+ * from the SAME mapping as every other schema on the site instead of declaring a
+ * second, drift-prone table.
+ */
+export function schemaLanguageTag(locale: string): string {
   return SCHEMA_LOCALE_TAG[isActiveLocale(locale) ? locale : DEFAULT_LOCALE];
 }
 

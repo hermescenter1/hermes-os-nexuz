@@ -18,7 +18,10 @@ import { recordAuditEvent, INFRA_AUDIT } from "@/lib/audit/audit-service";
 
 // ── Limits ────────────────────────────────────────────────────────────────────
 
-const LIMITS: Record<string, { max: number; windowMs: number }> = {
+/** Window quoted in `Retry-After` when no declared window applies. */
+const DEFAULT_WINDOW_SECONDS = 60;
+
+const LIMITS = {
   // PHASE 94B4 — OT / engineering private API buckets.
   //
   // Reads are cheap and interactive. Writes that persist tenant data, run the
@@ -80,7 +83,44 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   // polls nowhere, so a real visitor would have to reload roughly once a second
   // to notice this.
   "derived-graph":     { max: 60, windowMs: 60 * 1000 },
-};
+  // PHASE 102 — media authoring, keyed by `${organizationId}:${userId}`.
+  //
+  // `media-authoring-write` covers asset creation and metadata edits. An editor
+  // genuinely saves in bursts, so it matches the `ot-mutate` budget rather than
+  // an anonymous one.
+  //
+  // `media-editorial-transition` drives the publication state machine. Each hit
+  // appends an immutable editorial event and can change what the public can
+  // see, so it is deliberately tighter than an ordinary metadata save.
+  //
+  // Both buckets were used by their routes before they were declared here,
+  // which — see `checkRateLimit` below — meant no limit was applied at all.
+  "media-authoring-write":      { max: 30, windowMs: 60 * 1000 },
+  "media-editorial-transition": { max: 20, windowMs: 60 * 1000 },
+} as const satisfies Record<string, { max: number; windowMs: number }>;
+
+/**
+ * The closed set of declared rate-limit buckets.
+ *
+ * `RateLimitAction` is derived from `LIMITS` itself, so the registry is the
+ * single source of truth: passing a bucket that is not declared here is a
+ * COMPILE error at every call site, and deleting a bucket that a route still
+ * uses breaks the build. That structural invariant — not a runtime lookup — is
+ * what guarantees no route can silently run unlimited.
+ *
+ * `RATE_LIMIT_ACTIONS` exposes the same set at runtime so guard tests can
+ * assert membership without reaching into module internals.
+ */
+export type RateLimitAction = keyof typeof LIMITS;
+
+export const RATE_LIMIT_ACTIONS: readonly RateLimitAction[] = Object.freeze(
+  Object.keys(LIMITS) as RateLimitAction[],
+);
+
+/** Whether a bucket is declared. Total, and safe to call with any value. */
+export function isRateLimitAction(action: unknown): action is RateLimitAction {
+  return typeof action === "string" && Object.prototype.hasOwnProperty.call(LIMITS, action);
+}
 
 // ── Degradation state ─────────────────────────────────────────────────────────
 
@@ -157,9 +197,9 @@ function memKey(action: string, identifier: string): string {
   return `${action}:${identifier}`;
 }
 
-function memCheck(action: string, identifier: string): boolean {
+function memCheck(action: RateLimitAction, identifier: string): boolean {
   const limit = LIMITS[action];
-  if (!limit) return true;
+  if (!limit) return false;
 
   const key = memKey(action, identifier);
   const now  = Date.now();
@@ -176,9 +216,9 @@ function memCheck(action: string, identifier: string): boolean {
   return true;
 }
 
-function memRemaining(action: string, identifier: string): number {
+function memRemaining(action: RateLimitAction, identifier: string): number {
   const limit = LIMITS[action];
-  if (!limit) return 999;
+  if (!limit) return 0;
 
   const key  = memKey(action, identifier);
   const now  = Date.now();
@@ -189,9 +229,9 @@ function memRemaining(action: string, identifier: string): number {
   return Math.max(0, limit.max - active);
 }
 
-function memRetryAfter(action: string, identifier: string): number {
+function memRetryAfter(action: RateLimitAction, identifier: string): number {
   const limit = LIMITS[action];
-  if (!limit) return 0;
+  if (!limit) return DEFAULT_WINDOW_SECONDS;
 
   const key  = memKey(action, identifier);
   const win  = _store.get(key);
@@ -209,17 +249,42 @@ function memRetryAfter(action: string, identifier: string): number {
  * @returns true = allowed, false = blocked.
  */
 /** The configured window for an action, in seconds. Used for Retry-After. */
-export function limitWindowSeconds(action: string): number {
+export function limitWindowSeconds(action: RateLimitAction): number {
   const limit = LIMITS[action];
   return limit ? Math.ceil(limit.windowMs / 1000) : 60;
 }
 
+/**
+ * An undeclared bucket reached the limiter at runtime.
+ *
+ * The type system already prevents this from every TypeScript call site, so
+ * arriving here means the boundary was crossed untyped — a JS caller, a cast,
+ * or a bucket deleted from `LIMITS` while a route still names it. Historically
+ * every entry point returned "allowed" in this case, so the endpoint ran with
+ * NO limit at all. That is strictly worse than having no limiter, because the
+ * route reports itself as limited. It now fails CLOSED and is audited.
+ */
+function refuseUndeclaredAction(action: string, caller: string): void {
+  logger.error("[auth-rate-limiter] Undeclared rate-limit bucket — failing closed.", {
+    action,
+    caller,
+  });
+  void recordAuditEvent({
+    action:     INFRA_AUDIT.RATE_LIMITER_DEGRADED,
+    entityType: "rate_limiter",
+    metadata:   { limiter: "auth", reason: "undeclared_action", bucket: action, caller },
+  });
+}
+
 export async function checkRateLimit(
-  action:     string,
+  action:     RateLimitAction,
   identifier: string,
 ): Promise<boolean> {
   const limit = LIMITS[action];
-  if (!limit) return true;
+  if (!limit) {
+    refuseUndeclaredAction(action, "checkRateLimit");
+    return false;
+  }
 
   const key   = redisKey(action, identifier, limit.windowMs);
   const count = await redisIncr(key, limit.windowMs);
@@ -236,11 +301,14 @@ export async function checkRateLimit(
 
 /** Remaining attempts for an action / identifier pair. */
 export async function remainingAttempts(
-  action:     string,
+  action:     RateLimitAction,
   identifier: string,
 ): Promise<number> {
   const limit = LIMITS[action];
-  if (!limit) return 999;
+  if (!limit) {
+    refuseUndeclaredAction(action, "remainingAttempts");
+    return 0;
+  }
 
   const key   = redisKey(action, identifier, limit.windowMs);
   const count = await redisGet(key);
@@ -250,9 +318,14 @@ export async function remainingAttempts(
 }
 
 /** Seconds until the current window resets. */
-export function retryAfter(action: string, identifier: string): number {
+export function retryAfter(action: RateLimitAction, identifier: string): number {
   const limit = LIMITS[action];
-  if (!limit) return 0;
+  if (!limit) {
+    // A refusal with `Retry-After: 0` invites an immediate retry loop. An
+    // undeclared bucket is blocked outright, so quote the default window.
+    refuseUndeclaredAction(action, "retryAfter");
+    return DEFAULT_WINDOW_SECONDS;
+  }
 
   const windowMs = limit.windowMs;
   const windowId = Math.floor(Date.now() / windowMs);

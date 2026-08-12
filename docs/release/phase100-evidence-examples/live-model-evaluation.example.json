@@ -1,0 +1,38 @@
+{
+  "EXAMPLE_ONLY": true,
+  "SYNTHETIC_TEST_FIXTURE": true,
+  "NOT_EXTERNAL_ATTESTATION": true,
+  "_readme": "SHAPE REFERENCE ONLY. Rejected by construction. A real record is produced ONLY by an owner-approved run of .github/workflows/ai-governance-live-eval.yml in the protected ai-evaluation environment, then transcribed to docs/ai-governance/phase100-live-model-evaluation.json. An offline fixture run can never satisfy this gate: evaluationMode must be LIVE_PROVIDER and the run must actually have reached the provider.",
+  "schemaVersion": 1,
+  "evidenceType": "LIVE_MODEL_EVALUATION",
+  "testedCommitSha": "0000000000000000000000000000000000000000",
+  "recordedAt": "2026-01-01T00:00:00.000Z",
+  "signedOrOwnerVerified": true,
+  "evaluation": {
+    "evaluationMode": "LIVE_PROVIDER",
+    "offlineFixtureOnly": false,
+    "providerRequestCount": 120,
+    "evaluationEnvironment": "github-environment/ai-evaluation",
+    "provider": "anthropic",
+    "modelId": "claude-sonnet-4-20250514",
+    "modelVersion": "2025-05-14",
+    "governanceLibraryVersion": "phase95",
+    "datasetReference": "src/lib/ai-governance/eval/hallucination.jsonl",
+    "datasetSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "runReference": "private-channel/ai-eval/run-log",
+    "runSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "evaluatedAt": "2026-01-01",
+    "sampleCount": 120,
+    "hallucinationRateObserved": 0,
+    "hallucinationRateBudget": 0,
+    "unsupportedClaimRateObserved": 0,
+    "unsupportedClaimRateBudget": 0,
+    "unsafeOutputCount": 0,
+    "ownerApproval": {
+      "decision": "APPROVED",
+      "ownerAuthorityRole": "Managing Director",
+      "approvedAt": "2026-01-01"
+    },
+    "validityExpiresAt": "2027-01-01"
+  }
+}

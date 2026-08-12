@@ -105,8 +105,17 @@ gate(
 // ── Compose invocation model ─────────────────────────────────────────────────
 // Matches `docker compose` (one or more spaces) OR the legacy `docker-compose`
 // binary as a command word (not the `-f docker-compose.prod.yml` file arg).
-const COMPOSE_INVOCATION = /(^|\s)docker(?:\s+|-)compose(\s|$)/;
-const LEGACY_BINARY = /(^|\s)docker-compose(\s|$)/;
+//
+// PHASE 99.7: the boundary is `[^\w.]`, not `\s`. With a whitespace-only
+// boundary a command substitution — `X="$(docker compose … )"` — was NOT
+// recognised as an invocation, because the character before `docker` is `(`.
+// Every Tier 1 check (project pin, env file, subcommand allow-list, forbidden
+// patterns) silently skipped such a line, so an UNPINNED compose command
+// wrapped in `$( )` would have passed this gate. Tier 2 already used the wider
+// boundary; Tier 1 now matches it. The trailing `(\s|$)` still prevents the
+// filename token `docker-compose.prod.yml` from being read as an invocation.
+const COMPOSE_INVOCATION = /(^|[^\w.])docker(?:\s+|-)compose(\s|$)/;
+const LEGACY_BINARY = /(^|[^\w.])docker-compose(\s|$)/;
 
 // Extract the compose subcommand (first bare token after `docker compose` and
 // its value-bearing global flags). Used to allow-list up/ps only.
@@ -146,7 +155,23 @@ gate(
   "DEPLOY_COMPOSE_PRESENT",
   "expected at least the targeted `up` and the `ps` Compose commands",
 );
-const ALLOWED_SUBCOMMANDS = new Set(["up", "ps"]);
+// PHASE 99.7 — the deploy contract grew, so this allow-list grew WITH it, not
+// around it.
+//
+// The original contract was "up/ps only", written when the workflow rebuilt
+// hermes-web and nothing else. That premise is now known to be unsafe: the
+// runner image's CMD is `node server.js` and it ships only the Prisma runtime,
+// so NOTHING applied migrations — a migration-bearing release booted new code
+// against the old schema. The release must therefore build the image, run the
+// pinned migrator, and verify the outcome before replacing hermes-web.
+//
+// Each newly-permitted subcommand is constrained below to exactly the shape the
+// contract needs, so the guarantee is unchanged in substance: the deploy still
+// cannot stop, restart, remove or recreate postgres/redis/nginx, cannot destroy
+// a volume, and cannot write to the database.
+const ALLOWED_SUBCOMMANDS = new Set(["up", "ps", "build", "run", "exec"]);
+// Services this workflow may build. hermes-migrate is the pinned migrator stage.
+const BUILDABLE_SERVICES = new Set(["hermes-web", "hermes-migrate"]);
 for (const { line, lineNumber } of composeInvocations) {
   const at = `deploy.yml line ${lineNumber}`;
   gate(!LEGACY_BINARY.test(line), "DEPLOY_COMPOSE_V2", `${at}: use \`docker compose\` (v2), not \`docker-compose\``);
@@ -159,31 +184,83 @@ for (const { line, lineNumber } of composeInvocations) {
   gate(projectFlagCount === 1, "DEPLOY_SINGLE_PROJECT_FLAG", `${at}: expected exactly one \`-p <name>\` flag, found ${projectFlagCount}`);
   gate(!/--project-name/.test(line), "DEPLOY_LONG_PROJECT_FLAG", `${at}: use \`-p hermes\`, never \`--project-name\` (can override the pin)`);
   gate(!/(^|\s)-p=/.test(line), "DEPLOY_PROJECT_EQUALS", `${at}: use \`-p hermes\` (space form), not \`-p=…\``);
-  // Only up / ps are permitted in the deploy workflow. This inherently blocks
-  // down, stop, restart, exec, run, rm, kill and any migration-via-exec.
+  // Every Compose command must carry the canonical env file: without it the
+  // NEXT_PUBLIC_* build args interpolate to empty strings and the release
+  // silently ships an image with no analytics/SEO configuration.
+  gate(/\s--env-file\s+\.env\.production(?=\s|$)/.test(line), "DEPLOY_ENV_FILE", `${at}: every Compose command must pass \`--env-file .env.production\``);
+
+  // Subcommand allow-list. Still blocks down, stop, restart, rm, kill, cp, pull.
   const sub = composeSubcommand(line);
-  gate(sub !== null && ALLOWED_SUBCOMMANDS.has(sub), "DEPLOY_SUBCOMMAND_ALLOWLIST", `${at}: Compose subcommand \`${sub}\` not allowed (only up/ps)`);
+  gate(sub !== null && ALLOWED_SUBCOMMANDS.has(sub), "DEPLOY_SUBCOMMAND_ALLOWLIST", `${at}: Compose subcommand \`${sub}\` not allowed (only ${[...ALLOWED_SUBCOMMANDS].join("/")})`);
   // Any `up` must stay targeted: never recreate postgres/redis/nginx.
   if (sub === "up") {
     gate(/--no-deps/.test(line), "DEPLOY_UP_NO_DEPS", `${at}: \`up\` must pass \`--no-deps\` (never recreate postgres/redis/nginx)`);
     gate(/\bhermes-web\b/.test(line), "DEPLOY_UP_TARGET", `${at}: \`up\` must target the \`hermes-web\` service only`);
+    gate(!/\bhermes-migrate\b/.test(line), "DEPLOY_UP_NEVER_MIGRATOR", `${at}: \`up\` must never start the migrator (it is profile-gated and runs via \`run --rm\`)`);
+  }
+  // `build` may only produce the release image or the pinned migrator.
+  if (sub === "build") {
+    const targets = line.trim().split(/\s+/).filter((t) => BUILDABLE_SERVICES.has(t));
+    gate(targets.length >= 1, "DEPLOY_BUILD_TARGET", `${at}: \`build\` must name \`hermes-web\` or \`hermes-migrate\``);
+    gate(!/\b(postgres|redis|nginx)\b/.test(line), "DEPLOY_BUILD_NEVER_DATA_SERVICE", `${at}: \`build\` must never target a data or proxy service`);
+  }
+  // `run` exists solely for the profile-gated, pinned migrator, and must be
+  // ephemeral (`--rm`) so it can never linger as a stack member.
+  if (sub === "run") {
+    gate(/\bhermes-migrate\b/.test(line), "DEPLOY_RUN_MIGRATOR_ONLY", `${at}: \`run\` is permitted only for the \`hermes-migrate\` service`);
+    gate(/--rm(?=\s|$)/.test(line), "DEPLOY_RUN_EPHEMERAL", `${at}: \`run\` must pass \`--rm\``);
+    gate(/--profile\s+migrate(?=\s|$)/.test(line), "DEPLOY_RUN_PROFILE_GATED", `${at}: the migrator must be invoked through \`--profile migrate\``);
+  }
+  // `exec` exists solely to READ the migration outcome out of postgres. Any
+  // mutating statement, or any target other than postgres, is refused.
+  if (sub === "exec") {
+    gate(/\bpostgres\b/.test(line), "DEPLOY_EXEC_TARGET", `${at}: \`exec\` is permitted only against the \`postgres\` service`);
+    gate(/(^|\s)-T(?=\s)/.test(line), "DEPLOY_EXEC_NON_INTERACTIVE", `${at}: \`exec\` must pass \`-T\` (non-interactive)`);
+    gate(
+      !/\b(INSERT|UPDATE|DELETE|DROP|TRUNCATE|ALTER|CREATE|GRANT|REVOKE|COPY)\b/i.test(line),
+      "DEPLOY_EXEC_READ_ONLY",
+      `${at}: \`exec\` must be read-only — mutating SQL is forbidden in the deploy path`,
+    );
+    gate(/\bSELECT\b/i.test(line), "DEPLOY_EXEC_IS_QUERY", `${at}: \`exec\` must be a verification SELECT`);
   }
 }
 
 // ── 3. Targeted deploy + status commands must keep their exact shape ─────────
+const PINNED = "docker compose -p hermes -f docker-compose\\.prod\\.yml --env-file \\.env\\.production";
 gate(
-  composeInvocations.some(({ line }) =>
-    /^docker compose -p hermes -f docker-compose\.prod\.yml up -d --build --no-deps hermes-web$/.test(line.trim()),
-  ),
+  composeInvocations.some(({ line }) => new RegExp(`^${PINNED} up -d --no-deps hermes-web$`).test(line.trim())),
   "DEPLOY_TARGETED_UP",
-  "missing `docker compose -p hermes -f docker-compose.prod.yml up -d --build --no-deps hermes-web`",
+  "missing `docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d --no-deps hermes-web`",
 );
 gate(
-  composeInvocations.some(({ line }) =>
-    /^docker compose -p hermes -f docker-compose\.prod\.yml ps hermes-web$/.test(line.trim()),
-  ),
+  composeInvocations.some(({ line }) => new RegExp(`^${PINNED} ps hermes-web$`).test(line.trim())),
   "DEPLOY_STATUS_PS",
-  "missing `docker compose -p hermes -f docker-compose.prod.yml ps hermes-web`",
+  "missing `docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production ps hermes-web`",
+);
+
+// ── 3b. PHASE 99.7 — the migration contract must be present AND ordered ──────
+// These are POSITIVE requirements: the checker no longer merely tolerates the
+// migrator, it fails closed if the release stops applying migrations, stops
+// verifying them, or starts serving new code before they are applied.
+const buildWebAt = composeInvocations.findIndex(({ line }) => new RegExp(`^${PINNED} build hermes-web$`).test(line.trim()));
+const migrateRunAt = composeInvocations.findIndex(({ line }) => composeSubcommand(line) === "run" && /\bhermes-migrate\b/.test(line));
+const migrateStatusAt = composeInvocations.findIndex(({ line }) => /\bmigrate status\b/.test(line));
+const verifyCountAt = composeInvocations.findIndex(({ line }) => /_prisma_migrations/.test(line));
+const upWebAt = composeInvocations.findIndex(({ line }) => composeSubcommand(line) === "up");
+
+gate(buildWebAt !== -1, "DEPLOY_BUILD_WEB_PRESENT", "missing the explicit `build hermes-web` step");
+gate(migrateRunAt !== -1, "DEPLOY_MIGRATOR_PRESENT", "missing the pinned `--profile migrate run --rm hermes-migrate` step — nothing would apply migrations");
+gate(migrateStatusAt !== -1, "DEPLOY_MIGRATION_STATUS_VERIFIED", "missing the post-migration `migrate status` verification");
+gate(verifyCountAt !== -1, "DEPLOY_MIGRATION_COUNT_VERIFIED", "missing the applied-migration count verification against _prisma_migrations");
+gate(
+  migrateRunAt !== -1 && upWebAt !== -1 && migrateRunAt < upWebAt,
+  "DEPLOY_MIGRATE_BEFORE_CUTOVER",
+  "migrations must be applied BEFORE hermes-web is replaced",
+);
+gate(
+  migrateStatusAt !== -1 && upWebAt !== -1 && migrateStatusAt < upWebAt,
+  "DEPLOY_VERIFY_BEFORE_CUTOVER",
+  "the migration outcome must be verified BEFORE hermes-web is replaced",
 );
 
 // ── 4. Forbidden executable patterns must never (re)appear ───────────────────
@@ -195,7 +272,13 @@ const forbiddenPatterns = [
   [/\bgit\s+pull\b/, "FORBIDDEN_GIT_PULL"],
   [/\bssh-keyscan\b/, "FORBIDDEN_SSH_KEYSCAN"],
   [/-p\s+hermes-os-nexuz\b/, "FORBIDDEN_DERIVED_PROJECT"],
-  [/prisma\s+migrate/, "FORBIDDEN_MIGRATION"],
+  // PHASE 99.7: `prisma migrate deploy`/`status` via the PINNED migrator is now
+  // required (see 3b). What stays forbidden is every destructive or
+  // history-rewriting migration subcommand, and any network-resolved CLI —
+  // `npx` silently substitutes whatever version the registry serves.
+  [/\bprisma\s+migrate\s+(dev|reset|resolve|diff)\b/, "FORBIDDEN_DESTRUCTIVE_MIGRATION"],
+  [/\bnpx\b/, "FORBIDDEN_UNPINNED_CLI"],
+  [/\bdb\s+push\b/, "FORBIDDEN_DB_PUSH"],
   [/StrictHostKeyChecking[= ](no|accept-new|ask)\b/, "FORBIDDEN_WEAK_HOST_KEY"],
   [/\bCOMPOSE_PROJECT_NAME\b/, "FORBIDDEN_COMPOSE_PROJECT_ENV"],
 ];
