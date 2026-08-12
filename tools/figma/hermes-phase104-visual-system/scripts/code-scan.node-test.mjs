@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
+// Deliberately not named *.test.mjs: the repository-wide runner is Vitest,
+// while this dependency-free package intentionally uses Node's native runner.
 
 import test from 'node:test'
 import assert from 'node:assert/strict'

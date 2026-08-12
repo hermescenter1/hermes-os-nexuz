@@ -12,8 +12,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
+import { basename, dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { findInExecutableCode, checkSharedPluginDataCalls } from './lib/code-scan.mjs'
 
 const require = createRequire(import.meta.url)
@@ -27,6 +29,31 @@ const { STARTER_UNAVAILABLE } = require('../src/lib/dna-structure.js')
 const LIGHTEST = DNA.BASE_SURFACES.surfaceInteractive
 const TEXT_AA = 4.5
 const UI_AA = 3.0
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
+
+function scriptFiles(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name)
+    return entry.isDirectory() ? scriptFiles(path) : [path]
+  })
+}
+
+test('Node test entrypoints cannot collide with the repository Vitest glob', () => {
+  const nodeTests = scriptFiles(SCRIPT_DIR)
+    .filter((path) => /\.[cm]?js$/.test(path))
+    .filter((path) => /from ['"]node:test['"]/.test(readFileSync(path, 'utf8')))
+  const names = nodeTests.map((path) => basename(path)).sort()
+  assert.deepEqual(names, [
+    'code-scan.node-test.mjs',
+    'runtime-contract.node-test.mjs',
+    'test-dna.mjs',
+  ])
+  assert.deepEqual(names.filter((name) => /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(name)), [],
+    'node:test files must not be collected by the repository-wide Vitest runner')
+
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  for (const name of names) assert.ok(pkg.scripts.test.includes('scripts/' + name), name + ' must run explicitly')
+})
 
 /** Values already shipped by the canonical Phase 87B layer. */
 const CANONICAL = new Set([

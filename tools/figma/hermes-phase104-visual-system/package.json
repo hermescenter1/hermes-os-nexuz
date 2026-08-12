@@ -7,7 +7,7 @@
   "type": "commonjs",
   "scripts": {
     "audit": "node scripts/audit-contrast.mjs",
-    "test": "node --test scripts/test-dna.mjs scripts/code-scan.test.mjs scripts/runtime-contract.test.mjs",
+    "test": "node --test scripts/test-dna.mjs scripts/code-scan.node-test.mjs scripts/runtime-contract.node-test.mjs",
     "build": "node build.mjs",
     "dry-run": "node build.mjs --dry-run",
     "verify": "npm run audit && npm run build && npm run test"
