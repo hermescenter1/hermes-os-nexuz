@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { PLATFORM_COMPONENTS }        from "@/lib/industrial/platform-facts";
+import { LiveVoicePanel }             from "@/components/copilot/LiveVoicePanel";
 import type { BrainMemoryStats }       from "@/lib/services/types";
 
 interface BrainRow {
@@ -120,6 +121,11 @@ export default function CopilotPage() {
 
         {/* PRIMARY (2/3): Intelligence feed + recent queries */}
         <div className="lg:col-span-2 flex flex-col gap-5">
+
+          {/* PHASE 103 — Hermes Live Voice Intelligence.
+              First in the primary column because it is the interactive surface
+              of this page; everything below it is context and status. */}
+          <LiveVoicePanel />
 
           {/* How Copilot works */}
           <section className="rounded-xl border border-line bg-surface p-5" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}>

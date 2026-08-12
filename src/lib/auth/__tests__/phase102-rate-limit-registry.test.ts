@@ -96,12 +96,27 @@ describe("every rate-limit bucket used by a route is declared", () => {
     ).toEqual([]);
   });
 
-  it("has exactly one typed indirection, and it is the OT route kit", () => {
-    // `withOtRoute` forwards `opts.bucket`, which is typed `RateLimitAction`,
-    // so the compiler covers it; its call sites are audited as `bucket:`
-    // literals instead. Pinning the set exactly stops a NEW untyped
-    // indirection from appearing without anyone revisiting this file.
-    expect(audit.dynamic.map((u) => `${u.file} → ${u.raw}`)).toEqual([
+  it("has exactly two typed indirections, and both are shared route guards", () => {
+    // Both entries forward a parameter that is TYPED `RateLimitAction`, so the
+    // compiler covers the bucket itself; their call sites are audited as
+    // `bucket:` string literals instead, which is why those literals still show
+    // up in `audit.uses` above.
+    //
+    //   - `withOtRoute` composes the OT routes (Phase 94B4).
+    //   - `requireVoiceCopilotActor` is the single Phase 103 voice guard: three
+    //     equally sensitive endpoints share one ordered chain rather than three
+    //     hand-copied sequences that can drift, and the bucket is the one thing
+    //     that legitimately differs between them.
+    //
+    // Pinning the set EXACTLY is the point: a new untyped indirection cannot
+    // appear without someone revisiting this file and justifying it here.
+    //
+    // Sorted before comparison because the audit walks the tree in the order
+    // `readdirSync` reports, which is alphabetical on NTFS but arbitrary on
+    // ext4. Sorting compares the SET exactly without pinning a filesystem
+    // detail that would make this assertion pass locally and fail in CI.
+    expect(audit.dynamic.map((u) => `${u.file} → ${u.raw}`).sort()).toEqual([
+      "src/lib/copilot/voice/guard.ts → options.bucket",
       "src/lib/ot-edge/http/route-kit.ts → opts.bucket",
     ]);
   });

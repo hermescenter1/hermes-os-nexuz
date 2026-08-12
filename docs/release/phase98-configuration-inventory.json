@@ -352,6 +352,24 @@
       "required": "optional",
       "recoverySource": "Owner runbook decision",
       "ownerRole": "Platform/SRE"
+    },
+    {
+      "key": "HERMES_EXTERNAL_AI_ENABLED",
+      "secret": false,
+      "client": false,
+      "sourceClass": "OWNER_CONFIGURATION",
+      "required": "optional",
+      "recoverySource": "Owner runbook decision",
+      "ownerRole": "Application/release owner"
+    },
+    {
+      "key": "HERMES_VOICE_SIGNING_SECRET",
+      "secret": true,
+      "client": false,
+      "sourceClass": "SECRET_EXTERNAL",
+      "required": "conditional",
+      "recoverySource": "External secret store / operator vault (never in repo)",
+      "ownerRole": "Application/release owner"
     }
   ],
   "surfaces": [
@@ -470,5 +488,5 @@
       "ownerRole": "Upload recovery owner"
     }
   ],
-  "inventorySha256": "6e21ff8ca35c2f77bb00353b084ccf464de203a426ce14bb26166ebd26096adf"
+  "inventorySha256": "ae6b799f8485c86fa110758f974d2bf7b37a7a5b000bd789341ce176fc83be8a"
 }

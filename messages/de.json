@@ -1951,7 +1951,55 @@
     "noInsights": "Keine Erkenntnisse erzeugt. Die Datenlage ist möglicherweise begrenzt.",
     "noRecommendations": "Keine Empfehlungen. Alle überwachten Anlagen wirken stabil.",
     "insufficientData": "Mir liegen nicht genügend industrielle Daten vor, um dies verlässlich zu beantworten.",
-    "blocked": "Steuerungsaktionen stehen im Hermes Copilot nicht zur Verfügung. Dieses System ist nur lesend und kann keine Befehle ausführen."
+    "blocked": "Steuerungsaktionen stehen im Hermes Copilot nicht zur Verfügung. Dieses System ist nur lesend und kann keine Befehle ausführen.",
+    "liveVoice": {
+      "brand": "Hermes Live Voice Intelligence",
+      "title": "Sprachschnittstelle für den Industrial Copilot",
+      "lede": "Stellen Sie Ihre technische Frage per Sprache, prüfen Sie das Transkript und bestätigen Sie es. Die Antwort erzeugt die deterministische Copilot-Engine; die Sprachebene überträgt sie lediglich.",
+      "disclosure": "Spracherkennung und Sprachausgabe werden von einem externen KI-Anbieter verarbeitet. Ihr Mikrofonton wird zur Transkription an diesen Anbieter gesendet, und der bestätigte Antworttext wird erneut dorthin übertragen, wenn Sie ihn vorlesen lassen.",
+      "retentionNote": "Hermes speichert weder Audio noch Transkript. Nichts, was Sie sagen, wird in die Datenbank, das Prüfprotokoll oder einen Zwischenspeicher geschrieben — erfasst werden nur die Textlänge und das Ergebnis.",
+      "deterministicNote": "Die externen Modelle analysieren, entscheiden und handeln niemals. Jede Antwort stammt aus der deterministischen Copilot-Engine, und die Wiedergabe liest genau diese Antwort Wort für Wort vor.",
+      "transcriptLabel": "Transkript — vor der Analyse prüfen und bearbeiten",
+      "transcriptPlaceholder": "Ihre diktierte Frage erscheint hier. Korrigieren Sie alles, was die Transkription falsch verstanden hat.",
+      "transcriptHint": "Es wird nichts analysiert, bevor Sie auf Analysieren drücken. Das Transkript geht genau so an die deterministische Engine, wie es hier steht.",
+      "answerLabel": "Deterministische Copilot-Antwort",
+      "spokenTextLabel": "Genau dieser Text wird vorgelesen",
+      "noSpeechAvailable": "Für diese Antwort ist keine Sprachwiedergabe verfügbar. Die vollständige Antwort steht oben.",
+      "insufficientData": "Es liegen nicht genügend Industriedaten vor, um dies zuverlässig zu beantworten.",
+      "disabledNotice": "Die Spracheingabe ist für diese Installation abgeschaltet. Eine Administratorin oder ein Administrator muss die externe KI-Verarbeitung aktivieren, bevor das Mikrofon geöffnet werden kann.",
+      "states": {
+        "idle": "Bereit",
+        "connecting": "Verbindung wird aufgebaut",
+        "listening": "Hört zu",
+        "finalizing": "Transkript wird abgeschlossen",
+        "transcriptReady": "Transkript bereit",
+        "analyzing": "Analysiert",
+        "answerReady": "Antwort bereit",
+        "speaking": "Spricht",
+        "error": "Fehler"
+      },
+      "actions": {
+        "start": "Mikrofon starten",
+        "stop": "Beenden",
+        "analyze": "Analysieren",
+        "play": "KI-Stimme abspielen",
+        "stopAudio": "Wiedergabe beenden"
+      },
+      "errors": {
+        "MICROPHONE_DENIED": "Der Browser hat den Mikrofonzugriff verweigert. Erteilen Sie die Berechtigung und versuchen Sie es erneut.",
+        "SESSION_AUTH_REQUIRED": "Eine angemeldete Browsersitzung ist erforderlich. Melden Sie sich erneut an.",
+        "FORBIDDEN": "Diese Anfrage wurde aus Sicherheitsgründen blockiert. Laden Sie die Seite neu und versuchen Sie es erneut.",
+        "INSUFFICIENT_PERMISSION": "Ihre Rolle umfasst keinen Zugriff auf den Industrial Copilot.",
+        "ORGANIZATION_SCOPE_REQUIRED": "Eine aktive Mitgliedschaft in einer Organisation ist erforderlich.",
+        "RATE_LIMITED": "Zu viele Sprachanfragen. Warten Sie einen Moment und versuchen Sie es erneut.",
+        "INVALID_INPUT": "Die Anfrage wurde als ungültig abgewiesen. Prüfen Sie das Transkript und versuchen Sie es erneut.",
+        "EXTERNAL_AI_UNAVAILABLE": "Die externe Sprachverarbeitung ist für Ihre Organisation nicht freigeschaltet.",
+        "VOICE_GRANT_INVALID": "Diese Antwort kann nicht mehr abgespielt werden. Führen Sie die Analyse erneut aus.",
+        "PROVIDER_UNAVAILABLE": "Der externe Sprachdienst war nicht erreichbar. Versuchen Sie es in Kürze erneut.",
+        "COPILOT_UNAVAILABLE": "Die Copilot-Engine konnte nicht antworten. Versuchen Sie es in Kürze erneut.",
+        "UNKNOWN": "Etwas ist schiefgelaufen. Versuchen Sie es erneut."
+      }
+    }
   },
   "unknownCenter": {
     "eyebrow": "Intelligence",
