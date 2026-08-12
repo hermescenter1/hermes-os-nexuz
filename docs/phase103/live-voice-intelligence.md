@@ -389,3 +389,88 @@ the response shapes this code parses.
 | `src/lib/copilot/voice/__tests__/phase103-voice-source-invariants.test.ts` | No recorder, no autostart, real cleanup, no tools, no control path. |
 | `scripts/__tests__/phase103-voice-guard-recognition.test.ts` | The Phase 99 classifier really sees the routes as tenant-scoped. |
 | `src/i18n/__tests__/phase103-live-voice-i18n.test.ts` | Key set derived from the component; three-way parity; real translations. |
+| `src/lib/copilot/voice/__tests__/phase103-voice-transcript.test.ts` | The reducer: commit built and sent, `completed` replaces its deltas, `item_id` correlation, exact type matching, the bounded wait — plus four mutation cases. |
+| `src/lib/copilot/voice/__tests__/phase103-voice-panel-contract.test.ts` | Stop commits before it releases; the panel owns no transcript logic; one switch, one reader; no Start control while the switch is off. |
+
+---
+
+## 15. Review fixes applied after the first submission
+
+Three independent review findings, all in the browser half of the feature. The
+security chain, the grant, the governance matrix and the storage posture are
+untouched by all three.
+
+### 15.1 Stop now commits the input audio buffer
+
+The transcription session is created with `turn_detection: null`, so the
+provider performs no voice-activity detection and never decides on its own that
+a turn has ended. The original Stop handler closed the peer connection, which
+meant the audio the operator had just dictated was never transcribed at all.
+
+Stop is now two steps:
+
+1. **The microphone tracks stop immediately and unconditionally.** This is the
+   privacy-relevant half — the operating-system recording indicator goes out —
+   and it must not wait for a network round trip.
+2. **`{"type":"input_audio_buffer.commit"}` is sent on the same WebRTC data
+   channel**, and only the transport is kept alive until every open item has
+   emitted `conversation.item.input_audio_transcription.completed`, or until a
+   bounded 5-second timeout expires — whichever comes first.
+
+The bound is deliberate: an unbounded wait would let a silent provider hold a
+peer connection open indefinitely. Any other teardown path (error, restart,
+unmount) cancels the wait rather than orphaning it, and the panel shows a
+distinct `finalizing` state while the window is open, so Start stays unavailable.
+
+### 15.2 The transcript is reduced by `item_id`, not concatenated
+
+The old handler appended any string it found on the channel — `delta` or
+`transcript` — to whatever was already in the box, and recognised events by
+substring. Deltas `"Hello, "` + `"world"` followed by
+`completed.transcript = "Hello, world"` therefore rendered
+`"Hello, worldHello, world"`: a corrupted question, in the very field the
+operator is about to confirm and send to the deterministic engine.
+
+Reduction now lives in `src/lib/copilot/voice/transcript.ts`, as a pure function
+the tests drive directly:
+
+- a `delta` grows the **provisional** text of **its own item**;
+- a `completed` **replaces** that item's provisional text — it is never appended;
+- items are keyed by `item_id` and rendered in **first-seen** order, so two items
+  completing out of order still read in the order they were spoken;
+- event types are compared with `===`, never with `includes()`, and an event with
+  no usable `item_id` is ignored rather than attributed to a guessed owner.
+
+### 15.3 With the switch off there is no Start control
+
+`HERMES_EXTERNAL_AI_ENABLED` is a server variable, so a client component cannot
+read it. The panel previously rendered a fully enabled Start button regardless,
+opened the operator's microphone, and only then learned from the server that the
+feature was off.
+
+The switch now reaches the UI through one server boundary:
+
+```
+process.env.HERMES_EXTERNAL_AI_ENABLED
+  └── isExternalAiEnabled()            src/lib/copilot/voice/config.ts
+        ├── resolveVoiceGovernance()   server enforcement (FEATURE_FLAG_OFF)
+        ├── VOICE_CONNECT_DOMAINS      the CSP entry, in middleware.ts
+        └── copilot/layout.tsx         force-dynamic server component
+              └── VoiceAvailabilityProvider → useVoiceAvailability() → the panel
+```
+
+There is **no** `NEXT_PUBLIC_` mirror of the switch: a second variable is a
+second thing to set, and two variables that must agree eventually will not. The
+middleware's own inline copy of the parsing rule was removed in favour of the
+same function, so the CSP and the feature can no longer disagree about what
+`"on"` means. The React context defaults to **false**, so a tree rendered
+without the provider disables the panel rather than enabling it.
+
+`force-dynamic` on the Copilot segment is what makes the read a **runtime** read:
+without it the value would be captured during `next build` and a container
+started later with the switch flipped would describe the wrong reality. The
+route is confirmed absent from `.next/prerender-manifest.json`.
+
+When the switch is off the panel renders its brand, title, lede and a translated
+`disabledNotice` — and no button, no textarea, and no code path that can request
+a session.

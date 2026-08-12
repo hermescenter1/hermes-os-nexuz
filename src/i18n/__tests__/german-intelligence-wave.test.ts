@@ -31,9 +31,12 @@ const TRANSLATED = [
  * because the panel is part of the Industrial Copilot surface, so this wave's
  * total moves 489 → 527 with it. Every new leaf is genuinely German except the
  * product name, which is listed in IDENTICAL_BY_DESIGN below.
+ *
+ * PHASE 103 review fixes: `copilot` grew 95 → 97 — `liveVoice.states.finalizing`
+ * and `liveVoice.disabledNotice` — so the wave total moves 527 → 529.
  */
 const LEAF_COUNTS: Record<string, number> = {
-  brain: 118, copilot: 95, ke: 79, knowledgeGraph: 63,
+  brain: 118, copilot: 97, ke: 79, knowledgeGraph: 63,
   predictive: 111, knowledgeStudio: 52, industrialBrainReport: 9,
   knowledge: 480,
 };
@@ -78,7 +81,7 @@ describe("87L.6D — exact wave arithmetic", () => {
       }
       total += LEAF_COUNTS[ns];
     }
-    expect(total, "translated this wave").toBe(527);
+    expect(total, "translated this wave").toBe(529);
   });
 
   it("reconciles: translated + intentional-identical = every leaf, carryover = 0", () => {
@@ -94,7 +97,7 @@ describe("87L.6D — exact wave arithmetic", () => {
       }
     }
     expect(unapproved, "unapproved English carryover").toEqual([]);
-    expect(translated + identical).toBe(527);
+    expect(translated + identical).toBe(529);
     expect(translated).toBeGreaterThan(450);
   });
 

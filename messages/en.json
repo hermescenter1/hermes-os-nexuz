@@ -1966,10 +1966,12 @@
       "spokenTextLabel": "This exact text will be read aloud",
       "noSpeechAvailable": "Voice playback is not available for this answer. The full answer is shown above.",
       "insufficientData": "There is not enough industrial data to answer this reliably.",
+      "disabledNotice": "Voice input is switched off for this deployment. An administrator must enable external AI processing before the microphone can be opened.",
       "states": {
         "idle": "Idle",
         "connecting": "Connecting",
         "listening": "Listening",
+        "finalizing": "Finalising the transcript",
         "transcriptReady": "Transcript ready",
         "analyzing": "Analyzing",
         "answerReady": "Answer ready",

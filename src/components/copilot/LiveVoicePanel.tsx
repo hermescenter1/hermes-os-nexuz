@@ -29,16 +29,47 @@
  * and on unmount. A microphone that stays live after the operator navigated away
  * is a privacy failure, so the teardown is written once and called from every
  * exit path rather than being duplicated per handler.
+ *
+ * STOPPING IS TWO STEPS, NOT ONE
+ * The session is created with `turn_detection: null`: the provider never decides
+ * on its own that a turn ended, so it transcribes nothing until the client
+ * commits the input buffer. Stop therefore (a) kills the microphone tracks
+ * IMMEDIATELY — that is the privacy-relevant half and it must not wait for
+ * anything — then (b) sends `input_audio_buffer.commit` on the same data channel
+ * and keeps only the transport alive until the final transcript arrives or a
+ * bounded timeout expires. Tearing the peer down at (a) would throw away the
+ * words the operator just spoke.
+ *
+ * THE FEATURE CAN BE OFF
+ * `HERMES_EXTERNAL_AI_ENABLED` is a server switch, so it is read on the server
+ * and handed to this tree through `useVoiceAvailability`. When it is off the
+ * panel renders an explicit disabled surface with no Start control at all —
+ * never an inviting button that opens a microphone for a request the server was
+ * always going to refuse.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+
+import { useVoiceAvailability } from "@/components/copilot/voice-availability";
+import {
+  applyTranscriptEvent,
+  createFinalizeWaiter,
+  EMPTY_TRANSCRIPT_STATE,
+  isTranscriptComplete,
+  renderTranscript,
+  sendInputAudioBufferCommit,
+  TRANSCRIPTION_FINALIZE_TIMEOUT_MS,
+  type FinalizeWaiter,
+  type TranscriptState,
+} from "@/lib/copilot/voice/transcript";
 
 /** The panel's state machine. Every value has a translated label. */
 type VoiceState =
   | "idle"
   | "connecting"
   | "listening"
+  | "finalizing"
   | "transcriptReady"
   | "analyzing"
   | "answerReady"
@@ -110,6 +141,7 @@ function toVoiceLocale(locale: string): (typeof VOICE_LOCALES)[number] {
 export function LiveVoicePanel() {
   const t = useTranslations("copilot.liveVoice");
   const locale = toVoiceLocale(useLocale());
+  const externalAiEnabled = useVoiceAvailability();
 
   const [state, setState] = useState<VoiceState>("idle");
   const [errorCode, setErrorCode] = useState<RenderableErrorCode | null>(null);
@@ -121,8 +153,38 @@ export function LiveVoicePanel() {
   // render, and a re-render must never lose the handle to a live microphone.
   const streamRef = useRef<MediaStream | null>(null);
   const peerRef = useRef<RTCPeerConnection | null>(null);
+  const channelRef = useRef<RTCDataChannel | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+
+  // The reduced transcription state, and a mirror of the text currently in the
+  // textarea. Both are refs because the data-channel handler and the awaited
+  // half of `stopMicrophone` read them OUTSIDE the render that created them; a
+  // captured `transcript` would be stale by the time the final event lands.
+  const transcriptStateRef = useRef<TranscriptState>(EMPTY_TRANSCRIPT_STATE);
+  const transcriptTextRef = useRef("");
+  const finalizeRef = useRef<FinalizeWaiter | null>(null);
+
+  /** Set the transcript and keep the ref mirror honest. */
+  const setTranscriptText = useCallback((text: string) => {
+    transcriptTextRef.current = text;
+    setTranscript(text);
+  }, []);
+
+  /**
+   * Kill the microphone, and ONLY the microphone.
+   *
+   * Split out of `releaseCapture` because Stop must silence the hardware before
+   * it waits for anything: the recording indicator going out is the operator's
+   * proof that capture ended, and it must not be hostage to the provider's
+   * response time. The transport stays up so the committed audio can still be
+   * transcribed.
+   */
+  const stopMicrophoneTracks = useCallback(() => {
+    const stream = streamRef.current;
+    if (!stream) return;
+    for (const track of stream.getTracks()) track.stop();
+  }, []);
 
   /**
    * Release every browser resource this panel holds.
@@ -133,11 +195,19 @@ export function LiveVoicePanel() {
    * unconditionally.
    */
   const releaseCapture = useCallback(() => {
+    const waiter = finalizeRef.current;
+    if (waiter) {
+      // Whoever is awaiting finalisation must not be left hanging on a transport
+      // that is about to disappear.
+      finalizeRef.current = null;
+      waiter.cancel();
+    }
     const stream = streamRef.current;
     if (stream) {
       for (const track of stream.getTracks()) track.stop();
       streamRef.current = null;
     }
+    channelRef.current = null;
     const peer = peerRef.current;
     if (peer) {
       peer.close();
@@ -227,13 +297,22 @@ export function LiveVoicePanel() {
       peerRef.current = peer;
       for (const track of stream.getAudioTracks()) peer.addTrack(track, stream);
 
-      // The provider streams transcription events over this data channel. It is
-      // the ONLY thing read from the connection: no audio comes back, because a
+      // The provider streams transcription events over this data channel, and
+      // the commit that ends a turn is sent back over the same one. It is the
+      // ONLY thing read from the connection: no audio comes back, because a
       // transcription session has no assistant turn to speak.
       const channel = peer.createDataChannel("oai-events");
+      channelRef.current = channel;
+      transcriptStateRef.current = EMPTY_TRANSCRIPT_STATE;
       channel.onmessage = (event) => {
-        const text = readTranscriptDelta(event.data);
-        if (text) setTranscript((current) => `${current}${text}`);
+        const next = applyTranscriptEvent(transcriptStateRef.current, event.data);
+        // Same reference ⇒ the event said nothing this panel understands.
+        if (next === transcriptStateRef.current) return;
+        transcriptStateRef.current = next;
+        setTranscriptText(renderTranscript(next));
+        // Every open item is finalised: whoever is waiting on Stop can proceed
+        // without burning the rest of the timeout.
+        if (isTranscriptComplete(next)) finalizeRef.current?.complete();
       };
 
       const offer = await peer.createOffer();
@@ -256,13 +335,47 @@ export function LiveVoicePanel() {
     } catch {
       fail("PROVIDER_UNAVAILABLE");
     }
-  }, [fail, locale, releaseAudio, releaseCapture]);
+  }, [fail, locale, releaseAudio, releaseCapture, setTranscriptText]);
 
-  /** Stop capture. The transcript stays on screen for the operator to edit. */
-  const stopMicrophone = useCallback(() => {
+  /** Tear the transport down and settle on whatever the transcript now holds. */
+  const finishCapture = useCallback(() => {
     releaseCapture();
-    setState(transcript.trim().length > 0 ? "transcriptReady" : "idle");
-  }, [releaseCapture, transcript]);
+    setState(transcriptTextRef.current.trim().length > 0 ? "transcriptReady" : "idle");
+  }, [releaseCapture]);
+
+  /**
+   * Stop capture. The transcript stays on screen for the operator to edit.
+   *
+   * The microphone dies on the first line. Everything after it is about not
+   * throwing away what was already said: because the session runs with
+   * `turn_detection: null`, the provider transcribes nothing until the client
+   * commits the buffer, so a Stop that merely closed the peer connection would
+   * discard the operator's last utterance entirely.
+   */
+  const stopMicrophone = useCallback(async () => {
+    stopMicrophoneTracks();
+
+    if (!sendInputAudioBufferCommit(channelRef.current)) {
+      // No open channel to commit on — there is nothing left to wait for.
+      finishCapture();
+      return;
+    }
+
+    setState("finalizing");
+    const waiter = createFinalizeWaiter(TRANSCRIPTION_FINALIZE_TIMEOUT_MS);
+    finalizeRef.current = waiter;
+    // Closes the window between sending the commit and registering the waiter:
+    // if the final event already landed, do not sit through the timeout.
+    if (isTranscriptComplete(transcriptStateRef.current)) waiter.complete();
+
+    const outcome = await waiter.promise;
+    // `cancelled` means something else — an unmount, an error, a restart — already
+    // ran the teardown and owns the resulting state. Do not fight it.
+    if (outcome === "cancelled") return;
+
+    finalizeRef.current = null;
+    finishCapture();
+  }, [finishCapture, stopMicrophoneTracks]);
 
   /**
    * Send the CONFIRMED transcript to the deterministic engine.
@@ -350,8 +463,37 @@ export function LiveVoicePanel() {
   }, [releaseAudio]);
 
   const listening = state === "listening";
-  const busy = state === "connecting" || state === "analyzing";
+  const busy = state === "connecting" || state === "analyzing" || state === "finalizing";
   const canAnalyze = transcript.trim().length > 0 && !busy && state !== "speaking";
+
+  /**
+   * The switch is off ⇒ there is no Start control on this page.
+   *
+   * Rendered instead of the working panel, not alongside a disabled copy of it:
+   * a greyed-out button still invites a click, and every control below it would
+   * be dead weight. This branch sits after every hook, so the hook order is the
+   * same in both shapes.
+   */
+  if (!externalAiEnabled) {
+    return (
+      <section
+        aria-labelledby="live-voice-heading"
+        className="rounded-xl border border-line bg-surface p-5 opacity-80"
+      >
+        <p className="type-eyebrow mb-1.5">{t("brand")}</p>
+        <h2 id="live-voice-heading" className="type-panel-title">
+          {t("title")}
+        </h2>
+        <p className="mt-3 type-caption leading-relaxed">{t("lede")}</p>
+        <p
+          role="status"
+          className="mt-4 rounded-lg border border-line bg-surface2/40 px-4 py-3 font-body text-sm leading-relaxed text-muted"
+        >
+          {t("disabledNotice")}
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -419,7 +561,7 @@ export function LiveVoicePanel() {
         id="live-voice-transcript"
         value={transcript}
         onChange={(event) => {
-          setTranscript(event.target.value);
+          setTranscriptText(event.target.value);
           if (state === "answerReady" || state === "error") setState("transcriptReady");
         }}
         rows={4}
@@ -525,29 +667,4 @@ export function LiveVoicePanel() {
       )}
     </section>
   );
-}
-
-/**
- * Pull transcript text out of one realtime event.
- *
- * Total and defensive: an event this does not recognise contributes nothing.
- * Only the documented transcription delta/completed events carry text, and
- * nothing else on the channel is interpreted — in particular, no event can make
- * this component take an action, because it returns a string and nothing else.
- */
-function readTranscriptDelta(raw: unknown): string {
-  if (typeof raw !== "string") return "";
-  let event: unknown;
-  try {
-    event = JSON.parse(raw);
-  } catch {
-    return "";
-  }
-  if (typeof event !== "object" || event === null) return "";
-  const record = event as Record<string, unknown>;
-  const type = typeof record.type === "string" ? record.type : "";
-  if (!type.includes("input_audio_transcription")) return "";
-  if (typeof record.delta === "string") return record.delta;
-  if (typeof record.transcript === "string") return record.transcript;
-  return "";
 }

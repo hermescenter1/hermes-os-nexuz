@@ -1966,10 +1966,12 @@
       "spokenTextLabel": "Genau dieser Text wird vorgelesen",
       "noSpeechAvailable": "Für diese Antwort ist keine Sprachwiedergabe verfügbar. Die vollständige Antwort steht oben.",
       "insufficientData": "Es liegen nicht genügend Industriedaten vor, um dies zuverlässig zu beantworten.",
+      "disabledNotice": "Die Spracheingabe ist für diese Installation abgeschaltet. Eine Administratorin oder ein Administrator muss die externe KI-Verarbeitung aktivieren, bevor das Mikrofon geöffnet werden kann.",
       "states": {
         "idle": "Bereit",
         "connecting": "Verbindung wird aufgebaut",
         "listening": "Hört zu",
+        "finalizing": "Transkript wird abgeschlossen",
         "transcriptReady": "Transkript bereit",
         "analyzing": "Analysiert",
         "answerReady": "Antwort bereit",

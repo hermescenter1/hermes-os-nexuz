@@ -7,6 +7,7 @@ import {
   isAuthorizedForPath,
   getRoleFromRequestSync,
 } from "./lib/auth/rbac";
+import { isExternalAiEnabled } from "./lib/copilot/voice/config";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -67,10 +68,14 @@ const SAASHUB_IMG_DOMAIN = " https://cdn-b.saashub.com";
  *
  * Deliberately narrow: exact host, https only, no wildcard, and connect-src
  * ONLY. The provider needs no script, frame, style or image access here.
+ *
+ * The switch is read through the SAME `isExternalAiEnabled()` the routes, the
+ * governance layer and the UI boundary use. A second inline parse of the same
+ * variable — which is what stood here — is a second thing that can drift: one
+ * copy accepting "on" while another does not would open the CSP for a feature
+ * that is off, or close it for one that is on.
  */
-const VOICE_AI_ENABLED =
-  ["1", "true", "on", "yes"].includes((process.env.HERMES_EXTERNAL_AI_ENABLED ?? "").trim().toLowerCase());
-const VOICE_CONNECT_DOMAINS = VOICE_AI_ENABLED ? " https://api.openai.com" : "";
+const VOICE_CONNECT_DOMAINS = isExternalAiEnabled() ? " https://api.openai.com" : "";
 
 const PROVENEXPERT_SCRIPT_DOMAIN = " https://s.provenexpert.net";
 const PROVENEXPERT_CONNECT_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com https://d.provenexpert.net";

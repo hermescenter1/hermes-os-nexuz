@@ -396,7 +396,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            is identical by design and allowlisted in BOTH
     //            de-identical-allowlist.ts and fa-identical-allowlist.ts.
     //            -> 5892
-    expect(allEn.length).toBe(5892);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +38 liveVoice
+    // Phase 103 review fixes: +2 more copilot.liveVoice leaves —
+    //            `states.finalizing` (the bounded window between committing the
+    //            audio buffer and the provider's final transcript, during which
+    //            the microphone is already dead) and `disabledNotice` (what the
+    //            panel says instead of a Start control when
+    //            HERMES_EXTERNAL_AI_ENABLED is off). Both genuinely German.
+    //            -> 5894
+    expect(allEn.length).toBe(5894);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -410,14 +417,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 5892 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 5894 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(5892);
+    ).toBe(5894);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);
