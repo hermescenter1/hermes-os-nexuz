@@ -15,31 +15,31 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 355,
-    "handlers": 497,
+    "routeFiles": 369,
+    "handlers": 516,
     "byClassification": {
-      "PUBLIC_READ": 36,
-      "PUBLIC_WRITE": 13,
+      "PUBLIC_READ": 38,
+      "PUBLIC_WRITE": 14,
       "AUTHENTICATED_USER": 210,
-      "TENANT_MEMBER": 119,
+      "TENANT_MEMBER": 122,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
-      "PLATFORM_ADMIN": 115,
+      "PLATFORM_ADMIN": 128,
       "WEBHOOK": 2,
       "INTERNAL_HEALTH": 2,
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 119,
+    "tenantBoundHandlers": 122,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 234,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 234,
-    "TENANT_IDENTITY_SERVER_DERIVED": 234,
+    "TENANT_BOUND_HANDLERS_TOTAL": 250,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 250,
+    "TENANT_IDENTITY_SERVER_DERIVED": 250,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 234,
+    "OBJECT_SCOPED_HANDLERS": 250,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -5593,6 +5593,275 @@
         "requirePlatformAuth"
       ],
       "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets",
+      "method": "GET",
+      "file": "src/app/api/media/assets/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets",
+      "method": "POST",
+      "file": "src/app/api/media/assets/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets/[id]",
+      "method": "GET",
+      "file": "src/app/api/media/assets/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/media/assets/[id]/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets/[id]/poster",
+      "method": "GET",
+      "file": "src/app/api/media/assets/[id]/poster/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets/[id]/poster/upload",
+      "method": "POST",
+      "file": "src/app/api/media/assets/[id]/poster/upload/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets/[id]/stream",
+      "method": "GET",
+      "file": "src/app/api/media/assets/[id]/stream/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets/[id]/subtitles",
+      "method": "POST",
+      "file": "src/app/api/media/assets/[id]/subtitles/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets/[id]/subtitles/[trackId]",
+      "method": "GET",
+      "file": "src/app/api/media/assets/[id]/subtitles/[trackId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets/[id]/transitions",
+      "method": "POST",
+      "file": "src/app/api/media/assets/[id]/transitions/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/assets/[id]/upload",
+      "method": "POST",
+      "file": "src/app/api/media/assets/[id]/upload/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/me/favourites",
+      "method": "DELETE",
+      "file": "src/app/api/media/me/favourites/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/me/favourites",
+      "method": "GET",
+      "file": "src/app/api/media/me/favourites/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/me/favourites",
+      "method": "POST",
+      "file": "src/app/api/media/me/favourites/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/me/progress",
+      "method": "GET",
+      "file": "src/app/api/media/me/progress/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/me/progress",
+      "method": "PUT",
+      "file": "src/app/api/media/me/progress/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/public/videos",
+      "method": "GET",
+      "file": "src/app/api/media/public/videos/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/public/videos/[slug]",
+      "method": "GET",
+      "file": "src/app/api/media/public/videos/[slug]/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/media/public/videos/[slug]/view",
+      "method": "POST",
+      "file": "src/app/api/media/public/videos/[slug]/view/route.ts",
+      "classification": "PUBLIC_WRITE",
+      "authEvidence": [
+        "getUserIdFromRequest"
+      ],
+      "declaredSurface": true,
       "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": null

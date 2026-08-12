@@ -20,12 +20,23 @@
  * an integrity gate that cannot read its baseline has proven nothing, and
  * "could not check" must never render as "passed".
  *
+ * HISTORICAL CONTRACT — Phase 99.7 is completed evidence of the 911a2d7 -> cbfa292
+ * production transition. The 49/69/20 figures and both SHAs are immutable; they
+ * must NEVER be rewritten to describe a later release. Therefore the 69-set and
+ * every checksum in the ledger are read from the PINNED TARGET_SHA via git, not
+ * from the working tree, so a later phase that appends migration #70 does not
+ * (and must not) change this gate's verdict. The working tree is checked only
+ * for PRESERVATION: all 69 historical migrations must still exist byte-identical
+ * (modulo line endings), and anything beyond them must be a strictly append-only
+ * suffix. A later release ships its own contract (see
+ * scripts/ci/phase102-migration-integrity.mjs) instead of mutating this one.
+ *
  * Read-only: `git show` + the working tree. No database, no network, no
  * Production contact.
  *
  * Usage:
  *   node scripts/ci/phase997-migration-integrity.mjs            # verify + compare ledger
- *   node scripts/ci/phase997-migration-integrity.mjs --write    # regenerate the ledger
+ *   node scripts/ci/phase997-migration-integrity.mjs --write    # regenerate the ledger from TARGET_SHA (refuses while any check fails)
  */
 
 import { execFileSync } from "node:child_process";
@@ -162,6 +173,40 @@ export function verifyDeterministicOrdering(names) {
   return { ok: problems.length === 0, problems };
 }
 
+/**
+ * Prove that a pinned historical migration set is PRESERVED by the current
+ * working tree: every historical migration still exists with an identical
+ * normalised checksum (no mutation, no deletion, no rename), and any additional
+ * migration is a strictly append-only suffix — it must sort AFTER the last
+ * historical migration, because `prisma migrate deploy` cannot insert a
+ * migration before one the deployed database has already applied.
+ *
+ * Pure over its inputs so mutation/regression tests can drive every failure
+ * mode with synthetic maps.
+ *
+ * @param {Record<string,string>} historicalChecksums pinned set (from a commit)
+ * @param {Record<string,string>} currentChecksums working-tree set
+ */
+export function verifyHistoricalPreservation(historicalChecksums, currentChecksums) {
+  const historicalNames = Object.keys(historicalChecksums).sort();
+  const currentNames = Object.keys(currentChecksums).sort();
+  const missing = historicalNames.filter((n) => !(n in currentChecksums));
+  const mutated = historicalNames.filter(
+    (n) => n in currentChecksums && currentChecksums[n] !== historicalChecksums[n],
+  );
+  const lastHistorical = historicalNames[historicalNames.length - 1] ?? "";
+  const futureMigrations = currentNames.filter((n) => !(n in historicalChecksums));
+  const interleaved = futureMigrations.filter((n) => n <= lastHistorical);
+  return {
+    ok: missing.length === 0 && mutated.length === 0 && interleaved.length === 0,
+    missing,
+    mutated,
+    futureMigrations,
+    interleaved,
+    lastHistorical,
+  };
+}
+
 function main() {
   // ── Baseline (fail closed if unreachable) ─────────────────────────────────
   /** @type {Record<string,string>} */
@@ -175,7 +220,20 @@ function main() {
   }
   check("MIGRATION_BASELINE_REACHABLE", true);
 
-  const target = checksumsInWorkingTree(MIGRATIONS_DIR);
+  // ── Pinned historical target (fail closed if unreachable) ─────────────────
+  // The 69-set is a property of TARGET_SHA, not of whatever the working tree
+  // currently holds — later phases may legitimately append migration #70+.
+  /** @type {Record<string,string>} */
+  let target;
+  try {
+    target = checksumsAtCommit(TARGET_SHA);
+  } catch (err) {
+    check("MIGRATION_TARGET_REACHABLE", false, `cannot read ${TARGET_SHA.slice(0, 12)} — fetch full history (fetch-depth: 0): ${String(err?.message ?? err).slice(0, 160)}`);
+    finish();
+    return;
+  }
+  check("MIGRATION_TARGET_REACHABLE", true);
+
   const baselineNames = Object.keys(baseline).sort();
   const targetNames = Object.keys(target).sort();
 
@@ -187,16 +245,17 @@ function main() {
   check(
     "MIGRATION_TARGET_COUNT",
     targetNames.length === EXPECTED_TARGET_COUNT,
-    `expected ${EXPECTED_TARGET_COUNT}, found ${targetNames.length}`,
+    `expected ${EXPECTED_TARGET_COUNT} at ${TARGET_SHA.slice(0, 12)}, found ${targetNames.length}`,
   );
 
-  // ── The gate itself ────────────────────────────────────────────────────────
+  // ── The gate itself (baseline commit -> pinned target commit) ─────────────
   const gate = evaluateMigrationGate({
     migrationsDir: MIGRATIONS_DIR,
     releaseBaseChecksums: baseline,
-    // Pass the normalised target explicitly so both sides of the comparison use
-    // the same identity function (see `migrationIdentity`).
+    // Both sides come from git through the same normalised identity function
+    // (see `migrationIdentity`); nothing here depends on the working tree.
     targetChecksums: target,
+    readMigrationSql: (name) => git(["show", `${TARGET_SHA}:prisma/migrations/${name}/migration.sql`]),
   });
 
   check(
@@ -237,7 +296,34 @@ function main() {
     `new migrations sorting before the last applied baseline migration (${lastBaseline}): ${interleaved.join(", ")}`,
   );
 
+  // ── Working-tree preservation of the historical 69-set ────────────────────
+  // Later releases may append migrations, but they may never touch history:
+  // every one of the 69 must still exist with an identical checksum, and any
+  // extra migration must sort strictly after the last historical one.
+  const current = checksumsInWorkingTree(MIGRATIONS_DIR);
+  const preservation = verifyHistoricalPreservation(target, current);
+  check(
+    "HISTORICAL_SET_PRESENT_IN_TREE",
+    preservation.missing.length === 0,
+    `historical migrations deleted or renamed in the working tree: ${preservation.missing.join(", ")}`,
+  );
+  check(
+    "HISTORICAL_SET_UNMUTATED_IN_TREE",
+    preservation.mutated.length === 0,
+    `historical migrations mutated in the working tree: ${preservation.mutated.join(", ")}`,
+  );
+  check(
+    "FUTURE_MIGRATIONS_APPEND_ONLY",
+    preservation.interleaved.length === 0,
+    `migrations sorting before or among the historical set (last historical: ${preservation.lastHistorical}): ${preservation.interleaved.join(", ")}`,
+  );
+  const currentOrdering = verifyDeterministicOrdering(Object.keys(current).sort());
+  check("WORKING_TREE_ORDERING_DETERMINISTIC", currentOrdering.ok, currentOrdering.problems.join(" | "));
+
   // ── Durable identity ledger ────────────────────────────────────────────────
+  // Derived EXCLUSIVELY from the pinned commits above — `--write` regenerates
+  // the same 69-entry ledger no matter how many migrations the working tree has
+  // accumulated since, so it can never absorb a later release's migrations.
   const ledger = {
     phase: "99.7",
     baselineSha: BASELINE_SHA,
@@ -256,8 +342,14 @@ function main() {
   const serialized = `${JSON.stringify(ledgerWithHash, null, 2)}\n`;
 
   if (WRITE) {
-    writeFileSync(LEDGER, serialized, "utf8");
-    console.log(`RESULT MIGRATION_LEDGER=WRITTEN (${LEDGER})`);
+    if (failed) {
+      // A ledger written while any invariant fails would launder the failure
+      // into "recorded evidence" — refuse.
+      check("MIGRATION_LEDGER_WRITE_ALLOWED", false, "refusing --write while integrity checks fail");
+    } else {
+      writeFileSync(LEDGER, serialized, "utf8");
+      console.log(`RESULT MIGRATION_LEDGER=WRITTEN (${LEDGER})`);
+    }
   } else {
     let onDisk = null;
     try {

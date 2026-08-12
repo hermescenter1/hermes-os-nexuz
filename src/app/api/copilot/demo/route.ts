@@ -31,7 +31,7 @@ import { runRetrieval } from "@/lib/retrieval/retrieval-engine";
 import { screenQuestion } from "@/lib/llm/guardrails";
 import { CASES } from "@/lib/industrial/cases";
 import { computeMemoryStats } from "@/lib/industrial/memory";
-import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
+import { checkRateLimit, retryAfter, type RateLimitAction } from "@/lib/auth/rate-limiter";
 import {
   resolveClientIp,
   isJsonContentType,
@@ -56,7 +56,7 @@ const GET_ACTION = "copilot-demo-get";
 const POST_ACTION = "copilot-demo-post";
 
 /** 429 with Retry-After + no-store; never leaks the IP or the limiter key. */
-function rateLimited(action: string, ip: string): NextResponse {
+function rateLimited(action: RateLimitAction, ip: string): NextResponse {
   return securityError({ error: "rate limited" }, 429, {
     "Retry-After": String(retryAfter(action, ip)),
   });

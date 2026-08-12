@@ -28,6 +28,25 @@
  * therefore Prisma's own migration checksums — is identical regardless of the
  * checkout's line-ending policy.
  *
+ * BOTH ENDS ARE PINNED COMMITS — never HEAD (changed — read this)
+ * ---------------------------------------------------------------
+ * This rehearsal is HISTORICAL EVIDENCE for one specific production transition:
+ * 911a2d7 (49 migrations) → cbfa292 (69 migrations). It used to materialise
+ * `HEAD` as the target, which silently made the evidence a property of whatever
+ * the branch currently held: the moment a later release appended migration #70,
+ * the rehearsal materialised 70 and failed its own 69-migration contract — not
+ * because the historical transition had changed (it cannot; it already
+ * happened), but because the target had drifted. A later phase proves its own
+ * migration delta under its own contract (see
+ * scripts/ci/phase102-migration-integrity.mjs); it must never rewrite this one.
+ *
+ * So the target is {@link TARGET_SHA}, imported from the Phase 99.7 integrity
+ * contract, which is also what the immutable ledger records. There is no
+ * environment override: an override that can repoint the historical target is
+ * not a convenience, it is a way to make this evidence say something it did not
+ * observe. Tests drive {@link materializeMigrationSet} with an explicit ref
+ * instead.
+ *
  * No Production contact, no Production data, no OpenBao, no network beyond the
  * local Docker daemon. Row payloads and credentials are never printed.
  */
@@ -35,17 +54,24 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { withDisposablePg } from "./lib/disposable-pg.mjs";
-import { BASELINE_SHA, EXPECTED_BASELINE_COUNT, EXPECTED_DELTA, EXPECTED_TARGET_COUNT } from "./phase997-migration-integrity.mjs";
+import { BASELINE_SHA, TARGET_SHA, EXPECTED_BASELINE_COUNT, EXPECTED_DELTA, EXPECTED_TARGET_COUNT } from "./phase997-migration-integrity.mjs";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PRISMA_CLI = join(REPO, "node_modules", "prisma", "build", "index.js");
 
-/** The commit whose migration set is being rehearsed as the release target. */
-const TARGET_REF = process.env.PHASE997_TARGET_REF || "HEAD";
+/**
+ * The commit whose migration set is rehearsed as the release target.
+ *
+ * PINNED to the Phase 99.7 target, never `HEAD` and never an environment
+ * override — see the note at the top of this file. Declared once, here, by
+ * re-using the canonical constant rather than restating the SHA, so the
+ * rehearsal and the integrity gate cannot describe two different releases.
+ */
+export const TARGET_REF = TARGET_SHA;
 
 let failed = false;
 const check = (label, cond, detail) => {
@@ -54,32 +80,43 @@ const check = (label, cond, detail) => {
   if (!cond) failed = true;
 };
 
-const git = (args) => execFileSync("git", args, { cwd: REPO, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+const git = (args, cwd = REPO) => execFileSync("git", args, { cwd, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 
 /**
  * Materialise a commit's Prisma schema + migration set into a temp directory so
  * the CLI can be pointed at it with `--schema`. Contents come from git blobs, so
  * they are byte-identical to what a Linux production checkout would contain.
  *
+ * `repoRoot` defaults to THIS repository, which is the only value the rehearsal
+ * itself ever passes — the production path is unchanged. It exists so the
+ * contract tests can exercise this function against a synthetic repository they
+ * build themselves, instead of depending on the enclosing checkout having deep
+ * history. That dependency is what broke four unrelated CI jobs: the generic
+ * `npm test` runs under a default (shallow) checkout in workflows that have no
+ * reason to fetch history, so a unit test must never reach for a historical
+ * commit. Real-history proof belongs to `gate:phase997:migrations` and to this
+ * rehearsal, both of which run only under `fetch-depth: 0`.
+ *
  * @param {string} ref
  * @param {string} destRoot
+ * @param {{ repoRoot?: string }} [options]
  * @returns {{ schemaPath: string, migrationNames: string[] }}
  */
-function materializeMigrationSet(ref, destRoot) {
+export function materializeMigrationSet(ref, destRoot, { repoRoot = REPO } = {}) {
   const prismaDir = join(destRoot, "prisma");
   const migrationsDir = join(prismaDir, "migrations");
   mkdirSync(migrationsDir, { recursive: true });
 
-  writeFileSync(join(prismaDir, "schema.prisma"), git(["show", `${ref}:prisma/schema.prisma`]), "utf8");
-  writeFileSync(join(migrationsDir, "migration_lock.toml"), git(["show", `${ref}:prisma/migrations/migration_lock.toml`]), "utf8");
+  writeFileSync(join(prismaDir, "schema.prisma"), git(["show", `${ref}:prisma/schema.prisma`], repoRoot), "utf8");
+  writeFileSync(join(migrationsDir, "migration_lock.toml"), git(["show", `${ref}:prisma/migrations/migration_lock.toml`], repoRoot), "utf8");
 
   const names = [];
-  for (const line of git(["ls-tree", "-r", "--name-only", ref, "prisma/migrations/"]).split("\n")) {
+  for (const line of git(["ls-tree", "-r", "--name-only", ref, "prisma/migrations/"], repoRoot).split("\n")) {
     const m = /^prisma\/migrations\/([^/]+)\/migration\.sql$/.exec(line.trim());
     if (!m) continue;
     const name = m[1];
     mkdirSync(join(migrationsDir, name), { recursive: true });
-    writeFileSync(join(migrationsDir, name, "migration.sql"), git(["show", `${ref}:prisma/migrations/${name}/migration.sql`]), "utf8");
+    writeFileSync(join(migrationsDir, name, "migration.sql"), git(["show", `${ref}:prisma/migrations/${name}/migration.sql`], repoRoot), "utf8");
     names.push(name);
   }
   names.sort();
@@ -124,14 +161,53 @@ const SEED_DIGEST_SQL = `
 SELECT coalesce(md5(string_agg(h, '' ORDER BY h)), 'EMPTY')
 FROM (SELECT md5(row_to_json(x)::text) h FROM "AuditLog" x WHERE x.id LIKE 'SYNTHETIC_p997_%') s`;
 
+/**
+ * Materialise a PINNED commit, or report the failure as a named check.
+ *
+ * A rehearsal whose ends cannot be read has proven nothing, and "could not
+ * check" must never render as "passed". The overwhelmingly likely cause is a
+ * shallow clone, so the failure detail says so instead of surfacing a raw git
+ * error.
+ *
+ * @param {string} label the RESULT label to report under
+ * @param {string} sha
+ * @param {string} destRoot
+ * @returns {{ schemaPath: string, migrationNames: string[] }|null}
+ */
+function materializeOrFail(label, sha, destRoot) {
+  try {
+    const set = materializeMigrationSet(sha, destRoot);
+    check(label, true);
+    return set;
+  } catch (err) {
+    check(
+      label,
+      false,
+      `cannot materialise ${sha.slice(0, 12)} — fetch full history (fetch-depth: 0): ${String(err?.message ?? err)}`,
+    );
+    return null;
+  }
+}
+
 async function main() {
   const work = mkdtempSync(join(tmpdir(), "hermes-p997-mig-"));
   const baselineRoot = join(work, "baseline");
   const targetRoot = join(work, "target");
 
   try {
-    const baseline = materializeMigrationSet(BASELINE_SHA, baselineRoot);
-    const target = materializeMigrationSet(TARGET_REF, targetRoot);
+    // The historical contract is only meaningful if BOTH ends are immutable
+    // commits. A ref that is not a pinned 40-hex SHA (`HEAD`, a branch name, an
+    // environment override) makes this evidence a property of the checkout.
+    check(
+      "REHEARSAL_TARGET_REF_PINNED",
+      TARGET_REF === TARGET_SHA && /^[0-9a-f]{40}$/.test(TARGET_REF),
+      `the historical target must be the pinned ${TARGET_SHA.slice(0, 12)}, got "${TARGET_REF}"`,
+    );
+
+    const baseline = materializeOrFail("REHEARSAL_BASELINE_REACHABLE", BASELINE_SHA, baselineRoot);
+    if (baseline === null) return;
+    const target = materializeOrFail("REHEARSAL_TARGET_REACHABLE", TARGET_REF, targetRoot);
+    if (target === null) return;
 
     check(
       "REHEARSAL_BASELINE_SET",
@@ -141,7 +217,7 @@ async function main() {
     check(
       "REHEARSAL_TARGET_SET",
       target.migrationNames.length === EXPECTED_TARGET_COUNT,
-      `expected ${EXPECTED_TARGET_COUNT} target migrations, materialised ${target.migrationNames.length}`,
+      `expected ${EXPECTED_TARGET_COUNT} target migrations at ${TARGET_REF.slice(0, 12)}, materialised ${target.migrationNames.length}`,
     );
 
     await withDisposablePg("p997mig", async (ctx) => {
@@ -243,9 +319,23 @@ async function main() {
   } catch (err) {
     check("REHEARSAL_COMPLETED", false, String(err?.message ?? err));
   } finally {
-    rmSync(work, { recursive: true, force: true });
+    // Reached on EVERY path — normal completion, a thrown error, and the early
+    // returns above when a pinned commit could not be materialised — so the
+    // temp tree is always removed and the verdict is always printed exactly
+    // once. An unreachable baseline or target therefore exits non-zero rather
+    // than silently reporting nothing.
+    try {
+      rmSync(work, { recursive: true, force: true });
+    } catch {
+      // A temp directory that will not delete (Windows keeps handles open a
+      // moment longer) is housekeeping, not a verdict. It must never be able
+      // to swallow the RESULT lines below.
+    }
+    finish();
   }
+}
 
+function finish() {
   console.log(`RESULT phase997_migration_rehearsal=${failed ? "FAIL" : "PASS"}`);
   console.log("RESULT phase997_migration_rehearsal_production_contacted=False");
   console.log("RESULT phase997_migration_rehearsal_data=SYNTHETIC_ONLY");
@@ -265,7 +355,15 @@ function parseRowCounts(raw) {
   return out;
 }
 
-main().catch((err) => {
-  console.error(`RESULT phase997_migration_rehearsal=FAIL (${String(err?.message ?? err).slice(0, 200)})`);
-  process.exit(1);
-});
+// Only run when this file is the process entry point: the contract tests import
+// `TARGET_REF` and `materializeMigrationSet` to prove the historical target is
+// pinned, and importing must not start a Docker container (or exit the runner).
+const invokedDirectly =
+  typeof process.argv[1] === "string" && pathToFileURL(resolve(process.argv[1])).href === import.meta.url;
+
+if (invokedDirectly) {
+  main().catch((err) => {
+    console.error(`RESULT phase997_migration_rehearsal=FAIL (${String(err?.message ?? err).slice(0, 200)})`);
+    process.exit(1);
+  });
+}

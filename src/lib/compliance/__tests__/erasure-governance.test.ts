@@ -12,6 +12,7 @@ import {
 } from "../erasure-lifecycle";
 import {
   ERASURE_TARGET_REGISTRY, ERASURE_TARGET_NAMES, FORBIDDEN_ERASURE_FIELDS, FORBIDDEN_ERASURE_TARGETS,
+  ERASURE_REGISTRY_VERSION,
   getErasureTarget, collectErasureTargets, type ErasurePrisma, type ErasureTargetRecord, type ErasureTargetDefinition,
 } from "../erasure-targets";
 import {
@@ -103,6 +104,10 @@ function selectingDb(store: Record<string, Record<string, unknown>[]>): ErasureP
   return {
     consentRecord: make("consentRecord"), organizationMember: make("organizationMember"),
     legalAcceptance: make("legalAcceptance"), privacyRequest: make("privacyRequest"), user: make("user"),
+    // Phase 102 §8 — the two subject-attributable media tables joined the closed
+    // registry at ERASURE_REGISTRY_VERSION 1.1, so the stub must model them too.
+    mediaSave: make("mediaSave"), mediaWatchProgress: make("mediaWatchProgress"),
+    mediaViewEvent: make("mediaViewEvent"),
   } as ErasurePrisma;
 }
 
@@ -118,6 +123,34 @@ describe("collection excludes raw content + secrets (RAW_SUBJECT_CONTENT_IN_ERAS
     // document excluded field NAMES (e.g. "passwordHash") which are not data.
     const serialisedRecords = JSON.stringify(collected.map((c) => c.records));
     for (const bad of ["SECRET@x.com", "10.0.0.9", "HASH", "FREE-TEXT", "SECRET-NOTE"]) expect(serialisedRecords).not.toContain(bad);
+  });
+
+  it("Phase 102 media targets are registered, subject-scoped, and leak no viewing preference", async () => {
+    const db = selectingDb({
+      mediaSave: [
+        { id: "ms1", userId: "u1", organizationId: "org-A", mediaAssetId: "asset-PRIVATE", createdAt: new Date("2026-02-01") },
+        { id: "ms2", userId: "u2", organizationId: "org-A", mediaAssetId: "asset-OTHER", createdAt: new Date("2026-02-01") },
+      ],
+      mediaWatchProgress: [
+        { id: "mw1", userId: "u1", organizationId: "org-A", mediaAssetId: "asset-PRIVATE", positionSeconds: 42, progressPct: 77, createdAt: new Date("2026-02-01") },
+      ],
+    });
+    const collected = await collectErasureTargets(db, { userId: "u1", candidateId: null, organizationId: "org-A" });
+    const byName = (n: string) => collected.find((c) => c.target.name === n);
+
+    // Registered at all — before Phase 102 these tables were invisible to erasure planning.
+    expect(ERASURE_TARGET_NAMES).toContain("media_saves");
+    expect(ERASURE_TARGET_NAMES).toContain("media_watch_progress");
+    expect(byName("media_saves")?.records.map((r) => r.recordId)).toEqual(["ms1"]);
+    expect(byName("media_watch_progress")?.records.map((r) => r.recordId)).toEqual(["mw1"]);
+
+    // Another subject's row is never swept into this subject's plan.
+    const serialised = JSON.stringify(collected.map((c) => c.records));
+    expect(serialised).not.toContain("ms2");
+    // Evidence is retained by the controller AFTER execution, so it must not preserve
+    // which asset was saved or how far it was watched — that is the very preference
+    // the subject asked to have erased.
+    for (const leak of ["asset-PRIVATE", "asset-OTHER", "77", "42"]) expect(serialised).not.toContain(leak);
   });
 });
 
@@ -302,7 +335,10 @@ describe("execution posture (disabled by default) + preflight + idempotency", ()
   const approved = { plan: buildErasurePlan(planInput({ collected: [{ target: tgt("consent_records"), records: [rec({ recordId: "c1" })] }], policies: [livePolicy("consent", "consent_records")] })) };
   const base = {
     lifecycle: "APPROVED", executionEnabled: true, approvedPlanHash: approved.plan.planHash, approvedPlanVersion: 1,
-    recomputedPlanHash: approved.plan.planHash, recomputedPlanVersion: 1, bindingOk: true, executionIdempotencyKey: "k1", registryVersion: "1.0",
+    // Bound to the live constant, not a literal: a registry change must not be able to
+    // pass this preflight silently, and pinning "1.0" here would have to be hand-edited
+    // (and could be wrongly "fixed") on every future bump.
+    recomputedPlanHash: approved.plan.planHash, recomputedPlanVersion: 1, bindingOk: true, executionIdempotencyKey: "k1", registryVersion: ERASURE_REGISTRY_VERSION,
   } as const;
   it("disabled execution is refused (DESTRUCTIVE_ERASURE_WITH_FLAG_DISABLED=0)", () => {
     expect(runErasurePreflight({ ...base, executionEnabled: false }).code).toBe("ERASURE_EXECUTION_DISABLED");
@@ -312,6 +348,14 @@ describe("execution posture (disabled by default) + preflight + idempotency", ()
     expect(runErasurePreflight({ ...base, approvedPlanVersion: 2 }).code).toBe("ERASURE_PLAN_STALE");
   });
   it("a passing preflight is OK", () => { expect(runErasurePreflight(base).ok).toBe(true); });
+  it("a plan approved under an older registry can no longer execute (Phase 102 §8 bump)", () => {
+    // The whole point of versioning the closed registry: when Phase 102 added
+    // media_saves + media_watch_progress, every plan approved under 1.0 became a
+    // plan that cannot honestly claim to have accounted for those tables. It must
+    // be re-planned and re-approved, not executed.
+    expect(runErasurePreflight({ ...base, registryVersion: "1.0" }).code).toBe("ERASURE_REGISTRY_MISMATCH");
+    expect(ERASURE_REGISTRY_VERSION).not.toBe("1.0");
+  });
   it("repeated idempotency key cannot execute twice (DUPLICATE_ERASURE_ACTION=0)", () => {
     const store = createSyntheticErasureStore();
     const first = applyErasurePlanSynthetic(approved.plan.plan, store, "exec-key-1");

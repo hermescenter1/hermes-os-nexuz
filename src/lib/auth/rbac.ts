@@ -132,6 +132,27 @@ const BILLING_ADMIN          = localePathPattern("dashboard/billing");
 const ORGANIZATION_ADMIN     = localePathPattern("dashboard/organization");
 const API_PLATFORM_ADMIN     = localePathPattern("dashboard/api");
 
+// ── PHASE 102: the public Video Hub ───────────────────────────────────────────
+//
+// /{locale}/videos and /{locale}/videos/[slug] are ANONYMOUS-READABLE by design.
+// They serve only assets the repository has already gated to
+// PUBLISHED + PUBLIC + READY (src/lib/media/db.ts), so there is nothing on them
+// that requires a session — a login wall here would hide public marketing and
+// training content from the visitors it exists for.
+//
+// Being public in this file means exactly one thing: NOT appearing in
+// PROTECTED_PATHS. This constant does not add a rule, it records an intent and
+// makes it testable. `isPublicAnonymousPath` exists so a regression — someone
+// later registering a protected matcher whose segment happens to capture
+// /videos — fails a test instead of silently 302-ing anonymous traffic to
+// /auth/login. The route's own authorization stays where it belongs: in the
+// repository query and in the byte-serving route, neither of which trusts this
+// file.
+//
+// Editorial media surfaces (upload, review, moderation) are NOT under /videos —
+// they live under /dashboard, which is already protected above.
+const VIDEOS_PUBLIC          = localePathPattern("videos");
+
 // ── Middleware guard ──────────────────────────────────────────────────────────
 
 /** Paths that require authentication (locale-aware). */
@@ -163,6 +184,22 @@ export const PROTECTED_PATHS = [
 
 export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PATHS.some((p) => p.test(pathname));
+}
+
+/**
+ * Routes that are PUBLIC by an explicit decision rather than by omission
+ * (PHASE 102). Registering one here asserts nothing about authorization — the
+ * middleware still consults `isProtectedPath` alone — it declares the intent so
+ * that a later protected matcher accidentally capturing the same segment is
+ * caught by `src/app/[locale]/videos/__tests__` instead of in production.
+ */
+export const PUBLIC_ANONYMOUS_PATHS = [
+  VIDEOS_PUBLIC,
+] as const;
+
+/** True when `pathname` is a route Phase 102+ registered as anonymous-readable. */
+export function isPublicAnonymousPath(pathname: string): boolean {
+  return PUBLIC_ANONYMOUS_PATHS.some((p) => p.test(pathname));
 }
 
 export function isAuthorizedForPath(

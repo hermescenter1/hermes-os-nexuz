@@ -95,5 +95,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB not available at build time — vendor profiles omitted from static sitemap
   }
 
+  // PHASE 102 — public media hub (DB-backed, bounded, published-only).
+  //
+  // The predicate lives in `@/lib/media/seo`, which reuses the media repository's
+  // own `mediaVisibilityWhere(PUBLIC_AUDIENCE)` fragment: a DRAFT, SUBMITTED,
+  // REJECTED, ARCHIVED, PRIVATE, ORGANIZATION-visibility, still-validating,
+  // quarantined or editor-`noIndex`ed asset can never reach this list. The read is
+  // capped at MEDIA_SITEMAP_MAX_ASSETS rows, so — unlike the academy branch above —
+  // it cannot become an unbounded scan as the library grows. `lastModified` is the
+  // immutable first-publication instant, never `updatedAt` (which the view counter
+  // moves on every single play).
+  try {
+    const { listPublicMediaSitemapItems, mediaSitemapEntries } = await import("@/lib/media/seo");
+    entries.push(...mediaSitemapEntries(await listPublicMediaSitemapItems()));
+  } catch {
+    // DB not available at build time — media assets omitted from static sitemap
+  }
+
   return entries;
 }

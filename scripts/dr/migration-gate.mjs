@@ -98,9 +98,10 @@ function moreSevere(a, b) {
  * @param {string} opts.migrationsDir path to `prisma/migrations`
  * @param {Record<string,string>} opts.releaseBaseChecksums checksum map of the currently-deployed release
  * @param {Record<string,string>} [opts.targetChecksums] checksum map of the release being evaluated; defaults to scanning `migrationsDir`
+ * @param {(name: string) => string} [opts.readMigrationSql] reads a new migration's SQL for classification; defaults to the working tree. Callers verifying a PINNED commit pass a `git show` reader so the whole evaluation derives from that commit, not from a checkout.
  * @returns {MigrationGateDecision}
  */
-export function evaluateMigrationGate({ migrationsDir, releaseBaseChecksums, targetChecksums }) {
+export function evaluateMigrationGate({ migrationsDir, releaseBaseChecksums, targetChecksums, readMigrationSql }) {
   const target = targetChecksums ?? computeMigrationChecksums(migrationsDir);
   const base = releaseBaseChecksums ?? {};
 
@@ -138,10 +139,11 @@ export function evaluateMigrationGate({ migrationsDir, releaseBaseChecksums, tar
   } else {
     migrationClassification = "ADDITIVE_COMPATIBLE";
     for (const name of newMigrations) {
-      const sqlPath = join(migrationsDir, name, "migration.sql");
       let sql = "";
       try {
-        sql = readFileSync(sqlPath, "utf8");
+        sql = readMigrationSql
+          ? readMigrationSql(name)
+          : readFileSync(join(migrationsDir, name, "migration.sql"), "utf8");
       } catch {
         // Unreadable new migration SQL cannot be proven safe — treat as unknown/breaking.
         migrationClassification = moreSevere(migrationClassification, "BREAKING_OR_UNKNOWN");
