@@ -231,6 +231,106 @@ export function sendInputAudioBufferCommit(
   }
 }
 
+/* ═════════════════════ waiting for the channel to open ═════════════════════ */
+
+/**
+ * How long the panel waits for the data channel to reach `open` after the SDP
+ * exchange.
+ *
+ * `setRemoteDescription` resolving does NOT mean the channel is usable: ICE and
+ * DTLS still have to complete, and `RTCDataChannel.readyState` is `connecting`
+ * until they do. Entering the listening state on the strength of the SDP alone
+ * lets the operator press Stop against a channel that cannot carry the commit —
+ * the commit is refused, and everything they said is lost with no error shown.
+ */
+export const DATA_CHANNEL_OPEN_TIMEOUT_MS = 10_000;
+
+export type DataChannelOpenOutcome = "open" | "closed" | "timeout" | "cancelled";
+
+/** The subset of `RTCDataChannel` this module needs, so a test can stand in. */
+export interface OpenableChannel {
+  readonly readyState: string;
+  addEventListener(type: string, listener: () => void): void;
+  removeEventListener(type: string, listener: () => void): void;
+}
+
+export interface DataChannelOpenWaiter {
+  readonly promise: Promise<DataChannelOpenOutcome>;
+  /** The panel is tearing down for another reason (error, unmount, restart). */
+  cancel(): void;
+}
+
+/**
+ * Resolve once the channel is PROVABLY open — or once it provably never will be.
+ *
+ * `open` is returned only when the real `open` event fired AND `readyState` says
+ * `open` at that moment: the event alone is a claim, the readyState is the
+ * evidence, and a channel that announced itself and then immediately failed must
+ * not be reported as usable.
+ *
+ * Every other ending is a denial: `closed` for a channel that went to
+ * closing/closed/error, `timeout` for one that never said anything, `cancelled`
+ * for a teardown the panel itself started. Listeners are removed and the timer is
+ * cleared on every path, so no waiter outlives the connection it watched.
+ */
+export function awaitDataChannelOpen(
+  channel: OpenableChannel | null | undefined,
+  timeoutMs: number = DATA_CHANNEL_OPEN_TIMEOUT_MS,
+): DataChannelOpenWaiter {
+  let settle: ((outcome: DataChannelOpenOutcome) => void) | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const promise = new Promise<DataChannelOpenOutcome>((resolve) => {
+    settle = resolve;
+  });
+
+  // Mutually recursive by design: `finish` detaches the listeners, the listeners
+  // call `finish`. Neither runs before both are initialised.
+  function finish(outcome: DataChannelOpenOutcome): void {
+    if (settle === null) return;
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    if (channel) {
+      channel.removeEventListener("open", onOpen);
+      channel.removeEventListener("close", onDead);
+      channel.removeEventListener("closing", onDead);
+      channel.removeEventListener("error", onDead);
+    }
+    const resolve = settle;
+    settle = null;
+    resolve(outcome);
+  }
+
+  const onOpen = (): void => finish(channel?.readyState === "open" ? "open" : "closed");
+  const onDead = (): void => finish("closed");
+
+  if (!channel) {
+    finish("closed");
+    return { promise, cancel: () => finish("cancelled") };
+  }
+
+  // Already settled before we could listen: read the state rather than waiting
+  // for an event that has already been and gone.
+  if (channel.readyState === "open") {
+    finish("open");
+    return { promise, cancel: () => finish("cancelled") };
+  }
+  if (channel.readyState !== "connecting") {
+    finish("closed");
+    return { promise, cancel: () => finish("cancelled") };
+  }
+
+  channel.addEventListener("open", onOpen);
+  channel.addEventListener("close", onDead);
+  channel.addEventListener("closing", onDead);
+  channel.addEventListener("error", onDead);
+  timer = setTimeout(() => finish("timeout"), timeoutMs);
+
+  return { promise, cancel: () => finish("cancelled") };
+}
+
 /* ══════════════════════════ the bounded wait ════════════════════════════════ */
 
 /**

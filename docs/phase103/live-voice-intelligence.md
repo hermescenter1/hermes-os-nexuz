@@ -391,6 +391,7 @@ the response shapes this code parses.
 | `src/i18n/__tests__/phase103-live-voice-i18n.test.ts` | Key set derived from the component; three-way parity; real translations. |
 | `src/lib/copilot/voice/__tests__/phase103-voice-transcript.test.ts` | The reducer: commit built and sent, `completed` replaces its deltas, `item_id` correlation, exact type matching, the bounded wait — plus four mutation cases. |
 | `src/lib/copilot/voice/__tests__/phase103-voice-panel-contract.test.ts` | Stop commits before it releases; the panel owns no transcript logic; one switch, one reader; no Start control while the switch is off. |
+| `src/lib/copilot/voice/__tests__/phase103-voice-channel-open.test.ts` | The open handshake: event plus `readyState`, close/error/timeout/cancel, listener and timer cleanup — and the race replayed against a fake channel with and without the wait. |
 
 ---
 
@@ -474,3 +475,35 @@ route is confirmed absent from `.next/prerender-manifest.json`.
 When the switch is off the panel renders its brand, title, lede and a translated
 `disabledNotice` — and no button, no textarea, and no code path that can request
 a session.
+
+### 15.4 `listening` now means the data channel is open
+
+A fourth finding, on the fix above. `await peer.setRemoteDescription(...)`
+resolving means the SDP answer was accepted — it says nothing about ICE or
+DTLS, which complete afterwards, and `RTCDataChannel.readyState` stays
+`connecting` until they do. The panel announced `listening` immediately after
+the SDP exchange, which enabled the Stop control against a channel that could
+not carry the commit: `sendInputAudioBufferCommit` returned `false`, the handler
+fell through to teardown, and the operator's utterance was discarded **with no
+error on screen** — the worst shape of the bug 15.1 had just fixed.
+
+`awaitDataChannelOpen()` is a bounded, cancellable waiter registered **before**
+the SDP exchange, because the channel can reach `open` while that request is
+still in flight. It resolves:
+
+| Outcome | When | Panel response |
+|---|---|---|
+| `open` | the real `open` event fired **and** `readyState === "open"` at that moment | enter `listening` |
+| `closed` | `close`, `closing` or `error`; or the channel was already dead | mic tracks stopped, peer and channel released, `PROVIDER_UNAVAILABLE` |
+| `timeout` | nothing at all within 10 s | same |
+| `cancelled` | the panel itself tore the attempt down (unmount, restart, another error) | yield — the tearer-down owns the state |
+
+The event alone is a claim; the `readyState` re-read is the evidence, and the
+panel checks it a second time before `setState("listening")`. Listeners are
+removed and the timer cleared on every path, so no waiter outlives its
+connection.
+
+Stop is unchanged and still runs in the order 15.1 set: microphone tracks stop
+first and unconditionally, then the commit, then the bounded wait for
+`completed`, then teardown. The Stop control is gated on `listening`, which now
+provably means channel-open.

@@ -30,6 +30,14 @@
  * is a privacy failure, so the teardown is written once and called from every
  * exit path rather than being duplicated per handler.
  *
+ * `listening` MEANS THE CHANNEL IS OPEN
+ * The panel stays in `connecting` until the data channel fires a real `open`
+ * event AND reports `readyState === "open"`. A resolved SDP exchange does not
+ * prove either: ICE and DTLS finish afterwards. Entering `listening` early would
+ * enable Stop against a `connecting` channel, the commit would be refused, and
+ * the operator's words would vanish with no error on screen. A channel that
+ * closes, errors or never opens fails closed with `PROVIDER_UNAVAILABLE`.
+ *
  * STOPPING IS TWO STEPS, NOT ONE
  * The session is created with `turn_detection: null`: the provider never decides
  * on its own that a turn ended, so it transcribes nothing until the client
@@ -54,12 +62,15 @@ import { useLocale, useTranslations } from "next-intl";
 import { useVoiceAvailability } from "@/components/copilot/voice-availability";
 import {
   applyTranscriptEvent,
+  awaitDataChannelOpen,
   createFinalizeWaiter,
+  DATA_CHANNEL_OPEN_TIMEOUT_MS,
   EMPTY_TRANSCRIPT_STATE,
   isTranscriptComplete,
   renderTranscript,
   sendInputAudioBufferCommit,
   TRANSCRIPTION_FINALIZE_TIMEOUT_MS,
+  type DataChannelOpenWaiter,
   type FinalizeWaiter,
   type TranscriptState,
 } from "@/lib/copilot/voice/transcript";
@@ -164,6 +175,7 @@ export function LiveVoicePanel() {
   const transcriptStateRef = useRef<TranscriptState>(EMPTY_TRANSCRIPT_STATE);
   const transcriptTextRef = useRef("");
   const finalizeRef = useRef<FinalizeWaiter | null>(null);
+  const channelOpenRef = useRef<DataChannelOpenWaiter | null>(null);
 
   /** Set the transcript and keep the ref mirror honest. */
   const setTranscriptText = useCallback((text: string) => {
@@ -195,6 +207,13 @@ export function LiveVoicePanel() {
    * unconditionally.
    */
   const releaseCapture = useCallback(() => {
+    const opening = channelOpenRef.current;
+    if (opening) {
+      // A connection attempt still waiting on the data channel must not outlive
+      // the peer it was watching.
+      channelOpenRef.current = null;
+      opening.cancel();
+    }
     const waiter = finalizeRef.current;
     if (waiter) {
       // Whoever is awaiting finalisation must not be left hanging on a transport
@@ -304,6 +323,13 @@ export function LiveVoicePanel() {
       const channel = peer.createDataChannel("oai-events");
       channelRef.current = channel;
       transcriptStateRef.current = EMPTY_TRANSCRIPT_STATE;
+
+      // Registered BEFORE the SDP exchange, because the channel can reach `open`
+      // while that request is still in flight and a listener attached afterwards
+      // would miss the event.
+      const openWaiter = awaitDataChannelOpen(channel, DATA_CHANNEL_OPEN_TIMEOUT_MS);
+      channelOpenRef.current = openWaiter;
+
       channel.onmessage = (event) => {
         const next = applyTranscriptEvent(transcriptStateRef.current, event.data);
         // Same reference ⇒ the event said nothing this panel understands.
@@ -331,11 +357,33 @@ export function LiveVoicePanel() {
         return;
       }
       await peer.setRemoteDescription({ type: "answer", sdp: await answerSdp.text() });
+
+      // A resolved SDP exchange is NOT an open channel: ICE and DTLS still have
+      // to finish, and until they do `readyState` is `connecting`. Announcing
+      // `listening` here would enable Stop against a channel that cannot carry
+      // the commit — the operator's words would be lost with no error shown. So
+      // the panel waits for the real `open` event and re-reads `readyState` as
+      // the evidence behind it.
+      const opened = await openWaiter.promise;
+      if (channelOpenRef.current === openWaiter) channelOpenRef.current = null;
+
+      // Another path (unmount, restart, an error elsewhere) already tore this
+      // attempt down and owns the resulting state.
+      if (opened === "cancelled") return;
+
+      if (opened !== "open" || channel.readyState !== "open") {
+        // Fail closed: the microphone dies first, then the transport, then the
+        // operator is told. A half-open connection is not a listening session.
+        stopMicrophoneTracks();
+        fail("PROVIDER_UNAVAILABLE");
+        return;
+      }
+
       setState("listening");
     } catch {
       fail("PROVIDER_UNAVAILABLE");
     }
-  }, [fail, locale, releaseAudio, releaseCapture, setTranscriptText]);
+  }, [fail, locale, releaseAudio, releaseCapture, setTranscriptText, stopMicrophoneTracks]);
 
   /** Tear the transport down and settle on whatever the transcript now holds. */
   const finishCapture = useCallback(() => {

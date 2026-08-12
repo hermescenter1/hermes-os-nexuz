@@ -133,6 +133,88 @@ describe("Stop commits the input audio buffer before releasing the transport", (
   });
 });
 
+/* ═══════════ 1b — `listening` is only announced on a proven-open channel ════ */
+
+describe("the panel waits for the data channel to open before it says listening", () => {
+  const panel = code(PANEL);
+
+  const start = (): string =>
+    panel.slice(
+      at(panel, "const startMicrophone", "start"),
+      at(panel, "const finishCapture", "start-end"),
+    );
+
+  it("registers the open waiter BEFORE the SDP exchange", () => {
+    const body = start();
+    const register = at(body, "awaitDataChannelOpen(channel, DATA_CHANNEL_OPEN_TIMEOUT_MS)", "start");
+    const sdpPost = at(body, "PROVIDER_CALLS_URL", "start");
+    // A listener attached after the exchange could miss an `open` that fired
+    // while the request was in flight.
+    expect(register).toBeLessThan(sdpPost);
+  });
+
+  it("awaits that waiter AFTER setRemoteDescription and BEFORE listening", () => {
+    const body = start();
+    const remote = at(body, "setRemoteDescription", "start");
+    const awaited = at(body, "await openWaiter.promise", "start");
+    const listening = at(body, 'setState("listening")', "start");
+
+    expect(remote).toBeLessThan(awaited);
+    expect(awaited).toBeLessThan(listening);
+  });
+
+  it("MUTANT: there is EXACTLY ONE setState(\"listening\"), and none before the await", () => {
+    // The mutant is moving this line up next to setRemoteDescription — which is
+    // precisely what the pre-fix panel did.
+    const occurrences = panel.match(/setState\("listening"\)/g) ?? [];
+    expect(occurrences).toHaveLength(1);
+
+    const body = start();
+    const beforeAwait = body.slice(0, at(body, "await openWaiter.promise", "start"));
+    expect(beforeAwait).not.toContain('setState("listening")');
+  });
+
+  it("proves readyState as well as the event before entering listening", () => {
+    const body = start();
+    expect(body).toContain('opened !== "open" || channel.readyState !== "open"');
+    // And the waiter itself only calls an open event `open` when the state agrees.
+    expect(code(TRANSCRIPT)).toContain('finish(channel?.readyState === "open" ? "open" : "closed")');
+  });
+
+  it("fails closed on anything that is not an open channel", () => {
+    const body = start();
+    const guard = at(body, 'opened !== "open"', "start");
+    const branch = body.slice(guard, at(body, 'setState("listening")', "start"));
+    // Microphone first, then the transport, then the operator is told.
+    const mic = at(branch, "stopMicrophoneTracks()", "start");
+    const failed = at(branch, 'fail("PROVIDER_UNAVAILABLE")', "start");
+    expect(mic).toBeLessThan(failed);
+    // `fail` is the shared handler, and it releases the peer and the channel.
+    expect(panel.slice(at(panel, "const fail =", "fail"), at(panel, "const startMicrophone", "fail"))).toContain(
+      "releaseCapture()",
+    );
+  });
+
+  it("a cancelled attempt yields to whoever tore it down", () => {
+    const body = start();
+    expect(body).toContain('if (opened === "cancelled") return;');
+    // And teardown really does cancel it, rather than orphaning the waiter.
+    const release = panel.slice(
+      at(panel, "const releaseCapture", "release"),
+      at(panel, "const releaseAudio", "release-end"),
+    );
+    expect(release).toContain("opening.cancel()");
+  });
+
+  it("Stop is enabled by that state and nothing looser", () => {
+    // `listening` is now provably channel-open, so this is the whole gate.
+    expect(panel).toContain('const listening = state === "listening"');
+    expect(panel).toContain("disabled={!listening}");
+    // The connecting window is busy, so Start cannot be pressed twice either.
+    expect(panel).toContain('state === "connecting"');
+  });
+});
+
 /* ═══════════ 2 — the panel delegates all transcript reduction ═══════════════ */
 
 describe("the panel owns no transcript logic of its own", () => {
