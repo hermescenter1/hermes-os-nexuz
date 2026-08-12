@@ -4,61 +4,70 @@
   "fingerprint": {
     "plugin": "Hermes Phase 104 Visual System",
     "pluginId": "com.hermesnovin.phase104-visual-system",
-    "headSha": "40da2b13056dfbb99cddb3f5138073138b677ef4",
-    "headShaShort": "40da2b13056d",
+    "headSha": "224955de691c64b8c3bacbb0239312010f2c1854",
+    "headShaShort": "224955de691c",
     "branch": "agent/phase104-hermes-visual-figma-system",
-    "dirty": true,
-    "sourcesSha": "fb1165112ad2cfc2251be3f4f450a152e2c01e9f0fb436da922995fa3e71e924",
-    "sourcesShaShort": "fb1165112ad2"
+    "dirty": false,
+    "sourcesSha": "91a83625b27ca68e259691e3b62658963ac50e441408e784900606d9817b1ef3",
+    "sourcesShaShort": "91a83625b27c"
   },
   "manifestPath": "manifest.json",
   "sha256": {
     "manifest": "f8de0d64035b9851ac1de1842b38a62a48019eb2417c942c42573773d5fb3c2d",
-    "code": "c041754e994c77e2eb418a9de29317f52cce47e4bd5145decc9c85b84e1b983c",
-    "ui": "d5a66873ca4787554707a7da6a598ad83a4f81e8cd7360547bfc23d2f17faf70"
+    "code": "7cd516ba0ae53dfbe100386e4c0c2d048492f71dd39579b7204b857d92c429d3",
+    "ui": "d57669d53ef6e8998dbe12bc1587a1e1c0ddf8d6362019dfa5f9e7264c53cbbe"
   },
   "builtFrom": [
     {
-      "id": "contrast",
+      "file": "build.mjs",
+      "sha256": "9d6daf10d978b29ab93d07af684d53edfdf5386641c715910418edec4afb20e1"
+    },
+    {
+      "file": "manifest.json",
+      "sha256": "f8de0d64035b9851ac1de1842b38a62a48019eb2417c942c42573773d5fb3c2d"
+    },
+    {
+      "file": "scripts/lib/code-scan.mjs",
+      "sha256": "5bcab481d4559c9d3c1bbc7b16943464a8020ff06ee94c1dfa801312acd03e0d"
+    },
+    {
+      "file": "src/ui.html",
+      "sha256": "8f1f8cbd27d0c0028e860c5e9da5922c3348d583c0e8607c54f8b71f8fc59047"
+    },
+    {
       "file": "src/lib/contrast.js",
       "sha256": "5f1f607752db1451ba5614b5d4cba41f6611900497612f56497aa362998aaa87"
     },
     {
-      "id": "contract",
       "file": "src/lib/contract.js",
       "sha256": "e27514229907255b4f3dca0ed53d2481f4717649e9967c0a62adcaa46e69dee4"
     },
     {
-      "id": "dna-tokens",
       "file": "src/lib/dna-tokens.js",
       "sha256": "d08b4e11de0bb2d8bca4ed1afac5efe3fa438e1d608191213a797f0884dc5e16"
     },
     {
-      "id": "dna-structure",
       "file": "src/lib/dna-structure.js",
       "sha256": "cfc212a8f7334a323846e6f64458f0f19a6074d8b1031c383187c692dc7dd48f"
     },
     {
-      "id": "dna-components",
       "file": "src/lib/dna-components.js",
       "sha256": "83da605fef66a653f21ed6b7cd6c91092847d591ce5a1a7fea6cdee7eff98713"
     },
     {
-      "id": "dna-spec",
       "file": "src/lib/dna-spec.js",
       "sha256": "50d5648c22d5a1be782ec61169f97628b0ca9e4147fb24a3ca9b18e5ff89a2de"
     },
     {
-      "id": "dna-exec",
       "file": "src/lib/dna-exec.js",
       "sha256": "977c42a6be025a43732ea9522464c524b3f6762d7dfbd0e99a6cf310f5fc199e"
     },
     {
-      "id": "main",
       "file": "src/main.js",
       "sha256": "c79896b367f42c599efa5f6ee91bef6e1d3de536b0a66c41945e2e06283d979b"
     }
   ],
+  "sourceCommitSemantics": "Latest commit touching a build input; generated dist-only commits do not change it.",
   "counts": {
     "pages": 3,
     "sections": 23,

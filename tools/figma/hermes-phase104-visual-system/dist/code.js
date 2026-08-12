@@ -1,6 +1,6 @@
 /* Hermes Phase 104 Visual System — generated bundle.
    Do not edit dist/ by hand; edit src/ and run `npm run build`.
-   HEAD 40da2b13056dfbb99cddb3f5138073138b677ef4 (dirty)  sources fb1165112ad2cfc2251be3f4f450a152e2c01e9f0fb436da922995fa3e71e924 */
+   HEAD 224955de691c64b8c3bacbb0239312010f2c1854  sources 91a83625b27ca68e259691e3b62658963ac50e441408e784900606d9817b1ef3 */
 (function () {
   "use strict";
   var __modules = {}, __cache = {};
@@ -14,12 +14,12 @@
     module.exports = {
   "plugin": "Hermes Phase 104 Visual System",
   "pluginId": "com.hermesnovin.phase104-visual-system",
-  "headSha": "40da2b13056dfbb99cddb3f5138073138b677ef4",
-  "headShaShort": "40da2b13056d",
+  "headSha": "224955de691c64b8c3bacbb0239312010f2c1854",
+  "headShaShort": "224955de691c",
   "branch": "agent/phase104-hermes-visual-figma-system",
-  "dirty": true,
-  "sourcesSha": "fb1165112ad2cfc2251be3f4f450a152e2c01e9f0fb436da922995fa3e71e924",
-  "sourcesShaShort": "fb1165112ad2",
+  "dirty": false,
+  "sourcesSha": "91a83625b27ca68e259691e3b62658963ac50e441408e784900606d9817b1ef3",
+  "sourcesShaShort": "91a83625b27c",
   "buildCounts": {
     "pages": 3,
     "sections": 23,
