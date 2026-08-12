@@ -129,6 +129,17 @@ test('verify builds before testing the generated bundle', () => {
   assert.equal(pkg.scripts.verify, 'npm run audit && npm run build && npm run test')
 })
 
+test('fingerprint follows executable inputs and ignores generated dist commits', () => {
+  const build = readFileSync(new URL('../build.mjs', import.meta.url), 'utf8')
+  assert.match(build, /const BUILD_INPUT_FILES = \[/)
+  for (const input of ['build.mjs', 'manifest.json', 'scripts/lib/code-scan.mjs', 'src/ui.html']) {
+    assert.ok(build.includes("'" + input + "'"), input + ' must contribute to source identity')
+  }
+  assert.match(build, /git\(\['log', '-1', '--format=%H', '--', \.\.\.BUILD_INPUT_FILES\]/)
+  assert.match(build, /git\(\['status', '--porcelain', '--untracked-files=all', '--', \.\.\.BUILD_INPUT_FILES\]/)
+  assert.equal(build.includes("status --porcelain --untracked-files=all -- .'"), false)
+})
+
 test('component replacement builds and tags the new set before removing the previous set', () => {
   const source = readFileSync(new URL('../src/lib/dna-exec.js', import.meta.url), 'utf8')
   const buildAt = source.indexOf('await buildComponentSet(cs, fonts.resolved)')

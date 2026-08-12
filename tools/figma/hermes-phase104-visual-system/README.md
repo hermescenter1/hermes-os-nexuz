@@ -40,8 +40,11 @@ Two consequences are baked into the design:
 
 ## Running it
 
-1. From a clean commit, run `npm run verify` — audit + build + tests. A dirty or
-   unknown build is rejected again at runtime.
+1. From a clean source commit, run `npm run verify` — audit + build + tests. A
+   dirty or unknown executable input is rejected again at runtime. The fingerprint
+   pins the latest commit that touched a build input, so a later `dist/`-only
+   packaging commit rebuilds byte-for-byte without the impossible task of embedding
+   its own SHA.
 2. Figma Desktop → **Plugins → Development → Import plugin from manifest…**
 3. Select `tools/figma/hermes-phase104-visual-system/manifest.json`.
 4. Open the target file, run the plugin.
@@ -147,7 +150,7 @@ npm run verify
   64 checks, 0 failures. Text ≥ 4.5:1 (SC 1.4.3), indicators ≥ 3:1 (SC 1.4.11),
   measured against the **lightest** canonical surface `#152A36`, with translucent
   Glass tiers composited first so the ratio is the one the user actually sees.
-- `npm run test` — 55 policy, mutation and runtime-contract tests asserting the
+- `npm run test` — 56 policy, mutation and runtime-contract tests asserting the
   design *rules* and executor safety: `UNKNOWN` can never
   collapse into `HEALTHY`, no state depends on colour alone, an AI hypothesis never
   carries a verified look, the shipped glass lift ladder and `scale(1.012)` pin are

@@ -18,7 +18,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { findInExecutableCode, checkSharedPluginDataCalls } from './scripts/lib/code-scan.mjs'
 
@@ -36,6 +36,17 @@ const MODULES = [
   ['dna-spec', 'lib/dna-spec.js'],
   ['dna-exec', 'lib/dna-exec.js'],
   ['main', 'main.js'],
+]
+
+// These are every file whose bytes can affect the packaged plugin or the gates
+// that decide whether packaging is allowed. Generated dist/ files are excluded:
+// a packaging-only commit must rebuild to the exact same bytes and fingerprint.
+const BUILD_INPUT_FILES = [
+  'build.mjs',
+  'manifest.json',
+  'scripts/lib/code-scan.mjs',
+  'src/ui.html',
+  ...MODULES.map(([, rel]) => 'src/' + rel),
 ]
 
 const sha256 = (s) => createHash('sha256').update(s).digest('hex')
@@ -66,18 +77,20 @@ function rewriteRequires(body) {
   return body.replace(/require\(\s*['"](?:\.{1,2}\/)+(?:lib\/)?([\w-]+)(?:\.js)?['"]\s*\)/g, "require('$1')")
 }
 
-function git(cmd, fallback) {
-  try { return execSync('git ' + cmd, { cwd: __dirname, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() }
+function git(args, fallback) {
+  try { return execFileSync('git', args, { cwd: __dirname, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() }
   catch (e) { return fallback }
 }
 
-function buildFingerprint(sources) {
-  const headSha = git('rev-parse HEAD', 'UNKNOWN')
-  const branch = git('rev-parse --abbrev-ref HEAD', 'UNKNOWN')
-  // Are THIS PLUGIN's files dirty or untracked relative to HEAD?
-  const status = git('status --porcelain --untracked-files=all -- .', '')
+function buildFingerprint(inputs) {
+  // A generated-dist commit cannot contain its own SHA. Pin the latest commit
+  // that touched an actual build input instead, so a packaging-only commit is
+  // byte-for-byte reproducible and still identifies the exact executable source.
+  const headSha = git(['log', '-1', '--format=%H', '--', ...BUILD_INPUT_FILES], 'UNKNOWN')
+  const branch = git(['rev-parse', '--abbrev-ref', 'HEAD'], 'UNKNOWN')
+  const status = git(['status', '--porcelain', '--untracked-files=all', '--', ...BUILD_INPUT_FILES], '')
   const dirty = status.length > 0
-  const sourcesSha = sha256(sources.map((s) => s.id + ':' + sha256(s.body)).join('\n'))
+  const sourcesSha = sha256(inputs.map((input) => input.file + ':' + sha256(input.body)).join('\n'))
   return {
     plugin: 'Hermes Phase 104 Visual System',
     pluginId: 'com.hermesnovin.phase104-visual-system',
@@ -124,6 +137,7 @@ function main() {
   mkdirSync(DIST, { recursive: true })
 
   const sources = MODULES.map(([id, rel]) => ({ id, rel, body: readFileSync(join(SRC, rel), 'utf8') }))
+  const inputs = BUILD_INPUT_FILES.map((file) => ({ file, body: readFileSync(join(__dirname, file), 'utf8') }))
 
   // ── GATE 1: manifest identity ────────────────────────────────────────────
   const { PLUGIN_IDENTITY, assertContract } = require('./src/lib/contract.js')
@@ -147,7 +161,7 @@ function main() {
   assertExecutableSafety(sources)
 
   // ── GATE 3: fingerprint ──────────────────────────────────────────────────
-  const fingerprint = buildFingerprint(sources)
+  const fingerprint = buildFingerprint(inputs)
   const code = bundle(sources, fingerprint, spec.counts)
   writeFileSync(join(DIST, 'code.js'), code, 'utf8')
 
@@ -176,7 +190,8 @@ function main() {
     fingerprint,
     manifestPath: 'manifest.json',
     sha256: { manifest: manifestSha, code: bundleSha, ui: uiSha },
-    builtFrom: sources.map((s) => ({ id: s.id, file: 'src/' + s.rel, sha256: sha256(s.body) })),
+    builtFrom: inputs.map((input) => ({ file: input.file, sha256: sha256(input.body) })),
+    sourceCommitSemantics: 'Latest commit touching a build input; generated dist-only commits do not change it.',
     counts: spec.counts,
     contract: 'PASS',
     starterConstraints: {
