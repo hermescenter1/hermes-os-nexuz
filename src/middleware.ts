@@ -50,6 +50,28 @@ const ENAMAD_IMG_DOMAIN  = " https://trustseal.enamad.ir";
  * relaxed. Deliberately narrow: exact host, https only, no wildcard.
  */
 const SAASHUB_IMG_DOMAIN = " https://cdn-b.saashub.com";
+/**
+ * PHASE 103 — Hermes Live Voice Intelligence (Industrial Copilot voice panel).
+ *
+ * The transcription leg is a WebRTC connection the BROWSER opens directly to the
+ * provider using a short-lived, transcription-only credential the server mints.
+ * `connect-src 'self'` blocks both the SDP exchange and the media connection, so
+ * the panel cannot work without this entry.
+ *
+ * GATED ON THE SAME KILL SWITCH AS THE FEATURE ITSELF. With
+ * HERMES_EXTERNAL_AI_ENABLED unset — the default, and the state this phase ships
+ * in — the production Content-Security-Policy is byte-for-byte what it was
+ * before Phase 103. Turning the feature on is one deliberate decision that moves
+ * the API surface and the CSP together; there is no window in which the policy
+ * is relaxed for a capability that is switched off.
+ *
+ * Deliberately narrow: exact host, https only, no wildcard, and connect-src
+ * ONLY. The provider needs no script, frame, style or image access here.
+ */
+const VOICE_AI_ENABLED =
+  ["1", "true", "on", "yes"].includes((process.env.HERMES_EXTERNAL_AI_ENABLED ?? "").trim().toLowerCase());
+const VOICE_CONNECT_DOMAINS = VOICE_AI_ENABLED ? " https://api.openai.com" : "";
+
 const PROVENEXPERT_SCRIPT_DOMAIN = " https://s.provenexpert.net";
 const PROVENEXPERT_CONNECT_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com https://d.provenexpert.net";
 const PROVENEXPERT_IMG_DOMAINS = " https://s.provenexpert.net https://www.provenexpert.com";
@@ -66,7 +88,7 @@ function buildCSP(nonce: string): string {
     // WOFF2 fonts as data: URLs inside its stylesheet.
     "font-src 'self' data:",
     // ws: is needed for webpack HMR WebSocket in development
-    `connect-src 'self'${GA_CONNECT_DOMAINS}${PROVENEXPERT_CONNECT_DOMAINS}${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
+    `connect-src 'self'${GA_CONNECT_DOMAINS}${PROVENEXPERT_CONNECT_DOMAINS}${VOICE_CONNECT_DOMAINS}${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
     `frame-src 'self'${PROVENEXPERT_FRAME_DOMAINS}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",

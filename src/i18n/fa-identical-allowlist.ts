@@ -72,6 +72,9 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
   "publicSite.trustStrip.protocols": "protocol-or-standard",
   "adminOperations.seo.twitterCards": "brand-or-product",
   "authExperience.brandName": "brand-or-product",
+  // PHASE 103 — the product name of the voice panel. Everything else in
+  // copilot.liveVoice.* is genuinely Persian; a product name is not translated.
+  "copilot.liveVoice.brand": "brand-or-product",
   "meta.pages.seo.ogTags": "brand-or-product",
   "landing.pricing.paymentMastercard": "vendor-or-thirdparty",
   "landing.pricing.paymentStripe": "vendor-or-thirdparty",
@@ -99,7 +102,8 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
 /** Audit summary (kept in sync by the companion test). */
 export const FA_IDENTICAL_COUNTS: Record<FaIdenticalCategory, number> = {
   "protocol-or-standard": 33,
-  "brand-or-product": 3,
+  // Phase 103: +1 — copilot.liveVoice.brand ("Hermes Live Voice Intelligence").
+  "brand-or-product": 4,
   "vendor-or-thirdparty": 3,
   "contact-url-or-propernoun": 11,
   "non-linguistic": 7

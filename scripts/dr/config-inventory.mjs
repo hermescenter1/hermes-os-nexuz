@@ -78,6 +78,15 @@ export const ENV_INVENTORY = [
   env("HERMES_BACKUP_KEY_ID", { sourceClass: "OWNER_CONFIGURATION", required: "conditional", recoverySource: OWNER, ownerRole: "Database recovery owner" }),
   env("BACKUP_MIN_VERIFIED_COPIES", { sourceClass: "REPOSITORY_MANAGED", required: "optional", recoverySource: REPO, ownerRole: "Database recovery owner" }),
   env("HERMES_OFFHOST_BACKUP_DEST", { sourceClass: "OWNER_CONFIGURATION", required: "optional", recoverySource: OWNER, ownerRole: "Platform/SRE" }),
+  // ── Phase 103 additions (Live Voice Intelligence, disabled by default) ──────
+  // The kill switch is an owner decision, not a deployment detail: turning it on
+  // is what permits tenant speech to reach an external provider at all.
+  env("HERMES_EXTERNAL_AI_ENABLED", { sourceClass: "OWNER_CONFIGURATION", required: "optional", recoverySource: OWNER, ownerRole: "Application/release owner" }),
+  // Signs the speech grant and derives the irreversible external user
+  // identifier. Losing it is not a data-loss event: a new random value simply
+  // invalidates in-flight grants (60 s) and re-anonymises the provider-side
+  // identifiers, so recovery is "generate a new one", never "restore the old".
+  env("HERMES_VOICE_SIGNING_SECRET", { secret: true, sourceClass: "SECRET_EXTERNAL", required: "conditional", recoverySource: SECRET_STORE, ownerRole: "Application/release owner" }),
 ];
 
 export const CONFIG_SURFACES = [

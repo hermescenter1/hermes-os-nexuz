@@ -385,7 +385,18 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            from all three catalogs rather than pinned; mediahub-contract
     //            .test.ts now asserts the orphan set is EMPTY instead of pinning
     //            its size. mediaHub 563 -> 162. -> 5854
-    expect(allEn.length).toBe(5854);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav
+    // Phase 103: +38 copilot.liveVoice leaves (the Hermes Live Voice Intelligence
+    //            panel: 8 machine states, 5 controls, the transcript surface, the
+    //            three-part AI/retention/determinism disclosure and the 12
+    //            renderable error codes). Nested INSIDE the existing `copilot`
+    //            namespace rather than opening a new top-level one, because the
+    //            panel is part of the Industrial Copilot surface — so
+    //            de-catalog's TRANSLATED_NS needs no new entry. Genuinely German
+    //            in every leaf except the product name `liveVoice.brand`, which
+    //            is identical by design and allowlisted in BOTH
+    //            de-identical-allowlist.ts and fa-identical-allowlist.ts.
+    //            -> 5892
+    expect(allEn.length).toBe(5892);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +38 liveVoice
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -399,14 +410,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 5854 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 5892 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(5854);
+    ).toBe(5892);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

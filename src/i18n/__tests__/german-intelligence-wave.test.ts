@@ -21,8 +21,19 @@ const TRANSLATED = [
   "predictive", "knowledgeStudio", "industrialBrainReport",
 ] as const;
 
+/**
+ * PHASE 103 amendment: `copilot` grew 57 → 95.
+ *
+ * The Hermes Live Voice Intelligence panel adds 38 leaves under
+ * `copilot.liveVoice` — 8 machine states, 5 controls, the transcript surface,
+ * the three-part AI/retention/determinism disclosure and 12 renderable error
+ * codes. They live INSIDE this namespace rather than in a new top-level one
+ * because the panel is part of the Industrial Copilot surface, so this wave's
+ * total moves 489 → 527 with it. Every new leaf is genuinely German except the
+ * product name, which is listed in IDENTICAL_BY_DESIGN below.
+ */
 const LEAF_COUNTS: Record<string, number> = {
-  brain: 118, copilot: 57, ke: 79, knowledgeGraph: 63,
+  brain: 118, copilot: 95, ke: 79, knowledgeGraph: 63,
   predictive: 111, knowledgeStudio: 52, industrialBrainReport: 9,
   knowledge: 480,
 };
@@ -35,6 +46,7 @@ const IDENTICAL_BY_DESIGN = new Set<string>([
   "brain.vendors.phoenix", "brain.vendors.delta", "brain.vendors.mitsubishi",
   "brain.vendors.omron",
   "copilot.eyebrow", "copilot.title",     // product names
+  "copilot.liveVoice.brand",              // Hermes Live Voice Intelligence (product)
   "ke.evidence.types.article",            // "Artikel" — coincidentally close, kept explicit
   "knowledgeGraph.nodeIdPlaceholder", "knowledgeGraph.assetIdPlaceholder",
   "knowledgeGraph.failureModeIdPlaceholder", "knowledgeGraph.procedureIdPlaceholder",
@@ -66,7 +78,7 @@ describe("87L.6D — exact wave arithmetic", () => {
       }
       total += LEAF_COUNTS[ns];
     }
-    expect(total, "translated this wave").toBe(489);
+    expect(total, "translated this wave").toBe(527);
   });
 
   it("reconciles: translated + intentional-identical = every leaf, carryover = 0", () => {
@@ -82,7 +94,7 @@ describe("87L.6D — exact wave arithmetic", () => {
       }
     }
     expect(unapproved, "unapproved English carryover").toEqual([]);
-    expect(translated + identical).toBe(489);
+    expect(translated + identical).toBe(527);
     expect(translated).toBeGreaterThan(450);
   });
 

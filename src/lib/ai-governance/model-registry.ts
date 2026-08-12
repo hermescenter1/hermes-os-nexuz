@@ -97,6 +97,69 @@ export const MODEL_REGISTRY: readonly ModelRegistryEntry[] = [
     policyVersion: "phase95.1",
   },
   {
+    // PHASE 103 — Hermes Live Voice Intelligence, transcription leg.
+    //
+    // This entry governs SPEECH-TO-TEXT ONLY. The session it authorises is a
+    // transcription session (`session.type: "transcription"` in the current
+    // Realtime API — the contract earlier spelled `create_response: false`), so
+    // the provider returns transcript text and NEVER an assistant turn, a tool
+    // call or an analysis. Whatever it transcribes is shown to the operator for
+    // review; only an explicitly confirmed transcript reaches the deterministic
+    // Copilot, which remains the sole author of every answer.
+    registryId: "openai:gpt-live-transcribe",
+    provider: "openai",
+    providerType: "external_generation",
+    modelId: "gpt-live-transcribe",
+    modelVersion: "gpt-live-transcribe",
+    capability: "generation",
+    purpose:
+      "Live speech-to-text for the Industrial Copilot voice panel (transcription-only; never authors an answer).",
+    external: true,
+    defaultEnabled: false,
+    allowedEnvironments: ["staging", "production"],
+    allowedDataClasses: ["public", "tenant_operational"],
+    tenantPolicyRequired: true,
+    toolCallingAllowed: false,
+    // A transcript is free-form text, not a structured envelope; the structure
+    // this feature depends on comes from the deterministic engine downstream.
+    structuredOutputRequired: false,
+    deterministicFallback: "hermes:copilot-deterministic",
+    retentionPolicyStatus: EXTERNAL_REVIEW_REQUIRED,
+    trainingUseStatus: EXTERNAL_REVIEW_REQUIRED,
+    regionStatus: EXTERNAL_REVIEW_REQUIRED,
+    owner: "platform",
+    policyVersion: "phase103.1",
+  },
+  {
+    // PHASE 103 — Hermes Live Voice Intelligence, speech leg.
+    //
+    // Reads back the EXACT text the deterministic Copilot produced, proven by a
+    // server-signed grant that binds the text hash to one organisation, user,
+    // locale and expiry. The model receives text and returns audio; it is never
+    // asked to compose, summarise or extend anything.
+    registryId: "openai:gpt-4o-mini-tts",
+    provider: "openai",
+    providerType: "external_generation",
+    modelId: "gpt-4o-mini-tts",
+    modelVersion: "gpt-4o-mini-tts",
+    capability: "generation",
+    purpose:
+      "Text-to-speech playback of the signed, deterministic Copilot answer (verbatim only; authors nothing).",
+    external: true,
+    defaultEnabled: false,
+    allowedEnvironments: ["staging", "production"],
+    allowedDataClasses: ["public", "tenant_operational"],
+    tenantPolicyRequired: true,
+    toolCallingAllowed: false,
+    structuredOutputRequired: false,
+    deterministicFallback: "hermes:copilot-deterministic",
+    retentionPolicyStatus: EXTERNAL_REVIEW_REQUIRED,
+    trainingUseStatus: EXTERNAL_REVIEW_REQUIRED,
+    regionStatus: EXTERNAL_REVIEW_REQUIRED,
+    owner: "platform",
+    policyVersion: "phase103.1",
+  },
+  {
     registryId: "hermes:brain-deterministic",
     provider: "hermes",
     providerType: "internal_deterministic",
@@ -233,6 +296,17 @@ export const MODEL_REGISTRY: readonly ModelRegistryEntry[] = [
 const BY_REGISTRY_ID = new Map(MODEL_REGISTRY.map((e) => [e.registryId, e]));
 const EXTERNAL_MODEL_IDS = new Set(MODEL_REGISTRY.filter((e) => e.external).map((e) => e.modelId));
 const ALL_MODEL_IDS = new Set(MODEL_REGISTRY.map((e) => e.modelId));
+
+/**
+ * PHASE 103 — the two governance identities the Live Voice panel may use.
+ *
+ * Exported as CONSTANTS so no downstream module ever re-spells a provider model
+ * id. `src/lib/copilot/voice/*` resolves the raw `modelId` through
+ * {@link getRegistryEntry}, which keeps this file the only place a production
+ * model identifier is written and keeps the MODEL_INVENTORY gate meaningful.
+ */
+export const VOICE_TRANSCRIPTION_REGISTRY_ID = "openai:gpt-live-transcribe";
+export const VOICE_SPEECH_REGISTRY_ID = "openai:gpt-4o-mini-tts";
 
 export function getRegistryEntry(registryId: string): ModelRegistryEntry | null {
   return BY_REGISTRY_ID.get(registryId) ?? null;

@@ -15,13 +15,13 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 369,
-    "handlers": 516,
+    "routeFiles": 372,
+    "handlers": 519,
     "byClassification": {
       "PUBLIC_READ": 38,
       "PUBLIC_WRITE": 14,
       "AUTHENTICATED_USER": 210,
-      "TENANT_MEMBER": 122,
+      "TENANT_MEMBER": 125,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 128,
@@ -30,16 +30,16 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 122,
+    "tenantBoundHandlers": 125,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 250,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 250,
-    "TENANT_IDENTITY_SERVER_DERIVED": 250,
+    "TENANT_BOUND_HANDLERS_TOTAL": 253,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 253,
+    "TENANT_IDENTITY_SERVER_DERIVED": 253,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 250,
+    "OBJECT_SCOPED_HANDLERS": 253,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -2934,6 +2934,45 @@
       ],
       "declaredSurface": false,
       "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/voice/query",
+      "method": "POST",
+      "file": "src/app/api/copilot/voice/query/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireVoiceCopilotActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/voice/session",
+      "method": "POST",
+      "file": "src/app/api/copilot/voice/session/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireVoiceCopilotActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/copilot/voice/speech",
+      "method": "POST",
+      "file": "src/app/api/copilot/voice/speech/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireVoiceCopilotActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },

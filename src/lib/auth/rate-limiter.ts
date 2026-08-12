@@ -97,6 +97,27 @@ const LIMITS = {
   // which — see `checkRateLimit` below — meant no limit was applied at all.
   "media-authoring-write":      { max: 30, windowMs: 60 * 1000 },
   "media-editorial-transition": { max: 20, windowMs: 60 * 1000 },
+  // PHASE 103 — Live Voice Intelligence, keyed by `${organizationId}:${userId}`.
+  //
+  // Three independent buckets because the three surfaces cost different things,
+  // and sharing one budget would let the cheapest exhaust the most expensive.
+  //
+  // `copilot-voice-session` mints an ephemeral external credential. A real
+  // operator opens one session, dictates, and reuses it; ten per minute covers
+  // reconnects on a flaky plant network without making the endpoint a cheap way
+  // to mint provider credentials.
+  //
+  // `copilot-voice-query` runs the deterministic Copilot pipeline, so it is
+  // matched to the neighbouring `engineering-analyze` budget rather than to a
+  // cheap read: each hit is real CPU against the tenant's own data.
+  //
+  // `copilot-voice-speech` spends money at an external provider on every hit and
+  // is deliberately the tightest of the three — playback is one press of a
+  // button per answer, and an answer cannot arrive faster than the query bucket
+  // allows in the first place.
+  "copilot-voice-session":      { max: 10, windowMs: 60 * 1000 },
+  "copilot-voice-query":        { max: 12, windowMs: 60 * 1000 },
+  "copilot-voice-speech":       { max: 8,  windowMs: 60 * 1000 },
 } as const satisfies Record<string, { max: number; windowMs: number }>;
 
 /**

@@ -1951,7 +1951,53 @@
     "noInsights": "No insights generated. Data may be limited.",
     "noRecommendations": "No recommendations. All monitored assets appear stable.",
     "insufficientData": "I do not have enough industrial data to answer this reliably.",
-    "blocked": "Control actions are not available in Hermes Copilot. This system is read-only and cannot execute commands."
+    "blocked": "Control actions are not available in Hermes Copilot. This system is read-only and cannot execute commands.",
+    "liveVoice": {
+      "brand": "Hermes Live Voice Intelligence",
+      "title": "Voice interface for the Industrial Copilot",
+      "lede": "Speak an engineering question, review the transcript, then confirm it. The deterministic Copilot produces the answer; the voice layer only carries it.",
+      "disclosure": "Speech-to-text and text-to-speech are processed by an external AI provider. Your microphone audio is sent to that provider for transcription, and the confirmed answer text is sent there again if you choose to play it aloud.",
+      "retentionNote": "Hermes stores no audio and no transcript. Nothing you say is written to the database, the audit log or any cache — only the length of the text and the outcome are recorded.",
+      "deterministicNote": "The external models never analyse, decide or act. Every answer comes from the deterministic Copilot engine, and playback reads that answer back word for word.",
+      "transcriptLabel": "Transcript — review and edit before analysing",
+      "transcriptPlaceholder": "Your dictated question appears here. Correct anything the transcription got wrong.",
+      "transcriptHint": "Nothing is analysed until you press Analyze. The transcript is sent to the deterministic engine exactly as it reads here.",
+      "answerLabel": "Deterministic Copilot answer",
+      "spokenTextLabel": "This exact text will be read aloud",
+      "noSpeechAvailable": "Voice playback is not available for this answer. The full answer is shown above.",
+      "insufficientData": "There is not enough industrial data to answer this reliably.",
+      "states": {
+        "idle": "Idle",
+        "connecting": "Connecting",
+        "listening": "Listening",
+        "transcriptReady": "Transcript ready",
+        "analyzing": "Analyzing",
+        "answerReady": "Answer ready",
+        "speaking": "Speaking",
+        "error": "Error"
+      },
+      "actions": {
+        "start": "Start microphone",
+        "stop": "Stop",
+        "analyze": "Analyze",
+        "play": "Play AI voice",
+        "stopAudio": "Stop audio"
+      },
+      "errors": {
+        "MICROPHONE_DENIED": "Microphone access was refused by the browser. Grant permission and try again.",
+        "SESSION_AUTH_REQUIRED": "A signed-in browser session is required. Sign in again and retry.",
+        "FORBIDDEN": "This request was blocked for security reasons. Reload the page and try again.",
+        "INSUFFICIENT_PERMISSION": "Your role does not include access to the Industrial Copilot.",
+        "ORGANIZATION_SCOPE_REQUIRED": "Active membership of an organization is required.",
+        "RATE_LIMITED": "Too many voice requests. Wait a moment before trying again.",
+        "INVALID_INPUT": "The request was rejected as invalid. Check the transcript and try again.",
+        "EXTERNAL_AI_UNAVAILABLE": "External voice processing is not enabled for your organization.",
+        "VOICE_GRANT_INVALID": "This answer can no longer be played. Run the analysis again.",
+        "PROVIDER_UNAVAILABLE": "The external voice provider could not be reached. Try again shortly.",
+        "COPILOT_UNAVAILABLE": "The Copilot engine could not answer. Try again shortly.",
+        "UNKNOWN": "Something went wrong. Try again."
+      }
+    }
   },
   "unknownCenter": {
     "eyebrow": "Intelligence",
