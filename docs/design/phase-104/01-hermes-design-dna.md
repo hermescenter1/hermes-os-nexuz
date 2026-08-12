@@ -1,6 +1,6 @@
 # Phase 104 — Hermes Design DNA
 
-**Status:** specification complete · Figma materialisation BLOCKED (see §10)
+**Status:** specification + executor locally verified · Figma Apply NOT RUN (see §10)
 **Branch:** `agent/phase104-hermes-visual-figma-system` · base `cbfa292`
 **Machine-readable source:** `tools/figma/hermes-phase104-visual-system/src/lib/dna-tokens.js`
 **Verification:** `node tools/figma/hermes-phase104-visual-system/scripts/audit-contrast.mjs`
@@ -31,7 +31,7 @@ Center, and so on — and treats them as the mandatory visual baseline.
 | "Workspace Home", "Live Operations", "Alarm Center" | **Zero matches** repo-wide. |
 | the approved reference experiences | Are a **different six**: Homepage, Platform, Login, Copilot, Dashboard, IndustrialBrain — recorded in `docs/design/phase-87-closure/README.md:110-120` and existing only inside the owner's external Figma file `ahckSQbXwY4NVY3uxEZtLg`. |
 | "deep navy" base | The approved base is **Obsidian `#071018`** — a blue-black. |
-| cinematic direction | `docs/design/phase-87a/03-brand-system.md:16-18` forbids "cyberpunk concept" and "over-decorated neon dashboard"; `:320` retires all `.glow-*`, `.text-glow*`, `.landing-scanlines`. `docs/design/phase-87-closure/README.md:173-176` explicitly defers immersive/cinematic redesign to **Phase 103**, which is itself unbuilt. |
+| cinematic direction | `docs/design/phase-87a/03-brand-system.md:16-18` forbids "cyberpunk concept" and "over-decorated neon dashboard"; `:320` retires all `.glow-*`, `.text-glow*`, `.landing-scanlines`. The older closure document deferred an immersive redesign to a then-future Phase 103; the Phase 103 that actually merged is **Live Voice Intelligence**, and it delivered no approved visual mockup set. |
 
 **Resolution applied.** The description in the brief is treated as the owner's
 *authoritative direction*, because it came from the owner. The claim that it was
@@ -50,17 +50,18 @@ brand system wins and the conflict is recorded:
 No mockup has been synthesised and labelled "approved". If the owner holds the
 mockups outside the repo, supplying them (or the Figma node ids) supersedes §2–§9.
 
-### 0.2 Predecessor phases do not exist
+### 0.2 Current predecessor status
 
-`agent/phase101-industrial-brain-deep-engineering` and
-`agent/phase102-media-video-hub` are **empty placeholder branches** sitting on
-`cbfa292` with zero commits. No Phase 103 ref exists at all. `video_hub` and
-`automation_studio` exist only as orphan Phase 96 billing entitlement keys with no
-route, page or consumer.
+This checkpoint was originally written on `cbfa292`, before the successor product
+work landed. The current `main` now contains Phase 102 Media & Video Hub (PR #59),
+Phase 101 Industrial Brain Deep Engineering (PR #60), and Phase 103 Live Voice
+Intelligence (PR #61). Sections `15`–`17` therefore use those shipped scopes and are
+not labelled speculative. This changes names/status only; the 3-page / 23-section
+contract and all asset counts remain fixed.
 
-Consequently the Phase 101 / 102 / 103 design sections are **SPECULATIVE** and are
-labelled as such wherever they appear. Code integration for Phase 104 is deferred
-until 101–103 stabilise, per the owner's instruction.
+Direct app-token integration is still deferred until the native plugin passes a
+clean-build Dry Run, owner Apply and post-Apply Verify. No Figma state is inferred
+from the fact that the product phases merged.
 
 ---
 
@@ -286,13 +287,14 @@ Breakpoints designed and validated: **1440 × 1024 · 768 × 1024 · 390 × 844*
 |---|---|
 | Design DNA specification | **COMPLETE** |
 | Contrast / a11y verification | **PASS** — 64 checks, 0 failures |
-| Design-rule policy tests | **PASS** — 34 tests |
+| Design-rule / executor policy tests | **PASS** — 55 tests, including mutation controls |
 | Figma file created | **YES** — `QcJcRaBv1NMrgb4pMshEVB` |
-| Plugin: pages, sections, tokens, components | **BUILT** — 205 assets / 226 variants, awaiting owner Apply |
+| Plugin: pages, sections, tokens, components | **LOCALLY VERIFIED** — contract remains 205 assets / 226 variants; owner Dry Run evidence still required |
 | Figma Apply executed | **NOT RUN** — must be run by the owner inside Figma Desktop |
 | Approved mockups received | **NO** — owner is supplying them |
 | Screens designed | **NOT STARTED** — deliberately blocked on the mockups |
-| Code integration | **DEFERRED** by owner instruction until 101–103 stabilise |
+| Product-phase naming | **CURRENT** — merged Phase 101/102/103 scopes reflected |
+| Code integration | **DEFERRED** until accepted Dry Run / Apply / Verify evidence |
 
 **Starter-plan constraints, proven by direct probe and never worked around by
 pretending otherwise:**

@@ -4,18 +4,18 @@
   "fingerprint": {
     "plugin": "Hermes Phase 104 Visual System",
     "pluginId": "com.hermesnovin.phase104-visual-system",
-    "headSha": "cbfa2923318827ee42614c07f2e3861a3db8ed99",
-    "headShaShort": "cbfa29233188",
+    "headSha": "40da2b13056dfbb99cddb3f5138073138b677ef4",
+    "headShaShort": "40da2b13056d",
     "branch": "agent/phase104-hermes-visual-figma-system",
     "dirty": true,
-    "sourcesSha": "227e1c0b7212a890536fb1926ef2cb8d4b610bc6515cf7a93389edfa5dd3ffcd",
-    "sourcesShaShort": "227e1c0b7212"
+    "sourcesSha": "fb1165112ad2cfc2251be3f4f450a152e2c01e9f0fb436da922995fa3e71e924",
+    "sourcesShaShort": "fb1165112ad2"
   },
-  "absoluteManifestPath": "E:\\hermes-os-phase104\\tools\\figma\\hermes-phase104-visual-system\\manifest.json",
+  "manifestPath": "manifest.json",
   "sha256": {
     "manifest": "f8de0d64035b9851ac1de1842b38a62a48019eb2417c942c42573773d5fb3c2d",
-    "code": "9906861603147fc654a8d9739a114975bde640dc12f78e03210fa511e3896314",
-    "ui": "c6668dc4e2d42ee0e2dd4a2c01361da26007ff7bd5a80b4751360e86db4042c9"
+    "code": "c041754e994c77e2eb418a9de29317f52cce47e4bd5145decc9c85b84e1b983c",
+    "ui": "d5a66873ca4787554707a7da6a598ad83a4f81e8cd7360547bfc23d2f17faf70"
   },
   "builtFrom": [
     {
@@ -36,27 +36,27 @@
     {
       "id": "dna-structure",
       "file": "src/lib/dna-structure.js",
-      "sha256": "8c621174c4c11e5a61443964164d734c0703ff460db3ba33abec9424fdeb91f2"
+      "sha256": "cfc212a8f7334a323846e6f64458f0f19a6074d8b1031c383187c692dc7dd48f"
     },
     {
       "id": "dna-components",
       "file": "src/lib/dna-components.js",
-      "sha256": "f7fa153daa026430d0e9a7f1332aee2a169e7edb226e8e18f8a041b57d96966e"
+      "sha256": "83da605fef66a653f21ed6b7cd6c91092847d591ce5a1a7fea6cdee7eff98713"
     },
     {
       "id": "dna-spec",
       "file": "src/lib/dna-spec.js",
-      "sha256": "6bbc180aef5b503f29f1246177df6f0c7bfc4aef56cbf91f19230f99b928e648"
+      "sha256": "50d5648c22d5a1be782ec61169f97628b0ca9e4147fb24a3ca9b18e5ff89a2de"
     },
     {
       "id": "dna-exec",
       "file": "src/lib/dna-exec.js",
-      "sha256": "155200391520a2dc5edbf114a8da093554d8cfae851a601c7512c8e9079bf326"
+      "sha256": "977c42a6be025a43732ea9522464c524b3f6762d7dfbd0e99a6cf310f5fc199e"
     },
     {
       "id": "main",
       "file": "src/main.js",
-      "sha256": "10999c8eff203f157896e99040983bfffb7e850847f8ebccb0b08f881cb3b39d"
+      "sha256": "c79896b367f42c599efa5f6ee91bef6e1d3de536b0a66c41945e2e06283d979b"
     }
   ],
   "counts": {

@@ -60,8 +60,9 @@
 </div>
 
 <div class="row">
-  <button class="ghost" id="dry">Dry Run</button>
+  <button class="ghost" id="dry" disabled>Dry Run</button>
   <button class="primary" id="apply" disabled title="Run a Dry Run first">Apply</button>
+  <button class="ghost" id="verify" disabled>Verify</button>
 </div>
 <div class="row">
   <button class="danger" id="rollback">Rollback (this plugin's assets only)</button>
@@ -76,23 +77,27 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
 <script>
   var $ = function (id) { return document.getElementById(id) }
   var send = function (type) { parent.postMessage({ pluginMessage: { type: type } }, '*') }
+  var esc = function (value) {
+    return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
 
   // Render the build fingerprint immediately, from the value baked in at build time.
   var fp = null
   try { fp = JSON.parse($('fp').dataset.fingerprint) } catch (e) { fp = null }
   if (fp && fp.pluginId) {
     $('fp').innerHTML =
-      '<b>' + fp.plugin + '</b><br>' +
-      '<span class="id">' + fp.pluginId + '</span><br>' +
-      'HEAD ' + fp.headShaShort + ' (' + fp.branch + ')' +
+      '<b>' + esc(fp.plugin) + '</b><br>' +
+      '<span class="id">' + esc(fp.pluginId) + '</span><br>' +
+      'HEAD ' + esc(fp.headShaShort) + ' (' + esc(fp.branch) + ')' +
       (fp.dirty ? ' <span class="dirty">- uncommitted</span>' : '') + '<br>' +
-      'sources ' + fp.sourcesShaShort + ' - contract ' + fp.expectedTotal + ' assets'
+      'sources ' + esc(fp.sourcesShaShort) + ' - contract ' + esc(fp.expectedTotal) + ' assets'
   } else {
     $('fp').innerHTML = '<span class="dirty">NO FINGERPRINT - this bundle was not produced by build.mjs. Rebuild before use.</span>'
   }
 
   $('dry').onclick = function () { $('out').textContent = 'running dry run...'; send('dry-run') }
   $('apply').onclick = function () { $('out').textContent = 'applying...'; send('apply') }
+  $('verify').onclick = function () { $('out').textContent = 'verifying...'; send('verify') }
   $('rollback').onclick = function () {
     if (confirm('Delete every asset this plugin created in this file?')) {
       $('out').textContent = 'rolling back...'; send('rollback')
@@ -104,10 +109,24 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
     if (!m) return
 
     if (m.type === 'ready') {
+      var exactBuild = !!fp && m.fingerprint &&
+        fp.pluginId === m.fingerprint.pluginId &&
+        fp.headSha === m.fingerprint.headSha &&
+        fp.sourcesSha === m.fingerprint.sourcesSha &&
+        !fp.dirty && fp.expectedTotal === m.counts.appliableTotal
+      if (!exactBuild) {
+        $('dry').disabled = true
+        $('verify').disabled = true
+        $('apply').disabled = true
+        $('out').innerHTML = '<span class="err">BUILD FINGERPRINT MISMATCH - rebuild and re-import this manifest.</span>'
+        return
+      }
       $('ctx').textContent = m.fileName + ' - ' + m.pageCount + ' page(s)'
       $('c-total').textContent = m.counts.appliableTotal
       $('c-variants').textContent = m.counts.componentVariants
       $('c-owned').textContent = m.ownedInFile
+      $('dry').disabled = false
+      $('verify').disabled = false
     }
 
     if (m.type === 'result') {
@@ -115,6 +134,8 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
       var lines = ['-- ' + m.mode + ' --']
       if (fp) lines.push('build ' + fp.headShaShort + ' / sources ' + fp.sourcesShaShort)
       if (r.removed) lines.push('removed: ' + r.removed.length)
+      if (r.restored) lines.push('restored pages: ' + r.restored.length)
+      if (r.retained) lines.push('retained safely: ' + r.retained.length)
       lines.push('created: ' + r.created.length + '   updated: ' + r.updated.length + '   skipped: ' + r.skipped.length)
       lines.push('errors:  ' + r.errors.length)
       if (r.fontSubstitutions && r.fontSubstitutions.length) {
@@ -134,16 +155,37 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
       if ((r.created.length + r.updated.length) > 60) lines.push('  ... and more')
       $('out').textContent = lines.join('\n')
       // Apply unlocks only after a clean Dry Run on this exact build.
-      if (m.mode === 'Dry Run' && r.errors.length === 0) {
+      if (m.mode === 'Dry Run' && r.errors.length === 0 && m.applyPermitted === true) {
         $('apply').disabled = false
         $('apply').title = ''
+      } else if (m.mode !== 'Dry Run') {
+        $('apply').disabled = true
+        $('apply').title = 'Run a Dry Run first'
       }
+      send('init')
+    }
+
+    if (m.type === 'verify-result') {
+      var v = m.result
+      var verifyLines = ['-- Verify --', v.ok ? 'PASS' : 'FAIL']
+      verifyLines.push('verified: ' + v.verified.length + ' / ' + v.counts.appliableTotal)
+      verifyLines.push('missing: ' + v.missing.length + '   drifted: ' + v.drifted.length)
+      verifyLines.push('duplicates: ' + v.duplicates.length + '   unexpected: ' + v.unexpected.length)
+      for (var group of ['missing', 'drifted', 'duplicates', 'unexpected']) {
+        if (!v[group].length) continue
+        verifyLines.push('')
+        verifyLines.push(group + ':')
+        for (var vi = 0; vi < Math.min(v[group].length, 60); vi++) verifyLines.push('  x ' + v[group][vi])
+      }
+      $('out').textContent = verifyLines.join('\n')
+      $('apply').disabled = true
+      $('apply').title = 'Run a Dry Run first'
       send('init')
     }
 
     if (m.type === 'error') {
       $('apply').disabled = true
-      $('out').innerHTML = '<span class="err">' + String(m.message).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>'
+      $('out').innerHTML = '<span class="err">' + esc(m.message) + '</span>'
     }
   }
 

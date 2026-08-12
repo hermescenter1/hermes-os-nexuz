@@ -62,7 +62,7 @@ const PRESETS = Object.freeze({
  * @property {Record<string,string[]>} axes   variant axes -> values
  * @property {{name:string, default:Record<string,string>}[]} [text]  TEXT component properties (the locale mechanism)
  * @property {string[]} [bools]         BOOLEAN component properties
- * @property {string[]} [swaps]         INSTANCE_SWAP component properties
+ * @property {{name:string,target:string}[]} [swaps] INSTANCE_SWAP property + target family key
  * @property {string} glass             DNA glass tier or 'none'
  * @property {string} description
  * @property {string} a11y
@@ -78,7 +78,7 @@ const FAMILIES = [
   {
     key: 'shell', name: 'Hermes/Shell', section: '04 — Core Components', preset: 'shell',
     axes: { Breakpoint: BP, Direction: DIR },
-    swaps: ['Rail', 'Content'],
+    swaps: [{ name: 'Rail', target: 'rail' }, { name: 'Content', target: 'feedback' }],
     glass: 'none',
     description: 'The application frame. Holds a Rail instance and a content slot. Direction is a variant here and ONLY here for the outer layout — every nested component inherits direction from this auto-layout parent, which is why no leaf component carries a direction axis.',
     a11y: 'landmark structure: navigation + main. Skip-to-content is the first focusable node.',
@@ -88,7 +88,7 @@ const FAMILIES = [
     key: 'rail', name: 'Hermes/Rail', section: '04 — Core Components', preset: 'rail',
     axes: { Breakpoint: BP, State: ['Collapsed', 'Expanded'] },
     bools: ['Show labels'],
-    swaps: ['Item icon'],
+    swaps: [{ name: 'Item icon', target: 'state-pill' }],
     glass: 'none',
     description: 'Hermes Rail — 72px icon-only resting state, 264px expanded drawer, bottom sheet on Mobile. Active item carries a 2px inline-start Beacon bar.',
     a11y: 'nav landmark; 44px targets (SC 2.5.8); aria-current on the active item; labels exposed to AT even when visually collapsed.',
@@ -98,7 +98,7 @@ const FAMILIES = [
     key: 'command', name: 'Hermes/Command', section: '04 — Core Components', preset: 'field',
     axes: { Breakpoint: BP, State: ['Rest', 'Focus', 'Open'] },
     text: [{ name: 'Placeholder', default: T('Ask Hermes or search…', 'از هرمس بپرسید یا جست‌وجو کنید…', 'Hermes fragen oder suchen…') }],
-    swaps: ['Leading mark'],
+    swaps: [{ name: 'Leading mark', target: 'reasoning-chip' }],
     glass: 'elevated',
     description: 'Hermes Command — the signature AI command/search field. 720/640/342 wide, 64 tall. Deliberately larger than any other control in the product.',
     a11y: 'role=combobox, aria-expanded, aria-controls the palette listbox; 2px Beacon focus ring at 2px offset.',
@@ -109,7 +109,7 @@ const FAMILIES = [
     axes: { Intent: ['Primary', 'Secondary', 'Tertiary', 'Destructive'], Size: ['Sm', 'Md', 'Lg'] },
     text: [{ name: 'Label', default: T('Continue', 'ادامه', 'Weiter') }],
     bools: ['Leading icon', 'Trailing icon'],
-    swaps: ['Icon'],
+    swaps: [{ name: 'Icon', target: 'state-pill' }],
     glass: 'none',
     description: 'Mirrors buttonVariants in src/components/ds/logic.ts exactly (primary/secondary/tertiary/destructive x sm/md/lg). Interaction states live in the sibling States set so neither matrix exceeds the variant budget.',
     a11y: 'dark-on-cyan only for Primary — white-on-cyan is prohibited (11.01:1).',
@@ -240,7 +240,7 @@ const FAMILIES = [
       { name: 'Name', default: T('Boiler feed pump A', 'پمپ تغذیهٔ بویلر A', 'Kesselspeisepumpe A') },
       { name: 'Tag', default: T('P-101A', 'P-101A', 'P-101A') },
     ],
-    swaps: ['Status pill'],
+    swaps: [{ name: 'Status pill', target: 'state-pill' }],
     glass: 'interactive', description: 'Asset tile for Live Operations and Assets.',
     a11y: 'the status pill instance carries the accessible state; the card is a single tab stop.',
   },
@@ -276,7 +276,7 @@ const FAMILIES = [
       { name: 'Title', default: T('Evidence lineage', 'زنجیرهٔ شواهد', 'Nachweiskette') },
       { name: 'Source', default: T('Historian · tag FIC-1024.PV · 2h window', 'هیستورین · تگ FIC-1024.PV · بازهٔ ۲ ساعت', 'Historian · Tag FIC-1024.PV · 2-h-Fenster') },
     ],
-    swaps: ['Provenance chip'],
+    swaps: [{ name: 'Provenance chip', target: 'reasoning-chip' }],
     glass: 'elevated',
     description: 'Inspectable evidence lineage for the Industrial Brain. Empty state states what is missing and why — it never renders absence as zero.',
     a11y: 'disclosure pattern with aria-expanded; every claim row is linked to its source record.',
@@ -288,7 +288,7 @@ const FAMILIES = [
       { name: 'Title', default: T('Operate', 'بهره‌برداری', 'Betreiben') },
       { name: 'Summary', default: T('What is happening in the plant right now', 'همین حالا در کارخانه چه می‌گذرد', 'Was in der Anlage gerade passiert') },
     ],
-    swaps: ['Mark'],
+    swaps: [{ name: 'Mark', target: 'reasoning-chip' }],
     glass: 'interactive',
     description: 'Hermes Triad — the three primary Workspace cards. Exactly three, equal weight, one intent each. This is a fixed composition, not a generic card grid.',
     a11y: 'each card is a single tab stop with a descriptive accessible name; hover lift is decorative only.',
@@ -377,4 +377,45 @@ function assertLocaleIsNeverAVariant() {
 
 const LOCALES = Object.freeze(['en', 'fa', 'de'])
 
-module.exports = { FAMILIES, PRESETS, BP, DIR, LOCALES, variantCombos, variantName, assertVariantBudget, assertLocaleIsNeverAVariant }
+const BREAKPOINT_WIDTHS = Object.freeze({
+  shell: { Desktop: 1440, Tablet: 768, Mobile: 390 },
+  rail: { Desktop: 72, Tablet: 72, Mobile: 390 },
+  command: { Desktop: 720, Tablet: 640, Mobile: 342 },
+  dialog: { Desktop: 720, Tablet: 640, Mobile: 342 },
+  'kpi-card': { Desktop: 360, Tablet: 320, Mobile: 342 },
+  'asset-card': { Desktop: 360, Tablet: 320, Mobile: 342 },
+  table: { Desktop: 960, Tablet: 680, Mobile: 342 },
+  'evidence-panel': { Desktop: 720, Tablet: 640, Mobile: 342 },
+  feedback: { Desktop: 720, Tablet: 640, Mobile: 342 },
+})
+
+/**
+ * Concrete geometry for every family that declares a Breakpoint axis. The axis
+ * is not decorative: Desktop/Tablet/Mobile variants materially resize.
+ * @param {string} familyKey
+ * @param {Record<string,string>} combo
+ */
+function variantGeometry(familyKey, combo) {
+  if (!combo.Breakpoint) return null
+  const widths = BREAKPOINT_WIDTHS[familyKey]
+  if (!widths || !widths[combo.Breakpoint]) {
+    throw new Error('missing breakpoint geometry for ' + familyKey + '/' + combo.Breakpoint)
+  }
+  let width = widths[combo.Breakpoint]
+  if (familyKey === 'rail' && combo.State === 'Expanded' && combo.Breakpoint !== 'Mobile') width = 264
+  return { width }
+}
+
+module.exports = {
+  FAMILIES,
+  PRESETS,
+  BP,
+  DIR,
+  LOCALES,
+  BREAKPOINT_WIDTHS,
+  variantCombos,
+  variantName,
+  variantGeometry,
+  assertVariantBudget,
+  assertLocaleIsNeverAVariant,
+}

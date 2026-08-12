@@ -20,6 +20,7 @@ import { dirname, join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { execSync } from 'node:child_process'
 import { createRequire } from 'node:module'
+import { findInExecutableCode, checkSharedPluginDataCalls } from './scripts/lib/code-scan.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
@@ -39,6 +40,27 @@ const MODULES = [
 
 const sha256 = (s) => createHash('sha256').update(s).digest('hex')
 const short = (s) => s.slice(0, 12)
+const FORBIDDEN_EXECUTABLE_TOKENS = ['createTextStyle', 'buildAssemblies', 'hermesDSB']
+
+function assertExecutableSafety(sources) {
+  const failures = []
+  for (const source of sources) {
+    for (const needle of FORBIDDEN_EXECUTABLE_TOKENS) {
+      for (const hit of findInExecutableCode(source.body, needle)) {
+        failures.push(source.rel + ':' + hit.line + ' executable token ' + needle)
+      }
+    }
+    for (const violation of checkSharedPluginDataCalls(source.body)) {
+      failures.push(source.rel + ':' + violation.line + ' ' + violation.method +
+        ' first argument must be NAMESPACE, got ' + violation.argument)
+    }
+  }
+  if (failures.length) {
+    console.error('BUILD FAILED — executable-code safety gate rejected the source:')
+    for (const failure of failures) console.error('  - ' + failure)
+    process.exit(1)
+  }
+}
 
 function rewriteRequires(body) {
   return body.replace(/require\(\s*['"](?:\.{1,2}\/)+(?:lib\/)?([\w-]+)(?:\.js)?['"]\s*\)/g, "require('$1')")
@@ -122,6 +144,7 @@ function main() {
   const { buildDnaSpec } = require('./src/lib/dna-spec.js')
   const spec = buildDnaSpec()
   assertContract(spec.counts, 'build') // throws, fail-closed
+  assertExecutableSafety(sources)
 
   // ── GATE 3: fingerprint ──────────────────────────────────────────────────
   const fingerprint = buildFingerprint(sources)
@@ -136,6 +159,7 @@ function main() {
     branch: fingerprint.branch,
     dirty: fingerprint.dirty,
     sourcesShaShort: fingerprint.sourcesShaShort,
+    sourcesSha: fingerprint.sourcesSha,
     plugin: fingerprint.plugin,
     pluginId: fingerprint.pluginId,
     expectedTotal: spec.counts.appliableTotal,
@@ -150,7 +174,7 @@ function main() {
     plugin: fingerprint.plugin,
     pluginId: fingerprint.pluginId,
     fingerprint,
-    absoluteManifestPath: join(__dirname, 'manifest.json'),
+    manifestPath: 'manifest.json',
     sha256: { manifest: manifestSha, code: bundleSha, ui: uiSha },
     builtFrom: sources.map((s) => ({ id: s.id, file: 'src/' + s.rel, sha256: sha256(s.body) })),
     counts: spec.counts,
@@ -168,7 +192,7 @@ function main() {
   console.log('  id           : ' + fingerprint.pluginId)
   console.log('  branch/HEAD  : ' + fingerprint.branch + ' @ ' + fingerprint.headShaShort + (fingerprint.dirty ? ' (dirty)' : ''))
   console.log('  sources sha  : ' + fingerprint.sourcesShaShort)
-  console.log('  manifest path: ' + report.absoluteManifestPath)
+  console.log('  manifest path: ' + join(__dirname, report.manifestPath))
   console.log('  sha256 manifest: ' + manifestSha)
   console.log('  sha256 code.js : ' + bundleSha)
   console.log('  sha256 ui.html : ' + uiSha)

@@ -6,7 +6,8 @@ Design DNA as native Figma Variables, Paint Styles and Effect Styles.
 - No network. `networkAccess.allowedDomains = ["none"]`. Nothing leaves the file.
 - No dependencies. Everything runs on Node built-ins.
 - Deterministic and idempotent — re-running updates only what changed.
-- Fully reversible — Rollback deletes exactly what this plugin created.
+- Safely reversible — Rollback removes plugin-owned assets, restores reused page
+  metadata, and retains any container that has acquired non-plugin content.
 
 **Target file:** `Hermes OS — Phase 104 Visual System`
 `https://www.figma.com/design/QcJcRaBv1NMrgb4pMshEVB`
@@ -30,7 +31,7 @@ fully idempotent on re-run).
 
 Two consequences are baked into the design:
 
-- The 19-part Phase 104 taxonomy is carried as **Sections**, not pages.
+- The 23-part Phase 104 taxonomy is carried as **Sections**, not pages.
 - Theme/breakpoint **modes** are impossible, so the token architecture uses **many
   single-mode collections** instead. For a single-theme product this is arguably
   cleaner anyway — Hermes ships dark only (no `darkMode` config, no `data-theme`).
@@ -39,13 +40,16 @@ Two consequences are baked into the design:
 
 ## Running it
 
-1. `npm run verify` — audit + tests + build. Must be green before you open Figma.
+1. From a clean commit, run `npm run verify` — audit + build + tests. A dirty or
+   unknown build is rejected again at runtime.
 2. Figma Desktop → **Plugins → Development → Import plugin from manifest…**
 3. Select `tools/figma/hermes-phase104-visual-system/manifest.json`.
 4. Open the target file, run the plugin.
 5. Press **Dry Run** first. It writes nothing and enumerates exactly what Apply
    would create, update or skip.
-6. Press **Apply**.
+6. Confirm the Dry Run fingerprint and `205`-asset contract, then press **Apply**.
+7. Press **Verify**. The phase is not materially applied until Verify reports all
+   205 assets current, with zero missing, drifted, duplicate or unexpected assets.
 
 > You must be signed into Figma with **edit access** to the file. The account's MCP
 > seat shows as "View", but writes to its own drafts do work — that was verified
@@ -56,12 +60,14 @@ Two consequences are baked into the design:
 | control | effect |
 |---|---|
 | **Dry Run** | Enumerates create/update/skip. **No writes.** |
-| **Apply** | Creates or updates the DNA foundations. Idempotent. |
-| **Rollback** | Deletes exactly the assets this plugin owns. |
+| **Apply** | Creates or updates the DNA foundations. Requires a clean Dry Run on the same build and unchanged file state. |
+| **Verify** | Checks all 205 keys/hashes plus structural invariants; duplicate keys fail closed. |
+| **Rollback** | Removes plugin-owned assets; restores reused pages and preserves containers holding user content. |
 
 Rollback identifies assets by this plugin's own shared-plugin-data namespace
 (`hermesP104`), never by name prefix — a prefix match could delete owner-authored
-nodes. It therefore **cannot touch the Phase 87 design system**, which lives under
+nodes. Component sets are discovered recursively, including those nested inside
+Sections, and duplicate managed keys block Apply. It therefore **cannot touch the Phase 87 design system**, which lives under
 the separate `hermesDSB` namespace. That separation is load-bearing: Phase 87 is an
 owner-applied artifact with recorded evidence and must not be corruptible by accident.
 
@@ -87,7 +93,7 @@ owner-applied artifact with recorded evidence and must not be corruptible by acc
 | page | sections |
 |---|---|
 | `01 — Foundations & Components` | `00` Approved Visual References · `01` Design DNA · `02` Tokens · `03` Typography & Iconography · `04` Core Components · `05` Industrial Components · `06` Intelligence Components |
-| `02 — Hermes Product Screens` | `07` Workspace & Auth · `08` Command Center · `09` Industrial Brain · `10` Live Operations · `11` Assets & Connectivity · `12` Alarm Center · `13` Reports · `14` Administration · `15`–`17` Phase 101/102/103 *(speculative)* |
+| `02 — Hermes Product Screens` | `07` Workspace & Auth · `08` Command Center · `09` Industrial Brain · `10` Live Operations · `11` Assets & Connectivity · `12` Alarm Center · `13` Reports · `14` Administration · `15` Phase 101 Industrial Engineering · `16` Phase 102 Media & Video Hub · `17` Phase 103 Live Voice Intelligence |
 | `03 — Responsive, Prototypes & Handoff` | `18` Responsive Matrix · `19` RTL/LTR · `20` Prototypes · `21` Accessibility · `22` Handoff |
 
 All 23 categories survive the 3-page cap. A test asserts the section numbers are
@@ -141,7 +147,8 @@ npm run verify
   64 checks, 0 failures. Text ≥ 4.5:1 (SC 1.4.3), indicators ≥ 3:1 (SC 1.4.11),
   measured against the **lightest** canonical surface `#152A36`, with translucent
   Glass tiers composited first so the ratio is the one the user actually sees.
-- `npm run test` — 22 policy tests asserting the design *rules*: `UNKNOWN` can never
+- `npm run test` — 55 policy, mutation and runtime-contract tests asserting the
+  design *rules* and executor safety: `UNKNOWN` can never
   collapse into `HEALTHY`, no state depends on colour alone, an AI hypothesis never
   carries a verified look, the shipped glass lift ladder and `scale(1.012)` pin are
   preserved, Horizon is forbidden on every dense-data surface, edge illumination
@@ -164,5 +171,7 @@ semantic names to values the product already ships.
 Where a DNA variable maps to a shipped CSS custom property, it carries `var()`-wrapped
 WEB code syntax so Dev Mode round-trips correctly. A test enforces the wrapper.
 
-**Code integration is deferred.** Phases 101–103 do not exist yet (their branches are
-empty placeholders on `cbfa292`), so nothing here has been wired into the app.
+Phases 101–103 are now merged into `main` (PRs #60, #59 and #61 respectively), so
+their section names use the shipped product scopes rather than speculative labels.
+Direct app-token integration remains deferred until the Figma Dry Run, Apply and
+Verify evidence is accepted; this plugin does not silently rewrite the live app.

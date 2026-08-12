@@ -50,14 +50,58 @@ function slug(s) {
 }
 
 /**
- * FNV-1a over the JSON of an asset's identity payload. Deterministic across runs
- * and platforms — this is what makes re-running the plugin a surgical UPDATE of
- * only the changed assets rather than a duplicate-everything disaster.
+ * Recursively canonical JSON. `JSON.stringify(value, Object.keys(value).sort())`
+ * is not sufficient: its replacer array applies at every depth and silently
+ * drops nested keys that do not also exist at the root. Component axes, locale
+ * defaults and nested geometry are identity-bearing and must never disappear.
+ *
+ * @param {any} value
+ * @returns {string}
+ */
+function canonicalStringify(value) {
+  const seen = new Set()
+
+  /** @param {any} input @returns {string|undefined} */
+  const encode = (input) => {
+    if (input && typeof input.toJSON === 'function') input = input.toJSON()
+    if (input === null) return 'null'
+    if (typeof input === 'string' || typeof input === 'boolean') return JSON.stringify(input)
+    if (typeof input === 'number') return Number.isFinite(input) ? JSON.stringify(input) : 'null'
+    if (typeof input === 'bigint') throw new TypeError('BigInt cannot be canonicalised as JSON')
+    if (typeof input === 'undefined' || typeof input === 'function' || typeof input === 'symbol') return undefined
+
+    if (seen.has(input)) throw new TypeError('Cannot canonicalise a circular structure')
+    seen.add(input)
+    let encoded
+    if (Array.isArray(input)) {
+      encoded = '[' + input.map((item) => encode(item) ?? 'null').join(',') + ']'
+    } else {
+      const entries = []
+      for (const key of Object.keys(input).sort()) {
+        const item = encode(input[key])
+        if (item !== undefined) entries.push(JSON.stringify(key) + ':' + item)
+      }
+      encoded = '{' + entries.join(',') + '}'
+    }
+    seen.delete(input)
+    return encoded
+  }
+
+  const result = encode(value)
+  if (result === undefined) throw new TypeError('Root value is not representable as canonical JSON')
+  return result
+}
+
+/**
+ * FNV-1a over the canonical JSON of an asset's identity payload. Deterministic
+ * across runs and platforms — this is what makes re-running the plugin a
+ * surgical UPDATE of only changed assets rather than a duplicate-everything
+ * disaster.
  * @param {any} payload
  * @returns {string}
  */
 function hashAsset(payload) {
-  const s = JSON.stringify(payload, Object.keys(payload).sort())
+  const s = canonicalStringify(payload)
   let h = 0x811c9dc5
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i)
@@ -72,7 +116,7 @@ function web(cssVar) {
 }
 
 /**
- * @returns {{collections:any[], variables:any[], paintStyles:any[], effectStyles:any[], docs:any[], assets:any[], counts:Record<string,number>}}
+ * @returns {{pages:any[], sections:any[], collections:any[], variables:any[], paintStyles:any[], effectStyles:any[], componentSets:any[], docs:any[], assets:any[], counts:Record<string,number>}}
  */
 function buildDnaSpec() {
   /** @type {any[]} */ const collections = []
@@ -261,7 +305,7 @@ function buildDnaSpec() {
   const componentSets = FAMILIES.map((f) => {
     const combos = variantCombos(f)
     return {
-      key: 'componentSet:' + f.key, kind: 'componentSet', name: f.name,
+      key: 'componentSet:' + f.key, familyKey: f.key, kind: 'componentSet', name: f.name,
       sectionName: f.section, preset: f.preset, glass: f.glass,
       axes: f.axes, variants: combos.map((c) => variantName(f, c)),
       variantCount: combos.length,
@@ -298,4 +342,4 @@ function buildDnaSpec() {
   return { pages, sections, collections, variables, paintStyles, effectStyles, componentSets, docs, assets, counts }
 }
 
-module.exports = { buildDnaSpec, COLLECTIONS, SCOPES, MODE, slug, hashAsset }
+module.exports = { buildDnaSpec, COLLECTIONS, SCOPES, MODE, slug, canonicalStringify, hashAsset }

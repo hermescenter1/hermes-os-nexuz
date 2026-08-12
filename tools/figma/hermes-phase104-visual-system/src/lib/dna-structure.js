@@ -45,9 +45,9 @@ const PAGES = Object.freeze([
       { key: 'sec:alarms', name: '12 — Alarm Center', w: 11000, h: 5200 },
       { key: 'sec:reports', name: '13 — Reports & Analytics', w: 11000, h: 5200 },
       { key: 'sec:admin', name: '14 — Administration', w: 11000, h: 5200 },
-      { key: 'sec:p101', name: '15 — Phase 101 Industrial Engineering', w: 11000, h: 5200, speculative: true },
-      { key: 'sec:p102', name: '16 — Phase 102 Media & Video Hub', w: 11000, h: 5200, speculative: true },
-      { key: 'sec:p103', name: '17 — Phase 103 Automation Engineering Studio', w: 11000, h: 5200, speculative: true },
+      { key: 'sec:p101', name: '15 — Phase 101 Industrial Engineering', w: 11000, h: 5200 },
+      { key: 'sec:p102', name: '16 — Phase 102 Media & Video Hub', w: 11000, h: 5200 },
+      { key: 'sec:p103', name: '17 — Phase 103 Live Voice Intelligence', w: 11000, h: 5200 },
     ],
   },
   {
@@ -63,7 +63,7 @@ const PAGES = Object.freeze([
   },
 ])
 
-/** Sections whose content is SPECULATIVE because the phase does not exist in code. */
+/** Sections whose product phase does not yet exist in code. Currently empty. */
 const SPECULATIVE_SECTIONS = Object.freeze(
   PAGES.flatMap((p) => p.sections.filter((s) => s.speculative).map((s) => s.name))
 )

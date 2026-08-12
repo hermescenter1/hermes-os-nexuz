@@ -14,13 +14,14 @@ import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
+import { findInExecutableCode, checkSharedPluginDataCalls } from './lib/code-scan.mjs'
 
 const require = createRequire(import.meta.url)
 const { assertContract, checkContract, PLUGIN_IDENTITY } = require('../src/lib/contract.js')
 const DNA = require('../src/lib/dna-tokens.js')
 const { contrast } = require('../src/lib/contrast.js')
-const { buildDnaSpec, SCOPES } = require('../src/lib/dna-spec.js')
-const { assertVariantBudget, assertLocaleIsNeverAVariant } = require('../src/lib/dna-components.js')
+const { buildDnaSpec, SCOPES, canonicalStringify, hashAsset } = require('../src/lib/dna-spec.js')
+const { FAMILIES, variantCombos, variantGeometry, assertVariantBudget, assertLocaleIsNeverAVariant } = require('../src/lib/dna-components.js')
 const { STARTER_UNAVAILABLE } = require('../src/lib/dna-structure.js')
 
 const LIGHTEST = DNA.BASE_SURFACES.surfaceInteractive
@@ -169,6 +170,28 @@ test('the spec is deterministic across builds', () => {
   assert.deepEqual(a.assets.map((x) => x.key + ':' + x.hash), b.assets.map((x) => x.key + ':' + x.hash))
 })
 
+test('canonical asset identity is recursively order-independent', () => {
+  const a = { key: 'component', axes: { State: ['Default', 'Focus'], Breakpoint: ['Desktop'] } }
+  const b = { axes: { Breakpoint: ['Desktop'], State: ['Default', 'Focus'] }, key: 'component' }
+  assert.equal(canonicalStringify(a), canonicalStringify(b))
+  assert.equal(hashAsset(a), hashAsset(b))
+})
+
+test('nested component identity changes cannot collide with the previous hash', () => {
+  const base = {
+    key: 'componentSet:button',
+    axes: { State: ['Default', 'Focus'] },
+    text: [{ name: 'Label', default: { en: 'Start', fa: 'شروع', de: 'Starten' } }],
+    geometry: { padding: { x: 16, y: 10 } },
+  }
+  const mutations = [
+    { ...base, axes: { State: ['Default', 'Focus', 'Disabled'] } },
+    { ...base, text: [{ ...base.text[0], default: { ...base.text[0].default, de: 'Los' } }] },
+    { ...base, geometry: { padding: { ...base.geometry.padding, x: 20 } } },
+  ]
+  for (const mutation of mutations) assert.notEqual(hashAsset(mutation), hashAsset(base))
+})
+
 test('every asset key is unique', () => {
   const spec = buildDnaSpec()
   const keys = spec.assets.map((a) => a.key)
@@ -247,12 +270,15 @@ test('the approved-references section exists and is left empty for the owner', (
     'this section must be flagged as awaiting real owner assets so nothing invented is ever placed in it')
 })
 
-test('sections for phases that do not exist are flagged SPECULATIVE', () => {
+test('Phase 101–103 section names match the merged product phases', () => {
   const spec = buildDnaSpec()
-  for (const n of ['15', '16', '17']) {
-    const s = spec.sections.find((x) => x.name.startsWith(n))
-    assert.equal(s.speculative, true, `${s.name} covers a phase with no code and must be flagged`)
-  }
+  assert.deepEqual(spec.sections.filter((x) => /^1[5-7]/.test(x.name)).map((x) => x.name), [
+    '15 — Phase 101 Industrial Engineering',
+    '16 — Phase 102 Media & Video Hub',
+    '17 — Phase 103 Live Voice Intelligence',
+  ])
+  assert.deepEqual(spec.sections.filter((x) => x.speculative), [],
+    'merged Phase 101–103 product areas must not be labelled speculative')
 })
 
 // ── the anti-duplication contract ──────────────────────────────────────────
@@ -292,6 +318,25 @@ test('every breakpoint the phase must cover is represented', () => {
   assert.ok(bpSets.length >= 8, 'breakpoint coverage must not be reduced')
   for (const cs of bpSets) {
     assert.deepEqual(cs.axes.Breakpoint, ['Desktop', 'Tablet', 'Mobile'], `${cs.name} must cover 1440/768/390`)
+  }
+})
+
+test('every Breakpoint axis changes concrete component geometry', () => {
+  for (const family of FAMILIES.filter((item) => item.axes.Breakpoint)) {
+    const widths = family.axes.Breakpoint.map((breakpoint) =>
+      variantGeometry(family.key, { Breakpoint: breakpoint, State: family.axes.State ? family.axes.State[0] : '' }).width)
+    assert.ok(new Set(widths).size >= 2, `${family.name} declares Breakpoint but does not materially resize`)
+  }
+  assert.deepEqual(['Desktop', 'Tablet', 'Mobile'].map((Breakpoint) =>
+    variantGeometry('command', { Breakpoint }).width), [720, 640, 342])
+})
+
+test('every instance-swap declaration targets a real component family', () => {
+  const keys = new Set(FAMILIES.map((family) => family.key))
+  for (const family of FAMILIES) {
+    for (const swap of (family.swaps || [])) {
+      assert.ok(swap.name && keys.has(swap.target), `${family.name} has an unresolved swap target`)
+    }
   }
 })
 
@@ -374,10 +419,12 @@ test('the built bundle carries a fingerprint and matches its report', () => {
 
 test('the bundle physically cannot create Phase 87 asset kinds', () => {
   const code = readFileSync(new URL('../dist/code.js', import.meta.url), 'utf8')
-  // No text-style or assembly machinery exists in this plugin at all.
-  assert.equal(code.includes('createTextStyle'), false, 'Phase 104 creates no text styles')
-  assert.equal(code.includes('buildAssemblies'), false, 'Phase 104 creates no reference assemblies')
-  assert.equal(code.includes('hermesDSB'), false, 'Phase 104 must never touch the Phase 87 namespace')
+  // Comments are documentation, not executable capability. Strings and regular
+  // expressions remain executable data and are therefore still detected.
+  assert.deepEqual(findInExecutableCode(code, 'createTextStyle'), [], 'Phase 104 creates no text styles')
+  assert.deepEqual(findInExecutableCode(code, 'buildAssemblies'), [], 'Phase 104 creates no reference assemblies')
+  assert.deepEqual(findInExecutableCode(code, 'hermesDSB'), [], 'Phase 104 must never touch the Phase 87 namespace')
+  assert.deepEqual(checkSharedPluginDataCalls(code), [], 'all shared-plugin-data calls must use NAMESPACE directly')
 })
 
 test('the manifest points at the freshly built bundle and matches the contract identity', () => {

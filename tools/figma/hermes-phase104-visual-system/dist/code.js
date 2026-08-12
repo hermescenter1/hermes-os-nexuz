@@ -1,6 +1,6 @@
 /* Hermes Phase 104 Visual System — generated bundle.
    Do not edit dist/ by hand; edit src/ and run `npm run build`.
-   HEAD cbfa2923318827ee42614c07f2e3861a3db8ed99 (dirty)  sources 227e1c0b7212a890536fb1926ef2cb8d4b610bc6515cf7a93389edfa5dd3ffcd */
+   HEAD 40da2b13056dfbb99cddb3f5138073138b677ef4 (dirty)  sources fb1165112ad2cfc2251be3f4f450a152e2c01e9f0fb436da922995fa3e71e924 */
 (function () {
   "use strict";
   var __modules = {}, __cache = {};
@@ -14,12 +14,12 @@
     module.exports = {
   "plugin": "Hermes Phase 104 Visual System",
   "pluginId": "com.hermesnovin.phase104-visual-system",
-  "headSha": "cbfa2923318827ee42614c07f2e3861a3db8ed99",
-  "headShaShort": "cbfa29233188",
+  "headSha": "40da2b13056dfbb99cddb3f5138073138b677ef4",
+  "headShaShort": "40da2b13056d",
   "branch": "agent/phase104-hermes-visual-figma-system",
   "dirty": true,
-  "sourcesSha": "227e1c0b7212a890536fb1926ef2cb8d4b610bc6515cf7a93389edfa5dd3ffcd",
-  "sourcesShaShort": "227e1c0b7212",
+  "sourcesSha": "fb1165112ad2cfc2251be3f4f450a152e2c01e9f0fb436da922995fa3e71e924",
+  "sourcesShaShort": "fb1165112ad2",
   "buildCounts": {
     "pages": 3,
     "sections": 23,
@@ -678,9 +678,9 @@ const PAGES = Object.freeze([
       { key: 'sec:alarms', name: '12 — Alarm Center', w: 11000, h: 5200 },
       { key: 'sec:reports', name: '13 — Reports & Analytics', w: 11000, h: 5200 },
       { key: 'sec:admin', name: '14 — Administration', w: 11000, h: 5200 },
-      { key: 'sec:p101', name: '15 — Phase 101 Industrial Engineering', w: 11000, h: 5200, speculative: true },
-      { key: 'sec:p102', name: '16 — Phase 102 Media & Video Hub', w: 11000, h: 5200, speculative: true },
-      { key: 'sec:p103', name: '17 — Phase 103 Automation Engineering Studio', w: 11000, h: 5200, speculative: true },
+      { key: 'sec:p101', name: '15 — Phase 101 Industrial Engineering', w: 11000, h: 5200 },
+      { key: 'sec:p102', name: '16 — Phase 102 Media & Video Hub', w: 11000, h: 5200 },
+      { key: 'sec:p103', name: '17 — Phase 103 Live Voice Intelligence', w: 11000, h: 5200 },
     ],
   },
   {
@@ -696,7 +696,7 @@ const PAGES = Object.freeze([
   },
 ])
 
-/** Sections whose content is SPECULATIVE because the phase does not exist in code. */
+/** Sections whose product phase does not yet exist in code. Currently empty. */
 const SPECULATIVE_SECTIONS = Object.freeze(
   PAGES.flatMap((p) => p.sections.filter((s) => s.speculative).map((s) => s.name))
 )
@@ -791,7 +791,7 @@ const PRESETS = Object.freeze({
  * @property {Record<string,string[]>} axes   variant axes -> values
  * @property {{name:string, default:Record<string,string>}[]} [text]  TEXT component properties (the locale mechanism)
  * @property {string[]} [bools]         BOOLEAN component properties
- * @property {string[]} [swaps]         INSTANCE_SWAP component properties
+ * @property {{name:string,target:string}[]} [swaps] INSTANCE_SWAP property + target family key
  * @property {string} glass             DNA glass tier or 'none'
  * @property {string} description
  * @property {string} a11y
@@ -807,7 +807,7 @@ const FAMILIES = [
   {
     key: 'shell', name: 'Hermes/Shell', section: '04 — Core Components', preset: 'shell',
     axes: { Breakpoint: BP, Direction: DIR },
-    swaps: ['Rail', 'Content'],
+    swaps: [{ name: 'Rail', target: 'rail' }, { name: 'Content', target: 'feedback' }],
     glass: 'none',
     description: 'The application frame. Holds a Rail instance and a content slot. Direction is a variant here and ONLY here for the outer layout — every nested component inherits direction from this auto-layout parent, which is why no leaf component carries a direction axis.',
     a11y: 'landmark structure: navigation + main. Skip-to-content is the first focusable node.',
@@ -817,7 +817,7 @@ const FAMILIES = [
     key: 'rail', name: 'Hermes/Rail', section: '04 — Core Components', preset: 'rail',
     axes: { Breakpoint: BP, State: ['Collapsed', 'Expanded'] },
     bools: ['Show labels'],
-    swaps: ['Item icon'],
+    swaps: [{ name: 'Item icon', target: 'state-pill' }],
     glass: 'none',
     description: 'Hermes Rail — 72px icon-only resting state, 264px expanded drawer, bottom sheet on Mobile. Active item carries a 2px inline-start Beacon bar.',
     a11y: 'nav landmark; 44px targets (SC 2.5.8); aria-current on the active item; labels exposed to AT even when visually collapsed.',
@@ -827,7 +827,7 @@ const FAMILIES = [
     key: 'command', name: 'Hermes/Command', section: '04 — Core Components', preset: 'field',
     axes: { Breakpoint: BP, State: ['Rest', 'Focus', 'Open'] },
     text: [{ name: 'Placeholder', default: T('Ask Hermes or search…', 'از هرمس بپرسید یا جست‌وجو کنید…', 'Hermes fragen oder suchen…') }],
-    swaps: ['Leading mark'],
+    swaps: [{ name: 'Leading mark', target: 'reasoning-chip' }],
     glass: 'elevated',
     description: 'Hermes Command — the signature AI command/search field. 720/640/342 wide, 64 tall. Deliberately larger than any other control in the product.',
     a11y: 'role=combobox, aria-expanded, aria-controls the palette listbox; 2px Beacon focus ring at 2px offset.',
@@ -838,7 +838,7 @@ const FAMILIES = [
     axes: { Intent: ['Primary', 'Secondary', 'Tertiary', 'Destructive'], Size: ['Sm', 'Md', 'Lg'] },
     text: [{ name: 'Label', default: T('Continue', 'ادامه', 'Weiter') }],
     bools: ['Leading icon', 'Trailing icon'],
-    swaps: ['Icon'],
+    swaps: [{ name: 'Icon', target: 'state-pill' }],
     glass: 'none',
     description: 'Mirrors buttonVariants in src/components/ds/logic.ts exactly (primary/secondary/tertiary/destructive x sm/md/lg). Interaction states live in the sibling States set so neither matrix exceeds the variant budget.',
     a11y: 'dark-on-cyan only for Primary — white-on-cyan is prohibited (11.01:1).',
@@ -969,7 +969,7 @@ const FAMILIES = [
       { name: 'Name', default: T('Boiler feed pump A', 'پمپ تغذیهٔ بویلر A', 'Kesselspeisepumpe A') },
       { name: 'Tag', default: T('P-101A', 'P-101A', 'P-101A') },
     ],
-    swaps: ['Status pill'],
+    swaps: [{ name: 'Status pill', target: 'state-pill' }],
     glass: 'interactive', description: 'Asset tile for Live Operations and Assets.',
     a11y: 'the status pill instance carries the accessible state; the card is a single tab stop.',
   },
@@ -1005,7 +1005,7 @@ const FAMILIES = [
       { name: 'Title', default: T('Evidence lineage', 'زنجیرهٔ شواهد', 'Nachweiskette') },
       { name: 'Source', default: T('Historian · tag FIC-1024.PV · 2h window', 'هیستورین · تگ FIC-1024.PV · بازهٔ ۲ ساعت', 'Historian · Tag FIC-1024.PV · 2-h-Fenster') },
     ],
-    swaps: ['Provenance chip'],
+    swaps: [{ name: 'Provenance chip', target: 'reasoning-chip' }],
     glass: 'elevated',
     description: 'Inspectable evidence lineage for the Industrial Brain. Empty state states what is missing and why — it never renders absence as zero.',
     a11y: 'disclosure pattern with aria-expanded; every claim row is linked to its source record.',
@@ -1017,7 +1017,7 @@ const FAMILIES = [
       { name: 'Title', default: T('Operate', 'بهره‌برداری', 'Betreiben') },
       { name: 'Summary', default: T('What is happening in the plant right now', 'همین حالا در کارخانه چه می‌گذرد', 'Was in der Anlage gerade passiert') },
     ],
-    swaps: ['Mark'],
+    swaps: [{ name: 'Mark', target: 'reasoning-chip' }],
     glass: 'interactive',
     description: 'Hermes Triad — the three primary Workspace cards. Exactly three, equal weight, one intent each. This is a fixed composition, not a generic card grid.',
     a11y: 'each card is a single tab stop with a descriptive accessible name; hover lift is decorative only.',
@@ -1106,7 +1106,48 @@ function assertLocaleIsNeverAVariant() {
 
 const LOCALES = Object.freeze(['en', 'fa', 'de'])
 
-module.exports = { FAMILIES, PRESETS, BP, DIR, LOCALES, variantCombos, variantName, assertVariantBudget, assertLocaleIsNeverAVariant }
+const BREAKPOINT_WIDTHS = Object.freeze({
+  shell: { Desktop: 1440, Tablet: 768, Mobile: 390 },
+  rail: { Desktop: 72, Tablet: 72, Mobile: 390 },
+  command: { Desktop: 720, Tablet: 640, Mobile: 342 },
+  dialog: { Desktop: 720, Tablet: 640, Mobile: 342 },
+  'kpi-card': { Desktop: 360, Tablet: 320, Mobile: 342 },
+  'asset-card': { Desktop: 360, Tablet: 320, Mobile: 342 },
+  table: { Desktop: 960, Tablet: 680, Mobile: 342 },
+  'evidence-panel': { Desktop: 720, Tablet: 640, Mobile: 342 },
+  feedback: { Desktop: 720, Tablet: 640, Mobile: 342 },
+})
+
+/**
+ * Concrete geometry for every family that declares a Breakpoint axis. The axis
+ * is not decorative: Desktop/Tablet/Mobile variants materially resize.
+ * @param {string} familyKey
+ * @param {Record<string,string>} combo
+ */
+function variantGeometry(familyKey, combo) {
+  if (!combo.Breakpoint) return null
+  const widths = BREAKPOINT_WIDTHS[familyKey]
+  if (!widths || !widths[combo.Breakpoint]) {
+    throw new Error('missing breakpoint geometry for ' + familyKey + '/' + combo.Breakpoint)
+  }
+  let width = widths[combo.Breakpoint]
+  if (familyKey === 'rail' && combo.State === 'Expanded' && combo.Breakpoint !== 'Mobile') width = 264
+  return { width }
+}
+
+module.exports = {
+  FAMILIES,
+  PRESETS,
+  BP,
+  DIR,
+  LOCALES,
+  BREAKPOINT_WIDTHS,
+  variantCombos,
+  variantName,
+  variantGeometry,
+  assertVariantBudget,
+  assertLocaleIsNeverAVariant,
+}
 
   };
   __modules["dna-spec"] = function (module, exports, require) {
@@ -1162,14 +1203,58 @@ function slug(s) {
 }
 
 /**
- * FNV-1a over the JSON of an asset's identity payload. Deterministic across runs
- * and platforms — this is what makes re-running the plugin a surgical UPDATE of
- * only the changed assets rather than a duplicate-everything disaster.
+ * Recursively canonical JSON. `JSON.stringify(value, Object.keys(value).sort())`
+ * is not sufficient: its replacer array applies at every depth and silently
+ * drops nested keys that do not also exist at the root. Component axes, locale
+ * defaults and nested geometry are identity-bearing and must never disappear.
+ *
+ * @param {any} value
+ * @returns {string}
+ */
+function canonicalStringify(value) {
+  const seen = new Set()
+
+  /** @param {any} input @returns {string|undefined} */
+  const encode = (input) => {
+    if (input && typeof input.toJSON === 'function') input = input.toJSON()
+    if (input === null) return 'null'
+    if (typeof input === 'string' || typeof input === 'boolean') return JSON.stringify(input)
+    if (typeof input === 'number') return Number.isFinite(input) ? JSON.stringify(input) : 'null'
+    if (typeof input === 'bigint') throw new TypeError('BigInt cannot be canonicalised as JSON')
+    if (typeof input === 'undefined' || typeof input === 'function' || typeof input === 'symbol') return undefined
+
+    if (seen.has(input)) throw new TypeError('Cannot canonicalise a circular structure')
+    seen.add(input)
+    let encoded
+    if (Array.isArray(input)) {
+      encoded = '[' + input.map((item) => encode(item) ?? 'null').join(',') + ']'
+    } else {
+      const entries = []
+      for (const key of Object.keys(input).sort()) {
+        const item = encode(input[key])
+        if (item !== undefined) entries.push(JSON.stringify(key) + ':' + item)
+      }
+      encoded = '{' + entries.join(',') + '}'
+    }
+    seen.delete(input)
+    return encoded
+  }
+
+  const result = encode(value)
+  if (result === undefined) throw new TypeError('Root value is not representable as canonical JSON')
+  return result
+}
+
+/**
+ * FNV-1a over the canonical JSON of an asset's identity payload. Deterministic
+ * across runs and platforms — this is what makes re-running the plugin a
+ * surgical UPDATE of only changed assets rather than a duplicate-everything
+ * disaster.
  * @param {any} payload
  * @returns {string}
  */
 function hashAsset(payload) {
-  const s = JSON.stringify(payload, Object.keys(payload).sort())
+  const s = canonicalStringify(payload)
   let h = 0x811c9dc5
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i)
@@ -1184,7 +1269,7 @@ function web(cssVar) {
 }
 
 /**
- * @returns {{collections:any[], variables:any[], paintStyles:any[], effectStyles:any[], docs:any[], assets:any[], counts:Record<string,number>}}
+ * @returns {{pages:any[], sections:any[], collections:any[], variables:any[], paintStyles:any[], effectStyles:any[], componentSets:any[], docs:any[], assets:any[], counts:Record<string,number>}}
  */
 function buildDnaSpec() {
   /** @type {any[]} */ const collections = []
@@ -1373,7 +1458,7 @@ function buildDnaSpec() {
   const componentSets = FAMILIES.map((f) => {
     const combos = variantCombos(f)
     return {
-      key: 'componentSet:' + f.key, kind: 'componentSet', name: f.name,
+      key: 'componentSet:' + f.key, familyKey: f.key, kind: 'componentSet', name: f.name,
       sectionName: f.section, preset: f.preset, glass: f.glass,
       axes: f.axes, variants: combos.map((c) => variantName(f, c)),
       variantCount: combos.length,
@@ -1410,7 +1495,7 @@ function buildDnaSpec() {
   return { pages, sections, collections, variables, paintStyles, effectStyles, componentSets, docs, assets, counts }
 }
 
-module.exports = { buildDnaSpec, COLLECTIONS, SCOPES, MODE, slug, hashAsset }
+module.exports = { buildDnaSpec, COLLECTIONS, SCOPES, MODE, slug, canonicalStringify, hashAsset }
 
   };
   __modules["dna-exec"] = function (module, exports, require) {
@@ -1429,22 +1514,24 @@ module.exports = { buildDnaSpec, COLLECTIONS, SCOPES, MODE, slug, hashAsset }
  * with recorded 173/173 evidence and must not be corruptible even by accident.
  */
 
-const { buildDnaSpec } = require('dna-spec')
+const { buildDnaSpec, hashAsset } = require('dna-spec')
 const { assertContract } = require('contract')
 const { parseColor } = require('contrast')
 const DNA = require('dna-tokens')
-const { PRESETS } = require('dna-components')
+const { PRESETS, variantGeometry } = require('dna-components')
 
 const NAMESPACE = 'hermesP104'
 const K_MANAGED = 'managed'
 const K_ASSET_KEY = 'assetKey'
 const K_HASH = 'contentHash'
+const K_PAGE_CREATED = 'pageCreated'
+const K_PAGE_ORIGINAL = 'pageOriginal'
 
 /** @param {string} v */
 const rgb = (v) => { const c = parseColor(v); return { r: c.r, g: c.g, b: c.b } }
 /** @param {string} v */
 const opacityOf = (v) => parseColor(v).a
-/** @param {string} v */
+/** @param {string} v @returns {SolidPaint} */
 const solid = (v) => ({ type: 'SOLID', color: rgb(v), opacity: opacityOf(v) })
 
 function tag(node, assetKey, hash) {
@@ -1455,8 +1542,24 @@ function tag(node, assetKey, hash) {
 }
 function readKey(node) {
   if (!node || typeof node.getSharedPluginData !== 'function') return null
+  if (node.getSharedPluginData(NAMESPACE, K_MANAGED) !== '1') return null
   return node.getSharedPluginData(NAMESPACE, K_ASSET_KEY) || null
 }
+
+function readHash(node) {
+  if (!node || typeof node.getSharedPluginData !== 'function') return ''
+  return node.getSharedPluginData(NAMESPACE, K_HASH) || ''
+}
+
+function clearTag(node) {
+  if (!node || typeof node.setSharedPluginData !== 'function') return
+  for (const key of [K_MANAGED, K_ASSET_KEY, K_HASH, K_PAGE_CREATED, K_PAGE_ORIGINAL]) {
+    node.setSharedPluginData(NAMESPACE, key, '')
+  }
+}
+
+/** @param {any} node @param {any} asset */
+const isCurrent = (node, asset) => !!node && readHash(node) === asset.hash
 
 // ── fonts ───────────────────────────────────────────────────────────────────
 
@@ -1557,19 +1660,107 @@ function isDashed(family, combo) {
 
 // ── discovery ───────────────────────────────────────────────────────────────
 
-async function scanExisting() {
-  /** @type {Record<string, any>} */
-  const index = {}
-  for (const c of await figma.variables.getLocalVariableCollectionsAsync()) { const k = readKey(c); if (k) index[k] = c }
-  for (const v of await figma.variables.getLocalVariablesAsync()) { const k = readKey(v); if (k) index[k] = v }
-  for (const s of await figma.getLocalPaintStylesAsync()) { const k = readKey(s); if (k) index[k] = s }
-  for (const s of await figma.getLocalEffectStylesAsync()) { const k = readKey(s); if (k) index[k] = s }
-  for (const p of figma.root.children) {
-    const k = readKey(p)
-    if (k) index[k] = p
-    for (const n of p.children) { const nk = readKey(n); if (nk) index[nk] = n }
+/** @param {any} node @param {Record<string, any[]>} groups @param {string[]} malformed */
+function collectManaged(node, groups, malformed) {
+  if (!node || typeof node.getSharedPluginData !== 'function') return
+  const managed = node.getSharedPluginData(NAMESPACE, K_MANAGED)
+  const key = node.getSharedPluginData(NAMESPACE, K_ASSET_KEY)
+  if (managed === '1' && !key) malformed.push(String(node.id || node.name || 'unknown node'))
+  if (managed === '1' && key) (groups[key] || (groups[key] = [])).push(node)
+}
+
+/** @param {any} node @param {Record<string, any[]>} groups @param {string[]} malformed */
+function walkManaged(node, groups, malformed) {
+  collectManaged(node, groups, malformed)
+  if (node && Array.isArray(node.children)) {
+    for (const child of node.children) walkManaged(child, groups, malformed)
   }
-  return index
+}
+
+/**
+ * Scan every managed asset recursively. Component sets live inside Sections, so
+ * a page-plus-immediate-children scan is not idempotent and creates duplicates on
+ * the second Apply.
+ *
+ * @param {{allowDuplicates?:boolean}} [opts]
+ */
+async function scanManagedAssets(opts) {
+  /** @type {Record<string, any[]>} */ const groups = {}
+  /** @type {string[]} */ const malformed = []
+  for (const c of await figma.variables.getLocalVariableCollectionsAsync()) collectManaged(c, groups, malformed)
+  for (const v of await figma.variables.getLocalVariablesAsync()) collectManaged(v, groups, malformed)
+  for (const s of await figma.getLocalPaintStylesAsync()) collectManaged(s, groups, malformed)
+  for (const s of await figma.getLocalEffectStylesAsync()) collectManaged(s, groups, malformed)
+  for (const page of figma.root.children) walkManaged(page, groups, malformed)
+
+  if (malformed.length) {
+    throw new Error('PHASE 104 MANAGED-ASSET CORRUPTION — managed node(s) have no assetKey: ' + malformed.join(', '))
+  }
+
+  const duplicates = Object.entries(groups)
+    .filter(([, nodes]) => nodes.length > 1)
+    .map(([key, nodes]) => ({ key, count: nodes.length, nodes }))
+  if (duplicates.length && !(opts && opts.allowDuplicates)) {
+    throw new Error('PHASE 104 DUPLICATE MANAGED ASSETS — Rollback before Apply: ' +
+      duplicates.map((d) => d.key + ' x' + d.count).join(', '))
+  }
+
+  /** @type {Record<string, any>} */ const index = {}
+  for (const [key, nodes] of Object.entries(groups)) index[key] = nodes[0]
+  return { index, groups, duplicates }
+}
+
+async function scanExisting() {
+  return (await scanManagedAssets()).index
+}
+
+/**
+ * Use the same page allocation for Dry Run and Apply. Tagged pages win; remaining
+ * spec pages reuse each unclaimed live page in order, then create only what is
+ * genuinely missing.
+ * @param {any[]} pages @param {Record<string, any>} existing @param {any[]} livePages
+ */
+function planPages(pages, existing, livePages) {
+  // Reserve every explicitly tagged page before allocating untagged live pages;
+  // otherwise an earlier spec page can steal the page owned by a later key.
+  const used = new Set(pages.map((page) => existing[page.key]).filter(Boolean))
+  return pages.map((page, desiredIndex) => {
+    let node = existing[page.key] || null
+    if (!node) {
+      node = livePages.find((candidate) => !used.has(candidate)) || null
+      if (node) used.add(node)
+    }
+    return {
+      asset: page,
+      node,
+      created: !node,
+      managed: !!(node && readKey(node) === page.key),
+      desiredIndex,
+      orderMatches: !!node && livePages.indexOf(node) === desiredIndex,
+    }
+  })
+}
+
+/** @param {Record<string, any>} existing @param {any[]} livePages */
+function stateSignature(existing, livePages) {
+  const owned = Object.keys(existing).sort().map((key) => ({
+    key,
+    id: String(existing[key].id || ''),
+    hash: readHash(existing[key]),
+  }))
+  const shape = (node) => ({
+    id: String(node.id || ''),
+    type: String(node.type || ''),
+    name: String(node.name || ''),
+    x: typeof node.x === 'number' ? node.x : null,
+    y: typeof node.y === 'number' ? node.y : null,
+    width: typeof node.width === 'number' ? node.width : null,
+    height: typeof node.height === 'number' ? node.height : null,
+    characters: typeof node.characters === 'string' ? node.characters : null,
+    children: Array.isArray(node.children) ? node.children.map(shape) : [],
+  })
+  const pages = livePages.map(shape)
+  return hashAsset({ owned, pages })
 }
 
 // ── apply ───────────────────────────────────────────────────────────────────
@@ -1587,6 +1778,8 @@ async function applyDna(opts) {
 
   if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
   const existing = await scanExisting()
+  const livePages = figma.root.children.slice()
+  const pagePlan = planPages(spec.pages, existing, livePages)
 
   const result = {
     dryRun,
@@ -1596,17 +1789,33 @@ async function applyDna(opts) {
     errors: /** @type {string[]} */ ([]),
     fontSubstitutions: /** @type {string[]} */ ([]),
     counts: spec.counts,
+    stateSignature: stateSignature(existing, livePages),
   }
+  const expectedKeys = new Set(spec.assets.map((asset) => asset.key))
+  const unexpectedOwned = Object.keys(existing).filter((key) => !expectedKeys.has(key)).sort()
+  for (const key of unexpectedOwned) result.errors.push('unexpected managed asset: ' + key + ' — Rollback before Apply')
 
   if (dryRun) {
-    for (const a of spec.assets) {
+    for (const planned of pagePlan) {
+      const a = planned.asset
+      const label = a.kind + ':' + a.name
+      if (planned.created) result.created.push(label)
+      else if (planned.managed && isCurrent(planned.node, a) && planned.orderMatches) result.skipped.push(label)
+      else result.updated.push(label)
+    }
+    for (const a of spec.assets.filter((asset) => asset.kind !== 'page')) {
       const prev = existing[a.key]
       const label = a.kind + ':' + a.name
       if (!prev) result.created.push(label)
-      else if (prev.getSharedPluginData && prev.getSharedPluginData(NAMESPACE, K_HASH) !== a.hash) result.updated.push(label)
-      else result.skipped.push(label)
+      else if (isCurrent(prev, a)) result.skipped.push(label)
+      else result.updated.push(label)
     }
     return result
+  }
+
+  if (result.errors.length) {
+    throw new Error('APPLY BLOCKED — unexpected Phase 104 managed assets exist. Run Dry Run, then Rollback: ' +
+      unexpectedOwned.join(', '))
   }
 
   const fonts = await loadFonts()
@@ -1615,21 +1824,37 @@ async function applyDna(opts) {
   // ── 1. Pages — reuse the three the Starter plan allows, never create a 4th ──
   /** @type {Record<string, any>} */
   const pageByKey = {}
-  const livePages = figma.root.children.slice()
-  spec.pages.forEach((p, i) => {
-    let node = existing[p.key] || livePages[i]
+  for (const planned of pagePlan) {
+    const p = planned.asset
+    let node = planned.node
     if (!node) {
-      try { node = figma.createPage() } catch (e) { result.errors.push('page ' + p.name + ': ' + String(e.message || e)); return }
+      try {
+        node = figma.createPage()
+        node.setSharedPluginData(NAMESPACE, K_PAGE_CREATED, '1')
+      } catch (e) { result.errors.push('page ' + p.name + ': ' + String(e.message || e)); continue }
       result.created.push('page:' + p.name)
+    } else if (planned.managed && isCurrent(node, p) && planned.orderMatches) {
+      result.skipped.push('page:' + p.name)
+      pageByKey[p.key] = node
+      continue
     } else {
+      if (!planned.managed && typeof node.setSharedPluginData === 'function') {
+        try {
+          node.setSharedPluginData(NAMESPACE, K_PAGE_CREATED, '0')
+          node.setSharedPluginData(NAMESPACE, K_PAGE_ORIGINAL, JSON.stringify({ name: node.name, backgrounds: node.backgrounds }))
+        } catch (e) {
+          result.errors.push('page snapshot ' + p.name + ': ' + String(e && e.message ? e.message : e))
+          continue
+        }
+      }
       result.updated.push('page:' + p.name)
     }
     node.name = p.name
     node.backgrounds = [solid('#040A0F')]
     tag(node, p.key, p.hash)
     pageByKey[p.key] = node
-  })
-  spec.pages.forEach((p, i) => { const n = pageByKey[p.key]; if (n) figma.root.insertChild(i, n) })
+  }
+  spec.pages.forEach((p, i) => { const n = pageByKey[p.key]; if (n && figma.root.children[i] !== n) figma.root.insertChild(i, n) })
 
   // ── 2. Sections ────────────────────────────────────────────────────────────
   /** @type {Record<string, any>} */
@@ -1643,6 +1868,10 @@ async function applyDna(opts) {
         node = figma.createSection()
         page.appendChild(node)
         result.created.push('section:' + s.name)
+      } else if (isCurrent(node, s) && node.parent === page) {
+        result.skipped.push('section:' + s.name)
+        sectionByName[s.name] = node
+        continue
       } else {
         if (node.parent !== page) page.appendChild(node)
         result.updated.push('section:' + s.name)
@@ -1666,7 +1895,11 @@ async function applyDna(opts) {
     try {
       let node = existing[c.key]
       if (!node) { node = figma.variables.createVariableCollection(c.name); result.created.push('collection:' + c.name) }
-      else { result.skipped.push('collection:' + c.name) }
+      else if (isCurrent(node, c)) {
+        result.skipped.push('collection:' + c.name)
+        colByKey[c.key] = node
+        continue
+      } else { result.updated.push('collection:' + c.name) }
       node.name = c.name
       // Starter caps collections at ONE mode. We name it and never call addMode.
       try { node.renameMode(node.modes[0].modeId, c.modeName) } catch (e) { /* already named */ }
@@ -1684,7 +1917,11 @@ async function applyDna(opts) {
     try {
       let node = existing[v.key]
       if (!node) { node = figma.variables.createVariable(v.name, collection, v.resolvedType); result.created.push('variable:' + v.name) }
-      else { result.updated.push('variable:' + v.name) }
+      else if (isCurrent(node, v)) {
+        result.skipped.push('variable:' + v.name)
+        varByKey[v.key] = node
+        continue
+      } else { result.updated.push('variable:' + v.name) }
       node.name = v.name
       const modeId = collection.modes[0].modeId
       if (v.resolvedType === 'COLOR') { const c = parseColor(v.value); node.setValueForMode(modeId, { r: c.r, g: c.g, b: c.b, a: c.a }) }
@@ -1702,6 +1939,7 @@ async function applyDna(opts) {
     try {
       let node = existing[p.key]
       if (!node) { node = figma.createPaintStyle(); result.created.push('paintStyle:' + p.name) }
+      else if (isCurrent(node, p)) { result.skipped.push('paintStyle:' + p.name); continue }
       else result.updated.push('paintStyle:' + p.name)
       node.name = p.name
       let paint = solid(p.value)
@@ -1718,6 +1956,7 @@ async function applyDna(opts) {
     try {
       let node = existing[s.key]
       if (!node) { node = figma.createEffectStyle(); result.created.push('effectStyle:' + s.name) }
+      else if (isCurrent(node, s)) { result.skipped.push('effectStyle:' + s.name); continue }
       else result.updated.push('effectStyle:' + s.name)
       node.name = s.name
       node.effects = [{ type: 'DROP_SHADOW', color: { r: s.color[0], g: s.color[1], b: s.color[2], a: s.color[3] }, offset: s.offset, radius: s.radius, spread: s.spread, visible: true, blendMode: 'NORMAL' }]
@@ -1729,35 +1968,174 @@ async function applyDna(opts) {
   // ── 7. Component sets ──────────────────────────────────────────────────────
   const foundationsPage = pageByKey['page:foundations']
   if (foundationsPage) await figma.setCurrentPageAsync(foundationsPage)
+  /** @type {Record<string, {x:number,y:number}>} */
+  const layoutCursor = {}
+  /** @type {Record<string, {set:any,components:any[],combos:Record<string,string>[]}>} */
+  const availableSets = {}
+  /** @type {{cs:any,built:any,prev:any}[]} */
+  const pendingSets = []
 
   for (const cs of spec.componentSets) {
+    let built = null
     try {
       const prev = existing[cs.key]
-      if (prev) { try { prev.remove() } catch (e) {} } // rebuild in place — variants cannot be edited piecemeal
-      const built = await buildComponentSet(cs, fonts.resolved)
+      if (prev && isCurrent(prev, cs)) {
+        result.skipped.push('componentSet:' + cs.name + ' (' + cs.variantCount + ' variants)')
+        availableSets[cs.familyKey] = {
+          set: prev,
+          components: Array.isArray(prev.children) ? prev.children.filter((node) => node.type === 'COMPONENT') : [],
+          combos: [],
+        }
+        continue
+      }
       const host = sectionByName[cs.sectionName]
-      if (host) host.appendChild(built.set)
-      layoutInSection(built.set, host, cs.sectionName)
-      tag(built.set, cs.key, cs.hash)
-      result[prev ? 'updated' : 'created'].push('componentSet:' + cs.name + ' (' + cs.variantCount + ' variants)')
+      if (!host) throw new Error('missing host section ' + cs.sectionName)
+      built = await buildComponentSet(cs, fonts.resolved)
+      host.appendChild(built.set)
+      if (prev) {
+        built.set.x = prev.x
+        built.set.y = prev.y
+      } else {
+        layoutInSection(built.set, host, cs.sectionName, layoutCursor)
+      }
+      if (built.propertyErrors.length) throw new Error(built.propertyErrors.join('; '))
+      availableSets[cs.familyKey] = built
+      pendingSets.push({ cs, built, prev })
     } catch (e) {
+      if (built && !pendingSets.some((pending) => pending.built === built)) {
+        try { built.set.remove() } catch (cleanupError) {}
+      }
       result.errors.push('componentSet ' + cs.name + ': ' + String(e && e.message ? e.message : e))
     }
+  }
+
+  if (!result.errors.length) {
+    try {
+      for (const pending of pendingSets) wireSwapProperties(pending.cs, pending.built, availableSets)
+    } catch (e) {
+      result.errors.push('component properties: ' + String(e && e.message ? e.message : e))
+    }
+  }
+
+  if (result.errors.length) {
+    for (const pending of pendingSets) { try { pending.built.set.remove() } catch (cleanupError) {} }
+    return result
+  }
+
+  for (const { cs, built, prev } of pendingSets) {
+    tag(built.set, cs.key, cs.hash)
+    if (prev) {
+      try { prev.remove() }
+      catch (e) {
+        try { built.set.remove() } catch (cleanupError) {}
+        result.errors.push('componentSet ' + cs.name + ': could not replace the previous managed set safely: ' +
+          String(e && e.message ? e.message : e))
+        continue
+      }
+    }
+    result[prev ? 'updated' : 'created'].push('componentSet:' + cs.name + ' (' + cs.variantCount + ' variants)')
   }
 
   return result
 }
 
+/**
+ * Read-only integrity check for the exact Phase 104 contract. Stored hashes prove
+ * which canonical spec version last managed an asset; structural checks catch
+ * wrong parents, renamed nodes and variant-count drift. Duplicates are reported,
+ * never collapsed into a false PASS.
+ */
+async function verifyDna() {
+  const spec = buildDnaSpec()
+  assertContract(spec.counts, 'Verify')
+  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
+  const scan = await scanManagedAssets({ allowDuplicates: true })
+  const expected = Object.fromEntries(spec.assets.map((asset) => [asset.key, asset]))
+  const missing = []
+  const drifted = []
+  const verified = []
+  const unexpected = Object.keys(scan.groups).filter((key) => !expected[key]).sort()
+  const duplicates = scan.duplicates.map((d) => d.key + ' x' + d.count)
+
+  for (const asset of spec.assets) {
+    const nodes = scan.groups[asset.key] || []
+    if (!nodes.length) { missing.push(asset.kind + ':' + asset.name); continue }
+    const node = nodes[0]
+    const reasons = []
+    if (readHash(node) !== asset.hash) reasons.push('contentHash')
+    if (typeof node.name === 'string' && node.name !== asset.name) reasons.push('name')
+    if (asset.kind === 'page' && figma.root.children.indexOf(node) !== spec.pages.indexOf(asset)) reasons.push('page-order')
+    if (asset.kind === 'section' && (!node.parent || readKey(node.parent) !== asset.pageKey)) reasons.push('parent-page')
+    if (asset.kind === 'section' &&
+        (node.x !== asset.x || node.y !== asset.y || node.width !== asset.w || node.height !== asset.h)) reasons.push('section-geometry')
+    if (asset.kind === 'componentSet') {
+      if (!node.parent || node.parent.name !== asset.sectionName) reasons.push('parent-section')
+      const variants = Array.isArray(node.children) ? node.children.filter((child) => child.type === 'COMPONENT') : []
+      if (variants.length !== asset.variantCount) reasons.push('variant-count:' + variants.length + '/' + asset.variantCount)
+      else if (JSON.stringify(variants.map((child) => child.name).sort()) !== JSON.stringify(asset.variants.slice().sort())) reasons.push('variant-names')
+      const definitions = Object.entries(node.componentPropertyDefinitions || {})
+      const hasDefinition = (name, type) => definitions.some(([key, definition]) =>
+        (key === name || key.split('#')[0] === name) && definition && definition.type === type)
+      for (const property of (asset.text || [])) {
+        if (!hasDefinition(property.name, 'TEXT')) reasons.push('TEXT-property:' + property.name)
+        else if (variants.some((variant) => !variant.children.some((child) => child.name === property.name &&
+          child.componentPropertyReferences && child.componentPropertyReferences.characters))) reasons.push('TEXT-binding:' + property.name)
+      }
+      for (const property of (asset.bools || [])) {
+        if (!hasDefinition(property, 'BOOLEAN')) reasons.push('BOOLEAN-property:' + property)
+        else if (variants.some((variant) => !variant.children.some((child) => child.name === property &&
+          child.componentPropertyReferences && child.componentPropertyReferences.visible))) reasons.push('BOOLEAN-binding:' + property)
+      }
+      for (const property of (asset.swaps || [])) {
+        if (!hasDefinition(property.name, 'INSTANCE_SWAP')) reasons.push('SWAP-property:' + property.name)
+        else if (variants.some((variant) => !variant.children.some((child) => child.name === property.name &&
+          child.componentPropertyReferences && child.componentPropertyReferences.mainComponent))) reasons.push('SWAP-binding:' + property.name)
+      }
+    }
+    if (asset.kind === 'collection') {
+      if (!Array.isArray(node.modes) || node.modes.length !== 1 || node.modes[0].name !== asset.modeName) reasons.push('single-mode')
+    }
+    if (asset.kind === 'variable') {
+      if (node.resolvedType !== asset.resolvedType) reasons.push('resolved-type')
+      if (JSON.stringify((node.scopes || []).slice().sort()) !== JSON.stringify(asset.scopes.slice().sort())) reasons.push('scopes')
+      if (node.description !== asset.description) reasons.push('description')
+      if (asset.codeSyntax && asset.codeSyntax.WEB && typeof node.getVariableCodeSyntax === 'function' &&
+          node.getVariableCodeSyntax('WEB') !== asset.codeSyntax.WEB) reasons.push('web-code-syntax')
+    }
+    if ((asset.kind === 'paintStyle' || asset.kind === 'effectStyle') && node.description !== asset.description) reasons.push('description')
+    if (reasons.length) drifted.push(asset.kind + ':' + asset.name + ' [' + reasons.join(', ') + ']')
+    else verified.push(asset.kind + ':' + asset.name)
+  }
+
+  const errors = []
+  if (missing.length) errors.push('missing=' + missing.length)
+  if (drifted.length) errors.push('drifted=' + drifted.length)
+  if (duplicates.length) errors.push('duplicates=' + duplicates.length)
+  if (unexpected.length) errors.push('unexpected=' + unexpected.length)
+  return {
+    ok: errors.length === 0,
+    verified,
+    missing,
+    drifted,
+    duplicates,
+    unexpected,
+    errors,
+    counts: spec.counts,
+    stateSignature: stateSignature(scan.index, figma.root.children.slice()),
+  }
+}
+
 /** Simple stacking layout so sets never pile up at (0,0). */
-const _cursor = {}
-function layoutInSection(node, section, sectionName) {
+function layoutInSection(node, section, sectionName, cursor) {
   if (!section) return
-  const c = _cursor[sectionName] || { x: 80, y: 140 }
-  node.x = section.x + c.x
-  node.y = section.y + c.y
+  const c = cursor[sectionName] || { x: 80, y: 140 }
+  // Children of a Section use parent-relative coordinates. Adding section.x/y
+  // double-offsets every set when the Section itself is not at the origin.
+  node.x = c.x
+  node.y = c.y
   c.y += node.height + 120
   if (c.y > section.height - 200) { c.y = 140; c.x += 1600 }
-  _cursor[sectionName] = c
+  cursor[sectionName] = c
 }
 
 /**
@@ -1833,6 +2211,13 @@ async function buildComponentSet(cs, fonts) {
       kids.forEach((k, i) => comp.insertChild(i, k))
     }
 
+    const geometry = variantGeometry(cs.familyKey, combo)
+    if (geometry) {
+      if (preset.layout === 'HORIZONTAL') comp.primaryAxisSizingMode = 'FIXED'
+      else comp.counterAxisSizingMode = 'FIXED'
+      comp.resize(geometry.width, Math.max(comp.height, 1))
+    }
+
     if (preset.height && preset.layout === 'HORIZONTAL') {
       comp.counterAxisSizingMode = 'FIXED'
       comp.resize(Math.max(comp.width, 1), preset.height)
@@ -1857,16 +2242,27 @@ async function buildComponentSet(cs, fonts) {
   // ── component properties ────────────────────────────────────────────────
   /** @type {Record<string,string>} */
   const propIds = {}
+  /** @type {string[]} */
+  const propertyErrors = []
   for (const t of (cs.text || [])) {
     try {
       propIds[t.name] = set.addComponentProperty(t.name, 'TEXT', String((t.default && t.default.en) || ''))
-    } catch (e) { /* duplicate name */ }
+    } catch (e) { propertyErrors.push('TEXT ' + t.name + ': ' + String(e && e.message ? e.message : e)) }
   }
   for (const b of (cs.bools || [])) {
-    try { set.addComponentProperty(b, 'BOOLEAN', true) } catch (e) {}
-  }
-  for (const s of (cs.swaps || [])) {
-    try { set.addComponentProperty(s, 'INSTANCE_SWAP', '') } catch (e) {}
+    try {
+      const pid = set.addComponentProperty(b, 'BOOLEAN', true)
+      for (const comp of components) {
+        const marker = figma.createText()
+        marker.fontName = fonts['body/Regular'] || { family: 'Inter', style: 'Regular' }
+        marker.fontSize = 10
+        marker.characters = b
+        marker.fills = [solid('#A9BAC6')]
+        marker.name = b
+        marker.componentPropertyReferences = { visible: pid }
+        comp.appendChild(marker)
+      }
+    } catch (e) { propertyErrors.push('BOOLEAN ' + b + ': ' + String(e && e.message ? e.message : e)) }
   }
 
   // bind each variant's text nodes to the TEXT properties
@@ -1874,11 +2270,39 @@ async function buildComponentSet(cs, fonts) {
     for (const child of comp.children) {
       if (child.type !== 'TEXT') continue
       const pid = propIds[child.name]
-      if (pid) { try { child.componentPropertyReferences = { characters: pid } } catch (e) {} }
+      if (pid) {
+        try { child.componentPropertyReferences = { characters: pid } }
+        catch (e) { propertyErrors.push('TEXT binding ' + child.name + ': ' + String(e && e.message ? e.message : e)) }
+      }
     }
   }
 
-  return { set, components }
+  return { set, components, combos, propertyErrors }
+}
+
+/**
+ * Wire INSTANCE_SWAP properties only after every target set exists. This avoids
+ * empty-string defaults and makes each property control a real nested instance.
+ * @param {any} cs
+ * @param {{set:any,components:any[],combos:Record<string,string>[]}} built
+ * @param {Record<string,{set:any,components:any[],combos:Record<string,string>[]}>} availableSets
+ */
+function wireSwapProperties(cs, built, availableSets) {
+  for (const swap of (cs.swaps || [])) {
+    const targetSet = availableSets[swap.target]
+    const target = targetSet && targetSet.components[0]
+    if (!target || typeof target.createInstance !== 'function') {
+      throw new Error(cs.name + ' swap "' + swap.name + '" has no usable target family ' + swap.target)
+    }
+    const propertyId = built.set.addComponentProperty(swap.name, 'INSTANCE_SWAP', target.id)
+    for (let i = 0; i < built.components.length; i++) {
+      const instance = target.createInstance()
+      instance.name = swap.name
+      if (built.combos[i] && built.combos[i].Direction === 'RTL') built.components[i].insertChild(0, instance)
+      else built.components[i].appendChild(instance)
+      instance.componentPropertyReferences = { mainComponent: propertyId }
+    }
+  }
 }
 
 /**
@@ -1888,19 +2312,68 @@ async function buildComponentSet(cs, fonts) {
  */
 async function rollbackDna() {
   const removed = /** @type {string[]} */ ([])
+  const restored = /** @type {string[]} */ ([])
+  const retained = /** @type {string[]} */ ([])
   const errors = /** @type {string[]} */ ([])
   if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
-  const index = await scanExisting()
-  const rank = (k) => (k.startsWith('componentSet:') ? 0 : k.startsWith('variable:') ? 1 : k.startsWith('section:') ? 2 : k.startsWith('collection:') ? 3 : k.startsWith('page:') ? 5 : 4)
-  for (const key of Object.keys(index).sort((a, b) => rank(a) - rank(b))) {
-    if (key.startsWith('page:')) continue // never delete a page — Starter allows only 3
-    try { index[key].remove(); removed.push(key) }
-    catch (e) { errors.push(key + ': ' + String(e && e.message ? e.message : e)) }
+  const scan = await scanManagedAssets({ allowDuplicates: true })
+  const rank = (k) => (k.startsWith('componentSet:') ? 0
+    : k.startsWith('paintStyle:') || k.startsWith('effectStyle:') ? 1
+      : k.startsWith('variable:') ? 2
+        : k.startsWith('section:') ? 3
+          : k.startsWith('collection:') ? 4
+            : k.startsWith('page:') ? 5 : 4)
+  const entries = Object.entries(scan.groups)
+    .flatMap(([key, nodes]) => nodes.map((node) => ({ key, node })))
+    .sort((a, b) => rank(a.key) - rank(b.key))
+
+  for (const { key, node } of entries) {
+    try {
+      if (key.startsWith('section:') && Array.isArray(node.children) && node.children.length) {
+        clearTag(node)
+        retained.push(key + ' (contains non-plugin content)')
+        continue
+      }
+      if (key.startsWith('page:')) {
+        const created = node.getSharedPluginData(NAMESPACE, K_PAGE_CREATED) === '1'
+        if (created) {
+          if (Array.isArray(node.children) && node.children.length === 0 && figma.root.children.length > 1) {
+            node.remove()
+            removed.push(key)
+          } else {
+            clearTag(node)
+            retained.push(key + ' (page retained because it contains content or is the last page)')
+          }
+          continue
+        }
+        const raw = node.getSharedPluginData(NAMESPACE, K_PAGE_ORIGINAL)
+        if (!raw) throw new Error('reused page has no original-state snapshot')
+        const original = JSON.parse(raw)
+        node.name = original.name
+        node.backgrounds = original.backgrounds
+        clearTag(node)
+        restored.push(key)
+        continue
+      }
+      node.remove()
+      removed.push(key)
+    } catch (e) { errors.push(key + ': ' + String(e && e.message ? e.message : e)) }
   }
-  return { removed, errors }
+  return { removed, restored, retained, errors }
 }
 
-module.exports = { applyDna, rollbackDna, scanExisting, resolveStyle, isDashed, NAMESPACE }
+module.exports = {
+  applyDna,
+  verifyDna,
+  rollbackDna,
+  scanExisting,
+  scanManagedAssets,
+  planPages,
+  stateSignature,
+  resolveStyle,
+  isDashed,
+  NAMESPACE,
+}
 
   };
   __modules["main"] = function (module, exports, require) {
@@ -1909,9 +2382,10 @@ module.exports = { applyDna, rollbackDna, scanExisting, resolveStyle, isDashed, 
 /**
  * Plugin entry — Hermes Phase 104 Visual System.
  *
- * Three controls, all reversible, none destructive by default:
+ * Four controls, all scoped to this plugin, none destructive by default:
  *   Dry Run  — enumerate exactly what Apply would create/update/skip. No writes.
  *   Apply    — create or update the Phase 104 structure, tokens and components.
+ *   Verify   — prove every expected managed asset is present and current.
  *   Rollback — delete exactly the assets this plugin owns, and nothing else.
  *
  * FAIL-CLOSED IDENTITY GATE. Every Dry Run and every Apply first asserts the asset
@@ -1924,10 +2398,28 @@ module.exports = { applyDna, rollbackDna, scanExisting, resolveStyle, isDashed, 
  * No network. Nothing leaves the file.
  */
 
-const { applyDna, rollbackDna, scanExisting } = require('dna-exec')
+const { applyDna, verifyDna, rollbackDna, scanExisting } = require('dna-exec')
 const { buildDnaSpec } = require('dna-spec')
 const { assertContract, PLUGIN_IDENTITY } = require('contract')
 const FINGERPRINT = require('fingerprint') // synthetic module injected by build.mjs
+
+let applyPermit = null
+
+function fingerprintKey() {
+  return [FINGERPRINT.pluginId, FINGERPRINT.headSha, FINGERPRINT.sourcesSha].join('|')
+}
+
+function assertRuntimeIdentity(where) {
+  if (FINGERPRINT.plugin !== PLUGIN_IDENTITY.name || FINGERPRINT.pluginId !== PLUGIN_IDENTITY.id) {
+    throw new Error('WRONG PLUGIN IDENTITY during ' + where + ' — remove and re-import the Phase 104 manifest.')
+  }
+  assertContract(FINGERPRINT.buildCounts || {}, where + ' build fingerprint')
+  if (FINGERPRINT.dirty || !/^[0-9a-f]{40}$/.test(String(FINGERPRINT.headSha || '')) ||
+      !/^[0-9a-f]{64}$/.test(String(FINGERPRINT.sourcesSha || ''))) {
+    throw new Error('UNTRUSTED BUILD FINGERPRINT during ' + where +
+      ' — clean-build the plugin; dirty/UNKNOWN builds cannot Dry Run, Apply or Verify.')
+  }
+}
 
 figma.showUI(__html__, { width: 480, height: 640, themeColors: true })
 
@@ -1937,6 +2429,7 @@ const post = (msg) => figma.ui.postMessage(msg)
 figma.ui.onmessage = async (msg) => {
   try {
     if (msg.type === 'init') {
+      assertRuntimeIdentity('Init')
       const spec = buildDnaSpec()
       const existing = await scanExisting()
       post({
@@ -1951,27 +2444,59 @@ figma.ui.onmessage = async (msg) => {
       return
     }
 
-    if (msg.type === 'dry-run' || msg.type === 'apply') {
-      // Fail closed BEFORE any write.
+    if (msg.type === 'dry-run') {
+      assertRuntimeIdentity('Dry Run')
       const spec = buildDnaSpec()
-      assertContract(spec.counts, msg.type === 'apply' ? 'Apply' : 'Dry Run')
+      assertContract(spec.counts, 'Dry Run')
+      const r = await applyDna({ dryRun: true })
+      applyPermit = r.errors.length === 0
+        ? { fingerprint: fingerprintKey(), stateSignature: r.stateSignature }
+        : null
+      post({ type: 'result', mode: 'Dry Run', result: r, fingerprint: FINGERPRINT, applyPermitted: !!applyPermit })
+      return
+    }
 
-      const r = await applyDna({ dryRun: msg.type === 'dry-run' })
-      post({ type: 'result', mode: msg.type === 'apply' ? 'Apply' : 'Dry Run', result: r, fingerprint: FINGERPRINT })
+    if (msg.type === 'apply') {
+      assertRuntimeIdentity('Apply')
+      if (!applyPermit || applyPermit.fingerprint !== fingerprintKey()) {
+        throw new Error('APPLY BLOCKED — run a clean Dry Run on this exact build first.')
+      }
+      // Re-preview immediately before the first write. If the document changed
+      // since Dry Run, the permit is invalid and must never be reused.
+      const preview = await applyDna({ dryRun: true })
+      if (preview.errors.length || preview.stateSignature !== applyPermit.stateSignature) {
+        applyPermit = null
+        throw new Error('APPLY BLOCKED — the Figma file changed after Dry Run; run Dry Run again.')
+      }
+      applyPermit = null
+      const r = await applyDna({ dryRun: false })
+      post({ type: 'result', mode: 'Apply', result: r, fingerprint: FINGERPRINT, applyPermitted: false })
+      return
+    }
+
+    if (msg.type === 'verify') {
+      assertRuntimeIdentity('Verify')
+      const r = await verifyDna()
+      post({ type: 'verify-result', mode: 'Verify', result: r, fingerprint: FINGERPRINT })
       return
     }
 
     if (msg.type === 'rollback') {
+      applyPermit = null
       const r = await rollbackDna()
       post({
         type: 'result', mode: 'Rollback', fingerprint: FINGERPRINT,
-        result: { created: [], updated: [], skipped: [], errors: r.errors, removed: r.removed },
+        result: {
+          created: [], updated: [], skipped: [], errors: r.errors, removed: r.removed,
+          restored: r.restored, retained: r.retained,
+        },
       })
       return
     }
 
     if (msg.type === 'close') figma.closePlugin()
   } catch (e) {
+    applyPermit = null
     post({ type: 'error', message: String(e && e.message ? e.message : e), fingerprint: FINGERPRINT })
   }
 }
