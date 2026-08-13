@@ -68,21 +68,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push(...localeEntries(`/careers/${job.id}`, 0.8, "weekly"));
   }
 
-  // Dynamic: academy courses (DB-backed — skip gracefully if unavailable)
-  try {
-    const { getPrisma } = await import("@/lib/db/prisma");
-    const prisma = await getPrisma();
-    if (prisma) {
-      const courses = await (prisma as unknown as {
-        academyCourse: { findMany: (a: unknown) => Promise<{ id: string }[]> }
-      }).academyCourse.findMany({ select: { id: true } });
-      for (const course of courses) {
-        entries.push(...localeEntries(`/academy/course/${course.id}`, 0.8, "weekly"));
-      }
-    }
-  } catch {
-    // DB not available at build time — courses omitted from static sitemap
-  }
+  // Academy courses are DELIBERATELY absent.
+  //
+  // This block used to `findMany` every AcademyCourse row with no predicate at
+  // all and publish each id to search engines — unpublished drafts,
+  // soft-deleted rows and every other tenant's courses included. Adding
+  // `isPublished` would not have fixed it: `AcademyCourse` is tenant-owned
+  // (`organizationId` is non-null) and `isPublished` means "published inside the
+  // owning organization", so an isPublished filter would still have advertised
+  // every tenant's internal catalogue publicly.
+  //
+  // `AcademyCourse` has no public-visibility column, so no course URL is
+  // reachable by an anonymous crawler: the detail page now 404s for anyone who
+  // is not an ACTIVE member of the owning organization (see
+  // `@/lib/academy/page-access`). A sitemap of URLs that all answer 404 is
+  // worse than no entries at all. Re-add these ONLY behind an explicit
+  // public-visibility column on the model. The `/academy` landing page, which
+  // is genuine public marketing, stays in STATIC_PATHS above.
 
   // Dynamic: approved vendor profiles (DB-backed — skip gracefully if unavailable)
   try {
