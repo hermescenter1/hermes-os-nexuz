@@ -1,6 +1,6 @@
 /* Hermes Phase 104 Visual System — generated bundle.
    Do not edit dist/ by hand; edit src/ and run `npm run build`.
-   HEAD 224955de691c64b8c3bacbb0239312010f2c1854  sources 91a83625b27ca68e259691e3b62658963ac50e441408e784900606d9817b1ef3 */
+   HEAD 4e6753ac3283661d0c2ad619d62384fdaa1871f2  sources c5ca613e138412beaaf8041d4764652d958a99a3304d3993b928e61bdf98578c */
 (function () {
   "use strict";
   var __modules = {}, __cache = {};
@@ -14,12 +14,12 @@
     module.exports = {
   "plugin": "Hermes Phase 104 Visual System",
   "pluginId": "com.hermesnovin.phase104-visual-system",
-  "headSha": "224955de691c64b8c3bacbb0239312010f2c1854",
-  "headShaShort": "224955de691c",
+  "headSha": "4e6753ac3283661d0c2ad619d62384fdaa1871f2",
+  "headShaShort": "4e6753ac3283",
   "branch": "agent/phase104-hermes-visual-figma-system",
   "dirty": false,
-  "sourcesSha": "91a83625b27ca68e259691e3b62658963ac50e441408e784900606d9817b1ef3",
-  "sourcesShaShort": "91a83625b27c",
+  "sourcesSha": "c5ca613e138412beaaf8041d4764652d958a99a3304d3993b928e61bdf98578c",
+  "sourcesShaShort": "c5ca613e1384",
   "buildCounts": {
     "pages": 3,
     "sections": 23,
@@ -1677,6 +1677,10 @@ function walkManaged(node, groups, malformed) {
   }
 }
 
+async function ensureAllPagesLoaded() {
+  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
+}
+
 /**
  * Scan every managed asset recursively. Component sets live inside Sections, so
  * a page-plus-immediate-children scan is not idempotent and creates duplicates on
@@ -1685,6 +1689,11 @@ function walkManaged(node, groups, malformed) {
  * @param {{allowDuplicates?:boolean}} [opts]
  */
 async function scanManagedAssets(opts) {
+  // The manifest uses documentAccess: "dynamic-page". Reading PageNode.children
+  // before explicitly loading every page throws in Figma Desktop, including on
+  // the init-only scan that runs before Dry Run. Keep this guarantee inside the
+  // shared scanner so every caller is safe and no new entry point can forget it.
+  await ensureAllPagesLoaded()
   /** @type {Record<string, any[]>} */ const groups = {}
   /** @type {string[]} */ const malformed = []
   for (const c of await figma.variables.getLocalVariableCollectionsAsync()) collectManaged(c, groups, malformed)
@@ -1776,7 +1785,6 @@ async function applyDna(opts) {
   // the file on its own account if the spec is not Phase 104.
   assertContract(spec.counts, dryRun ? 'Dry Run' : 'Apply')
 
-  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
   const existing = await scanExisting()
   const livePages = figma.root.children.slice()
   const pagePlan = planPages(spec.pages, existing, livePages)
@@ -2048,7 +2056,6 @@ async function applyDna(opts) {
 async function verifyDna() {
   const spec = buildDnaSpec()
   assertContract(spec.counts, 'Verify')
-  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
   const scan = await scanManagedAssets({ allowDuplicates: true })
   const expected = Object.fromEntries(spec.assets.map((asset) => [asset.key, asset]))
   const missing = []
@@ -2315,7 +2322,6 @@ async function rollbackDna() {
   const restored = /** @type {string[]} */ ([])
   const retained = /** @type {string[]} */ ([])
   const errors = /** @type {string[]} */ ([])
-  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
   const scan = await scanManagedAssets({ allowDuplicates: true })
   const rank = (k) => (k.startsWith('componentSet:') ? 0
     : k.startsWith('paintStyle:') || k.startsWith('effectStyle:') ? 1
