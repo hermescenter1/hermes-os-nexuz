@@ -4,18 +4,18 @@
   "fingerprint": {
     "plugin": "Hermes Phase 104 Visual System",
     "pluginId": "com.hermesnovin.phase104-visual-system",
-    "headSha": "54e76acee7b72d99d8126f40a99742f3600d930a",
-    "headShaShort": "54e76acee7b7",
+    "headSha": "2e100aa09266eeef74435f26c42ac308fc3c6d84",
+    "headShaShort": "2e100aa09266",
     "branch": "agent/phase104-hermes-visual-figma-system",
     "dirty": false,
-    "sourcesSha": "ddf78d591390451b9ae1d554936ae59d5ca9e56a318da74af241757f81071ef4",
-    "sourcesShaShort": "ddf78d591390"
+    "sourcesSha": "c86fab85f077779dbd1aabe15747e42ee672bc8d0f91f88a9acb6a124f096032",
+    "sourcesShaShort": "c86fab85f077"
   },
   "manifestPath": "manifest.json",
   "sha256": {
     "manifest": "f8de0d64035b9851ac1de1842b38a62a48019eb2417c942c42573773d5fb3c2d",
-    "code": "e053b0344c7aa787c7958ef2355571f082d3721e8d338b51f4e39be27706da2e",
-    "ui": "92d05cc6bd9f685d686f67abee50fc0d3ac1c5b0c3fad9f06e7b529c454d250f"
+    "code": "78c59d65e0df783a2d343345334f44c91e5b0581d62f6a7dd82d50c9d3eb8de7",
+    "ui": "aae839df33d834c3cce3167959e0a9fc053b1029bd23fb81d6d40e654ee35b59"
   },
   "builtFrom": [
     {
@@ -60,7 +60,7 @@
     },
     {
       "file": "src/lib/dna-exec.js",
-      "sha256": "7854352de36106417cd49b625315d9c08521a85c4c68bfe263d12f75e5d64c50"
+      "sha256": "68886c2f3d654a1929f7be9ac98c0fa8e935f04c75dc160daa75b98a3d90be16"
     },
     {
       "file": "src/main.js",

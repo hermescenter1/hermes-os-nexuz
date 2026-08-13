@@ -1,6 +1,6 @@
 /* Hermes Phase 104 Visual System — generated bundle.
    Do not edit dist/ by hand; edit src/ and run `npm run build`.
-   HEAD 54e76acee7b72d99d8126f40a99742f3600d930a  sources ddf78d591390451b9ae1d554936ae59d5ca9e56a318da74af241757f81071ef4 */
+   HEAD 2e100aa09266eeef74435f26c42ac308fc3c6d84  sources c86fab85f077779dbd1aabe15747e42ee672bc8d0f91f88a9acb6a124f096032 */
 (function () {
   "use strict";
   var __modules = {}, __cache = {};
@@ -14,12 +14,12 @@
     module.exports = {
   "plugin": "Hermes Phase 104 Visual System",
   "pluginId": "com.hermesnovin.phase104-visual-system",
-  "headSha": "54e76acee7b72d99d8126f40a99742f3600d930a",
-  "headShaShort": "54e76acee7b7",
+  "headSha": "2e100aa09266eeef74435f26c42ac308fc3c6d84",
+  "headShaShort": "2e100aa09266",
   "branch": "agent/phase104-hermes-visual-figma-system",
   "dirty": false,
-  "sourcesSha": "ddf78d591390451b9ae1d554936ae59d5ca9e56a318da74af241757f81071ef4",
-  "sourcesShaShort": "ddf78d591390",
+  "sourcesSha": "c86fab85f077779dbd1aabe15747e42ee672bc8d0f91f88a9acb6a124f096032",
+  "sourcesShaShort": "c86fab85f077",
   "buildCounts": {
     "pages": 3,
     "sections": 23,
@@ -2498,8 +2498,20 @@ async function buildComponentSet(cs, fonts) {
         marker.characters = b
         marker.fills = [solid('#A9BAC6')]
         marker.name = b
-        marker.componentPropertyReferences = { visible: pid }
+        // A node becomes a component sublayer only once it is INSIDE the
+        // ComponentNode. Binding first fails with "Can only set component
+        // property references on symbol sublayer" — which is what cost Apply all
+        // 24 sets: three families raised it, and the fail-closed cleanup then
+        // correctly removed every set that had been built. Append, then bind.
         comp.appendChild(marker)
+        try {
+          marker.componentPropertyReferences = { visible: pid }
+        } catch (bindError) {
+          // Leave nothing half-bound behind; the throw hands the failure to the
+          // existing fail-closed path, which discards the whole set.
+          try { marker.remove() } catch (cleanupError) {}
+          throw bindError
+        }
       }
     } catch (e) { propertyErrors.push('BOOLEAN ' + b + ': ' + String(e && e.message ? e.message : e)) }
   }
