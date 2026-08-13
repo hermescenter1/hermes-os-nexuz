@@ -1248,6 +1248,59 @@ h6 { font-weight: 550; letter-spacing: 0; }
   --motion-ease-out:  cubic-bezier(0.16, 1, 0.3, 1);      /* entrance (out-expo) */
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104 — HERMES DESIGN DNA new semantic layer (additive)
+   ───────────────────────────────────────────────────────────────────────────
+   The eleven values Phase 104 introduces on top of the Phase 87B canonical
+   layer above. Nothing here replaces or renumbers a Phase 87B token; every
+   canonical token keeps its exact value and every existing page renders
+   unchanged. Adding these tokens produces NO visual change on its own —
+   no component consumes them yet.
+
+   Source of truth (machine-derived, not hand-copied):
+     tools/figma/hermes-phase104-visual-system/src/lib/dna-tokens.js
+   Contract + gate:
+     src/components/ds/phase104-token-contract.ts
+     src/components/ds/__tests__/phase104-token-contract.test.ts
+   Rationale for each value (why a new hue was unavoidable):
+     docs/design/phase-104/01-hermes-design-dna.md
+   Mapping table:
+     docs/design/phase-104/02-token-integration.md
+
+   Two rules are machine-enforced by the contract test, not merely written here:
+     1. INDICATOR vs TEXT is not interchangeable. The `-text` partners exist
+        because the indicator values measure BELOW 4.5:1 and may not colour
+        readable type; the test asserts that failure deliberately.
+     2. COLOUR IS NEVER THE ONLY CHANNEL. Every state below also carries a
+        glyph and an outline treatment (see the state ladder in the machine
+        source), so severity survives greyscale and colour-vision deficiency.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Industrial state ladder — new states ──
+     `-text` variants are the readable partners; the bare token is the
+     indicator (dot / bar / border / chart mark) and is NOT text-legible. */
+  --color-state-degraded:            #C9B06A;  /* Industrial Brass — running below nominal, NOT "act now" */
+  --color-state-critical:            #E03144;  /* Safety Red Urgent — indicator only (3.31:1) */
+  --color-state-critical-text:       #FF8A94;  /* readable partner (6.58:1) */
+  --color-state-maintenance:         #5F7E9E;  /* Maintenance Steel — indicator only (3.51:1) */
+  --color-state-maintenance-text:    #93AEC8;  /* readable partner (6.45:1) */
+  --color-state-offline:             #6B7F8D;  /* Offline Slate — indicator only (3.56:1); never --color-text-disabled */
+
+  /* ── Reasoning ladder — readable partners ──
+     The canonical --color-reasoning-* values stay the indicator/border; these
+     carry the same meaning at text-legible luminance. */
+  --color-reasoning-evidence-text:      #7FB0FF;  /* (6.75:1) */
+  --color-reasoning-hypothesis-text:    #A99BFF;  /* (6.23:1) */
+  --color-reasoning-contradiction-text: #FF7C86;  /* (5.99:1) */
+
+  /* ── Horizon atmosphere — background gradient stops ONLY ──
+     PROHIBITED as a foreground: never text, never an icon, never a border,
+     never a data-surface fill. Text never sits directly on Horizon; it sits on
+     a Hermes Glass surface composited over it. */
+  --color-horizon-ember-fade: #34201C;
+  --color-horizon-ember-core: #6B3A22;
+}
+
 /* ── Selection colour for the new system ── */
 ::selection { background: var(--color-selection); }
 
