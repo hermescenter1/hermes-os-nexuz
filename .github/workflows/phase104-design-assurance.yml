@@ -1,0 +1,140 @@
+name: Phase 104 design assurance
+
+# Phase 104 ships a design language across three layers that can drift apart
+# silently: the Figma executor under `tools/`, the product token layer in
+# `globals.css` + `tailwind.config.ts`, and the executable contract that binds
+# them. Until this workflow existed NOTHING in CI ran the Figma package tests or
+# the DNA contrast audit — the Phase 104-A claim that they were "green on Linux"
+# was an inference from the committed blobs, never an execution. This workflow
+# executes them.
+#
+# Two jobs, deliberately split by cost:
+#   * phase104-design-dna     — the plugin package declares ZERO dependencies and
+#                               runs on Node built-ins, so this job needs no
+#                               `npm ci` at all and finishes in seconds.
+#   * phase104-product-tokens — the product contract test needs the repository's
+#                               dev dependencies (vitest, postcss, tailwind).
+#
+# No database, no Prisma, no service container, no secret: nothing here needs
+# one, and adding one would only slow the gate down and widen its blast radius.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/figma/hermes-phase104-visual-system/**"
+      - "docs/design/phase-104/**"
+      - "src/components/ds/phase104-token-contract.ts"
+      - "src/components/ds/__tests__/phase104-token-contract.test.ts"
+      - "src/app/globals.css"
+      - "tailwind.config.ts"
+      - ".gitattributes"
+      - ".github/workflows/phase104-design-assurance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase104-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase104-design-dna:
+    name: Phase 104 design DNA (Figma executor, contrast audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+
+      # The plugin's build fingerprint is a raw-byte sha256 over its own sources
+      # and dist/. Any end-of-line conversion changes those bytes and turns a
+      # provably correct artifact red — which is exactly what happened on a
+      # Windows `core.autocrlf` checkout. The `.gitattributes` pin is what keeps
+      # the checkout byte-exact on every platform, so assert the pin is still
+      # there rather than waiting for a contributor to rediscover it.
+      - name: Assert the plugin directory is pinned to LF
+        run: |
+          set -euo pipefail
+          attr="$(git check-attr eol -- tools/figma/hermes-phase104-visual-system/dist/code.js)"
+          echo "$attr"
+          case "$attr" in
+            *"eol: lf") ;;
+            *) echo "::error::tools/figma/hermes-phase104-visual-system is not pinned to LF in .gitattributes"; exit 1 ;;
+          esac
+
+      # Deliberately Node, not `grep $'\r'`: ANSI-C quoting of a carriage return
+      # is not dependable once it is nested inside a command substitution, and a
+      # gate that reports every file as an offender because of shell quoting is
+      # worse than no gate. Reading the bytes is unambiguous on every platform.
+      - name: Assert the checkout carries no CR byte in the fingerprinted tree
+        run: |
+          node -e '
+            const { execSync } = require("node:child_process");
+            const { readFileSync } = require("node:fs");
+            const files = execSync("git ls-files tools/figma/hermes-phase104-visual-system", { encoding: "utf8" })
+              .trim().split("\n").filter(Boolean);
+            const offenders = files.filter((f) => readFileSync(f).includes(0x0d));
+            if (offenders.length) {
+              console.log("::error::CR byte found in the fingerprinted plugin tree:");
+              for (const f of offenders) console.log("  " + f);
+              process.exit(1);
+            }
+            console.log("no CR byte in " + files.length + " fingerprinted files");
+          '
+
+      # Computes real WCAG 2.2 ratios for every DNA colour decision and exits
+      # non-zero on any FAIL. No dependency install required.
+      - name: Phase 104 DNA contrast audit
+        run: node tools/figma/hermes-phase104-visual-system/scripts/audit-contrast.mjs
+
+      # Executor contract, code scan, operation lock, component properties and
+      # the build fingerprint. Runs on node:test — no npm ci.
+      - name: Phase 104 Figma executor package tests
+        working-directory: tools/figma/hermes-phase104-visual-system
+        run: npm test
+
+      # NOTE — there is deliberately NO "rebuild and diff dist/" step here.
+      # `build.mjs` stamps the current git branch and head SHA into the bundle,
+      # so `dist/code.js` is intentionally NOT byte-reproducible across branches
+      # or commits; a rebuild-and-compare gate would fail on every PR while
+      # proving nothing. The committed bundle's integrity is already covered:
+      # `test-dna.mjs` re-hashes `dist/code.js`, `dist/ui.html` and
+      # `manifest.json` and compares them against `dist/build-report.json`, which
+      # is what catches a stale or hand-edited bundle.
+
+  phase104-product-tokens:
+    name: Phase 104 product token contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Parses globals.css with PostCSS and imports tailwind.config.ts as an
+      # object, so a value hidden in a comment or overridden by a duplicate
+      # declaration cannot satisfy it. Needs no database and no Prisma client.
+      - name: Phase 104 product token contract
+        run: npx vitest run src/components/ds/__tests__/phase104-token-contract.test.ts
+
+      - name: Phase 104 design-system and contrast suites
+        run: npx vitest run src/components/ds src/app/__tests__/text-contrast-a11y.test.ts
