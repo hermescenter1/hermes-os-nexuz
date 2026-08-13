@@ -360,7 +360,50 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     // Phase 97: +74 complianceCenter leaves (the Compliance Operations Center, genuinely
     //           German, zero English carryover) -> 5687
     // TRUST: +4 trustBadges leaves (footer Trust & Verification headings) -> 5691
-    expect(allEn.length).toBe(5691);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4
+    // Phase 102: +529 mediaHub leaves (the Media & Video Hub: library, filters,
+    //            player controls with real accessible labels, transcript, subtitles,
+    //            chapters, attachments, upload, editorial workflow, moderation,
+    //            processing states and accessibility labels). Genuinely German in
+    //            every leaf, zero English carryover. -> 6220
+    // Phase 102 reconciliation: the namespace was authored to a different key
+    //            spec than the 21 media components actually call, so every media
+    //            surface emitted MISSING_MESSAGE at runtime. The catalog was made
+    //            to match the components — the enum-faithful key shapes
+    //            (`lifecycle.PUBLISHED`, `skillLevel.BEGINNER`, `sort.NEWEST`) are
+    //            the ones the code reads, so the parallel lowercase vocabularies
+    //            were removed and the hint maps re-keyed onto the same enums.
+    //            -86 duplicate/structurally-conflicting leaves, +120 leaves the
+    //            components read (mediaHub 529 -> 563), +1 appShell.nav.items
+    //            .videoHub. Guarded from now on by mediahub-contract.test.ts,
+    //            which re-derives the key set from the component sources at test
+    //            time and resolves it against fa, en AND de. -> 6255
+    // Phase 102 orphan deletion: 401 of the 563 mediaHub leaves were reached by
+    //            no `t()` call anywhere in the tree (drafted copy for upload, the
+    //            moderation queue, the editorial workflow, the player settings
+    //            menu — surfaces this phase did not ship). Counting them as
+    //            coverage inflated this gate's arithmetic, so they were deleted
+    //            from all three catalogs rather than pinned; mediahub-contract
+    //            .test.ts now asserts the orphan set is EMPTY instead of pinning
+    //            its size. mediaHub 563 -> 162. -> 5854
+    // Phase 103: +38 copilot.liveVoice leaves (the Hermes Live Voice Intelligence
+    //            panel: 8 machine states, 5 controls, the transcript surface, the
+    //            three-part AI/retention/determinism disclosure and the 12
+    //            renderable error codes). Nested INSIDE the existing `copilot`
+    //            namespace rather than opening a new top-level one, because the
+    //            panel is part of the Industrial Copilot surface — so
+    //            de-catalog's TRANSLATED_NS needs no new entry. Genuinely German
+    //            in every leaf except the product name `liveVoice.brand`, which
+    //            is identical by design and allowlisted in BOTH
+    //            de-identical-allowlist.ts and fa-identical-allowlist.ts.
+    //            -> 5892
+    // Phase 103 review fixes: +2 more copilot.liveVoice leaves —
+    //            `states.finalizing` (the bounded window between committing the
+    //            audio buffer and the provider's final transcript, during which
+    //            the microphone is already dead) and `disabledNotice` (what the
+    //            panel says instead of a Start control when
+    //            HERMES_EXTERNAL_AI_ENABLED is off). Both genuinely German.
+    //            -> 5894
+    expect(allEn.length).toBe(5894);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -374,14 +417,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 5691 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 5894 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(5691);
+    ).toBe(5894);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

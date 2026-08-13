@@ -1951,7 +1951,55 @@
     "noInsights": "No insights generated. Data may be limited.",
     "noRecommendations": "No recommendations. All monitored assets appear stable.",
     "insufficientData": "I do not have enough industrial data to answer this reliably.",
-    "blocked": "Control actions are not available in Hermes Copilot. This system is read-only and cannot execute commands."
+    "blocked": "Control actions are not available in Hermes Copilot. This system is read-only and cannot execute commands.",
+    "liveVoice": {
+      "brand": "Hermes Live Voice Intelligence",
+      "title": "Voice interface for the Industrial Copilot",
+      "lede": "Speak an engineering question, review the transcript, then confirm it. The deterministic Copilot produces the answer; the voice layer only carries it.",
+      "disclosure": "Speech-to-text and text-to-speech are processed by an external AI provider. Your microphone audio is sent to that provider for transcription, and the confirmed answer text is sent there again if you choose to play it aloud.",
+      "retentionNote": "Hermes stores no audio and no transcript. Nothing you say is written to the database, the audit log or any cache — only the length of the text and the outcome are recorded.",
+      "deterministicNote": "The external models never analyse, decide or act. Every answer comes from the deterministic Copilot engine, and playback reads that answer back word for word.",
+      "transcriptLabel": "Transcript — review and edit before analysing",
+      "transcriptPlaceholder": "Your dictated question appears here. Correct anything the transcription got wrong.",
+      "transcriptHint": "Nothing is analysed until you press Analyze. The transcript is sent to the deterministic engine exactly as it reads here.",
+      "answerLabel": "Deterministic Copilot answer",
+      "spokenTextLabel": "This exact text will be read aloud",
+      "noSpeechAvailable": "Voice playback is not available for this answer. The full answer is shown above.",
+      "insufficientData": "There is not enough industrial data to answer this reliably.",
+      "disabledNotice": "Voice input is switched off for this deployment. An administrator must enable external AI processing before the microphone can be opened.",
+      "states": {
+        "idle": "Idle",
+        "connecting": "Connecting",
+        "listening": "Listening",
+        "finalizing": "Finalising the transcript",
+        "transcriptReady": "Transcript ready",
+        "analyzing": "Analyzing",
+        "answerReady": "Answer ready",
+        "speaking": "Speaking",
+        "error": "Error"
+      },
+      "actions": {
+        "start": "Start microphone",
+        "stop": "Stop",
+        "analyze": "Analyze",
+        "play": "Play AI voice",
+        "stopAudio": "Stop audio"
+      },
+      "errors": {
+        "MICROPHONE_DENIED": "Microphone access was refused by the browser. Grant permission and try again.",
+        "SESSION_AUTH_REQUIRED": "A signed-in browser session is required. Sign in again and retry.",
+        "FORBIDDEN": "This request was blocked for security reasons. Reload the page and try again.",
+        "INSUFFICIENT_PERMISSION": "Your role does not include access to the Industrial Copilot.",
+        "ORGANIZATION_SCOPE_REQUIRED": "Active membership of an organization is required.",
+        "RATE_LIMITED": "Too many voice requests. Wait a moment before trying again.",
+        "INVALID_INPUT": "The request was rejected as invalid. Check the transcript and try again.",
+        "EXTERNAL_AI_UNAVAILABLE": "External voice processing is not enabled for your organization.",
+        "VOICE_GRANT_INVALID": "This answer can no longer be played. Run the analysis again.",
+        "PROVIDER_UNAVAILABLE": "The external voice provider could not be reached. Try again shortly.",
+        "COPILOT_UNAVAILABLE": "The Copilot engine could not answer. Try again shortly.",
+        "UNKNOWN": "Something went wrong. Try again."
+      }
+    }
   },
   "unknownCenter": {
     "eyebrow": "Intelligence",
@@ -5593,7 +5641,8 @@
         "orgSettings": "Organization Settings",
         "admin": "Admin Console",
         "observability": "Observability",
-        "otEdge": "OT Edge"
+        "otEdge": "OT Edge",
+        "videoHub": "Video Hub"
       }
     },
     "shell": {
@@ -7346,6 +7395,274 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "close": "Close"
+    }
+  },
+  "mediaHub": {
+    "eyebrow": "Industrial video",
+    "title": "Hermes Media & Video Hub",
+    "subtitle": "Commissioning walkthroughs, control-system training and engineering briefings, curated for your organization.",
+    "description": "Every recording is hosted by Hermes itself: no external embeds, no third-party trackers, and access follows your organization roles.",
+    "library": {
+      "resultCount": "{count} recordings found"
+    },
+    "search": {
+      "label": "Search the video library",
+      "placeholder": "Search titles, chapters and transcripts…",
+      "clear": "Clear the search"
+    },
+    "filters": {
+      "title": "Filter options",
+      "activeCount": "{count} filters active",
+      "category": "Category",
+      "skillLevel": "Skill level",
+      "duration": "Length",
+      "language": "Spoken language",
+      "sort": "Sort by",
+      "any": "Any",
+      "clear": "Clear the filters ({count})"
+    },
+    "categories": {
+      "all": "All categories",
+      "label": "Category filter"
+    },
+    "states": {
+      "loading": "Loading the library…",
+      "error": "The library could not be loaded",
+      "errorHint": "The request failed before any data arrived, so nothing was changed.",
+      "retry": "Try again",
+      "notFound": "This recording no longer exists",
+      "notFoundHint": "An editor may have archived or removed it."
+    },
+    "card": {
+      "views": "{count} plays",
+      "completed": "Finished",
+      "noPoster": "No preview frame available",
+      "durationUnknown": "Length not recorded",
+      "progressLabel": "Watch progress for “{title}”"
+    },
+    "watch": {
+      "backToLibrary": "Back to the library",
+      "publishedOn": "Published on {date}",
+      "viewCount": "{count} plays recorded",
+      "descriptionTitle": "About this recording"
+    },
+    "player": {
+      "play": "Play",
+      "pause": "Pause playback",
+      "mute": "Mute the sound",
+      "unmute": "Turn the sound back on",
+      "buffering": "Buffering the next segment…",
+      "error": {
+        "retry": "Reload the player",
+        "ABORTED": {
+          "title": "Loading was interrupted",
+          "body": "The browser stopped fetching the video before playback could start."
+        },
+        "NETWORK": {
+          "title": "The connection dropped during playback",
+          "body": "Playback resumes as soon as the byte-range request succeeds again."
+        },
+        "DECODE": {
+          "title": "The video data is damaged",
+          "body": "Report this recording so an operator can revalidate the stored file."
+        },
+        "UNSUPPORTED": {
+          "title": "Your browser cannot play this container format",
+          "body": "Use a current build of a Chromium, Firefox or Safari browser."
+        },
+        "UNKNOWN": {
+          "title": "Playback failed",
+          "body": "The player stopped because the video data could not be read."
+        }
+      },
+      "region": "Video player for “{title}”",
+      "seek": "Playback position",
+      "volume": "Volume",
+      "volumePct": "Volume {pct} percent",
+      "speed": "Playback speed",
+      "enterFullscreen": "Enter full screen",
+      "exitFullscreen": "Leave full screen",
+      "timeOf": "{current} of {total}",
+      "durationUnknown": "an unknown length",
+      "resumedAt": "Playback resumed at {time}",
+      "startOver": "Start over from the beginning",
+      "dismiss": "Dismiss this notice",
+      "watchedPct": "{pct} percent of this recording watched",
+      "keyboardHelp": "Keyboard shortcuts: the space bar or K plays and pauses, the left and right arrows move five seconds, J and L move ten seconds, the up and down arrows change the volume, Home and End jump to the start and the end, M mutes and unmutes, F switches full screen, C switches the captions, N and P move to the next and the previous chapter, the number keys jump to the matching tenth of the recording, and the angle-bracket keys make playback slower and faster.",
+      "announce": {
+        "playing": "Playing",
+        "paused": "Paused",
+        "muted": "Sound muted",
+        "unmuted": "Sound switched back on",
+        "rate": "Playback speed {rate}"
+      },
+      "blocked": {
+        "PENDING_UPLOAD": {
+          "title": "No file has been uploaded yet",
+          "body": "The record exists but no video data has arrived, so there is nothing to play."
+        },
+        "PROCESSING": {
+          "title": "This recording is still being checked",
+          "body": "An operator has to finish the validation run before playback is released."
+        },
+        "FAILED": {
+          "title": "The stored file did not pass validation",
+          "body": "A file that cannot be verified is never served, so playback stays blocked."
+        },
+        "QUARANTINED": {
+          "title": "This recording is held in quarantine",
+          "body": "Nothing vouches for these bytes, so they are not served on the assumption that they are safe."
+        },
+        "NO_SOURCE": {
+          "title": "No playable source is available",
+          "body": "The recording is ready but no media address could be issued for it."
+        }
+      },
+      "stalled": {
+        "title": "Playback is not progressing",
+        "body": "Buffering has not advanced for a while; the connection may have dropped."
+      },
+      "blockedByBrowser": {
+        "title": "Your browser blocked playback",
+        "body": "Autoplay is not permitted here. Press play to start the recording."
+      },
+      "fullscreenUnavailable": {
+        "title": "Full screen is unavailable",
+        "body": "This browser exposes no full-screen interface, so the player stays inline."
+      }
+    },
+    "chapters": {
+      "title": "Chapters",
+      "empty": "No chapters defined",
+      "jumpTo": "Jump to “{title}” at {time}",
+      "range": "From {start} to {end}",
+      "previous": "Previous chapter",
+      "next": "Next chapter"
+    },
+    "transcript": {
+      "title": "Transcript",
+      "empty": "No transcript available",
+      "follow": "Follow the playback position",
+      "jumpTo": "Play from {time}"
+    },
+    "subtitles": {
+      "label": "Captions",
+      "off": "Off",
+      "unavailable": "No captions have been uploaded for this recording.",
+      "turnOn": "Turn the captions on",
+      "turnOff": "Turn the captions off"
+    },
+    "attachments": {
+      "title": "Attachments",
+      "empty": "No attachments",
+      "download": "Download"
+    },
+    "instructor": {
+      "videoCount": "{count} recordings in the library"
+    },
+    "related": {
+      "title": "Related recordings"
+    },
+    "continueWatching": {
+      "title": "Continue watching"
+    },
+    "processing": {
+      "PENDING_UPLOAD": "Waiting for the file",
+      "UPLOADED": "File received",
+      "VALIDATING": "Checking the file",
+      "READY": "Ready to play",
+      "FAILED": "The check failed",
+      "QUARANTINED": "Held in quarantine"
+    },
+    "a11y": {
+      "skipToPlayer": "Skip to the video player",
+      "libraryRegion": "Video library results"
+    },
+    "lifecycle": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "IN_REVIEW": "In review",
+      "PUBLISHED": "Published",
+      "REJECTED": "Sent back",
+      "ARCHIVED": "Archived"
+    },
+    "skillLevel": {
+      "BEGINNER": "Beginner",
+      "INTERMEDIATE": "Intermediate",
+      "ADVANCED": "Advanced",
+      "EXPERT": "Expert"
+    },
+    "duration": {
+      "SHORT": "Under {minutes} minutes",
+      "MEDIUM": "{from} to {to} minutes",
+      "LONG": "Longer than {minutes} minutes"
+    },
+    "sort": {
+      "NEWEST": "Newest first",
+      "OLDEST": "Oldest first",
+      "MOST_VIEWED": "Most watched",
+      "LONGEST": "Longest first",
+      "SHORTEST": "Shortest first",
+      "TITLE": "Title from A to Z"
+    },
+    "empty": {
+      "LIBRARY_EMPTY": {
+        "title": "No recordings published yet",
+        "body": "As soon as an editor publishes a recording it shows up here."
+      },
+      "NO_MATCHES": {
+        "title": "Nothing matches these filters",
+        "body": "Widen the length or level filter, or clear the search term."
+      },
+      "NO_RESULTS": {
+        "title": "No recording matches that search",
+        "body": "Try another term, or clear the search to browse the whole library."
+      },
+      "NOT_ENTITLED": {
+        "title": "The Video Hub is not part of your plan",
+        "body": "Extend the subscription to unlock the media library."
+      }
+    },
+    "failure": {
+      "FORBIDDEN": {
+        "title": "You have no access to this library",
+        "body": "Ask an organization administrator for the media viewing permission."
+      },
+      "NOT_FOUND": {
+        "title": "This recording no longer exists",
+        "body": "An editor may have archived or removed it."
+      },
+      "STORAGE_UNAVAILABLE": {
+        "title": "Media storage cannot be reached",
+        "body": "The platform could not reach the media volume, so nothing was loaded."
+      },
+      "RATE_LIMITED": {
+        "title": "Too many requests in a short time",
+        "body": "Wait a moment before loading the library again."
+      },
+      "ERROR": {
+        "title": "The library could not be loaded",
+        "body": "The request failed before any data arrived, so nothing was changed."
+      },
+      "UNKNOWN": {
+        "title": "Something went wrong",
+        "body": "The request could not be completed and no reason was reported."
+      },
+      "retry": "Try again"
+    },
+    "grid": {
+      "label": "List of published recordings",
+      "loading": "Loading the recordings…"
+    },
+    "hero": {
+      "watch": "Watch now",
+      "resumeAt": "Resume at {time}"
+    },
+    "favourite": {
+      "add": "Save “{title}” to my list",
+      "remove": "Remove “{title}” from my list",
+      "signInRequired": "Sign in to save recordings to your list",
+      "failed": "Your list could not be updated. Try again."
     }
   }
 }

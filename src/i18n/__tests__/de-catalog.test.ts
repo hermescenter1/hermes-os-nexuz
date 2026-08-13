@@ -259,6 +259,11 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // PHASE 96 — the public pricing page. 18 genuinely German leaves (status,
     // feature/resource headings, trial + currency notes); zero English carryover.
     "pricing",
+    // PHASE 102 — the Media & Video Hub (mediaHub): library, filters, player
+    // controls with real accessible labels, transcript, subtitles, chapters,
+    // attachments, upload, editorial workflow, moderation and processing states.
+    // Genuinely German throughout; zero English carryover.
+    "mediaHub",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

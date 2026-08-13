@@ -66,6 +66,16 @@ export const GUARD_TOKENS = [
   { token: "getOrgActorContext", scope: "tenant" },
   { token: "getSiteActorContext", scope: "tenant" },
   { token: "requireScope", scope: "tenant" },
+  // PHASE 103 — the single Live Voice guard. It COMPOSES requireOrgActor and
+  // requirePermission (both already tenant-scope tokens above) into one ordered,
+  // fail-closed chain shared by the three voice routes, so the acting
+  // organization is resolved on the server and a membership + `view_copilot`
+  // predicate is enforced against it before any handler body runs. Registering
+  // the composite is what keeps the classifier honest about routes that call it;
+  // scripts/__tests__/phase103-voice-guard-recognition.test.ts locks both halves
+  // — that the routes really delegate to it, and that it really performs the
+  // checks this entry vouches for.
+  { token: "requireVoiceCopilotActor", scope: "tenant" },
   // Machine identity: the OT gateway authenticates with an HMAC over the
   // envelope using a server-held signing key, and the tenant is read from the
   // gateway record rather than the request.

@@ -1,0 +1,19 @@
+{
+  "name": "@hermes/phase102-media-hub-builder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local, auditable Figma development plugin that generates the Phase 102 \"Hermes Media & Video Hub\" design (Foundations / Components / Screens) natively in Figma. No network, no telemetry, deterministic and idempotent, Starter-plan safe.",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "build": "node build.mjs",
+    "dry-run": "node build.mjs --dry-run",
+    "verify": "npm run typecheck && npm run build && npm run test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "//": "This package intentionally declares NO dependencies. Its scripts resolve tsc and vitest from the repository root node_modules (npx/direct node resolution walks up). It must not create its own lockfile and must not change the repository package manager."
+}

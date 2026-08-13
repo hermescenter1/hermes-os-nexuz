@@ -19,11 +19,39 @@ type MemberModel = {
   findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
 };
 
+/**
+ * The acting user id, or `null` for an anonymous caller.
+ *
+ * PHASE 102 / RELEASE BLOCKER 5 — this verified the JWT and stopped there. A
+ * signature is a statement about a token, not about a session: an access token
+ * from a session the user had signed out of, an administrator had revoked, or a
+ * password reset had invalidated still verified, and still yielded that user's
+ * id. Every caller then attributed a write to them.
+ *
+ * That mattered most on the anonymous media view beacon, which uses this
+ * function for OPTIONAL attribution: a revoked session's token was enough to
+ * write a `MediaViewEvent` naming a real person, so a leaked-and-revoked token
+ * kept producing records of what that person supposedly watched — records the
+ * subject cannot see happening and the revocation was supposed to stop.
+ *
+ * `isPayloadSessionActive` is the repository's canonical revocation check — the
+ * same one `requireOrgActor` has always used, backed by the `RefreshToken` row
+ * whose id is the `sid` claim. It fails CLOSED: an unreachable database, a
+ * missing row, a revoked or expired session, or a stale token generation all
+ * answer "not active".
+ *
+ * FAILING CLOSED HERE MEANS ANONYMOUS, NOT REFUSED. Returning `null` for a
+ * caller whose session cannot be confirmed is the privacy-safe direction: the
+ * event is still recorded, still counted, and simply attributed to nobody. No
+ * analytics are lost and no person is named on evidence that no longer holds.
+ */
 export async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   if (!token) return null;
   const payload = await verifyAccessToken(token);
-  return payload?.sub ?? null;
+  if (!payload?.sub) return null;
+  if (!(await isPayloadSessionActive(payload))) return null;
+  return payload.sub;
 }
 
 /**

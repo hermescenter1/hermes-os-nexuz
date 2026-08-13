@@ -1951,7 +1951,55 @@
     "noInsights": "Keine Erkenntnisse erzeugt. Die Datenlage ist möglicherweise begrenzt.",
     "noRecommendations": "Keine Empfehlungen. Alle überwachten Anlagen wirken stabil.",
     "insufficientData": "Mir liegen nicht genügend industrielle Daten vor, um dies verlässlich zu beantworten.",
-    "blocked": "Steuerungsaktionen stehen im Hermes Copilot nicht zur Verfügung. Dieses System ist nur lesend und kann keine Befehle ausführen."
+    "blocked": "Steuerungsaktionen stehen im Hermes Copilot nicht zur Verfügung. Dieses System ist nur lesend und kann keine Befehle ausführen.",
+    "liveVoice": {
+      "brand": "Hermes Live Voice Intelligence",
+      "title": "Sprachschnittstelle für den Industrial Copilot",
+      "lede": "Stellen Sie Ihre technische Frage per Sprache, prüfen Sie das Transkript und bestätigen Sie es. Die Antwort erzeugt die deterministische Copilot-Engine; die Sprachebene überträgt sie lediglich.",
+      "disclosure": "Spracherkennung und Sprachausgabe werden von einem externen KI-Anbieter verarbeitet. Ihr Mikrofonton wird zur Transkription an diesen Anbieter gesendet, und der bestätigte Antworttext wird erneut dorthin übertragen, wenn Sie ihn vorlesen lassen.",
+      "retentionNote": "Hermes speichert weder Audio noch Transkript. Nichts, was Sie sagen, wird in die Datenbank, das Prüfprotokoll oder einen Zwischenspeicher geschrieben — erfasst werden nur die Textlänge und das Ergebnis.",
+      "deterministicNote": "Die externen Modelle analysieren, entscheiden und handeln niemals. Jede Antwort stammt aus der deterministischen Copilot-Engine, und die Wiedergabe liest genau diese Antwort Wort für Wort vor.",
+      "transcriptLabel": "Transkript — vor der Analyse prüfen und bearbeiten",
+      "transcriptPlaceholder": "Ihre diktierte Frage erscheint hier. Korrigieren Sie alles, was die Transkription falsch verstanden hat.",
+      "transcriptHint": "Es wird nichts analysiert, bevor Sie auf Analysieren drücken. Das Transkript geht genau so an die deterministische Engine, wie es hier steht.",
+      "answerLabel": "Deterministische Copilot-Antwort",
+      "spokenTextLabel": "Genau dieser Text wird vorgelesen",
+      "noSpeechAvailable": "Für diese Antwort ist keine Sprachwiedergabe verfügbar. Die vollständige Antwort steht oben.",
+      "insufficientData": "Es liegen nicht genügend Industriedaten vor, um dies zuverlässig zu beantworten.",
+      "disabledNotice": "Die Spracheingabe ist für diese Installation abgeschaltet. Eine Administratorin oder ein Administrator muss die externe KI-Verarbeitung aktivieren, bevor das Mikrofon geöffnet werden kann.",
+      "states": {
+        "idle": "Bereit",
+        "connecting": "Verbindung wird aufgebaut",
+        "listening": "Hört zu",
+        "finalizing": "Transkript wird abgeschlossen",
+        "transcriptReady": "Transkript bereit",
+        "analyzing": "Analysiert",
+        "answerReady": "Antwort bereit",
+        "speaking": "Spricht",
+        "error": "Fehler"
+      },
+      "actions": {
+        "start": "Mikrofon starten",
+        "stop": "Beenden",
+        "analyze": "Analysieren",
+        "play": "KI-Stimme abspielen",
+        "stopAudio": "Wiedergabe beenden"
+      },
+      "errors": {
+        "MICROPHONE_DENIED": "Der Browser hat den Mikrofonzugriff verweigert. Erteilen Sie die Berechtigung und versuchen Sie es erneut.",
+        "SESSION_AUTH_REQUIRED": "Eine angemeldete Browsersitzung ist erforderlich. Melden Sie sich erneut an.",
+        "FORBIDDEN": "Diese Anfrage wurde aus Sicherheitsgründen blockiert. Laden Sie die Seite neu und versuchen Sie es erneut.",
+        "INSUFFICIENT_PERMISSION": "Ihre Rolle umfasst keinen Zugriff auf den Industrial Copilot.",
+        "ORGANIZATION_SCOPE_REQUIRED": "Eine aktive Mitgliedschaft in einer Organisation ist erforderlich.",
+        "RATE_LIMITED": "Zu viele Sprachanfragen. Warten Sie einen Moment und versuchen Sie es erneut.",
+        "INVALID_INPUT": "Die Anfrage wurde als ungültig abgewiesen. Prüfen Sie das Transkript und versuchen Sie es erneut.",
+        "EXTERNAL_AI_UNAVAILABLE": "Die externe Sprachverarbeitung ist für Ihre Organisation nicht freigeschaltet.",
+        "VOICE_GRANT_INVALID": "Diese Antwort kann nicht mehr abgespielt werden. Führen Sie die Analyse erneut aus.",
+        "PROVIDER_UNAVAILABLE": "Der externe Sprachdienst war nicht erreichbar. Versuchen Sie es in Kürze erneut.",
+        "COPILOT_UNAVAILABLE": "Die Copilot-Engine konnte nicht antworten. Versuchen Sie es in Kürze erneut.",
+        "UNKNOWN": "Etwas ist schiefgelaufen. Versuchen Sie es erneut."
+      }
+    }
   },
   "unknownCenter": {
     "eyebrow": "Intelligence",
@@ -5593,7 +5641,8 @@
         "orgSettings": "Organisationseinstellungen",
         "admin": "Admin-Konsole",
         "observability": "Beobachtbarkeit",
-        "otEdge": "OT-Edge"
+        "otEdge": "OT-Edge",
+        "videoHub": "Videothek"
       }
     },
     "shell": {
@@ -7346,6 +7395,274 @@
       "confirm": "Bestätigen",
       "cancel": "Abbrechen",
       "close": "Schließen"
+    }
+  },
+  "mediaHub": {
+    "eyebrow": "Industrievideo",
+    "title": "Hermes Medien- und Videozentrale",
+    "subtitle": "Inbetriebnahme-Rundgänge, Schulungen zu Leitsystemen und technische Kurzvorträge – kuratiert für Ihre Organisation.",
+    "description": "Jede Aufzeichnung wird von Hermes selbst gehostet: keine externen Einbettungen, keine Tracker Dritter, und der Zugriff richtet sich nach den Rollen Ihrer Organisation.",
+    "library": {
+      "resultCount": "{count} Aufzeichnungen gefunden"
+    },
+    "search": {
+      "label": "Videothek durchsuchen",
+      "placeholder": "Titel, Kapitel und Transkripte durchsuchen …",
+      "clear": "Suche zurücksetzen"
+    },
+    "filters": {
+      "title": "Filteroptionen",
+      "activeCount": "{count} Filter aktiv",
+      "category": "Rubrik",
+      "skillLevel": "Kenntnisstufe",
+      "duration": "Länge",
+      "language": "Sprache der Tonspur",
+      "sort": "Sortieren nach",
+      "any": "Beliebig",
+      "clear": "Filter entfernen ({count})"
+    },
+    "categories": {
+      "all": "Alle Rubriken",
+      "label": "Rubrikenfilter"
+    },
+    "states": {
+      "loading": "Mediathek wird geladen …",
+      "error": "Die Mediathek konnte nicht geladen werden",
+      "errorHint": "Die Anfrage schlug fehl, bevor Daten eintrafen; es wurde nichts verändert.",
+      "retry": "Erneut versuchen",
+      "notFound": "Diese Aufzeichnung besteht nicht mehr",
+      "notFoundHint": "Möglicherweise wurde sie von der Redaktion archiviert oder entfernt."
+    },
+    "card": {
+      "views": "{count} Abrufe",
+      "completed": "Vollständig angesehen",
+      "noPoster": "Kein Vorschaubild vorhanden",
+      "durationUnknown": "Länge nicht erfasst",
+      "progressLabel": "Wiedergabefortschritt für „{title}“"
+    },
+    "watch": {
+      "backToLibrary": "Zurück zur Mediathek",
+      "publishedOn": "Veröffentlicht am {date}",
+      "viewCount": "{count} Abrufe erfasst",
+      "descriptionTitle": "Über diese Aufzeichnung"
+    },
+    "player": {
+      "play": "Abspielen",
+      "pause": "Wiedergabe anhalten",
+      "mute": "Ton stummschalten",
+      "unmute": "Stummschaltung aufheben",
+      "buffering": "Nächster Abschnitt wird gepuffert …",
+      "error": {
+        "retry": "Player neu laden",
+        "ABORTED": {
+          "title": "Das Laden wurde unterbrochen",
+          "body": "Der Browser brach den Abruf des Videos ab, bevor die Wiedergabe beginnen konnte."
+        },
+        "NETWORK": {
+          "title": "Die Verbindung brach während der Wiedergabe ab",
+          "body": "Die Wiedergabe wird fortgesetzt, sobald die Bereichsanfrage wieder gelingt."
+        },
+        "DECODE": {
+          "title": "Die Videodaten sind beschädigt",
+          "body": "Melden Sie diese Aufzeichnung, damit die Betriebsmannschaft die gespeicherte Datei erneut prüft."
+        },
+        "UNSUPPORTED": {
+          "title": "Ihr Browser kann dieses Containerformat nicht abspielen",
+          "body": "Verwenden Sie eine aktuelle Fassung von Chromium, Firefox oder Safari."
+        },
+        "UNKNOWN": {
+          "title": "Wiedergabe fehlgeschlagen",
+          "body": "Der Player hat angehalten, weil die Videodaten nicht gelesen werden konnten."
+        }
+      },
+      "region": "Videoplayer für „{title}“",
+      "seek": "Wiedergabeposition",
+      "volume": "Lautstärke",
+      "volumePct": "Lautstärke {pct} Prozent",
+      "speed": "Abspielgeschwindigkeit",
+      "enterFullscreen": "Vollbild einschalten",
+      "exitFullscreen": "Vollbild verlassen",
+      "timeOf": "{current} von {total}",
+      "durationUnknown": "unbekannte Länge",
+      "resumedAt": "Wiedergabe bei {time} fortgesetzt",
+      "startOver": "Von vorn beginnen",
+      "dismiss": "Diesen Hinweis ausblenden",
+      "watchedPct": "{pct} Prozent dieser Aufzeichnung angesehen",
+      "keyboardHelp": "Tastaturkürzel: die Leertaste oder K startet und pausiert, die Pfeiltasten links und rechts springen fünf Sekunden, J und L springen zehn Sekunden, die Pfeiltasten oben und unten ändern die Lautstärke, Pos1 und Ende springen an den Anfang und das Ende, M schaltet den Ton stumm und wieder ein, F schaltet das Vollbild um, C schaltet die Untertitel um, N und P wechseln zum nächsten und zum vorherigen Kapitel, die Zifferntasten springen zum jeweiligen Zehntel der Aufzeichnung, und die spitzen Klammern machen die Wiedergabe langsamer und schneller.",
+      "announce": {
+        "playing": "Wiedergabe läuft",
+        "paused": "Angehalten",
+        "muted": "Ton stummgeschaltet",
+        "unmuted": "Ton wieder eingeschaltet",
+        "rate": "Abspielgeschwindigkeit {rate}"
+      },
+      "blocked": {
+        "PENDING_UPLOAD": {
+          "title": "Es wurde noch keine Datei hochgeladen",
+          "body": "Der Datensatz besteht, es sind aber keine Videodaten eingetroffen; abzuspielen gibt es daher nichts."
+        },
+        "PROCESSING": {
+          "title": "Diese Aufzeichnung wird noch geprüft",
+          "body": "Die Betriebsmannschaft muss den Prüflauf abschließen, bevor die Wiedergabe freigegeben wird."
+        },
+        "FAILED": {
+          "title": "Die gespeicherte Datei bestand die Prüfung nicht",
+          "body": "Eine Datei, die sich nicht verifizieren lässt, wird nie ausgeliefert; die Wiedergabe bleibt daher gesperrt."
+        },
+        "QUARANTINED": {
+          "title": "Diese Aufzeichnung wird in Quarantäne gehalten",
+          "body": "Für diese Daten bürgt nichts; sie werden daher nicht in der Annahme ausgeliefert, sie seien unbedenklich."
+        },
+        "NO_SOURCE": {
+          "title": "Es steht keine abspielbare Quelle bereit",
+          "body": "Die Aufzeichnung ist bereit, es ließ sich aber keine Medienadresse dafür ausstellen."
+        }
+      },
+      "stalled": {
+        "title": "Die Wiedergabe kommt nicht voran",
+        "body": "Der Puffer füllt sich seit einer Weile nicht mehr; womöglich ist die Verbindung abgebrochen."
+      },
+      "blockedByBrowser": {
+        "title": "Ihr Browser hat die Wiedergabe blockiert",
+        "body": "Automatische Wiedergabe ist hier nicht erlaubt. Drücken Sie auf Abspielen, um die Aufzeichnung zu starten."
+      },
+      "fullscreenUnavailable": {
+        "title": "Vollbild steht nicht zur Verfügung",
+        "body": "Dieser Browser stellt keine Vollbildschnittstelle bereit; der Player bleibt daher eingebettet."
+      }
+    },
+    "chapters": {
+      "title": "Kapitel",
+      "empty": "Keine Kapitel hinterlegt",
+      "jumpTo": "Zu „{title}“ bei {time} springen",
+      "range": "Von {start} bis {end}",
+      "previous": "Vorheriges Kapitel",
+      "next": "Nächstes Kapitel"
+    },
+    "transcript": {
+      "title": "Transkript",
+      "empty": "Kein Transkript vorhanden",
+      "follow": "Der Wiedergabeposition folgen",
+      "jumpTo": "Ab {time} abspielen"
+    },
+    "subtitles": {
+      "label": "Untertitel",
+      "off": "Aus",
+      "unavailable": "Für diese Aufzeichnung wurden keine Untertitel hochgeladen.",
+      "turnOn": "Untertitel einschalten",
+      "turnOff": "Untertitel ausschalten"
+    },
+    "attachments": {
+      "title": "Anlagen",
+      "empty": "Keine Anlagen",
+      "download": "Herunterladen"
+    },
+    "instructor": {
+      "videoCount": "{count} Aufzeichnungen in der Mediathek"
+    },
+    "related": {
+      "title": "Verwandte Aufzeichnungen"
+    },
+    "continueWatching": {
+      "title": "Weiterschauen"
+    },
+    "processing": {
+      "PENDING_UPLOAD": "Wartet auf die Datei",
+      "UPLOADED": "Datei eingegangen",
+      "VALIDATING": "Datei wird geprüft",
+      "READY": "Abspielbereit",
+      "FAILED": "Die Prüfung schlug fehl",
+      "QUARANTINED": "In Quarantäne gehalten"
+    },
+    "a11y": {
+      "skipToPlayer": "Zum Videoplayer springen",
+      "libraryRegion": "Ergebnisse der Videothek"
+    },
+    "lifecycle": {
+      "DRAFT": "Entwurf",
+      "SUBMITTED": "Eingereicht",
+      "IN_REVIEW": "In Prüfung",
+      "PUBLISHED": "Veröffentlicht",
+      "REJECTED": "Zurückgewiesen",
+      "ARCHIVED": "Archiviert"
+    },
+    "skillLevel": {
+      "BEGINNER": "Einstieg",
+      "INTERMEDIATE": "Aufbaustufe",
+      "ADVANCED": "Fortgeschritten",
+      "EXPERT": "Expertenstufe"
+    },
+    "duration": {
+      "SHORT": "Unter {minutes} Minuten",
+      "MEDIUM": "{from} bis {to} Minuten",
+      "LONG": "Länger als {minutes} Minuten"
+    },
+    "sort": {
+      "NEWEST": "Neueste zuerst",
+      "OLDEST": "Älteste zuerst",
+      "MOST_VIEWED": "Meistgesehen",
+      "LONGEST": "Längste zuerst",
+      "SHORTEST": "Kürzeste zuerst",
+      "TITLE": "Titel von A bis Z"
+    },
+    "empty": {
+      "LIBRARY_EMPTY": {
+        "title": "Bislang keine Aufzeichnungen veröffentlicht",
+        "body": "Sobald die Redaktion eine Aufzeichnung veröffentlicht, erscheint sie hier."
+      },
+      "NO_MATCHES": {
+        "title": "Zu diesen Filtern passt nichts",
+        "body": "Erweitern Sie den Längen- oder Stufenfilter oder löschen Sie den Suchbegriff."
+      },
+      "NO_RESULTS": {
+        "title": "Zu dieser Suche passt keine Aufzeichnung",
+        "body": "Versuchen Sie einen anderen Begriff oder leeren Sie die Suche, um die ganze Mediathek zu durchsehen."
+      },
+      "NOT_ENTITLED": {
+        "title": "Das Videomodul gehört nicht zu Ihrem Tarif",
+        "body": "Erweitern Sie das Abonnement, um die Mediathek freizuschalten."
+      }
+    },
+    "failure": {
+      "FORBIDDEN": {
+        "title": "Sie haben keinen Zugriff auf diese Mediathek",
+        "body": "Bitten Sie die Administration Ihrer Organisation um die Leseberechtigung für Medien."
+      },
+      "NOT_FOUND": {
+        "title": "Diese Aufzeichnung besteht nicht mehr",
+        "body": "Die Redaktion hat sie womöglich archiviert oder entfernt."
+      },
+      "STORAGE_UNAVAILABLE": {
+        "title": "Der Medienspeicher ist nicht erreichbar",
+        "body": "Die Plattform erreichte den Medienspeicher nicht, daher wurde nichts geladen."
+      },
+      "RATE_LIMITED": {
+        "title": "Zu viele Anfragen in kurzer Zeit",
+        "body": "Warten Sie einen Augenblick, bevor Sie die Mediathek erneut laden."
+      },
+      "ERROR": {
+        "title": "Die Mediathek konnte nicht geladen werden",
+        "body": "Die Anfrage schlug fehl, bevor Daten eintrafen; verändert wurde nichts."
+      },
+      "UNKNOWN": {
+        "title": "Etwas ist schiefgelaufen",
+        "body": "Die Anfrage ließ sich nicht abschließen; ein Grund wurde nicht gemeldet."
+      },
+      "retry": "Erneut versuchen"
+    },
+    "grid": {
+      "label": "Liste der veröffentlichten Aufzeichnungen",
+      "loading": "Aufzeichnungen werden geladen …"
+    },
+    "hero": {
+      "watch": "Jetzt ansehen",
+      "resumeAt": "Bei {time} fortsetzen"
+    },
+    "favourite": {
+      "add": "„{title}“ in meiner Liste speichern",
+      "remove": "„{title}“ aus meiner Liste entfernen",
+      "signInRequired": "Melden Sie sich an, um Aufzeichnungen in Ihrer Liste zu speichern",
+      "failed": "Ihre Liste ließ sich nicht aktualisieren. Versuchen Sie es erneut."
     }
   }
 }

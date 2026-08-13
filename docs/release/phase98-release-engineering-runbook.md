@@ -260,7 +260,10 @@ reconstruct what happened without needing credentials.
   `VERSION_TAG_POLICY:INVALID_SEMVER`.
 - **`v1.0.0` is reserved for Phase 100.** Phase 98 releases must not tag
   `v1.0.0` — choose an appropriate pre-1.0 or patch/minor version consistent
-  with the current release line.
+  with the current release line. Phase 100 supplies the gate that must precede
+  that tag: `v1.0.0` may be cut only when `npm run eval:phase100:closure`
+  reports `GA_RELEASE_READY=YES` on the exact release commit
+  (see `phase100-ga-closure-contract.md`).
 - The tag's commit must be `git merge-base --is-ancestor`-reachable from
   `main` (`reachableFromMain`) — never release from a stray branch.
 - The tag must have a matching `## [vX.Y.Z]` (or `## vX.Y.Z`) section in the

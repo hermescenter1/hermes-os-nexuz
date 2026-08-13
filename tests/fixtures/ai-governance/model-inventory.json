@@ -1,9 +1,11 @@
 {
-  "_comment": "PHASE 95 model-inventory snapshot. Drift guard: must equal MODEL_REGISTRY registryIds. Update deliberately when the registry changes.",
+  "_comment": "PHASE 95 model-inventory snapshot. Drift guard: must equal MODEL_REGISTRY registryIds. Update deliberately when the registry changes. PHASE 103 added the two Live Voice entries (transcription + text-to-speech), both external, both deny-by-default, both falling back to hermes:copilot-deterministic.",
   "registryIds": [
     "anthropic:claude-sonnet-4-20250514",
     "openai:text-embedding-3-small",
     "openai:gpt-4o-mini",
+    "openai:gpt-live-transcribe",
+    "openai:gpt-4o-mini-tts",
     "hermes:brain-deterministic",
     "hermes:industrial-brain",
     "hermes:copilot-deterministic",

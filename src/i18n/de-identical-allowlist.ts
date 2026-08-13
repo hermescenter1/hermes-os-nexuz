@@ -188,6 +188,9 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "contact.websiteUrl": "contact-url-or-propernoun",
   "copilot.eyebrow": "brand-eyebrow",
   "copilot.title": "brand-or-product",
+  // PHASE 103 — the product name of the voice panel. Everything else in
+  // copilot.liveVoice.* is genuinely German; a product name is not translated.
+  "copilot.liveVoice.brand": "brand-or-product",
   "crm.cs.eyebrow": "brand-eyebrow",
   "crm.cs.tabExpansions": "non-linguistic",
   "crm.cs.tabManagers": "protocol-or-standard",
@@ -411,7 +414,8 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
 
 /** Audit summary (kept in sync by the companion test). */
 export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
-  "brand-or-product": 63,
+  // Phase 103: +1 — copilot.liveVoice.brand ("Hermes Live Voice Intelligence").
+  "brand-or-product": 64,
   "contact-url-or-propernoun": 15,
   "german-word-identical": 103,
   "non-linguistic": 19,

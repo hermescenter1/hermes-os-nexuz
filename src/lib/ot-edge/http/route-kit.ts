@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/billing/context";
 import { requireOrgActor } from "@/lib/org/context";
 import { getAllowedSiteIds } from "@/lib/site/context";
-import { checkRateLimit } from "@/lib/auth/rate-limiter";
+import { checkRateLimit, type RateLimitAction } from "@/lib/auth/rate-limiter";
 import { resolveClientIp } from "@/lib/security/request-guards";
 import type { OrgPermission } from "@/lib/org/rbac";
 import { can } from "@/lib/org/rbac";
@@ -106,8 +106,12 @@ export function tooManyRequests(): NextResponse {
 
 export interface OtRouteOptions {
   permission: OrgPermission;
-  /** Rate-limit bucket declared in the shared limiter. */
-  bucket: string;
+  /**
+   * Rate-limit bucket declared in the shared limiter. Typed as the limiter's
+   * own key union, so a bucket that is not declared there fails to COMPILE
+   * rather than silently disabling the limit at runtime.
+   */
+  bucket: RateLimitAction;
 }
 
 /**

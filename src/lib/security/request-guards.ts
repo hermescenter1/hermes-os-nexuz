@@ -189,6 +189,45 @@ export function isAllowedOrigin(origin: string | null): boolean {
 }
 
 /**
+ * PHASE 102 — the same-origin decision for a state-changing request, keyed on
+ * HOW the caller authenticated.
+ *
+ * WHY THE AUTH METHOD DECIDES IT
+ * A cross-site request forgery works because the BROWSER attaches the session
+ * cookie automatically: the attacker never has to read the credential, only
+ * cause the request. That is true of cookie/JWT sessions and false of an API
+ * key, which a caller must possess and set deliberately on every request and
+ * which no browser will attach on its behalf. Requiring an `Origin` from
+ * server-to-server API-key clients would therefore break legitimate integrations
+ * while buying no security — curl, CI jobs and SDKs send no `Origin` at all.
+ *
+ * So: `jwt` must present an allowed `Origin`; `apikey` is exempt. Absent,
+ * unparseable, cross-site and same-site-but-not-allowed origins are all refused
+ * for cookie callers, because {@link isAllowedOrigin} is an exact-origin match
+ * that fails closed on a missing header.
+ *
+ * The result carries no detail about the target resource, so a refusal here is
+ * indistinguishable across ids and can never act as an existence oracle.
+ */
+export type RequestAuthMethod = "jwt" | "apikey";
+
+export interface TrustedOriginVerdict {
+  readonly ok: boolean;
+  /** Why the request was refused. Diagnostic only — never put in a response. */
+  readonly reason: "allowed" | "exempt_api_key" | "origin_not_allowed";
+}
+
+export function requireTrustedOrigin(
+  req: Request,
+  authMethod: RequestAuthMethod,
+): TrustedOriginVerdict {
+  if (authMethod === "apikey") return { ok: true, reason: "exempt_api_key" };
+  return isAllowedOrigin(req.headers.get("origin"))
+    ? { ok: true, reason: "allowed" }
+    : { ok: false, reason: "origin_not_allowed" };
+}
+
+/**
  * Standard security error: a stable JSON body with `Cache-Control: no-store`
  * and no IP / key / stack-trace / internal detail leakage.
  */
