@@ -36,11 +36,27 @@
  * ----------------------------------------------------
  * Each entry declares `textLegible` and `indicatorSafe`. These are ASSERTIONS
  * the test computes against every canonical surface — including the negative
- * ones. A token declared `textLegible: false` must actually measure below
- * 4.5:1 (an EXPECTED-FAIL): that is the machine proof that it is an indicator,
- * not type, and the reason it may never colour a readable label. Horizon's two
- * ember values are `atmosphere` and are proven to fall below even the 3:1
- * non-text threshold, which is what makes "never a foreground" checkable.
+ * ones.
+ *
+ * The negative claim is EXISTENTIAL, and stating it any stronger would be
+ * false. Two of the three indicator-only values do clear 4.5:1 on the darkest
+ * surfaces (`state-offline` measures 4.78 and 4.6 there, `state-maintenance`
+ * 4.7 and 4.53); only `state-critical` is below 4.5:1 on all five. So the rule
+ * this contract encodes is:
+ *
+ *   Indicator-only tokens are not universally text-safe across all canonical
+ *   surfaces; failure on any supported surface prohibits their use as a general
+ *   text token.
+ *
+ * `textLegible: false` therefore means "NOT safe as normal text on every
+ * canonical surface", and the test asserts the value falls below 4.5:1 on at
+ * least one of them. A component cannot pick its backdrop out of that set at
+ * will, so a token that fails anywhere cannot be a general text token anywhere.
+ *
+ * Horizon is the one place the universal form is true and is asserted as such:
+ * both ember values fall below even the 3:1 non-text threshold on EVERY surface
+ * (max 2.14), which is what makes "never a foreground" checkable rather than
+ * advisory.
  */
 
 import {
@@ -97,7 +113,9 @@ export interface Phase104TokenEntry {
   restriction: string;
   /**
    * Declared to clear 4.5:1 (WCAG 2.2 SC 1.4.3, normal text) on EVERY canonical
-   * surface. `false` is an EXPECTED-FAIL and is asserted as such.
+   * surface. `false` means NOT universally text-safe — the value falls below the
+   * threshold on at least one canonical surface, which is asserted, and which
+   * disqualifies it as a general text token even where it happens to pass.
    */
   textLegible: boolean;
   /**
@@ -182,7 +200,7 @@ export const PHASE104_TOKEN_CONTRACT: readonly Phase104TokenEntry[] = [
     usage:
       "CRITICAL indicator — the top of the severity ladder, which must visibly outrank ALARM. Dots, bars, borders and chart marks only.",
     restriction:
-      "EXPECTED-FAIL as normal text. Render the word 'Critical' in --color-state-critical-text instead. Always pair with the non-colour cue (double outline + cross glyph).",
+      "Not universally text-safe: it is below 4.5:1 on all five canonical surfaces, so render the word 'Critical' in --color-state-critical-text instead. Always pair with the non-colour cue (double outline + cross glyph).",
     textLegible: false,
     indicatorSafe: true,
   },
@@ -210,7 +228,7 @@ export const PHASE104_TOKEN_CONTRACT: readonly Phase104TokenEntry[] = [
     usage:
       "MAINTENANCE indicator — a planned, non-fault state. Deliberately desaturated so it recedes rather than alerting.",
     restriction:
-      "EXPECTED-FAIL as normal text; use --color-state-maintenance-text. Must not read as --color-status-information: maintenance is not telemetry.",
+      "Not universally text-safe: it clears 4.5:1 only on the two darkest canonical surfaces and fails on the other three, so use --color-state-maintenance-text for type. Must not read as --color-status-information: maintenance is not telemetry.",
     textLegible: false,
     indicatorSafe: true,
   },
@@ -237,7 +255,7 @@ export const PHASE104_TOKEN_CONTRACT: readonly Phase104TokenEntry[] = [
     usage:
       "OFFLINE indicator — a real operational state (the device is not reachable), one luminance step below the UNKNOWN grey so the two never collapse.",
     restriction:
-      "EXPECTED-FAIL as normal text; the state name uses --color-text-metadata. May NOT borrow --color-text-disabled: OFFLINE is a plant condition, not a disabled control, and the disabled token sits below SC 1.4.11.",
+      "Not universally text-safe: it clears 4.5:1 only on the two darkest canonical surfaces and fails on the other three, so the state name uses --color-text-metadata. May NOT borrow --color-text-disabled: OFFLINE is a plant condition, not a disabled control, and the disabled token sits below SC 1.4.11.",
     textLegible: false,
     indicatorSafe: true,
   },

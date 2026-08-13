@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
+import tailwindConfig from "../../../../tailwind.config";
 import {
   PHASE104_BASE_SURFACES,
   PHASE104_DNA_SOURCE,
@@ -15,47 +17,118 @@ import {
   NEW_HUES,
   REASONING_LADDER,
 } from "../../../../tools/figma/hermes-phase104-visual-system/src/lib/dna-tokens.js";
-import { contrast } from "../../../../tools/figma/hermes-phase104-visual-system/src/lib/contrast.js";
+import {
+  contrast,
+  r2,
+} from "../../../../tools/figma/hermes-phase104-visual-system/src/lib/contrast.js";
 
 /**
  * PHASE 104-A — product token bridge gate.
  *
  * Phase 104 declared eleven new colour values in the design-side machine source.
- * This suite is the thing that makes them *executable product tokens* rather
- * than a document: it proves, mechanically, that
+ * This suite is what makes them *executable product tokens* rather than a
+ * document: it proves, mechanically, that
  *
  *   1. the contract covers the live `NEW_HUES` array one-to-one — no value
  *      silently dropped, none silently invented;
- *   2. `globals.css` declares every mapped token with the exact machine value;
- *   3. `tailwind.config.ts` exposes every mapped token as `var(--…)`;
+ *   2. `globals.css` declares every mapped token EXACTLY ONCE, actively, with
+ *      the exact machine value;
+ *   3. `tailwind.config.ts` maps every mapped token to `var(--…)` AT RUNTIME;
  *   4. the Phase 87B canonical surfaces still hold their source values, so the
  *      contrast maths below is measured against the surfaces that actually ship;
- *   5. every accessibility claim in the contract is COMPUTED, including the
- *      negative ones — a token declared indicator-only must genuinely fail the
- *      4.5:1 text threshold, which is the proof it may not colour a label;
+ *   5. every accessibility claim is COMPUTED, including the negative ones;
  *   6. the Phase 87 contract is untouched and Phase 104 never leaks into it;
  *   7. no hex literal was hand-copied into the TypeScript contract.
  *
- * The count is derived from `NEW_HUES.length`, never hard-coded, so adding a
- * twelfth hue to the machine source fails here until it is mapped, justified and
- * shipped through the same gate.
+ * TWO HARDENING DECISIONS, both from external review of a8811234:
+ *
+ * A. PARITY IS CHECKED AGAINST WHAT THE TOOLCHAIN ACTUALLY SEES, NOT SOURCE TEXT.
+ *    An earlier revision asserted CSS parity with a substring match on the raw
+ *    file and Tailwind parity with `toContain()` on the config's source text.
+ *    Both are maskable: a stale-but-correct value sitting in a COMMENT satisfies
+ *    a substring match while the active declaration is wrong, and a duplicate
+ *    later declaration silently overrides an earlier correct one. So `globals.css`
+ *    is now parsed with PostCSS — comments are Comment nodes and are skipped by
+ *    the AST walk for free — and exactly ONE active declaration is required per
+ *    variable. `tailwind.config.ts` is imported as an object and
+ *    `theme.extend.colors[key]` is compared directly. The adversarial block below
+ *    proves each masking route fails, and proves the old text-matching approach
+ *    would have passed on the very same input.
+ *
+ * B. THE NEGATIVE CONTRAST CLAIM IS QUANTIFIED CORRECTLY.
+ *    The earlier revision asserted `min(ratios) < 4.5` while the prose claimed
+ *    the token was below 4.5:1 on EVERY canonical surface. `min < 4.5` only
+ *    proves failure on at least one surface, and for two of the three tokens the
+ *    stronger prose claim is simply false: `state-offline` measures 4.78 and
+ *    4.60 on the two darkest surfaces and `state-maintenance` measures 4.7 and
+ *    4.53 there. Only `state-critical` is below 4.5 on all five. The accurate
+ *    rule — and the one now asserted and documented — is:
+ *
+ *      Indicator-only tokens are not universally text-safe across all canonical
+ *      surfaces; failure on any supported surface prohibits their use as a
+ *      general text token.
+ *
+ *    Horizon is different: there the "below 3:1 on EVERY surface" claim really is
+ *    true, so it is asserted per surface (max, not min) rather than being taken
+ *    on trust. No DNA colour value was changed to make any of this pass.
  */
 
 const read = (rel: string): string =>
   readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8");
 
-const globals = read("../../../app/globals.css");
-const tailwind = read("../../../../tailwind.config.ts");
-const tailwindNorm = tailwind.replace(/\s+/g, " ");
+const globalsCss = read("../../../app/globals.css");
 const contractSource = read("../phase104-token-contract.ts");
+const tailwindSource = read("../../../../tailwind.config.ts");
 const phase87Contract = read("../token-contract.ts");
 const integrationDoc = read(
   "../../../../docs/design/phase-104/02-token-integration.md",
 );
 
-/** The declaration line for a CSS custom property, or "" if undeclared. */
-const cssVarLine = (cssVar: string): string =>
-  globals.split("\n").find((l) => l.includes(`${cssVar}:`)) ?? "";
+/** The accurate rule that replaced the earlier over-strong claim. */
+const INDICATOR_RULE =
+  "Indicator-only tokens are not universally text-safe across all canonical " +
+  "surfaces; failure on any supported surface prohibits their use as a general " +
+  "text token.";
+
+/**
+ * Collapse whitespace, line-leading comment/quote markers and markdown emphasis,
+ * so the rule matches whether it is wrapped inside a JSDoc block, a CSS comment,
+ * a Tailwind config comment or a markdown blockquote.
+ */
+const flatten = (s: string): string =>
+  s
+    .replace(/^[ \t]*(?:[*>]|\/\/|\/\*)[ \t]?/gm, "")
+    .replace(/\*\*/g, "")
+    .replace(/\s+/g, " ");
+
+// ── Parity primitives ───────────────────────────────────────────────────────
+
+/**
+ * Every ACTIVE declaration of a custom property, in source order, read from the
+ * PostCSS AST. Declarations inside a comment are Comment nodes and never appear
+ * here, which is precisely the masking route this replaces.
+ */
+function activeDeclarations(css: string, prop: string): string[] {
+  const values: string[] = [];
+  // Block body on purpose: `push` returns a number and `walkDecls` treats a
+  // truthy return as "stop walking", which would silently hide a duplicate.
+  postcss.parse(css).walkDecls(prop, (decl) => {
+    values.push(decl.value.trim());
+  });
+  return values;
+}
+
+/** The runtime Tailwind colour map — the object the toolchain actually consumes. */
+const tailwindColors: Readonly<Record<string, unknown>> = (() => {
+  const extend = tailwindConfig.theme?.extend as
+    | { colors?: Record<string, unknown> }
+    | undefined;
+  const colors = extend?.colors;
+  if (colors === undefined) {
+    throw new Error("tailwind.config.ts exposes no theme.extend.colors object");
+  }
+  return colors;
+})();
 
 /** WCAG 2.2 thresholds. */
 const AA_NORMAL_TEXT = 4.5; // SC 1.4.3
@@ -66,11 +139,21 @@ const SURFACES = Object.entries(BASE_SURFACES) as ReadonlyArray<
   readonly [string, string]
 >;
 
-const worstCase = (value: string): number =>
-  Math.min(...SURFACES.map(([, surface]) => contrast(value, surface)));
+const ratios = (value: string): number[] =>
+  SURFACES.map(([, surface]) => contrast(value, surface));
+
+/** Canonical surfaces on which a value falls below the normal-text threshold. */
+const subAaSurfaces = (value: string): string[] =>
+  SURFACES.filter(([, surface]) => contrast(value, surface) < AA_NORMAL_TEXT).map(
+    ([key]) => key,
+  );
 
 const byRole = (role: Phase104TokenEntry["role"]): Phase104TokenEntry[] =>
   PHASE104_TOKEN_CONTRACT.filter((t) => t.role === role);
+
+const INDICATOR_ONLY = PHASE104_TOKEN_CONTRACT.filter(
+  (t) => t.role === "indicator" && !t.textLegible,
+);
 
 // ───────────────────────────────────────────────────────────────────────────
 describe("Phase 104 contract — provenance and shape", () => {
@@ -167,23 +250,84 @@ describe("Phase 104 contract — values are derived structurally, never copied",
 });
 
 // ───────────────────────────────────────────────────────────────────────────
-describe("Phase 104 contract — globals.css declares every token with the machine value", () => {
+describe("Phase 104 contract — globals.css declares every token exactly once (PostCSS AST)", () => {
   it.each(
     PHASE104_TOKEN_CONTRACT.map((t) => [t.cssVar, t.value, t.key] as const),
   )("%s = %s  (%s)", (cssVar, value) => {
-    expect(globals).toContain(`${cssVar}:`);
-    expect(cssVarLine(cssVar).toLowerCase()).toContain(value.toLowerCase());
+    const declared = activeDeclarations(globalsCss, cssVar);
+    // Exactly one ACTIVE declaration: a second one would override the first, and
+    // whichever of the two is wrong would otherwise go unnoticed.
+    expect(declared, `active declarations of ${cssVar}`).toHaveLength(1);
+    expect(declared[0].toLowerCase()).toBe(value.toLowerCase());
   });
 });
 
-describe("Phase 104 contract — Tailwind exposes every token as var(--…)", () => {
+describe("Phase 104 contract — Tailwind maps every token at RUNTIME", () => {
   it.each(
     PHASE104_TOKEN_CONTRACT.map((t) => [t.tailwind, t.cssVar] as const),
-  )("maps %s → var(%s)", (tailwindKey, cssVar) => {
-    expect(tailwindNorm).toContain(`"${tailwindKey}": "var(${cssVar})"`);
+  )("theme.extend.colors[%s] === var(%s)", (tailwindKey, cssVar) => {
+    expect(tailwindColors[tailwindKey]).toBe(`var(${cssVar})`);
   });
 });
 
+// ───────────────────────────────────────────────────────────────────────────
+describe("Phase 104 parity checks resist comments and overrides (adversarial)", () => {
+  const [sample] = PHASE104_TOKEN_CONTRACT;
+
+  it("a correct value inside a CSS comment cannot mask a wrong active declaration", () => {
+    const masked = `:root {\n  /* ${sample.cssVar}: ${sample.value}; */\n  ${sample.cssVar}: #000000;\n}`;
+    // The retired substring approach would have accepted this outright…
+    expect(masked).toContain(`${sample.cssVar}: ${sample.value}`);
+    // …the AST sees only the active declaration, and it is wrong.
+    const declared = activeDeclarations(masked, sample.cssVar);
+    expect(declared).toEqual(["#000000"]);
+    expect(declared[0].toLowerCase()).not.toBe(sample.value.toLowerCase());
+  });
+
+  it("a duplicate/overriding declaration fails the exactly-once requirement", () => {
+    const duplicated = `:root {\n  ${sample.cssVar}: ${sample.value};\n}\n:root {\n  ${sample.cssVar}: #000000;\n}`;
+    // A substring match still passes here — the correct value IS present.
+    expect(duplicated).toContain(`${sample.cssVar}: ${sample.value}`);
+    // The AST reports both, so the override cannot hide behind the good one.
+    expect(activeDeclarations(duplicated, sample.cssVar)).toHaveLength(2);
+  });
+
+  it("a correct Tailwind mapping in a comment cannot mask a wrong runtime mapping", () => {
+    const source = `{\n  /* "${sample.tailwind}": "var(${sample.cssVar})", */\n  "${sample.tailwind}": "var(--wrong)",\n}`;
+    const runtime: Record<string, unknown> = {
+      [sample.tailwind]: "var(--wrong)",
+    };
+    // The retired source-text assertion would have passed on this file…
+    expect(source.replace(/\s+/g, " ")).toContain(
+      `"${sample.tailwind}": "var(${sample.cssVar})"`,
+    );
+    // …while the object the toolchain actually consumes is wrong.
+    expect(runtime[sample.tailwind]).not.toBe(`var(${sample.cssVar})`);
+  });
+
+  it("an effective wrong Tailwind mapping fails the runtime requirement", () => {
+    const runtime: Record<string, unknown> = {
+      [sample.tailwind]: "var(--color-brand-primary)",
+    };
+    expect(runtime[sample.tailwind]).not.toBe(`var(${sample.cssVar})`);
+    // …and a missing key is equally a failure, not an accidental pass.
+    expect(runtime["definitely-not-a-token"]).toBeUndefined();
+  });
+
+  it("the real config is an object, not text — no Phase 104 key is comment-only", () => {
+    for (const t of PHASE104_TOKEN_CONTRACT) {
+      expect(
+        Object.prototype.hasOwnProperty.call(tailwindColors, t.tailwind),
+        `theme.extend.colors is missing ${t.tailwind}`,
+      ).toBe(true);
+    }
+    // The source file is read only to prove the runtime object is not a subset
+    // of some larger commented block; it is never the authority.
+    expect(tailwindSource).toContain("PHASE 104");
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
 describe("Phase 104 contract — the canonical surfaces it measures against still ship", () => {
   const SURFACE_CSS_VARS: Readonly<Record<string, string>> = {
     backgroundDeep: "--color-background-deep",
@@ -199,11 +343,16 @@ describe("Phase 104 contract — the canonical surfaces it measures against stil
     );
   });
 
-  it.each(SURFACES)("%s retains its source value in globals.css", (key, value) => {
-    const cssVar = SURFACE_CSS_VARS[key];
-    expect(cssVar, `no CSS var mapped for BASE_SURFACES.${key}`).toBeTruthy();
-    expect(cssVarLine(cssVar).toLowerCase()).toContain(value.toLowerCase());
-  });
+  it.each(SURFACES)(
+    "%s retains its source value as the single active declaration",
+    (key, value) => {
+      const cssVar = SURFACE_CSS_VARS[key];
+      expect(cssVar, `no CSS var mapped for BASE_SURFACES.${key}`).toBeTruthy();
+      const declared = activeDeclarations(globalsCss, cssVar);
+      expect(declared, `active declarations of ${cssVar}`).toHaveLength(1);
+      expect(declared[0].toLowerCase()).toBe(value.toLowerCase());
+    },
+  );
 });
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -220,23 +369,17 @@ describe("Phase 104 contract — computed WCAG verdicts (positive claims)", () =
     textTokens.flatMap((t) =>
       SURFACES.map(([s, surface]) => [t.key, t.value, s, surface] as const),
     ),
-  )(
-    "%s (%s) is >= 4.5:1 on %s",
-    (_key, value, _surfaceKey, surface) => {
-      expect(contrast(value, surface)).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
-    },
-  );
+  )("%s (%s) is >= 4.5:1 on %s", (_key, value, _surfaceKey, surface) => {
+    expect(contrast(value, surface)).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+  });
 
   it.each(
     indicatorTokens.flatMap((t) =>
       SURFACES.map(([s, surface]) => [t.key, t.value, s, surface] as const),
     ),
-  )(
-    "%s (%s) is >= 3:1 on %s",
-    (_key, value, _surfaceKey, surface) => {
-      expect(contrast(value, surface)).toBeGreaterThanOrEqual(UI_NON_TEXT);
-    },
-  );
+  )("%s (%s) is >= 3:1 on %s", (_key, value, _surfaceKey, surface) => {
+    expect(contrast(value, surface)).toBeGreaterThanOrEqual(UI_NON_TEXT);
+  });
 
   it("every `text` role token is also indicator-safe (safe for its own glyph)", () => {
     for (const t of byRole("text")) {
@@ -246,40 +389,63 @@ describe("Phase 104 contract — computed WCAG verdicts (positive claims)", () =
   });
 });
 
-describe("Phase 104 contract — EXPECTED-FAIL: indicator-only tokens are not text", () => {
-  const indicatorOnly = PHASE104_TOKEN_CONTRACT.filter(
-    (t) => t.role === "indicator" && !t.textLegible,
-  );
-
+// ───────────────────────────────────────────────────────────────────────────
+describe("Phase 104 contract — indicator-only tokens are not universally text-safe", () => {
   it("the indicator-only set is non-empty (otherwise this guard proves nothing)", () => {
-    expect(indicatorOnly.map((t) => t.key)).not.toEqual([]);
+    expect(INDICATOR_ONLY.map((t) => t.key)).not.toEqual([]);
   });
 
-  it.each(indicatorOnly.map((t) => [t.key, t.value] as const))(
-    "%s (%s) deliberately measures BELOW 4.5:1 — it must never colour a label",
+  it.each(INDICATOR_ONLY.map((t) => [t.key, t.value] as const))(
+    "%s (%s) falls below 4.5:1 on AT LEAST ONE canonical surface",
     (_key, value) => {
-      expect(worstCase(value)).toBeLessThan(AA_NORMAL_TEXT);
-      // …but it is still a legitimate non-text indicator.
-      expect(worstCase(value)).toBeGreaterThanOrEqual(UI_NON_TEXT);
+      const failing = subAaSurfaces(value);
+      // The claim is existential, not universal: two of these three tokens DO
+      // clear 4.5:1 on the darkest surfaces. Failure anywhere is what disqualifies
+      // them as a general text token, and that is exactly what is asserted.
+      expect(failing.length).toBeGreaterThanOrEqual(1);
+      expect(Math.min(...ratios(value))).toBeLessThan(AA_NORMAL_TEXT);
     },
   );
 
+  it.each(INDICATOR_ONLY.map((t) => [t.key, t.value] as const))(
+    "%s (%s) is still a legitimate non-text indicator on EVERY surface",
+    (_key, value) => {
+      expect(Math.min(...ratios(value))).toBeGreaterThanOrEqual(UI_NON_TEXT);
+    },
+  );
+
+  it("records which surfaces each indicator-only token is text-unsafe on", () => {
+    // Pins the evidence so a future DNA change that silently makes one of these
+    // universally text-safe (or universally unsafe) has to be acknowledged here.
+    const observed = Object.fromEntries(
+      INDICATOR_ONLY.map((t) => [t.key, subAaSurfaces(t.value).length]),
+    );
+    expect(observed).toEqual({
+      "state-critical": 5,
+      "state-maintenance": 3,
+      "state-offline": 3,
+    });
+  });
+
   it("each indicator-only token names its readable partner in the restriction", () => {
-    for (const t of indicatorOnly) {
+    for (const t of INDICATOR_ONLY) {
       const partner = PHASE104_TOKEN_CONTRACT.find(
-        (p) => p.role === "text" && p.dnaPath === t.dnaPath.replace(/\.fill$/, ".text"),
+        (p) =>
+          p.role === "text" &&
+          p.dnaPath === t.dnaPath.replace(/\.fill$/, ".text"),
       );
       const named =
         (partner !== undefined && t.restriction.includes(partner.cssVar)) ||
         /--color-text-metadata/.test(t.restriction);
-      expect(named, `${t.key} must point at the token that may carry its type`).toBe(
-        true,
-      );
+      expect(
+        named,
+        `${t.key} must point at the token that may carry its type`,
+      ).toBe(true);
     }
   });
 });
 
-describe("Phase 104 contract — Horizon is atmosphere and may never be a foreground", () => {
+describe("Phase 104 contract — Horizon is below 3:1 on EVERY canonical surface", () => {
   const horizon = byRole("atmosphere");
 
   it("both Horizon ember stops are classified as atmosphere", () => {
@@ -289,18 +455,29 @@ describe("Phase 104 contract — Horizon is atmosphere and may never be a foregr
     ]);
   });
 
-  it.each(horizon.map((t) => [t.key, t.value, t.restriction] as const))(
-    "%s (%s) is prohibited as a foreground and proven unusable as one",
-    (_key, value, restriction) => {
-      expect(restriction).toContain("PROHIBITED");
-      // Below even the non-text threshold on EVERY surface: there is no legal
-      // foreground use, so the prohibition is not merely stylistic.
-      expect(worstCase(value)).toBeLessThan(UI_NON_TEXT);
+  it.each(
+    horizon.flatMap((t) =>
+      SURFACES.map(([s, surface]) => [t.key, t.value, s, surface] as const),
+    ),
+  )(
+    "%s (%s) is below 3:1 on %s — no legal foreground use",
+    (_key, value, _surfaceKey, surface) => {
+      expect(contrast(value, surface)).toBeLessThan(UI_NON_TEXT);
     },
   );
 
-  it("no Horizon token is declared text-legible or indicator-safe", () => {
+  it.each(horizon.map((t) => [t.key, t.value] as const))(
+    "%s (%s) is universally sub-3:1 — asserted on the MAXIMUM, not the minimum",
+    (_key, value) => {
+      // Unlike the indicator-only tokens above, this claim really is universal,
+      // so it is asserted against the best case rather than the worst.
+      expect(Math.max(...ratios(value))).toBeLessThan(UI_NON_TEXT);
+    },
+  );
+
+  it("both Horizon tokens are declared prohibited as a foreground", () => {
     for (const t of horizon) {
+      expect(t.restriction, t.key).toContain("PROHIBITED");
       expect(t.textLegible, t.key).toBe(false);
       expect(t.indicatorSafe, t.key).toBe(false);
     }
@@ -339,4 +516,31 @@ describe("Phase 104 contract — the integration document records every mapping"
     expect(integrationDoc).toContain(PHASE104_DNA_SOURCE.machineSource);
     expect(integrationDoc).toContain(PHASE104_DNA_SOURCE.integrationBase);
   });
+
+  it("states the indicator rule accurately, in the product source as well", () => {
+    for (const [label, text] of [
+      ["integration document", integrationDoc],
+      ["globals.css", globalsCss],
+      ["tailwind.config.ts", tailwindSource],
+      ["the contract", contractSource],
+    ] as const) {
+      expect(flatten(text), label).toContain(flatten(INDICATOR_RULE));
+    }
+  });
+
+  it.each(
+    INDICATOR_ONLY.map((t) => [t.key, t.cssVar, t.value] as const),
+  )(
+    "documents the real measured range and sub-AA surface count for %s",
+    (_key, cssVar, value) => {
+      const all = ratios(value);
+      const line = integrationDoc
+        .split("\n")
+        .find((l) => l.includes(cssVar) && /of 5/.test(l));
+      expect(line, `no measurement row for ${cssVar}`).toBeTruthy();
+      expect(line).toContain(String(r2(Math.min(...all))));
+      expect(line).toContain(String(r2(Math.max(...all))));
+      expect(line).toContain(`${subAaSurfaces(value).length} of 5`);
+    },
+  );
 });
