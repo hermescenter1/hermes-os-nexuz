@@ -984,8 +984,20 @@ async function buildComponentSet(cs, fonts) {
         marker.characters = b
         marker.fills = [solid('#A9BAC6')]
         marker.name = b
-        marker.componentPropertyReferences = { visible: pid }
+        // A node becomes a component sublayer only once it is INSIDE the
+        // ComponentNode. Binding first fails with "Can only set component
+        // property references on symbol sublayer" — which is what cost Apply all
+        // 24 sets: three families raised it, and the fail-closed cleanup then
+        // correctly removed every set that had been built. Append, then bind.
         comp.appendChild(marker)
+        try {
+          marker.componentPropertyReferences = { visible: pid }
+        } catch (bindError) {
+          // Leave nothing half-bound behind; the throw hands the failure to the
+          // existing fail-closed path, which discards the whole set.
+          try { marker.remove() } catch (cleanupError) {}
+          throw bindError
+        }
       }
     } catch (e) { propertyErrors.push('BOOLEAN ' + b + ': ' + String(e && e.message ? e.message : e)) }
   }

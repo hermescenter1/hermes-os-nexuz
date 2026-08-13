@@ -165,7 +165,7 @@ npm run verify
   64 checks, 0 failures. Text ≥ 4.5:1 (SC 1.4.3), indicators ≥ 3:1 (SC 1.4.11),
   measured against the **lightest** canonical surface `#152A36`, with translucent
   Glass tiers composited first so the ratio is the one the user actually sees.
-- `npm run test` — 80 policy, mutation and runtime-contract tests asserting the
+- `npm run test` — 85 policy, mutation and runtime-contract tests asserting the
   design *rules* and executor safety: `UNKNOWN` can never
   collapse into `HEALTHY`, no state depends on colour alone, an AI hypothesis never
   carries a verified look, the shipped glass lift ladder and `scale(1.012)` pin are
@@ -183,7 +183,12 @@ npm run verify
   and Figma-persisted descriptions remain canonical.
   The runtime-lock and busy-gate tests execute the shipped `src/main.js` and the
   real `src/ui.html` script (through `node:vm`), so deleting either guard from
-  the source turns them red rather than merely failing a text match.
+  the source turns them red rather than merely failing a text match. The
+  component-property tests go further and run a **complete Apply** against an
+  in-memory Figma double that enforces the real constraint — a node accepts
+  `componentPropertyReferences` only once it is inside a `ComponentNode` — so the
+  205-asset / 226-variant build, every Boolean binding and the fail-closed
+  cleanup are all proven by execution.
 
 The audit caught four genuine contrast failures in the first draft of the token set
 (`critical` indicator at 2.64:1, `maintenance` text at 3.51:1, `offline` indicator at

@@ -287,7 +287,7 @@ Breakpoints designed and validated: **1440 × 1024 · 768 × 1024 · 390 × 844*
 |---|---|
 | Design DNA specification | **COMPLETE** |
 | Contrast / a11y verification | **PASS** — 64 checks, 0 failures |
-| Design-rule / executor policy tests | **PASS** — 80 tests, including mutation controls, dynamic-page load-before-traverse, ChildrenMixin traversal in all three collection shapes, direct Component Set enumeration, node-id de-duplication, unclaimed-collision fail-closed, the single-operation runtime lock and UI busy gate, canonical Figma descriptions, reproducible source identity and runner-isolation guard |
+| Design-rule / executor policy tests | **PASS** — 85 tests, including mutation controls, dynamic-page load-before-traverse, ChildrenMixin traversal in all three collection shapes, direct Component Set enumeration, node-id de-duplication, unclaimed-collision fail-closed, the single-operation runtime lock and UI busy gate, a complete Apply against an in-memory Figma double with every Boolean property bound, canonical Figma descriptions, reproducible source identity and runner-isolation guard |
 | Figma file created | **YES** — `QcJcRaBv1NMrgb4pMshEVB` |
 | Plugin: pages, sections, tokens, components | **LOCALLY VERIFIED** — contract remains 205 assets / 226 variants; owner Dry Run reported 202 create / 3 update / 0 skip / 0 error on source `c5ca613e1384` |
 | Figma Apply executed | **YES** — owner executed Apply on the same clean Dry Run; no Rollback was executed |
@@ -438,3 +438,41 @@ Variable descriptions. Nothing here may be reported as passed until the owner
 runs it in Figma Desktop. Only after that Dry Run is accepted should a single
 Apply be run to completion, which should then give `OWNED HERE=205` and a final
 Verify of `205/205`. The contract stays at 205 assets / 226 variants.
+
+### 10.4 Why the completed Apply still created nothing — Boolean binding order
+
+With the operation lock in place the owner's Apply ran to completion on build
+`54e76acee7b7` and reported `created: 0 · updated: 9 · skipped: 172 · errors: 3`,
+`component sets in file: 0`. So the lock did its job: the run finished and
+reported honestly, and the fail-closed cleanup left no half-built set behind.
+
+All three errors were the same Figma refusal —
+**`Can only set component property references on symbol sublayer`** — raised by
+the Boolean properties of `Hermes/Rail`, `Hermes/Button` and `Hermes/Table`.
+
+**Root cause.** In `buildComponentSet` the Boolean marker had its
+`componentPropertyReferences` assigned *before* `comp.appendChild(marker)`. A node
+is a component sublayer only once it is inside the `ComponentNode`, so Figma
+rejected every one of them. The TEXT properties bind in a later pass over
+`comp.children` — already appended — which is exactly why TEXT worked and BOOLEAN
+did not, and why `INSTANCE_SWAP` (which appends, then binds) also worked.
+
+The three errors are one per *family*, not one per property:
+`buildComponentSet` collects a family's failing properties into `propertyErrors`
+and `applyDna` joins them into a single `componentSet <name>: …` message. Rail
+contributes 1, Button 2 and Table 3 — the owner's transcript lists Table's
+`Header` and `Selection`; `Pagination` is a third declared Boolean on the same
+family and was failing identically.
+
+**Fix.** Append first, then bind; if the binding is still rejected, remove that
+marker and hand the failure to the existing fail-closed path, which discards the
+entire Component Set under construction. No fallback, no silent skip, and no
+Boolean property was removed — the declared set is pinned by test.
+
+The regression suite now runs a **complete Apply** against an in-memory Figma
+double that enforces the real constraint (a node accepts
+`componentPropertyReferences` only while its parent is a `COMPONENT`). It proves
+205 assets and 226 variants are created with zero errors, that all six declared
+Booleans bind to their own set's property id on every variant, and — reverting
+the source to the historical ordering — that the failure reproduces as exactly
+3 errors with zero Component Sets left in the document.
