@@ -139,6 +139,19 @@ function buildDnaSpec() {
   const cSig = col(COLLECTIONS.SIGNATURE)
   const cMotion = col(COLLECTIONS.MOTION)
 
+  const MANAGED_DESCRIPTION = 'Managed by Hermes Phase 104 Visual System'
+
+  /**
+   * Figma trims leading whitespace when it persists Variable.description.
+   * Join semantic fragments first so an absent optional fragment can never
+   * produce a leading separator and a permanent false drift on Verify.
+   * @param {string[]} parts
+   */
+  const canonicalDescription = (parts) => [...parts, MANAGED_DESCRIPTION]
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join(' · ')
+
   /**
    * @param {any} c collection
    * @param {string} name variable name (slash-grouped)
@@ -167,14 +180,14 @@ function buildDnaSpec() {
   }
 
   /**
-   * @param {any} c @param {string} name @param {number} value @param {string[]} scopes @param {string} usage
+   * @param {any} c @param {string} name @param {number} value @param {string[]} scopes @param {string|string[]} usage
    */
   const float = (c, name, value, scopes, usage) => {
     variables.push({
       key: 'variable:' + slug(c.name) + ':' + slug(name), kind: 'variable',
       collectionKey: c.key, name, resolvedType: 'FLOAT', floatValue: value, scopes,
       codeSyntax: {},
-      description: usage + ' · Managed by Hermes Phase 104 Visual System',
+      description: canonicalDescription(Array.isArray(usage) ? usage : [usage]),
     })
   }
 
@@ -251,7 +264,7 @@ function buildDnaSpec() {
   }
   for (const c of DNA.MOTION.choreography) {
     float(cMotion, 'Motion/choreography/' + c.key, c.duration, SCOPES.float,
-      (c.note || '') + ' · easing: ' + c.easing)
+      [c.note || '', 'easing: ' + c.easing])
   }
 
   // ── ELEVATION EFFECT STYLES ──────────────────────────────────────────────

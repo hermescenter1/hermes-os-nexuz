@@ -168,12 +168,25 @@ function collectManaged(node, groups, malformed) {
   if (managed === '1' && key) (groups[key] || (groups[key] = [])).push(node)
 }
 
+/**
+ * Figma exposes ChildrenMixin.children as a readonly collection. In Desktop it
+ * is iterable, but nested collections such as SectionNode.children are not
+ * guaranteed to satisfy Array.isArray(). Always materialise the public
+ * iterable instead of treating a negative Array.isArray() as "no children".
+ *
+ * @param {any} node
+ * @returns {any[]}
+ */
+function childNodes(node) {
+  const children = node && node.children
+  if (!children || typeof children[Symbol.iterator] !== 'function') return []
+  return Array.from(children)
+}
+
 /** @param {any} node @param {Record<string, any[]>} groups @param {string[]} malformed */
 function walkManaged(node, groups, malformed) {
   collectManaged(node, groups, malformed)
-  if (node && Array.isArray(node.children)) {
-    for (const child of node.children) walkManaged(child, groups, malformed)
-  }
+  for (const child of childNodes(node)) walkManaged(child, groups, malformed)
 }
 
 async function ensureAllPagesLoaded() {
@@ -265,7 +278,7 @@ function stateSignature(existing, livePages) {
     width: typeof node.width === 'number' ? node.width : null,
     height: typeof node.height === 'number' ? node.height : null,
     characters: typeof node.characters === 'string' ? node.characters : null,
-    children: Array.isArray(node.children) ? node.children.map(shape) : [],
+    children: childNodes(node).map(shape),
   })
   const pages = livePages.map(shape)
   return hashAsset({ owned, pages })
@@ -490,7 +503,7 @@ async function applyDna(opts) {
         result.skipped.push('componentSet:' + cs.name + ' (' + cs.variantCount + ' variants)')
         availableSets[cs.familyKey] = {
           set: prev,
-          components: Array.isArray(prev.children) ? prev.children.filter((node) => node.type === 'COMPONENT') : [],
+          components: childNodes(prev).filter((node) => node.type === 'COMPONENT'),
           combos: [],
         }
         continue
@@ -576,7 +589,7 @@ async function verifyDna() {
         (node.x !== asset.x || node.y !== asset.y || node.width !== asset.w || node.height !== asset.h)) reasons.push('section-geometry')
     if (asset.kind === 'componentSet') {
       if (!node.parent || node.parent.name !== asset.sectionName) reasons.push('parent-section')
-      const variants = Array.isArray(node.children) ? node.children.filter((child) => child.type === 'COMPONENT') : []
+      const variants = childNodes(node).filter((child) => child.type === 'COMPONENT')
       if (variants.length !== asset.variantCount) reasons.push('variant-count:' + variants.length + '/' + asset.variantCount)
       else if (JSON.stringify(variants.map((child) => child.name).sort()) !== JSON.stringify(asset.variants.slice().sort())) reasons.push('variant-names')
       const definitions = Object.entries(node.componentPropertyDefinitions || {})
@@ -584,17 +597,17 @@ async function verifyDna() {
         (key === name || key.split('#')[0] === name) && definition && definition.type === type)
       for (const property of (asset.text || [])) {
         if (!hasDefinition(property.name, 'TEXT')) reasons.push('TEXT-property:' + property.name)
-        else if (variants.some((variant) => !variant.children.some((child) => child.name === property.name &&
+        else if (variants.some((variant) => !childNodes(variant).some((child) => child.name === property.name &&
           child.componentPropertyReferences && child.componentPropertyReferences.characters))) reasons.push('TEXT-binding:' + property.name)
       }
       for (const property of (asset.bools || [])) {
         if (!hasDefinition(property, 'BOOLEAN')) reasons.push('BOOLEAN-property:' + property)
-        else if (variants.some((variant) => !variant.children.some((child) => child.name === property &&
+        else if (variants.some((variant) => !childNodes(variant).some((child) => child.name === property &&
           child.componentPropertyReferences && child.componentPropertyReferences.visible))) reasons.push('BOOLEAN-binding:' + property)
       }
       for (const property of (asset.swaps || [])) {
         if (!hasDefinition(property.name, 'INSTANCE_SWAP')) reasons.push('SWAP-property:' + property.name)
-        else if (variants.some((variant) => !variant.children.some((child) => child.name === property.name &&
+        else if (variants.some((variant) => !childNodes(variant).some((child) => child.name === property.name &&
           child.componentPropertyReferences && child.componentPropertyReferences.mainComponent))) reasons.push('SWAP-binding:' + property.name)
       }
     }
@@ -834,7 +847,7 @@ async function rollbackDna() {
 
   for (const { key, node } of entries) {
     try {
-      if (key.startsWith('section:') && Array.isArray(node.children) && node.children.length) {
+      if (key.startsWith('section:') && childNodes(node).length) {
         clearTag(node)
         retained.push(key + ' (contains non-plugin content)')
         continue

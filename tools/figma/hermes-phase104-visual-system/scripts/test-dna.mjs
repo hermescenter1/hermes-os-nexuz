@@ -31,6 +31,13 @@ const TEXT_AA = 4.5
 const UI_AA = 3.0
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 
+function loadDnaSpecFromSource(source) {
+  const sourceRequire = createRequire(new URL('../src/lib/dna-spec.js', import.meta.url))
+  const loadedModule = { exports: {} }
+  Function('require', 'module', 'exports', source)(sourceRequire, loadedModule, loadedModule.exports)
+  return loadedModule.exports
+}
+
 function scriptFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name)
@@ -195,6 +202,39 @@ test('the spec is deterministic across builds', () => {
   const b = buildDnaSpec()
   assert.deepEqual(a.counts, b.counts)
   assert.deepEqual(a.assets.map((x) => x.key + ':' + x.hash), b.assets.map((x) => x.key + ':' + x.hash))
+})
+
+test('Variable descriptions survive Figma leading-whitespace normalisation byte-for-byte', () => {
+  const source = readFileSync(new URL('../src/lib/dna-spec.js', import.meta.url), 'utf8')
+  const filterGate = '    .filter(Boolean)\n    .join(\' · \')'
+  assert.equal(source.split(filterGate).length - 1, 1,
+    'canonical descriptions must own exactly one empty-fragment filter')
+
+  const invalid = (spec) => spec.variables
+    .filter((variable) => variable.description !== variable.description.trimStart())
+    .map((variable) => variable.name)
+    .sort()
+
+  const mutant = loadDnaSpecFromSource(source.replace(filterGate,
+    '    .filter(() => true)\n    .join(\' · \')'))
+  assert.deepEqual(invalid(mutant.buildDnaSpec()), [
+    'Command/width mobile',
+    'Command/width tablet',
+    'Motion/choreography/alarmAcknowledge',
+    'Motion/choreography/panelTransition',
+    'Motion/choreography/progressiveDisclosure',
+    'Motion/choreography/workspaceNavigation',
+    'Triad/card height',
+    'Triad/card width',
+    'Triad/gap',
+  ], 'removing canonical empty-fragment filtering must reproduce all nine Figma description drifts')
+
+  const fixed = buildDnaSpec()
+  assert.deepEqual(invalid(fixed), [])
+  const byName = Object.fromEntries(fixed.variables.map((variable) => [variable.name, variable.description]))
+  assert.equal(byName['Command/width tablet'], 'Managed by Hermes Phase 104 Visual System')
+  assert.equal(byName['Motion/choreography/panelTransition'],
+    'easing: standard · Managed by Hermes Phase 104 Visual System')
 })
 
 test('canonical asset identity is recursively order-independent', () => {

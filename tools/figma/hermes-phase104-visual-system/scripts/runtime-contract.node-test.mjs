@@ -27,6 +27,13 @@ function managed(key, children = []) {
 
 const unowned = (id) => ({ id, name: id, children: [], getSharedPluginData() { return '' } })
 
+function readonlyChildren(items) {
+  return Object.freeze({
+    length: items.length,
+    *[Symbol.iterator]() { yield * items },
+  })
+}
+
 function fakeFigma(pages, extras = {}) {
   const root = { children: pages }
   const link = (parent, children) => {
@@ -138,6 +145,36 @@ test('dynamic-page discovery loads and awaits every page before reading children
     assert.equal(fixedEnv.loadCalls(), 1)
     assert.ok(fixedEnv.childrenReads() > 0)
     assert.equal(scan.index['componentSet:dynamic'], fixedEnv.componentSet)
+  } finally {
+    globalThis.figma = previous
+  }
+})
+
+test('managed discovery traverses iterable Figma child collections that are not Arrays', async () => {
+  const previous = globalThis.figma
+  try {
+    const source = readFileSync(new URL('../src/lib/dna-exec.js', import.meta.url), 'utf8')
+    const iterableGate = "  if (!children || typeof children[Symbol.iterator] !== 'function') return []\n  return Array.from(children)"
+    assert.equal(source.split(iterableGate).length - 1, 1,
+      'the shared child reader must own exactly one iterable-collection gate')
+
+    const mutant = loadDnaExecFromSource(source.replace(iterableGate,
+      "  if (!Array.isArray(children)) return []\n  return children"))
+    const componentSet = managed('componentSet:readonly-children')
+    const section = managed('section:readonly-host')
+    section.children = readonlyChildren([componentSet])
+    globalThis.figma = {
+      ...fakeFigma([managed('page:foundation', [section])]),
+      async loadAllPagesAsync() {},
+    }
+
+    const missed = await mutant.scanManagedAssets()
+    assert.equal(missed.index['componentSet:readonly-children'], undefined,
+      'the previous Array-only scanner must reproduce the 24 missing Component Sets')
+
+    const found = await scanManagedAssets()
+    assert.equal(found.index['componentSet:readonly-children'], componentSet,
+      'the fixed scanner must discover a nested Component Set through ChildrenMixin')
   } finally {
     globalThis.figma = previous
   }

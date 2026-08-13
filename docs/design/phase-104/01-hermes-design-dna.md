@@ -1,6 +1,6 @@
 # Phase 104 — Hermes Design DNA
 
-**Status:** specification + executor locally verified · Figma Apply NOT RUN (see §10)
+**Status:** specification + executor locally verified · owner Apply executed · post-Apply Verify remediation awaiting owner re-run (see §10)
 **Branch:** `agent/phase104-hermes-visual-figma-system` · base `cbfa292`
 **Machine-readable source:** `tools/figma/hermes-phase104-visual-system/src/lib/dna-tokens.js`
 **Verification:** `node tools/figma/hermes-phase104-visual-system/scripts/audit-contrast.mjs`
@@ -287,10 +287,11 @@ Breakpoints designed and validated: **1440 × 1024 · 768 × 1024 · 390 × 844*
 |---|---|
 | Design DNA specification | **COMPLETE** |
 | Contrast / a11y verification | **PASS** — 64 checks, 0 failures |
-| Design-rule / executor policy tests | **PASS** — 58 tests, including mutation controls, dynamic-page load-before-traverse, reproducible source identity and runner-isolation guard |
+| Design-rule / executor policy tests | **PASS** — 60 tests, including mutation controls, dynamic-page load-before-traverse, iterable ChildrenMixin traversal, canonical Figma descriptions, reproducible source identity and runner-isolation guard |
 | Figma file created | **YES** — `QcJcRaBv1NMrgb4pMshEVB` |
-| Plugin: pages, sections, tokens, components | **LOCALLY VERIFIED** — contract remains 205 assets / 226 variants; owner Dry Run evidence still required |
-| Figma Apply executed | **NOT RUN** — must be run by the owner inside Figma Desktop |
+| Plugin: pages, sections, tokens, components | **LOCALLY VERIFIED** — contract remains 205 assets / 226 variants; owner Dry Run reported 202 create / 3 update / 0 skip / 0 error on source `c5ca613e1384` |
+| Figma Apply executed | **YES** — owner executed Apply on the same clean Dry Run; no Rollback was executed |
+| Figma Verify | **OWNER RE-RUN REQUIRED** — initial evidence was 172/205 verified, 24 missing Component Sets and 9 description drifts; both runtime causes are covered by mutation tests in the remediation build |
 | Approved mockups received | **NO** — owner is supplying them |
 | Screens designed | **NOT STARTED** — deliberately blocked on the mockups |
 | Product-phase naming | **CURRENT** — merged Phase 101/102/103 scopes reflected |
