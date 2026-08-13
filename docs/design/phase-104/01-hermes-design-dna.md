@@ -287,7 +287,7 @@ Breakpoints designed and validated: **1440 × 1024 · 768 × 1024 · 390 × 844*
 |---|---|
 | Design DNA specification | **COMPLETE** |
 | Contrast / a11y verification | **PASS** — 64 checks, 0 failures |
-| Design-rule / executor policy tests | **PASS** — 57 tests, including mutation controls, reproducible source identity and runner-isolation guard |
+| Design-rule / executor policy tests | **PASS** — 58 tests, including mutation controls, dynamic-page load-before-traverse, reproducible source identity and runner-isolation guard |
 | Figma file created | **YES** — `QcJcRaBv1NMrgb4pMshEVB` |
 | Plugin: pages, sections, tokens, components | **LOCALLY VERIFIED** — contract remains 205 assets / 226 variants; owner Dry Run evidence still required |
 | Figma Apply executed | **NOT RUN** — must be run by the owner inside Figma Desktop |

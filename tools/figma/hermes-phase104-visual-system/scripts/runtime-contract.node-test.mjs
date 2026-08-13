@@ -51,6 +51,51 @@ function fakeFigma(pages, extras = {}) {
   }
 }
 
+function dynamicPageFigma() {
+  let loaded = false
+  let loadCalls = 0
+  let childrenReads = 0
+  const componentSet = managed('componentSet:dynamic')
+  const section = managed('section:dynamic', [componentSet])
+  const page = managed('page:dynamic')
+  Object.defineProperty(page, 'children', {
+    configurable: true,
+    get() {
+      childrenReads++
+      if (!loaded) {
+        throw new Error("Cannot access property `children` on a page that has not been explicitly loaded")
+      }
+      return [section]
+    },
+  })
+  return {
+    componentSet,
+    figma: {
+      root: { children: [page] },
+      variables: {
+        async getLocalVariableCollectionsAsync() { return [] },
+        async getLocalVariablesAsync() { return [] },
+      },
+      async getLocalPaintStylesAsync() { return [] },
+      async getLocalEffectStylesAsync() { return [] },
+      async loadAllPagesAsync() {
+        loadCalls++
+        await Promise.resolve()
+        loaded = true
+      },
+    },
+    loadCalls: () => loadCalls,
+    childrenReads: () => childrenReads,
+  }
+}
+
+function loadDnaExecFromSource(source) {
+  const sourceRequire = createRequire(new URL('../src/lib/dna-exec.js', import.meta.url))
+  const loadedModule = { exports: {} }
+  Function('require', 'module', 'exports', source)(sourceRequire, loadedModule, loadedModule.exports)
+  return loadedModule.exports
+}
+
 test('managed discovery is recursive and rejects duplicate asset keys fail-closed', async () => {
   const previous = globalThis.figma
   try {
@@ -65,6 +110,34 @@ test('managed discovery is recursive and rejects duplicate asset keys fail-close
     await assert.rejects(() => scanManagedAssets(), /DUPLICATE MANAGED ASSETS.*componentSet:deep x2/)
     const reportable = await scanManagedAssets({ allowDuplicates: true })
     assert.equal(reportable.duplicates[0].count, 2)
+  } finally {
+    globalThis.figma = previous
+  }
+})
+
+test('dynamic-page discovery loads and awaits every page before reading children', async () => {
+  const previous = globalThis.figma
+  try {
+    const source = readFileSync(new URL('../src/lib/dna-exec.js', import.meta.url), 'utf8')
+    const loadGate = '  await ensureAllPagesLoaded()\n'
+    assert.equal(source.split(loadGate).length - 1, 1, 'the shared scanner must own exactly one page-load gate')
+
+    const mutant = loadDnaExecFromSource(source.replace(loadGate, ''))
+    const mutantEnv = dynamicPageFigma()
+    globalThis.figma = mutantEnv.figma
+    await assert.rejects(
+      () => mutant.scanManagedAssets(),
+      /page that has not been explicitly loaded/,
+      'removing the load-before-traverse gate must reproduce the Figma Desktop failure',
+    )
+    assert.equal(mutantEnv.loadCalls(), 0)
+
+    const fixedEnv = dynamicPageFigma()
+    globalThis.figma = fixedEnv.figma
+    const scan = await scanManagedAssets()
+    assert.equal(fixedEnv.loadCalls(), 1)
+    assert.ok(fixedEnv.childrenReads() > 0)
+    assert.equal(scan.index['componentSet:dynamic'], fixedEnv.componentSet)
   } finally {
     globalThis.figma = previous
   }

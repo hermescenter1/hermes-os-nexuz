@@ -176,6 +176,10 @@ function walkManaged(node, groups, malformed) {
   }
 }
 
+async function ensureAllPagesLoaded() {
+  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
+}
+
 /**
  * Scan every managed asset recursively. Component sets live inside Sections, so
  * a page-plus-immediate-children scan is not idempotent and creates duplicates on
@@ -184,6 +188,11 @@ function walkManaged(node, groups, malformed) {
  * @param {{allowDuplicates?:boolean}} [opts]
  */
 async function scanManagedAssets(opts) {
+  // The manifest uses documentAccess: "dynamic-page". Reading PageNode.children
+  // before explicitly loading every page throws in Figma Desktop, including on
+  // the init-only scan that runs before Dry Run. Keep this guarantee inside the
+  // shared scanner so every caller is safe and no new entry point can forget it.
+  await ensureAllPagesLoaded()
   /** @type {Record<string, any[]>} */ const groups = {}
   /** @type {string[]} */ const malformed = []
   for (const c of await figma.variables.getLocalVariableCollectionsAsync()) collectManaged(c, groups, malformed)
@@ -275,7 +284,6 @@ async function applyDna(opts) {
   // the file on its own account if the spec is not Phase 104.
   assertContract(spec.counts, dryRun ? 'Dry Run' : 'Apply')
 
-  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
   const existing = await scanExisting()
   const livePages = figma.root.children.slice()
   const pagePlan = planPages(spec.pages, existing, livePages)
@@ -547,7 +555,6 @@ async function applyDna(opts) {
 async function verifyDna() {
   const spec = buildDnaSpec()
   assertContract(spec.counts, 'Verify')
-  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
   const scan = await scanManagedAssets({ allowDuplicates: true })
   const expected = Object.fromEntries(spec.assets.map((asset) => [asset.key, asset]))
   const missing = []
@@ -814,7 +821,6 @@ async function rollbackDna() {
   const restored = /** @type {string[]} */ ([])
   const retained = /** @type {string[]} */ ([])
   const errors = /** @type {string[]} */ ([])
-  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync()
   const scan = await scanManagedAssets({ allowDuplicates: true })
   const rank = (k) => (k.startsWith('componentSet:') ? 0
     : k.startsWith('paintStyle:') || k.startsWith('effectStyle:') ? 1
