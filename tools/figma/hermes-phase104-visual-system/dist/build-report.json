@@ -4,18 +4,18 @@
   "fingerprint": {
     "plugin": "Hermes Phase 104 Visual System",
     "pluginId": "com.hermesnovin.phase104-visual-system",
-    "headSha": "ab187ec443e638c2596c8fd6b0f1484efcfca55c",
-    "headShaShort": "ab187ec443e6",
+    "headSha": "54e76acee7b72d99d8126f40a99742f3600d930a",
+    "headShaShort": "54e76acee7b7",
     "branch": "agent/phase104-hermes-visual-figma-system",
     "dirty": false,
-    "sourcesSha": "597c2acf75e9ba00efcc9a7b4028b6717ddafe670d1090ba477d85c67da9d4ed",
-    "sourcesShaShort": "597c2acf75e9"
+    "sourcesSha": "ddf78d591390451b9ae1d554936ae59d5ca9e56a318da74af241757f81071ef4",
+    "sourcesShaShort": "ddf78d591390"
   },
   "manifestPath": "manifest.json",
   "sha256": {
     "manifest": "f8de0d64035b9851ac1de1842b38a62a48019eb2417c942c42573773d5fb3c2d",
-    "code": "d1fef09a4d0ca0fa62a2b6b32259153c2edb705b88b39cbbfc4c89ab3301bb86",
-    "ui": "e502eb2fd89fe9a6d9ea9b3d345f70a42a868c0a6ef06f20f000170c52844057"
+    "code": "e053b0344c7aa787c7958ef2355571f082d3721e8d338b51f4e39be27706da2e",
+    "ui": "92d05cc6bd9f685d686f67abee50fc0d3ac1c5b0c3fad9f06e7b529c454d250f"
   },
   "builtFrom": [
     {
@@ -32,7 +32,7 @@
     },
     {
       "file": "src/ui.html",
-      "sha256": "b0efdd49284378d74c9fd0b39d91527e5f5d9b4c08d3fc7376a0b0985c19e272"
+      "sha256": "f0e054b58395b1d770ab97ac59f2ce6ffb9a108c1e67e49caa0fdaf2efdd42c2"
     },
     {
       "file": "src/lib/contrast.js",
@@ -64,7 +64,7 @@
     },
     {
       "file": "src/main.js",
-      "sha256": "c79896b367f42c599efa5f6ee91bef6e1d3de536b0a66c41945e2e06283d979b"
+      "sha256": "1e5506b32721e808f70f232f06d2b07c165a0365694026e451b051fdcab65629"
     }
   ],
   "sourceCommitSemantics": "Latest commit touching a build input; generated dist-only commits do not change it.",

@@ -1,6 +1,6 @@
 /* Hermes Phase 104 Visual System — generated bundle.
    Do not edit dist/ by hand; edit src/ and run `npm run build`.
-   HEAD ab187ec443e638c2596c8fd6b0f1484efcfca55c  sources 597c2acf75e9ba00efcc9a7b4028b6717ddafe670d1090ba477d85c67da9d4ed */
+   HEAD 54e76acee7b72d99d8126f40a99742f3600d930a  sources ddf78d591390451b9ae1d554936ae59d5ca9e56a318da74af241757f81071ef4 */
 (function () {
   "use strict";
   var __modules = {}, __cache = {};
@@ -14,12 +14,12 @@
     module.exports = {
   "plugin": "Hermes Phase 104 Visual System",
   "pluginId": "com.hermesnovin.phase104-visual-system",
-  "headSha": "ab187ec443e638c2596c8fd6b0f1484efcfca55c",
-  "headShaShort": "ab187ec443e6",
+  "headSha": "54e76acee7b72d99d8126f40a99742f3600d930a",
+  "headShaShort": "54e76acee7b7",
   "branch": "agent/phase104-hermes-visual-figma-system",
   "dirty": false,
-  "sourcesSha": "597c2acf75e9ba00efcc9a7b4028b6717ddafe670d1090ba477d85c67da9d4ed",
-  "sourcesShaShort": "597c2acf75e9",
+  "sourcesSha": "ddf78d591390451b9ae1d554936ae59d5ca9e56a318da74af241757f81071ef4",
+  "sourcesShaShort": "ddf78d591390",
   "buildCounts": {
     "pages": 3,
     "sections": 23,
@@ -2637,6 +2637,17 @@ module.exports = {
  * performed against the Phase 87 builder by mistake and the numbers looked
  * plausible enough to be believed.
  *
+ * FAIL-CLOSED SINGLE-OPERATION LOCK. `figma.ui.onmessage` is async, so without a
+ * lock a second message delivered while an operation is suspended on an `await`
+ * runs its executor CONCURRENTLY against the same document. Apply performs
+ * hundreds of interleaved writes across many awaits; a Verify — or a second
+ * Apply — landing inside that window reads and writes a half-built file, and the
+ * Apply that owns the write can be left partially completed. There is
+ * deliberately NO queue: a message arriving while an operation runs is REJECTED
+ * with OPERATION_IN_PROGRESS, never deferred, because running it later is the
+ * same hazard moved in time. The lock is released in a `finally`, so a throwing
+ * operation can never wedge the plugin shut.
+ *
  * No network. Nothing leaves the file.
  */
 
@@ -2646,6 +2657,17 @@ const { assertContract, PLUGIN_IDENTITY } = require('contract')
 const FINGERPRINT = require('fingerprint') // synthetic module injected by build.mjs
 
 let applyPermit = null
+
+/**
+ * The single-operation lock. Null when idle; `{type, operationId}` while an
+ * operation owns the document. Every message type that reads or writes the file
+ * is locked — `init` included, because its scan races an in-flight Apply exactly
+ * as Verify does.
+ * @type {{type:string, operationId:string|null}|null}
+ */
+let activeOperation = null
+
+const LOCKED_MESSAGE_TYPES = ['init', 'dry-run', 'apply', 'verify', 'rollback']
 
 function fingerprintKey() {
   return [FINGERPRINT.pluginId, FINGERPRINT.headSha, FINGERPRINT.sourcesSha].join('|')
@@ -2668,78 +2690,123 @@ figma.showUI(__html__, { width: 480, height: 640, themeColors: true })
 /** @param {any} msg */
 const post = (msg) => figma.ui.postMessage(msg)
 
+/**
+ * The operation bodies. Reached ONLY through the lock below — never call these
+ * directly, or the single-operation guarantee is gone.
+ * @param {string} type
+ * @param {string|null} operationId
+ */
+async function runOperation(type, operationId) {
+  if (type === 'init') {
+    assertRuntimeIdentity('Init')
+    const spec = buildDnaSpec()
+    const existing = await scanExisting()
+    post({
+      type: 'ready',
+      operationId,
+      fingerprint: FINGERPRINT,
+      identity: PLUGIN_IDENTITY,
+      counts: spec.counts,
+      ownedInFile: Object.keys(existing).length,
+      fileName: figma.root.name,
+      pageCount: figma.root.children.length,
+    })
+    return
+  }
+
+  if (type === 'dry-run') {
+    assertRuntimeIdentity('Dry Run')
+    const spec = buildDnaSpec()
+    assertContract(spec.counts, 'Dry Run')
+    const r = await applyDna({ dryRun: true })
+    applyPermit = r.errors.length === 0
+      ? { fingerprint: fingerprintKey(), stateSignature: r.stateSignature }
+      : null
+    post({
+      type: 'result', mode: 'Dry Run', operationId, result: r,
+      fingerprint: FINGERPRINT, applyPermitted: !!applyPermit,
+    })
+    return
+  }
+
+  if (type === 'apply') {
+    assertRuntimeIdentity('Apply')
+    if (!applyPermit || applyPermit.fingerprint !== fingerprintKey()) {
+      throw new Error('APPLY BLOCKED — run a clean Dry Run on this exact build first.')
+    }
+    // Re-preview immediately before the first write. If the document changed
+    // since Dry Run, the permit is invalid and must never be reused.
+    const preview = await applyDna({ dryRun: true })
+    if (preview.errors.length || preview.stateSignature !== applyPermit.stateSignature) {
+      applyPermit = null
+      throw new Error('APPLY BLOCKED — the Figma file changed after Dry Run; run Dry Run again.')
+    }
+    applyPermit = null
+    const r = await applyDna({ dryRun: false })
+    post({
+      type: 'result', mode: 'Apply', operationId, result: r,
+      fingerprint: FINGERPRINT, applyPermitted: false,
+    })
+    return
+  }
+
+  if (type === 'verify') {
+    assertRuntimeIdentity('Verify')
+    const r = await verifyDna()
+    post({ type: 'verify-result', mode: 'Verify', operationId, result: r, fingerprint: FINGERPRINT })
+    return
+  }
+
+  if (type === 'rollback') {
+    applyPermit = null
+    const r = await rollbackDna()
+    post({
+      type: 'result', mode: 'Rollback', operationId, fingerprint: FINGERPRINT,
+      result: {
+        created: [], updated: [], skipped: [], errors: r.errors, removed: r.removed,
+        restored: r.restored, retained: r.retained,
+      },
+    })
+  }
+}
+
 figma.ui.onmessage = async (msg) => {
+  const type = msg && msg.type ? String(msg.type) : ''
+  const operationId = msg && msg.operationId != null ? String(msg.operationId) : null
+
+  // Closing is the operator's own escape hatch and is never blocked.
+  if (type === 'close') { figma.closePlugin(); return }
+  if (LOCKED_MESSAGE_TYPES.indexOf(type) < 0) return
+
+  if (activeOperation) {
+    // Rejected, NOT queued, and the executor is never reached. The rejection
+    // carries the rejected message's own operationId so the UI can tell it apart
+    // from the result of the operation that is still running.
+    post({
+      type: 'error',
+      code: 'OPERATION_IN_PROGRESS',
+      operationId,
+      rejectedType: type,
+      activeType: activeOperation.type,
+      message: 'OPERATION_IN_PROGRESS — "' + activeOperation.type + '" is still running. ' +
+        '"' + type + '" was refused so it cannot run concurrently against the same file. ' +
+        'Wait for the running operation to report completion, then try again.',
+      fingerprint: FINGERPRINT,
+    })
+    return
+  }
+
+  activeOperation = { type, operationId }
   try {
-    if (msg.type === 'init') {
-      assertRuntimeIdentity('Init')
-      const spec = buildDnaSpec()
-      const existing = await scanExisting()
-      post({
-        type: 'ready',
-        fingerprint: FINGERPRINT,
-        identity: PLUGIN_IDENTITY,
-        counts: spec.counts,
-        ownedInFile: Object.keys(existing).length,
-        fileName: figma.root.name,
-        pageCount: figma.root.children.length,
-      })
-      return
-    }
-
-    if (msg.type === 'dry-run') {
-      assertRuntimeIdentity('Dry Run')
-      const spec = buildDnaSpec()
-      assertContract(spec.counts, 'Dry Run')
-      const r = await applyDna({ dryRun: true })
-      applyPermit = r.errors.length === 0
-        ? { fingerprint: fingerprintKey(), stateSignature: r.stateSignature }
-        : null
-      post({ type: 'result', mode: 'Dry Run', result: r, fingerprint: FINGERPRINT, applyPermitted: !!applyPermit })
-      return
-    }
-
-    if (msg.type === 'apply') {
-      assertRuntimeIdentity('Apply')
-      if (!applyPermit || applyPermit.fingerprint !== fingerprintKey()) {
-        throw new Error('APPLY BLOCKED — run a clean Dry Run on this exact build first.')
-      }
-      // Re-preview immediately before the first write. If the document changed
-      // since Dry Run, the permit is invalid and must never be reused.
-      const preview = await applyDna({ dryRun: true })
-      if (preview.errors.length || preview.stateSignature !== applyPermit.stateSignature) {
-        applyPermit = null
-        throw new Error('APPLY BLOCKED — the Figma file changed after Dry Run; run Dry Run again.')
-      }
-      applyPermit = null
-      const r = await applyDna({ dryRun: false })
-      post({ type: 'result', mode: 'Apply', result: r, fingerprint: FINGERPRINT, applyPermitted: false })
-      return
-    }
-
-    if (msg.type === 'verify') {
-      assertRuntimeIdentity('Verify')
-      const r = await verifyDna()
-      post({ type: 'verify-result', mode: 'Verify', result: r, fingerprint: FINGERPRINT })
-      return
-    }
-
-    if (msg.type === 'rollback') {
-      applyPermit = null
-      const r = await rollbackDna()
-      post({
-        type: 'result', mode: 'Rollback', fingerprint: FINGERPRINT,
-        result: {
-          created: [], updated: [], skipped: [], errors: r.errors, removed: r.removed,
-          restored: r.restored, retained: r.retained,
-        },
-      })
-      return
-    }
-
-    if (msg.type === 'close') figma.closePlugin()
+    await runOperation(type, operationId)
   } catch (e) {
     applyPermit = null
-    post({ type: 'error', message: String(e && e.message ? e.message : e), fingerprint: FINGERPRINT })
+    post({
+      type: 'error', operationId, rejectedType: type,
+      message: String(e && e.message ? e.message : e), fingerprint: FINGERPRINT,
+    })
+  } finally {
+    activeOperation = null
   }
 }
 
