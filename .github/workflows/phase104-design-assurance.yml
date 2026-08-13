@@ -25,9 +25,14 @@ on:
       - "tools/figma/hermes-phase104-visual-system/**"
       - "docs/design/phase-104/**"
       - "src/components/ds/phase104-token-contract.ts"
+      - "src/components/ds/phase104-signature-contract.ts"
       - "src/components/ds/__tests__/phase104-token-contract.test.ts"
+      - "src/components/ds/__tests__/phase104-signature-contract.test.ts"
       - "src/app/globals.css"
       - "tailwind.config.ts"
+      - "src/app/**/page.tsx"
+      - "scripts/design/phase104-route-inventory.mjs"
+      - "scripts/__tests__/phase104-route-coverage.test.ts"
       - ".gitattributes"
       - ".github/workflows/phase104-design-assurance.yml"
   workflow_dispatch:
@@ -102,6 +107,12 @@ jobs:
         working-directory: tools/figma/hermes-phase104-visual-system
         run: npm test
 
+      # Every page.* under src/app must map to exactly one design family. The
+      # count is derived from the filesystem, so a page added without a design
+      # owner turns this red -- which is the point. Needs no dependencies.
+      - name: Phase 104 route design coverage (UNCLASSIFIED_ROUTES must be 0)
+        run: node scripts/design/phase104-route-inventory.mjs --check
+
       # NOTE — there is deliberately NO "rebuild and diff dist/" step here.
       # `build.mjs` stamps the current git branch and head SHA into the bundle,
       # so `dist/code.js` is intentionally NOT byte-reproducible across branches
@@ -135,6 +146,12 @@ jobs:
       # declaration cannot satisfy it. Needs no database and no Prisma client.
       - name: Phase 104 product token contract
         run: npx vitest run src/components/ds/__tests__/phase104-token-contract.test.ts
+
+      - name: Phase 104 signature contract
+        run: npx vitest run src/components/ds/__tests__/phase104-signature-contract.test.ts
+
+      - name: Phase 104 route coverage gate
+        run: npx vitest run scripts/__tests__/phase104-route-coverage.test.ts
 
       - name: Phase 104 design-system and contrast suites
         run: npx vitest run src/components/ds src/app/__tests__/text-contrast-a11y.test.ts

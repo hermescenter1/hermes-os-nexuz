@@ -1,0 +1,274 @@
+#!/usr/bin/env node
+// @ts-check
+/**
+ * PHASE 104-G — product route design-coverage inventory.
+ *
+ * Phase 104 is a design phase across a product with hundreds of pages. The
+ * failure mode that matters is not an ugly screen — it is a screen NOBODY OWNS:
+ * a route that predates the design language, inherits nothing, and is never
+ * looked at again because no list says it exists.
+ *
+ * This module derives every `page.*` under `src/app` from the filesystem, maps
+ * each one onto exactly one design family and one coverage status, and fails
+ * closed on anything it cannot classify. The route COUNT is derived, never
+ * pinned: adding a page to the product adds it here, and if no rule matches it
+ * the gate goes red until someone gives it a design owner.
+ *
+ * Usage:
+ *   node scripts/design/phase104-route-inventory.mjs           # print a summary
+ *   node scripts/design/phase104-route-inventory.mjs --json    # machine output
+ *   node scripts/design/phase104-route-inventory.mjs --check   # exit 1 if unclassified
+ */
+
+import { readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
+
+/**
+ * How a route reaches the Phase 104 visual language. These are deliberately
+ * distinguishable: "covered by a shared layout" is a real, verifiable claim,
+ * while "migrated directly" means the page's own file was changed.
+ *
+ * @typedef {"MIGRATED_DIRECTLY"
+ *   | "COVERED_BY_SHARED_LAYOUT"
+ *   | "COVERED_BY_SHARED_TEMPLATE"
+ *   | "VISUAL_ONLY_STATIC_PUBLIC"
+ *   | "INTENTIONALLY_UNCHANGED_WITH_JUSTIFICATION"
+ *   | "BLOCKED_OWNER_TOOLING"} CoverageStatus
+ */
+
+/** The design families every product route must belong to. */
+export const DESIGN_FAMILIES = Object.freeze([
+  "public/marketing",
+  "authentication",
+  "workspace/dashboard",
+  "command/intelligence",
+  "industrial operations",
+  "assets/connectivity",
+  "alarms",
+  "reports/analytics",
+  "administration/organization",
+  "ERP/CRM/CMMS/documents/compliance/automation",
+  "academy/articles/library/media",
+  "customer/vendor/candidate/careers",
+  "error/not-found/access-denied",
+]);
+
+/**
+ * Families that are declared but own ZERO routes today, each with the reason.
+ *
+ * A family with no routes is not a bookkeeping detail — it means a surface the
+ * Phase 104 brief treats as existing does not exist in the product. Recording
+ * that here, and asserting it, is what stops "designed the Alarm Center" from
+ * being claimed about a screen that has no route behind it.
+ *
+ * @type {Readonly<Record<string, string>>}
+ */
+export const EMPTY_FAMILIES = Object.freeze({
+  alarms:
+    "There is NO Alarm Center in the product: no route under src/app and no component under src/ matches /alarm/i. Alarm handling today lives inside the operations surfaces. Building one is a new feature, not a design migration, and is out of scope for a UI phase. Figma may specify it; the product has nothing to migrate.",
+});
+
+/**
+ * Ordered classification rules. FIRST MATCH WINS, so the list runs from most
+ * specific to least specific. `prefix` is matched against the locale-stripped
+ * route path.
+ *
+ * @type {ReadonlyArray<{prefix: string, family: string, status: CoverageStatus, note: string}>}
+ */
+export const ROUTE_RULES = Object.freeze([
+  // ── Error and catch-all surfaces ────────────────────────────────────────
+  { prefix: "/[...unmatched]", family: "error/not-found/access-denied", status: "COVERED_BY_SHARED_LAYOUT", note: "catch-all; renders the shared not-found surface" },
+
+  // ── Dashboard subtree — classified BEFORE the generic /dashboard rule ───
+  { prefix: "/dashboard/operations", family: "industrial operations", status: "COVERED_BY_SHARED_LAYOUT", note: "live operations surface" },
+  { prefix: "/dashboard/industrial", family: "industrial operations", status: "COVERED_BY_SHARED_LAYOUT", note: "industrial engineering surface" },
+  { prefix: "/dashboard/predictive", family: "reports/analytics", status: "COVERED_BY_SHARED_LAYOUT", note: "predictive maintenance analytics" },
+  { prefix: "/dashboard/multi-site", family: "reports/analytics", status: "COVERED_BY_SHARED_LAYOUT", note: "multi-site rollup analytics" },
+  { prefix: "/dashboard/digital-twin", family: "industrial operations", status: "COVERED_BY_SHARED_LAYOUT", note: "digital twin surface" },
+  { prefix: "/dashboard/ot", family: "assets/connectivity", status: "COVERED_BY_SHARED_LAYOUT", note: "OT gateways and devices" },
+  { prefix: "/dashboard/knowledge-graph", family: "command/intelligence", status: "COVERED_BY_SHARED_LAYOUT", note: "knowledge graph surface" },
+  { prefix: "/dashboard/knowledge", family: "command/intelligence", status: "COVERED_BY_SHARED_LAYOUT", note: "knowledge surfaces" },
+  { prefix: "/dashboard/copilot", family: "command/intelligence", status: "COVERED_BY_SHARED_LAYOUT", note: "assistant surface" },
+  { prefix: "/dashboard/organization", family: "administration/organization", status: "COVERED_BY_SHARED_LAYOUT", note: "organization administration" },
+  { prefix: "/dashboard/billing", family: "administration/organization", status: "COVERED_BY_SHARED_LAYOUT", note: "billing administration" },
+  { prefix: "/dashboard/ats", family: "customer/vendor/candidate/careers", status: "COVERED_BY_SHARED_LAYOUT", note: "applicant tracking" },
+  { prefix: "/dashboard/customers", family: "ERP/CRM/CMMS/documents/compliance/automation", status: "COVERED_BY_SHARED_LAYOUT", note: "CRM customers" },
+  { prefix: "/dashboard", family: "workspace/dashboard", status: "COVERED_BY_SHARED_LAYOUT", note: "workspace shell and dashboard home" },
+
+  // ── Authentication ──────────────────────────────────────────────────────
+  { prefix: "/login", family: "authentication", status: "COVERED_BY_SHARED_TEMPLATE", note: "auth-experience shell" },
+  { prefix: "/auth", family: "authentication", status: "COVERED_BY_SHARED_TEMPLATE", note: "auth-experience shell" },
+
+  // ── Intelligence ────────────────────────────────────────────────────────
+  { prefix: "/industrial-brain", family: "command/intelligence", status: "COVERED_BY_SHARED_LAYOUT", note: "Industrial Brain" },
+  { prefix: "/brain", family: "command/intelligence", status: "COVERED_BY_SHARED_LAYOUT", note: "Brain entry surface" },
+  { prefix: "/intelligence", family: "command/intelligence", status: "COVERED_BY_SHARED_LAYOUT", note: "intelligence surface" },
+  { prefix: "/copilot", family: "command/intelligence", status: "COVERED_BY_SHARED_LAYOUT", note: "assistant surface" },
+  { prefix: "/knowledge", family: "command/intelligence", status: "COVERED_BY_SHARED_LAYOUT", note: "knowledge surfaces" },
+
+  // ── Industrial engineering (Phase 101) ──────────────────────────────────
+  { prefix: "/engineering", family: "industrial operations", status: "COVERED_BY_SHARED_LAYOUT", note: "Phase 101 engineering surfaces" },
+
+  // ── Assets and connectivity ─────────────────────────────────────────────
+  { prefix: "/assets", family: "assets/connectivity", status: "COVERED_BY_SHARED_LAYOUT", note: "asset register and detail" },
+  { prefix: "/cmms", family: "assets/connectivity", status: "COVERED_BY_SHARED_LAYOUT", note: "maintenance management" },
+
+  // ── Business modules ────────────────────────────────────────────────────
+  { prefix: "/erp", family: "ERP/CRM/CMMS/documents/compliance/automation", status: "COVERED_BY_SHARED_LAYOUT", note: "ERP module" },
+  { prefix: "/crm", family: "ERP/CRM/CMMS/documents/compliance/automation", status: "COVERED_BY_SHARED_LAYOUT", note: "CRM module" },
+  { prefix: "/documents", family: "ERP/CRM/CMMS/documents/compliance/automation", status: "COVERED_BY_SHARED_LAYOUT", note: "EDMS document management" },
+  { prefix: "/compliance", family: "ERP/CRM/CMMS/documents/compliance/automation", status: "COVERED_BY_SHARED_LAYOUT", note: "compliance module" },
+  { prefix: "/automation", family: "ERP/CRM/CMMS/documents/compliance/automation", status: "COVERED_BY_SHARED_LAYOUT", note: "automation studio" },
+
+  // ── Learning and media ──────────────────────────────────────────────────
+  { prefix: "/academy", family: "academy/articles/library/media", status: "COVERED_BY_SHARED_LAYOUT", note: "academy" },
+  { prefix: "/articles", family: "academy/articles/library/media", status: "COVERED_BY_SHARED_LAYOUT", note: "articles" },
+  { prefix: "/library", family: "academy/articles/library/media", status: "COVERED_BY_SHARED_LAYOUT", note: "library" },
+  { prefix: "/videos", family: "academy/articles/library/media", status: "COVERED_BY_SHARED_LAYOUT", note: "Phase 102 media and video hub" },
+
+  // ── Administration ──────────────────────────────────────────────────────
+  { prefix: "/admin", family: "administration/organization", status: "COVERED_BY_SHARED_LAYOUT", note: "platform administration" },
+
+  // ── External-party portals ──────────────────────────────────────────────
+  { prefix: "/customer", family: "customer/vendor/candidate/careers", status: "COVERED_BY_SHARED_LAYOUT", note: "customer portal" },
+  { prefix: "/vendors", family: "customer/vendor/candidate/careers", status: "COVERED_BY_SHARED_LAYOUT", note: "vendor directory" },
+  { prefix: "/vendor", family: "customer/vendor/candidate/careers", status: "COVERED_BY_SHARED_LAYOUT", note: "vendor portal" },
+  { prefix: "/candidate", family: "customer/vendor/candidate/careers", status: "COVERED_BY_SHARED_LAYOUT", note: "candidate portal" },
+  { prefix: "/careers", family: "customer/vendor/candidate/careers", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public careers pages" },
+
+  // ── Public and marketing ────────────────────────────────────────────────
+  { prefix: "/about", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
+  { prefix: "/platform", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
+  { prefix: "/services", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
+  { prefix: "/pricing", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
+  { prefix: "/contact", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
+  { prefix: "/architecture", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
+  { prefix: "/demo", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
+  { prefix: "/cookies", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "legal page" },
+  { prefix: "/privacy-center", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "privacy centre" },
+  { prefix: "/privacy", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "legal page" },
+  { prefix: "/terms", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "legal page" },
+  { prefix: "/gdpr", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "legal page" },
+  { prefix: "/data-request", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "privacy request form" },
+
+  // ── Locale root ─────────────────────────────────────────────────────────
+  { prefix: "/", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "localised homepage" },
+]);
+
+/**
+ * Every `page.*` under `src/app`, as a locale-stripped route path.
+ * @param {string} [repoRoot]
+ * @returns {string[]}
+ */
+export function deriveRoutes(repoRoot = process.cwd()) {
+  const appDir = resolve(repoRoot, "src/app");
+  /** @type {string[]} */
+  const pages = [];
+  /** @param {string} dir */
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "__tests__") continue;
+        walk(p);
+      } else if (/^page\.(tsx|ts|jsx|js)$/.test(entry.name)) {
+        pages.push(p);
+      }
+    }
+  };
+  walk(appDir);
+
+  return pages
+    .map((p) => p.slice(appDir.length).split("\\").join("/"))
+    .map((p) => p.replace(/\/page\.(tsx|ts|jsx|js)$/, ""))
+    // The locale segment is a routing device, not a design surface: /fa/assets
+    // and /en/assets are the same screen in two directions.
+    .map((p) => p.replace(/^\/\[locale\]/, ""))
+    .map((p) => (p === "" ? "/" : p))
+    .sort();
+}
+
+/**
+ * Classify one route. Returns null when no rule matches — the fail-closed case.
+ * @param {string} route
+ */
+export function classify(route) {
+  for (const rule of ROUTE_RULES) {
+    if (rule.prefix === "/") {
+      if (route === "/") return rule;
+      continue;
+    }
+    if (route === rule.prefix || route.startsWith(`${rule.prefix}/`)) return rule;
+  }
+  return null;
+}
+
+/**
+ * Full inventory.
+ * @param {string} [repoRoot]
+ */
+export function buildInventory(repoRoot = process.cwd()) {
+  const routes = deriveRoutes(repoRoot);
+  const classified = routes.map((route) => {
+    const rule = classify(route);
+    return {
+      route,
+      family: rule?.family ?? null,
+      status: rule?.status ?? null,
+      note: rule?.note ?? null,
+    };
+  });
+  const unclassified = classified.filter((c) => c.family === null).map((c) => c.route);
+
+  /** @type {Record<string, number>} */
+  const byFamily = {};
+  /** @type {Record<string, number>} */
+  const byStatus = {};
+  for (const c of classified) {
+    if (c.family) byFamily[c.family] = (byFamily[c.family] ?? 0) + 1;
+    if (c.status) byStatus[c.status] = (byStatus[c.status] ?? 0) + 1;
+  }
+
+  return {
+    total: routes.length,
+    covered: routes.length - unclassified.length,
+    unclassified,
+    byFamily,
+    byStatus,
+    routes: classified,
+  };
+}
+
+// ── CLI ─────────────────────────────────────────────────────────────────────
+const isMain =
+  process.argv[1] !== undefined &&
+  import.meta.url === new URL(`file://${process.argv[1].split("\\").join("/")}`).href;
+
+if (isMain) {
+  const inv = buildInventory();
+  if (process.argv.includes("--json")) {
+    console.log(JSON.stringify(inv, null, 2));
+  } else {
+    console.log("\n=== PHASE 104 ROUTE DESIGN COVERAGE ===");
+    console.log(`PHASE104_ROUTE_COVERAGE=${inv.covered}/${inv.total}`);
+    console.log(`PHASE104_UNCLASSIFIED_ROUTES=${inv.unclassified.length}`);
+    console.log("\nby family:");
+    for (const [f, n] of Object.entries(inv.byFamily).sort((a, b) => b[1] - a[1])) {
+      console.log(`  ${String(n).padStart(4)}  ${f}`);
+    }
+    console.log("\nby coverage status:");
+    for (const [s, n] of Object.entries(inv.byStatus).sort((a, b) => b[1] - a[1])) {
+      console.log(`  ${String(n).padStart(4)}  ${s}`);
+    }
+    if (inv.unclassified.length) {
+      console.log("\nUNCLASSIFIED (no design owner):");
+      for (const r of inv.unclassified) console.log(`  - ${r}`);
+    }
+  }
+  if (process.argv.includes("--check") && inv.unclassified.length > 0) {
+    console.error(
+      `\nFAIL: ${inv.unclassified.length} route(s) have no design family.`,
+    );
+    process.exit(1);
+  }
+}
