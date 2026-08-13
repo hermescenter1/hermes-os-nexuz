@@ -4,18 +4,18 @@
   "fingerprint": {
     "plugin": "Hermes Phase 104 Visual System",
     "pluginId": "com.hermesnovin.phase104-visual-system",
-    "headSha": "9832d0ef8e8721a3a323bb8d9ecab726bac2b6c3",
-    "headShaShort": "9832d0ef8e87",
+    "headSha": "ab187ec443e638c2596c8fd6b0f1484efcfca55c",
+    "headShaShort": "ab187ec443e6",
     "branch": "agent/phase104-hermes-visual-figma-system",
     "dirty": false,
-    "sourcesSha": "37a27afdf1b49c83ed709e391ef069ccaec9d772afaf9200d4c61e7b61a1e781",
-    "sourcesShaShort": "37a27afdf1b4"
+    "sourcesSha": "597c2acf75e9ba00efcc9a7b4028b6717ddafe670d1090ba477d85c67da9d4ed",
+    "sourcesShaShort": "597c2acf75e9"
   },
   "manifestPath": "manifest.json",
   "sha256": {
     "manifest": "f8de0d64035b9851ac1de1842b38a62a48019eb2417c942c42573773d5fb3c2d",
-    "code": "a58583aad60f43e38ee2de5c988cfbccfa7fcb2308ff2fd0a9b2d5117fe04950",
-    "ui": "6f021318f64db0b24949807ccb12eb3a06dd056d21e9491af61369bc5b7b87d4"
+    "code": "d1fef09a4d0ca0fa62a2b6b32259153c2edb705b88b39cbbfc4c89ab3301bb86",
+    "ui": "e502eb2fd89fe9a6d9ea9b3d345f70a42a868c0a6ef06f20f000170c52844057"
   },
   "builtFrom": [
     {
@@ -32,7 +32,7 @@
     },
     {
       "file": "src/ui.html",
-      "sha256": "8f1f8cbd27d0c0028e860c5e9da5922c3348d583c0e8607c54f8b71f8fc59047"
+      "sha256": "b0efdd49284378d74c9fd0b39d91527e5f5d9b4c08d3fc7376a0b0985c19e272"
     },
     {
       "file": "src/lib/contrast.js",
@@ -60,7 +60,7 @@
     },
     {
       "file": "src/lib/dna-exec.js",
-      "sha256": "8d83492c0d4dc166d8b53a0e3beebebdb016c425febacb1eaf3df0746e51d768"
+      "sha256": "7854352de36106417cd49b625315d9c08521a85c4c68bfe263d12f75e5d64c50"
     },
     {
       "file": "src/main.js",

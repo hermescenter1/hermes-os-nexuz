@@ -51,7 +51,7 @@
 <h1>Hermes Phase 104 — Visual System</h1>
 <div class="sub" id="ctx">reading file…</div>
 
-<div class="fp" id="fp" data-fingerprint="{&quot;headShaShort&quot;:&quot;9832d0ef8e87&quot;,&quot;headSha&quot;:&quot;9832d0ef8e8721a3a323bb8d9ecab726bac2b6c3&quot;,&quot;branch&quot;:&quot;agent/phase104-hermes-visual-figma-system&quot;,&quot;dirty&quot;:false,&quot;sourcesShaShort&quot;:&quot;37a27afdf1b4&quot;,&quot;sourcesSha&quot;:&quot;37a27afdf1b49c83ed709e391ef069ccaec9d772afaf9200d4c61e7b61a1e781&quot;,&quot;plugin&quot;:&quot;Hermes Phase 104 Visual System&quot;,&quot;pluginId&quot;:&quot;com.hermesnovin.phase104-visual-system&quot;,&quot;expectedTotal&quot;:205}">loading build fingerprint…</div>
+<div class="fp" id="fp" data-fingerprint="{&quot;headShaShort&quot;:&quot;ab187ec443e6&quot;,&quot;headSha&quot;:&quot;ab187ec443e638c2596c8fd6b0f1484efcfca55c&quot;,&quot;branch&quot;:&quot;agent/phase104-hermes-visual-figma-system&quot;,&quot;dirty&quot;:false,&quot;sourcesShaShort&quot;:&quot;597c2acf75e9&quot;,&quot;sourcesSha&quot;:&quot;597c2acf75e9ba00efcc9a7b4028b6717ddafe670d1090ba477d85c67da9d4ed&quot;,&quot;plugin&quot;:&quot;Hermes Phase 104 Visual System&quot;,&quot;pluginId&quot;:&quot;com.hermesnovin.phase104-visual-system&quot;,&quot;expectedTotal&quot;:205}">loading build fingerprint…</div>
 
 <div class="grid">
   <div class="stat"><b id="c-total">-</b><span>appliable</span></div>
@@ -138,6 +138,22 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
       if (r.retained) lines.push('retained safely: ' + r.retained.length)
       lines.push('created: ' + r.created.length + '   updated: ' + r.updated.length + '   skipped: ' + r.skipped.length)
       lines.push('errors:  ' + r.errors.length)
+      // Component Set discovery is reported per path: "0 found" must never again be
+      // indistinguishable from "0 exist".
+      if (r.componentSetScan) {
+        var cs = r.componentSetScan
+        lines.push('component sets in file: ' + cs.local +
+          '  (tree walk ' + cs.fromTreeWalk + ', direct API ' + cs.fromDirectApi + ')')
+        lines.push('  owned by this plugin: ' + cs.owned + '   unclaimed: ' + cs.unclaimed)
+      }
+      if (r.unclaimedComponentSets && r.unclaimedComponentSets.length) {
+        lines.push('')
+        lines.push('UNCLAIMED COMPONENT SETS - not adopted, nothing was written:')
+        for (var u = 0; u < r.unclaimedComponentSets.length; u++) {
+          var uc = r.unclaimedComponentSets[u]
+          lines.push('  ! ' + uc.name + '  id=' + uc.id + '  metadata=' + uc.ownership)
+        }
+      }
       if (r.fontSubstitutions && r.fontSubstitutions.length) {
         lines.push('')
         lines.push('font substitutions:')
@@ -171,6 +187,12 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
       verifyLines.push('verified: ' + v.verified.length + ' / ' + v.counts.appliableTotal)
       verifyLines.push('missing: ' + v.missing.length + '   drifted: ' + v.drifted.length)
       verifyLines.push('duplicates: ' + v.duplicates.length + '   unexpected: ' + v.unexpected.length)
+      if (v.componentSetScan) {
+        verifyLines.push('component sets in file: ' + v.componentSetScan.local +
+          '  (tree walk ' + v.componentSetScan.fromTreeWalk +
+          ', direct API ' + v.componentSetScan.fromDirectApi +
+          ', owned ' + v.componentSetScan.owned + ', unclaimed ' + v.componentSetScan.unclaimed + ')')
+      }
       for (var group of ['missing', 'drifted', 'duplicates', 'unexpected']) {
         if (!v[group].length) continue
         verifyLines.push('')

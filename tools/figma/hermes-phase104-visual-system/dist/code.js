@@ -1,6 +1,6 @@
 /* Hermes Phase 104 Visual System — generated bundle.
    Do not edit dist/ by hand; edit src/ and run `npm run build`.
-   HEAD 9832d0ef8e8721a3a323bb8d9ecab726bac2b6c3  sources 37a27afdf1b49c83ed709e391ef069ccaec9d772afaf9200d4c61e7b61a1e781 */
+   HEAD ab187ec443e638c2596c8fd6b0f1484efcfca55c  sources 597c2acf75e9ba00efcc9a7b4028b6717ddafe670d1090ba477d85c67da9d4ed */
 (function () {
   "use strict";
   var __modules = {}, __cache = {};
@@ -14,12 +14,12 @@
     module.exports = {
   "plugin": "Hermes Phase 104 Visual System",
   "pluginId": "com.hermesnovin.phase104-visual-system",
-  "headSha": "9832d0ef8e8721a3a323bb8d9ecab726bac2b6c3",
-  "headShaShort": "9832d0ef8e87",
+  "headSha": "ab187ec443e638c2596c8fd6b0f1484efcfca55c",
+  "headShaShort": "ab187ec443e6",
   "branch": "agent/phase104-hermes-visual-figma-system",
   "dirty": false,
-  "sourcesSha": "37a27afdf1b49c83ed709e391ef069ccaec9d772afaf9200d4c61e7b61a1e781",
-  "sourcesShaShort": "37a27afdf1b4",
+  "sourcesSha": "597c2acf75e9ba00efcc9a7b4028b6717ddafe670d1090ba477d85c67da9d4ed",
+  "sourcesShaShort": "597c2acf75e9",
   "buildCounts": {
     "pages": 3,
     "sections": 23,
@@ -1683,24 +1683,79 @@ function collectManaged(node, groups, malformed) {
 }
 
 /**
- * Figma exposes ChildrenMixin.children as a readonly collection. In Desktop it
- * is iterable, but nested collections such as SectionNode.children are not
- * guaranteed to satisfy Array.isArray(). Always materialise the public
- * iterable instead of treating a negative Array.isArray() as "no children".
+ * Materialise a Figma readonly collection into a real Array.
  *
+ * `ChildrenMixin.children` is neither guaranteed to be an Array nor guaranteed
+ * to be iterable, and the shapes differ between node types in the same document.
+ * All three must be handled, because treating an unrecognised shape as "empty"
+ * truncates the document walk SILENTLY — no exception, just a short answer:
+ *
+ *   1. a real Array                    — how PageNode.children presented itself;
+ *   2. a non-Array iterable            — a frozen collection exposing Symbol.iterator;
+ *   3. an array-like WITHOUT Symbol.iterator, carrying only `length` and indices.
+ *
+ * Shape 3 is what cost Phase 104 all 24 Component Sets. Pages and their direct
+ * Section children were discovered normally, then the walk found "no children"
+ * one level further down, so the correctly tagged Component Sets nested inside
+ * every Section were never visited and a second Apply would have created 24
+ * duplicates. `Array.from` handles shape 3 perfectly well — it was the iterable
+ * GUARD in front of it that rejected the collection before it ever ran.
+ *
+ * @param {any} collection
+ * @returns {any[]}
+ */
+function materialiseNodes(collection) {
+  if (!collection) return []
+  if (Array.isArray(collection)) return collection.slice()
+  if (typeof collection[Symbol.iterator] === 'function') return Array.from(collection)
+  const length = collection.length
+  if (typeof length !== 'number' || !isFinite(length) || length <= 0) return []
+  /** @type {any[]} */ const nodes = []
+  for (let index = 0; index < length; index++) nodes.push(collection[index])
+  return nodes
+}
+
+/**
  * @param {any} node
  * @returns {any[]}
  */
 function childNodes(node) {
-  const children = node && node.children
-  if (!children || typeof children[Symbol.iterator] !== 'function') return []
-  return Array.from(children)
+  return materialiseNodes(node && node.children)
 }
 
-/** @param {any} node @param {Record<string, any[]>} groups @param {string[]} malformed */
-function walkManaged(node, groups, malformed) {
-  collectManaged(node, groups, malformed)
-  for (const child of childNodes(node)) walkManaged(child, groups, malformed)
+/**
+ * Stable de-duplication identity.
+ *
+ * A node can now be reached twice — once through the document walk and once
+ * through direct API enumeration — and must be counted exactly ONCE. `node.id`
+ * is Figma's own stable identity, so it is what makes the two paths converge.
+ * The node object itself is the fallback, which is what keeps two genuinely
+ * different nodes distinct: two DIFFERENT nodes carrying the SAME assetKey stay
+ * a real duplicate and must still fail closed, never be collapsed into one.
+ *
+ * @param {any} node
+ */
+function nodeIdentity(node) {
+  const id = node && node.id
+  return typeof id === 'string' && id ? 'figma-node-id:' + id : node
+}
+
+/**
+ * Describe what this plugin's namespace says about a node's ownership, WITHOUT
+ * changing anything. Shared plugin data is the only ownership authority there
+ * is; a matching name proves nothing and is never treated as ownership.
+ *
+ * @param {any} node
+ * @returns {string}
+ */
+function describeOwnership(node) {
+  if (!node || typeof node.getSharedPluginData !== 'function') return 'unreadable'
+  const managed = node.getSharedPluginData(NAMESPACE, K_MANAGED)
+  const key = node.getSharedPluginData(NAMESPACE, K_ASSET_KEY)
+  if (managed === '1' && key) return 'owned:' + key
+  if (managed === '1') return 'managed-flag-without-assetKey'
+  if (key) return 'assetKey-without-managed-flag'
+  return 'absent'
 }
 
 async function ensureAllPagesLoaded() {
@@ -1708,9 +1763,54 @@ async function ensureAllPagesLoaded() {
 }
 
 /**
- * Scan every managed asset recursively. Component sets live inside Sections, so
- * a page-plus-immediate-children scan is not idempotent and creates duplicates on
- * the second Apply.
+ * Enumerate every local Component Set through the Figma API itself rather than
+ * inferring the set from a recursive `children` walk.
+ *
+ * A recursive walk reaches a node only if EVERY ancestor exposes a `children`
+ * collection in a shape the walker consumes. That single assumption is what lost
+ * the 24 Phase 104 Component Sets, and hardening the walker alone would leave the
+ * discovery of the most duplication-prone asset kind resting on it again. Asking
+ * the API directly removes the dependency on document shape entirely.
+ *
+ * Sources are tried in order of directness and MERGED, never short-circuited, so
+ * a partial source cannot hide a node. A source missing from this runtime is
+ * skipped; a source that throws is reported, so discovery can never silently
+ * degrade back into "found nothing" a second time.
+ *
+ * @param {string[]} enumerationErrors mutated with any source-level failure
+ * @returns {Promise<any[]>}
+ */
+async function enumerateLocalComponentSets(enumerationErrors) {
+  /** @type {any[]} */ const found = []
+  const seen = new Set()
+  const sources = [
+    ['figma.getLocalComponentSetsAsync', () => (typeof figma.getLocalComponentSetsAsync === 'function'
+      ? figma.getLocalComponentSetsAsync() : null)],
+    ['figma.root.findAllWithCriteria', () => (figma.root && typeof figma.root.findAllWithCriteria === 'function'
+      ? figma.root.findAllWithCriteria({ types: ['COMPONENT_SET'] }) : null)],
+    ['figma.root.findAll', () => (figma.root && typeof figma.root.findAll === 'function'
+      ? figma.root.findAll((node) => !!node && node.type === 'COMPONENT_SET') : null)],
+  ]
+  for (const [label, run] of sources) {
+    let nodes = null
+    try { nodes = await run() }
+    catch (e) { enumerationErrors.push(label + ': ' + String(e && e.message ? e.message : e)); continue }
+    for (const node of materialiseNodes(nodes)) {
+      if (!node || node.type !== 'COMPONENT_SET') continue
+      const identity = nodeIdentity(node)
+      if (seen.has(identity)) continue
+      seen.add(identity)
+      found.push(node)
+    }
+  }
+  return found
+}
+
+/**
+ * Scan every managed asset. Discovery runs on TWO independent paths — the
+ * recursive document walk and direct Component Set enumeration — and the results
+ * are merged on stable node identity, so a node seen twice is counted once while
+ * two distinct nodes sharing one assetKey remain a fail-closed duplicate.
  *
  * @param {{allowDuplicates?:boolean}} [opts]
  */
@@ -1722,11 +1822,40 @@ async function scanManagedAssets(opts) {
   await ensureAllPagesLoaded()
   /** @type {Record<string, any[]>} */ const groups = {}
   /** @type {string[]} */ const malformed = []
-  for (const c of await figma.variables.getLocalVariableCollectionsAsync()) collectManaged(c, groups, malformed)
-  for (const v of await figma.variables.getLocalVariablesAsync()) collectManaged(v, groups, malformed)
-  for (const s of await figma.getLocalPaintStylesAsync()) collectManaged(s, groups, malformed)
-  for (const s of await figma.getLocalEffectStylesAsync()) collectManaged(s, groups, malformed)
-  for (const page of figma.root.children) walkManaged(page, groups, malformed)
+  /** @type {string[]} */ const enumerationErrors = []
+  /** @type {any[]} */ const componentSets = []
+  const seen = new Set()
+  let componentSetsFromTreeWalk = 0
+  let componentSetsFromDirectApi = 0
+
+  /** @param {any} node @param {boolean} viaTreeWalk */
+  const visit = (node, viaTreeWalk) => {
+    if (!node) return false
+    const identity = nodeIdentity(node)
+    if (seen.has(identity)) return false
+    seen.add(identity)
+    collectManaged(node, groups, malformed)
+    if (node.type === 'COMPONENT_SET') {
+      componentSets.push(node)
+      if (viaTreeWalk) componentSetsFromTreeWalk += 1
+      else componentSetsFromDirectApi += 1
+    }
+    return true
+  }
+  /** @param {any} node @param {boolean} viaTreeWalk */
+  const walk = (node, viaTreeWalk) => {
+    if (!visit(node, viaTreeWalk)) return
+    for (const child of childNodes(node)) walk(child, viaTreeWalk)
+  }
+
+  // Every collection crossing the API boundary goes through the same shape gate:
+  // a collection this code cannot consume must never read as "empty".
+  for (const c of materialiseNodes(await figma.variables.getLocalVariableCollectionsAsync())) visit(c, true)
+  for (const v of materialiseNodes(await figma.variables.getLocalVariablesAsync())) visit(v, true)
+  for (const s of materialiseNodes(await figma.getLocalPaintStylesAsync())) visit(s, true)
+  for (const s of materialiseNodes(await figma.getLocalEffectStylesAsync())) visit(s, true)
+  for (const page of materialiseNodes(figma.root.children)) walk(page, true)
+  for (const set of await enumerateLocalComponentSets(enumerationErrors)) walk(set, false)
 
   if (malformed.length) {
     throw new Error('PHASE 104 MANAGED-ASSET CORRUPTION — managed node(s) have no assetKey: ' + malformed.join(', '))
@@ -1742,7 +1871,53 @@ async function scanManagedAssets(opts) {
 
   /** @type {Record<string, any>} */ const index = {}
   for (const [key, nodes] of Object.entries(groups)) index[key] = nodes[0]
-  return { index, groups, duplicates }
+  return {
+    index,
+    groups,
+    duplicates,
+    componentSets,
+    componentSetsFromTreeWalk,
+    componentSetsFromDirectApi,
+    enumerationErrors,
+  }
+}
+
+/**
+ * Defence in depth against creating a second copy of something that is already
+ * in the file.
+ *
+ * If an expected Component Set is absent from the managed index while a local
+ * Component Set already carries its canonical name, Apply would create a twin.
+ * That is reported as a hard, named error and NOTHING is adopted: a name is not
+ * ownership, and silently tagging an owner-authored node would be worse than the
+ * duplicate it prevents. Adoption is an owner decision, taken with the reported
+ * id/name/metadata in hand.
+ *
+ * @param {any} spec
+ * @param {Record<string, any>} existing
+ * @param {any[]} localComponentSets
+ */
+function unclaimedComponentSetCollisions(spec, existing, localComponentSets) {
+  /** @type {Record<string, any[]>} */ const unclaimedByName = {}
+  for (const node of localComponentSets) {
+    if (readKey(node)) continue
+    const name = typeof node.name === 'string' ? node.name : ''
+    if (!name) continue
+    ;(unclaimedByName[name] || (unclaimedByName[name] = [])).push(node)
+  }
+  /** @type {{key:string, name:string, id:string, ownership:string}[]} */ const collisions = []
+  for (const cs of spec.componentSets) {
+    if (existing[cs.key]) continue
+    for (const node of unclaimedByName[cs.name] || []) {
+      collisions.push({
+        key: cs.key,
+        name: cs.name,
+        id: String((node && node.id) || 'unknown-id'),
+        ownership: describeOwnership(node),
+      })
+    }
+  }
+  return collisions
 }
 
 async function scanExisting() {
@@ -1811,10 +1986,12 @@ async function applyDna(opts) {
   // the file on its own account if the spec is not Phase 104.
   assertContract(spec.counts, dryRun ? 'Dry Run' : 'Apply')
 
-  const existing = await scanExisting()
-  const livePages = figma.root.children.slice()
+  const scan = await scanManagedAssets()
+  const existing = scan.index
+  const livePages = materialiseNodes(figma.root.children)
   const pagePlan = planPages(spec.pages, existing, livePages)
 
+  const unclaimedComponentSets = unclaimedComponentSetCollisions(spec, existing, scan.componentSets)
   const result = {
     dryRun,
     created: /** @type {string[]} */ ([]),
@@ -1824,10 +2001,30 @@ async function applyDna(opts) {
     fontSubstitutions: /** @type {string[]} */ ([]),
     counts: spec.counts,
     stateSignature: stateSignature(existing, livePages),
+    // Reported so a run can prove WHICH discovery path saw each Component Set,
+    // instead of leaving "0 found" indistinguishable from "0 exist".
+    componentSetScan: {
+      local: scan.componentSets.length,
+      fromTreeWalk: scan.componentSetsFromTreeWalk,
+      fromDirectApi: scan.componentSetsFromDirectApi,
+      owned: scan.componentSets.filter((node) => !!readKey(node)).length,
+      unclaimed: scan.componentSets.filter((node) => !readKey(node)).length,
+    },
+    unclaimedComponentSets,
   }
   const expectedKeys = new Set(spec.assets.map((asset) => asset.key))
   const unexpectedOwned = Object.keys(existing).filter((key) => !expectedKeys.has(key)).sort()
   for (const key of unexpectedOwned) result.errors.push('unexpected managed asset: ' + key + ' — Rollback before Apply')
+  for (const message of scan.enumerationErrors) {
+    result.errors.push('COMPONENT_SET_ENUMERATION_FAILED: ' + message +
+      ' — discovery is incomplete, so Apply could duplicate an existing set.')
+  }
+  for (const collision of unclaimedComponentSets) {
+    result.errors.push('UNCLAIMED_COMPONENT_SET_COLLISION: ' + collision.key +
+      ' — a local Component Set named "' + collision.name + '" (id ' + collision.id + ', ' +
+      NAMESPACE + ' metadata: ' + collision.ownership + ') already exists and is NOT owned by this plugin.' +
+      ' Apply is blocked so no second copy can be created. Adoption requires explicit owner authorisation.')
+  }
 
   if (dryRun) {
     for (const planned of pagePlan) {
@@ -1848,8 +2045,8 @@ async function applyDna(opts) {
   }
 
   if (result.errors.length) {
-    throw new Error('APPLY BLOCKED — unexpected Phase 104 managed assets exist. Run Dry Run, then Rollback: ' +
-      unexpectedOwned.join(', '))
+    throw new Error('APPLY BLOCKED — Phase 104 pre-Apply checks failed. Run Dry Run for the full report:\n  - ' +
+      result.errors.join('\n  - '))
   }
 
   const fonts = await loadFonts()
@@ -2145,6 +2342,8 @@ async function verifyDna() {
   if (drifted.length) errors.push('drifted=' + drifted.length)
   if (duplicates.length) errors.push('duplicates=' + duplicates.length)
   if (unexpected.length) errors.push('unexpected=' + unexpected.length)
+  // A discovery source that failed makes "missing" unprovable rather than false.
+  for (const message of scan.enumerationErrors) errors.push('componentSetEnumeration: ' + message)
   return {
     ok: errors.length === 0,
     verified,
@@ -2154,7 +2353,14 @@ async function verifyDna() {
     unexpected,
     errors,
     counts: spec.counts,
-    stateSignature: stateSignature(scan.index, figma.root.children.slice()),
+    componentSetScan: {
+      local: scan.componentSets.length,
+      fromTreeWalk: scan.componentSetsFromTreeWalk,
+      fromDirectApi: scan.componentSetsFromDirectApi,
+      owned: scan.componentSets.filter((node) => !!readKey(node)).length,
+      unclaimed: scan.componentSets.filter((node) => !readKey(node)).length,
+    },
+    stateSignature: stateSignature(scan.index, materialiseNodes(figma.root.children)),
   }
 }
 
@@ -2400,6 +2606,10 @@ module.exports = {
   rollbackDna,
   scanExisting,
   scanManagedAssets,
+  enumerateLocalComponentSets,
+  unclaimedComponentSetCollisions,
+  materialiseNodes,
+  nodeIdentity,
   planPages,
   stateSignature,
   resolveStyle,
