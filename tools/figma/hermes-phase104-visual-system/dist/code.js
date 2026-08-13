@@ -1,6 +1,6 @@
 /* Hermes Phase 104 Visual System — generated bundle.
    Do not edit dist/ by hand; edit src/ and run `npm run build`.
-   HEAD 4e6753ac3283661d0c2ad619d62384fdaa1871f2  sources c5ca613e138412beaaf8041d4764652d958a99a3304d3993b928e61bdf98578c */
+   HEAD 9832d0ef8e8721a3a323bb8d9ecab726bac2b6c3  sources 37a27afdf1b49c83ed709e391ef069ccaec9d772afaf9200d4c61e7b61a1e781 */
 (function () {
   "use strict";
   var __modules = {}, __cache = {};
@@ -14,12 +14,12 @@
     module.exports = {
   "plugin": "Hermes Phase 104 Visual System",
   "pluginId": "com.hermesnovin.phase104-visual-system",
-  "headSha": "4e6753ac3283661d0c2ad619d62384fdaa1871f2",
-  "headShaShort": "4e6753ac3283",
+  "headSha": "9832d0ef8e8721a3a323bb8d9ecab726bac2b6c3",
+  "headShaShort": "9832d0ef8e87",
   "branch": "agent/phase104-hermes-visual-figma-system",
   "dirty": false,
-  "sourcesSha": "c5ca613e138412beaaf8041d4764652d958a99a3304d3993b928e61bdf98578c",
-  "sourcesShaShort": "c5ca613e1384",
+  "sourcesSha": "37a27afdf1b49c83ed709e391ef069ccaec9d772afaf9200d4c61e7b61a1e781",
+  "sourcesShaShort": "37a27afdf1b4",
   "buildCounts": {
     "pages": 3,
     "sections": 23,
@@ -1292,6 +1292,19 @@ function buildDnaSpec() {
   const cSig = col(COLLECTIONS.SIGNATURE)
   const cMotion = col(COLLECTIONS.MOTION)
 
+  const MANAGED_DESCRIPTION = 'Managed by Hermes Phase 104 Visual System'
+
+  /**
+   * Figma trims leading whitespace when it persists Variable.description.
+   * Join semantic fragments first so an absent optional fragment can never
+   * produce a leading separator and a permanent false drift on Verify.
+   * @param {string[]} parts
+   */
+  const canonicalDescription = (parts) => [...parts, MANAGED_DESCRIPTION]
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join(' · ')
+
   /**
    * @param {any} c collection
    * @param {string} name variable name (slash-grouped)
@@ -1320,14 +1333,14 @@ function buildDnaSpec() {
   }
 
   /**
-   * @param {any} c @param {string} name @param {number} value @param {string[]} scopes @param {string} usage
+   * @param {any} c @param {string} name @param {number} value @param {string[]} scopes @param {string|string[]} usage
    */
   const float = (c, name, value, scopes, usage) => {
     variables.push({
       key: 'variable:' + slug(c.name) + ':' + slug(name), kind: 'variable',
       collectionKey: c.key, name, resolvedType: 'FLOAT', floatValue: value, scopes,
       codeSyntax: {},
-      description: usage + ' · Managed by Hermes Phase 104 Visual System',
+      description: canonicalDescription(Array.isArray(usage) ? usage : [usage]),
     })
   }
 
@@ -1404,7 +1417,7 @@ function buildDnaSpec() {
   }
   for (const c of DNA.MOTION.choreography) {
     float(cMotion, 'Motion/choreography/' + c.key, c.duration, SCOPES.float,
-      (c.note || '') + ' · easing: ' + c.easing)
+      [c.note || '', 'easing: ' + c.easing])
   }
 
   // ── ELEVATION EFFECT STYLES ──────────────────────────────────────────────
@@ -1669,12 +1682,25 @@ function collectManaged(node, groups, malformed) {
   if (managed === '1' && key) (groups[key] || (groups[key] = [])).push(node)
 }
 
+/**
+ * Figma exposes ChildrenMixin.children as a readonly collection. In Desktop it
+ * is iterable, but nested collections such as SectionNode.children are not
+ * guaranteed to satisfy Array.isArray(). Always materialise the public
+ * iterable instead of treating a negative Array.isArray() as "no children".
+ *
+ * @param {any} node
+ * @returns {any[]}
+ */
+function childNodes(node) {
+  const children = node && node.children
+  if (!children || typeof children[Symbol.iterator] !== 'function') return []
+  return Array.from(children)
+}
+
 /** @param {any} node @param {Record<string, any[]>} groups @param {string[]} malformed */
 function walkManaged(node, groups, malformed) {
   collectManaged(node, groups, malformed)
-  if (node && Array.isArray(node.children)) {
-    for (const child of node.children) walkManaged(child, groups, malformed)
-  }
+  for (const child of childNodes(node)) walkManaged(child, groups, malformed)
 }
 
 async function ensureAllPagesLoaded() {
@@ -1766,7 +1792,7 @@ function stateSignature(existing, livePages) {
     width: typeof node.width === 'number' ? node.width : null,
     height: typeof node.height === 'number' ? node.height : null,
     characters: typeof node.characters === 'string' ? node.characters : null,
-    children: Array.isArray(node.children) ? node.children.map(shape) : [],
+    children: childNodes(node).map(shape),
   })
   const pages = livePages.map(shape)
   return hashAsset({ owned, pages })
@@ -1991,7 +2017,7 @@ async function applyDna(opts) {
         result.skipped.push('componentSet:' + cs.name + ' (' + cs.variantCount + ' variants)')
         availableSets[cs.familyKey] = {
           set: prev,
-          components: Array.isArray(prev.children) ? prev.children.filter((node) => node.type === 'COMPONENT') : [],
+          components: childNodes(prev).filter((node) => node.type === 'COMPONENT'),
           combos: [],
         }
         continue
@@ -2077,7 +2103,7 @@ async function verifyDna() {
         (node.x !== asset.x || node.y !== asset.y || node.width !== asset.w || node.height !== asset.h)) reasons.push('section-geometry')
     if (asset.kind === 'componentSet') {
       if (!node.parent || node.parent.name !== asset.sectionName) reasons.push('parent-section')
-      const variants = Array.isArray(node.children) ? node.children.filter((child) => child.type === 'COMPONENT') : []
+      const variants = childNodes(node).filter((child) => child.type === 'COMPONENT')
       if (variants.length !== asset.variantCount) reasons.push('variant-count:' + variants.length + '/' + asset.variantCount)
       else if (JSON.stringify(variants.map((child) => child.name).sort()) !== JSON.stringify(asset.variants.slice().sort())) reasons.push('variant-names')
       const definitions = Object.entries(node.componentPropertyDefinitions || {})
@@ -2085,17 +2111,17 @@ async function verifyDna() {
         (key === name || key.split('#')[0] === name) && definition && definition.type === type)
       for (const property of (asset.text || [])) {
         if (!hasDefinition(property.name, 'TEXT')) reasons.push('TEXT-property:' + property.name)
-        else if (variants.some((variant) => !variant.children.some((child) => child.name === property.name &&
+        else if (variants.some((variant) => !childNodes(variant).some((child) => child.name === property.name &&
           child.componentPropertyReferences && child.componentPropertyReferences.characters))) reasons.push('TEXT-binding:' + property.name)
       }
       for (const property of (asset.bools || [])) {
         if (!hasDefinition(property, 'BOOLEAN')) reasons.push('BOOLEAN-property:' + property)
-        else if (variants.some((variant) => !variant.children.some((child) => child.name === property &&
+        else if (variants.some((variant) => !childNodes(variant).some((child) => child.name === property &&
           child.componentPropertyReferences && child.componentPropertyReferences.visible))) reasons.push('BOOLEAN-binding:' + property)
       }
       for (const property of (asset.swaps || [])) {
         if (!hasDefinition(property.name, 'INSTANCE_SWAP')) reasons.push('SWAP-property:' + property.name)
-        else if (variants.some((variant) => !variant.children.some((child) => child.name === property.name &&
+        else if (variants.some((variant) => !childNodes(variant).some((child) => child.name === property.name &&
           child.componentPropertyReferences && child.componentPropertyReferences.mainComponent))) reasons.push('SWAP-binding:' + property.name)
       }
     }
@@ -2335,7 +2361,7 @@ async function rollbackDna() {
 
   for (const { key, node } of entries) {
     try {
-      if (key.startsWith('section:') && Array.isArray(node.children) && node.children.length) {
+      if (key.startsWith('section:') && childNodes(node).length) {
         clearTag(node)
         retained.push(key + ' (contains non-plugin content)')
         continue
