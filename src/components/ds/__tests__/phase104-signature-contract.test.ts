@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { PHASE104_TOKEN_CONTRACT } from "../phase104-token-contract";
 import {
+  GLASS_VARIABLE_CONTRACT,
   HORIZON_POLICY,
   SHIPPED_GLASS_TIERS,
   SIGNATURE_CONTRACT,
@@ -107,18 +108,69 @@ describe("Phase 104 signatures — all eight are declared and grounded in CSS", 
 });
 
 // ───────────────────────────────────────────────────────────────────────────
-describe("Hermes Glass — the tokenisation is provably 1:1", () => {
-  it.each(SHIPPED_GLASS_TIERS.map((t) => [t.tier, t.fillVar, t.fill] as const))(
-    "%s tier: %s still holds the shipped literal",
-    (_tier, cssVar, literal) => {
-      expect(activeDeclarations(globalsCss, cssVar)).toEqual([literal]);
+describe("Hermes Glass — EVERY glass variable is owned and matched exactly", () => {
+  /** Active `--glass-*` custom properties, from the parsed CSS. */
+  const activeGlassVars = (css: string): string[] => {
+    const found: string[] = [];
+    postcss.parse(css).walkDecls((decl) => {
+      if (decl.prop.startsWith("--glass-")) found.push(decl.prop);
+    });
+    return found;
+  };
+
+  const owned = Object.keys(GLASS_VARIABLE_CONTRACT);
+
+  it("the contract owns EVERY active --glass-* variable, and no others", () => {
+    // Set equality, so this single assertion catches all three failure shapes:
+    // a variable added to CSS but not owned, an owned variable deleted from CSS,
+    // and a rename (which is both at once).
+    const active = activeGlassVars(globalsCss);
+    expect(new Set(active)).toEqual(new Set(owned));
+    // The subset bug that shipped: 26 active, 9 owned. Guard the shape too.
+    expect(owned.length).toBe(active.length);
+    expect(owned.length).toBeGreaterThanOrEqual(26);
+  });
+
+  it.each(owned.map((v) => [v, GLASS_VARIABLE_CONTRACT[v]] as const))(
+    "%s is declared exactly once with the exact runtime value %s",
+    (cssVar, value) => {
+      // Exactly-once rejects a duplicate/override; the value comparison is on
+      // the parsed declaration, so a value sitting in a comment cannot satisfy it.
+      expect(activeDeclarations(globalsCss, cssVar)).toEqual([value]);
     },
   );
 
+  it("every --glass-* variable referenced by a .ds-glass-* rule is owned", () => {
+    const referenced = new Set<string>();
+    postcss.parse(globalsCss).walkRules((rule) => {
+      if (!/\.ds-glass/.test(rule.selector)) return;
+      rule.walkDecls((decl) => {
+        for (const m of decl.value.matchAll(/var\((--glass-[a-z0-9-]+)\)/g)) {
+          referenced.add(m[1]);
+        }
+      });
+    });
+    expect(referenced.size).toBeGreaterThan(0);
+    const unowned = [...referenced].filter((v) => !owned.includes(v));
+    expect(unowned).toEqual([]);
+  });
+
   it.each(
-    SHIPPED_GLASS_TIERS.map((t) => [t.tier, t.borderVar, t.border] as const),
-  )("%s tier: %s still holds the shipped border", (_tier, cssVar, literal) => {
-    expect(activeDeclarations(globalsCss, cssVar)).toEqual([literal]);
+    SHIPPED_GLASS_TIERS.map(
+      (t) =>
+        [t.tier, t.fillVar, GLASS_VARIABLE_CONTRACT[t.fillVar]] as const,
+    ),
+  )("%s tier: %s still holds the shipped fill", (_tier, cssVar, value) => {
+    expect(activeDeclarations(globalsCss, cssVar)).toEqual([value]);
+  });
+
+  it.each(
+    SHIPPED_GLASS_TIERS.map(
+      (t) =>
+        [t.tier, t.borderVar, GLASS_VARIABLE_CONTRACT[t.borderVar]] as const,
+    ),
+  )("%s tier: %s still holds the shipped border", (_tier, cssVar, value) => {
+    expect(activeDeclarations(globalsCss, cssVar)).toEqual([value]);
   });
 
   it("the shipped rules reference the variables instead of restating rgba()", () => {
@@ -158,14 +210,80 @@ describe("Hermes Glass — the tokenisation is provably 1:1", () => {
     }
   });
 
-  it("the machine source's Glass SPEC still differs from what ships (declared divergence)", () => {
-    // If these ever become equal, someone changed the product's rendering or
-    // rewrote the spec. Either is a real decision and must not pass silently.
-    const specSoft = GLASS.tiers.find((t) => t.tier === "soft")!;
-    const shippedSoft = SHIPPED_GLASS_TIERS.find((t) => t.tier === "soft")!;
-    expect(specSoft.fill).not.toBe(shippedSoft.fill);
-    expect(specSoft.blur).toBeGreaterThan(0);
-    expect(shippedSoft.blurs).toBe(false);
+  it("the machine source now AGREES with what ships (divergence closed by owner decision)", () => {
+    // The owner ruled the restrained operational rendering canonical, so the
+    // spec was updated to follow the product rather than the other way round.
+    // These assertions are the thing that keeps them together from now on.
+    for (const tier of SHIPPED_GLASS_TIERS) {
+      const spec = GLASS.tiers.find((t) => t.tier === tier.tier);
+      expect(spec, `machine source has no ${tier.tier} tier`).toBeTruthy();
+      expect(spec!.fill, `${tier.tier} fill`).toBe(
+        GLASS_VARIABLE_CONTRACT[tier.fillVar],
+      );
+      expect(spec!.border, `${tier.tier} border`).toBe(
+        GLASS_VARIABLE_CONTRACT[tier.borderVar],
+      );
+      // Blur is reserved for hero and overlay contexts, never operational cards.
+      expect(spec!.blur > 0, `${tier.tier} blur`).toBe(tier.blurs);
+    }
+  });
+
+  it("the interactive tier shares the card surface recipe but not its lift", () => {
+    const card = GLASS.tiers.find((t) => t.tier === "card")!;
+    const interactive = GLASS.tiers.find((t) => t.tier === "interactive")!;
+    expect(interactive.fill).toBe(card.fill);
+    expect(interactive.border).toBe(card.border);
+    // …and stays a distinct interaction: a deeper lift than the card tier.
+    expect(Math.abs(interactive.lift)).toBeGreaterThan(Math.abs(card.lift));
+  });
+});
+
+describe("Hermes Glass parity resists comments, duplicates and drift (adversarial)", () => {
+  const sample = "--glass-card-fill-to";
+  const value = GLASS_VARIABLE_CONTRACT[sample];
+
+  /** The same check the real gate applies, run against synthetic CSS. */
+  const parity = (css: string, cssVar: string, expected: string): boolean => {
+    const decls = activeDeclarations(css, cssVar);
+    return decls.length === 1 && decls[0] === expected;
+  };
+
+  it("a WRONG value fails — this is the exact hole review found", () => {
+    // External review set --glass-card-fill-to to magenta and all 93 assertions
+    // passed, because the variable was not owned. It is owned now.
+    expect(Object.keys(GLASS_VARIABLE_CONTRACT)).toContain(sample);
+    const magenta = `:root { ${sample}: rgba(255, 0, 255, 0.90); }`;
+    expect(parity(magenta, sample, value)).toBe(false);
+    // …and the real sheet still passes.
+    expect(parity(globalsCss, sample, value)).toBe(true);
+  });
+
+  it("a correct value inside a comment cannot mask a wrong active declaration", () => {
+    const masked = `:root {\n  /* ${sample}: ${value}; */\n  ${sample}: rgba(0, 0, 0, 1);\n}`;
+    // The retired substring approach would have accepted this outright…
+    expect(masked).toContain(`${sample}: ${value}`);
+    // …the AST sees only the active declaration, and it is wrong.
+    expect(parity(masked, sample, value)).toBe(false);
+    expect(activeDeclarations(masked, sample)).toEqual(["rgba(0, 0, 0, 1)"]);
+  });
+
+  it("a duplicate/overriding declaration fails the exactly-once requirement", () => {
+    const duplicated = `:root { ${sample}: ${value}; }\n:root { ${sample}: rgba(0, 0, 0, 1); }`;
+    // A substring match still passes here — the correct value IS present.
+    expect(duplicated).toContain(`${sample}: ${value}`);
+    expect(activeDeclarations(duplicated, sample)).toHaveLength(2);
+    expect(parity(duplicated, sample, value)).toBe(false);
+  });
+
+  it("an unowned Glass variable added to the sheet fails set equality", () => {
+    const owned = new Set(Object.keys(GLASS_VARIABLE_CONTRACT));
+    const withStray = `${globalsCss}\n:root { --glass-rogue-tint: rgba(255, 0, 255, 1); }`;
+    const active = new Set<string>();
+    postcss.parse(withStray).walkDecls((d) => {
+      if (d.prop.startsWith("--glass-")) active.add(d.prop);
+    });
+    expect(active).not.toEqual(owned);
+    expect(active.has("--glass-rogue-tint")).toBe(true);
   });
 
   it("the lift ladder and interactive scale are derived from the DNA, not retyped", () => {

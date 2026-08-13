@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -117,13 +118,70 @@ describe("Phase 104 route coverage — families with no routes are declared, not
     expect(wronglyEmpty).toEqual([]);
   });
 
-  it("records that the Alarm Center does not exist in the product", () => {
-    // The Phase 104 brief treats an Alarm Center as an existing surface. It is
-    // not one: no route and no component matches /alarm/i. Building it would be
-    // a new feature, not a design migration.
-    expect(EMPTY_FAMILIES.alarms).toBeDefined();
-    expect(EMPTY_FAMILIES.alarms.length).toBeGreaterThan(60);
-    expect(inventory.byFamily.alarms).toBeUndefined();
+  it("no family is empty today — every declared family owns at least one route", () => {
+    // CORRECTION (post-review). An earlier revision asserted the opposite for
+    // `alarms` and was wrong: the shipped surface is spelled ALERTS, so a
+    // /alarm/i filename scan missed it and a narrow lexical search became a
+    // confident negative about the whole product.
+    expect(Object.keys(EMPTY_FAMILIES)).toEqual([]);
+    for (const family of DESIGN_FAMILIES) {
+      expect(inventory.byFamily[family], `${family} owns no routes`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("Phase 104 route coverage — the Alarm Center is the Alert Command surface", () => {
+  it("classifies the shipped alert surface as the alarms family", () => {
+    expect(classify("/dashboard/operations/alerts")?.family).toBe("alarms");
+    expect(inventory.byFamily.alarms).toBeGreaterThan(0);
+  });
+
+  it("the alerts rule outranks the generic operations rule", () => {
+    // Without the specificity ordering the Alarm Center vanishes into
+    // "industrial operations" and the alarms family looks empty — the exact
+    // failure that produced the false "no Alarm Center exists" claim.
+    expect(classify("/dashboard/operations")?.family).toBe(
+      "industrial operations",
+    );
+    expect(classify("/dashboard/operations/alerts")?.family).not.toBe(
+      "industrial operations",
+    );
+    const alertsIdx = ROUTE_RULES.findIndex(
+      (r) => r.prefix === "/dashboard/operations/alerts",
+    );
+    const genericIdx = ROUTE_RULES.findIndex(
+      (r) => r.prefix === "/dashboard/operations",
+    );
+    expect(alertsIdx).toBeGreaterThanOrEqual(0);
+    expect(alertsIdx).toBeLessThan(genericIdx);
+  });
+
+  it("the shipped route, client and API all exist at the recorded paths", () => {
+    for (const rel of [
+      "src/app/[locale]/dashboard/operations/alerts/page.tsx",
+      "src/components/operations/AlertCommandClient.tsx",
+      "src/app/api/operations/alerts/route.ts",
+    ]) {
+      expect(existsSync(resolve(process.cwd(), rel)), rel).toBe(true);
+    }
+  });
+
+  it("records that the alerts API exposes no acknowledge mutation", () => {
+    // Requirement: no acknowledgement control may be implemented or faked while
+    // the backend has no mutation to bind it to. This asserts the premise, so if
+    // a POST/PATCH is added later the note stops being true and has to be revisited.
+    const api = readFileSync(
+      resolve(process.cwd(), "src/app/api/operations/alerts/route.ts"),
+      "utf8",
+    );
+    const methods = [...api.matchAll(/^export async function (\w+)\(/gm)].map(
+      (m) => m[1],
+    );
+    expect(methods).toEqual(["GET"]);
+    const rule = ROUTE_RULES.find(
+      (r) => r.prefix === "/dashboard/operations/alerts",
+    );
+    expect(rule?.note).toContain("no acknowledge mutation");
   });
 });
 

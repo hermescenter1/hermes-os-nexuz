@@ -39,7 +39,7 @@ screen in two directions, not two design surfaces.
 | `assets/connectivity` | 40 |
 | `academy/articles/library/media` | 39 |
 | `customer/vendor/candidate/careers` | 27 |
-| `industrial operations` | 27 |
+| `industrial operations` | 26 |
 | `public/marketing` | 19 |
 | `command/intelligence` | 16 |
 | `administration/organization` | 15 |
@@ -47,6 +47,7 @@ screen in two directions, not two design surfaces.
 | `authentication` | 7 |
 | `workspace/dashboard` | 2 |
 | `error/not-found/access-denied` | 1 |
+| `alarms` | 1 |
 
 ## 3. Coverage by status
 
@@ -63,21 +64,50 @@ As of this increment no route carries `MIGRATED_DIRECTLY`, because increment 104
 Workspace adoption) has not landed. The count of routes whose appearance has actually been
 changed by Phase 104 is **zero**, and this document will not imply otherwise.
 
-## 4. A surface the brief assumes exists, and does not
+## 4. The Alarm Center — correction of a false claim
 
-The declared family `alarms` owns **zero routes**, and that is a finding rather than a gap in
-this table:
+An earlier revision of this document asserted that **no Alarm Center exists in the product**.
+**That was wrong**, and the way it was wrong matters more than the conclusion.
 
-> There is **no Alarm Center in the product**. No route under `src/app` and no component under
-> `src/` matches `/alarm/i`. Alarm handling today lives inside the operations surfaces.
+The shipped surface exists and is canonical:
 
-Building one is a **new feature**, not a design migration, and a UI phase is the wrong place for
-it. Figma may specify the screen; the product has nothing to migrate onto. The gate asserts this
-explicitly (`EMPTY_FAMILIES.alarms`), so "designed the Alarm Center" can never be claimed about a
-screen with no route behind it.
+| | |
+|---|---|
+| Route | `src/app/[locale]/dashboard/operations/alerts/page.tsx` |
+| Client | `src/components/operations/AlertCommandClient.tsx` |
+| API | `GET /api/operations/alerts` |
 
-**Owner decision required:** scope an Alarm Center as its own feature phase, or drop it from the
-Phase 104 screen list.
+The mistake was methodological: the search looked for `/alarm/i` in route and component
+filenames, but the product spells this surface **alerts**. A narrow lexical scan returned nothing
+and was reported as a confident negative about the entire product. The lesson is recorded here
+rather than quietly deleted — a search that finds nothing is evidence about the search, not proof
+about the system.
+
+`/dashboard/operations/alerts` is now classified as the **`alarms`** family, with a rule placed
+**before** the generic `/dashboard/operations` rule. Without that ordering the Alarm Center
+disappears into "industrial operations" and the family looks empty, which is exactly how the
+false claim survived. The gate asserts the ordering directly.
+
+Derived movement from this correction (recomputed, not asserted):
+
+| Family | Before | After |
+|---|---|---|
+| `alarms` | 0 | **1** |
+| `industrial operations` | 27 | **26** |
+| total routes | 270 | **270** |
+
+`EMPTY_FAMILIES` is now empty and every declared family owns at least one route.
+
+### 4.1 Acknowledgement is deliberately not built
+
+`GET /api/operations/alerts` exposes **only** `GET` — there is no acknowledge mutation, and
+`AlertCommandClient.tsx` carries no acknowledge affordance. The gate asserts the exported HTTP
+methods are exactly `["GET"]`, so this note cannot silently become false.
+
+Any acknowledgement control therefore stays **omitted**. A button that appears to acknowledge an
+alarm but is bound to nothing is worse than no button at all in an industrial context: it invites
+an operator to believe a safety-relevant action was recorded. When a real backend contract exists,
+the control can be built against it; until then it is explicitly **unbound and not shipped**.
 
 ## 5. Specificity ordering
 
@@ -87,6 +117,7 @@ surface would be filed as "workspace" and silently lose its design owner:
 
 | Route | Family |
 |---|---|
+| `/dashboard/operations/alerts` | `alarms` |
 | `/dashboard/operations` | `industrial operations` |
 | `/dashboard/ot` | `assets/connectivity` |
 | `/dashboard/predictive` | `reports/analytics` |
@@ -106,9 +137,11 @@ route classifies as `null`.
 5. No duplicate rule prefix, and **no dead rule** — every rule matches at least one route.
 6. Specificity ordering holds for the dashboard subtree and the locale root.
 7. An unknown route fails closed.
-8. Every declared family either owns routes or is listed in `EMPTY_FAMILIES` with a reason, and
-   no family is listed as empty while actually owning routes.
-9. This document publishes the derived totals, every family count and every status count
+8. Every declared family owns at least one route; `EMPTY_FAMILIES` is empty, and no family may be
+   listed as empty while actually owning routes.
+9. The Alarm Center route, client and API all exist at their recorded paths, and the alerts API
+   exports exactly `["GET"]` — so the "no acknowledge mutation" note cannot go stale.
+10. This document publishes the derived totals, every family count and every status count
    verbatim — so the table cannot drift from the code that produced it.
 
 ## 7. Rollback

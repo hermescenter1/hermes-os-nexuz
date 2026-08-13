@@ -69,30 +69,45 @@ unable to see what it checks is the wrong direction, so the literal stays.
 
 ---
 
-## 4. Open owner decisions — recorded, not silently resolved
+## 4. Owner decisions
 
-### 4.1 The machine source's Glass SPEC does not match what ships
+### 4.1 The Glass conflict — RESOLVED in favour of the shipped rendering
 
-`GLASS.tiers` in `dna-tokens.js` is a specification and it diverges from the product:
+`GLASS.tiers` in `dna-tokens.js` used to be an aspirational specification that diverged from the
+product. **The owner has ruled the restrained operational rendering canonical**, and the machine
+source has been updated to agree with it:
 
-| Tier | Spec fill / blur | Shipped fill / blur |
+| Tier | Was (spec) | Now (canonical, = shipped) |
 |---|---|---|
-| soft | `rgba(12,23,32,0.55)` / 10px | `rgba(12,23,32,0.72)` / **none** |
-| card | `rgba(12,23,32,0.72)` / 14px | `rgba(17,33,44,0.94)` / **none** |
-| elevated | `rgba(17,33,44,0.80)` / 18px | `rgba(20,38,50,0.96)` / **none** |
-| hero | `rgba(20,38,50,0.86)` / 22px | `rgba(20,38,50,0.88)` / 18px |
+| soft | `rgba(12,23,32,0.55)` / blur 10 | `rgba(12,23,32,0.72)` / **blur 0** |
+| card | `rgba(12,23,32,0.72)` / blur 14 | `rgba(17,33,44,0.94)` / **blur 0** |
+| interactive | `rgba(17,33,44,0.74)` / blur 14 | `rgba(17,33,44,0.94)` / **blur 0** |
+| elevated | `rgba(17,33,44,0.80)` / blur 18 | `rgba(20,38,50,0.96)` / **blur 0** |
+| hero | `rgba(20,38,50,0.86)` / blur 22 | `rgba(20,38,50,0.88)` / **blur 18** |
 
-The divergence is intentional in origin: 87L.1 dropped `backdrop-filter` on the app tiers because
-blur has nothing to sample on a solid dark shell and only costs compositing time on dense
-dashboards.
+The ruling, as encoded:
 
-**Phase 104-C did not resolve this.** Adopting the spec numbers would change how every card in the
-product renders — a visual decision for the owner, not something to smuggle in under the word
-"migration". The gate asserts the two still differ, so collapsing them in *either* direction has
-to be a deliberate, reviewed change.
+- operational cards stay **filled and high-legibility** (alpha 0.94–0.96);
+- **blur is reserved for hero and overlay contexts**, never ordinary operational cards — it
+  samples nothing on a solid dark shell and only costs compositing time on dense dashboards;
+- **`interactive` shares the card surface recipe** while keeping its own distinct interaction: a
+  deeper lift (−6 vs −3) and the 1.012 scale. The gate asserts both halves of that sentence.
 
-**Owner decision required:** amend the spec to match the shipped values, or approve a visual
-change that adopts the spec.
+**No rendering changed.** `globals.css` was already the canonical source; only the design-side
+spec moved. The lift ladder (−2/−3/−5/−6/−8), the 1.012 scale and the 0.72 Horizon alpha floor
+are unchanged, and the executor's asset contract is unaffected because `dna-spec.js` derives the
+variable count from structure, not values (still 102 variables / 205 appliable assets).
+
+The Figma plugin bundle was **rebuilt deterministically** so it no longer carries the retired
+values: two consecutive builds on the same tree produced the identical
+`dist/code.js` sha256 `e3faea25…`, `build-report.json` agrees with it, and the package suite is
+**85 passed / 0 failed**. `Apply` was **not** run.
+
+> Worth recording: the package suite passed 85/0 *while the bundle was stale* — the tests compare
+> `dist` against `build-report.json`, and both regenerate together, so nothing detects "sources
+> changed, bundle not rebuilt". The rebuild here was done deliberately, not because a gate caught it.
+
+The gate now asserts spec and shipped values **match**, so drifting them apart again fails.
 
 ### 4.2 The retired glow utilities are still shipped
 
@@ -114,8 +129,30 @@ Deleting shipped utilities that pages still reference is not a token increment's
 bloom, scanline or text-shadow — checked on the AST, because the prose that forbids glow contains
 the word "glow" and a substring scan cannot tell a prohibition from a violation.
 
-**Owner decision required:** migrate the six remaining consumers and delete the utilities, or
-amend the DNA notes to stop describing them as retired.
+**Owner decision — RECORDED, executed in a later increment.** Nothing is deleted in this
+correction. The agreed sequence is:
+
+1. During **104-D / 104-G** migration, the remaining `landing-scanlines` and `glow-signal`
+   consumers migrate to the **Hermes Edge** and **Hermes Beacon** primitives.
+2. Once the consumer inventory for a utility reaches **zero**, the unused `.glow-*`, `.text-glow*`
+   and scanline utilities are removed.
+3. **Deletion happens only after the inventory is zero** — never speculatively, because a utility
+   deleted while a page still references it is a silent visual regression on that page.
+
+Until then the utilities stay defined, and the gate holds Phase 104 to what it can actually own:
+its own signature layer introduces no glow, bloom, scanline or text-shadow.
+
+### 4.3 The Glass parity gap — CLOSED
+
+External review found that the contract owned only **9 of the 26** active `--glass-*` variables,
+and proved it by setting `--glass-card-fill-to` to magenta: all 93 assertions passed while every
+card in the product would have rendered with a magenta gradient.
+
+`GLASS_VARIABLE_CONTRACT` is now **complete (26/26)**, and the gate requires **set equality**
+between the owned keys and the active `--glass-*` declarations parsed from the CSS — so a
+variable that is added, removed, renamed or left unowned fails, not merely one that drifts. Each
+variable must appear as **exactly one active declaration** whose parsed value matches exactly, and
+every `--glass-*` referenced by a `.ds-glass-*` rule must be owned.
 
 ---
 

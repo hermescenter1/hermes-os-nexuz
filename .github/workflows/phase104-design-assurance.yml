@@ -22,17 +22,34 @@ on:
   pull_request:
     branches: [main]
     paths:
+      # Phase 104 design source, executor and contracts
       - "tools/figma/hermes-phase104-visual-system/**"
       - "docs/design/phase-104/**"
-      - "src/components/ds/phase104-token-contract.ts"
-      - "src/components/ds/phase104-signature-contract.ts"
-      - "src/components/ds/__tests__/phase104-token-contract.test.ts"
-      - "src/components/ds/__tests__/phase104-signature-contract.test.ts"
+      - "src/components/ds/**"
+      - "scripts/design/**"
+      - "scripts/__tests__/phase104-route-coverage.test.ts"
+      - "scripts/__tests__/phase104-workflow-contract.test.ts"
+      # Styling sources the signatures are expressed in
       - "src/app/globals.css"
       - "tailwind.config.ts"
+      - "postcss.config.*"
+      # PHASE 104-D..I FORWARD COVERAGE.
+      # The later increments change shared components, route layouts and the
+      # locale catalogues. Filters narrow enough to miss those would let the
+      # very work this workflow exists to guard bypass it entirely.
+      - "src/components/**"
       - "src/app/**/page.tsx"
-      - "scripts/design/phase104-route-inventory.mjs"
-      - "scripts/__tests__/phase104-route-coverage.test.ts"
+      - "src/app/**/layout.tsx"
+      - "src/app/**/template.tsx"
+      - "src/app/**/loading.tsx"
+      - "src/app/**/error.tsx"
+      - "src/app/**/not-found.tsx"
+      - "src/app/**/*.css"
+      # Localisation: `messages/` is the real catalogue location (repo root),
+      # and `src/i18n/**` is the locale/direction configuration those screens read.
+      - "messages/**"
+      - "src/i18n/**"
+      # Determinism and the workflow itself
       - ".gitattributes"
       - ".github/workflows/phase104-design-assurance.yml"
   workflow_dispatch:
@@ -152,6 +169,12 @@ jobs:
 
       - name: Phase 104 route coverage gate
         run: npx vitest run scripts/__tests__/phase104-route-coverage.test.ts
+
+      # Asserts this workflow's own path filter still covers the files the later
+      # increments will change. Without it a narrowed filter would not fail --
+      # the workflow would simply stop running, silently.
+      - name: Phase 104 workflow path-filter contract
+        run: npx vitest run scripts/__tests__/phase104-workflow-contract.test.ts
 
       - name: Phase 104 design-system and contrast suites
         run: npx vitest run src/components/ds src/app/__tests__/text-contrast-a11y.test.ts

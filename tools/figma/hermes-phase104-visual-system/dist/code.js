@@ -1,6 +1,6 @@
 /* Hermes Phase 104 Visual System — generated bundle.
    Do not edit dist/ by hand; edit src/ and run `npm run build`.
-   HEAD 2e100aa09266eeef74435f26c42ac308fc3c6d84  sources c86fab85f077779dbd1aabe15747e42ee672bc8d0f91f88a9acb6a124f096032 */
+   HEAD 2e100aa09266eeef74435f26c42ac308fc3c6d84 (dirty)  sources 010099dd7e5ba677aa3cddd200a6204074d1537fc38d31bbf271ffaa4704b0d1 */
 (function () {
   "use strict";
   var __modules = {}, __cache = {};
@@ -16,10 +16,10 @@
   "pluginId": "com.hermesnovin.phase104-visual-system",
   "headSha": "2e100aa09266eeef74435f26c42ac308fc3c6d84",
   "headShaShort": "2e100aa09266",
-  "branch": "agent/phase104-hermes-visual-figma-system",
-  "dirty": false,
-  "sourcesSha": "c86fab85f077779dbd1aabe15747e42ee672bc8d0f91f88a9acb6a124f096032",
-  "sourcesShaShort": "c86fab85f077",
+  "branch": "design/phase104-dna-token-layer",
+  "dirty": true,
+  "sourcesSha": "010099dd7e5ba677aa3cddd200a6204074d1537fc38d31bbf271ffaa4704b0d1",
+  "sourcesShaShort": "010099dd7e5b",
   "buildCounts": {
     "pages": 3,
     "sections": 23,
@@ -385,19 +385,37 @@ const DEEP_NAVY = Object.freeze({
 
 /**
  * ── SIGNATURE 3 · HERMES GLASS ──────────────────────────────────────────────
- * Controlled translucency. Phase 104's real job here is to CLOSE the largest
- * known inconsistency in the system: the shipped `.ds-glass-*` family in
- * globals.css:1269-1305 is hard-coded rgba() and does not read from any token.
- * Each tier below records the exact literal it replaces so the migration is
- * a provable 1:1, not a redesign.
+ * Controlled, restrained translucency. Phase 104's real job here was to CLOSE
+ * the largest known inconsistency in the system: the shipped `.ds-glass-*`
+ * family was hard-coded rgba() and read from no token. Phase 104-C tokenised it
+ * 1:1, and this correction aligns the values below with what actually renders,
+ * so the design source and the product no longer disagree.
  */
 const GLASS = Object.freeze({
+  /**
+   * OWNER DECISION (Phase 104 correction). These tiers previously carried an
+   * aspirational specification that did not match what the product renders —
+   * translucent fills behind a backdrop blur on every tier. The owner has ruled
+   * the shipped, restrained operational rendering CANONICAL:
+   *
+   *   - operational cards stay FILLED and high-legibility (alpha 0.94–0.96);
+   *   - blur is reserved for hero and overlay contexts, never ordinary
+   *     operational cards, because blur samples nothing on a solid dark shell
+   *     and only costs compositing time on dense dashboards;
+   *   - `interactive` shares the card surface recipe and keeps its own distinct
+   *     interaction behaviour — a deeper lift (-6) and the 1.012 scale.
+   *
+   * The values below are therefore read FROM the product (globals.css) rather
+   * than prescribed to it, and the divergence is closed rather than tracked.
+   * `fill` is the top stop of each tier's fill gradient, which is the value the
+   * Figma variable represents; the second stop lives only in CSS.
+   */
   tiers: Object.freeze([
-    { tier: 'soft', fill: 'rgba(12, 23, 32, 0.55)', border: 'rgba(139, 244, 248, 0.06)', blur: 10, lift: -2, replaces: '.ds-glass-soft' },
-    { tier: 'card', fill: 'rgba(12, 23, 32, 0.72)', border: 'rgba(139, 244, 248, 0.10)', blur: 14, lift: -3, replaces: '.ds-glass-card' },
-    { tier: 'interactive', fill: 'rgba(17, 33, 44, 0.74)', border: 'rgba(139, 244, 248, 0.12)', blur: 14, lift: -6, replaces: '.ds-glass-interactive' },
-    { tier: 'elevated', fill: 'rgba(17, 33, 44, 0.80)', border: 'rgba(139, 244, 248, 0.14)', blur: 18, lift: -5, replaces: '.ds-glass-elevated' },
-    { tier: 'hero', fill: 'rgba(20, 38, 50, 0.86)', border: 'rgba(139, 244, 248, 0.16)', blur: 22, lift: -8, replaces: '.ds-glass-hero' },
+    { tier: 'soft', fill: 'rgba(12, 23, 32, 0.72)', border: 'rgba(139, 244, 248, 0.07)', blur: 0, lift: -2, replaces: '.ds-glass-soft' },
+    { tier: 'card', fill: 'rgba(17, 33, 44, 0.94)', border: 'rgba(139, 244, 248, 0.10)', blur: 0, lift: -3, replaces: '.ds-glass-card' },
+    { tier: 'interactive', fill: 'rgba(17, 33, 44, 0.94)', border: 'rgba(139, 244, 248, 0.10)', blur: 0, lift: -6, replaces: '.ds-glass-interactive' },
+    { tier: 'elevated', fill: 'rgba(20, 38, 50, 0.96)', border: 'rgba(139, 244, 248, 0.14)', blur: 0, lift: -5, replaces: '.ds-glass-elevated' },
+    { tier: 'hero', fill: 'rgba(20, 38, 50, 0.88)', border: 'rgba(139, 244, 248, 0.16)', blur: 18, lift: -8, replaces: '.ds-glass-hero' },
   ]),
   /**
    * The shipped lift ordering is MACHINE-PINNED by

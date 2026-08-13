@@ -13,20 +13,26 @@
  * Every one of them is derived from `dna-tokens.js` here and asserted by
  * `__tests__/phase104-signature-contract.test.ts`.
  *
- * ── THE GLASS DIVERGENCE IS DECLARED, NOT RESOLVED ──
- * `GLASS.tiers` in the machine source is a specification, and it does not match
- * what ships. The spec's soft tier is rgba(12,23,32,0.55) behind a 10px blur;
- * the shipped soft tier is rgba(12,23,32,0.72) with a sheen gradient and no
- * blur at all, because the 87L.1 filled-glass system deliberately dropped
- * backdrop-filter on the app tiers — blur has nothing to sample on a solid dark
- * shell and only costs compositing time on dense dashboards.
+ * ── THE GLASS DIVERGENCE IS NOW CLOSED, BY OWNER DECISION ──
+ * `GLASS.tiers` in the machine source used to be an aspirational specification
+ * that did not match what ships — translucent fills behind a backdrop blur on
+ * every tier. Phase 104-C tokenised the SHIPPED values and recorded the conflict
+ * rather than picking a side, because adopting the spec numbers would have
+ * changed how every card in the product renders.
  *
- * Phase 104-C tokenises the SHIPPED values byte for byte. Adopting the spec
- * numbers would change how every card in the product renders, which is a visual
- * decision for the owner and not something to smuggle in under the word
- * "migration". `SHIPPED_GLASS_TIERS` below pins what ships, the test asserts the
- * two genuinely differ, and the divergence is listed as an open owner decision
- * rather than quietly closed in either direction.
+ * The owner has ruled: the restrained operational rendering is CANONICAL.
+ * Operational cards stay filled and high-legibility; blur is reserved for hero
+ * and overlay contexts; `interactive` shares the card surface recipe while
+ * keeping its own deeper lift and the 1.012 scale. The machine source has been
+ * updated to agree with the product, so the design source and the running
+ * system no longer disagree, and the test now asserts they MATCH.
+ *
+ * ── COMPLETENESS IS THE PARITY PROPERTY ──
+ * An earlier revision owned only nine of the twenty-six Glass variables.
+ * External review set `--glass-card-fill-to` to magenta and all 93 assertions
+ * still passed. `GLASS_VARIABLE_CONTRACT` below is complete, and the gate
+ * requires SET EQUALITY with the active declarations parsed from the CSS, so an
+ * added, removed, renamed or unowned variable fails — not merely a drifting one.
  */
 
 import {
@@ -69,44 +75,65 @@ export interface SignatureEntry {
 }
 
 /**
- * The shipped Glass tiers, pinned. These are the exact literals the 87L.1 rules
- * carried before Phase 104-C moved them into variables; the test asserts the
- * variables still hold them, which is what makes the tokenisation provably 1:1
- * rather than a redesign wearing its name.
+ * EVERY Glass variable the product declares, with its exact shipped value.
+ *
+ * This map is COMPLETE by contract, and completeness is the point. An earlier
+ * revision owned only the nine variables named in the `glass` signature's
+ * `cssVars`, which left seventeen — every sheen stop, inner highlight, drop
+ * shadow and second fill stop — outside the gate. External review proved the
+ * hole by setting `--glass-card-fill-to` to magenta: all 93 assertions still
+ * passed while every card in the product would have rendered with a magenta
+ * gradient. A parity gate that covers a subset of a family is not a parity gate.
+ *
+ * The companion test enumerates the ACTIVE `--glass-*` declarations from the
+ * parsed CSS and requires set equality with these keys, so a variable that is
+ * added, removed, renamed or left unowned fails, not merely one that drifts.
+ */
+export const GLASS_VARIABLE_CONTRACT: Readonly<Record<string, string>> =
+  Object.freeze({
+    // soft
+    "--glass-soft-fill": "rgba(12, 23, 32, 0.72)",
+    "--glass-soft-sheen-from": "rgba(237, 247, 250, 0.03)",
+    "--glass-soft-border": "rgba(139, 244, 248, 0.07)",
+    "--glass-soft-inner": "rgba(237, 247, 250, 0.05)",
+    // card (shared by the interactive tier, which differs only in interaction)
+    "--glass-card-fill-from": "rgba(17, 33, 44, 0.94)",
+    "--glass-card-fill-to": "rgba(12, 23, 32, 0.90)",
+    "--glass-card-sheen-from": "rgba(237, 247, 250, 0.05)",
+    "--glass-card-sheen-mid": "rgba(237, 247, 250, 0.015)",
+    "--glass-card-border": "rgba(139, 244, 248, 0.10)",
+    "--glass-card-inner": "rgba(237, 247, 250, 0.07)",
+    "--glass-card-drop": "0 2px 10px rgba(0, 0, 0, 0.28)",
+    // elevated
+    "--glass-elevated-fill-from": "rgba(20, 38, 50, 0.96)",
+    "--glass-elevated-fill-to": "rgba(12, 23, 32, 0.92)",
+    "--glass-elevated-sheen-from": "rgba(237, 247, 250, 0.07)",
+    "--glass-elevated-sheen-mid": "rgba(237, 247, 250, 0.02)",
+    "--glass-elevated-border": "rgba(139, 244, 248, 0.14)",
+    "--glass-elevated-inner": "rgba(237, 247, 250, 0.09)",
+    "--glass-elevated-drop": "0 8px 24px rgba(0, 0, 0, 0.40)",
+    // hero — the only tier permitted to blur
+    "--glass-hero-fill-from": "rgba(20, 38, 50, 0.88)",
+    "--glass-hero-fill-to": "rgba(7, 16, 24, 0.82)",
+    "--glass-hero-sheen-from": "rgba(237, 247, 250, 0.08)",
+    "--glass-hero-sheen-mid": "rgba(237, 247, 250, 0.02)",
+    "--glass-hero-border": "rgba(139, 244, 248, 0.16)",
+    "--glass-hero-inner": "rgba(237, 247, 250, 0.10)",
+    "--glass-hero-drop": "0 16px 48px rgba(0, 0, 0, 0.45)",
+    "--glass-hero-backdrop": "blur(18px) saturate(1.25)",
+  });
+
+/**
+ * The shipped Glass tiers. Values are looked up from `GLASS_VARIABLE_CONTRACT`
+ * rather than restated, so there is exactly one place a Glass value is written
+ * down. `blurs` is the tier-level policy the owner ruled canonical: blur is
+ * reserved for hero and overlay contexts, never ordinary operational cards.
  */
 export const SHIPPED_GLASS_TIERS = [
-  {
-    tier: "soft",
-    fill: "rgba(12, 23, 32, 0.72)",
-    border: "rgba(139, 244, 248, 0.07)",
-    fillVar: "--glass-soft-fill",
-    borderVar: "--glass-soft-border",
-    blurs: false,
-  },
-  {
-    tier: "card",
-    fill: "rgba(17, 33, 44, 0.94)",
-    border: "rgba(139, 244, 248, 0.10)",
-    fillVar: "--glass-card-fill-from",
-    borderVar: "--glass-card-border",
-    blurs: false,
-  },
-  {
-    tier: "elevated",
-    fill: "rgba(20, 38, 50, 0.96)",
-    border: "rgba(139, 244, 248, 0.14)",
-    fillVar: "--glass-elevated-fill-from",
-    borderVar: "--glass-elevated-border",
-    blurs: false,
-  },
-  {
-    tier: "hero",
-    fill: "rgba(20, 38, 50, 0.88)",
-    border: "rgba(139, 244, 248, 0.16)",
-    fillVar: "--glass-hero-fill-from",
-    borderVar: "--glass-hero-border",
-    blurs: true,
-  },
+  { tier: "soft", fillVar: "--glass-soft-fill", borderVar: "--glass-soft-border", blurs: false },
+  { tier: "card", fillVar: "--glass-card-fill-from", borderVar: "--glass-card-border", blurs: false },
+  { tier: "elevated", fillVar: "--glass-elevated-fill-from", borderVar: "--glass-elevated-border", blurs: false },
+  { tier: "hero", fillVar: "--glass-hero-fill-from", borderVar: "--glass-hero-border", blurs: true },
 ] as const;
 
 /**
@@ -191,21 +218,14 @@ export const SIGNATURE_CONTRACT: readonly SignatureEntry[] = [
   {
     key: "glass",
     name: "Hermes Glass",
-    cssVars: [
-      "--glass-soft-fill",
-      "--glass-soft-border",
-      "--glass-card-fill-from",
-      "--glass-card-border",
-      "--glass-elevated-fill-from",
-      "--glass-elevated-border",
-      "--glass-hero-fill-from",
-      "--glass-hero-border",
-      "--glass-hero-backdrop",
-    ],
+    // EVERY Glass variable, derived from the complete map above. Listing a
+    // hand-picked subset here is precisely how seventeen variables ended up
+    // ungated, so the list is no longer written by hand.
+    cssVars: Object.keys(GLASS_VARIABLE_CONTRACT),
     usage:
-      "Controlled translucency in five tiers. Builds hierarchy: a view where every panel shares one opacity has no hierarchy at all.",
+      "Controlled, restrained translucency in five tiers. Builds hierarchy: a view where every panel shares one opacity has no hierarchy at all.",
     restriction:
-      "Only the hero tier blurs — the app tiers sit on a solid dark shell where blur samples nothing and only costs compositing time. Glass never goes on everything.",
+      "Only the hero tier blurs — operational cards stay filled and high-legibility because blur samples nothing on a solid dark shell and only costs compositing time. Glass never goes on everything.",
   },
   {
     key: "edge",

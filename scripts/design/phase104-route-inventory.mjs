@@ -56,17 +56,21 @@ export const DESIGN_FAMILIES = Object.freeze([
 /**
  * Families that are declared but own ZERO routes today, each with the reason.
  *
- * A family with no routes is not a bookkeeping detail — it means a surface the
- * Phase 104 brief treats as existing does not exist in the product. Recording
- * that here, and asserting it, is what stops "designed the Alarm Center" from
- * being claimed about a screen that has no route behind it.
+ * A family with no routes is not a bookkeeping detail — it would mean a surface
+ * the Phase 104 brief treats as existing does not exist in the product.
+ *
+ * CORRECTION (post-review). This map previously claimed `alarms` was empty and
+ * asserted that no Alarm Center existed. That was WRONG, and the way it was
+ * wrong is worth recording: the search looked for `/alarm/i` in route and
+ * component filenames, but the shipped surface is spelled ALERTS —
+ * `src/app/[locale]/dashboard/operations/alerts/page.tsx`, rendering
+ * `src/components/operations/AlertCommandClient.tsx` against
+ * `GET /api/operations/alerts`. A narrow lexical scan was turned into a
+ * confident negative about the whole product. Every family now owns routes.
  *
  * @type {Readonly<Record<string, string>>}
  */
-export const EMPTY_FAMILIES = Object.freeze({
-  alarms:
-    "There is NO Alarm Center in the product: no route under src/app and no component under src/ matches /alarm/i. Alarm handling today lives inside the operations surfaces. Building one is a new feature, not a design migration, and is out of scope for a UI phase. Figma may specify it; the product has nothing to migrate.",
-});
+export const EMPTY_FAMILIES = Object.freeze({});
 
 /**
  * Ordered classification rules. FIRST MATCH WINS, so the list runs from most
@@ -80,6 +84,11 @@ export const ROUTE_RULES = Object.freeze([
   { prefix: "/[...unmatched]", family: "error/not-found/access-denied", status: "COVERED_BY_SHARED_LAYOUT", note: "catch-all; renders the shared not-found surface" },
 
   // ── Dashboard subtree — classified BEFORE the generic /dashboard rule ───
+  // The Alert Command surface IS the product's Alarm Center. It must be matched
+  // before the generic operations rule, or it disappears into "industrial
+  // operations" and the alarms family looks empty — which is exactly the
+  // mistake this rule corrects.
+  { prefix: "/dashboard/operations/alerts", family: "alarms", status: "COVERED_BY_SHARED_LAYOUT", note: "Alert Command — the shipped Alarm Center (AlertCommandClient over GET /api/operations/alerts; that API exposes GET only, so there is no acknowledge mutation to bind a control to)" },
   { prefix: "/dashboard/operations", family: "industrial operations", status: "COVERED_BY_SHARED_LAYOUT", note: "live operations surface" },
   { prefix: "/dashboard/industrial", family: "industrial operations", status: "COVERED_BY_SHARED_LAYOUT", note: "industrial engineering surface" },
   { prefix: "/dashboard/predictive", family: "reports/analytics", status: "COVERED_BY_SHARED_LAYOUT", note: "predictive maintenance analytics" },
