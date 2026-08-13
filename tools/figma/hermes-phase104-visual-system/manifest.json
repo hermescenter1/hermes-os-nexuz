@@ -1,0 +1,16 @@
+{
+  "name": "Hermes Phase 104 Visual System",
+  "id": "com.hermesnovin.phase104-visual-system",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "reasoning": "This plugin performs no network requests. It only reads and writes the currently open Figma file locally. It never contacts any external service and sends no file contents, tokens or telemetry anywhere."
+  },
+  "capabilities": [],
+  "enableProposedApi": false,
+  "permissions": []
+}

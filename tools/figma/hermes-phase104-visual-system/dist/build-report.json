@@ -1,0 +1,90 @@
+{
+  "plugin": "Hermes Phase 104 Visual System",
+  "pluginId": "com.hermesnovin.phase104-visual-system",
+  "fingerprint": {
+    "plugin": "Hermes Phase 104 Visual System",
+    "pluginId": "com.hermesnovin.phase104-visual-system",
+    "headSha": "2e100aa09266eeef74435f26c42ac308fc3c6d84",
+    "headShaShort": "2e100aa09266",
+    "branch": "agent/phase104-hermes-visual-figma-system",
+    "dirty": false,
+    "sourcesSha": "c86fab85f077779dbd1aabe15747e42ee672bc8d0f91f88a9acb6a124f096032",
+    "sourcesShaShort": "c86fab85f077"
+  },
+  "manifestPath": "manifest.json",
+  "sha256": {
+    "manifest": "f8de0d64035b9851ac1de1842b38a62a48019eb2417c942c42573773d5fb3c2d",
+    "code": "78c59d65e0df783a2d343345334f44c91e5b0581d62f6a7dd82d50c9d3eb8de7",
+    "ui": "aae839df33d834c3cce3167959e0a9fc053b1029bd23fb81d6d40e654ee35b59"
+  },
+  "builtFrom": [
+    {
+      "file": "build.mjs",
+      "sha256": "9d6daf10d978b29ab93d07af684d53edfdf5386641c715910418edec4afb20e1"
+    },
+    {
+      "file": "manifest.json",
+      "sha256": "f8de0d64035b9851ac1de1842b38a62a48019eb2417c942c42573773d5fb3c2d"
+    },
+    {
+      "file": "scripts/lib/code-scan.mjs",
+      "sha256": "5bcab481d4559c9d3c1bbc7b16943464a8020ff06ee94c1dfa801312acd03e0d"
+    },
+    {
+      "file": "src/ui.html",
+      "sha256": "f0e054b58395b1d770ab97ac59f2ce6ffb9a108c1e67e49caa0fdaf2efdd42c2"
+    },
+    {
+      "file": "src/lib/contrast.js",
+      "sha256": "5f1f607752db1451ba5614b5d4cba41f6611900497612f56497aa362998aaa87"
+    },
+    {
+      "file": "src/lib/contract.js",
+      "sha256": "e27514229907255b4f3dca0ed53d2481f4717649e9967c0a62adcaa46e69dee4"
+    },
+    {
+      "file": "src/lib/dna-tokens.js",
+      "sha256": "d08b4e11de0bb2d8bca4ed1afac5efe3fa438e1d608191213a797f0884dc5e16"
+    },
+    {
+      "file": "src/lib/dna-structure.js",
+      "sha256": "cfc212a8f7334a323846e6f64458f0f19a6074d8b1031c383187c692dc7dd48f"
+    },
+    {
+      "file": "src/lib/dna-components.js",
+      "sha256": "83da605fef66a653f21ed6b7cd6c91092847d591ce5a1a7fea6cdee7eff98713"
+    },
+    {
+      "file": "src/lib/dna-spec.js",
+      "sha256": "8d45452394c02712e564e4474a415f5aad96bad2e78c17fc47c1e798874ce212"
+    },
+    {
+      "file": "src/lib/dna-exec.js",
+      "sha256": "68886c2f3d654a1929f7be9ac98c0fa8e935f04c75dc160daa75b98a3d90be16"
+    },
+    {
+      "file": "src/main.js",
+      "sha256": "1e5506b32721e808f70f232f06d2b07c165a0365694026e451b051fdcab65629"
+    }
+  ],
+  "sourceCommitSemantics": "Latest commit touching a build input; generated dist-only commits do not change it.",
+  "counts": {
+    "pages": 3,
+    "sections": 23,
+    "collections": 6,
+    "variables": 102,
+    "paintStyles": 43,
+    "effectStyles": 4,
+    "componentSets": 24,
+    "componentVariants": 226,
+    "appliableTotal": 205,
+    "docsDeclaredNotAppliable": 4
+  },
+  "contract": "PASS",
+  "starterConstraints": {
+    "maxPagesPerFile": 3,
+    "maxModesPerCollection": 1,
+    "libraryPublishing": false,
+    "note": "Proven by direct probe. All 23 taxonomy categories are carried as Sections; theme/breakpoint modes are impossible and are expressed as component variants."
+  }
+}

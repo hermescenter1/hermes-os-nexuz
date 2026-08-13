@@ -1,0 +1,306 @@
+<!doctype html>
+<meta charset="utf-8" />
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 16px;
+    font: 12px/1.5 "Inter", -apple-system, system-ui, sans-serif;
+    background: #071018; color: #EDF7FA;
+  }
+  h1 { font-size: 13px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.1px; }
+  .sub { color: #708694; font-size: 11px; margin-bottom: 10px; }
+
+  /* The build fingerprint is the first thing on screen, deliberately.
+     Running the wrong plugin must be impossible to miss. */
+  .fp {
+    border: 1px solid #203743; border-left: 3px solid #16D9E3; border-radius: 6px;
+    background: #040A0F; padding: 8px 10px; margin-bottom: 12px;
+    font: 10px/1.6 "Roboto Mono", ui-monospace, monospace; color: #A9BAC6;
+  }
+  .fp b { color: #16D9E3; font-weight: 600; }
+  .fp .dirty { color: #F5B942; }
+  .fp .id { color: #708694; word-break: break-all; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .stat { background: #0C1720; border: 1px solid #203743; border-radius: 8px; padding: 8px 10px; }
+  .stat b { display: block; font-size: 15px; font-weight: 600; color: #16D9E3; }
+  .stat span { color: #708694; font-size: 9px; text-transform: uppercase; letter-spacing: .4px; }
+
+  .row { display: flex; gap: 6px; margin-bottom: 8px; }
+  button {
+    flex: 1; cursor: pointer; border-radius: 6px; padding: 9px 10px;
+    font: inherit; font-weight: 500; transition: background 140ms cubic-bezier(.4,0,.2,1);
+  }
+  button:focus-visible { outline: 2px solid #16D9E3; outline-offset: 2px; }
+  button[disabled] { opacity: .45; cursor: not-allowed; }
+  .primary { background: #16D9E3; color: #071018; border: 1px solid #16D9E3; }
+  .primary:hover:not([disabled]) { background: #8BF4F8; }
+  .ghost { background: transparent; color: #A9BAC6; border: 1px solid #203743; }
+  .ghost:hover { background: #152A36; }
+  .danger { background: transparent; color: #F05D68; border: 1px solid #F05D68; }
+  .danger:hover { background: rgba(240,93,104,.12); }
+
+  pre {
+    background: #040A0F; border: 1px solid #203743; border-radius: 8px;
+    padding: 10px; max-height: 280px; overflow: auto; white-space: pre-wrap;
+    font: 11px/1.5 "Roboto Mono", ui-monospace, monospace; color: #A9BAC6; margin: 0;
+  }
+  .err { color: #FF7C86; }
+</style>
+
+<h1>Hermes Phase 104 — Visual System</h1>
+<div class="sub" id="ctx">reading file…</div>
+
+<div class="fp" id="fp" data-fingerprint="{&quot;headShaShort&quot;:&quot;2e100aa09266&quot;,&quot;headSha&quot;:&quot;2e100aa09266eeef74435f26c42ac308fc3c6d84&quot;,&quot;branch&quot;:&quot;agent/phase104-hermes-visual-figma-system&quot;,&quot;dirty&quot;:false,&quot;sourcesShaShort&quot;:&quot;c86fab85f077&quot;,&quot;sourcesSha&quot;:&quot;c86fab85f077779dbd1aabe15747e42ee672bc8d0f91f88a9acb6a124f096032&quot;,&quot;plugin&quot;:&quot;Hermes Phase 104 Visual System&quot;,&quot;pluginId&quot;:&quot;com.hermesnovin.phase104-visual-system&quot;,&quot;expectedTotal&quot;:205}">loading build fingerprint…</div>
+
+<div class="grid">
+  <div class="stat"><b id="c-total">-</b><span>appliable</span></div>
+  <div class="stat"><b id="c-variants">-</b><span>variants</span></div>
+  <div class="stat"><b id="c-owned">-</b><span>owned here</span></div>
+</div>
+
+<div class="row">
+  <button class="ghost" id="dry" disabled>Dry Run</button>
+  <button class="primary" id="apply" disabled title="Run a Dry Run first">Apply</button>
+  <button class="ghost" id="verify" disabled>Verify</button>
+</div>
+<div class="row">
+  <button class="danger" id="rollback" disabled>Rollback (this plugin's assets only)</button>
+</div>
+
+<pre id="out">Dry Run makes no changes. Apply unlocks only after a Dry Run whose fingerprint
+and asset contract match Phase 104 exactly.
+
+One operation at a time. While Dry Run, Apply, Verify or Rollback is running,
+every button is disabled and a concurrent request is refused outright - it is
+never queued. Wait for the result before pressing anything.
+
+If the panel above does not say "Hermes Phase 104 Visual System", you have the
+wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
+
+<script>
+  var $ = function (id) { return document.getElementById(id) }
+  var esc = function (value) {
+    return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  // ── single-operation UI lock ──────────────────────────────────────────────
+  // The panel may have at most ONE operation in flight. Every operational button
+  // is disabled the moment one starts and re-enabled only when THAT operation
+  // reports back. There is no queue: a click while busy is dropped, never
+  // remembered, because a deferred second Apply is the same hazard delayed.
+  var state = {
+    fingerprintOk: false,
+    busy: null,            // { id: 'op-3', type: 'apply' } while an operation runs
+    applyPermitted: false,
+    verifyPermitted: false,
+    applyFailed: false,
+    counts: null,
+  }
+  var operationSequence = 0
+
+  function refreshControls() {
+    var locked = !!state.busy
+    $('dry').disabled = locked || !state.fingerprintOk
+    $('apply').disabled = locked || !state.fingerprintOk || !state.applyPermitted
+    $('verify').disabled = locked || !state.fingerprintOk || !state.verifyPermitted
+    $('rollback').disabled = locked
+    $('apply').title = $('apply').disabled ? 'Run a clean Dry Run first' : ''
+  }
+
+  // Busy is set and the buttons are disabled BEFORE the message leaves, so a
+  // double-click landing inside the same tick cannot post a second message.
+  function startOperation(type) {
+    if (state.busy) return null
+    operationSequence += 1
+    var operationId = 'op-' + operationSequence
+    state.busy = { id: operationId, type: type }
+    refreshControls()
+    parent.postMessage({ pluginMessage: { type: type, operationId: operationId } }, '*')
+    return operationId
+  }
+
+  // Render the build fingerprint immediately, from the value baked in at build time.
+  var fp = null
+  try { fp = JSON.parse($('fp').dataset.fingerprint) } catch (e) { fp = null }
+  if (fp && fp.pluginId) {
+    $('fp').innerHTML =
+      '<b>' + esc(fp.plugin) + '</b><br>' +
+      '<span class="id">' + esc(fp.pluginId) + '</span><br>' +
+      'HEAD ' + esc(fp.headShaShort) + ' (' + esc(fp.branch) + ')' +
+      (fp.dirty ? ' <span class="dirty">- uncommitted</span>' : '') + '<br>' +
+      'sources ' + esc(fp.sourcesShaShort) + ' - contract ' + esc(fp.expectedTotal) + ' assets'
+  } else {
+    $('fp').innerHTML = '<span class="dirty">NO FINGERPRINT - this bundle was not produced by build.mjs. Rebuild before use.</span>'
+  }
+
+  function applyProgressText() {
+    var counts = state.counts || {}
+    return 'Applying ' + counts.componentSets + ' Component Sets / ' + counts.componentVariants + ' variants…\n' +
+      'Do not close the plugin until completion is reported.'
+  }
+
+  $('dry').onclick = function () {
+    if (state.busy) return
+    $('out').textContent = 'running dry run...'
+    startOperation('dry-run')
+  }
+  $('apply').onclick = function () {
+    if (state.busy) return
+    $('out').textContent = applyProgressText()
+    startOperation('apply')
+  }
+  $('verify').onclick = function () {
+    if (state.busy) return
+    $('out').textContent = 'verifying...'
+    startOperation('verify')
+  }
+  $('rollback').onclick = function () {
+    if (state.busy) return
+    if (confirm('Delete every asset this plugin created in this file?')) {
+      $('out').textContent = 'rolling back...'
+      startOperation('rollback')
+    }
+  }
+
+  onmessage = function (e) {
+    var m = e.data.pluginMessage
+    if (!m) return
+
+    if (m.type === 'error' && m.code === 'OPERATION_IN_PROGRESS') {
+      // A concurrent message the runtime refused. It never reached an executor,
+      // so it must not disturb the operation that is still running. If the
+      // refused message is OUR OWN pending one, it will never be answered - stop
+      // waiting for it rather than leaving the panel disabled forever.
+      $('out').textContent = ($('out').textContent || '') + '\n\n' + m.message
+      if (state.busy && m.operationId === state.busy.id) state.busy = null
+      refreshControls()
+      return
+    }
+
+    // Anything that does not belong to the operation in flight is STALE and is
+    // ignored outright. Releasing the busy state on someone else's result is
+    // exactly how a second operation would get to run concurrently.
+    if (state.busy && m.operationId !== state.busy.id) return
+    state.busy = null
+
+    if (m.type === 'ready') {
+      var exactBuild = !!fp && m.fingerprint &&
+        fp.pluginId === m.fingerprint.pluginId &&
+        fp.headSha === m.fingerprint.headSha &&
+        fp.sourcesSha === m.fingerprint.sourcesSha &&
+        !fp.dirty && fp.expectedTotal === m.counts.appliableTotal
+      if (!exactBuild) {
+        state.fingerprintOk = false
+        state.applyPermitted = false
+        state.verifyPermitted = false
+        refreshControls()
+        $('out').innerHTML = '<span class="err">BUILD FINGERPRINT MISMATCH - rebuild and re-import this manifest.</span>'
+        return
+      }
+      state.fingerprintOk = true
+      state.counts = m.counts
+      // A failed Apply keeps Verify shut until a fresh Dry Run re-establishes
+      // what the file is supposed to contain.
+      if (!state.applyFailed) state.verifyPermitted = true
+      $('ctx').textContent = m.fileName + ' - ' + m.pageCount + ' page(s)'
+      $('c-total').textContent = m.counts.appliableTotal
+      $('c-variants').textContent = m.counts.componentVariants
+      $('c-owned').textContent = m.ownedInFile
+      refreshControls()
+    }
+
+    if (m.type === 'result') {
+      var r = m.result
+      var lines = ['-- ' + m.mode + ' --']
+      if (fp) lines.push('build ' + fp.headShaShort + ' / sources ' + fp.sourcesShaShort)
+      if (r.removed) lines.push('removed: ' + r.removed.length)
+      if (r.restored) lines.push('restored pages: ' + r.restored.length)
+      if (r.retained) lines.push('retained safely: ' + r.retained.length)
+      lines.push('created: ' + r.created.length + '   updated: ' + r.updated.length + '   skipped: ' + r.skipped.length)
+      lines.push('errors:  ' + r.errors.length)
+      // Component Set discovery is reported per path: "0 found" must never again be
+      // indistinguishable from "0 exist".
+      if (r.componentSetScan) {
+        var cs = r.componentSetScan
+        lines.push('component sets in file: ' + cs.local +
+          '  (tree walk ' + cs.fromTreeWalk + ', direct API ' + cs.fromDirectApi + ')')
+        lines.push('  owned by this plugin: ' + cs.owned + '   unclaimed: ' + cs.unclaimed)
+      }
+      if (r.unclaimedComponentSets && r.unclaimedComponentSets.length) {
+        lines.push('')
+        lines.push('UNCLAIMED COMPONENT SETS - not adopted, nothing was written:')
+        for (var u = 0; u < r.unclaimedComponentSets.length; u++) {
+          var uc = r.unclaimedComponentSets[u]
+          lines.push('  ! ' + uc.name + '  id=' + uc.id + '  metadata=' + uc.ownership)
+        }
+      }
+      if (r.fontSubstitutions && r.fontSubstitutions.length) {
+        lines.push('')
+        lines.push('font substitutions:')
+        for (var i = 0; i < r.fontSubstitutions.length; i++) lines.push('  ~ ' + r.fontSubstitutions[i])
+      }
+      if (r.errors.length) {
+        lines.push('')
+        for (var j = 0; j < r.errors.length; j++) lines.push('  x ' + r.errors[j])
+      }
+      var sample = (r.created.length ? r.created : r.updated).slice(0, 60)
+      if (sample.length) {
+        lines.push('')
+        for (var k = 0; k < sample.length; k++) lines.push('  - ' + sample[k])
+      }
+      if ((r.created.length + r.updated.length) > 60) lines.push('  ... and more')
+      $('out').textContent = lines.join('\n')
+      // Apply unlocks only after a clean Dry Run on this exact build.
+      state.applyPermitted = m.mode === 'Dry Run' && r.errors.length === 0 && m.applyPermitted === true
+      if (m.mode === 'Dry Run') {
+        state.applyFailed = false
+        state.verifyPermitted = true
+      }
+      if (m.mode === 'Apply') {
+        // Verify becomes available only once the COMPLETE Apply result is in
+        // hand and reports no errors.
+        state.applyFailed = r.errors.length > 0
+        state.verifyPermitted = r.errors.length === 0
+      }
+      refreshControls()
+      startOperation('init')
+    }
+
+    if (m.type === 'verify-result') {
+      var v = m.result
+      var verifyLines = ['-- Verify --', v.ok ? 'PASS' : 'FAIL']
+      verifyLines.push('verified: ' + v.verified.length + ' / ' + v.counts.appliableTotal)
+      verifyLines.push('missing: ' + v.missing.length + '   drifted: ' + v.drifted.length)
+      verifyLines.push('duplicates: ' + v.duplicates.length + '   unexpected: ' + v.unexpected.length)
+      if (v.componentSetScan) {
+        verifyLines.push('component sets in file: ' + v.componentSetScan.local +
+          '  (tree walk ' + v.componentSetScan.fromTreeWalk +
+          ', direct API ' + v.componentSetScan.fromDirectApi +
+          ', owned ' + v.componentSetScan.owned + ', unclaimed ' + v.componentSetScan.unclaimed + ')')
+      }
+      for (var group of ['missing', 'drifted', 'duplicates', 'unexpected']) {
+        if (!v[group].length) continue
+        verifyLines.push('')
+        verifyLines.push(group + ':')
+        for (var vi = 0; vi < Math.min(v[group].length, 60); vi++) verifyLines.push('  x ' + v[group][vi])
+      }
+      $('out').textContent = verifyLines.join('\n')
+      state.applyPermitted = false
+      refreshControls()
+      startOperation('init')
+    }
+
+    if (m.type === 'error') {
+      state.applyPermitted = false
+      if (m.rejectedType === 'apply') {
+        state.applyFailed = true
+        state.verifyPermitted = false
+      }
+      refreshControls()
+      $('out').innerHTML = '<span class="err">' + esc(m.message) + '</span>'
+    }
+  }
+
+  startOperation('init')
+</script>

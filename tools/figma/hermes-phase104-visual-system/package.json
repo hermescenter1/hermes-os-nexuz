@@ -1,0 +1,19 @@
+{
+  "name": "@hermes/phase104-visual-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local, auditable Figma development plugin that materialises the Hermes Phase 104 Design DNA (Horizon, Glass, Edge, Beacon, Rail, Command, Triad, the industrial state ladder and the reasoning ladder) as native Figma Variables, Paint Styles and Effect Styles. No network, no telemetry, deterministic and idempotent.",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "scripts": {
+    "audit": "node scripts/audit-contrast.mjs",
+    "test": "node --test scripts/test-dna.mjs scripts/code-scan.node-test.mjs scripts/runtime-contract.node-test.mjs scripts/operation-lock.node-test.mjs scripts/component-properties.node-test.mjs",
+    "build": "node build.mjs",
+    "dry-run": "node build.mjs --dry-run",
+    "verify": "npm run audit && npm run build && npm run test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "//": "Intentionally declares NO dependencies. Everything runs on Node built-ins (node:test, node:assert) so it never touches the repository lockfile or package manager."
+}
