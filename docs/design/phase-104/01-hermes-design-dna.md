@@ -287,11 +287,11 @@ Breakpoints designed and validated: **1440 × 1024 · 768 × 1024 · 390 × 844*
 |---|---|
 | Design DNA specification | **COMPLETE** |
 | Contrast / a11y verification | **PASS** — 64 checks, 0 failures |
-| Design-rule / executor policy tests | **PASS** — 60 tests, including mutation controls, dynamic-page load-before-traverse, iterable ChildrenMixin traversal, canonical Figma descriptions, reproducible source identity and runner-isolation guard |
+| Design-rule / executor policy tests | **PASS** — 68 tests, including mutation controls, dynamic-page load-before-traverse, ChildrenMixin traversal in all three collection shapes, direct Component Set enumeration, node-id de-duplication, unclaimed-collision fail-closed, canonical Figma descriptions, reproducible source identity and runner-isolation guard |
 | Figma file created | **YES** — `QcJcRaBv1NMrgb4pMshEVB` |
 | Plugin: pages, sections, tokens, components | **LOCALLY VERIFIED** — contract remains 205 assets / 226 variants; owner Dry Run reported 202 create / 3 update / 0 skip / 0 error on source `c5ca613e1384` |
 | Figma Apply executed | **YES** — owner executed Apply on the same clean Dry Run; no Rollback was executed |
-| Figma Verify | **OWNER RE-RUN REQUIRED** — initial evidence was 172/205 verified, 24 missing Component Sets and 9 description drifts; both runtime causes are covered by mutation tests in the remediation build |
+| Figma Verify | **OWNER RE-RUN REQUIRED** — initial evidence was 172/205 verified, 24 missing Component Sets and 9 description drifts; see §10.2 |
 | Approved mockups received | **NO** — owner is supplying them |
 | Screens designed | **NOT STARTED** — deliberately blocked on the mockups |
 | Product-phase naming | **CURRENT** — merged Phase 101/102/103 scopes reflected |
@@ -319,3 +319,71 @@ and sections `07`–`17` are created as empty named containers. Nothing is inven
 in their place, and no claim is made that the approved baseline has been
 reconstructed. On receipt, the mockups go into `00` and the Phase 104 screens are
 built from that identity using the component library already in place.
+
+### 10.2 The 24 unfound Component Sets
+
+**Symptom.** After the owner's Apply, the plugin reported `OWNED HERE: 181` and a
+Dry Run of `created: 24 · updated: 9 · skipped: 172 · errors: 0`, while all 24
+Component Sets were visibly present in the file. Pressing Apply on that Dry Run
+would have created 24 duplicates.
+
+**Where the 181 comes from.** 3 pages + 23 sections + 6 collections + 102
+variables + 43 paint styles + 4 effect styles = 181. Every asset kind fetched
+through a dedicated `getLocal*Async` API was found, plus pages and their direct
+Section children. Exactly one kind was missing: the 24 `COMPONENT_SET` nodes,
+which are the only assets that sit **two** levels down, inside a Section.
+
+**Root cause.** Discovery depended exclusively on a recursive
+`ChildrenMixin.children` walk, and that walk's reader treated any collection
+without a callable `Symbol.iterator` as "no children" — returning an empty array
+instead of raising. `PageNode.children` satisfied the guard, so pages and Sections
+were discovered; the collection one level further down did not, so the walk
+terminated at the Section boundary. The scan therefore returned a well-formed but
+**incomplete** index, with no error to signal it, and the 24 correctly tagged
+Component Sets were reported as `missing` by Verify and as `created` by Dry Run.
+
+The earlier remediation added `Array.from` behind that same iterable guard, which
+fixed only the non-Array *iterable* shape. The guard itself was the defect: it
+rejects an array-like collection before `Array.from` — which handles array-likes
+natively — is ever reached.
+
+**Fix.** Two independent changes, either of which alone closes the symptom:
+
+1. **Shape-complete children reader.** One shared gate materialises all three
+   shapes an exposed collection can take — Array, non-Array iterable, and
+   array-like carrying only `length` plus indices. Two mutation tests reproduce
+   the historical failures: the original Array-only reader and the iterable-only
+   reader must each still lose the Component Set.
+2. **Direct Component Set enumeration.** `scanManagedAssets()` no longer infers
+   Component Sets from document shape at all. It also enumerates them through the
+   API — `figma.getLocalComponentSetsAsync()` where the runtime provides it, then
+   `figma.root.findAllWithCriteria({types:['COMPONENT_SET']})`, then
+   `figma.root.findAll` — merging every source. Deleting that enumeration turns a
+   mutation test red.
+
+Results from the two paths are merged on **`node.id`**, so a set seen by both is
+counted once, while two *different* nodes carrying the same `assetKey` remain a
+real duplicate and still fail closed.
+
+**Ownership is unchanged.** Shared plugin data in the `hermesP104` namespace
+remains the only ownership authority. Nothing is adopted or tagged because its
+name matches.
+
+**Defence in depth.** If an expected Component Set is absent from the managed
+index while an *unowned* local Component Set already carries its canonical name,
+Dry Run raises `UNCLAIMED_COMPONENT_SET_COLLISION`, lists each colliding node's
+id, name and metadata state, and Apply refuses to run — so a second copy can never
+be created. Adopting such a node requires separate owner authorisation and is not
+performed automatically.
+
+**Diagnostics.** Dry Run and Verify now report Component Set discovery per path
+(`tree walk` / `direct API`, `owned` / `unclaimed`), so "0 found" can never again
+be indistinguishable from "0 exist".
+
+**Expected owner Dry Run after re-import** — *expectation, not a result*: if the
+24 sets carry intact `hermesP104` metadata, `OWNED HERE: 205` with
+`created: 0 · updated: 9 · skipped: 196 · errors: 0`. If instead they carry no
+metadata, the run must report 24 `UNCLAIMED_COMPONENT_SET_COLLISION` errors with
+Apply disabled. Neither outcome can be claimed until the owner re-runs Dry Run in
+Figma Desktop. The 9 updates are the canonical Variable descriptions and nothing
+else; the contract stays at 205 assets / 226 variants.

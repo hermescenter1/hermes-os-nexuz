@@ -69,8 +69,12 @@ Two consequences are baked into the design:
 
 Rollback identifies assets by this plugin's own shared-plugin-data namespace
 (`hermesP104`), never by name prefix — a prefix match could delete owner-authored
-nodes. Component sets are discovered recursively, including those nested inside
-Sections, and duplicate managed keys block Apply. It therefore **cannot touch the Phase 87 design system**, which lives under
+nodes. Component sets are discovered on **two independent paths** — the recursive
+document walk *and* direct API enumeration — merged on `node.id`, so a set nested
+inside a Section is found whatever shape its parent's `children` collection takes.
+Duplicate managed keys block Apply, and an expected set whose canonical name is
+already taken by an unowned local set raises `UNCLAIMED_COMPONENT_SET_COLLISION`
+rather than creating a twin. It therefore **cannot touch the Phase 87 design system**, which lives under
 the separate `hermesDSB` namespace. That separation is load-bearing: Phase 87 is an
 owner-applied artifact with recorded evidence and must not be corruptible by accident.
 
@@ -150,14 +154,19 @@ npm run verify
   64 checks, 0 failures. Text ≥ 4.5:1 (SC 1.4.3), indicators ≥ 3:1 (SC 1.4.11),
   measured against the **lightest** canonical surface `#152A36`, with translucent
   Glass tiers composited first so the ratio is the one the user actually sees.
-- `npm run test` — 60 policy, mutation and runtime-contract tests asserting the
+- `npm run test` — 68 policy, mutation and runtime-contract tests asserting the
   design *rules* and executor safety: `UNKNOWN` can never
   collapse into `HEALTHY`, no state depends on colour alone, an AI hypothesis never
   carries a verified look, the shipped glass lift ladder and `scale(1.012)` pin are
   preserved, Horizon is forbidden on every dense-data surface, edge illumination
   never becomes a glow, motion stays in the 120–240 ms band, dynamic pages are
-  loaded and awaited before recursive scans, iterable ChildrenMixin collections
-  are traversed, and Figma-persisted descriptions remain canonical.
+  loaded and awaited before recursive scans, ChildrenMixin collections are
+  traversed in all three shapes they take (Array, non-Array iterable and
+  array-like without an iterator), Component Sets the walk cannot reach are still
+  found by direct API enumeration, one node seen on both paths is counted once
+  while two nodes sharing an assetKey stay fail-closed, an unclaimed same-named
+  Component Set blocks Apply and is never adopted, and Figma-persisted
+  descriptions remain canonical.
 
 The audit caught four genuine contrast failures in the first draft of the token set
 (`critical` indicator at 2.64:1, `maintenance` text at 3.51:1, `offline` indicator at

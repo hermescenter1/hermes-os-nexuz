@@ -10,7 +10,17 @@ import { readFileSync } from 'node:fs'
 import { findInExecutableCode } from './lib/code-scan.mjs'
 
 const require = createRequire(import.meta.url)
-const { scanManagedAssets, planPages, rollbackDna, NAMESPACE } = require('../src/lib/dna-exec.js')
+const { scanManagedAssets, applyDna, planPages, rollbackDna, NAMESPACE } = require('../src/lib/dna-exec.js')
+const { buildDnaSpec } = require('../src/lib/dna-spec.js')
+
+const EXEC_SOURCE_URL = new URL('../src/lib/dna-exec.js', import.meta.url)
+
+/**
+ * Read a source file for the mutation gates with line endings normalised.
+ * A Windows checkout (core.autocrlf) delivers CRLF, which would make every
+ * multi-line needle below miss and silently turn these controls into no-ops.
+ */
+const readSource = (url) => readFileSync(url, 'utf8').replace(/\r\n/g, '\n')
 
 let nodeSequence = 0
 
@@ -25,6 +35,33 @@ function managed(key, children = []) {
   }
 }
 
+/** A managed node that Figma reports as a Component Set. */
+function managedComponentSet(key, { name, id, children = [] } = {}) {
+  const node = managed(key, children)
+  node.type = 'COMPONENT_SET'
+  if (name) node.name = name
+  if (id) node.id = id
+  return node
+}
+
+/**
+ * A Component Set that exists in the file but carries NO ownership metadata —
+ * the shape an owner-authored (or orphaned) set has. Every write attempt is
+ * recorded so a test can prove the plugin never adopts one.
+ */
+function unclaimedComponentSet(name) {
+  const writes = []
+  return {
+    id: 'unclaimed-' + (++nodeSequence),
+    name,
+    type: 'COMPONENT_SET',
+    children: [],
+    writes,
+    getSharedPluginData() { return '' },
+    setSharedPluginData(namespace, field, value) { writes.push([namespace, field, value].join('/')) },
+  }
+}
+
 const unowned = (id) => ({ id, name: id, children: [], getSharedPluginData() { return '' } })
 
 function readonlyChildren(items) {
@@ -34,10 +71,31 @@ function readonlyChildren(items) {
   })
 }
 
+/**
+ * A children collection with `length` and index access but NO Symbol.iterator —
+ * the shape that made the document walk report "no children" one level below a
+ * Section and lose all 24 tagged Component Sets without raising anything.
+ */
+function arrayLikeChildren(items) {
+  const collection = { length: items.length }
+  items.forEach((item, index) => { collection[index] = item })
+  return Object.freeze(collection)
+}
+
+/** Materialise any of the three children shapes, for the fixtures' own linking. */
+function fixtureChildren(collection) {
+  if (!collection) return []
+  if (Array.isArray(collection)) return collection.slice()
+  if (typeof collection[Symbol.iterator] === 'function') return Array.from(collection)
+  const out = []
+  for (let index = 0; index < (collection.length || 0); index++) out.push(collection[index])
+  return out
+}
+
 function fakeFigma(pages, extras = {}) {
   const root = { children: pages }
   const link = (parent, children) => {
-    for (const child of children || []) {
+    for (const child of fixtureChildren(children)) {
       child.parent = parent
       child.remove = function () {
         const at = this.parent.children.indexOf(this)
@@ -47,7 +105,7 @@ function fakeFigma(pages, extras = {}) {
     }
   }
   link(root, pages)
-  return {
+  const figma = {
     root,
     variables: {
       async getLocalVariableCollectionsAsync() { return extras.collections || [] },
@@ -55,7 +113,14 @@ function fakeFigma(pages, extras = {}) {
     },
     async getLocalPaintStylesAsync() { return extras.paintStyles || [] },
     async getLocalEffectStylesAsync() { return extras.effectStyles || [] },
+    async loadAllPagesAsync() {},
   }
+  // Only present when the fixture explicitly models the direct enumeration API,
+  // so the runtime-probe fallback stays exercised everywhere else.
+  if (extras.localComponentSets) {
+    figma.getLocalComponentSetsAsync = async () => extras.localComponentSets
+  }
+  return figma
 }
 
 function dynamicPageFigma() {
@@ -125,7 +190,7 @@ test('managed discovery is recursive and rejects duplicate asset keys fail-close
 test('dynamic-page discovery loads and awaits every page before reading children', async () => {
   const previous = globalThis.figma
   try {
-    const source = readFileSync(new URL('../src/lib/dna-exec.js', import.meta.url), 'utf8')
+    const source = readSource(EXEC_SOURCE_URL)
     const loadGate = '  await ensureAllPagesLoaded()\n'
     assert.equal(source.split(loadGate).length - 1, 1, 'the shared scanner must own exactly one page-load gate')
 
@@ -150,31 +215,209 @@ test('dynamic-page discovery loads and awaits every page before reading children
   }
 })
 
+// The single pinned shape gate every children read goes through. Both historical
+// mutants below are derived from it, so deleting or narrowing it turns red.
+const SHAPE_GATE = [
+  '  if (!collection) return []',
+  '  if (Array.isArray(collection)) return collection.slice()',
+  "  if (typeof collection[Symbol.iterator] === 'function') return Array.from(collection)",
+  '  const length = collection.length',
+  "  if (typeof length !== 'number' || !isFinite(length) || length <= 0) return []",
+  '  /** @type {any[]} */ const nodes = []',
+  '  for (let index = 0; index < length; index++) nodes.push(collection[index])',
+  '  return nodes',
+].join('\n')
+
+const ARRAY_ONLY_MUTANT = '  if (!Array.isArray(collection)) return []\n  return collection'
+const ITERABLE_ONLY_MUTANT =
+  "  if (!collection || typeof collection[Symbol.iterator] !== 'function') return []\n  return Array.from(collection)"
+
+test('the children reader owns exactly one shape gate', () => {
+  const source = readSource(EXEC_SOURCE_URL)
+  assert.equal(source.split(SHAPE_GATE).length - 1, 1,
+    'every children read must go through one shared, mutable-in-one-place shape gate')
+})
+
 test('managed discovery traverses iterable Figma child collections that are not Arrays', async () => {
   const previous = globalThis.figma
   try {
-    const source = readFileSync(new URL('../src/lib/dna-exec.js', import.meta.url), 'utf8')
-    const iterableGate = "  if (!children || typeof children[Symbol.iterator] !== 'function') return []\n  return Array.from(children)"
-    assert.equal(source.split(iterableGate).length - 1, 1,
-      'the shared child reader must own exactly one iterable-collection gate')
-
-    const mutant = loadDnaExecFromSource(source.replace(iterableGate,
-      "  if (!Array.isArray(children)) return []\n  return children"))
-    const componentSet = managed('componentSet:readonly-children')
+    const source = readSource(EXEC_SOURCE_URL)
+    const mutant = loadDnaExecFromSource(source.replace(SHAPE_GATE, ARRAY_ONLY_MUTANT))
+    const componentSet = managedComponentSet('componentSet:readonly-children')
     const section = managed('section:readonly-host')
     section.children = readonlyChildren([componentSet])
-    globalThis.figma = {
-      ...fakeFigma([managed('page:foundation', [section])]),
-      async loadAllPagesAsync() {},
-    }
+    globalThis.figma = fakeFigma([managed('page:foundation', [section])])
 
     const missed = await mutant.scanManagedAssets()
     assert.equal(missed.index['componentSet:readonly-children'], undefined,
-      'the previous Array-only scanner must reproduce the 24 missing Component Sets')
+      'the original Array-only scanner must reproduce the missing Component Sets')
 
     const found = await scanManagedAssets()
     assert.equal(found.index['componentSet:readonly-children'], componentSet,
-      'the fixed scanner must discover a nested Component Set through ChildrenMixin')
+      'the fixed scanner must discover a nested Component Set through an iterable ChildrenMixin')
+  } finally {
+    globalThis.figma = previous
+  }
+})
+
+test('managed discovery traverses array-like child collections that are not iterable', async () => {
+  const previous = globalThis.figma
+  try {
+    const source = readSource(EXEC_SOURCE_URL)
+    const mutant = loadDnaExecFromSource(source.replace(SHAPE_GATE, ITERABLE_ONLY_MUTANT))
+    const componentSet = managedComponentSet('componentSet:array-like-children')
+    const section = managed('section:array-like-host')
+    section.children = arrayLikeChildren([componentSet])
+    assert.equal(typeof section.children[Symbol.iterator], 'undefined',
+      'the fixture must model a collection Figma exposes without an iterator')
+
+    globalThis.figma = fakeFigma([managed('page:foundation', [section])])
+    const missed = await mutant.scanManagedAssets()
+    assert.equal(missed.index['componentSet:array-like-children'], undefined,
+      'the iterable-only scanner must still lose the Component Set — that was the surviving bug')
+
+    globalThis.figma = fakeFigma([managed('page:foundation', [section])])
+    const found = await scanManagedAssets()
+    assert.equal(found.index['componentSet:array-like-children'], componentSet,
+      'the fixed scanner must materialise a length/index collection')
+  } finally {
+    globalThis.figma = previous
+  }
+})
+
+test('Component Sets invisible to the document walk are found by direct API enumeration', async () => {
+  const previous = globalThis.figma
+  try {
+    const source = readSource(EXEC_SOURCE_URL)
+    const directGate = '  for (const set of await enumerateLocalComponentSets(enumerationErrors)) walk(set, false)\n'
+    assert.equal(source.split(directGate).length - 1, 1,
+      'the scanner must own exactly one direct Component Set enumeration')
+
+    // The walk is deliberately blind: the Section reports no children at all.
+    const buildFile = () => {
+      const componentSet = managedComponentSet('componentSet:direct-only')
+      const section = managed('section:blind-host')
+      section.children = []
+      return {
+        componentSet,
+        figma: fakeFigma([managed('page:foundation', [section])], { localComponentSets: [componentSet] }),
+      }
+    }
+
+    const mutantFile = buildFile()
+    globalThis.figma = mutantFile.figma
+    const mutant = loadDnaExecFromSource(source.replace(directGate, ''))
+    const missed = await mutant.scanManagedAssets()
+    assert.equal(missed.index['componentSet:direct-only'], undefined,
+      'removing direct enumeration must reproduce a Component Set the walk cannot reach')
+
+    const fixedFile = buildFile()
+    globalThis.figma = fixedFile.figma
+    const found = await scanManagedAssets()
+    assert.equal(found.index['componentSet:direct-only'], fixedFile.componentSet)
+    assert.equal(found.componentSetsFromTreeWalk, 0)
+    assert.equal(found.componentSetsFromDirectApi, 1)
+  } finally {
+    globalThis.figma = previous
+  }
+})
+
+test('a Component Set seen by both discovery paths is counted exactly once', async () => {
+  const previous = globalThis.figma
+  try {
+    const componentSet = managedComponentSet('componentSet:both-paths')
+    const section = managed('section:host', [componentSet])
+    globalThis.figma = fakeFigma([managed('page:foundation', [section])],
+      { localComponentSets: [componentSet] })
+
+    const scan = await scanManagedAssets()
+    assert.deepEqual(scan.duplicates, [], 'seeing one node twice must never look like a duplicate')
+    assert.equal(scan.groups['componentSet:both-paths'].length, 1)
+    assert.equal(scan.componentSets.length, 1)
+    assert.equal(scan.componentSetsFromTreeWalk, 1)
+    assert.equal(scan.componentSetsFromDirectApi, 0)
+  } finally {
+    globalThis.figma = previous
+  }
+})
+
+test('de-duplication keys off node.id, not object identity', async () => {
+  const previous = globalThis.figma
+  try {
+    // Figma may hand the same node back as two distinct wrappers; node.id is the
+    // stable identity that must collapse them.
+    const inTree = managedComponentSet('componentSet:same-id', { id: 'figma:1:42' })
+    const fromApi = managedComponentSet('componentSet:same-id', { id: 'figma:1:42' })
+    assert.notEqual(inTree, fromApi)
+    globalThis.figma = fakeFigma([managed('page:foundation', [managed('section:host', [inTree])])],
+      { localComponentSets: [fromApi] })
+
+    const scan = await scanManagedAssets()
+    assert.deepEqual(scan.duplicates, [])
+    assert.equal(scan.componentSets.length, 1)
+    assert.equal(scan.index['componentSet:same-id'], inTree)
+  } finally {
+    globalThis.figma = previous
+  }
+})
+
+test('two different nodes sharing one assetKey stay a fail-closed duplicate', async () => {
+  const previous = globalThis.figma
+  try {
+    const inTree = managedComponentSet('componentSet:twin', { id: 'figma:1:10' })
+    const elsewhere = managedComponentSet('componentSet:twin', { id: 'figma:1:11' })
+    globalThis.figma = fakeFigma([managed('page:foundation', [managed('section:host', [inTree])])],
+      { localComponentSets: [elsewhere] })
+
+    await assert.rejects(() => scanManagedAssets(), /DUPLICATE MANAGED ASSETS.*componentSet:twin x2/,
+      'a real duplicate must never be collapsed by the de-duplication that merges the two paths')
+
+    const reportable = await scanManagedAssets({ allowDuplicates: true })
+    assert.equal(reportable.duplicates[0].count, 2)
+    assert.equal(reportable.componentSets.length, 2)
+  } finally {
+    globalThis.figma = previous
+  }
+})
+
+test('an unclaimed same-named Component Set blocks Apply and is never adopted', async () => {
+  const previous = globalThis.figma
+  try {
+    const spec = buildDnaSpec()
+    const target = spec.componentSets[0]
+    const twin = unclaimedComponentSet(target.name)
+    globalThis.figma = fakeFigma([unowned('live-page')], { localComponentSets: [twin] })
+
+    const dry = await applyDna({ dryRun: true })
+    const collision = dry.errors.filter((message) => message.startsWith('UNCLAIMED_COMPONENT_SET_COLLISION:'))
+    assert.equal(collision.length, 1, 'Dry Run must name the collision explicitly')
+    assert.match(collision[0], new RegExp('id ' + twin.id))
+    assert.match(collision[0], /metadata: absent/)
+    assert.deepEqual(dry.unclaimedComponentSets, [{
+      key: target.key, name: target.name, id: twin.id, ownership: 'absent',
+    }])
+    assert.equal(dry.componentSetScan.unclaimed, 1)
+    assert.equal(dry.componentSetScan.owned, 0)
+    assert.deepEqual(twin.writes, [], 'a matching name is not ownership — nothing may be tagged or adopted')
+
+    await assert.rejects(() => applyDna({ dryRun: false }), /APPLY BLOCKED/,
+      'Apply must refuse rather than create a second copy')
+    assert.deepEqual(twin.writes, [])
+  } finally {
+    globalThis.figma = previous
+  }
+})
+
+test('a differently named local Component Set is not treated as a collision', async () => {
+  const previous = globalThis.figma
+  try {
+    const stranger = unclaimedComponentSet('Owner/Unrelated Set')
+    globalThis.figma = fakeFigma([unowned('live-page')], { localComponentSets: [stranger] })
+
+    const dry = await applyDna({ dryRun: true })
+    assert.deepEqual(dry.errors, [], 'only a canonical-name match may block Apply')
+    assert.deepEqual(dry.unclaimedComponentSets, [])
+    assert.equal(dry.componentSetScan.local, 1)
   } finally {
     globalThis.figma = previous
   }

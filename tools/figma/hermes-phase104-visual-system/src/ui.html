@@ -138,6 +138,22 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
       if (r.retained) lines.push('retained safely: ' + r.retained.length)
       lines.push('created: ' + r.created.length + '   updated: ' + r.updated.length + '   skipped: ' + r.skipped.length)
       lines.push('errors:  ' + r.errors.length)
+      // Component Set discovery is reported per path: "0 found" must never again be
+      // indistinguishable from "0 exist".
+      if (r.componentSetScan) {
+        var cs = r.componentSetScan
+        lines.push('component sets in file: ' + cs.local +
+          '  (tree walk ' + cs.fromTreeWalk + ', direct API ' + cs.fromDirectApi + ')')
+        lines.push('  owned by this plugin: ' + cs.owned + '   unclaimed: ' + cs.unclaimed)
+      }
+      if (r.unclaimedComponentSets && r.unclaimedComponentSets.length) {
+        lines.push('')
+        lines.push('UNCLAIMED COMPONENT SETS - not adopted, nothing was written:')
+        for (var u = 0; u < r.unclaimedComponentSets.length; u++) {
+          var uc = r.unclaimedComponentSets[u]
+          lines.push('  ! ' + uc.name + '  id=' + uc.id + '  metadata=' + uc.ownership)
+        }
+      }
       if (r.fontSubstitutions && r.fontSubstitutions.length) {
         lines.push('')
         lines.push('font substitutions:')
@@ -171,6 +187,12 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
       verifyLines.push('verified: ' + v.verified.length + ' / ' + v.counts.appliableTotal)
       verifyLines.push('missing: ' + v.missing.length + '   drifted: ' + v.drifted.length)
       verifyLines.push('duplicates: ' + v.duplicates.length + '   unexpected: ' + v.unexpected.length)
+      if (v.componentSetScan) {
+        verifyLines.push('component sets in file: ' + v.componentSetScan.local +
+          '  (tree walk ' + v.componentSetScan.fromTreeWalk +
+          ', direct API ' + v.componentSetScan.fromDirectApi +
+          ', owned ' + v.componentSetScan.owned + ', unclaimed ' + v.componentSetScan.unclaimed + ')')
+      }
       for (var group of ['missing', 'drifted', 'duplicates', 'unexpected']) {
         if (!v[group].length) continue
         verifyLines.push('')
