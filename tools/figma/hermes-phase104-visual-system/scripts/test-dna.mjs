@@ -52,6 +52,7 @@ test('Node test entrypoints cannot collide with the repository Vitest glob', () 
   const names = nodeTests.map((path) => basename(path)).sort()
   assert.deepEqual(names, [
     'code-scan.node-test.mjs',
+    'operation-lock.node-test.mjs',
     'runtime-contract.node-test.mjs',
     'test-dna.mjs',
   ])

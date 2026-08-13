@@ -67,6 +67,17 @@ Two consequences are baked into the design:
 | **Verify** | Checks all 205 keys/hashes plus structural invariants; duplicate keys fail closed. |
 | **Rollback** | Removes plugin-owned assets; restores reused pages and preserves containers holding user content. |
 
+**One operation at a time.** `figma.ui.onmessage` is async, so without a lock a
+second message delivered while an operation is parked on an `await` runs its
+executor concurrently against the same document — which is how an Apply gets left
+half-finished. The panel disables all four controls the instant an operation
+starts and re-enables them only when *that* operation reports back, and the
+runtime refuses any concurrent message with `OPERATION_IN_PROGRESS`. There is
+deliberately **no queue**: a refused message is dropped, never deferred. The lock
+is released in a `finally`, so a throwing operation cannot wedge the plugin shut.
+During Apply the panel states the work in progress and asks you not to close it;
+Verify unlocks only once the complete Apply result reports zero errors.
+
 Rollback identifies assets by this plugin's own shared-plugin-data namespace
 (`hermesP104`), never by name prefix — a prefix match could delete owner-authored
 nodes. Component sets are discovered on **two independent paths** — the recursive
@@ -154,7 +165,7 @@ npm run verify
   64 checks, 0 failures. Text ≥ 4.5:1 (SC 1.4.3), indicators ≥ 3:1 (SC 1.4.11),
   measured against the **lightest** canonical surface `#152A36`, with translucent
   Glass tiers composited first so the ratio is the one the user actually sees.
-- `npm run test` — 68 policy, mutation and runtime-contract tests asserting the
+- `npm run test` — 80 policy, mutation and runtime-contract tests asserting the
   design *rules* and executor safety: `UNKNOWN` can never
   collapse into `HEALTHY`, no state depends on colour alone, an AI hypothesis never
   carries a verified look, the shipped glass lift ladder and `scale(1.012)` pin are
@@ -165,8 +176,14 @@ npm run verify
   array-like without an iterator), Component Sets the walk cannot reach are still
   found by direct API enumeration, one node seen on both paths is counted once
   while two nodes sharing an assetKey stay fail-closed, an unclaimed same-named
-  Component Set blocks Apply and is never adopted, and Figma-persisted
-  descriptions remain canonical.
+  Component Set blocks Apply and is never adopted, a message arriving during a
+  running operation is refused instead of running concurrently, a throwing
+  operation still releases the lock, every control is disabled while busy, a
+  double-click sends one message, a stale operation id never unlocks the panel,
+  and Figma-persisted descriptions remain canonical.
+  The runtime-lock and busy-gate tests execute the shipped `src/main.js` and the
+  real `src/ui.html` script (through `node:vm`), so deleting either guard from
+  the source turns them red rather than merely failing a text match.
 
 The audit caught four genuine contrast failures in the first draft of the token set
 (`critical` indicator at 2.64:1, `maintenance` text at 3.51:1, `offline` indicator at

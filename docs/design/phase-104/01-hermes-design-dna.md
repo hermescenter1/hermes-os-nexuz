@@ -287,11 +287,11 @@ Breakpoints designed and validated: **1440 × 1024 · 768 × 1024 · 390 × 844*
 |---|---|
 | Design DNA specification | **COMPLETE** |
 | Contrast / a11y verification | **PASS** — 64 checks, 0 failures |
-| Design-rule / executor policy tests | **PASS** — 68 tests, including mutation controls, dynamic-page load-before-traverse, ChildrenMixin traversal in all three collection shapes, direct Component Set enumeration, node-id de-duplication, unclaimed-collision fail-closed, canonical Figma descriptions, reproducible source identity and runner-isolation guard |
+| Design-rule / executor policy tests | **PASS** — 80 tests, including mutation controls, dynamic-page load-before-traverse, ChildrenMixin traversal in all three collection shapes, direct Component Set enumeration, node-id de-duplication, unclaimed-collision fail-closed, the single-operation runtime lock and UI busy gate, canonical Figma descriptions, reproducible source identity and runner-isolation guard |
 | Figma file created | **YES** — `QcJcRaBv1NMrgb4pMshEVB` |
 | Plugin: pages, sections, tokens, components | **LOCALLY VERIFIED** — contract remains 205 assets / 226 variants; owner Dry Run reported 202 create / 3 update / 0 skip / 0 error on source `c5ca613e1384` |
 | Figma Apply executed | **YES** — owner executed Apply on the same clean Dry Run; no Rollback was executed |
-| Figma Verify | **OWNER RE-RUN REQUIRED** — initial evidence was 172/205 verified, 24 missing Component Sets and 9 description drifts; see §10.2 |
+| Figma Verify | **OWNER RE-RUN REQUIRED** — initial evidence was 172/205 verified, 24 missing Component Sets and 9 description drifts; the file holds a partial Apply of 181 assets, see §10.2 and §10.3 |
 | Approved mockups received | **NO** — owner is supplying them |
 | Screens designed | **NOT STARTED** — deliberately blocked on the mockups |
 | Product-phase naming | **CURRENT** — merged Phase 101/102/103 scopes reflected |
@@ -380,10 +380,61 @@ performed automatically.
 (`tree walk` / `direct API`, `owned` / `unclaimed`), so "0 found" can never again
 be indistinguishable from "0 exist".
 
-**Expected owner Dry Run after re-import** — *expectation, not a result*: if the
-24 sets carry intact `hermesP104` metadata, `OWNED HERE: 205` with
-`created: 0 · updated: 9 · skipped: 196 · errors: 0`. If instead they carry no
-metadata, the run must report 24 `UNCLAIMED_COMPONENT_SET_COLLISION` errors with
-Apply disabled. Neither outcome can be claimed until the owner re-runs Dry Run in
-Figma Desktop. The 9 updates are the canonical Variable descriptions and nothing
-else; the contract stays at 205 assets / 226 variants.
+**What the census then proved.** The owner re-imported build `ab187ec443e6` and
+ran Dry Run: `OWNED HERE=181`, `created=24 / updated=9 / skipped=172 / errors=0`,
+and the new per-path census reported **`component sets in file = 0`** — with a
+Figma Assets search for `Hermes/Button` returning only external Material 3
+results and no local Hermes asset. Both discovery paths agree the sets are simply
+**not in the file**. So neither branch above applies: the file holds a **partial
+Apply** of 181 assets, and the missing-set report was accurate all along. The
+two-path scan and the collision guard are still correct and are retained — they
+are what turned an ambiguous "0 found" into a decidable fact.
+
+### 10.3 Why the Apply stopped at 181 — the concurrency lock
+
+Apply writes in strict order: pages, sections, collections, variables, paint
+styles, effect styles (**181 assets**), and *then* the 24 Component Sets. The file
+contains exactly the first six groups and none of the seventh, so the run ended
+at that boundary.
+
+`figma.ui.onmessage` is an **async** handler and, as shipped, had no mutex, while
+the panel left every button live after a click. A second message delivered while
+Apply was parked on one of its many `await`s therefore ran its executor
+**concurrently** against the same half-built document — a Verify scanning a file
+mid-write, or a second Apply writing into it. The Component Set phase is where
+Apply spends nearly all of its await time, which is exactly where such an
+interleaving lands. Note the honest limit: the plugin persists no run journal, so
+this is the mechanism the code makes possible, not an observed transcript of the
+owner's session.
+
+The remediation is scoped to that hazard and touches no scan, spec, description
+or count:
+
+- **Runtime lock (`src/main.js`).** One `activeOperation` at a time across
+  `init`, `dry-run`, `apply`, `verify` and `rollback`. A message arriving while an
+  operation runs is answered with `code: 'OPERATION_IN_PROGRESS'` and the executor
+  is never reached. There is **no queue** — deferring the second message is the
+  same hazard moved in time. The lock is released in a `finally`, so a throwing
+  operation cannot wedge the plugin shut.
+- **UI busy gate (`src/ui.html`).** All four controls are disabled *before* the
+  message is posted, so even a double-click inside one tick sends once. Each
+  message carries an `operationId`; a result whose id does not match the operation
+  in flight is ignored outright, so a stale or foreign reply can never release the
+  busy state.
+- **Apply is explicit about its cost.** It prints
+  `Applying 24 Component Sets / 226 variants…` and
+  `Do not close the plugin until completion is reported.`
+- **Verify unlocks only on a complete Apply result with `errors=0`.** An Apply
+  that reports errors leaves Verify shut until a fresh Dry Run re-establishes what
+  the file should contain.
+- The Apply permit is unchanged: still issued only by a clean Dry Run on the same
+  fingerprint, and still re-checked against the same `stateSignature` immediately
+  before the first write.
+
+**Expected owner Dry Run after re-import** — *expectation, not a result*:
+`OWNED HERE=181` with `created=24 · updated=9 · skipped=172 · errors=0`, because
+the 24 Component Sets are genuinely absent and the 9 updates are the canonical
+Variable descriptions. Nothing here may be reported as passed until the owner
+runs it in Figma Desktop. Only after that Dry Run is accepted should a single
+Apply be run to completion, which should then give `OWNED HERE=205` and a final
+Verify of `205/205`. The contract stays at 205 assets / 226 variants.

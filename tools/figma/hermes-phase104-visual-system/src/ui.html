@@ -65,20 +65,59 @@
   <button class="ghost" id="verify" disabled>Verify</button>
 </div>
 <div class="row">
-  <button class="danger" id="rollback">Rollback (this plugin's assets only)</button>
+  <button class="danger" id="rollback" disabled>Rollback (this plugin's assets only)</button>
 </div>
 
 <pre id="out">Dry Run makes no changes. Apply unlocks only after a Dry Run whose fingerprint
 and asset contract match Phase 104 exactly.
+
+One operation at a time. While Dry Run, Apply, Verify or Rollback is running,
+every button is disabled and a concurrent request is refused outright - it is
+never queued. Wait for the result before pressing anything.
 
 If the panel above does not say "Hermes Phase 104 Visual System", you have the
 wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
 
 <script>
   var $ = function (id) { return document.getElementById(id) }
-  var send = function (type) { parent.postMessage({ pluginMessage: { type: type } }, '*') }
   var esc = function (value) {
     return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  // ── single-operation UI lock ──────────────────────────────────────────────
+  // The panel may have at most ONE operation in flight. Every operational button
+  // is disabled the moment one starts and re-enabled only when THAT operation
+  // reports back. There is no queue: a click while busy is dropped, never
+  // remembered, because a deferred second Apply is the same hazard delayed.
+  var state = {
+    fingerprintOk: false,
+    busy: null,            // { id: 'op-3', type: 'apply' } while an operation runs
+    applyPermitted: false,
+    verifyPermitted: false,
+    applyFailed: false,
+    counts: null,
+  }
+  var operationSequence = 0
+
+  function refreshControls() {
+    var locked = !!state.busy
+    $('dry').disabled = locked || !state.fingerprintOk
+    $('apply').disabled = locked || !state.fingerprintOk || !state.applyPermitted
+    $('verify').disabled = locked || !state.fingerprintOk || !state.verifyPermitted
+    $('rollback').disabled = locked
+    $('apply').title = $('apply').disabled ? 'Run a clean Dry Run first' : ''
+  }
+
+  // Busy is set and the buttons are disabled BEFORE the message leaves, so a
+  // double-click landing inside the same tick cannot post a second message.
+  function startOperation(type) {
+    if (state.busy) return null
+    operationSequence += 1
+    var operationId = 'op-' + operationSequence
+    state.busy = { id: operationId, type: type }
+    refreshControls()
+    parent.postMessage({ pluginMessage: { type: type, operationId: operationId } }, '*')
+    return operationId
   }
 
   // Render the build fingerprint immediately, from the value baked in at build time.
@@ -95,18 +134,55 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
     $('fp').innerHTML = '<span class="dirty">NO FINGERPRINT - this bundle was not produced by build.mjs. Rebuild before use.</span>'
   }
 
-  $('dry').onclick = function () { $('out').textContent = 'running dry run...'; send('dry-run') }
-  $('apply').onclick = function () { $('out').textContent = 'applying...'; send('apply') }
-  $('verify').onclick = function () { $('out').textContent = 'verifying...'; send('verify') }
+  function applyProgressText() {
+    var counts = state.counts || {}
+    return 'Applying ' + counts.componentSets + ' Component Sets / ' + counts.componentVariants + ' variants…\n' +
+      'Do not close the plugin until completion is reported.'
+  }
+
+  $('dry').onclick = function () {
+    if (state.busy) return
+    $('out').textContent = 'running dry run...'
+    startOperation('dry-run')
+  }
+  $('apply').onclick = function () {
+    if (state.busy) return
+    $('out').textContent = applyProgressText()
+    startOperation('apply')
+  }
+  $('verify').onclick = function () {
+    if (state.busy) return
+    $('out').textContent = 'verifying...'
+    startOperation('verify')
+  }
   $('rollback').onclick = function () {
+    if (state.busy) return
     if (confirm('Delete every asset this plugin created in this file?')) {
-      $('out').textContent = 'rolling back...'; send('rollback')
+      $('out').textContent = 'rolling back...'
+      startOperation('rollback')
     }
   }
 
   onmessage = function (e) {
     var m = e.data.pluginMessage
     if (!m) return
+
+    if (m.type === 'error' && m.code === 'OPERATION_IN_PROGRESS') {
+      // A concurrent message the runtime refused. It never reached an executor,
+      // so it must not disturb the operation that is still running. If the
+      // refused message is OUR OWN pending one, it will never be answered - stop
+      // waiting for it rather than leaving the panel disabled forever.
+      $('out').textContent = ($('out').textContent || '') + '\n\n' + m.message
+      if (state.busy && m.operationId === state.busy.id) state.busy = null
+      refreshControls()
+      return
+    }
+
+    // Anything that does not belong to the operation in flight is STALE and is
+    // ignored outright. Releasing the busy state on someone else's result is
+    // exactly how a second operation would get to run concurrently.
+    if (state.busy && m.operationId !== state.busy.id) return
+    state.busy = null
 
     if (m.type === 'ready') {
       var exactBuild = !!fp && m.fingerprint &&
@@ -115,18 +191,23 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
         fp.sourcesSha === m.fingerprint.sourcesSha &&
         !fp.dirty && fp.expectedTotal === m.counts.appliableTotal
       if (!exactBuild) {
-        $('dry').disabled = true
-        $('verify').disabled = true
-        $('apply').disabled = true
+        state.fingerprintOk = false
+        state.applyPermitted = false
+        state.verifyPermitted = false
+        refreshControls()
         $('out').innerHTML = '<span class="err">BUILD FINGERPRINT MISMATCH - rebuild and re-import this manifest.</span>'
         return
       }
+      state.fingerprintOk = true
+      state.counts = m.counts
+      // A failed Apply keeps Verify shut until a fresh Dry Run re-establishes
+      // what the file is supposed to contain.
+      if (!state.applyFailed) state.verifyPermitted = true
       $('ctx').textContent = m.fileName + ' - ' + m.pageCount + ' page(s)'
       $('c-total').textContent = m.counts.appliableTotal
       $('c-variants').textContent = m.counts.componentVariants
       $('c-owned').textContent = m.ownedInFile
-      $('dry').disabled = false
-      $('verify').disabled = false
+      refreshControls()
     }
 
     if (m.type === 'result') {
@@ -171,14 +252,19 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
       if ((r.created.length + r.updated.length) > 60) lines.push('  ... and more')
       $('out').textContent = lines.join('\n')
       // Apply unlocks only after a clean Dry Run on this exact build.
-      if (m.mode === 'Dry Run' && r.errors.length === 0 && m.applyPermitted === true) {
-        $('apply').disabled = false
-        $('apply').title = ''
-      } else if (m.mode !== 'Dry Run') {
-        $('apply').disabled = true
-        $('apply').title = 'Run a Dry Run first'
+      state.applyPermitted = m.mode === 'Dry Run' && r.errors.length === 0 && m.applyPermitted === true
+      if (m.mode === 'Dry Run') {
+        state.applyFailed = false
+        state.verifyPermitted = true
       }
-      send('init')
+      if (m.mode === 'Apply') {
+        // Verify becomes available only once the COMPLETE Apply result is in
+        // hand and reports no errors.
+        state.applyFailed = r.errors.length > 0
+        state.verifyPermitted = r.errors.length === 0
+      }
+      refreshControls()
+      startOperation('init')
     }
 
     if (m.type === 'verify-result') {
@@ -200,16 +286,21 @@ wrong plugin loaded - remove it from Plugins > Development and re-import.</pre>
         for (var vi = 0; vi < Math.min(v[group].length, 60); vi++) verifyLines.push('  x ' + v[group][vi])
       }
       $('out').textContent = verifyLines.join('\n')
-      $('apply').disabled = true
-      $('apply').title = 'Run a Dry Run first'
-      send('init')
+      state.applyPermitted = false
+      refreshControls()
+      startOperation('init')
     }
 
     if (m.type === 'error') {
-      $('apply').disabled = true
+      state.applyPermitted = false
+      if (m.rejectedType === 'apply') {
+        state.applyFailed = true
+        state.verifyPermitted = false
+      }
+      refreshControls()
       $('out').innerHTML = '<span class="err">' + esc(m.message) + '</span>'
     }
   }
 
-  send('init')
+  startOperation('init')
 </script>

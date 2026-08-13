@@ -470,13 +470,22 @@ test('Rollback restores reused pages and retains containers with user content', 
 })
 
 test('runtime code contains server-side Dry Run permit, re-preview and Verify gates', () => {
-  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
+  const main = readSource(new URL('../src/main.js', import.meta.url))
   assert.match(main, /let applyPermit = null/)
   assert.match(main, /preview\.stateSignature !== applyPermit\.stateSignature/)
   assert.match(main, /assertRuntimeIdentity\('Apply'\)/)
-  assert.match(main, /msg\.type === 'verify'/)
+  assert.match(main, /if \(type === 'verify'\)/)
   assert.equal(findInExecutableCode(main, "applyDna({ dryRun: true })").length, 2,
     'Dry Run and the immediate pre-Apply re-preview must both execute')
+
+  // Every operation body is reachable only through the lock: the dispatcher owns
+  // the single call site, and the executors are not invoked from anywhere else.
+  assert.match(main, /let activeOperation = null/)
+  assert.equal(findInExecutableCode(main, 'await runOperation(type, operationId)').length, 1)
+  assert.equal(findInExecutableCode(main, "code: 'OPERATION_IN_PROGRESS'").length, 1)
+  for (const type of ['init', 'dry-run', 'apply', 'verify', 'rollback']) {
+    assert.ok(main.includes("'" + type + "'"), type + ' must be a locked message type')
+  }
 })
 
 test('verify builds before testing the generated bundle', () => {
