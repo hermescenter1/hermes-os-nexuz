@@ -30,6 +30,21 @@ const SERVICES = [
   { slug: "knowledge-cloud", key: "knowledgeCloud" },
 ] as const;
 
+// R2 — the eight capability pages under services.capabilities.<key>. Listed
+// separately because their content shape (problem/what-it-does/connects/
+// value/automation/cta) is richer than the five items above, not because
+// they are a different product family — see CapabilityDetail.tsx.
+const CAPABILITIES = [
+  { slug: "digital-twin", key: "digitalTwin" },
+  { slug: "predictive-maintenance", key: "predictiveMaintenance" },
+  { slug: "cmms", key: "cmms" },
+  { slug: "multi-site", key: "multiSite" },
+  { slug: "edms", key: "edms" },
+  { slug: "erp", key: "erp" },
+  { slug: "ot-edge", key: "otEdge" },
+  { slug: "crm", key: "crm" },
+] as const;
+
 export default async function ServicesPage({
   params,
 }: {
@@ -68,6 +83,34 @@ export default async function ServicesPage({
               </span>
             </Link>
           ))}
+        </div>
+
+        {/* R2 — implemented platform capabilities, each with its own public
+            explainer, evidence and connection graph (not a duplicate of the
+            engineering services above). */}
+        <div className="mt-16">
+          <h2 className="font-display text-2xl font-bold text-ink">
+            {t("capabilityChrome.eyebrow")}
+          </h2>
+          <div className="mt-8 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+            {CAPABILITIES.map((cap) => (
+              <Link
+                key={cap.slug}
+                href={`/services/${cap.slug}`}
+                className="group flex flex-col bg-surface p-6 transition-colors hover:bg-[#16202c]"
+              >
+                <h3 className="font-display text-base font-semibold text-ink">
+                  {t(`capabilities.${cap.key}.name`)}
+                </h3>
+                <p className="mt-2 flex-1 font-body text-sm leading-relaxed text-muted">
+                  {t(`capabilities.${cap.key}.lede`)}
+                </p>
+                <span className="mt-4 font-mono text-xs text-signal opacity-70 transition-opacity group-hover:opacity-100">
+                  {c("explore")} →
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
     </PublicPageShell>

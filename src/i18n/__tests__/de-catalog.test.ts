@@ -185,6 +185,9 @@ const PRESERVED_VALUES = new Set([
   "Case Studio", "Knowledge Studio", "Unknown Analysis Center", "Academy",
   // protected technical terms & acronyms
   "SCADA", "PLC & SCADA", "HMI", "ATS", "API", "Consent API", "hreflang", "Open Graph",
+  // R2 — public capability pages (gap-closure roadmap): CMMS/EDMS/ERP/CRM are
+  // technical abbreviations with no German equivalent, same class as ATS above.
+  "CMMS", "EDMS", "ERP", "CRM",
   // loanwords standard in German enterprise SaaS
   "Dashboard", "Services", "Status", "Admin", "Compliance", "Customer Success",
   "Demo", "Community", "Professional", "Team", "Enterprise",
@@ -272,13 +275,20 @@ describe("de.json — Phase 86C1 translation audit", () => {
   const preservedInBatch = batch.filter((r) => r.de === r.en);
   const carryover = stillEnglish.filter((r) => r.de === r.en);
 
-  it("batch namespaces cover 560 keys; 508 carry German, 52 preserved terms", () => {
+  it("batch namespaces cover 593 keys; 537 carry German, 56 preserved terms", () => {
     // 89C: +18 meta leaves (breadcrumbs + page metadata templates), all genuinely German.
     // 96:  +3 meta.pages.pricing leaves (title/description/keywords), genuinely German,
     //      so batch 557->560 and translated 505->508; preserved terms unchanged (52).
-    expect(batch.length).toBe(560);
-    expect(translated.length).toBe(508);
-    expect(preservedInBatch.length).toBe(52);
+    // R2:  +24 meta.pages.service<Capability> leaves (8 x title/description/keywords,
+    //      all genuinely German) + 9 nav leaves (nav.groups.capabilities +
+    //      8 nav.items.cap<Capability>). Of those 9, 4 are the protected acronyms
+    //      CMMS/EDMS/ERP/CRM (identical by design, see PRESERVED_VALUES); the rest
+    //      (capDigitalTwin, capPredictiveMaintenance, capMultiSite, capOtEdge, plus
+    //      the group label) are genuinely German. batch 560->593 (+33),
+    //      translated 508->537 (+29), preserved 52->56 (+4).
+    expect(batch.length).toBe(593);
+    expect(translated.length).toBe(537);
+    expect(preservedInBatch.length).toBe(56);
   });
 
   it("every same-as-English batch value is a legitimate preserved term", () => {

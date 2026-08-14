@@ -24,6 +24,7 @@ export { HomeStorySection, type HomeStorySectionProps } from "./HomeStorySection
 export { PlatformArchitecture } from "./PlatformArchitecture";
 export { TrustSection, type TrustSectionProps } from "./TrustSection";
 export { PublicCta, type PublicCtaProps } from "./PublicCta";
+export { CapabilityDetail, type CapabilityDetailProps } from "./CapabilityDetail";
 export { PublicPageContainer, type PublicPageContainerProps } from "./PublicPageContainer";
 export { PublicPageShell, type PublicPageShellProps } from "./PublicPageShell";
 export { PublicSection, type PublicSectionProps, type PublicSectionTone, type PublicSectionPadding } from "./PublicSection";

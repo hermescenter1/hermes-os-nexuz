@@ -58,6 +58,21 @@ ${locales.map((p) => `- ${BASE_URL}${p}/library: Open engineering knowledge libr
 ${locales.map((p) => `- ${BASE_URL}${p}/articles: Industrial Journal — community engineering articles (${p.slice(1)})`).join("\n")}
 ${locales.map((p) => `- ${BASE_URL}${p}/academy: Hermes Academy — industrial courses (${p.slice(1)})`).join("\n")}
 
+## Platform capabilities
+These are implemented, running capabilities of ${SITE_NAME} — each is a
+capability within the single ${PRODUCT_ID} entity, not a separate product.
+The pages below are public explainers; the operational data behind each
+capability (records, tenants, telemetry) stays inside the authenticated
+workspace and is never exposed here.
+${locales.map((p) => `- ${BASE_URL}${p}/services/digital-twin: Digital Twin — a live node-and-relation graph of plant assets overlaid with real telemetry (${p.slice(1)})`).join("\n")}
+${locales.map((p) => `- ${BASE_URL}${p}/services/predictive-maintenance: Predictive Maintenance — remaining-useful-life estimation and risk scoring from asset telemetry (${p.slice(1)})`).join("\n")}
+${locales.map((p) => `- ${BASE_URL}${p}/services/cmms: CMMS — work orders, preventive scheduling, spare parts and maintenance cost (${p.slice(1)})`).join("\n")}
+${locales.map((p) => `- ${BASE_URL}${p}/services/multi-site: Multi-Site Operations — cross-site KPI comparison and failure-pattern detection (${p.slice(1)})`).join("\n")}
+${locales.map((p) => `- ${BASE_URL}${p}/services/edms: EDMS — version-controlled engineering documents with approvals and retention (${p.slice(1)})`).join("\n")}
+${locales.map((p) => `- ${BASE_URL}${p}/services/erp: ERP — project, task, inventory and approval workflows on the same tenancy (${p.slice(1)})`).join("\n")}
+${locales.map((p) => `- ${BASE_URL}${p}/services/ot-edge: OT Edge — a governed, read-only registry for OT gateways and devices (${p.slice(1)})`).join("\n")}
+${locales.map((p) => `- ${BASE_URL}${p}/services/crm: CRM — the sales pipeline, on the same tenancy as the rest of the platform (${p.slice(1)})`).join("\n")}
+
 ## Machine-readable
 - ${BASE_URL}/sitemap.xml: Multilingual sitemap (canonical public URLs)
 - ${BASE_URL}/robots.txt: Crawler policy
@@ -65,6 +80,8 @@ ${locales.map((p) => `- ${BASE_URL}${p}/academy: Hermes Academy — industrial c
 ## Notes
 - Authenticated product areas (dashboard, CRM, ERP, assets, CMMS, documents,
   organization, billing, admin) are private and intentionally not listed.
+  The capability pages above are public explainers of what each does; the
+  tenant records, telemetry and deals behind them stay inside sign-in.
 - Analyses are evidence-based and explainable; recommendations always require
   human approval before touching plant state.
 `;

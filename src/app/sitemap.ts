@@ -25,6 +25,17 @@ const STATIC_PATHS = [
   { path: "/services/plc",              priority: 0.85, changeFreq: "monthly" as const },
   { path: "/services/scada-hmi",        priority: 0.85, changeFreq: "monthly" as const },
   { path: "/architecture", priority: 0.85, changeFreq: "monthly" as const },
+  // R2 — eight already-implemented platform capabilities, newly given a
+  // public explainer under /services/<slug>. See CapabilityDetail.tsx and
+  // src/lib/capabilities/registry.ts for the underlying evidence.
+  { path: "/services/digital-twin",             priority: 0.8, changeFreq: "monthly" as const },
+  { path: "/services/predictive-maintenance",   priority: 0.8, changeFreq: "monthly" as const },
+  { path: "/services/cmms",                     priority: 0.8, changeFreq: "monthly" as const },
+  { path: "/services/multi-site",               priority: 0.8, changeFreq: "monthly" as const },
+  { path: "/services/edms",                     priority: 0.8, changeFreq: "monthly" as const },
+  { path: "/services/erp",                      priority: 0.8, changeFreq: "monthly" as const },
+  { path: "/services/ot-edge",                  priority: 0.8, changeFreq: "monthly" as const },
+  { path: "/services/crm",                      priority: 0.8, changeFreq: "monthly" as const },
   // TWO DISTINCT PUBLIC CAPABILITIES — NOT duplicates of each other.
   //
   //   /brain            → "Hermes Brain", the Industrial Knowledge Engine
