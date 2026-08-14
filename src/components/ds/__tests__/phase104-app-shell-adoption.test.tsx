@@ -214,6 +214,20 @@ describe("104-D — the shared Command surface consumes the Command signature", 
     }
     expect(varsUsedBy(".hermes-command-surface")).toContain("--command-width");
     expect(varsUsedBy(".hermes-command-surface")).toContain("--command-radius");
+
+    // Repeated subtraction rather than `2 * var(--x)`: multiplication by a
+    // custom property inside calc() is the least portable form in this
+    // expression, and the computed geometry is identical either way.
+    const width = ruleDecls(".hermes-command-surface")
+      .filter((d) => d.prop === "inline-size")
+      .map((d) => d.value);
+    expect(width).toHaveLength(1);
+    expect(width[0], "use repeated subtraction, not multiplication").not.toMatch(
+      /\d\s*\*\s*var\(/,
+    );
+    expect(width[0]).toContain(
+      "calc(100vw - var(--space-card) - var(--space-card))",
+    );
     expect(varsUsedBy(".hermes-command-field")).toContain("--command-height-mobile");
     expect(varsUsedBy(".hermes-command-list")).toContain("--command-palette-max-height");
   });
@@ -240,6 +254,14 @@ describe("104-D — the shared Command surface consumes the Command signature", 
     expect(prop("display")).toEqual(["flex"]);
     expect(prop("flex-direction")).toEqual(["column"]);
     expect(prop("overflow")).toEqual(["hidden"]);
+
+    // The portal root is a ROW flex container, so its default `stretch`
+    // alignment would pull an auto-height panel all the way down to the cap.
+    // Opting out is what lets the surface take its natural height on a tall
+    // viewport while the cap still contains it on a short one.
+    expect(prop("align-self"), "the surface does not opt out of flex stretch").toEqual([
+      "flex-start",
+    ]);
 
     // The cap must subtract the top offset AND a bottom gutter from the
     // viewport, or the surface can still run off a 568px-tall phone.
@@ -274,7 +296,7 @@ describe("104-D — the shared Command surface consumes the Command signature", 
     expect(prop("max-block-size")).toEqual(["var(--command-palette-max-height)"]);
   });
 
-  it("the component no longer carries the offset or an intrinsic height", () => {
+  it("the component no longer carries its own top offset", () => {
     const src = readFileSync(
       resolve(process.cwd(), "src/components/app-shell/AppCommandPalette.tsx"),
       "utf8",
@@ -283,8 +305,26 @@ describe("104-D — the shared Command surface consumes the Command signature", 
     expect(className, "the surface className was not found").toContain(
       "hermes-command-surface",
     );
+    // The offset is part of the height budget, so it must live in one place.
+    // NOTE: `h-fit` is deliberately NOT asserted against. An earlier revision
+    // claimed it "defeats the height cap"; that was false — a max-size clamps a
+    // `fit-content` size perfectly well. The real cause of the stretching was
+    // the parent's default flex alignment, and that is asserted above.
     expect(className, "`mt-24` would double the top offset").not.toMatch(/\bmt-\d/);
-    expect(className, "`h-fit` would defeat the height cap").not.toMatch(/\bh-fit\b/);
+  });
+
+  it("the parent this surface renders into really is a row flex container", () => {
+    // The `align-self` opt-out above is only meaningful because of this. If the
+    // wrapper ever stops being a flex row, the assertion should be revisited
+    // rather than silently kept as cargo.
+    const src = readFileSync(
+      resolve(process.cwd(), "src/components/app-shell/AppCommandPalette.tsx"),
+      "utf8",
+    );
+    expect(src).toMatch(/className="fixed inset-0[^"]*\bflex\b/);
+    expect(src, "a column parent would change the stretch axis").not.toMatch(
+      /className="fixed inset-0[^"]*\bflex-col\b/,
+    );
   });
 
   it("every variable the command rules reference exists in the signature contract", () => {

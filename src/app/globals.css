@@ -1777,12 +1777,25 @@ html[lang^="en"] {
    `100dvh` is declared after a `100vh` fallback so a browser without dynamic
    viewport units still gets a real cap rather than no cap at all. The offsets
    reuse the shipped spacing scale (`--space-page` = the 96px top offset that
-   used to be a `mt-24` utility, `--space-card` = the bottom gutter). */
+   used to be a `mt-24` utility, `--space-card` = the bottom gutter).
+
+   `align-self: flex-start` is load-bearing, not tidiness. The portal root is a
+   ROW flex container (`fixed inset-0 flex justify-center`), whose default
+   cross-axis alignment is `stretch` — so an auto block size stretches all the
+   way to the cap even when the content is far shorter. At 1440x900 that cap is
+   784px against roughly 604px of natural content: about 180px of empty panel.
+   Opting out of stretch is what makes the surface take its NATURAL height on a
+   tall viewport while the cap above still contains it on a short one.
+
+   (An earlier revision blamed `h-fit` for this. That was wrong: a max-size
+   clamps a `fit-content` size perfectly well. Default flex stretching was
+   always the cause.) */
 .hermes-command-surface {
-  inline-size: min(var(--command-width), calc(100vw - 2 * var(--space-card)));
+  inline-size: min(var(--command-width), calc(100vw - var(--space-card) - var(--space-card)));
   border-radius: var(--command-radius);
   display: flex;
   flex-direction: column;
+  align-self: flex-start;
   overflow: hidden;
   margin-block-start: var(--space-page);
   max-block-size: calc(100vh - var(--space-page) - var(--space-card));

@@ -131,8 +131,13 @@ export function AppCommandPalette({ groups }: AppCommandPaletteProps) {
         data-hermes-signature="command"
         // `mt-24` moved into `.hermes-command-surface` as `margin-block-start:
         // var(--space-page)`, because the top offset is part of the height
-        // budget the surface now caps itself against. `h-fit` is gone for the
-        // same reason: the surface must be allowed to stop growing.
+        // budget the surface caps itself against.
+        //
+        // The surface takes its NATURAL height on a tall viewport and is capped
+        // to the available height on a short one. Both need `align-self:
+        // flex-start` in the CSS: this wrapper is a row flex container, so its
+        // default `stretch` alignment would otherwise pull the panel down to
+        // the cap — roughly 180px of empty space at 1440x900.
         className="hermes-command-surface ds-glass relative z-10 shadow-e4 outline-none"
       >
         <div className="border-b border-border-default p-3">

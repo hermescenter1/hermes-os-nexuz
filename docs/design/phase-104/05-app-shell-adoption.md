@@ -15,7 +15,7 @@ their first real consumers in the shared authenticated shell — and nothing els
 | | |
 |---|---|
 | Scope | `APP_SHELL + RAIL + COMMAND + SHARED_WORKSPACE_CHROME` |
-| Gate | `src/components/ds/__tests__/phase104-app-shell-adoption.test.tsx` — 28 assertions |
+| Gate | `src/components/ds/__tests__/phase104-app-shell-adoption.test.tsx` — 29 assertions |
 | Not started | 104-E, 104-F, 104-H, 104-I |
 
 ---
@@ -73,7 +73,8 @@ supplies its width and colour rather than replacing the utility.
 | field height | `h-9` (36px) | 56px mobile / 64px ≥768px | `--command-height-mobile`, `--command-height` |
 | result list | `max-h-80` (320px) | 480px, shrinkable | `--command-palette-max-height` |
 | top offset | `mt-24` utility | `margin-block-start` | `--space-page` |
-| height cap | **none** | `calc(100dvh − --space-page − --space-card)` | existing spacing tokens |
+| height cap | **none** | `calc(100dvh − --space-page − --space-card)`, natural height below it | existing spacing tokens |
+| cross-axis | stretched by the parent | `align-self: flex-start` | — |
 
 The field is deliberately the largest control in the product — that scale is what makes the
 signature recognisable.
@@ -86,6 +87,22 @@ The surface is now a column flex container with `overflow: hidden`, capped to th
 viewport height; the result list is the part that gives way (`min-block-size: 0`, `flex: 1 1 auto`,
 `overflow-y: auto`) and stays independently scrollable. `min-block-size: 0` is not decoration — a
 flex child refuses to shrink below its content without it, and the cap would do nothing.
+
+**The surface takes its natural height on a tall viewport and is capped only on a short one.**
+Both behaviours need `align-self: flex-start`. The portal root is a *row* flex container
+(`fixed inset-0 flex justify-center`), whose default cross-axis alignment is `stretch`, so an
+auto block size would be pulled all the way down to the cap regardless of content: at 1440×900 the
+cap is 784px against roughly 604px of natural content — about **180px of empty panel**. Opting out
+of stretch is the fix, and the gate asserts it.
+
+A correction to the previous revision of this document: it blamed `h-fit` for the containment
+problem. That was wrong — a max-size clamps a `fit-content` size perfectly well. Default flex
+stretching was always the cause, and `h-fit` is no longer asserted against.
+
+The horizontal calculation uses repeated subtraction
+(`calc(100vw - var(--space-card) - var(--space-card))`) rather than `2 * var(--space-card)`:
+identical computed geometry, and multiplication by a custom property inside `calc()` is the least
+portable form in that expression. The gate pins the portable form.
 
 A `100vh` cap is declared before the `100dvh` one so a browser without dynamic viewport units
 still gets a real cap rather than none. Dialog, combobox and listbox semantics, keyboard
@@ -194,8 +211,7 @@ together, and neither is stated without the other:
 - Target size: rows remain 264×32 / 72×32, above SC 2.5.8's 24×24 minimum.
 - Reduced motion: the rail transition keeps `motion-reduce:transition-none`; the property changed
   from `width` to `inline-size` so the transition mirrors correctly under RTL.
-- No overflow on **either** axis: the Command surface is clamped horizontally (`min(720px,
-  100vw − 40px)` → 280px at 320px) and vertically (`calc(100dvh − 96px − 20px)` → 452px at 568px,
+- No overflow on **either** axis: the Command surface is clamped horizontally (`min(720px, 100vw − 40px)` → 280px at 320px) and vertically (`calc(100dvh − 96px − 20px)` → 452px at 568px,
   with the result list shrinking to fit). Both are asserted from the CSS AST.
 - All adoption CSS uses **logical properties** (`inline-size`, `border-inline-end-*`), so Persian
   RTL mirrors without a second rule. No physical left/right was introduced.
