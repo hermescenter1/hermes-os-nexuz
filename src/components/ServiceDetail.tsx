@@ -1,11 +1,17 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { PublicPageShell } from "@/components/public-site";
+import { PublicCta } from "@/components/public-site";
 import { PageIntro } from "@/components/PageIntro";
 
 const POINTS = ["one", "two", "three"] as const;
 
 // Renders a service detail page from a translation key under services.items.
+//
+// R2 — these five pages previously dead-ended (only a "back to services"
+// link). They now carry the same conversion band every other public page
+// uses (PublicCta -> /demo), closing that gap without touching the engine
+// each service describes.
 export async function ServiceDetail({
   locale,
   serviceKey,
@@ -16,6 +22,7 @@ export async function ServiceDetail({
   setRequestLocale(locale);
   const t = await getTranslations(`services.items.${serviceKey}`);
   const s = await getTranslations("services");
+  const pub = await getTranslations("publicSite");
   const c = await getTranslations("common");
 
   return (
@@ -48,6 +55,12 @@ export async function ServiceDetail({
           </Link>
         </div>
       </section>
+
+      <PublicCta
+        title={s("capabilityChrome.genericCtaTitle")}
+        ctaLabel={pub("demoCta.requestDemo")}
+        href="/demo"
+      />
     </PublicPageShell>
   );
 }

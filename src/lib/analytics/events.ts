@@ -20,7 +20,12 @@ export type AnalyticsEvent =
   | "vendor_application_submitted"
   | "vendor_contact_clicked"
   | "vendor_admin_approved"
-  | "vendor_admin_rejected";
+  | "vendor_admin_rejected"
+  // R2 — public capability explainer pages (gap-closure, exposes existing
+  // capabilities; reuses this same gtag-based, consent-gated pipeline).
+  | "capability_view"
+  | "capability_related_click"
+  | "capability_cta_click";
 
 export interface EventParams {
   method?:      string;
@@ -55,6 +60,10 @@ export const track = {
   vendorContactClicked:     (id: string)       => trackEvent("vendor_contact_clicked",   { item_id: id }),
   vendorAdminApproved:      (id: string)       => trackEvent("vendor_admin_approved",    { item_id: id }),
   vendorAdminRejected:      (id: string)       => trackEvent("vendor_admin_rejected",    { item_id: id }),
+  capabilityView:           (key: string)      => trackEvent("capability_view",           { item_id: key }),
+  capabilityRelatedClick:   (from: string, to: string) =>
+    trackEvent("capability_related_click", { item_id: from, item_name: to }),
+  capabilityCtaClick:       (key: string)      => trackEvent("capability_cta_click",      { item_id: key }),
 } as const;
 
 export const TRACKED_EVENTS: Array<{ event: AnalyticsEvent; description: string }> = [
@@ -77,4 +86,7 @@ export const TRACKED_EVENTS: Array<{ event: AnalyticsEvent; description: string 
   { event: "vendor_contact_clicked",     description: "Vendor contact clicked" },
   { event: "vendor_admin_approved",      description: "Vendor approved by admin" },
   { event: "vendor_admin_rejected",      description: "Vendor rejected by admin" },
+  { event: "capability_view",            description: "Public capability page viewed" },
+  { event: "capability_related_click",   description: "Navigated from one capability page to a related one" },
+  { event: "capability_cta_click",       description: "Demo CTA clicked from a capability page" },
 ];

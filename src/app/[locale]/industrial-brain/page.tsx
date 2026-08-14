@@ -4,6 +4,7 @@ import { Link }             from "@/i18n/navigation";
 import { getCurrentUser }   from "@/lib/auth/session";
 import { can }              from "@/lib/auth/roles";
 import { IndustrialBrainWorkspace } from "@/components/industrial-brain/IndustrialBrainWorkspace";
+import { CapabilityLink } from "@/components/analytics/CapabilityLink";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -156,6 +157,19 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
                   {t("hero.exploreKnowledge")}
                 </Link>
               </div>
+              {/* R5 — human-facing reciprocal link. Machine-facing distinction
+                  (canonical, sitemap, llms.txt) is Phase 105's; this is the
+                  piece Phase 105 deliberately left out of scope. */}
+              <CapabilityLink
+                href="/brain"
+                from="industrialBrain"
+                kind="related"
+                to="brain"
+                className="mt-5 inline-flex items-center gap-1.5 font-mono text-[11px] text-cyan-400 hover:underline"
+              >
+                {t("crossLink")}
+                <span aria-hidden="true" className="rtl:-scale-x-100">→</span>
+              </CapabilityLink>
             </div>
           </div>
         </div>

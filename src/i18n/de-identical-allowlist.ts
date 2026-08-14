@@ -353,6 +353,12 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "nav.items.dashboard": "accepted-german-loanword",
   "nav.items.demo": "german-word-identical",
   "nav.items.industrialBrain": "brand-or-product",
+  // R2 — public capability pages (gap-closure roadmap). Same acronym class as
+  // nav.items.atsPortal above (protocols/standards with no German equivalent).
+  "nav.items.capCmms": "protocol-or-standard",
+  "nav.items.capCrm": "protocol-or-standard",
+  "nav.items.capEdms": "protocol-or-standard",
+  "nav.items.capErp": "protocol-or-standard",
   "nav.items.knowledgeStudio": "brand-or-product",
   "nav.items.servicesItem": "accepted-german-loanword",
   "nav.items.unknownCenter": "brand-or-product",
@@ -404,6 +410,34 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "publicSite.platform.layers.engineering.name": "accepted-german-loanword",
   "publicSite.platform.layers.intelligence.modules": "brand-or-product",
   "publicSite.trustStrip.protocols": "protocol-or-standard",
+  // F2 — the eight capabilities in the REAL public header registry; these four
+  // are acronyms German keeps verbatim (same class as nav.items.capCmms).
+  "publicSite.header.nav.capCmms": "protocol-or-standard",
+  "publicSite.header.nav.capCrm": "protocol-or-standard",
+  "publicSite.header.nav.capEdms": "protocol-or-standard",
+  "publicSite.header.nav.capErp": "protocol-or-standard",
+  // R2 — public capability pages. CMMS/EDMS/ERP/CRM are technical
+  // abbreviations (same class as services.items.scadaHmi below); "Industrial
+  // Brain" is the existing product name, never translated (see
+  // nav.items.industrialBrain above).
+  "services.capabilities.cmms.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.cmms.name": "protocol-or-standard",
+  "services.capabilities.crm.connects.items.0.name": "protocol-or-standard",
+  "services.capabilities.crm.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.crm.name": "protocol-or-standard",
+  "services.capabilities.digitalTwin.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.digitalTwin.connects.items.2.name": "brand-or-product",
+  "services.capabilities.edms.connects.items.0.name": "protocol-or-standard",
+  "services.capabilities.edms.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.edms.connects.items.2.name": "brand-or-product",
+  "services.capabilities.edms.name": "protocol-or-standard",
+  "services.capabilities.erp.connects.items.0.name": "protocol-or-standard",
+  "services.capabilities.erp.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.erp.name": "protocol-or-standard",
+  "services.capabilities.multiSite.connects.items.0.name": "protocol-or-standard",
+  "services.capabilities.multiSite.connects.items.2.name": "brand-or-product",
+  "services.capabilities.otEdge.connects.items.2.name": "brand-or-product",
+  "services.capabilities.predictiveMaintenance.connects.items.1.name": "protocol-or-standard",
   "services.items.knowledgeCloud.name": "brand-or-product",
   "services.items.knowledgeCloud.title": "brand-or-product",
   "services.items.scadaHmi.name": "protocol-or-standard",
@@ -414,13 +448,16 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
 
 /** Audit summary (kept in sync by the companion test). */
 export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
-  // Phase 103: +1 — copilot.liveVoice.brand ("Hermes Live Voice Intelligence").
-  "brand-or-product": 64,
+  // R2: +4 — "Industrial Brain" (existing product name) in capability connect
+  // cards.
+  "brand-or-product": 68,
   "contact-url-or-propernoun": 15,
   "german-word-identical": 103,
   "non-linguistic": 19,
   "accepted-german-loanword": 74,
-  "protocol-or-standard": 66,
+  // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
+  // F2: +4  — the same acronyms in the real public header registry.
+  "protocol-or-standard": 88,
   "vendor-or-thirdparty": 16,
   "brand-eyebrow": 8
 } as const;

@@ -12,6 +12,7 @@
 
 export type PublicNavGroupKey =
   | "platform"
+  | "capabilities"
   | "intelligence"
   | "knowledge"
   | "resources"
@@ -35,6 +36,28 @@ export const PUBLIC_NAV_GROUPS: readonly PublicNavGroup[] = [
       { labelKey: "platformOverview", href: "/platform" },
       { labelKey: "architecture",     href: "/architecture" },
       { labelKey: "services",         href: "/services" },
+    ],
+  },
+  {
+    // R2 corrective (F2) — the eight ALREADY-IMPLEMENTED platform capabilities.
+    //
+    // These were previously added to `lib/navigation/site-nav.ts`, which is
+    // rendered only by the legacy SiteNav/SiteHeader/PageShell chain — NOT by
+    // the public shell. PublicHeader renders PublicNavMenus, which reads THIS
+    // registry, so this is the file that actually makes them discoverable to a
+    // public visitor. Kept as its own disclosure group rather than appended to
+    // "platform" (which is overview/architecture/services) so neither panel
+    // becomes an unusable 11-item list.
+    groupKey: "capabilities",
+    items: [
+      { labelKey: "capDigitalTwin",           href: "/services/digital-twin" },
+      { labelKey: "capPredictiveMaintenance", href: "/services/predictive-maintenance" },
+      { labelKey: "capCmms",                  href: "/services/cmms" },
+      { labelKey: "capMultiSite",             href: "/services/multi-site" },
+      { labelKey: "capEdms",                  href: "/services/edms" },
+      { labelKey: "capErp",                   href: "/services/erp" },
+      { labelKey: "capOtEdge",                href: "/services/ot-edge" },
+      { labelKey: "capCrm",                   href: "/services/crm" },
     ],
   },
   {

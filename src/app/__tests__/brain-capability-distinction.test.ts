@@ -44,7 +44,14 @@ describe("both Brain capabilities are advertised to crawlers", () => {
 
   it("still advertises no private, admin, auth or API surface", async () => {
     for (const url of (await sitemap()).map((e) => e.url)) {
-      expect(url).not.toMatch(/\/admin|\/dashboard|\/auth\/|\/api\/|\/crm|\/erp/);
+      // R2 — matched as a locale-rooted path SEGMENT, not a bare substring:
+      // the previous substring check flagged the legitimately public
+      // /services/erp and /services/crm capability pages (added by R2)
+      // because their URLs merely CONTAIN "/erp"/"/crm". The private
+      // workspace routes this guards against are /{locale}/erp, /{locale}/crm,
+      // /{locale}/admin, /{locale}/dashboard, /{locale}/auth/* and /api/* —
+      // none of which this pattern change stops catching.
+      expect(url).not.toMatch(/\/(fa|en|de)\/(admin|dashboard|auth|crm|erp)(\/|$)|\/api\//);
       // `/engineering` is explicitly noindex and `/automation` is a protected
       // route — neither may be advertised.
       expect(url).not.toMatch(/\/(fa|en|de)\/(engineering|automation)(\/|$)/);

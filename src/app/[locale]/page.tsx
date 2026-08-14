@@ -51,16 +51,23 @@ const PIPELINE_KEYS = [
 ] as const;
 
 // 87D.1 — homepage capability groups (all truthful, all existing routes).
+//
+// R2 corrective (F3): these two groups declared `href` but their `.map()`
+// discarded it, so the cards rendered as dead text — the homepage had NO link
+// into any capability. The map now forwards href + ctaLabel exactly like the
+// LEARNING/ECOSYSTEM groups below always did. Cards whose capability has a
+// dedicated public page now point at it; `asset` keeps /platform because no
+// dedicated Asset Intelligence page exists, and `knowledge` keeps /library.
 const CHALLENGE_KEYS = ["fragmented", "opaque", "risky", "lost"] as const;
 const OPERATIONS_CARDS = [
   { key: "asset",      accent: "success", href: "/platform" },
-  { key: "predictive", accent: "brand",   href: "/platform" },
-  { key: "multisite",  accent: "azure",   href: "/platform" },
+  { key: "predictive", accent: "brand",   href: "/services/predictive-maintenance" },
+  { key: "multisite",  accent: "azure",   href: "/services/multi-site" },
 ] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
 const ENGINEERING_CARDS = [
   { key: "knowledge", accent: "azure",   href: "/library" },
-  { key: "twin",      accent: "violet",  href: "/platform" },
-  { key: "edge",      accent: "success", href: "/architecture" },
+  { key: "twin",      accent: "violet",  href: "/services/digital-twin" },
+  { key: "edge",      accent: "success", href: "/services/ot-edge" },
 ] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
 const LEARNING_CARDS = [
   { key: "academy",  accent: "brand",  href: "/academy" },
@@ -209,11 +216,13 @@ export default async function HomePage({
             <CapabilityGrid
               className="mt-10"
               columns={3}
-              items={OPERATIONS_CARDS.map(({ key, accent }) => ({
+              items={OPERATIONS_CARDS.map(({ key, accent, href }) => ({
                 key,
                 accent,
+                href,
                 title: t(`operations.cards.${key}.name`),
                 body: t(`operations.cards.${key}.desc`),
+                ctaLabel: t(`operations.cards.${key}.cta`),
               }))}
             />
           </PublicPageContainer>
@@ -225,11 +234,13 @@ export default async function HomePage({
             <CapabilityGrid
               className="mt-10"
               columns={3}
-              items={ENGINEERING_CARDS.map(({ key, accent }) => ({
+              items={ENGINEERING_CARDS.map(({ key, accent, href }) => ({
                 key,
                 accent,
+                href,
                 title: t(`engineering.cards.${key}.name`),
                 body: t(`engineering.cards.${key}.desc`),
+                ctaLabel: t(`engineering.cards.${key}.cta`),
               }))}
             />
           </PublicPageContainer>
