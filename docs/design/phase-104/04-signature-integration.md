@@ -154,7 +154,7 @@ its own signature layer introduces no glow, bloom, scanline or text-shadow.
 External review found that the contract owned only **9 of the 26** active `--glass-*` variables,
 and proved it by setting `--glass-card-fill-to` to magenta: **all 93 assertions of the then-current
 gate passed** while every card in the product would have rendered with a magenta gradient. (Those
-93 are the historical figure at commit `f15b73e`; the gate now stands at 143.)
+93 are the historical figure at commit `f15b73e`; the gate now stands at 153.)
 
 `GLASS_VARIABLE_CONTRACT` is now **complete (26/26)**, and the gate requires **set equality**
 between the owned keys and the active `--glass-*` declarations parsed from the CSS — so a
@@ -167,7 +167,7 @@ every `--glass-*` referenced by a `.ds-glass-*` rule must be owned.
 ## 5. Mutation evidence
 
 The gate was mutation-tested against the real `globals.css`; each mutation was reverted. Results
-below were **re-measured against the current 143-assertion gate**, not carried over from the
+below were **re-measured against the current 153-assertion gate**, not carried over from the
 104-C run:
 
 | Mutation | Result |
