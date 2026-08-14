@@ -1763,17 +1763,39 @@ html[lang^="en"] {
 
 /* ── Hermes Command — the shared command/search surface ──
    Deliberately larger than any other control in the product; that scale is
-   what makes the signature recognisable. Width is clamped to the viewport so
-   the surface can never cause horizontal overflow on a narrow phone. */
+   what makes the signature recognisable.
+
+   BOTH AXES ARE CONTAINED. Width was clamped from the start; height was not,
+   and the arithmetic said so: a 96px top offset + the 56px field + the 480px
+   result list + padding totals ~700px, which overflows a 320x568 phone by
+   132px. The surface is therefore a column flex container capped to the
+   available viewport height, and the result list is the part allowed to
+   shrink and scroll. `min-block-size: 0` is what actually lets a flex child
+   shrink below its content — without it the list would refuse to compress and
+   the cap would do nothing.
+
+   `100dvh` is declared after a `100vh` fallback so a browser without dynamic
+   viewport units still gets a real cap rather than no cap at all. The offsets
+   reuse the shipped spacing scale (`--space-page` = the 96px top offset that
+   used to be a `mt-24` utility, `--space-card` = the bottom gutter). */
 .hermes-command-surface {
   inline-size: min(var(--command-width), calc(100vw - 2 * var(--space-card)));
   border-radius: var(--command-radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-block-start: var(--space-page);
+  max-block-size: calc(100vh - var(--space-page) - var(--space-card));
+  max-block-size: calc(100dvh - var(--space-page) - var(--space-card));
 }
 .hermes-command-field {
   block-size: var(--command-height-mobile);
 }
 .hermes-command-list {
   max-block-size: var(--command-palette-max-height);
+  min-block-size: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
 }
 @media (min-width: 768px) {
   .hermes-command-field {

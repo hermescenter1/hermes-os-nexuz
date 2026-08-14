@@ -15,7 +15,7 @@ their first real consumers in the shared authenticated shell — and nothing els
 | | |
 |---|---|
 | Scope | `APP_SHELL + RAIL + COMMAND + SHARED_WORKSPACE_CHROME` |
-| Gate | `src/components/ds/__tests__/phase104-app-shell-adoption.test.tsx` — 22 assertions |
+| Gate | `src/components/ds/__tests__/phase104-app-shell-adoption.test.tsx` — 28 assertions |
 | Not started | 104-E, 104-F, 104-H, 104-I |
 
 ---
@@ -27,7 +27,7 @@ Ownership was discovered from actual imports, not filenames.
 | Component | Runtime owner | Phase 104 target | Decision |
 |---|---|---|---|
 | `app-shell/AppSidebar.tsx` | `AppShell` (standard mode) | **Rail**, **Beacon**, Edge | **MIGRATE_104_D** |
-| `app-shell/AppCommandPalette.tsx` | `AppShell` (both modes) | **Command**, Glass | **MIGRATE_104_D** |
+| `app-shell/AppCommandPalette.tsx` | `AppShell` (both modes) | **Command** | **MIGRATE_104_D** |
 | `app-shell/AppShell.tsx` | route layouts across 6+ modules | — | REUSE_UNCHANGED — composition only, already on Deep Navy surfaces |
 | `app-shell/AppTopbar.tsx` | `AppShell` | — | REUSE_UNCHANGED — already `surface-primary` + `border-border-default`; no Rail/Command role |
 | `app-shell/SearchTrigger.tsx` | `AppTopbar` | — | REUSE_UNCHANGED — a trigger, not the Command surface; it dispatches the same event |
@@ -71,11 +71,29 @@ supplies its width and colour rather than replacing the utility.
 | surface width | `max-w-xl` (576px) | `min(720px, 100vw − 40px)` | `--command-width` |
 | surface radius | `rounded-lg` (12px) | 16px | `--command-radius` |
 | field height | `h-9` (36px) | 56px mobile / 64px ≥768px | `--command-height-mobile`, `--command-height` |
-| result list | `max-h-80` (320px) | 480px | `--command-palette-max-height` |
+| result list | `max-h-80` (320px) | 480px, shrinkable | `--command-palette-max-height` |
+| top offset | `mt-24` utility | `margin-block-start` | `--space-page` |
+| height cap | **none** | `calc(100dvh − --space-page − --space-card)` | existing spacing tokens |
 
 The field is deliberately the largest control in the product — that scale is what makes the
-signature recognisable. The width is clamped to the viewport, so the surface cannot cause
-horizontal overflow: at 320px it resolves to 280px.
+signature recognisable.
+
+**Both axes are contained.** Width was clamped from the first revision; height was not, and
+review caught it. The arithmetic: 96px top offset + 24px padding + 56px field + ~20px hint + 8px
+gap + 480px list + 16px list padding = **~700px, which overflows a 320×568 phone by 132px**.
+
+The surface is now a column flex container with `overflow: hidden`, capped to the available
+viewport height; the result list is the part that gives way (`min-block-size: 0`, `flex: 1 1 auto`,
+`overflow-y: auto`) and stays independently scrollable. `min-block-size: 0` is not decoration — a
+flex child refuses to shrink below its content without it, and the cap would do nothing.
+
+A `100vh` cap is declared before the `100dvh` one so a browser without dynamic viewport units
+still gets a real cap rather than none. Dialog, combobox and listbox semantics, keyboard
+handling, Escape, backdrop close and focus restoration are untouched.
+
+`AppCommandPalette` adopts **Command only**. It continues to use the pre-existing `.ds-glass`
+overlay utility, which is *not* one of the contracted `.ds-glass-*` tiers — so **no new Phase 104
+Glass adoption is claimed here**. Glass remains consumed solely by the `.ds-glass-*` family.
 
 ### 2.3 Beacon — the active-route locator
 
@@ -83,9 +101,16 @@ horizontal overflow: at 320px it resolves to 280px.
 is a semantic adoption, not a recolour. The indicator width moves from `w-[3px]` to
 `--rail-indicator-width` (2px).
 
-Beacon appears **exactly once per view** (asserted), is `aria-hidden`, and sits inside the element
-already carrying `aria-current="page"`. It is a locator, never a glow: the gate rejects any
-`box-shadow`, `filter` or `text-shadow` in its rule.
+Beacon appears **exactly once per view in both the expanded and the collapsed rail** (asserted in
+both states), is `aria-hidden`, and sits inside the element already carrying `aria-current="page"`.
+It is a locator, never a glow: the gate rejects any `box-shadow`, `filter` or `text-shadow` in its
+rule.
+
+The first revision gated it on `!collapsed`, and review was right that this left the collapsed
+rail with **no structural channel at all**: the glyph tile is always `font-semibold`, so the
+link-level weight change was invisible and only border, fill and text *colour* distinguished the
+active item. A 2px inline-start bar is geometry, and geometry survives greyscale and
+colour-vision deficiency. `start-0` keeps it logical, so RTL mirrors it.
 
 ### 2.4 Deliberately NOT adopted
 
@@ -155,7 +180,11 @@ the alerts API remains `GET`-only.
 
 ## 5. Accessibility
 
-104-H remains the final cross-product closure. This increment introduces no debt:
+104-H remains the final cross-product closure. The first revision of this section claimed the
+increment introduced "no responsive debt" while the Command surface was in fact unconstrained on
+the vertical axis and overflowed a 320×568 viewport by 132px. That claim was wrong. It is now
+true only because the containment gate exists and is asserted; the claim and the gate ship
+together, and neither is stated without the other:
 
 - `aria-current="page"` retained on the active item; Beacon is `aria-hidden` and additive.
 - Active state carries **three** channels: `aria-current`, semibold weight and the interactive
@@ -165,7 +194,9 @@ the alerts API remains `GET`-only.
 - Target size: rows remain 264×32 / 72×32, above SC 2.5.8's 24×24 minimum.
 - Reduced motion: the rail transition keeps `motion-reduce:transition-none`; the property changed
   from `width` to `inline-size` so the transition mirrors correctly under RTL.
-- No horizontal overflow: the Command surface is viewport-clamped.
+- No overflow on **either** axis: the Command surface is clamped horizontally (`min(720px,
+  100vw − 40px)` → 280px at 320px) and vertically (`calc(100dvh − 96px − 20px)` → 452px at 568px,
+  with the result list shrinking to fit). Both are asserted from the CSS AST.
 - All adoption CSS uses **logical properties** (`inline-size`, `border-inline-end-*`), so Persian
   RTL mirrors without a second rule. No physical left/right was introduced.
 

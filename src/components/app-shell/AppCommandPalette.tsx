@@ -129,7 +129,11 @@ export function AppCommandPalette({ groups }: AppCommandPaletteProps) {
         aria-label={t("shell.commandPaletteTitle")}
         tabIndex={-1}
         data-hermes-signature="command"
-        className="hermes-command-surface ds-glass relative z-10 mt-24 h-fit shadow-e4 outline-none"
+        // `mt-24` moved into `.hermes-command-surface` as `margin-block-start:
+        // var(--space-page)`, because the top offset is part of the height
+        // budget the surface now caps itself against. `h-fit` is gone for the
+        // same reason: the surface must be allowed to stop growing.
+        className="hermes-command-surface ds-glass relative z-10 shadow-e4 outline-none"
       >
         <div className="border-b border-border-default p-3">
           <input

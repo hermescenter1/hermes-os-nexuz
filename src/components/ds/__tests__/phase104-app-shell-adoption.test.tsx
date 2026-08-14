@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import postcss from "postcss";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { keyDown, mount } from "./_render";
+import { click, keyDown, mount } from "./_render";
 import {
   GLASS_VARIABLE_CONTRACT,
   SIGNATURE_CONTRACT,
@@ -188,7 +188,11 @@ describe("104-D — the shared Command surface consumes the Command signature", 
     await unmount();
   });
 
-  it("the command rules consume ONLY contract variables — no literals", () => {
+  it("the command rules hard-code no dimension, colour or shadow", () => {
+    // Asserted on VALUES, not on form. Layout keywords (`display: flex`,
+    // `overflow: hidden`, `min-block-size: 0`) carry no design decision and
+    // must be allowed; what may never appear is a raw px/rem length, a colour
+    // or a shadow recipe, because those are the things the contract owns.
     for (const selector of [
       ".hermes-command-surface",
       ".hermes-command-field",
@@ -197,8 +201,14 @@ describe("104-D — the shared Command surface consumes the Command signature", 
       const decls = ruleDecls(selector);
       expect(decls.length, `${selector} is not declared`).toBeGreaterThan(0);
       for (const d of decls) {
-        expect(d.value, `${selector} { ${d.prop} } must reference a variable`).toMatch(
-          /var\(--/,
+        expect(d.value, `${selector} { ${d.prop} } hard-codes a length`).not.toMatch(
+          /\b\d*\.?\d+(px|rem|em)\b/,
+        );
+        expect(d.value, `${selector} { ${d.prop} } hard-codes a colour`).not.toMatch(
+          /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i,
+        );
+        expect(`${d.prop}`, `${selector} must not define a shadow`).not.toMatch(
+          /shadow/i,
         );
       }
     }
@@ -219,6 +229,62 @@ describe("104-D — the shared Command surface consumes the Command signature", 
       });
     });
     expect(found, "--command-height is never applied at a desktop breakpoint").toBe(true);
+  });
+
+  it("the surface is contained on the VERTICAL axis, not only the horizontal one", () => {
+    const surface = ruleDecls(".hermes-command-surface");
+    const prop = (p: string) => surface.filter((d) => d.prop === p).map((d) => d.value);
+
+    // A column flex container is what makes the field fixed and the list the
+    // part that gives way.
+    expect(prop("display")).toEqual(["flex"]);
+    expect(prop("flex-direction")).toEqual(["column"]);
+    expect(prop("overflow")).toEqual(["hidden"]);
+
+    // The cap must subtract the top offset AND a bottom gutter from the
+    // viewport, or the surface can still run off a 568px-tall phone.
+    const caps = prop("max-block-size");
+    expect(caps.length, "the surface declares no height cap").toBeGreaterThan(0);
+    for (const c of caps) {
+      expect(c).toMatch(/calc\(/);
+      expect(c).toMatch(/var\(--space-page\)/);
+      expect(c).toMatch(/var\(--space-card\)/);
+      expect(c, "the cap must subtract, not add").toMatch(/-\s*var\(/);
+    }
+    // A plain `vh` fallback must precede the dynamic unit, so a browser without
+    // `dvh` still gets a real cap instead of none.
+    expect(caps.some((c) => /\b100vh\b/.test(c)), "no 100vh fallback").toBe(true);
+    expect(caps.some((c) => /\b100dvh\b/.test(c)), "no 100dvh cap").toBe(true);
+    expect(caps.findIndex((c) => /100vh/.test(c))).toBeLessThan(
+      caps.findIndex((c) => /100dvh/.test(c)),
+    );
+
+    // The top offset moved out of the component so it is part of the budget.
+    expect(prop("margin-block-start")).toEqual(["var(--space-page)"]);
+  });
+
+  it("the result list can actually shrink and scrolls independently", () => {
+    const list = ruleDecls(".hermes-command-list");
+    const prop = (p: string) => list.filter((d) => d.prop === p).map((d) => d.value);
+    // Without `min-block-size: 0` a flex child refuses to compress below its
+    // content and the height cap above would do nothing at all.
+    expect(prop("min-block-size")).toEqual(["0"]);
+    expect(prop("flex")).toEqual(["1 1 auto"]);
+    expect(prop("overflow-y")).toEqual(["auto"]);
+    expect(prop("max-block-size")).toEqual(["var(--command-palette-max-height)"]);
+  });
+
+  it("the component no longer carries the offset or an intrinsic height", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/components/app-shell/AppCommandPalette.tsx"),
+      "utf8",
+    );
+    const className = src.match(/className="(hermes-command-surface[^"]*)"/)?.[1] ?? "";
+    expect(className, "the surface className was not found").toContain(
+      "hermes-command-surface",
+    );
+    expect(className, "`mt-24` would double the top offset").not.toMatch(/\bmt-\d/);
+    expect(className, "`h-fit` would defeat the height cap").not.toMatch(/\bh-fit\b/);
   });
 
   it("every variable the command rules reference exists in the signature contract", () => {
@@ -250,6 +316,42 @@ describe("104-D — Beacon stays a semantic locator, not a glow", () => {
     // It must sit inside the element that is already marked as the current page.
     expect(beacon.closest('[aria-current="page"]')).toBeTruthy();
     await unmount();
+  });
+
+  it("survives collapse: the active item keeps exactly one structural Beacon", async () => {
+    // The regression this pins: the Beacon used to be gated on `!collapsed`,
+    // which left the collapsed rail distinguishing the active item by border,
+    // fill and text COLOUR alone — the glyph tile is always `font-semibold`, so
+    // the link-level weight change was invisible.
+    const { container, unmount } = await mount(
+      <AppSidebar groups={GROUPS} organizationName={null} siteName={null} />,
+    );
+    const toggle = container.querySelector<HTMLElement>("[aria-expanded]")!;
+    await click(toggle);
+
+    const rail = container.querySelector<HTMLElement>('[data-hermes-signature="rail"]')!;
+    expect(rail.getAttribute("data-collapsed")).toBe("true");
+    expect(rail.getAttribute("data-expanded")).toBe("false");
+    // The preference is persisted exactly as before the visual adoption.
+    expect(window.localStorage.getItem("hermes.appshell.sidebar.collapsed")).toBe("1");
+
+    const current = container.querySelector<HTMLElement>('[aria-current="page"]');
+    expect(current, "collapse lost the current-page marker").toBeTruthy();
+    const beacons = current!.querySelectorAll('[data-hermes-signature="beacon"]');
+    expect(beacons.length, "collapsed active item has no structural locator").toBe(1);
+    expect((beacons[0] as HTMLElement).getAttribute("aria-hidden")).toBe("true");
+    expect((beacons[0] as HTMLElement).classList.contains("hermes-rail-beacon")).toBe(true);
+
+    // Still at most one Beacon in the whole view, collapsed or not.
+    expect(container.querySelectorAll('[data-hermes-signature="beacon"]').length).toBe(1);
+
+    // …and inactive items never receive one.
+    for (const a of Array.from(container.querySelectorAll("a"))) {
+      if (a.getAttribute("aria-current") === "page") continue;
+      expect(a.querySelector('[data-hermes-signature="beacon"]')).toBeNull();
+    }
+    await unmount();
+    window.localStorage.clear();
   });
 
   it("the Beacon rule carries no glow, bloom, spread shadow or filter", () => {
@@ -348,13 +450,24 @@ describe("104-D — legacy glow utilities do not spread", () => {
     "landing-scanlines",
   ] as const;
 
+  /**
+   * Every extension that can carry shipped source in this repository. An
+   * earlier revision scanned only `.ts`/`.tsx`, so a legacy glow arriving in a
+   * `.jsx` or `.js` file would have been invisible to the gate — the same class
+   * of latent hole as a route filter that lists one extension out of four.
+   * Nothing under `src/` uses these today; the coverage is deliberate.
+   */
+  const SOURCE_EXTENSIONS = ["tsx", "ts", "jsx", "js", "mjs", "cjs"] as const;
+  const SOURCE_RE = new RegExp(`\\.(${SOURCE_EXTENSIONS.join("|")})$`);
+  const TEST_RE = new RegExp(`\\.test\\.(${SOURCE_EXTENSIONS.join("|")})$`);
+
   /** Shipped source files, excluding tests and the contracts that merely name them. */
   function walk(dir: string, acc: string[] = []): string[] {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       if (e.isDirectory()) {
         if (e.name === "node_modules" || e.name === ".next" || e.name === "__tests__") continue;
         walk(join(dir, e.name), acc);
-      } else if (/\.(tsx|ts)$/.test(e.name) && !/\.test\.(tsx|ts)$/.test(e.name)) {
+      } else if (SOURCE_RE.test(e.name) && !TEST_RE.test(e.name)) {
         acc.push(join(dir, e.name));
       }
     }
@@ -381,6 +494,32 @@ describe("104-D — legacy glow utilities do not spread", () => {
 
   it("the scan actually covers shipped source", () => {
     expect(sourceFiles.length).toBeGreaterThan(100);
+  });
+
+  it("the scanner accepts every shipped source extension, not just TypeScript", () => {
+    for (const ext of SOURCE_EXTENSIONS) {
+      expect(SOURCE_RE.test(`Widget.${ext}`), `.${ext} is not scanned`).toBe(true);
+      expect(TEST_RE.test(`Widget.test.${ext}`), `.test.${ext} is not excluded`).toBe(true);
+    }
+    // …and it does not sweep in things that are not source.
+    for (const notSource of ["styles.css", "data.json", "README.md", "logo.svg"]) {
+      expect(SOURCE_RE.test(notSource), `${notSource} should not be scanned`).toBe(false);
+    }
+  });
+
+  it("a legacy consumer arriving in a JSX or JS file would be detected", () => {
+    // The detection predicate, applied to synthetic sources rather than by
+    // writing files into the repository. Proves the regex — not just the
+    // extension filter — fires on the shapes a .jsx/.js consumer would take.
+    const detects = (src: string): boolean =>
+      LEGACY.some((c) => new RegExp(`\\b${c}\\b`).test(src));
+
+    expect(detects('export const A = () => <div className="glow-signal" />;')).toBe(true);
+    expect(detects("const cls = 'landing-scanlines';")).toBe(true);
+    expect(detects('classNames({ "text-glow-ice": on })')).toBe(true);
+    // A word that merely contains a utility name must not trip it.
+    expect(detects('const x = "afterglow-signalling";')).toBe(false);
+    expect(detects('<div className="hermes-rail-beacon" />')).toBe(false);
   });
 
   it("no 104-D in-scope component consumes a legacy glow or scanline utility", () => {
