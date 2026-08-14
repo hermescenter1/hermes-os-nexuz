@@ -1706,3 +1706,77 @@ html[lang^="en"] {
   --font-display: var(--font-inter, "Inter"), system-ui, sans-serif;
   --font-body:    var(--font-inter, "Inter"), system-ui, sans-serif;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-D — SHARED APP-SHELL ADOPTION (Rail · Command · Beacon · Edge)
+   ───────────────────────────────────────────────────────────────────────────
+   The first intentionally VISIBLE Phase 104 adoption. These selectors do one
+   job: let the shared shell CONSUME the signature variables declared by the
+   104-C layer. They introduce no colour, no shadow recipe, no gradient and no
+   motion constant of their own — every value below is a `var()` reference into
+   the machine-derived contract, so a component can express "the Rail" instead
+   of restating a pixel nobody can trace.
+
+   Owned and asserted by:
+     src/components/ds/phase104-signature-contract.ts
+     src/components/ds/__tests__/phase104-app-shell-adoption.test.tsx
+
+   Deliberately NOT adopted, and why:
+     --rail-item-size (44px)  The shipped nav rows are 264×32 expanded and
+                              72×32 collapsed. Both clear WCAG 2.2 SC 2.5.8
+                              (24×24 minimum) comfortably, and forcing 44px
+                              would cut roughly a third of the visible
+                              navigation on a 900px viewport. The increment
+                              brief forbids reducing information density, so
+                              the row height is left alone and this variable
+                              stays unconsumed rather than quietly applied.
+     --rail-icon-size (20px)  The collapsed rail renders a 28px initial-letter
+                              tile, not a 20px icon. Applying the icon metric
+                              to a glyph tile would be a false adoption.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hermes Rail — the shared persistent navigation rail ── */
+/* The `border-e` utility stays on the element: it is a LOGICAL edge utility and
+   the Phase 87C shell gate pins it there to prove the rail never uses physical
+   left/right. This rule supplies its width and colour from the Rail and Edge
+   signatures instead of restating them. */
+.hermes-rail {
+  inline-size: var(--rail-width);
+  background: var(--rail-surface);
+  border-inline-end-width: var(--edge-width);
+  border-inline-end-color: var(--rail-edge);
+}
+.hermes-rail[data-expanded="true"] {
+  inline-size: var(--rail-width-expanded);
+}
+.hermes-rail-items {
+  gap: var(--rail-item-gap);
+}
+/* The active-route locator. `--beacon-core` aliases the shipped brand primary,
+   so this is a semantic adoption, not a colour change: the computed value is
+   identical to what the rail already rendered. Beacon is a FOCUS/LOCATOR
+   device — it marks the current route and nothing else in this shell. */
+.hermes-rail-beacon {
+  inline-size: var(--rail-indicator-width);
+  background: var(--beacon-core);
+}
+
+/* ── Hermes Command — the shared command/search surface ──
+   Deliberately larger than any other control in the product; that scale is
+   what makes the signature recognisable. Width is clamped to the viewport so
+   the surface can never cause horizontal overflow on a narrow phone. */
+.hermes-command-surface {
+  inline-size: min(var(--command-width), calc(100vw - 2 * var(--space-card)));
+  border-radius: var(--command-radius);
+}
+.hermes-command-field {
+  block-size: var(--command-height-mobile);
+}
+.hermes-command-list {
+  max-block-size: var(--command-palette-max-height);
+}
+@media (min-width: 768px) {
+  .hermes-command-field {
+    block-size: var(--command-height);
+  }
+}

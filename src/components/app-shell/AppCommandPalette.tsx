@@ -128,7 +128,8 @@ export function AppCommandPalette({ groups }: AppCommandPaletteProps) {
         aria-modal="true"
         aria-label={t("shell.commandPaletteTitle")}
         tabIndex={-1}
-        className="ds-glass relative z-10 mt-24 h-fit w-full max-w-xl rounded-lg shadow-e4 outline-none"
+        data-hermes-signature="command"
+        className="hermes-command-surface ds-glass relative z-10 mt-24 h-fit shadow-e4 outline-none"
       >
         <div className="border-b border-border-default p-3">
           <input
@@ -145,14 +146,18 @@ export function AppCommandPalette({ groups }: AppCommandPaletteProps) {
               setHighlighted(0);
             }}
             onKeyDown={onInputKeyDown}
+            // PHASE 104-D — the Hermes Command field. Its height comes from the
+            // Command signature (56 mobile / 64 desktop): deliberately larger
+            // than any other control in the product, which is what makes the
+            // signature recognisable. Behaviour is untouched.
             className={cn(
-              "ds-focus h-9 w-full rounded-sm border border-border-default bg-surface-interactive px-3",
+              "hermes-command-field ds-focus w-full rounded-sm border border-border-default bg-surface-interactive px-3",
               "text-body text-text-primary placeholder:text-text-muted",
             )}
           />
           <p className="mt-2 text-caption text-text-muted">{t("shell.commandPaletteNavHint")}</p>
         </div>
-        <ul id={listboxId} role="listbox" aria-label={t("shell.commandPaletteTitle")} className="max-h-80 overflow-y-auto p-2">
+        <ul id={listboxId} role="listbox" aria-label={t("shell.commandPaletteTitle")} className="hermes-command-list overflow-y-auto p-2">
           {filtered.length === 0 ? (
             <li className="px-3 py-6 text-center text-body text-text-muted">{t("shell.noResults")}</li>
           ) : (
