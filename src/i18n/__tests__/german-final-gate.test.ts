@@ -415,7 +415,16 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            Predictive Maintenance, CMMS, Multi-Site, EDMS, ERP, OT Edge,
     //            CRM) with a public explainer; adds no new backend surface.
     //            -> 6134
-    expect(allEn.length).toBe(6134);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages
+    // R2 corrective (F1-F4): +17 leaves. F2 exposes the eight capabilities in
+    //            the REAL public header registry (publicSite.header): 1 group
+    //            label + 8 item labels = 9. F3 repairs the homepage cards,
+    //            which needed a cta label each to render as links at all:
+    //            3 operations + 3 engineering = 6. F4 replaces the duplicated
+    //            anchor text with a generic action label plus an ICU-templated
+    //            accessible name: 2 (services.capabilityChrome.relatedCta,
+    //            .relatedCtaAria). F1 changed VALUES only — no leaf delta.
+    //            -> 6151
+    expect(allEn.length).toBe(6151);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -429,14 +438,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6134 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 6151 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6134);
+    ).toBe(6151);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

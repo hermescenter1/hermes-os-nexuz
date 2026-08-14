@@ -18,11 +18,17 @@ export interface CapabilityLinkProps {
   kind: "related" | "cta";
   /** Required for kind="related": which capability the link points to. */
   to?: string;
+  /**
+   * Accessible name, when the visible label is a short generic action. Keeps
+   * the destination identifiable to assistive technology even though the
+   * visible text is only "Explore" (F4).
+   */
+  ariaLabel?: string;
   className?: string;
   children: ReactNode;
 }
 
-export function CapabilityLink({ href, from, kind, to, className, children }: CapabilityLinkProps) {
+export function CapabilityLink({ href, from, kind, to, ariaLabel, className, children }: CapabilityLinkProps) {
   function handleClick() {
     if (kind === "related") {
       track.capabilityRelatedClick(from, to ?? href);
@@ -32,7 +38,7 @@ export function CapabilityLink({ href, from, kind, to, className, children }: Ca
   }
 
   return (
-    <Link href={href} className={className} onClick={handleClick}>
+    <Link href={href} aria-label={ariaLabel} className={className} onClick={handleClick}>
       {children}
     </Link>
   );

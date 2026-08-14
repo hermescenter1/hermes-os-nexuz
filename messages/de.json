@@ -760,17 +760,19 @@
       "valueLabel": "Warum es wichtig ist",
       "automationLabel": "Was automatisiert ist, was menschlich bleibt",
       "relatedLabel": "Verwandte Hermes-OS-Fähigkeiten",
+      "relatedCta": "Entdecken",
+      "relatedCtaAria": "{name} entdecken",
       "genericCtaTitle": "Bereit, das in Ihrer Anlage zu sehen?"
     },
     "capabilities": {
       "digitalTwin": {
         "name": "Digitaler Zwilling",
-        "title": "Digitaler Zwilling — ein lebendiges Modell Ihrer Anlage, auf echten Daten basierend",
-        "lede": "Ein Graph aus Knoten und Beziehungen Ihrer Anlagen und Linien, überlagert mit Live-Telemetrie und Zustandsdaten — keine reine Visualisierung, sondern ein abfragbares Modell, auf dem die übrigen Hermes-Fähigkeiten aufbauen.",
+        "title": "Digitaler Zwilling — ein abfragbares Modell Ihrer Anlage, auf echten Daten basierend",
+        "lede": "Ein Graph aus Knoten und Beziehungen Ihrer Anlagen und Linien, überlagert mit der zuletzt gemeldeten Telemetrie und einem berechneten Zustandswert — keine reine Visualisierung, sondern ein abfragbares Modell, auf dem die übrigen Hermes-Fähigkeiten aufbauen.",
         "problem": { "body": "Anlagenbeziehungen — welche Pumpe welche Linie versorgt, welcher Sensor zu welcher Maschine gehört — leben meist nur im Kopf einer Person oder in einer veralteten Zeichnung. Bei einer Störung kostet die Rekonstruktion dieses physischen Kontexts Zeit, die die Anlage nicht hat." },
         "whatItDoes": { "bullets": [
           { "name": "Knoten- und Beziehungsgraph", "desc": "Anlagen, Linien und Ausrüstung werden als Knoten mit typisierten Beziehungen modelliert, bearbeitbar in einem eigenen Graph- und Layout-Arbeitsbereich." },
-          { "name": "Live-Telemetrie-Überlagerung", "desc": "Tag-Werte und Zustands-Snapshots werden dem Zwilling in Echtzeit zugeordnet, sodass das Modell den aktuellen Zustand zeigt, kein statisches Diagramm." },
+          { "name": "Telemetrie-Überlagerung", "desc": "Tag-Werte und ein berechneter Zustandswert werden dem Zwilling aus der zuletzt von jedem Gateway gemeldeten Telemetrie zugeordnet, sodass das Modell den zuletzt bekannten Zustand zeigt und kein statisches Diagramm. Veraltete Messwerte senken diesen Wert, statt als aktuell dargestellt zu werden." },
           { "name": "Standortbezogene Layouts", "desc": "Gespeicherte visuelle Layouts je Standort halten den Zwilling lesbar, während der Anlagengraph wächst." }
         ] },
         "connects": { "items": [
@@ -912,7 +914,7 @@
           { "name": "Rein lesender Engineering-Export", "desc": "Modelle exportieren ausschließlich Engineering-Metadaten und Gateway-Registrierung — bewusst so gestaltet, dass nichts hier ein Schreiben, eine Sollwertänderung oder einen Steuerbefehl ausdrücken kann." }
         ] },
         "connects": { "items": [
-          { "name": "Digitaler Zwilling", "desc": "Vom Gateway gemeldete Telemetrie hält die Live-Überlagerung des Zwillings aktuell." },
+          { "name": "Digitaler Zwilling", "desc": "Vom Gateway gemeldete Telemetrie hält die Überlagerung des Zwillings aktuell." },
           { "name": "Prädiktive Instandhaltung", "desc": "Derselbe Telemetriestrom ist die Grundlage, aus der Risikobewertung und Restnutzungsdauer-Schätzung berechnet werden." },
           { "name": "Industrial Brain", "desc": "Die in der diagnostischen Auswertung verwendete Evidenz lässt sich auf eine registrierte, mit Anmeldedaten versehene Quelle zurückführen, nicht auf einen anonymen Datenstrom." }
         ] },
@@ -987,7 +989,7 @@
       "items": {
         "twin": {
           "name": "Digitaler-Zwilling-Engine",
-          "desc": "Ein lebendiger Graph aus Knoten und Beziehungen für Ihre Linien und Anlagen, überlagert mit echter Telemetrie und Zustandsdaten.",
+          "desc": "Ein Graph aus Knoten und Beziehungen für Ihre Linien und Anlagen, überlagert mit der zuletzt gemeldeten Telemetrie und einem berechneten Zustandswert.",
           "cta": "Digitalen Zwilling entdecken"
         },
         "predictive": {
@@ -5964,6 +5966,7 @@
       "navLabel": "Hauptnavigation",
       "groups": {
         "platform": "Plattform",
+        "capabilities": "Fähigkeiten",
         "intelligence": "Intelligenz",
         "knowledge": "Wissen",
         "resources": "Ressourcen",
@@ -5973,6 +5976,14 @@
         "platformOverview": "Plattformüberblick",
         "architecture": "Architektur",
         "services": "Leistungen",
+        "capDigitalTwin": "Digitaler Zwilling",
+        "capPredictiveMaintenance": "Prädiktive Instandhaltung",
+        "capCmms": "CMMS",
+        "capMultiSite": "Mehrstandortbetrieb",
+        "capEdms": "EDMS",
+        "capErp": "ERP",
+        "capOtEdge": "OT-Edge",
+        "capCrm": "CRM",
         "industrialBrain": "Industrial Brain",
         "hermesBrain": "Hermes Brain",
         "copilot": "Copilot",
@@ -6101,15 +6112,18 @@
       "cards": {
         "asset": {
           "name": "Anlagen- und Betriebsintelligenz",
-          "desc": "Anlagenregister, Standortstruktur, Arbeitsaufträge und Instandhaltungsabläufe — das operative Rückgrat, das den Kreislauf schließt."
+          "desc": "Anlagenregister, Standortstruktur, Arbeitsaufträge und Instandhaltungsabläufe — das operative Rückgrat, das den Kreislauf schließt.",
+          "cta": "Plattform ansehen"
         },
         "predictive": {
           "name": "Prädiktive Instandhaltung",
-          "desc": "Baselines, Risikobewertung und Restnutzungsdauer-Schätzungen — nachvollziehbare Indikatoren, nie Blackbox-Garantien."
+          "desc": "Baselines, Risikobewertung und Restnutzungsdauer-Schätzungen — nachvollziehbare Indikatoren, nie Blackbox-Garantien.",
+          "cta": "Prädiktive Instandhaltung entdecken"
         },
         "multisite": {
           "name": "Standortübergreifende Intelligenz",
-          "desc": "Eine Organisation, viele Werke: Isolation auf Standortebene mit standortübergreifender Sicht für die, die sie brauchen."
+          "desc": "Eine Organisation, viele Werke: Isolation auf Standortebene mit standortübergreifender Sicht für die, die sie brauchen.",
+          "cta": "Mehrstandortbetrieb entdecken"
         }
       }
     },
@@ -6118,15 +6132,18 @@
       "cards": {
         "knowledge": {
           "name": "Knowledge Engine & Graph",
-          "desc": "Kuratierte Engineering-Bibliotheken zu PLC, SCADA/HMI, Elektrotechnik, Instrumentierung, Protokollen, Cybersicherheit und Instandhaltung — verknüpft in einem Wissensgraphen mit realen Engineering-Fällen."
+          "desc": "Kuratierte Engineering-Bibliotheken zu PLC, SCADA/HMI, Elektrotechnik, Instrumentierung, Protokollen, Cybersicherheit und Instandhaltung — verknüpft in einem Wissensgraphen mit realen Engineering-Fällen.",
+          "cta": "Wissensbibliothek öffnen"
         },
         "twin": {
           "name": "Digitaler Zwilling & Zeitreihen",
-          "desc": "Modellieren Sie Anlagenhierarchien und Tags und analysieren Sie deren Zeitreihenverhalten auf derselben Oberfläche, auf der das Brain schlussfolgert."
+          "desc": "Modellieren Sie Anlagenhierarchien und Tags und analysieren Sie deren Zeitreihenverhalten auf derselben Oberfläche, auf der das Brain schlussfolgert.",
+          "cta": "Digitalen Zwilling entdecken"
         },
         "edge": {
           "name": "Edge-Gateway & Konnektivität",
-          "desc": "Gateway- und Konnektorverwaltung mit protokollbewusster Architektur — OPC UA, MQTT, PLC- und SCADA-Domänen, ausgelegt für On-Premises- und Edge-Betrieb."
+          "desc": "Gateway- und Konnektorverwaltung mit protokollbewusster Architektur — OPC UA, MQTT, PLC- und SCADA-Domänen, ausgelegt für On-Premises- und Edge-Betrieb.",
+          "cta": "OT-Edge entdecken"
         }
       }
     },

@@ -100,12 +100,18 @@ export async function CapabilityDetail({ capabilityKey }: CapabilityDetailProps)
                       from={capabilityKey}
                       kind="related"
                       to={target}
+                      /* F4 — the visible label is a short action ("Explore"),
+                         but the ACCESSIBLE name still names the destination
+                         ("Explore CMMS"). Previously the anchor repeated the
+                         card's own <h3> verbatim, which read as duplicated
+                         text visually and gave crawlers a redundant anchor. */
+                      ariaLabel={t("capabilityChrome.relatedCtaAria", { name: item.name })}
                       className={cn(
                         "ds-focus mt-3.5 inline-flex items-center gap-1.5 rounded-sm text-label font-semibold",
                         "text-brand-primary transition-colors duration-fast hover:text-brand-primary-hover",
                       )}
                     >
-                      {item.name}
+                      {chrome.relatedCta}
                       <span aria-hidden="true" className="rtl:-scale-x-100">→</span>
                     </CapabilityLink>
                   ) : null}

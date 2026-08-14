@@ -760,17 +760,19 @@
       "valueLabel": "Why it matters",
       "automationLabel": "What's automated, what stays human",
       "relatedLabel": "Related Hermes OS capabilities",
+      "relatedCta": "Explore",
+      "relatedCtaAria": "Explore {name}",
       "genericCtaTitle": "Ready to see this in your plant?"
     },
     "capabilities": {
       "digitalTwin": {
         "name": "Digital Twin",
-        "title": "Digital Twin — a live model of your plant, grounded in real data",
-        "lede": "A node-and-relation graph of your assets and lines, overlaid with live telemetry and health state — not a rendering exercise, a queryable model your other Hermes capabilities reason over.",
+        "title": "Digital Twin — a queryable model of your plant, grounded in real data",
+        "lede": "A node-and-relation graph of your assets and lines, overlaid with the latest reported telemetry and a computed health state — not a rendering exercise, a queryable model your other Hermes capabilities reason over.",
         "problem": { "body": "Asset relationships — which pump feeds which line, which sensor belongs to which machine — usually live in someone's head or in a drawing that's out of date. When a fault happens, reconstructing the physical context costs time the plant doesn't have." },
         "whatItDoes": { "bullets": [
           { "name": "Node & relation graph", "desc": "Assets, lines and equipment modeled as nodes with typed relationships between them, editable through a dedicated graph and layout workspace." },
-          { "name": "Live telemetry overlay", "desc": "Tag values and health snapshots attach to the twin in real time, so the model reflects current state, not a static diagram." },
+          { "name": "Telemetry overlay", "desc": "Tag values and a computed health score attach to the twin from the latest telemetry each gateway has reported, so the model shows the most recent known state rather than a static diagram. Readings that have gone stale lower that score instead of being presented as current." },
           { "name": "Site-scoped layouts", "desc": "Saved visual layouts per site keep the twin readable as the asset graph grows." }
         ] },
         "connects": { "items": [
@@ -912,7 +914,7 @@
           { "name": "Read-only engineering export", "desc": "Models exported engineering metadata and gateway registration only — by design, nothing here can express a write, a setpoint change or a control command." }
         ] },
         "connects": { "items": [
-          { "name": "Digital Twin", "desc": "Gateway-reported telemetry is what keeps the twin's live overlay current." },
+          { "name": "Digital Twin", "desc": "Gateway-reported telemetry is what keeps the twin's overlay current." },
           { "name": "Predictive Maintenance", "desc": "The same telemetry stream is what risk scoring and RUL estimation are computed from." },
           { "name": "Industrial Brain", "desc": "Evidence used in diagnostic reasoning traces back to a registered, credentialed source, not an anonymous feed." }
         ] },
@@ -987,7 +989,7 @@
       "items": {
         "twin": {
           "name": "Digital Twin Engine",
-          "desc": "A live node-and-relation graph of your lines and equipment, overlaid with real telemetry and health state.",
+          "desc": "A node-and-relation graph of your lines and equipment, overlaid with the latest reported telemetry and a computed health state.",
           "cta": "Explore Digital Twin"
         },
         "predictive": {
@@ -5964,6 +5966,7 @@
       "navLabel": "Primary",
       "groups": {
         "platform": "Platform",
+        "capabilities": "Capabilities",
         "intelligence": "Intelligence",
         "knowledge": "Knowledge",
         "resources": "Resources",
@@ -5973,6 +5976,14 @@
         "platformOverview": "Platform Overview",
         "architecture": "Architecture",
         "services": "Services",
+        "capDigitalTwin": "Digital Twin",
+        "capPredictiveMaintenance": "Predictive Maintenance",
+        "capCmms": "CMMS",
+        "capMultiSite": "Multi-Site Operations",
+        "capEdms": "EDMS",
+        "capErp": "ERP",
+        "capOtEdge": "OT Edge",
+        "capCrm": "CRM",
         "industrialBrain": "Industrial Brain",
         "hermesBrain": "Hermes Brain",
         "copilot": "Copilot",
@@ -6101,15 +6112,18 @@
       "cards": {
         "asset": {
           "name": "Asset & operational intelligence",
-          "desc": "Asset registry, site structure, work orders and maintenance workflows — the operational spine that closes the loop."
+          "desc": "Asset registry, site structure, work orders and maintenance workflows — the operational spine that closes the loop.",
+          "cta": "See the platform"
         },
         "predictive": {
           "name": "Predictive maintenance",
-          "desc": "Baselines, risk scoring and remaining-useful-life estimates — explainable indicators, never black-box guarantees."
+          "desc": "Baselines, risk scoring and remaining-useful-life estimates — explainable indicators, never black-box guarantees.",
+          "cta": "Explore Predictive Maintenance"
         },
         "multisite": {
           "name": "Multi-site intelligence",
-          "desc": "One organization, many plants: site-level isolation with cross-site visibility for the people who need it."
+          "desc": "One organization, many plants: site-level isolation with cross-site visibility for the people who need it.",
+          "cta": "Explore Multi-Site Operations"
         }
       }
     },
@@ -6118,15 +6132,18 @@
       "cards": {
         "knowledge": {
           "name": "Knowledge Engine & Graph",
-          "desc": "Curated engineering libraries across PLC, SCADA/HMI, electrical, instrumentation, protocols, cybersecurity and maintenance — connected in a knowledge graph with real engineering cases."
+          "desc": "Curated engineering libraries across PLC, SCADA/HMI, electrical, instrumentation, protocols, cybersecurity and maintenance — connected in a knowledge graph with real engineering cases.",
+          "cta": "Open the Knowledge Library"
         },
         "twin": {
           "name": "Digital Twin & Time Series",
-          "desc": "Model asset hierarchies and tags, and analyze their time-series behavior on the same surface the Brain reasons over."
+          "desc": "Model asset hierarchies and tags, and analyze their time-series behavior on the same surface the Brain reasons over.",
+          "cta": "Explore Digital Twin"
         },
         "edge": {
           "name": "Edge gateway & connectivity",
-          "desc": "Gateway and connector management with a protocol-aware architecture — OPC UA, MQTT, PLC and SCADA domains, designed for on-prem and edge deployments."
+          "desc": "Gateway and connector management with a protocol-aware architecture — OPC UA, MQTT, PLC and SCADA domains, designed for on-prem and edge deployments.",
+          "cta": "Explore OT Edge"
         }
       }
     },

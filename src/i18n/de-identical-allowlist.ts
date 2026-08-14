@@ -410,6 +410,12 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "publicSite.platform.layers.engineering.name": "accepted-german-loanword",
   "publicSite.platform.layers.intelligence.modules": "brand-or-product",
   "publicSite.trustStrip.protocols": "protocol-or-standard",
+  // F2 — the eight capabilities in the REAL public header registry; these four
+  // are acronyms German keeps verbatim (same class as nav.items.capCmms).
+  "publicSite.header.nav.capCmms": "protocol-or-standard",
+  "publicSite.header.nav.capCrm": "protocol-or-standard",
+  "publicSite.header.nav.capEdms": "protocol-or-standard",
+  "publicSite.header.nav.capErp": "protocol-or-standard",
   // R2 — public capability pages. CMMS/EDMS/ERP/CRM are technical
   // abbreviations (same class as services.items.scadaHmi below); "Industrial
   // Brain" is the existing product name, never translated (see
@@ -450,7 +456,8 @@ export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   "non-linguistic": 19,
   "accepted-german-loanword": 74,
   // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
-  "protocol-or-standard": 84,
+  // F2: +4  — the same acronyms in the real public header registry.
+  "protocol-or-standard": 88,
   "vendor-or-thirdparty": 16,
   "brand-eyebrow": 8
 } as const;

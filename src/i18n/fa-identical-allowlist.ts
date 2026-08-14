@@ -77,6 +77,12 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
   "nav.items.capCrm": "protocol-or-standard",
   "nav.items.capEdms": "protocol-or-standard",
   "nav.items.capErp": "protocol-or-standard",
+  // F2 — the same four acronyms in the REAL public header registry
+  // (publicSite.header.nav), which is what visitors actually see.
+  "publicSite.header.nav.capCmms": "protocol-or-standard",
+  "publicSite.header.nav.capCrm": "protocol-or-standard",
+  "publicSite.header.nav.capEdms": "protocol-or-standard",
+  "publicSite.header.nav.capErp": "protocol-or-standard",
   "services.capabilities.cmms.connects.items.1.name": "protocol-or-standard",
   "services.capabilities.cmms.name": "protocol-or-standard",
   "services.capabilities.crm.connects.items.0.name": "protocol-or-standard",
@@ -123,7 +129,8 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
 /** Audit summary (kept in sync by the companion test). */
 export const FA_IDENTICAL_COUNTS: Record<FaIdenticalCategory, number> = {
   // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
-  "protocol-or-standard": 51,
+  // F2: +4  — the same acronyms in the real public header registry.
+  "protocol-or-standard": 55,
   // Phase 103: +1 — copilot.liveVoice.brand ("Hermes Live Voice Intelligence").
   "brand-or-product": 4,
   "vendor-or-thirdparty": 3,
