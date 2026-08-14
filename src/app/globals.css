@@ -1810,6 +1810,82 @@ html[lang^="en"] {
   flex: 1 1 auto;
   overflow-y: auto;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-D2 — WORKSPACE & AUTHENTICATION VISUAL PILOT
+   ───────────────────────────────────────────────────────────────────────────
+   The first route-content adoption. Two surfaces only: the canonical Login
+   (Horizon + Glass) and Workspace Home (Triad). Everything below consumes the
+   Phase 104 signature variables; no colour, gradient stop colour or shadow
+   recipe is invented here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hermes Horizon — the cinematic atmosphere layer ──
+   Permitted on the Login pilot ONLY. Three hard rules from the machine source
+   are encoded structurally rather than trusted to prose:
+
+     1. The warm ember band may not exceed 22% of the frame. It starts at 78%,
+        so the band is exactly 22% and the gate recomputes that from
+        `HORIZON.emberBandMaxHeightRatio` rather than from a written number.
+     2. The vignette is MANDATORY. It is the first (topmost) background layer
+        here, so it composites OVER the ember and pins attention to the centre.
+     3. Text never sits on Horizon. This layer is `position: absolute`,
+        `pointer-events: none` and `aria-hidden` at the call site; content sits
+        on a Glass surface stacked above it.
+
+   The ember stops are `--color-horizon-ember-*`, the two atmosphere-only
+   tokens from 104-A that are proven below 3:1 on every canonical surface and
+   are therefore prohibited as any foreground. */
+.hermes-horizon {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 120% 78% at 50% 34%,
+      transparent 0%,
+      var(--color-background-deep) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 78%,
+      var(--color-horizon-ember-fade) 88%,
+      var(--color-horizon-ember-core) 96%,
+      var(--color-background-deep) 100%
+    );
+}
+
+/* ── Hermes Triad — the three Workspace Home intents ──
+   Exactly three, equal weight, one intent each. Below the DNA's `stackBelow`
+   breakpoint the composition becomes a vertical stack: reading order is the
+   decision order (operate → understand → act), so the stack is the same
+   hierarchy, not a degraded one. */
+.hermes-triad {
+  display: grid;
+  gap: var(--triad-gap);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .hermes-triad {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+/* An intent group is Edge-separated, not Glass-stacked: the panels inside it
+   already carry their own surface, and wrapping glass around glass is the
+   "card inside card" noise the brief forbids. */
+.hermes-triad-group {
+  border-radius: var(--triad-radius);
+  border: var(--edge-width) solid var(--edge-structural);
+  min-inline-size: 0;
+}
+/* The Beacon marks the intent that currently needs a decision. It is one
+   inline-start bar, the same locator grammar as the Rail. */
+.hermes-triad-group[data-beacon="true"] {
+  border-inline-start-color: var(--beacon-core);
+  border-inline-start-width: var(--rail-indicator-width);
+}
 @media (min-width: 768px) {
   .hermes-command-field {
     block-size: var(--command-height);

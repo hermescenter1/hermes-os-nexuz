@@ -65,9 +65,25 @@ describe("Phase 104 route coverage — every product route has a design owner", 
     }
   });
 
-  it("has no duplicate rule prefix", () => {
-    const prefixes = ROUTE_RULES.map((r) => r.prefix);
-    expect(new Set(prefixes).size).toBe(prefixes.length);
+  it("has no duplicate rule prefix at the same specificity", () => {
+    // PHASE 104-D2 — a prefix may now appear twice, once with `exact: true`
+    // and once as a subtree rule, because a route can be directly migrated
+    // while its children are not (Workspace Home). The invariant is unchanged
+    // in substance: no two rules may be indistinguishable, so the key is the
+    // (prefix, exact) pair rather than the prefix alone.
+    const keys = ROUTE_RULES.map((r) => `${r.prefix}::${r.exact === true}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    // …and an exact rule must always precede its own subtree rule, or it can
+    // never match.
+    for (const rule of ROUTE_RULES.filter((r) => r.exact === true)) {
+      const exactIdx = ROUTE_RULES.findIndex(
+        (r) => r.prefix === rule.prefix && r.exact === true,
+      );
+      const subtreeIdx = ROUTE_RULES.findIndex(
+        (r) => r.prefix === rule.prefix && r.exact !== true,
+      );
+      if (subtreeIdx >= 0) expect(exactIdx).toBeLessThan(subtreeIdx);
+    }
   });
 
   it("every rule actually matches at least one route (no dead rules)", () => {

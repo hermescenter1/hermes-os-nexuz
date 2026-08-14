@@ -27,6 +27,11 @@ export default async function AuthLoginPage({
 
   return (
     <AuthExperienceShell
+      // PHASE 104-D2 — the canonical Login is the ONLY auth route permitted to
+      // render the Hermes Horizon atmosphere. Every other route that shares
+      // this shell keeps the default "standard" mode; the opt-in is explicit
+      // here so it cannot propagate by accident.
+      visualMode="horizon"
       title={t("loginTitle")}
       subtitle={t("loginLede")}
       footer={

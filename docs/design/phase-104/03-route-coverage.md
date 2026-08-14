@@ -53,16 +53,27 @@ screen in two directions, not two design surfaces.
 
 | Coverage status | Routes |
 |---|---|
-| `COVERED_BY_SHARED_LAYOUT` | 241 |
+| `COVERED_BY_SHARED_LAYOUT` | 240 |
 | `VISUAL_ONLY_STATIC_PUBLIC` | 22 |
-| `COVERED_BY_SHARED_TEMPLATE` | 7 |
+| `COVERED_BY_SHARED_TEMPLATE` | 6 |
+| `MIGRATED_DIRECTLY` | 2 |
 
 **Read this table honestly.** `COVERED_BY_SHARED_LAYOUT` is a statement about *how* a route
 would receive the design language — through the shell and shared layout it already renders
 inside — **not** a claim that the Phase 104 visual language has been applied to it and reviewed.
-As of this increment no route carries `MIGRATED_DIRECTLY`, because increment 104-D (App Shell and
-Workspace adoption) has not landed. The count of routes whose appearance has actually been
-changed by Phase 104 is **zero**, and this document will not imply otherwise.
+
+`MIGRATED_DIRECTLY` means the opposite: the route's **own content** was redesigned. Increment
+104-D2 migrated exactly two, and only these two:
+
+| Route | What changed |
+|---|---|
+| `/auth/login` | Hermes Horizon atmosphere (Login pilot only) + a contract-owned `.ds-glass-elevated` content surface |
+| `/dashboard` | The Hermes Triad — `operate` / `understand` / `act` — as the Workspace Home decision hierarchy |
+
+Everything else is still inheritance, not adoption. `/login` stays a **redirect** to `/auth/login`
+and is deliberately *not* counted as a migrated visual route; `/dashboard/*` subroutes are matched
+by a separate subtree rule and remain `COVERED_BY_SHARED_LAYOUT`, so the pilot cannot inflate the
+count by inheritance. **No owner visual review has been performed on either route.**
 
 ## 4. The Alarm Center — correction of a false claim
 

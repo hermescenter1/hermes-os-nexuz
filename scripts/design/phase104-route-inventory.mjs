@@ -77,7 +77,10 @@ export const EMPTY_FAMILIES = Object.freeze({});
  * specific to least specific. `prefix` is matched against the locale-stripped
  * route path.
  *
- * @type {ReadonlyArray<{prefix: string, family: string, status: CoverageStatus, note: string}>}
+ * `exact: true` matches the route itself but NOT its subtree — needed where a
+ * route is directly migrated while its children are not (Workspace Home).
+ *
+ * @type {ReadonlyArray<{prefix: string, family: string, status: CoverageStatus, note: string, exact?: boolean}>}
  */
 export const ROUTE_RULES = Object.freeze([
   // ── Error and catch-all surfaces ────────────────────────────────────────
@@ -102,10 +105,20 @@ export const ROUTE_RULES = Object.freeze([
   { prefix: "/dashboard/billing", family: "administration/organization", status: "COVERED_BY_SHARED_LAYOUT", note: "billing administration" },
   { prefix: "/dashboard/ats", family: "customer/vendor/candidate/careers", status: "COVERED_BY_SHARED_LAYOUT", note: "applicant tracking" },
   { prefix: "/dashboard/customers", family: "ERP/CRM/CMMS/documents/compliance/automation", status: "COVERED_BY_SHARED_LAYOUT", note: "CRM customers" },
-  { prefix: "/dashboard", family: "workspace/dashboard", status: "COVERED_BY_SHARED_LAYOUT", note: "workspace shell and dashboard home" },
+  // PHASE 104-D2 — Workspace Home is the first directly migrated route
+  // content: the Hermes Triad replaced the flat section stack. Matched before
+  // the generic /dashboard rule so the pilot cannot hide inside it.
+  { prefix: "/dashboard", family: "workspace/dashboard", status: "MIGRATED_DIRECTLY", note: "Workspace Home — Phase 104-D2 visual pilot; the Hermes Triad (operate/understand/act) is the decision hierarchy", exact: true },
+  { prefix: "/dashboard", family: "workspace/dashboard", status: "COVERED_BY_SHARED_LAYOUT", note: "workspace shell and dashboard subroutes" },
 
   // ── Authentication ──────────────────────────────────────────────────────
-  { prefix: "/login", family: "authentication", status: "COVERED_BY_SHARED_TEMPLATE", note: "auth-experience shell" },
+  // The canonical Login is the second directly migrated route: Hermes Horizon
+  // plus a contract-owned Glass tier. Every other auth route keeps the shared
+  // 87E template, which is exactly what the 104-D2 gate asserts.
+  { prefix: "/auth/login", family: "authentication", status: "MIGRATED_DIRECTLY", note: "canonical Login — Phase 104-D2 visual pilot; Horizon atmosphere and .ds-glass-elevated content surface" },
+  // `/login` is a redirect to /auth/login and is NOT a separately designed
+  // page; it must never be counted as a migrated visual route.
+  { prefix: "/login", family: "authentication", status: "COVERED_BY_SHARED_TEMPLATE", note: "compatibility redirect to /auth/login — no visual surface of its own" },
   { prefix: "/auth", family: "authentication", status: "COVERED_BY_SHARED_TEMPLATE", note: "auth-experience shell" },
 
   // ── Intelligence ────────────────────────────────────────────────────────
@@ -205,6 +218,13 @@ export function classify(route) {
   for (const rule of ROUTE_RULES) {
     if (rule.prefix === "/") {
       if (route === "/") return rule;
+      continue;
+    }
+    // `exact: true` matches the route itself but not its subtree. Workspace
+    // Home is directly migrated while `/dashboard/*` is not, and a prefix rule
+    // alone cannot express that difference.
+    if (rule.exact) {
+      if (route === rule.prefix) return rule;
       continue;
     }
     if (route === rule.prefix || route.startsWith(`${rule.prefix}/`)) return rule;

@@ -22,6 +22,17 @@ export interface AuthExperienceShellProps {
   footer?: ReactNode;
   /** Show the desktop supporting capability panel (default true). */
   capabilityPanel?: boolean;
+  /**
+   * PHASE 104-D2 — which atmosphere this auth route renders on.
+   *
+   * `"standard"` is the shipped 87E treatment and stays the DEFAULT, because
+   * this shell is shared by register, forgot-password, reset-password,
+   * accept-invite and verify-email. Horizon is permitted on the Login pilot
+   * only, so opting in has to be explicit at the call site — a default of
+   * `"horizon"` would silently leak the atmosphere across five other routes.
+   * The 104-D2 gate asserts both halves: Login opts in, nothing else does.
+   */
+  visualMode?: "standard" | "horizon";
 }
 
 const CAPABILITY_KEYS = ["tenant", "rbac", "audit", "deploy"] as const;
@@ -32,14 +43,27 @@ export function AuthExperienceShell({
   children,
   footer,
   capabilityPanel = true,
+  visualMode = "standard",
 }: AuthExperienceShellProps) {
+  const horizon = visualMode === "horizon";
   const t = useTranslations("authExperience");
   // Trust line lives in the (frozen) auth namespace, already corrected to drop
   // the unsupported SOC 2 claim — read, never mutate.
   const a = useTranslations("auth");
 
   return (
-    <div className="relative min-h-screen bg-background-deep lg:grid lg:grid-cols-2">
+    <div
+      data-visual-mode={visualMode}
+      className="relative min-h-screen bg-background-deep lg:grid lg:grid-cols-2"
+    >
+      {/* PHASE 104-D2 — Hermes Horizon, Login pilot only. Purely atmospheric:
+          absolutely positioned behind every content layer, pointer-inert and
+          hidden from assistive technology. The ember band and the mandatory
+          vignette live in `.hermes-horizon`. */}
+      {horizon ? (
+        <div aria-hidden="true" data-hermes-signature="horizon" className="hermes-horizon" />
+      ) : null}
+
       {/* Restrained industrial grid — decorative. */}
       <div
         aria-hidden="true"
@@ -91,10 +115,19 @@ export function AuthExperienceShell({
           </span>
         </Link>
 
+        {/* PHASE 104-D2 — in Horizon mode the panel sits on a CONTRACT-OWNED
+            Glass tier (`.ds-glass-elevated`, whose fill, sheen, border and
+            inner highlight are all owned by GLASS_VARIABLE_CONTRACT) rather
+            than a flat elevated surface. That is what keeps text off the
+            atmosphere: content is composited on Glass, never on Horizon.
+            Standard mode keeps the shipped 87E treatment untouched. */}
         <main
+          data-hermes-signature={horizon ? "glass-elevated" : undefined}
           className={cn(
-            "relative w-full max-w-[26rem] rounded-lg border border-border-default",
-            "bg-surface-elevated p-7 shadow-e3 sm:p-9",
+            "relative w-full max-w-[26rem] rounded-lg p-7 sm:p-9",
+            horizon
+              ? "ds-glass-elevated"
+              : "border border-border-default bg-surface-elevated shadow-e3",
           )}
         >
           <div
