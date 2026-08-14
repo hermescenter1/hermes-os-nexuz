@@ -9,7 +9,7 @@ yet** — that adoption is 104-D and later, and this document does not claim it.
 |---|---|
 | Increment | 104-C — DNA signature variables and contract |
 | Contract | `src/components/ds/phase104-signature-contract.ts` |
-| Gate | `src/components/ds/__tests__/phase104-signature-contract.test.ts` (93 assertions) |
+| Gate | `src/components/ds/__tests__/phase104-signature-contract.test.ts` — **153 assertions** as of this commit. A point-in-time measurement, deliberately **not** gated: it is not derivable from the contract, and pinning it would turn every new assertion into a documentation edit. The per-signature variable counts below **are** derived and gated. |
 | Machine source | `tools/figma/hermes-phase104-visual-system/src/lib/dna-tokens.js` |
 
 ---
@@ -26,17 +26,24 @@ spec change cannot leave the CSS behind and a CSS change cannot quietly leave th
 
 | Signature | CSS variables | Consumer today |
 |---|---|---|
-| Hermes Horizon | 2 (`--color-horizon-ember-*`, from 104-A) | **none** — policy only |
-| Hermes Deep Navy | 5 (Phase 87B surfaces, alias layer) | every page (pre-existing) |
-| Hermes Glass | 9 | `.ds-glass-soft/card/interactive/elevated/hero` |
+| Hermes Horizon | 2 | **none** — policy only |
+| Hermes Deep Navy | 5 | every page (pre-existing) |
+| Hermes Glass | 26 | `.ds-glass-soft/card/interactive/elevated/hero` |
 | Hermes Edge | 8 | `.ds-glass-*` borders |
 | Hermes Beacon | 9 | **none** — alias layer ready |
 | Hermes Rail | 8 | **none** |
 | Hermes Command | 8 | **none** |
 | Hermes Triad | 4 | **none** |
+| **Total** | **70** | |
 
 Every variable above is asserted to have **exactly one active declaration** in `globals.css`,
 read from the PostCSS AST so a value in a comment cannot satisfy it.
+
+These counts are **derived from the executable contract and gated** — the suite reads
+`SIGNATURE_CONTRACT[].cssVars.length` and requires this table to publish the same numbers, so
+the document cannot silently contradict the code again. That is a direct response to review:
+an earlier revision of this file still said Glass owned **9** variables in its summary while
+§4.3 below already said **26**.
 
 ## 3. The Glass tokenisation is provably 1:1
 
@@ -145,8 +152,9 @@ its own signature layer introduces no glow, bloom, scanline or text-shadow.
 ### 4.3 The Glass parity gap — CLOSED
 
 External review found that the contract owned only **9 of the 26** active `--glass-*` variables,
-and proved it by setting `--glass-card-fill-to` to magenta: all 93 assertions passed while every
-card in the product would have rendered with a magenta gradient.
+and proved it by setting `--glass-card-fill-to` to magenta: **all 93 assertions of the then-current
+gate passed** while every card in the product would have rendered with a magenta gradient. (Those
+93 are the historical figure at commit `f15b73e`; the gate now stands at 143.)
 
 `GLASS_VARIABLE_CONTRACT` is now **complete (26/26)**, and the gate requires **set equality**
 between the owned keys and the active `--glass-*` declarations parsed from the CSS — so a
@@ -158,14 +166,21 @@ every `--glass-*` referenced by a `.ds-glass-*` rule must be owned.
 
 ## 5. Mutation evidence
 
-The gate was mutation-tested against the real `globals.css`; each mutation was reverted:
+The gate was mutation-tested against the real `globals.css`; each mutation was reverted. Results
+below were **re-measured against the current 143-assertion gate**, not carried over from the
+104-C run:
 
 | Mutation | Result |
 |---|---|
-| Drift a shipped Glass literal (`--glass-soft-fill` → the spec value) | 1 failed / 92 passed |
-| Break `--rail-width` away from the DNA (72 → 80) | 1 failed / 92 passed |
-| Add an outer glow variable to the Phase 104 layer | 1 failed / 92 passed |
-| Un-tokenise one glass rule back to a literal | 1 failed / 92 passed |
+| Drift a shipped Glass literal (`--glass-soft-fill` → the retired spec value) | **2 failed / 151 passed** |
+| Set `--glass-card-fill-to` to magenta (the exact hole review found) | **2 failed / 151 passed** |
+| Delete an owned Glass variable (`--glass-card-inner`) | **3 failed / 150 passed** |
+| Break `--rail-width` away from the DNA (72 → 80) | **1 failed / 152 passed** |
+| Add an outer glow variable to the Phase 104 layer | **1 failed / 152 passed** |
+| Un-tokenise one glass rule back to a literal | **1 failed / 152 passed** |
+
+The first three are the ones that mattered: before the parity gap was closed, the magenta
+mutation passed 93/93 and the deletion would not have been noticed at all.
 
 ## 6. Rollback
 

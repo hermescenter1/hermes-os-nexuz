@@ -67,6 +67,42 @@ const signature = (key: SignatureKey) =>
   SIGNATURE_CONTRACT.find((s) => s.key === key)!;
 
 // ───────────────────────────────────────────────────────────────────────────
+describe("Phase 104 signatures — the document cannot contradict the contract", () => {
+  /**
+   * Review found `04-signature-integration.md` claiming Glass owned NINE
+   * variables in its summary table while a later section of the same file
+   * already said twenty-six. Prose drifts; the contract does not. So the
+   * per-signature counts are DERIVED here and the document is required to
+   * publish the same numbers.
+   *
+   * Only contract-derived figures are gated. The suite's own assertion total is
+   * deliberately NOT gated: it changes whenever a test is added, it cannot be
+   * derived from the contract, and pinning it would turn every new assertion
+   * into a documentation edit for no invariant gained.
+   */
+  const doc = read("../../../../docs/design/phase-104/04-signature-integration.md");
+
+  it.each(
+    SIGNATURE_CONTRACT.map((s) => [s.name, s.cssVars.length] as const),
+  )("documents %s as owning %i CSS variables", (name, count) => {
+    const row = doc
+      .split("\n")
+      .find((l) => l.includes(`| ${name} |`));
+    expect(row, `no summary row for ${name}`).toBeTruthy();
+    expect(row, `${name} variable count`).toContain(`| ${count} |`);
+  });
+
+  it("documents the total variable count across all signatures", () => {
+    const total = SIGNATURE_CONTRACT.reduce((n, s) => n + s.cssVars.length, 0);
+    expect(doc).toContain(`| **Total** | **${total}** |`);
+  });
+
+  it("documents the complete Glass ownership figure", () => {
+    const owned = Object.keys(GLASS_VARIABLE_CONTRACT).length;
+    expect(doc).toContain(`complete (${owned}/${owned})`);
+  });
+});
+
 describe("Phase 104 signatures — all eight are declared and grounded in CSS", () => {
   it("declares exactly the eight required signatures, with no duplicates", () => {
     const keys = SIGNATURE_CONTRACT.map((s) => s.key);

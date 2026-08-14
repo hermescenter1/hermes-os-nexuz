@@ -38,12 +38,37 @@ on:
       # locale catalogues. Filters narrow enough to miss those would let the
       # very work this workflow exists to guard bypass it entirely.
       - "src/components/**"
+      # Every extension `deriveRoutes()` accepts, spelled out. The route
+      # inventory recognises page.tsx/ts/jsx/js, so a filter that only listed
+      # .tsx would inventory a future `page.ts` while letting it bypass the
+      # coverage gate entirely — the gate would not fail, it would never run.
+      # Every file in the tree is .tsx today, so this closes a LATENT gap.
+      # Written out per extension rather than as `page.*` or a character class
+      # so the contract test can match them with a simple, trustworthy matcher.
       - "src/app/**/page.tsx"
+      - "src/app/**/page.ts"
+      - "src/app/**/page.jsx"
+      - "src/app/**/page.js"
       - "src/app/**/layout.tsx"
+      - "src/app/**/layout.ts"
+      - "src/app/**/layout.jsx"
+      - "src/app/**/layout.js"
       - "src/app/**/template.tsx"
+      - "src/app/**/template.ts"
+      - "src/app/**/template.jsx"
+      - "src/app/**/template.js"
       - "src/app/**/loading.tsx"
+      - "src/app/**/loading.ts"
+      - "src/app/**/loading.jsx"
+      - "src/app/**/loading.js"
       - "src/app/**/error.tsx"
+      - "src/app/**/error.ts"
+      - "src/app/**/error.jsx"
+      - "src/app/**/error.js"
       - "src/app/**/not-found.tsx"
+      - "src/app/**/not-found.ts"
+      - "src/app/**/not-found.jsx"
+      - "src/app/**/not-found.js"
       - "src/app/**/*.css"
       # Localisation: `messages/` is the real catalogue location (repo root),
       # and `src/i18n/**` is the locale/direction configuration those screens read.
