@@ -8,8 +8,6 @@
 // Conversion routes are the approved pair: /demo (primary), /platform.
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { JsonLd } from "@/components/seo/JsonLd";
-import { softwareApplicationSchema } from "@/lib/seo/schemas";
 import { buildMetadata } from "@/lib/seo/metadata";
 import {
   PublicHeader,
@@ -119,10 +117,10 @@ export default async function HomePage({
 
   return (
     <div className="flex min-h-screen flex-col bg-background-base">
-      {/* Organization/WebSite JSON-LD is already emitted globally by the
-          locale layout — emitting SoftwareApplication only avoids the legacy
-          duplicate-Organization node. */}
-      <JsonLd data={[softwareApplicationSchema()]} />
+      {/* The full entity graph — Organization, founder, WebSite AND the
+          Hermes OS SoftwareApplication node — is emitted globally by the
+          locale layout, so the homepage adds no structured data of its own.
+          Re-emitting the product here would duplicate an @id node. */}
       <PublicHeader />
       <main id="public-content" tabIndex={-1} className="flex-1 outline-none">
         <PublicHero />

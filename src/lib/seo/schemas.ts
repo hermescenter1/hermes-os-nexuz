@@ -3,7 +3,23 @@
  * All builders return plain objects ready for serialisation via <JsonLd />.
  */
 
-import { BASE_URL, SITE_NAME, ORG_NAME, CONTACT_EMAIL, ORG_LOGO_URL, OG_IMAGE_URL } from "./config";
+import {
+  BASE_URL,
+  SITE_NAME,
+  ORG_NAME,
+  ORG_SHORT_NAME,
+  PRODUCT_CATEGORY,
+  CONTACT_EMAIL,
+  OG_IMAGE_URL,
+  ORG_ID,
+  WEBSITE_ID,
+  PRODUCT_ID,
+  FOUNDER_ID,
+  ORG_SAME_AS,
+  FOUNDER_SAME_AS,
+  FOUNDER_NAME,
+  FOUNDER_ROLE,
+} from "./config";
 import {
   ACTIVE_LOCALES,
   DEFAULT_LOCALE,
@@ -37,26 +53,96 @@ export function schemaLanguageTag(locale: string): string {
   return SCHEMA_LOCALE_TAG[isActiveLocale(locale) ? locale : DEFAULT_LOCALE];
 }
 
+/* ── Canonical entity graph ──────────────────────────────────────────────────
+
+   Every builder below emits a stable `@id` and references OTHER entities by
+   `@id` rather than repeating their properties. That is what lets a crawler
+   merge the whole public site — three locales, dozens of pages — into ONE
+   organisation, ONE website and ONE product instead of a pile of unrelated
+   look-alike blocks.
+
+   Relationship direction is deliberate. Schema.org has no "develops" property,
+   so ownership is expressed the way the vocabulary actually models it:
+
+       WebSite   --publisher-->                     Organization
+       Hermes OS --creator / publisher / provider--> Organization
+       Person    --worksFor / founder of-->          Organization
+
+   Nothing here invents a property to make the graph look richer.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/** Reference to an entity defined elsewhere in the graph. */
+const ref = (id: string) => ({ "@id": id });
+
+/**
+ * Technical domains the organisation demonstrably works in. Every term is
+ * backed by real platform functionality and real published content — this is a
+ * disambiguation signal ("which Hermes is this?"), not a keyword list.
+ */
+const ORG_KNOWS_ABOUT: readonly string[] = [
+  "Industrial automation",
+  "Programmable logic controllers (PLC)",
+  "SCADA systems",
+  "Human-machine interfaces (HMI)",
+  "OPC UA",
+  "MQTT",
+  "Modbus",
+  "Industrial internet of things",
+  "Predictive maintenance",
+  "Digital twins",
+  "Asset management",
+  "Computerised maintenance management systems (CMMS)",
+  "Industrial diagnostics",
+  "Root cause analysis",
+  "Operational technology cybersecurity",
+  "Engineering knowledge management",
+  "Explainable artificial intelligence",
+];
+
 /* ── Organisation ────────────────────────────────────────────────────────── */
 
 export function organizationSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": ORG_ID,
     name: ORG_NAME,
-    alternateName: SITE_NAME,
+    legalName: ORG_NAME,
+    // The short brand and the product name are the two other strings the
+    // company is referred to by in the wild. Declaring them as alternates lets
+    // a retrieval system resolve all three to this single entity.
+    alternateName: [ORG_SHORT_NAME, SITE_NAME],
     url: BASE_URL,
-    logo: {
-      "@type": "ImageObject",
-      url: ORG_LOGO_URL,
-    },
+    // `logo` intentionally omitted pending a verified corporate asset — see the
+    // note in ./config.ts. A favicon is not a corporate logo.
+    founder: ref(FOUNDER_ID),
+    knowsAbout: [...ORG_KNOWS_ABOUT],
     contactPoint: {
       "@type": "ContactPoint",
       email: CONTACT_EMAIL,
       contactType: "customer support",
       availableLanguage: ACTIVE_LOCALES.map((locale) => LOCALE_ACCESSIBLE_NAME[locale]),
     },
-    sameAs: [],
+    sameAs: [...ORG_SAME_AS],
+  };
+}
+
+/* ── Founder (Person) ────────────────────────────────────────────────────── */
+
+/**
+ * The public founder entity. Only information this site already publishes on
+ * its own About and Contact pages is included — no private contact details.
+ */
+export function founderSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": FOUNDER_ID,
+    name: FOUNDER_NAME,
+    jobTitle: FOUNDER_ROLE,
+    worksFor: ref(ORG_ID),
+    url: `${BASE_URL}/${DEFAULT_LOCALE}/about`,
+    sameAs: [...FOUNDER_SAME_AS],
   };
 }
 
@@ -66,37 +152,76 @@ export function webSiteSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": WEBSITE_ID,
     name: SITE_NAME,
     url: BASE_URL,
+    publisher: ref(ORG_ID),
+    inLanguage: ACTIVE_LOCALES.map((locale) => SCHEMA_LOCALE_TAG[locale]),
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${BASE_URL}/fa/library?q={search_term_string}`,
+        urlTemplate: `${BASE_URL}/${DEFAULT_LOCALE}/library?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
   };
 }
 
-/* ── SoftwareApplication ─────────────────────────────────────────────────── */
+/* ── SoftwareApplication (Hermes OS) ─────────────────────────────────────── */
 
 export function softwareApplicationSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
+    "@id": PRODUCT_ID,
     name: SITE_NAME,
     applicationCategory: "BusinessApplication",
+    applicationSubCategory: PRODUCT_CATEGORY,
     operatingSystem: "Web",
     description:
-      "Enterprise industrial automation platform combining PLC programming, SCADA, HMI, and an AI copilot into one bilingual operations surface.",
+      `${SITE_NAME} is an ${PRODUCT_CATEGORY.toLowerCase()} developed by ${ORG_NAME}. ` +
+      "It connects industrial systems such as PLC, SCADA and HMI through OPC UA and MQTT, " +
+      "and applies evidence-based diagnostic reasoning, engineering knowledge management, " +
+      "asset intelligence, predictive maintenance and multi-site analytics — with explainable " +
+      "analysis and human approval required before any action touches plant state.",
     url: BASE_URL,
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
+    // Ownership, in the three directions the vocabulary actually supports.
+    creator: ref(ORG_ID),
+    publisher: ref(ORG_ID),
+    provider: ref(ORG_ID),
     image: OG_IMAGE_URL,
+    // NOTE: `offers`, `aggregateRating` and `review` are deliberately absent.
+    // Commercial terms are negotiated per deployment and no authoritative
+    // public price exists, so publishing one — in particular the previous
+    // `price: "0"` — would be a fabricated commercial claim about a paid
+    // product. Omitting the property is correct even though Google's
+    // SoftwareApplication rich result prefers it to be present.
+  };
+}
+
+/**
+ * The full canonical entity graph, ready for a single `<JsonLd />` block.
+ *
+ * Emitting these together as one `@graph` (rather than four sibling scripts)
+ * is what makes the `@id` cross-references resolvable inside one document.
+ */
+export function siteEntityGraph() {
+  // Nodes inside an @graph must NOT repeat @context — it is declared once on
+  // the envelope.
+  const strip = <T extends Record<string, unknown>>(node: T) => {
+    const rest: Record<string, unknown> = { ...node };
+    delete rest["@context"];
+    return rest;
+  };
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      strip(organizationSchema()),
+      strip(founderSchema()),
+      strip(webSiteSchema()),
+      strip(softwareApplicationSchema()),
+    ],
   };
 }
 
@@ -139,20 +264,18 @@ export function articleSchema(opts: ArticleSchemaOptions) {
     headline: opts.headline,
     description: opts.description,
     url: opts.url,
-    datePublished: opts.datePublished ?? "2026-01-01",
-    dateModified:  opts.dateModified  ?? "2026-06-25",
+    mainEntityOfPage: opts.url,
+    // Dates are emitted ONLY when the caller actually has them. The previous
+    // "2026-01-01" / "2026-06-25" fallbacks stamped a fabricated publication
+    // history onto every article that lacked real timestamps, which is both a
+    // false factual claim and an active freshness-signal risk.
+    ...(opts.datePublished ? { datePublished: opts.datePublished } : {}),
+    ...(opts.dateModified  ? { dateModified:  opts.dateModified  } : {}),
     inLanguage: schemaLanguageTag(opts.locale),
-    author: {
-      "@type": "Organization",
-      name: ORG_NAME,
-      url: BASE_URL,
-    },
-    publisher: {
-      "@type": "Organization",
-      name: ORG_NAME,
-      logo: { "@type": "ImageObject", url: ORG_LOGO_URL },
-    },
-    keywords: opts.keywords?.join(", "),
+    // Author and publisher resolve to the one canonical organisation entity.
+    author: ref(ORG_ID),
+    publisher: ref(ORG_ID),
+    ...(opts.keywords?.length ? { keywords: opts.keywords.join(", ") } : {}),
     image: OG_IMAGE_URL,
   };
 }
@@ -186,9 +309,10 @@ export function jobPostingSchema(opts: JobPostingSchemaOptions) {
     },
     hiringOrganization: {
       "@type": "Organization",
+      "@id": ORG_ID,
       name: ORG_NAME,
       sameAs: BASE_URL,
-      logo: ORG_LOGO_URL,
+      // `logo` intentionally omitted — same reason as organizationSchema().
     },
     jobLocation: {
       "@type": "Place",

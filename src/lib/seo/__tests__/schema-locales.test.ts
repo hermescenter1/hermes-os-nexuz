@@ -81,15 +81,27 @@ describe("89B.1 — organization / website language metadata", () => {
     expect(org["@context"]).toBe("https://schema.org");
     expect(org["@type"]).toBe("Organization");
     expect(org.contactPoint["@type"]).toBe("ContactPoint");
+    // PHASE 105 widened this pin: the organisation now carries a stable `@id`,
+    // its full legal name, a `founder` reference into the entity graph and
+    // `knowsAbout`. The assertion stays exact — it is the guard that stops an
+    // unreviewed property appearing in production structured data.
+    // `logo` is absent on purpose: a favicon is not a corporate logo, and no
+    // verified brand asset exists yet. See the note in lib/seo/config.ts.
     expect(Object.keys(org).sort()).toEqual(
-      ["@context", "@type", "alternateName", "contactPoint", "logo", "name", "sameAs", "url"].sort(),
+      [
+        "@context", "@id", "@type", "alternateName", "contactPoint", "founder",
+        "knowsAbout", "legalName", "name", "sameAs", "url",
+      ].sort(),
     );
   });
 
-  it("webSite schema shape is untouched by 89B.1", () => {
+  it("webSite declares every active locale and publishes as the organisation", () => {
     const site = webSiteSchema() as Record<string, unknown>;
     expect(site["@type"]).toBe("WebSite");
-    expect("inLanguage" in site).toBe(false);
+    // PHASE 105 replaced the 89B.1 "inLanguage must be absent" pin. The site is
+    // genuinely trilingual and one WebSite entity covers all three locales, so
+    // declaring the languages is correct rather than a drift risk.
+    expect(site.inLanguage).toEqual(["fa-IR", "en-US", "de-DE"]);
   });
 });
 
