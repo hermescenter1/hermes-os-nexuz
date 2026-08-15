@@ -5,7 +5,10 @@ import { SiteNav }         from "./SiteNav";
 import { AuthIndicator }   from "./auth/AuthIndicator";
 import { HermesLogoMark }  from "./HermesLogo";
 import { NotificationCenter } from "./NotificationCenter";
-import { getCurrentUser }  from "@/lib/auth/session";
+// AUTH-U1 — canonical identity facade (JWT first, legacy HMAC fallback).
+// Read-only consumer: the resolved role only filters which nav links render.
+// Middleware remains the authorization boundary, so this is a display concern.
+import { getCurrentUserUnified } from "@/lib/auth/current-user";
 import type { Role }       from "@/lib/auth/roles";
 
 export async function SiteHeader() {
@@ -15,7 +18,7 @@ export async function SiteHeader() {
   // links are filtered before render (never fetched from a client endpoint).
   let role: Role | null = null;
   try {
-    role = (await getCurrentUser())?.role ?? null;
+    role = (await getCurrentUserUnified())?.role ?? null;
   } catch { /* unauthenticated or auth not configured */ }
 
   return (
