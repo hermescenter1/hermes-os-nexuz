@@ -13,11 +13,26 @@ import { TrustBadgesSection } from "@/components/trust/TrustBadgesSection";
 import { PUBLIC_FOOTER_COLUMNS } from "./nav";
 import { PublicPageContainer } from "./PublicPageContainer";
 
-export function PublicFooter() {
+export interface PublicFooterProps {
+  /**
+   * PHASE 104-E — footer shell treatment. `"standard"` is the shipped 87D
+   * footer and stays the DEFAULT for every public route. The homepage opts
+   * into `"observatory"` explicitly: an Edge top rule and a base→deep gradient
+   * that lands the closing scene, instead of a hard border on flat deep navy.
+   * Contents, links, columns and landmarks are unchanged.
+   */
+  visualMode?: "standard" | "observatory";
+}
+
+export function PublicFooter({ visualMode = "standard" }: PublicFooterProps = {}) {
   const t = useTranslations("publicSite.footer");
+  const observatory = visualMode === "observatory";
 
   return (
-    <footer className="border-t border-border-subtle bg-background-deep">
+    <footer
+      data-visual-mode={visualMode}
+      className={observatory ? "hh-footer" : "border-t border-border-subtle bg-background-deep"}
+    >
       <PublicPageContainer className="py-12">
         {/* 87D.1 — five link columns: the public site structure at a glance. */}
         <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[minmax(0,1.3fr)_repeat(5,minmax(0,1fr))]">

@@ -424,7 +424,7 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            accessible name: 2 (services.capabilityChrome.relatedCta,
     //            .relatedCtaAria). F1 changed VALUES only — no leaf delta.
     //            -> 6151
-    expect(allEn.length).toBe(6151);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths
+    expect(allEn.length).toBe(6194);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; 104-E: +43 publicSite.observatory (planes + gate semantics, genuinely German)
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -438,14 +438,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6151 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 6194 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6151);
+    ).toBe(6194);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

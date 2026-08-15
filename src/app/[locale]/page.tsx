@@ -1,28 +1,58 @@
 // PHASE 87D — premium public homepage on the public-site foundation.
+// Server-rendered throughout; copy comes from the `publicSite` catalogs
+// (en + de + fa). Content integrity: no certifications, statistics,
+// testimonials or partner claims, and every product depiction is explicitly
+// captioned as illustrative. Conversion routes are the approved pair:
+// /demo (primary), /platform (secondary).
 //
-// Server-rendered throughout (the mobile-nav drawer is the only client
-// island); copy comes from the `publicSite` catalogs (fa + en, de carryover).
-// Content integrity: no certifications, statistics, testimonials or partner
-// claims — the trust surfaces state verifiable architecture facts only, and
-// the hero product composition is explicitly captioned as illustrative.
-// Conversion routes are the approved pair: /demo (primary), /platform.
+// ══ PHASE 104-E — HERMES INDUSTRIAL INTELLIGENCE OBSERVATORY (round 3) ══
+//
+// Round 1 (rejected): a re-layout of the old card-grid page.
+// Round 2 (conditionally accepted): the Observatory direction, the bespoke
+//   signature, eight chapters, no photograph — but visual power lived only in
+//   the hero; after the fold the page fell back to text and hairlines.
+// Round 3 (this): the SAME architecture, carried through. Every chapter now
+//   owns a real drawing; the signature is stronger, instrumented, and present
+//   in the mobile fold; three Glass surfaces mark genuine depth; the semantic
+//   reasoning tokens appear only at their meaning; the header and footer opt
+//   into the Observatory shell without changing their defaults.
+//
+//   CH 01 hero      deep field + signature + Glass instrumentation (Glass #1)
+//   CH 02 case      incident rail + waveform + Glass evidence inspector (#2)
+//   CH 03 planes    four connected planes on one spine (in/process/out/limit)
+//   CH 04 backbone  plant-to-platform system map, four tiers
+//   CH 05 core      ONE intelligence drawing shared by Brain/Copilot/Ops
+//   CH 06 gate      validation gate: actor / evidence / state / block
+//   CH 07 editorial editorial spread with cover geometry + issue mark
+//   CH 08 close     signal convergence on a Glass decision surface (#3)
+//
+// NO photograph, NO card grid, NO hardcoded text inside any SVG, NO
+// ember/Horizon token. The two retired round-1 hero/story components are
+// unreferenced and deliberately kept on disk until final visual approval.
+//
+// ── CONTENT PRESERVED, NOT DROPPED ──
+// Every `publicSite` group the old page rendered still renders. Every URL,
+// CTA destination, metadata field and canonical behaviour is unchanged.
+//
+// ── ORDER CONTRACT ──
+// `homepage-104e-narrative.test.ts` asserts the eight chapters in order,
+// exactly once, plus routes and content groups, with a mutation harness.
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { buildMetadata } from "@/lib/seo/metadata";
+import { PublicHeader, PublicFooter } from "@/components/public-site";
 import {
-  PublicHeader,
-  PublicFooter,
-  PublicHero,
-  PublicSection,
-  PublicPageContainer,
-  SectionHeader,
-  CapabilityGrid,
-  IntelligenceFlow,
-  TrustSection,
-  PublicCta,
-  HomeStorySection,
-  type CapabilityAccent,
-} from "@/components/public-site";
+  ObservatoryHero,
+  ObservatorySignature,
+  CaseChapter,
+  PlanesChapter,
+  BackboneChapter,
+  CoreChapter,
+  GateChapter,
+  EditorialChapter,
+  ClosingChapter,
+  type ObservatoryNodes,
+} from "@/components/public-site/home";
 
 export async function generateMetadata({
   params,
@@ -40,67 +70,51 @@ export async function generateMetadata({
   });
   // The locale layout applies the `%s | Hermes OS` title template to child
   // segments; meta.title already carries the brand, so the homepage opts out
-  // with an absolute document title ("Hermes OS — … | Hermes OS" otherwise).
-  // openGraph/twitter titles from buildMetadata are unaffected by templates.
+  // with an absolute document title.
   return { ...meta, title: { absolute: t("title") } };
 }
 
-const PIPELINE_KEYS = [
-  "data", "context", "classification", "hypotheses", "evidence",
-  "confidence", "risk", "safeAction", "report",
+/**
+ * CH04 — the engineering backbone tiers, plant floor to Hermes.
+ * `tags` are locale-INVARIANT protocol / standard identifiers the catalogs
+ * already keep verbatim inside translated sentences (the de-catalog test
+ * asserts exactly that for "OPC UA"); they render `dir="ltr"` in RTL.
+ */
+const BACKBONE_TIERS = [
+  { key: "plant",   tags: ["Instrumentation", "Electrical", "Asset"] },
+  { key: "control", tags: ["PLC", "OT Edge", "OPC UA", "MQTT"] },
+  { key: "super",   tags: ["SCADA/HMI", "Historian", "Time Series"] },
+  { key: "models",  tags: ["Digital Twin", "Knowledge Graph", "EDMS"] },
+  { key: "hermes",  tags: ["Industrial Brain", "Copilot"], live: true },
 ] as const;
 
-// 87D.1 — homepage capability groups (all truthful, all existing routes).
-//
-// R2 corrective (F3): these two groups declared `href` but their `.map()`
-// discarded it, so the cards rendered as dead text — the homepage had NO link
-// into any capability. The map now forwards href + ctaLabel exactly like the
-// LEARNING/ECOSYSTEM groups below always did. Cards whose capability has a
-// dedicated public page now point at it; `asset` keeps /platform because no
-// dedicated Asset Intelligence page exists, and `knowledge` keeps /library.
-const CHALLENGE_KEYS = ["fragmented", "opaque", "risky", "lost"] as const;
+/** CH04 — the three capability routes the backbone links to. */
+const ENGINEERING_CARDS = [
+  { key: "edge",      accent: "success", href: "/services/ot-edge" },
+  { key: "twin",      accent: "violet",  href: "/services/digital-twin" },
+  { key: "knowledge", accent: "azure",   href: "/library" },
+] as const;
+
+/** CH05 — operational intelligence links (real capability routes). */
 const OPERATIONS_CARDS = [
   { key: "asset",      accent: "success", href: "/platform" },
   { key: "predictive", accent: "brand",   href: "/services/predictive-maintenance" },
   { key: "multisite",  accent: "azure",   href: "/services/multi-site" },
-] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
-const ENGINEERING_CARDS = [
-  { key: "knowledge", accent: "azure",   href: "/library" },
-  { key: "twin",      accent: "violet",  href: "/services/digital-twin" },
-  { key: "edge",      accent: "success", href: "/services/ot-edge" },
-] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
-const LEARNING_CARDS = [
-  { key: "academy",  accent: "brand",  href: "/academy" },
-  { key: "library",  accent: "azure",  href: "/library" },
-  { key: "articles", accent: "violet", href: "/articles" },
-] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
+] as const;
+
+/** CH08 — the eight ecosystem doors. Every href is a live public route. */
 const ECOSYSTEM_CARDS = [
-  { key: "industrialBrain", href: "/industrial-brain", accent: "brand" },
-  { key: "copilot",         href: "/copilot",          accent: "brand" },
-  { key: "services",        href: "/services",         accent: "azure" },
-  { key: "academy",         href: "/academy",          accent: "success" },
-  { key: "library",         href: "/library",          accent: "azure" },
-  { key: "articles",        href: "/articles",         accent: "violet" },
-  { key: "vendors",         href: "/vendors",          accent: "success" },
-  { key: "careers",         href: "/careers",          accent: "violet" },
-] as const satisfies readonly { key: string; accent: CapabilityAccent; href: string }[];
+  { key: "industrialBrain", href: "/industrial-brain" },
+  { key: "copilot",         href: "/copilot"          },
+  { key: "services",        href: "/services"         },
+  { key: "academy",         href: "/academy"          },
+  { key: "library",         href: "/library"          },
+  { key: "articles",        href: "/articles"         },
+  { key: "vendors",         href: "/vendors"          },
+  { key: "careers",         href: "/careers"          },
+] as const;
 
-const PILLARS = [
-  { key: "reasoning", accent: "brand",   glyph: "◇" },
-  { key: "evidence",  accent: "azure",   glyph: "◆" },
-  { key: "model",     accent: "violet",  glyph: "◈" },
-  { key: "safety",    accent: "success", glyph: "◉" },
-] as const satisfies readonly { key: string; accent: CapabilityAccent; glyph: string }[];
-
-const DOMAINS = [
-  { key: "intelligence",   accent: "brand" },
-  { key: "engineering",    accent: "azure" },
-  { key: "operations",     accent: "success" },
-  { key: "business",       accent: "violet" },
-  { key: "administration", accent: "brand" },
-] as const satisfies readonly { key: string; accent: CapabilityAccent }[];
-
-const GATE_KEYS = ["proposed", "validated", "approval", "executed"] as const;
+const GUARANTEE_KEYS = ["isolation", "rbac", "protocols", "deterministic"] as const;
 
 export default async function HomePage({
   params,
@@ -110,234 +124,245 @@ export default async function HomePage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("publicSite");
+  const split = (s: string) => s.split("·").map((x) => x.trim()).filter(Boolean);
 
-  const pipeline = PIPELINE_KEYS.map((key) => ({
-    key,
-    label: t(`flow.stages.${key}`),
-    emphasis: key === "safeAction",
-  }));
-  const gates = GATE_KEYS.map((key) => ({
-    key,
-    label: t(`safeAction.gates.${key}`),
-    emphasis: key === "approval",
-  }));
+  // The Observatory signature's labels — all existing catalog keys.
+  const nodes: ObservatoryNodes = {
+    asset:      t("evidence.header"),
+    signals:    t("flow.stages.data"),
+    evidence:   t("flow.stages.evidence"),
+    brain:      t("intelligence.brain.name"),
+    hypotheses: t("flow.stages.hypotheses"),
+    risk:       t("flow.stages.risk"),
+    gate:       t("safeAction.gates.approval"),
+    action:     t("flow.stages.safeAction"),
+    quality:    [t("evidence.evidence1"), t("evidence.evidence2"), t("evidence.evidence3")],
+    disclosure: t("evidence.caption"),
+    ariaLabel:  t("evidence.ariaLabel"),
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background-base">
-      {/* The full entity graph — Organization, founder, WebSite AND the
-          Hermes OS SoftwareApplication node — is emitted globally by the
-          locale layout, so the homepage adds no structured data of its own.
-          Re-emitting the product here would duplicate an @id node. */}
-      <PublicHeader />
+      {/* The full entity graph is emitted globally by the locale layout, so
+          the homepage adds no structured data of its own. */}
+      <PublicHeader visualMode="observatory" />
+
       <main id="public-content" tabIndex={-1} className="flex-1 outline-none">
-        <PublicHero />
-        <TrustSection variant="strip" />
+        {/* ══ CH 01 ══ */}
+        <ObservatoryHero nodes={nodes} />
 
-        <PublicSection aria-labelledby="challenge-title">
-          <PublicPageContainer>
-            <SectionHeader
-              id="challenge-title"
-              title={t("challenge.title")}
-              lede={t("challenge.lede")}
-              align="center"
-            />
-            <CapabilityGrid
-              className="mt-10"
-              columns={4}
-              items={CHALLENGE_KEYS.map((key) => ({
-                key,
-                accent: "violet",
-                title: t(`challenge.cards.${key}.name`),
-                body: t(`challenge.cards.${key}.desc`),
-              }))}
-            />
-          </PublicPageContainer>
-        </PublicSection>
-
-        <PublicSection tone="deep" aria-labelledby="pillars-title">
-          <PublicPageContainer>
-            <SectionHeader id="pillars-title" title={t("pillars.title")} align="center" />
-            <CapabilityGrid
-              className="mt-10"
-              columns={4}
-              items={PILLARS.map(({ key, accent, glyph }) => ({
-                key,
-                accent,
-                glyph,
-                title: t(`pillars.${key}.name`),
-                body: t(`pillars.${key}.desc`),
-              }))}
-            />
-          </PublicPageContainer>
-        </PublicSection>
-
-        <PublicSection aria-labelledby="flow-title">
-          <PublicPageContainer>
-            <SectionHeader id="flow-title" title={t("flow.title")} align="center" />
-            <IntelligenceFlow className="mt-10 justify-center" stages={pipeline} />
-          </PublicPageContainer>
-        </PublicSection>
-
-        <PublicSection tone="deep" aria-labelledby="intelligence-title">
-          <PublicPageContainer>
-            <SectionHeader
-              id="intelligence-title"
-              title={t("intelligence.title")}
-              lede={t("intelligence.lede")}
-              align="center"
-            />
-            <CapabilityGrid
-              className="mt-10"
-              columns={2}
-              items={(["brain", "copilot"] as const).map((key) => ({
-                key,
-                accent: "brand",
-                title: t(`intelligence.${key}.name`),
-                body: t(`intelligence.${key}.desc`),
-                list: t(`intelligence.${key}.items`).split(" · "),
-                href: key === "brain" ? "/industrial-brain" : "/copilot",
-                ctaLabel: t(`intelligence.${key}.cta`),
-              }))}
-            />
-          </PublicPageContainer>
-        </PublicSection>
-
-        {/* 87D.2 story 2/4 — smart factory (image 02) leads into operations */}
-        <HomeStorySection
-          id="story-factory"
-          storyKey="factory"
-          imageSrc="/images/home-industrial/02-smart-factory-engineers.webp"
-          tone="raised"
+        {/* ══ CH 02 — one industrial case, as an incident rail ══ */}
+        <CaseChapter
+          id="case-title"
+          title={t("challenge.title")}
+          lede={t("challenge.lede")}
+          asset={t("evidence.header")}
+          status={t("evidence.status")}
+          disclosure={t("evidence.caption")}
+          signature={<ObservatorySignature nodes={nodes} />}
+          steps={[
+            { key: "evidence",      state: "evidence",      label: t("evidence.evidence1") },
+            { key: "contradiction", state: "contradiction", label: t("evidence.evidence2") },
+            { key: "missing",       state: "missing",       label: t("evidence.evidence3") },
+            { key: "hyp1",          state: "hypothesis",    label: t("evidence.hyp1Title"), body: t("evidence.hyp1Meta") },
+            { key: "risk",          state: "risk",          label: t("evidence.riskLabel"), body: t("evidence.riskNote") },
+            { key: "gate",          state: "decision",      label: t("safeAction.gates.approval"), body: t("evidence.sapNote") },
+            { key: "action",        state: "action",        label: t("flow.stages.safeAction") },
+          ]}
+          inspector={{
+            title: t("evidence.railTitle"),
+            rows: [
+              { key: "e1", state: "evidence",      label: t("evidence.evidence1") },
+              { key: "e2", state: "contradiction", label: t("evidence.evidence2") },
+              { key: "e3", state: "missing",       label: t("evidence.evidence3") },
+            ],
+            hypTitle: t("evidence.hypothesesTitle"),
+            hyps: [
+              { label: t("evidence.hyp1Title"), meta: t("evidence.hyp1Meta") },
+              { label: t("evidence.hyp2Title"), meta: t("evidence.hyp2Meta") },
+            ],
+          }}
         />
 
-        <PublicSection aria-labelledby="operations-title">
-          <PublicPageContainer>
-            <SectionHeader id="operations-title" title={t("operations.title")} align="center" />
-            <CapabilityGrid
-              className="mt-10"
-              columns={3}
-              items={OPERATIONS_CARDS.map(({ key, accent, href }) => ({
-                key,
-                accent,
+        {/* ══ CH 03 — four connected planes ══
+            Codex fix: the round-3 cells borrowed pipeline-stage names as
+            column heads and the pillar `desc` as "process", which produced
+            heads that did not describe their cells. The planes now read
+            DEDICATED, exact copy from `publicSite.observatory` — INPUT /
+            PROCESS / OUTPUT / CONSTRAINT with a per-plane cell for each — in
+            en/de/fa. The chapter also gets its own lede instead of reusing
+            the Chapter 5 line. */}
+        <PlanesChapter
+          id="planes-title"
+          title={t("pillars.title")}
+          lede={t("observatory.planesLede")}
+          cellHeads={{
+            input:      t("observatory.planeHeads.input"),
+            process:    t("observatory.planeHeads.process"),
+            output:     t("observatory.planeHeads.output"),
+            constraint: t("observatory.planeHeads.constraint"),
+          }}
+          planes={(["evidence", "reasoning", "model", "safety"] as const).map((key) => ({
+            key,
+            name:       t(`pillars.${key}.name`),
+            input:      t(`observatory.planes.${key}.input`),
+            process:    t(`observatory.planes.${key}.process`),
+            output:     t(`observatory.planes.${key}.output`),
+            constraint: t(`observatory.planes.${key}.constraint`),
+          }))}
+        />
+
+        {/* ══ CH 04 — the engineering backbone ══ */}
+        <BackboneChapter
+          id="backbone-title"
+          title={t("engineering.title")}
+          lede={t("modules.title")}
+          tiers={BACKBONE_TIERS.map((tier) => ({
+            key:  tier.key,
+            tags: tier.tags,
+            live: "live" in tier ? tier.live : undefined,
+            name:
+              tier.key === "plant"   ? t("modules.groups.operations.name") :
+              tier.key === "control" ? t("engineering.cards.edge.name") :
+              tier.key === "super"   ? t("engineering.cards.twin.name") :
+              tier.key === "models"  ? t("engineering.cards.knowledge.name") :
+                                       t("modules.groups.intelligence.name"),
+          }))}
+          links={ENGINEERING_CARDS.map(({ key, href }) => ({
+            key,
+            href,
+            name: t(`engineering.cards.${key}.name`),
+            desc: t(`engineering.cards.${key}.desc`),
+            ctaLabel: t(`engineering.cards.${key}.cta`),
+          }))}
+        />
+
+        {/* ══ CH 05 — the intelligence core, one drawing ══
+            Own lede (Codex fix): "one evidence-bound reasoning core, with
+            assistance kept outside the decision gate" — distinct from CH03. */}
+        <CoreChapter
+          id="core-title"
+          title={t("intelligence.title")}
+          lede={t("observatory.coreLede")}
+          surfaces={[
+            {
+              key: "brain", role: "core",
+              name: t("intelligence.brain.name"), desc: t("intelligence.brain.desc"),
+              items: split(t("intelligence.brain.items")).map((label) => ({ label })),
+              href: "/industrial-brain", ctaLabel: t("intelligence.brain.cta"),
+            },
+            {
+              key: "copilot", role: "assistant",
+              name: t("intelligence.copilot.name"), desc: t("intelligence.copilot.desc"),
+              items: split(t("intelligence.copilot.items")).map((label) => ({ label })),
+              href: "/copilot", ctaLabel: t("intelligence.copilot.cta"),
+            },
+            {
+              // Each operations entry is a REAL link, so /platform,
+              // predictive-maintenance and multi-site keep inbound links.
+              key: "operations", role: "operations",
+              name: t("operations.title"), desc: t("operations.cards.asset.desc"),
+              // Forwards href AND ctaLabel — the F3 discovery invariant. The
+              // rail renders each entry as an anchor whose accessible name is
+              // the card's own cta copy, so every capability route keeps a
+              // real, uniquely-labelled inbound link from the homepage.
+              items: OPERATIONS_CARDS.map(({ key, href }) => ({
                 href,
-                title: t(`operations.cards.${key}.name`),
-                body: t(`operations.cards.${key}.desc`),
+                label: t(`operations.cards.${key}.name`),
                 ctaLabel: t(`operations.cards.${key}.cta`),
-              }))}
-            />
-          </PublicPageContainer>
-        </PublicSection>
-
-        <PublicSection tone="deep" aria-labelledby="engineering-title">
-          <PublicPageContainer>
-            <SectionHeader id="engineering-title" title={t("engineering.title")} align="center" />
-            <CapabilityGrid
-              className="mt-10"
-              columns={3}
-              items={ENGINEERING_CARDS.map(({ key, accent, href }) => ({
-                key,
-                accent,
-                href,
-                title: t(`engineering.cards.${key}.name`),
-                body: t(`engineering.cards.${key}.desc`),
-                ctaLabel: t(`engineering.cards.${key}.cta`),
-              }))}
-            />
-          </PublicPageContainer>
-        </PublicSection>
-
-        {/* 87D.2 story 3/4 — energy & infrastructure (image 03), reversed */}
-        <HomeStorySection
-          id="story-energy"
-          storyKey="energy"
-          imageSrc="/images/home-industrial/03-energy-infrastructure-campus.webp"
-          tone="raised"
-          reverse
+              })),
+              href: "/platform", ctaLabel: t("operations.cards.asset.cta"),
+            },
+          ]}
         />
 
-        <PublicSection aria-labelledby="modules-title">
-          <PublicPageContainer>
-            <SectionHeader id="modules-title" title={t("modules.title")} align="center" />
-            <CapabilityGrid
-              className="mt-10"
-              columns={5}
-              items={DOMAINS.map(({ key, accent }) => ({
-                key,
-                accent,
-                title: t(`modules.groups.${key}.name`),
-                list: t(`modules.groups.${key}.items`).split(" · "),
-              }))}
-            />
-          </PublicPageContainer>
-        </PublicSection>
-
-        <PublicSection tone="deep" aria-labelledby="learning-title">
-          <PublicPageContainer>
-            <SectionHeader id="learning-title" title={t("learning.title")} align="center" />
-            <CapabilityGrid
-              className="mt-10"
-              columns={3}
-              items={LEARNING_CARDS.map(({ key, accent, href }) => ({
-                key,
-                accent,
-                href,
-                title: t(`learning.cards.${key}.name`),
-                body: t(`learning.cards.${key}.desc`),
-                ctaLabel: t(`learning.cards.${key}.cta`),
-              }))}
-            />
-          </PublicPageContainer>
-        </PublicSection>
-
-        {/* 87D.2 story 4/4 — engineering intelligence (image 04) leads into the
-            safe-action gates */}
-        <HomeStorySection
-          id="story-intelligence"
-          storyKey="intelligence"
-          imageSrc="/images/home-industrial/04-engineering-intelligence.webp"
-          tone="raised"
+        {/* ══ CH 06 — the validation gate ══
+            Codex fix: every column and cell now reads DEDICATED copy from
+            `publicSite.observatory` — GATE / ACTOR / EVIDENCE REQUIREMENT /
+            BLOCKING CONDITION / STATE — so each row answers exactly what the
+            gate is, who owns it, what evidence it needs, what blocks it and
+            where it stands. Rendered as a semantic <table> on md+ and as an
+            accessible <details> accordion below md (G3 open by default). */}
+        <GateChapter
+          id="gate-title"
+          title={t("safeAction.title")}
+          lede={t("safeAction.lede")}
+          heads={{
+            gate:     t("observatory.gateHeads.gate"),
+            actor:    t("observatory.gateHeads.actor"),
+            evidence: t("observatory.gateHeads.evidence"),
+            block:    t("observatory.gateHeads.block"),
+            state:    t("observatory.gateHeads.state"),
+          }}
+          states={{
+            pending:   t("observatory.gateStates.pending"),
+            validated: t("observatory.gateStates.validated"),
+            decision:  t("observatory.gateStates.decision"),
+            released:  t("observatory.gateStates.released"),
+          }}
+          stages={(
+            [
+              { key: "proposed",  state: "pending"   },
+              { key: "validated", state: "validated" },
+              { key: "approval",  state: "decision", beacon: true },
+              { key: "executed",  state: "released"  },
+            ] as const
+          ).map((g) => ({
+            key:      g.key,
+            state:    g.state,
+            beacon:   "beacon" in g ? g.beacon : undefined,
+            label:    t(`safeAction.gates.${g.key}`),
+            actor:    t(`observatory.gates.${g.key}.actor`),
+            evidence: t(`observatory.gates.${g.key}.evidence`),
+            block:    t(`observatory.gates.${g.key}.block`),
+          }))}
+          guarantees={GUARANTEE_KEYS.map((key) => ({ key, label: t(`trustStrip.${key}`) }))}
         />
 
-        <PublicSection aria-labelledby="safe-action-title">
-          <PublicPageContainer className="flex flex-col items-center">
-            <SectionHeader
-              id="safe-action-title"
-              title={t("safeAction.title")}
-              lede={t("safeAction.lede")}
-              align="center"
-            />
-            <IntelligenceFlow className="mt-10 justify-center" appearance="chips" stages={gates} />
-          </PublicPageContainer>
-        </PublicSection>
+        {/* ══ CH 07 — the editorial spread ══ */}
+        <EditorialChapter
+          id="editorial-title"
+          title={t("learning.title")}
+          feature={{
+            kicker:   t("learning.cards.articles.name"),
+            issue:    t("header.nav.articles"),
+            name:     t("ecosystem.cards.articles.desc"),
+            desc:     t("learning.cards.articles.desc"),
+            meta:     t("trustStrip.deterministic"),
+            ctaLabel: t("learning.cards.articles.cta"),
+            href:     "/articles",
+          }}
+          rail={(["academy", "library"] as const).map((key) => ({
+            key,
+            name:     t(`learning.cards.${key}.name`),
+            desc:     t(`learning.cards.${key}.desc`),
+            ctaLabel: t(`learning.cards.${key}.cta`),
+            href:     key === "academy" ? "/academy" : "/library",
+          }))}
+        />
 
-        <TrustSection variant="features" />
-
-        <PublicSection aria-labelledby="ecosystem-title">
-          <PublicPageContainer>
-            <SectionHeader
-              id="ecosystem-title"
-              title={t("ecosystem.title")}
-              lede={t("ecosystem.lede")}
-              align="center"
-            />
-            <CapabilityGrid
-              className="mt-10"
-              columns={4}
-              items={ECOSYSTEM_CARDS.map(({ key, accent, href }) => ({
-                key,
-                accent,
-                href,
-                title: t(`ecosystem.cards.${key}.name`),
-                body: t(`ecosystem.cards.${key}.desc`),
-                ctaLabel: t(`ecosystem.cards.${key}.cta`),
-              }))}
-            />
-          </PublicPageContainer>
-        </PublicSection>
-
-        <PublicCta title={t("demoCta.title")} ctaLabel={t("demoCta.requestDemo")} href="/demo" />
+        {/* ══ CH 08 — the closing scene ══ */}
+        <ClosingChapter
+          id="close-title"
+          title={t("demoCta.title")}
+          ctaLabel={t("demoCta.requestDemo")}
+          href="/demo"
+          secondary={{ label: t("hero.explorePlatform"), href: "/platform" }}
+          closeLines={[
+            t("flow.stages.data"),
+            t("flow.stages.evidence"),
+            t("safeAction.gates.approval"),
+            t("flow.stages.safeAction"),
+          ]}
+          ecosystem={ECOSYSTEM_CARDS.map(({ key, href }) => ({
+            key, href,
+            name:     t(`ecosystem.cards.${key}.name`),
+            ctaLabel: t(`ecosystem.cards.${key}.cta`),
+          }))}
+        />
       </main>
-      <PublicFooter />
+
+      <PublicFooter visualMode="observatory" />
     </div>
   );
 }

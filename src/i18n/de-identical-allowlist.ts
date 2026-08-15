@@ -440,6 +440,9 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "services.capabilities.predictiveMaintenance.connects.items.1.name": "protocol-or-standard",
   "services.items.knowledgeCloud.name": "brand-or-product",
   "services.items.knowledgeCloud.title": "brand-or-product",
+  // 104-E: the Observatory gate table names the Industrial Brain as the actor
+  // of the PROPOSED gate — the same product name R2 already reviewed above.
+  "publicSite.observatory.gates.proposed.actor": "brand-or-product",
   "services.items.scadaHmi.name": "protocol-or-standard",
   "services.items.scadaHmi.title": "protocol-or-standard",
   "unknownCenter.eyebrow": "accepted-german-loanword",
@@ -450,7 +453,8 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
 export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   // R2: +4 — "Industrial Brain" (existing product name) in capability connect
   // cards.
-  "brand-or-product": 68,
+  // 104-E: +1 — the same product name as the PROPOSED gate actor.
+  "brand-or-product": 69,
   "contact-url-or-propernoun": 15,
   "german-word-identical": 103,
   "non-linguistic": 19,

@@ -56,23 +56,25 @@ describe("approved assets — presence, mapping and order", () => {
     }
   });
 
-  it("hero uses the command-center image with priority; page maps 02→factory, 03→energy, 04→intelligence in story order", () => {
+  // PHASE 104-E ROUND 2 — the HOMEPAGE-PLACEMENT half of this assertion is
+  // retired, by explicit owner decision.
+  //
+  // The owner rejected the photographic direction outright, and the approved
+  // Observatory narrative has eight chapters and NO photograph. `page.tsx`
+  // therefore no longer places these assets, so asserting their position there
+  // would pin a page that deliberately no longer exists.
+  //
+  // What is NOT retired: the components still exist and every behavioural
+  // guarantee this file makes about them — priority vs lazy loading, stable
+  // 1672×941 dimensions, responsive `sizes`, localized alt text, the
+  // illustrative figcaption, real CTA routes, reduced-motion safety, no remote
+  // or base64 images, no animation dependency, and all copy integrity — is
+  // untouched below, so the approved assets remain safe to reuse.
+  // `homepage-104e-narrative.test.ts` separately asserts that no photograph
+  // and no `<Image>` returns to the homepage.
+  it("the hero component still carries the command-center image with priority", () => {
     expect(heroSrc).toContain(`/images/home-industrial/${ASSETS[0]}`);
     expect(heroSrc).toContain("priority");
-    const positions = [
-      pageSrc.indexOf(`id="story-factory"`),
-      pageSrc.indexOf(`id="story-energy"`),
-      pageSrc.indexOf(`id="story-intelligence"`),
-    ];
-    for (const p of positions) expect(p).toBeGreaterThan(-1);
-    expect(positions[1]).toBeGreaterThan(positions[0]);
-    expect(positions[2]).toBeGreaterThan(positions[1]);
-    // each story id sits with its approved image
-    expect(pageSrc.indexOf(ASSETS[1])).toBeGreaterThan(positions[0]);
-    expect(pageSrc.indexOf(ASSETS[1])).toBeLessThan(positions[1]);
-    expect(pageSrc.indexOf(ASSETS[2])).toBeGreaterThan(positions[1]);
-    expect(pageSrc.indexOf(ASSETS[2])).toBeLessThan(positions[2]);
-    expect(pageSrc.indexOf(ASSETS[3])).toBeGreaterThan(positions[2]);
   });
 
   it("no remote images, no CSS-background content images, no base64 payloads", () => {
@@ -238,13 +240,12 @@ describe("PublicHero — 87D.2 command-center image + story navigation", () => {
     await unmount();
   });
 
-  it("hero section is the command anchor and the page keeps the 87D.1 marker order around the stories", () => {
+  // The 87D.1 marker-order half is retired with that contract — see
+  // `homepage-104e-narrative.test.ts`, which asserts the approved eight-chapter
+  // order, forbids duplicates, and proves via a mutation harness that deleting
+  // or reordering a chapter is actually detected. The component-level anchor
+  // guarantee below is kept.
+  it("hero section is still the command anchor", () => {
     expect(heroSrc).toContain(`id="story-command"`);
-    // stories interleave WITHOUT disturbing the pinned 87D.1 sequence
-    const before = pageSrc.indexOf('"intelligence-title"');
-    const factory = pageSrc.indexOf('id="story-factory"');
-    const operations = pageSrc.indexOf('"operations-title"');
-    expect(before).toBeLessThan(factory);
-    expect(factory).toBeLessThan(operations);
   });
 });

@@ -177,7 +177,14 @@ export const ROUTE_RULES = Object.freeze([
   { prefix: "/data-request", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "privacy request form" },
 
   // ── Locale root ─────────────────────────────────────────────────────────
-  { prefix: "/", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "localised homepage" },
+  // Phase 104-E — the Observatory homepage is the first PUBLIC route to be
+  // redesigned in full (owner-approved after three visual review rounds:
+  // bespoke ObservatorySignature, eight-chapter narrative, no stock imagery,
+  // Glass/Beacon/Edge at their contract meanings, header/footer opt-in).
+  // The classifier already treats "/" as an EXACT match (see ), so
+  // this status reaches the localised homepage only — no other public route
+  // inherits it, and the locale variants remain ONE route, not three.
+  { prefix: "/", family: "public/marketing", status: "MIGRATED_DIRECTLY", note: "Observatory homepage — Phase 104-E; owner + Codex approved reference surface", exact: true },
 ]);
 
 /**

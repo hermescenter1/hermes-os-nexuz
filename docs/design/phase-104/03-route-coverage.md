@@ -54,26 +54,28 @@ screen in two directions, not two design surfaces.
 | Coverage status | Routes |
 |---|---|
 | `COVERED_BY_SHARED_LAYOUT` | 240 |
-| `VISUAL_ONLY_STATIC_PUBLIC` | 30 |
+| `VISUAL_ONLY_STATIC_PUBLIC` | 29 |
 | `COVERED_BY_SHARED_TEMPLATE` | 6 |
-| `MIGRATED_DIRECTLY` | 2 |
+| `MIGRATED_DIRECTLY` | 3 |
 
 **Read this table honestly.** `COVERED_BY_SHARED_LAYOUT` is a statement about *how* a route
 would receive the design language — through the shell and shared layout it already renders
 inside — **not** a claim that the Phase 104 visual language has been applied to it and reviewed.
 
 `MIGRATED_DIRECTLY` means the opposite: the route's **own content** was redesigned. Increment
-104-D2 migrated exactly two, and only these two:
+104-D2 migrated two, and increment 104-E added the homepage — exactly these three:
 
 | Route | What changed |
 |---|---|
 | `/auth/login` | Hermes Horizon atmosphere (Login pilot only) + a contract-owned `.ds-glass-elevated` content surface |
 | `/dashboard` | The Hermes Triad — `operate` / `understand` / `act` — as the Workspace Home decision hierarchy |
+| `/` | **Phase 104-E — the Observatory homepage.** Bespoke `ObservatorySignature` (asset → PLC/SCADA/HMI → evidence → Brain → hypothesis & risk → human gate → safe action), eight-chapter narrative, no stock imagery, three Glass surfaces at real depth, header/footer opt-in. **Owner + Codex approved after three visual review rounds.** The classifier matches `/` exactly, so the locale variants are one route and no other public route inherits the status. |
 
 Everything else is still inheritance, not adoption. `/login` stays a **redirect** to `/auth/login`
 and is deliberately *not* counted as a migrated visual route; `/dashboard/*` subroutes are matched
 by a separate subtree rule and remain `COVERED_BY_SHARED_LAYOUT`, so the pilot cannot inflate the
-count by inheritance. **No owner visual review has been performed on either route.**
+count by inheritance. **The homepage is the only one of the three that has passed owner visual
+review**; Login and Workspace Home remain 104-D2 pilots awaiting their own redesign rounds.
 
 ## 4. The Alarm Center — correction of a false claim
 

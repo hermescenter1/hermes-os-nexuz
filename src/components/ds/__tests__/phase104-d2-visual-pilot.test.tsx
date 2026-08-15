@@ -653,8 +653,10 @@ describe("104-D2 — scope hygiene in the changed product components", () => {
   });
 });
 
-describe("104-D2 — route inventory records exactly the two pilot routes", () => {
-  it("Login and Workspace Home are MIGRATED_DIRECTLY and nothing else is", async () => {
+describe("104-D2 — route inventory records exactly the directly-migrated routes", () => {
+  // 104-D2 delivered Login + Workspace Home. 104-E added the Observatory
+  // homepage (owner + Codex approved). Exactly these three, and nothing else.
+  it("Login, Workspace Home and the Observatory homepage are MIGRATED_DIRECTLY and nothing else is", async () => {
     const inv = await import(
       "../../../../scripts/design/phase104-route-inventory.mjs"
     );
@@ -663,7 +665,7 @@ describe("104-D2 — route inventory records exactly the two pilot routes", () =
       .filter((r: { status: string | null }) => r.status === "MIGRATED_DIRECTLY")
       .map((r: { route: string }) => r.route)
       .sort();
-    expect(migrated).toEqual(["/auth/login", "/dashboard"]);
+    expect(migrated).toEqual(["/", "/auth/login", "/dashboard"]);
     expect(built.unclassified).toEqual([]);
   });
 
@@ -676,7 +678,7 @@ describe("104-D2 — route inventory records exactly the two pilot routes", () =
     expect(inv.classify("/dashboard/assets")?.status).toBe("COVERED_BY_SHARED_LAYOUT");
   });
 
-  it("both pilot rules are EXACT — no child inherits MIGRATED_DIRECTLY", async () => {
+  it("all migrated rules are EXACT — no child inherits MIGRATED_DIRECTLY", async () => {
     const inv = await import(
       "../../../../scripts/design/phase104-route-inventory.mjs"
     );
@@ -690,9 +692,14 @@ describe("104-D2 — route inventory records exactly the two pilot routes", () =
     expect(child?.status).toBe("COVERED_BY_SHARED_TEMPLATE");
     expect(child?.family).toBe("authentication");
     expect(inv.classify("/dashboard/anything")?.status).toBe("COVERED_BY_SHARED_LAYOUT");
+    // The homepage rule reaches ONLY "/": every other public route keeps its
+    // own status, and the locale variants are one route, not three.
+    expect(inv.classify("/")?.status).toBe("MIGRATED_DIRECTLY");
+    expect(inv.classify("/about")?.status).toBe("VISUAL_ONLY_STATIC_PUBLIC");
+    expect(inv.classify("/platform")?.status).toBe("VISUAL_ONLY_STATIC_PUBLIC");
 
     // The rules themselves must declare `exact`, not merely happen to work.
-    for (const prefix of ["/auth/login", "/dashboard"]) {
+    for (const prefix of ["/", "/auth/login", "/dashboard"]) {
       const rule = inv.ROUTE_RULES.find(
         (r: { prefix: string; status: string; exact?: boolean }) =>
           r.prefix === prefix && r.status === "MIGRATED_DIRECTLY",
@@ -710,6 +717,6 @@ describe("104-D2 — route inventory records exactly the two pilot routes", () =
     expect(built.total).toBe(inv.deriveRoutes().length);
     expect(built.covered).toBe(built.total);
     expect(built.unclassified).toEqual([]);
-    expect(built.byStatus.MIGRATED_DIRECTLY).toBe(2);
+    expect(built.byStatus.MIGRATED_DIRECTLY).toBe(3);
   });
 });

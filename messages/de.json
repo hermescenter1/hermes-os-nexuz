@@ -1,150 +1,150 @@
 {
-    "trustBadges": {
-      "sectionTitle": "Vertrauen & Verifizierung",
-      "enamadHeading": "Vertrauenssiegel",
-      "saashubHeading": "Software-Verzeichnis",
-      "provenExpertHeading": "Kundenbewertungen"
+  "trustBadges": {
+    "sectionTitle": "Vertrauen & Verifizierung",
+    "enamadHeading": "Vertrauenssiegel",
+    "saashubHeading": "Software-Verzeichnis",
+    "provenExpertHeading": "Kundenbewertungen"
+  },
+  "observability": {
+    "eyebrow": "Betrieb",
+    "title": "SRE-Leitstand",
+    "lede": "Live-Betriebszustand, Abhängigkeitsprüfungen, Sicherheits- und Fehlersignale, Vorfallrekonstruktion und Sicherungslage — jeder Wert ist gemessen, niemals simuliert.",
+    "posture": {
+      "healthy": "Alle Systeme betriebsbereit",
+      "degraded": "Betrieb mit Einschränkungen",
+      "critical": "Kritische Aufmerksamkeit erforderlich",
+      "detail": "Abgeleitet aus Live-Prüfungen und prozessinternen Signalen · Stand {at}"
     },
-    "observability": {
-      "eyebrow": "Betrieb",
-      "title": "SRE-Leitstand",
-      "lede": "Live-Betriebszustand, Abhängigkeitsprüfungen, Sicherheits- und Fehlersignale, Vorfallrekonstruktion und Sicherungslage — jeder Wert ist gemessen, niemals simuliert.",
-      "posture": {
-        "healthy": "Alle Systeme betriebsbereit",
-        "degraded": "Betrieb mit Einschränkungen",
-        "critical": "Kritische Aufmerksamkeit erforderlich",
-        "detail": "Abgeleitet aus Live-Prüfungen und prozessinternen Signalen · Stand {at}"
-      },
-      "kpi": {
-        "database": "Datenbank",
-        "redis": "Zwischenspeicher",
-        "activeAlerts": "Aktive Warnungen",
-        "activeAlertsSub": "derzeit ausgelöst",
-        "errorEvents": "Fehlerereignisse",
-        "securityEvents": "Sicherheitsereignisse",
-        "uptime": "Prozesslaufzeit",
-        "cumulative": "kumuliert"
-      },
-      "status": {
-        "unknown": "Unbekannt",
-        "notConfigured": "Nicht konfiguriert",
-        "up": "Aktiv",
-        "down": "Ausgefallen",
-        "operational": "Betriebsbereit",
-        "clear": "Frei",
-        "fallback": "Ersatz aktiv",
-        "redisBacked": "Redis-gestützt"
-      },
-      "labels": {
-        "liveProbe": "Live-Prüfung",
-        "count": "Anzahl",
-        "time": "Zeit",
-        "event": "Ereignis",
-        "severity": "Schweregrad",
-        "outcome": "Ergebnis",
-        "reason": "Grund",
-        "operation": "Vorgang",
-        "lastSeen": "Zuletzt gesehen",
-        "source": "Quelle",
-        "action": "Aktion",
-        "dataSource": "Datenquelle"
-      },
-      "sections": {
-        "topology": "Abhängigkeitstopologie",
-        "latency": "Abhängigkeitslatenz",
-        "httpLatency": "HTTP-Anfragelatenz",
-        "httpRate": "HTTP-Anfragerate",
-        "alerts": "Aktive Warnungen",
-        "securityRecent": "Letzte Sicherheitsereignisse",
-        "errors": "Fehler-Fingerabdrücke",
-        "incident": "Vorfall-Zeitachse",
-        "audit": "Audit-Explorer",
-        "backup": "Sicherungsstatus",
-        "startup": "Startvalidierung",
-        "runtime": "Laufzeit"
-      },
-      "topology": {
-        "application": "Anwendung",
-        "database": "Datenbank",
-        "redis": "Redis (Cache)",
-        "apiLimiter": "API-Ratenbegrenzer",
-        "authLimiter": "Auth-Ratenbegrenzer",
-        "self": "selbst",
-        "rateLimiter": "Ratenbegrenzer",
-        "externalNote": "Nginx, Mail und OpenBao werden von der Anwendung nicht geprüft und sind bewusst ausgelassen; fügen Sie eine echte Prüfung hinzu, bevor deren Zustand angezeigt wird."
-      },
-      "charts": {
-        "latencyAvg": "Durchschnitt",
-        "latencySamples": "Stichproben",
-        "latencyThreshold": "Warnung / kritisch",
-        "latencyEmpty": "Noch keine Prüfstichproben erfasst — der Bereitschaftsendpunkt erfasst die Datenbank-Prüflatenz, wenn er aufgerufen wird.",
-        "errorsBySeverity": "Fehler nach Schweregrad",
-        "securityByEvent": "Sicherheitsereignisse nach Typ",
-        "authActivity": "Authentifizierungs- und Sitzungsaktivität",
-        "authFailures": "Authentifizierungsfehler",
-        "authzDenials": "Autorisierungsverweigerungen",
-        "sessionOps": "Sitzungsvorgänge",
-        "alertDelivery": "Warnungszustellung"
-      },
-      "notInstrumented": {
-        "badge": "Nicht instrumentiert",
-        "httpRequestLatency": "HTTP-Anfragelatenz",
-        "httpRequestRate": "HTTP-Anfragerate",
-        "explanation": "Dieses Signal hat keine Aufzeichnungsstelle und keinen dauerhaften Zeitreihenspeicher, daher liegen keine echten Daten vor. Es wird als nicht gemessen angezeigt — bewusst nicht als Null, was fälschlich Verkehr vortäuschen würde.",
-        "sourceValue": "Prometheus-Scrape · /api/metrics",
-        "action": "Betreiberaktion: einen Prometheus-Scrape von /api/metrics aktivieren und echte HTTP-Instrumentierung hinzufügen (als separate Nachverfolgung erfasst)."
-      },
-      "empties": {
-        "noErrors": "Keine Fehler erfasst.",
-        "noSecurity": "Keine Sicherheitsereignisse erfasst.",
-        "noData": "Noch keine Daten erfasst.",
-        "noAlerts": "Keine aktiven Warnungen.",
-        "noAudit": "Keine Audit-Ereignisse passen.",
-        "auditError": "Der Audit-Speicher ist nicht verfügbar — dieses Panel ist eingeschränkt."
-      },
-      "severities": {
-        "info": "Hinweis",
-        "warning": "Warnung",
-        "error": "Fehler",
-        "critical": "Kritisch"
-      },
-      "incidentLookup": {
-        "label": "Vorfall über Korrelations-ID nachschlagen",
-        "placeholder": "zum Beispiel 3f2a-b19c",
-        "submit": "Rekonstruieren",
-        "invalid": "Fehlerhafte Korrelations-ID",
-        "empty": "Keine Ereignisse für diese Korrelations-ID"
-      },
-      "audit": {
-        "filterLabel": "Nach Aktion oder Ergebnis filtern",
-        "filterPlaceholder": "zum Beispiel login oder denied",
-        "results": "{shown} von {total} angezeigt",
-        "outcomeDistribution": "Ergebnisverteilung"
-      },
-      "backup": {
-        "verified": "Verifiziert",
-        "notVerified": "Nicht verifiziert",
-        "noBackup": "Keine Sicherung gefunden",
-        "noBackupHint": "Keine .dump-Datei in BACKUP_DIR gefunden — prüfen Sie, ob der Sicherungs-Cron läuft.",
-        "lastBackup": "Letzte Sicherung",
-        "age": "Alter",
-        "size": "Größe",
-        "verifiedAt": "Verifiziert am",
-        "neverVerified": "nie verifiziert",
-        "file": "Datei"
-      },
-      "startup": {
-        "fatal": "{n} fatale",
-        "ok": "Bestanden",
-        "notRun": "Nicht ausgeführt"
-      },
-      "runtime": {
-        "environment": "Umgebung",
-        "uptime": "Laufzeit",
-        "rss": "Residenter Speicher",
-        "heap": "Heap belegt / gesamt"
-      }
+    "kpi": {
+      "database": "Datenbank",
+      "redis": "Zwischenspeicher",
+      "activeAlerts": "Aktive Warnungen",
+      "activeAlertsSub": "derzeit ausgelöst",
+      "errorEvents": "Fehlerereignisse",
+      "securityEvents": "Sicherheitsereignisse",
+      "uptime": "Prozesslaufzeit",
+      "cumulative": "kumuliert"
     },
+    "status": {
+      "unknown": "Unbekannt",
+      "notConfigured": "Nicht konfiguriert",
+      "up": "Aktiv",
+      "down": "Ausgefallen",
+      "operational": "Betriebsbereit",
+      "clear": "Frei",
+      "fallback": "Ersatz aktiv",
+      "redisBacked": "Redis-gestützt"
+    },
+    "labels": {
+      "liveProbe": "Live-Prüfung",
+      "count": "Anzahl",
+      "time": "Zeit",
+      "event": "Ereignis",
+      "severity": "Schweregrad",
+      "outcome": "Ergebnis",
+      "reason": "Grund",
+      "operation": "Vorgang",
+      "lastSeen": "Zuletzt gesehen",
+      "source": "Quelle",
+      "action": "Aktion",
+      "dataSource": "Datenquelle"
+    },
+    "sections": {
+      "topology": "Abhängigkeitstopologie",
+      "latency": "Abhängigkeitslatenz",
+      "httpLatency": "HTTP-Anfragelatenz",
+      "httpRate": "HTTP-Anfragerate",
+      "alerts": "Aktive Warnungen",
+      "securityRecent": "Letzte Sicherheitsereignisse",
+      "errors": "Fehler-Fingerabdrücke",
+      "incident": "Vorfall-Zeitachse",
+      "audit": "Audit-Explorer",
+      "backup": "Sicherungsstatus",
+      "startup": "Startvalidierung",
+      "runtime": "Laufzeit"
+    },
+    "topology": {
+      "application": "Anwendung",
+      "database": "Datenbank",
+      "redis": "Redis (Cache)",
+      "apiLimiter": "API-Ratenbegrenzer",
+      "authLimiter": "Auth-Ratenbegrenzer",
+      "self": "selbst",
+      "rateLimiter": "Ratenbegrenzer",
+      "externalNote": "Nginx, Mail und OpenBao werden von der Anwendung nicht geprüft und sind bewusst ausgelassen; fügen Sie eine echte Prüfung hinzu, bevor deren Zustand angezeigt wird."
+    },
+    "charts": {
+      "latencyAvg": "Durchschnitt",
+      "latencySamples": "Stichproben",
+      "latencyThreshold": "Warnung / kritisch",
+      "latencyEmpty": "Noch keine Prüfstichproben erfasst — der Bereitschaftsendpunkt erfasst die Datenbank-Prüflatenz, wenn er aufgerufen wird.",
+      "errorsBySeverity": "Fehler nach Schweregrad",
+      "securityByEvent": "Sicherheitsereignisse nach Typ",
+      "authActivity": "Authentifizierungs- und Sitzungsaktivität",
+      "authFailures": "Authentifizierungsfehler",
+      "authzDenials": "Autorisierungsverweigerungen",
+      "sessionOps": "Sitzungsvorgänge",
+      "alertDelivery": "Warnungszustellung"
+    },
+    "notInstrumented": {
+      "badge": "Nicht instrumentiert",
+      "httpRequestLatency": "HTTP-Anfragelatenz",
+      "httpRequestRate": "HTTP-Anfragerate",
+      "explanation": "Dieses Signal hat keine Aufzeichnungsstelle und keinen dauerhaften Zeitreihenspeicher, daher liegen keine echten Daten vor. Es wird als nicht gemessen angezeigt — bewusst nicht als Null, was fälschlich Verkehr vortäuschen würde.",
+      "sourceValue": "Prometheus-Scrape · /api/metrics",
+      "action": "Betreiberaktion: einen Prometheus-Scrape von /api/metrics aktivieren und echte HTTP-Instrumentierung hinzufügen (als separate Nachverfolgung erfasst)."
+    },
+    "empties": {
+      "noErrors": "Keine Fehler erfasst.",
+      "noSecurity": "Keine Sicherheitsereignisse erfasst.",
+      "noData": "Noch keine Daten erfasst.",
+      "noAlerts": "Keine aktiven Warnungen.",
+      "noAudit": "Keine Audit-Ereignisse passen.",
+      "auditError": "Der Audit-Speicher ist nicht verfügbar — dieses Panel ist eingeschränkt."
+    },
+    "severities": {
+      "info": "Hinweis",
+      "warning": "Warnung",
+      "error": "Fehler",
+      "critical": "Kritisch"
+    },
+    "incidentLookup": {
+      "label": "Vorfall über Korrelations-ID nachschlagen",
+      "placeholder": "zum Beispiel 3f2a-b19c",
+      "submit": "Rekonstruieren",
+      "invalid": "Fehlerhafte Korrelations-ID",
+      "empty": "Keine Ereignisse für diese Korrelations-ID"
+    },
+    "audit": {
+      "filterLabel": "Nach Aktion oder Ergebnis filtern",
+      "filterPlaceholder": "zum Beispiel login oder denied",
+      "results": "{shown} von {total} angezeigt",
+      "outcomeDistribution": "Ergebnisverteilung"
+    },
+    "backup": {
+      "verified": "Verifiziert",
+      "notVerified": "Nicht verifiziert",
+      "noBackup": "Keine Sicherung gefunden",
+      "noBackupHint": "Keine .dump-Datei in BACKUP_DIR gefunden — prüfen Sie, ob der Sicherungs-Cron läuft.",
+      "lastBackup": "Letzte Sicherung",
+      "age": "Alter",
+      "size": "Größe",
+      "verifiedAt": "Verifiziert am",
+      "neverVerified": "nie verifiziert",
+      "file": "Datei"
+    },
+    "startup": {
+      "fatal": "{n} fatale",
+      "ok": "Bestanden",
+      "notRun": "Nicht ausgeführt"
+    },
+    "runtime": {
+      "environment": "Umgebung",
+      "uptime": "Laufzeit",
+      "rss": "Residenter Speicher",
+      "heap": "Heap belegt / gesamt"
+    }
+  },
   "meta": {
     "title": "Hermes OS — Industrielle KI-Plattform",
     "description": "Enterprise-Plattform für industrielle Automatisierung: PLC, SCADA, HMI, KI-Copilot und intelligente Betriebsführung — entwickelt für persisch- und englischsprachige Produktionsumgebungen.",
@@ -769,185 +769,497 @@
         "name": "Digitaler Zwilling",
         "title": "Digitaler Zwilling — ein abfragbares Modell Ihrer Anlage, auf echten Daten basierend",
         "lede": "Ein Graph aus Knoten und Beziehungen Ihrer Anlagen und Linien, überlagert mit der zuletzt gemeldeten Telemetrie und einem berechneten Zustandswert — keine reine Visualisierung, sondern ein abfragbares Modell, auf dem die übrigen Hermes-Fähigkeiten aufbauen.",
-        "problem": { "body": "Anlagenbeziehungen — welche Pumpe welche Linie versorgt, welcher Sensor zu welcher Maschine gehört — leben meist nur im Kopf einer Person oder in einer veralteten Zeichnung. Bei einer Störung kostet die Rekonstruktion dieses physischen Kontexts Zeit, die die Anlage nicht hat." },
-        "whatItDoes": { "bullets": [
-          { "name": "Knoten- und Beziehungsgraph", "desc": "Anlagen, Linien und Ausrüstung werden als Knoten mit typisierten Beziehungen modelliert, bearbeitbar in einem eigenen Graph- und Layout-Arbeitsbereich." },
-          { "name": "Telemetrie-Überlagerung", "desc": "Tag-Werte und ein berechneter Zustandswert werden dem Zwilling aus der zuletzt von jedem Gateway gemeldeten Telemetrie zugeordnet, sodass das Modell den zuletzt bekannten Zustand zeigt und kein statisches Diagramm. Veraltete Messwerte senken diesen Wert, statt als aktuell dargestellt zu werden." },
-          { "name": "Standortbezogene Layouts", "desc": "Gespeicherte visuelle Layouts je Standort halten den Zwilling lesbar, während der Anlagengraph wächst." }
-        ] },
-        "connects": { "items": [
-          { "name": "Prädiktive Instandhaltung", "desc": "Der Zwilling-Kontext — was mit was verbunden ist — ist die Struktur, auf der die prädiktive Risikobewertung aufbaut." },
-          { "name": "CMMS", "desc": "Zwilling-Knoten bilden dieselben Anlagen ab, für die das CMMS Instandhaltungsarbeit plant und verfolgt." },
-          { "name": "Industrial Brain", "desc": "Die diagnostische Auswertung verankert ihre Evidenz im Anlagen- und Beziehungsmodell des Zwillings, nicht in einer Vermutung über den Anlagenaufbau." }
-        ] },
-        "value": { "items": [
-          { "name": "Schnellerer Störungskontext", "desc": "Ingenieure sehen, was tatsächlich verbunden ist, bevor sie zur Anlage gehen." },
-          { "name": "Ein Modell, viele Nutzer", "desc": "Derselbe Zwilling versorgt Analytik, Zustandsbewertung und diagnostische Auswertung — keine doppelten Anlagenlisten, die synchron gehalten werden müssen." },
-          { "name": "Prüfbare Struktur", "desc": "Beziehungen sind explizit und versioniert, kein stillschweigendes Wissen." }
-        ] },
-        "automation": { "body": "Graph-Aktualisierungen und Telemetrie-Überlagerungen werden automatisch berechnet; was ein Knoten in der physischen Anlage darstellt, bleibt eine Entscheidung des Ingenieurs." },
-        "cta": { "title": "Sehen Sie, wie der Digitale Zwilling zu Ihrer Architektur passt" }
+        "problem": {
+          "body": "Anlagenbeziehungen — welche Pumpe welche Linie versorgt, welcher Sensor zu welcher Maschine gehört — leben meist nur im Kopf einer Person oder in einer veralteten Zeichnung. Bei einer Störung kostet die Rekonstruktion dieses physischen Kontexts Zeit, die die Anlage nicht hat."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Knoten- und Beziehungsgraph",
+              "desc": "Anlagen, Linien und Ausrüstung werden als Knoten mit typisierten Beziehungen modelliert, bearbeitbar in einem eigenen Graph- und Layout-Arbeitsbereich."
+            },
+            {
+              "name": "Telemetrie-Überlagerung",
+              "desc": "Tag-Werte und ein berechneter Zustandswert werden dem Zwilling aus der zuletzt von jedem Gateway gemeldeten Telemetrie zugeordnet, sodass das Modell den zuletzt bekannten Zustand zeigt und kein statisches Diagramm. Veraltete Messwerte senken diesen Wert, statt als aktuell dargestellt zu werden."
+            },
+            {
+              "name": "Standortbezogene Layouts",
+              "desc": "Gespeicherte visuelle Layouts je Standort halten den Zwilling lesbar, während der Anlagengraph wächst."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "Prädiktive Instandhaltung",
+              "desc": "Der Zwilling-Kontext — was mit was verbunden ist — ist die Struktur, auf der die prädiktive Risikobewertung aufbaut."
+            },
+            {
+              "name": "CMMS",
+              "desc": "Zwilling-Knoten bilden dieselben Anlagen ab, für die das CMMS Instandhaltungsarbeit plant und verfolgt."
+            },
+            {
+              "name": "Industrial Brain",
+              "desc": "Die diagnostische Auswertung verankert ihre Evidenz im Anlagen- und Beziehungsmodell des Zwillings, nicht in einer Vermutung über den Anlagenaufbau."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Schnellerer Störungskontext",
+              "desc": "Ingenieure sehen, was tatsächlich verbunden ist, bevor sie zur Anlage gehen."
+            },
+            {
+              "name": "Ein Modell, viele Nutzer",
+              "desc": "Derselbe Zwilling versorgt Analytik, Zustandsbewertung und diagnostische Auswertung — keine doppelten Anlagenlisten, die synchron gehalten werden müssen."
+            },
+            {
+              "name": "Prüfbare Struktur",
+              "desc": "Beziehungen sind explizit und versioniert, kein stillschweigendes Wissen."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Graph-Aktualisierungen und Telemetrie-Überlagerungen werden automatisch berechnet; was ein Knoten in der physischen Anlage darstellt, bleibt eine Entscheidung des Ingenieurs."
+        },
+        "cta": {
+          "title": "Sehen Sie, wie der Digitale Zwilling zu Ihrer Architektur passt"
+        }
       },
       "predictiveMaintenance": {
         "name": "Prädiktive Instandhaltung",
         "title": "Prädiktive Instandhaltung — Restnutzungsdauer und Risiko, berechnet aus echter Telemetrie",
         "lede": "Baselines, Verschleißverfolgung, Risikobewertung und Schätzung der Restnutzungsdauer, angewendet auf die Anlagentelemetrie, die Hermes OS bereits erfasst — kein Black-Box-Wert ohne Erklärung.",
-        "problem": { "body": "Die meisten Instandhaltungsmaßnahmen sind entweder reaktiv (Reparatur nach dem Ausfall) oder kalenderbasiert (Austausch unabhängig vom Bedarf). Beides verschwendet entweder Betriebszeit oder intakte Teile, weil keines von beiden den tatsächlichen Verschleiß der Anlage betrachtet." },
-        "whatItDoes": { "bullets": [
-          { "name": "Restnutzungsdauer (RUL)", "desc": "Schätzt, wie viel Nutzungsdauer einer Anlage noch bleibt, abgeleitet aus ihrer Telemetriehistorie." },
-          { "name": "Risikobewertung", "desc": "Ordnet Anlagen nach Ausfallrisiko, damit Instandhaltungsaufmerksamkeit zuerst dorthin geht, wo sie zählt." },
-          { "name": "Baselines und Verschleißverfolgung", "desc": "Lernt den normalen Betriebsbereich einer Anlage und verfolgt ihre Abweichung davon über die Zeit." }
-        ] },
-        "connects": { "items": [
-          { "name": "Digitaler Zwilling", "desc": "Liest denselben Anlagen- und Beziehungskontext, den der Zwilling pflegt, sodass ein Risikowert an eine reale Position in der Anlage gebunden ist." },
-          { "name": "CMMS", "desc": "Eine Empfehlung ist erst nützlich, wenn sie zu einem geplanten Arbeitsauftrag wird — beide teilen dieselbe Anlagenidentität." },
-          { "name": "Mehrstandortbetrieb", "desc": "Risiko-Snapshots werden standortübergreifend für die Priorisierung auf Portfolioebene aggregiert." }
-        ] },
-        "value": { "items": [
-          { "name": "Weniger überraschende Ausfälle", "desc": "Verschleiß wird sichtbar, bevor er zu Stillstand wird." },
-          { "name": "Weniger verschwendete Instandhaltung", "desc": "Teile und Arbeitszeit gehen an Anlagen, die tatsächlich Aufmerksamkeit benötigen, nicht an einen festen Kalender." },
-          { "name": "Nachvollziehbar, keine Black Box", "desc": "Jeder Wert lässt sich auf die Baseline und Telemetrie zurückführen, aus der er berechnet wurde." }
-        ] },
-        "automation": { "body": "Restnutzungsdauer-Schätzungen, Risikowerte und Baselines werden automatisch aus der Telemetrie berechnet; die Entscheidung, eine Linie stillzulegen oder eine Warnung zu übersteuern, bleibt beim verantwortlichen Ingenieur." },
-        "cta": { "title": "Prädiktive Instandhaltung an Ihren Anlagen sehen" }
+        "problem": {
+          "body": "Die meisten Instandhaltungsmaßnahmen sind entweder reaktiv (Reparatur nach dem Ausfall) oder kalenderbasiert (Austausch unabhängig vom Bedarf). Beides verschwendet entweder Betriebszeit oder intakte Teile, weil keines von beiden den tatsächlichen Verschleiß der Anlage betrachtet."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Restnutzungsdauer (RUL)",
+              "desc": "Schätzt, wie viel Nutzungsdauer einer Anlage noch bleibt, abgeleitet aus ihrer Telemetriehistorie."
+            },
+            {
+              "name": "Risikobewertung",
+              "desc": "Ordnet Anlagen nach Ausfallrisiko, damit Instandhaltungsaufmerksamkeit zuerst dorthin geht, wo sie zählt."
+            },
+            {
+              "name": "Baselines und Verschleißverfolgung",
+              "desc": "Lernt den normalen Betriebsbereich einer Anlage und verfolgt ihre Abweichung davon über die Zeit."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "Digitaler Zwilling",
+              "desc": "Liest denselben Anlagen- und Beziehungskontext, den der Zwilling pflegt, sodass ein Risikowert an eine reale Position in der Anlage gebunden ist."
+            },
+            {
+              "name": "CMMS",
+              "desc": "Eine Empfehlung ist erst nützlich, wenn sie zu einem geplanten Arbeitsauftrag wird — beide teilen dieselbe Anlagenidentität."
+            },
+            {
+              "name": "Mehrstandortbetrieb",
+              "desc": "Risiko-Snapshots werden standortübergreifend für die Priorisierung auf Portfolioebene aggregiert."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Weniger überraschende Ausfälle",
+              "desc": "Verschleiß wird sichtbar, bevor er zu Stillstand wird."
+            },
+            {
+              "name": "Weniger verschwendete Instandhaltung",
+              "desc": "Teile und Arbeitszeit gehen an Anlagen, die tatsächlich Aufmerksamkeit benötigen, nicht an einen festen Kalender."
+            },
+            {
+              "name": "Nachvollziehbar, keine Black Box",
+              "desc": "Jeder Wert lässt sich auf die Baseline und Telemetrie zurückführen, aus der er berechnet wurde."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Restnutzungsdauer-Schätzungen, Risikowerte und Baselines werden automatisch aus der Telemetrie berechnet; die Entscheidung, eine Linie stillzulegen oder eine Warnung zu übersteuern, bleibt beim verantwortlichen Ingenieur."
+        },
+        "cta": {
+          "title": "Prädiktive Instandhaltung an Ihren Anlagen sehen"
+        }
       },
       "cmms": {
         "name": "CMMS",
         "title": "CMMS — Instandhaltungsarbeit, in einem gelenkten System verfolgt",
         "lede": "Arbeitsaufträge, vorbeugende Zeitpläne, Ersatzteile und Instandhaltungskosten — ein gelenkter Datensatz statt einer Tabelle pro Schicht.",
-        "problem": { "body": "Wenn die Instandhaltungshistorie in Papierprotokollen oder persönlichen Tabellen lebt, sind Ausfallursache und frühere Reparaturen nicht abfragbar — sie sind das, woran sich der anwesende Techniker erinnert." },
-        "whatItDoes": { "bullets": [
-          { "name": "Lebenszyklus des Arbeitsauftrags", "desc": "Von der gemeldeten Störung über die geplante Aufgabe bis zur abgeschlossenen Arbeit, mit erhaltener Historie." },
-          { "name": "Vorbeugende Planung", "desc": "Instandhaltungspläne und Kalender, die Arbeit vor dem Ausfall auslösen, nicht danach." },
-          { "name": "Ersatzteile und Kostenverfolgung", "desc": "Ersatzteilverbrauch und Instandhaltungskosten werden gegen die Anlage erfasst, für die sie aufgewendet wurden." }
-        ] },
-        "connects": { "items": [
-          { "name": "Prädiktive Instandhaltung", "desc": "Risikobasierte Empfehlungen werden zu CMMS-Arbeitsaufträgen, statt ein Dashboard zu bleiben, auf das niemand reagiert." },
-          { "name": "EDMS", "desc": "Arbeit an einer Anlage kann auf dieselben gelenkten Verfahren und Zeichnungen verweisen, die das EDMS verwaltet." },
-          { "name": "Mehrstandortbetrieb", "desc": "Ausfall- und Stillstandsdaten fließen in den standortübergreifenden Ausfallmuster-Vergleich ein." }
-        ] },
-        "value": { "items": [
-          { "name": "Ein Instandhaltungsdatensatz", "desc": "Historie, Kosten und Ursache leben an einem Ort, nicht im Gedächtnis mehrerer Personen." },
-          { "name": "Weniger ungeplanter Stillstand", "desc": "Vorbeugende Pläne fangen Arbeit ab, bevor sie zum Ausfall wird." },
-          { "name": "Kostentransparenz", "desc": "Ausgaben nach Anlage, nach Standort sind abfragbar statt nachträglich rekonstruiert." }
-        ] },
-        "automation": { "body": "Planung und Historienverfolgung laufen automatisch; die Freigabe abgeschlossener Arbeit und die Sicherheitsabnahme bleiben Aufgabe von Techniker und Vorgesetztem." },
-        "cta": { "title": "CMMS an Ihrem Instandhaltungsablauf sehen" }
+        "problem": {
+          "body": "Wenn die Instandhaltungshistorie in Papierprotokollen oder persönlichen Tabellen lebt, sind Ausfallursache und frühere Reparaturen nicht abfragbar — sie sind das, woran sich der anwesende Techniker erinnert."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Lebenszyklus des Arbeitsauftrags",
+              "desc": "Von der gemeldeten Störung über die geplante Aufgabe bis zur abgeschlossenen Arbeit, mit erhaltener Historie."
+            },
+            {
+              "name": "Vorbeugende Planung",
+              "desc": "Instandhaltungspläne und Kalender, die Arbeit vor dem Ausfall auslösen, nicht danach."
+            },
+            {
+              "name": "Ersatzteile und Kostenverfolgung",
+              "desc": "Ersatzteilverbrauch und Instandhaltungskosten werden gegen die Anlage erfasst, für die sie aufgewendet wurden."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "Prädiktive Instandhaltung",
+              "desc": "Risikobasierte Empfehlungen werden zu CMMS-Arbeitsaufträgen, statt ein Dashboard zu bleiben, auf das niemand reagiert."
+            },
+            {
+              "name": "EDMS",
+              "desc": "Arbeit an einer Anlage kann auf dieselben gelenkten Verfahren und Zeichnungen verweisen, die das EDMS verwaltet."
+            },
+            {
+              "name": "Mehrstandortbetrieb",
+              "desc": "Ausfall- und Stillstandsdaten fließen in den standortübergreifenden Ausfallmuster-Vergleich ein."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Ein Instandhaltungsdatensatz",
+              "desc": "Historie, Kosten und Ursache leben an einem Ort, nicht im Gedächtnis mehrerer Personen."
+            },
+            {
+              "name": "Weniger ungeplanter Stillstand",
+              "desc": "Vorbeugende Pläne fangen Arbeit ab, bevor sie zum Ausfall wird."
+            },
+            {
+              "name": "Kostentransparenz",
+              "desc": "Ausgaben nach Anlage, nach Standort sind abfragbar statt nachträglich rekonstruiert."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Planung und Historienverfolgung laufen automatisch; die Freigabe abgeschlossener Arbeit und die Sicherheitsabnahme bleiben Aufgabe von Techniker und Vorgesetztem."
+        },
+        "cta": {
+          "title": "CMMS an Ihrem Instandhaltungsablauf sehen"
+        }
       },
       "multiSite": {
         "name": "Mehrstandortbetrieb",
         "title": "Mehrstandortbetrieb — ein Gesamtbild über jede Anlage hinweg",
         "lede": "Benchmarks, KPI-Vergleich, Risiko-Aggregation und standortübergreifende Ausfallmuster-Erkennung — damit eine an einem Standort gelernte Lektion nicht dort steckenbleibt.",
-        "problem": { "body": "Verschiedene Standorte, die dieselbe Ausrüstung betreiben, haben meist keine gemeinsame Sicht: Ein an einem Standort entdecktes Ausfallmuster erreicht die Ingenieure, die dieselbe Maschine anderswo betreiben, auf keinem Weg." },
-        "whatItDoes": { "bullets": [
-          { "name": "Standortübergreifender KPI-Vergleich", "desc": "Dieselben Kennzahlen, auf dieselbe Weise berechnet, über alle Standorte der Organisation." },
-          { "name": "Standortübergreifende Ausfallmuster", "desc": "Erkennt, wenn dieselbe Ausfallsignatur an mehr als einer Anlage auftritt." },
-          { "name": "Benchmarking und Risiko-Aggregation", "desc": "Aggregiert standortbezogenes Risiko zu einer organisationsweiten Sicht." }
-        ] },
-        "connects": { "items": [
-          { "name": "CMMS", "desc": "Die standortübergreifende Ausfallerkennung baut auf denselben Arbeitsauftrags- und Ausfalldaten auf, die das CMMS je Standort verfolgt." },
-          { "name": "Prädiktive Instandhaltung", "desc": "Standort-Risiko-Snapshots aggregieren dieselben je Anlage berechneten Risikowerte." },
-          { "name": "Industrial Brain", "desc": "Die Auswertung greift auf organisationsweiten Kontext zurück, nicht nur auf die Historie eines Standorts." }
-        ] },
-        "value": { "items": [
-          { "name": "Geteilte Erkenntnisse", "desc": "Ein einmal gefundenes Ausfallmuster ist überall sichtbar, wo es zutrifft." },
-          { "name": "Vergleichbare KPIs", "desc": "Standorte werden auf dieselbe Weise gemessen, sodass Vergleiche aussagekräftig sind." },
-          { "name": "Risikosicht auf Portfolioebene", "desc": "Die Führung sieht, wo sich Risiko im gesamten Betrieb konzentriert, nicht nur an einer Anlage." }
-        ] },
-        "automation": { "body": "Aggregation und Mustererkennung laufen automatisch standortübergreifend; das Handeln auf einen standortübergreifenden Befund — ein Verfahren ändern, ein Risiko eskalieren — bleibt eine menschliche Entscheidung am zuständigen Standort." },
-        "cta": { "title": "Mehrstandortbetrieb über Ihre Anlagen hinweg sehen" }
+        "problem": {
+          "body": "Verschiedene Standorte, die dieselbe Ausrüstung betreiben, haben meist keine gemeinsame Sicht: Ein an einem Standort entdecktes Ausfallmuster erreicht die Ingenieure, die dieselbe Maschine anderswo betreiben, auf keinem Weg."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Standortübergreifender KPI-Vergleich",
+              "desc": "Dieselben Kennzahlen, auf dieselbe Weise berechnet, über alle Standorte der Organisation."
+            },
+            {
+              "name": "Standortübergreifende Ausfallmuster",
+              "desc": "Erkennt, wenn dieselbe Ausfallsignatur an mehr als einer Anlage auftritt."
+            },
+            {
+              "name": "Benchmarking und Risiko-Aggregation",
+              "desc": "Aggregiert standortbezogenes Risiko zu einer organisationsweiten Sicht."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "CMMS",
+              "desc": "Die standortübergreifende Ausfallerkennung baut auf denselben Arbeitsauftrags- und Ausfalldaten auf, die das CMMS je Standort verfolgt."
+            },
+            {
+              "name": "Prädiktive Instandhaltung",
+              "desc": "Standort-Risiko-Snapshots aggregieren dieselben je Anlage berechneten Risikowerte."
+            },
+            {
+              "name": "Industrial Brain",
+              "desc": "Die Auswertung greift auf organisationsweiten Kontext zurück, nicht nur auf die Historie eines Standorts."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Geteilte Erkenntnisse",
+              "desc": "Ein einmal gefundenes Ausfallmuster ist überall sichtbar, wo es zutrifft."
+            },
+            {
+              "name": "Vergleichbare KPIs",
+              "desc": "Standorte werden auf dieselbe Weise gemessen, sodass Vergleiche aussagekräftig sind."
+            },
+            {
+              "name": "Risikosicht auf Portfolioebene",
+              "desc": "Die Führung sieht, wo sich Risiko im gesamten Betrieb konzentriert, nicht nur an einer Anlage."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Aggregation und Mustererkennung laufen automatisch standortübergreifend; das Handeln auf einen standortübergreifenden Befund — ein Verfahren ändern, ein Risiko eskalieren — bleibt eine menschliche Entscheidung am zuständigen Standort."
+        },
+        "cta": {
+          "title": "Mehrstandortbetrieb über Ihre Anlagen hinweg sehen"
+        }
       },
       "edms": {
         "name": "EDMS",
         "title": "EDMS — Engineering-Dokumente unter Versionskontrolle",
         "lede": "Gelenkte Dokumente mit Freigaben, Revisionen, Aufbewahrung und Audit-Trail — damit die Zeichnung, mit der ein Ingenieur arbeitet, die freigegebene ist.",
-        "problem": { "body": "Über E-Mail, gemeinsame Laufwerke und gedruckte Ordner verstreute Engineering-Dokumente erschweren es zu wissen, welche Revision aktuell ist, wer sie freigegeben hat und ob sie noch gültig ist." },
-        "whatItDoes": { "bullets": [
-          { "name": "Dokumente unter Versionskontrolle", "desc": "Revisionen, Freigaben und Auscheckvorgänge werden verfolgt, nicht überschrieben." },
-          { "name": "Aufbewahrung und Audit-Trail", "desc": "Aufbewahrungsrichtlinie und ein Protokoll, wer auf ein Dokument zugegriffen oder es geändert hat, sind eingebaut." },
-          { "name": "Suche, Ordner und Vorlagen", "desc": "Dokumente sind organisiert und durchsuchbar, statt nach Konvention und Hoffnung benannt." }
-        ] },
-        "connects": { "items": [
-          { "name": "CMMS", "desc": "Instandhaltungsarbeit kann auf dieselben gelenkten Verfahren und Zeichnungen verweisen, nicht auf eine ungelenkte Kopie." },
-          { "name": "ERP", "desc": "Projektdokumentation teilt dasselbe Dokumentenlenkungsmodell wie operative Datensätze." },
-          { "name": "Industrial Brain", "desc": "Diagnostische Empfehlungen verankern sich in freigegebenen Revisionen der zitierten Dokumente, nicht in einer zufällig verfügbaren Kopie." }
-        ] },
-        "value": { "items": [
-          { "name": "Eine gültige Version", "desc": "Alle arbeiten mit der freigegebenen Revision, nicht mit einem E-Mail-Anhang vom letzten Jahr." },
-          { "name": "Prüfungsbereiter Nachweis", "desc": "Aufbewahrungs- und Audit-Historie sind bereits vorhanden, wenn danach gefragt wird." },
-          { "name": "Auffindbare Dokumente", "desc": "Suche und Struktur ersetzen stillschweigendes Wissen darüber, wo etwas gespeichert ist." }
-        ] },
-        "automation": { "body": "Versionierung, Aufbewahrungsfristen und Audit-Protokollierung laufen automatisch; die Freigabe eines Dokuments zur Veröffentlichung bleibt die Entscheidung einer benannten Person." },
-        "cta": { "title": "EDMS an Ihrem Dokumentenbestand sehen" }
+        "problem": {
+          "body": "Über E-Mail, gemeinsame Laufwerke und gedruckte Ordner verstreute Engineering-Dokumente erschweren es zu wissen, welche Revision aktuell ist, wer sie freigegeben hat und ob sie noch gültig ist."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Dokumente unter Versionskontrolle",
+              "desc": "Revisionen, Freigaben und Auscheckvorgänge werden verfolgt, nicht überschrieben."
+            },
+            {
+              "name": "Aufbewahrung und Audit-Trail",
+              "desc": "Aufbewahrungsrichtlinie und ein Protokoll, wer auf ein Dokument zugegriffen oder es geändert hat, sind eingebaut."
+            },
+            {
+              "name": "Suche, Ordner und Vorlagen",
+              "desc": "Dokumente sind organisiert und durchsuchbar, statt nach Konvention und Hoffnung benannt."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "CMMS",
+              "desc": "Instandhaltungsarbeit kann auf dieselben gelenkten Verfahren und Zeichnungen verweisen, nicht auf eine ungelenkte Kopie."
+            },
+            {
+              "name": "ERP",
+              "desc": "Projektdokumentation teilt dasselbe Dokumentenlenkungsmodell wie operative Datensätze."
+            },
+            {
+              "name": "Industrial Brain",
+              "desc": "Diagnostische Empfehlungen verankern sich in freigegebenen Revisionen der zitierten Dokumente, nicht in einer zufällig verfügbaren Kopie."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Eine gültige Version",
+              "desc": "Alle arbeiten mit der freigegebenen Revision, nicht mit einem E-Mail-Anhang vom letzten Jahr."
+            },
+            {
+              "name": "Prüfungsbereiter Nachweis",
+              "desc": "Aufbewahrungs- und Audit-Historie sind bereits vorhanden, wenn danach gefragt wird."
+            },
+            {
+              "name": "Auffindbare Dokumente",
+              "desc": "Suche und Struktur ersetzen stillschweigendes Wissen darüber, wo etwas gespeichert ist."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Versionierung, Aufbewahrungsfristen und Audit-Protokollierung laufen automatisch; die Freigabe eines Dokuments zur Veröffentlichung bleibt die Entscheidung einer benannten Person."
+        },
+        "cta": {
+          "title": "EDMS an Ihrem Dokumentenbestand sehen"
+        }
       },
       "erp": {
         "name": "ERP",
         "title": "ERP — Engineering-Projekte, Bestand und Freigaben auf einem Mandanten",
         "lede": "Projekt- und Aufgabenmanagement, Bestandsverfolgung, Freigabe-Workflows und operative KPIs — die Unternehmens-Workflows rund um die Anlage, auf demselben Zugriffsmodell wie alles andere in Hermes OS.",
-        "problem": { "body": "Engineering- und Betriebsteams führen Projekte und Bestände oft in einem separaten System von dem, das die Anlage versteht, sodass die beiden Sichten auf dieselbe Arbeit auseinanderdriften." },
-        "whatItDoes": { "bullets": [
-          { "name": "Projekt- und Aufgabenmanagement", "desc": "Projekte, Aufgaben und Meilensteine werden gegen dasselbe Organisations- und Standortmodell wie der Rest der Plattform verfolgt." },
-          { "name": "Bestandsverfolgung", "desc": "Bestandsposten und ihre Bewegungen werden erfasst, nicht am Monatsende per Tabelle abgeglichen." },
-          { "name": "Freigaben und operative KPIs", "desc": "Mehrstufige Freigabe-Workflows und operative KPI-Verfolgung sind eingebaut." }
-        ] },
-        "connects": { "items": [
-          { "name": "CRM", "desc": "Eine gewonnene Opportunity kann zu einem verfolgten Projekt werden, ohne die Plattform zu verlassen." },
-          { "name": "EDMS", "desc": "Projektdokumentation folgt demselben gelenkten Dokumentenmodell wie Engineering-Datensätze." },
-          { "name": "Mehrstandortbetrieb", "desc": "Projekte und Ressourcen sind im selben standortübergreifenden operativen Gesamtbild sichtbar." }
-        ] },
-        "value": { "items": [
-          { "name": "Ein Mandant, ein Zugriffsmodell", "desc": "Kein zweiter Login, kein zweites Berechtigungssystem für Unternehmens-Workflows." },
-          { "name": "Aktueller Bestand", "desc": "Bewegungen werden erfasst, sobald sie passieren, nicht zur Zählzeit rekonstruiert." },
-          { "name": "Freigaben mit Nachweis", "desc": "Wer was wann freigegeben hat, ist Teil des Datensatzes." }
-        ] },
-        "automation": { "body": "KPI-Berechnung und Bewegungsprotokollierung laufen automatisch; die Freigabe einer Anfrage oder die Freigabe von Budget bleibt die Entscheidung eines benannten Genehmigers." },
-        "cta": { "title": "ERP an Ihren Projekten und Beständen sehen" }
+        "problem": {
+          "body": "Engineering- und Betriebsteams führen Projekte und Bestände oft in einem separaten System von dem, das die Anlage versteht, sodass die beiden Sichten auf dieselbe Arbeit auseinanderdriften."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Projekt- und Aufgabenmanagement",
+              "desc": "Projekte, Aufgaben und Meilensteine werden gegen dasselbe Organisations- und Standortmodell wie der Rest der Plattform verfolgt."
+            },
+            {
+              "name": "Bestandsverfolgung",
+              "desc": "Bestandsposten und ihre Bewegungen werden erfasst, nicht am Monatsende per Tabelle abgeglichen."
+            },
+            {
+              "name": "Freigaben und operative KPIs",
+              "desc": "Mehrstufige Freigabe-Workflows und operative KPI-Verfolgung sind eingebaut."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "CRM",
+              "desc": "Eine gewonnene Opportunity kann zu einem verfolgten Projekt werden, ohne die Plattform zu verlassen."
+            },
+            {
+              "name": "EDMS",
+              "desc": "Projektdokumentation folgt demselben gelenkten Dokumentenmodell wie Engineering-Datensätze."
+            },
+            {
+              "name": "Mehrstandortbetrieb",
+              "desc": "Projekte und Ressourcen sind im selben standortübergreifenden operativen Gesamtbild sichtbar."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Ein Mandant, ein Zugriffsmodell",
+              "desc": "Kein zweiter Login, kein zweites Berechtigungssystem für Unternehmens-Workflows."
+            },
+            {
+              "name": "Aktueller Bestand",
+              "desc": "Bewegungen werden erfasst, sobald sie passieren, nicht zur Zählzeit rekonstruiert."
+            },
+            {
+              "name": "Freigaben mit Nachweis",
+              "desc": "Wer was wann freigegeben hat, ist Teil des Datensatzes."
+            }
+          ]
+        },
+        "automation": {
+          "body": "KPI-Berechnung und Bewegungsprotokollierung laufen automatisch; die Freigabe einer Anfrage oder die Freigabe von Budget bleibt die Entscheidung eines benannten Genehmigers."
+        },
+        "cta": {
+          "title": "ERP an Ihren Projekten und Beständen sehen"
+        }
       },
       "otEdge": {
         "name": "OT-Edge",
         "title": "OT Edge — ein gelenktes Register für Gateways und Geräte, konzeptionell nur lesend",
         "lede": "Gateway- und Geräteregistrierung mit sicherer Anmeldedaten-Ausstellung und -Rotation — eine Aufzeichnungs- und Beobachtungsebene für die OT-Edge, kein Steuerkanal.",
-        "problem": { "body": "Betriebstechnik-Gateways und -Geräte sicher in ein IT-nahes System einzubinden ist schwer: Die meisten Integrationen legen entweder mehr offen als nötig oder bleiben so verschlossen, dass niemand sieht, was tatsächlich verbunden ist." },
-        "whatItDoes": { "bullets": [
-          { "name": "Gateway- und Geräteregister", "desc": "Jedes registrierte Gateway- und Geräteprofil wird an einem Ort, je Standort, verfolgt." },
-          { "name": "Sicherer Anmeldedaten-Lebenszyklus", "desc": "Ausstellung, Rotation und Widerruf von Gateway-Anmeldedaten, damit ein kompromittiertes Zugangsdatum ohne Vor-Ort-Besuch gekappt werden kann." },
-          { "name": "Rein lesender Engineering-Export", "desc": "Modelle exportieren ausschließlich Engineering-Metadaten und Gateway-Registrierung — bewusst so gestaltet, dass nichts hier ein Schreiben, eine Sollwertänderung oder einen Steuerbefehl ausdrücken kann." }
-        ] },
-        "connects": { "items": [
-          { "name": "Digitaler Zwilling", "desc": "Vom Gateway gemeldete Telemetrie hält die Überlagerung des Zwillings aktuell." },
-          { "name": "Prädiktive Instandhaltung", "desc": "Derselbe Telemetriestrom ist die Grundlage, aus der Risikobewertung und Restnutzungsdauer-Schätzung berechnet werden." },
-          { "name": "Industrial Brain", "desc": "Die in der diagnostischen Auswertung verwendete Evidenz lässt sich auf eine registrierte, mit Anmeldedaten versehene Quelle zurückführen, nicht auf einen anonymen Datenstrom." }
-        ] },
-        "value": { "items": [
-          { "name": "Sichtbarkeit ohne Offenlegung", "desc": "Sicherheits- und Engineering-Teams sehen, was verbunden ist, ohne dafür Schreibzugriff zu gewähren." },
-          { "name": "Anmeldedaten-Hygiene", "desc": "Das Rotieren oder Widerrufen eines Gateway-Zugangsdatums erfordert kein physisches Erreichen des Geräts." },
-          { "name": "Eine ehrliche Sicherheitsgrenze", "desc": "Das rein lesende Design wird in der Oberfläche durchgesetzt, nicht nur in einem Dokument versprochen." }
-        ] },
-        "automation": { "body": "Registrierung, Zustandsprüfungen und Anmeldedaten-Rotation laufen automatisiert; jede Steuerhandlung an realer Ausrüstung liegt für diese Ebene ausdrücklich außerhalb des Umfangs — diese Grenze ist eine Designentscheidung, keine derzeitige Einschränkung." },
-        "cta": { "title": "OT Edge an Ihrem Gateway-Bestand sehen" }
+        "problem": {
+          "body": "Betriebstechnik-Gateways und -Geräte sicher in ein IT-nahes System einzubinden ist schwer: Die meisten Integrationen legen entweder mehr offen als nötig oder bleiben so verschlossen, dass niemand sieht, was tatsächlich verbunden ist."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Gateway- und Geräteregister",
+              "desc": "Jedes registrierte Gateway- und Geräteprofil wird an einem Ort, je Standort, verfolgt."
+            },
+            {
+              "name": "Sicherer Anmeldedaten-Lebenszyklus",
+              "desc": "Ausstellung, Rotation und Widerruf von Gateway-Anmeldedaten, damit ein kompromittiertes Zugangsdatum ohne Vor-Ort-Besuch gekappt werden kann."
+            },
+            {
+              "name": "Rein lesender Engineering-Export",
+              "desc": "Modelle exportieren ausschließlich Engineering-Metadaten und Gateway-Registrierung — bewusst so gestaltet, dass nichts hier ein Schreiben, eine Sollwertänderung oder einen Steuerbefehl ausdrücken kann."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "Digitaler Zwilling",
+              "desc": "Vom Gateway gemeldete Telemetrie hält die Überlagerung des Zwillings aktuell."
+            },
+            {
+              "name": "Prädiktive Instandhaltung",
+              "desc": "Derselbe Telemetriestrom ist die Grundlage, aus der Risikobewertung und Restnutzungsdauer-Schätzung berechnet werden."
+            },
+            {
+              "name": "Industrial Brain",
+              "desc": "Die in der diagnostischen Auswertung verwendete Evidenz lässt sich auf eine registrierte, mit Anmeldedaten versehene Quelle zurückführen, nicht auf einen anonymen Datenstrom."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Sichtbarkeit ohne Offenlegung",
+              "desc": "Sicherheits- und Engineering-Teams sehen, was verbunden ist, ohne dafür Schreibzugriff zu gewähren."
+            },
+            {
+              "name": "Anmeldedaten-Hygiene",
+              "desc": "Das Rotieren oder Widerrufen eines Gateway-Zugangsdatums erfordert kein physisches Erreichen des Geräts."
+            },
+            {
+              "name": "Eine ehrliche Sicherheitsgrenze",
+              "desc": "Das rein lesende Design wird in der Oberfläche durchgesetzt, nicht nur in einem Dokument versprochen."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Registrierung, Zustandsprüfungen und Anmeldedaten-Rotation laufen automatisiert; jede Steuerhandlung an realer Ausrüstung liegt für diese Ebene ausdrücklich außerhalb des Umfangs — diese Grenze ist eine Designentscheidung, keine derzeitige Einschränkung."
+        },
+        "cta": {
+          "title": "OT Edge an Ihrem Gateway-Bestand sehen"
+        }
       },
       "crm": {
         "name": "CRM",
         "title": "CRM — die Vertriebspipeline, auf derselben Plattform wie die Anlage",
         "lede": "Leads, Opportunities, Konten und Vertriebsaktivität — die kommerzielle Seite von Hermes OS, mit demselben Mandanten- und Zugriffsmodell wie alles andere.",
-        "problem": { "body": "Ein Vertriebsteam mit einem separaten CRM hat keinen natürlichen Weg zurück in dieselbe Plattform, auf der der Interessent später arbeiten wird, sodass früher Kontext — wonach ein Interessent gefragt hat, was ihm wichtig war — bei der Übergabe verlorengeht." },
-        "whatItDoes": { "bullets": [
-          { "name": "Lead- und Opportunity-Pipeline", "desc": "Leads durchlaufen eine definierte Pipeline zu verfolgten Opportunities und Deals." },
-          { "name": "Konten- und Kontaktverwaltung", "desc": "Konten und ihre Kontakte werden gegen dasselbe Organisationsmodell wie jedes andere Modul erfasst." },
-          { "name": "Aktivitäts- und Verlängerungsverfolgung", "desc": "Lead-Aktivitätshistorie und Verlängerungsprognose sind eingebaut, nicht nachträglich angefügt." }
-        ] },
-        "connects": { "items": [
-          { "name": "ERP", "desc": "Ein gewonnener Deal kann in ein verfolgtes Projekt auf demselben Mandanten übergehen, kein Datenexport." },
-          { "name": "EDMS", "desc": "Angebote und Verträge gehen in dasselbe Dokumentenlenkungsmodell wie Engineering-Datensätze über." },
-          { "name": "Hermes-OS-Plattform", "desc": "CRM läuft unter demselben Organisations-, Rollen- und Standort-Zugriffsmodell wie der Rest der Plattform." }
-        ] },
-        "value": { "items": [
-          { "name": "Kontext, der die Übergabe übersteht", "desc": "Was einem Interessenten wichtig war, ist noch da, wenn er Kunde wird." },
-          { "name": "Ein Zugriffsmodell", "desc": "Vertrieb, Engineering und Betrieb teilen sich denselben Mandanten und dasselbe Berechtigungssystem." },
-          { "name": "Eine abfragbare Pipeline", "desc": "Deal-Stadium und Historie sind Datensätze, keine von Hand gepflegte Tabelle." }
-        ] },
-        "automation": { "body": "Aktivitätsprotokollierung und Verlängerungsprognose werden automatisch berechnet; die Qualifizierung eines Leads oder der Abschluss eines Deals bleibt die Einschätzung des Vertriebsmitarbeiters." },
-        "cta": { "title": "CRM an Ihrer Vertriebspipeline sehen" }
+        "problem": {
+          "body": "Ein Vertriebsteam mit einem separaten CRM hat keinen natürlichen Weg zurück in dieselbe Plattform, auf der der Interessent später arbeiten wird, sodass früher Kontext — wonach ein Interessent gefragt hat, was ihm wichtig war — bei der Übergabe verlorengeht."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Lead- und Opportunity-Pipeline",
+              "desc": "Leads durchlaufen eine definierte Pipeline zu verfolgten Opportunities und Deals."
+            },
+            {
+              "name": "Konten- und Kontaktverwaltung",
+              "desc": "Konten und ihre Kontakte werden gegen dasselbe Organisationsmodell wie jedes andere Modul erfasst."
+            },
+            {
+              "name": "Aktivitäts- und Verlängerungsverfolgung",
+              "desc": "Lead-Aktivitätshistorie und Verlängerungsprognose sind eingebaut, nicht nachträglich angefügt."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "ERP",
+              "desc": "Ein gewonnener Deal kann in ein verfolgtes Projekt auf demselben Mandanten übergehen, kein Datenexport."
+            },
+            {
+              "name": "EDMS",
+              "desc": "Angebote und Verträge gehen in dasselbe Dokumentenlenkungsmodell wie Engineering-Datensätze über."
+            },
+            {
+              "name": "Hermes-OS-Plattform",
+              "desc": "CRM läuft unter demselben Organisations-, Rollen- und Standort-Zugriffsmodell wie der Rest der Plattform."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Kontext, der die Übergabe übersteht",
+              "desc": "Was einem Interessenten wichtig war, ist noch da, wenn er Kunde wird."
+            },
+            {
+              "name": "Ein Zugriffsmodell",
+              "desc": "Vertrieb, Engineering und Betrieb teilen sich denselben Mandanten und dasselbe Berechtigungssystem."
+            },
+            {
+              "name": "Eine abfragbare Pipeline",
+              "desc": "Deal-Stadium und Historie sind Datensätze, keine von Hand gepflegte Tabelle."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Aktivitätsprotokollierung und Verlängerungsprognose werden automatisch berechnet; die Qualifizierung eines Leads oder der Abschluss eines Deals bleibt die Einschätzung des Vertriebsmitarbeiters."
+        },
+        "cta": {
+          "title": "CRM an Ihrer Vertriebspipeline sehen"
+        }
       }
     }
   },
@@ -6258,6 +6570,77 @@
     "demoCta": {
       "title": "Erleben Sie, wie Hermes über Ihre Anlage schlussfolgert",
       "requestDemo": "Demo anfragen"
+    },
+    "observatory": {
+      "planesLede": "Vier Absicherungsebenen, verbunden durch eine Achse von der Evidenz bis zur Handlung.",
+      "coreLede": "Ein evidenzgebundener Reasoning-Kern, dessen Assistenz außerhalb des Entscheidungsgatters bleibt.",
+      "planeHeads": {
+        "input": "Eingang",
+        "process": "Verarbeitung",
+        "output": "Ausgang",
+        "constraint": "Randbedingung"
+      },
+      "planes": {
+        "evidence": {
+          "input": "Industriedaten",
+          "process": "Evidenzkorrelation und Sichtbarmachen von Widersprüchen",
+          "output": "Evidenzgebundener Bericht",
+          "constraint": "Fehlende Evidenz bleibt explizit"
+        },
+        "reasoning": {
+          "input": "Gewichtete Evidenz",
+          "process": "Deterministische Regeln mit gekennzeichneter Modellinferenz",
+          "output": "Gerankte Hypothesen mit Konfidenz",
+          "constraint": "Jede Schlussfolgerung ist auf ihre Evidenz rückführbar"
+        },
+        "model": {
+          "input": "Gerankte Hypothesen",
+          "process": "Simulation und modellgestützte Schätzung",
+          "output": "Risikobewertung",
+          "constraint": "Modellausgaben bleiben von beobachteten Fakten getrennt"
+        },
+        "safety": {
+          "input": "Risikobewertung",
+          "process": "Validierungsgatter und menschliche Freigabe",
+          "output": "Sicherer Handlungspfad",
+          "constraint": "Keine Änderung des Anlagenzustands ohne explizite Freigabe"
+        }
+      },
+      "gateHeads": {
+        "gate": "Gatter",
+        "actor": "Akteur",
+        "evidence": "Evidenzanforderung",
+        "block": "Sperrbedingung",
+        "state": "Status"
+      },
+      "gateStates": {
+        "pending": "Ausstehend",
+        "validated": "Validiert",
+        "decision": "Entscheidung",
+        "released": "Freigegeben"
+      },
+      "gates": {
+        "proposed": {
+          "actor": "Industrial Brain",
+          "evidence": "Korrelierte Evidenz mit sichtbaren Widersprüchen",
+          "block": "Fehlende Evidenz noch nicht deklariert"
+        },
+        "validated": {
+          "actor": "Validierungsregeln",
+          "evidence": "Konfidenz über Schwellwert und rückführbar",
+          "block": "Ungelöster Widerspruch"
+        },
+        "approval": {
+          "actor": "Verantwortlicher Ingenieur",
+          "evidence": "Risikobewertung und Handlungsbegründung",
+          "block": "Keine explizite menschliche Freigabe"
+        },
+        "executed": {
+          "actor": "Sicherer Handlungspfad",
+          "evidence": "Freigabenachweis und Audit-Trail",
+          "block": "Freigabe erst nach Genehmigung"
+        }
+      }
     },
     "footer": {
       "tagline": "Industrielle Intelligenz. Entwickelt für sicheres Handeln.",

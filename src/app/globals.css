@@ -1926,3 +1926,474 @@ html[lang^="en"] {
     block-size: var(--command-height);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-E ROUND 3 — HERMES INDUSTRIAL INTELLIGENCE OBSERVATORY
+   ───────────────────────────────────────────────────────────────────────────
+   Round 2 was CONDITIONALLY ACCEPTED: the direction, the bespoke signature,
+   the eight-chapter narrative and the production evidence discipline all
+   stand. Its defect was that visual power lived almost entirely in the hero;
+   after the fold the page fell back to text, hairlines, columns and lists.
+
+   Round 3 keeps the architecture and carries the graphic language through
+   every chapter: each one now owns a real drawing, the signature is stronger
+   and instrumented, three Glass surfaces mark genuine depth, and semantic
+   reasoning tokens appear ONLY at their meaning (evidence / contradiction /
+   missing / hypothesis / decision) — never as decoration.
+
+   Rules kept, unchanged:
+     - NO new custom property in a gated family (--glass-*, --edge-*,
+       --beacon-*, --rail-*, --command-*, --triad-*, --color-horizon-*).
+       Local names are --hh-*; every colour is READ from a shipped token.
+     - Every animation is inside prefers-reduced-motion: no-preference.
+     - No ember/Horizon token anywhere on the homepage.
+     - No hardcoded text inside any SVG.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── THE DEEP FIELD ── the observatory's air, four layers of shipped tokens.
+   Stronger than round 2: the overhead pool is brighter, the shafts read, and
+   the horizon band has a visible floor line. */
+.hh-deepfield {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -10%, var(--color-surface-interactive) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 18% 30%, var(--color-surface-elevated) 0%, transparent 70%),
+    linear-gradient(to bottom, var(--color-background-deep) 0%, var(--color-background-base) 100%);
+}
+.hh-deepfield::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(107deg, transparent 32%, var(--color-surface-elevated) 42%, transparent 53%),
+    linear-gradient(72deg, transparent 56%, var(--color-surface-primary) 65%, transparent 75%);
+  opacity: 0.7;
+}
+.hh-deepfield::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 58%;
+  block-size: 42%;
+  background:
+    linear-gradient(to bottom, var(--edge-illumination-to) 0%, transparent 2px, transparent 100%),
+    radial-gradient(ellipse 70% 100% at 50% 0%, var(--color-surface-interactive) 0%, transparent 72%);
+}
+/* A quieter variant for mid-page chapters that want depth without the full
+   overhead pool. */
+.hh-deepfield[data-tone="mid"] {
+  background:
+    radial-gradient(ellipse 80% 55% at 85% 20%, var(--color-surface-elevated) 0%, transparent 65%),
+    linear-gradient(to bottom, var(--color-background-base) 0%, var(--color-background-deep) 50%, var(--color-background-base) 100%);
+}
+.hh-deepfield[data-tone="mid"]::before { opacity: 0.35; }
+.hh-deepfield[data-tone="mid"]::after  { display: none; }
+
+/* ── TEXTURE ── a CSS-only industrial grain, no asset. Very low amplitude:
+   it exists to stop large navy areas reading as flat digital fill. */
+.hh-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 2px, var(--color-text-primary) 2px 3px),
+    repeating-linear-gradient(90deg, transparent 0 3px, var(--color-text-primary) 3px 4px);
+  mix-blend-mode: overlay;
+}
+
+/* ── ENGINEERING PLATE ── drafting coordinates. */
+.hh-plate { position: relative; isolation: isolate; }
+.hh-plate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--color-border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border-subtle) 1px, transparent 1px);
+  background-size: 72px 72px;
+  opacity: 0.6;
+  mask-image: radial-gradient(ellipse 85% 65% at 50% 30%, black, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 65% at 50% 30%, black, transparent 80%);
+}
+/* Low-opacity coordinate ticks along the plate's top edge — technical
+   annotation, not decoration. Purely CSS. */
+.hh-plate[data-ticks="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  block-size: 6px;
+  pointer-events: none;
+  z-index: -1;
+  background-image: repeating-linear-gradient(90deg, var(--edge-structural) 0 1px, transparent 1px 36px);
+  opacity: 0.6;
+}
+
+/* ── THE SIGNATURE DIAGRAM GRAMMAR ──
+   Three stroke weights make a HIERARCHY the owner could not see in round 2:
+     bus       2.5  the main signal path, full brand contrast
+     track     1.25 secondary connections
+     dim       1    dimension / provenance lines
+   And the semantic reasoning tokens, at their meaning ONLY. */
+.hh-sig-bus     { fill: none; stroke: var(--beacon-core); stroke-width: 2.5; stroke-linecap: round; }
+.hh-sig-flow    { fill: none; stroke: var(--color-text-primary); stroke-width: 2.5; stroke-linecap: round; opacity: 0.85; }
+.hh-sig-track   { fill: none; stroke: var(--color-border-default); stroke-width: 1.25; }
+.hh-sig-dim     { fill: none; stroke: var(--edge-structural); stroke-width: 1; }
+.hh-sig-prov    { fill: none; stroke: var(--beacon-core); stroke-width: 1; opacity: 0.45; }
+.hh-sig-plate   { fill: var(--color-surface-primary); stroke: var(--color-border-default); stroke-width: 1.25; }
+.hh-sig-plate-2 { fill: var(--color-surface-elevated); stroke: var(--edge-hairline); stroke-width: 1; }
+.hh-sig-plate-3 { fill: var(--color-surface-interactive); stroke: var(--color-border-default); stroke-width: 1; }
+.hh-sig-core    { fill: var(--color-surface-elevated); stroke: var(--beacon-core); stroke-width: 1.75; }
+.hh-sig-core-2  { fill: var(--color-surface-interactive); stroke: var(--beacon-core); stroke-width: 1.25; }
+.hh-sig-gate    { fill: none; stroke: var(--beacon-core); stroke-width: 2.25; }
+.hh-sig-mark    { fill: var(--beacon-core); }
+.hh-sig-ink     { fill: var(--color-text-primary); }
+.hh-sig-ink-2   { fill: var(--color-text-secondary); }
+/* semantic states — the ONLY places these tokens appear on the homepage */
+.hh-sig-evidence      { fill: var(--color-reasoning-evidence); stroke: var(--color-reasoning-evidence); }
+.hh-sig-contradiction { fill: var(--color-reasoning-contradiction); stroke: var(--color-reasoning-contradiction); }
+.hh-sig-missing       { fill: none; stroke: var(--color-reasoning-missing); stroke-dasharray: 3 3; }
+.hh-sig-hypothesis    { fill: var(--color-reasoning-hypothesis); stroke: var(--color-reasoning-hypothesis); }
+.hh-sig-decision      { fill: var(--color-reasoning-decision); stroke: var(--color-reasoning-decision); }
+.hh-sig-scan          { fill: none; stroke: var(--color-reasoning-evidence); stroke-width: 1.5; opacity: 0.9; }
+
+/* Motion is opt-in ONLY. */
+@media (prefers-reduced-motion: no-preference) {
+  .hh-sig-flow { stroke-dasharray: 6 40; animation: hh-packet 7s linear infinite; }
+  .hh-sig-gate { animation: hh-gate-ready 4.5s ease-in-out infinite; }
+}
+@keyframes hh-packet     { from { stroke-dashoffset: 46; } to { stroke-dashoffset: 0; } }
+@keyframes hh-gate-ready { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* The signature mirrors with the writing direction. Safe because the drawing
+   contains NO text; pure geometry flips without producing reversed glyphs. */
+[dir="rtl"] .hh-sig-frame { transform: scaleX(-1); }
+
+/* ── HERO INSTRUMENTATION OVERLAY ── Glass surface #1 of three. */
+.hh-instrument {
+  position: relative;
+  border-radius: var(--triad-radius);
+  overflow: hidden;
+}
+.hh-instrument-readout {
+  border-inline-start: 2px solid var(--edge-structural);
+  padding-inline-start: 0.75rem;
+}
+.hh-instrument-readout[data-state="evidence"]      { border-inline-start-color: var(--color-reasoning-evidence); }
+.hh-instrument-readout[data-state="contradiction"] { border-inline-start-color: var(--color-reasoning-contradiction); }
+.hh-instrument-readout[data-state="missing"]       { border-inline-start-color: var(--color-reasoning-missing); border-inline-start-style: dashed; }
+.hh-instrument-readout[data-state="hypothesis"]    { border-inline-start-color: var(--color-reasoning-hypothesis); }
+.hh-instrument-readout[data-state="decision"]      { border-inline-start-color: var(--color-reasoning-decision); }
+
+/* ── OBSERVATORY HEADER ── opt-in only; the default header is untouched.
+   Not "the old header at lower opacity": a thin instrument rail whose bottom
+   edge is a coordinate rule continuing the hero plate, with a scrim that
+   compacts as content scrolls beneath it. */
+/* PROGRESSIVE ENHANCEMENT, in three tiers, so no browser gets a broken bar:
+     1. BASE (every browser): a legible scrim — a solid-enough deep-navy fill
+        with a soft lower fade — plus a subtle Edge rule. This is what a
+        browser without `animation-timeline` support shows at every scroll
+        position, and it is fully usable on its own.
+     2. `@supports (animation-timeline)` + motion allowed: the bar starts
+        transparent over the hero and compacts to the base scrim over the
+        first 160px of scroll.
+     3. reduced-motion: the base scrim, no animation.
+   `background` (not `background-color`) is set here so the keyframe below can
+   animate the colour without fighting a gradient shorthand. */
+.hh-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--edge-structural);
+  background-color: color-mix(in srgb, var(--color-background-deep) 90%, transparent);
+  background-image: linear-gradient(to bottom, var(--color-background-deep) 0%, transparent 100%);
+  backdrop-filter: blur(6px);
+}
+/* Browsers without color-mix still get an opaque, legible bar. */
+@supports not (background-color: color-mix(in srgb, red 50%, transparent)) {
+  .hh-header { background-color: var(--color-background-deep); }
+}
+.hh-header::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  block-size: 1px;
+  background: linear-gradient(to right, transparent, var(--edge-structural) 15%, var(--edge-structural) 85%, transparent);
+  pointer-events: none;
+}
+/* Coordinate ticks along the header's bottom edge, continuing the plate. */
+.hh-header::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 5px;
+  background-image: repeating-linear-gradient(90deg, var(--edge-structural) 0 1px, transparent 1px 72px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+/* Tier 2 — scroll-driven compaction where supported AND motion is allowed.
+   The animation runs FROM transparent-over-hero TO the base scrim, so its end
+   state equals the fallback exactly: a supporting browser at scroll=100% and a
+   non-supporting browser at scroll=0 render the same bar. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hh-header {
+      animation: hh-header-compact linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 160px;
+    }
+  }
+}
+@keyframes hh-header-compact {
+  from {
+    background-color: transparent;
+    border-color: transparent;
+  }
+  to {
+    background-color: color-mix(in srgb, var(--color-background-deep) 90%, transparent);
+    border-color: var(--edge-structural);
+  }
+}
+
+/* ── OBSERVATORY FOOTER ── opt-in only. */
+.hh-footer {
+  position: relative;
+  border-top: 1px solid var(--edge-structural);
+  background: linear-gradient(to bottom, var(--color-background-base) 0%, var(--color-background-deep) 100%);
+}
+
+/* ── CHAPTER 2 — THE INCIDENT RAIL ──
+   Not a text spine: a continuous rail whose steps are drawn instrument
+   readings. Each step carries a semantic state marker (state tokens at their
+   meaning ONLY) and the decision step is the chapter's Beacon. */
+.hh-incident { position: relative; }
+.hh-incident::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 1.25rem;
+  inset-block: 0.5rem 0.5rem;
+  inline-size: 2px;
+  background: linear-gradient(to bottom, transparent, var(--color-border-default) 4%, var(--color-border-default) 96%, transparent);
+}
+.hh-incident-step {
+  position: relative;
+  padding-inline-start: 3.5rem;
+}
+.hh-incident-step::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(1.25rem - 6px);
+  inset-block-start: 0.55rem;
+  inline-size: 14px;
+  block-size: 14px;
+  border-radius: 50%;
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--color-border-default);
+}
+.hh-incident-step[data-state="evidence"]::before      { border-color: var(--color-reasoning-evidence); }
+.hh-incident-step[data-state="contradiction"]::before { border-color: var(--color-reasoning-contradiction); background: var(--color-reasoning-contradiction); }
+.hh-incident-step[data-state="missing"]::before       { border-color: var(--color-reasoning-missing); border-style: dashed; background: transparent; }
+.hh-incident-step[data-state="hypothesis"]::before    { border-color: var(--color-reasoning-hypothesis); }
+.hh-incident-step[data-state="risk"]::before          { border-color: var(--color-status-warning); }
+.hh-incident-step[data-state="decision"]::before {
+  border-color: var(--beacon-core);
+  background: var(--beacon-core);
+  inline-size: 18px;
+  block-size: 18px;
+  inset-inline-start: calc(1.25rem - 8px);
+}
+.hh-incident-step[data-state="action"]::before        { border-color: var(--color-status-success); background: var(--color-status-success); }
+
+/* ── CHAPTER 3 — THE FOUR PLANES ── connected strata on one signal spine.
+   Each plane is a band with input / process / output / limit cells; a vertical
+   signal path threads through all four so the structure reads as one system. */
+.hh-planes { position: relative; }
+.hh-planes::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 2.25rem;
+  inset-block: 0;
+  inline-size: 2px;
+  background: var(--beacon-core);
+  opacity: 0.55;
+}
+.hh-plane {
+  position: relative;
+  padding-inline-start: 4.5rem;
+  padding-block: clamp(1.25rem, 3vw, 2rem);
+}
+.hh-plane + .hh-plane { border-block-start: 1px solid var(--edge-structural); }
+.hh-plane::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(2.25rem - 8px);
+  inset-block-start: calc(clamp(1.25rem, 3vw, 2rem) + 0.35rem);
+  inline-size: 18px;
+  block-size: 18px;
+  border-radius: 3px;
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--beacon-core);
+  transform: rotate(45deg);
+}
+.hh-plane[data-depth="1"] { background: linear-gradient(90deg, var(--color-surface-primary) 0%, transparent 55%); }
+.hh-plane[data-depth="2"] { background: linear-gradient(90deg, var(--color-surface-elevated) 0%, transparent 62%); }
+.hh-plane[data-depth="3"] { background: linear-gradient(90deg, var(--color-surface-interactive) 0%, transparent 70%); }
+.hh-plane[data-depth="4"] { background: linear-gradient(90deg, var(--color-surface-elevated) 0%, transparent 78%); }
+[dir="rtl"] .hh-plane[data-depth="1"] { background: linear-gradient(270deg, var(--color-surface-primary) 0%, transparent 55%); }
+[dir="rtl"] .hh-plane[data-depth="2"] { background: linear-gradient(270deg, var(--color-surface-elevated) 0%, transparent 62%); }
+[dir="rtl"] .hh-plane[data-depth="3"] { background: linear-gradient(270deg, var(--color-surface-interactive) 0%, transparent 70%); }
+[dir="rtl"] .hh-plane[data-depth="4"] { background: linear-gradient(270deg, var(--color-surface-elevated) 0%, transparent 78%); }
+.hh-plane-cell {
+  border-inline-start: 1px solid var(--edge-structural);
+  padding-inline-start: 0.875rem;
+}
+.hh-plane-cell[data-kind="constraint"] { border-inline-start-color: var(--color-status-warning); }
+
+/* ── CHAPTER 4 — ENGINEERING BACKBONE ── the plant-to-platform map. */
+.hh-backbone-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.hh-backbone { min-inline-size: 52rem; }
+.hh-bb-tier {
+  position: relative;
+  border-radius: var(--triad-radius);
+  border: 1px solid var(--edge-structural);
+  background: linear-gradient(to bottom, var(--color-surface-primary), transparent);
+}
+.hh-bb-tier[data-tier="plant"]    { background: linear-gradient(to bottom, var(--color-surface-elevated), var(--color-surface-primary)); }
+.hh-bb-tier[data-tier="hermes"]   { border-color: var(--beacon-core); }
+.hh-bb-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 3px;
+  border: 1px solid var(--edge-hairline);
+  background: var(--color-surface-elevated);
+  padding: 0.2rem 0.5rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+.hh-bb-tag[data-live="true"] { border-color: var(--beacon-core); color: var(--color-brand-primary); }
+
+/* ── CHAPTER 5 — THE INTELLIGENCE CORE ── one shared drawing. */
+.hh-core-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.hh-core { min-inline-size: 40rem; }
+
+/* ── CHAPTER 6 — VALIDATION GATE ── */
+.hh-gate-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  padding-block: 1rem;
+  border-block-end: 1px solid var(--edge-structural);
+  align-items: start;
+}
+.hh-gate-row[data-beacon="true"] {
+  border-inline-start: var(--rail-indicator-width) solid var(--beacon-core);
+  padding-inline-start: 1rem;
+  background: linear-gradient(90deg, var(--color-surface-elevated), transparent 60%);
+}
+[dir="rtl"] .hh-gate-row[data-beacon="true"] { background: linear-gradient(270deg, var(--color-surface-elevated), transparent 60%); }
+.hh-gate-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hh-gate-state::before {
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--color-border-default);
+}
+.hh-gate-state[data-state="pending"]::before  { background: var(--color-status-warning); }
+.hh-gate-state[data-state="decision"]::before { background: var(--beacon-core); }
+.hh-gate-state[data-state="released"]::before { background: var(--color-status-success); }
+
+/* ── CHAPTER 7 — EDITORIAL SPREAD ── */
+.hh-editorial-cover {
+  position: relative;
+  border: 1px solid var(--edge-structural);
+  border-radius: var(--triad-radius);
+  background: linear-gradient(135deg, var(--color-surface-elevated) 0%, var(--color-background-deep) 100%);
+  overflow: hidden;
+}
+.hh-editorial-issue {
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.hh-editorial-rule { block-size: 2px; background: var(--color-text-primary); }
+
+/* ── UTILITIES ── */
+.hh-rule { block-size: 1px; background: linear-gradient(to right, var(--edge-structural), transparent); }
+[dir="rtl"] .hh-rule { background: linear-gradient(to left, var(--edge-structural), transparent); }
+.hh-mono-label {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ── CHAPTER 6 — gate table (md+) and gate accordion (<md) ──
+   One DOM each. The Beacon row/summary carries the same inline-start indicator
+   grammar as the Rail; state is a marker AND a text label everywhere. */
+.hh-gate-table th, .hh-gate-table td { border-block-end: 1px solid var(--edge-structural); }
+.hh-gate-table thead th { border-block-end-color: var(--color-border-default); }
+.hh-gate-tr[data-beacon="true"] > th { box-shadow: inset var(--rail-indicator-width) 0 0 0 var(--beacon-core); padding-inline-start: 0.875rem; }
+[dir="rtl"] .hh-gate-tr[data-beacon="true"] > th { box-shadow: inset calc(-1 * var(--rail-indicator-width)) 0 0 0 var(--beacon-core); }
+.hh-gate-tr[data-beacon="true"] { background: linear-gradient(90deg, var(--color-surface-elevated), transparent 55%); }
+[dir="rtl"] .hh-gate-tr[data-beacon="true"] { background: linear-gradient(270deg, var(--color-surface-elevated), transparent 55%); }
+
+.hh-gate-acc { border-block-end: 1px solid var(--edge-structural); }
+.hh-gate-acc[data-beacon="true"] {
+  border-inline-start: var(--rail-indicator-width) solid var(--beacon-core);
+  padding-inline-start: 0.75rem;
+  background: linear-gradient(90deg, var(--color-surface-elevated), transparent 70%);
+}
+[dir="rtl"] .hh-gate-acc[data-beacon="true"] { background: linear-gradient(270deg, var(--color-surface-elevated), transparent 70%); }
+.hh-gate-acc > summary::-webkit-details-marker { display: none; }
+.hh-gate-acc[open] > summary .hh-gate-chevron { transform: rotate(180deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .hh-gate-chevron { transition: transform 160ms ease; }
+}
+.hh-gate-state[data-state="validated"]::before { background: var(--color-reasoning-evidence); }
+
+/* ── ANCHOR OFFSET UNDER THE STICKY HEADER ──
+   Every chapter heading is a fragment target (`#case-title`, `#gate-title`,
+   …), and the skip link targets `#public-content`. A sticky header would park
+   the target's first line UNDER the bar on direct-hash load and on anchor
+   click. The offset below is derived, not guessed:
+
+     header block-size  = 4rem (`h-16` = 64px on md+; 3.5rem on mobile, and
+                          the larger value is used so no viewport under-shoots)
+     safe gap           = var(--space-card) = 20px, from the shipped scale
+
+   Logical property, so RTL needs no second rule. `--hh-anchor-offset` is a
+   homepage-local name and not part of any gated token family. */
+:root { --hh-anchor-offset: calc(4rem + var(--space-card)); }
+#public-content,
+main [id$="-title"] {
+  scroll-margin-block-start: var(--hh-anchor-offset);
+}
