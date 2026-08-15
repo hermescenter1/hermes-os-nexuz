@@ -1,7 +1,10 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { buildMetadata }    from "@/lib/seo/metadata";
 import { Link }             from "@/i18n/navigation";
-import { getCurrentUser }   from "@/lib/auth/session";
+// AUTH-U1 — canonical identity facade (JWT first, legacy HMAC fallback).
+// Read-only consumer: identity only toggles a UI affordance below; the
+// case-save API enforces its own authorization independently.
+import { getCurrentUserUnified } from "@/lib/auth/current-user";
 import { can }              from "@/lib/auth/roles";
 import { IndustrialBrainWorkspace } from "@/components/industrial-brain/IndustrialBrainWorkspace";
 import { CapabilityLink } from "@/components/analytics/CapabilityLink";
@@ -85,7 +88,7 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
 
   // Phase 82: page stays fully public — auth only decides whether the
   // report shows an active "Save as Engineering Case" button or a sign-in CTA.
-  const user = await getCurrentUser();
+  const user = await getCurrentUserUnified();
   const canSaveCase = can(user?.role, "authoring");
 
   return (
