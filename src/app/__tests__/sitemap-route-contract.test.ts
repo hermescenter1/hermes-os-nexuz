@@ -38,11 +38,42 @@ beforeAll(async () => {
 });
 
 /**
+ * Is `name` an ORDINARY single-segment dynamic directory — `[id]`, `[slug]`,
+ * `[org]` — as opposed to a catch-all?
+ *
+ * PRE-PR HARDENING (F2). The previous predicate was
+ * `d.startsWith("[") && d.endsWith("]")`, which also accepts
+ * `[...unmatched]` — the locale-level catch-all that exists precisely to turn
+ * every unrecognised URL into a localized 404. Because `[...unmatched]/page.tsx`
+ * exists, ANY unknown top-level path was reported routable:
+ *
+ *     routeExists("/no-such-public-page")  →  true   (wrong)
+ *     routeExists("/utter-nonsense")       →  true   (wrong)
+ *
+ * That made CASE A's central claim — "every sitemap URL resolves to a page" —
+ * vacuously true for single-segment paths, so a typo'd or deleted route in the
+ * sitemap would not have been caught.
+ *
+ * A catch-all matches *leftover* segments and answers `notFound()`; it is not
+ * evidence that a route family exists. Both spellings are excluded:
+ *   `[...slug]`   required catch-all
+ *   `[[...slug]]` optional catch-all
+ *
+ * This corrects the TEST HELPER only. Production routing is untouched — the
+ * catch-all is deliberate and stays exactly as it is.
+ */
+function isOrdinaryDynamicSegment(name: string): boolean {
+  if (!name.startsWith("[") || !name.endsWith("]")) return false;
+  const inner = name.replace(/^\[+/, "").replace(/\]+$/, "");
+  return !inner.startsWith("...");
+}
+
+/**
  * Does the App Router implement this locale-relative path?
  *
- * A segment matches a literal directory, or any `[dynamic]` directory at that
- * level. Deliberately walks the real tree: a route that is deleted or renamed
- * makes this fail, which is exactly the regression the phase is closing.
+ * A segment matches a literal directory, or an ORDINARY `[dynamic]` directory at
+ * that level. Deliberately walks the real tree: a route that is deleted or
+ * renamed makes this fail, which is exactly the regression the phase is closing.
  */
 function routeExists(relPath: string): boolean {
   const segments = relPath.split("/").filter(Boolean);
@@ -54,13 +85,106 @@ function routeExists(relPath: string): boolean {
       continue;
     }
     const dynamic = fs.existsSync(dir)
-      ? fs.readdirSync(dir).find((d) => d.startsWith("[") && d.endsWith("]"))
+      ? fs.readdirSync(dir).find(isOrdinaryDynamicSegment)
       : undefined;
     if (!dynamic) return false;
     dir = path.join(dir, dynamic);
   }
   return fs.existsSync(path.join(dir, "page.tsx"));
 }
+
+/**
+ * PRE-PR HARDENING (F2) — controls for the helper itself.
+ *
+ * Every assertion in CASE A is only as good as `routeExists`. If the helper
+ * says "yes" to everything, the suite passes while advertising 404s. These
+ * controls run FIRST and pin both directions.
+ */
+describe("CASE A0 — the routability helper is itself trustworthy", () => {
+  it("recognises ordinary dynamic segments and rejects catch-alls", () => {
+    expect(isOrdinaryDynamicSegment("[id]")).toBe(true);
+    expect(isOrdinaryDynamicSegment("[slug]")).toBe(true);
+    expect(isOrdinaryDynamicSegment("[org]")).toBe(true);
+    expect(isOrdinaryDynamicSegment("[vendorId]")).toBe(true);
+    // Catch-alls are not evidence that a route family exists.
+    expect(isOrdinaryDynamicSegment("[...unmatched]")).toBe(false);
+    expect(isOrdinaryDynamicSegment("[...slug]")).toBe(false);
+    expect(isOrdinaryDynamicSegment("[[...slug]]")).toBe(false);
+    // Plain directories are not dynamic segments at all.
+    expect(isOrdinaryDynamicSegment("platform")).toBe(false);
+    expect(isOrdinaryDynamicSegment("__tests__")).toBe(false);
+  });
+
+  it("the locale-level catch-all really is present (the control has a subject)", () => {
+    // If `[...unmatched]` were ever removed, the negative controls below would
+    // pass for the wrong reason. State the premise instead of assuming it.
+    const catchAlls = fs.readdirSync(APP_ROOT).filter((d) => d.startsWith("[..."));
+    expect(catchAlls, "the locale catch-all must exist for this control to mean anything")
+      .toContain("[...unmatched]");
+  });
+
+  it("KNOWN_FAKE_ROUTE — nonexistent paths are rejected, not swallowed", () => {
+    // Synthetic names that cannot collide with a real route, at the depths the
+    // catch-all used to absorb.
+    for (const fake of [
+      "/__discovery2a_nonexistent__",
+      "/__discovery2a_nonexistent__/child",
+      "/library/__discovery2a_nonexistent__/deeper",
+      "/videos/__d2a_org__/__d2a_slug__/extra-segment",
+    ]) {
+      expect(routeExists(fake), `${fake} must NOT be reported routable`).toBe(false);
+    }
+  });
+
+  it("KNOWN_REAL_ROUTE — genuine static and dynamic families are accepted", () => {
+    for (const real of [
+      "",                              // the locale homepage
+      "/platform",
+      "/services/digital-twin",
+      "/library",
+      "/library/cases",
+      "/library/cases/case-abb-acs580-oc",   // [id]
+      "/library/vendor/siemens",             // [vendor]
+      "/careers/job-001",                    // [jobId]
+      "/academy/course/c1",                  // [courseId]
+      "/articles/some-slug",                 // [slug]
+      "/videos",
+      "/videos/hermes-a",                    // [org]
+      "/videos/hermes-a/plc-basics",         // [org]/[slug]
+    ]) {
+      expect(routeExists(real), `${real || "/"} must be reported routable`).toBe(true);
+    }
+  });
+
+  it("the OLD helper would have accepted a fake path — the fix is load-bearing", () => {
+    // Reproduces the defective predicate verbatim so the regression cannot be
+    // reintroduced silently: if someone relaxes `isOrdinaryDynamicSegment` back
+    // to "starts with [ and ends with ]", this test's premise and the negative
+    // control above disagree and CASE A0 fails.
+    const oldPredicate = (d: string) => d.startsWith("[") && d.endsWith("]");
+    const oldRouteExists = (relPath: string): boolean => {
+      const segments = relPath.split("/").filter(Boolean);
+      let dir = APP_ROOT;
+      for (const segment of segments) {
+        const literal = path.join(dir, segment);
+        if (fs.existsSync(literal) && fs.statSync(literal).isDirectory()) {
+          dir = literal;
+          continue;
+        }
+        const dynamic = fs.existsSync(dir)
+          ? fs.readdirSync(dir).find(oldPredicate)
+          : undefined;
+        if (!dynamic) return false;
+        dir = path.join(dir, dynamic);
+      }
+      return fs.existsSync(path.join(dir, "page.tsx"));
+    };
+
+    const fake = "/__discovery2a_nonexistent__";
+    expect(oldRouteExists(fake), "the old helper's false positive").toBe(true);
+    expect(routeExists(fake), "the corrected helper blocks it").toBe(false);
+  });
+});
 
 describe("CASE A — every sitemap URL is a real public route family", () => {
   it("the sitemap is not empty (so the assertions below mean something)", () => {

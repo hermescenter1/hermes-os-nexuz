@@ -277,6 +277,145 @@ async function renderHubRoot(locale = "en") {
   return HubRoot({ params: params({ locale }) });
 }
 
+// ── F. The canonical path, asserted at RUNTIME ───────────────────────────────
+
+/**
+ * DISCOVERY-2A pre-PR hardening (F1).
+ *
+ * The canonical contract used to be guarded only by reading `data.ts` as TEXT
+ * and checking it mentioned `mediaWatchPath` and did not contain one specific
+ * literal. Independent mutation testing defeated that: rewriting
+ *
+ *     const canonicalPath = mediaWatchPath(params.scope.orgSlug, asset.slug);
+ *   → const canonicalPath = `/videos/${asset.slug}`;
+ *
+ * kept the word `mediaWatchPath` in the file (it is still imported) and did not
+ * match the forbidden literal, so the entire suite stayed green while the exact
+ * P0 this phase exists to fix was reintroduced — a canonical URL that 404s.
+ *
+ * These assertions therefore compare the VALUE the loader and the page actually
+ * produce, against a locally spelled-out expectation. The expected string is
+ * written literally rather than derived from `mediaWatchPath`, because a test
+ * that rebuilds the value with the production helper cannot detect the
+ * production helper being bypassed.
+ */
+describe("F — the canonical video path is produced at runtime, not merely mentioned", () => {
+  const ORG = ORG_A.slug;      // "hermes-a"
+  const SLUG = "plc-basics";   // the one PUBLISHED + PUBLIC + READY fixture
+  const EXPECTED_PATH = `/videos/${ORG}/${SLUG}`;
+
+  it("loadVideoWatch returns the tenant-scoped canonical path exactly", async () => {
+    const { loadVideoWatch, resolveVideoHubScope } = await import("../data");
+    const scope = await resolveVideoHubScope(ORG);
+    expect(scope, "the fixture organization must resolve").not.toBeNull();
+
+    const view = await loadVideoWatch({ scope: scope!, slug: SLUG, routeLocale: "en" });
+    expect(view, "the published fixture must load").not.toBeNull();
+
+    // The whole point: an exact value, not a substring and not a source-text probe.
+    expect(view!.canonicalPath).toBe(EXPECTED_PATH);
+  });
+
+  it("the canonical path is NOT the slug-only or query-string shape", async () => {
+    const { loadVideoWatch, resolveVideoHubScope } = await import("../data");
+    const scope = await resolveVideoHubScope(ORG);
+    const view = await loadVideoWatch({ scope: scope!, slug: SLUG, routeLocale: "en" });
+
+    // The two shapes that 404 in production. Both were live before DISCOVERY-2A.
+    expect(view!.canonicalPath).not.toBe(`/videos/${SLUG}`);
+    expect(view!.canonicalPath).not.toBe(`/videos/${SLUG}?org=${ORG}`);
+    // A canonical URL may never depend on a query string or a fragment.
+    expect(view!.canonicalPath).not.toContain("?");
+    expect(view!.canonicalPath).not.toContain("#");
+    // Four segments: "videos", the organization, the asset — and nothing else.
+    expect(view!.canonicalPath.split("/").filter(Boolean)).toEqual(["videos", ORG, SLUG]);
+  });
+
+  it("the library href is the tenant-scoped path, not ?org=", async () => {
+    const { loadVideoWatch, resolveVideoHubScope } = await import("../data");
+    const scope = await resolveVideoHubScope(ORG);
+    const view = await loadVideoWatch({ scope: scope!, slug: SLUG, routeLocale: "en" });
+
+    expect(view!.libraryHref).toBe(`/en/videos/${ORG}`);
+    expect(view!.libraryHref).not.toContain("?");
+  });
+
+  it("every related-video href carries the organization segment", async () => {
+    const { loadVideoLibrary, resolveVideoHubScope } = await import("../data");
+    const scope = await resolveVideoHubScope(ORG);
+    const library = await loadVideoLibrary({ scope: scope!, routeLocale: "en", page: 1 });
+
+    expect(library, "the library must load").not.toBeNull();
+    expect(library!.items.length).toBeGreaterThan(0);
+    for (const item of library!.items) {
+      expect(item.href).toBe(`/en/videos/${ORG}/${item.slug}`);
+      expect(item.href).not.toContain("?");
+    }
+  });
+
+  it("generateMetadata emits the tenant-scoped canonical URL exactly", async () => {
+    const { generateMetadata } = await import("../[org]/[slug]/page");
+    const { BASE_URL } = await import("@/lib/seo/config");
+
+    const meta = await generateMetadata({
+      params: params({ locale: "en", org: ORG, slug: SLUG }),
+    });
+
+    expect(meta.alternates?.canonical).toBe(`${BASE_URL}/en${EXPECTED_PATH}`);
+    // The OpenGraph URL is built from the same canonical and must not diverge.
+    expect((meta.openGraph as { url?: string } | undefined)?.url).toBe(
+      `${BASE_URL}/en${EXPECTED_PATH}`,
+    );
+  });
+
+  it("generateMetadata never emits the slug-only or query-string canonical", async () => {
+    const { generateMetadata } = await import("../[org]/[slug]/page");
+    const { BASE_URL } = await import("@/lib/seo/config");
+
+    const meta = await generateMetadata({
+      params: params({ locale: "en", org: ORG, slug: SLUG }),
+    });
+
+    expect(meta.alternates?.canonical).not.toBe(`${BASE_URL}/en/videos/${SLUG}`);
+    expect(meta.alternates?.canonical).not.toBe(`${BASE_URL}/en/videos/${SLUG}?org=${ORG}`);
+
+    // Nothing anywhere in the emitted metadata may carry the broken shapes.
+    const serialised = JSON.stringify(meta);
+    expect(serialised).not.toContain(`/en/videos/${SLUG}"`);
+    expect(serialised).not.toContain("?org=");
+  });
+
+  it("stays tenant-scoped in every rendering locale", async () => {
+    const { generateMetadata } = await import("../[org]/[slug]/page");
+    const { BASE_URL } = await import("@/lib/seo/config");
+
+    // This fixture has ONE editorial locale (primaryLocale "en", a single `en`
+    // translation), so under the DISCOVERY-2A hreflang contract every locale
+    // prefix canonicalises onto that one representation — the same rule that
+    // sends /de engineering cases to /en. What must hold in ALL of them is the
+    // shape: the organization segment is never dropped.
+    for (const locale of ["fa", "en", "de"] as const) {
+      const meta = await generateMetadata({
+        params: params({ locale, org: ORG, slug: SLUG }),
+      });
+      expect(meta.alternates?.canonical, `under /${locale}`).toBe(
+        `${BASE_URL}/en${EXPECTED_PATH}`,
+      );
+      expect(String(meta.alternates?.canonical), `under /${locale}`).toContain(`/videos/${ORG}/`);
+    }
+  });
+
+  it("a single-locale asset declares no fabricated alternates", async () => {
+    // Guards the hreflang half of the same metadata call: this asset exists in
+    // one language, so it must carry no `languages` map at all.
+    const { generateMetadata } = await import("../[org]/[slug]/page");
+    const meta = await generateMetadata({
+      params: params({ locale: "fa", org: ORG, slug: SLUG }),
+    });
+    expect(meta.alternates?.languages).toBeUndefined();
+  });
+});
+
 // ── A. Route classification ──────────────────────────────────────────────────
 
 describe("A — /videos is registered as a PUBLIC, anonymous-readable route", () => {

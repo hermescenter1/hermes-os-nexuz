@@ -94,18 +94,32 @@ describe("E3 — the sitemap emits the same shape as the route", () => {
     expect(suffix).not.toContain("?");
   });
 
-  it("the sitemap path and the watch page's canonicalPath are the same string", async () => {
-    // `loadVideoWatch` sets `canonicalPath` from `mediaWatchPath`, so proving the
-    // source is shared is stronger than comparing two literals.
-    const src = fs.readFileSync(
-      path.resolve(__dirname, "../../../app/[locale]/videos/data.ts"),
-      "utf8",
-    );
-    expect(src).toContain("mediaWatchPath");
-    expect(src).toContain("canonicalPath,");
-    // The old hand-built shapes must be gone.
-    expect(src).not.toContain("canonicalPath: `/videos/${asset.slug}`");
-    expect(src).not.toContain("?${VIDEO_HUB_ORG_PARAM}=");
+  it("the sitemap path for an asset is the same string the watch page canonicalises to", () => {
+    /**
+     * PRE-PR HARDENING (F1) — this used to read `data.ts` as TEXT and assert it
+     * mentioned `mediaWatchPath` and lacked one specific literal. Mutation
+     * testing defeated that: rewriting
+     *
+     *     const canonicalPath = mediaWatchPath(orgSlug, asset.slug);
+     *   → const canonicalPath = `/videos/${asset.slug}`;
+     *
+     * left the word `mediaWatchPath` in the file (still imported) and matched no
+     * forbidden literal, so the suite stayed green while the canonical went back
+     * to a URL that 404s.
+     *
+     * The RUNTIME proof now lives in
+     * `src/app/[locale]/videos/__tests__/video-hub-pages.test.tsx` describe "F",
+     * which drives `loadVideoWatch` and `generateMetadata` against the real
+     * in-memory Prisma double and compares the produced value. What remains here
+     * is the sitemap side of the same equality, asserted as a value.
+     */
+    const sitemapPath = mediaWatchPath("acme", "plc-basics");
+    expect(sitemapPath).toBe("/videos/acme/plc-basics");
+    // Byte-identical to what the watch page's canonical resolves to, so the two
+    // surfaces cannot describe one asset with two addresses.
+    expect(mediaSitemapEntries([
+      { path: sitemapPath!, lastModified: null, contentLocales: ["en"] },
+    ])[0].url).toBe(`${BASE_URL}/en${sitemapPath}`);
   });
 });
 
