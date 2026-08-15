@@ -4357,7 +4357,31 @@
       "prefDemo": "Pref. Demo",
       "locale": "Locale",
       "useCase": "Use Case",
-      "message": "Message"
+      "message": "Message",
+      "openReview": "Review",
+      "closeReview": "Close",
+      "reviewTitle": "Demo request review",
+      "currentStatus": "Current status",
+      "actionBusy": "Working…",
+      "actionFailed": "Action failed. Please try again.",
+      "actionConflict": "This lead was already updated by another administrator. The current status is shown above.",
+      "terminalNote": "This lead is closed. No further action is available.",
+      "approvedNote": "Approved for commercial demo follow-up. This does not grant Hermes OS account access — that requires a separate access request.",
+      "status": {
+        "NEW": "New",
+        "REVIEWED": "Reviewed",
+        "CONTACTED": "Contacted",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "CLOSED": "Closed"
+      },
+      "action": {
+        "REVIEWED": "Mark reviewed",
+        "CONTACTED": "Mark contacted",
+        "APPROVED": "Approve demo",
+        "REJECTED": "Reject",
+        "CLOSED": "Close lead"
+      }
     },
     "customers": {
       "eyebrow": "Admin · Customer Management",
