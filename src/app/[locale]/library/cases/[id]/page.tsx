@@ -3,13 +3,59 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PublicPageShell } from "@/components/public-site";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { CASES } from "@/lib/industrial/cases";
+import { CASES, CASE_CONTENT_LOCALES } from "@/lib/industrial/cases";
 import { caseConfidenceFor } from "@/lib/industrial/case-explorer";
+import { buildMetadata } from "@/lib/seo/metadata";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
     CASES.map((c) => ({ locale, id: c.id }))
   );
+}
+
+/**
+ * DISCOVERY-2A — case detail metadata.
+ *
+ * This page had NO `generateMetadata` at all, so it inherited the nearest
+ * ancestor that declares `alternates`: `src/app/[locale]/layout.tsx`, whose
+ * canonical is `${BASE_URL}/${locale}`. Every one of these pages was therefore
+ * telling Google that the canonical version of a root-cause analysis is the
+ * locale HOMEPAGE — which consolidates the site's strongest technical-evidence
+ * corpus onto a page that does not contain it, and drops the cases from the
+ * index entirely.
+ *
+ * The content locales are `en` and `fa` because that is what the DATA has:
+ * `EngineeringCase` carries an `en` and an `fa` body and no German one, and the
+ * page below reads `locale === "fa" ? c.fa : c.en`. Under /de a reader gets the
+ * ENGLISH body with German chrome, so /de is not a German representation — it
+ * canonicalises to /en and is not advertised as an alternate. Title and summary
+ * are localised in all three catalogs, so the /de page still reads correctly;
+ * it simply stops claiming to be a translation it is not.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}) {
+  const { locale, id } = await params;
+  const c = CASES.find((x) => x.id === id);
+  if (!c) {
+    return { title: "Not Found", robots: { index: false, follow: false } };
+  }
+
+  const tCase = await getTranslations({ locale, namespace: "brain.cases" });
+  const tSummary = await getTranslations({ locale, namespace: "knowledgeCases" });
+
+  // No `publishedTime`/`modifiedTime`: these records carry no timestamp, and one
+  // is never invented (the same rule `articleSchema()` applies).
+  return buildMetadata({
+    locale,
+    path: `/library/cases/${c.id}`,
+    title: tCase(c.id),
+    description: tSummary(c.id),
+    keywords: c.keywords,
+    contentLocales: CASE_CONTENT_LOCALES,
+  });
 }
 
 function confTone(c: number): string {

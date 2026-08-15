@@ -205,13 +205,24 @@ describe("102-SEO (b) — sitemap query is gated, bounded and minimal", () => {
     expect(h.state.calls[0]?.take).toBe(MEDIA_SITEMAP_MAX_ASSETS);
   });
 
-  it("selects an address and a date and nothing else — no id, no storage key", async () => {
+  it("selects an address, a date and the language facts — no id, no storage key", async () => {
+    // DISCOVERY-2A widened this projection by exactly two fields, both of which
+    // are language facts the sitemap needs to stop fabricating hreflang. The
+    // point of the assertion is unchanged and still enforced below: nothing that
+    // identifies internal state may be read here.
     await listPublicMediaSitemapItems();
     expect(h.state.calls[0]?.select).toEqual({
       slug: true,
       publishedAt: true,
+      primaryLocale: true,
+      translations: { select: { locale: true } },
       organization: { select: { slug: true } },
     });
+
+    const serialised = JSON.stringify(h.state.calls[0]?.select);
+    for (const forbidden of ["id", "storageKey", "posterStorageKey", "viewCount", "createdBy"]) {
+      expect(serialised, `${forbidden} must never be selected`).not.toContain(`"${forbidden}"`);
+    }
   });
 
   it("orders by publishedAt — never by updatedAt, which the view counter moves", async () => {
@@ -231,7 +242,13 @@ describe("102-SEO (b) — sitemap query is gated, bounded and minimal", () => {
 
   it("drops rows whose slugs could not mint a safe path", () => {
     const items = buildMediaSitemapItems([
-      { slug: "good-slug", publishedAt: "2026-01-01T00:00:00.000Z", organization: { slug: "acme" } },
+      {
+        slug: "good-slug",
+        publishedAt: "2026-01-01T00:00:00.000Z",
+        primaryLocale: "en",
+        translations: [{ locale: "en" }],
+        organization: { slug: "acme" },
+      },
       { slug: "../../etc/passwd", publishedAt: null, organization: { slug: "acme" } },
       { slug: "has space", publishedAt: null, organization: { slug: "acme" } },
       { slug: "ok", publishedAt: null, organization: { slug: "BAD_ORG" } },
@@ -242,6 +259,7 @@ describe("102-SEO (b) — sitemap query is gated, bounded and minimal", () => {
       {
         path: `${MEDIA_PUBLIC_PATH_PREFIX}/acme/good-slug`,
         lastModified: "2026-01-01T00:00:00.000Z",
+        contentLocales: ["en"],
       },
     ]);
   });
@@ -529,8 +547,21 @@ describe("102-SEO (d) — a property the platform cannot back is omitted", () =>
 
 /* ── (e) hreflang, canonical and locale ───────────────────────────────────── */
 
-describe("102-SEO (e) — hreflang covers exactly the active locales", () => {
-  it("emits one alternate per ACTIVE_LOCALES entry plus x-default, and nothing else", () => {
+describe("102-SEO (e) — hreflang covers exactly the locales the asset EXISTS in", () => {
+  /**
+   * DISCOVERY-2A — CONTRACT CHANGE, recorded deliberately.
+   *
+   * This block previously asserted "one alternate per ACTIVE_LOCALES entry plus
+   * x-default, and nothing else", and that the set was identical whichever
+   * locale rendered the page. That pinned a FALSE claim: hreflang says an
+   * alternate representation exists in that language, and `MediaAssetTranslation`
+   * is per-locale, so an asset with one English translation has exactly one
+   * representation. The old assertions have been replaced, not relaxed — the new
+   * ones are strictly more specific about what may be published.
+   */
+  it("an asset with no declared content locales keeps the full active set", () => {
+    // Backward-compatible default: a caller that cannot tell gets the historical
+    // behaviour rather than silently losing its alternates.
     const meta = buildMediaAssetMetadata({ asset: PUBLIC_ASSET, content: CONTENT, locale: "en" });
     const languages = meta.alternates?.languages as Record<string, string>;
     expect(Object.keys(languages).sort()).toEqual(
@@ -542,7 +573,37 @@ describe("102-SEO (e) — hreflang covers exactly the active locales", () => {
     expect(languages["x-default"]).toBe(`${BASE_URL}/${DEFAULT_LOCALE}${WATCH_PATH}`);
   });
 
-  it("the alternate set is identical whichever locale renders the page", () => {
+  it("an English-only asset advertises NO Persian or German alternate", () => {
+    for (const locale of ACTIVE_LOCALES) {
+      const meta = buildMediaAssetMetadata({
+        asset: PUBLIC_ASSET,
+        content: CONTENT,
+        locale,
+        contentLocales: ["en"],
+      });
+      // One representation → no languages map at all, and every locale prefix
+      // canonicalises onto it.
+      expect(meta.alternates?.languages).toBeUndefined();
+      expect(meta.alternates?.canonical).toBe(`${BASE_URL}/en${WATCH_PATH}`);
+      expect(JSON.stringify(meta)).not.toContain(`/fa${WATCH_PATH}`);
+      expect(JSON.stringify(meta)).not.toContain(`/de${WATCH_PATH}`);
+    }
+  });
+
+  it("a fa+en asset advertises exactly those two, with x-default on the primary", () => {
+    const meta = buildMediaAssetMetadata({
+      asset: PUBLIC_ASSET,
+      content: CONTENT,
+      locale: "fa",
+      contentLocales: ["en", "fa"],
+    });
+    const languages = meta.alternates?.languages as Record<string, string>;
+    expect(Object.keys(languages).sort()).toEqual(["en", "fa", "x-default"]);
+    expect(languages["x-default"]).toBe(`${BASE_URL}/en${WATCH_PATH}`);
+    expect(languages.de).toBeUndefined();
+  });
+
+  it("with no declared locales the alternate set is identical whichever locale renders", () => {
     const sets = ACTIVE_LOCALES.map(
       (locale) =>
         buildMediaAssetMetadata({ asset: PUBLIC_ASSET, content: CONTENT, locale })
@@ -577,9 +638,13 @@ describe("102-SEO (e) — hreflang covers exactly the active locales", () => {
     expect(tags).toEqual(["fa-IR", "en-US", "de-DE"]);
   });
 
-  it("sitemap entries carry the full active-locale alternate map", () => {
+  it("a trilingual asset's sitemap entries carry the full alternate map", () => {
     const entries = mediaSitemapEntries([
-      { path: WATCH_PATH, lastModified: "2026-03-04T09:15:00.000Z" },
+      {
+        path: WATCH_PATH,
+        lastModified: "2026-03-04T09:15:00.000Z",
+        contentLocales: [...ACTIVE_LOCALES],
+      },
     ]);
     expect(entries).toHaveLength(ACTIVE_LOCALES.length);
     for (const entry of entries) {
@@ -592,8 +657,54 @@ describe("102-SEO (e) — hreflang covers exactly the active locales", () => {
     );
   });
 
+  it("an English-only asset gets ONE sitemap URL and no alternates", () => {
+    // DISCOVERY-2A — was three URLs with a three-way alternate map, claiming two
+    // translations that do not exist.
+    const entries = mediaSitemapEntries([
+      { path: WATCH_PATH, lastModified: null, contentLocales: ["en"] },
+    ]);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].url).toBe(`${BASE_URL}/en${WATCH_PATH}`);
+    expect(entries[0].alternates).toBeUndefined();
+  });
+
+  it("an asset whose language cannot be established is not advertised at all", () => {
+    expect(mediaSitemapEntries([{ path: WATCH_PATH, lastModified: null, contentLocales: [] }]))
+      .toEqual([]);
+    expect(
+      mediaSitemapEntries([{ path: WATCH_PATH, lastModified: null, contentLocales: ["pt"] }]),
+    ).toEqual([]);
+  });
+
+  it("buildMediaSitemapItems derives the locales from the row, never from ACTIVE_LOCALES", () => {
+    const [item] = buildMediaSitemapItems([
+      {
+        slug: "plc-commissioning",
+        publishedAt: null,
+        primaryLocale: "en",
+        translations: [{ locale: "en" }, { locale: "fa" }],
+        organization: { slug: "acme" },
+      },
+    ]);
+    // primaryLocale leads, so it becomes the canonical / x-default target.
+    expect(item.contentLocales).toEqual(["en", "fa"]);
+
+    const [single] = buildMediaSitemapItems([
+      {
+        slug: "plc-commissioning",
+        publishedAt: null,
+        primaryLocale: "en",
+        translations: [],
+        organization: { slug: "acme" },
+      },
+    ]);
+    expect(single.contentLocales).toEqual(["en"]);
+  });
+
   it("a sitemap entry omits lastModified entirely when publication date is unknown", () => {
-    const [entry] = mediaSitemapEntries([{ path: WATCH_PATH, lastModified: null }]);
+    const [entry] = mediaSitemapEntries([
+      { path: WATCH_PATH, lastModified: null, contentLocales: ["en"] },
+    ]);
     expect(entry).not.toHaveProperty("lastModified");
   });
 });

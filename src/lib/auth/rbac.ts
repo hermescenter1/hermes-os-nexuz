@@ -187,6 +187,79 @@ export function isProtectedPath(pathname: string): boolean {
 }
 
 /**
+ * DISCOVERY-2A — the same protected surface, expressed as plain path prefixes.
+ *
+ * WHY THIS IS A SEPARATE EXPORT AND NOT A REFACTOR
+ * ------------------------------------------------
+ * `robots.txt` and the sitemap guard both need to know which locale-prefixed
+ * paths are private. Before this phase `robots.ts` carried its OWN hand-written
+ * list of six prefixes while this file protected twenty-three, so fourteen
+ * authenticated route families were advertised as crawlable and every unnamed
+ * crawler was free to walk them.
+ *
+ * The obvious fix — deriving `PROTECTED_PATHS` from this array — would rewrite
+ * the regexes that gate every authenticated request in the product. That is a
+ * change to the authorization layer to fix an indexing bug, so it is not made
+ * here. Instead this array restates the SAME literals that are passed to
+ * `localePathPattern()` above, and
+ * `src/lib/auth/__tests__/protected-prefix-contract.test.ts` proves the two
+ * agree in BOTH directions: every prefix here is matched by some pattern, and
+ * every pattern matches some prefix here. Adding a protected route without
+ * adding it here fails that test.
+ *
+ * Each entry is locale-RELATIVE and carries no leading or trailing slash;
+ * consumers expand it across locales themselves.
+ *
+ * `dashboard` deliberately covers `dashboard/billing`, `dashboard/organization`
+ * and `dashboard/api`: those exist as separate patterns only to express a
+ * stricter ROLE requirement, not a wider path.
+ */
+export const PROTECTED_ROUTE_PREFIXES: readonly string[] = [
+  "engineering",
+  "admin",
+  "knowledge/case-studio",
+  "knowledge/studio",
+  "intelligence/unknown",
+  "candidate",
+  "academy/admin",
+  "compliance",
+  "privacy-center",
+  "vendor",
+  "customer",
+  "crm",
+  "automation",
+  "erp",
+  "documents",
+  "cmms",
+  "assets",
+  "articles/moderation",
+  "articles/review-queue",
+  "articles/reports",
+  "articles/editorial-board",
+  "articles/editor",
+  "articles/submissions",
+  "articles/write",
+  "articles/drafts",
+  "articles/saved",
+  "articles/following",
+  "articles/my-articles",
+  "articles/settings",
+  "dashboard",
+] as const;
+
+/**
+ * Locale-relative paths that stay PUBLIC even though a protected prefix above
+ * captures their parent. Mirrors the `publicChildren` argument given to
+ * `localePathPattern()` — today only the candidate signup page.
+ *
+ * A crawl policy that expands `PROTECTED_ROUTE_PREFIXES` must re-allow these, or
+ * it will block a page anonymous visitors are meant to reach.
+ */
+export const PROTECTED_ROUTE_PUBLIC_CHILDREN: readonly string[] = [
+  "candidate/register",
+] as const;
+
+/**
  * Routes that are PUBLIC by an explicit decision rather than by omission
  * (PHASE 102). Registering one here asserts nothing about authorization — the
  * middleware still consults `isProtectedPath` alone — it declares the intent so

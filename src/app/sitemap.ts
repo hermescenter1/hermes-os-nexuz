@@ -1,9 +1,20 @@
 import type { MetadataRoute } from "next";
 import { BASE_URL, LOCALES } from "@/lib/seo/config";
 import { KNOWLEDGE } from "@/lib/industrial/knowledge";
-import { JOBS } from "@/lib/ats/mock-data";
+import { CASES, CASE_CONTENT_LOCALES } from "@/lib/industrial/cases";
+import { VENDORS } from "@/lib/industrial/vendors";
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
+
+/**
+ * Hard ceiling on Academy course rows one sitemap generation will read.
+ *
+ * Mirrors `MEDIA_SITEMAP_MAX_ASSETS`. Multiplied by the active locales this is
+ * well inside the 50 000 URL / 50 MB sitemap limits, and it means this branch
+ * cannot become an unbounded scan as the catalog grows. When a deployment
+ * outgrows it the fix is a paginated sitemap index, not a larger number.
+ */
+const ACADEMY_SITEMAP_MAX_COURSES = 1000;
 
 /* PHASE 105 — `lastModified` on static routes is deliberately OMITTED.
  *
@@ -57,8 +68,15 @@ const STATIC_PATHS = [
   // the site's crawlable technical-authority surface.
   { path: "/articles",      priority: 0.9,  changeFreq: "daily"   as const },
   { path: "/academy",       priority: 0.9,  changeFreq: "weekly"  as const },
-  // Public media hub index. Individual assets are appended below from the DB.
-  { path: "/videos",        priority: 0.8,  changeFreq: "weekly"  as const },
+  // DISCOVERY-2A — `/videos` is NOT listed.
+  //
+  // A media asset is addressed by `(organization, slug)`, so the bare hub root
+  // has no organization and can never render a library. It was advertised here
+  // at priority 0.8 while permanently serving an empty grid — a soft 404, and
+  // advertising one teaches a crawler to discount the whole sitemap. The route
+  // still answers 200 and is now `noindex`; the indexable media surfaces are
+  // `/videos/{org}` and `/videos/{org}/{slug}`, appended below from the DB.
+  // A real hub is DISCOVERY-2B's decision, not an indexing fix.
   { path: "/pricing",       priority: 0.8,  changeFreq: "monthly" as const },
   { path: "/careers",       priority: 0.9,  changeFreq: "daily"   as const },
   { path: "/vendors",       priority: 0.9,  changeFreq: "weekly"  as const },
@@ -68,20 +86,50 @@ const STATIC_PATHS = [
   { path: "/privacy",       priority: 0.5,  changeFreq: "yearly"  as const },
   { path: "/terms",         priority: 0.5,  changeFreq: "yearly"  as const },
   { path: "/cookies",       priority: 0.5,  changeFreq: "yearly"  as const },
-  { path: "/privacy-center",priority: 0.5,  changeFreq: "monthly" as const },
+  // DISCOVERY-2A — `/privacy-center` is NOT listed. It is registered in
+  // `PROTECTED_PATHS` (`@/lib/auth/rbac`), so an anonymous crawler following it
+  // receives a 307 to `/auth/login`. Advertising an authenticated URL as public
+  // content is the same defect class as leaking one: the sitemap must follow the
+  // access authority, never the other way round. `sitemap-route-contract.test.ts`
+  // now fails if any protected prefix reappears here.
   { path: "/gdpr",          priority: 0.5,  changeFreq: "yearly"  as const },
 ];
 
-function localeEntries(path: string, priority: number, changeFreq: SitemapEntry["changeFrequency"]): SitemapEntry[] {
-  return LOCALES.map((locale) => ({
+/**
+ * One entry per locale in which the content GENUINELY exists.
+ *
+ * DISCOVERY-2A — `contentLocales` defaults to every active locale, which is
+ * correct for a page whose copy comes from `messages/{fa,en,de}.json`: those are
+ * translated with full key parity, so all three URLs really are alternates of
+ * one another. Record-backed families pass their own list and get exactly those
+ * URLs, with reciprocal `alternates` covering only the real set — matching the
+ * `<link rel="alternate">` tags the page itself now emits through
+ * `buildMetadata({ contentLocales })`. The sitemap and the page can no longer
+ * disagree about which translations exist.
+ */
+function localeEntries(
+  path: string,
+  priority: number,
+  changeFreq: SitemapEntry["changeFrequency"],
+  contentLocales: readonly string[] = LOCALES,
+): SitemapEntry[] {
+  const locales = contentLocales.filter((l) => (LOCALES as readonly string[]).includes(l));
+  if (locales.length === 0) return [];
+  return locales.map((locale) => ({
     url: `${BASE_URL}/${locale}${path}`,
     changeFrequency: changeFreq,
     priority,
-    alternates: {
-      languages: Object.fromEntries(
-        LOCALES.map((l) => [l, `${BASE_URL}/${l}${path}`])
-      ),
-    },
+    // A single-representation document has no alternates; emitting a lone
+    // self-referencing entry would claim a translation relationship with itself.
+    ...(locales.length > 1
+      ? {
+          alternates: {
+            languages: Object.fromEntries(
+              locales.map((l) => [l, `${BASE_URL}/${l}${path}`]),
+            ),
+          },
+        }
+      : {}),
   }));
 }
 
@@ -93,15 +141,57 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push(...localeEntries(path, priority, changeFreq));
   }
 
-  // Dynamic: knowledge library articles × locales
+  // Dynamic: knowledge library articles × locales.
+  // Every visible string lives in `messages.knowledge.<id>.*` with full fa/en/de
+  // parity, so all three locales are real representations.
   for (const lib of KNOWLEDGE) {
     entries.push(...localeEntries(`/library/${lib.id}`, 0.75, "monthly"));
   }
 
-  // Dynamic: open job postings × locales
-  const openJobs = JOBS.filter((j) => j.status === "open");
-  for (const job of openJobs) {
-    entries.push(...localeEntries(`/careers/${job.id}`, 0.8, "weekly"));
+  // DISCOVERY-2A — the engineering case corpus (14 records).
+  //
+  // These were absent from the sitemap entirely while ALSO inheriting the locale
+  // homepage as their canonical, so the site's strongest technical-evidence
+  // surface was both unlisted and de-indexed. Both halves are fixed: the page
+  // now declares its own canonical, and the URLs are listed here.
+  //
+  // TWO locales, not three. `EngineeringCase` carries an `en` body and an `fa`
+  // body and no German one (`CASE_CONTENT_LOCALES`), and the detail page reads
+  // `locale === "fa" ? c.fa : c.en` — so `/de/library/cases/{id}` serves the
+  // ENGLISH text under German chrome and is not a German representation. It
+  // still renders and canonicalises to `/en`; it is simply not advertised.
+  for (const c of CASES) {
+    entries.push(
+      ...localeEntries(`/library/cases/${c.id}`, 0.75, "monthly", CASE_CONTENT_LOCALES),
+    );
+  }
+
+  // DISCOVERY-2A — the vendor knowledge pages (7 records).
+  //
+  // Also previously unlisted. Unlike the cases these ARE genuinely trilingual:
+  // `library/vendor/[vendor]/page.tsx` renders entirely from the `library`,
+  // `brain`, `knowledge` and `knowledgeCases` catalogs, all of which carry full
+  // fa/en/de parity — so the default locale set is correct here.
+  for (const v of VENDORS) {
+    entries.push(...localeEntries(`/library/vendor/${v.id}`, 0.7, "monthly"));
+  }
+
+  // DISCOVERY-2A — job postings come from the AUTHORITATIVE source only.
+  //
+  // This branch used to import `@/lib/ats/mock-data` and advertise five invented
+  // vacancies. It now reads `AtsJob` through `@/lib/ats/public-jobs`, which
+  // applies the public predicate (OPEN + isPublic) and returns `[]` rather than
+  // ever falling back to the fixture. When the database is unreachable the
+  // family is simply omitted — the same graceful degradation every other
+  // DB-backed branch below uses. A search engine cannot tell a fixture from a
+  // fact, so public discovery fails empty.
+  try {
+    const { listPublicJobs } = await import("@/lib/ats/public-jobs");
+    for (const job of await listPublicJobs()) {
+      entries.push(...localeEntries(`/careers/${job.id}`, 0.8, "weekly"));
+    }
+  } catch {
+    // DB not available at build time — job postings omitted from the sitemap
   }
 
   // PHASE 105 — the Journal (DB-backed, bounded, published + indexable only).
@@ -126,14 +216,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB not available at build time — Journal omitted from the static sitemap
   }
 
-  // Dynamic: academy courses (DB-backed — skip gracefully if unavailable)
+  // Dynamic: academy courses (DB-backed — skip gracefully if unavailable).
+  //
+  // DISCOVERY-2A added the two predicates this read was missing. It was a bare
+  // `findMany({ select: { id: true } })`: no publication filter, so every DRAFT
+  // course was advertised as public content, and no `take`, so it degraded into
+  // an unbounded table scan on every sitemap generation. `isPublished` is an
+  // existing column with an existing index (`@@index([organizationId,
+  // isPublished])`), so this needs no schema change.
+  //
+  // hreflang is deliberately UNCHANGED here: `AcademyCourse` carries a plain
+  // `title`/`description` and NO locale column, so there is no way to know which
+  // language a course is written in. Fixing that needs either a schema addition
+  // or an owner ruling on the default course language — deferred to
+  // DISCOVERY-2B by owner decision, rather than guessed at here.
   try {
     const { getPrisma } = await import("@/lib/db/prisma");
     const prisma = await getPrisma();
     if (prisma) {
       const courses = await (prisma as unknown as {
         academyCourse: { findMany: (a: unknown) => Promise<{ id: string }[]> }
-      }).academyCourse.findMany({ select: { id: true } });
+      }).academyCourse.findMany({
+        where: { isPublished: true },
+        select: { id: true },
+        take: ACADEMY_SITEMAP_MAX_COURSES,
+      });
       for (const course of courses) {
         entries.push(...localeEntries(`/academy/course/${course.id}`, 0.8, "weekly"));
       }

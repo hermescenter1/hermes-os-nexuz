@@ -5,7 +5,7 @@ import { SeoAdminClient }     from "@/components/admin/SeoAdminClient";
 import { noIndexMetadata }    from "@/lib/seo/metadata";
 import { ACTIVE_LOCALES }     from "@/i18n/locales";
 import { KNOWLEDGE }          from "@/lib/industrial/knowledge";
-import { JOBS }               from "@/lib/ats/mock-data";
+import { listPublicJobs }     from "@/lib/ats/public-jobs";
 import { BASE_URL }           from "@/lib/seo/config";
 
 export function generateMetadata() {
@@ -14,14 +14,25 @@ export function generateMetadata() {
 
 // 89C: derived from ACTIVE_LOCALES so newly activated locales (German) are
 // automatically observed — the list previously enumerated only fa/en.
+//
+// DISCOVERY-2A: brought back in step with `src/app/sitemap.ts`. It was missing
+// thirteen public paths (all eight capability explainers, /industrial-brain,
+// /articles, /videos, /pricing and the vendor directory) and still listed
+// /privacy-center, which is an authenticated route. This dashboard reports on
+// discovery, so reporting a stale route set is itself a defect.
 const STATIC_PUBLIC_PATHS = [
   "", "/platform", "/services",
   "/services/industrial-ai", "/services/knowledge-cloud", "/services/cybersecurity",
   "/services/plc", "/services/scada-hmi",
-  "/architecture", "/brain", "/copilot",
-  "/library", "/library/cases",
+  "/services/digital-twin", "/services/predictive-maintenance", "/services/cmms",
+  "/services/multi-site", "/services/edms", "/services/erp",
+  "/services/ot-edge", "/services/crm",
+  "/architecture", "/brain", "/industrial-brain", "/copilot",
+  "/library", "/library/cases", "/articles",
   "/academy", "/careers", "/contact", "/about",
-  "/privacy", "/terms", "/cookies", "/privacy-center", "/gdpr",
+  "/pricing", "/vendors", "/vendors/apply", "/demo",
+  // /privacy-center is NOT here: it is registered in PROTECTED_PATHS.
+  "/privacy", "/terms", "/cookies", "/gdpr",
 ];
 const STATIC_PUBLIC_ROUTES = STATIC_PUBLIC_PATHS.flatMap((path) =>
   ACTIVE_LOCALES.map((locale) => `/${locale}${path}`),
@@ -47,11 +58,16 @@ export default async function SeoAdminPage({
   const p = t.raw("pages") as Record<string, Record<string, string>>;
   const seo = p.seo;
 
-  const openJobs       = JOBS.filter((j) => j.status === "open");
-  const articleCount   = KNOWLEDGE.length;
-  const staticCount    = STATIC_PUBLIC_ROUTES.length;
-  const dynamicArticles = articleCount * 2; // × 2 locales
-  const dynamicJobs     = openJobs.length * 2;
+  // DISCOVERY-2A — the AUTHORITATIVE job source, never `@/lib/ats/mock-data`.
+  // This dashboard is a discovery surface: it must count the vacancies the
+  // sitemap actually advertises, which is `AtsJob` rows passing the public
+  // predicate, and zero when the database is unreachable.
+  const openJobs        = await listPublicJobs();
+  const articleCount    = KNOWLEDGE.length;
+  const staticCount     = STATIC_PUBLIC_ROUTES.length;
+  const localeCount     = ACTIVE_LOCALES.length;
+  const dynamicArticles = articleCount * localeCount;
+  const dynamicJobs     = openJobs.length * localeCount;
   const totalRoutes     = staticCount + dynamicArticles + dynamicJobs;
 
   const stats = {
@@ -59,7 +75,8 @@ export default async function SeoAdminPage({
     staticRoutes:     staticCount,
     articleRoutes:    dynamicArticles,
     jobRoutes:        dynamicJobs,
-    locales:          2,
+    // Was hard-coded to 2 while three locales are active.
+    locales:          localeCount,
     schemaTypes:      SCHEMA_TYPES_ACTIVE,
     knowledgeArticles: articleCount,
     openJobs:         openJobs.length,
