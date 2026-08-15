@@ -207,7 +207,12 @@ describe("industrial-brain/page.tsx — fully catalog-backed", () => {
   });
 
   it("preserves the RBAC gate for Save-as-Engineering-Case unchanged", () => {
-    expect(src).toMatch(/getCurrentUser\(\)/);
+    // The gate itself — role-based on "authoring" — is asserted exactly and is
+    // unchanged. AUTH-U1 migrated only the identity SOURCE on this page from the
+    // legacy-only reader to the canonical facade (JWT first, legacy fallback),
+    // so accept either sanctioned reader: what this guard protects is that an
+    // identity is resolved and then role-gated, not which cookie carried it.
+    expect(src).toMatch(/getCurrentUser(Unified)?\(\)/);
     expect(src).toMatch(/can\(user\?\.role,\s*"authoring"\)/);
   });
 });
