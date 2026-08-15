@@ -15,8 +15,8 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 372,
-    "handlers": 519,
+    "routeFiles": 373,
+    "handlers": 520,
     "byClassification": {
       "PUBLIC_READ": 38,
       "PUBLIC_WRITE": 14,
@@ -24,7 +24,7 @@
       "TENANT_MEMBER": 125,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
-      "PLATFORM_ADMIN": 128,
+      "PLATFORM_ADMIN": 129,
       "WEBHOOK": 2,
       "INTERNAL_HEALTH": 2,
       "UNKNOWN": 0
@@ -35,11 +35,11 @@
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 253,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 253,
-    "TENANT_IDENTITY_SERVER_DERIVED": 253,
+    "TENANT_BOUND_HANDLERS_TOTAL": 254,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 254,
+    "TENANT_IDENTITY_SERVER_DERIVED": 254,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 253,
+    "OBJECT_SCOPED_HANDLERS": 254,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -295,6 +295,19 @@
       "apiPath": "/api/admin/observability",
       "method": "GET",
       "file": "src/app/api/admin/observability/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/admin/sales/leads/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/admin/sales/leads/[id]/route.ts",
       "classification": "PLATFORM_ADMIN",
       "authEvidence": [
         "getCurrentUser"
