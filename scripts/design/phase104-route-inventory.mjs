@@ -181,7 +181,7 @@ export const ROUTE_RULES = Object.freeze([
   // redesigned in full (owner-approved after three visual review rounds:
   // bespoke ObservatorySignature, eight-chapter narrative, no stock imagery,
   // Glass/Beacon/Edge at their contract meanings, header/footer opt-in).
-  // The classifier already treats "/" as an EXACT match (see ), so
+  // The classifier already treats "/" as an EXACT match (see `classify`), so
   // this status reaches the localised homepage only — no other public route
   // inherits it, and the locale variants remain ONE route, not three.
   { prefix: "/", family: "public/marketing", status: "MIGRATED_DIRECTLY", note: "Observatory homepage — Phase 104-E; owner + Codex approved reference surface", exact: true },

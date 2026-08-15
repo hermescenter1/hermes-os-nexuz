@@ -2357,8 +2357,11 @@ html[lang^="en"] {
 }
 
 /* ── CHAPTER 6 — gate table (md+) and gate accordion (<md) ──
-   One DOM each. The Beacon row/summary carries the same inline-start indicator
-   grammar as the Rail; state is a marker AND a text label everywhere. */
+   Both representations exist in the DOM; at each supported viewport exactly
+   one is rendered and exposed to the accessibility tree (the other is
+   `display:none` via the breakpoint utilities). The Beacon row/summary carries
+   the same inline-start indicator grammar as the Rail; state is a marker AND a
+   text label everywhere. */
 .hh-gate-table th, .hh-gate-table td { border-block-end: 1px solid var(--edge-structural); }
 .hh-gate-table thead th { border-block-end-color: var(--color-border-default); }
 .hh-gate-tr[data-beacon="true"] > th { box-shadow: inset var(--rail-indicator-width) 0 0 0 var(--beacon-core); padding-inline-start: 0.875rem; }

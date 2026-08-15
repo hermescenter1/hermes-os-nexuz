@@ -365,11 +365,17 @@ export function CoreChapter({
    five questions — GATE / ACTOR / EVIDENCE REQUIREMENT / BLOCKING CONDITION /
    STATE — and Human Approved is the chapter's Beacon.
 
-   TWO RENDERINGS, one DOM each (never both):
+   TWO RESPONSIVE REPRESENTATIONS. Both exist in the DOM — `md:hidden` and
+   `hidden md:block` do not remove markup, they set `display:none` on one per
+   breakpoint. Exactly one is visually rendered and exposed to the
+   accessibility tree at each supported viewport (`display:none` removes a
+   subtree from the a11y tree and from tab order); neither carries an id or an
+   aria-labelledby/aria-describedby reference, so the hidden twin can never
+   produce a duplicate id, a dangling reference, or a second announcement:
      · md+   a semantic <table> with <th scope>, so a screen reader announces
              column and row headers for every cell;
      · <md   an accessible accordion of native <details>/<summary>, G3 open by
-             default, every cell still in the DOM. This is the owner-selected
+             default, every cell in the DOM. This is the owner-selected
              MOBILE_GATE_LAYOUT=ACCESSIBLE_ACCORDION, chosen to bring the phone
              page back toward the height target without dropping content.
    State is carried by a structural marker AND a text label in both — colour is
