@@ -251,6 +251,46 @@
         "description": "Connect your plant data to a structured knowledge layer: tag libraries, alarm management, historian integration, and AI-ready pipelines.",
         "keywords": "industrial knowledge cloud, tag library, historian integration, alarm management, data intelligence, IIoT data"
       },
+      "serviceDigitalTwin": {
+        "title": "Digital Twin — Hermes OS",
+        "description": "A live node-and-relation graph of your plant's assets, overlaid with real telemetry and health state — implemented and running today.",
+        "keywords": "digital twin, asset graph, industrial digital twin, plant model, telemetry overlay"
+      },
+      "servicePredictiveMaintenance": {
+        "title": "Predictive Maintenance — Hermes OS",
+        "description": "Remaining-useful-life estimation, risk scoring and degradation baselines, computed from asset telemetry.",
+        "keywords": "predictive maintenance, remaining useful life, RUL, risk scoring, condition monitoring"
+      },
+      "serviceCmms": {
+        "title": "CMMS — Hermes OS",
+        "description": "Work orders, preventive maintenance scheduling, spare parts and maintenance cost tracking in one governed system.",
+        "keywords": "CMMS, computerized maintenance management, work orders, preventive maintenance, spare parts"
+      },
+      "serviceMultiSite": {
+        "title": "Multi-Site Operations — Hermes OS",
+        "description": "Cross-site KPI comparison, failure-pattern detection and risk roll-up across every plant in your organization.",
+        "keywords": "multi-site operations, cross-site benchmarking, plant KPI comparison, enterprise industrial operations"
+      },
+      "serviceEdms": {
+        "title": "EDMS — Hermes OS",
+        "description": "Version-controlled engineering documents with approvals, revisions, retention and audit trail.",
+        "keywords": "EDMS, engineering document management, controlled documents, document approvals, revision control"
+      },
+      "serviceErp": {
+        "title": "ERP — Hermes OS",
+        "description": "Project and task management, inventory tracking, approval workflows and operational KPIs on the same tenancy as the rest of Hermes OS.",
+        "keywords": "industrial ERP, project management, inventory tracking, approval workflow, operational KPIs"
+      },
+      "serviceOtEdge": {
+        "title": "OT Edge — Hermes OS",
+        "description": "A governed, read-only registry for OT gateways and devices with secure credential enrollment and rotation.",
+        "keywords": "OT edge, gateway registry, industrial gateway security, credential rotation, OT device management"
+      },
+      "serviceCrm": {
+        "title": "CRM — Hermes OS",
+        "description": "Leads, opportunities, accounts and deal activity, on the same tenancy and access model as the rest of Hermes OS.",
+        "keywords": "industrial CRM, sales pipeline, lead management, opportunity tracking"
+      },
       "libraryCases": {
         "title": "Engineering Case Library — Industrial Incidents & Solutions",
         "description": "Real-world industrial automation cases: fault diagnoses, root cause analyses, and engineering solutions across PLC, SCADA, HMI, and electrical systems.",
@@ -438,7 +478,8 @@
       "operations": "Operations",
       "knowledge": "Knowledge",
       "journal": "Industrial Journal",
-      "services": "Services"
+      "services": "Services",
+      "capabilities": "Platform Capabilities"
     },
     "items": {
       "overview": "Overview",
@@ -476,7 +517,15 @@
       "journalCategories": "Categories",
       "industrialBrain": "Industrial Brain",
       "discover": "Discovery",
-      "demo": "Demo"
+      "demo": "Demo",
+      "capDigitalTwin": "Digital Twin",
+      "capPredictiveMaintenance": "Predictive Maintenance",
+      "capCmms": "CMMS",
+      "capMultiSite": "Multi-Site Operations",
+      "capEdms": "EDMS",
+      "capErp": "ERP",
+      "capOtEdge": "OT Edge",
+      "capCrm": "CRM"
     },
     "menu": "Menu",
     "close": "Close"
@@ -702,7 +751,205 @@
         }
       }
     },
-    "strap": "PLC • SCADA • HMI • AI • OT Security"
+    "strap": "PLC • SCADA • HMI • AI • OT Security",
+    "capabilityChrome": {
+      "eyebrow": "Hermes OS Capability",
+      "problemLabel": "The problem",
+      "whatItDoesLabel": "What Hermes OS does",
+      "connectsLabel": "How it connects",
+      "valueLabel": "Why it matters",
+      "automationLabel": "What's automated, what stays human",
+      "relatedLabel": "Related Hermes OS capabilities",
+      "relatedCta": "Explore",
+      "relatedCtaAria": "Explore {name}",
+      "genericCtaTitle": "Ready to see this in your plant?"
+    },
+    "capabilities": {
+      "digitalTwin": {
+        "name": "Digital Twin",
+        "title": "Digital Twin — a queryable model of your plant, grounded in real data",
+        "lede": "A node-and-relation graph of your assets and lines, overlaid with the latest reported telemetry and a computed health state — not a rendering exercise, a queryable model your other Hermes capabilities reason over.",
+        "problem": { "body": "Asset relationships — which pump feeds which line, which sensor belongs to which machine — usually live in someone's head or in a drawing that's out of date. When a fault happens, reconstructing the physical context costs time the plant doesn't have." },
+        "whatItDoes": { "bullets": [
+          { "name": "Node & relation graph", "desc": "Assets, lines and equipment modeled as nodes with typed relationships between them, editable through a dedicated graph and layout workspace." },
+          { "name": "Telemetry overlay", "desc": "Tag values and a computed health score attach to the twin from the latest telemetry each gateway has reported, so the model shows the most recent known state rather than a static diagram. Readings that have gone stale lower that score instead of being presented as current." },
+          { "name": "Site-scoped layouts", "desc": "Saved visual layouts per site keep the twin readable as the asset graph grows." }
+        ] },
+        "connects": { "items": [
+          { "name": "Predictive Maintenance", "desc": "Twin context — what's connected to what — is the structure predictive risk scoring reasons over." },
+          { "name": "CMMS", "desc": "Twin nodes map onto the same assets CMMS schedules and tracks maintenance work for." },
+          { "name": "Industrial Brain", "desc": "Diagnostic reasoning anchors its evidence to the twin's asset and relationship model, not a guess at plant layout." }
+        ] },
+        "value": { "items": [
+          { "name": "Faster fault context", "desc": "Engineers see what's actually connected before they walk the floor." },
+          { "name": "One model, many consumers", "desc": "The same twin backs analytics, health scoring and diagnostic reasoning — no duplicate asset lists to keep in sync." },
+          { "name": "Auditable structure", "desc": "Relationships are explicit and versioned, not tribal knowledge." }
+        ] },
+        "automation": { "body": "Graph updates and telemetry overlays are computed automatically; changing what a node represents in the physical plant remains an engineer's decision." },
+        "cta": { "title": "See how Digital Twin fits your architecture" }
+      },
+      "predictiveMaintenance": {
+        "name": "Predictive Maintenance",
+        "title": "Predictive Maintenance — remaining life and risk, computed from real telemetry",
+        "lede": "Baselines, degradation tracking, risk scoring and remaining-useful-life estimation, run against the asset telemetry Hermes OS already collects — not a black-box score with no explanation.",
+        "problem": { "body": "Most maintenance is either reactive (fix it after it breaks) or calendar-based (replace it whether it needs it or not). Both waste either uptime or good parts, because neither looks at how the asset is actually degrading." },
+        "whatItDoes": { "bullets": [
+          { "name": "Remaining useful life (RUL)", "desc": "Estimates how much service life an asset has left, derived from its telemetry history." },
+          { "name": "Risk scoring", "desc": "Ranks assets by failure risk so maintenance attention goes where it matters first." },
+          { "name": "Baselines & degradation tracking", "desc": "Learns an asset's normal operating envelope and tracks its drift away from it over time." }
+        ] },
+        "connects": { "items": [
+          { "name": "Digital Twin", "desc": "Reads the same asset and relationship context the twin maintains, so a risk score is tied to a real position in the plant." },
+          { "name": "CMMS", "desc": "A recommendation is only useful once it becomes a scheduled work order — the two share the same asset identity." },
+          { "name": "Multi-Site Operations", "desc": "Risk snapshots roll up across sites for portfolio-level prioritization." }
+        ] },
+        "value": { "items": [
+          { "name": "Fewer surprise failures", "desc": "Degradation is visible before it becomes downtime." },
+          { "name": "Less wasted maintenance", "desc": "Parts and labor go to assets that actually need attention, not a fixed calendar." },
+          { "name": "Explainable, not a black box", "desc": "Every score traces back to the baseline and telemetry it was computed from." }
+        ] },
+        "automation": { "body": "RUL estimates, risk scores and baselines are calculated automatically from telemetry; deciding to shut down a line or override a warning stays with the engineer responsible for it." },
+        "cta": { "title": "See Predictive Maintenance on your assets" }
+      },
+      "cmms": {
+        "name": "CMMS",
+        "title": "CMMS — maintenance work, tracked in one governed system",
+        "lede": "Work orders, preventive schedules, spare parts and maintenance cost — one governed record instead of a spreadsheet per shift.",
+        "problem": { "body": "When maintenance history lives in paper logs or personal spreadsheets, a failure's cause and prior repairs aren't queryable — they're whatever the technician who was there remembers." },
+        "whatItDoes": { "bullets": [
+          { "name": "Work order lifecycle", "desc": "From reported failure to scheduled task to completed work, with history retained." },
+          { "name": "Preventive scheduling", "desc": "Maintenance plans and calendars that trigger work before failure, not after." },
+          { "name": "Spares & cost tracking", "desc": "Spare-part usage and maintenance cost recorded against the asset they were spent on." }
+        ] },
+        "connects": { "items": [
+          { "name": "Predictive Maintenance", "desc": "Risk-driven recommendations become CMMS work orders instead of staying a dashboard nobody acts on." },
+          { "name": "EDMS", "desc": "Work against an asset can reference the same controlled procedures and drawings EDMS governs." },
+          { "name": "Multi-Site Operations", "desc": "Failure and downtime records feed the cross-site failure-pattern comparison." }
+        ] },
+        "value": { "items": [
+          { "name": "One maintenance record", "desc": "History, cost and cause live in one place, not several people's memory." },
+          { "name": "Less unplanned downtime", "desc": "Preventive schedules catch work before it becomes an outage." },
+          { "name": "Cost visibility", "desc": "Spend by asset, by site, is queryable rather than reconstructed after the fact." }
+        ] },
+        "automation": { "body": "Scheduling and history-tracking run automatically; approving completed work and signing off on safety remain a technician's and supervisor's responsibility." },
+        "cta": { "title": "See CMMS on your maintenance workflow" }
+      },
+      "multiSite": {
+        "name": "Multi-Site Operations",
+        "title": "Multi-Site Operations — one picture across every plant",
+        "lede": "Benchmarks, KPI comparison, risk roll-up and cross-site failure-pattern detection — so a lesson learned at one plant doesn't stay stuck there.",
+        "problem": { "body": "Different plants running the same equipment usually have no shared view: a failure pattern discovered at one site has no path to reach the engineers running the same machine somewhere else." },
+        "whatItDoes": { "bullets": [
+          { "name": "Cross-site KPI comparison", "desc": "The same metrics, computed the same way, across every site in the organization." },
+          { "name": "Cross-site failure patterns", "desc": "Detects when the same failure signature is showing up at more than one plant." },
+          { "name": "Benchmarking & risk roll-up", "desc": "Aggregates site-level risk into one organization-wide view." }
+        ] },
+        "connects": { "items": [
+          { "name": "CMMS", "desc": "Cross-site failure detection is built from the same work-order and failure records CMMS tracks per site." },
+          { "name": "Predictive Maintenance", "desc": "Site risk snapshots aggregate the same risk scores computed per asset." },
+          { "name": "Industrial Brain", "desc": "Reasoning has organization-wide context to draw on, not just one site's history." }
+        ] },
+        "value": { "items": [
+          { "name": "Shared lessons", "desc": "A failure pattern found once is visible everywhere it applies." },
+          { "name": "Comparable KPIs", "desc": "Sites are measured the same way, so comparisons mean something." },
+          { "name": "Portfolio-level risk view", "desc": "Leadership sees where risk concentrates across the whole operation, not one plant at a time." }
+        ] },
+        "automation": { "body": "Aggregation and pattern detection run automatically across sites; acting on a cross-site finding — changing a procedure, escalating a risk — remains a human decision at the responsible site." },
+        "cta": { "title": "See Multi-Site Operations across your plants" }
+      },
+      "edms": {
+        "name": "EDMS",
+        "title": "EDMS — engineering documents, under version control",
+        "lede": "Controlled documents with approvals, revisions, retention and audit trail — so the drawing an engineer is working from is the approved one.",
+        "problem": { "body": "Engineering documents scattered across email, shared drives and printed binders make it hard to know which revision is current, who approved it, and whether it's still valid." },
+        "whatItDoes": { "bullets": [
+          { "name": "Version-controlled documents", "desc": "Revisions, approvals and check-out are tracked, not overwritten." },
+          { "name": "Retention & audit trail", "desc": "Retention policy and a record of who accessed or changed a document are built in." },
+          { "name": "Search, folders & templates", "desc": "Documents are organized and searchable rather than named by convention and hope." }
+        ] },
+        "connects": { "items": [
+          { "name": "CMMS", "desc": "Maintenance work can reference the same controlled procedures and drawings, not an uncontrolled copy." },
+          { "name": "ERP", "desc": "Project documentation shares the same document-control model as operational records." },
+          { "name": "Industrial Brain", "desc": "Diagnostic recommendations anchor to approved revisions of the documents they cite, not whatever copy happens to be on hand." }
+        ] },
+        "value": { "items": [
+          { "name": "One current version", "desc": "Everyone works from the approved revision, not an email attachment from last year." },
+          { "name": "Compliance-ready trail", "desc": "Retention and audit history are already there when someone asks for them." },
+          { "name": "Findable documents", "desc": "Search and structure replace tribal knowledge of where things are saved." }
+        ] },
+        "automation": { "body": "Versioning, retention timers and audit logging happen automatically; approving a document for release stays a named person's decision." },
+        "cta": { "title": "See EDMS on your document set" }
+      },
+      "erp": {
+        "name": "ERP",
+        "title": "ERP — engineering projects, inventory and approvals on one tenancy",
+        "lede": "Project and task management, inventory tracking, approval workflows and operational KPIs — the enterprise workflows around the plant, on the same access model as everything else in Hermes OS.",
+        "problem": { "body": "Engineering and operations teams often run projects and inventory in a separate system from the one that understands the plant, so the two views of the same work drift apart." },
+        "whatItDoes": { "bullets": [
+          { "name": "Project & task management", "desc": "Projects, tasks and milestones tracked against the same organization and site model as the rest of the platform." },
+          { "name": "Inventory tracking", "desc": "Inventory items and their movements recorded, not reconciled by spreadsheet at month end." },
+          { "name": "Approvals & operational KPIs", "desc": "Multi-step approval workflows and operational KPI tracking built in." }
+        ] },
+        "connects": { "items": [
+          { "name": "CRM", "desc": "A won opportunity can become a tracked project without leaving the platform." },
+          { "name": "EDMS", "desc": "Project documentation follows the same controlled-document model as engineering records." },
+          { "name": "Multi-Site Operations", "desc": "Projects and resources are visible in the same cross-site operational picture." }
+        ] },
+        "value": { "items": [
+          { "name": "One tenancy, one access model", "desc": "No second login, no second permission system for enterprise workflows." },
+          { "name": "Inventory that's current", "desc": "Movements are recorded as they happen, not reconstructed at count time." },
+          { "name": "Approvals with a trail", "desc": "Who approved what, and when, is part of the record." }
+        ] },
+        "automation": { "body": "KPI computation and movement logging run automatically; approving a request or releasing budget remains a named approver's decision." },
+        "cta": { "title": "See ERP on your projects and inventory" }
+      },
+      "otEdge": {
+        "name": "OT Edge",
+        "title": "OT Edge — a governed registry for gateways and devices, read-only by design",
+        "lede": "Gateway and device registration with secure credential enrollment and rotation — a records-and-observability layer for the OT edge, not a control channel.",
+        "problem": { "body": "Bringing operational-technology gateways and devices into an IT-adjacent system safely is hard: most integrations either expose more than they should or stay so locked down nobody can see what's actually connected." },
+        "whatItDoes": { "bullets": [
+          { "name": "Gateway & device registry", "desc": "Every registered gateway and device profile is tracked in one place, per site." },
+          { "name": "Secure credential lifecycle", "desc": "Enrollment, rotation and revocation of gateway credentials, so a compromised credential can be cut off without a site visit." },
+          { "name": "Read-only engineering export", "desc": "Models exported engineering metadata and gateway registration only — by design, nothing here can express a write, a setpoint change or a control command." }
+        ] },
+        "connects": { "items": [
+          { "name": "Digital Twin", "desc": "Gateway-reported telemetry is what keeps the twin's overlay current." },
+          { "name": "Predictive Maintenance", "desc": "The same telemetry stream is what risk scoring and RUL estimation are computed from." },
+          { "name": "Industrial Brain", "desc": "Evidence used in diagnostic reasoning traces back to a registered, credentialed source, not an anonymous feed." }
+        ] },
+        "value": { "items": [
+          { "name": "Visibility without exposure", "desc": "Security and engineering teams can see what's connected without granting write access to it." },
+          { "name": "Credential hygiene", "desc": "Rotating or revoking a gateway credential doesn't require physically reaching the device." },
+          { "name": "An honest safety boundary", "desc": "The read-only design is enforced in the interface, not just promised in a document." }
+        ] },
+        "automation": { "body": "Registration, health checks and credential rotation are automated; every control action on real equipment is explicitly out of scope for this layer — that boundary is a design decision, not a current limitation." },
+        "cta": { "title": "See OT Edge on your gateway estate" }
+      },
+      "crm": {
+        "name": "CRM",
+        "title": "CRM — the sales pipeline, on the same platform as the plant",
+        "lede": "Leads, opportunities, accounts and deal activity — the commercial side of Hermes OS, sharing its tenancy and access model with everything else.",
+        "problem": { "body": "A sales team using a separate CRM has no natural path back into the same platform their prospects will eventually run on, so early context — what a prospect asked about, what mattered to them — gets lost at handoff." },
+        "whatItDoes": { "bullets": [
+          { "name": "Lead & opportunity pipeline", "desc": "Leads progress through a defined pipeline into tracked opportunities and deals." },
+          { "name": "Account & contact management", "desc": "Accounts and their contacts are recorded against the same organization model as every other module." },
+          { "name": "Activity & renewal tracking", "desc": "Lead activity history and renewal forecasting are built in, not bolted on." }
+        ] },
+        "connects": { "items": [
+          { "name": "ERP", "desc": "A won deal can hand off into a tracked project on the same tenancy, not a data export." },
+          { "name": "EDMS", "desc": "Proposals and contracts move into the same document-control model as engineering records." },
+          { "name": "Hermes OS Platform", "desc": "CRM runs under the same organization, role and site access model as the rest of the platform." }
+        ] },
+        "value": { "items": [
+          { "name": "Context that survives handoff", "desc": "What a prospect cared about is still there once they become a customer." },
+          { "name": "One access model", "desc": "Sales, engineering and operations share the same tenancy and permission system." },
+          { "name": "A pipeline that's queryable", "desc": "Deal stage and history are records, not a spreadsheet someone maintains by hand." }
+        ] },
+        "automation": { "body": "Activity logging and renewal forecasting are computed automatically; qualifying a lead or closing a deal remains a salesperson's judgment call." },
+        "cta": { "title": "See CRM on your sales pipeline" }
+      }
+    }
   },
   "architecture": {
     "eyebrow": "Architecture",
@@ -735,6 +982,23 @@
         "desc": "Controllers, drives, and instruments"
       }
     },
+    "delivered": {
+      "title": "Delivered platform capabilities",
+      "badge": "Available now",
+      "lede": "These engines are already implemented and running — not a roadmap promise. Open a capability to see what it does and how it connects to the rest of Hermes OS.",
+      "items": {
+        "twin": {
+          "name": "Digital Twin Engine",
+          "desc": "A node-and-relation graph of your lines and equipment, overlaid with the latest reported telemetry and a computed health state.",
+          "cta": "Explore Digital Twin"
+        },
+        "predictive": {
+          "name": "Predictive Maintenance Engine",
+          "desc": "Remaining-useful-life estimation, risk scoring, and degradation baselines computed from asset telemetry.",
+          "cta": "Explore Predictive Maintenance"
+        }
+      }
+    },
     "future": {
       "title": "Future Platform Capabilities",
       "badge": "Phase 2+",
@@ -755,14 +1019,6 @@
         "historian": {
           "name": "Historian Service",
           "desc": "Long-term time-series storage for process data and audits."
-        },
-        "twin": {
-          "name": "Digital Twin Engine",
-          "desc": "Live virtual models of lines and equipment for simulation."
-        },
-        "predictive": {
-          "name": "Predictive Maintenance Engine",
-          "desc": "Failure-pattern detection from vibration, thermal, and cycle data."
         }
       }
     }
@@ -1598,6 +1854,7 @@
     "eyebrow": "Hermes Brain",
     "title": "Industrial engineering analysis",
     "lede": "Describe a problem from the plant floor. Hermes Brain classifies the domain, selects the relevant knowledge libraries, and returns a structured engineering analysis. It analyzes — it does not control equipment.",
+    "crossLink": "Looking for alarm intelligence, signal matrix and fault analysis instead? Explore Hermes Industrial Brain.",
     "placeholder": "Describe the problem… e.g. \"S7-1200 digital input chatters when the conveyor starts\"",
     "analyze": "Analyze",
     "analyzing": "Analyzing…",
@@ -4379,6 +4636,7 @@
       "title": "Hermes Industrial Brain — Alarm Intelligence, Signal Matrix",
       "description": "Hermes Industrial Brain — deterministic fault analysis, alarm intelligence, signal matrix, and neural reasoning map for industrial operations."
     },
+    "crossLink": "Looking for general industrial engineering knowledge instead? Explore Hermes Brain.",
     "status": {
       "heading": "SYSTEM STATUS",
       "online": "ONLINE",
@@ -5708,6 +5966,7 @@
       "navLabel": "Primary",
       "groups": {
         "platform": "Platform",
+        "capabilities": "Capabilities",
         "intelligence": "Intelligence",
         "knowledge": "Knowledge",
         "resources": "Resources",
@@ -5717,6 +5976,14 @@
         "platformOverview": "Platform Overview",
         "architecture": "Architecture",
         "services": "Services",
+        "capDigitalTwin": "Digital Twin",
+        "capPredictiveMaintenance": "Predictive Maintenance",
+        "capCmms": "CMMS",
+        "capMultiSite": "Multi-Site Operations",
+        "capEdms": "EDMS",
+        "capErp": "ERP",
+        "capOtEdge": "OT Edge",
+        "capCrm": "CRM",
         "industrialBrain": "Industrial Brain",
         "hermesBrain": "Hermes Brain",
         "copilot": "Copilot",
@@ -5845,15 +6112,18 @@
       "cards": {
         "asset": {
           "name": "Asset & operational intelligence",
-          "desc": "Asset registry, site structure, work orders and maintenance workflows — the operational spine that closes the loop."
+          "desc": "Asset registry, site structure, work orders and maintenance workflows — the operational spine that closes the loop.",
+          "cta": "See the platform"
         },
         "predictive": {
           "name": "Predictive maintenance",
-          "desc": "Baselines, risk scoring and remaining-useful-life estimates — explainable indicators, never black-box guarantees."
+          "desc": "Baselines, risk scoring and remaining-useful-life estimates — explainable indicators, never black-box guarantees.",
+          "cta": "Explore Predictive Maintenance"
         },
         "multisite": {
           "name": "Multi-site intelligence",
-          "desc": "One organization, many plants: site-level isolation with cross-site visibility for the people who need it."
+          "desc": "One organization, many plants: site-level isolation with cross-site visibility for the people who need it.",
+          "cta": "Explore Multi-Site Operations"
         }
       }
     },
@@ -5862,15 +6132,18 @@
       "cards": {
         "knowledge": {
           "name": "Knowledge Engine & Graph",
-          "desc": "Curated engineering libraries across PLC, SCADA/HMI, electrical, instrumentation, protocols, cybersecurity and maintenance — connected in a knowledge graph with real engineering cases."
+          "desc": "Curated engineering libraries across PLC, SCADA/HMI, electrical, instrumentation, protocols, cybersecurity and maintenance — connected in a knowledge graph with real engineering cases.",
+          "cta": "Open the Knowledge Library"
         },
         "twin": {
           "name": "Digital Twin & Time Series",
-          "desc": "Model asset hierarchies and tags, and analyze their time-series behavior on the same surface the Brain reasons over."
+          "desc": "Model asset hierarchies and tags, and analyze their time-series behavior on the same surface the Brain reasons over.",
+          "cta": "Explore Digital Twin"
         },
         "edge": {
           "name": "Edge gateway & connectivity",
-          "desc": "Gateway and connector management with a protocol-aware architecture — OPC UA, MQTT, PLC and SCADA domains, designed for on-prem and edge deployments."
+          "desc": "Gateway and connector management with a protocol-aware architecture — OPC UA, MQTT, PLC and SCADA domains, designed for on-prem and edge deployments.",
+          "cta": "Explore OT Edge"
         }
       }
     },

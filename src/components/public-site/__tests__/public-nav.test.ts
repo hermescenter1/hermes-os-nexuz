@@ -52,11 +52,15 @@ function keyPaths(obj: Record<string, unknown>, prefix = ""): string[] {
 }
 
 describe("public-site nav registry — structure (87D.1 grouped IA)", () => {
-  it("header exposes the five approved groups with their grouped destinations", () => {
+  it("header exposes the approved groups with their grouped destinations", () => {
+    // R2 corrective (F2): a sixth group exposes the eight already-implemented
+    // platform capabilities. They were previously only in `site-nav.ts`, which
+    // the public shell does not render — see capability-discovery.test.ts.
     expect(
       PUBLIC_NAV_GROUPS.map((g) => `${g.groupKey}:${g.items.map((i) => i.href).join(",")}`),
     ).toEqual([
       "platform:/platform,/architecture,/services",
+      "capabilities:/services/digital-twin,/services/predictive-maintenance,/services/cmms,/services/multi-site,/services/edms,/services/erp,/services/ot-edge,/services/crm",
       "intelligence:/industrial-brain,/brain,/copilot",
       "knowledge:/library,/academy,/articles",
       "resources:/demo,/vendors",

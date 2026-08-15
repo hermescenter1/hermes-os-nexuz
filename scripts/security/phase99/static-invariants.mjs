@@ -404,7 +404,7 @@ export function htmlSinkInventory(repoRoot) {
       }
     }
   }
-  const SAFE_FORMS = new Set(["JSON_SERIALISED", "STATIC_LITERAL"]);
+  const SAFE_FORMS = new Set(["JSON_SERIALISED", "JSON_SERIALISED_ESCAPED", "STATIC_LITERAL"]);
   const unsanitised = items.filter((i) => !(i.kind === "REACT_RAW_HTML" && SAFE_FORMS.has(i.valueForm)));
   return {
     ok: unsanitised.length === 0,
@@ -417,10 +417,21 @@ export function htmlSinkInventory(repoRoot) {
 /**
  * Classify what actually reaches `__html`.
  *
- * `JSON.stringify` output is safe in a JSON-LD/bootstrap script because it
- * escapes the sequences that could close the element; a literal with no
- * interpolation is safe because nothing external reaches it. Everything else is
- * an unsanitised sink and must be reviewed.
+ * A literal with no interpolation is safe because nothing external reaches it.
+ *
+ * `JSON.stringify` is accepted as `JSON_SERIALISED` for continuity, but note
+ * the limit of that guarantee: it escapes quotes and backslashes, so the JSON
+ * cannot be broken out of — but it does NOT escape `<`. A value containing
+ * `</script>` therefore survives verbatim and closes the surrounding element.
+ * Bare `JSON.stringify` is only genuinely safe where every value is
+ * application-controlled.
+ *
+ * `JSON_SERIALISED_ESCAPED` is the stronger form: a dedicated serialiser that
+ * additionally escapes `<` (and the U+2028/U+2029 line terminators). It is
+ * recognised structurally, not by name — the helper's definition must be
+ * present in the same file AND must be shown to perform the `<` escape — so
+ * this cannot be used to wave through an arbitrary function that merely has a
+ * reassuring identifier.
  */
 function classifyRawHtmlValue(text, tokenIdx) {
   const containerStart = text.indexOf("{", tokenIdx);
@@ -434,9 +445,34 @@ function classifyRawHtmlValue(text, tokenIdx) {
   if (colon === -1) return "UNRESOLVED";
   const value = (splitTopLevel(obj.slice(colon + 1, obj.length - 1))[0] ?? "").trim();
   if (/JSON\.stringify\s*\(/.test(value)) return "JSON_SERIALISED";
+  // A local serialiser call, verified against its own definition in this file:
+  // it must wrap JSON.stringify AND escape "<" to the u003c JSON escape.
+  const call = value.match(/^([A-Za-z_$][\w$]*)\s*\(/);
+  if (call && definesEscapingSerialiser(text, call[1])) return "JSON_SERIALISED_ESCAPED";
   if (/^`[\s\S]*`$/.test(value) && !value.includes("${")) return "STATIC_LITERAL";
   if (/^(["'])(?:(?!\1)[^\\]|\\.)*\1$/.test(value)) return "STATIC_LITERAL";
   return "DYNAMIC";
+}
+
+/**
+ * True when `name` is defined in this same source as a serialiser that wraps
+ * `JSON.stringify` and escapes `<` into the `u003c` JSON escape.
+ *
+ * Both spellings of the escape are accepted because the replacement string may
+ * legitimately be assembled from a `String.fromCharCode(92)` backslash rather
+ * than written as a literal escape sequence.
+ */
+function definesEscapingSerialiser(text, name) {
+  const defIdx = text.search(
+    new RegExp(`function\\s+${name}\\s*\\(|(?:const|let|var)\\s+${name}\\s*=`),
+  );
+  if (defIdx === -1) return false;
+  const bodyStart = text.indexOf("{", defIdx);
+  if (bodyStart === -1) return false;
+  const body = balancedFrom(text, bodyStart, "{", "}");
+  if (!/JSON\.stringify\s*\(/.test(body)) return false;
+  const escapesLt = /u003c/i.test(body) && /\.replace\s*\(/.test(body);
+  return escapesLt;
 }
 
 // ─── File upload ──────────────────────────────────────────────────────────────

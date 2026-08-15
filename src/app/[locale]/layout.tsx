@@ -9,8 +9,8 @@ import { ACTIVE_LOCALES, DEFAULT_LOCALE as DEFAULT_ACTIVE_LOCALE, LOCALE_LANG_TA
 import { CookieConsentBanner }  from "@/components/compliance/CookieConsentBanner";
 import { AnalyticsProvider }    from "@/components/analytics/AnalyticsProvider";
 import { JsonLd }               from "@/components/seo/JsonLd";
-import { organizationSchema, webSiteSchema } from "@/lib/seo/schemas";
-import { BASE_URL, SITE_NAME, OG_IMAGE_URL, TWITTER_HANDLE, OG_LOCALE, type SeoLocale } from "@/lib/seo/config";
+import { siteEntityGraph } from "@/lib/seo/schemas";
+import { BASE_URL, SITE_NAME, OG_IMAGE_URL, OG_LOCALE, type SeoLocale } from "@/lib/seo/config";
 import "../globals.css";
 
 const estedad = localFont({
@@ -107,12 +107,11 @@ export async function generateMetadata({
         },
       ],
     },
+    // No verified X/Twitter account — see the note in lib/seo/metadata.ts.
     twitter: {
       card:    "summary_large_image",
       title,
       description,
-      site:    TWITTER_HANDLE,
-      creator: TWITTER_HANDLE,
       images:  [OG_IMAGE_URL],
     },
     icons: {
@@ -164,11 +163,13 @@ export default async function LocaleLayout({
   return (
     <html lang={LOCALE_LANG_TAG[locale as Locale]} dir={dir} className={`${estedad.variable} ${vazir.variable} ${inter.variable}`}>
       <head>
-        {/* Structured data — global on every page */}
-        <JsonLd
-          data={[organizationSchema(), webSiteSchema()]}
-          nonce={nonce}
-        />
+        {/* Structured data — the canonical entity graph, global on every page.
+            One @graph (Organization + founder + WebSite + Hermes OS), all
+            cross-referenced by stable @id, so any public page a crawler lands
+            on carries the full company↔product relationship. */}
+        <JsonLd data={siteEntityGraph()} nonce={nonce} />
+        {/* Canonical entity IDs are locale-independent: the fa/en/de pages
+            describe the SAME organisation and product, never three of each. */}
         {/* Performance: DNS prefetch for canonical domain */}
         <link rel="dns-prefetch" href="https://hermesnovin.com" />
         {/* Favicon fallback for legacy browsers */}

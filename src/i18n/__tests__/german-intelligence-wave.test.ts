@@ -35,8 +35,12 @@ const TRANSLATED = [
  * PHASE 103 review fixes: `copilot` grew 95 → 97 — `liveVoice.states.finalizing`
  * and `liveVoice.disabledNotice` — so the wave total moves 527 → 529.
  */
+// R2 (gap-closure): brain +1 — `crossLink`, the reciprocal note pointing to
+// Hermes Industrial Brain (see src/app/[locale]/brain/page.tsx). Genuinely
+// German, not identical-by-design, so it only moves `translated`, not
+// `identical`. Wave total 529 -> 530.
 const LEAF_COUNTS: Record<string, number> = {
-  brain: 118, copilot: 97, ke: 79, knowledgeGraph: 63,
+  brain: 119, copilot: 97, ke: 79, knowledgeGraph: 63,
   predictive: 111, knowledgeStudio: 52, industrialBrainReport: 9,
   knowledge: 480,
 };
@@ -81,7 +85,7 @@ describe("87L.6D — exact wave arithmetic", () => {
       }
       total += LEAF_COUNTS[ns];
     }
-    expect(total, "translated this wave").toBe(529);
+    expect(total, "translated this wave").toBe(530);
   });
 
   it("reconciles: translated + intentional-identical = every leaf, carryover = 0", () => {
@@ -97,7 +101,7 @@ describe("87L.6D — exact wave arithmetic", () => {
       }
     }
     expect(unapproved, "unapproved English carryover").toEqual([]);
-    expect(translated + identical).toBe(529);
+    expect(translated + identical).toBe(530);
     expect(translated).toBeGreaterThan(450);
   });
 

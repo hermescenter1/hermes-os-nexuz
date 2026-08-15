@@ -4,7 +4,6 @@ import {
   SITE_NAME,
   OG_IMAGE_URL,
   OG_LOCALE,
-  TWITTER_HANDLE,
   DEFAULT_LOCALE,
   LOCALES,
   type SeoLocale,
@@ -90,12 +89,14 @@ export function buildMetadata(opts: BuildMetadataOptions): Metadata {
       images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
       ...openGraphExtra,
     },
+    // `site`/`creator` are intentionally omitted: no X/Twitter account has been
+    // verified as belonging to this organisation, and publishing an unowned
+    // handle would attribute the brand to a third party. The large-image card
+    // renders correctly without them.
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      site: TWITTER_HANDLE,
-      creator: TWITTER_HANDLE,
       images: [ogImage],
     },
   };

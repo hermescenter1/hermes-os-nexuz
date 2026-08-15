@@ -134,7 +134,15 @@ describe("llms.txt — supplemental discovery document", () => {
     const body = await llmsTxt().text();
     expect(body).toContain("/sitemap.xml");
     expect(body).toContain("/robots.txt");
-    expect(body).toContain("/fa/industrial-brain");
+    // PHASE 105 — TWO DISTINCT public Brain capabilities, both listed and both
+    // explicitly disambiguated. Both pages are public and self-canonical;
+    // neither redirects or canonicalises to the other, so llms.txt must not
+    // describe one using the other's identity (an earlier revision labelled
+    // `/brain` as "Hermes Industrial Brain", which this now guards against).
+    expect(body).toContain("/fa/brain:");
+    expect(body).toContain("/fa/industrial-brain:");
+    expect(body).toMatch(/\/brain: Hermes Brain — the Industrial Knowledge Engine/);
+    expect(body).toMatch(/\/industrial-brain: Hermes Industrial Brain — alarm intelligence/);
     expect(body).toContain("/en/library");
     // never a private/auth/api URL, never an env value
     expect(body).not.toMatch(/\/dashboard|\/admin|\/api\/|\/auth\//);

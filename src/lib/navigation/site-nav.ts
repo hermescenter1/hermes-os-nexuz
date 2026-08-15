@@ -91,6 +91,27 @@ export const SITE_NAV_GROUPS: NavGroup[] = [
       { labelKey: "demo", href: "/demo" },
     ],
   },
+  {
+    // R2 — eight already-implemented platform capabilities, previously
+    // reachable only from inside the authenticated workspace. Each links to
+    // its own public explainer under /services/<slug> (see
+    // src/lib/capabilities/registry.ts and CapabilityDetail.tsx). This does
+    // not duplicate the "services" group above: that group is the
+    // engineering-consulting offerings (PLC/SCADA/AI/cybersecurity/knowledge
+    // cloud); this group is the platform's own operational/enterprise
+    // capabilities.
+    groupKey: "capabilities",
+    items: [
+      { labelKey: "capDigitalTwin", href: "/services/digital-twin" },
+      { labelKey: "capPredictiveMaintenance", href: "/services/predictive-maintenance" },
+      { labelKey: "capCmms", href: "/services/cmms" },
+      { labelKey: "capMultiSite", href: "/services/multi-site" },
+      { labelKey: "capEdms", href: "/services/edms" },
+      { labelKey: "capErp", href: "/services/erp" },
+      { labelKey: "capOtEdge", href: "/services/ot-edge" },
+      { labelKey: "capCrm", href: "/services/crm" },
+    ],
+  },
 ];
 
 /** True when `role` may see the given nav item. Public items (no capability)

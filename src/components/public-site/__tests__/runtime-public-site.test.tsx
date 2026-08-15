@@ -89,6 +89,8 @@ describe("PublicHeader — English (87D.1 grouped IA)", () => {
     const buttons = Array.from(nav.querySelectorAll("button"));
     expect(buttons.map((b) => b.textContent?.replace("▾", ""))).toEqual([
       en.publicSite.header.groups.platform,
+      // R2 corrective (F2) — the eight implemented capabilities.
+      en.publicSite.header.groups.capabilities,
       en.publicSite.header.groups.intelligence,
       en.publicSite.header.groups.knowledge,
       en.publicSite.header.groups.resources,
@@ -188,8 +190,13 @@ describe("PublicMobileNav — focus behavior", () => {
     const dialog = document.querySelector('[role="dialog"][aria-modal="true"]')!;
     expect(dialog).toBeTruthy();
     const links = Array.from(dialog.querySelectorAll("nav a"));
+    // R2 corrective (F2): the eight implemented capabilities are now a real
+    // rendered group in the mobile drawer, not just a registry entry.
     expect(links.map((a) => a.getAttribute("href"))).toEqual([
       "/platform", "/architecture", "/services",
+      "/services/digital-twin", "/services/predictive-maintenance",
+      "/services/cmms", "/services/multi-site", "/services/edms",
+      "/services/erp", "/services/ot-edge", "/services/crm",
       "/industrial-brain", "/brain", "/copilot",
       "/library", "/academy", "/articles",
       "/demo", "/vendors",
@@ -197,7 +204,7 @@ describe("PublicMobileNav — focus behavior", () => {
     ]);
     for (const link of links) expect(link.className).toContain("min-h-11");
     // grouped section labels are rendered for orientation
-    for (const groupKey of ["platform", "intelligence", "knowledge", "resources", "company"] as const) {
+    for (const groupKey of ["platform", "capabilities", "intelligence", "knowledge", "resources", "company"] as const) {
       expect(dialog.textContent).toContain(en.publicSite.header.groups[groupKey]);
     }
     expect(dialog.querySelector('a[href="/demo"]')).toBeTruthy();
@@ -366,6 +373,39 @@ describe("CapabilityGrid + PlatformArchitecture — heading discipline", () => {
     await unmount();
   });
 
+  /**
+   * R2 corrective (F3) — REAL DOM proof of the Homepage → capability hop.
+   *
+   * The homepage previously declared `href` on these cards but its `.map()`
+   * dropped it, so CapabilityGrid received no href/ctaLabel and rendered dead
+   * text. Asserting the source string alone would not have caught that, so
+   * this renders the grid with exactly the props the homepage now passes and
+   * asserts real anchors in the DOM.
+   */
+  it("homepage operations/engineering cards render real anchors to their capability routes", async () => {
+    const homepageItems = [
+      { key: "predictive", href: "/services/predictive-maintenance", title: en.publicSite.operations.cards.predictive.name, body: en.publicSite.operations.cards.predictive.desc, ctaLabel: en.publicSite.operations.cards.predictive.cta },
+      { key: "multisite",  href: "/services/multi-site",             title: en.publicSite.operations.cards.multisite.name,  body: en.publicSite.operations.cards.multisite.desc,  ctaLabel: en.publicSite.operations.cards.multisite.cta },
+      { key: "twin",       href: "/services/digital-twin",           title: en.publicSite.engineering.cards.twin.name,      body: en.publicSite.engineering.cards.twin.desc,      ctaLabel: en.publicSite.engineering.cards.twin.cta },
+      { key: "edge",       href: "/services/ot-edge",                title: en.publicSite.engineering.cards.edge.name,      body: en.publicSite.engineering.cards.edge.desc,      ctaLabel: en.publicSite.engineering.cards.edge.cta },
+    ];
+    const { container, unmount } = await mount(
+      withIntl("en", <CapabilityGrid items={homepageItems} columns={4} />),
+    );
+    const anchors = Array.from(container.querySelectorAll("a"));
+    expect(anchors.map((a) => a.getAttribute("href"))).toEqual([
+      "/services/predictive-maintenance",
+      "/services/multi-site",
+      "/services/digital-twin",
+      "/services/ot-edge",
+    ]);
+    // each anchor carries a destination-specific label (no bare "Explore" ×4)
+    const labels = anchors.map((a) => a.textContent?.replace("→", "").trim());
+    expect(new Set(labels).size).toBe(4);
+    expect(labels).toContain(en.publicSite.operations.cards.predictive.cta);
+    await unmount();
+  });
+
   it("platform stack renders five layers with the core badge on Core Intelligence (en)", async () => {
     const { container, unmount } = await mount(withIntl("en", <PlatformArchitecture />));
     const layers = Array.from(container.querySelectorAll("ol > li"));
@@ -435,9 +475,10 @@ describe("PublicPageShell — drop-in adapter runtime (87D delta)", () => {
     // skip link (from PublicHeader) targets the adapter's main.
     expect(container.querySelector('a[href="#public-content"]')).toBeTruthy();
     // the canonical public nav is present — this page now shares the 87D shell
-    // (87D.1: five disclosure-group buttons; links render on open only).
+    // (87D.1: five disclosure-group buttons; links render on open only.
+    // R2 corrective F2 added a sixth group for the eight capabilities).
     const nav = container.querySelector(`nav[aria-label="${en.publicSite.header.navLabel}"]`)!;
-    expect(nav.querySelectorAll("button").length).toBe(5);
+    expect(nav.querySelectorAll("button").length).toBe(6);
     await unmount();
   });
 

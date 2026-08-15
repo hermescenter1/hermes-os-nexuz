@@ -70,6 +70,33 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
   "publicSite.modules.groups.business.items": "protocol-or-standard",
   "publicSite.platform.layers.business.modules": "protocol-or-standard",
   "publicSite.trustStrip.protocols": "protocol-or-standard",
+  // R2 — public capability pages (gap-closure roadmap). CMMS/EDMS/ERP/CRM are
+  // technical abbreviations with no Persian equivalent in industrial-software
+  // usage, exactly like the existing MQTT/OPC UA/HMI/PLC entries above.
+  "nav.items.capCmms": "protocol-or-standard",
+  "nav.items.capCrm": "protocol-or-standard",
+  "nav.items.capEdms": "protocol-or-standard",
+  "nav.items.capErp": "protocol-or-standard",
+  // F2 — the same four acronyms in the REAL public header registry
+  // (publicSite.header.nav), which is what visitors actually see.
+  "publicSite.header.nav.capCmms": "protocol-or-standard",
+  "publicSite.header.nav.capCrm": "protocol-or-standard",
+  "publicSite.header.nav.capEdms": "protocol-or-standard",
+  "publicSite.header.nav.capErp": "protocol-or-standard",
+  "services.capabilities.cmms.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.cmms.name": "protocol-or-standard",
+  "services.capabilities.crm.connects.items.0.name": "protocol-or-standard",
+  "services.capabilities.crm.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.crm.name": "protocol-or-standard",
+  "services.capabilities.digitalTwin.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.edms.connects.items.0.name": "protocol-or-standard",
+  "services.capabilities.edms.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.edms.name": "protocol-or-standard",
+  "services.capabilities.erp.connects.items.0.name": "protocol-or-standard",
+  "services.capabilities.erp.connects.items.1.name": "protocol-or-standard",
+  "services.capabilities.erp.name": "protocol-or-standard",
+  "services.capabilities.multiSite.connects.items.0.name": "protocol-or-standard",
+  "services.capabilities.predictiveMaintenance.connects.items.1.name": "protocol-or-standard",
   "adminOperations.seo.twitterCards": "brand-or-product",
   "authExperience.brandName": "brand-or-product",
   // PHASE 103 — the product name of the voice panel. Everything else in
@@ -101,7 +128,9 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
 
 /** Audit summary (kept in sync by the companion test). */
 export const FA_IDENTICAL_COUNTS: Record<FaIdenticalCategory, number> = {
-  "protocol-or-standard": 33,
+  // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
+  // F2: +4  — the same acronyms in the real public header registry.
+  "protocol-or-standard": 55,
   // Phase 103: +1 — copilot.liveVoice.brand ("Hermes Live Voice Intelligence").
   "brand-or-product": 4,
   "vendor-or-thirdparty": 3,
