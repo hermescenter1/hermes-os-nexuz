@@ -132,11 +132,12 @@ export function DashboardCommandSurface({ snap }: { snap: DashboardSnapshot }) {
             readiness={{ label: t(`riskEvidence.${readinessLabelKey[model.readiness]}`), tone: model.readiness }}
             formatNumber={nf.format}
             pct={pct}
+            layout="container"
           />
         </TriadGroup>
 
         <TriadGroup intent="act" id="safe-actions" title={t("actions.title")}>
-          <SafeActionGrid actions={actions} LinkComponent={DashLink} />
+          <SafeActionGrid actions={actions} LinkComponent={DashLink} layout="container" />
         </TriadGroup>
       </div>
     </div>

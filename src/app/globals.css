@@ -1879,6 +1879,31 @@ html[lang^="en"] {
   border-radius: var(--triad-radius);
   border: var(--edge-width) solid var(--edge-structural);
   min-inline-size: 0;
+  /* Makes the group a query container so its CONTENT can respond to the group's
+     own width instead of the viewport's. Without this, a nested `sm:grid-cols-2`
+     sees a 768px viewport and splits a ~192px column in two. */
+  container-type: inline-size;
+}
+
+/* ── Container-driven grid for content nested inside a Triad group ──
+   Opt-in, via an explicit `layout="container"` prop on the primitive — NOT a
+   descendant override. `SafeActionGrid` and `AttentionPanel` have six other
+   consumers outside the Dashboard, and those must keep their viewport layout
+   exactly; a blanket rule would silently restyle all of them.
+
+   One column until the group is genuinely wide enough for two. 20rem = 320px:
+   at the ~192px a group gets on a 768px viewport this stays single-column,
+   and at ~357px on desktop it becomes two usable tracks. There is deliberately
+   NO four-column step — four action tracks inside one third of the container
+   is the ~80px collapse this replaces. */
+.hermes-cq-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@container (min-width: 20rem) {
+  .hermes-cq-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 /* The Beacon marks the intent that currently needs a decision. It is one
    inline-start bar, the same locator grammar as the Rail. */

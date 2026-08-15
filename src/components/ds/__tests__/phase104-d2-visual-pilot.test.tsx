@@ -54,18 +54,46 @@ const read = (rel: string): string =>
   readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8");
 const repo = (rel: string): string => readFileSync(resolve(process.cwd(), rel), "utf8");
 
-/** Every shipped .tsx/.ts under src/, excluding tests. */
+/** Every extension that can carry shipped source in this repository. */
+const SOURCE_EXTENSIONS = ["tsx", "ts", "jsx", "js", "mjs", "cjs"] as const;
+const SOURCE_RE = new RegExp(`\\.(${SOURCE_EXTENSIONS.join("|")})$`);
+const TEST_RE = new RegExp(`\\.test\\.(${SOURCE_EXTENSIONS.join("|")})$`);
+
+/** Shipped source under src/, excluding tests and generated directories. */
 const SRC_FILES: string[] = (function walk(dir: string, acc: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     if (e.isDirectory()) {
-      if (e.name === "node_modules" || e.name === ".next" || e.name === "__tests__") continue;
+      if (["node_modules", ".next", "__tests__", "dist", "build"].includes(e.name)) continue;
       walk(join(dir, e.name), acc);
-    } else if (/.(tsx|ts)$/.test(e.name) && !/.test.(tsx|ts)$/.test(e.name)) {
+    } else if (SOURCE_RE.test(e.name) && !TEST_RE.test(e.name)) {
       acc.push(join(dir, e.name).slice(process.cwd().length + 1).split("\\").join("/"));
     }
   }
   return acc;
 })(resolve(process.cwd(), "src"));
+
+/** Strip comments so a mention in prose can never register as a consumer. */
+const stripComments = (src: string): string =>
+  src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1 ");
+
+/**
+ * Does this source actually put the Horizon layer into the DOM?
+ *
+ * An earlier revision matched only the exact double-quoted
+ * `className="hermes-horizon"` in `.ts`/`.tsx`. A `.jsx` file, a single-quoted
+ * string, a template literal or a `cn(...)` argument would all have slipped
+ * past it, so exclusivity was weaker than it looked. This covers every shape a
+ * class realistically reaches the DOM through, plus the signature attribute.
+ */
+function detectsHorizon(src: string): boolean {
+  const active = stripComments(src);
+  if (/data-hermes-signature\s*=\s*[{"']\s*["']?horizon/.test(active)) return true;
+  // A quoted string, a template literal, or a cn() argument containing the class.
+  return /["'`][^"'`\n]*\bhermes-horizon\b/.test(active);
+}
+
+const horizonConsumers = (): string[] =>
+  SRC_FILES.filter((f) => detectsHorizon(repo(f))).sort();
 
 const globalsCss = read("../../../app/globals.css");
 const root = postcss.parse(globalsCss);
@@ -201,6 +229,66 @@ describe("104-D2 Login — the Horizon layer obeys its own policy", () => {
     expect(shell).toMatch(/aria-hidden="true"[\s\S]*?className="hermes-horizon"/);
   });
 
+  it("EVERY Horizon foreground zone is protected by a Glass tier", () => {
+    // The signature contract says no text or control sits directly on Horizon —
+    // content sits on a Glass tier composited over it. An earlier revision put
+    // only <main> on Glass and left the capability aside, the brand link, the
+    // footer and the trust line directly over the atmosphere. Finding one
+    // `ds-glass-elevated` string in the file did not prove the rule held, so
+    // each zone is now identified and checked individually.
+    const shell = activeSource(AUTH_SHELL);
+    const REQUIRED_ZONES = ["aside", "brand", "form", "footer", "trust"] as const;
+
+    for (const zone of REQUIRED_ZONES) {
+      const marker = `data-horizon-zone={horizon ? "${zone}" : undefined}`;
+      expect(shell, `zone "${zone}" is not declared`).toContain(marker);
+
+      // The zone's element must carry a contract-owned Glass tier in the
+      // horizon branch. The window is bounded by the NEXT zone marker — a
+      // fixed-width slice bled into the following zone and let a missing tier
+      // pass because its neighbour had one.
+      const at = shell.indexOf(marker);
+      const rest = shell.slice(at + marker.length);
+      const nextZone = rest.indexOf("data-horizon-zone");
+      const element = rest.slice(0, nextZone === -1 ? 700 : Math.min(nextZone, 700));
+      expect(
+        /ds-glass-(soft|card|interactive|elevated|hero)/.test(element),
+        `zone "${zone}" has no Glass tier over the atmosphere`,
+      ).toBe(true);
+    }
+    // No zone may be left unaccounted for: the marker count must match.
+    const declared = [...shell.matchAll(/data-horizon-zone=\{horizon \? "(\w+)"/g)].map(
+      (m) => m[1],
+    );
+    expect(declared.slice().sort()).toEqual(REQUIRED_ZONES.slice().sort());
+  });
+
+  it("the Glass tiers used by those zones are all contract-owned", () => {
+    const shell = activeSource(AUTH_SHELL);
+    const tiers = new Set(
+      [...shell.matchAll(/ds-glass-(soft|card|interactive|elevated|hero)/g)].map((m) => m[1]),
+    );
+    expect(tiers.size).toBeGreaterThan(0);
+    const owned = Object.keys(GLASS_VARIABLE_CONTRACT);
+    for (const tier of tiers) {
+      expect(
+        owned.some((v) => v.startsWith(`--glass-${tier}-`)),
+        `.ds-glass-${tier} is not backed by the Glass contract`,
+      ).toBe(true);
+    }
+  });
+
+  it("standard mode keeps its original, non-Glass rendering", () => {
+    const shell = activeSource(AUTH_SHELL);
+    // Every zone's Glass is inside a `horizon ?` / `horizon &&` branch, so the
+    // five other auth routes are untouched by this increment.
+    for (const marker of ['horizon ? "ds-glass-elevated"', 'horizon && "ds-glass-soft']) {
+      expect(shell).toContain(marker.slice(0, 12));
+    }
+    expect(shell).toMatch(/horizon\s*\?\s*"ds-glass-soft"\s*:\s*"border-e/);
+    expect(shell).toMatch(/:\s*"border border-border-default bg-surface-elevated shadow-e3"/);
+  });
+
   it("the login content sits on a CONTRACT-OWNED Glass tier", () => {
     const shell = activeSource(AUTH_SHELL);
     expect(shell).toMatch(/ds-glass-elevated/);
@@ -249,8 +337,40 @@ describe("104-D2 — Horizon never reaches the Dashboard", () => {
   it("only ONE product component may render the Horizon layer", () => {
     // A second call site would be a second atmosphere surface, which is the
     // failure mode the permitted/forbidden lists exist to prevent.
-    const consumers = SRC_FILES.filter((f) => /className="hermes-horizon"/.test(repo(f)));
-    expect(consumers).toEqual([AUTH_SHELL]);
+    //
+    // The scan covers every shipped source extension and every realistic way a
+    // class reaches the DOM. An earlier revision matched only the exact
+    // double-quoted `className="hermes-horizon"` in `.ts`/`.tsx`, so a `.jsx`
+    // file, a single-quoted string, a template literal or a `cn(...)` call
+    // would all have slipped past it. Comments are stripped first, so a
+    // mention in prose can never register as a consumer.
+    expect(horizonConsumers()).toEqual([AUTH_SHELL]);
+  });
+
+  it("the Horizon scanner sees every way the class can reach the DOM", () => {
+    // Proves the detector itself, on synthetic sources — no files are written.
+    for (const shape of [
+      'className="hermes-horizon"',
+      "className='hermes-horizon'",
+      "className={`hermes-horizon ${x}`}",
+      'className={cn("hermes-horizon", x)}',
+      "className={cn('hermes-horizon')}",
+      '<div data-hermes-signature="horizon" />',
+    ]) {
+      expect(detectsHorizon(shape), `missed: ${shape}`).toBe(true);
+    }
+    // …and does not fire on prose or on an unrelated class.
+    expect(detectsHorizon("// the hermes-horizon layer is login-only")).toBe(false);
+    expect(detectsHorizon("/* className=\"hermes-horizon\" */")).toBe(false);
+    expect(detectsHorizon('className="hermes-triad-group"')).toBe(false);
+  });
+
+  it("the scanner covers every shipped source extension", () => {
+    for (const ext of SOURCE_EXTENSIONS) {
+      expect(SOURCE_RE.test(`Surface.${ext}`), `.${ext} not scanned`).toBe(true);
+      expect(TEST_RE.test(`Surface.test.${ext}`), `.test.${ext} not excluded`).toBe(true);
+    }
+    expect(SOURCE_EXTENSIONS).toEqual(["tsx", "ts", "jsx", "js", "mjs", "cjs"]);
   });
 });
 
@@ -361,6 +481,66 @@ describe("104-D2 Dashboard — the Triad CSS consumes the contract", () => {
     }
   });
 
+  it("nested Triad content follows the GROUP's width, not the viewport", () => {
+    // The failure this pins: the outer Triad goes three-up at a 768px viewport,
+    // so each group is ~192px inside — but a nested `sm:grid-cols-2` still saw
+    // the 768px viewport and split that into ~90px tracks. At desktop,
+    // `xl:grid-cols-4` produced ~80px action tracks inside one third of the
+    // container. The group is now a query container and the nested grids opt
+    // into a container-driven layout.
+    expect(ruleDecls(".hermes-triad-group").map((d) => `${d.prop}: ${d.value}`)).toContain(
+      "container-type: inline-size",
+    );
+
+    const cq = ruleDecls(".hermes-cq-grid").map((d) => `${d.prop}: ${d.value}`);
+    expect(cq, ".hermes-cq-grid is not declared").toContain("display: grid");
+    // Single column by default — that is what a ~185px group must render.
+    expect(cq).toContain("grid-template-columns: 1fr");
+
+    // Two columns only once the CONTAINER is wide enough, and never four.
+    let twoUp: string | null = null;
+    let fourUp = false;
+    root.walkAtRules("container", (at) => {
+      at.walkRules((rule) => {
+        if (rule.selector.trim() !== ".hermes-cq-grid") return;
+        rule.walkDecls((d) => {
+          if (/repeat\(2,/.test(d.value)) twoUp = at.params;
+          if (/repeat\([34],/.test(d.value)) fourUp = true;
+        });
+      });
+    });
+    expect(twoUp, "no container query promotes the grid to two columns").toBeTruthy();
+    expect(fourUp, "the container variant must never reach three or four columns").toBe(false);
+
+    // The threshold must sit between the two acceptance widths: single column
+    // at ~185px, two usable columns at ~350px.
+    const rem = Number(String(twoUp).match(/(\d+(?:\.\d+)?)rem/)?.[1]);
+    expect(Number.isFinite(rem), `unparseable container query: ${twoUp}`).toBe(true);
+    const px = rem * 16;
+    expect(px).toBeGreaterThan(185);
+    expect(px).toBeLessThanOrEqual(350);
+  });
+
+  it("the Triad opts its nested grids in explicitly — no descendant override", () => {
+    const surface = activeSource(DASHBOARD_SURFACE);
+    expect(surface).toMatch(/<RiskEvidence[\s\S]*?layout="container"/);
+    expect(surface).toMatch(/<SafeActionGrid[^>]*layout="container"/);
+
+    // The primitives must DEFAULT to the viewport layout, or the six other
+    // command surfaces that consume them would change silently.
+    const grid = activeSource("src/components/dashboard-experience/SafeActionGrid.tsx");
+    expect(grid).toMatch(/layout\s*=\s*"viewport"/);
+    expect(grid).toMatch(/xl:grid-cols-4/); // still available to non-Triad consumers
+    const risk = activeSource("src/components/dashboard-experience/RiskEvidence.tsx");
+    expect(risk).toMatch(/layout\s*\?\?\s*"viewport"/);
+
+    // And the container branch must not carry viewport breakpoints at all.
+    for (const src of [grid, risk]) {
+      const cq = src.match(/hermes-cq-grid[^"]*/)?.[0] ?? "";
+      expect(cq).not.toMatch(/\b(sm|md|lg|xl|2xl):/);
+    }
+  });
+
   it("stacks on one column below the breakpoint and to three above it", () => {
     expect(ruleDecls(".hermes-triad").map((d) => `${d.prop}: ${d.value}`)).toContain(
       "grid-template-columns: 1fr",
@@ -426,5 +606,42 @@ describe("104-D2 — route inventory records exactly the two pilot routes", () =
     expect(inv.classify("/login")?.status).toBe("COVERED_BY_SHARED_TEMPLATE");
     // …and the dashboard subtree did not inherit the pilot's status.
     expect(inv.classify("/dashboard/assets")?.status).toBe("COVERED_BY_SHARED_LAYOUT");
+  });
+
+  it("both pilot rules are EXACT — no child inherits MIGRATED_DIRECTLY", async () => {
+    const inv = await import(
+      "../../../../scripts/design/phase104-route-inventory.mjs"
+    );
+    expect(inv.classify("/auth/login")?.status).toBe("MIGRATED_DIRECTLY");
+    expect(inv.classify("/dashboard")?.status).toBe("MIGRATED_DIRECTLY");
+
+    // A hypothetical child must fall through to the general auth template rule
+    // rather than inheriting a redesign it never received.
+    const child = inv.classify("/auth/login/example");
+    expect(child?.status).not.toBe("MIGRATED_DIRECTLY");
+    expect(child?.status).toBe("COVERED_BY_SHARED_TEMPLATE");
+    expect(child?.family).toBe("authentication");
+    expect(inv.classify("/dashboard/anything")?.status).toBe("COVERED_BY_SHARED_LAYOUT");
+
+    // The rules themselves must declare `exact`, not merely happen to work.
+    for (const prefix of ["/auth/login", "/dashboard"]) {
+      const rule = inv.ROUTE_RULES.find(
+        (r: { prefix: string; status: string; exact?: boolean }) =>
+          r.prefix === prefix && r.status === "MIGRATED_DIRECTLY",
+      );
+      expect(rule, `${prefix} has no MIGRATED_DIRECTLY rule`).toBeTruthy();
+      expect(rule?.exact, `${prefix} is not an exact rule`).toBe(true);
+    }
+  });
+
+  it("the totals stay derived and nothing is unclassified", async () => {
+    const inv = await import(
+      "../../../../scripts/design/phase104-route-inventory.mjs"
+    );
+    const built = inv.buildInventory();
+    expect(built.total).toBe(inv.deriveRoutes().length);
+    expect(built.covered).toBe(built.total);
+    expect(built.unclassified).toEqual([]);
+    expect(built.byStatus.MIGRATED_DIRECTLY).toBe(2);
   });
 });

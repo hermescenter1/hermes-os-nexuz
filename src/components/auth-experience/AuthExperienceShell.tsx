@@ -82,7 +82,14 @@ export function AuthExperienceShell({
       {capabilityPanel ? (
         <aside
           aria-label={t("panelAriaLabel")}
-          className="relative z-10 hidden flex-col justify-center border-e border-border-subtle px-14 py-16 lg:flex"
+          data-horizon-zone={horizon ? "aside" : undefined}
+          className={cn(
+            "relative z-10 hidden flex-col justify-center px-14 py-16 lg:flex",
+            // PHASE 104-D2 — in Horizon mode this panel is a FOREGROUND over the
+            // atmosphere, so it gets its own Glass tier. `soft`, not `elevated`:
+            // it is a large recessive surface and must not compete with the form.
+            horizon ? "ds-glass-soft" : "border-e border-border-subtle",
+          )}
         >
           <p className="max-w-md text-role-h3 font-bold tracking-tight text-text-primary">
             {t("positioningTitle")}
@@ -107,7 +114,12 @@ export function AuthExperienceShell({
           href="/"
           aria-label={t("backToSite")}
           dir="ltr"
-          className="ds-focus mb-8 flex items-center gap-2.5 rounded-sm"
+          data-horizon-zone={horizon ? "brand" : undefined}
+          className={cn(
+            "ds-focus mb-8 flex items-center gap-2.5 rounded-sm",
+            // An interactive foreground: it needs the same protection as text.
+            horizon && "ds-glass-soft px-4 py-2",
+          )}
         >
           <HermesLogoMark />
           <span className="text-title font-extrabold tracking-tight text-text-primary">
@@ -123,6 +135,7 @@ export function AuthExperienceShell({
             Standard mode keeps the shipped 87E treatment untouched. */}
         <main
           data-hermes-signature={horizon ? "glass-elevated" : undefined}
+          data-horizon-zone={horizon ? "form" : undefined}
           className={cn(
             "relative w-full max-w-[26rem] rounded-lg p-7 sm:p-9",
             horizon
@@ -143,10 +156,25 @@ export function AuthExperienceShell({
         </main>
 
         {footer ? (
-          <div className="mt-6 text-center text-body-compact text-text-secondary">{footer}</div>
+          <div
+            data-horizon-zone={horizon ? "footer" : undefined}
+            className={cn(
+              "mt-6 text-center text-body-compact text-text-secondary",
+              horizon && "ds-glass-soft rounded-sm px-4 py-2",
+            )}
+          >
+            {footer}
+          </div>
         ) : null}
 
-        <p className="mt-8 text-center text-caption text-text-muted" dir="auto">
+        <p
+          data-horizon-zone={horizon ? "trust" : undefined}
+          className={cn(
+            "mt-8 text-center text-caption text-text-muted",
+            horizon && "ds-glass-soft rounded-sm px-4 py-2",
+          )}
+          dir="auto"
+        >
           {a("trustLine")}
         </p>
       </div>

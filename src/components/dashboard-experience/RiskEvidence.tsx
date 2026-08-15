@@ -25,6 +25,8 @@ export interface RiskEvidenceProps {
   readiness: { label: string; tone: "ready" | "guarded" | "hold" };
   formatNumber: (n: number) => string;
   pct: string;
+  /** Grid basis: viewport breakpoints (default) or this element's own width. */
+  layout?: "viewport" | "container";
 }
 
 const READINESS_TONE = {
@@ -40,11 +42,15 @@ function factorTone(weight: number): string {
 }
 
 export function RiskEvidence(props: RiskEvidenceProps) {
+  // PHASE 104-D2 — "container" makes the two-up split follow this component's
+  // OWN width instead of the viewport, which is what a Triad group needs.
+  // Defaults to "viewport" so every existing consumer renders identically.
+  const layout = props.layout ?? "viewport";
   const { score, formatNumber, pct } = props;
   const scoreTone = score >= 75 ? "text-status-danger" : score >= 50 ? "text-status-warning" : "text-status-success";
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+    <div className={cn("gap-5", layout === "container" ? "hermes-cq-grid" : "grid grid-cols-1 sm:grid-cols-2")}>
       {/* Risk */}
       <div>
         <p className="text-label-compact font-semibold uppercase tracking-wide text-text-muted">{props.riskLabel}</p>

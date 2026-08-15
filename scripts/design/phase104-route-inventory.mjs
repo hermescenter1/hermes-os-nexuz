@@ -115,7 +115,10 @@ export const ROUTE_RULES = Object.freeze([
   // The canonical Login is the second directly migrated route: Hermes Horizon
   // plus a contract-owned Glass tier. Every other auth route keeps the shared
   // 87E template, which is exactly what the 104-D2 gate asserts.
-  { prefix: "/auth/login", family: "authentication", status: "MIGRATED_DIRECTLY", note: "canonical Login — Phase 104-D2 visual pilot; Horizon atmosphere and .ds-glass-elevated content surface" },
+  // `exact` for the same reason Workspace Home needs it: only the canonical
+  // Login page was redesigned. A future `/auth/login/*` child would otherwise
+  // inherit MIGRATED_DIRECTLY and inflate the count without being touched.
+  { prefix: "/auth/login", family: "authentication", status: "MIGRATED_DIRECTLY", note: "canonical Login — Phase 104-D2 visual pilot; Horizon atmosphere and .ds-glass-elevated content surface", exact: true },
   // `/login` is a redirect to /auth/login and is NOT a separately designed
   // page; it must never be counted as a migrated visual route.
   { prefix: "/login", family: "authentication", status: "COVERED_BY_SHARED_TEMPLATE", note: "compatibility redirect to /auth/login — no visual surface of its own" },
