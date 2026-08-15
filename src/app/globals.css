@@ -1904,6 +1904,16 @@ html[lang^="en"] {
   .hermes-cq-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  /* The two-column divider belongs to the two-column state, so it is bound to
+     the SAME container threshold as the grid itself. A `sm:` divider survived
+     the first correction: at a 768px viewport the Triad group is ~192px and
+     correctly renders one column, yet the viewport-driven rule still drew a
+     side border and inset the pane as if a second column were beside it.
+     Logical properties, so RTL mirrors without a second rule. */
+  .hermes-cq-divide {
+    border-inline-start: var(--edge-width) solid var(--color-border-subtle);
+    padding-inline-start: var(--space-card);
+  }
 }
 /* The Beacon marks the intent that currently needs a decision. It is one
    inline-start bar, the same locator grammar as the Rail. */

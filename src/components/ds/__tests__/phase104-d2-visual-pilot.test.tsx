@@ -521,6 +521,74 @@ describe("104-D2 Dashboard — the Triad CSS consumes the contract", () => {
     expect(px).toBeLessThanOrEqual(350);
   });
 
+  it("the two-column divider is bound to the container, not the viewport", () => {
+    // The divider belongs to the two-column STATE. A `sm:` rule survived the
+    // first correction: at a 768px viewport the group is ~192px and correctly
+    // renders one column, yet the viewport-driven border still drew a side line
+    // and inset the pane as if a second column were beside it.
+    const risk = activeSource("src/components/dashboard-experience/RiskEvidence.tsx");
+
+    // Container layout must use the container-bound class and nothing viewport-y.
+    expect(risk).toMatch(/layout === "container"\s*\?\s*"hermes-cq-divide"/);
+    // …and the viewport layout must keep its existing behaviour untouched.
+    expect(risk).toContain("sm:border-s sm:border-border-subtle sm:ps-5");
+
+    // The divider rule must live ONLY inside a container query, at the same
+    // threshold as the grid — otherwise the two can disagree.
+    // `ruleDecls` walks into at-rules too, so the top-level check has to look
+    // at the rule's PARENT rather than at the selector alone.
+    const topLevelDivider: string[] = [];
+    root.walkRules((rule) => {
+      if (rule.selector.trim() !== ".hermes-cq-divide") return;
+      // Block body: `push` returns a number and a truthy return stops the walk.
+      if (rule.parent?.type === "root") {
+        topLevelDivider.push(rule.selector);
+      }
+    });
+    expect(
+      topLevelDivider,
+      ".hermes-cq-divide must not apply outside a container query",
+    ).toEqual([]);
+
+    const thresholds: string[] = [];
+    const dividerDecls: Array<{ prop: string; value: string }> = [];
+    root.walkAtRules("container", (at) => {
+      at.walkRules((rule) => {
+        if (rule.selector.trim() === ".hermes-cq-divide") {
+          thresholds.push(at.params);
+          rule.walkDecls((d) => {
+            dividerDecls.push({ prop: d.prop, value: d.value });
+          });
+        }
+      });
+    });
+    expect(thresholds, "the divider is not container-bound").toHaveLength(1);
+
+    // Same threshold as the grid promotion — one source of truth for "two-up".
+    let gridThreshold = "";
+    root.walkAtRules("container", (at) => {
+      at.walkRules((rule) => {
+        if (rule.selector.trim() === ".hermes-cq-grid") gridThreshold = at.params;
+      });
+    });
+    expect(thresholds[0]).toBe(gridThreshold);
+
+    // Logical properties only, so RTL mirrors; no raw colour or shadow.
+    const props = dividerDecls.map((d) => d.prop);
+    expect(props).toContain("border-inline-start");
+    expect(props).toContain("padding-inline-start");
+    for (const d of dividerDecls) {
+      expect(d.prop, "physical side property breaks RTL").not.toMatch(
+        /-(left|right)\b/,
+      );
+      expect(d.value, `${d.prop} hard-codes a colour`).not.toMatch(
+        /#[0-9a-f]{3,8}\b|rgba?\(/i,
+      );
+      expect(`${d.prop}`, "the divider must not define a shadow").not.toMatch(/shadow/i);
+      expect(d.value).toMatch(/var\(--/);
+    }
+  });
+
   it("the Triad opts its nested grids in explicitly — no descendant override", () => {
     const surface = activeSource(DASHBOARD_SURFACE);
     expect(surface).toMatch(/<RiskEvidence[\s\S]*?layout="container"/);

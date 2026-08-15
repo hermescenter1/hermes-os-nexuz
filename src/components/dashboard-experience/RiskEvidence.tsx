@@ -87,7 +87,16 @@ export function RiskEvidence(props: RiskEvidenceProps) {
       </div>
 
       {/* Evidence */}
-      <div className="sm:border-s sm:border-border-subtle sm:ps-5">
+      {/* The Evidence pane's side divider only makes sense once a second column
+          exists beside it. In the container layout that decision belongs to the
+          container, not the viewport. */}
+      <div
+        className={
+          layout === "container"
+            ? "hermes-cq-divide"
+            : "sm:border-s sm:border-border-subtle sm:ps-5"
+        }
+      >
         <p className="text-label-compact font-semibold uppercase tracking-wide text-text-muted">
           {props.evidenceTitle}
         </p>
