@@ -4,6 +4,8 @@ import { RequireCapability }    from "@/components/auth/RequireCapability";
 import { noIndexMetadata }      from "@/lib/seo/metadata";
 import { getPrisma }            from "@/lib/db/prisma";
 import { AccessRequestActions } from "@/components/admin/AccessRequestActions";
+import { SalesLeadActions }     from "@/components/admin/SalesLeadActions";
+import { isSalesLeadStatus }    from "@/lib/sales/lead-status";
 import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = noIndexMetadata("Sales Leads — Hermes Admin");
@@ -95,7 +97,16 @@ const STATUS_CLS: Record<string, string> = {
 
 // ── Lead card (shared by both sections) ───────────────────────────────────────
 
-async function LeadCard({ lead, actions }: { lead: SalesLeadRow; actions?: boolean }) {
+/**
+ * `workflow` selects which review surface the expanded card exposes:
+ *
+ *   "access" → AccessRequestActions — approve MINTS AN ACCOUNT INVITATION.
+ *   "sales"  → SalesLeadActions     — approve is a commercial decision only.
+ *
+ * It is a discriminated choice rather than a boolean `actions` flag so a demo
+ * lead cannot be handed the invitation surface by an accidental prop.
+ */
+async function LeadCard({ lead, workflow }: { lead: SalesLeadRow; workflow: "access" | "sales" }) {
   let requestLocale: string = DEFAULT_LOCALE;
   try { requestLocale = await getLocale(); } catch { /* header unavailable */ }
   const locale = requestLocale;
@@ -124,14 +135,30 @@ async function LeadCard({ lead, actions }: { lead: SalesLeadRow; actions?: boole
                         {lead.interest.replace(/_/g, " ")}
                       </span>
                     )}
+                    {/*
+                      The status is always spelled out as a word as well as
+                      tinted — colour is never the only channel. An unrecognised
+                      legacy value falls back to the raw code rather than a
+                      missing-key crash.
+                    */}
                     <span className={`text-[9px] px-2 py-0.5 rounded border font-mono uppercase ${STATUS_CLS[lead.status] ?? STATUS_CLS.NEW}`}>
-                      {lead.status}
+                      {isSalesLeadStatus(lead.status) ? t(`status.${lead.status}`) : lead.status}
                     </span>
                     <span className="text-[9px] text-[#4A5A6E] font-mono">{fmtDate(lead.createdAt, locale)}</span>
-                    <svg viewBox="0 0 20 20" fill="currentColor"
-                      className="w-3.5 h-3.5 text-[#4A5A6E] group-open:rotate-180 transition-transform">
-                      <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"/>
-                    </svg>
+                    {/*
+                      The review controls live in the collapsed panel below, so
+                      the summary has to SAY that opening the row is how you act
+                      on it — a bare chevron read as decoration and was why the
+                      controls looked absent. Text plus icon, never icon alone.
+                    */}
+                    <span className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wider text-[#1EC8A4]">
+                      <span className="group-open:hidden">{t("openReview")}</span>
+                      <span className="hidden group-open:inline">{t("closeReview")}</span>
+                      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                        className="w-3.5 h-3.5 group-open:rotate-180 transition-transform">
+                        <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"/>
+                      </svg>
+                    </span>
                   </div>
                 </summary>
 
@@ -167,7 +194,9 @@ async function LeadCard({ lead, actions }: { lead: SalesLeadRow; actions?: boole
                       <p className="text-xs text-[#8A9BB0] leading-relaxed whitespace-pre-wrap">{lead.message}</p>
                     </div>
                   )}
-                  {actions && <AccessRequestActions leadId={lead.id} initialStatus={lead.status} />}
+                  {workflow === "access"
+                    ? <AccessRequestActions leadId={lead.id} initialStatus={lead.status} />
+                    : <SalesLeadActions     leadId={lead.id} initialStatus={lead.status} />}
                 </div>
               </details>
   );
@@ -224,7 +253,7 @@ export default async function AdminLeadsPage({ params }: { params: Promise<{ loc
           ) : (
             <div className="space-y-3">
               {accessRequests.map(lead => (
-                <LeadCard key={lead.id} lead={lead} actions />
+                <LeadCard key={lead.id} lead={lead} workflow="access" />
               ))}
             </div>
           )}
@@ -249,7 +278,7 @@ export default async function AdminLeadsPage({ params }: { params: Promise<{ loc
         ) : (
           <div className="space-y-3">
             {demoLeads.map(lead => (
-              <LeadCard key={lead.id} lead={lead} />
+              <LeadCard key={lead.id} lead={lead} workflow="sales" />
             ))}
           </div>
         )}
