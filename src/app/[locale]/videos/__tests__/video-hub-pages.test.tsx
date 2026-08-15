@@ -248,14 +248,33 @@ function withIntl(ui: ReactNode, locale: "en" | "fa" = "en"): ReactNode {
   );
 }
 
-async function renderWatch(slug: string, sp: Record<string, string>) {
-  const { default: WatchPage } = await import("../[slug]/page");
-  return WatchPage({ params: params({ locale: "en", slug }), searchParams: search(sp) });
+/**
+ * DISCOVERY-2A — the organization is a PATH SEGMENT, not `?org=`.
+ *
+ * The assertions below are unchanged in intent: every one of them still proves
+ * that an unresolvable request is answered by the SAME `notFound()` as an
+ * unpublished asset, so these pages remain useless as a tenant oracle. Only
+ * where the selector is read has moved.
+ */
+async function renderWatch(slug: string, org: string, sp: Record<string, string> = {}) {
+  const { default: WatchPage } = await import("../[org]/[slug]/page");
+  void sp;
+  return WatchPage({ params: params({ locale: "en", org, slug }) });
 }
 
-async function renderLibrary(sp: Record<string, string>, locale = "en") {
-  const { default: LibraryPage } = await import("../page");
-  return LibraryPage({ params: params({ locale }), searchParams: search(sp) });
+async function renderLibrary(
+  org: string,
+  sp: Record<string, string> = {},
+  locale = "en",
+) {
+  const { default: LibraryPage } = await import("../[org]/page");
+  return LibraryPage({ params: params({ locale, org }), searchParams: search(sp) });
+}
+
+/** The bare `/videos` root, which carries no organization and lists nothing. */
+async function renderHubRoot(locale = "en") {
+  const { default: HubRoot } = await import("../page");
+  return HubRoot({ params: params({ locale }) });
 }
 
 // ── A. Route classification ──────────────────────────────────────────────────
@@ -267,8 +286,11 @@ describe("A — /videos is registered as a PUBLIC, anonymous-readable route", ()
     for (const path of [
       `/${loc}/videos`,
       `/${loc}/videos/`,
-      `/${loc}/videos/plc-basics`,
-      `/${loc}/videos/plc-basics/`,
+      // DISCOVERY-2A — the canonical shapes now carry the organization segment.
+      `/${loc}/videos/acme`,
+      `/${loc}/videos/acme/`,
+      `/${loc}/videos/acme/plc-basics`,
+      `/${loc}/videos/acme/plc-basics/`,
     ]) {
       expect(isProtectedPath(path), `${path} must stay public`).toBe(false);
     }
@@ -276,13 +298,15 @@ describe("A — /videos is registered as a PUBLIC, anonymous-readable route", ()
 
   it.each(LOCALES)("/%s/videos is explicitly registered, not merely omitted", (loc) => {
     expect(isPublicAnonymousPath(`/${loc}/videos`)).toBe(true);
-    expect(isPublicAnonymousPath(`/${loc}/videos/plc-basics`)).toBe(true);
+    expect(isPublicAnonymousPath(`/${loc}/videos/acme`)).toBe(true);
+    expect(isPublicAnonymousPath(`/${loc}/videos/acme/plc-basics`)).toBe(true);
   });
 
   it("no individual protected matcher captures the Video Hub", () => {
     for (const pattern of PROTECTED_PATHS) {
       expect(pattern.test("/fa/videos"), String(pattern)).toBe(false);
-      expect(pattern.test("/en/videos/plc-basics"), String(pattern)).toBe(false);
+      expect(pattern.test("/en/videos/acme"), String(pattern)).toBe(false);
+      expect(pattern.test("/en/videos/acme/plc-basics"), String(pattern)).toBe(false);
       expect(pattern.test("/de/videos"), String(pattern)).toBe(false);
     }
   });
@@ -316,30 +340,44 @@ describe("B — the watch page calls notFound() for anything not PUBLISHED + PUB
   ];
 
   it.each(REFUSED)("%s → notFound()", async (_label, slug) => {
-    await expect(renderWatch(slug, { org: ORG_A.slug })).rejects.toThrow(NOT_FOUND);
+    await expect(renderWatch(slug, ORG_A.slug)).rejects.toThrow(NOT_FOUND);
   });
 
-  it("a missing organization selector → notFound(), not a cross-tenant search", async () => {
-    await expect(renderWatch("plc-basics", {})).rejects.toThrow(NOT_FOUND);
+  it("a malformed organization segment → notFound(), not a cross-tenant search", async () => {
+    await expect(renderWatch("plc-basics", "Not An Org!")).rejects.toThrow(NOT_FOUND);
+    await expect(renderWatch("plc-basics", "")).rejects.toThrow(NOT_FOUND);
   });
 
   it("an unknown organization → the same notFound() as an unpublished asset", async () => {
-    await expect(renderWatch("plc-basics", { org: "no-such-org" })).rejects.toThrow(NOT_FOUND);
+    await expect(renderWatch("plc-basics", "no-such-org")).rejects.toThrow(NOT_FOUND);
+  });
+
+  it("another tenant's organization segment cannot reach this tenant's asset", async () => {
+    // ORG_B is a real organization; `plc-basics` belongs to ORG_A. The pair must
+    // not resolve, and must fail exactly like an unknown slug.
+    await expect(renderWatch("plc-basics", ORG_B.slug)).rejects.toThrow(NOT_FOUND);
   });
 
   it("a malformed slug is a 404, never a 400 — the answer must not classify the input", async () => {
-    await expect(renderWatch("Not A Slug!", { org: ORG_A.slug })).rejects.toThrow(NOT_FOUND);
+    await expect(renderWatch("Not A Slug!", ORG_A.slug)).rejects.toThrow(NOT_FOUND);
   });
 
   it("generateMetadata refuses indexing for a slug that did not resolve", async () => {
-    const { generateMetadata } = await import("../[slug]/page");
+    const { generateMetadata } = await import("../[org]/[slug]/page");
     const meta = await generateMetadata({
-      params: params({ locale: "en", slug: "secret-draft" }),
-      searchParams: search({ org: ORG_A.slug }),
+      params: params({ locale: "en", org: ORG_A.slug, slug: "secret-draft" }),
     });
     expect(meta.robots).toEqual({ index: false, follow: false });
     // No editorial copy from the hidden row leaked into the tab title.
     expect(JSON.stringify(meta)).not.toContain("Unreleased Draft");
+  });
+
+  it("generateMetadata refuses indexing for an unresolvable organization too", async () => {
+    const { generateMetadata } = await import("../[org]/[slug]/page");
+    const meta = await generateMetadata({
+      params: params({ locale: "en", org: "no-such-org", slug: "plc-basics" }),
+    });
+    expect(meta.robots).toEqual({ index: false, follow: false });
   });
 });
 
@@ -347,7 +385,7 @@ describe("B — the watch page calls notFound() for anything not PUBLISHED + PUB
 
 describe("C — a published, public, validated asset reaches the player", () => {
   it("mints same-origin URLs for the stream, the poster and every caption track", async () => {
-    const tree = await renderWatch("plc-basics", { org: ORG_A.slug });
+    const tree = await renderWatch("plc-basics", ORG_A.slug);
     const player = findElement(tree, MediaPlayer);
     expect(player, "the watch page must render MediaPlayer").not.toBeNull();
 
@@ -388,7 +426,7 @@ describe("C — a published, public, validated asset reaches the player", () => 
   });
 
   it("never mints a URL from another tenant's track row", async () => {
-    const tree = await renderWatch("plc-basics", { org: ORG_A.slug });
+    const tree = await renderWatch("plc-basics", ORG_A.slug);
     const player = findElement(tree, MediaPlayer);
     const media = (player as unknown as Visited).props.media as Record<string, unknown>;
 
@@ -432,7 +470,7 @@ describe("C — a published, public, validated asset reaches the player", () => 
   });
 
   it("renders exactly one h1 and leaks no storage key or organization id", async () => {
-    const tree = await renderWatch("plc-basics", { org: ORG_A.slug });
+    const tree = await renderWatch("plc-basics", ORG_A.slug);
     const headings: unknown[] = [];
     walk(tree, (el) => {
       if (el.type === "h1") headings.push(el);
@@ -449,7 +487,7 @@ describe("C — a published, public, validated asset reaches the player", () => 
 
 describe("D — the library page renders the empty state when there are no results", () => {
   it("an organization with nothing published gets LIBRARY_EMPTY, not an error", async () => {
-    const tree = await renderLibrary({ org: ORG_B.slug });
+    const tree = await renderLibrary(ORG_B.slug);
     const { container, unmount } = await mount(withIntl(tree));
     try {
       const t = createTranslator({
@@ -471,11 +509,16 @@ describe("D — the library page renders the empty state when there are no resul
     }
   });
 
-  it("an absent organization selector is answered identically — no tenant oracle", async () => {
-    const withoutOrg = await renderLibrary({});
-    const unknownOrg = await renderLibrary({ org: "no-such-org" });
-    const a = await mount(withIntl(withoutOrg));
-    const b = await mount(withIntl(unknownOrg));
+  it("an unknown organization is answered identically to an empty one — no tenant oracle", async () => {
+    // DISCOVERY-2A — this is the oracle property, and it is now stated against
+    // the pair that actually matters: a segment naming an organization that does
+    // NOT exist must render byte-identically to one naming a real organization
+    // with nothing published. If the two ever diverged, `/videos/{guess}` would
+    // become a tenant-existence probe.
+    const unknownOrg = await renderLibrary("no-such-org");
+    const emptyRealOrg = await renderLibrary(ORG_B.slug);
+    const a = await mount(withIntl(unknownOrg));
+    const b = await mount(withIntl(emptyRealOrg));
     try {
       expect(a.container.textContent).toBe(b.container.textContent);
     } finally {
@@ -484,8 +527,41 @@ describe("D — the library page renders the empty state when there are no resul
     }
   });
 
+  it("a malformed organization segment is answered identically too", async () => {
+    const malformed = await renderLibrary("Not An Org!");
+    const emptyRealOrg = await renderLibrary(ORG_B.slug);
+    const a = await mount(withIntl(malformed));
+    const b = await mount(withIntl(emptyRealOrg));
+    try {
+      // Never a 404 and never an error: a malformed selector reveals nothing
+      // that an empty library does not already reveal.
+      expect(a.container.textContent).toBe(b.container.textContent);
+    } finally {
+      await a.unmount();
+      await b.unmount();
+    }
+  });
+
+  it("the bare /videos root lists nothing and is explicitly not indexed", async () => {
+    const { generateMetadata } = await import("../page");
+    const meta = await generateMetadata({ params: params({ locale: "en" }) });
+    expect(meta.robots).toEqual({ index: false, follow: true });
+
+    const tree = await renderHubRoot();
+    const { container, unmount } = await mount(withIntl(tree));
+    try {
+      // No organization is named here, so this route cannot become a tenant
+      // directory by accident.
+      expect(container.querySelectorAll("li").length).toBe(0);
+      expect(container.textContent).not.toContain(ORG_A.slug);
+      expect(container.textContent).not.toContain(ORG_B.slug);
+    } finally {
+      await unmount();
+    }
+  });
+
   it("a filter that matches nothing says NO_MATCHES, not LIBRARY_EMPTY", async () => {
-    const tree = await renderLibrary({ org: ORG_A.slug, category: "no-such-category" });
+    const tree = await renderLibrary(ORG_A.slug, { category: "no-such-category" });
     const { container, unmount } = await mount(withIntl(tree));
     try {
       const t = createTranslator({
@@ -501,7 +577,7 @@ describe("D — the library page renders the empty state when there are no resul
   });
 
   it("a populated library lists only the published asset — the five hidden ones never appear", async () => {
-    const tree = await renderLibrary({ org: ORG_A.slug });
+    const tree = await renderLibrary(ORG_A.slug);
     const { container, unmount } = await mount(withIntl(tree));
     try {
       expect(container.textContent).toContain("PLC Basics");
@@ -519,7 +595,7 @@ describe("D — the library page renders the empty state when there are no resul
 describe("E — the published-only gate is applied in the database query", () => {
   it("every mediaAsset read carried status, visibility and processingState", async () => {
     db.reset();
-    await renderLibrary({ org: ORG_A.slug });
+    await renderLibrary(ORG_A.slug);
     const wheres = db.wheres("mediaAsset");
     expect(wheres.length).toBeGreaterThan(0);
     for (const where of wheres) {
@@ -532,7 +608,7 @@ describe("E — the published-only gate is applied in the database query", () =>
 
   it("the watch page's read is gated and tenant-scoped too", async () => {
     db.reset();
-    await renderWatch("plc-basics", { org: ORG_A.slug });
+    await renderWatch("plc-basics", ORG_A.slug);
     const wheres = db.wheres("mediaAsset");
     expect(wheres.length).toBeGreaterThan(0);
     for (const where of wheres) {
@@ -547,7 +623,10 @@ describe("E — the published-only gate is applied in the database query", () =>
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const root = join(process.cwd(), "src", "app", "[locale]", "videos");
-    for (const file of ["data.ts", "page.tsx", "[slug]/page.tsx"]) {
+    // DISCOVERY-2A — the watch page moved under the organization segment and a
+    // per-organization library page joined it. Every file that can reach the
+    // repository is still covered; missing one would let the opt-out back in.
+    for (const file of ["data.ts", "page.tsx", "[org]/page.tsx", "[org]/[slug]/page.tsx"]) {
       const source = readFileSync(join(root, file), "utf8");
       expect(source, `${file} must not opt out of the published-only gate`).not.toContain(
         "includeUnpublished",

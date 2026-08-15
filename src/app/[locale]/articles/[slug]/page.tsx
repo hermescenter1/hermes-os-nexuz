@@ -30,6 +30,14 @@ export async function generateMetadata({
     ogType:        "article",
     publishedTime: article.publishedAt ?? undefined,
     modifiedTime:  article.updatedAt,
+    // DISCOVERY-2A — an article exists in exactly ONE language. `Article.slug`
+    // is globally unique and `getArticleDetailBySlug` has no language filter, so
+    // /fa, /en and /de all render the SAME text under different chrome. Declaring
+    // three hreflang alternates claimed three translations that do not exist and
+    // never can (`ArtLanguage` is EN | FA — there is no DE). Passing the row's
+    // real language collapses the three URLs onto one canonical and emits no
+    // alternates at all.
+    contentLocales: [article.language.toLowerCase()],
   });
 }
 

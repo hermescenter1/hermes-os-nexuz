@@ -38,18 +38,36 @@ describe("published-only, indexable-only predicate", () => {
 });
 
 describe("article entries", () => {
+  /**
+   * DISCOVERY-2A — CONTRACT CHANGE, recorded deliberately.
+   *
+   * This block previously asserted "one canonical URL per active locale" and
+   * "reciprocal alternates for every locale". Both pinned a false claim: an
+   * article exists in exactly ONE language (`Article.language` is `ArtLanguage`,
+   * whose members are EN and FA — there is no DE), `Article.slug` is globally
+   * unique, and `getArticleDetailBySlug` has no language filter, so /fa, /en and
+   * /de all served the SAME text. The old expectations are replaced with the
+   * one-URL-per-article invariant, which is strictly more specific.
+   */
   const entries = articleSitemapEntries([
-    { slug: "opc-ua-basics", lastModified: "2026-03-04T10:00:00.000Z" },
-    { slug: "no-timestamp", lastModified: null },
+    { slug: "opc-ua-basics", language: "en", lastModified: "2026-03-04T10:00:00.000Z" },
+    { slug: "no-timestamp", language: "fa", lastModified: null },
   ]);
 
-  it("emits one canonical URL per active locale", () => {
-    expect(entries).toHaveLength(2 * LOCALES.length);
-    for (const locale of LOCALES) {
-      expect(entries.map((e) => e.url)).toContain(
-        `${BASE_URL}/${locale}/articles/opc-ua-basics`,
-      );
-    }
+  it("emits exactly one canonical URL per article, under its own language", () => {
+    expect(entries).toHaveLength(2);
+    expect(entries.map((e) => e.url)).toEqual([
+      `${BASE_URL}/en/articles/opc-ua-basics`,
+      `${BASE_URL}/fa/articles/no-timestamp`,
+    ]);
+  });
+
+  it("never fabricates a locale variant of a single-language article", () => {
+    const urls = entries.map((e) => e.url);
+    expect(urls).not.toContain(`${BASE_URL}/fa/articles/opc-ua-basics`);
+    expect(urls).not.toContain(`${BASE_URL}/de/articles/opc-ua-basics`);
+    expect(urls).not.toContain(`${BASE_URL}/en/articles/no-timestamp`);
+    expect(urls).not.toContain(`${BASE_URL}/de/articles/no-timestamp`);
   });
 
   it("every URL is absolute on the canonical host", () => {
@@ -59,9 +77,15 @@ describe("article entries", () => {
     }
   });
 
-  it("carries reciprocal alternates for every locale", () => {
-    const languages = entries[0].alternates?.languages ?? {};
-    expect(Object.keys(languages).sort()).toEqual([...LOCALES].sort());
+  it("carries NO alternates — a single representation has no alternate", () => {
+    for (const e of entries) {
+      expect(e.alternates).toBeUndefined();
+    }
+  });
+
+  it("a language outside the active set is dropped rather than guessed at", () => {
+    expect(articleSitemapEntries([{ slug: "x", language: "pt", lastModified: null }])).toEqual([]);
+    expect(articleSitemapEntries([{ slug: "x", language: "", lastModified: null }])).toEqual([]);
   });
 
   it("uses the row's real timestamp, and omits lastModified when there is none", () => {
@@ -72,7 +96,7 @@ describe("article entries", () => {
   });
 
   it("never invents a timestamp for an undated article", () => {
-    const undated = articleSitemapEntries([{ slug: "x", lastModified: null }]);
+    const undated = articleSitemapEntries([{ slug: "x", language: "en", lastModified: null }]);
     for (const e of undated) expect(e.lastModified).toBeUndefined();
   });
 });
@@ -81,6 +105,11 @@ describe("author entries", () => {
   const entries = authorSitemapEntries([{ handle: "h-forozandeh" }]);
 
   it("emits one profile URL per locale with no fabricated lastModified", () => {
+    // DISCOVERY-2A deliberately leaves this one alone. Unlike an article, an
+    // author profile carries no language field: it is a structured record
+    // (display name, handle, headline, expertise areas) rendered in whatever
+    // chrome the locale supplies, so each locale URL genuinely is an alternate
+    // representation rather than the same prose reprinted three times.
     expect(entries).toHaveLength(LOCALES.length);
     for (const e of entries) {
       expect(e.url).toContain("/articles/author/h-forozandeh");
@@ -92,7 +121,7 @@ describe("author entries", () => {
 describe("no private surface is ever advertised", () => {
   it("article and author paths never touch an authenticated Journal route", () => {
     const all = [
-      ...articleSitemapEntries([{ slug: "a", lastModified: null }]),
+      ...articleSitemapEntries([{ slug: "a", language: "en", lastModified: null }]),
       ...authorSitemapEntries([{ handle: "b" }]),
     ].map((e) => e.url);
     for (const url of all) {

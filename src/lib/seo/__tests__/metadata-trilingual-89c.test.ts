@@ -34,6 +34,43 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+/**
+ * DISCOVERY-2A — one AUTHORITATIVE `AtsJob` row.
+ *
+ * The careers job page reads `@/lib/ats/public-jobs`, which reads `AtsJob` and
+ * never the development fixture. `getJobById` is stubbed (not
+ * `getPublicJobById`) so the real OPEN + isPublic predicate still runs on the
+ * way through.
+ */
+vi.mock("@/lib/ats/db", () => ({
+  getPublicJobs: async () => [],
+  getJobById: async (id: string) =>
+    id === "job-db-1"
+      ? {
+          id: "job-db-1",
+          organizationId: "org-1",
+          title: "SCADA Architect",
+          description: "Design and architect enterprise SCADA systems.",
+          requirements: [],
+          responsibilities: [],
+          benefits: [],
+          skills: ["SCADA", "OPC UA"],
+          location: "Isfahan",
+          locationType: "onsite",
+          department: "Automation Engineering",
+          salaryCurrency: "EUR",
+          salaryMin: null,
+          salaryMax: null,
+          status: "OPEN",
+          closingDate: null,
+          postedById: null,
+          isPublic: true,
+          createdAt: new Date("2026-05-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-05-01T00:00:00.000Z"),
+        }
+      : null,
+}));
+
 vi.mock("next-intl/server", () => ({
   getLocale: async () => "en",
   setRequestLocale: () => {},
@@ -140,13 +177,20 @@ describe("89C — demo, careers job, library article, academy fallback, privacy-
   });
 
   it("careers job title/keywords use the localized template on de", async () => {
+    // DISCOVERY-2A — this used to read `JOBS[0]` from `@/lib/ats/mock-data`,
+    // which is exactly the import the public job page no longer makes: five
+    // invented vacancies were being published as `JobPosting` rich data. The
+    // assertion's INTENT — "the German title template is applied, not English"
+    // — is unchanged; it is now proven against an AUTHORITATIVE `AtsJob` row.
     const { generateMetadata } = await import("@/app/[locale]/careers/[jobId]/page");
-    const { JOBS } = await import("@/lib/ats/mock-data");
-    const job = JOBS[0];
-    const m = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: job.id }) });
-    expect(String(m.title)).toBe(`${job.title} — Karriere bei Hermes OS`);
+    const m = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: "job-db-1" }) });
+    expect(String(m.title)).toBe("SCADA Architect — Karriere bei Hermes OS");
+
+    // An id with no authoritative row keeps the localized not-found title AND
+    // is refused indexing — a fixture-only page must never be advertised.
     const missing = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: "nope" }) });
     expect(String(missing.title)).toBe("Stelle nicht gefunden");
+    expect(missing.robots).toEqual({ index: false, follow: false });
   });
 
   it("library article title suffix is localized; not-found title is localized", async () => {

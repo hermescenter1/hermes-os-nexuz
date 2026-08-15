@@ -42,6 +42,19 @@ export interface ArticleSitemapItem {
   slug: string;
   /** ISO 8601, or null when the row carries no usable timestamp. */
   lastModified: string | null;
+  /**
+   * DISCOVERY-2A — the article's OWN language, lower-cased ("fa" | "en").
+   *
+   * An article exists in exactly one language: `Article.language` is
+   * `ArtLanguage`, whose members are EN and FA — there is no DE and there cannot
+   * be one. `Article.slug` is globally unique and `getArticleDetailBySlug` has no
+   * language filter, so /fa, /en and /de all render the SAME text under different
+   * chrome. Emitting three URLs with reciprocal `alternates` therefore claimed
+   * two translations that do not exist, tripled the URL count for one document,
+   * and contradicted `@/lib/seo/indexnow-lifecycle`, which has always refused to
+   * fabricate the very same URLs.
+   */
+  language: string;
 }
 
 export interface AuthorSitemapItem {
@@ -79,18 +92,23 @@ export async function listPublicArticleSitemapItems(): Promise<ArticleSitemapIte
   try {
     const rows = await (prisma as unknown as { article: { findMany: FindMany } }).article.findMany({
       where: ARTICLE_SITEMAP_WHERE,
-      select: { slug: true, publishedAt: true, updatedAt: true },
+      // `language` joins the projection so the sitemap can address each article
+      // under its OWN locale instead of inventing one URL per active locale.
+      select: { slug: true, language: true, publishedAt: true, updatedAt: true },
       orderBy: { publishedAt: "desc" },
       take: ARTICLE_SITEMAP_MAX,
     });
     return rows
       .map((row) => ({
         slug: typeof row.slug === "string" ? row.slug : "",
+        language: typeof row.language === "string" ? row.language.toLowerCase() : "",
         // `updatedAt` is the more accurate "last modified" of the two; fall
         // back to publication time, and omit entirely if neither is usable.
         lastModified: asIso(row.updatedAt) ?? asIso(row.publishedAt),
       }))
-      .filter((item) => item.slug.length > 0);
+      // A row with no usable language cannot be addressed honestly, so it is
+      // dropped rather than defaulted onto a locale it may not be written in.
+      .filter((item) => item.slug.length > 0 && item.language.length > 0);
   } catch {
     return [];
   }
@@ -124,30 +142,61 @@ export async function listPublicAuthorSitemapItems(): Promise<AuthorSitemapItem[
   }
 }
 
-/** Expand one path across every active locale, with reciprocal alternates. */
+/**
+ * Expand one path across the locales it GENUINELY exists in.
+ *
+ * `contentLocales` defaults to every active locale, which is right for content
+ * whose copy is translated with full key parity. A record that exists in one
+ * language passes just that one and gets a single URL with NO `alternates` — a
+ * lone self-referencing hreflang entry states nothing.
+ */
 function localeEntries(
   path: string,
   priority: number,
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"],
   lastModified: string | null,
+  contentLocales: readonly string[] = LOCALES,
 ): MetadataRoute.Sitemap {
-  return LOCALES.map((locale) => ({
+  const locales = contentLocales.filter((l) => (LOCALES as readonly string[]).includes(l));
+  if (locales.length === 0) return [];
+  return locales.map((locale) => ({
     url: `${BASE_URL}/${locale}${path}`,
     ...(lastModified ? { lastModified } : {}),
     changeFrequency,
     priority,
-    alternates: {
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `${BASE_URL}/${l}${path}`])),
-    },
+    ...(locales.length > 1
+      ? {
+          alternates: {
+            languages: Object.fromEntries(locales.map((l) => [l, `${BASE_URL}/${l}${path}`])),
+          },
+        }
+      : {}),
   }));
 }
 
+/**
+ * One URL per article, under the article's own language.
+ *
+ * DISCOVERY-2A: was three URLs per article with reciprocal alternates. See
+ * {@link ArticleSitemapItem.language} for why that was a false claim. This now
+ * matches exactly what `articles/[slug]/page.tsx` emits through
+ * `buildMetadata({ contentLocales: [article.language] })`, so the sitemap and
+ * the page's own canonical can no longer disagree.
+ */
 export function articleSitemapEntries(items: ArticleSitemapItem[]): MetadataRoute.Sitemap {
   return items.flatMap((item) =>
-    localeEntries(`/articles/${item.slug}`, 0.75, "monthly", item.lastModified),
+    localeEntries(`/articles/${item.slug}`, 0.75, "monthly", item.lastModified, [item.language]),
   );
 }
 
+/**
+ * Author profiles keep every active locale.
+ *
+ * Unlike an article, a profile carries no language field: it is a structured
+ * record (display name, handle, headline, expertise areas) rendered in whatever
+ * chrome the locale provides, so each locale URL genuinely is an alternate
+ * representation of the same record rather than the same prose reprinted.
+ */
 export function authorSitemapEntries(items: AuthorSitemapItem[]): MetadataRoute.Sitemap {
   return items.flatMap((item) =>
     localeEntries(`/articles/author/${item.handle}`, 0.5, "weekly", null),
