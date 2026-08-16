@@ -37,11 +37,100 @@
  * is not advertised anywhere.
  */
 
+import { getPrisma } from "@/lib/db/prisma";
 import { getPublicJobs, getJobById, type DbAtsJob } from "./db";
 
 /** The public predicate, restated once so every caller applies the same one. */
 export function isPubliclyListedJob(job: DbAtsJob): boolean {
   return job.status === "OPEN" && job.isPublic === true;
+}
+
+/**
+ * Hard ceiling on job rows one sitemap generation will read.
+ *
+ * Mirrors `ARTICLE_SITEMAP_MAX`, `MEDIA_SITEMAP_MAX_ASSETS` and
+ * `ACADEMY_SITEMAP_MAX_COURSES`. When a deployment outgrows it the fix is a
+ * paginated sitemap index, not a larger number.
+ */
+export const JOB_SITEMAP_MAX_POSTINGS = 1000;
+
+/**
+ * The eligibility predicate for a publicly listed job, as a Prisma `where`.
+ *
+ * Exported so a test can assert the exact clauses rather than re-describing
+ * them, and so it cannot drift from `isPubliclyListedJob` above. It is the same
+ * contract `getPublicJobs()` pins in its own query and the public detail route
+ * re-checks: OPEN, explicitly public, not soft-deleted.
+ */
+export const JOB_SITEMAP_WHERE = {
+  status: "OPEN",
+  isPublic: true,
+  deletedAt: null,
+} as const;
+
+/** One publicly listed job, reduced to what a sitemap URL actually needs. */
+export interface JobSitemapItem {
+  readonly id: string;
+}
+
+type FindMany = (args: unknown) => Promise<Record<string, unknown>[]>;
+
+/**
+ * DISCOVERY-2B (query hardening) — the sitemap's OWN job reader.
+ *
+ * WHY THIS EXISTS INSTEAD OF REUSING `getPublicJobs()`
+ * ----------------------------------------------------
+ * `getPublicJobs()` is correct, and it is shared with `GET /api/careers/jobs`,
+ * so it is deliberately left alone. But it is unsuitable for a route that now
+ * executes on EVERY anonymous request:
+ *
+ *   - it has no `take`, so the row count is unbounded;
+ *   - it has no `select`, so every column is materialised — including
+ *     `description` and the four `Json` columns `requirements`,
+ *     `responsibilities`, `benefits` and `skills`.
+ *
+ * The sitemap consumes exactly one field per row: `id`, to build
+ * `/{locale}/careers/{id}`. Loading heavy payloads to discard them was
+ * tolerable when this ran once per image build; it is not once it is reachable
+ * anonymously at will.
+ *
+ * ELIGIBILITY IS UNCHANGED. `JOB_SITEMAP_WHERE` is the same OPEN + isPublic +
+ * not-deleted contract; this narrows the PROJECTION and bounds the ROW COUNT,
+ * never what counts as public. A job this returns is a job `getPublicJobs()`
+ * would also return.
+ *
+ * Returns `[]` — never throws — when the database is unavailable, matching the
+ * fail-closed convention of every other sitemap family.
+ */
+export async function listPublicJobSitemapItems(
+  limit: number = JOB_SITEMAP_MAX_POSTINGS,
+): Promise<JobSitemapItem[]> {
+  const take = Number.isInteger(limit)
+    ? Math.min(Math.max(limit, 1), JOB_SITEMAP_MAX_POSTINGS)
+    : JOB_SITEMAP_MAX_POSTINGS;
+
+  try {
+    const prisma = await getPrisma();
+    if (!prisma) return [];
+    const model = (prisma as unknown as { atsJob?: { findMany?: FindMany } }).atsJob;
+    if (!model || typeof model.findMany !== "function") return [];
+
+    const rows = await model.findMany({
+      where: JOB_SITEMAP_WHERE,
+      // An address and nothing else. No description, no Json payload column.
+      select: { id: true },
+      // Deterministic, and newest-first so a truncated list keeps the freshest
+      // postings rather than an arbitrary slice.
+      orderBy: { createdAt: "desc" },
+      take,
+    });
+
+    return (Array.isArray(rows) ? rows : [])
+      .map((row) => ({ id: typeof row.id === "string" ? row.id : "" }))
+      .filter((item) => item.id.length > 0);
+  } catch {
+    return [];
+  }
 }
 
 /**

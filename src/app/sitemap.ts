@@ -236,9 +236,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // family is simply omitted — the same graceful degradation every other
   // DB-backed branch below uses. A search engine cannot tell a fixture from a
   // fact, so public discovery fails empty.
+  //
+  // DISCOVERY-2B (query hardening) — this consumes `listPublicJobSitemapItems`,
+  // NOT `listPublicJobs`. The latter delegates to `getPublicJobs()`, which is
+  // shared with `GET /api/careers/jobs` and therefore has no `take` and no
+  // `select`: it materialises every column, including `description` and four
+  // `Json` columns, for rows this loop reduces to an `id`. Unbounded and
+  // heavyweight was tolerable once per image build; it is not on a route that
+  // now runs on every anonymous request. Eligibility is identical — the
+  // sitemap reader pins the same OPEN + isPublic + not-deleted predicate.
   try {
-    const { listPublicJobs } = await import("@/lib/ats/public-jobs");
-    for (const job of await listPublicJobs()) {
+    const { listPublicJobSitemapItems } = await import("@/lib/ats/public-jobs");
+    for (const job of await listPublicJobSitemapItems()) {
       entries.push(...localeEntries(`/careers/${job.id}`, 0.8, "weekly"));
     }
   } catch {
@@ -292,6 +301,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }).academyCourse.findMany({
         where: { isPublished: true },
         select: { id: true },
+        // DISCOVERY-2B (query hardening): deterministic order. A `take` with no
+        // `orderBy` is a bounded but ARBITRARY slice, so two identical crawls
+        // could be advertised two different course sets once the catalog
+        // exceeds the ceiling.
+        orderBy: { createdAt: "desc" },
         take: ACADEMY_SITEMAP_MAX_COURSES,
       });
       for (const course of courses) {

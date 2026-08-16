@@ -127,6 +127,11 @@ export async function listPublicAuthorSitemapItems(): Promise<AuthorSitemapItem[
     const rows = await (prisma as unknown as { article: { findMany: FindMany } }).article.findMany({
       where: ARTICLE_SITEMAP_WHERE,
       select: { author: { select: { handle: true } } },
+      // DISCOVERY-2B (query hardening): a `take` with no `orderBy` is a bounded
+      // but ARBITRARY slice — two identical crawls could be advertised two
+      // different author sets once the Journal exceeds the ceiling. Newest-first
+      // matches the article read above.
+      orderBy: { publishedAt: "desc" },
       take: ARTICLE_SITEMAP_MAX,
     });
     const handles = new Set<string>();

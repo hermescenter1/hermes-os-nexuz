@@ -62,12 +62,27 @@ vi.mock("@/lib/articles/seo", async () => {
 });
 
 const jobs = vi.hoisted(() => ({ rows: [] as { id: string }[], throws: false }));
-vi.mock("@/lib/ats/public-jobs", () => ({
-  listPublicJobs: async () => {
-    if (jobs.throws) throw new Error("DB unavailable");
-    return jobs.rows;
-  },
-}));
+vi.mock("@/lib/ats/public-jobs", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/ats/public-jobs")>(
+    "@/lib/ats/public-jobs",
+  );
+  return {
+    ...actual,
+    // DISCOVERY-2B (query hardening): the sitemap consumes the bounded,
+    // projection-minimal sitemap reader, NOT the heavy shared `listPublicJobs`.
+    // Both are doubled so this file fails loudly if the wiring is reverted to
+    // the unbounded path rather than silently exercising a stale seam.
+    listPublicJobSitemapItems: async () => {
+      if (jobs.throws) throw new Error("DB unavailable");
+      return jobs.rows;
+    },
+    listPublicJobs: async () => {
+      throw new Error(
+        "sitemap must not call listPublicJobs — it is unbounded and loads every column",
+      );
+    },
+  };
+});
 
 const media = vi.hoisted(() => ({ throws: false }));
 vi.mock("@/lib/media/seo", async () => {
