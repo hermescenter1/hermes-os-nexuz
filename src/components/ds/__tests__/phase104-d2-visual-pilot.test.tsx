@@ -655,8 +655,9 @@ describe("104-D2 — scope hygiene in the changed product components", () => {
 
 describe("104-D2 — route inventory records exactly the directly-migrated routes", () => {
   // 104-D2 delivered Login + Workspace Home. 104-E added the Observatory
-  // homepage (owner + Codex approved). Exactly these three, and nothing else.
-  it("Login, Workspace Home and the Observatory homepage are MIGRATED_DIRECTLY and nothing else is", async () => {
+  // homepage. 104-F added the Industrial Journal landing and article detail.
+  // Exactly these five, and nothing else.
+  it("Login, Workspace Home, the Observatory homepage and the two Journal reading surfaces are MIGRATED_DIRECTLY and nothing else is", async () => {
     const inv = await import(
       "../../../../scripts/design/phase104-route-inventory.mjs"
     );
@@ -665,7 +666,7 @@ describe("104-D2 — route inventory records exactly the directly-migrated route
       .filter((r: { status: string | null }) => r.status === "MIGRATED_DIRECTLY")
       .map((r: { route: string }) => r.route)
       .sort();
-    expect(migrated).toEqual(["/", "/auth/login", "/dashboard"]);
+    expect(migrated).toEqual(["/", "/articles", "/articles/[slug]", "/auth/login", "/dashboard"]);
     expect(built.unclassified).toEqual([]);
   });
 
@@ -699,7 +700,12 @@ describe("104-D2 — route inventory records exactly the directly-migrated route
     expect(inv.classify("/platform")?.status).toBe("VISUAL_ONLY_STATIC_PUBLIC");
 
     // The rules themselves must declare `exact`, not merely happen to work.
-    for (const prefix of ["/", "/auth/login", "/dashboard"]) {
+    // 104-F: the Journal rules must ALSO be exact — the private author and
+    // editorial routes under /articles must never inherit the status.
+    expect(inv.classify("/articles/write")?.status).toBe("COVERED_BY_SHARED_LAYOUT");
+    expect(inv.classify("/articles/editor")?.status).toBe("COVERED_BY_SHARED_LAYOUT");
+    expect(inv.classify("/articles/discover")?.status).toBe("COVERED_BY_SHARED_LAYOUT");
+    for (const prefix of ["/", "/articles", "/articles/[slug]", "/auth/login", "/dashboard"]) {
       const rule = inv.ROUTE_RULES.find(
         (r: { prefix: string; status: string; exact?: boolean }) =>
           r.prefix === prefix && r.status === "MIGRATED_DIRECTLY",
@@ -717,6 +723,6 @@ describe("104-D2 — route inventory records exactly the directly-migrated route
     expect(built.total).toBe(inv.deriveRoutes().length);
     expect(built.covered).toBe(built.total);
     expect(built.unclassified).toEqual([]);
-    expect(built.byStatus.MIGRATED_DIRECTLY).toBe(3);
+    expect(built.byStatus.MIGRATED_DIRECTLY).toBe(5);
   });
 });

@@ -4402,6 +4402,54 @@
         "standard": "Standard",
         "maintenanceDomain": "Maintenance Domain"
       }
+    },
+    "pressroom": {
+      "standfirst": "Engineering evidence transformed into durable technical knowledge.",
+      "mastheadNote": "Field observations, failure analyses, commissioning notes and case studies from PLC, SCADA/HMI, instrumentation, electrical and industrial-AI practice — reviewed before they are published.",
+      "folio": {
+        "signal": "Raw signal",
+        "fragment": "Evidence fragment",
+        "annotation": "Engineering annotation",
+        "folio": "Reviewed technical folio",
+        "knowledge": "Published knowledge",
+        "ariaLabel": "How a field observation becomes published knowledge"
+      },
+      "marks": {
+        "lead": "Lead dossier",
+        "dispatch": "Dispatch ledger",
+        "disciplines": "Discipline index",
+        "provenance": "Authority and provenance",
+        "paths": "Publication paths",
+        "empty": "Nothing has been published yet",
+        "emptyBody": "The Journal shows only reviewed, published articles. There are none to show right now."
+      },
+      "dispatchIntro": "Recently published, in order of appearance.",
+      "disciplinesIntro": "Every discipline below is a real category with at least one published article.",
+      "provenanceIntro": "Every article carries its author’s engineering identity and, where reviewed, its evidence level and review state.",
+      "pathsIntro": "Where to go next.",
+      "readingProgress": "Reading progress",
+      "onThisPage": "On this page",
+      "provenanceTitle": "Provenance",
+      "domainLabel": "Industrial domain",
+      "technologyLabel": "Linked technology",
+      "platformLabel": "PLC platform",
+      "standardLabel": "Standard",
+      "evidenceLabel": "Evidence level",
+      "reviewLabel": "Review state",
+      "reviewedByHuman": "Human reviewed",
+      "notReviewed": "Not yet reviewed",
+      "safetyLabel": "Safety-critical content",
+      "publishedOn": "Published",
+      "updatedOn": "Updated",
+      "readingTime": "{minutes} min read",
+      "byAuthor": "By",
+      "filedUnder": "Filed under",
+      "relatedTitle": "Further reading",
+      "backToJournal": "Back to the Journal",
+      "filterAll": "All disciplines",
+      "searchLabel": "Search the Journal",
+      "results": "{count} results",
+      "entry": "Entry"
     }
   },
   "journalWriter": {

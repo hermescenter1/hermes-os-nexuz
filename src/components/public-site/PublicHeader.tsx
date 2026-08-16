@@ -37,13 +37,22 @@ export interface PublicHeaderProps {
    * defect from the first visual review. Height, contents, focus order,
    * landmarks and the skip link are all unchanged; a soft scrim keeps text
    * legible once content scrolls underneath.
+   *
+   * PHASE 104-F — `"journal"` is the Industrial Journal masthead rail: the
+   * same sticky bar, but ruled like a publication's running head (a heavy top
+   * rule and a hairline below) on the page ground rather than glass. It is
+   * opted into ONLY by the public Journal reading shell; the default remains
+   * `"standard"`, and Observatory remains the homepage's alone. A third mode
+   * was chosen over overloading `observatory` because the two surfaces are
+   * different publications and must be able to diverge without coupling.
    */
-  visualMode?: "standard" | "observatory";
+  visualMode?: "standard" | "observatory" | "journal";
 }
 
 export function PublicHeader({ visualMode = "standard" }: PublicHeaderProps = {}) {
   const t = useTranslations("publicSite.header");
   const observatory = visualMode === "observatory";
+  const journal = visualMode === "journal";
 
   return (
     <>
@@ -65,7 +74,11 @@ export function PublicHeader({ visualMode = "standard" }: PublicHeaderProps = {}
           // and it compacts with a scrim as the page scrolls (scroll-driven
           // CSS where supported, static scrim otherwise). Same height, same
           // contents, same focus order and landmarks as the standard bar.
-          observatory ? "hh-header" : "sticky top-0 z-40 border-b border-surface-glass-border ds-glass",
+          observatory
+            ? "hh-header"
+            : journal
+              ? "hj-header"
+              : "sticky top-0 z-40 border-b border-surface-glass-border ds-glass",
         )}
       >
         <PublicPageContainer className={cn("flex items-center gap-3", observatory ? "h-14 md:h-16" : "h-16")}>

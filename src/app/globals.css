@@ -2400,3 +2400,365 @@ html[lang^="en"] {
 main [id$="-title"] {
   scroll-margin-block-start: var(--hh-anchor-offset);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-F — HERMES INDUSTRIAL JOURNAL · THE INDUSTRIAL EVIDENCE PRESSROOM
+   ───────────────────────────────────────────────────────────────────────────
+   The public reading and discovery system of the Journal, redesigned as an
+   engineering publication: a technical field journal crossed with an evidence
+   ledger. It shares the Hermes DNA with the Observatory homepage but is a
+   DIFFERENT publication — no signal bus, no chapters, no atmospheric field. Its
+   ground is a PAGE: baseline rules, margin annotation rails, a folio spine and
+   the typographic measure of a printed engineering dossier.
+
+   Namespace `.hj-*` (hermes journal). Rules, all structural:
+     - NO new custom property in a gated family (--glass-*, --edge-*,
+       --beacon-*, --rail-*, --command-*, --triad-*, --color-horizon-*).
+       Every colour is READ from a shipped token; there is no raw hex/rgba here.
+     - The homepage class namespace is never used on Journal surfaces.
+     - Every animation is inside prefers-reduced-motion: no-preference.
+     - No atmosphere-only token from the login allowlist. Rail / Command / Triad are not consumed.
+     - Glass appears in exactly TWO places: the featured dossier and author
+       provenance. The article body is never inside Glass.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── THE PAGE GROUND ── the reading space: base navy with a faint baseline
+   grid, like ruled drafting paper. Present but never competing with type. */
+.hj-page {
+  position: relative;
+  isolation: isolate;
+  background: var(--color-background-base);
+}
+.hj-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(1.75rem - 1px),
+    var(--color-border-subtle) calc(1.75rem - 1px),
+    var(--color-border-subtle) 1.75rem
+  );
+  opacity: 0.55;
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+}
+
+/* ── MASTHEAD RULES ── the publication's identity is drawn with rules, not
+   boxes: a heavy rule, a hairline, and a mono folio line between them. */
+.hj-rule-heavy { block-size: 3px; background: var(--color-text-primary); }
+.hj-rule       { block-size: 1px; background: var(--color-border-default); }
+.hj-rule-hair  { block-size: 1px; background: var(--color-border-subtle); }
+
+/* ── FOLIO LINE ── mono, tracked, uppercase; the running header of a dossier. */
+.hj-folio {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.hj-folio-strong { color: var(--color-text-secondary); }
+
+/* ── ANNOTATION RAIL ── the margin column of an engineering dossier: a hairline
+   at the inline start with hanging marginalia. Mirrors under RTL through
+   logical properties alone. */
+.hj-rail {
+  border-inline-start: 1px solid var(--color-border-default);
+  padding-inline-start: clamp(1rem, 3vw, 1.75rem);
+}
+.hj-marginalia {
+  position: relative;
+}
+.hj-marginalia::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(-1 * clamp(1rem, 3vw, 1.75rem) - 3px);
+  inset-block-start: 0.6em;
+  inline-size: 5px;
+  block-size: 5px;
+  border-radius: 50%;
+  background: var(--color-border-default);
+}
+
+/* ── DISPATCH LEDGER ── numbered entries on one continuous ledger. Each entry
+   is a ROW with a hanging number, not a card: rule-separated, natural height. */
+.hj-ledger { border-block-start: 1px solid var(--color-border-default); }
+.hj-entry {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  column-gap: 1rem;
+  padding-block: 1.25rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+@media (min-width: 768px) {
+  .hj-entry {
+    grid-template-columns: 4rem minmax(0, 1fr) 11rem;
+    column-gap: 1.5rem;
+    padding-block: 1.5rem;
+  }
+}
+.hj-entry-no {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  padding-block-start: 0.35rem;
+}
+/* the LEAD entry is typographically heavier — hierarchy without a box */
+.hj-entry[data-lead="true"] { padding-block: 1.75rem; }
+
+/* ── DISCIPLINE INDEX ── an index column of disciplines with counts, drawn as a
+   contents table: dotted leader between name and count. */
+.hj-index-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  min-block-size: 2.75rem;
+  padding-block: 0.4rem;
+}
+/* the row's LINK is the pointer target and must itself be >= 44px tall
+   (WCAG 2.5.8) — a tall row around a short inline anchor is not enough */
+.hj-index-row > a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+}
+.hj-leader {
+  flex: 1 1 auto;
+  border-block-end: 1px dotted var(--color-border-default);
+  transform: translateY(-0.35em);
+  min-inline-size: 1.5rem;
+}
+/* the SELECTED discipline is the index's Beacon */
+.hj-index-row[aria-current="true"] {
+  box-shadow: inset var(--rail-indicator-width) 0 0 0 var(--beacon-core);
+  padding-inline-start: 0.75rem;
+}
+[dir="rtl"] .hj-index-row[aria-current="true"] {
+  box-shadow: inset calc(-1 * var(--rail-indicator-width)) 0 0 0 var(--beacon-core);
+}
+
+/* ── EVIDENCE FOLIO SIGNATURE ── stroke grammar for the Journal's own drawing.
+   No reuse of the homepage signature grammar: this is a different instrument. */
+.hj-sig-stroke   { fill: none; stroke: var(--color-border-default); stroke-width: 1.25; }
+.hj-sig-hair     { fill: none; stroke: var(--color-border-subtle); stroke-width: 1; }
+.hj-sig-ink      { fill: none; stroke: var(--color-text-primary); stroke-width: 1.5; stroke-linecap: round; }
+.hj-sig-ink-2    { fill: none; stroke: var(--color-text-secondary); stroke-width: 1.25; }
+.hj-sig-sheet    { fill: var(--color-surface-primary); stroke: var(--color-border-default); stroke-width: 1; }
+.hj-sig-sheet-2  { fill: var(--color-surface-elevated); stroke: var(--color-border-default); stroke-width: 1; }
+.hj-sig-mark     { fill: var(--beacon-core); }
+.hj-sig-mark-ring{ fill: none; stroke: var(--beacon-core); stroke-width: 1.5; }
+.hj-sig-signal   { fill: none; stroke: var(--color-reasoning-evidence); stroke-width: 1.5; }
+.hj-sig-annot    { fill: none; stroke: var(--color-brand-primary); stroke-width: 1; stroke-dasharray: 3 3; }
+.hj-sig-seal     { fill: var(--color-surface-interactive); stroke: var(--color-brand-primary); stroke-width: 1.25; }
+/* the reviewed-folio seal pulses only when motion is allowed */
+@media (prefers-reduced-motion: no-preference) {
+  .hj-sig-seal { animation: hj-seal 5s ease-in-out infinite; }
+}
+@keyframes hj-seal { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+/* the drawing contains NO text, so mirroring is safe under RTL */
+[dir="rtl"] .hj-sig-frame { transform: scaleX(-1); }
+
+/* ── ARTICLE READING INSTRUMENT ── */
+/* Measure: 68–76ch as required. `ch` on the body font. */
+.hj-measure { max-inline-size: 72ch; }
+.hj-measure-wide { max-inline-size: 76ch; }
+
+/* Reading progress: a structural bar (height) + the mono percent label lives
+   in HTML beside it, so the channel is never colour alone. */
+.hj-progress {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  block-size: 3px;
+  background: var(--color-border-subtle);
+}
+.hj-progress > span {
+  display: block;
+  block-size: 100%;
+  background: var(--beacon-core);
+  transform-origin: 0 50%;
+  inline-size: 100%;
+  transform: scaleX(var(--hj-progress, 0));
+}
+[dir="rtl"] .hj-progress > span { transform-origin: 100% 50%; }
+@media (prefers-reduced-motion: no-preference) {
+  .hj-progress > span { transition: transform 120ms linear; }
+}
+
+/* the article body: dossier typography, NEVER inside Glass */
+.hj-body { color: var(--color-text-primary); }
+.hj-body p { margin-block: 1.1em; line-height: 1.75; }
+.hj-body h2 {
+  margin-block: 2.25em 0.75em;
+  padding-block-end: 0.5rem;
+  border-block-end: 1px solid var(--color-border-default);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.hj-body h3 { margin-block: 1.75em 0.5em; font-weight: 600; }
+.hj-body ul, .hj-body ol { margin-block: 1em; padding-inline-start: 1.5em; }
+.hj-body li { margin-block: 0.35em; }
+.hj-body blockquote {
+  margin-block: 1.5em;
+  padding-inline-start: 1.25rem;
+  border-inline-start: 3px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+}
+/* code and tables: internal scroll ONLY, the document never overflows */
+.hj-body pre {
+  margin-block: 1.5em;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-primary);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  direction: ltr;
+  text-align: start;
+}
+.hj-body code { font-family: var(--font-mono), monospace; font-size: 0.9em; direction: ltr; unicode-bidi: isolate; }
+.hj-body table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.hj-body .hj-table-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  margin-block: 1.5em;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+}
+.hj-body th, .hj-body td {
+  padding: 0.55rem 0.85rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+  text-align: start;
+  vertical-align: top;
+}
+.hj-body th { font-weight: 600; color: var(--color-text-secondary); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.hj-body figure { margin-block: 1.75em; }
+.hj-body figcaption { margin-block-start: 0.5rem; font-size: 0.8125rem; color: var(--color-text-muted); }
+
+/* desktop margin TOC — sticky under the header, hairline rail, active item is
+   the reading Beacon (structural bar + aria-current, not colour alone) */
+.hj-toc {
+  position: sticky;
+  top: calc(4rem + 3px + var(--space-card));
+  max-block-size: calc(100vh - 4rem - 3px - var(--space-card) * 2);
+  overflow-y: auto;
+  border-inline-start: 1px solid var(--color-border-default);
+}
+.hj-toc a {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.75rem; /* 44px target (WCAG 2.5.8) */
+  padding: 0.35rem 0 0.35rem 0.875rem;
+  padding-inline-start: 0.875rem;
+  padding-inline-end: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  border-inline-start: 2px solid transparent;
+  margin-inline-start: -1px;
+}
+.hj-toc a[aria-current="true"] {
+  color: var(--color-text-primary);
+  border-inline-start-color: var(--beacon-core);
+}
+.hj-toc a[data-depth="3"] { padding-inline-start: 1.75rem; font-size: 0.75rem; }
+
+/* provenance seal — the ONE Glass surface on the article page */
+/* provenance rows: a two-column ledger where the container is wide enough (the
+   landing dossier), a stacked label-over-value form where it is not (the
+   article's margin aside). Container-driven, so neither layout guesses about the
+   viewport. */
+.hj-provenance { container-type: inline-size; }
+.hj-provenance-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.15rem 1rem;
+  padding-block: 0.55rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+@container (min-width: 22rem) {
+  .hj-provenance-row { grid-template-columns: 8.5rem minmax(0, 1fr); gap: 0.5rem 1rem; }
+}
+.hj-provenance-row dt {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+/* the semantic-state ticks — evidence level / human review — reasoning tokens
+   at their MEANING only, and always paired with a text label */
+.hj-state {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.hj-state::before {
+  content: ""; inline-size: 8px; block-size: 8px; border-radius: 2px;
+  background: var(--color-border-default);
+}
+.hj-state[data-state="reviewed"]::before  { background: var(--color-status-success); }
+.hj-state[data-state="evidence"]::before  { background: var(--color-reasoning-evidence); }
+.hj-state[data-state="safety"]::before    { background: var(--color-status-warning); }
+.hj-state[data-state="knowledge"]::before { background: var(--color-reasoning-decision); }
+
+/* anchor offset under the sticky masthead — DERIVED, not guessed:
+     header block-size 4rem (h-16) + the 3px running-head top rule + --space-card.
+   Logical property, so RTL needs no second rule. */
+.hj-page :is(h1, h2, h3, h4)[id],
+.hj-page [id$="-title"] {
+  scroll-margin-block-start: calc(4rem + 3px + var(--space-card));
+}
+
+/* mobile: the ledger's third column collapses; the TOC becomes in-flow */
+@media (max-width: 767.98px) {
+  .hj-toc { position: static; max-block-size: none; overflow: visible; }
+}
+
+/* ── JOURNAL HEADER / FOOTER (opt-in only; defaults untouched) ──
+   The masthead rail: sticky, on the page ground, ruled like a running head —
+   a heavy rule above the bar, a hairline below. No glass, no scrim animation:
+   a publication's running head does not compact. Height, contents, landmarks
+   and the skip link are the shared header's. */
+.hj-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background-color: var(--color-background-base);
+  border-top: 3px solid var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-default);
+}
+.hj-footer {
+  border-top: 3px solid var(--color-text-primary);
+  background: var(--color-background-base);
+}
+
+/* ── Evidence Folio stage labels: whole words only ──
+   `hyphens: none` + `word-break: normal` + `overflow-wrap: normal` forbid any
+   break inside a word; wrapping at spaces stays allowed. The track floor is
+   MEASURED, not guessed: the widest single word any locale carries is German
+   "Ingenieurtechnische", which renders at ~117px (7.3rem) at the 0.8125rem
+   label size; 7.5rem is that width, not a padded guess. The floor is exactly
+   the longest word and nothing more, so en/fa keep five tracks aligned one-to-
+   one with the five drawing nodes on desktop, while German — whose longest word
+   physically needs a wider track — reflows to four via `auto-fit` rather than
+   ever splitting the word. One rule for every locale; no override, no masking,
+   no ellipsis, no font-size step. */
+.hj-folio-stages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  column-gap: 1rem;
+  row-gap: 0.375rem;
+  hyphens: none;
+  word-break: normal;
+  overflow-wrap: normal;
+}

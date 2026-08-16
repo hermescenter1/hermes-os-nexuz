@@ -4402,6 +4402,54 @@
         "standard": "Norm",
         "maintenanceDomain": "Instandhaltungsbereich"
       }
+    },
+    "pressroom": {
+      "standfirst": "Ingenieurtechnische Evidenz, in dauerhaftes technisches Wissen überführt.",
+      "mastheadNote": "Feldbeobachtungen, Fehleranalysen, Inbetriebnahme-Notizen und Fallstudien aus der Praxis von PLC, SCADA/HMI, Instrumentierung, Elektrotechnik und industrieller KI — vor der Veröffentlichung geprüft.",
+      "folio": {
+        "signal": "Rohsignal",
+        "fragment": "Evidenzfragment",
+        "annotation": "Ingenieurtechnische Annotation",
+        "folio": "Geprüftes technisches Folio",
+        "knowledge": "Veröffentlichtes Wissen",
+        "ariaLabel": "Wie aus einer Feldbeobachtung veröffentlichtes Wissen wird"
+      },
+      "marks": {
+        "lead": "Leitdossier",
+        "dispatch": "Meldungsjournal",
+        "disciplines": "Fachgebietsverzeichnis",
+        "provenance": "Autorität und Herkunft",
+        "paths": "Publikationspfade",
+        "empty": "Es wurde noch nichts veröffentlicht",
+        "emptyBody": "Das Journal zeigt ausschließlich geprüfte, veröffentlichte Artikel. Derzeit gibt es keine."
+      },
+      "dispatchIntro": "Kürzlich veröffentlicht, in Reihenfolge des Erscheinens.",
+      "disciplinesIntro": "Jedes Fachgebiet unten ist eine echte Kategorie mit mindestens einem veröffentlichten Artikel.",
+      "provenanceIntro": "Jeder Artikel trägt die ingenieurtechnische Identität seines Autors und, sofern geprüft, sein Evidenzniveau und seinen Prüfstatus.",
+      "pathsIntro": "Wohin als Nächstes.",
+      "readingProgress": "Lesefortschritt",
+      "onThisPage": "Auf dieser Seite",
+      "provenanceTitle": "Herkunft",
+      "domainLabel": "Industriedomäne",
+      "technologyLabel": "Verknüpfte Technologie",
+      "platformLabel": "PLC-Plattform",
+      "standardLabel": "Norm",
+      "evidenceLabel": "Evidenzniveau",
+      "reviewLabel": "Prüfstatus",
+      "reviewedByHuman": "Von Menschen geprüft",
+      "notReviewed": "Noch nicht geprüft",
+      "safetyLabel": "Sicherheitskritischer Inhalt",
+      "publishedOn": "Veröffentlicht",
+      "updatedOn": "Aktualisiert",
+      "readingTime": "{minutes} Min. Lesezeit",
+      "byAuthor": "Von",
+      "filedUnder": "Abgelegt unter",
+      "relatedTitle": "Weiterführende Lektüre",
+      "backToJournal": "Zurück zum Journal",
+      "filterAll": "Alle Fachgebiete",
+      "searchLabel": "Journal durchsuchen",
+      "results": "{count} Ergebnisse",
+      "entry": "Eintrag"
     }
   },
   "journalWriter": {

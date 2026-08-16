@@ -147,7 +147,16 @@ export const ROUTE_RULES = Object.freeze([
 
   // ── Learning and media ──────────────────────────────────────────────────
   { prefix: "/academy", family: "academy/articles/library/media", status: "COVERED_BY_SHARED_LAYOUT", note: "academy" },
-  { prefix: "/articles", family: "academy/articles/library/media", status: "COVERED_BY_SHARED_LAYOUT", note: "articles" },
+  // Phase 104-F — the Industrial Journal. ONLY the two surfaces whose own
+  // composition was redesigned (and screenshot-reviewed in en/de/fa) are
+  // MIGRATED_DIRECTLY, each as an EXACT rule placed BEFORE the broad prefix so
+  // that neither the private author/editorial routes nor the other public
+  // sub-views inherit the status. /discover, /latest, /tags, /tag/[slug] and
+  // the rest still render inside the redesigned journal shell but keep their
+  // own (untouched) compositions, so they stay COVERED_BY_SHARED_LAYOUT.
+  { prefix: "/articles",        family: "academy/articles/library/media", status: "MIGRATED_DIRECTLY", note: "Industrial Journal landing — Phase 104-F Evidence Pressroom", exact: true },
+  { prefix: "/articles/[slug]", family: "academy/articles/library/media", status: "MIGRATED_DIRECTLY", note: "Industrial Journal article detail — Phase 104-F reading instrument", exact: true },
+  { prefix: "/articles", family: "academy/articles/library/media", status: "COVERED_BY_SHARED_LAYOUT", note: "articles — public sub-views in the journal shell; author workspace and editorial tools in the legacy shell" },
   { prefix: "/library", family: "academy/articles/library/media", status: "COVERED_BY_SHARED_LAYOUT", note: "library" },
   { prefix: "/videos", family: "academy/articles/library/media", status: "COVERED_BY_SHARED_LAYOUT", note: "Phase 102 media and video hub" },
 

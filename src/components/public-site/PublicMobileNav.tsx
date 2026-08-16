@@ -28,7 +28,9 @@ export function PublicMobileNav() {
         aria-expanded={open}
         variant="tertiary"
         size="lg"
-        className="lg:hidden"
+        // PHASE 104-F — paired with PublicNavMenus: the drawer trigger stays
+        // until `xl`, where the measured full bar first fits every locale.
+        className="xl:hidden"
         onClick={() => setOpen(true)}
         icon={<span aria-hidden="true">☰</span>}
       />

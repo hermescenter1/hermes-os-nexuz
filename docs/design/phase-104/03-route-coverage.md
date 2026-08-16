@@ -53,29 +53,37 @@ screen in two directions, not two design surfaces.
 
 | Coverage status | Routes |
 |---|---|
-| `COVERED_BY_SHARED_LAYOUT` | 240 |
+| `COVERED_BY_SHARED_LAYOUT` | 238 |
 | `VISUAL_ONLY_STATIC_PUBLIC` | 29 |
 | `COVERED_BY_SHARED_TEMPLATE` | 6 |
-| `MIGRATED_DIRECTLY` | 3 |
+| `MIGRATED_DIRECTLY` | 5 |
 
 **Read this table honestly.** `COVERED_BY_SHARED_LAYOUT` is a statement about *how* a route
 would receive the design language — through the shell and shared layout it already renders
 inside — **not** a claim that the Phase 104 visual language has been applied to it and reviewed.
 
 `MIGRATED_DIRECTLY` means the opposite: the route's **own content** was redesigned. Increment
-104-D2 migrated two, and increment 104-E added the homepage — exactly these three:
+104-D2 migrated two, 104-E added the homepage, and 104-F added the two Industrial Journal reading
+surfaces — exactly these five:
 
 | Route | What changed |
 |---|---|
 | `/auth/login` | Hermes Horizon atmosphere (Login pilot only) + a contract-owned `.ds-glass-elevated` content surface |
 | `/dashboard` | The Hermes Triad — `operate` / `understand` / `act` — as the Workspace Home decision hierarchy |
 | `/` | **Phase 104-E — the Observatory homepage.** Bespoke `ObservatorySignature` (asset → PLC/SCADA/HMI → evidence → Brain → hypothesis & risk → human gate → safe action), eight-chapter narrative, no stock imagery, three Glass surfaces at real depth, header/footer opt-in. **Owner + Codex approved after three visual review rounds.** The classifier matches `/` exactly, so the locale variants are one route and no other public route inherits the status. |
+| `/articles` | **Phase 104-F — the Industrial Journal landing (the Evidence Pressroom).** Masthead + Evidence Folio signature, lead dossier on the landing's single Glass surface, a numbered dispatch ledger, a real discipline index, a byline register, publication paths. No card grid, no sidebar, no fabricated KPI. Exact rule, placed before the broad `/articles` prefix. |
+| `/articles/[slug]` | **Phase 104-F — the article reading instrument.** 72ch measure, reading-progress instrument, real-heading margin TOC, provenance on the page's single Glass surface, editorial related rail; one `<h1>` (the 72.5 renderer emitted two). Exact rule. |
 
 Everything else is still inheritance, not adoption. `/login` stays a **redirect** to `/auth/login`
 and is deliberately *not* counted as a migrated visual route; `/dashboard/*` subroutes are matched
 by a separate subtree rule and remain `COVERED_BY_SHARED_LAYOUT`, so the pilot cannot inflate the
-count by inheritance. **The homepage is the only one of the three that has passed owner visual
-review**; Login and Workspace Home remain 104-D2 pilots awaiting their own redesign rounds.
+count by inheritance. **Owner visual review status:** the homepage is approved; the two Journal surfaces are implemented and
+awaiting owner + Codex visual review; Login and Workspace Home remain 104-D2 pilots awaiting their own
+redesign rounds. Every other `/articles/*` route — the public sub-views (discover, latest, tags, tag,
+categories, category, authors, author, trending, editors-picks, case-studies, feed) AND the private
+author workspace and editorial tools — stays `COVERED_BY_SHARED_LAYOUT`: the public ones render inside
+the redesigned journal shell with their own untouched compositions, the private ones keep the legacy
+sidebar shell, and none inherits the migrated status because both Journal rules are exact.
 
 ## 4. The Alarm Center — correction of a false claim
 

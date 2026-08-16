@@ -20,18 +20,25 @@ export interface PublicFooterProps {
    * into `"observatory"` explicitly: an Edge top rule and a base→deep gradient
    * that lands the closing scene, instead of a hard border on flat deep navy.
    * Contents, links, columns and landmarks are unchanged.
+   *
+   * PHASE 104-F — `"journal"`: the Industrial Journal colophon, ruled like the
+   * end of a printed dossier (heavy rule, then the columns on the page
+   * ground). Opted into only by the public Journal reading shell.
    */
-  visualMode?: "standard" | "observatory";
+  visualMode?: "standard" | "observatory" | "journal";
 }
 
 export function PublicFooter({ visualMode = "standard" }: PublicFooterProps = {}) {
   const t = useTranslations("publicSite.footer");
   const observatory = visualMode === "observatory";
+  const journal = visualMode === "journal";
 
   return (
     <footer
       data-visual-mode={visualMode}
-      className={observatory ? "hh-footer" : "border-t border-border-subtle bg-background-deep"}
+      className={
+        observatory ? "hh-footer" : journal ? "hj-footer" : "border-t border-border-subtle bg-background-deep"
+      }
     >
       <PublicPageContainer className="py-12">
         {/* 87D.1 — five link columns: the public site structure at a glance. */}
