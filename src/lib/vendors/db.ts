@@ -83,13 +83,48 @@ export async function getVendorBySlug(slug: string): Promise<VendorDetailItem | 
   }
 }
 
-export async function listApprovedVendorSlugs(): Promise<string[] | null> {
+/**
+ * Hard ceiling on vendor rows one sitemap generation will read.
+ *
+ * Mirrors `ARTICLE_SITEMAP_MAX`, `MEDIA_SITEMAP_MAX_ASSETS`,
+ * `ACADEMY_SITEMAP_MAX_COURSES` and `JOB_SITEMAP_MAX_POSTINGS`. When a
+ * deployment outgrows it the fix is a paginated sitemap index, not a larger
+ * number.
+ */
+export const VENDOR_SITEMAP_MAX_PROFILES = 1000;
+
+/**
+ * Approved, active vendor slugs for the public sitemap.
+ *
+ * DISCOVERY-2B (query hardening) — SITEMAP-ONLY. `src/app/sitemap.ts` is the
+ * sole caller in the repository, which is why the ceiling below can be added
+ * here rather than in a separate reader: no API or UI consumer can be affected.
+ * That also makes it a per-request anonymous read now that the sitemap is
+ * server-rendered on demand, so it needs a bound like every other family.
+ *
+ * The eligibility predicate is UNCHANGED — APPROVED + active + not
+ * soft-deleted. Only the row count is bounded and the order made deterministic;
+ * without an `orderBy` a truncated result would be an arbitrary slice of the
+ * table, and the same request could return different vendors each time.
+ *
+ * Returns `null` — not `[]` — when the database is unavailable, preserving this
+ * module's existing convention (the sitemap caller already treats `null` as
+ * "omit the family" via `slugs ?? []`).
+ */
+export async function listApprovedVendorSlugs(
+  limit: number = VENDOR_SITEMAP_MAX_PROFILES,
+): Promise<string[] | null> {
   const p = await db();
   if (!p) return null;
+  const take = Number.isInteger(limit)
+    ? Math.min(Math.max(limit, 1), VENDOR_SITEMAP_MAX_PROFILES)
+    : VENDOR_SITEMAP_MAX_PROFILES;
   try {
     const rows = await p.vendorProfile.findMany({
       where:  { status: "APPROVED", isActive: true, deletedAt: null },
       select: { slug: true },
+      orderBy: { slug: "asc" },
+      take,
     });
     return (rows as { slug: string }[]).map((r) => r.slug);
   } catch {
