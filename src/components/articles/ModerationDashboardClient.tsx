@@ -34,10 +34,15 @@ interface ArticleActionState {
   overrideStatus: string | null;
   showRejectForm: boolean;
   rejectReason:   string;
+  /** Delete is two-step: this opens the confirmation surface, it never deletes. */
+  showDeleteConfirm: boolean;
+  /** Set once the server confirmed removal — the row leaves the list and stats. */
+  removed:        boolean;
 }
 
 const defaultState: ArticleActionState = {
   loading: false, error: null, overrideStatus: null, showRejectForm: false, rejectReason: "",
+  showDeleteConfirm: false, removed: false,
 };
 
 interface Props {
@@ -118,9 +123,45 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
     }
   }
 
-  const statuses = ["ALL", ...Array.from(new Set(articles.map(a => a.status)))];
+  function openDeleteConfirm(id: string) {
+    patch(id, { showDeleteConfirm: true, showRejectForm: false, error: null });
+  }
 
-  const filtered = articles.filter(a => {
+  function cancelDelete(id: string) {
+    patch(id, { showDeleteConfirm: false, error: null });
+  }
+
+  async function confirmDelete(id: string) {
+    const st = getState(id);
+    if (st.loading || st.removed) return;
+    patch(id, { loading: true, error: null });
+    try {
+      const res = await fetch(`/api/articles/${id}`, { method: "DELETE" });
+      // 404 means the article is no longer there — another moderator removed
+      // it, or this is a retry after a response that never arrived. The end
+      // state the operator asked for already holds, so the row leaves the list
+      // rather than showing an error about a thing that is already gone.
+      if (!res.ok && res.status !== 404) {
+        // The endpoint answers with stable machine codes ("forbidden",
+        // "service_unavailable"), which are identifiers rather than display
+        // text. Showing them raw would put an untranslated English token in
+        // front of a Persian or German operator, so they are deliberately not
+        // surfaced — the localized message is.
+        patch(id, { loading: false, error: t("mod.errDelete") });
+        return;
+      }
+      // Row leaves the list without a reload; stats recompute from `removed`.
+      patch(id, { loading: false, removed: true, showDeleteConfirm: false, error: null });
+    } catch {
+      patch(id, { loading: false, error: t("mod.errNetwork") });
+    }
+  }
+
+  const visible = articles.filter(a => !getState(a.id).removed);
+
+  const statuses = ["ALL", ...Array.from(new Set(visible.map(a => a.status)))];
+
+  const filtered = visible.filter(a => {
     const effStatus = getState(a.id).overrideStatus ?? a.status;
     if (statusFilter !== "ALL" && effStatus !== statusFilter) return false;
     if (search) {
@@ -131,10 +172,10 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
   });
 
   const stats = {
-    total:     articles.length,
-    pending:   articles.filter(a => { const e = getState(a.id).overrideStatus ?? a.status; return e === "SUBMITTED" || e === "IN_REVIEW"; }).length,
-    published: articles.filter(a => (getState(a.id).overrideStatus ?? a.status) === "PUBLISHED").length,
-    rejected:  articles.filter(a => (getState(a.id).overrideStatus ?? a.status) === "REJECTED").length,
+    total:     visible.length,
+    pending:   visible.filter(a => { const e = getState(a.id).overrideStatus ?? a.status; return e === "SUBMITTED" || e === "IN_REVIEW"; }).length,
+    published: visible.filter(a => (getState(a.id).overrideStatus ?? a.status) === "PUBLISHED").length,
+    rejected:  visible.filter(a => (getState(a.id).overrideStatus ?? a.status) === "REJECTED").length,
   };
 
   const titleKey: Record<Props["mode"], string> = {
@@ -170,7 +211,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
             {t(titleKey[mode])}
           </h1>
           <p className="text-xs text-muted mt-1">
-            {t("mod.countOfTotal", { filtered: String(filtered.length), total: String(articles.length) })}
+            {t("mod.countOfTotal", { filtered: String(filtered.length), total: String(visible.length) })}
           </p>
         </div>
       </div>
@@ -242,6 +283,22 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                 <div className="flex gap-4 items-start p-4">
                   <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${cfg.dot}`} />
 
+                  {/* Cover thumbnail so a moderator can judge the image before
+                      approving. Purely informational: if the file is missing or
+                      unreadable the element removes itself and the row — and
+                      every action on it — behaves exactly as it does for an
+                      article with no cover at all. */}
+                  {a.coverImageUrl && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={a.coverImageUrl}
+                      alt=""
+                      loading="lazy"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      className="hidden sm:block w-16 h-10 shrink-0 rounded border border-line/40 object-cover bg-surface2"
+                    />
+                  )}
+
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       {isPublished ? (
@@ -291,7 +348,7 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                         {t("view")}
                       </Link>
                     )}
-                    {isPending && !st.showRejectForm && (
+                    {isPending && !st.showRejectForm && !st.showDeleteConfirm && (
                       <>
                         <button
                           type="button"
@@ -308,6 +365,24 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                           {t("mod.reject")}
                         </button>
                       </>
+                    )}
+                    {/* Removal is available in every lifecycle state, so an
+                        operator can clear a DRAFT or an ARCHIVED article too —
+                        not just the reviewable ones. The trash glyph and the
+                        explicit verb carry the destructive meaning; the danger
+                        colour only reinforces it. */}
+                    {!st.showRejectForm && !st.showDeleteConfirm && (
+                      <button
+                        type="button"
+                        onClick={() => openDeleteConfirm(a.id)}
+                        disabled={st.loading}
+                        aria-label={t("mod.deleteArticleNamed", { title: a.title })}
+                        className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-lg border border-danger/25 text-danger hover:bg-danger/8 transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">
+                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="w-3 h-3">
+                          <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd"/>
+                        </svg>
+                        {t("mod.delete")}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -338,6 +413,44 @@ export function ModerationDashboardClient({ articles, mode }: Props) {
                         onClick={() => cancelReject(a.id)}
                         disabled={st.loading}
                         className="text-[10px] px-3 py-1.5 rounded-lg border border-line/50 text-muted hover:text-ink transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed">
+                        {t("mod.cancel")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Delete confirmation. Deliberately an in-page surface rather
+                    than window.confirm(): the reject flow above already
+                    established that pattern here, and a native dialog cannot
+                    show the article title in the operator's own locale or be
+                    styled to match the destructive affordance. */}
+                {st.showDeleteConfirm && (
+                  <div
+                    role="group"
+                    aria-labelledby={`del-h-${a.id}`}
+                    className="border-t border-danger/30 px-4 pb-4 pt-3 bg-danger/[0.06]">
+                    <p id={`del-h-${a.id}`} className="text-[11px] text-danger font-mono font-semibold mb-1">
+                      {t("mod.deleteConfirmTitle")}
+                    </p>
+                    {/* The exact article being destroyed, quoted back to the
+                        operator — the guard against deleting the wrong row. */}
+                    <p className="text-xs text-ink mb-1.5 break-words">&ldquo;{a.title}&rdquo;</p>
+                    <p className="text-[10px] text-muted mb-2.5">
+                      {t("mod.deleteConfirmBody")}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => confirmDelete(a.id)}
+                        disabled={st.loading}
+                        className="text-[10px] px-3 py-1.5 rounded-lg bg-danger/15 border border-danger/40 text-danger hover:bg-danger/25 transition-all font-mono font-semibold disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">
+                        {st.loading ? t("mod.deleting") : t("mod.confirmDelete")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => cancelDelete(a.id)}
+                        disabled={st.loading}
+                        className="text-[10px] px-3 py-1.5 rounded-lg border border-line/50 text-muted hover:text-ink transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal">
                         {t("mod.cancel")}
                       </button>
                     </div>

@@ -118,6 +118,24 @@ const LIMITS = {
   "copilot-voice-session":      { max: 10, windowMs: 60 * 1000 },
   "copilot-voice-query":        { max: 12, windowMs: 60 * 1000 },
   "copilot-voice-speech":       { max: 8,  windowMs: 60 * 1000 },
+  // Journal article cover upload, keyed by the authenticated user id. Each hit
+  // writes up to 4MB to the durable uploads volume, and the writer holds the
+  // returned URL in form state until the article is saved — so an authenticated
+  // author who never submits can leave files behind. This bucket is what bounds
+  // that: enough for a real author to try a few crops and replace an image,
+  // not enough to use the volume as free storage.
+  "article-cover-upload":       { max: 20, windowMs: 60 * 60 * 1000 },
+  // Journal engagement, keyed by the authenticated user id.
+  //
+  // Writing a comment is a deliberate act — a reader posts a handful per
+  // session even in a lively discussion — so the budget is tight enough to stop
+  // automated flooding while never obstructing a real participant.
+  //
+  // Reactions are a single click and are legitimately toggled and changed while
+  // reading, so they get a much larger allowance. It exists only to stop a
+  // script from cycling a reaction thousands of times a minute.
+  "journal-comment-create":     { max: 15,  windowMs: 10 * 60 * 1000 },
+  "journal-reaction-set":       { max: 120, windowMs: 60 * 1000 },
 } as const satisfies Record<string, { max: number; windowMs: number }>;
 
 /**

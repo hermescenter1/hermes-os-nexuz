@@ -77,6 +77,18 @@ export const PUBLIC_SURFACE = [
     justification: "Public trending list. PUBLISHED and PUBLIC only, limit clamped to 50.",
   },
   {
+    path: "/api/articles/[id]/comments",
+    methods: ["GET"],
+    justification:
+      "Public discussion on a published article. getEngageableArticle gates the read on PUBLISHED + PUBLIC and answers 404 for anything else, so an unpublished article is not an existence oracle; only isActive comments are returned, so a withdrawn or moderated comment is invisible without being destroyed. The page is always bounded (default 20, hard cap 50) and the cursor is shape-checked before it reaches the query. The projection carries the comment body plus the PUBLIC author identity only — display name, avatar, headline, verified marker and handle — and never the commenter's email, role or any organization field.",
+  },
+  {
+    path: "/api/articles/[id]/reaction",
+    methods: ["GET"],
+    justification:
+      "Public reaction aggregate for a published article, gated by the same PUBLISHED + PUBLIC predicate as the discussion. Returns four integers and, for a caller who happens to hold a session, that reader's own reaction; it exposes no reaction rows and therefore never reveals WHO reacted. Mutation is a separate PUT on this path that requires a session and is not declared public.",
+  },
+  {
     path: "/api/media/public/videos",
     methods: ["GET"],
     justification:

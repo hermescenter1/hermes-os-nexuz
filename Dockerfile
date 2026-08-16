@@ -126,7 +126,7 @@ COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/dotenv   ./node_modu
 # Phase 76: Ensure upload directory exists and is owned by the runtime user.
 # The Docker volume for uploads is mounted at /app/public/uploads at runtime;
 # creating it here initializes correct ownership when the volume is first used.
-RUN mkdir -p /app/public/uploads/authors && chown -R nextjs:nodejs /app/public/uploads
+RUN mkdir -p /app/public/uploads/authors /app/public/uploads/articles && chown -R nextjs:nodejs /app/public/uploads
 
 USER nextjs
 

@@ -3788,6 +3788,35 @@
     }
   },
   "journal": {
+    "engagement": {
+      "saved": "Gespeichert",
+      "saveFailed": "Ihre Merkliste konnte nicht aktualisiert werden.",
+      "signInToSave": "Zum Speichern anmelden",
+      "reactionsLabel": "Reaktionen",
+      "signInToReact": "Zum Reagieren anmelden",
+      "reactFailed": "Ihre Reaktion konnte nicht gespeichert werden.",
+      "networkError": "Netzwerkfehler. Bitte erneut versuchen.",
+      "commentsHeading": "Kommentare ({count})",
+      "commentPlaceholder": "Teilen Sie Ihre fachliche Einschätzung…",
+      "replyPlaceholder": "Antwort schreiben…",
+      "post": "Senden",
+      "posting": "Wird gesendet…",
+      "cancel": "Abbrechen",
+      "reply": "Antworten",
+      "delete": "Löschen",
+      "moderate": "Entfernen",
+      "removeConfirm": "Diesen Kommentar entfernen?",
+      "confirmRemove": "Entfernen",
+      "removing": "Wird entfernt…",
+      "removeFailed": "Der Kommentar konnte nicht entfernt werden.",
+      "signInToComment": "Zum Mitdiskutieren anmelden",
+      "noComments": "Noch keine Kommentare. Eröffnen Sie die Diskussion.",
+      "loadMore": "Weitere Kommentare laden",
+      "loading": "Wird geladen…",
+      "commentTooLong": "Der Kommentar ist zu lang.",
+      "commentRateLimited": "Zu viele Kommentare. Bitte einen Moment warten.",
+      "commentFailed": "Ihr Kommentar konnte nicht gesendet werden."
+    },
     "knowledgeNetwork": "Industrielles Wissensnetzwerk",
     "brandUpper": "HERMES INDUSTRIAL JOURNAL",
     "brandTitle": "Hermes Industrial Journal",
@@ -3971,6 +4000,9 @@
       }
     },
     "nav": {
+      "becomeAuthor": "Autor werden",
+      "signIn": "Anmelden",
+      "createAccount": "Konto beantragen",
       "brandTitle": "Hermes Industrial Journal",
       "myAccount": "Mein Konto",
       "editorial": "Redaktion",
@@ -4093,6 +4125,22 @@
     }
   },
   "journalWriter": {
+    "media": {
+      "section": "Artikelmedien",
+      "coverLabel": "Titelbild",
+      "upload": "Bild hochladen",
+      "uploading": "Wird hochgeladen…",
+      "replace": "Ersetzen",
+      "remove": "Entfernen",
+      "previewAlt": "Vorschau des Titelbilds",
+      "hint": "JPG, PNG oder WebP · bis 4 MB · 16:9 empfohlen",
+      "errType": "Nicht unterstütztes Bild. Bitte JPG, PNG oder WebP verwenden.",
+      "errTooLarge": "Bild zu groß. Maximal 4 MB.",
+      "errUpload": "Upload fehlgeschlagen. Bitte erneut versuchen.",
+      "errNetwork": "Netzwerkfehler. Bitte erneut versuchen.",
+      "errRateLimited": "Zu viele Uploads. Bitte warten Sie und versuchen Sie es erneut.",
+      "errUnauthorized": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an."
+    },
     "newArticle": "Neuer Artikel",
     "saveDraft": "Entwurf speichern",
     "submitForReview": "Zur Prüfung einreichen",
@@ -4249,6 +4297,13 @@
       "ARCHIVED": "Archiviert"
     },
     "mod": {
+      "delete": "Löschen",
+      "deleteArticleNamed": "Artikel löschen: {title}",
+      "deleteConfirmTitle": "Diesen Artikel endgültig löschen?",
+      "deleteConfirmBody": "Der Artikel wird mitsamt seinen Kommentaren, Reaktionen, Merklisten-Einträgen und dem Prüfverlauf entfernt. Dies kann nicht rückgängig gemacht werden.",
+      "confirmDelete": "Ja, löschen",
+      "deleting": "Wird gelöscht…",
+      "errDelete": "Löschen fehlgeschlagen",
       "brand": "HERMES INDUSTRIAL JOURNAL — REDAKTION",
       "titleModeration": "Inhaltsmoderation",
       "titleSubmissions": "Eingereichte Artikel",

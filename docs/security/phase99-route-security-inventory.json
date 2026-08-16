@@ -15,12 +15,12 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 373,
-    "handlers": 520,
+    "routeFiles": 377,
+    "handlers": 527,
     "byClassification": {
-      "PUBLIC_READ": 38,
+      "PUBLIC_READ": 40,
       "PUBLIC_WRITE": 14,
-      "AUTHENTICATED_USER": 210,
+      "AUTHENTICATED_USER": 215,
       "TENANT_MEMBER": 125,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
@@ -436,8 +436,84 @@
     },
     {
       "apiPath": "/api/articles/[id]",
+      "method": "DELETE",
+      "file": "src/app/api/articles/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": true,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/[id]",
       "method": "GET",
       "file": "src/app/api/articles/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/[id]/comments",
+      "method": "GET",
+      "file": "src/app/api/articles/[id]/comments/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/[id]/comments",
+      "method": "POST",
+      "file": "src/app/api/articles/[id]/comments/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/[id]/comments/[commentId]",
+      "method": "DELETE",
+      "file": "src/app/api/articles/[id]/comments/[commentId]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/[id]/reaction",
+      "method": "GET",
+      "file": "src/app/api/articles/[id]/reaction/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/[id]/reaction",
+      "method": "PUT",
+      "file": "src/app/api/articles/[id]/reaction/route.ts",
       "classification": "AUTHENTICATED_USER",
       "authEvidence": [
         "getCurrentUser"
@@ -480,6 +556,19 @@
       "classification": "PUBLIC_READ",
       "authEvidence": [],
       "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/articles/cover",
+      "method": "POST",
+      "file": "src/app/api/articles/cover/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
       "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": null
