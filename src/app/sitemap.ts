@@ -7,6 +7,57 @@ import { VENDORS } from "@/lib/industrial/vendors";
 type SitemapEntry = MetadataRoute.Sitemap[number];
 
 /**
+ * DISCOVERY-2B — THIS SITEMAP IS GENERATED PER REQUEST, NOT AT BUILD TIME.
+ *
+ * THE DEFECT THIS FIXES
+ * ---------------------
+ * Without a route-level dynamic contract, Next.js treats a `sitemap.ts` with no
+ * dynamic params as a STATICALLY PRERENDERED route: it executes the generator
+ * once during `next build`, writes the result to
+ * `.next/server/app/sitemap.xml.body`, and serves that frozen body for the life
+ * of the image.
+ *
+ * `Dockerfile` builds the image under `ENV HERMES_STORAGE_MODE="session"` — a
+ * deliberate contract, because an image build must never reach a production
+ * database. `getPrisma()` returns `null` in session mode, so every DB-backed
+ * branch below correctly contributed nothing... and Next.js then persisted that
+ * empty result as the authoritative production sitemap.
+ *
+ * Measured on the production baseline: 241 URLs, of which ZERO were articles,
+ * author profiles, media assets, Academy courses or job postings — while the
+ * production database held 19 sitemap-eligible articles (8 EN + 11 FA). The
+ * static artifact and the live response were byte-identical, which is what
+ * proves the body was frozen rather than merely empty at that moment.
+ *
+ * WHY `force-dynamic` AND NOT SOMETHING ELSE
+ * ------------------------------------------
+ * It is the smallest supported mechanism that makes the contract EXPLICIT
+ * rather than incidental. In Next 15.5.23 the metadata-route loader
+ * (`next-metadata-route-loader`) re-exports every named export of this file
+ * except `default` and `generateSitemaps`, so this segment config reaches the
+ * generated route module; `next/dist/build/utils.js` then sets `revalidate = 0`
+ * and keeps the route out of the prerender manifest. The alternative —
+ * depending on some accidental dynamic signal — is exactly how this regressed
+ * in the first place, and would regress again silently.
+ *
+ * A time-based `revalidate` was NOT used: it would still serve a build-frozen
+ * body for the first window after every deploy, which is the same defect with a
+ * shorter fuse. Sitemap traffic is a handful of crawler fetches per day and
+ * every database read below is bounded by an explicit `take`, so per-request
+ * generation is affordable.
+ *
+ * WHAT DID NOT CHANGE
+ * -------------------
+ * No predicate, no locale expansion, no storage-mode logic, and no
+ * `getPrisma()` behaviour. The database branches were always correct; they were
+ * simply being executed in the one environment guaranteed to have no database.
+ * Their graceful degradation still applies — see the note on the `catch` blocks
+ * below — so a runtime with no reachable database still serves valid XML
+ * containing the complete static public surface.
+ */
+export const dynamic = "force-dynamic";
+
+/**
  * Hard ceiling on Academy course rows one sitemap generation will read.
  *
  * Mirrors `MEDIA_SITEMAP_MAX_ASSETS`. Multiplied by the active locales this is
@@ -191,7 +242,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       entries.push(...localeEntries(`/careers/${job.id}`, 0.8, "weekly"));
     }
   } catch {
-    // DB not available at build time — job postings omitted from the sitemap
+    // DISCOVERY-2B: unreachable database — this family is omitted and the rest
+    // of the sitemap still renders. Never a fixture fallback (see public-jobs.ts).
   }
 
   // PHASE 105 — the Journal (DB-backed, bounded, published + indexable only).
@@ -213,7 +265,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push(...articleSitemapEntries(await listPublicArticleSitemapItems()));
     entries.push(...authorSitemapEntries(await listPublicAuthorSitemapItems()));
   } catch {
-    // DB not available at build time — Journal omitted from the static sitemap
+    // DISCOVERY-2B: unreachable database — the Journal is omitted and the rest of
+    // the sitemap still renders. A partial sitemap beats a failed request.
   }
 
   // Dynamic: academy courses (DB-backed — skip gracefully if unavailable).
@@ -246,7 +299,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
   } catch {
-    // DB not available at build time — courses omitted from static sitemap
+    // DISCOVERY-2B: unreachable database — courses omitted, rest still renders.
   }
 
   // Dynamic: approved vendor profiles (DB-backed — skip gracefully if unavailable)
@@ -257,7 +310,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       entries.push(...localeEntries(`/vendors/${slug}`, 0.8, "weekly"));
     }
   } catch {
-    // DB not available at build time — vendor profiles omitted from static sitemap
+    // DISCOVERY-2B: unreachable database — vendor profiles omitted, rest renders.
   }
 
   // PHASE 102 — public media hub (DB-backed, bounded, published-only).
@@ -274,7 +327,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { listPublicMediaSitemapItems, mediaSitemapEntries } = await import("@/lib/media/seo");
     entries.push(...mediaSitemapEntries(await listPublicMediaSitemapItems()));
   } catch {
-    // DB not available at build time — media assets omitted from static sitemap
+    // DISCOVERY-2B: unreachable database — media omitted, rest still renders.
   }
 
   return entries;
