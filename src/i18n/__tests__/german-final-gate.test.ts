@@ -424,7 +424,22 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            accessible name: 2 (services.capabilityChrome.relatedCta,
     //            .relatedCtaAria). F1 changed VALUES only — no leaf delta.
     //            -> 6151
-    expect(allEn.length).toBe(6236);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; 104-E: +43 publicSite.observatory (planes + gate semantics, genuinely German)
+    // LEAD-REVIEW: +20 leaves. The admin demo/sales lead review workflow under
+    //            adminOperations.leads: 9 control labels (openReview,
+    //            closeReview, reviewTitle, currentStatus, actionBusy,
+    //            actionFailed, actionConflict, terminalNote, approvedNote),
+    //            the 6-value status vocabulary and the 5 transition action
+    //            labels. adminAccess is untouched — the account-access
+    //            workflow keeps its own namespace. -> 6171 on main
+    // 104-E/104-F: +85 leaves on this branch, on top of the same 6151 base:
+    //            publicSite.observatory (planes + gate semantics) and the
+    //            journal.pressroom Evidence Pressroom catalog. -> 6236 here
+    // MERGE (main d1db221 -> design/phase104-dna-token-layer): the two bumps
+    //            are on disjoint namespaces, so the union is 6151 + 20 + 85.
+    //            NOT taken on trust: the merged en.json was re-walked with this
+    //            file's own leaves() and MEASURED 6256, zero duplicate paths.
+    //            -> 6256
+    expect(allEn.length).toBe(6256);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; 104-E/F: +85 observatory + journal pressroom
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -438,14 +453,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6236 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 6256 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6236);
+    ).toBe(6256);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

@@ -287,16 +287,39 @@ export interface JobPostingSchemaOptions {
   title: string;
   description: string;
   location: string;
-  currency: string;
-  salaryMin: number;
-  salaryMax: number;
-  contractType: string;
+  /** Both salary bounds and the currency, or none of them. */
+  currency?: string;
+  salaryMin?: number | null;
+  salaryMax?: number | null;
+  /** Omitted when the record carries no employment-type column. */
+  contractType?: string;
   datePosted: string;
   validThrough?: string;
   skills: string[];
 }
 
+/**
+ * DISCOVERY-2A — every optional property is now genuinely optional.
+ *
+ * `AtsJob` — the authoritative source — has nullable `salaryMin`/`salaryMax` and
+ * NO employment-type column at all. The previous shape required all of them, so
+ * the only caller that could satisfy it was the development fixture, and
+ * `contractTypeToSchema` silently defaulted an unknown contract to `FULL_TIME` —
+ * publishing an employment term the platform had never been told.
+ *
+ * A property the record cannot back is omitted, never defaulted. Google treats a
+ * missing optional property as missing; it treats a wrong one as a wrong fact.
+ */
 export function jobPostingSchema(opts: JobPostingSchemaOptions) {
+  const hasSalary =
+    typeof opts.currency === "string" &&
+    opts.currency.length > 0 &&
+    typeof opts.salaryMin === "number" &&
+    typeof opts.salaryMax === "number";
+
+  const employmentType =
+    opts.contractType === undefined ? undefined : contractTypeToSchema(opts.contractType);
+
   return {
     "@context": "https://schema.org",
     "@type": "JobPosting",
@@ -318,24 +341,35 @@ export function jobPostingSchema(opts: JobPostingSchemaOptions) {
       "@type": "Place",
       address: { "@type": "PostalAddress", addressLocality: opts.location },
     },
-    baseSalary: {
-      "@type": "MonetaryAmount",
-      currency: opts.currency,
-      value: {
-        "@type": "QuantitativeValue",
-        minValue: opts.salaryMin,
-        maxValue: opts.salaryMax,
-        unitText: "YEAR",
-      },
-    },
-    employmentType: contractTypeToSchema(opts.contractType),
+    ...(hasSalary
+      ? {
+          baseSalary: {
+            "@type": "MonetaryAmount",
+            currency: opts.currency,
+            value: {
+              "@type": "QuantitativeValue",
+              minValue: opts.salaryMin,
+              maxValue: opts.salaryMax,
+              unitText: "YEAR",
+            },
+          },
+        }
+      : {}),
+    ...(employmentType ? { employmentType } : {}),
     datePosted: opts.datePosted,
     ...(opts.validThrough ? { validThrough: opts.validThrough } : {}),
-    skills: opts.skills.join(", "),
+    ...(opts.skills.length > 0 ? { skills: opts.skills.join(", ") } : {}),
   };
 }
 
-function contractTypeToSchema(type: string): string {
+/**
+ * Map a known contract type to the schema.org token, or `undefined`.
+ *
+ * An unrecognised value used to fall through to `FULL_TIME`. It now yields
+ * `undefined` and the property is dropped: "we do not know" and "full time" are
+ * different claims, and only one of them is safe to publish.
+ */
+function contractTypeToSchema(type: string): string | undefined {
   const map: Record<string, string> = {
     "full-time": "FULL_TIME",
     "part-time": "PART_TIME",
@@ -343,7 +377,7 @@ function contractTypeToSchema(type: string): string {
     freelance:   "CONTRACTOR",
     internship:  "INTERN",
   };
-  return map[type] ?? "FULL_TIME";
+  return map[type];
 }
 
 /* ── Course / EducationalOrganization ───────────────────────────────────── */

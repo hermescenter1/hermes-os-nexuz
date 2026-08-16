@@ -34,6 +34,25 @@ export interface EngineeringCase {
 
 export const CASES: EngineeringCase[] = (casesData as { cases: EngineeringCase[] }).cases;
 
+/**
+ * DISCOVERY-2A — the locales an engineering case genuinely EXISTS in.
+ *
+ * `EngineeringCase` carries an `en` body and an `fa` body and nothing else — the
+ * interface above is the whole contract, and `cases.json` has no `de` key on any
+ * record. The public detail page selects `locale === "fa" ? c.fa : c.en`, so a
+ * German request is served the ENGLISH body under German chrome.
+ *
+ * Exported so the canonical/hreflang builder and the sitemap read the same fact
+ * from the data model instead of each restating it. Ordered so that `en` is the
+ * primary representation: it is what every locale other than `fa` actually
+ * receives, so it is the correct canonical target and x-default.
+ *
+ * ADDING A GERMAN BODY: add `de: CaseContent` to the interface and to every
+ * record, then add "de" here — the page metadata and the sitemap follow with no
+ * further change.
+ */
+export const CASE_CONTENT_LOCALES: readonly string[] = ["en", "fa"];
+
 // Build-time sanity: unique ids.
 const ids = new Set<string>();
 for (const c of CASES) {

@@ -393,6 +393,13 @@ export interface MediaMetadataInput {
   readonly locale: string;
   /** Poster image for OG/Twitter; falls back to the site default when absent. */
   readonly ogImage?: string | null;
+  /**
+   * DISCOVERY-2A — the locales this asset genuinely has editorial copy in,
+   * `primaryLocale` first. Omit only when the caller truly cannot tell; passing
+   * it is what stops an English-only asset advertising a Persian and a German
+   * alternate that do not exist.
+   */
+  readonly contentLocales?: readonly string[];
 }
 
 /**
@@ -404,9 +411,13 @@ export interface MediaMetadataInput {
  * fails to do.
  *
  * An indexable asset goes through the platform's own `buildMetadata`, so its
- * canonical, its hreflang set (every `ACTIVE_LOCALES` entry plus `x-default`), its
- * OpenGraph/Twitter cards and its robots directives are byte-identical in shape to
- * every other public page on the site.
+ * canonical, its hreflang set, its OpenGraph/Twitter cards and its robots
+ * directives are byte-identical in shape to every other public page on the site.
+ *
+ * DISCOVERY-2A — the hreflang set is the asset's REAL editorial locales, not
+ * every `ACTIVE_LOCALES` entry. `contentLocales` is optional so a caller that
+ * genuinely does not know keeps the old behaviour, but the watch page and the
+ * sitemap both pass the translation rows.
  */
 export function buildMediaAssetMetadata(input: MediaMetadataInput): Metadata {
   const { asset, content } = input;
@@ -433,6 +444,9 @@ export function buildMediaAssetMetadata(input: MediaMetadataInput): Metadata {
     ...(ogImage ? { ogImage } : {}),
     ogType: "article" as const,
     ...(publishedTime ? { publishedTime } : {}),
+    ...(input.contentLocales && input.contentLocales.length > 0
+      ? { contentLocales: input.contentLocales }
+      : {}),
   });
 
   if (description === null) stripDescription(meta);
@@ -475,11 +489,24 @@ export interface MediaSitemapItem {
   readonly path: string;
   /** First-publication instant, or null when unknown. Never `updatedAt`. */
   readonly lastModified: string | null;
+  /**
+   * DISCOVERY-2A — the locales this asset ACTUALLY has editorial copy in,
+   * `primaryLocale` first.
+   *
+   * Derived from the asset's real `MediaAssetTranslation` rows, never from
+   * `ACTIVE_LOCALES`. An asset with one English translation used to be listed
+   * under /fa, /en and /de with reciprocal `alternates`, claiming two
+   * translations that do not exist — and contradicting the watch page, which
+   * falls back to `primaryLocale` precisely because the others may be absent.
+   */
+  readonly contentLocales: readonly string[];
 }
 
 interface MediaSitemapRow {
   slug?: unknown;
   publishedAt?: unknown;
+  primaryLocale?: unknown;
+  translations?: readonly { locale?: unknown }[] | null;
   organization?: { slug?: unknown } | null;
 }
 
@@ -502,9 +529,32 @@ export function buildMediaSitemapItems(
     items.push({
       path,
       lastModified: isoInstant(row.publishedAt as Date | string | null | undefined),
+      contentLocales: mediaContentLocales(row),
     });
   }
   return items;
+}
+
+/**
+ * The asset's real editorial locales: `primaryLocale` (the copy every reader
+ * falls back to, so it leads and becomes the canonical/x-default target),
+ * followed by every OTHER locale that has its own translation row.
+ *
+ * Values are lower-cased and filtered against the active locale set; a row with
+ * nothing usable yields `[]`, and `mediaSitemapEntries` then emits no URL for it
+ * rather than guessing a language.
+ */
+function mediaContentLocales(row: MediaSitemapRow): readonly string[] {
+  const primary = typeof row.primaryLocale === "string" ? row.primaryLocale.toLowerCase() : "";
+  const translated = Array.isArray(row.translations)
+    ? row.translations
+        .map((t) => (typeof t?.locale === "string" ? t.locale.toLowerCase() : ""))
+        .filter((l) => l.length > 0)
+    : [];
+  return [primary, ...translated]
+    .filter((l) => l.length > 0)
+    .filter((l) => (LOCALES as readonly string[]).includes(l))
+    .filter((l, i, all) => all.indexOf(l) === i);
 }
 
 /**
@@ -546,11 +596,14 @@ export async function listPublicMediaSitemapItems(
 
     const rows = await model.findMany({
       where: { ...gate.value, noIndex: false, canonicalUrl: null },
-      // Slug and publication date only. No storage key, no id, no counters — a
-      // sitemap needs an address and a date, and nothing else may leak into one.
+      // Slug, publication date and the LANGUAGE FACTS. No storage key, no id, no
+      // counters — a sitemap needs an address, a date and the set of languages
+      // the address genuinely exists in, and nothing else may leak into one.
       select: {
         slug: true,
         publishedAt: true,
+        primaryLocale: true,
+        translations: { select: { locale: true } },
         organization: { select: { slug: true } },
       },
       orderBy: { publishedAt: "desc" },
@@ -563,8 +616,18 @@ export async function listPublicMediaSitemapItems(
 }
 
 /**
- * Locale-expanded sitemap entries for the public media hub, each carrying the full
- * `alternates.languages` map built from `ACTIVE_LOCALES`.
+ * Sitemap entries for the public media hub, one per locale the asset REALLY has.
+ *
+ * DISCOVERY-2A: this used to loop over `ACTIVE_LOCALES` unconditionally and
+ * attach a full three-way `alternates.languages` map to every asset. The
+ * language set now comes from the row (`MediaSitemapItem.contentLocales`), so an
+ * English-only asset produces one URL and no alternates, a fa+en asset produces
+ * two mutually-referencing URLs, and only a genuinely trilingual asset produces
+ * three. This mirrors exactly what the watch page emits through
+ * `buildMetadata({ contentLocales: view.contentLocales })`.
+ *
+ * An item with no usable locale produces NO entry — a URL is never emitted for
+ * an asset whose language cannot be established.
  */
 export function mediaSitemapEntries(
   items: readonly MediaSitemapItem[],
@@ -572,17 +635,25 @@ export function mediaSitemapEntries(
 ): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [];
   for (const item of items) {
-    for (const locale of LOCALES) {
+    const locales = item.contentLocales.filter((l) =>
+      (LOCALES as readonly string[]).includes(l),
+    );
+    if (locales.length === 0) continue;
+    for (const locale of locales) {
       entries.push({
         url: `${BASE_URL}/${locale}${item.path}`,
         ...(item.lastModified ? { lastModified: item.lastModified } : {}),
         changeFrequency: "weekly" as const,
         priority,
-        alternates: {
-          languages: Object.fromEntries(
-            LOCALES.map((l) => [l, `${BASE_URL}/${l}${item.path}`]),
-          ),
-        },
+        ...(locales.length > 1
+          ? {
+              alternates: {
+                languages: Object.fromEntries(
+                  locales.map((l) => [l, `${BASE_URL}/${l}${item.path}`]),
+                ),
+              },
+            }
+          : {}),
       });
     }
   }

@@ -393,6 +393,14 @@ export const TENANT_REVIEW_ALLOWLIST = [
       "Platform-admin authority (getCurrentUser plus can(role, 'admin')) over SalesLead, which has no organizationId — access requests are platform-level lead capture, not tenant data. The invite role is clamped to the invitable set.",
   })),
   ...[
+    { apiPath: "/api/admin/sales/leads/[id]", method: "PATCH" },
+  ].map((r) => ({
+    ...r,
+    dimension: "OBJECT_SCOPE",
+    mechanism:
+      "Platform-admin authority (getCurrentUser plus can(role, 'admin')) over SalesLead, which has no organizationId — demo/sales lead capture is platform-level, not tenant data. The body is a strict two-field schema of closed-vocabulary statuses, so no owner, actor or source field is assignable from the request, and the acting administrator is taken from the session. transitionSalesLead additionally refuses any row whose source is AUTH_ACCESS_REQUEST, so this endpoint cannot drive the account-access state machine.",
+  })),
+  ...[
     { apiPath: "/api/admin/customers/[id]", method: "GET" },
     { apiPath: "/api/admin/customers/[id]", method: "PATCH" },
   ].map((r) => ({

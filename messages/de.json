@@ -4717,7 +4717,31 @@
       "prefDemo": "Bevorz. Demo",
       "locale": "Sprache",
       "useCase": "Anwendungsfall",
-      "message": "Nachricht"
+      "message": "Nachricht",
+      "openReview": "Prüfen",
+      "closeReview": "Schließen",
+      "reviewTitle": "Prüfung der Demo-Anfrage",
+      "currentStatus": "Aktueller Status",
+      "actionBusy": "Wird ausgeführt…",
+      "actionFailed": "Aktion fehlgeschlagen. Bitte erneut versuchen.",
+      "actionConflict": "Diese Anfrage wurde bereits von einer anderen Administratorin oder einem anderen Administrator aktualisiert. Der aktuelle Status wird oben angezeigt.",
+      "terminalNote": "Diese Anfrage ist abgeschlossen. Es sind keine weiteren Aktionen verfügbar.",
+      "approvedNote": "Für die kommerzielle Demo-Nachverfolgung genehmigt. Dies gewährt keinen Kontozugang zu Hermes OS — dafür ist eine separate Zugriffsanfrage erforderlich.",
+      "status": {
+        "NEW": "Neu",
+        "REVIEWED": "Geprüft",
+        "CONTACTED": "Kontaktiert",
+        "APPROVED": "Genehmigt",
+        "REJECTED": "Abgelehnt",
+        "CLOSED": "Abgeschlossen"
+      },
+      "action": {
+        "REVIEWED": "Als geprüft markieren",
+        "CONTACTED": "Als kontaktiert markieren",
+        "APPROVED": "Demo genehmigen",
+        "REJECTED": "Ablehnen",
+        "CLOSED": "Anfrage abschließen"
+      }
     },
     "customers": {
       "eyebrow": "Admin · Kundenverwaltung",

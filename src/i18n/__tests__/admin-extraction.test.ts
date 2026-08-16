@@ -93,7 +93,11 @@ describe("admin namespaces — structural parity", () => {
   });
 
   it("covers the expected admin key count", () => {
-    expect(adminKeys.length).toBe(259);
+    // 259 + 20: the demo/sales lead review workflow adds 9 control labels, the
+    // 6-value status vocabulary and the 5 transition action labels under
+    // adminOperations.leads. The account-access namespace (adminAccess) is
+    // deliberately untouched — the two workflows keep separate vocabularies.
+    expect(adminKeys.length).toBe(279);
   });
 });
 

@@ -1,126 +1,72 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { PageIntro } from "@/components/PageIntro";
-import { MediaErrorState, VideoGrid } from "@/components/media";
-import { buildMetadata } from "@/lib/seo/metadata";
-import { VideoLibraryFilters } from "./VideoLibraryFilters";
-import {
-  VIDEO_HUB_CATEGORY_PARAM,
-  VIDEO_HUB_LEVEL_PARAM,
-  VIDEO_HUB_ORG_PARAM,
-  VIDEO_HUB_PAGE_PARAM,
-} from "@/lib/media/video-library-params";
-import {
-  loadVideoLibrary,
-  readPageParam,
-  readParam,
-  readSlugParam,
-  resolveVideoHubScope,
-} from "./data";
+import { VideoGrid } from "@/components/media";
 
 /**
- * PHASE 102 — `/[locale]/videos`: the PUBLIC Video Hub library.
+ * DISCOVERY-2A — `/[locale]/videos`: the bare hub root.
  *
- * A Server Component, following `src/app/[locale]/library/page.tsx`: locale is
- * pinned with `setRequestLocale`, copy is resolved with `getTranslations`, the data
- * is loaded on the server, and the only client boundary is the category island.
+ * WHY THIS PAGE CARRIES NO CONTENT AND IS NOT INDEXED
+ * ---------------------------------------------------
+ * A media asset is addressed by `(organization, slug)`, so a library page has to
+ * say WHOSE library it is showing. Without an organization there is nothing this
+ * route can honestly render, and it never could: before DISCOVERY-2A this page
+ * accepted `?org=` and, when it was absent, rendered a permanently empty grid —
+ * while `src/app/sitemap.ts` advertised it at priority 0.8. A URL that always
+ * answers "nothing here" is a soft 404, and advertising one teaches a crawler to
+ * discount the whole sitemap.
  *
- * PUBLISHED-ONLY, IN THE REPOSITORY. Nothing on this page passes an `audience` to
- * `listMediaAssets`, so the `PUBLISHED + PUBLIC + READY` gate is applied by the
- * default in `src/lib/media/db.ts`, inside the Prisma `where` clause. That is the
- * deliberate opposite of the Journal, where `getArticleDetailBySlug` has no status
- * filter and each caller repeats the check.
+ * So this route now states the position instead of faking a library:
+ *   - it still answers HTTP 200 (nothing that used to resolve now 404s);
+ *   - it is `noindex, follow`, so a crawler that arrives moves on to the real
+ *     organization libraries rather than indexing an empty shell;
+ *   - it is removed from the sitemap.
  *
- * THREE OUTCOMES, THREE DIFFERENT ANSWERS. A storage failure is an error state, an
- * unfiltered empty library is `LIBRARY_EMPTY`, and a filtered empty library is
- * `NO_MATCHES`. Collapsing them would tell most of the audience the wrong thing:
- * "no videos found" is a lie when the request never reached the database, and
- * "nothing published yet" sends someone hunting for content that a filter is
- * hiding.
+ * Turning this into a genuine hub means deciding whether the platform is willing
+ * to publish a directory of organizations that have public media. That is a
+ * tenant-visibility policy question, not an indexing bug, so it is deliberately
+ * left to DISCOVERY-2B; `../data.ts` already refuses to distinguish "no such
+ * organization" from "nothing published here", and nothing in this phase weakens
+ * that.
  *
- * RTL/LTR is inherited: `dir` is set once on `<html>` by the locale layout and
- * every component here uses logical properties, so Persian mirrors without a
- * single direction-conditional in this file.
+ * The real, indexable surfaces are:
+ *   /{locale}/videos/{org}          one organization's library
+ *   /{locale}/videos/{org}/{slug}   one watch page
  */
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "mediaHub" });
-  return buildMetadata({
-    locale,
-    path: "/videos",
+  return {
     title: t("title"),
     description: t("description"),
-  });
+    // `follow` stays true: the page has no content of its own, but a crawler
+    // that lands here should still be free to walk onward.
+    robots: { index: false, follow: true },
+  };
 }
 
-export default async function VideoLibraryPage({
+export default async function VideoHubRootPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<SearchParams>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const sp = await searchParams;
   const t = await getTranslations({ locale, namespace: "mediaHub" });
-
-  const categorySlug = readSlugParam(sp[VIDEO_HUB_CATEGORY_PARAM]);
-  const level = readParam(sp[VIDEO_HUB_LEVEL_PARAM]);
-  const page = readPageParam(sp[VIDEO_HUB_PAGE_PARAM]);
-
-  // An absent or unknown organization selector is answered exactly as an
-  // organization with nothing published: the same empty library. Distinguishing
-  // them would turn this page into a tenant-enumeration oracle.
-  const scope = await resolveVideoHubScope(sp[VIDEO_HUB_ORG_PARAM]);
-  const library = scope
-    ? await loadVideoLibrary({ scope, routeLocale: locale, page, categorySlug, level })
-    : null;
-
-  const intro = (
-    <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("subtitle")} />
-  );
-
-  // `scope && !library` is the only genuine failure: media storage was reachable
-  // enough to resolve the organization but the library query did not complete.
-  if (scope && !library) {
-    return (
-      <>
-        {intro}
-        <div className="mx-auto w-full max-w-6xl px-6 py-10">
-          <MediaErrorState code="STORAGE_UNAVAILABLE" />
-        </div>
-      </>
-    );
-  }
-
-  const items = library?.items ?? [];
-  const categories = library?.categories ?? [];
-  const filtered = library?.filtered ?? false;
 
   return (
     <>
-      {intro}
+      <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("subtitle")} />
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10">
-        <VideoLibraryFilters categories={categories} value={categorySlug} />
-
-        {/* One live region for the result count, so a screen-reader user hears the
-            outcome of a category change without moving focus. */}
-        <p role="status" aria-live="polite" className="text-body-compact text-text-muted">
-          {t("library.resultCount", { count: library?.total ?? 0 })}
-        </p>
-
         <section aria-label={t("a11y.libraryRegion")}>
-          <VideoGrid
-            items={items}
-            emptyReason={filtered ? "NO_MATCHES" : "LIBRARY_EMPTY"}
-            label={t("a11y.libraryRegion")}
-          />
+          {/* The existing empty state, with its existing copy. No organization
+              was selected, so there is genuinely nothing to list — and no
+              organization is named here, which is what keeps this route from
+              becoming a tenant directory by accident. */}
+          <VideoGrid items={[]} emptyReason="LIBRARY_EMPTY" label={t("a11y.libraryRegion")} />
         </section>
       </div>
     </>
