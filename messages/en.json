@@ -3789,6 +3789,7 @@
   },
   "journal": {
     "engagement": {
+      "removedComment": "This comment has been removed.",
       "saved": "Saved",
       "saveFailed": "Could not update your saved articles.",
       "signInToSave": "Sign in to save",

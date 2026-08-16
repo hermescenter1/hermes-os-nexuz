@@ -63,8 +63,15 @@ export async function DELETE(
     entityId:      result.commentId,
     outcome:       "success",
     correlationId: resolveRequestId(req),
-    metadata:      { articleId: id, wasReply: result.wasReply },
+    metadata:      { articleId: id, wasReply: result.wasReply, becameTombstone: result.becameTombstone },
   });
 
-  return NextResponse.json({ ok: true, commentId: result.commentId });
+  // `becameTombstone` tells the client whether the row disappears or turns into
+  // a placeholder that still carries its replies — so the rendered tree matches
+  // what a reload would produce, rather than being invented client-side.
+  return NextResponse.json({
+    ok:              true,
+    commentId:       result.commentId,
+    becameTombstone: result.becameTombstone,
+  });
 }

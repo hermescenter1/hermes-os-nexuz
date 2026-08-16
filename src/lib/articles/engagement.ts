@@ -22,6 +22,7 @@ import {
   ARTICLE_REACTIONS,
   COMMENT_MAX_PAGE_SIZE,
   COMMENT_PAGE_SIZE,
+  REMOVED_COMMENT_IDENTITY,
   SAVED_MAX_PAGE_SIZE,
   SAVED_PAGE_SIZE,
   isArticleReaction,
@@ -180,9 +181,30 @@ export type SetReactionResult =
  *   HELPFUL   + INSIGHTFUL → INSIGHTFUL   (replace — never two reactions)
  *   INSIGHTFUL+ INSIGHTFUL → none         (toggle off)
  *
- * "Replace" is an `upsert` on the composite unique key rather than a
- * read-then-write, so two concurrent reactions from the same reader cannot race
- * into two rows — the unique index decides, not the application.
+ * CONCURRENCY — stated precisely, because the shape is a read followed by a
+ * write and it would be wrong to describe it as anything else.
+ *
+ * The `findUnique` below exists only to choose the VERB (withdraw vs set); the
+ * write itself is then either an `upsert` or a `delete`, both keyed on
+ * `@@unique([userId, articleId])`. What that buys:
+ *
+ *   • Duplicate rows are impossible. Two concurrent requests that both observe
+ *     "no reaction" both reach `upsert` on the same composite key — the unique
+ *     index serialises them, so one inserts and the other updates. The
+ *     application never decides this.
+ *   • Concurrent withdrawals are safe: one `delete` wins, the other raises
+ *     P2025 and is swallowed, because "no row" is exactly the end state asked
+ *     for.
+ *   • The invariant "at most one reaction per reader per article" is held by
+ *     the DATABASE at all times, not by this function.
+ *
+ * What it does NOT provide is linearizability between two concurrent mutations
+ * from the SAME reader: a toggle-off computed from a stale read can land after
+ * a replace and leave no row, even though the later click asked for one. Every
+ * reachable outcome is a valid state the reader asked for in one of their two
+ * clicks, nothing is corrupted or duplicated, and the response carries a fresh
+ * aggregate so the UI converges on the server's truth. Serialising a single
+ * reader's own double-click is not worth a transaction here.
  */
 export async function setArticleReaction(
   articleId: string,
@@ -522,6 +544,30 @@ function toNode(row: Row, identity: Map<string, CommenterIdentity>): CommentNode
       handle:         null,
     },
     replies: [],
+    removed: false,
+  };
+}
+
+/**
+ * A withdrawn parent, reduced to the only thing a reader may still learn about
+ * it: that it existed here and is gone.
+ *
+ * The row's `content` and `userId` are deliberately NOT read into the result —
+ * not merely omitted from the render, but never placed on the wire — so no
+ * client, cache or devtools inspection can recover the removed text or who
+ * wrote it. `createdAt` is kept because the replies below it are ordered
+ * relative to it and hiding it would tell the reader nothing extra.
+ */
+function toTombstone(row: Row): CommentNode {
+  return {
+    id:        str(row.id),
+    body:      "",
+    createdAt: iso(row.createdAt),
+    updatedAt: iso(row.updatedAt),
+    parentId:  null,
+    author:    REMOVED_COMMENT_IDENTITY,
+    replies:   [],
+    removed:   true,
   };
 }
 
@@ -552,7 +598,20 @@ export async function listArticleComments(
 
   try {
     const parents = await model.findMany({
-      where:   { articleId, parentId: null, isActive: true },
+      // A top-level comment is part of the tree when it is active, OR when it
+      // has been removed but still carries at least one active reply. The
+      // second arm is what keeps other people's replies reachable: without it
+      // they were fetched by nobody (the reply query is keyed by the parents on
+      // this page) yet still counted in `total`, so the header claimed more
+      // comments than the page could possibly render.
+      where: {
+        articleId,
+        parentId: null,
+        OR: [
+          { isActive: true },
+          { replies: { some: { isActive: true } } },
+        ],
+      },
       // `id` is the tie-breaker, and it is required rather than cosmetic: the
       // cursor below is an id, so ordering by createdAt ALONE would be a
       // non-total order — two comments written in the same millisecond could
@@ -562,7 +621,7 @@ export async function listArticleComments(
       // it is dropped before the page is returned.
       take:    limit + 1,
       ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
-      select:  { id: true, userId: true, content: true, parentId: true, createdAt: true, updatedAt: true },
+      select:  { id: true, userId: true, content: true, parentId: true, createdAt: true, updatedAt: true, isActive: true },
     });
 
     const hasMore = parents.length > limit;
@@ -577,14 +636,21 @@ export async function listArticleComments(
         })
       : [];
 
+    // Every ACTIVE comment, replies included — and now every one of them is
+    // reachable, because a removed parent that still holds replies is returned
+    // as a tombstone rather than vanishing. Tombstones are not comments and are
+    // not counted, so this number matches what the page renders and what a
+    // reload produces.
     const total = await model.count({ where: { articleId, isActive: true } });
 
+    // A tombstoned parent's userId is never resolved: there is no identity to
+    // attach to a node that carries none.
     const identity = await resolveCommenterIdentities([
-      ...page.map((r) => str(r.userId)),
+      ...page.filter((p) => p.isActive !== false).map((r) => str(r.userId)),
       ...replies.map((r) => str(r.userId)),
     ]);
 
-    const nodes = page.map((p) => toNode(p, identity));
+    const nodes = page.map((p) => (p.isActive === false ? toTombstone(p) : toNode(p, identity)));
     const byId = new Map(nodes.map((n) => [n.id, n]));
     for (const r of replies) {
       const node = toNode(r, identity);
@@ -667,7 +733,18 @@ export async function createArticleComment(input: {
 }
 
 export type RemoveCommentResult =
-  | { ok: true; commentId: string; wasReply: boolean }
+  | {
+      ok: true;
+      commentId: string;
+      wasReply: boolean;
+      /**
+       * True when a removed TOP-LEVEL comment still holds active replies and
+       * therefore stays in the tree as a tombstone. The client uses this to
+       * decide whether the row disappears or turns into a placeholder, so both
+       * sides agree without the client having to guess.
+       */
+      becameTombstone: boolean;
+    }
   | { ok: false; error: "db-unavailable" | "not-found" | "forbidden" | "failed" };
 
 /**
@@ -694,6 +771,7 @@ export async function removeArticleComment(input: {
     articleComment: {
       findUnique: (a: unknown) => Promise<Row | null>;
       update:     (a: unknown) => Promise<Row>;
+      count:      (a: unknown) => Promise<number>;
     };
   }).articleComment;
 
@@ -707,13 +785,32 @@ export async function removeArticleComment(input: {
     // as forbidden — the article id in the path is part of the object's
     // identity here, so a mismatch must not confirm that the id exists.
     if (!row || str(row.articleId) !== input.articleId) return { ok: false, error: "not-found" };
-    if (row.isActive === false) return { ok: true, commentId: input.commentId, wasReply: row.parentId != null };
+    const wasReply = row.parentId != null;
+
+    // Already withdrawn. Answering ok keeps a repeat click idempotent, and the
+    // tombstone flag is recomputed so a caller acting on stale state still
+    // learns the tree's current shape.
+    if (row.isActive === false) {
+      const stillHasReplies = wasReply
+        ? false
+        : (await model.count({ where: { parentId: str(row.id), isActive: true } })) > 0;
+      return { ok: true, commentId: input.commentId, wasReply, becameTombstone: stillHasReplies };
+    }
 
     const isOwner = str(row.userId) === input.actorUserId;
     if (!isOwner && !input.actorIsModerator) return { ok: false, error: "forbidden" };
 
     await model.update({ where: { id: input.commentId }, data: { isActive: false } });
-    return { ok: true, commentId: input.commentId, wasReply: row.parentId != null };
+
+    // A top-level comment that still holds other people's active replies stays
+    // in the tree as a tombstone rather than taking those replies out of view
+    // with it. Counted AFTER the update so the answer describes the tree the
+    // next read will produce.
+    const becameTombstone = wasReply
+      ? false
+      : (await model.count({ where: { parentId: str(row.id), isActive: true } })) > 0;
+
+    return { ok: true, commentId: input.commentId, wasReply, becameTombstone };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[engagement] removeArticleComment commentId=${input.commentId} error=${msg}`);

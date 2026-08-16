@@ -3789,6 +3789,7 @@
   },
   "journal": {
     "engagement": {
+      "removedComment": "Dieser Kommentar wurde entfernt.",
       "saved": "Gespeichert",
       "saveFailed": "Ihre Merkliste konnte nicht aktualisiert werden.",
       "signInToSave": "Zum Speichern anmelden",

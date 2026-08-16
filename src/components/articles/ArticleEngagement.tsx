@@ -282,7 +282,7 @@ function CommentItem({
   viewer: EngagementViewer | null;
   isReply: boolean;
   onReplyPosted: (parentId: string, reply: CommentNode) => void;
-  onRemoved: (id: string, parentId: string | null) => void;
+  onRemoved: (id: string, parentId: string | null, becameTombstone: boolean) => void;
 }) {
   const locale = useLocale();
   const t = useTranslations("journal");
@@ -305,12 +305,53 @@ function CommentItem({
         setError(t("engagement.removeFailed"));
         return;
       }
-      onRemoved(node.id, node.parentId);
+      // The SERVER decides whether this leaves a tombstone behind; the client
+      // never guesses, so the tree on screen matches the tree a reload returns.
+      const data = await res.json().catch(() => ({}) as Record<string, unknown>);
+      onRemoved(node.id, node.parentId, data.becameTombstone === true);
     } catch {
       setError(t("engagement.networkError"));
     } finally {
       setBusy(false);
     }
+  }
+
+  // TOMBSTONE. The comment was withdrawn or moderated but still holds other
+  // people's replies, so the placeholder keeps them anchored. It deliberately
+  // renders no author, no body and NO controls — a removed comment must not
+  // regain a reply or delete affordance — and the placeholder is announced to
+  // assistive tech rather than being a bare visual grey-out.
+  if (node.removed) {
+    return (
+      <div className="flex gap-3">
+        <span
+          aria-hidden="true"
+          className="shrink-0 rounded-full border border-dashed border-line/50 bg-surface2/40"
+          style={{ width: 36, height: 36 }}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="rounded-xl border border-dashed border-line/40 bg-surface/30 px-3.5 py-2.5">
+            <p className="text-xs text-metadata italic">{t("engagement.removedComment")}</p>
+          </div>
+
+          {node.replies.length > 0 && (
+            <div className="mt-3 flex flex-col gap-3 ps-3 border-s border-line/25">
+              {node.replies.map((r) => (
+                <CommentItem
+                  key={r.id}
+                  node={r}
+                  articleId={articleId}
+                  viewer={viewer}
+                  isReply
+                  onReplyPosted={onReplyPosted}
+                  onRemoved={onRemoved}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -453,21 +494,43 @@ function CommentThread({
     }));
   }
 
-  function onRemoved(id: string, parentId: string | null) {
+  /**
+   * Apply a removal the server already performed.
+   *
+   * `total` counts renderable comments, so it always falls by exactly ONE —
+   * the comment that was withdrawn. A tombstone is a placeholder, not a
+   * comment, and its surviving replies are still renderable, so nothing else
+   * is deducted. That is what keeps this number equal to the one a reload
+   * computes from the database.
+   */
+  function onRemoved(id: string, parentId: string | null, becameTombstone: boolean) {
     setPage((p) => {
+      const total = Math.max(0, p.total - 1);
+
       if (parentId) {
+        const comments = p.comments
+          .map((c) => (c.id === parentId ? { ...c, replies: c.replies.filter((r) => r.id !== id) } : c))
+          // Removing the LAST active reply under a tombstone leaves a
+          // placeholder anchoring nothing, and the next read would not return
+          // it either — so it goes too.
+          .filter((c) => !(c.removed && c.replies.length === 0));
+        return { ...p, total, comments };
+      }
+
+      if (becameTombstone) {
         return {
           ...p,
-          total: Math.max(0, p.total - 1),
+          total,
           comments: p.comments.map((c) =>
-            c.id === parentId ? { ...c, replies: c.replies.filter((r) => r.id !== id) } : c,
+            c.id === id
+              ? { ...c, removed: true, body: "", author: { ...c.author, userId: "", displayName: "", avatarUrl: null, headline: null, verifiedExpert: false, handle: null } }
+              : c,
           ),
         };
       }
-      const removed = p.comments.find((c) => c.id === id);
-      // A withdrawn parent takes its replies out of view with it.
-      const drop = 1 + (removed?.replies.length ?? 0);
-      return { ...p, total: Math.max(0, p.total - drop), comments: p.comments.filter((c) => c.id !== id) };
+
+      // No surviving replies — the row simply leaves the list.
+      return { ...p, total, comments: p.comments.filter((c) => c.id !== id) };
     });
   }
 

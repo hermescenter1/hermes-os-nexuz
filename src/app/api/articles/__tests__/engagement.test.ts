@@ -64,10 +64,20 @@ function seedComment(over: Row = {}): Row {
   return row;
 }
 
-/** Minimal `where` matcher supporting equality, { in: [] } and null. */
+/**
+ * Minimal `where` matcher: equality, `{ in: [] }`, null, `OR`, and the one
+ * relation filter the tree query uses — `replies: { some: { isActive: true } }`,
+ * which is what keeps a removed parent in the list as a tombstone.
+ */
 function match(row: Row, where: Row = {}): boolean {
   for (const [k, v] of Object.entries(where)) {
-    if (v !== null && typeof v === "object" && "in" in (v as Row)) {
+    if (k === "OR") {
+      if (!(v as Row[]).some((clause) => match(row, clause))) return false;
+    } else if (k === "replies") {
+      const some = ((v as Row).some ?? {}) as Row;
+      const kids = store.comments.filter((c) => c.parentId === row.id);
+      if (!kids.some((c) => match(c, some))) return false;
+    } else if (v !== null && typeof v === "object" && "in" in (v as Row)) {
       if (!(v as { in: unknown[] }).in.includes(row[k])) return false;
     } else if (v === null) {
       if (row[k] != null) return false;
@@ -393,6 +403,55 @@ describe("article reactions — vocabulary and invariant", () => {
       expect((await reactionPUT(jsonReq(body), P(a.id as string))).status).toBe(400);
     }
     expect(store.reactions).toHaveLength(0);
+  });
+
+  it("two concurrent identical reactions still leave exactly ONE row", async () => {
+    const a = seedArticle();
+    setUser("customer", "u-1");
+    const { reactionPUT } = await load();
+    // Both start from "no reaction", so both take the upsert branch on the same
+    // composite key — the unique index, not the application, decides.
+    const [r1, r2] = await Promise.all([
+      reactionPUT(jsonReq({ type: "HELPFUL" }), P(a.id as string)),
+      reactionPUT(jsonReq({ type: "HELPFUL" }), P(a.id as string)),
+    ]);
+    expect(r1.status).toBe(200);
+    expect(r2.status).toBe(200);
+    expect(store.reactions).toHaveLength(1);
+    expect(store.reactions[0].reactionType).toBe("HELPFUL");
+  });
+
+  it("two concurrent withdrawals do not surface the lost race as an error", async () => {
+    const a = seedArticle();
+    store.reactions.push({ id: "rx-seed", userId: "u-1", articleId: a.id, reactionType: "DETAILED" });
+    setUser("customer", "u-1");
+    const { reactionPUT } = await load();
+    // One delete wins; the other raises P2025, which is swallowed because "no
+    // row" is precisely the end state both callers asked for.
+    const [r1, r2] = await Promise.all([
+      reactionPUT(jsonReq({ type: "DETAILED" }), P(a.id as string)),
+      reactionPUT(jsonReq({ type: "DETAILED" }), P(a.id as string)),
+    ]);
+    expect([r1.status, r2.status]).toEqual([200, 200]);
+    expect(store.reactions).toHaveLength(0);
+  });
+
+  it("a concurrent replace and withdraw stays integrity-safe — never two rows", async () => {
+    const a = seedArticle();
+    store.reactions.push({ id: "rx-seed", userId: "u-1", articleId: a.id, reactionType: "HELPFUL" });
+    setUser("customer", "u-1");
+    const { reactionPUT } = await load();
+    await Promise.all([
+      reactionPUT(jsonReq({ type: "HELPFUL" }),    P(a.id as string)), // withdraw
+      reactionPUT(jsonReq({ type: "INSIGHTFUL" }), P(a.id as string)), // replace
+    ]);
+    // Not linearizable — either end state is one the reader asked for — but the
+    // invariant holds in both.
+    expect(store.reactions.length).toBeLessThanOrEqual(1);
+    if (store.reactions.length === 1) {
+      expect(store.reactions[0].userId).toBe("u-1");
+      expect(store.reactions[0].articleId).toBe(a.id);
+    }
   });
 
   it("reports a database outage as 503, NOT as a missing article", async () => {
@@ -730,7 +789,9 @@ describe("comment removal and moderation", () => {
     expect(e.userId).toBe("mod-7");
     expect(e.correlationId).toBeTruthy();
     expect(JSON.stringify(e)).not.toContain("SENSITIVE COMMENT TEXT");
-    expect(e.metadata).toEqual({ articleId: a.id, wasReply: false });
+    // Booleans and identifiers only — `becameTombstone` records the shape of
+    // the tree after the removal, never anything about the removed text.
+    expect(e.metadata).toEqual({ articleId: a.id, wasReply: false, becameTombstone: false });
   });
 
   it("audits a self-withdrawal under a different action", async () => {
@@ -740,6 +801,245 @@ describe("comment removal and moderation", () => {
     const { commentDELETE } = await load();
     await commentDELETE(delReq(), PC(a.id as string, c.id as string));
     expect(auditCalls[0].action).toBe("journal.comment.removed");
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// Tombstones — a removed parent must not take other people's replies with it
+// ════════════════════════════════════════════════════════════════════════════
+
+describe("removed parent comments become tombstones", () => {
+  /** An active parent by u-1 with two active replies by u-2 and u-3. */
+  function seedThread(articleId: string) {
+    seedUser("u-1", "Parent Author");
+    seedUser("u-2", "Replier Two");
+    seedUser("u-3", "Replier Three");
+    seedProfile("u-1", { displayName: "Parent Author", headline: "Lead Engineer" });
+    const parent = seedComment({ articleId, userId: "u-1", content: "ORIGINAL PARENT BODY" });
+    const r1 = seedComment({ articleId, userId: "u-2", parentId: parent.id, content: "reply one" });
+    const r2 = seedComment({ articleId, userId: "u-3", parentId: parent.id, content: "reply two" });
+    return { parent, r1, r2 };
+  }
+
+  it("renders an active parent with its active replies, total = 3", async () => {
+    const a = seedArticle();
+    seedThread(a.id as string);
+    setUser(null);
+    const { commentsGET } = await load();
+    const body = await (await commentsGET(getReq(), P(a.id as string))).json();
+    expect(body.comments).toHaveLength(1);
+    expect(body.comments[0].removed).toBe(false);
+    expect(body.comments[0].replies).toHaveLength(2);
+    expect(body.total).toBe(3);
+  });
+
+  it.each<[string, Role, string]>([
+    ["the owner",   "customer", "u-1"],
+    ["a moderator", "admin",    "mod-1"],
+  ])("%s removing the parent leaves a tombstone that keeps the replies", async (_l, role, actorId) => {
+    const a = seedArticle();
+    const { parent } = seedThread(a.id as string);
+
+    setUser(role, actorId);
+    let api = await load();
+    const del = await api.commentDELETE(delReq(), PC(a.id as string, parent.id as string));
+    expect(del.status).toBe(200);
+    // The server tells the client the row survives as a placeholder.
+    await expect(del.json()).resolves.toMatchObject({ becameTombstone: true });
+
+    // The row is deactivated, never destroyed, and the replies are untouched.
+    expect(store.comments.find((c) => c.id === parent.id)!.isActive).toBe(false);
+    expect(store.comments.filter((c) => c.parentId === parent.id && c.isActive)).toHaveLength(2);
+
+    setUser(null);
+    api = await load();
+    const body = await (await api.commentsGET(getReq(), P(a.id as string))).json();
+
+    expect(body.comments).toHaveLength(1);
+    const node = body.comments[0];
+    expect(node.removed).toBe(true);
+    expect(node.replies.map((r: Row) => r.body)).toEqual(["reply one", "reply two"]);
+    // Total counts the two surviving replies — and NOT the tombstone.
+    expect(body.total).toBe(2);
+  });
+
+  it("never puts the removed body or the author's identity on the wire", async () => {
+    const a = seedArticle();
+    const { parent } = seedThread(a.id as string);
+    setUser("customer", "u-1");
+    let api = await load();
+    await api.commentDELETE(delReq(), PC(a.id as string, parent.id as string));
+
+    setUser(null);
+    api = await load();
+    const raw = JSON.stringify(await (await api.commentsGET(getReq(), P(a.id as string))).json());
+
+    expect(raw).not.toContain("ORIGINAL PARENT BODY");
+    expect(raw).not.toContain("Parent Author");
+    expect(raw).not.toContain("Lead Engineer");
+    expect(raw).not.toContain("u-1");
+    // The replies and their own authors are of course still present.
+    expect(raw).toContain("reply one");
+  });
+
+  it("a removed parent with NO active replies disappears entirely", async () => {
+    const a = seedArticle();
+    seedUser("u-1", "Solo");
+    const lonely = seedComment({ articleId: a.id, userId: "u-1", content: "no replies here" });
+
+    setUser("customer", "u-1");
+    let api = await load();
+    const del = await api.commentDELETE(delReq(), PC(a.id as string, lonely.id as string));
+    await expect(del.json()).resolves.toMatchObject({ becameTombstone: false });
+
+    setUser(null);
+    api = await load();
+    const body = await (await api.commentsGET(getReq(), P(a.id as string))).json();
+    expect(body.comments).toHaveLength(0);
+    expect(body.total).toBe(0);
+  });
+
+  it("a removed REPLY simply disappears and total drops by one", async () => {
+    const a = seedArticle();
+    const { r1 } = seedThread(a.id as string);
+
+    setUser("customer", "u-2");
+    let api = await load();
+    await api.commentDELETE(delReq(), PC(a.id as string, r1.id as string));
+
+    setUser(null);
+    api = await load();
+    const body = await (await api.commentsGET(getReq(), P(a.id as string))).json();
+    expect(body.comments[0].removed).toBe(false);
+    expect(body.comments[0].replies).toHaveLength(1);
+    expect(body.total).toBe(2);
+  });
+
+  it("removing the LAST reply under a tombstone removes the tombstone too", async () => {
+    const a = seedArticle();
+    const { parent, r1, r2 } = seedThread(a.id as string);
+
+    setUser("admin", "mod-1");
+    let api = await load();
+    await api.commentDELETE(delReq(), PC(a.id as string, parent.id as string));
+    await api.commentDELETE(delReq(), PC(a.id as string, r1.id as string));
+
+    // One reply left → the tombstone still anchors it.
+    setUser(null);
+    api = await load();
+    let body = await (await api.commentsGET(getReq(), P(a.id as string))).json();
+    expect(body.comments).toHaveLength(1);
+    expect(body.comments[0].removed).toBe(true);
+    expect(body.total).toBe(1);
+
+    // Remove the last one → nothing left to anchor, so the placeholder goes.
+    setUser("admin", "mod-1");
+    api = await load();
+    await api.commentDELETE(delReq(), PC(a.id as string, r2.id as string));
+
+    setUser(null);
+    api = await load();
+    body = await (await api.commentsGET(getReq(), P(a.id as string))).json();
+    expect(body.comments).toHaveLength(0);
+    expect(body.total).toBe(0);
+  });
+
+  it("the total always equals the number of RENDERABLE comments", async () => {
+    const a = seedArticle();
+    const { parent } = seedThread(a.id as string);
+    setUser("customer", "u-1");
+    let api = await load();
+    await api.commentDELETE(delReq(), PC(a.id as string, parent.id as string));
+
+    setUser(null);
+    api = await load();
+    const body = await (await api.commentsGET(getReq(), P(a.id as string))).json();
+
+    // This is the invariant the defect broke: before the fix the header said 3
+    // while the page could render 0.
+    const renderable = body.comments.reduce(
+      (n: number, c: { removed: boolean; replies: unknown[] }) => n + (c.removed ? 0 : 1) + c.replies.length,
+      0,
+    );
+    expect(renderable).toBe(body.total);
+  });
+
+  it("is stable across reloads — the same tree comes back every time", async () => {
+    const a = seedArticle();
+    const { parent } = seedThread(a.id as string);
+    setUser("customer", "u-1");
+    let api = await load();
+    await api.commentDELETE(delReq(), PC(a.id as string, parent.id as string));
+
+    setUser(null);
+    api = await load();
+    const first  = await (await api.commentsGET(getReq(), P(a.id as string))).json();
+    const second = await (await api.commentsGET(getReq(), P(a.id as string))).json();
+    expect(second).toEqual(first);
+  });
+
+  it("refuses a reply to a tombstone", async () => {
+    const a = seedArticle();
+    const { parent } = seedThread(a.id as string);
+    setUser("customer", "u-1");
+    let api = await load();
+    await api.commentDELETE(delReq(), PC(a.id as string, parent.id as string));
+
+    setUser("customer", "u-9");
+    api = await load();
+    // A tombstone must not regain a reply affordance, on the server or the client.
+    const res = await api.commentsPOST(
+      jsonReq({ body: "sneaking in", parentId: parent.id }, "POST"), P(a.id as string),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("keeps tombstones inside their own article", async () => {
+    const a = seedArticle();
+    const b = seedArticle();
+    const { parent } = seedThread(a.id as string);
+    seedComment({ articleId: b.id, userId: "u-1", content: "other article" });
+
+    setUser("customer", "u-1");
+    let api = await load();
+    await api.commentDELETE(delReq(), PC(a.id as string, parent.id as string));
+
+    setUser(null);
+    api = await load();
+    const other = await (await api.commentsGET(getReq(), P(b.id as string))).json();
+    expect(other.comments).toHaveLength(1);
+    expect(other.comments[0].removed).toBe(false);
+    expect(other.total).toBe(1);
+  });
+
+  it("pages tombstones like any other top-level row", async () => {
+    const a = seedArticle();
+    seedUser("u-1", "A");
+    seedUser("u-2", "B");
+    // 25 top-level comments; every third one is removed but keeps a reply.
+    for (let i = 0; i < 25; i++) {
+      const p = seedComment({ articleId: a.id, userId: "u-1", content: `p${i}` });
+      if (i % 3 === 0) {
+        seedComment({ articleId: a.id, userId: "u-2", parentId: p.id, content: `r${i}` });
+        p.isActive = false;
+      }
+    }
+    setUser(null);
+    const { commentsGET } = await load();
+
+    const page1 = await (await commentsGET(getReq(), P(a.id as string))).json();
+    expect(page1.comments).toHaveLength(20);
+    expect(page1.comments.some((c: Row) => c.removed === true)).toBe(true);
+    expect(page1.nextCursor).toBeTruthy();
+
+    const page2 = await (await commentsGET(
+      getReq(`?cursor=${encodeURIComponent(page1.nextCursor)}`), P(a.id as string),
+    )).json();
+    // No row is repeated across the page boundary.
+    const ids1 = page1.comments.map((c: Row) => c.id);
+    const ids2 = page2.comments.map((c: Row) => c.id);
+    expect(ids1.filter((id: string) => ids2.includes(id))).toEqual([]);
+    expect(page2.total).toBe(page1.total);
   });
 });
 

@@ -3789,6 +3789,7 @@
   },
   "journal": {
     "engagement": {
+      "removedComment": "این دیدگاه برداشته شده است.",
       "saved": "ذخیره شد",
       "saveFailed": "به‌روزرسانی فهرست ذخیره‌ها ممکن نشد.",
       "signInToSave": "برای ذخیره وارد شوید",
