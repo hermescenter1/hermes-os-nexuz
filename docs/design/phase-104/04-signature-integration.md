@@ -5,6 +5,11 @@ machine-checked contract. The Glass tier family is tokenised **1:1 with zero vis
 Rail, Command, Triad, Beacon and Horizon have **variables and policy, but no product consumer
 yet** — that adoption is 104-D and later, and this document does not claim it.
 
+> **Historical (as of `f15b73e`, 2026-08-13).** Superseded: Rail, Command and Beacon gained product
+> consumers in 104-D (`73b7c9f`), Horizon and Triad in 104-D2 (`f606792`), and every signature is
+> consumed on the Observatory homepage (104-E), the Industrial Journal (104-F) and the shell closure
+> (104-H). Current status: `09-responsive-rtl-a11y-motion-closure.md` (integrated head `58ed5a7`).
+
 | | |
 |---|---|
 | Increment | 104-C — DNA signature variables and contract |

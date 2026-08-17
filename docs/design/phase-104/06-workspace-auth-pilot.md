@@ -131,7 +131,7 @@ OWNER_VISUAL_RUN_REQUIRED=YES
 OWNER_VISUAL_APPROVAL=OUTSTANDING
 ```
 
-No screenshots were captured and **no visual PASS is claimed**. The blockers are concrete:
+*(historical, at `f606792`, 2026-08-14)* No screenshots were captured and **no visual PASS was claimed** — superseded: the Login Horizon and Dashboard Triad were later rendered and measured on the production build (104-D2 first render, then the 104-H frozen-surface regression set, `09-…md` §8a). The blockers at the time were concrete:
 
 - the repository contains no screenshot or e2e tooling (`puppeteer`, `playwright`, `cypress` are
   all absent from `package.json`) and this increment may not add a dependency;
@@ -155,9 +155,9 @@ and the Persian build mirrors the Beacon bar to the right edge.
 
 ## 6. Limitations
 
-- 104-E, 104-F, 104-H and 104-I have **not started**.
+- *(historical, at `f606792`)* 104-E, 104-F, 104-H and 104-I had **not started** — **superseded:** 104-E (`b860a62`), 104-F (`ed5a1e4`), 104-H (`4e1ac5c`) implemented; 104-I outstanding (integrated head `58ed5a7`).
 - Only **two** routes are `MIGRATED_DIRECTLY`. Everything else still inherits.
-- No owner visual approval. No screenshots.
+- *(historical, at `f606792`)* No owner visual approval, no screenshots — the 104-D2 Login/Dashboard pilot remains a pilot: bespoke composition of Login and the operational family is 104-I scope (`09-…md` §13).
 - Figma unchanged: historical **181/205**, Verify / Dry Run / Apply all **not run**.
 - Legacy glow utilities still ship with their two out-of-scope consumers.
 - `DashboardClient`'s own `Panel` helper still carries inline `boxShadow` and `rgba()` literals.

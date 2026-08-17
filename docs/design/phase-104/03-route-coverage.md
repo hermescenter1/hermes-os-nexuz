@@ -109,7 +109,9 @@ about the system.
 disappears into "industrial operations" and the family looks empty, which is exactly how the
 false claim survived. The gate asserts the ordering directly.
 
-Derived movement from this correction (recomputed, not asserted):
+Derived movement from this correction (recomputed, not asserted; **historical — measured at
+`a7b665a` on 2026-08-15 when the inventory totalled 270; the current total is 279/279 with 0
+unclassified, see the header of this document**):
 
 | Family | Before | After |
 |---|---|---|

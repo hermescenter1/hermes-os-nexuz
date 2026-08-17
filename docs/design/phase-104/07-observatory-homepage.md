@@ -7,9 +7,9 @@ CODEX_FINAL_VISUAL_REVIEW=APPROVED
 MOBILE_HEIGHT_EXCEPTION=ACCEPTED
 PUBLIC_HOME_HORIZON_ALLOWLIST=UNCHANGED
 ROUTE_STATUS=/  →  MIGRATED_DIRECTLY   (exact match; locale variants are one route)
-JOURNAL_REDESIGN=NOT_STARTED
-LOGIN_REDESIGN=NOT_STARTED
-DASHBOARD_REDESIGN=NOT_STARTED
+JOURNAL_REDESIGN=NOT_STARTED        # historical at `b860a62` (2026-08-15) — superseded: DONE in 104-F (`ed5a1e4`)
+LOGIN_REDESIGN=NOT_STARTED          # historical — 104-D2 Horizon pilot exists (`f606792`); bespoke composition pending 104-I
+DASHBOARD_REDESIGN=NOT_STARTED      # historical — 104-D2 Triad pilot exists (`f606792`); family system pending 104-I
 ```
 
 The public homepage is the first of the five Phase 104 reference surfaces to be redesigned in

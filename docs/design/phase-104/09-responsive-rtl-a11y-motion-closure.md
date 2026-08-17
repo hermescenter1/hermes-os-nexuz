@@ -1,16 +1,26 @@
 # Phase 104-H — Responsive, RTL, Accessibility and Motion Closure
 
 ```text
-PHASE104_H_IMPLEMENTATION=COMPLETE (narrow review corrections applied)
+PHASE104_H_IMPLEMENTATION=COMPLETE
+PHASE104_H_COMMIT_SHA=4e1ac5cc3c764f2bbaa5faf6830ebfebb7b9a278
+INTEGRATED_HEAD=58ed5a7bc2493456149735947dfdd5c592e53ab0
+MERGED_MAIN_SHA=44109b91890f0a493f9010468ded953824ead046
+COMMIT=YES
+PUSH=YES
+CI=23/23_SUCCESS
+WORKFLOWS=8/8_SUCCESS
+PR_STATE=DRAFT_UNMERGED
+DEPLOY=NO
+PHASE104_STATUS=INCOMPLETE_PENDING_104_I
+
 LEGACY_SHELL_CLOSURE=PASS · LEGACY_MATRIX=90/90 · RESPONSIVE_CLOSURE=PASS (mechanics only — owner decisions A/B/C + German heading applied, §1b; NO visual acceptance, §13)
 OWNER_DECISION_A=FULL_NAV_AT_1600_ONLY · OWNER_DECISION_B=LEGACY_WORDMARK_TEXT_HIDDEN_BELOW_SM · OWNER_DECISION_C=KEEP_LANGUAGE_SWITCH_44PX
 LEGACY_VISUAL_ACCEPTANCE=NO · GENERIC_HEADER_ACCEPTANCE=NO · GENERIC_FOOTER_ACCEPTANCE=NO · GENERIC_PAGE_TEMPLATE_ACCEPTANCE=NO
 PRIMARY_DEFERRED_COMPONENT=AppMobileNav        (deferred from 104-D → closed here)
 SCOPE=UI_AND_DESIGN_SYSTEM_ONLY
 FROZEN_SURFACES=Observatory homepage · Journal landing · article detail · Login Horizon · Dashboard Triad · Rail/Command geometry
-OWNER_VISUAL_APPROVAL=OUTSTANDING
-CODEX_REVIEW=REQUIRED
-COMMIT=NO · PUSH=NO · PR_STATE=DRAFT_OPEN_UNMERGED · PHASE104_I=NOT_STARTED
+PHASE104_H_CODE_REVIEW=APPROVED · PHASE104_H_MAIN_INTEGRATION=APPROVED · PHASE104_H_CI=PASS
+OWNER_FINAL_VISUAL_APPROVAL=OUTSTANDING_PHASE104_I · MERGE_PR_TO_MAIN=NO · PHASE104_I=AUTHORIZED_AFTER_GREEN_METADATA_CLEANUP
 ```
 
 104-H is closure, not art direction. It brings the Phase 104 shell to release-grade small-screen,
@@ -375,7 +385,7 @@ A docs/design/phase-104/09-responsive-rtl-a11y-motion-closure.md
 
 ## 11. Rollback
 
-Before commit: `git restore` the files in §10 and delete the two new files. No migration, no
+The 104-H work is committed as `4e1ac5c` and integrated with `main@44109b9` in `58ed5a7`; rollback is `git revert` of those commits (a revert of the merge must use `-m 1`). No migration, no
 dependency, no route, no API changed — rollback is purely presentational.
 
 ## 12. Separation from 104-I

@@ -1,11 +1,17 @@
 # Phase 104 — Shared App-Shell Adoption (Increment 104-D)
 
 ```text
+# historical — status at 104-D (`73b7c9f`, 2026-08-14); superseded, see the note below
 VISUAL_CHANGE=YES_SCOPED_APP_SHELL
-MIGRATED_DIRECTLY_ROUTE_CONTENT=0
+MIGRATED_DIRECTLY_ROUTE_CONTENT=0        # historical: 5 routes are MIGRATED_DIRECTLY as of `58ed5a7`
 SHARED_SHELL_ADOPTION=YES
-OWNER_VISUAL_APPROVAL=NO
+OWNER_VISUAL_APPROVAL=NO                 # historical: 104-E/104-F reference surfaces later approved; final visual approval pending 104-I
 ```
+
+> **Superseded status (integrated head `58ed5a7`, 2026-08-17):** 104-D, 104-D2, 104-E, 104-F, 104-G
+> and 104-H are implemented; route inventory 279/279 with 0 unclassified and 5 `MIGRATED_DIRECTLY`
+> routes; visual/responsive/RTL evidence exists for the shell (104-H, `AppMobileNav` closed) and the
+> reference surfaces (104-E/F). Only 104-I has not started. Everything below is the 104-D record.
 
 This is the **first intentionally visible** Phase 104 increment. 104-A through 104-C proved the
 design language exists and is internally consistent; nothing consumed it. Five of the eight
@@ -227,7 +233,7 @@ VISUAL_ARTIFACTS=BLOCKED_OWNER_TOOLING
 The shell is authenticated-only, the repository contains **no screenshot or e2e tooling**
 (`puppeteer`, `playwright`, `cypress` are all absent from `package.json`), adding a dependency is
 prohibited by this increment, and no database was reachable to create an authenticated session.
-**No screenshots were captured and no visual PASS is claimed.**
+**No screenshots were captured and no visual PASS is claimed** *(historical, at `73b7c9f` — production screenshots and runtime matrices for the shell exist since 104-H, see `09-…md` §8a/§8b)*.
 
 What *is* machine-verified is the exact geometry delta, computed from the contract:
 
@@ -249,9 +255,9 @@ remains **required and outstanding**.
 
 ## 7. Limitations
 
-- 104-E, 104-F, 104-H and 104-I have not started.
-- **Zero route content was migrated.** Only the shared shell changed.
-- Horizon and Triad remain **unconsumed** — deliberately.
+- *(historical, at `73b7c9f`)* 104-E, 104-F, 104-H and 104-I had not started — **superseded:** 104-E (`b860a62`), 104-F (`ed5a1e4`) and 104-H (`4e1ac5c`) are implemented; only 104-I is outstanding.
+- *(historical, at `73b7c9f`)* Zero route content was migrated — **superseded:** 5 routes are `MIGRATED_DIRECTLY` (104-D2, 104-E, 104-F).
+- *(historical, at `73b7c9f`)* Horizon and Triad remained unconsumed — **superseded:** consumed since 104-D2 (`f606792`).
 - No screenshots, no owner visual approval, no Figma operation. Figma remains at the historical
   181/205 with Verify, Dry Run and Apply all **not run**.
 - Legacy glow utilities remain shipped with two out-of-scope consumers.

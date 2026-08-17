@@ -5,9 +5,9 @@ PHASE104_F_IMPLEMENTATION=COMPLETE
 CONCEPT=THE_INDUSTRIAL_EVIDENCE_PRESSROOM
 ROUTES_MIGRATED_DIRECTLY=/articles, /articles/[slug]   (exact rules; nothing inherits)
 PUBLIC_PRIVATE_ISOLATION=PASS   (runtime-verified)
-OWNER_VISUAL_APPROVAL=PENDING
-CODEX_FINAL_REVIEW=PENDING
-COMMIT=NO · PUSH=NO · PR_STATE=KEEP_DRAFT
+OWNER_VISUAL_APPROVAL=PENDING   # historical — 104-F visual direction APPROVED 2026-08-16 (frozen reference surface); final page approval = 104-I scope
+CODEX_FINAL_REVIEW=PENDING      # historical — Codex approved 2026-08-16 (PASS_WITH_FIXES → fixes applied)
+COMMIT=NO · PUSH=NO · PR_STATE=KEEP_DRAFT   # historical (pre-commit status, 2026-08-16) — superseded: committed as `ed5a1e4`, merged with main `d1db221` (`2a3d9f7`), integrated head `58ed5a7`
 ```
 
 The second Phase 104 reference surface: the public reading and discovery system of the Hermes
