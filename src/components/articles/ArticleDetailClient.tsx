@@ -6,8 +6,11 @@
 // bar, the body, tags, a metadata card, an author card, a related-cards grid,
 // all in pre-104 `text-ink` / `border-line` / `bg-surface2` classes).
 // Everything it DID is preserved, byte-for-byte where it touches the network:
-//   · save        POST/DELETE  /api/articles/saved      { articleId }
-//   · reactions   POST/DELETE  /api/articles/reactions  { articleId, reactionType }
+//   · save        POST /api/articles/saved { articleId } · DELETE /api/articles/saved?articleId=
+//                 (PR #70: page-owned, server-seeded, anonymous → sign-in link)
+//   · reactions   server-truthful, rendered by <ArticleEngagement> (PR #70:
+//                 POST/DELETE /api/articles/{id}/reaction) — no local reaction state here
+//   · discussion  first page server-loaded, replies preserved (PR #70, <ArticleEngagement>)
 //   · follow      POST/DELETE  /api/articles/follow     { authorHandle }
 //   · share       navigator.clipboard.writeText(location.href)
 //   · related articles, author / category / tag links, knowledge metadata,
@@ -44,6 +47,9 @@ import { formatDate, formatNumber } from "@/lib/i18n/format";
 import { cn } from "@/components/ds";
 import { buttonVariants } from "@/components/ds/logic";
 import { getArticleDisplay } from "./article-display";
+// PR #70 — server-truthful reactions + discussion (reply-preserving) and the viewer contract.
+import { ArticleEngagement, type EngagementViewer } from "./ArticleEngagement";
+import type { CommentPage, ReactionSummary } from "@/lib/articles/engagement-types";
 
 /* ── locale-invariant technical tokens render LTR inside an RTL page ─────── */
 const LTR_TOKEN = /^(PLC|SCADA|HMI|OPC|MQTT|IEC|ISA|DCS|VFD|SIL|OT|IT|S7|TIA|WinCC|Modbus|Profinet|EtherNet)/i;
@@ -187,32 +193,32 @@ function Toc({ headings, title }: { headings: Heading[]; title: string }) {
   );
 }
 
-/* ── actions: save / react / share — network contracts unchanged ──────────── */
-function ActionsBar({ article }: { article: ArticleDetail }) {
+/* ── actions: save / share — save is PAGE-owned (PR #70); reactions live in <ArticleEngagement> ── */
+/**
+ * PR #70 — save state is owned by the PAGE, not by this bar. The bar renders
+ * twice (above and below the body); when each copy held its own state, saving
+ * in one left the other showing the opposite label — two controls for one fact.
+ * It is lifted so both render the same value, seeded from the server, and
+ * reverted to server truth on failure. An anonymous reader gets a sign-in link
+ * that returns to this article instead of a toggle. Reactions used to be local
+ * state here; they are server-truthful now and rendered by <ArticleEngagement>,
+ * so this bar keeps save, share and the counters. 104-F chip geometry unchanged.
+ */
+interface SaveControl {
+  saved:     boolean;
+  busy:      boolean;
+  error:     string | null;
+  /** Absent for an anonymous reader, who is sent to sign-in instead. */
+  onToggle?: () => void;
+  /** Localized sign-in URL that returns to this article. */
+  authHref?: string;
+}
+
+function ActionsBar({ article, save }: { article: ArticleDetail; save: SaveControl }) {
   const t = useTranslations("journal");
   const locale = useLocale();
-  const [saved, setSaved]     = useState(false);
-  const [reacted, setReacted] = useState<string | null>(null);
   const [copied, setCopied]   = useState(false);
-  const reactions = ["INSIGHTFUL", "HELPFUL", "DETAILED", "PRACTICAL"] as const;
 
-  async function handleSave() {
-    const next = !saved;
-    setSaved(next);
-    await fetch("/api/articles/saved", {
-      method: next ? "POST" : "DELETE",
-      body:   next ? JSON.stringify({ articleId: article.id }) : undefined,
-      headers: { "Content-Type": "application/json" },
-    }).catch(() => setSaved(!next));
-  }
-  async function handleReact(key: string) {
-    const next = reacted === key ? null : key;
-    setReacted(next);
-    await fetch("/api/articles/reactions", {
-      method: next ? "POST" : "DELETE",
-      ...(next ? { body: JSON.stringify({ articleId: article.id, reactionType: key }), headers: { "Content-Type": "application/json" } } : {}),
-    }).catch(() => setReacted(reacted));
-  }
   function handleShare() {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href).then(() => {
@@ -225,17 +231,22 @@ function ActionsBar({ article }: { article: ArticleDetail }) {
   const chip = "ds-focus inline-flex min-h-11 items-center gap-1.5 rounded-sm border px-3 text-label transition-colors motion-reduce:transition-none";
   return (
     <div className="flex flex-wrap items-center gap-2 border-y py-3" style={{ borderColor: "var(--color-border-default)" }}>
-      {reactions.map((key) => (
-        <button key={key} type="button" onClick={() => handleReact(key)} aria-pressed={reacted === key}
-          className={cn(chip, reacted === key ? "text-brand-primary" : "text-text-secondary hover:text-text-primary")}
-          style={{ borderColor: reacted === key ? "var(--beacon-core)" : "var(--color-border-default)" }}>
-          <span aria-hidden="true">{reacted === key ? "◆" : "◇"}</span>{t(`detail.reaction.${key}`)}
+      {/* Save — the glyph switches ▢ → ▣ AND the label changes word, so the state
+          is never colour alone; aria-pressed carries it to assistive tech. */}
+      {save.onToggle ? (
+        <button type="button" onClick={save.onToggle} disabled={save.busy} aria-pressed={save.saved}
+          className={cn(chip, "text-text-secondary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-60")}
+          style={{ borderColor: save.saved ? "var(--beacon-core)" : "var(--color-border-default)" }}>
+          <span aria-hidden="true">{save.saved ? "▣" : "▢"}</span>{save.saved ? t("engagement.saved") : t("detail.save")}
         </button>
-      ))}
-      <span className="mx-1 hidden h-5 w-px sm:block" style={{ background: "var(--color-border-default)" }} aria-hidden="true" />
-      <button type="button" onClick={handleSave} aria-pressed={saved} className={cn(chip, "text-text-secondary hover:text-text-primary")} style={{ borderColor: saved ? "var(--beacon-core)" : "var(--color-border-default)" }}>
-        <span aria-hidden="true">{saved ? "▣" : "▢"}</span>{t("detail.save")}
-      </button>
+      ) : (
+        <a href={save.authHref ?? "#"} title={t("engagement.signInToSave")}
+          className={cn(chip, "text-text-secondary hover:text-text-primary")}
+          style={{ borderColor: "var(--color-border-default)" }}>
+          <span aria-hidden="true">▢</span>{t("detail.save")}
+        </a>
+      )}
+      {save.error ? <span role="alert" className="text-caption text-state-critical">{save.error}</span> : null}
       <button type="button" onClick={handleShare} className={cn(chip, "text-text-secondary hover:text-text-primary")} style={{ borderColor: "var(--color-border-default)" }} aria-live="polite">
         <span aria-hidden="true">⇪</span>{copied ? t("detail.copied") : t("detail.share")}
       </button>
@@ -319,9 +330,25 @@ function RelatedRail({ articles, locale, isFa }: { articles: ArticleListItem[]; 
   );
 }
 
-interface Props { article: ArticleDetail; related: ArticleListItem[] }
+interface Props {
+  article: ArticleDetail;
+  related: ArticleListItem[];
+  /**
+   * PR #70 — reactions and the first page of the discussion, loaded on the
+   * server so the conversation is present in the initial HTML rather than
+   * appearing after a client round-trip. Optional so the mock/offline render
+   * path and any other caller keep working unchanged.
+   */
+  engagement?: {
+    reactions: ReactionSummary;
+    comments:  CommentPage;
+    /** Whether the signed-in reader has bookmarked this article. */
+    saved:     boolean;
+    viewer:    EngagementViewer | null;
+  };
+}
 
-export function ArticleDetailClient({ article, related }: Props) {
+export function ArticleDetailClient({ article, related, engagement }: Props) {
   const t = useTranslations("journal");
   const locale = useLocale();
   const isFa = locale === "fa";
@@ -331,6 +358,60 @@ export function ArticleDetailClient({ article, related }: Props) {
   const km = article.knowledgeMetadata;
   const cat = article.category;
   const catName = cat ? (isFa && cat.nameFa ? cat.nameFa : cat.name) : null;
+
+  // ── Bookmark (PR #70) ────────────────────────────────────────────────────
+  // Seeded from the server so the correct label is in the first paint, then
+  // kept in step with what the server actually confirmed.
+  const [saved, setSaved]             = useState(engagement?.saved ?? false);
+  const [savePending, setSavePending] = useState(false);
+  const [saveError, setSaveError]     = useState<string | null>(null);
+  // Synchronous guard — React's disabled={busy} is not instantaneous, so a fast
+  // double-click could otherwise fire POST and DELETE out of order.
+  const savingRef = useRef(false);
+
+  async function toggleSave() {
+    if (savingRef.current) return;
+    const next = !saved;
+    savingRef.current = true;
+    setSavePending(true);
+    setSaveError(null);
+    // Optimistic, but reverted below if the server disagrees.
+    setSaved(next);
+    try {
+      const res = await fetch(
+        next ? "/api/articles/saved" : `/api/articles/saved?articleId=${encodeURIComponent(article.id)}`,
+        next
+          ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ articleId: article.id }) }
+          : { method: "DELETE" },
+      );
+      if (!res.ok) {
+        setSaved(!next);
+        setSaveError(t("engagement.saveFailed"));
+        return;
+      }
+      // Server truth wins over the optimistic guess.
+      const data = await res.json().catch(() => ({}) as Record<string, unknown>);
+      if (typeof data.saved === "boolean")        setSaved(data.saved);
+      else if (typeof data.unsaved === "boolean") setSaved(!data.unsaved);
+    } catch {
+      setSaved(!next);
+      setSaveError(t("engagement.networkError"));
+    } finally {
+      setSavePending(false);
+      savingRef.current = false;
+    }
+  }
+
+  const saveControl: SaveControl = {
+    saved,
+    busy:  savePending,
+    error: saveError,
+    // An anonymous reader has no toggle at all — they get the sign-in link,
+    // carrying a return path back to this exact article.
+    ...(engagement?.viewer
+      ? { onToggle: toggleSave }
+      : { authHref: `/${locale}/auth/login?from=${encodeURIComponent(`/${locale}/articles/${article.slug}`)}` }),
+  };
 
   return (
     <div className="hj-page">
@@ -383,7 +464,20 @@ export function ArticleDetailClient({ article, related }: Props) {
           ) : null}
         </header>
 
-        <div className="mt-8"><ActionsBar article={article} /></div>
+        {/* PR #70 — cover image. Decorative by design: the headline above already
+            names the article, so an empty alt is the correct accessible
+            treatment. The fixed 16:9 frame reserves its space before the bytes
+            arrive, so the reading spread does not jump. Absent cover => nothing. */}
+        {article.coverImageUrl ? (
+          <figure className="mt-8 overflow-hidden rounded-lg border" style={{ borderColor: "var(--color-border-default)" }}>
+            <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={article.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            </div>
+          </figure>
+        ) : null}
+
+        <div className="mt-8"><ActionsBar article={article} save={saveControl} /></div>
 
         {/* ── the reading spread: body + margin TOC ── */}
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-14">
@@ -396,7 +490,23 @@ export function ArticleDetailClient({ article, related }: Props) {
           </div>
         </div>
 
-        <div className="mt-10"><ActionsBar article={article} /></div>
+        <div className="mt-10"><ActionsBar article={article} save={saveControl} /></div>
+
+        {/* PR #70 — reactions + discussion (reply-preserving), rendered from
+            server-loaded state; absent only on the offline/mock path, where
+            there is no database to hold a conversation in the first place. */}
+        {engagement ? (
+          <div className="mt-10">
+            <ArticleEngagement
+              articleId={article.id}
+              articleSlug={article.slug}
+              reactions={engagement.reactions}
+              comments={engagement.comments}
+              viewer={engagement.viewer}
+            />
+          </div>
+        ) : null}
+
         <div className="mt-10"><AuthorProvenance article={article} locale={locale} /></div>
         {related.length ? <RelatedRail articles={related} locale={locale} isFa={isFa} /> : null}
         <div className="mt-12 pb-16">

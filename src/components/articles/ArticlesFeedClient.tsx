@@ -183,7 +183,11 @@ function SectionHeader({ label, eyebrow, href, linkLabel, isFa }: {
 
 // ── Article Card ──────────────────────────────────────────────────────────────
 
-function ArticleCard({ article, locale, isFa, size = "normal" }: {
+/**
+ * Exported so other Journal surfaces (the saved-articles list) render the
+ * SAME card rather than growing a near-duplicate that drifts from this one.
+ */
+export function ArticleCard({ article, locale, isFa, size = "normal" }: {
   article: ArticleListItem;
   locale: string;
   isFa: boolean;
@@ -305,6 +309,22 @@ function ArticleCard({ article, locale, isFa, size = "normal" }: {
     <div className="hs-card-depth group rounded-xl border border-line/40 bg-surface hover:border-signal/20 flex flex-col overflow-hidden">
       {/* Content type color bar */}
       <div className={`h-0.5 w-full bg-gradient-to-r ${contentTypeBarColor(article.contentType)}`} />
+
+      {/* Cover thumbnail. Decorative — the card's own heading names the
+          article — so alt is empty. The 16:9 frame is fixed, which keeps a
+          grid of cards aligned whether or not each article has an image and
+          reserves the space before the image loads. */}
+      {article.coverImageUrl && (
+        <Link href={href} className="block relative w-full overflow-hidden bg-surface2" style={{ aspectRatio: "16 / 9" }} tabIndex={-1} aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={article.coverImageUrl}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        </Link>
+      )}
 
       <div className="p-5 flex-1 flex flex-col">
         {/* Badges row */}

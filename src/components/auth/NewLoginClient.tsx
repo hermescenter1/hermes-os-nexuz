@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { cn, Checkbox } from "@/components/ds";
 import { AuthField, PasswordField, AuthStatus, AuthSubmit } from "@/components/auth-experience";
+import { safeLocaleReturnPath } from "@/lib/auth/safe-return-path";
 
 interface Props {
   locale: string;
@@ -37,9 +38,13 @@ export function NewLoginClient({ locale, from }: Props) {
         const privileged = ["superadmin", "admin", "engineer"].includes(role);
         // Default landing: privileged roles go to engineering, others to dashboard
         const defaultDest = privileged ? `/${locale}/engineering` : `/${locale}/dashboard`;
-        // Only follow a `from` redirect when the role is permitted to access it,
-        // preventing a silent bounce-loop for lower-privilege roles
-        const fromPath = from ? decodeURIComponent(from) : null;
+        // `from` is attacker-controllable, and this assigns window.location —
+        // so it is validated as a same-origin, locale-prefixed internal path
+        // before it can be followed. An absolute URL, a protocol-relative
+        // "//host", or a backslash variant yields null and we use defaultDest.
+        // Only THEN does the privilege check below apply, which prevents a
+        // silent bounce-loop for lower-privilege roles.
+        const fromPath = safeLocaleReturnPath(from);
         const fromNeedsPrivilege = fromPath
           ? /^\/(fa|en|de)\/(engineering|admin)/.test(fromPath)
           : false;

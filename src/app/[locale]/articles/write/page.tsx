@@ -15,7 +15,9 @@ export default async function WritePage({
   setRequestLocale(locale);
 
   return (
-    <RequireCapability capability="dashboard">
+    // returnTo keeps the author's intent across the sign-in hop: a visitor who
+    // clicked "Write article" lands back on the writer, not on the dashboard.
+    <RequireCapability capability="dashboard" returnTo={`/${locale}/articles/write`}>
       <ArticleWriterClient />
     </RequireCapability>
   );

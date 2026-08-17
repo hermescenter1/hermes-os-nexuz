@@ -233,14 +233,57 @@ describe("104-F — article detail semantics and behaviour", () => {
     expect(src.detail).not.toContain("dangerouslySetInnerHTML");
     expect(src.detail).not.toMatch(/innerHTML|DOMPurify|marked\(|remark|rehype/);
   });
-  it("keeps every network contract byte-for-byte", () => {
-    expect(src.detail).toContain('await fetch("/api/articles/saved", {');
-    expect(src.detail).toContain('body:   next ? JSON.stringify({ articleId: article.id }) : undefined,');
-    expect(src.detail).toContain('await fetch("/api/articles/reactions", {');
-    expect(src.detail).toContain('JSON.stringify({ articleId: article.id, reactionType: key })');
+  it("keeps every network contract — merged with PR #70 (page-owned save, server-truthful reactions in <ArticleEngagement>)", () => {
+    // save (PR #70): POST with a JSON body, DELETE by query — page-owned, server-seeded, reverted to server truth
+    expect(src.detail).toContain('next ? "/api/articles/saved" : `/api/articles/saved?articleId=${encodeURIComponent(article.id)}`');
+    expect(src.detail).toContain('? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ articleId: article.id }) }');
+    expect(src.detail).toContain(': { method: "DELETE" },');
+    expect(src.detail).toContain("if (typeof data.saved === \"boolean\")        setSaved(data.saved);");
+    // reactions (PR #70): no local reaction state or legacy endpoint in the detail client — delegated
+    expect(src.detail).not.toContain("/api/articles/reactions");
+    expect(src.detail).not.toContain("reactionType");
+    expect(src.detail).toContain('import { ArticleEngagement, type EngagementViewer } from "./ArticleEngagement";');
+    expect(read("src/components/articles/ArticleEngagement.tsx")).toContain("`/api/articles/${articleId}/reaction`");
+    // follow + share: unchanged
     expect(src.detail).toContain('await fetch("/api/articles/follow", {');
     expect(src.detail).toContain('JSON.stringify({ authorHandle: author.handle })');
     expect(src.detail).toContain("navigator.clipboard.writeText(window.location.href)");
+  });
+
+  it("MERGE — the 104-F reading composition and the PR #70 engagement feature set coexist in one component", () => {
+    const d = src.detail;
+    // 104-F composition intact
+    for (const marker of ['className="hj-page"', "<ReadingProgress", "<Toc headings={headings}", "hj-provenance", "<RelatedRail", 'className="hj-body hj-measure', "<AuthorProvenance"]) {
+      expect(d, marker).toContain(marker);
+    }
+    // PR #70 feature set present: engagement prop, viewer contract, cover, discussion + reactions
+    expect(d).toMatch(/engagement\?: \{[\s\S]*reactions: ReactionSummary;[\s\S]*comments:  CommentPage;[\s\S]*saved:     boolean;[\s\S]*viewer:    EngagementViewer \| null;[\s\S]*\};/);
+    expect(d).toContain("<ArticleEngagement");
+    for (const prop of ["articleId={article.id}", "articleSlug={article.slug}", "reactions={engagement.reactions}", "comments={engagement.comments}", "viewer={engagement.viewer}"]) expect(d, prop).toContain(prop);
+    expect(d).toContain("article.coverImageUrl ?");
+    expect(d).toContain('alt=""');
+    // save control semantics: state carried by aria-pressed + glyph + word, anonymous readers get a return-path sign-in link
+    expect(d).toContain("aria-pressed={save.saved}");
+    expect(d).toContain("disabled={save.busy}");
+    expect(d).toContain('{save.saved ? t("engagement.saved") : t("detail.save")}');
+    expect(d).toContain('title={t("engagement.signInToSave")}');
+    expect(d).toContain("authHref: `/${locale}/auth/login?from=${encodeURIComponent(`/${locale}/articles/${article.slug}`)}`");
+    expect(d).toContain('role="alert"');
+    // both actions bars share ONE page-owned save control (never two disagreeing controls)
+    expect((d.match(/<ActionsBar article=\{article\} save=\{saveControl\} \/>/g) ?? []).length).toBe(2);
+    // order in the reading spread: body → bottom actions → engagement → author provenance → related
+    const iBody = d.indexOf("<ArticleBody content={article.content} />");
+    const iBottom = d.lastIndexOf("<ActionsBar article={article} save={saveControl} />");
+    const iEng = d.indexOf("<ArticleEngagement", iBottom);   // the rendered element, not the header-comment mention
+    const iAuthor = d.indexOf("<AuthorProvenance article={article}");
+    expect(iBody).toBeGreaterThan(0);
+    expect(iBottom).toBeGreaterThan(iBody);
+    expect(iEng).toBeGreaterThan(iBottom);
+    expect(iAuthor).toBeGreaterThan(iEng);
+    // the article page feeds the server-loaded engagement (PR #70 wiring survives 104-F)
+    const page = read("src/app/[locale]/articles/[slug]/page.tsx");
+    expect(page).toContain("engagement={{");
+    expect(page).toContain("<ArticleDetailClient");
   });
   it("uses the shared formatter (format-migration invariant) and the shared Persian display overlay", () => {
     expect(src.detail).toContain("formatDate(");
