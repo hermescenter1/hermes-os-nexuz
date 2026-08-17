@@ -1,0 +1,53 @@
+{
+  "slug": "designing-reusable-plc-function-blocks",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "plc-programming",
+  "tags": ["function-blocks", "iec-61131-3", "software-architecture", "maintainability", "commissioning"],
+  "publishedAt": "2026-08-16T02:30:00.000Z",
+  "coverImage": {
+    "file": "journal/reusable-function-blocks.jpg",
+    "url": null,
+    "concept": "A rack of identical modular components in a control panel — visually repeated, individually addressable: the physical counterpart of many instances of one block.",
+    "prompt": "Photorealistic photograph of a row of identical grey modular components mounted in a clean industrial control panel, strong visual repetition receding into shallow depth of field, subtle cyan status indicators, cool technical lighting, no readable text or branding, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Row of identical modular components mounted in an industrial control panel",
+      "fa": "ردیفی از قطعات ماژولار یکسان نصب‌شده در یک تابلوی کنترل صنعتی",
+      "de": "Reihe identischer modularer Komponenten in einem industriellen Schaltschrank"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "Function Block Libraries",
+    "linkedStandard": "IEC 61131-3",
+    "linkedPLCPlatform": "Multi-vendor",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Designing Reusable Function Blocks That Survive Reuse",
+      "subtitle": "Interface contracts, instance state, error propagation and versioning — the properties that separate a library block from copied code",
+      "excerpt": "Most reusable blocks are not reusable; they are the first project's block with parameters bolted on. What an interface contract has to guarantee, why every block needs a Ready output, and how versioning decides whether a fix reaches the plants that need it.",
+      "seoTitle": "Designing Reusable Function Blocks That Survive Reuse",
+      "seoDescription": "Build PLC function blocks that are genuinely reusable: interface contracts, instance state, fault propagation, restart behaviour, testability and library versioning."
+    },
+    "fa": {
+      "title": "طراحی بلوک‌های تابعی که از استفادهٔ مجدد جان سالم به در می‌برند",
+      "subtitle": "قرارداد واسط، وضعیت نمونه، انتشار خطا و نسخه‌بندی — ویژگی‌هایی که بلوک کتابخانه‌ای را از کد کپی‌شده جدا می‌کنند",
+      "excerpt": "بیشتر بلوک‌های «قابل استفادهٔ مجدد» قابل استفادهٔ مجدد نیستند؛ بلوک پروژهٔ اول‌اند که چند پارامتر به آن پیچ شده. اینکه قرارداد واسط چه چیزی را باید تضمین کند، چرا هر بلوک به خروجی Ready نیاز دارد، و اینکه نسخه‌بندی چگونه تعیین می‌کند یک اصلاح به کارخانه‌های نیازمندش می‌رسد یا نه.",
+      "seoTitle": "طراحی بلوک تابعی قابل استفادهٔ مجدد در PLC صنعتی",
+      "seoDescription": "ساخت بلوک تابعی واقعاً قابل استفادهٔ مجدد در PLC: قرارداد واسط، وضعیت نمونه، انتشار خطا، رفتار راه‌اندازی مجدد، آزمون‌پذیری و نسخه‌بندی کتابخانه."
+    },
+    "de": {
+      "title": "Wiederverwendbare Funktionsbausteine richtig entwerfen",
+      "subtitle": "Schnittstellenvertrag, Instanzdaten, Fehlerweitergabe und Versionierung — was einen Bibliotheksbaustein von kopiertem Code trennt",
+      "excerpt": "Die meisten „wiederverwendbaren\" Bausteine sind es nicht; sie sind der Baustein des ersten Projekts mit angeschraubten Parametern. Was ein Schnittstellenvertrag zusichern muss, warum jeder Baustein einen Bereitschaftsausgang braucht und wie Versionierung entscheidet, ob eine Korrektur ankommt.",
+      "seoTitle": "Wiederverwendbare Funktionsbausteine richtig entwerfen",
+      "seoDescription": "SPS-Funktionsbausteine wiederverwendbar bauen: Schnittstellenvertrag, Instanzdaten, Fehlerweitergabe, Wiederanlaufverhalten, Testbarkeit und Bibliotheksversionierung."
+    }
+  }
+}

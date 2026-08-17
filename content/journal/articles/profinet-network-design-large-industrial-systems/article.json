@@ -1,0 +1,52 @@
+{
+  "slug": "profinet-network-design-large-industrial-systems",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "industrial-networks",
+  "tags": ["profinet", "mrp", "network-segmentation", "commissioning", "diagnostics"],
+  "publishedAt": "2026-08-16T10:40:00.000Z",
+  "coverImage": {
+    "file": "journal/profinet-network-design.jpg",
+    "url": null,
+    "concept": "Industrial Ethernet cabling entering a row of DIN-rail switches — the point where topology stops being a drawing and becomes physical.",
+    "prompt": "Photorealistic photograph of DIN-rail mounted industrial Ethernet switches in a control cabinet, green industrial patch cables neatly routed, cyan link indicators, dark grey enclosure, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "DIN-rail mounted industrial Ethernet switches with neatly routed patch cables in a control cabinet",
+      "fa": "سوئیچ‌های اترنت صنعتی نصب‌شده روی ریل DIN با کابل‌کشی مرتب در تابلوی کنترل",
+      "de": "Auf Hutschiene montierte Industrial-Ethernet-Switches mit sauber verlegten Patchkabeln im Schaltschrank"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "NETWORK",
+    "linkedTechnology": "PROFINET",
+    "linkedStandard": "IEC 61784",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "PROFINET Network Design for Large Industrial Systems",
+      "subtitle": "Topology as failure domains, update times chosen rather than minimised, and the naming discipline that decides whether a device swap takes minutes or hours",
+      "excerpt": "PROFINET design decisions look like network engineering and behave like plant availability engineering. Topology and failure domains, MRP, RT versus IRT, update time and watchdog, device naming, EMC and fibre choices, and diagnostics that identify the segment rather than the symptom.",
+      "seoTitle": "PROFINET Network Design for Large Industrial Systems",
+      "seoDescription": "Engineering PROFINET properly: topology and failure domains, MRP rings, RT and IRT, update time and watchdog, device naming, EMC, fibre choice and diagnostics."
+    },
+    "fa": {
+      "title": "طراحی شبکهٔ PROFINET برای سامانه‌های صنعتی بزرگ",
+      "subtitle": "توپولوژی به‌مثابهٔ دامنهٔ خرابی، update time انتخاب‌شده به‌جای کمینه‌شده، و انضباط نام‌گذاری که تعیین می‌کند تعویض یک دستگاه چند دقیقه طول بکشد یا چند ساعت",
+      "excerpt": "تصمیم‌های طراحی PROFINET شبیه مهندسی شبکه به نظر می‌رسند اما مثل مهندسی دسترس‌پذیری کارخانه رفتار می‌کنند. توپولوژی و دامنهٔ خرابی، MRP، تفاوت RT و IRT، update time و watchdog، نام‌گذاری دستگاه، EMC و انتخاب فیبر، و تشخیصی که سگمنت را شناسایی می‌کند نه نشانه را.",
+      "seoTitle": "طراحی شبکهٔ PROFINET برای سامانه‌های صنعتی بزرگ",
+      "seoDescription": "مهندسی درست PROFINET: توپولوژی و دامنهٔ خرابی، حلقهٔ MRP، تفاوت RT و IRT، update time و watchdog، نام‌گذاری دستگاه، EMC، انتخاب فیبر، تشخیص و راه‌اندازی."
+    },
+    "de": {
+      "title": "PROFINET-Netzentwurf für große Industrieanlagen",
+      "subtitle": "Topologie als Fehlerdomäne, bewusst gewählte statt minimierter Aktualisierungszeiten und die Namensdisziplin, die über Minuten oder Stunden beim Gerätetausch entscheidet",
+      "excerpt": "PROFINET-Entwurfsentscheidungen sehen nach Netzwerktechnik aus und wirken wie Verfügbarkeitstechnik. Topologie und Fehlerdomänen, MRP, RT gegenüber IRT, Aktualisierungszeit und Ansprechüberwachung, Gerätenamen, EMV und Lichtwellenleiter sowie Diagnose, die das Segment benennt.",
+      "seoTitle": "PROFINET-Netzentwurf für große Industrieanlagen",
+      "seoDescription": "PROFINET richtig auslegen: Topologie und Fehlerdomänen, MRP-Ringe, RT und IRT, Aktualisierungszeit und Ansprechüberwachung, Gerätenamen, EMV, LWL und Diagnose."
+    }
+  }
+}

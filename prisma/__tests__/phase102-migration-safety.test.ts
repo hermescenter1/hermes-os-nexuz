@@ -386,6 +386,24 @@ describe("102 — migration ordering", () => {
    */
   const PHASE102_FOLLOW_UPS = ["20260822000000_phase102_tenant_composite_foreign_keys"];
 
+  /**
+   * Migrations from LATER PHASES that legitimately sort after this one.
+   *
+   * Kept separate from PHASE102_FOLLOW_UPS on purpose: the assertions below
+   * hold Phase 102's own follow-ups to Phase 102's additive contract, and a
+   * later phase's migration is not Phase 102 work. Enrolling it in that list to
+   * silence a failure would make this record claim something false about what
+   * Phase 102 shipped.
+   *
+   * The pin itself is unchanged in strength — a new migration still has to be
+   * added here deliberately and visibly, it just gets named for what it is.
+   *
+   *   Phase 106 — Journal multilingual editions: adds DE to ArtLanguage,
+   *   replaces Article's global unique slug with a composite (slug, language),
+   *   and adds a nullable German category label. Touches no Phase 102 table.
+   */
+  const LATER_PHASE_MIGRATIONS = ["20260823000000_phase106_journal_multilingual_editions"];
+
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {
     const all = dirs();
     expect(all).toContain(MIGRATION);
@@ -393,7 +411,18 @@ describe("102 — migration ordering", () => {
     const after = all.slice(all.indexOf(MIGRATION) + 1);
     // Pinned exactly: a new migration appearing after this one must be a
     // deliberate contract change, visible here, not an accident.
-    expect(after).toEqual(PHASE102_FOLLOW_UPS);
+    expect(after).toEqual([...PHASE102_FOLLOW_UPS, ...LATER_PHASE_MIGRATIONS]);
+  });
+
+  it("no later-phase migration touches a Phase 102 table", () => {
+    // The reason a later phase can be waved past the additive-contract checks
+    // below: it is not operating on this phase's schema at all.
+    for (const d of LATER_PHASE_MIGRATIONS) {
+      const sql = readFileSync(join(REPO, "prisma/migrations", d, "migration.sql"), "utf8");
+      for (const t of NEW_TABLES) {
+        expect(sql, `${d} must not mention Phase 102 table ${t}`).not.toContain(`"${t}"`);
+      }
+    }
   });
 
   it("its stamp is strictly greater than every migration that precedes it", () => {
@@ -407,8 +436,9 @@ describe("102 — migration ordering", () => {
         `${d} must sort strictly before ${MIGRATION}`,
       ).toBe(true);
     }
-    // And every follow-up sorts strictly after, so the history stays append-only.
-    for (const d of PHASE102_FOLLOW_UPS) {
+    // And everything that follows sorts strictly after, so history stays
+    // append-only — later phases included.
+    for (const d of [...PHASE102_FOLLOW_UPS, ...LATER_PHASE_MIGRATIONS]) {
       expect(d.slice(0, 14) > mine, `${d} must sort strictly after ${MIGRATION}`).toBe(true);
     }
   });

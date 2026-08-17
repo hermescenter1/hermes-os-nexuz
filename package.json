@@ -47,7 +47,11 @@
     "eval:phase100:closure": "node scripts/ci/phase100-ga-closure-eval.mjs",
     "eval:phase100:hygiene": "node scripts/ci/phase100-summary-hygiene.mjs",
     "dr:adopt-documents": "node scripts/dr/adopt-documents.mjs",
-    "media:processing": "node scripts/media/phase102-media-processing.mjs"
+    "media:processing": "node scripts/media/phase102-media-processing.mjs",
+    "test:phase106:postgres": "vitest run --config vitest.phase106-postgres.config.ts",
+    "journal:validate": "node scripts/journal/validate-content.mjs",
+    "journal:import:dry": "node scripts/journal/import-articles.mjs",
+    "journal:import": "node scripts/journal/import-articles.mjs --commit"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

@@ -15,7 +15,16 @@ export type ArtContentType =
   | "RESEARCH_SUMMARY"
   | "FIELD_COMMISSIONING_NOTE"
   | "SAFETY_COMPLIANCE_NOTE";
-export type ArtLanguage = "EN" | "FA";
+/**
+ * The language an article edition is WRITTEN IN. This is content data, not the
+ * UI locale: a Persian reader can open an English article, and the value here
+ * decides `<html lang>`-level truth (JSON-LD `inLanguage`, IndexNow paths),
+ * never which chrome is rendered.
+ *
+ * DE joined in Phase 106 — German has been an active public locale since Phase
+ * 87L.6, so a German edition is representable end to end.
+ */
+export type ArtLanguage = "EN" | "FA" | "DE";
 export type ArtReactionType = "INSIGHTFUL" | "HELPFUL" | "DETAILED" | "PRACTICAL";
 
 export interface ArticleAuthorProfile {
@@ -50,6 +59,8 @@ export interface ArticleCategory {
   slug: string;
   name: string;
   nameFa: string;
+  /** German label; null falls back to `name` (Phase 106). */
+  nameDe?: string | null;
   description: string | null;
   color: string;
   isActive: boolean;

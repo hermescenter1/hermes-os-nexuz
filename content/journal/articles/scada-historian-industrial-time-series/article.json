@@ -1,0 +1,52 @@
+{
+  "slug": "scada-historian-industrial-time-series",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "scada-hmi",
+  "tags": ["historian", "time-series", "scada", "opc-ua", "isa-95"],
+  "publishedAt": "2026-08-16T08:30:00.000Z",
+  "coverImage": {
+    "file": "journal/scada-historian.jpg",
+    "url": null,
+    "concept": "Storage arrays in a plant equipment room, cool and dense — the physical form of years of process history, with no readable labels.",
+    "prompt": "Photorealistic photograph of dense rack-mounted storage arrays in an industrial equipment room, rows of drive bays with subtle cyan activity indicators against dark grey metal, no readable text or labels, cool technical lighting, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Rack-mounted storage arrays in an industrial equipment room",
+      "fa": "آرایه‌های ذخیره‌سازی رک‌مونت در اتاق تجهیزات صنعتی",
+      "de": "Rackmontierte Speicherarrays in einem industriellen Technikraum"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "HISTORIAN",
+    "linkedTechnology": "Industrial Time-Series",
+    "linkedStandard": "ISA-95",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "SCADA Historian Architecture and Industrial Time-Series Data",
+      "subtitle": "What a historian is for, what it is not, and why deadband settings decide whether your data can answer the question you will ask in three years",
+      "excerpt": "A historian is not a database with timestamps. Collection strategy, deadband, timestamp fidelity and store-and-forward decide whether an archive can reconstruct a plant event — and those decisions are made once, at configuration, long before anyone needs the answer.",
+      "seoTitle": "SCADA Historian Architecture and Industrial Time-Series",
+      "seoDescription": "Design an industrial historian properly: exception and deadband collection, timestamp fidelity, store-and-forward, compression, retention and OT/IT integration."
+    },
+    "fa": {
+      "title": "معماری هیستورین SCADA و دادهٔ سری‌زمانی صنعتی",
+      "subtitle": "هیستورین برای چیست، برای چه نیست، و چرا تنظیم دِدبند تعیین می‌کند دادهٔ شما سه سال بعد به پرسش شما پاسخ می‌دهد یا نه",
+      "excerpt": "هیستورین یک پایگاه داده با مُهر زمانی نیست. راهبرد جمع‌آوری، دِدبند، وفاداری مُهر زمانی و store-and-forward تعیین می‌کنند که آیا یک آرشیو می‌تواند رویداد کارخانه را بازسازی کند — و این تصمیم‌ها یک بار، هنگام پیکربندی، مدت‌ها پیش از نیاز به پاسخ گرفته می‌شوند.",
+      "seoTitle": "معماری هیستورین SCADA و دادهٔ سری‌زمانی صنعتی",
+      "seoDescription": "طراحی درست هیستورین صنعتی: جمع‌آوری مبتنی بر استثنا و دِدبند، وفاداری مُهر زمانی، store-and-forward، فشرده‌سازی، نگهداشت و یکپارچگی OT/IT."
+    },
+    "de": {
+      "title": "SCADA-Historian-Architektur und industrielle Zeitreihen",
+      "subtitle": "Wofür ein Historian da ist, wofür nicht — und warum Hysterese-Einstellungen entscheiden, ob die Daten in drei Jahren die dann gestellte Frage beantworten",
+      "excerpt": "Ein Historian ist keine Datenbank mit Zeitstempeln. Erfassungsstrategie, Hysterese, Zeitstempeltreue und Store-and-Forward entscheiden, ob ein Archiv ein Anlagenereignis rekonstruieren kann — und diese Entscheidungen fallen einmalig bei der Projektierung.",
+      "seoTitle": "SCADA-Historian-Architektur und industrielle Zeitreihen",
+      "seoDescription": "Industrielle Historians richtig auslegen: Ausnahme- und Hysterese-Erfassung, Zeitstempeltreue, Store-and-Forward, Komprimierung, Aufbewahrung und OT/IT-Anbindung."
+    }
+  }
+}

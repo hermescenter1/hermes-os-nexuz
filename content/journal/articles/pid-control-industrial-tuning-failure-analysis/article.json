@@ -1,0 +1,52 @@
+{
+  "slug": "pid-control-industrial-tuning-failure-analysis",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "industrial-automation",
+  "tags": ["pid-control", "diagnostics", "root-cause-analysis", "commissioning", "maintainability"],
+  "publishedAt": "2026-08-17T12:00:00.000Z",
+  "coverImage": {
+    "file": "journal/pid-loop-trend.jpg",
+    "url": null,
+    "concept": "A control-room trend showing setpoint, process variable and controller output together — the three traces whose relative shapes distinguish a tuning problem from a stiction limit cycle from an external disturbance.",
+    "prompt": "Photorealistic photograph of a control room screen displaying three overlaid process trend curves on a dark background, cyan and amber traces, slight screen glow, no readable text or numbers, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Control room trend display showing setpoint, process variable and controller output traces",
+      "fa": "نمایش روند اتاق کنترل با منحنی‌های ست‌پوینت، متغیر فرایند و خروجی کنترلر",
+      "de": "Trendanzeige in der Warte mit Sollwert-, Istwert- und Stellgrößenkurven"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "PROCESS",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "PID Control",
+    "linkedStandard": null,
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "PID Control: Practical Industrial Tuning and Failure Analysis",
+      "subtitle": "An oscillating loop has at least eight distinct causes and only two of them are tuning — so the first move is always to put the controller in manual",
+      "excerpt": "PID treated as a diagnostic discipline rather than a numbers exercise: what each term does and why controller form makes a tuning set meaningless without it, the dynamics that decide what is achievable, step-response reasoning, windup as a structural fault, derivative and noise, a differential diagnosis of oscillation covering stiction, saturation, varying dead time and disturbance, and cascade control.",
+      "seoTitle": "PID Control: Industrial Tuning and Failure Analysis",
+      "seoDescription": "PID in practice: process gain, dead time, integrating processes, step tests, anti-windup, derivative filtering, valve stiction, cascade control and oscillation diagnosis."
+    },
+    "fa": {
+      "title": "کنترل PID: تنظیم عملی صنعتی و تحلیل خرابی",
+      "subtitle": "حلقهٔ نوسانی دست‌کم هشت علت متمایز دارد و تنها دوتای آن‌ها تنظیم است — پس نخستین حرکت همیشه بردن کنترلر به حالت دستی است",
+      "excerpt": "PID به‌عنوان یک انضباط تشخیصی و نه یک تمرین عددی: هر ترم چه می‌کند و چرا فرم کنترلر یک مجموعهٔ تنظیم را بدون خودش بی‌معنا می‌کند، دینامیکی که تعیین می‌کند چه چیزی دست‌یافتنی است، استدلال پاسخ پله، وایندآپ به‌عنوان عیب ساختاری، مشتق و نویز، تشخیص افتراقی نوسان شامل استیکشن، اشباع، تأخیر متغیر و اغتشاش، و کنترل آبشاری.",
+      "seoTitle": "کنترل PID: تنظیم صنعتی و تحلیل خرابی حلقهٔ کنترل",
+      "seoDescription": "PID در عمل: بهرهٔ فرایند، زمان مرده، فرایند انتگرالی، آزمون پله، ضد وایندآپ، فیلتر مشتق، استیکشن شیر، کنترل آبشاری و تشخیص نوسان."
+    },
+    "de": {
+      "title": "PID-Regelung: praktische Einstellung und Fehleranalyse",
+      "subtitle": "Ein schwingender Regelkreis hat mindestens acht verschiedene Ursachen und nur zwei davon sind die Einstellung — der erste Schritt ist stets Handbetrieb",
+      "excerpt": "PID als diagnostische Disziplin statt als Zahlenübung: was jeder Anteil bewirkt und warum die Reglerform einen Parametersatz ohne sie bedeutungslos macht, die Dynamik, die das Erreichbare bestimmt, Sprungantwortauswertung, Windup als struktureller Fehler, D-Anteil und Rauschen, eine Differentialdiagnose des Schwingens sowie Kaskadenregelung.",
+      "seoTitle": "PID-Regelung: praktische Einstellung und Fehleranalyse",
+      "seoDescription": "PID in der Praxis: Streckenverstärkung, Totzeit, integrierende Strecken, Sprungversuch, Anti-Windup, D-Filter, Ventilhaftreibung, Kaskade und Schwingungsdiagnose."
+    }
+  }
+}

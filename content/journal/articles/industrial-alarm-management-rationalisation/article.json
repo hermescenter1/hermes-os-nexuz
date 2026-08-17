@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-alarm-management-rationalisation",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "scada-hmi",
+  "tags": ["alarm-management", "isa-18-2", "scada", "hmi", "isa-101"],
+  "publishedAt": "2026-08-15T07:30:00.000Z",
+  "coverImage": {
+    "file": "journal/alarm-management.jpg",
+    "url": null,
+    "concept": "Control room operator workstation at night, muted dark interface with a small number of clearly prioritised indicators — deliberately calm, not a wall of red.",
+    "prompt": "Photorealistic photograph of a modern industrial control room operator desk at night, dark navy ambience, multiple muted grey process displays with a few distinct amber and cyan indicators, no readable text, calm atmosphere, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Control room operator workstation at night showing calm, low-contrast process displays",
+      "fa": "میز اپراتور اتاق کنترل در شب با نمایشگرهای فرایندی آرام و کم‌کنتراست",
+      "de": "Bedienplatz einer Leitwarte bei Nacht mit ruhigen, kontrastarmen Prozessbildern"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "OPERATIONS",
+    "linkedAssetType": "SCADA",
+    "linkedTechnology": "Alarm Management",
+    "linkedStandard": "ISA-18.2",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Alarm Management: From Nuisance Floods to Actionable Signals",
+      "subtitle": "Rationalisation, prioritisation and suppression as engineering activities rather than configuration housekeeping",
+      "excerpt": "An alarm system that annunciates everything communicates nothing. How to rationalise an existing alarm set, define priority from consequence and response time, and apply suppression without hiding the alarm that mattered.",
+      "seoTitle": "Alarm Management: From Nuisance Floods to Actionable Signals",
+      "seoDescription": "Rationalise an alarm system: derive priority from consequence and response time, remove chattering nuisance alarms, and suppress without hiding real events."
+    },
+    "fa": {
+      "title": "مدیریت آلارم: از سیل آلارم‌های مزاحم تا سیگنال‌های قابل اقدام",
+      "subtitle": "منطقی‌سازی، اولویت‌بندی و سرکوب آلارم به‌عنوان فعالیت مهندسی، نه نظافت پیکربندی",
+      "excerpt": "سیستمی که همه‌چیز را اعلام می‌کند، هیچ‌چیز را منتقل نمی‌کند. چگونه یک مجموعه آلارم موجود را منطقی کنیم، اولویت را از پیامد و زمان پاسخ اپراتور استخراج کنیم و سرکوب را بدون پنهان کردن آلارمِ مهم اعمال کنیم.",
+      "seoTitle": "مدیریت آلارم صنعتی: از سیل آلارم تا سیگنال قابل اقدام",
+      "seoDescription": "منطقی‌سازی سیستم آلارم صنعتی: استخراج اولویت از پیامد و زمان پاسخ اپراتور، حذف آلارم‌های لرزان و مزاحم، و سرکوب ایمن بدون پنهان کردن رویداد واقعی."
+    },
+    "de": {
+      "title": "Alarmmanagement: Von der Alarmflut zum handlungsrelevanten Signal",
+      "subtitle": "Rationalisierung, Priorisierung und Unterdrückung als Ingenieuraufgabe statt als Konfigurationspflege",
+      "excerpt": "Ein Alarmsystem, das alles meldet, teilt nichts mit. Wie ein bestehender Alarmbestand rationalisiert wird, wie Priorität aus Konsequenz und Reaktionszeit entsteht und wie Unterdrückung wirkt, ohne den entscheidenden Alarm zu verbergen.",
+      "seoTitle": "Alarmmanagement: Von der Alarmflut zum nutzbaren Signal",
+      "seoDescription": "Alarmbestand rationalisieren: Priorität aus Konsequenz und Reaktionszeit ableiten, Störalarme beseitigen und sicher unterdrücken, ohne reale Ereignisse zu verbergen."
+    }
+  }
+}

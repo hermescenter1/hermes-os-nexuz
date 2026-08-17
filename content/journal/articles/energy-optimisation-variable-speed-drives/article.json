@@ -1,0 +1,52 @@
+{
+  "slug": "energy-optimisation-variable-speed-drives",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "energy-utilities",
+  "tags": ["vfd", "power-quality", "condition-monitoring", "commissioning", "maintainability"],
+  "publishedAt": "2026-08-16T13:10:00.000Z",
+  "coverImage": {
+    "file": "journal/vsd-energy-optimisation.jpg",
+    "url": null,
+    "concept": "A throttling valve on a pump discharge line — the component whose pressure drop is the energy a variable-speed drive is meant to stop wasting.",
+    "prompt": "Photorealistic photograph of a large partially closed throttling valve on an industrial pump discharge pipe, weathered flange bolts and insulation, cool cyan light on grey steel, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Partially closed throttling valve on a large industrial pump discharge pipe",
+      "fa": "شیر خفه‌کن نیمه‌بسته روی لولهٔ خروجی یک پمپ صنعتی بزرگ",
+      "de": "Teilweise geschlossenes Drosselventil an der Druckleitung einer großen Industriepumpe"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "VFD",
+    "linkedTechnology": "Variable Speed Energy Performance",
+    "linkedStandard": "IEC 61800",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Energy Optimisation Using Variable-Speed Drives",
+      "subtitle": "The saving lives in the duty profile, not in the drive — and a machine that runs at full flow can consume more after conversion",
+      "excerpt": "Where variable-speed energy savings actually come from, why static head and minimum-speed constraints erode them, when a correctly sized pump beats a drive on an oversized one, how drive and motor losses subtract from the benefit, and how to measure and verify instead of asserting.",
+      "seoTitle": "Energy Optimisation Using Variable-Speed Drives in Industry",
+      "seoDescription": "Variable-speed energy performance: duty profiles, affinity laws and static head, minimum speed limits, drive and motor losses, oversizing, power factor and verification."
+    },
+    "fa": {
+      "title": "بهینه‌سازی انرژی با درایوهای دور متغیر",
+      "subtitle": "صرفه‌جویی در پروفیل کارکرد زندگی می‌کند نه در درایو — و ماشینی که با دبی کامل کار می‌کند می‌تواند پس از تبدیل بیشتر مصرف کند",
+      "excerpt": "صرفه‌جویی انرژی دور متغیر واقعاً از کجا می‌آید، چرا هد استاتیک و قید حداقل دور آن را می‌فرسایند، کِی پمپ درست‌اندازه از درایو روی پمپ بزرگ‌تر از نیاز بهتر است، تلفات درایو و موتور چگونه از منفعت کم می‌کنند، و چگونه به‌جای ادعا اندازه‌گیری و راستی‌آزمایی کنیم.",
+      "seoTitle": "بهینه‌سازی انرژی با درایوهای دور متغیر در صنعت",
+      "seoDescription": "کارایی انرژی دور متغیر: پروفیل کارکرد، قوانین تشابه و هد استاتیک، حداقل دور، تلفات درایو و موتور، بزرگ‌تر از نیاز بودن، ضریب توان و راستی‌آزمایی."
+    },
+    "de": {
+      "title": "Energieoptimierung mit drehzahlvariablen Antrieben",
+      "subtitle": "Die Einsparung steckt im Betriebsprofil, nicht im Umrichter — und eine Maschine bei Vollförderung kann nach der Umrüstung mehr verbrauchen",
+      "excerpt": "Woher Einsparungen durch Drehzahlregelung tatsächlich kommen, warum statische Förderhöhe und Mindestdrehzahlen sie aufzehren, wann eine richtig ausgelegte Pumpe den Umrichter schlägt, wie Umrichter- und Motorverluste den Nutzen mindern und wie man misst statt behauptet.",
+      "seoTitle": "Energieoptimierung mit drehzahlvariablen Antrieben",
+      "seoDescription": "Energieeffizienz durch Drehzahlregelung: Betriebsprofile, Ähnlichkeitsgesetze und statische Förderhöhe, Mindestdrehzahl, Verluste, Überdimensionierung, Nachweis."
+    }
+  }
+}

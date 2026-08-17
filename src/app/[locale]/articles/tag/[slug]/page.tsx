@@ -34,9 +34,9 @@ export default async function TagPage({
 
   const [tag, articles, categories, feed] = await Promise.all([
     getTagBySlug(slug),
-    getArticlesByTag_(slug),
+    getArticlesByTag_(slug, locale),
     getAllCategories(),
-    getArticleFeed(),
+    getArticleFeed(locale),
   ]);
 
   if (!tag) notFound();

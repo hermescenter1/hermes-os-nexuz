@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-ethernet-vlan-segmentation",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "industrial-networks",
+  "tags": ["network-segmentation", "profinet", "ethernet-ip", "diagnostics", "maintainability"],
+  "publishedAt": "2026-08-16T11:10:00.000Z",
+  "coverImage": {
+    "file": "journal/industrial-vlan-segmentation.jpg",
+    "url": null,
+    "concept": "Fibre uplinks leaving a plant distribution cabinet in separated bundles — segmentation made physical before it is made logical.",
+    "prompt": "Photorealistic photograph of an industrial network distribution cabinet with separated fibre uplink bundles leaving through segregated cable ducts, cool cyan indicators on dark steel, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Industrial network distribution cabinet with separated fibre uplink bundles in segregated ducts",
+      "fa": "تابلوی توزیع شبکهٔ صنعتی با دسته‌های مجزای uplink فیبر در داکت‌های جداشده",
+      "de": "Industrieller Netzverteilerschrank mit getrennten Glasfaser-Uplink-Bündeln in separaten Kanälen"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "NETWORK",
+    "linkedTechnology": "Industrial Ethernet",
+    "linkedStandard": "IEC 62443",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial Ethernet Network Segmentation and VLAN Design",
+      "subtitle": "Why an OT VLAN boundary is a failure boundary first, a policy boundary second — and why the routed edge must sit above the cell, never inside it",
+      "excerpt": "Segmentation in OT is not the corporate VLAN exercise wearing industrial clothing. Layer-2-only industrial protocols, multicast that floods without a querier, management paths that must survive the fault they report, and the real cost of over-segmenting a plant network.",
+      "seoTitle": "Industrial Ethernet Segmentation and VLAN Design for OT Networks",
+      "seoDescription": "OT-first VLAN design: broadcast domains, layer-2-only protocols, multicast containment, cell failure domains, routed boundaries, trunk and access ports, documentation."
+    },
+    "fa": {
+      "title": "بخش‌بندی شبکهٔ اترنت صنعتی و طراحی VLAN",
+      "subtitle": "چرا مرز VLAN در OT پیش از آنکه مرز سیاست باشد مرز خرابی است — و چرا لبهٔ مسیریابی باید بالای سلول بنشیند، نه درون آن",
+      "excerpt": "بخش‌بندی در OT همان تمرین VLAN سازمانی با لباس صنعتی نیست. پروتکل‌های صنعتیِ فقط لایه ۲، multicastی که بدون querier همه‌جا سیل می‌شود، مسیر مدیریتی که باید از خرابیِ گزارش‌شده جان سالم به در ببرد، و هزینهٔ واقعی بخش‌بندی بیش از حد شبکهٔ کارخانه.",
+      "seoTitle": "بخش‌بندی شبکهٔ اترنت صنعتی و طراحی VLAN در OT",
+      "seoDescription": "طراحی VLAN با نگاه OT: دامنهٔ broadcast، پروتکل‌های فقط لایه ۲، مهار multicast، دامنهٔ خرابی سلول، مرزهای مسیریابی، پورت trunk و access و مستندسازی."
+    },
+    "de": {
+      "title": "Segmentierung industrieller Ethernet-Netze und VLAN-Entwurf",
+      "subtitle": "Warum eine OT-VLAN-Grenze zuerst eine Fehlergrenze und erst danach eine Richtliniengrenze ist — und warum der Routing-Rand über der Zelle liegt, nie darin",
+      "excerpt": "Segmentierung in der OT ist nicht die Unternehmens-VLAN-Übung im Industriegewand. Industrieprotokolle, die nur auf Layer 2 arbeiten, Multicast, der ohne Querier alles flutet, Managementpfade, die den gemeldeten Fehler überstehen müssen — und der reale Preis übertriebener Segmentierung.",
+      "seoTitle": "Segmentierung industrieller Ethernet-Netze und VLAN-Entwurf",
+      "seoDescription": "VLAN-Entwurf aus OT-Sicht: Broadcast-Domänen, reine Layer-2-Protokolle, Multicast-Eindämmung, Zellen-Fehlerdomänen, Routing-Grenzen, Trunk- und Access-Ports."
+    }
+  }
+}

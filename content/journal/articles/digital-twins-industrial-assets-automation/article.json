@@ -1,0 +1,52 @@
+{
+  "slug": "digital-twins-industrial-assets-automation",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "industrial-automation",
+  "tags": ["digital-twin", "time-series", "software-architecture", "condition-monitoring", "commissioning"],
+  "publishedAt": "2026-08-17T13:40:00.000Z",
+  "coverImage": {
+    "file": "journal/digital-twin-residual.jpg",
+    "url": null,
+    "concept": "A screen showing a measured process trace overlaid with a model-predicted trace and the residual between them — the difference, not the picture, is the engineering artefact.",
+    "prompt": "Photorealistic photograph of an engineering screen displaying two nearly coincident curves with a small difference plot beneath them, cyan and amber on a dark background, no readable text or numbers, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Screen showing a measured trace, a model-predicted trace and the residual between them",
+      "fa": "نمایشگری با منحنی اندازه‌گیری‌شده، منحنی پیش‌بینی مدل و باقی‌ماندهٔ میان آن دو",
+      "de": "Bildschirm mit gemessener Kurve, modellprognostizierter Kurve und deren Residuum"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "DIGITAL_TWIN",
+    "linkedAssetType": null,
+    "linkedTechnology": "Digital Twin",
+    "linkedStandard": null,
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Digital Twins for Industrial Assets and Automation Systems",
+      "subtitle": "Most things called digital twins are digital shadows, and the engineering value was never the picture — it is the difference between what the model predicted and what the plant did",
+      "excerpt": "Digital twins defined precisely rather than aspirationally: model, shadow and twin distinguished by data flow, physics-based against data-driven against hybrid, why an estimated physical parameter is worth more than an anomaly score, synchronisation and initialisation, data fidelity and false precision, virtual commissioning and its honest limits, and the governance without which a twin silently diverges.",
+      "seoTitle": "Digital Twins for Industrial Assets and Automation",
+      "seoDescription": "Digital model, shadow and twin distinguished; physics, data-driven and hybrid models; synchronisation, residuals, virtual commissioning, model drift and governance."
+    },
+    "fa": {
+      "title": "دوقلوی دیجیتال برای دارایی‌های صنعتی و سیستم‌های اتوماسیون",
+      "subtitle": "بیشتر چیزهایی که دوقلوی دیجیتال نامیده می‌شوند سایهٔ دیجیتال‌اند، و ارزش مهندسی هرگز تصویر نبود — تفاوت میان آنچه مدل پیش‌بینی کرد و آنچه کارخانه کرد است",
+      "excerpt": "دوقلوی دیجیتال با تعریف دقیق و نه آرمانی: تفکیک مدل، سایه و دوقلو بر پایهٔ جریان داده، مدل فیزیک‌محور در برابر داده‌محور در برابر ترکیبی، چرا پارامتر فیزیکی تخمین‌زده‌شده از نمرهٔ ناهنجاری ارزشمندتر است، همگام‌سازی و مقداردهی اولیه، وفاداری داده و دقت کاذب، راه‌اندازی مجازی و حدود صادقانه‌اش، و حکمرانی‌ای که بدون آن دوقلو بی‌صدا واگرا می‌شود.",
+      "seoTitle": "دوقلوی دیجیتال برای دارایی‌های صنعتی و اتوماسیون",
+      "seoDescription": "تفکیک مدل، سایه و دوقلوی دیجیتال؛ مدل فیزیکی، داده‌محور و ترکیبی؛ همگام‌سازی، باقی‌مانده، راه‌اندازی مجازی، رانش مدل و حکمرانی."
+    },
+    "de": {
+      "title": "Digitale Zwillinge für Industrieanlagen und Automatisierung",
+      "subtitle": "Das meiste, was digitaler Zwilling heißt, ist ein digitaler Schatten — und der technische Wert war nie das Bild, sondern die Differenz zwischen Prognose und Wirklichkeit",
+      "excerpt": "Digitale Zwillinge präzise statt visionär definiert: Modell, Schatten und Zwilling nach Datenfluss unterschieden, physikbasiert gegenüber datengetrieben gegenüber hybrid, warum ein geschätzter physikalischer Parameter mehr wert ist als ein Anomaliewert, Synchronisation und Initialisierung, Datentreue und Scheingenauigkeit, virtuelle Inbetriebnahme und ihre ehrlichen Grenzen sowie die nötige Governance.",
+      "seoTitle": "Digitale Zwillinge für Industrieanlagen und Automatisierung",
+      "seoDescription": "Digitales Modell, Schatten und Zwilling unterschieden; physikalische, datengetriebene und hybride Modelle; Synchronisation, Residuen, virtuelle Inbetriebnahme, Drift."
+    }
+  }
+}

@@ -12,6 +12,116 @@ import {
 } from "./mock-data";
 import { getPrisma } from "@/lib/db/prisma";
 import { normalizeArticleSlug } from "./slug";
+import { articleLanguageForLocale } from "./locale";
+
+/**
+ * PHASE 106 — LIST READS NEVER LOAD ARTICLE BODIES.
+ *
+ * `ArticleListItem` has no `content` field, but every listing query used
+ * `include:` — which selects all scalars, `content` among them. With the short
+ * seeded corpus that was invisible; with full-length technical articles it
+ * means a feed request drags ~50 article bodies through the driver, serialises
+ * them into the RSC payload and throws them away.
+ *
+ * This projection is the list contract: exactly the columns `ArticleListItem`
+ * declares, and nothing that only `ArticleDetail` needs. Detail reads keep
+ * using `include:` because they genuinely want the body.
+ */
+const LIST_SELECT = {
+  id: true,
+  title: true,
+  slug: true,
+  subtitle: true,
+  excerpt: true,
+  coverImageUrl: true,
+  language: true,
+  contentType: true,
+  status: true,
+  visibility: true,
+  authorId: true,
+  categoryId: true,
+  readingTimeMinutes: true,
+  publishedAt: true,
+  rejectionReason: true,
+  viewCount: true,
+  saveCount: true,
+  reactionCount: true,
+  commentCount: true,
+  shareCount: true,
+  createdAt: true,
+  updatedAt: true,
+  author: true,
+  category: true,
+  tags: { include: { tag: true } },
+} as const;
+
+/**
+ * Upper bound for any listing query. An unbounded `findMany` over a growing
+ * public corpus is a latent full-table scan; every list surface paginates or
+ * truncates well below this.
+ */
+const LIST_MAX = 60;
+
+/**
+ * Prisma returns tags in the join-table shape
+ * `[{ articleId, tagId, tag: {...} }]`; every consumer expects flat
+ * `ArticleTag[]`. Detail reads already flattened this inline — list reads did
+ * not, which is why tag chips were blank on DB-backed listings.
+ */
+function flattenTags(row: Record<string, unknown>): Record<string, unknown> {
+  const raw = Array.isArray(row.tags) ? (row.tags as { tag?: Record<string, unknown> }[]) : [];
+  return {
+    ...row,
+    tags: raw
+      .filter((t): t is { tag: Record<string, unknown> } => !!t?.tag)
+      .map((t) => ({
+        id: String(t.tag.id ?? ""),
+        slug: String(t.tag.slug ?? ""),
+        name: String(t.tag.name ?? ""),
+        nameFa: t.tag.nameFa != null ? String(t.tag.nameFa) : null,
+      })),
+  };
+}
+
+/** Normalise a raw list row: deep date -> ISO, join-table tags -> flat tags. */
+function toListItem(row: unknown): ArticleListItem {
+  return flattenTags(deepTs(row) as Record<string, unknown>) as unknown as ArticleListItem;
+}
+
+/**
+ * The language clause for a locale-scoped listing.
+ *
+ * BACKWARD COMPATIBILITY IS THE POINT. Filtering the feed by language is only
+ * correct once a corpus actually HAS editions in that language; applied to the
+ * pre-Phase-106 corpus (English rows only) it would empty the Persian feed.
+ * So callers use this together with `withLanguageFallback` below: filter first,
+ * and if the language yields nothing at all, serve the unfiltered result — the
+ * exact behaviour the Journal had before this phase.
+ */
+function languageClause(locale?: string): Record<string, unknown> {
+  if (!locale) return {};
+  const language = articleLanguageForLocale(locale);
+  return language ? { language } : {};
+}
+
+/**
+ * Run a language-scoped read, falling back to the language-agnostic one when
+ * the scoped read finds nothing.
+ *
+ * An EMPTY result is the only trigger. A partially-translated corpus keeps its
+ * scoped result (showing 3 Persian articles rather than 3 Persian + 47 English
+ * is the correct answer); only a corpus with no edition in this language at all
+ * degrades to the legacy behaviour.
+ */
+async function withLanguageFallback<T>(
+  locale: string | undefined,
+  run: (clause: Record<string, unknown>) => Promise<T[]>,
+): Promise<T[]> {
+  const clause = languageClause(locale);
+  if (Object.keys(clause).length === 0) return run({});
+  const scoped = await run(clause);
+  return scoped.length > 0 ? scoped : run({});
+}
 
 function ts<T extends object>(row: T): T {
   const out: Record<string, unknown> = {};
@@ -45,17 +155,28 @@ async function getDb() {
 
 // ── Public feed ───────────────────────────────────────────────────────────────
 
-export async function getArticleFeed(): Promise<ArticleFeed> {
+/**
+ * The public Journal feed.
+ *
+ * `locale` (Phase 106) scopes the feed to the language a reader of that locale
+ * can actually read. It is optional so every pre-existing call site keeps its
+ * exact behaviour, and it degrades to the unscoped feed when the corpus has no
+ * edition in that language (see `withLanguageFallback`).
+ */
+export async function getArticleFeed(locale?: string): Promise<ArticleFeed> {
   const db = await getDb();
   if (db) {
     try {
+      const articleModel = (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article;
       const [articlesRaw, categoriesRaw, authorsRaw] = await Promise.all([
-        (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article.findMany({
-          where: { status: "PUBLISHED", visibility: "PUBLIC" },
-          include: { author: true, category: true, tags: { include: { tag: true } } },
-          orderBy: { publishedAt: "desc" },
-          take: 50,
-        }),
+        withLanguageFallback(locale, (clause) =>
+          articleModel.findMany({
+            where: { status: "PUBLISHED", visibility: "PUBLIC", ...clause },
+            select: LIST_SELECT,
+            orderBy: { publishedAt: "desc" },
+            take: LIST_MAX,
+          }),
+        ),
         (db as never as { articleCategory: { findMany: (a: unknown) => Promise<unknown[]> } }).articleCategory.findMany({
           where: { isActive: true }, orderBy: { sortOrder: "asc" },
         }),
@@ -63,7 +184,7 @@ export async function getArticleFeed(): Promise<ArticleFeed> {
           where: { isActive: true }, orderBy: { followerCount: "desc" }, take: 6,
         }),
       ]);
-      const articles = articlesRaw.map(a => ts(a as object)) as ArticleListItem[];
+      const articles = articlesRaw.map(toListItem);
       const categories = categoriesRaw.map(c => ts(c as object)) as ArticleCategory[];
       const topAuthors = authorsRaw.map(a => ts(a as object)) as ArticleAuthorProfile[];
       const sorted = [...articles].sort((a, b) => (b.viewCount + b.reactionCount * 3) - (a.viewCount + a.reactionCount * 3));
@@ -99,20 +220,28 @@ export async function getPublicArticles(filters: ArticleFilters = {}): Promise<A
       const where: Record<string, unknown> = { status: "PUBLISHED", visibility: "PUBLIC" };
       if (filters.contentType) where.contentType = filters.contentType;
       if (filters.language)    where.language    = filters.language;
+      // Phase 106: these three were honoured only by the mock fallback, so a
+      // DB-backed category/tag/author filter silently returned the UNFILTERED
+      // feed. Harmless while the DB was empty; wrong the moment it is not.
+      if (filters.categorySlug) where.category = { slug: filters.categorySlug };
+      if (filters.tagSlug)      where.tags     = { some: { tag: { slug: filters.tagSlug } } };
+      if (filters.authorHandle) where.author   = { handle: filters.authorHandle };
       if (filters.search) {
         where.OR = [
           { title: { contains: filters.search, mode: "insensitive" } },
           { excerpt: { contains: filters.search, mode: "insensitive" } },
         ];
       }
+      // A client-supplied limit can never widen the read past LIST_MAX.
+      const limit = Math.min(Math.max(filters.limit ?? 20, 1), LIST_MAX);
       const rows = await (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article.findMany({
         where,
-        include: { author: true, category: true, tags: { include: { tag: true } } },
+        select: LIST_SELECT,
         orderBy: { publishedAt: "desc" },
-        take: filters.limit ?? 20,
-        skip: ((filters.page ?? 1) - 1) * (filters.limit ?? 20),
+        take: limit,
+        skip: (Math.max(filters.page ?? 1, 1) - 1) * limit,
       });
-      return rows.map(r => ts(r as object)) as ArticleListItem[];
+      return rows.map(toListItem);
     } catch { /* fall through */ }
   }
   let data = getPublishedArticles() as ArticleListItem[];
@@ -133,7 +262,30 @@ export async function getPublicArticles(filters: ArticleFilters = {}): Promise<A
   return data.slice(offset, offset + limit);
 }
 
-export async function getArticleDetailBySlug(slug: string): Promise<ArticleDetail | null> {
+/**
+ * Resolve one article by slug, preferring the edition written in the language
+ * the requested locale reads.
+ *
+ * PHASE 106 — THIS IS THE TRANSLATION-GROUP LOOKUP.
+ *
+ * The three editions of an article share a slug and differ by `language`, so
+ * `/fa/articles/{slug}`, `/en/articles/{slug}` and `/de/articles/{slug}` are
+ * genuinely the three translations the SEO layer already advertises as hreflang
+ * alternates. Resolution is two-step and deliberately never 404s on a partial
+ * group:
+ *
+ *   1. exact `(slug, language)` — the reader's own edition;
+ *   2. any edition with that slug — which is ALSO the entire pre-Phase-106
+ *      behaviour, so a legacy single-language article still resolves at every
+ *      locale exactly as before.
+ *
+ * `locale` is optional: omitting it skips step 1 and reproduces the old
+ * behaviour byte for byte.
+ */
+export async function getArticleDetailBySlug(
+  slug: string,
+  locale?: string,
+): Promise<ArticleDetail | null> {
   // Canonicalize the route slug BEFORE any lookup: decode percent-encoding once,
   // NFC-normalize, and reject unsafe values. A Persian slug arriving encoded or
   // in NFD form is byte-different from the persisted NFC slug and would 404 on
@@ -141,23 +293,31 @@ export async function getArticleDetailBySlug(slug: string): Promise<ArticleDetai
   const lookupSlug = normalizeArticleSlug(slug);
   if (!lookupSlug) return null;
 
+  const language = locale ? articleLanguageForLocale(locale) : null;
+
   const db = await getDb();
   if (db) {
     try {
       // findFirst is used instead of findUnique for robustness with Prisma 7
       // driverAdapters + complex nested includes. Both use WHERE slug = $1 but
       // findFirst generates a simpler query path in the adapter layer.
-      const row = await (db as never as {
+      const articleModel = (db as never as {
         article: { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
-      }).article.findFirst({
-        where: { slug: lookupSlug },
-        include: {
-          author:            true,
-          category:          true,
-          tags:              { include: { tag: true } },
-          knowledgeMetadata: true,
-        },
-      });
+      }).article;
+      const include = {
+        author:            true,
+        category:          true,
+        tags:              { include: { tag: true } },
+        knowledgeMetadata: true,
+      };
+
+      // Step 1 — the reader's own language edition.
+      let row = language
+        ? await articleModel.findFirst({ where: { slug: lookupSlug, language }, include })
+        : null;
+
+      // Step 2 — any edition under this slug. Also the legacy path.
+      row ??= await articleModel.findFirst({ where: { slug: lookupSlug }, include });
 
       if (!row) return null;
 
@@ -194,17 +354,20 @@ export async function getArticleDetailBySlug(slug: string): Promise<ArticleDetai
   return getArticleBySlug(lookupSlug) ?? null;
 }
 
-export async function getTrendingArticlesList(limit = 8): Promise<ArticleListItem[]> {
+export async function getTrendingArticlesList(limit = 8, locale?: string): Promise<ArticleListItem[]> {
   const db = await getDb();
   if (db) {
     try {
-      const rows = await (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article.findMany({
-        where: { status: "PUBLISHED", visibility: "PUBLIC" },
-        include: { author: true, category: true, tags: { include: { tag: true } } },
-        orderBy: [{ viewCount: "desc" }, { reactionCount: "desc" }],
-        take: limit,
-      });
-      return rows.map(r => ts(r as object)) as ArticleListItem[];
+      const articleModel = (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article;
+      const rows = await withLanguageFallback(locale, (clause) =>
+        articleModel.findMany({
+          where: { status: "PUBLISHED", visibility: "PUBLIC", ...clause },
+          select: LIST_SELECT,
+          orderBy: [{ viewCount: "desc" }, { reactionCount: "desc" }],
+          take: Math.min(limit, LIST_MAX),
+        }),
+      );
+      return rows.map(toListItem);
     } catch { /* fall through */ }
   }
   return getTrendingArticles(limit);
@@ -218,22 +381,53 @@ export async function getCaseStudiesList(limit = 8): Promise<ArticleListItem[]> 
   return getCaseStudies(limit);
 }
 
-export async function getArticlesByCategory_(categorySlug: string): Promise<ArticleListItem[]> {
+export async function getArticlesByCategory_(categorySlug: string, locale?: string): Promise<ArticleListItem[]> {
   const db = await getDb();
   if (db) {
     try {
-      const rows = await (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article.findMany({
-        where: { status: "PUBLISHED", visibility: "PUBLIC", category: { slug: categorySlug } },
-        include: { author: true, category: true, tags: { include: { tag: true } } },
-        orderBy: { publishedAt: "desc" },
-      });
-      return rows.map(r => ts(r as object)) as ArticleListItem[];
+      const articleModel = (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article;
+      const rows = await withLanguageFallback(locale, (clause) =>
+        articleModel.findMany({
+          where: { status: "PUBLISHED", visibility: "PUBLIC", category: { slug: categorySlug }, ...clause },
+          select: LIST_SELECT,
+          orderBy: { publishedAt: "desc" },
+          // Phase 106: this read had NO bound at all. One popular category is
+          // enough to turn a category page into a full scan of the corpus.
+          take: LIST_MAX,
+        }),
+      );
+      return rows.map(toListItem);
     } catch { /* fall through */ }
   }
   return getArticlesByCategory(categorySlug);
 }
 
-export async function getArticlesByTag_(tagSlug: string): Promise<ArticleListItem[]> {
+/**
+ * Phase 106: this never consulted the database — it returned mock data even
+ * when a real DB was connected, so every tag page was empty (or worse, showed
+ * seed articles) in production. It now mirrors the category reader.
+ */
+export async function getArticlesByTag_(tagSlug: string, locale?: string): Promise<ArticleListItem[]> {
+  const db = await getDb();
+  if (db) {
+    try {
+      const articleModel = (db as never as { article: { findMany: (a: unknown) => Promise<unknown[]> } }).article;
+      const rows = await withLanguageFallback(locale, (clause) =>
+        articleModel.findMany({
+          where: {
+            status: "PUBLISHED",
+            visibility: "PUBLIC",
+            tags: { some: { tag: { slug: tagSlug } } },
+            ...clause,
+          },
+          select: LIST_SELECT,
+          orderBy: { publishedAt: "desc" },
+          take: LIST_MAX,
+        }),
+      );
+      return rows.map(toListItem);
+    } catch { /* fall through */ }
+  }
   return getArticlesByTag(tagSlug);
 }
 

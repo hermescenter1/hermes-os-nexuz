@@ -83,14 +83,31 @@ export async function listPublicArticleSitemapItems(): Promise<ArticleSitemapIte
       orderBy: { publishedAt: "desc" },
       take: ARTICLE_SITEMAP_MAX,
     });
-    return rows
-      .map((row) => ({
-        slug: typeof row.slug === "string" ? row.slug : "",
-        // `updatedAt` is the more accurate "last modified" of the two; fall
-        // back to publication time, and omit entirely if neither is usable.
-        lastModified: asIso(row.updatedAt) ?? asIso(row.publishedAt),
-      }))
-      .filter((item) => item.slug.length > 0);
+    // ONE ENTRY PER TRANSLATION GROUP, NOT PER ROW.
+    //
+    // Since Phase 106 a topic is up to three rows (EN/FA/DE) sharing one slug,
+    // and `articleSitemapEntries` already expands each item across every active
+    // locale. Returning one item per ROW therefore emitted the same URL three
+    // times — 9 <loc> entries per topic instead of 3 — which a crawler reads as
+    // a malformed sitemap. Found by the PostgreSQL rehearsal: with the old
+    // single-language corpus each slug had exactly one row, so the duplication
+    // was invisible until real multilingual data existed.
+    //
+    // The group's `lastModified` is the NEWEST across its editions: translating
+    // an article genuinely changes what that URL set offers.
+    const byGroup = new Map<string, string | null>();
+    for (const row of rows) {
+      const slug = typeof row.slug === "string" ? row.slug : "";
+      if (slug.length === 0) continue;
+      const modified = asIso(row.updatedAt) ?? asIso(row.publishedAt);
+      const seen = byGroup.get(slug);
+      if (seen === undefined) {
+        byGroup.set(slug, modified);
+        continue;
+      }
+      if (modified && (!seen || modified > seen)) byGroup.set(slug, modified);
+    }
+    return [...byGroup].map(([slug, lastModified]) => ({ slug, lastModified }));
   } catch {
     return [];
   }

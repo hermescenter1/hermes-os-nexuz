@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   ARTICLE_SITEMAP_WHERE,
   ARTICLE_SITEMAP_MAX,
@@ -6,6 +6,22 @@ import {
   authorSitemapEntries,
 } from "../seo";
 import { BASE_URL, LOCALES } from "@/lib/seo/config";
+
+/**
+ * Rows as PostgreSQL returns them once a topic is trilingual: three Article
+ * rows sharing one slug. Declared here so the dedup test below reproduces the
+ * exact shape that produced duplicate sitemap URLs in the rehearsal.
+ */
+const TRILINGUAL_ROWS = [
+  { slug: "topic-a", publishedAt: new Date("2026-08-16T00:00:00Z"), updatedAt: new Date("2026-08-16T01:00:00Z") },
+  { slug: "topic-a", publishedAt: new Date("2026-08-16T00:00:00Z"), updatedAt: new Date("2026-08-16T03:00:00Z") },
+  { slug: "topic-a", publishedAt: new Date("2026-08-16T00:00:00Z"), updatedAt: new Date("2026-08-16T02:00:00Z") },
+  { slug: "topic-b", publishedAt: new Date("2026-08-15T00:00:00Z"), updatedAt: new Date("2026-08-15T05:00:00Z") },
+];
+
+vi.mock("@/lib/db/prisma", () => ({
+  getPrisma: async () => ({ article: { findMany: async () => TRILINGUAL_ROWS } }),
+}));
 
 /**
  * PHASE 105 — the Journal's sitemap surface.
@@ -74,6 +90,41 @@ describe("article entries", () => {
   it("never invents a timestamp for an undated article", () => {
     const undated = articleSitemapEntries([{ slug: "x", lastModified: null }]);
     for (const e of undated) expect(e.lastModified).toBeUndefined();
+  });
+});
+
+describe("one entry per translation group, not per row (Phase 106)", () => {
+  /**
+   * REGRESSION: a topic is up to three Article rows sharing one slug, and
+   * `articleSitemapEntries` already expands each item across every locale.
+   * Returning one item per ROW emitted the same URL three times — 9 <loc>
+   * entries per topic. Caught by the PostgreSQL rehearsal, because with a
+   * single-language corpus each slug had exactly one row and the bug was
+   * invisible.
+   */
+  it("collapses three language rows of one slug into a single item", async () => {
+    const { listPublicArticleSitemapItems } = await import("../seo");
+    const items = await listPublicArticleSitemapItems();
+    expect(items).toHaveLength(2);
+    expect(items.map((i) => i.slug).sort()).toEqual(["topic-a", "topic-b"]);
+  });
+
+  it("takes the NEWEST lastModified across the group's editions", async () => {
+    const { listPublicArticleSitemapItems } = await import("../seo");
+    const items = await listPublicArticleSitemapItems();
+    const a = items.find((i) => i.slug === "topic-a");
+    // Translating an article changes what that URL set offers, so the group's
+    // freshness is its most recently touched edition — not whichever row the
+    // query happened to return first.
+    expect(a?.lastModified).toBe("2026-08-16T03:00:00.000Z");
+  });
+
+  it("produces exactly one URL per locale per topic once expanded", async () => {
+    const { listPublicArticleSitemapItems } = await import("../seo");
+    const entries = articleSitemapEntries(await listPublicArticleSitemapItems());
+    expect(entries).toHaveLength(2 * LOCALES.length);
+    const urls = entries.map((e) => e.url);
+    expect(new Set(urls).size, "sitemap must contain no duplicate <loc>").toBe(urls.length);
   });
 });
 

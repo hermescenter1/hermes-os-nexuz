@@ -4,7 +4,8 @@ import { useState }  from "react";
 import Link            from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ArticleDetail, ArticleListItem } from "@/lib/articles/types";
-import { formatDate } from "@/lib/i18n/format";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
+import { parseArticleContent, type InlineSpan } from "./article-content";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -80,60 +81,185 @@ function contentTypeBadgeColor(t: string) {
 }
 
 // ── Safe content renderer ─────────────────────────────────────────────────────
-// Renders plain-text markdown as styled React nodes (no HTML injection).
+// Renders stored Markdown as styled React nodes (no HTML injection, ever).
+// Block parsing lives in ./article-content.ts so it can be unit-tested; this
+// file owns presentation only.
 
-function ArticleContent({ content, isFa }: { content: string; isFa: boolean }) {
-  const blocks = content.split(/\n{2,}/).filter(b => b.trim());
+function Inline({ spans }: { spans: InlineSpan[] }) {
+  return (
+    <>
+      {spans.map((span, i) => {
+        if (span.type === "strong") return <strong key={i} className="font-semibold text-ink">{span.value}</strong>;
+        if (span.type === "code")
+          return (
+            <code
+              key={i}
+              // `dir="ltr"` + inline-block: a tag name, block name or register
+              // address is LTR even inside Persian prose, and without this it
+              // reorders visually in an RTL paragraph.
+              dir="ltr"
+              className="inline-block font-mono text-[0.85em] px-1.5 py-0.5 rounded-md bg-surface2/70 border border-signal/10 text-signal/90 align-baseline"
+            >
+              {span.value}
+            </code>
+          );
+        return <span key={i}>{span.value}</span>;
+      })}
+    </>
+  );
+}
+
+function ArticleContent({
+  content,
+  isFa,
+  locale,
+}: {
+  content: string;
+  isFa: boolean;
+  locale: string;
+}) {
+  const blocks = parseArticleContent(content);
   return (
     <div className={`space-y-6 ${isFa ? "font-body" : ""}`}>
       {blocks.map((block, i) => {
-        const t = block.trim();
-        if (t.startsWith("### "))
-          return (
-            <h3 key={i} className="text-xl font-bold text-ink mt-10 mb-3">
-              <span className="inline-flex items-center gap-2">
-                <span className="w-1 h-5 rounded-full bg-signal/50 inline-block" />
-                {t.slice(4)}
-              </span>
-            </h3>
-          );
-        if (t.startsWith("## "))
-          return (
-            <h2 key={i} className="text-2xl font-bold text-ink mt-12 mb-4 pb-3 border-b border-signal/15">
-              {t.slice(3)}
-            </h2>
-          );
-        if (t.startsWith("# "))
-          return <h1 key={i} className="text-3xl font-bold text-ink mt-14 mb-5">{t.slice(2)}</h1>;
-        if (t.startsWith("```")) {
-          const code = t.replace(/^```\w*\n?/, "").replace(/```$/, "").trim();
-          return (
-            <div key={i} className="relative group">
-              <div className="absolute top-3 end-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-[9px] font-mono text-signal/60 uppercase tracking-wider">code</span>
+        switch (block.type) {
+          case "heading": {
+            if (block.level === 3)
+              return (
+                <h3 key={i} className="text-xl font-bold text-ink mt-10 mb-3">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="w-1 h-5 rounded-full bg-signal/50 inline-block" />
+                    <Inline spans={block.spans} />
+                  </span>
+                </h3>
+              );
+            if (block.level === 2)
+              return (
+                <h2 key={i} className="text-2xl font-bold text-ink mt-12 mb-4 pb-3 border-b border-signal/15">
+                  <Inline spans={block.spans} />
+                </h2>
+              );
+            // A markdown `# ` in the BODY renders as an <h2> element, never an
+            // <h1>. The page already emits the document's single <h1> — the
+            // article title — and article bodies conventionally repeat that
+            // title as their first line (every seeded article does, and so does
+            // every imported edition). Emitting a body <h1> therefore produced
+            // TWO identical <h1>s on every article page.
+            //
+            // Only the ELEMENT changes; the visual weight is untouched, so the
+            // rendered design is identical. This keeps the heading order valid
+            // (h1 -> h2 -> h3, never skipping a level) and fixes existing
+            // content as well as imported content, which editing 30 markdown
+            // files would not have done.
+            return (
+              <h2 key={i} className="text-3xl font-bold text-ink mt-14 mb-5">
+                <Inline spans={block.spans} />
+              </h2>
+            );
+          }
+
+          case "code":
+            return (
+              <div key={i} className="relative group">
+                <div className="absolute top-3 end-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[9px] font-mono text-signal/60 uppercase tracking-wider">
+                    {block.language ?? "code"}
+                  </span>
+                </div>
+                {/* Code and ASCII signal-path diagrams are LTR in every locale;
+                    forcing direction here keeps a block diagram readable on the
+                    Persian edition instead of mirroring its arrows. */}
+                <pre
+                  dir="ltr"
+                  className="bg-surface2/80 border border-signal/10 rounded-xl p-5 overflow-x-auto text-sm font-mono text-signal/90 leading-relaxed"
+                >
+                  <code>{block.code}</code>
+                </pre>
               </div>
-              <pre className="bg-surface2/80 border border-signal/10 rounded-xl p-5 overflow-x-auto text-sm font-mono text-signal/90 leading-relaxed">
-                <code>{code}</code>
-              </pre>
-            </div>
-          );
+            );
+
+          case "list":
+            return block.ordered ? (
+              <ol key={i} className="list-none space-y-2.5 ps-0">
+                {block.items.map((item, j) => (
+                  <li key={j} className="flex items-start gap-3 text-muted leading-relaxed">
+                    {/* The marker is generated, not authored, so it must be
+                        localized: an ASCII "1." beside Persian body text on a
+                        Persian page is a visible inconsistency. */}
+                    <span className="mt-0.5 shrink-0 w-5 h-5 rounded-md bg-signal/10 border border-signal/25 text-signal text-[10px] font-mono flex items-center justify-center tabular-nums">
+                      {formatNumber(j + 1, locale)}
+                    </span>
+                    <span className="text-[0.9375rem]"><Inline spans={item} /></span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <ul key={i} className="list-none space-y-2.5 ps-0">
+                {block.items.map((item, j) => (
+                  <li key={j} className="flex items-start gap-3 text-muted leading-relaxed">
+                    <span className="mt-2 w-1.5 h-1.5 rounded-full bg-signal/60 shrink-0" />
+                    <span className="text-[0.9375rem]"><Inline spans={item} /></span>
+                  </li>
+                ))}
+              </ul>
+            );
+
+          case "quote":
+            return (
+              <blockquote
+                key={i}
+                className="border-s-2 border-signal/40 ps-4 py-1 text-muted italic leading-[1.85] text-[0.9375rem]"
+              >
+                <Inline spans={block.spans} />
+              </blockquote>
+            );
+
+          case "table":
+            return (
+              // The wrapper scrolls, never the page: a wide parameter table must
+              // not push the article body into horizontal overflow on mobile.
+              <div key={i} className="overflow-x-auto rounded-xl border border-signal/10 bg-surface2/40">
+                <table className="w-full text-[0.875rem] border-collapse">
+                  <thead>
+                    <tr className="border-b border-signal/15 bg-signal/[0.04]">
+                      {block.head.map((cell, j) => (
+                        <th
+                          key={j}
+                          scope="col"
+                          className="px-4 py-3 font-semibold text-ink whitespace-nowrap"
+                          style={{ textAlign: block.align[j] }}
+                        >
+                          <Inline spans={cell} />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.rows.map((row, j) => (
+                      <tr key={j} className="border-b border-line/40 last:border-0">
+                        {row.map((cell, k) => (
+                          <td
+                            key={k}
+                            className="px-4 py-3 text-muted align-top leading-relaxed"
+                            style={{ textAlign: block.align[k] }}
+                          >
+                            <Inline spans={cell} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+
+          default:
+            return (
+              <p key={i} className="text-muted leading-[1.85] text-[0.9375rem]">
+                <Inline spans={block.spans} />
+              </p>
+            );
         }
-        if (t.startsWith("- ") || t.startsWith("* ")) {
-          const items = t.split("\n").filter(l => l.trim().startsWith("- ") || l.trim().startsWith("* "));
-          return (
-            <ul key={i} className="list-none space-y-2.5 ps-0">
-              {items.map((item, j) => (
-                <li key={j} className="flex items-start gap-3 text-muted leading-relaxed">
-                  <span className="mt-2 w-1.5 h-1.5 rounded-full bg-signal/60 shrink-0" />
-                  <span className="text-[0.9375rem]">{item.replace(/^[-*]\s/, "")}</span>
-                </li>
-              ))}
-            </ul>
-          );
-        }
-        return (
-          <p key={i} className="text-muted leading-[1.85] text-[0.9375rem]">{t}</p>
-        );
       })}
     </div>
   );
@@ -692,7 +818,7 @@ export function ArticleDetailClient({ article, related }: Props) {
 
         {/* Article content */}
         <article className="mt-10 mb-12">
-          <ArticleContent content={article.content} isFa={isFa} />
+          <ArticleContent content={article.content} isFa={isFa} locale={locale} />
         </article>
 
         {/* Tags */}

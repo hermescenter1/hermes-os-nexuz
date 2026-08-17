@@ -24,6 +24,6 @@ export default async function ArticlesPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const feed = await getArticleFeed();
+  const feed = await getArticleFeed(locale);
   return <ArticlesFeedClient feed={feed} view="feed" />;
 }

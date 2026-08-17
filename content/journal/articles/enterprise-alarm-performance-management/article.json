@@ -1,0 +1,52 @@
+{
+  "slug": "enterprise-alarm-performance-management",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "scada-hmi",
+  "tags": ["alarm-management", "isa-18-2", "situational-awareness", "root-cause-analysis", "maintainability"],
+  "publishedAt": "2026-08-16T07:40:00.000Z",
+  "coverImage": {
+    "file": "journal/alarm-performance-management.jpg",
+    "url": null,
+    "concept": "A wall-mounted performance board in a plant office showing abstract trend shapes — the governance surface where alarm performance is reviewed, not the control room itself.",
+    "prompt": "Photorealistic photograph of a large wall-mounted display in a quiet industrial office showing abstract line-chart shapes in muted cyan on dark grey, no readable text or numbers, cool technical lighting, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Wall-mounted performance display in a plant office showing abstract trend charts",
+      "fa": "نمایشگر دیواری عملکرد در دفتر کارخانه با نمودارهای ترند انتزاعی",
+      "de": "Wandmonitor mit abstrakten Trendkurven in einem Anlagenbüro"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "OPERATIONS",
+    "linkedAssetType": "SCADA",
+    "linkedTechnology": "Alarm Performance Management",
+    "linkedStandard": "ISA-18.2",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Enterprise Alarm Performance Management for Complex Plants",
+      "subtitle": "The master alarm database, the KPI set that actually means something, and the governance that stops a rationalised system from decaying",
+      "excerpt": "Rationalisation is a project; alarm performance is a permanent operational discipline. The master alarm database as the authoritative record, how to read alarm KPIs without deceiving yourself, bad-actor workflow, shelving governance and post-event review.",
+      "seoTitle": "Enterprise Alarm Performance Management for Complex Plants",
+      "seoDescription": "Run alarm performance as an ongoing discipline: master alarm database, meaningful KPIs, bad-actor workflow, shelving governance, flood analysis and post-event review."
+    },
+    "fa": {
+      "title": "مدیریت عملکرد آلارم در مقیاس سازمانی برای کارخانه‌های پیچیده",
+      "subtitle": "پایگاه دادهٔ مرجع آلارم، مجموعهٔ KPI که واقعاً معنا دارد، و حاکمیتی که نمی‌گذارد سیستم منطقی‌شده دوباره فرسوده شود",
+      "excerpt": "منطقی‌سازی یک پروژه است؛ عملکرد آلارم یک انضباط عملیاتی دائمی. پایگاه دادهٔ مرجع آلارم به‌عنوان سند معتبر، چگونه KPIهای آلارم را بدون فریب دادن خود بخوانیم، گردش‌کار عوامل بد، حاکمیت shelving و بازبینی پس از رویداد.",
+      "seoTitle": "مدیریت عملکرد آلارم در کارخانه‌های صنعتی پیچیده",
+      "seoDescription": "اجرای عملکرد آلارم به‌عنوان انضباطی مستمر: پایگاه دادهٔ مرجع، KPIهای معنادار، گردش‌کار عوامل بد، حاکمیت shelving، تحلیل سیل آلارم و بازبینی پس از رویداد."
+    },
+    "de": {
+      "title": "Alarmperformance-Management für komplexe Industrieanlagen",
+      "subtitle": "Die Master-Alarmdatenbank, die wirklich aussagekräftigen Kennzahlen und die Governance, die ein rationalisiertes System vor dem Verfall bewahrt",
+      "excerpt": "Rationalisierung ist ein Projekt; Alarmperformance ist eine dauerhafte betriebliche Disziplin. Die Master-Alarmdatenbank als maßgebliche Aufzeichnung, Alarmkennzahlen ohne Selbsttäuschung lesen, Bad-Actor-Workflow, Shelving-Governance und Ereignisnachbereitung.",
+      "seoTitle": "Alarmperformance-Management für komplexe Industrieanlagen",
+      "seoDescription": "Alarmperformance dauerhaft führen: Master-Alarmdatenbank, aussagekräftige Kennzahlen, Bad-Actor-Workflow, Shelving-Governance, Flutanalyse und Ereignisnachbereitung."
+    }
+  }
+}

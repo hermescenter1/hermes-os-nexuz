@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-low-voltage-distribution-design",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "electrical-engineering",
+  "tags": ["short-circuit", "protection-coordination", "earthing", "mcc", "commissioning"],
+  "publishedAt": "2026-08-16T13:30:00.000Z",
+  "coverImage": {
+    "file": "journal/lv-distribution-design.jpg",
+    "url": null,
+    "concept": "A main low-voltage switchboard with its bus section, seen along the line-up — the architecture decision made physical.",
+    "prompt": "Photorealistic photograph along a long industrial low-voltage switchboard line-up with a visible bus section panel, cool cyan indicators against dark grey steel doors, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Long industrial low-voltage switchboard line-up with a bus section panel",
+      "fa": "ردیف بلند تابلوی فشار ضعیف صنعتی همراه با پنل سکشن باس",
+      "de": "Lange Niederspannungs-Schaltanlagenreihe mit Kupplungsfeld"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "PANEL",
+    "linkedTechnology": "LV Distribution Architecture",
+    "linkedStandard": "IEC 60364",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial Low-Voltage Distribution System Design",
+      "subtitle": "Lower transformer impedance buys voltage regulation and sells fault level — and the starting dip, not the thermal current, usually sizes the feeder",
+      "excerpt": "LV architecture as a set of explicit trades: source configuration and bus sections, demand estimation against recorded diversity, the three independent cable-sizing criteria, voltage drop under start as the governing case, fault level as a consequence of the source, and expansion capacity that survives value engineering.",
+      "seoTitle": "Industrial Low-Voltage Distribution System Design Practice",
+      "seoDescription": "Industrial LV design: source architecture and bus sections, demand and diversity, voltage drop under motor start, fault levels, cable sizing criteria and commissioning."
+    },
+    "fa": {
+      "title": "طراحی سامانهٔ توزیع فشار ضعیف صنعتی",
+      "subtitle": "امپدانس کمتر ترانسفورماتور تنظیم ولتاژ می‌خرد و سطح خطا می‌فروشد — و افت لحظه‌ای راه‌اندازی، نه جریان حرارتی، معمولاً اندازهٔ فیدر را تعیین می‌کند",
+      "excerpt": "معماری LV به‌عنوان مجموعه‌ای از معاوضه‌های صریح: پیکربندی منبع و سکشن باس، برآورد تقاضا در برابر ضریب هم‌زمانی ثبت‌شده، سه معیار مستقل اندازه‌گذاری کابل، افت ولتاژ هنگام راه‌اندازی به‌عنوان حالت حاکم، سطح خطا به‌عنوان پیامد منبع، و ظرفیت توسعه‌ای که از مهندسی ارزش جان سالم به در ببرد.",
+      "seoTitle": "طراحی سامانهٔ توزیع فشار ضعیف در تأسیسات صنعتی",
+      "seoDescription": "طراحی LV صنعتی: معماری منبع و سکشن باس، تقاضا و هم‌زمانی، افت ولتاژ در راه‌اندازی موتور، سطح خطا، معیارهای اندازه‌گذاری کابل و راه‌اندازی."
+    },
+    "de": {
+      "title": "Entwurf industrieller Niederspannungsverteilungen",
+      "subtitle": "Geringere Transformatorimpedanz kauft Spannungshaltung und verkauft Kurzschlussleistung — und meist bemisst der Anlaufeinbruch die Leitung, nicht der Dauerstrom",
+      "excerpt": "NS-Architektur als Satz ausdrücklicher Abwägungen: Einspeisekonzept und Kupplung, Bedarfsermittlung gegen dokumentierte Gleichzeitigkeit, die drei unabhängigen Kriterien der Kabelbemessung, Spannungsfall beim Motoranlauf als maßgebender Fall und Erweiterungsreserve, die Value Engineering übersteht.",
+      "seoTitle": "Entwurf industrieller Niederspannungsverteilungen",
+      "seoDescription": "Industrielle NS-Auslegung: Einspeisekonzept und Kupplung, Gleichzeitigkeit, Spannungsfall beim Motoranlauf, Kurzschlussleistung und Kabelbemessung."
+    }
+  }
+}
