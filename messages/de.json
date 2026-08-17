@@ -3277,7 +3277,7 @@
   },
   "org": {
     "eyebrow": "Organisation",
-    "title": "Organisationsverwaltung",
+    "title": "Organisation verwalten",
     "noOrg": "Keine Organisation gefunden. Erstellen Sie eine, um zu beginnen.",
     "loading": "Wird geladen...",
     "edit": "Bearbeiten",

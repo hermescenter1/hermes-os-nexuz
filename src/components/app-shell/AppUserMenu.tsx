@@ -85,13 +85,22 @@ export function AppUserMenu({ name, email, role }: AppUserMenuProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "ds-focus flex h-8 w-8 items-center justify-center rounded-full",
-          "border border-border-active/40 bg-surface-interactive",
-          "text-label-compact font-semibold text-brand-ice",
-        )}
+        // PHASE 104-H — the BUTTON is the 44×44 target (`hermes-topbar-target`);
+        // the 32px avatar disc is now a purely visual child, so the topbar
+        // rhythm is unchanged while the interactive box meets WCAG 2.5.8.
+        // aria-label / aria-haspopup / aria-expanded / Escape+restore untouched.
+        className="hermes-topbar-target ds-focus rounded-full"
       >
-        <span aria-hidden="true">{initials}</span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-full",
+            "border border-border-active/40 bg-surface-interactive",
+            "text-label-compact font-semibold text-brand-ice",
+          )}
+        >
+          {initials}
+        </span>
       </button>
 
       {open && (

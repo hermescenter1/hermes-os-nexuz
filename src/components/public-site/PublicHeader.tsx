@@ -81,13 +81,22 @@ export function PublicHeader({ visualMode = "standard" }: PublicHeaderProps = {}
               : "sticky top-0 z-40 border-b border-surface-glass-border ds-glass",
         )}
       >
-        <PublicPageContainer className={cn("flex items-center gap-3", observatory ? "h-14 md:h-16" : "h-16")}>
+        {/* PHASE 104-H (owner decision C) — 320px budget of this row, measured on the
+            production build: gutter 20 + trigger 44 + logo (32 emblem + gap + 53
+            wordmark) + auth 49–56 + bell 44 + language 44 + gutter 20. With every
+            target at 44px the only levers that keep an ≥8px logical inset to the
+            viewport edge WITHOUT hiding or shrinking a control are the small-screen
+            gaps: container 12→4, cluster 6→4 and the emblem/wordmark gap 10→8, all
+            below `sm` only (`sm:` restores the approved values). Result: 310px used,
+            10px inset (en/de), 18px (fa). No overflow rule, no clipping, no
+            locale-specific CSS. */}
+        <PublicPageContainer className={cn("flex items-center gap-1 sm:gap-3", observatory ? "h-14 md:h-16" : "h-16")}>
           <PublicMobileNav />
           <Link
             href="/"
             aria-label={t("home")}
             dir="ltr"
-            className="ds-focus flex shrink-0 items-center gap-2.5 rounded-sm"
+            className="ds-focus flex min-h-11 shrink-0 items-center gap-2 rounded-sm sm:gap-2.5"
           >
             <HermesLogoMark />
             <span className="text-title font-extrabold tracking-tight text-text-primary">
@@ -96,9 +105,13 @@ export function PublicHeader({ visualMode = "standard" }: PublicHeaderProps = {}
           </Link>
           {/* 87D.1 — grouped enterprise IA (client island: disclosure menus). */}
           <PublicNavMenus />
-          <div className="ms-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+          <div className="ms-auto flex shrink-0 items-center gap-1 sm:gap-2.5">
             <AuthIndicator />
-            <NotificationCenter />
+            {/* same scoped 44px hit-target wrapper as the app-shell / legacy headers;
+                the shared NotificationCenter itself is untouched. */}
+            <span className="hermes-topbar-bell inline-flex">
+              <NotificationCenter />
+            </span>
             <LanguageSwitch />
             <Link href="/demo" className={cn(buttonVariants("primary", "md"), "hidden sm:inline-flex")}>
               {t("requestDemo")}

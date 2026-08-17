@@ -34,7 +34,15 @@ export function ExecKpiStrip({ items, className = "", children }: ExecKpiStripPr
       aria-label="Key performance indicators"
     >
       {items.map((item, i) => (
-        <div key={i} className="flex-1 min-w-[120px] px-5 py-4">
+        // PHASE 104-H — the cell floor must cover the LONGEST LABEL WORD any
+        // locale ships, or the label overflows the cell (overflow:visible), and
+        // that overflow escapes the strip's own horizontal scroller and widens
+        // the DOCUMENT — the residual 16px of the known "German Dashboard 320
+        // overflow". Measured at the label's computed font: PRODUKTIONSLINIEN =
+        // 113px + 40px cell padding = 153px → 10rem. en (106px) / fa fit inside
+        // it. The strip still scrolls horizontally as before; only the per-cell
+        // floor changed. Font size and copy untouched.
+        <div key={i} className="flex-1 min-w-[10rem] px-5 py-4">
           <p className="kpi-label mb-2">{item.label}</p>
           <div className="flex items-baseline gap-1.5 flex-wrap">
             <span
@@ -71,7 +79,10 @@ export function KpiSlot({
   accent,
 }: Pick<KpiItem, "label" | "value" | "unit" | "accent">) {
   return (
-    <div className="flex-1 min-w-[120px] px-5 py-4 border-l border-line">
+    // PHASE 104-H — same measured 10rem cell floor as the strip's own cells (see
+    // above), and the divider is `border-s` (logical), not `border-l`: a physical
+    // left border sat on the WRONG side of the slot under RTL. Behaviour unchanged.
+    <div className="flex-1 min-w-[10rem] px-5 py-4 border-s border-line">
       <p className="kpi-label mb-2">{label}</p>
       <div className="flex items-baseline gap-1.5">
         <span className={`exec-kpi-value ${accent ? (ACCENT_VALUE[accent] ?? "text-ink") : "text-ink"}`}>

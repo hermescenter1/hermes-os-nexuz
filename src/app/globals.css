@@ -673,7 +673,21 @@ h6 { font-weight: 550; letter-spacing: 0; }
   letter-spacing:  0.10em;
   text-transform:  uppercase;
   border:          1px solid transparent;
-  white-space:     nowrap;
+  /* PHASE 104-H — `white-space: nowrap` made a badge carrying a full German
+     sentence ("EREIGNISSE MIT HOHER PRIORITÄT", 225px) unable to fit a 230px
+     flex row on a 320 viewport; it pushed past its parent and, through three
+     overflow:visible ancestors, widened the DOCUMENT to 336 — the last of the
+     four causes of the known German Dashboard 320 overflow. A badge may now
+     wrap BETWEEN words under real pressure but never inside a word. Blast
+     radius was measured on the production build before changing this shared
+     rule: of 16 dashboard badges, exactly ONE changes height (the one that was
+     already broken) in every locale; the 15 short pills are unaffected. Font
+     size and copy untouched. */
+  white-space:     normal;
+  overflow-wrap:   normal;
+  word-break:      normal;
+  hyphens:         none;
+  min-inline-size: 0;
   line-height:     1.4;
 }
 
@@ -886,6 +900,17 @@ h6 { font-weight: 550; letter-spacing: 0; }
   text-transform: uppercase;
   color:          var(--muted);
   line-height:    1.2;
+  /* PHASE 104-H — the known "German Dashboard KPI label overflow at 320×568":
+     "4/4 Linien aktiv" set as one unbreakable uppercase-mono line outgrew its
+     KPI cell by 16px and widened the DOCUMENT (scrollWidth 336 on a 320
+     viewport). The label may now wrap at spaces; it must never break inside a
+     word, and neither the font size nor the German copy is touched. Logical
+     min-inline-size:0 lets a flex/grid cell actually shrink to its track. */
+  min-inline-size: 0;
+  overflow-wrap:   normal;
+  word-break:      normal;
+  hyphens:         none;
+  white-space:     normal;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2761,4 +2786,73 @@ main [id$="-title"] {
   hyphens: none;
   word-break: normal;
   overflow-wrap: normal;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-H — RESPONSIVE / RTL / A11Y / MOTION CLOSURE
+   ───────────────────────────────────────────────────────────────────────────
+   Shared-shell presentation only. No new destination, command, API call or
+   role rule lives here; every value below is READ from a shipped token.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Drawer panel: safe small-screen geometry ──
+   `inset-y-0` alone measures against 100vh, which on mobile browsers includes
+   the area under the collapsing URL bar — so the last navigation rows could
+   sit below the visible viewport with no way to reach them. Fallback chain:
+   `100vh` first for engines without dynamic units, then `100dvh`. The header
+   and the scroller (not the document) absorb the safe-area insets so notch and
+   home-indicator regions never cover a control. Logical properties throughout;
+   the drawer keeps `start-0` / `end-0` from the primitive for RTL. */
+.ds-drawer-panel {
+  block-size: 100vh;
+  block-size: 100dvh;
+  max-block-size: 100vh;
+  max-block-size: 100dvh;
+  padding-block-start: env(safe-area-inset-top, 0px);
+  padding-block-end: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Authenticated mobile navigation (AppMobileNav) ──
+   The active destination carries FOUR channels: `aria-current="page"` for AT,
+   a structural Beacon bar (the same inline-start locator grammar as the Rail),
+   a surface lift, and semibold type — colour is never the only signal. The bar
+   is `--rail-indicator-width` × `--beacon-core`, both contract-owned; nothing
+   here declares a raw colour. */
+.hermes-mobile-nav-item {
+  position: relative;
+  min-block-size: var(--rail-item-size);          /* 44px — WCAG 2.5.8 target */
+}
+.hermes-mobile-nav-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 0.45rem;
+  inline-size: var(--rail-indicator-width);
+  border-radius: 999px;
+  background: var(--beacon-core);
+}
+
+/* ── Topbar hit-target expansion ──
+   The search, notification and account controls kept 32–36px visual bodies
+   from Phase 87C. WCAG 2.5.8 wants ≥44×44 for the interactive TARGET; the
+   visual mark may stay smaller. `.hermes-topbar-target` guarantees the target
+   box without redrawing the icon, so the bar's rhythm is preserved. */
+.hermes-topbar-target {
+  min-inline-size: var(--rail-item-size);
+  min-block-size: var(--rail-item-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Authenticated notification bell: hit-target only ──
+   `NotificationCenter` is a SHARED component (public SiteHeader, PublicHeader
+   and the app-shell adapter) that owns live fetch/SSE/mark-read behaviour, so it
+   is not edited. The app-shell adapter wraps it in `.hermes-topbar-bell`, and
+   this rule reaches the bell button — the root's first direct child — to give
+   the interactive box the 44px target the authenticated topbar requires. The
+   two public consumers are untouched because they never carry the wrapper. */
+.hermes-topbar-bell > div > button:first-of-type {
+  min-inline-size: var(--rail-item-size);
+  min-block-size: var(--rail-item-size);
 }

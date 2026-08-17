@@ -103,8 +103,13 @@ export function AdminConsoleClient({
         <Metric label={t("metrics.role")} value={tAuth(roleLabel)} />
       </div>
 
+      {/* PHASE 104-H — a bare `2fr` track is `minmax(auto, 2fr)`: the left column's
+          automatic minimum took the filter grid's max-content (five selects × ~284px
+          = 909px) and the tracks froze at 909/174 at every width ≥ lg, pushing the
+          Control Center off a 1024px viewport (measured 1129–1131/1024). `min-w-0`
+          lets both columns honour their fr shares; the selects stay `w-full`. */}
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-        <div>
+        <div className="min-w-0">
           {/* 3 — filters */}
           <section className="rounded-xl border border-line bg-surface p-4">
             <h2 className="font-mono text-xs uppercase tracking-widest text-muted">{t("filters.heading")}</h2>
@@ -130,13 +135,19 @@ export function AdminConsoleClient({
               <Field label={t("filters.to")}>
                 <input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)} className="w-full rounded-lg border border-line bg-bg px-3 py-2 font-body text-sm text-ink focus:border-signal/50 focus:outline-none" dir="ltr" />
               </Field>
-              <div className="flex items-end gap-2">
-                <button onClick={load} className="rounded-lg bg-signal px-4 py-2 font-body text-sm font-semibold text-bg transition-opacity hover:opacity-90">
+              {/* PHASE 104-H — this action cell sat in a 149px grid track at 390px
+                  and its two buttons (de: "Anwenden" + "Zurücksetzen" ≈ 216px) could
+                  neither shrink nor wrap, widening the document to 425px. The cell
+                  now spans the full row below `sm` and wraps when a translation is
+                  still too long; both buttons meet the 44px target. Copy, reset
+                  behaviour and the API call are unchanged. */}
+              <div className="col-span-2 flex flex-wrap items-end gap-2 sm:col-span-1">
+                <button onClick={load} className="min-h-11 rounded-lg bg-signal px-4 py-2 font-body text-sm font-semibold text-bg transition-opacity hover:opacity-90">
                   {t("filters.apply")}
                 </button>
                 <button
                   onClick={() => { setFAction(""); setFEntity(""); setFFrom(""); setFTo(""); setFLimit("100"); setTimeout(load, 0); }}
-                  className="rounded-lg border border-line px-4 py-2 font-body text-sm text-muted transition-colors hover:text-ink"
+                  className="min-h-11 rounded-lg border border-line px-4 py-2 font-body text-sm text-muted transition-colors hover:text-ink"
                 >
                   {t("filters.reset")}
                 </button>
@@ -194,7 +205,7 @@ export function AdminConsoleClient({
           </section>
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {/* 4 — Control Center: capability-filtered admin/editorial/contributor nav */}
           {controlGroups.map((group) => (
             <section key={group.key} className="rounded-xl border border-line bg-surface p-5">

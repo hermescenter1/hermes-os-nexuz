@@ -32,7 +32,22 @@ const F_FILES = {
 } as const;
 
 const src = Object.fromEntries(Object.entries(F_FILES).map(([k, v]) => [k, read(v)])) as Record<keyof typeof F_FILES, string>;
-const cssF = src.css.slice(src.css.indexOf("PHASE 104-F"));
+/**
+ * The Journal's OWN CSS block, bounded at both ends.
+ *
+ * An earlier revision sliced from the 104-F banner to end-of-file. That was
+ * correct only while 104-F was the last block in globals.css: the moment 104-H
+ * appended shell CSS after it, every Journal-scoped count (Beacon uses, raw
+ * colour, animations) silently began policing the authenticated shell too, and
+ * the "Beacon ≤ 6" cap failed on a mobile-navigation Beacon that is not part of
+ * this surface. Bounding the slice at the NEXT phase banner keeps this contract
+ * meaning exactly what it says — the Journal — and stays correct when 104-I
+ * appends after 104-H. The block must exist and be non-trivial.
+ */
+const cssFStart = src.css.indexOf("PHASE 104-F");
+const cssFNext = src.css.indexOf("PHASE 104-", cssFStart + "PHASE 104-F".length);
+const cssF = src.css.slice(cssFStart, cssFNext === -1 ? undefined : cssFNext);
+if (cssFStart < 0 || cssF.length < 500) throw new Error("104-F CSS block not found or truncated");
 
 /* ══════════════════════════════════════════════════════════════════════════
    1. PUBLIC / PRIVATE ISOLATION — the resolver is the boundary
