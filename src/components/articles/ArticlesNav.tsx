@@ -63,8 +63,11 @@ interface Props {
 
 export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) {
   const pathname = usePathname();
-  const isFa     = pathname.startsWith("/fa");
-  const locale   = isFa ? "fa" : "en";
+  // Derive the actual active locale. The previous `isFa ? "fa" : "en"` form
+  // sent every German visitor's Journal links to /en, which would equally
+  // mis-route the sign-in and access links added below.
+  const seg      = pathname.split("/")[1] ?? "";
+  const locale   = seg === "fa" || seg === "de" ? seg : "en";
   const t        = useTranslations("journal");
 
   function NavLink({ l }: { l: typeof PUBLIC_LINKS[0] }) {
@@ -107,7 +110,7 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
         {PUBLIC_LINKS.map(l => <NavLink key={l.href} l={l} />)}
       </div>
 
-      {showAuth && (
+      {showAuth ? (
         <>
           <div className="my-4 border-t border-line/25" />
           <p className="px-3 mb-2.5 text-[9px] font-semibold text-metadata uppercase tracking-[0.18em]">
@@ -115,6 +118,46 @@ export function ArticlesNav({ showAuth = false, showEditorial = false }: Props) 
           </p>
           <div className="flex flex-col gap-1">
             {AUTH_LINKS.map(l => <NavLink key={l.href} l={l} />)}
+          </div>
+        </>
+      ) : (
+        /* Unauthenticated visitors previously saw no route into authorship at
+           all — the writer, drafts and my-articles links simply did not
+           render, so "how do I publish here?" had no answer on the page.
+           These three lines are that answer, kept to three so the public
+           Journal stays uncluttered.
+
+           "Write article" deliberately points at sign-in carrying a return
+           path rather than at /articles/write itself: the writer is
+           capability-gated, so linking it directly would just bounce the
+           visitor to a login screen that then forgot where they were going. */
+        <>
+          <div className="my-4 border-t border-line/25" />
+          <p className="px-3 mb-2.5 text-[9px] font-semibold text-metadata uppercase tracking-[0.18em]">
+            {t("nav.becomeAuthor")}
+          </p>
+          <div className="flex flex-col gap-1">
+            <Link
+              href={`/${locale}/auth/login?from=${encodeURIComponent(`/${locale}/articles/write`)}`}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 text-signal border border-signal/25 bg-signal/[0.06] hover:bg-signal/[0.12] font-semibold"
+            >
+              <span className="text-signal">{ICONS.write}</span>
+              <span className="truncate">{t("nav.write")}</span>
+            </Link>
+            <Link
+              href={`/${locale}/auth/login`}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 text-muted hover:text-ink hover:bg-surface2/60 border border-transparent hover:border-line/30"
+            >
+              <span className="text-metadata">{ICONS.authors}</span>
+              <span className="truncate">{t("nav.signIn")}</span>
+            </Link>
+            <Link
+              href={`/${locale}/auth/register`}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 text-muted hover:text-ink hover:bg-surface2/60 border border-transparent hover:border-line/30"
+            >
+              <span className="text-metadata">{ICONS.myarticles}</span>
+              <span className="truncate">{t("nav.createAccount")}</span>
+            </Link>
           </div>
         </>
       )}

@@ -1,11 +1,23 @@
 import { notFound }              from "next/navigation";
 import { setRequestLocale }       from "next-intl/server";
+import { getCurrentUser }         from "@/lib/auth/session";
+import { can }                    from "@/lib/auth/roles";
+import { getReactionSummary, isArticleSaved, listArticleComments } from "@/lib/articles/engagement";
 import { getArticleDetailBySlug, getArticleFeed, incrementArticleViewCount } from "@/lib/articles/db";
 import { ArticleDetailClient }    from "@/components/articles/ArticleDetailClient";
 import { buildMetadata }          from "@/lib/seo/metadata";
 import { JsonLd }                 from "@/components/seo/JsonLd";
 import { BASE_URL }               from "@/lib/seo/config";
 import type { ArticleDetail }     from "@/lib/articles/types";
+
+/**
+ * Site-relative cover path -> absolute URL, or undefined when there is no
+ * cover so `buildMetadata` falls back to the brand OG image as before.
+ */
+function absoluteCover(coverImageUrl: string | null): string | undefined {
+  if (!coverImageUrl) return undefined;
+  return coverImageUrl.startsWith("/") ? `${BASE_URL}${coverImageUrl}` : coverImageUrl;
+}
 
 export async function generateMetadata({
   params,
@@ -26,7 +38,11 @@ export async function generateMetadata({
     title:         article.seoTitle  ?? article.title,
     description:   article.seoDescription ?? article.excerpt ?? "",
     noIndex:       article.noIndex || article.status !== "PUBLISHED",
-    ogImage:       article.ogImageUrl ?? undefined,
+    // An explicit ogImageUrl still wins. Otherwise the author's cover becomes
+    // the social preview — absolutised, because OG_IMAGE_URL (the fallback
+    // buildMetadata applies when this is undefined) is an absolute URL and
+    // crawlers will not resolve a site-relative one.
+    ogImage:       article.ogImageUrl ?? absoluteCover(article.coverImageUrl),
     ogType:        "article",
     publishedTime: article.publishedAt ?? undefined,
     modifiedTime:  article.updatedAt,
@@ -49,6 +65,10 @@ function buildArticleJsonLd(article: ArticleDetail, locale: string) {
     "@type":    "Article",
     headline:   article.title,
     description: article.excerpt ?? "",
+    // Absolute, per schema.org. Dropped from the emitted JSON when the article
+    // has no cover — an Article without `image` is valid, an Article with a
+    // broken relative one is not.
+    image:      absoluteCover(article.coverImageUrl),
     author: {
       "@type": "Person",
       name:    article.author.displayName,
@@ -102,10 +122,42 @@ export default async function ArticleDetailPage({
     ? related
     : feed.trending.filter(a => a.id !== article.id).slice(0, 3);
 
+  // Engagement is loaded on the server so the discussion is in the first paint
+  // and is indexable. `getCurrentUser` is wrapped because an unauthenticated or
+  // unconfigured auth context must leave the PUBLIC article fully readable —
+  // the conversation is a public read, only posting needs a session.
+  let viewerUser: { id: string; role?: string } | null = null;
+  try {
+    viewerUser = await getCurrentUser();
+  } catch { /* anonymous reader */ }
+
+  // Three bounded reads in parallel. `isArticleSaved` is a single lookup on the
+  // ArticleSave composite key and returns false for an anonymous reader without
+  // touching the database at all.
+  const [reactions, comments, saved] = await Promise.all([
+    getReactionSummary(article.id, viewerUser?.id ?? null),
+    listArticleComments(article.id),
+    isArticleSaved(article.id, viewerUser?.id ?? null),
+  ]);
+
   return (
     <>
       <JsonLd data={[buildArticleJsonLd(article, locale)]} />
-      <ArticleDetailClient article={article} related={finalRelated} />
+      <ArticleDetailClient
+        article={article}
+        related={finalRelated}
+        engagement={{
+          reactions,
+          comments,
+          saved,
+          viewer: viewerUser
+            // `isModerator` is the same `admin` capability the review endpoints
+            // use, resolved on the server — the client is told what it may do,
+            // it never asserts it.
+            ? { id: viewerUser.id, isModerator: can(viewerUser.role as never, "admin") }
+            : null,
+        }}
+      />
     </>
   );
 }

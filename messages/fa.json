@@ -3788,6 +3788,36 @@
     }
   },
   "journal": {
+    "engagement": {
+      "removedComment": "این دیدگاه برداشته شده است.",
+      "saved": "ذخیره شد",
+      "saveFailed": "به‌روزرسانی فهرست ذخیره‌ها ممکن نشد.",
+      "signInToSave": "برای ذخیره وارد شوید",
+      "reactionsLabel": "واکنش‌ها",
+      "signInToReact": "برای ثبت واکنش وارد شوید",
+      "reactFailed": "ثبت واکنش شما ممکن نشد.",
+      "networkError": "خطای شبکه. لطفاً دوباره تلاش کنید.",
+      "commentsHeading": "دیدگاه‌ها ({count})",
+      "commentPlaceholder": "دیدگاه مهندسی خود را بنویسید…",
+      "replyPlaceholder": "پاسخ خود را بنویسید…",
+      "post": "ثبت",
+      "posting": "در حال ثبت…",
+      "cancel": "انصراف",
+      "reply": "پاسخ",
+      "delete": "حذف",
+      "moderate": "برداشتن",
+      "removeConfirm": "این دیدگاه برداشته شود؟",
+      "confirmRemove": "برداشتن",
+      "removing": "در حال برداشتن…",
+      "removeFailed": "برداشتن دیدگاه ممکن نشد.",
+      "signInToComment": "برای شرکت در گفت‌وگو وارد شوید",
+      "noComments": "هنوز دیدگاهی ثبت نشده است. گفت‌وگو را آغاز کنید.",
+      "loadMore": "نمایش دیدگاه‌های بیشتر",
+      "loading": "در حال بارگذاری…",
+      "commentTooLong": "دیدگاه بیش از حد طولانی است.",
+      "commentRateLimited": "تعداد دیدگاه‌های شما بیش از حد مجاز است. کمی صبر کنید.",
+      "commentFailed": "ثبت دیدگاه شما ممکن نشد."
+    },
     "knowledgeNetwork": "شبکه دانش صنعتی",
     "brandUpper": "ژورنال صنعتی هرمس",
     "brandTitle": "ژورنال صنعتی هرمس",
@@ -3971,6 +4001,9 @@
       }
     },
     "nav": {
+      "becomeAuthor": "نویسنده شوید",
+      "signIn": "ورود",
+      "createAccount": "درخواست حساب کاربری",
       "brandTitle": "ژورنال صنعتی هرمس",
       "myAccount": "حساب کاربری",
       "editorial": "هیئت تحریریه",
@@ -4093,6 +4126,22 @@
     }
   },
   "journalWriter": {
+    "media": {
+      "section": "رسانهٔ مقاله",
+      "coverLabel": "تصویر کاور",
+      "upload": "بارگذاری تصویر",
+      "uploading": "در حال بارگذاری…",
+      "replace": "جایگزینی",
+      "remove": "حذف",
+      "previewAlt": "پیش‌نمایش تصویر کاور",
+      "hint": "JPG، PNG یا WebP · حداکثر ۴ مگابایت · نسبت ۱۶:۹ توصیه می‌شود",
+      "errType": "قالب تصویر پشتیبانی نمی‌شود. از JPG، PNG یا WebP استفاده کنید.",
+      "errTooLarge": "تصویر بیش از حد بزرگ است. حداکثر ۴ مگابایت.",
+      "errUpload": "بارگذاری ناموفق بود. لطفاً دوباره تلاش کنید.",
+      "errNetwork": "خطای شبکه. لطفاً دوباره تلاش کنید.",
+      "errRateLimited": "تعداد بارگذاری‌ها بیش از حد مجاز است. کمی صبر کنید و دوباره تلاش کنید.",
+      "errUnauthorized": "نشست شما منقضی شده است. لطفاً دوباره وارد شوید."
+    },
     "newArticle": "نوشتن مقاله جدید",
     "saveDraft": "ذخیره پیش‌نویس",
     "submitForReview": "ارسال برای بررسی",
@@ -4249,6 +4298,13 @@
       "ARCHIVED": "آرشیوشده"
     },
     "mod": {
+      "delete": "حذف",
+      "deleteArticleNamed": "حذف مقاله: {title}",
+      "deleteConfirmTitle": "این مقاله برای همیشه حذف شود؟",
+      "deleteConfirmBody": "مقاله همراه با دیدگاه‌ها، واکنش‌ها، ذخیره‌ها و تاریخچهٔ بازبینی آن حذف می‌شود. این کار برگشت‌پذیر نیست.",
+      "confirmDelete": "بله، حذف شود",
+      "deleting": "در حال حذف…",
+      "errDelete": "حذف ناموفق بود",
       "brand": "ژورنال صنعتی هرمس — مدیریت محتوا",
       "titleModeration": "اعتدال محتوا",
       "titleSubmissions": "مقالات ارسال‌شده",

@@ -18,9 +18,17 @@ import { PageIntro } from "@/components/PageIntro";
 export async function RequireCapability({
   capability,
   children,
+  returnTo,
 }: {
   capability: Capability;
   children: React.ReactNode;
+  /**
+   * Locale-prefixed internal path to come back to after signing in, e.g.
+   * "/fa/articles/write". Optional and defaulted-off so the six existing
+   * call sites are unaffected; the login surface re-validates the value with
+   * `safeLocaleReturnPath` regardless of what is passed here.
+   */
+  returnTo?: string;
 }) {
   const t = await getTranslations("auth");
 
@@ -38,12 +46,22 @@ export async function RequireCapability({
     return (
       <PageShell>
         <PageIntro eyebrow="Hermes OS" title={t("loginRequiredTitle")} lede={t("loginRequired")} />
-        <div className="mx-auto max-w-3xl px-6">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-6">
           <Link
-            href="/login"
+            href={returnTo ? `/login?from=${encodeURIComponent(returnTo)}` : "/login"}
             className="inline-block rounded-lg bg-signal px-5 py-2.5 font-body text-sm font-semibold text-bg transition-opacity hover:opacity-90"
           >
             {t("login")}
+          </Link>
+          {/* A visitor with no account at all needs the other half of the
+              journey. Account creation is the reviewed access-request flow
+              (Phase 81A), so this points there rather than at a self-serve
+              signup that deliberately does not exist. */}
+          <Link
+            href="/auth/register"
+            className="inline-block rounded-lg border border-line/60 px-5 py-2.5 font-body text-sm font-semibold text-muted transition-colors hover:border-signal/40 hover:text-ink"
+          >
+            {t("requestAccessTitle")}
           </Link>
         </div>
       </PageShell>
