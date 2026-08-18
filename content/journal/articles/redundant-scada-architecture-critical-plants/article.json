@@ -1,0 +1,52 @@
+{
+  "slug": "redundant-scada-architecture-critical-plants",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "scada-hmi",
+  "tags": ["redundancy", "high-availability", "scada", "commissioning", "diagnostics"],
+  "publishedAt": "2026-08-16T09:20:00.000Z",
+  "coverImage": {
+    "file": "journal/redundant-scada.jpg",
+    "url": null,
+    "concept": "Two identical equipment cabinets side by side with a visible interconnect between them — redundancy as a physical fact, and the link that decides whether it works.",
+    "prompt": "Photorealistic photograph of two identical industrial equipment cabinets side by side in a technical room, a visible fibre interconnect running between them, cool cyan status indicators, dark grey metal, no readable text or labels, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Two identical industrial equipment cabinets connected by a visible fibre interconnect",
+      "fa": "دو تابلوی تجهیزات صنعتی یکسان که با یک لینک فیبر قابل مشاهده به هم متصل‌اند",
+      "de": "Zwei identische Technikschränke, verbunden durch eine sichtbare Glasfaserverbindung"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "SCADA",
+    "linkedTechnology": "High Availability",
+    "linkedFailureMode": "SWITCHOVER_FAILURE",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Redundant SCADA Architectures for Mission-Critical Plants",
+      "subtitle": "Split-brain, heartbeat design and the switchover you have never tested — redundancy adds failure modes as well as removing them",
+      "excerpt": "A redundant pair can fail in ways a single server cannot. Active/passive versus active/active, heartbeat path independence, split-brain prevention, client and controller failover, and why an untested switchover is a hypothesis rather than a capability.",
+      "seoTitle": "Redundant SCADA Architectures for Mission-Critical Plants",
+      "seoDescription": "Engineer SCADA redundancy honestly: active/passive vs active/active, heartbeat independence, split-brain prevention, client failover and switchover testing."
+    },
+    "fa": {
+      "title": "معماری‌های افزونهٔ SCADA برای کارخانه‌های حیاتی",
+      "subtitle": "Split-brain، طراحی heartbeat و سوئیچ‌اووری که هرگز آزمونش نکرده‌اید — افزونگی به همان اندازه که خرابی حذف می‌کند، خرابی هم اضافه می‌کند",
+      "excerpt": "یک جفت افزونه می‌تواند به شیوه‌هایی خراب شود که یک سرور تنها نمی‌تواند. active/passive در برابر active/active، استقلال مسیر heartbeat، پیشگیری از split-brain، failover کلاینت و کنترلر، و چرا سوئیچ‌اوور آزموده‌نشده یک فرضیه است نه یک قابلیت.",
+      "seoTitle": "معماری‌های افزونهٔ SCADA برای کارخانه‌های حیاتی",
+      "seoDescription": "مهندسی صادقانهٔ افزونگی SCADA: active/passive در برابر active/active، استقلال heartbeat، پیشگیری از split-brain، failover کلاینت و آزمون سوئیچ‌اوور."
+    },
+    "de": {
+      "title": "Redundante SCADA-Architekturen für kritische Anlagen",
+      "subtitle": "Split-Brain, Heartbeat-Auslegung und die nie geprüfte Umschaltung — Redundanz fügt Fehlerbilder hinzu, statt nur welche zu beseitigen",
+      "excerpt": "Ein redundantes Paar kann auf Arten ausfallen, die ein Einzelserver nicht kennt. Active/Passive gegen Active/Active, Unabhängigkeit des Heartbeat-Pfads, Split-Brain-Vermeidung, Client- und Steuerungs-Failover — und warum eine ungeprüfte Umschaltung eine Hypothese ist.",
+      "seoTitle": "Redundante SCADA-Architekturen für kritische Anlagen",
+      "seoDescription": "SCADA-Redundanz ehrlich auslegen: Active/Passive gegen Active/Active, Heartbeat-Unabhängigkeit, Split-Brain-Vermeidung, Client-Failover und Umschaltprüfung."
+    }
+  }
+}

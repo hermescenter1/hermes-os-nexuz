@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-power-quality-harmonics-flicker-voltage",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "energy-utilities",
+  "tags": ["power-quality", "harmonics", "diagnostics", "root-cause-analysis", "condition-monitoring"],
+  "publishedAt": "2026-08-17T09:40:00.000Z",
+  "coverImage": {
+    "file": "journal/power-quality-analyser.jpg",
+    "url": null,
+    "concept": "A portable power quality analyser clamped onto an incoming feeder inside a switchroom — the instrument whose measurement window decides which disturbances are visible and which are invisible.",
+    "prompt": "Photorealistic photograph of a portable power quality analyser with flexible current clamps installed on busbars inside an industrial switchroom, waveform display glowing, cool cyan and grey palette, no readable text or numbers, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Portable power quality analyser with current clamps connected to an industrial switchboard feeder",
+      "fa": "آنالایزر پرتابل کیفیت توان با کلمپ‌های جریان متصل به فیدر تابلوی صنعتی",
+      "de": "Mobiler Netzqualitätsanalysator mit Stromzangen an einem industriellen Schaltanlagenabgang"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "SWITCHBOARD",
+    "linkedTechnology": "Power Quality Monitoring",
+    "linkedStandard": "IEC 61000-4-30",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial Power Quality: Harmonics, Flicker and Voltage Disturbances",
+      "subtitle": "Six physically different phenomena that share one name — and why the measurement window decides which of them you are allowed to see",
+      "excerpt": "Power quality is not one problem. Harmonics, voltage dips, flicker, transients, unbalance and notching have different physics, different instruments, different victims and different remedies. This article separates them, explains what each measurement can and cannot reveal, and maps each phenomenon to the mitigation that actually addresses it.",
+      "seoTitle": "Industrial Power Quality: Harmonics, Flicker and Voltage",
+      "seoDescription": "Separating harmonics, voltage dips, flicker, transients, unbalance and notching: causes, measurement windows, equipment effects and the mitigation that fits each one."
+    },
+    "fa": {
+      "title": "کیفیت توان صنعتی: هارمونیک، فلیکر و اغتشاش‌های ولتاژ",
+      "subtitle": "شش پدیدهٔ فیزیکی متفاوت که یک نام مشترک دارند — و اینکه چرا پنجرهٔ اندازه‌گیری تعیین می‌کند کدام‌یک اصلاً دیده شود",
+      "excerpt": "کیفیت توان یک مسئله نیست. هارمونیک، افت ولتاژ، فلیکر، گذراها، نامتعادلی و ناچینگ فیزیک متفاوت، ابزار متفاوت، قربانی متفاوت و راه‌حل متفاوت دارند. این مقاله آن‌ها را از هم جدا می‌کند، توضیح می‌دهد هر اندازه‌گیری چه چیزی را نشان می‌دهد و چه چیزی را نمی‌تواند ببیند، و هر پدیده را به راه‌حلی نگاشت می‌کند که واقعاً به همان پدیده می‌پردازد.",
+      "seoTitle": "کیفیت توان صنعتی: هارمونیک، فلیکر و اغتشاش ولتاژ",
+      "seoDescription": "تفکیک هارمونیک، افت ولتاژ، فلیکر، گذرا، نامتعادلی و ناچینگ: علت‌ها، پنجرهٔ اندازه‌گیری، اثر بر تجهیزات و راه‌حل متناسب با هر پدیده."
+    },
+    "de": {
+      "title": "Netzqualität in der Industrie: Oberschwingungen, Flicker, Spannung",
+      "subtitle": "Sechs physikalisch verschiedene Erscheinungen unter einem Namen — und warum das Messfenster entscheidet, welche davon überhaupt sichtbar wird",
+      "excerpt": "Netzqualität ist nicht ein Problem. Oberschwingungen, Spannungseinbrüche, Flicker, Transienten, Unsymmetrie und Kommutierungseinbrüche haben andere Physik, andere Messtechnik, andere Betroffene und andere Abhilfen. Dieser Beitrag trennt sie, erklärt, was jede Messung zeigen kann und was nicht, und ordnet jeder Erscheinung die passende Maßnahme zu.",
+      "seoTitle": "Netzqualität in der Industrie: Oberschwingungen und Flicker",
+      "seoDescription": "Oberschwingungen, Spannungseinbrüche, Flicker, Transienten, Unsymmetrie und Kommutierungseinbrüche unterscheiden: Ursachen, Messfenster, Gerätewirkung, Abhilfe."
+    }
+  }
+}

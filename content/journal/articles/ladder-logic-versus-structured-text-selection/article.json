@@ -1,0 +1,53 @@
+{
+  "slug": "ladder-logic-versus-structured-text-selection",
+  "contentType": "ENGINEERING_OPINION",
+  "category": "plc-programming",
+  "tags": ["ladder-logic", "structured-text", "iec-61131-3", "maintainability", "diagnostics"],
+  "publishedAt": "2026-08-16T01:40:00.000Z",
+  "coverImage": {
+    "file": "journal/ladder-vs-scl.jpg",
+    "url": null,
+    "concept": "A programming terminal on a workbench beside an open control cabinet — the engineering interface between written logic and the machine it drives, deliberately without readable screen content.",
+    "prompt": "Photorealistic photograph of an engineering laptop on a workbench beside an open industrial control cabinet, screen glow with no legible content, terminal blocks and wiring visible behind, cool blue-grey technical lighting, shallow depth of field, no readable text or branding, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Engineering laptop on a workbench beside an open industrial control cabinet",
+      "fa": "لپ‌تاپ مهندسی روی میز کار در کنار یک تابلوی کنترل صنعتی باز",
+      "de": "Engineering-Laptop auf einer Werkbank neben einem geöffneten Steuerungsschrank"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "IEC 61131-3 Languages",
+    "linkedStandard": "IEC 61131-3",
+    "linkedPLCPlatform": "Multi-vendor",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Ladder Logic vs Structured Text: Choosing per Function",
+      "subtitle": "The choice is not a preference or a generational argument — it is a property of the logic being written and of who will maintain it",
+      "excerpt": "Ladder shows live signal state to a technician at 3 a.m.; Structured Text expresses algorithms ladder cannot hold. A per-function selection rule, the online-diagnosis argument that decides most real cases, and the mixed-project conventions that keep both readable.",
+      "seoTitle": "Ladder Logic vs Structured Text: Choosing per Function",
+      "seoDescription": "When ladder beats Structured Text and when it does not: online diagnosability, algorithmic density, maintenance audience and mixed-language conventions in IEC 61131-3."
+    },
+    "fa": {
+      "title": "منطق نردبانی در برابر متن ساختاریافته: انتخاب بر حسب عملکرد",
+      "subtitle": "این انتخاب سلیقه یا دعوای نسلی نیست — ویژگی خودِ منطقی است که نوشته می‌شود و کسی که نگهداری‌اش می‌کند",
+      "excerpt": "لدر وضعیت زندهٔ سیگنال را ساعت سه بامداد به تکنسین نشان می‌دهد؛ SCL الگوریتم‌هایی را بیان می‌کند که لدر نمی‌تواند نگه دارد. یک قاعدهٔ انتخاب بر حسب عملکرد، استدلال عیب‌یابی آنلاین که بیشتر موارد واقعی را تعیین می‌کند، و قراردادهایی که پروژهٔ ترکیبی را خوانا نگه می‌دارند.",
+      "seoTitle": "منطق نردبانی در برابر متن ساختاریافته در کنترل صنعتی",
+      "seoDescription": "کجا لدر بر SCL برتری دارد و کجا نه: عیب‌یابی آنلاین، چگالی الگوریتمی، مخاطب نگهداری و قراردادهای زبان ترکیبی در IEC 61131-3."
+    },
+    "de": {
+      "title": "KOP versus SCL: Sprachwahl je Funktion",
+      "subtitle": "Die Wahl ist keine Vorliebe und kein Generationenstreit — sie ist eine Eigenschaft der Logik und ihrer künftigen Instandhalter",
+      "excerpt": "KOP zeigt der Fachkraft um drei Uhr morgens den Signalzustand online; SCL formuliert Algorithmen, die KOP nicht tragen kann. Eine Auswahlregel je Funktion, das Online-Diagnose-Argument, das die meisten realen Fälle entscheidet, und Konventionen für gemischtsprachige Projekte.",
+      "seoTitle": "KOP versus SCL: Die Sprachwahl je Funktion",
+      "seoDescription": "Wann KOP besser ist als SCL und wann nicht: Online-Diagnosefähigkeit, algorithmische Dichte, Instandhaltungspublikum und Konventionen für gemischte IEC-61131-3-Projekte."
+    }
+  }
+}

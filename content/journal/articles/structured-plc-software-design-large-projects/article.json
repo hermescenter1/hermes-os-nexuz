@@ -1,0 +1,53 @@
+{
+  "slug": "structured-plc-software-design-large-projects",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "plc-programming",
+  "tags": ["software-architecture", "iec-61131-3", "state-machines", "maintainability", "commissioning"],
+  "publishedAt": "2026-08-16T00:50:00.000Z",
+  "coverImage": {
+    "file": "journal/structured-plc-software.jpg",
+    "url": null,
+    "concept": "Overhead view of a production line broken into visibly distinct machine modules, each self-contained, connected by a common conveyor spine — the physical analogue of software layering.",
+    "prompt": "Photorealistic elevated wide photograph of a modern production hall at night, several visually distinct self-contained machine cells linked by a central conveyor line, cool cyan accent lighting on dark machinery, no readable text or branding, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Overhead view of a production line divided into distinct self-contained machine modules",
+      "fa": "نمای از بالای یک خط تولید که به ماژول‌های ماشینی مستقل و متمایز تقسیم شده است",
+      "de": "Draufsicht einer Fertigungslinie, unterteilt in eigenständige Maschinenmodule"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "Application Architecture",
+    "linkedStandard": "IEC 61131-3",
+    "linkedPLCPlatform": "Multi-vendor",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Structured PLC Software Design for Large Projects",
+      "subtitle": "Layering, equipment modules and the ownership rules that decide whether a program survives its second engineer",
+      "excerpt": "Large control programs fail on structure, not syntax. Layering by responsibility, one owner per output, equipment modules with explicit interfaces, and mode handling that is designed rather than accumulated.",
+      "seoTitle": "Structured PLC Software Design for Large Projects",
+      "seoDescription": "Architect large PLC applications: layer by responsibility, give every output one owner, build equipment modules with explicit interfaces, design modes and states."
+    },
+    "fa": {
+      "title": "طراحی ساختاریافتهٔ نرم‌افزار PLC در پروژه‌های بزرگ",
+      "subtitle": "لایه‌بندی، ماژول تجهیز و قواعد مالکیتی که تعیین می‌کنند برنامه از مهندس دومش جان سالم به در می‌برد یا نه",
+      "excerpt": "برنامه‌های کنترلی بزرگ روی ساختار شکست می‌خورند، نه روی نحو. لایه‌بندی بر اساس مسئولیت، یک مالک برای هر خروجی، ماژول‌های تجهیز با واسط صریح، و مدیریت مُدی که طراحی شده باشد نه انباشته.",
+      "seoTitle": "طراحی ساختاریافتهٔ نرم‌افزار PLC در پروژه‌های بزرگ",
+      "seoDescription": "معماری برنامه‌های بزرگ PLC: لایه‌بندی بر اساس مسئولیت، یک مالک برای هر خروجی، ماژول تجهیز با واسط صریح، و طراحی مدیریت مُد و حالت."
+    },
+    "de": {
+      "title": "Strukturierter SPS-Softwareentwurf für Großprojekte",
+      "subtitle": "Schichtung, Anlagenmodule und die Eigentumsregeln, die entscheiden, ob ein Programm seinen zweiten Bearbeiter überlebt",
+      "excerpt": "Große Steuerungsprogramme scheitern an der Struktur, nicht an der Syntax. Schichtung nach Verantwortung, genau ein Eigentümer je Ausgang, Anlagenmodule mit expliziten Schnittstellen und eine Betriebsartenlogik, die entworfen und nicht angesammelt wurde.",
+      "seoTitle": "Strukturierter SPS-Softwareentwurf für Großprojekte",
+      "seoDescription": "Große SPS-Anwendungen strukturieren: nach Verantwortung schichten, je Ausgang ein Eigentümer, Anlagenmodule mit klaren Schnittstellen, Betriebsarten bewusst entwerfen."
+    }
+  }
+}

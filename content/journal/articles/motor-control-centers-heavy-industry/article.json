@@ -1,0 +1,52 @@
+{
+  "slug": "motor-control-centers-heavy-industry",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "electrical-engineering",
+  "tags": ["mcc", "short-circuit", "protection-coordination", "motor-protection", "commissioning"],
+  "publishedAt": "2026-08-16T12:00:00.000Z",
+  "coverImage": {
+    "file": "journal/motor-control-centers.jpg",
+    "url": null,
+    "concept": "A row of withdrawable starter units in a heavy-industry MCC line-up — the repeated module that makes availability and maintainability a design choice.",
+    "prompt": "Photorealistic photograph of a long line-up of withdrawable motor starter units in an industrial motor control centre, stacked compartments with handles and indicators, cool cyan LEDs against grey steel, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Line-up of withdrawable motor starter units in a heavy-industry motor control centre",
+      "fa": "ردیف واحدهای استارتر کشویی در مرکز کنترل موتور صنایع سنگین",
+      "de": "Reihe einsteckbarer Motorabzweige in einer Motor Control Center-Anlage der Schwerindustrie"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "PANEL",
+    "linkedTechnology": "Motor Control Centre",
+    "linkedStandard": "IEC 61439",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Engineering Motor Control Centers for Heavy Industry",
+      "subtitle": "Ratings are properties of the system, not of the cubicle — and the ambient temperature is a protection setting nobody wrote down",
+      "excerpt": "MCC engineering as it is actually decided: busbar withstand against the real fault level and clearing time, internal separation and withdrawable units as availability choices, control-supply behaviour on restoration, thermal derating, communicating starters and the network dependency they create.",
+      "seoTitle": "Engineering Motor Control Centers for Heavy Industry Plants",
+      "seoDescription": "MCC design for heavy industry: incomer and busbar ratings, short-circuit withstand, internal separation, withdrawable units, control supply and thermal derating."
+    },
+    "fa": {
+      "title": "مهندسی مراکز کنترل موتور برای صنایع سنگین",
+      "subtitle": "رتبه‌بندی‌ها خاصیت سامانه‌اند نه خاصیت کیوبیکل — و دمای محیط تنظیمی حفاظتی است که هیچ‌کس ننوشته",
+      "excerpt": "مهندسی MCC آن‌گونه که واقعاً تصمیم‌گیری می‌شود: تحمل باسبار در برابر سطح خطای واقعی و زمان قطع، جداسازی داخلی و واحدهای کشویی به‌عنوان انتخاب دسترس‌پذیری، رفتار تغذیهٔ کنترل هنگام بازگشت برق، کاهش رتبه‌بندی حرارتی، و وابستگی شبکه‌ای که استارترهای ارتباطی می‌سازند.",
+      "seoTitle": "مهندسی مراکز کنترل موتور برای کارخانه‌های صنایع سنگین",
+      "seoDescription": "طراحی MCC برای صنایع سنگین: رتبهٔ ورودی و باسبار، تحمل اتصال کوتاه، جداسازی داخلی، واحد کشویی، تغذیهٔ کنترل، کاهش حرارتی و راه‌اندازی."
+    },
+    "de": {
+      "title": "Motor Control Center für die Schwerindustrie auslegen",
+      "subtitle": "Bemessungswerte sind Eigenschaften des Systems, nicht des Feldes — und die Umgebungstemperatur ist eine Schutzeinstellung, die niemand notiert hat",
+      "excerpt": "MCC-Engineering, wie es tatsächlich entschieden wird: Sammelschienenfestigkeit gegen den realen Kurzschlussstrom und die Abschaltzeit, innere Unterteilung und einsteckbare Abzweige als Verfügbarkeitsentscheidung, Steuerspannungsverhalten nach Wiederkehr, thermische Reduktionsfaktoren und die Netzabhängigkeit kommunizierender Abzweige.",
+      "seoTitle": "Motor Control Center für die Schwerindustrie auslegen",
+      "seoDescription": "MCC-Entwurf für die Schwerindustrie: Einspeisung und Sammelschiene, Kurzschlussfestigkeit, innere Unterteilung, Einschubtechnik, Steuerspannung, Derating, Inbetriebnahme."
+    }
+  }
+}

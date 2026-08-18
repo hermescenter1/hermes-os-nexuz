@@ -1,0 +1,52 @@
+{
+  "slug": "evidence-based-industrial-diagnostics-safe-actions",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "troubleshooting",
+  "tags": ["root-cause-analysis", "diagnostics", "interlocks", "commissioning", "maintainability"],
+  "publishedAt": "2026-08-17T14:00:00.000Z",
+  "coverImage": {
+    "file": "journal/evidence-matrix-workbench.jpg",
+    "url": null,
+    "concept": "A whiteboard carrying a hypothesis-versus-evidence matrix beside a laptop showing a high-resolution captured trace — the two artefacts a disciplined diagnosis actually produces.",
+    "prompt": "Photorealistic photograph of an engineering office whiteboard with a hand-drawn grid of marks beside a laptop displaying a captured waveform, cool cyan daylight, no readable text or writing, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Whiteboard with a hypothesis and evidence grid beside a laptop showing a captured waveform",
+      "fa": "وایت‌بورد با شبکهٔ فرضیه و شواهد در کنار لپ‌تاپی که شکل موج ضبط‌شده را نشان می‌دهد",
+      "de": "Whiteboard mit einer Hypothesen-Nachweis-Matrix neben einem Laptop mit aufgezeichnetem Signalverlauf"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "MAINTENANCE",
+    "linkedAssetType": null,
+    "linkedTechnology": "Evidence-Based Diagnostics",
+    "linkedStandard": null,
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Evidence-Based Industrial Diagnostics and Safe Action Planning",
+      "subtitle": "The deliverable of a diagnosis is not a cause — it is a ranked candidate set, a discriminating next test, and an action ranked by consequence rather than by how sure you feel",
+      "excerpt": "A complete diagnostic method for industrial plant: framing the symptom rather than accepting it, normalising evidence with provenance, establishing constraints before hypothesising, a discrimination matrix that values evidence by what it rules out, two separate confidence gates, and an action hierarchy governed by reversibility and consequence — ending in a worked case where the right answer is a safe action under acknowledged uncertainty.",
+      "seoTitle": "Evidence-Based Industrial Diagnostics and Safe Actions",
+      "seoDescription": "A diagnostic method for industrial plant: symptom framing, evidence provenance, discrimination matrix, sufficiency gates and an action hierarchy ranked by consequence."
+    },
+    "fa": {
+      "title": "تشخیص صنعتی شواهدمحور و برنامه‌ریزی اقدام ایمن",
+      "subtitle": "قلم تحویلی یک تشخیص، یک علت نیست — مجموعه‌ای رتبه‌بندی‌شده از نامزدها، یک آزمون متمایزکنندهٔ بعدی، و اقدامی است که با پیامد رتبه‌بندی می‌شود نه با میزان اطمینان شما",
+      "excerpt": "یک روش تشخیصی کامل برای تأسیسات صنعتی: قالب‌بندی نشانه به‌جای پذیرفتنش، نرمال‌سازی شواهد با منشأ، تعیین قیدها پیش از فرضیه‌سازی، ماتریس تمایز که شواهد را با آنچه رد می‌کنند ارزش‌گذاری می‌کند، دو دروازهٔ جدای اطمینان، و سلسله‌مراتب اقدام که با برگشت‌پذیری و پیامد اداره می‌شود — و پایانی با نمونه‌ای که پاسخ درستش اقدامی ایمن زیر عدم قطعیت پذیرفته‌شده است.",
+      "seoTitle": "تشخیص صنعتی شواهدمحور و برنامه‌ریزی اقدام ایمن",
+      "seoDescription": "روش تشخیصی برای تأسیسات صنعتی: قالب‌بندی نشانه، منشأ شواهد، ماتریس تمایز، دروازه‌های کفایت و سلسله‌مراتب اقدام بر پایهٔ پیامد."
+    },
+    "de": {
+      "title": "Nachweisgestützte Diagnostik und sichere Handlungsplanung",
+      "subtitle": "Das Ergebnis einer Diagnose ist keine Ursache — es sind eine gereihte Kandidatenmenge, ein unterscheidender nächster Test und eine nach Folgen statt nach Sicherheitsgefühl gereihte Handlung",
+      "excerpt": "Eine vollständige Diagnosemethode für Industrieanlagen: das Symptom formulieren statt übernehmen, Nachweise mit Herkunft normalisieren, Randbedingungen vor der Hypothesenbildung klären, eine Unterscheidungsmatrix, die Nachweise nach ihrer Ausschlusskraft bewertet, zwei getrennte Konfidenzstufen und eine nach Umkehrbarkeit und Folgen gereihte Handlungshierarchie.",
+      "seoTitle": "Nachweisgestützte Diagnostik und sichere Handlungsplanung",
+      "seoDescription": "Diagnosemethode für Industrieanlagen: Symptomformulierung, Nachweisherkunft, Unterscheidungsmatrix, Hinlänglichkeitsstufen und nach Folgen gereihte Handlungen."
+    }
+  }
+}

@@ -64,8 +64,27 @@ export const PHASE102_MIGRATION = EXPECTED_NEW_MIGRATIONS[0];
  * have let the second fail silently and still report PASS.
  */
 export const PHASE102_MIGRATIONS = EXPECTED_NEW_MIGRATIONS;
-/** Completed migrations a Phase 102 database must report (69 historical + 1). */
+/** Completed migrations the Phase 102 ERA must report (69 historical + 2). */
 export const EXPECTED_COMPLETED_MIGRATIONS = EXPECTED_TARGET_COUNT;
+
+/**
+ * Migrations that legitimately land AFTER the Phase 102 target set.
+ *
+ * The completed-count check below is an equality, deliberately: a database that
+ * is missing a migration, or carrying one nobody declared, must fail closed.
+ * But an equality against a pinned total also encodes an assumption this
+ * repository cannot keep — that nothing will ever ship after Phase 102. The
+ * first later phase to reach a real database turns a correct rehearsal red for
+ * a reason that has nothing to do with the media hub, and it can only ever be
+ * observed against PostgreSQL, so no offline gate catches it first.
+ *
+ * Naming the later migrations here keeps the equality intact instead of
+ * relaxing it to `>=`: a declared migration is subtracted from the total, an
+ * UNDECLARED one still fails exactly as before. Every entry must exist under
+ * `prisma/migrations/` and sort after the last Phase 102 migration; the
+ * regression suite proves both, so this list cannot become a rubber stamp.
+ */
+export const POST_PHASE102_MIGRATIONS = ["20260823000000_phase106_journal_multilingual_editions"];
 
 /**
  * Hosts a rehearsal database may live on. A rehearsal runs either against the
@@ -156,12 +175,14 @@ export function assertDisposableDatabase(raw) {
  * @param {MigrationRow[]} params.rows every row of `_prisma_migrations`
  * @param {string} [params.expectedMigration]
  * @param {number} [params.expectedTotal]
- * @returns {{ ok: boolean, completedCount: number, checks: {label: string, ok: boolean, detail: string}[] }}
+ * @param {string[]} [params.allowedLaterMigrations] declared post-Phase-102 migrations
+ * @returns {{ ok: boolean, completedCount: number, eraCompletedCount: number, checks: {label: string, ok: boolean, detail: string}[] }}
  */
 export function evaluateAppliedMigrations({
   rows,
   expectedMigrations = PHASE102_MIGRATIONS,
   expectedTotal = EXPECTED_COMPLETED_MIGRATIONS,
+  allowedLaterMigrations = POST_PHASE102_MIGRATIONS,
 }) {
   /** @type {{label: string, ok: boolean, detail: string}[]} */
   const checks = [];
@@ -218,14 +239,24 @@ export function evaluateAppliedMigrations({
     `duplicate migration name(s): ${duplicated.slice(0, 8).join(", ")}`,
   );
 
-  const completedCount = all.filter(isCompleted).length;
+  // The Phase 102 ERA count, not the raw total: declared later-phase migrations
+  // are subtracted, so the equality still asserts "exactly the Phase 102 target
+  // set is applied, nothing missing, nothing undeclared". A row nobody declared
+  // is not subtracted and therefore still fails — which is the reason this stays
+  // an equality rather than becoming `>=`.
+  const completedRows = all.filter(isCompleted);
+  const completedCount = completedRows.length;
+  const declaredLater = new Set(Array.isArray(allowedLaterMigrations) ? allowedLaterMigrations : []);
+  const laterCompleted = completedRows.filter((r) => declaredLater.has(r.migration_name));
+  const eraCompletedCount = completedCount - laterCompleted.length;
   add(
     "PHASE102_COMPLETED_MIGRATION_COUNT",
-    completedCount === expectedTotal,
-    `expected ${expectedTotal} completed migrations, database reports ${completedCount}`,
+    eraCompletedCount === expectedTotal,
+    `expected ${expectedTotal} completed Phase 102-era migrations, database reports ${eraCompletedCount}` +
+      ` (${completedCount} completed in total, ${laterCompleted.length} declared later-phase)`,
   );
 
-  return { ok: checks.every((c) => c.ok), completedCount, checks };
+  return { ok: checks.every((c) => c.ok), completedCount, eraCompletedCount, checks };
 }
 
 /** Every row of the applied-migration ledger. Read-only, no interpolation. */

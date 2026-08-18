@@ -1,0 +1,52 @@
+{
+  "slug": "modern-scada-architecture-industrial-facilities",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "scada-hmi",
+  "tags": ["scada", "historian", "redundancy", "network-segmentation", "opc-ua"],
+  "publishedAt": "2026-08-16T06:00:00.000Z",
+  "coverImage": {
+    "file": "journal/modern-scada-architecture.jpg",
+    "url": null,
+    "concept": "A server room aisle adjacent to a plant control area — the physical separation between the supervisory layer and the process, shot cool and technical with no readable screens.",
+    "prompt": "Photorealistic wide photograph of a small industrial server room aisle with rack-mounted equipment and structured fibre cabling, cool cyan indicator lighting against dark grey racks, no readable text or screens, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Industrial server room aisle with rack-mounted equipment and structured fibre cabling",
+      "fa": "راهروی اتاق سرور صنعتی با تجهیزات رک‌مونت و کابل‌کشی ساختاریافتهٔ فیبر",
+      "de": "Gang eines industriellen Serverraums mit Rack-Technik und strukturierter Glasfaserverkabelung"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "SCADA",
+    "linkedTechnology": "SCADA Architecture",
+    "linkedStandard": "IEC 62443",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Modern SCADA Architecture for Industrial Facilities",
+      "subtitle": "Server roles, zone boundaries and time discipline — the decisions that determine what a supervisory outage actually costs",
+      "excerpt": "A SCADA system is a set of roles with different availability requirements, not one application. How to separate acquisition, historisation and engineering, where the zone boundaries belong, and why clock discipline decides whether your event log can be reasoned about.",
+      "seoTitle": "Modern SCADA Architecture for Industrial Facilities",
+      "seoDescription": "Design plant SCADA properly: separate server roles, place OT zone boundaries, integrate PLC and RTU layers, and use time synchronisation that makes event logs analysable."
+    },
+    "fa": {
+      "title": "معماری مدرن SCADA برای تأسیسات صنعتی",
+      "subtitle": "نقش سرورها، مرزهای ناحیه و انضباط زمانی — تصمیم‌هایی که هزینهٔ واقعی یک قطعی نظارتی را تعیین می‌کنند",
+      "excerpt": "SCADA یک اپلیکیشن واحد نیست؛ مجموعه‌ای از نقش‌هاست با الزامات دسترس‌پذیری متفاوت. چگونه اکتساب داده، تاریخ‌نگاری و مهندسی را جدا کنیم، مرزهای ناحیه کجا بنشینند، و چرا انضباط ساعت تعیین می‌کند لاگ رویداد شما قابل استدلال هست یا نه.",
+      "seoTitle": "معماری مدرن SCADA برای تأسیسات صنعتی و کارخانه‌ای",
+      "seoDescription": "طراحی درست SCADA کارخانه: تفکیک نقش سرورها، جانمایی مرزهای ناحیهٔ OT، یکپارچگی لایهٔ PLC و RTU، و همگام‌سازی زمانی که لاگ رویداد را تحلیل‌پذیر می‌کند."
+    },
+    "de": {
+      "title": "Moderne SCADA-Architektur für Industrieanlagen",
+      "subtitle": "Serverrollen, Zonengrenzen und Zeitdisziplin — die Entscheidungen, die bestimmen, was ein Ausfall der Leitebene wirklich kostet",
+      "excerpt": "Ein SCADA-System ist eine Menge von Rollen mit unterschiedlichen Verfügbarkeitsanforderungen, keine einzelne Anwendung. Wie Datenerfassung, Historisierung und Engineering getrennt werden, wo Zonengrenzen hingehören und warum Zeitdisziplin darüber entscheidet, ob ein Ereignisprotokoll auswertbar ist.",
+      "seoTitle": "Moderne SCADA-Architektur für Industrieanlagen",
+      "seoDescription": "Anlagen-SCADA richtig auslegen: Serverrollen trennen, OT-Zonengrenzen setzen, SPS- und RTU-Ebene anbinden und Zeitsynchronisation für auswertbare Ereignisprotokolle."
+    }
+  }
+}

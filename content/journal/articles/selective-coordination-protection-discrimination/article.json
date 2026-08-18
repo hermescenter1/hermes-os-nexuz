@@ -1,0 +1,52 @@
+{
+  "slug": "selective-coordination-protection-discrimination",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "electrical-engineering",
+  "tags": ["protection-coordination", "short-circuit", "motor-protection", "commissioning", "diagnostics"],
+  "publishedAt": "2026-08-17T09:10:00.000Z",
+  "coverImage": {
+    "file": "journal/selective-coordination.jpg",
+    "url": null,
+    "concept": "A protection relay's setting display in a switchgear cubicle — the point where a study becomes a plant's actual behaviour.",
+    "prompt": "Photorealistic photograph of a numerical protection relay front panel inside a switchgear cubicle, keypad and blank display, cool cyan indicator glow on dark grey metal, no readable text or characters, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Numerical protection relay front panel inside an industrial switchgear cubicle",
+      "fa": "پنل جلوی رلهٔ حفاظتی عددی درون کیوبیکل تابلوی صنعتی",
+      "de": "Frontplatte eines digitalen Schutzgeräts in einem industriellen Schaltfeld"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "PANEL",
+    "linkedTechnology": "Protection Coordination",
+    "linkedStandard": "IEC 60947",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Selective Coordination and Protection Discrimination",
+      "subtitle": "Speed, sensitivity and selectivity cannot all be maximised — and selectivity in the current-limiting range is a manufacturer's test result, not a curve comparison",
+      "excerpt": "Coordination as a consumer of the fault study: current and time selectivity and where each stops working, why backup protection deliberately trades selectivity away, what energy-based selectivity really rests on, bus faults and zone interlocking, and partial selectivity as an honest documented outcome.",
+      "seoTitle": "Selective Coordination and Protection Discrimination Practice",
+      "seoDescription": "Protection coordination: current and time selectivity, grading margins, backup and cascading, energy-based selectivity limits, motor and transformer feeders, bus faults."
+    },
+    "fa": {
+      "title": "سلکتیویتی و تفکیک حفاظتی",
+      "subtitle": "سرعت، حساسیت و سلکتیویتی را نمی‌توان هم‌زمان بیشینه کرد — و سلکتیویتی در ناحیهٔ محدودکنندهٔ جریان نتیجهٔ آزمون سازنده است، نه مقایسهٔ منحنی",
+      "excerpt": "هماهنگی حفاظت به‌عنوان مصرف‌کنندهٔ مطالعهٔ خطا: سلکتیویتی جریانی و زمانی و اینکه هر یک کجا از کار می‌افتد، چرا حفاظت پشتیبان عامدانه سلکتیویتی را معاوضه می‌کند، سلکتیویتی مبتنی بر انرژی واقعاً بر چه استوار است، خطای باس و اینترلاک ناحیه‌ای، و سلکتیویتی جزئی به‌عنوان نتیجه‌ای صادقانه و مستند.",
+      "seoTitle": "سلکتیویتی و تفکیک حفاظتی در شبکه‌های صنعتی",
+      "seoDescription": "هماهنگی حفاظت: سلکتیویتی جریانی و زمانی، حاشیهٔ گریدینگ، حفاظت پشتیبان و cascading، مرزهای سلکتیویتی انرژی، فیدر موتور و ترانسفورماتور، خطای باس."
+    },
+    "de": {
+      "title": "Selektivität und Schutzkoordination",
+      "subtitle": "Schnelligkeit, Empfindlichkeit und Selektivität lassen sich nicht gemeinsam maximieren — und Selektivität im strombegrenzenden Bereich ist ein Prüfergebnis des Herstellers, kein Kennlinienvergleich",
+      "excerpt": "Schutzkoordination als Verbraucher der Kurzschlussstudie: Strom- und Zeitselektivität und wo beide enden, warum Backup-Schutz Selektivität bewusst opfert, worauf energiebasierte Selektivität wirklich beruht, Sammelschienenfehler und Zonenverriegelung sowie Teilselektivität als ehrliches Ergebnis.",
+      "seoTitle": "Selektivität und Schutzkoordination in Industrienetzen",
+      "seoDescription": "Schutzkoordination: Strom- und Zeitselektivität, Staffelzeiten, Backup und Kaskadierung, Grenzen energiebasierter Selektivität, Motor- und Trafoabgänge, Schienenfehler."
+    }
+  }
+}

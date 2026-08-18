@@ -1,0 +1,52 @@
+{
+  "slug": "ot-network-redundancy-mrp-rstp-prp-hsr",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "industrial-networks",
+  "tags": ["redundancy", "high-availability", "mrp", "commissioning", "diagnostics"],
+  "publishedAt": "2026-08-16T11:20:00.000Z",
+  "coverImage": {
+    "file": "journal/ot-network-redundancy.jpg",
+    "url": null,
+    "concept": "Two physically separated fibre paths leaving a substation panel by different routes — redundancy that is real because the paths never meet.",
+    "prompt": "Photorealistic photograph of a substation automation panel with two fibre trunks leaving through separate ducts on opposite sides, cool cyan port indicators, dark grey steel, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Substation automation panel with two fibre trunks leaving through physically separated ducts",
+      "fa": "تابلوی اتوماسیون پست با دو مسیر فیبر که از داکت‌های فیزیکی جداگانه خارج می‌شوند",
+      "de": "Stationsleittechnik-Schrank mit zwei Glasfaserstrecken durch physisch getrennte Kanäle"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "NETWORK",
+    "linkedTechnology": "MRP / RSTP / PRP / HSR",
+    "linkedStandard": "IEC 62439",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "OT Network Redundancy: MRP, RSTP, PRP and HSR",
+      "subtitle": "Recovery time is set by the application's watchdog, not by preference — and the redundancy that expires silently is the one you already have",
+      "excerpt": "Four redundancy mechanisms with genuinely different behaviour, and a selection method that starts from the tolerated loss rather than the product catalogue. Reconfiguring versus seamless schemes, what each demands of the devices, and why unmonitored redundancy quietly stops existing.",
+      "seoTitle": "OT Network Redundancy: MRP, RSTP, PRP and HSR Compared",
+      "seoDescription": "Selecting industrial network redundancy: RSTP convergence, MRP ring recovery, PRP parallel networks, HSR seamless rings, watchdog matching, testing and diagnostics."
+    },
+    "fa": {
+      "title": "افزونگی شبکهٔ OT: مقایسهٔ MRP، RSTP، PRP و HSR",
+      "subtitle": "زمان بازیابی را watchdog کاربرد تعیین می‌کند نه سلیقه — و افزونگی‌ای که بی‌صدا منقضی می‌شود همانی است که هم‌اکنون دارید",
+      "excerpt": "چهار سازوکار افزونگی با رفتار واقعاً متفاوت، و روش انتخابی که از میزان تلفات قابل تحمل شروع می‌شود نه از کاتالوگ محصول. طرح‌های بازپیکربندی در برابر طرح‌های بدون وقفه، اینکه هرکدام از دستگاه‌ها چه می‌خواهند، و چرا افزونگی پایش‌نشده بی‌صدا از وجود بازمی‌ایستد.",
+      "seoTitle": "افزونگی شبکهٔ OT: مقایسهٔ MRP، RSTP، PRP و HSR",
+      "seoDescription": "انتخاب افزونگی شبکهٔ صنعتی: همگرایی RSTP، بازیابی حلقهٔ MRP، شبکه‌های موازی PRP، حلقهٔ بدون وقفهٔ HSR، تطبیق با watchdog، آزمون و تشخیص."
+    },
+    "de": {
+      "title": "OT-Netzredundanz: MRP, RSTP, PRP und HSR",
+      "subtitle": "Die Wiederherstellzeit bestimmt die Ansprechüberwachung der Anwendung, nicht die Vorliebe — und die still ablaufende Redundanz ist die, die Sie bereits haben",
+      "excerpt": "Vier Redundanzmechanismen mit wirklich unterschiedlichem Verhalten und eine Auswahlmethode, die beim tolerierbaren Verlust beginnt statt beim Produktkatalog. Rekonfigurierende gegenüber unterbrechungsfreien Verfahren, ihre Anforderungen an die Geräte — und warum unüberwachte Redundanz still verschwindet.",
+      "seoTitle": "OT-Netzredundanz: MRP, RSTP, PRP und HSR im Vergleich",
+      "seoDescription": "Industrielle Netzredundanz auswählen: RSTP-Konvergenz, MRP-Ringwiederherstellung, PRP-Parallelnetze, HSR-Ringe, Abgleich mit der Ansprechüberwachung, Test und Diagnose."
+    }
+  }
+}

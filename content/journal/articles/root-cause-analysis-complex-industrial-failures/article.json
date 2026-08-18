@@ -1,0 +1,52 @@
+{
+  "slug": "root-cause-analysis-complex-industrial-failures",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "troubleshooting",
+  "tags": ["root-cause-analysis", "diagnostics", "condition-monitoring", "maintainability", "commissioning"],
+  "publishedAt": "2026-08-17T13:00:00.000Z",
+  "coverImage": {
+    "file": "journal/rca-evidence-table.jpg",
+    "url": null,
+    "concept": "A failed machine component laid out on a workbench beside a camera, sample bottles and a printed trend — the evidence set that exists only if somebody collected it before restoration began.",
+    "prompt": "Photorealistic photograph of a damaged industrial bearing and shaft section arranged on a clean workbench with labelled sample bottles and a printed graph, cool cyan overhead light, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Failed industrial component laid out on a workbench with sample bottles and a printed trend",
+      "fa": "قطعهٔ صنعتی خراب‌شده روی میز کار همراه با ظرف‌های نمونه و نمودار چاپ‌شده",
+      "de": "Ausgefallenes Industriebauteil auf einer Werkbank mit Probenflaschen und einem gedruckten Verlauf"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "MAINTENANCE",
+    "linkedAssetType": null,
+    "linkedTechnology": "Root Cause Analysis",
+    "linkedStandard": null,
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Root Cause Analysis for Complex Industrial Failures",
+      "subtitle": "\"The root cause\" is usually a grammatical error — complex failures have a causal structure, and removing one link leaves the structure intact",
+      "excerpt": "Retrospective failure analysis done rigorously: five terms that are not synonyms, why the first hours decide the investigation, timeline construction and the evidence hierarchy, causal structure rather than a chain, common-cause and latent conditions, hypothesis testing with disconfirming evidence, the specific limits of Five Whys, and corrective actions ranked by effectiveness and verified.",
+      "seoTitle": "Root Cause Analysis for Complex Industrial Failures",
+      "seoDescription": "Industrial RCA in practice: immediate cause, contributing factor, latent condition, evidence hierarchy, causal structure and verified corrective action."
+    },
+    "fa": {
+      "title": "تحلیل ریشه‌ای خرابی‌های پیچیدهٔ صنعتی",
+      "subtitle": "«علت ریشه‌ای» معمولاً یک خطای دستوری است — خرابی‌های پیچیده ساختار علّی دارند، و برداشتن یک حلقه ساختار را دست‌نخورده باقی می‌گذارد",
+      "excerpt": "تحلیل پس‌نگر خرابی به‌صورت دقیق: پنج اصطلاحی که مترادف نیستند، چرا ساعات نخست بررسی را تعیین می‌کنند، ساخت خط زمانی و سلسله‌مراتب شواهد، ساختار علّی به‌جای زنجیرهٔ علّی، خرابی با علت مشترک و شرایط نهفته، آزمون فرضیه با شواهد ناقض، حدود مشخص روش پنج چرا، و اقدامات اصلاحی رتبه‌بندی‌شده بر پایهٔ اثربخشی و تأییدشده.",
+      "seoTitle": "تحلیل ریشه‌ای خرابی‌های پیچیدهٔ صنعتی در کارخانه",
+      "seoDescription": "RCA صنعتی در عمل: علت بی‌واسطه، عامل کمک‌کننده، شرایط نهفته، سلسله‌مراتب شواهد، ساختار علّی، آزمون فرضیه و اقدام اصلاحی تأییدشده."
+    },
+    "de": {
+      "title": "Ursachenanalyse komplexer industrieller Ausfälle",
+      "subtitle": "„Die Grundursache“ ist meist ein grammatischer Fehler — komplexe Ausfälle haben eine Ursachenstruktur, und ein entferntes Glied lässt sie intakt",
+      "excerpt": "Rückblickende Fehleranalyse mit Strenge: fünf Begriffe, die keine Synonyme sind, warum die ersten Stunden die Untersuchung entscheiden, Zeitstrahl und Beweishierarchie, Ursachenstruktur statt Ursachenkette, gemeinsame Ursachen und latente Bedingungen, Hypothesenprüfung mit widerlegenden Nachweisen, die konkreten Grenzen der Fünf-Warum-Methode und wirksam eingestufte, verifizierte Abhilfen.",
+      "seoTitle": "Ursachenanalyse komplexer industrieller Ausfälle",
+      "seoDescription": "Industrielle Ursachenanalyse: unmittelbare Ursache, Einflussfaktor, latente Bedingung, Beweishierarchie, Ursachenstruktur, Hypothesenprüfung, verifizierte Abhilfen."
+    }
+  }
+}

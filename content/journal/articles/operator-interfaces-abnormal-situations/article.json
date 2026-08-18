@@ -1,0 +1,52 @@
+{
+  "slug": "operator-interfaces-abnormal-situations",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "scada-hmi",
+  "tags": ["situational-awareness", "hmi", "isa-101", "alarm-management", "interlocks"],
+  "publishedAt": "2026-08-16T10:30:00.000Z",
+  "coverImage": {
+    "file": "journal/abnormal-situation-interfaces.jpg",
+    "url": null,
+    "concept": "A control room at low light with a single operator position illuminated — the moment when attention narrows to one screen and one decision.",
+    "prompt": "Photorealistic photograph of a dimly lit industrial control room at night, one operator workstation illuminated by cool screen light, empty chairs beyond, abstract unreadable displays, no legible text, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Dimly lit industrial control room at night with a single illuminated operator workstation",
+      "fa": "اتاق کنترل صنعتی کم‌نور در شب با یک ایستگاه اپراتور روشن",
+      "de": "Schwach beleuchteter industrieller Kontrollraum bei Nacht mit einem einzelnen erhellten Bedienplatz"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "HMI",
+    "linkedTechnology": "SCADA / HMI",
+    "linkedStandard": "ISA-101",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Designing Operator Interfaces for Abnormal Situations",
+      "subtitle": "First-out information, degraded instrumentation, mode visibility and recovery — designing for the hours that decide outcomes",
+      "excerpt": "Steady-state HMI design is a solved problem in principle. Abnormal-situation design is not. What the interface must show when alarms flood, instruments fail, interlocks act and the operator has to decide quickly with less information than usual.",
+      "seoTitle": "Designing Operator Interfaces for Abnormal Industrial Situations",
+      "seoDescription": "HMI design for abnormal and degraded plant states: alarm floods, first-out information, instrument loss, mode and interlock visibility, and safe recovery."
+    },
+    "fa": {
+      "title": "طراحی رابط اپراتور برای وضعیت‌های غیرعادی",
+      "subtitle": "اطلاعات first-out، ابزاردقیق از دست‌رفته، نمایش مُد و بازیابی — طراحی برای ساعت‌هایی که سرنوشت را تعیین می‌کنند",
+      "excerpt": "طراحی HMI برای حالت پایدار در اصول حل‌شده است. طراحی برای وضعیت غیرعادی نه. رابط در لحظه‌ای که آلارم‌ها سرریز می‌کنند، ابزاردقیق از کار می‌افتد، اینترلاک عمل می‌کند و اپراتور باید با اطلاعات کمتر از معمول سریع تصمیم بگیرد، باید چه چیزی نشان دهد.",
+      "seoTitle": "طراحی رابط اپراتور برای وضعیت‌های غیرعادی صنعتی",
+      "seoDescription": "طراحی HMI برای حالت‌های غیرعادی و تنزل‌یافته: سرریز آلارم، اطلاعات first-out، از دست رفتن ابزاردقیق، نمایش مُد و اینترلاک، پشتیبانی تصمیم و بازیابی ایمن."
+    },
+    "de": {
+      "title": "Bedienoberflächen für Störungssituationen entwerfen",
+      "subtitle": "Erstmeldung, ausgefallene Messtechnik, Betriebsartanzeige und Rückführung — Entwurf für die Stunden, die über den Ausgang entscheiden",
+      "excerpt": "Der HMI-Entwurf für den Normalbetrieb ist im Prinzip gelöst. Der Entwurf für Störungssituationen nicht. Was die Oberfläche zeigen muss, wenn Meldungen überfluten, Messstellen ausfallen, Verriegelungen greifen und schnell entschieden werden muss.",
+      "seoTitle": "Bedienoberflächen für industrielle Störungssituationen entwerfen",
+      "seoDescription": "HMI-Entwurf für gestörte Anlagenzustände: Meldungsfluten, Erstmeldung, Ausfall von Messtechnik, Betriebsart- und Verriegelungsanzeige, sichere Rückführung."
+    }
+  }
+}

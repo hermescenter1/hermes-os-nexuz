@@ -1,0 +1,52 @@
+{
+  "slug": "ups-critical-power-automation-systems",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "electrical-engineering",
+  "tags": ["redundancy", "high-availability", "commissioning", "condition-monitoring", "diagnostics"],
+  "publishedAt": "2026-08-17T11:00:00.000Z",
+  "coverImage": {
+    "file": "journal/ups-critical-power.jpg",
+    "url": null,
+    "concept": "An industrial UPS cabinet beside its battery cabinets with the maintenance bypass panel alongside — the three elements whose relationship decides whether the system can be serviced without stopping the plant.",
+    "prompt": "Photorealistic photograph of an industrial three-phase UPS cabinet next to battery cabinets and a wall-mounted maintenance bypass panel in a clean plant room, cool cyan indicator glow on grey steel, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Industrial three-phase UPS cabinet with adjacent battery cabinets and maintenance bypass panel",
+      "fa": "کابینت UPS صنعتی سه‌فاز در کنار کابینت‌های باتری و تابلوی بای‌پس تعمیراتی",
+      "de": "Industrielle dreiphasige USV mit benachbarten Batterieschränken und Wartungsbypass-Feld"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "SWITCHBOARD",
+    "linkedTechnology": "Uninterruptible Power Supply",
+    "linkedStandard": "IEC 62040",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "UPS and Critical Power Architecture for Automation Systems",
+      "subtitle": "The battery is the part that fails visibly; the architecture is the part that fails quietly — usually at the network switch nobody classified",
+      "excerpt": "Critical power engineered as an architecture rather than a product: topology classes and what they promise, the three distinct bypasses, load classification by signal path rather than by cabinet, autonomy derived from end-of-life capacity, battery ageing evidence, DC systems, generator interaction, redundancy that is not concurrent maintainability, and the commissioning that actually proves any of it.",
+      "seoTitle": "UPS and Critical Power Architecture for Automation",
+      "seoDescription": "Industrial UPS design: VFI topology, static and maintenance bypass, load classification, autonomy sizing, battery ageing, DC systems, generators and redundancy."
+    },
+    "fa": {
+      "title": "معماری UPS و برق اضطراری برای سیستم‌های اتوماسیون",
+      "subtitle": "باتری بخشی است که آشکارا خراب می‌شود؛ معماری بخشی است که بی‌صدا خراب می‌شود — معمولاً در سوییچ شبکه‌ای که کسی طبقه‌بندی‌اش نکرده",
+      "excerpt": "برق اضطراری به‌عنوان یک معماری و نه یک محصول: کلاس‌های توپولوژی و آنچه وعده می‌دهند، سه بای‌پس متمایز، طبقه‌بندی بار بر پایهٔ مسیر سیگنال نه بر پایهٔ تابلو، محاسبهٔ خودمختاری بر پایهٔ ظرفیت پایان عمر، شواهد پیری باتری، سیستم‌های DC، تعامل با ژنراتور، افزونگی که با قابلیت نگه‌داری هم‌زمان یکی نیست، و راه‌اندازی‌ای که واقعاً این‌ها را اثبات می‌کند.",
+      "seoTitle": "معماری UPS و برق اضطراری در سیستم‌های اتوماسیون",
+      "seoDescription": "طراحی UPS صنعتی: توپولوژی VFI، بای‌پس استاتیک و تعمیراتی، طبقه‌بندی بار، محاسبهٔ خودمختاری، پیری باتری، سیستم DC، تعامل با ژنراتور و افزونگی."
+    },
+    "de": {
+      "title": "USV- und Notstromarchitektur für Automatisierungssysteme",
+      "subtitle": "Die Batterie fällt sichtbar aus, die Architektur leise — meist am Netzwerk-Switch, den niemand eingestuft hat",
+      "excerpt": "Notstromversorgung als Architektur statt als Produkt: Topologieklassen und ihr Versprechen, die drei verschiedenen Bypässe, Lasteinstufung entlang des Signalwegs statt nach Schrank, Autonomie aus der Kapazität am Lebensdauerende, Alterungsnachweise der Batterie, DC-Anlagen, Generatorzusammenspiel, Redundanz gegenüber Wartbarkeit im Betrieb und die Inbetriebnahme, die all das erst belegt.",
+      "seoTitle": "USV- und Notstromarchitektur für die Automatisierung",
+      "seoDescription": "Industrielle USV-Planung: VFI-Topologie, statischer und Wartungsbypass, Lasteinstufung, Autonomie, Batteriealterung, DC-Anlagen, Generatorbetrieb und Redundanz."
+    }
+  }
+}

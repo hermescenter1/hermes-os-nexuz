@@ -8,6 +8,7 @@ import { ArticleDetailClient }    from "@/components/articles/ArticleDetailClien
 import { buildMetadata }          from "@/lib/seo/metadata";
 import { JsonLd }                 from "@/components/seo/JsonLd";
 import { BASE_URL }               from "@/lib/seo/config";
+import { langTagForArticleLanguage } from "@/lib/articles/locale";
 import type { ArticleDetail }     from "@/lib/articles/types";
 
 /**
@@ -25,7 +26,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale, slug } = await params;
-  const article = await getArticleDetailBySlug(slug);
+  // Phase 106: resolve the edition this locale reads, so the title, description
+  // and og: fields describe the page that is actually served — not a sibling
+  // translation that happened to be found first.
+  const article = await getArticleDetailBySlug(slug, locale);
   if (!article || article.status !== "PUBLISHED" || article.visibility !== "PUBLIC") {
     return { title: "Article Not Found", robots: { index: false, follow: false } };
   }
@@ -82,7 +86,9 @@ function buildArticleJsonLd(article: ArticleDetail, locale: string) {
     datePublished:  article.publishedAt ?? undefined,
     dateModified:   article.updatedAt,
     url:            `${BASE_URL}/${locale}/articles/${article.slug}`,
-    inLanguage:     article.language === "FA" ? "fa" : "en",
+    // The language the article is WRITTEN IN, from the row — not the route
+    // locale, and no longer an EN-or-FA guess that silently mislabelled German.
+    inLanguage:     langTagForArticleLanguage(article.language),
     keywords:       article.tags.map(t => t.name).join(", "),
     articleSection: article.category?.name ?? undefined,
   };
@@ -97,8 +103,8 @@ export default async function ArticleDetailPage({
   setRequestLocale(locale);
 
   const [article, feed] = await Promise.all([
-    getArticleDetailBySlug(slug),
-    getArticleFeed(),
+    getArticleDetailBySlug(slug, locale),
+    getArticleFeed(locale),
   ]);
 
   if (!article || article.status !== "PUBLISHED" || article.visibility !== "PUBLIC") {

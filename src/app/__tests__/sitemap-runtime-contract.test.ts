@@ -37,7 +37,7 @@ const BASE = "https://hermesnovin.com";
  * change to locale expansion or to the static surface is still caught here. */
 
 const articles = vi.hoisted(() => ({
-  items: [] as { slug: string; language: string; lastModified: string | null }[],
+  items: [] as { slug: string; languages: string[]; lastModified: string | null }[],
   authors: [] as { handle: string }[],
   throws: false,
 }));
@@ -204,8 +204,8 @@ describe("CASE B — only PUBLISHED + PUBLIC + noIndex=false articles, under the
 
   beforeEach(() => {
     articles.items = [
-      { slug: EN_SLUG, language: "en", lastModified: "2026-08-01T00:00:00.000Z" },
-      { slug: FA_SLUG, language: "fa", lastModified: "2026-08-02T00:00:00.000Z" },
+      { slug: EN_SLUG, languages: ["en"], lastModified: "2026-08-01T00:00:00.000Z" },
+      { slug: FA_SLUG, languages: ["fa"], lastModified: "2026-08-02T00:00:00.000Z" },
     ];
   });
 
@@ -247,7 +247,7 @@ describe("CASE B — only PUBLISHED + PUBLIC + noIndex=false articles, under the
     // private article simply is not in `items`. Proving the sitemap adds nothing
     // of its own means a future caller cannot smuggle one in.
     articles.items = [
-      { slug: EN_SLUG, language: "en", lastModified: null },
+      { slug: EN_SLUG, languages: ["en"], lastModified: null },
     ];
     const urls = urlsOf(await generate());
     for (const excluded of ["noindexed-article", "draft-article", "private-article"]) {
@@ -258,8 +258,8 @@ describe("CASE B — only PUBLISHED + PUBLIC + noIndex=false articles, under the
 
   it("carries the row's real lastModified, and omits it when absent", async () => {
     articles.items = [
-      { slug: EN_SLUG, language: "en", lastModified: "2026-08-01T00:00:00.000Z" },
-      { slug: FA_SLUG, language: "fa", lastModified: null },
+      { slug: EN_SLUG, languages: ["en"], lastModified: "2026-08-01T00:00:00.000Z" },
+      { slug: FA_SLUG, languages: ["fa"], lastModified: null },
     ];
     const entries = await generate();
     const en = entries.find((e) => String(e.url).endsWith(`/articles/${EN_SLUG}`));
@@ -347,7 +347,7 @@ describe("CASE D — build-time session mode cannot become the frozen authority"
 
     vi.resetModules();
     db.client = true;
-    articles.items = [{ slug: "live-row", language: "en", lastModified: null }];
+    articles.items = [{ slug: "live-row", languages: ["en"], lastModified: null }];
     const live = urlsOf(await generate());
     expect(live).toContain(`${BASE}/en/articles/live-row`);
   });
@@ -358,8 +358,8 @@ describe("CASE D — build-time session mode cannot become the frozen authority"
 describe("CASE E — no duplicates, and every article URL is in its truthful locale", () => {
   it("emits no duplicate URLs across every family", async () => {
     articles.items = [
-      { slug: "a-en", language: "en", lastModified: null },
-      { slug: "a-fa", language: "fa", lastModified: null },
+      { slug: "a-en", languages: ["en"], lastModified: null },
+      { slug: "a-fa", languages: ["fa"], lastModified: null },
     ];
     articles.authors = [{ handle: "auth-1" }];
     jobs.rows = [{ id: "job-1" }];
@@ -372,8 +372,8 @@ describe("CASE E — no duplicates, and every article URL is in its truthful loc
 
   it("every article URL's locale segment matches the row's own language", async () => {
     articles.items = [
-      { slug: "a-en", language: "en", lastModified: null },
-      { slug: "a-fa", language: "fa", lastModified: null },
+      { slug: "a-en", languages: ["en"], lastModified: null },
+      { slug: "a-fa", languages: ["fa"], lastModified: null },
     ];
     const urls = urlsOf(await generate());
     const articleUrls = urls.filter((u) => /\/articles\/a-(en|fa)$/.test(u));
@@ -386,7 +386,7 @@ describe("CASE E — no duplicates, and every article URL is in its truthful loc
   });
 
   it("every emitted URL is absolute on the canonical origin", async () => {
-    articles.items = [{ slug: "a-en", language: "en", lastModified: null }];
+    articles.items = [{ slug: "a-en", languages: ["en"], lastModified: null }];
     for (const u of urlsOf(await generate())) {
       expect(u.startsWith(`${BASE}/`)).toBe(true);
       expect(u).not.toContain("?");
@@ -399,7 +399,7 @@ describe("CASE E — no duplicates, and every article URL is in its truthful loc
 
 describe("CASE F — no private surface becomes indexable as a side effect", () => {
   it("no URL falls under any protected route prefix", async () => {
-    articles.items = [{ slug: "a-en", language: "en", lastModified: null }];
+    articles.items = [{ slug: "a-en", languages: ["en"], lastModified: null }];
     articles.authors = [{ handle: "auth-1" }];
     jobs.rows = [{ id: "job-1" }];
     db.courses = [{ id: "course-1" }];

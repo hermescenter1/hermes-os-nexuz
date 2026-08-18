@@ -45,13 +45,25 @@ describe("articlePaths — language-true canonical only", () => {
     expect(articlePaths("bearing-case", "EN")).toEqual(["/en/articles/bearing-case"]);
   });
 
-  it("never fabricates a German URL — ArtLanguage has no DE today", () => {
-    // if a future migration adds DE articles this starts working automatically
-    // (de is an active locale), but no existing EN/FA article maps to /de/
-    for (const lang of ["FA", "EN"]) {
-      expect(articlePaths("s", lang).some((p) => p.startsWith("/de/"))).toBe(false);
+  it("submits a German article under /de — the migration this test anticipated has landed", () => {
+    // This assertion previously pinned `ArtLanguage = "EN" | "FA"` and noted
+    // that "if a future migration adds DE articles this starts working
+    // automatically (de is an active locale)". Phase 106 IS that migration, so
+    // the pin now records the widened enum instead of the absent one.
+    expect(articlePaths("bearing-case", "DE")).toEqual(["/de/articles/bearing-case"]);
+    expect(read("src/lib/articles/types.ts")).toContain('ArtLanguage = "EN" | "FA" | "DE"');
+  });
+
+  it("still submits each edition under its OWN language only — never all three", () => {
+    // The three editions share a slug, so the temptation is to submit all three
+    // locale paths for one row. That would claim a German URL exists for an
+    // article that has no German edition yet.
+    expect(articlePaths("s", "FA")).toEqual(["/fa/articles/s"]);
+    expect(articlePaths("s", "EN")).toEqual(["/en/articles/s"]);
+    expect(articlePaths("s", "DE")).toEqual(["/de/articles/s"]);
+    for (const lang of ["FA", "EN", "DE"]) {
+      expect(articlePaths("s", lang)).toHaveLength(1);
     }
-    expect(read("src/lib/articles/types.ts")).toContain('ArtLanguage = "EN" | "FA"');
   });
 
   it("drops unknown languages and unsafe slugs instead of guessing", () => {

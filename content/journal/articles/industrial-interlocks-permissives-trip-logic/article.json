@@ -1,0 +1,53 @@
+{
+  "slug": "industrial-interlocks-permissives-trip-logic",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "safety-systems",
+  "tags": ["interlocks", "functional-safety", "iec-61511", "state-machines", "commissioning"],
+  "publishedAt": "2026-08-16T04:10:00.000Z",
+  "coverImage": {
+    "file": "journal/interlocks-permissives.jpg",
+    "url": null,
+    "concept": "A lockout point on a plant isolator — the physical embodiment of a condition that forbids operation, shot tight and technical without any person present.",
+    "prompt": "Photorealistic close-up photograph of an industrial isolator handle in the locked position with a lockout hasp fitted, brushed metal and grey enclosure, cool technical lighting, shallow depth of field, no people, no readable text or branding, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Industrial isolator handle in the locked position with a lockout hasp fitted",
+      "fa": "دستهٔ ایزولاتور صنعتی در وضعیت قفل با قفل ایمنی نصب‌شده",
+      "de": "Handgriff eines Lasttrennschalters in Verriegelungsstellung mit angebrachter Sperrvorrichtung"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "Interlock Logic",
+    "linkedStandard": "IEC 61511",
+    "linkedPLCPlatform": "Multi-vendor",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Interlocks, Permissives and Trips: Designing the Constraint Layer",
+      "subtitle": "Three different things that are routinely called the same thing — and the first-out, reset and override rules that follow from telling them apart",
+      "excerpt": "A permissive blocks a start; an interlock forces a safe state; a trip is a protective action. Conflating them produces equipment that cannot be started and nobody can say why. Classification, first-out capture, reset semantics and disciplined override.",
+      "seoTitle": "Interlocks, Permissives and Trips: The Constraint Layer",
+      "seoDescription": "Design industrial constraint logic properly: separate permissives from interlocks and trips, capture first-out cause, define reset semantics and govern override safely."
+    },
+    "fa": {
+      "title": "اینترلاک، پرمیسیو و تریپ: طراحی لایهٔ قید",
+      "subtitle": "سه چیز متفاوت که معمولاً یک نام می‌گیرند — و قواعد first-out، ریست و بایپس که از تفکیکشان نتیجه می‌شود",
+      "excerpt": "پرمیسیو جلوی استارت را می‌گیرد؛ اینترلاک وضعیت ایمن را تحمیل می‌کند؛ تریپ یک اقدام حفاظتی است. یکی گرفتنشان تجهیزی می‌سازد که استارت نمی‌خورد و هیچ‌کس نمی‌تواند بگوید چرا. طبقه‌بندی، ثبت علت اولیه، معنای ریست و بایپس منضبط.",
+      "seoTitle": "اینترلاک، پرمیسیو و تریپ: طراحی لایهٔ قید در کنترل صنعتی",
+      "seoDescription": "طراحی درست منطق قید صنعتی: جدا کردن پرمیسیو از اینترلاک و تریپ، ثبت علت اولیهٔ تریپ، تعریف معنای ریست، و مدیریت ایمن و قابل مشاهدهٔ بایپس."
+    },
+    "de": {
+      "title": "Verriegelungen, Freigaben und Auslösungen entwerfen",
+      "subtitle": "Drei verschiedene Dinge, die routinemäßig gleich genannt werden — und die Erstwert-, Quittier- und Überbrückungsregeln, die aus ihrer Trennung folgen",
+      "excerpt": "Eine Freigabe verhindert den Anlauf; eine Verriegelung erzwingt den sicheren Zustand; eine Auslösung ist eine Schutzhandlung. Sie zu vermengen erzeugt Betriebsmittel, die nicht anlaufen und bei denen niemand sagen kann warum. Klassifizierung, Erstwerterfassung, Quittierlogik, Überbrückung.",
+      "seoTitle": "Verriegelungen, Freigaben und Auslösungen entwerfen",
+      "seoDescription": "Verriegelungslogik richtig entwerfen: Freigaben von Verriegelungen und Auslösungen trennen, Erstursache erfassen, Quittierlogik definieren, Überbrückung steuern."
+    }
+  }
+}

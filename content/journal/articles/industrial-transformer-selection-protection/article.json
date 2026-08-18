@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-transformer-selection-protection",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "electrical-engineering",
+  "tags": ["protection-coordination", "condition-monitoring", "short-circuit", "commissioning", "diagnostics"],
+  "publishedAt": "2026-08-17T10:20:00.000Z",
+  "coverImage": {
+    "file": "journal/industrial-transformer.jpg",
+    "url": null,
+    "concept": "A liquid-immersed distribution transformer with its radiators, bushings and protection pocket visible — the construction details that decide which protective devices can physically exist on the unit.",
+    "prompt": "Photorealistic photograph of an industrial liquid-immersed distribution transformer in a substation compound, radiator fins, porcelain bushings and instrument pockets visible, cool cyan light on grey steel, no readable text or nameplate detail, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Industrial liquid-immersed distribution transformer with radiators and bushings in a substation compound",
+      "fa": "ترانسفورماتور توزیع روغنی صنعتی با رادیاتور و بوشینگ در محوطهٔ پست",
+      "de": "Industrieller flüssigkeitsgefüllter Verteiltransformator mit Radiatoren und Durchführungen auf einem Umspannplatz"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "TRANSFORMER",
+    "linkedTechnology": "Power Transformers",
+    "linkedStandard": "IEC 60076",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial Transformer Selection and Protection",
+      "subtitle": "The rating is a thermal statement, the impedance is a fault-level decision, and half the protection you can specify depends on how the tank was built",
+      "excerpt": "Choosing and protecting an industrial transformer: what the rating actually promises, why impedance voltage is the widest-reaching decision on the datasheet, the real engineering differences between liquid-immersed and dry-type units, layered protection and which devices a given construction can physically carry, and the condition monitoring that only some of them allow.",
+      "seoTitle": "Industrial Transformer Selection and Protection Design",
+      "seoDescription": "Transformer rating, impedance voltage, vector group, liquid-immersed versus dry-type, differential and REF protection, gas and pressure devices, DGA and thermal trending."
+    },
+    "fa": {
+      "title": "انتخاب و حفاظت ترانسفورماتور صنعتی",
+      "subtitle": "توان نامی یک گزارهٔ حرارتی است، امپدانس یک تصمیم دربارهٔ سطح خطاست، و نیمی از حفاظتی که می‌توانید مشخص کنید به ساخت تانک بستگی دارد",
+      "excerpt": "انتخاب و حفاظت ترانسفورماتور صنعتی: توان نامی واقعاً چه وعده‌ای می‌دهد، چرا ولتاژ امپدانس گسترده‌ترین اثر را در میان اقلام دیتاشیت دارد، تفاوت‌های واقعی مهندسی میان واحد روغنی و خشک، حفاظت لایه‌ای و اینکه هر ساختار فیزیکاً کدام وسیله را می‌تواند داشته باشد، و پایش وضعیتی که فقط بعضی از آن‌ها اجازه می‌دهند.",
+      "seoTitle": "انتخاب و حفاظت ترانسفورماتور در تأسیسات صنعتی",
+      "seoDescription": "توان نامی، ولتاژ امپدانس، گروه برداری، ترانسفورماتور روغنی در برابر خشک، حفاظت دیفرانسیل و REF، وسایل گاز و فشار، آنالیز گاز محلول و پایش حرارتی."
+    },
+    "de": {
+      "title": "Auswahl und Schutz industrieller Transformatoren",
+      "subtitle": "Die Bemessungsleistung ist eine thermische Aussage, die Kurzschlussspannung eine Entscheidung über das Fehlerniveau — und die Hälfte des möglichen Schutzes hängt vom Kesselaufbau ab",
+      "excerpt": "Industrietransformatoren auswählen und schützen: was die Bemessungsleistung tatsächlich zusagt, warum die Kurzschlussspannung die weitreichendste Angabe im Datenblatt ist, die realen Unterschiede zwischen flüssigkeitsgefüllten und Trockentransformatoren, gestaffelter Schutz und welche Geräte eine Bauform überhaupt tragen kann.",
+      "seoTitle": "Industrietransformatoren auswählen und richtig schützen",
+      "seoDescription": "Bemessungsleistung, Kurzschlussspannung, Schaltgruppe, Öl- gegen Trockentransformator, Differential- und REF-Schutz, Gas- und Druckgeräte, DGA und Temperaturüberwachung."
+    }
+  }
+}
