@@ -29,6 +29,33 @@ import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
  * credential material of any kind reaching the logger.
  */
 
+/**
+ * ../keys is mocked EXACTLY ONCE, hoisted above every import, and its factory
+ * never changes. Behaviour is varied only through the `vi.fn`s it delegates to.
+ *
+ * WHY THIS SHAPE — a CI failure, not a preference. Two API-key tests used to
+ * re-register this same specifier inside the test body to override a DIFFERENT
+ * factory registered in `beforeEach`. Re-registering a specifier is only
+ * reliable while nothing has resolved it yet, so which factory won depended on
+ * module-resolution order — which in turn depends on how vitest packs test files
+ * into workers. This suite was green at 05973cc and red at ef4d16b with
+ * IDENTICAL test code: the only delta was merging main, which changed the file
+ * set. Both failures were the default null-returning stub winning, so a valid
+ * API key produced a 401.
+ *
+ * With one permanent registration there is no second factory to lose a race to,
+ * and the tests no longer depend on ordering at all.
+ */
+const { verifyApiKeyMock, touchLastUsedMock } = vi.hoisted(() => ({
+  verifyApiKeyMock:  vi.fn(),
+  touchLastUsedMock: vi.fn(),
+}));
+
+vi.mock("../keys", () => ({
+  verifyApiKey:  (...args: unknown[]) => verifyApiKeyMock(...args),
+  touchLastUsed: (...args: unknown[]) => touchLastUsedMock(...args),
+}));
+
 const TOKEN     = "eyJhbGciOiJIUzI1NiJ9.super-secret-access-token.signature";
 const RAW_KEY   = "hk_live_ThisIsARawApiKeySecretValue";
 const DB_SECRET = "connect ECONNREFUSED 10.0.0.5:5432";
@@ -38,7 +65,6 @@ const MOCKED = [
   "@/lib/auth/session-store",
   "@/lib/db/prisma",
   "@/lib/logger/security-events",
-  "../keys",
 ];
 
 interface Captured { channel: string; payload: Record<string, unknown> }
@@ -61,11 +87,12 @@ beforeEach(() => {
     },
   }));
 
-  // Default: no API keys resolve unless a test says otherwise.
-  vi.doMock("../keys", () => ({
-    verifyApiKey: async () => null,
-    touchLastUsed: () => {},
-  }));
+  // Default: no API key resolves unless a test arms one. Reset and re-arm the
+  // shared fn rather than re-registering the module factory, so no ordering
+  // between competing registrations can exist.
+  verifyApiKeyMock.mockReset();
+  verifyApiKeyMock.mockResolvedValue(null);
+  touchLastUsedMock.mockReset();
 });
 
 afterEach(() => {
@@ -207,10 +234,7 @@ describe("platform auth — failure classification", () => {
 describe("platform auth — API-key behaviour is unchanged", () => {
   it("a valid API key still authenticates with its own org and scopes, logging nothing", async () => {
     mockJwt(null); mockSession(true); mockOrg(null);
-    vi.doMock("../keys", () => ({
-      verifyApiKey: async () => ({ id: "key_1", organizationId: "org_k", scopes: ["read"], lastUsedAt: null }),
-      touchLastUsed: () => {},
-    }));
+    verifyApiKeyMock.mockResolvedValue({ id: "key_1", organizationId: "org_k", scopes: ["read"], lastUsedAt: null });
 
     const res = await callRequire(req({ "x-api-key": RAW_KEY }));
     expect(res).toEqual({
@@ -221,10 +245,7 @@ describe("platform auth — API-key behaviour is unchanged", () => {
 
   it("an API key takes precedence over a session cookie (precedence unchanged)", async () => {
     mockJwt({ sub: "user_1" }); mockSession(true); mockOrg({ organizationId: "org_jwt" });
-    vi.doMock("../keys", () => ({
-      verifyApiKey: async () => ({ id: "key_1", organizationId: "org_k", scopes: [], lastUsedAt: null }),
-      touchLastUsed: () => {},
-    }));
+    verifyApiKeyMock.mockResolvedValue({ id: "key_1", organizationId: "org_k", scopes: [], lastUsedAt: null });
 
     const res = await callRequire(
       new NextRequest("http://localhost/api/multi-site/summary", {
@@ -270,7 +291,6 @@ describe("platform auth — the public contract did NOT change", () => {
         logAuthzDenial: (c: Record<string, unknown>) => { events.push({ channel: "authz_denied", payload: c }); },
         logInfraFailure: () => {},
       }));
-      vi.doMock("../keys", () => ({ verifyApiKey: async () => null, touchLastUsed: () => {} }));
       setup();
 
       const res = await callRequire(request);
@@ -320,7 +340,6 @@ describe("platform auth — nothing sensitive reaches the REAL log stream", () =
     // explicitly or the real logger never runs and the capture is empty.
     vi.doUnmock("@/lib/logger/security-events");
     vi.resetModules();
-    vi.doMock("../keys", () => ({ verifyApiKey: async () => null, touchLastUsed: () => {} }));
   }
 
   it("a database fault logs the error CLASS and CODE but never the driver message", async () => {
@@ -423,7 +442,6 @@ describe("sanitizeDatabaseError", () => {
   async function sanitize() {
     vi.doUnmock("@/lib/logger/security-events");
     vi.resetModules();
-    vi.doMock("../keys", () => ({ verifyApiKey: async () => null, touchLastUsed: () => {} }));
     const mod = await import("../auth");
     return mod.sanitizeDatabaseError;
   }
