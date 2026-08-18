@@ -26,7 +26,7 @@
     "eval:phase96": "node scripts/ci/phase96-billing-governance-eval.mjs",
     "eval:phase97": "node scripts/ci/phase97-compliance-governance-eval.mjs",
     "test:phase97:postgres": "vitest run --config vitest.phase97-postgres.config.ts",
-  "test:phase102:postgres": "vitest run --config vitest.phase102-postgres.config.ts",
+    "test:phase102:postgres": "vitest run --config vitest.phase102-postgres.config.ts",
     "eval:phase98": "node scripts/ci/phase98-dr-release-eval.mjs",
     "config:inventory": "node scripts/dr/generate-config-inventory.mjs",
     "config:inventory:check": "node scripts/dr/generate-config-inventory.mjs --check",
@@ -39,7 +39,7 @@
     "gate:phase997:migrations": "node scripts/ci/phase997-migration-integrity.mjs",
     "gate:phase102:migrations": "node scripts/ci/phase102-migration-integrity.mjs",
     "gate:phase102:applied-migrations": "node scripts/ci/phase102-applied-migration-check.mjs",
-  "rehearse:phase102:tenant-integrity": "node scripts/ci/phase102-tenant-integrity-rehearsal.mjs",
+    "rehearse:phase102:tenant-integrity": "node scripts/ci/phase102-tenant-integrity-rehearsal.mjs",
     "gate:phase997:safety": "node scripts/ci/phase997-release-safety-check.mjs",
     "gate:phase997:candidate": "node scripts/ci/phase997-candidate-gate.mjs",
     "rehearse:phase997:migrations": "node scripts/ci/phase997-migration-rehearsal.mjs",
@@ -95,6 +95,7 @@
   },
   "overrides": {
     "postcss": "8.5.26",
-    "sharp": "0.35.3"
+    "sharp": "0.35.3",
+    "deepmerge-ts": "^8.0.0"
   }
 }
