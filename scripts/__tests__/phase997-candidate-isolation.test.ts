@@ -156,15 +156,30 @@ describe("PHASE997_CANDIDATE_ENV_ISOLATION", () => {
     // read of the repository file.
     const compose = readFileSync(join(process.cwd(), "docker-compose.prod.yml"), "utf8");
     const declaring: string[] = [];
+    const profileGated = new Set<string>();
     let current: string | null = null;
     for (const line of compose.split("\n")) {
       const svc = /^ {2}([a-z0-9][a-z0-9_-]*):\s*$/.exec(line);
       if (svc) current = svc[1];
       if (/^\s+env_file:\s*\.env\.production\s*$/.test(line) && current) declaring.push(current);
+      if (/^\s+profiles:/.test(line) && current) profileGated.add(current);
     }
-    // hermes-migrate is profile-gated and never started by the candidate gate,
-    // so it is deliberately absent from the runtime override list.
-    expect(declaring.filter((s) => s !== "hermes-migrate").sort()).toEqual([...ENV_FILE_SERVICES].sort());
+    // Profile-gated services are never started by the candidate gate, so they
+    // are deliberately absent from the runtime override list. The exclusion is
+    // DERIVED from `profiles:` rather than naming a service: that is the actual
+    // rule, and a hard-coded name makes the next profile-gated service fail this
+    // gate for a reason that has nothing to do with env isolation. A service
+    // WITHOUT `profiles:` that picks up `.env.production` still fails, which is
+    // the property being guarded.
+    expect(declaring.filter((s) => !profileGated.has(s)).sort()).toEqual([...ENV_FILE_SERVICES].sort());
+    // The exclusion must not silently swallow a service that is actually
+    // started: every excluded name has to be genuinely profile-gated.
+    for (const excluded of declaring.filter((s) => profileGated.has(s))) {
+      expect(profileGated.has(excluded), `${excluded} is excluded but not profile-gated`).toBe(true);
+      expect(ENV_FILE_SERVICES, `${excluded} must not also be in the override list`).not.toContain(
+        excluded,
+      );
+    }
   });
 
   it("the env file basename is exactly .env.production (the name the services reference)", () => {
