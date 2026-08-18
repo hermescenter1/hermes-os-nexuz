@@ -46,10 +46,11 @@ const LOCALES = ["fa", "en", "de"];
  *
  * `redis` is deliberately absent: it declares no `env_file` and takes its
  * password purely through `${REDIS_PASSWORD}` interpolation, which the isolated
- * `--env-file` already supplies. `hermes-migrate` is absent because it is
- * profile-gated and never started here. The companion test derives this set from
- * the compose file itself, so a new service picking up `.env.production` cannot
- * silently escape the override.
+ * `--env-file` already supplies. Profile-gated services (`hermes-migrate`,
+ * `hermes-journal-import`) are absent because they are never started here. The
+ * companion test derives this set from the compose file itself — including the
+ * profile-gated exclusion — so a new service picking up `.env.production`
+ * cannot silently escape the override.
  */
 export const ENV_FILE_SERVICES = Object.freeze(["hermes-web", "postgres"]);
 

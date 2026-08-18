@@ -100,6 +100,40 @@ services:
       postgres:
         condition: service_healthy
 
+  # Phase 106A — explicit, profile-gated CONTENT import runner.
+  #
+  # Mirrors hermes-migrate deliberately: never started by `up -d` (the
+  # "journal-import" profile is off by default), no ports, no restart policy, on
+  # the internal network only, and invoked exclusively as
+  #   --profile journal-import run --rm hermes-journal-import
+  # so it is ephemeral and can never linger as a stack member.
+  #
+  # It is a SEPARATE service from hermes-migrate because schema migration and
+  # content import are separate operations with separate blast radii: the
+  # migration is additive and reversible in review, the import writes production
+  # content. Merging them would make "the migration succeeded" and "the corpus
+  # imported" a single indivisible outcome.
+  #
+  # DATABASE_URL comes from .env.production — the same secure runtime source the
+  # migrator and the web service use. No credential is written into this file,
+  # and postgres keeps no published port: this service reaches it only over
+  # hermes_internal.
+  #
+  # The image CMD is the DRY RUN. Writing requires the operator to append
+  # `--commit` explicitly; see docs/phase106/production-import-runbook.md.
+  hermes-journal-import:
+    profiles: ["journal-import"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: journal-importer
+    env_file: .env.production
+    networks:
+      - hermes_internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: pgvector/pgvector:pg16
     restart: unless-stopped

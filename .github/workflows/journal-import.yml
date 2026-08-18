@@ -1,0 +1,290 @@
+# PHASE 106A — production Journal content import. MANUAL ONLY, SEPARATE FROM DEPLOY.
+#
+# WHY THIS IS ITS OWN WORKFLOW
+# ----------------------------
+# The obvious shortcut is to append an import step to deploy.yml. That is the
+# wrong shape, for a reason the repository already encoded: Gate 0D-A permits
+# `run` in the deploy path ONLY for hermes-migrate, and permits `exec` only for
+# read-only SELECTs, so the deploy pipeline provably CANNOT write to the
+# database beyond applying migrations. Adding a content import there would
+# delete that guarantee — the very property that makes a deploy safe to approve.
+#
+# So schema migration and content import stay distinct operations:
+#   * deploy.yml  — builds the image, applies + verifies migrations, cuts over.
+#   * this file   — imports content, and nothing else, after a deploy has landed.
+#
+# A release can therefore succeed, be verified, and be reasoned about without
+# ever implying that production content was rewritten.
+#
+# WHAT THIS ENFORCES
+# ------------------
+#   - workflow_dispatch only. There is no push, schedule or workflow_run
+#     trigger: a merge to main never imports content by itself.
+#   - The protected `production` environment, so the same required reviewers
+#     that gate a deploy also gate a content write.
+#   - The target SHA must be an exact 40-hex commit that is already part of
+#     approved main history, and it must be the commit production is actually
+#     running — verified on the server, not asserted by the operator.
+#   - The server worktree must be CLEAN and already checked out at that SHA.
+#     This workflow never moves production source; deploy.yml owns that.
+#   - The DRY RUN ALWAYS RUNS FIRST and must pass. A failed dry-run stops the
+#     job before any write, and the real import is unreachable.
+#   - The real import runs ONLY when `journal_import_confirmation` is exactly
+#     "import-phase106-journal". Absent or wrong, the job completes having done
+#     nothing but validate — it does not "fall back" to importing.
+#   - Post-import verification reads the outcome back out of PostgreSQL with a
+#     read-only SELECT and fails the job if the corpus is not fully present.
+#
+# WHAT IT DELIBERATELY DOES NOT DO
+# --------------------------------
+# No migration, no build, no cutover, no restart, no database restore, no
+# deletion. The importer itself has no --force and issues no DELETE, TRUNCATE or
+# destructive raw SQL; this workflow adds no way to ask it for one.
+
+name: Journal Content Import
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Exact 40-character commit SHA currently deployed in production"
+        required: true
+        type: string
+      journal_import_confirmation:
+        description: 'Real import ONLY: type "import-phase106-journal". Leave empty for a dry-run-only rehearsal.'
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-journal-import
+  cancel-in-progress: false
+
+jobs:
+  journal-import:
+    name: Import the Journal corpus into production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      TARGET_SHA: ${{ inputs.commit_sha }}
+    steps:
+      - name: Validate commit SHA format
+        run: |
+          # Whole-string check: rejects any non-hex byte, including whitespace
+          # and newlines, and enforces exact length 40.
+          case "$TARGET_SHA" in
+            *[!0-9a-f]*|'')
+              echo "commit_sha must be an exact 40-character lowercase hex SHA." >&2
+              exit 1
+              ;;
+          esac
+          if [ "${#TARGET_SHA}" -ne 40 ]; then
+            echo "commit_sha must be an exact 40-character lowercase hex SHA." >&2
+            exit 1
+          fi
+
+      - name: Check out main history (read-only)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify the commit belongs to approved main history
+        run: |
+          if ! git merge-base --is-ancestor "$TARGET_SHA" origin/main; then
+            echo "Refusing: $TARGET_SHA is not an ancestor of approved main." >&2
+            exit 1
+          fi
+
+      - name: Classify the requested mode
+        id: mode
+        env:
+          CONFIRMATION: ${{ inputs.journal_import_confirmation }}
+        run: |
+          # Fail-CLOSED classification: anything that is not the exact phrase is
+          # a dry-run rehearsal. There is no boolean, and no "truthy" parsing
+          # that could read "false"/"0"/"no" as a request to write.
+          if [ "$CONFIRMATION" = "import-phase106-journal" ]; then
+            echo "real_import=true" >> "$GITHUB_OUTPUT"
+            echo "Mode: REAL IMPORT (confirmation phrase accepted)."
+          elif [ -z "$CONFIRMATION" ]; then
+            echo "real_import=false" >> "$GITHUB_OUTPUT"
+            echo "Mode: DRY RUN ONLY (no confirmation supplied)."
+          else
+            echo "Refusing: journal_import_confirmation was supplied but does not match." >&2
+            echo "Type exactly: import-phase106-journal" >&2
+            exit 1
+          fi
+
+      - name: Configure SSH with a pinned host key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          # Same posture as deploy.yml: trust ONLY the pinned host key. Runtime
+          # ssh-keyscan is forbidden — it would trust whatever answers.
+          if [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$SSH_KNOWN_HOSTS" ]; then
+            echo "SSH_PRIVATE_KEY and SSH_KNOWN_HOSTS must both be configured." >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Validate the SSH port
+        id: ssh
+        env:
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          PORT="${SSH_PORT:-22}"
+          case "$PORT" in
+            *[!0-9]*|'') echo "SSH_PORT must be numeric." >&2; exit 1 ;;
+          esac
+          if [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+            echo "SSH_PORT out of range." >&2
+            exit 1
+          fi
+          echo "port=$PORT" >> "$GITHUB_OUTPUT"
+
+      # ── The remote operation ────────────────────────────────────────────────
+      # TARGET_SHA and the mode flag are passed through the ENVIRONMENT, never
+      # interpolated into the remote command string: `${{ }}` expansion inside a
+      # shell line is how a workflow input becomes a shell injection. The remote
+      # script reads them from its own environment via `env -i`-style explicit
+      # assignment on the ssh command line, and every value it uses has already
+      # been validated above as hex-only or an exact literal.
+      - name: Verify production is at the target commit and clean
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          PORT: ${{ steps.ssh.outputs.port }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$PORT" -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "TARGET_SHA='$TARGET_SHA' DEPLOY_PATH='$DEPLOY_PATH' sh -s" <<'REMOTE'
+          set -eu
+          cd "$DEPLOY_PATH"
+          HEAD_SHA="$(git rev-parse HEAD)"
+          if [ "$HEAD_SHA" != "$TARGET_SHA" ]; then
+            echo "Refusing: production HEAD $HEAD_SHA != requested $TARGET_SHA." >&2
+            echo "Deploy the target commit first; this workflow never moves source." >&2
+            exit 1
+          fi
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Refusing: production worktree is dirty." >&2
+            exit 1
+          fi
+          echo "Production is clean at $HEAD_SHA."
+          REMOTE
+
+      - name: Build the pinned importer image
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          PORT: ${{ steps.ssh.outputs.port }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$PORT" -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" "DEPLOY_PATH='$DEPLOY_PATH' sh -s" <<'REMOTE'
+          set -eu
+          cd "$DEPLOY_PATH"
+          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile journal-import build hermes-journal-import
+          REMOTE
+
+      # The dry run is not optional and not conditional. It runs on every
+      # invocation, before any write, and `set -e` stops the job if it fails.
+      - name: Journal importer DRY RUN (always, must pass)
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          PORT: ${{ steps.ssh.outputs.port }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$PORT" -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" "DEPLOY_PATH='$DEPLOY_PATH' sh -s" <<'REMOTE'
+          set -eu
+          cd "$DEPLOY_PATH"
+          OUT="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile journal-import run --rm -T hermes-journal-import)"
+          printf '%s\n' "$OUT"
+          # The importer prints its own verdict; require it explicitly rather
+          # than trusting the exit code alone.
+          printf '%s\n' "$OUT" | grep -q '^DRY_RUN=PASS$' || {
+            echo "Dry run did not report DRY_RUN=PASS — refusing to continue." >&2
+            exit 1
+          }
+          printf '%s\n' "$OUT" | grep -q 'No database connection was opened' || {
+            echo "Dry run did not confirm it opened no database connection." >&2
+            exit 1
+          }
+          REMOTE
+
+      - name: Journal importer REAL IMPORT (confirmation required)
+        if: steps.mode.outputs.real_import == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          PORT: ${{ steps.ssh.outputs.port }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$PORT" -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" "DEPLOY_PATH='$DEPLOY_PATH' sh -s" <<'REMOTE'
+          set -eu
+          cd "$DEPLOY_PATH"
+          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile journal-import run --rm -T hermes-journal-import node scripts/journal/import-articles.mjs --commit
+          REMOTE
+
+      # Read the outcome back out of PostgreSQL. Read-only SELECTs only — this
+      # verifies, it never repairs.
+      - name: Verify the imported corpus (read-only)
+        if: steps.mode.outputs.real_import == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          PORT: ${{ steps.ssh.outputs.port }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$PORT" -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" "DEPLOY_PATH='$DEPLOY_PATH' sh -s" <<'REMOTE'
+          set -eu
+          cd "$DEPLOY_PATH"
+          q() {
+            docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production exec -T postgres \
+              sh -c "psql -U \"\${POSTGRES_USER:-hermes}\" -d \"\${POSTGRES_DB:-hermes_db}\" -tAc \"$1\"" | tr -d '[:space:]'
+          }
+          GROUPS="$(q 'SELECT count(DISTINCT slug) FROM \"Article\"')"
+          TOTAL="$(q 'SELECT count(*) FROM \"Article\"')"
+          FULL="$(q 'SELECT count(*) FROM (SELECT slug FROM \"Article\" GROUP BY slug HAVING count(DISTINCT language) = 3) g')"
+          DUPES="$(q 'SELECT count(*) FROM (SELECT slug, language FROM \"Article\" GROUP BY slug, language HAVING count(*) > 1) d')"
+          echo "JOURNAL_TOPIC_GROUPS=$GROUPS"
+          echo "JOURNAL_TOTAL_ROWS=$TOTAL"
+          echo "JOURNAL_THREE_LOCALE_GROUPS=$FULL"
+          echo "JOURNAL_DUPLICATE_SLUG_LANGUAGE=$DUPES"
+          if [ "$DUPES" != "0" ]; then
+            echo "Refusing to report success: duplicate (slug, language) rows exist." >&2
+            exit 1
+          fi
+          if [ "$GROUPS" != "$FULL" ]; then
+            echo "Refusing to report success: $((GROUPS - FULL)) topic group(s) are not fully trilingual." >&2
+            exit 1
+          fi
+          echo "Corpus verified: $GROUPS groups, $TOTAL rows, all trilingual, no duplicates."
+          REMOTE
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ "${{ steps.mode.outputs.real_import }}" = "true" ]; then
+            echo "Journal import ran in REAL mode against $TARGET_SHA."
+          else
+            echo "Dry-run rehearsal only against $TARGET_SHA. No content was written."
+            echo "To import, re-run with journal_import_confirmation=import-phase106-journal."
+          fi
