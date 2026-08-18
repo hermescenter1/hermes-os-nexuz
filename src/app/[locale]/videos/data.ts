@@ -15,17 +15,34 @@
  * `processingState` key may ever be written into a `where` clause here, and the
  * typed editorial opt-out is never constructed.
  *
- * WHY AN ORGANIZATION SLUG IS REQUIRED
- * ------------------------------------
+ * WHY AN ORGANIZATION SLUG IS REQUIRED — AND WHY IT IS A PATH SEGMENT
+ * -------------------------------------------------------------------
  * `MediaAsset` is organization-owned (ADR §3) — unlike `Article`, which is
- * deliberately global. Every repository loader takes an `organizationId`, so a
- * public library page has to say *whose* library it is showing. `?org=<slug>` is
- * the same public namespace selector the anonymous API uses
- * (`src/app/api/media/public/videos/route.ts`), and it is a selector, never an
- * authorization claim: nothing is returned that is not already published, public
- * and validated. An unknown slug is answered exactly as an organization with
- * nothing published — an empty library, a 404 on a watch page — so a probe cannot
- * use these pages to enumerate tenants.
+ * deliberately global. It is unique on `(organizationId, slug)` and NEVER on
+ * `slug` alone, so the organization is not a filter, it is half of the asset's
+ * identity: two tenants may legitimately mint the same slug. Every repository
+ * loader takes an `organizationId`, so a public library page has to say *whose*
+ * library it is showing.
+ *
+ * DISCOVERY-2A moved that selector out of `?org=<slug>` and into the path:
+ *
+ *     /{locale}/videos/{org}            one organization's public library
+ *     /{locale}/videos/{org}/{slug}     one public watch page
+ *
+ * A canonical URL must not depend on a query string — it would otherwise appear
+ * inside every `<link rel="canonical">`, every hreflang alternate and every
+ * sitemap entry — and `isSubmittablePath()` in `@/lib/seo/indexnow-lifecycle`
+ * rejects any path containing `?`. Both paths are minted by the SINGLE pair of
+ * helpers in `@/lib/media/seo` that the sitemap already uses, so the route, the
+ * internal links, the canonical tag and the sitemap cannot drift apart.
+ * `?org=` is preserved as a 308 legacy redirect in `next.config.ts`, and the
+ * anonymous JSON API keeps its own `?org=` selector unchanged.
+ *
+ * The security properties are unchanged by the move: the segment is a selector,
+ * never an authorization claim; nothing is returned that is not already
+ * published, public and validated; and an unknown organization is answered
+ * exactly as an organization with nothing published — an empty library, a 404 on
+ * a watch page — so a probe still cannot use these pages to enumerate tenants.
  *
  * POSTERS AND CAPTIONS — WHY THESE URLS ARE REAL NOW
  * --------------------------------------------------
@@ -76,10 +93,11 @@ import type {
   MediaSubtitleTrackView,
 } from "@/components/media/view-model";
 import { DEFAULT_LOCALE } from "@/i18n/locales";
-import {
-  VIDEO_HUB_ORG_PARAM,
-  VIDEO_HUB_PAGE_SIZE,
-} from "@/lib/media/video-library-params";
+// DISCOVERY-2A — the ONE place public media paths are minted. Shared with
+// `src/app/sitemap.ts`, so an internal link, a canonical tag and a sitemap
+// entry for the same asset are the same string by construction.
+import { mediaLibraryPath, mediaWatchPath } from "@/lib/media/seo";
+import { VIDEO_HUB_PAGE_SIZE } from "@/lib/media/video-library-params";
 
 // ── Public contract of the route ─────────────────────────────────────────────
 //
@@ -199,12 +217,23 @@ function categoryName(row: CategoryRow, locale: MediaLocale): string {
 /**
  * The locale-prefixed watch route for one asset.
  *
- * The organization selector is carried forward so a link out of the library
- * lands on the same namespace it came from. Both components are already
- * slug-shaped (validated above), so this cannot smuggle a query separator.
+ * DISCOVERY-2A — the path IS the identity. `MediaAsset` is unique on
+ * `(organizationId, slug)`, never on `slug` alone, so the organization is a
+ * required component of an asset's address. It now travels as a PATH SEGMENT
+ * rather than as `?org=`: a canonical URL must not depend on a query string
+ * (it would then appear inside every `<link rel=canonical>`, every hreflang
+ * alternate and every sitemap entry), and `isSubmittablePath()` in
+ * `@/lib/seo/indexnow-lifecycle` rejects any path containing `?`.
+ *
+ * `mediaWatchPath` is the ONE minting function — shared with the sitemap and
+ * the canonical builder — so the route, the internal link, the canonical tag
+ * and the sitemap cannot drift apart. It returns `null` for a slug that could
+ * not survive `SLUG_PATTERN`; that can only happen for a row the loaders
+ * already refuse, and the callers below treat it as "no link".
  */
-function watchHref(locale: string, orgSlug: string, slug: string): string {
-  return `/${locale}/videos/${encodeURIComponent(slug)}?${VIDEO_HUB_ORG_PARAM}=${encodeURIComponent(orgSlug)}`;
+function watchHref(locale: string, orgSlug: string, slug: string): string | null {
+  const path = mediaWatchPath(orgSlug, slug);
+  return path === null ? null : `/${locale}${path}`;
 }
 
 /**
@@ -243,12 +272,15 @@ export interface VideoHubScope {
 }
 
 /**
- * Resolve `?org=<slug>` to an organization id.
+ * Resolve an organization slug to an organization id.
  *
- * A missing, malformed or unknown slug all return `null`, and every caller then
- * answers the way it would for a real organization with nothing published. That
- * removes the existence oracle: a probe cannot tell "no such organization" from
- * "nothing public here".
+ * DISCOVERY-2A: the slug now arrives as the `{org}` PATH SEGMENT instead of
+ * `?org=`. The signature is unchanged — it still accepts whatever a Next.js
+ * param yields — and so is the security contract: a missing, malformed or
+ * unknown slug all return `null`, and every caller then answers the way it
+ * would for a real organization with nothing published. That removes the
+ * existence oracle: a probe cannot tell "no such organization" from "nothing
+ * public here", whether it probes the path or the legacy query string.
  */
 export async function resolveVideoHubScope(
   value: string | string[] | undefined,
@@ -386,6 +418,10 @@ function toInstructorView(row: InstructorRow | undefined): MediaInstructorView |
  * and `VideoHero` renders this value into a DOM `id` attribute. `progress` and
  * `saved` are null because these pages are anonymous — private viewing history is
  * never inferred, only ever read back for the authenticated subject (ADR §8).
+ *
+ * DISCOVERY-2A: returns `null` when the pair could not mint a path, matching
+ * `buildMediaSitemapItems` — a row whose slug cannot survive `SLUG_PATTERN` is
+ * dropped rather than rendered as a card with a dead or forged link.
  */
 function toCardView(
   row: MediaAssetRow,
@@ -395,11 +431,13 @@ function toCardView(
   routeLocale: string,
   categories: Map<string, CategoryRow>,
   instructors: Map<string, InstructorRow>,
-): MediaCardView {
+): MediaCardView | null {
+  const href = watchHref(routeLocale, orgSlug, row.slug);
+  if (href === null) return null;
   return {
     id: row.slug,
     slug: row.slug,
-    href: watchHref(routeLocale, orgSlug, row.slug),
+    href,
     title: translation?.title ?? row.slug,
     summary: translation?.summary ?? null,
     posterUrl: posterSrc(row),
@@ -437,17 +475,19 @@ async function toCardViews(
       rows.map((r) => r.instructorId).filter((v): v is string => typeof v === "string"),
     ),
   ]);
-  return rows.map((row) =>
-    toCardView(
-      row,
-      pickTranslation(translations.get(row.id), locale, row.primaryLocale),
-      locale,
-      orgSlug,
-      routeLocale,
-      categories,
-      instructors,
-    ),
-  );
+  return rows
+    .map((row) =>
+      toCardView(
+        row,
+        pickTranslation(translations.get(row.id), locale, row.primaryLocale),
+        locale,
+        orgSlug,
+        routeLocale,
+        categories,
+        instructors,
+      ),
+    )
+    .filter((view): view is MediaCardView => view !== null);
 }
 
 // ── Library ──────────────────────────────────────────────────────────────────
@@ -587,6 +627,17 @@ export interface VideoWatchView {
   readonly related: readonly MediaCardView[];
   readonly libraryHref: string;
   readonly canonicalPath: string;
+  /**
+   * DISCOVERY-2A — the locales this asset ACTUALLY has editorial copy in.
+   *
+   * Derived from the `MediaAssetTranslation` rows plus `primaryLocale`, never
+   * from `ACTIVE_LOCALES`. An asset with one English translation must not
+   * advertise a Persian and a German alternate that do not exist; the watch
+   * page feeds this straight into `buildMetadata({ contentLocales })`.
+   *
+   * `primaryLocale` leads, so it is the canonical/x-default representation.
+   */
+  readonly contentLocales: readonly string[];
 }
 
 /**
@@ -638,6 +689,23 @@ export async function loadVideoWatch(params: {
     transcripts.find((t) => t.locale === asset.primaryLocale)?.body ??
     null;
 
+  // DISCOVERY-2A — the canonical address, minted once by the shared helper.
+  // `null` joins every other refusal: the caller answers notFound(), so a row
+  // whose slug pair cannot mint a URL never reaches a page that would then have
+  // to invent a canonical for it.
+  const canonicalPath = mediaWatchPath(params.scope.orgSlug, asset.slug);
+  const libraryPath = mediaLibraryPath(params.scope.orgSlug);
+  if (canonicalPath === null || libraryPath === null) return null;
+
+  // Real editorial locales: primaryLocale first (it is the fallback the reader
+  // actually gets), then every OTHER locale that has its own translation row.
+  // Nothing here consults ACTIVE_LOCALES.
+  const translationLocales = (translations.get(asset.id) ?? []).map((row) => row.locale);
+  const contentLocales = [
+    asset.primaryLocale,
+    ...translationLocales.filter((l) => l !== asset.primaryLocale),
+  ].filter((l, i, all) => all.indexOf(l) === i);
+
   return {
     playback: {
       // The real identifier is needed here and only here: it is what the Range
@@ -671,8 +739,9 @@ export async function loadVideoWatch(params: {
     instructor: toInstructorView(asset.instructorId ? instructors.get(asset.instructorId) : undefined),
     transcript,
     related: await loadRelated(db, params, asset, locale),
-    libraryHref: `/${params.routeLocale}/videos?${VIDEO_HUB_ORG_PARAM}=${encodeURIComponent(params.scope.orgSlug)}`,
-    canonicalPath: `/videos/${asset.slug}`,
+    libraryHref: `/${params.routeLocale}${libraryPath}`,
+    canonicalPath,
+    contentLocales,
   };
 }
 

@@ -1,6 +1,7 @@
 import { NextResponse }   from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getPrisma }      from "@/lib/db/prisma";
+import { isManagedCoverUrl } from "@/lib/articles/media";
 import type { ArtContentType, ArtLanguage, ArtStatus } from "@/lib/articles/types";
 
 export const runtime = "nodejs";
@@ -57,6 +58,17 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Content is required." }, { status: 422 });
   }
 
+  // The cover is accepted ONLY as a URL that /api/articles/cover minted in this
+  // deployment. That rejects an arbitrary remote image, a `javascript:` or
+  // `data:` URL, a traversal string and any attempt to point an article at a
+  // file the uploader does not own — the client cannot name a storage path
+  // here, it can only hand back something the server already produced.
+  const coverRaw = typeof body.coverImageUrl === "string" ? body.coverImageUrl.trim() : "";
+  if (coverRaw && !isManagedCoverUrl(coverRaw)) {
+    return NextResponse.json({ error: "Invalid cover image reference." }, { status: 422 });
+  }
+  const coverImageUrl = coverRaw || null;
+
   // Use shared singleton (PrismaPg adapter — required by Prisma 7 driverAdapters pattern)
   const db = await getPrisma();
   if (!db) {
@@ -98,6 +110,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         subtitle:       String(body.subtitle ?? "").trim() || undefined,
         excerpt:        String(body.excerpt  ?? "").trim() || undefined,
         content,
+        coverImageUrl,
         contentType:    (String(body.contentType ?? "TECHNICAL_ARTICLE") as ArtContentType),
         language:       (String(body.language    ?? "EN") as ArtLanguage),
         seoTitle:       String(body.seoTitle ?? "").trim() || undefined,

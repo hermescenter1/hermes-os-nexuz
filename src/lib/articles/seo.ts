@@ -42,6 +42,27 @@ export interface ArticleSitemapItem {
   slug: string;
   /** ISO 8601, or null when the row carries no usable timestamp. */
   lastModified: string | null;
+  /**
+   * The languages this topic ACTUALLY exists in, lower-cased, deduplicated.
+   *
+   * DISCOVERY-2A established the rule this field enforces: never advertise a
+   * locale the article was not written in, and never emit reciprocal
+   * `alternates` for translations that do not exist. At that time an article
+   * was necessarily single-language, so the rule was expressed as one scalar
+   * language per row.
+   *
+   * Phase 106 makes the multi-language case real — `ArtLanguage` gains DE and
+   * uniqueness moves to `@@unique([slug, language])`, so one slug is now a
+   * translation GROUP of up to three genuine editions. The rule is unchanged;
+   * only its input is. A legacy single-language topic still yields exactly one
+   * URL with no alternates, and a translated topic yields one URL per edition
+   * with reciprocal alternates that are now true.
+   *
+   * Reading a scalar here would have forced a choice between reintroducing
+   * fabricated alternates for legacy rows and hiding the Phase 106 editions, so
+   * the field carries the set instead of one member of it.
+   */
+  languages: string[];
 }
 
 export interface AuthorSitemapItem {
@@ -79,36 +100,51 @@ export async function listPublicArticleSitemapItems(): Promise<ArticleSitemapIte
   try {
     const rows = await (prisma as unknown as { article: { findMany: FindMany } }).article.findMany({
       where: ARTICLE_SITEMAP_WHERE,
-      select: { slug: true, publishedAt: true, updatedAt: true },
+      // `language` joins the projection so the sitemap can address each article
+      // under its OWN locale instead of inventing one URL per active locale.
+      select: { slug: true, language: true, publishedAt: true, updatedAt: true },
       orderBy: { publishedAt: "desc" },
       take: ARTICLE_SITEMAP_MAX,
     });
-    // ONE ENTRY PER TRANSLATION GROUP, NOT PER ROW.
+    // ONE ENTRY PER TRANSLATION GROUP, ADDRESSED ONLY IN ITS REAL LANGUAGES.
     //
-    // Since Phase 106 a topic is up to three rows (EN/FA/DE) sharing one slug,
-    // and `articleSitemapEntries` already expands each item across every active
-    // locale. Returning one item per ROW therefore emitted the same URL three
-    // times — 9 <loc> entries per topic instead of 3 — which a crawler reads as
-    // a malformed sitemap. Found by the PostgreSQL rehearsal: with the old
-    // single-language corpus each slug had exactly one row, so the duplication
+    // Two corrections meet here and both are required.
+    //
+    // DISCOVERY-2A: a row may only be advertised under the locale it is written
+    // in, so a row whose language is unusable is dropped rather than defaulted
+    // onto a locale it may not be written in.
+    //
+    // Phase 106: a topic is now up to three rows (EN/FA/DE) sharing one slug,
+    // and `articleSitemapEntries` expands each item across the locales it is
+    // given. Returning one item per ROW would emit the same slug once per
+    // edition, so the rows are folded into one item per slug carrying the set of
+    // languages that slug genuinely has. Found by the PostgreSQL rehearsal: with
+    // a single-language corpus each slug had exactly one row, so the duplication
     // was invisible until real multilingual data existed.
     //
     // The group's `lastModified` is the NEWEST across its editions: translating
     // an article genuinely changes what that URL set offers.
-    const byGroup = new Map<string, string | null>();
+    const byGroup = new Map<string, { lastModified: string | null; languages: string[] }>();
     for (const row of rows) {
       const slug = typeof row.slug === "string" ? row.slug : "";
-      if (slug.length === 0) continue;
+      const language = typeof row.language === "string" ? row.language.toLowerCase() : "";
+      if (slug.length === 0 || language.length === 0) continue;
       const modified = asIso(row.updatedAt) ?? asIso(row.publishedAt);
-      const seen = byGroup.get(slug);
-      if (seen === undefined) {
-        byGroup.set(slug, modified);
+      const group = byGroup.get(slug);
+      if (!group) {
+        byGroup.set(slug, { lastModified: modified, languages: [language] });
         continue;
       }
-      if (modified && (!seen || modified > seen)) byGroup.set(slug, modified);
+      if (!group.languages.includes(language)) group.languages.push(language);
+      if (modified && (!group.lastModified || modified > group.lastModified)) {
+        group.lastModified = modified;
+      }
     }
-    return [...byGroup].map(([slug, lastModified]) => ({ slug, lastModified }));
-  } catch {
+    return [...byGroup].map(([slug, group]) => ({
+      slug,
+      lastModified: group.lastModified,
+      languages: group.languages,
+    }));  } catch {
     return [];
   }
 }
@@ -126,6 +162,11 @@ export async function listPublicAuthorSitemapItems(): Promise<AuthorSitemapItem[
     const rows = await (prisma as unknown as { article: { findMany: FindMany } }).article.findMany({
       where: ARTICLE_SITEMAP_WHERE,
       select: { author: { select: { handle: true } } },
+      // DISCOVERY-2B (query hardening): a `take` with no `orderBy` is a bounded
+      // but ARBITRARY slice — two identical crawls could be advertised two
+      // different author sets once the Journal exceeds the ceiling. Newest-first
+      // matches the article read above.
+      orderBy: { publishedAt: "desc" },
       take: ARTICLE_SITEMAP_MAX,
     });
     const handles = new Set<string>();
@@ -141,30 +182,61 @@ export async function listPublicAuthorSitemapItems(): Promise<AuthorSitemapItem[
   }
 }
 
-/** Expand one path across every active locale, with reciprocal alternates. */
+/**
+ * Expand one path across the locales it GENUINELY exists in.
+ *
+ * `contentLocales` defaults to every active locale, which is right for content
+ * whose copy is translated with full key parity. A record that exists in one
+ * language passes just that one and gets a single URL with NO `alternates` — a
+ * lone self-referencing hreflang entry states nothing.
+ */
 function localeEntries(
   path: string,
   priority: number,
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"],
   lastModified: string | null,
+  contentLocales: readonly string[] = LOCALES,
 ): MetadataRoute.Sitemap {
-  return LOCALES.map((locale) => ({
+  const locales = contentLocales.filter((l) => (LOCALES as readonly string[]).includes(l));
+  if (locales.length === 0) return [];
+  return locales.map((locale) => ({
     url: `${BASE_URL}/${locale}${path}`,
     ...(lastModified ? { lastModified } : {}),
     changeFrequency,
     priority,
-    alternates: {
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `${BASE_URL}/${l}${path}`])),
-    },
+    ...(locales.length > 1
+      ? {
+          alternates: {
+            languages: Object.fromEntries(locales.map((l) => [l, `${BASE_URL}/${l}${path}`])),
+          },
+        }
+      : {}),
   }));
 }
 
+/**
+ * One URL per article, under the article's own language.
+ *
+ * DISCOVERY-2A: was three URLs per article with reciprocal alternates. See
+ * {@link ArticleSitemapItem.language} for why that was a false claim. This now
+ * matches exactly what `articles/[slug]/page.tsx` emits through
+ * `buildMetadata({ contentLocales: [article.language] })`, so the sitemap and
+ * the page's own canonical can no longer disagree.
+ */
 export function articleSitemapEntries(items: ArticleSitemapItem[]): MetadataRoute.Sitemap {
   return items.flatMap((item) =>
-    localeEntries(`/articles/${item.slug}`, 0.75, "monthly", item.lastModified),
+    localeEntries(`/articles/${item.slug}`, 0.75, "monthly", item.lastModified, item.languages),
   );
 }
 
+/**
+ * Author profiles keep every active locale.
+ *
+ * Unlike an article, a profile carries no language field: it is a structured
+ * record (display name, handle, headline, expertise areas) rendered in whatever
+ * chrome the locale provides, so each locale URL genuinely is an alternate
+ * representation of the same record rather than the same prose reprinted.
+ */
 export function authorSitemapEntries(items: AuthorSitemapItem[]): MetadataRoute.Sitemap {
   return items.flatMap((item) =>
     localeEntries(`/articles/author/${item.handle}`, 0.5, "weekly", null),

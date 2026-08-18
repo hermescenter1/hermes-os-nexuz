@@ -489,7 +489,17 @@ export function uploadSurfaceInventory(repoRoot) {
       file: relPath(repoRoot, file),
       sizeLimited: /MAX_BYTES|maxBytes|validateFileSize|\.size\s*>/.test(text),
       typeChecked: /validateFileType|ALLOWED_MIME|allowedTypes|\.type\s*(?:===|!==|\.startsWith)|instanceof File/.test(text),
-      filenameControlled: /randomBytes|randomUUID|sanitizeKey|validateFilename|basename\s*\(/.test(text),
+      // `mintCoverFilename` is the Journal's canonical cover-name minter. It is
+      // registered here for the same reason `requireVoiceCopilotActor` is
+      // registered in route-inventory.mjs GUARD_TOKENS: this invariant is
+      // file-local and cannot follow an import, so a route that delegates the
+      // control to a shared helper would otherwise read as having no control at
+      // all. The helper builds the stored name from `randomBytes(16)` plus an
+      // extension derived from the SNIFFED content type and never touches the
+      // uploader's filename — src/lib/articles/__tests__/cover-media.test.ts
+      // locks both halves of that claim: the mint format, and that a filename
+      // carrying parent-directory segments reaches storage carrying none.
+      filenameControlled: /randomBytes|randomUUID|sanitizeKey|validateFilename|basename\s*\(|mintCoverFilename/.test(text),
       authGated: /requireAdmin|getCurrentUser|requireOrgActor|requirePermission|requirePlatformAuth|requireAuthoring|getAuthRole/.test(text),
       absolutePathRejected: !/path\.join\([^)]*\breq\b/.test(text),
     });

@@ -3788,6 +3788,36 @@
     }
   },
   "journal": {
+    "engagement": {
+      "removedComment": "This comment has been removed.",
+      "saved": "Saved",
+      "saveFailed": "Could not update your saved articles.",
+      "signInToSave": "Sign in to save",
+      "reactionsLabel": "Reactions",
+      "signInToReact": "Sign in to react",
+      "reactFailed": "Could not save your reaction.",
+      "networkError": "Network error. Please try again.",
+      "commentsHeading": "Comments ({count})",
+      "commentPlaceholder": "Share your engineering perspective…",
+      "replyPlaceholder": "Write a reply…",
+      "post": "Post",
+      "posting": "Posting…",
+      "cancel": "Cancel",
+      "reply": "Reply",
+      "delete": "Delete",
+      "moderate": "Remove",
+      "removeConfirm": "Remove this comment?",
+      "confirmRemove": "Remove",
+      "removing": "Removing…",
+      "removeFailed": "Could not remove the comment.",
+      "signInToComment": "Sign in to join the discussion",
+      "noComments": "No comments yet. Start the discussion.",
+      "loadMore": "Load more comments",
+      "loading": "Loading…",
+      "commentTooLong": "Comment is too long.",
+      "commentRateLimited": "Too many comments. Please wait a moment.",
+      "commentFailed": "Could not post your comment."
+    },
     "knowledgeNetwork": "Industrial Knowledge Network",
     "brandUpper": "HERMES INDUSTRIAL JOURNAL",
     "brandTitle": "Hermes Industrial Journal",
@@ -3971,6 +4001,9 @@
       }
     },
     "nav": {
+      "becomeAuthor": "Become an Author",
+      "signIn": "Sign in",
+      "createAccount": "Request an account",
       "brandTitle": "Hermes Industrial Journal",
       "myAccount": "My Account",
       "editorial": "Editorial",
@@ -4093,6 +4126,22 @@
     }
   },
   "journalWriter": {
+    "media": {
+      "section": "Article Media",
+      "coverLabel": "Cover image",
+      "upload": "Upload image",
+      "uploading": "Uploading…",
+      "replace": "Replace",
+      "remove": "Remove",
+      "previewAlt": "Cover image preview",
+      "hint": "JPG, PNG or WebP · up to 4 MB · 16:9 recommended",
+      "errType": "Unsupported image. Use JPG, PNG or WebP.",
+      "errTooLarge": "Image too large. Maximum 4 MB.",
+      "errUpload": "Upload failed. Please try again.",
+      "errNetwork": "Network error. Please try again.",
+      "errRateLimited": "Too many uploads. Please wait and try again.",
+      "errUnauthorized": "Your session has expired. Please sign in again."
+    },
     "newArticle": "New Article",
     "saveDraft": "Save Draft",
     "submitForReview": "Submit for Review",
@@ -4249,6 +4298,13 @@
       "ARCHIVED": "Archived"
     },
     "mod": {
+      "delete": "Delete",
+      "deleteArticleNamed": "Delete article: {title}",
+      "deleteConfirmTitle": "Delete this article permanently?",
+      "deleteConfirmBody": "This removes the article together with its comments, reactions, saves and review history. It cannot be undone.",
+      "confirmDelete": "Yes, delete",
+      "deleting": "Deleting…",
+      "errDelete": "Deletion failed",
       "brand": "HERMES INDUSTRIAL JOURNAL — EDITORIAL",
       "titleModeration": "Content Moderation",
       "titleSubmissions": "Submitted Articles",

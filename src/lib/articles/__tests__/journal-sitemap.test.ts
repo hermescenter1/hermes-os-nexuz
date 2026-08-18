@@ -8,19 +8,24 @@ import {
 import { BASE_URL, LOCALES } from "@/lib/seo/config";
 
 /**
- * Rows as PostgreSQL returns them once a topic is trilingual: three Article
- * rows sharing one slug. Declared here so the dedup test below reproduces the
- * exact shape that produced duplicate sitemap URLs in the rehearsal.
+ * Rows as PostgreSQL returns them AFTER Phase 106 merged into a database that
+ * already held single-language articles — which is the population production
+ * will actually have. `topic-a` is a trilingual translation group (three rows,
+ * one slug); `topic-b` is a legacy article that exists in one language only.
+ *
+ * Both cases must hold simultaneously: the group must collapse to one item and
+ * expand to one URL per real edition, and the legacy row must still produce a
+ * single URL with no fabricated alternates.
  */
-const TRILINGUAL_ROWS = [
-  { slug: "topic-a", publishedAt: new Date("2026-08-16T00:00:00Z"), updatedAt: new Date("2026-08-16T01:00:00Z") },
-  { slug: "topic-a", publishedAt: new Date("2026-08-16T00:00:00Z"), updatedAt: new Date("2026-08-16T03:00:00Z") },
-  { slug: "topic-a", publishedAt: new Date("2026-08-16T00:00:00Z"), updatedAt: new Date("2026-08-16T02:00:00Z") },
-  { slug: "topic-b", publishedAt: new Date("2026-08-15T00:00:00Z"), updatedAt: new Date("2026-08-15T05:00:00Z") },
+const MIXED_POPULATION_ROWS = [
+  { slug: "topic-a", language: "EN", publishedAt: new Date("2026-08-16T00:00:00Z"), updatedAt: new Date("2026-08-16T01:00:00Z") },
+  { slug: "topic-a", language: "FA", publishedAt: new Date("2026-08-16T00:00:00Z"), updatedAt: new Date("2026-08-16T03:00:00Z") },
+  { slug: "topic-a", language: "DE", publishedAt: new Date("2026-08-16T00:00:00Z"), updatedAt: new Date("2026-08-16T02:00:00Z") },
+  { slug: "topic-b", language: "EN", publishedAt: new Date("2026-08-15T00:00:00Z"), updatedAt: new Date("2026-08-15T05:00:00Z") },
 ];
 
 vi.mock("@/lib/db/prisma", () => ({
-  getPrisma: async () => ({ article: { findMany: async () => TRILINGUAL_ROWS } }),
+  getPrisma: async () => ({ article: { findMany: async () => MIXED_POPULATION_ROWS } }),
 }));
 
 /**
@@ -54,18 +59,36 @@ describe("published-only, indexable-only predicate", () => {
 });
 
 describe("article entries", () => {
+  /**
+   * DISCOVERY-2A — CONTRACT CHANGE, recorded deliberately.
+   *
+   * This block previously asserted "one canonical URL per active locale" and
+   * "reciprocal alternates for every locale". Both pinned a false claim: an
+   * article exists in exactly ONE language (`Article.language` is `ArtLanguage`,
+   * whose members are EN and FA — there is no DE), `Article.slug` is globally
+   * unique, and `getArticleDetailBySlug` has no language filter, so /fa, /en and
+   * /de all served the SAME text. The old expectations are replaced with the
+   * one-URL-per-article invariant, which is strictly more specific.
+   */
   const entries = articleSitemapEntries([
-    { slug: "opc-ua-basics", lastModified: "2026-03-04T10:00:00.000Z" },
-    { slug: "no-timestamp", lastModified: null },
+    { slug: "opc-ua-basics", languages: ["en"], lastModified: "2026-03-04T10:00:00.000Z" },
+    { slug: "no-timestamp", languages: ["fa"], lastModified: null },
   ]);
 
-  it("emits one canonical URL per active locale", () => {
-    expect(entries).toHaveLength(2 * LOCALES.length);
-    for (const locale of LOCALES) {
-      expect(entries.map((e) => e.url)).toContain(
-        `${BASE_URL}/${locale}/articles/opc-ua-basics`,
-      );
-    }
+  it("emits exactly one canonical URL per article, under its own language", () => {
+    expect(entries).toHaveLength(2);
+    expect(entries.map((e) => e.url)).toEqual([
+      `${BASE_URL}/en/articles/opc-ua-basics`,
+      `${BASE_URL}/fa/articles/no-timestamp`,
+    ]);
+  });
+
+  it("never fabricates a locale variant of a single-language article", () => {
+    const urls = entries.map((e) => e.url);
+    expect(urls).not.toContain(`${BASE_URL}/fa/articles/opc-ua-basics`);
+    expect(urls).not.toContain(`${BASE_URL}/de/articles/opc-ua-basics`);
+    expect(urls).not.toContain(`${BASE_URL}/en/articles/no-timestamp`);
+    expect(urls).not.toContain(`${BASE_URL}/de/articles/no-timestamp`);
   });
 
   it("every URL is absolute on the canonical host", () => {
@@ -75,9 +98,16 @@ describe("article entries", () => {
     }
   });
 
-  it("carries reciprocal alternates for every locale", () => {
-    const languages = entries[0].alternates?.languages ?? {};
-    expect(Object.keys(languages).sort()).toEqual([...LOCALES].sort());
+  it("carries NO alternates — a single representation has no alternate", () => {
+    for (const e of entries) {
+      expect(e.alternates).toBeUndefined();
+    }
+  });
+
+  it("a language outside the active set is dropped rather than guessed at", () => {
+    expect(articleSitemapEntries([{ slug: "x", languages: ["pt"], lastModified: null }])).toEqual([]);
+    expect(articleSitemapEntries([{ slug: "x", languages: [""], lastModified: null }])).toEqual([]);
+    expect(articleSitemapEntries([{ slug: "x", languages: [], lastModified: null }])).toEqual([]);
   });
 
   it("uses the row's real timestamp, and omits lastModified when there is none", () => {
@@ -88,7 +118,7 @@ describe("article entries", () => {
   });
 
   it("never invents a timestamp for an undated article", () => {
-    const undated = articleSitemapEntries([{ slug: "x", lastModified: null }]);
+    const undated = articleSitemapEntries([{ slug: "x", languages: ["en"], lastModified: null }]);
     for (const e of undated) expect(e.lastModified).toBeUndefined();
   });
 });
@@ -109,6 +139,15 @@ describe("one entry per translation group, not per row (Phase 106)", () => {
     expect(items.map((i) => i.slug).sort()).toEqual(["topic-a", "topic-b"]);
   });
 
+  it("carries the languages the group really has, lower-cased", async () => {
+    const { listPublicArticleSitemapItems } = await import("../seo");
+    const items = await listPublicArticleSitemapItems();
+    expect(items.find((i) => i.slug === "topic-a")?.languages.sort()).toEqual(["de", "en", "fa"]);
+    // The legacy single-language row keeps exactly one language: the merge must
+    // not widen it into a translation group it does not have.
+    expect(items.find((i) => i.slug === "topic-b")?.languages).toEqual(["en"]);
+  });
+
   it("takes the NEWEST lastModified across the group's editions", async () => {
     const { listPublicArticleSitemapItems } = await import("../seo");
     const items = await listPublicArticleSitemapItems();
@@ -119,10 +158,20 @@ describe("one entry per translation group, not per row (Phase 106)", () => {
     expect(a?.lastModified).toBe("2026-08-16T03:00:00.000Z");
   });
 
-  it("produces exactly one URL per locale per topic once expanded", async () => {
+  it("expands each topic across its OWN editions only", async () => {
     const { listPublicArticleSitemapItems } = await import("../seo");
     const entries = articleSitemapEntries(await listPublicArticleSitemapItems());
-    expect(entries).toHaveLength(2 * LOCALES.length);
+    // topic-a is trilingual (3 URLs, reciprocal alternates); topic-b is a legacy
+    // single-language article (1 URL, no alternates). Asserting the total pins
+    // both halves of the reconciliation in one number.
+    expect(entries).toHaveLength(LOCALES.length + 1);
+    const a = entries.filter((e) => e.url.includes("topic-a"));
+    const b = entries.filter((e) => e.url.includes("topic-b"));
+    expect(a).toHaveLength(LOCALES.length);
+    for (const e of a) expect(Object.keys(e.alternates?.languages ?? {}).sort()).toEqual(["de", "en", "fa"]);
+    expect(b).toHaveLength(1);
+    expect(b[0].url).toBe(`${BASE_URL}/en/articles/topic-b`);
+    expect(b[0].alternates).toBeUndefined();
     const urls = entries.map((e) => e.url);
     expect(new Set(urls).size, "sitemap must contain no duplicate <loc>").toBe(urls.length);
   });
@@ -132,6 +181,11 @@ describe("author entries", () => {
   const entries = authorSitemapEntries([{ handle: "h-forozandeh" }]);
 
   it("emits one profile URL per locale with no fabricated lastModified", () => {
+    // DISCOVERY-2A deliberately leaves this one alone. Unlike an article, an
+    // author profile carries no language field: it is a structured record
+    // (display name, handle, headline, expertise areas) rendered in whatever
+    // chrome the locale supplies, so each locale URL genuinely is an alternate
+    // representation rather than the same prose reprinted three times.
     expect(entries).toHaveLength(LOCALES.length);
     for (const e of entries) {
       expect(e.url).toContain("/articles/author/h-forozandeh");
@@ -143,7 +197,7 @@ describe("author entries", () => {
 describe("no private surface is ever advertised", () => {
   it("article and author paths never touch an authenticated Journal route", () => {
     const all = [
-      ...articleSitemapEntries([{ slug: "a", lastModified: null }]),
+      ...articleSitemapEntries([{ slug: "a", languages: ["en"], lastModified: null }]),
       ...authorSitemapEntries([{ handle: "b" }]),
     ].map((e) => e.url);
     for (const url of all) {

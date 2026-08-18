@@ -1,11 +1,13 @@
 "use client";
 
-import { useState }  from "react";
+import { useRef, useState } from "react";
 import Link            from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ArticleDetail, ArticleListItem } from "@/lib/articles/types";
 import { formatDate, formatNumber } from "@/lib/i18n/format";
 import { parseArticleContent, type InlineSpan } from "./article-content";
+import { ArticleEngagement, type EngagementViewer } from "./ArticleEngagement";
+import type { CommentPage, ReactionSummary } from "@/lib/articles/engagement-types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -323,33 +325,31 @@ function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }
 
 // ── Actions bar ───────────────────────────────────────────────────────────────
 
-function ActionsBar({ article }: { article: ArticleDetail }) {
+/**
+ * Save state is owned by the PAGE, not by this bar.
+ *
+ * The bar is rendered twice (above and below the article body). When each copy
+ * held its own `useState`, bookmarking in one left the other showing the
+ * opposite label — two controls for one fact, disagreeing. It is lifted so both
+ * render the same value, and so the value can be seeded from the server.
+ */
+interface SaveControl {
+  saved:     boolean;
+  busy:      boolean;
+  error:     string | null;
+  /** Absent for an anonymous reader, who is sent to sign-in instead. */
+  onToggle?: () => void;
+  /** Localized sign-in URL that returns to this article. */
+  authHref?: string;
+}
+
+function ActionsBar({ article, save }: { article: ArticleDetail; save: SaveControl }) {
   const t = useTranslations("journal");
-  const [saved, setSaved]     = useState(false);
-  const [reacted, setReacted] = useState<string | null>(null);
   const [copied, setCopied]   = useState(false);
 
-  const reactions = ["INSIGHTFUL", "HELPFUL", "DETAILED", "PRACTICAL"] as const;
-
-  async function handleSave() {
-    const next = !saved;
-    setSaved(next);
-    await fetch("/api/articles/saved", {
-      method: next ? "POST" : "DELETE",
-      body:   next ? JSON.stringify({ articleId: article.id }) : undefined,
-      headers: { "Content-Type": "application/json" },
-    }).catch(() => setSaved(!next));
-  }
-
-  async function handleReact(key: string) {
-    const next = reacted === key ? null : key;
-    setReacted(next);
-    await fetch("/api/articles/reactions", {
-      method: next ? "POST" : "DELETE",
-      ...(next ? { body: JSON.stringify({ articleId: article.id, reactionType: key }), headers: { "Content-Type": "application/json" } } : {}),
-    }).catch(() => setReacted(reacted));
-  }
-
+  // Reactions used to live here as purely local state that never reached the
+  // database. They are now server-truthful and rendered by <ArticleEngagement>,
+  // so this bar keeps only the stats, Save and Share.
   function handleShare() {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href).then(() => {
@@ -370,32 +370,40 @@ function ActionsBar({ article }: { article: ArticleDetail }) {
         <span>{fmtNum(article.reactionCount)} {t("detail.reactionsUnit")}</span>
       </div>
 
-      {/* Reactions */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {reactions.map(key => (
-          <button key={key} onClick={() => handleReact(key)}
-            className={`text-[10px] px-2.5 py-1.5 rounded-full border transition-all font-mono uppercase tracking-wide ${
-              reacted === key
-                ? "border-signal bg-signal/12 text-signal font-semibold"
-                : "border-line/60 text-metadata hover:border-signal/30 hover:text-ink"
-            }`}>
-            {t(`detail.reaction.${key}`)}
-          </button>
-        ))}
-      </div>
-
-      {/* Save */}
-      <button onClick={handleSave}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all border font-medium ${
-          saved
-            ? "border-signal bg-signal/12 text-signal"
-            : "border-line/60 text-muted hover:border-signal/30 hover:text-ink"
-        }`}>
-        <svg viewBox="0 0 20 20" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5} className="w-3.5 h-3.5">
-          <path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-2.5L5 18V4Z"/>
-        </svg>
-        {t("detail.save")}
-      </button>
+      {/* Save. Anonymous readers get a link to sign-in that returns here;
+          everyone else gets a real toggle. The bookmark glyph switches from
+          outline to FILLED and the label changes word, so the saved state is
+          carried by shape and text — never by colour alone. */}
+      {save.onToggle ? (
+        <button
+          type="button"
+          onClick={save.onToggle}
+          disabled={save.busy}
+          aria-pressed={save.saved}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all border font-medium disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
+            save.saved
+              ? "border-signal bg-signal/12 text-signal"
+              : "border-line/60 text-muted hover:border-signal/30 hover:text-ink"
+          }`}>
+          <svg viewBox="0 0 20 20" fill={save.saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5} aria-hidden="true" className="w-3.5 h-3.5">
+            <path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-2.5L5 18V4Z"/>
+          </svg>
+          {save.saved ? t("engagement.saved") : t("detail.save")}
+        </button>
+      ) : (
+        <a
+          href={save.authHref ?? "#"}
+          title={t("engagement.signInToSave")}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all border font-medium border-line/60 text-muted hover:border-signal/30 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true" className="w-3.5 h-3.5">
+            <path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-2.5L5 18V4Z"/>
+          </svg>
+          {t("detail.save")}
+        </a>
+      )}
+      {save.error && (
+        <span role="alert" className="text-[10px] text-danger font-mono">{save.error}</span>
+      )}
 
       {/* Share */}
       <button onClick={handleShare}
@@ -671,9 +679,22 @@ function RelatedArticles({ articles, isFa, locale }: { articles: ArticleListItem
 interface Props {
   article: ArticleDetail;
   related: ArticleListItem[];
+  /**
+   * Reactions and the first page of the discussion, loaded on the server so the
+   * conversation is present in the initial HTML rather than appearing after a
+   * client round-trip. Optional so the mock/offline render path and any other
+   * caller keep working unchanged.
+   */
+  engagement?: {
+    reactions: ReactionSummary;
+    comments:  CommentPage;
+    /** Whether the signed-in reader has bookmarked this article. */
+    saved:     boolean;
+    viewer:    EngagementViewer | null;
+  };
 }
 
-export function ArticleDetailClient({ article, related }: Props) {
+export function ArticleDetailClient({ article, related, engagement }: Props) {
   // useLocale() reads from the next-intl middleware request context — always a
   // stable string, never null. Do NOT use usePathname() from next/navigation here:
   // next-intl middleware rewrites paths before Next.js sees them, so usePathname()
@@ -685,6 +706,60 @@ export function ArticleDetailClient({ article, related }: Props) {
   const typeKey   = `contentType.${article.contentType}`;
   const typeLabel = t.has(typeKey) ? t(typeKey) : article.contentType;
   const catHref   = article.category ? `/${locale}/articles/category/${article.category.slug}` : null;
+
+  // ── Bookmark ──────────────────────────────────────────────────────────────
+  // Seeded from the server so the correct label is in the first paint, then
+  // kept in step with what the server actually confirmed.
+  const [saved, setSaved]           = useState(engagement?.saved ?? false);
+  const [savePending, setSavePending] = useState(false);
+  const [saveError, setSaveError]   = useState<string | null>(null);
+  // Synchronous guard — React's disabled={busy} is not instantaneous, so a fast
+  // double-click could otherwise fire POST and DELETE out of order.
+  const savingRef = useRef(false);
+
+  async function toggleSave() {
+    if (savingRef.current) return;
+    const next = !saved;
+    savingRef.current = true;
+    setSavePending(true);
+    setSaveError(null);
+    // Optimistic, but reverted below if the server disagrees.
+    setSaved(next);
+    try {
+      const res = await fetch(
+        next ? "/api/articles/saved" : `/api/articles/saved?articleId=${encodeURIComponent(article.id)}`,
+        next
+          ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ articleId: article.id }) }
+          : { method: "DELETE" },
+      );
+      if (!res.ok) {
+        setSaved(!next);
+        setSaveError(t("engagement.saveFailed"));
+        return;
+      }
+      // Server truth wins over the optimistic guess.
+      const data = await res.json().catch(() => ({}) as Record<string, unknown>);
+      if (typeof data.saved === "boolean")        setSaved(data.saved);
+      else if (typeof data.unsaved === "boolean") setSaved(!data.unsaved);
+    } catch {
+      setSaved(!next);
+      setSaveError(t("engagement.networkError"));
+    } finally {
+      setSavePending(false);
+      savingRef.current = false;
+    }
+  }
+
+  const saveControl = {
+    saved,
+    busy:  savePending,
+    error: saveError,
+    // An anonymous reader has no toggle at all — they get the sign-in link,
+    // carrying a return path back to this exact article.
+    ...(engagement?.viewer
+      ? { onToggle: toggleSave }
+      : { authHref: `/${locale}/auth/login?from=${encodeURIComponent(`/${locale}/articles/${article.slug}`)}` }),
+  };
 
   return (
     <div className="min-h-screen">
@@ -802,6 +877,26 @@ export function ArticleDetailClient({ article, related }: Props) {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-10">
+        {/* Cover image. Decorative by design: the headline immediately above
+            already names the article, so an empty alt is the correct
+            accessible treatment — a screen reader skips the image instead of
+            hearing a restatement of the title. The fixed 16:9 frame reserves
+            its space before the bytes arrive, so the article body does not
+            jump when the image loads. Absent cover => nothing renders and the
+            page keeps its current clean presentation. */}
+        {article.coverImageUrl && (
+          <figure className="mb-8 overflow-hidden rounded-xl border border-line/30 bg-surface2">
+            <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={article.coverImageUrl}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </div>
+          </figure>
+        )}
+
         {/* Trust strip — editorial approval + key metrics (real DB fields only) */}
         <TrustStrip article={article} isFa={isFa} />
 
@@ -814,7 +909,7 @@ export function ArticleDetailClient({ article, related }: Props) {
         )}
 
         {/* Actions bar */}
-        <ActionsBar article={article} />
+        <ActionsBar article={article} save={saveControl} />
 
         {/* Article content */}
         <article className="mt-10 mb-12">
@@ -837,7 +932,20 @@ export function ArticleDetailClient({ article, related }: Props) {
         )}
 
         {/* Bottom actions */}
-        <ActionsBar article={article} />
+        <ActionsBar article={article} save={saveControl} />
+
+        {/* Reactions + discussion. Rendered from server-loaded state; absent
+            only on the offline/mock path, where there is no database to hold a
+            conversation in the first place. */}
+        {engagement && (
+          <ArticleEngagement
+            articleId={article.id}
+            articleSlug={article.slug}
+            reactions={engagement.reactions}
+            comments={engagement.comments}
+            viewer={engagement.viewer}
+          />
+        )}
 
         {/* Knowledge metadata */}
         {article.knowledgeMetadata && (

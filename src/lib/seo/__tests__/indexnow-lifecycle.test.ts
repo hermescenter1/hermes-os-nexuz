@@ -102,9 +102,33 @@ describe("submitIndexNow — inert in tests, bounded, dedup, non-throwing", () =
     expect(route).not.toMatch(/await\s+notifyArticleLifecycle/);
   });
 
-  it("no unpublish/delete endpoint exists for published articles — NOT IMPLEMENTED by product contract", () => {
-    // the [id] route is read-only; removal flows would hook the same helper
+  /**
+   * This assertion previously read "no unpublish/delete endpoint exists —
+   * NOT IMPLEMENTED by product contract", pinning the absence of a DELETE on
+   * the [id] route. Editorial removal is now a shipped feature, so the absence
+   * is no longer the contract. What that test was really protecting — the note
+   * it carried, that "removal flows would hook the same helper" — is asserted
+   * directly below instead, which is a stronger claim than absence ever was.
+   */
+  it("the delete hook fires AFTER the row is gone and is fire-and-forget", () => {
     const idRoute = read("src/app/api/articles/[id]/route.ts");
-    expect(idRoute).not.toMatch(/export async function (DELETE|PATCH|PUT)/);
+
+    // A removal exists, and it announces the change to IndexNow.
+    expect(idRoute).toMatch(/export async function DELETE/);
+    expect(idRoute).toContain("notifyArticleLifecycle(slug, language)");
+
+    // Ordering: the notify call sits after the delete's own failure return,
+    // so it is unreachable unless the row was actually removed.
+    const deleteFailureReturn = idRoute.indexOf('console.error(`[api/articles/delete] delete articleId=');
+    const hook = idRoute.indexOf("notifyArticleLifecycle(slug, language)");
+    expect(deleteFailureReturn).toBeGreaterThan(-1);
+    expect(hook).toBeGreaterThan(deleteFailureReturn);
+
+    // Fire-and-forget: a slow or failing IndexNow submission must never delay
+    // or fail the operator's delete.
+    expect(idRoute).not.toMatch(/await\s+notifyArticleLifecycle/);
+
+    // Only a previously PUBLISHED article had public URLs worth retracting.
+    expect(idRoute).toMatch(/previousStatus === "PUBLISHED"/);
   });
 });

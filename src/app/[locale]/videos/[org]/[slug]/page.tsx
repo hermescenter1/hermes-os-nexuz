@@ -9,11 +9,20 @@ import {
 } from "@/components/media";
 import { formatDate } from "@/lib/i18n/format";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { VIDEO_HUB_ORG_PARAM } from "@/lib/media/video-library-params";
-import { loadVideoWatch, resolveVideoHubScope } from "../data";
+import { loadVideoWatch, resolveVideoHubScope } from "../../data";
 
 /**
- * PHASE 102 — `/[locale]/videos/[slug]`: the PUBLIC watch page.
+ * PHASE 102 / DISCOVERY-2A — `/[locale]/videos/[org]/[slug]`: the PUBLIC watch page.
+ *
+ * THE ORGANIZATION IS A PATH SEGMENT, NOT A QUERY PARAMETER
+ * ---------------------------------------------------------
+ * `MediaAsset` is unique on `(organizationId, slug)`, so a slug alone does not
+ * identify an asset and the organization is half of its address. It used to
+ * arrive as `?org=`, which meant the page's own canonical URL — `/videos/{slug}`
+ * — resolved to a 404 when a crawler followed it, while the sitemap advertised a
+ * third shape that had no route at all. All three now agree on this one path,
+ * minted by `@/lib/media/seo`. The legacy `?org=` form 308-redirects here from
+ * `next.config.ts`, so no URL that ever worked has stopped working.
  *
  * PUBLISHED-ONLY, WITHOUT RE-IMPLEMENTING THE GATE
  * ------------------------------------------------
@@ -27,11 +36,13 @@ import { loadVideoWatch, resolveVideoHubScope } from "../data";
  *
  * EVERY REFUSAL IS THE SAME 404
  * -----------------------------
- * A missing organization selector, an unknown organization, an unknown slug, a
+ * A malformed organization segment, an unknown organization, an unknown slug, a
  * draft, a PRIVATE or ORGANIZATION-visibility asset, another tenant's asset, one
  * still validating, one quarantined, and a storage failure all reach `notFound()`.
  * A distinguishable answer would confirm the existence of a resource the visitor is
- * not entitled to know about.
+ * not entitled to know about. Moving the selector from the query string to the
+ * path changes where the value is read and nothing about how a refusal is
+ * answered.
  *
  * SERVER / CLIENT SPLIT
  * ---------------------
@@ -44,33 +55,34 @@ import { loadVideoWatch, resolveVideoHubScope } from "../data";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
-  searchParams: Promise<SearchParams>;
+  params: Promise<{ locale: string; org: string; slug: string }>;
 }) {
-  const { locale, slug } = await params;
-  const sp = await searchParams;
+  const { locale, org, slug } = await params;
   const t = await getTranslations({ locale, namespace: "mediaHub" });
 
-  const scope = await resolveVideoHubScope(sp[VIDEO_HUB_ORG_PARAM]);
+  const scope = await resolveVideoHubScope(org);
   const view = scope ? await loadVideoWatch({ scope, slug, routeLocale: locale }) : null;
   if (!view) {
     // Never index a page that did not resolve, and never describe why it did not.
     return { title: t("states.notFound"), robots: { index: false, follow: false } };
   }
 
-  // The canonical URL is built from the PERSISTED slug, never the raw route param,
-  // so one asset keeps one canonical URL however the request encoded it.
+  // The canonical URL is built from the PERSISTED organization and asset slugs,
+  // never the raw route params, so one asset keeps one canonical URL however the
+  // request encoded it.
   return buildMetadata({
     locale,
     path: view.canonicalPath,
     title: view.seoTitle ?? view.title,
     description: view.seoDescription ?? view.summary ?? "",
+    // DISCOVERY-2A — hreflang from the asset's REAL editorial locales
+    // (`MediaAssetTranslation` rows ∪ `primaryLocale`), never from
+    // ACTIVE_LOCALES. An English-only asset no longer advertises a Persian and
+    // a German alternate that do not exist.
+    contentLocales: view.contentLocales,
     // `buildMetadata` accepts only "website" | "article". A `video.other` OG type
     // would need a change to the shared SEO module, which is out of scope here.
     ogType: "article",
@@ -80,17 +92,14 @@ export async function generateMetadata({
 
 export default async function VideoWatchPage({
   params,
-  searchParams,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
-  searchParams: Promise<SearchParams>;
+  params: Promise<{ locale: string; org: string; slug: string }>;
 }) {
-  const { locale, slug } = await params;
+  const { locale, org, slug } = await params;
   setRequestLocale(locale);
-  const sp = await searchParams;
   const t = await getTranslations({ locale, namespace: "mediaHub" });
 
-  const scope = await resolveVideoHubScope(sp[VIDEO_HUB_ORG_PARAM]);
+  const scope = await resolveVideoHubScope(org);
   const view = scope ? await loadVideoWatch({ scope, slug, routeLocale: locale }) : null;
   if (!view) {
     notFound();

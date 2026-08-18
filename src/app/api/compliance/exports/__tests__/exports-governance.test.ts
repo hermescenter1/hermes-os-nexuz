@@ -265,6 +265,26 @@ describe("token issuance + gating (transactional, completeness-checked)", () => 
   });
   it("token issuance racing revocation never leaves a live post-revocation token (TOKEN_ISSUED_AFTER_REVOCATION=0)", async () => {
     adminA(); jobs = [readyJob()];
+    // Instantiate the two route module graphs SEQUENTIALLY before racing their
+    // handlers.
+    //
+    // `issueToken` and `patchJob` each `await import(...)` internally, so the
+    // Promise.all below would otherwise begin two dynamic imports at the same
+    // moment. Instantiating two graphs concurrently while `vi.doMock` is in
+    // force is not reliable: under worker contention the auth mock can fail to
+    // apply, the REAL verifyAccessToken then rejects the fixture cookie, and
+    // BOTH requests answer 401 — so neither mutation runs and the job is still
+    // READY. That failure says nothing about this invariant (it was observed
+    // with `tokens=[]`, i.e. TOKEN_ISSUED_AFTER_REVOCATION=0 still held), and
+    // it is why the identical suite and commit passed in the `CI` workflow
+    // while failing in the Phase 98 workflow.
+    //
+    // Importing them one at a time removes ONLY that module-loading race. The
+    // race this test exists for is untouched, and is now isolated: both
+    // handlers still execute concurrently below, still hit the mocked row
+    // lock, and still contend through the shared $transaction mutex.
+    await import("../[id]/token/route");
+    await import("../[id]/route");
     const [, ] = await Promise.all([issueToken("e1"), patchJob("e1", { transition: "REVOKED" })]);
     expect(jobs[0].lifecycle).toBe("REVOKED");
     expect(tokens.filter((t) => (t.revokedAt ?? null) === null && (t.usedAt ?? null) === null)).toHaveLength(0);

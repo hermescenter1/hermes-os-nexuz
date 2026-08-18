@@ -29,6 +29,8 @@ interface FormData {
   tags:           string;
   seoTitle:       string;
   seoDesc:        string;
+  /** Cover image URL as returned by /api/articles/cover. "" = no cover. */
+  coverImageUrl:  string;
   domain:         string;
   assetType:      string;
   technology:     string;
@@ -61,9 +63,13 @@ export function ArticleWriterClient() {
     title: "", subtitle: "", excerpt: "", content: "",
     contentType: "TECHNICAL_ARTICLE", language: isFa ? "FA" : "EN",
     category: "", tags: "", seoTitle: "", seoDesc: "",
+    coverImageUrl: "",
     domain: "", assetType: "", technology: "", plcPlatform: "",
     safetyCritical: false,
   });
+  const coverInputRef              = useRef<HTMLInputElement>(null);
+  const [coverBusy, setCoverBusy]  = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
   const [tab, setTab]         = useState<"write" | "seo" | "meta">("write");
   const [saving, setSaving]   = useState(false);
   const [message, setMessage] = useState<{
@@ -77,6 +83,71 @@ export function ArticleWriterClient() {
 
   function update(f: keyof FormData, value: string | boolean) {
     setForm(prev => ({ ...prev, [f]: value }));
+  }
+
+  /* Cover image ------------------------------------------------------------
+     These two client-side checks exist to give instant feedback, NOT to
+     enforce anything: /api/articles/cover re-checks the size and decides the
+     type from the file's magic bytes, so a crafted request that skips this
+     component is rejected there. Keep the ceiling in step with
+     ARTICLE_COVER_MAX_BYTES in lib/articles/media.ts — that module cannot be
+     imported here because it touches the filesystem. */
+  const COVER_MAX_BYTES  = 4 * 1024 * 1024;
+  const COVER_ACCEPT     = ["image/jpeg", "image/png", "image/webp"];
+
+  async function handleCoverSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Let the same file be re-picked after a failure.
+    e.target.value = "";
+    if (!file) return;
+
+    if (!COVER_ACCEPT.includes(file.type)) {
+      setCoverError(t("media.errType"));
+      return;
+    }
+    if (file.size > COVER_MAX_BYTES) {
+      setCoverError(t("media.errTooLarge"));
+      return;
+    }
+
+    setCoverBusy(true);
+    setCoverError(null);
+    try {
+      const fd = new FormData();
+      fd.append("cover", file);
+      const res = await fetch("/api/articles/cover", { method: "POST", body: fd });
+      let data: Record<string, unknown> = {};
+      try {
+        const raw = await res.json();
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+          data = raw as Record<string, unknown>;
+        }
+      } catch { /* empty or non-JSON body — keep data = {} */ }
+
+      if (!res.ok || typeof data.url !== "string") {
+        // Server error codes are stable identifiers, not display text, so they
+        // are mapped to localized copy rather than shown raw.
+        const code = typeof data.error === "string" ? data.error : "";
+        const msg =
+          code === "file_too_large"    ? t("media.errTooLarge")
+          : code === "unsupported_image" ? t("media.errType")
+          : code === "rate_limited"      ? t("media.errRateLimited")
+          : code === "unauthorized"      ? t("media.errUnauthorized")
+          : t("media.errUpload");
+        setCoverError(msg);
+        return;
+      }
+      update("coverImageUrl", data.url);
+    } catch {
+      setCoverError(t("media.errNetwork"));
+    } finally {
+      setCoverBusy(false);
+    }
+  }
+
+  function removeCover() {
+    update("coverImageUrl", "");
+    setCoverError(null);
   }
 
   function field(
@@ -373,6 +444,81 @@ export function ArticleWriterClient() {
 
           {/* Sidebar */}
           <div className="space-y-5">
+            {/* Article media — cover image */}
+            <div className="rounded-xl border border-line/40 overflow-hidden" style={{ background: "var(--surface)" }}>
+              <div className="px-4 py-3 border-b border-line/30"
+                style={{ background: "linear-gradient(90deg, rgba(30,200,164,0.05) 0%, transparent 100%)" }}>
+                <p className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
+                  {t("media.section")}
+                </p>
+              </div>
+              <div className="p-4 space-y-3">
+                <p className="text-[10px] font-bold text-metadata uppercase tracking-widest font-mono">
+                  {t("media.coverLabel")}
+                </p>
+
+                {form.coverImageUrl ? (
+                  <>
+                    {/* 16:9 box with object-cover: the frame is fixed so the
+                        sidebar never reflows between images, and the image is
+                        cropped rather than stretched — no distortion. */}
+                    <div className="relative w-full overflow-hidden rounded-lg border border-line/40 bg-surface2"
+                      style={{ aspectRatio: "16 / 9" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={form.coverImageUrl}
+                        alt={t("media.previewAlt")}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => coverInputRef.current?.click()}
+                        disabled={coverBusy}
+                        className="text-[10px] px-3 py-1.5 rounded-lg border border-line/60 text-muted hover:text-ink hover:border-signal/30 transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal">
+                        {coverBusy ? t("media.uploading") : t("media.replace")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={removeCover}
+                        disabled={coverBusy}
+                        className="text-[10px] px-3 py-1.5 rounded-lg border border-danger/25 text-danger hover:bg-danger/8 transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">
+                        {t("media.remove")}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => coverInputRef.current?.click()}
+                    disabled={coverBusy}
+                    className="w-full flex flex-col items-center justify-center gap-2 py-6 rounded-lg border border-dashed border-line/60 text-muted hover:text-ink hover:border-signal/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal">
+                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="w-5 h-5 text-metadata">
+                      <path fillRule="evenodd" d="M1 5.25A2.25 2.25 0 0 1 3.25 3h13.5A2.25 2.25 0 0 1 19 5.25v9.5A2.25 2.25 0 0 1 16.75 17H3.25A2.25 2.25 0 0 1 1 14.75v-9.5Zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75v-2.69l-2.22-2.219a.75.75 0 0 0-1.06 0l-1.91 1.909.47.47a.75.75 0 1 1-1.06 1.06L6.53 8.091a.75.75 0 0 0-1.06 0l-2.97 2.97ZM12 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="text-xs font-medium">
+                      {coverBusy ? t("media.uploading") : t("media.upload")}
+                    </span>
+                  </button>
+                )}
+
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCoverSelect}
+                  className="hidden"
+                  aria-label={t("media.upload")}
+                />
+
+                {coverError && (
+                  <p role="alert" className="text-[10px] text-danger font-mono">{coverError}</p>
+                )}
+                <p className="text-[9px] text-metadata font-mono">{t("media.hint")}</p>
+              </div>
+            </div>
+
             {/* Article settings */}
             <div className="rounded-xl border border-line/40 overflow-hidden" style={{ background: "var(--surface)" }}>
               <div className="px-4 py-3 border-b border-line/30"
