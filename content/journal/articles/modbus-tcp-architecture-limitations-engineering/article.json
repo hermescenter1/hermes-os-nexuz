@@ -1,0 +1,52 @@
+{
+  "slug": "modbus-tcp-architecture-limitations-engineering",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "industrial-networks",
+  "tags": ["modbus-tcp", "scada", "diagnostics", "commissioning", "network-segmentation"],
+  "publishedAt": "2026-08-16T11:00:00.000Z",
+  "coverImage": {
+    "file": "journal/modbus-tcp-architecture.jpg",
+    "url": null,
+    "concept": "A pump-station control cabinet with a compact protocol gateway among the terminals — the ordinary hardware on which most Modbus integrations actually run.",
+    "prompt": "Photorealistic photograph of a compact industrial protocol gateway on a DIN rail beside terminal blocks in a pump-station cabinet, cool cyan status LEDs, weathered grey enclosure, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Compact DIN-rail protocol gateway beside terminal blocks in a pump-station control cabinet",
+      "fa": "دروازهٔ پروتکل فشرده روی ریل DIN در کنار ترمینال‌ها در تابلوی کنترل ایستگاه پمپاژ",
+      "de": "Kompaktes Protokoll-Gateway auf Hutschiene neben Reihenklemmen im Schaltschrank einer Pumpstation"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "GATEWAY",
+    "linkedTechnology": "Modbus TCP",
+    "linkedStandard": "",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Modbus TCP Architecture, Limitations and Engineering Practices",
+      "subtitle": "Registers without meaning, silence versus refusal, and the register map as the only real interface contract",
+      "excerpt": "Modbus TCP moves numbers reliably and carries no meaning with them. What the protocol actually specifies, what it leaves entirely to the engineer — typing, word order, scaling, discovery, security — and how to design a polling strategy, a gateway and a register map that survive the plant.",
+      "seoTitle": "Modbus TCP Architecture, Limitations and Engineering Practice",
+      "seoDescription": "Engineering Modbus TCP honestly: register modelling, addressing ambiguity, word order, polling and timeout design, gateways, connection scaling and diagnostics."
+    },
+    "fa": {
+      "title": "معماری Modbus TCP، محدودیت‌ها و شیوه‌های مهندسی",
+      "subtitle": "رجیسترهایی بدون معنا، تفاوت سکوت با ردّ درخواست، و نقشهٔ رجیستر به‌عنوان تنها قرارداد واقعی رابط",
+      "excerpt": "Modbus TCP اعداد را قابل اتکا جابه‌جا می‌کند و هیچ معنایی همراه‌شان نمی‌برد. اینکه پروتکل واقعاً چه چیزی را تعریف می‌کند، چه چیزی را کاملاً به مهندس واگذار می‌کند — نوع داده، ترتیب کلمه، مقیاس، کشف، امنیت — و چگونه راهبرد polling، gateway و نقشهٔ رجیستری طراحی کنیم که در کارخانه دوام بیاورد.",
+      "seoTitle": "معماری Modbus TCP، محدودیت‌ها و شیوه‌های مهندسی",
+      "seoDescription": "مهندسی صادقانهٔ Modbus TCP: مدل‌سازی رجیستر، ابهام آدرس‌دهی، ترتیب کلمه، طراحی polling و timeout، gateway، مقیاس اتصال، تشخیص و مرزهای امنیتی."
+    },
+    "de": {
+      "title": "Modbus-TCP-Architektur, Grenzen und Engineering-Praxis",
+      "subtitle": "Register ohne Bedeutung, Schweigen gegenüber Ablehnung — und die Registerkarte als einziger echter Schnittstellenvertrag",
+      "excerpt": "Modbus TCP transportiert Zahlen zuverlässig und trägt keinerlei Bedeutung mit. Was das Protokoll tatsächlich festlegt, was es vollständig dem Engineering überlässt — Typisierung, Wortreihenfolge, Skalierung, Auffindbarkeit, Sicherheit — und wie Abfragestrategie, Gateway und Registerkarte anlagentauglich entworfen werden.",
+      "seoTitle": "Modbus-TCP-Architektur, Grenzen und Engineering-Praxis",
+      "seoDescription": "Modbus TCP sauber auslegen: Registermodellierung, Adressierungsbasis, Wortreihenfolge, Abfrage- und Timeout-Entwurf, Gateways und Verbindungsskalierung."
+    }
+  }
+}

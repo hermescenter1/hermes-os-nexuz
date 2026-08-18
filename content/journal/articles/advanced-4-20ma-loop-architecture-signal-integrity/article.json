@@ -1,0 +1,52 @@
+{
+  "slug": "advanced-4-20ma-loop-architecture-signal-integrity",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "instrumentation",
+  "tags": ["4-20ma", "signal-integrity", "diagnostics", "commissioning", "maintainability"],
+  "publishedAt": "2026-08-17T11:40:00.000Z",
+  "coverImage": {
+    "file": "journal/loop-isolator-rail.jpg",
+    "url": null,
+    "concept": "A DIN rail of loop isolators and repeater power supplies between field terminals and I/O terminals — the boundary at which a loop's reference, its active side and its HART transparency are all decided.",
+    "prompt": "Photorealistic photograph of a DIN rail populated with slim loop isolator modules and repeater power supplies inside a control cabinet, blue instrument wiring on one side and grey system wiring on the other, cool cyan light, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "DIN rail of loop isolators and repeater power supplies between field and system wiring",
+      "fa": "ریل دین با ایزولاتورهای حلقه و منابع تغذیهٔ تکرارکننده میان سیم‌کشی میدانی و سیستمی",
+      "de": "Hutschiene mit Schleifentrennern und Speisetrennern zwischen Feld- und Systemverdrahtung"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "INSTRUMENTATION",
+    "linkedAssetType": "TRANSMITTER",
+    "linkedTechnology": "4-20 mA and HART",
+    "linkedStandard": "NAMUR NE 43",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Advanced 4–20 mA Loop Architecture, Isolation and Signal Integrity",
+      "subtitle": "The standard specifies a current, not a circuit — and every real loop still has to answer who powers it, where its single reference lives and what else shares the wire",
+      "excerpt": "The 4–20 mA loop at engineering depth: the active and passive matrix and the mismatches it explains, multi-device interaction and why splitters beat daisy chains, the single-reference rule and what two references actually do to a reading, barriers versus isolators and how a retrofit changes the active side, HART coexistence constraints, analogue input architecture and shared-return cross-talk, and the current value read as evidence.",
+      "seoTitle": "Advanced 4–20 mA Loop Architecture and Isolation",
+      "seoDescription": "Active and passive 4-20 mA interfaces, single-reference rule, barriers and isolators, HART constraints, analogue input architecture and cross-talk diagnosis."
+    },
+    "fa": {
+      "title": "معماری پیشرفتهٔ حلقهٔ ۴ تا ۲۰ میلی‌آمپر، ایزولاسیون و یکپارچگی سیگنال",
+      "subtitle": "استاندارد یک جریان را تعریف می‌کند نه یک مدار — و هر حلقهٔ واقعی همچنان باید پاسخ دهد چه کسی تغذیه‌اش می‌کند، مرجع یگانه‌اش کجاست و چه چیز دیگری سیم را شریک است",
+      "excerpt": "حلقهٔ ۴ تا ۲۰ میلی‌آمپر در عمق مهندسی: ماتریس اکتیو و پسیو و ناسازگاری‌هایی که توضیح می‌دهد، تعامل چنددستگاهی و چرا اسپلیتر بر زنجیرهٔ سری برتری دارد، قاعدهٔ مرجع یگانه و اینکه دو مرجع واقعاً با قرائت چه می‌کنند، بریر در برابر ایزولاتور و اینکه چگونه یک نصب بعدی سمت اکتیو را عوض می‌کند، محدودیت‌های هم‌زیستی HART، معماری ورودی آنالوگ و تداخل ناشی از بازگشت مشترک، و خواندن مقدار جریان به‌عنوان شاهد.",
+      "seoTitle": "معماری پیشرفتهٔ حلقهٔ ۴ تا ۲۰ میلی‌آمپر و ایزولاسیون",
+      "seoDescription": "رابط‌های اکتیو و پسیو، قاعدهٔ مرجع یگانه، بریر و ایزولاتور، محدودیت‌های HART، معماری ورودی آنالوگ، تداخل کانالی و روش عیب‌یابی خطاهای متناوب."
+    },
+    "de": {
+      "title": "Fortgeschrittene 4–20-mA-Kreise: Architektur, Trennung, Integrität",
+      "subtitle": "Die Norm legt einen Strom fest, keinen Stromkreis — jeder reale Kreis muss dennoch klären, wer ihn speist, wo sein einziger Bezug liegt und wer die Ader mitbenutzt",
+      "excerpt": "Der 4–20-mA-Kreis in ingenieurtechnischer Tiefe: die Aktiv-Passiv-Matrix und die Fehlpaarungen, die sie erklärt, Zusammenspiel mehrerer Geräte, die Ein-Bezugs-Regel und was zwei Bezüge tatsächlich mit einem Messwert machen, Barriere gegenüber Trennverstärker, HART-Randbedingungen, Analogeingangsarchitektur und Übersprechen über gemeinsame Rückleiter.",
+      "seoTitle": "Fortgeschrittene 4–20-mA-Kreise: Architektur und Trennung",
+      "seoDescription": "Aktive und passive 4-20-mA-Schnittstellen, Ein-Bezugs-Regel, Barrieren und Trennverstärker, HART-Grenzen, Analogeingänge, Übersprechen und sporadische Fehler."
+    }
+  }
+}

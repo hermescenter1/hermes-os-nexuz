@@ -1,0 +1,52 @@
+{
+  "slug": "short-circuit-analysis-industrial-electrical-networks",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "electrical-engineering",
+  "tags": ["short-circuit", "protection-coordination", "commissioning", "diagnostics", "mcc"],
+  "publishedAt": "2026-08-17T09:00:00.000Z",
+  "coverImage": {
+    "file": "journal/short-circuit-analysis.jpg",
+    "url": null,
+    "concept": "The arcing chamber and contact assembly of a withdrawn LV air circuit breaker — the component whose ratings the whole fault study exists to justify.",
+    "prompt": "Photorealistic close-up photograph of the arc chute and contact assembly of a withdrawn industrial air circuit breaker on a maintenance trolley, dark carbonised steel plates, cool cyan rim light, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Arc chute and contact assembly of a withdrawn industrial air circuit breaker",
+      "fa": "محفظهٔ قوس و مجموعهٔ کنتاکت یک کلید هوایی صنعتی خارج‌شده از تابلو",
+      "de": "Lichtbogenkammer und Kontaktapparat eines ausgefahrenen industriellen Leistungsschalters"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "PANEL",
+    "linkedTechnology": "Short-Circuit Study",
+    "linkedStandard": "IEC 60909",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Short-Circuit Analysis in Industrial Electrical Networks",
+      "subtitle": "Prospective current, breaking capacity, making capacity and short-time withstand are four different quantities — and the minimum fault case decides whether protection works at all",
+      "excerpt": "What a fault study is actually for: the distinct meanings of prospective, breaking, making and withstand ratings; why maximum and minimum fault conditions serve opposite purposes; motor and generator contributions; earth-fault current as a consequence of the earthing arrangement; and the data quality the whole result rests on.",
+      "seoTitle": "Short-Circuit Analysis in Industrial Electrical Networks",
+      "seoDescription": "Industrial fault studies: prospective short-circuit current, breaking and making capacity, short-time withstand, maximum and minimum fault cases, motor contribution."
+    },
+    "fa": {
+      "title": "تحلیل اتصال کوتاه در شبکه‌های برق صنعتی",
+      "subtitle": "جریان محتمل، قدرت قطع، قدرت وصل و تحمل کوتاه‌مدت چهار کمیت متفاوت‌اند — و حالت خطای کمینه تعیین می‌کند که آیا حفاظت اصلاً کار می‌کند",
+      "excerpt": "مطالعهٔ اتصال کوتاه واقعاً برای چیست: معنای متمایز جریان محتمل، قدرت قطع، قدرت وصل و تحمل؛ چرا حالت‌های خطای بیشینه و کمینه دو هدف متضاد را خدمت می‌کنند؛ سهم موتور و ژنراتور؛ جریان خطای زمین به‌عنوان پیامد آرایش ارت؛ و کیفیت داده‌ای که کل نتیجه بر آن استوار است.",
+      "seoTitle": "تحلیل اتصال کوتاه در شبکه‌های برق صنعتی و مطالعهٔ خطا",
+      "seoDescription": "مطالعهٔ خطای صنعتی: جریان اتصال کوتاه محتمل، قدرت قطع و قدرت وصل، تحمل کوتاه‌مدت، حالت‌های خطای بیشینه و کمینه، سهم موتور و کیفیت داده."
+    },
+    "de": {
+      "title": "Kurzschlussstromberechnung in industriellen Netzen",
+      "subtitle": "Erwarteter Kurzschlussstrom, Ausschaltvermögen, Einschaltvermögen und Kurzzeitstromfestigkeit sind vier verschiedene Größen — und der Mindestkurzschlussfall entscheidet, ob der Schutz überhaupt anspricht",
+      "excerpt": "Wozu eine Kurzschlussstudie tatsächlich dient: die unterschiedlichen Bedeutungen von erwartetem Strom, Ausschalt- und Einschaltvermögen und Kurzzeitstromfestigkeit; warum Maximal- und Minimalfall gegensätzliche Zwecke haben; Motor- und Generatorbeiträge; Erdschlussstrom als Folge der Sternpunktbehandlung.",
+      "seoTitle": "Kurzschlussstromberechnung in industriellen Netzen",
+      "seoDescription": "Industrielle Kurzschlussstudien: erwarteter Kurzschlussstrom, Ausschalt- und Einschaltvermögen, Kurzzeitstromfestigkeit, Maximal- und Minimalfall, Motorbeitrag."
+    }
+  }
+}

@@ -43,18 +43,26 @@ export interface ArticleSitemapItem {
   /** ISO 8601, or null when the row carries no usable timestamp. */
   lastModified: string | null;
   /**
-   * DISCOVERY-2A — the article's OWN language, lower-cased ("fa" | "en").
+   * The languages this topic ACTUALLY exists in, lower-cased, deduplicated.
    *
-   * An article exists in exactly one language: `Article.language` is
-   * `ArtLanguage`, whose members are EN and FA — there is no DE and there cannot
-   * be one. `Article.slug` is globally unique and `getArticleDetailBySlug` has no
-   * language filter, so /fa, /en and /de all render the SAME text under different
-   * chrome. Emitting three URLs with reciprocal `alternates` therefore claimed
-   * two translations that do not exist, tripled the URL count for one document,
-   * and contradicted `@/lib/seo/indexnow-lifecycle`, which has always refused to
-   * fabricate the very same URLs.
+   * DISCOVERY-2A established the rule this field enforces: never advertise a
+   * locale the article was not written in, and never emit reciprocal
+   * `alternates` for translations that do not exist. At that time an article
+   * was necessarily single-language, so the rule was expressed as one scalar
+   * language per row.
+   *
+   * Phase 106 makes the multi-language case real — `ArtLanguage` gains DE and
+   * uniqueness moves to `@@unique([slug, language])`, so one slug is now a
+   * translation GROUP of up to three genuine editions. The rule is unchanged;
+   * only its input is. A legacy single-language topic still yields exactly one
+   * URL with no alternates, and a translated topic yields one URL per edition
+   * with reciprocal alternates that are now true.
+   *
+   * Reading a scalar here would have forced a choice between reintroducing
+   * fabricated alternates for legacy rows and hiding the Phase 106 editions, so
+   * the field carries the set instead of one member of it.
    */
-  language: string;
+  languages: string[];
 }
 
 export interface AuthorSitemapItem {
@@ -98,18 +106,45 @@ export async function listPublicArticleSitemapItems(): Promise<ArticleSitemapIte
       orderBy: { publishedAt: "desc" },
       take: ARTICLE_SITEMAP_MAX,
     });
-    return rows
-      .map((row) => ({
-        slug: typeof row.slug === "string" ? row.slug : "",
-        language: typeof row.language === "string" ? row.language.toLowerCase() : "",
-        // `updatedAt` is the more accurate "last modified" of the two; fall
-        // back to publication time, and omit entirely if neither is usable.
-        lastModified: asIso(row.updatedAt) ?? asIso(row.publishedAt),
-      }))
-      // A row with no usable language cannot be addressed honestly, so it is
-      // dropped rather than defaulted onto a locale it may not be written in.
-      .filter((item) => item.slug.length > 0 && item.language.length > 0);
-  } catch {
+    // ONE ENTRY PER TRANSLATION GROUP, ADDRESSED ONLY IN ITS REAL LANGUAGES.
+    //
+    // Two corrections meet here and both are required.
+    //
+    // DISCOVERY-2A: a row may only be advertised under the locale it is written
+    // in, so a row whose language is unusable is dropped rather than defaulted
+    // onto a locale it may not be written in.
+    //
+    // Phase 106: a topic is now up to three rows (EN/FA/DE) sharing one slug,
+    // and `articleSitemapEntries` expands each item across the locales it is
+    // given. Returning one item per ROW would emit the same slug once per
+    // edition, so the rows are folded into one item per slug carrying the set of
+    // languages that slug genuinely has. Found by the PostgreSQL rehearsal: with
+    // a single-language corpus each slug had exactly one row, so the duplication
+    // was invisible until real multilingual data existed.
+    //
+    // The group's `lastModified` is the NEWEST across its editions: translating
+    // an article genuinely changes what that URL set offers.
+    const byGroup = new Map<string, { lastModified: string | null; languages: string[] }>();
+    for (const row of rows) {
+      const slug = typeof row.slug === "string" ? row.slug : "";
+      const language = typeof row.language === "string" ? row.language.toLowerCase() : "";
+      if (slug.length === 0 || language.length === 0) continue;
+      const modified = asIso(row.updatedAt) ?? asIso(row.publishedAt);
+      const group = byGroup.get(slug);
+      if (!group) {
+        byGroup.set(slug, { lastModified: modified, languages: [language] });
+        continue;
+      }
+      if (!group.languages.includes(language)) group.languages.push(language);
+      if (modified && (!group.lastModified || modified > group.lastModified)) {
+        group.lastModified = modified;
+      }
+    }
+    return [...byGroup].map(([slug, group]) => ({
+      slug,
+      lastModified: group.lastModified,
+      languages: group.languages,
+    }));  } catch {
     return [];
   }
 }
@@ -190,7 +225,7 @@ function localeEntries(
  */
 export function articleSitemapEntries(items: ArticleSitemapItem[]): MetadataRoute.Sitemap {
   return items.flatMap((item) =>
-    localeEntries(`/articles/${item.slug}`, 0.75, "monthly", item.lastModified, [item.language]),
+    localeEntries(`/articles/${item.slug}`, 0.75, "monthly", item.lastModified, item.languages),
   );
 }
 

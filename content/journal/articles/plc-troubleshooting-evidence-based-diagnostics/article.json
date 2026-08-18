@@ -1,0 +1,53 @@
+{
+  "slug": "plc-troubleshooting-evidence-based-diagnostics",
+  "contentType": "TROUBLESHOOTING_REPORT",
+  "category": "troubleshooting",
+  "tags": ["diagnostics", "root-cause-analysis", "commissioning", "profinet", "signal-integrity"],
+  "publishedAt": "2026-08-16T05:00:00.000Z",
+  "coverImage": {
+    "file": "journal/evidence-based-plc-diagnostics.jpg",
+    "url": null,
+    "concept": "A meter probe resting on a terminal inside a live-looking but de-energised control cabinet — measurement as the act that separates evidence from assumption.",
+    "prompt": "Photorealistic close-up photograph of a multimeter probe touching a terminal block inside an industrial control cabinet, neat wiring and grey terminal rails, cool blue-grey technical lighting, shallow depth of field, no people, no readable text or branding, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Meter probe touching a terminal block inside an industrial control cabinet",
+      "fa": "پروب مولتی‌متر روی یک ترمینال در داخل تابلوی کنترل صنعتی",
+      "de": "Messspitze an einer Reihenklemme im Inneren eines industriellen Schaltschranks"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "Evidence-Based Diagnostics",
+    "linkedFailureMode": "INTERMITTENT_FAULT",
+    "linkedPLCPlatform": "Multi-vendor",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "PLC Troubleshooting Through Evidence-Based Diagnostics",
+      "subtitle": "Partition the command path before forming a hypothesis, and never change two things between observations",
+      "excerpt": "Most PLC fault-finding is component substitution dressed as diagnosis. A partitioning method built on the command/feedback boundary, what evidence to capture before touching anything, and why the intermittent fault is a measurement problem rather than a mystery.",
+      "seoTitle": "PLC Troubleshooting Through Evidence-Based Diagnostics",
+      "seoDescription": "A disciplined method for PLC fault-finding: partition at the command/feedback boundary, capture timestamped evidence, and isolate intermittent faults without guessing."
+    },
+    "fa": {
+      "title": "عیب‌یابی PLC بر پایهٔ شواهد",
+      "subtitle": "پیش از ساختن فرضیه، مسیر فرمان را افراز کنید — و هرگز بین دو مشاهده دو چیز را تغییر ندهید",
+      "excerpt": "بیشتر عیب‌یابی PLC در واقع تعویض قطعه است که لباس تشخیص پوشیده. یک روش افراز بر پایهٔ مرز فرمان/فیدبک، اینکه پیش از دست زدن به هر چیزی چه شواهدی باید ثبت شود، و چرا خطای متناوب یک مسئلهٔ اندازه‌گیری است نه یک معما.",
+      "seoTitle": "عیب‌یابی PLC بر پایهٔ شواهد در سیستم‌های صنعتی",
+      "seoDescription": "روشی منضبط برای عیب‌یابی PLC: افراز روی مرز فرمان و فیدبک، ثبت شواهد زمان‌دار پیش از هر تغییر، و جداسازی خطاهای متناوب بدون حدس زدن."
+    },
+    "de": {
+      "title": "SPS-Fehlersuche mit belegbasierter Diagnose",
+      "subtitle": "Den Befehlspfad aufteilen, bevor eine Hypothese entsteht — und zwischen zwei Beobachtungen nie zwei Dinge ändern",
+      "excerpt": "Die meiste SPS-Fehlersuche ist Bauteiltausch im Gewand einer Diagnose. Eine Aufteilungsmethode entlang der Befehl-Rückmeldung-Grenze, welche Belege vor jedem Eingriff zu sichern sind und warum der sporadische Fehler ein Messproblem und kein Rätsel ist.",
+      "seoTitle": "SPS-Fehlersuche mit belegbasierter Diagnose",
+      "seoDescription": "Eine disziplinierte Methode zur SPS-Fehlersuche: an der Befehl-Rückmeldung-Grenze aufteilen, zeitgestempelte Belege sichern, sporadische Fehler ohne Raten eingrenzen."
+    }
+  }
+}

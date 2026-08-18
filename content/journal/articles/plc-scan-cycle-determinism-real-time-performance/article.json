@@ -1,0 +1,53 @@
+{
+  "slug": "plc-scan-cycle-determinism-real-time-performance",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "plc-programming",
+  "tags": ["determinism", "profinet", "diagnostics", "commissioning", "signal-integrity"],
+  "publishedAt": "2026-08-16T03:20:00.000Z",
+  "coverImage": {
+    "file": "journal/scan-cycle-determinism.jpg",
+    "url": null,
+    "concept": "High-speed industrial machinery mid-motion with visible motion blur against a static machine frame — the contrast between fast physical events and the fixed timing that must capture them.",
+    "prompt": "Photorealistic photograph of high-speed industrial machinery in motion, sharp static machine frame with a fast-moving element rendered as motion blur, cool cyan and steel-grey tones, dramatic technical lighting, no readable text or branding, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "High-speed industrial machinery in motion against a static machine frame",
+      "fa": "ماشین‌آلات صنعتی پرسرعت در حال حرکت در برابر بدنهٔ ثابت دستگاه",
+      "de": "Schnell laufende Industriemaschine in Bewegung vor einem statischen Maschinenrahmen"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "Real-Time Control",
+    "linkedStandard": "IEC 61131-3",
+    "linkedPLCPlatform": "Multi-vendor",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "PLC Scan Cycle, Determinism and Response Time",
+      "subtitle": "Why the number in the programming tool is the smallest term in your latency budget, and what jitter breaks before mean scan time does",
+      "excerpt": "Response time is a chain: I/O update, network transport and jitter, controller scan, and final-element response. Engineers optimise the one term they can see. A budget-based treatment of determinism, the process image, task priority and worst-case response.",
+      "seoTitle": "PLC Scan Cycle, Determinism and Response Time",
+      "seoDescription": "Budget PLC response time properly: process image semantics, I/O update rate, network jitter, task priority, worst-case latency and why jitter breaks sequencing first."
+    },
+    "fa": {
+      "title": "سیکل اسکن PLC، قطعیت زمانی و زمان پاسخ",
+      "subtitle": "چرا عددی که در نرم‌افزار برنامه‌نویسی می‌بینید کوچک‌ترین جملهٔ بودجهٔ تأخیر شماست، و جیتر پیش از میانگین اسکن چه چیزی را می‌شکند",
+      "excerpt": "زمان پاسخ یک زنجیره است: به‌روزرسانی I/O، انتقال و جیتر شبکه، اسکن کنترلر، و پاسخ المان نهایی. مهندسان همان یک جمله‌ای را بهینه می‌کنند که می‌بینند. بررسی قطعیت زمانی، ایمیج فرایند، اولویت تسک و بدترین حالت پاسخ بر پایهٔ بودجه.",
+      "seoTitle": "سیکل اسکن PLC، قطعیت زمانی و زمان پاسخ در کنترل صنعتی",
+      "seoDescription": "بودجه‌بندی درست زمان پاسخ PLC: معنای ایمیج فرایند، نرخ به‌روزرسانی I/O، جیتر شبکه، اولویت تسک، بدترین تأخیر و اینکه چرا جیتر اول توالی را می‌شکند."
+    },
+    "de": {
+      "title": "SPS-Zykluszeit, Determinismus und Reaktionszeit",
+      "subtitle": "Warum der Wert im Engineering-Werkzeug der kleinste Term im Latenzbudget ist und was Jitter eher bricht als die mittlere Zykluszeit",
+      "excerpt": "Reaktionszeit ist eine Kette: E/A-Aktualisierung, Netzübertragung samt Jitter, Steuerungszyklus und Ansprechzeit des Endglieds. Optimiert wird meist der einzige sichtbare Term. Eine budgetbasierte Betrachtung von Determinismus, Prozessabbild, Taskpriorität und Worst-Case-Reaktion.",
+      "seoTitle": "SPS-Zykluszeit, Determinismus und Reaktionszeit",
+      "seoDescription": "SPS-Reaktionszeit korrekt budgetieren: Prozessabbild, E/A-Aktualisierungsrate, Netz-Jitter, Taskprioritäten, Worst-Case-Latenz und warum Jitter zuerst Abläufe bricht."
+    }
+  }
+}

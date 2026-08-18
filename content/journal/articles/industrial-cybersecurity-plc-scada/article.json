@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-cybersecurity-plc-scada",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "cybersecurity-ot",
+  "tags": ["iec-62443", "network-segmentation", "commissioning", "maintainability", "diagnostics"],
+  "publishedAt": "2026-08-16T11:50:00.000Z",
+  "coverImage": {
+    "file": "journal/industrial-cybersecurity-programme.jpg",
+    "url": null,
+    "concept": "A locked cabinet key cylinder against dark steel — the least technical control in the programme and often the most effective.",
+    "prompt": "Photorealistic macro photograph of a heavy industrial enclosure lock cylinder and hinge on a dark grey control cabinet, cool cyan rim light, weathered metal texture, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Lock cylinder and hinge on a heavy industrial control cabinet door",
+      "fa": "سیلندر قفل و لولا روی درِ تابلوی کنترل صنعتی سنگین",
+      "de": "Schließzylinder und Scharnier an der Tür eines schweren Industrieschaltschranks"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "OPERATIONS",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "OT Security Programme",
+    "linkedStandard": "IEC 62443",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial Cybersecurity for PLC and SCADA Environments",
+      "subtitle": "You cannot protect what you cannot list, and you cannot claim resilience you have never rehearsed",
+      "excerpt": "A defensive programme for plant control systems: building an asset inventory that is actually true, least privilege that operations will accept, firmware and end-of-support as planning inputs, removable media, change control as a security control, and recovery capability measured in hours the plant can afford.",
+      "seoTitle": "Industrial Cybersecurity for PLC and SCADA Plant Environments",
+      "seoDescription": "Defensive OT security programme: asset inventory, zones and least privilege, backups and recovery, change control, firmware lifecycle, removable media and containment."
+    },
+    "fa": {
+      "title": "امنیت سایبری صنعتی برای محیط‌های PLC و SCADA",
+      "subtitle": "نمی‌توانید از چیزی که نمی‌توانید فهرست کنید محافظت کنید، و نمی‌توانید تاب‌آوری‌ای را ادعا کنید که هرگز تمرینش نکرده‌اید",
+      "excerpt": "یک برنامهٔ دفاعی برای سامانه‌های کنترل کارخانه: ساختن فهرست دارایی که واقعاً درست باشد، کمینه‌سازی دسترسی که بهره‌برداری بپذیرد، firmware و پایان پشتیبانی به‌عنوان ورودی برنامه‌ریزی، رسانهٔ جداشدنی، کنترل تغییر به‌عنوان کنترل امنیتی، و توان بازیابی سنجیده‌شده با ساعت‌هایی که کارخانه از عهده‌شان برمی‌آید.",
+      "seoTitle": "امنیت سایبری صنعتی برای محیط‌های PLC و SCADA",
+      "seoDescription": "برنامهٔ دفاعی امنیت OT: فهرست دارایی، zone و کمینه‌سازی دسترسی، پشتیبان‌گیری و بازیابی، کنترل تغییر، چرخهٔ عمر firmware، رسانهٔ جداشدنی و مهار حادثه."
+    },
+    "de": {
+      "title": "Industrielle Cybersicherheit für PLC- und SCADA-Umgebungen",
+      "subtitle": "Man kann nicht schützen, was man nicht auflisten kann — und keine Widerstandsfähigkeit behaupten, die nie geübt wurde",
+      "excerpt": "Ein defensives Programm für Anlagenleittechnik: ein Asset-Inventar, das wirklich stimmt, ein Least-Privilege-Modell, das der Betrieb akzeptiert, Firmware und Supportende als Planungsgrößen, Wechselmedien, Änderungskontrolle als Sicherheitsmaßnahme und eine Wiederherstellfähigkeit, gemessen in Stunden, die die Anlage verkraftet.",
+      "seoTitle": "Industrielle Cybersicherheit für PLC- und SCADA-Umgebungen",
+      "seoDescription": "Defensives OT-Sicherheitsprogramm: Asset-Inventar, Zonen und Least Privilege, Sicherung und Wiederherstellung, Änderungskontrolle, Firmware-Lebenszyklus, Wechselmedien."
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-network-troubleshooting-methodology",
+  "contentType": "TROUBLESHOOTING_REPORT",
+  "category": "troubleshooting",
+  "tags": ["diagnostics", "root-cause-analysis", "signal-integrity", "network-segmentation", "maintainability"],
+  "publishedAt": "2026-08-16T11:30:00.000Z",
+  "coverImage": {
+    "file": "journal/network-troubleshooting-methodology.jpg",
+    "url": null,
+    "concept": "A laptop open on a cabinet ledge in front of a live switch stack — the moment before the first measurement, when the method matters more than the tool.",
+    "prompt": "Photorealistic photograph of an engineering laptop open on a narrow ledge in front of a live industrial switch stack, cool cyan port lights reflecting on the screen bezel, dark cabinet interior, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Engineering laptop open in front of a live industrial switch stack inside a control cabinet",
+      "fa": "لپ‌تاپ مهندسی باز در برابر مجموعهٔ سوئیچ صنعتی فعال درون تابلوی کنترل",
+      "de": "Engineering-Notebook vor einem laufenden industriellen Switch-Stack im Schaltschrank"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "OPERATIONS",
+    "linkedAssetType": "NETWORK",
+    "linkedTechnology": "Evidence-Based Network Diagnostics",
+    "linkedStandard": "",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial Network Troubleshooting Methodology",
+      "subtitle": "What failed together is the most informative measurement you will take — and it costs nothing",
+      "excerpt": "A protocol-independent method for locating industrial network faults: defining a falsifiable symptom, partitioning the fault domain by what failed together, choosing evidence that discriminates, handling intermittents by correlation, and escalating with something the next engineer can use.",
+      "seoTitle": "Industrial Network Troubleshooting Methodology for OT Engineers",
+      "seoDescription": "Evidence-based method for industrial network faults: symptom definition, fault-domain partitioning, layer selection, port counters, intermittents, jitter and escalation."
+    },
+    "fa": {
+      "title": "روش‌شناسی عیب‌یابی شبکهٔ صنعتی",
+      "subtitle": "اینکه چه چیزهایی با هم خراب شدند آگاهی‌بخش‌ترین اندازه‌گیری شماست — و هیچ هزینه‌ای ندارد",
+      "excerpt": "روشی مستقل از پروتکل برای محل‌یابی خطای شبکهٔ صنعتی: تعریف نشانه‌ای ابطال‌پذیر، تقسیم دامنهٔ خطا بر پایهٔ آنچه با هم شکست خورد، انتخاب شواهدی که تفکیک می‌کنند، برخورد با خطاهای متناوب از راه همبستگی، و ارجاعی که مهندس بعدی بتواند از آن استفاده کند.",
+      "seoTitle": "روش‌شناسی عیب‌یابی شبکهٔ صنعتی برای مهندسان OT",
+      "seoDescription": "روش شواهدمحور برای خطاهای شبکهٔ صنعتی: تعریف نشانه، تقسیم دامنهٔ خطا، انتخاب لایه، شمارنده‌های پورت، خطای متناوب، jitter و ارجاع ساختاریافته."
+    },
+    "de": {
+      "title": "Methodik der Fehlersuche in Industrienetzen",
+      "subtitle": "Was gemeinsam ausfiel, ist die aussagekräftigste Messung, die Sie vornehmen werden — und sie kostet nichts",
+      "excerpt": "Eine protokollunabhängige Methode zur Eingrenzung von Netzfehlern in der Industrie: ein widerlegbares Symptom formulieren, die Fehlerdomäne nach gemeinsamem Ausfall aufteilen, unterscheidungsstarke Belege wählen, Sporadisches über Korrelation angehen und so eskalieren, dass es weiterhilft.",
+      "seoTitle": "Methodik der Fehlersuche in industriellen Netzwerken",
+      "seoDescription": "Belegbasierte Methode für Industrienetz-Fehler: Symptomdefinition, Fehlerdomänen-Aufteilung, Ebenenwahl, Portzähler, sporadische Fehler, Jitter und Eskalation."
+    }
+  }
+}

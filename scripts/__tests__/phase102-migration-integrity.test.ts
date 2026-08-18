@@ -66,6 +66,24 @@ for (const name of migrationNames) {
   diskChecksums[name] = migrationIdentity(readFileSync(join(MIGRATIONS_DIR, name, "migration.sql"), "utf8"));
 }
 
+/**
+ * PHASE 106 — the PINNED Phase 102 set, as it exists on disk today.
+ *
+ * The ledger describes the 71 migrations Phase 102 shipped; the working tree
+ * legitimately grows past that as later phases append. So the ledger assertions
+ * below re-derive from disk RESTRICTED TO THE PINNED NAMES rather than from
+ * everything present — otherwise a later phase's migration would be read as
+ * checksum drift in a release record it has nothing to do with.
+ *
+ * This narrows nothing: the pinned set must still be fully present, unmutated
+ * and correctly ordered, and `FUTURE_MIGRATIONS_APPEND_ONLY` below proves the
+ * excluded remainder is a strict suffix rather than something hiding inside it.
+ */
+const pinnedNames: string[] = Object.keys(ledger.migrationChecksums).sort();
+const pinnedChecksums: Record<string, string> = Object.fromEntries(
+  pinnedNames.filter((n) => n in diskChecksums).map((n) => [n, diskChecksums[n]]),
+);
+
 describe("PHASE102_MIGRATION_CONTRACT", () => {
   it("chains off the Phase 99.7 target: same commit, same 69-count", () => {
     expect(BASELINE_SHA).toBe("cbfa2923318827ee42614c07f2e3861a3db8ed99");
@@ -90,10 +108,23 @@ describe("PHASE102_MIGRATION_CONTRACT", () => {
     expect(EXPECTED_CLASSIFICATION).toBe("FORWARD_ONLY_REQUIRES_BACKUP");
   });
 
-  it("the working tree holds exactly the 70-migration target set", () => {
-    expect(migrationNames.length).toBe(EXPECTED_TARGET_COUNT);
+  it("the working tree still carries the whole 71-migration target set, in deterministic order", () => {
+    // PHASE 106: presence, not equality. Later phases append migration #72+ and
+    // that is legitimate; what must never happen is one of the 71 going missing.
+    expect(migrationNames.length).toBeGreaterThanOrEqual(EXPECTED_TARGET_COUNT);
+    for (const name of pinnedNames) expect(migrationNames).toContain(name);
     for (const name of EXPECTED_NEW_MIGRATIONS) expect(migrationNames).toContain(name);
     expect(verifyDeterministicOrdering(migrationNames).ok).toBe(true);
+  });
+
+  it("anything the tree holds beyond the pinned set is a strict append-only suffix", () => {
+    // A migration that sorted BEFORE or AMONG the pinned set would make
+    // `prisma migrate deploy` try to insert ahead of an already-applied
+    // migration on the deployed database.
+    const preservation = verifyHistoricalPreservation(pinnedChecksums, diskChecksums);
+    expect(preservation.missing).toEqual([]);
+    expect(preservation.mutated).toEqual([]);
+    expect(preservation.interleaved).toEqual([]);
   });
 
   it("the Phase 102 migration appends strictly after all 69 historical migrations", () => {
@@ -140,27 +171,42 @@ describe("PHASE102_MIGRATION_LEDGER", () => {
     expect(source).not.toBe("9d4487f3a044942b01f29962794131935b6dee9c");
   });
 
-  it("covers exactly the migration set present in the repository", () => {
-    expect(Object.keys(ledger.migrationChecksums).sort()).toEqual(migrationNames);
+  it("covers exactly the 71 migrations Phase 102 shipped, and every one is still on disk", () => {
+    expect(pinnedNames).toHaveLength(EXPECTED_TARGET_COUNT);
+    // Every pinned name resolved to a real file (pinnedChecksums drops any that
+    // did not), so an equal length proves none of the 71 has been deleted.
+    expect(Object.keys(pinnedChecksums).sort()).toEqual(pinnedNames);
   });
 
   it("every recorded checksum still matches the migration on disk", () => {
-    for (const name of migrationNames) {
-      expect(ledger.migrationChecksums[name], `checksum drift in ${name}`).toBe(diskChecksums[name]);
+    for (const name of pinnedNames) {
+      expect(ledger.migrationChecksums[name], `checksum drift in ${name}`).toBe(pinnedChecksums[name]);
     }
   });
 
   it("the deterministic migration-set digest recomputes from disk", () => {
     expect(ledger.migrationSetSha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(migrationSetDigest(diskChecksums)).toBe(ledger.migrationSetSha256);
+    expect(migrationSetDigest(pinnedChecksums)).toBe(ledger.migrationSetSha256);
     // Any mutation of any migration changes the digest.
-    expect(migrationSetDigest({ ...diskChecksums, [migrationNames[0]]: "0".repeat(64) })).not.toBe(ledger.migrationSetSha256);
+    expect(migrationSetDigest({ ...pinnedChecksums, [pinnedNames[0]]: "0".repeat(64) })).not.toBe(ledger.migrationSetSha256);
+  });
+
+  it("the digest is a property of the pinned set alone — a later phase's append cannot move it", () => {
+    // This is the invariant that lets the contract stay frozen while the repo
+    // keeps evolving: adding migration #72 must not change Phase 102's identity.
+    const withAppend = { ...pinnedChecksums, "29991231000000_some_future_phase": "f".repeat(64) };
+    expect(migrationSetDigest(pinnedChecksums)).toBe(ledger.migrationSetSha256);
+    expect(migrationSetDigest(withAppend)).not.toBe(ledger.migrationSetSha256);
   });
 });
 
 describe("PHASE102_MUTATION_REGRESSION", () => {
   // The historical 69-set exactly as the immutable Phase 99.7 ledger records it.
   const historical: Record<string, string> = phase997Ledger.migrationChecksums;
+  // The "current" side is the PINNED 71-set read from disk (Phase 106), not
+  // everything present: this block asserts the 69 -> 71 transition, and a later
+  // phase's appended migration is not part of it. Those appends are proven
+  // append-only by PHASE102_MIGRATION_CONTRACT above.
   const phase102Name = EXPECTED_NEW_MIGRATIONS[0];
 
   const gateOver = (current: Record<string, string>) =>
@@ -171,19 +217,19 @@ describe("PHASE102_MUTATION_REGRESSION", () => {
     });
 
   it("the legitimate Phase 102 append passes both contracts", () => {
-    const gate = gateOver(diskChecksums);
+    const gate = gateOver(pinnedChecksums);
     expect(gate.newMigrations).toEqual(EXPECTED_NEW_MIGRATIONS);
     expect(gate.historicalMutation).toBe(false);
     expect(gate.deployBlocked).toBe(false);
     expect(gate.migrationClassification).toBe(EXPECTED_CLASSIFICATION);
-    const preservation = verifyHistoricalPreservation(historical, diskChecksums);
+    const preservation = verifyHistoricalPreservation(historical, pinnedChecksums);
     expect(preservation.ok).toBe(true);
     expect(preservation.futureMigrations).toEqual(EXPECTED_NEW_MIGRATIONS);
   });
 
   it("fails closed when a historical migration is mutated", () => {
     const first = Object.keys(historical).sort()[0];
-    const tampered = { ...diskChecksums, [first]: "f".repeat(64) };
+    const tampered = { ...pinnedChecksums, [first]: "f".repeat(64) };
     const gate = gateOver(tampered);
     expect(gate.historicalMutation).toBe(true);
     expect(gate.deployBlocked).toBe(true);
@@ -192,7 +238,7 @@ describe("PHASE102_MUTATION_REGRESSION", () => {
 
   it("fails closed when a historical migration is deleted or renamed", () => {
     const victim = Object.keys(historical).sort()[10];
-    const tampered: Record<string, string> = { ...diskChecksums };
+    const tampered: Record<string, string> = { ...pinnedChecksums };
     delete tampered[victim];
     const deleted = gateOver(tampered);
     expect(deleted.missingMigrations).toEqual([victim]);
@@ -206,7 +252,7 @@ describe("PHASE102_MUTATION_REGRESSION", () => {
   });
 
   it("fails closed when the Phase 102 migration itself is mutated or removed", () => {
-    const mutated = { ...diskChecksums, [phase102Name]: "0".repeat(64) };
+    const mutated = { ...pinnedChecksums, [phase102Name]: "0".repeat(64) };
     expect(migrationSetDigest(mutated)).not.toBe(ledger.migrationSetSha256);
     expect(ledger.migrationChecksums[phase102Name]).not.toBe(mutated[phase102Name]);
 
@@ -214,7 +260,7 @@ describe("PHASE102_MUTATION_REGRESSION", () => {
     // only the first would let a later one be deleted unnoticed, which is
     // exactly the hole the contract grew when it went from one to two.
     for (const victimName of EXPECTED_NEW_MIGRATIONS) {
-      const removed: Record<string, string> = { ...diskChecksums };
+      const removed: Record<string, string> = { ...pinnedChecksums };
       delete removed[victimName];
       const gate = gateOver(removed);
 
@@ -231,14 +277,14 @@ describe("PHASE102_MUTATION_REGRESSION", () => {
     const tenantMigration = "20260822000000_phase102_tenant_composite_foreign_keys";
     expect(EXPECTED_NEW_MIGRATIONS).toContain(tenantMigration);
 
-    const mutated = { ...diskChecksums, [tenantMigration]: "f".repeat(64) };
+    const mutated = { ...pinnedChecksums, [tenantMigration]: "f".repeat(64) };
     expect(migrationSetDigest(mutated)).not.toBe(ledger.migrationSetSha256);
     expect(ledger.migrationChecksums[tenantMigration]).not.toBe(mutated[tenantMigration]);
     expect(ledger.migrationChecksums[tenantMigration]).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("fails closed on an interleaved or backdated migration", () => {
-    const interleaved = { ...diskChecksums, "20260820000009_backdated_intruder": "ab".repeat(32) };
+    const interleaved = { ...pinnedChecksums, "20260820000009_backdated_intruder": "ab".repeat(32) };
     const preservation = verifyHistoricalPreservation(historical, interleaved);
     expect(preservation.ok).toBe(false);
     expect(preservation.interleaved).toEqual(["20260820000009_backdated_intruder"]);

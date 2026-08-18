@@ -162,7 +162,7 @@ describe("D4 — defensive behaviour", () => {
 describe("D5 — the sitemap tells the same story as the page", () => {
   it("one article produces exactly one sitemap URL, under its own language", () => {
     const entries = articleSitemapEntries([
-      { slug: "plc-alarm-flood", language: "fa", lastModified: "2026-01-02T00:00:00.000Z" },
+      { slug: "plc-alarm-flood", languages: ["fa"], lastModified: "2026-01-02T00:00:00.000Z" },
     ]);
     expect(entries).toHaveLength(1);
     expect(entries[0].url).toBe(`${BASE_URL}/fa/articles/plc-alarm-flood`);
@@ -171,8 +171,8 @@ describe("D5 — the sitemap tells the same story as the page", () => {
 
   it("two articles in different languages produce one URL each, never cross-linked", () => {
     const entries = articleSitemapEntries([
-      { slug: "a", language: "fa", lastModified: null },
-      { slug: "b", language: "en", lastModified: null },
+      { slug: "a", languages: ["fa"], lastModified: null },
+      { slug: "b", languages: ["en"], lastModified: null },
     ]);
     expect(entries.map((e) => e.url)).toEqual([
       `${BASE_URL}/fa/articles/a`,

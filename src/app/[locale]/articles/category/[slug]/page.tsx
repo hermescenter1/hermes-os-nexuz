@@ -3,6 +3,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getArticlesByCategory_, getCategoryBySlug, getAllCategories, getArticleFeed } from "@/lib/articles/db";
 import { ArticlesFeedClient }     from "@/components/articles/ArticlesFeedClient";
 import { buildMetadata }          from "@/lib/seo/metadata";
+import { categoryNameForLocale }  from "@/lib/articles/locale";
 
 export async function generateMetadata({
   params,
@@ -13,7 +14,9 @@ export async function generateMetadata({
   const cat = await getCategoryBySlug(slug);
   if (!cat) return { title: "Category Not Found", robots: { index: false, follow: false } };
   const t = await getTranslations({ locale, namespace: "journal" });
-  const name = locale === "fa" ? cat.nameFa : cat.name;
+  // Phase 106: German is an active locale, so a /de category title used to fall
+  // through to the English name. `categoryNameForLocale` owns the fallback.
+  const name = categoryNameForLocale(cat, locale);
   return buildMetadata({
     locale,
     path:        `/articles/category/${slug}`,
@@ -34,14 +37,13 @@ export default async function CategoryPage({
 
   const [cat, articles, categories, feed] = await Promise.all([
     getCategoryBySlug(slug),
-    getArticlesByCategory_(slug),
+    getArticlesByCategory_(slug, locale),
     getAllCategories(),
-    getArticleFeed(),
+    getArticleFeed(locale),
   ]);
 
   if (!cat) notFound();
 
-  const isFa = locale === "fa";
   const t    = await getTranslations({ locale, namespace: "journal" });
 
   // Build a feed object that filters to this category
@@ -64,7 +66,7 @@ export default async function CategoryPage({
             {t("brandUpper")}
           </p>
           <h1 className="text-2xl font-bold text-ink">
-            {isFa ? cat.nameFa : cat.name}
+            {categoryNameForLocale(cat, locale)}
           </h1>
           {cat.description && (
             <p className="text-muted text-sm mt-1">{cat.description}</p>

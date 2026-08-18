@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-instrumentation-signal-integrity",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "instrumentation",
+  "tags": ["signal-integrity", "earthing", "commissioning", "diagnostics", "maintainability"],
+  "publishedAt": "2026-08-17T11:20:00.000Z",
+  "coverImage": {
+    "file": "journal/instrumentation-marshalling.jpg",
+    "url": null,
+    "concept": "A marshalling cabinet with disciplined segregation between signal categories and shield bars terminating drain wires — the physical expression of an instrumentation architecture decision.",
+    "prompt": "Photorealistic photograph inside an industrial marshalling cabinet showing neatly segregated terminal rails, blue and grey instrument cables, shield bonding bars with drain wires, cool cyan light on grey steel, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Industrial marshalling cabinet with segregated terminal rails and shield bonding bars",
+      "fa": "کابینت مارشالینگ صنعتی با ریل‌های ترمینال تفکیک‌شده و شینهٔ اتصال شیلد",
+      "de": "Industrieller Rangierschrank mit getrennten Klemmenreihen und Schirmanbindungsschienen"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "INSTRUMENTATION",
+    "linkedAssetType": "PANEL",
+    "linkedTechnology": "Field Instrumentation Architecture",
+    "linkedStandard": "IEC 61000-5-2",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial Instrumentation Architecture and Signal Integrity",
+      "subtitle": "Protective earth, shield bond, functional reference, signal return and common-mode rejection are five different things — collapsing them is how measurement systems become unfixable",
+      "excerpt": "Instrumentation signal integrity treated as an architecture problem: five concepts that must stay separate, signal categories and why they segregate, central marshalling versus remote I/O, junction boxes as the real reliability determinant, shield policy, isolation as a design choice, common-mode as a distinct failure, and the documentation that decides whether a plant is diagnosable at all.",
+      "seoTitle": "Industrial Instrumentation Architecture and Signal Integrity",
+      "seoDescription": "Instrumentation architecture: signal categories, segregation, marshalling versus remote I/O, shield policy, isolation, common-mode failures and commissioning."
+    },
+    "fa": {
+      "title": "معماری ابزار دقیق صنعتی و یکپارچگی سیگنال",
+      "subtitle": "ارت حفاظتی، اتصال شیلد، مرجع عملکردی، بازگشت سیگنال و حذف مؤلفهٔ هم‌مد پنج چیز متفاوت‌اند — یکی کردنشان همان راهی است که سیستم اندازه‌گیری را غیرقابل‌تعمیر می‌کند",
+      "excerpt": "یکپارچگی سیگنال ابزار دقیق به‌عنوان یک مسئلهٔ معماری: پنج مفهومی که باید جدا بمانند، دسته‌های سیگنال و دلیل تفکیکشان، مارشالینگ متمرکز در برابر I/O از راه دور، جعبه‌های اتصال به‌عنوان تعیین‌کنندهٔ واقعی قابلیت اطمینان، سیاست شیلد، ایزولاسیون به‌عنوان انتخاب طراحی، هم‌مد به‌عنوان خرابی متمایز، و مستنداتی که تعیین می‌کند کارخانه اصلاً قابل عیب‌یابی هست یا نه.",
+      "seoTitle": "معماری ابزار دقیق صنعتی و یکپارچگی سیگنال",
+      "seoDescription": "معماری ابزار دقیق: دسته‌های سیگنال، تفکیک، مارشالینگ در برابر I/O از راه دور، سیاست شیلد، ایزولاسیون، خرابی هم‌مد، راه‌اندازی و مستندسازی."
+    },
+    "de": {
+      "title": "Architektur industrieller Messtechnik und Signalintegrität",
+      "subtitle": "Schutzerde, Schirmanbindung, Funktionsbezug, Signalrückleitung und Gleichtaktunterdrückung sind fünf verschiedene Dinge — sie zu vermischen macht Messsysteme unreparierbar",
+      "excerpt": "Signalintegrität in der Messtechnik als Architekturproblem: fünf Begriffe, die getrennt bleiben müssen, Signalkategorien und warum sie getrennt verlegt werden, zentrale Rangierung gegenüber dezentraler E/A, Feldverteiler als eigentlicher Zuverlässigkeitsfaktor, Schirmkonzept, Trennung als Auslegungsentscheidung und Gleichtakt als eigenständiger Fehler.",
+      "seoTitle": "Architektur industrieller Messtechnik und Signalintegrität",
+      "seoDescription": "Messtechnikarchitektur: Signalkategorien, Trennung, Rangierung gegenüber dezentraler E/A, Schirmkonzept, Trennverstärker, Gleichtaktfehler, Inbetriebnahme, Dokumentation."
+    }
+  }
+}

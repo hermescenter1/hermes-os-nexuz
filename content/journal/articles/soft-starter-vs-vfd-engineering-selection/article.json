@@ -1,0 +1,52 @@
+{
+  "slug": "soft-starter-vs-vfd-engineering-selection",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "drives-motors",
+  "tags": ["vfd", "motor-protection", "commissioning", "power-quality", "maintainability"],
+  "publishedAt": "2026-08-16T13:00:00.000Z",
+  "coverImage": {
+    "file": "journal/soft-starter-vs-vfd.jpg",
+    "url": null,
+    "concept": "Two starter cubicles side by side in one line-up — the same motor, two different answers to what starting actually costs.",
+    "prompt": "Photorealistic photograph of two adjacent industrial starter cubicles in a switchgear line-up, one compact and one deeper with heat sink venting, cool cyan indicators on dark grey steel, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Two adjacent industrial motor starter cubicles of different depth in one switchgear line-up",
+      "fa": "دو کیوبیکل استارتر موتور صنعتی مجاور با عمق متفاوت در یک ردیف تابلو",
+      "de": "Zwei benachbarte Motorabzweigfelder unterschiedlicher Tiefe in einer Schaltanlagenreihe"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "MOTOR",
+    "linkedTechnology": "Soft Starter and VFD",
+    "linkedStandard": "IEC 60947",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Soft Starter vs VFD: Engineering Selection Criteria",
+      "subtitle": "A soft starter buys reduced current by giving up torque; a drive does not — and that single asymmetry decides most of these cases",
+      "excerpt": "Reduced voltage costs torque as the square, which is why a soft starter cannot start every load a drive can. When the simpler machine is the better engineering answer, when speed control genuinely justifies a drive, and what bypass, losses, harmonics and start frequency really cost.",
+      "seoTitle": "Soft Starter vs VFD: Engineering Selection Criteria",
+      "seoDescription": "Choosing between soft starter and VFD: torque versus current at reduced voltage, acceleration and rotor heating, bypass operation, losses, harmonics and start frequency."
+    },
+    "fa": {
+      "title": "سافت‌استارتر در برابر VFD: معیارهای انتخاب مهندسی",
+      "subtitle": "سافت‌استارتر کاهش جریان را با از دست دادن گشتاور می‌خرد؛ درایو نه — و همین یک عدم‌تقارن بیشتر این پرونده‌ها را تعیین می‌کند",
+      "excerpt": "کاهش ولتاژ، گشتاور را با توان دو کم می‌کند، و به همین دلیل سافت‌استارتر نمی‌تواند هر باری را که درایو راه می‌اندازد راه بیندازد. کجا ماشین ساده‌تر پاسخ مهندسی بهتری است، کجا کنترل دور واقعاً درایو را توجیه می‌کند، و bypass، تلفات، هارمونیک و فراوانی راه‌اندازی واقعاً چه هزینه‌ای دارند.",
+      "seoTitle": "سافت‌استارتر در برابر VFD: معیارهای انتخاب مهندسی",
+      "seoDescription": "انتخاب میان سافت‌استارتر و VFD: گشتاور در برابر جریان در ولتاژ کاهش‌یافته، شتاب‌گیری و گرمایش روتور، bypass، تلفات، هارمونیک و فراوانی راه‌اندازی."
+    },
+    "de": {
+      "title": "Sanftanlasser oder Frequenzumrichter: Auswahlkriterien",
+      "subtitle": "Ein Sanftanlasser erkauft geringeren Strom mit Moment; ein Umrichter nicht — und diese eine Asymmetrie entscheidet die meisten Fälle",
+      "excerpt": "Reduzierte Spannung kostet Moment im Quadrat — deshalb kann ein Sanftanlasser nicht jede Last anfahren, die ein Umrichter schafft. Wann die einfachere Maschine die bessere Antwort ist, wann Drehzahlregelung den Umrichter rechtfertigt und was Bypass, Verluste, Oberschwingungen und Schalthäufigkeit wirklich kosten.",
+      "seoTitle": "Sanftanlasser oder Frequenzumrichter: Auswahlkriterien",
+      "seoDescription": "Sanftanlasser gegen Umrichter: Moment und Strom bei reduzierter Spannung, Hochlauf und Rotorerwärmung, Bypassbetrieb, Verluste, Oberschwingungen, Schalthäufigkeit."
+    }
+  }
+}

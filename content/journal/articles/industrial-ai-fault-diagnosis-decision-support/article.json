@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-ai-fault-diagnosis-decision-support",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "industrial-ai",
+  "tags": ["time-series", "diagnostics", "root-cause-analysis", "condition-monitoring", "software-architecture"],
+  "publishedAt": "2026-08-17T13:20:00.000Z",
+  "coverImage": {
+    "file": "journal/industrial-ai-evidence-panel.jpg",
+    "url": null,
+    "concept": "A workstation screen showing several correlated process traces highlighted against a band of learned normal behaviour — evidence presented for an engineer to judge, rather than a verdict presented to be accepted.",
+    "prompt": "Photorealistic photograph of an engineering workstation displaying multiple overlaid time-series traces with a shaded normal-operating band, cyan and amber on dark background, no readable text or numbers, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Engineering workstation showing time-series traces against a shaded band of normal behaviour",
+      "fa": "ایستگاه کاری مهندسی با نمایش سری‌های زمانی در برابر نوار سایه‌دار رفتار عادی",
+      "de": "Engineering-Arbeitsplatz mit Zeitreihen vor einem schattierten Band des Normalverhaltens"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AI",
+    "linkedAssetType": null,
+    "linkedTechnology": "Industrial AI",
+    "linkedStandard": null,
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial AI for Fault Diagnosis and Decision Support",
+      "subtitle": "A model's confidence is a statement about the model, not about the world — and no learned output actuates a safety function, however good the model gets",
+      "excerpt": "Where learned models genuinely help in industrial diagnosis and where deterministic methods remain better: what industrial data does to models, why confidence and evidence sufficiency are different questions, usable explainability, the layered architecture that keeps safety deterministic, human validation that is not theatre, and model governance including reproducibility and drift.",
+      "seoTitle": "Industrial AI for Fault Diagnosis and Decision Support",
+      "seoDescription": "Industrial AI in practice: model versus deterministic methods, label scarcity, drift, confidence and evidence sufficiency, explainability, safe boundaries and governance."
+    },
+    "fa": {
+      "title": "هوش مصنوعی صنعتی برای تشخیص خطا و پشتیبانی تصمیم",
+      "subtitle": "اطمینان یک مدل گزاره‌ای دربارهٔ خود مدل است نه دربارهٔ جهان — و هیچ خروجی یادگرفته‌شده‌ای تابع ایمنی را فعال نمی‌کند، مدل هر چه خوب شود",
+      "excerpt": "جایی که مدل‌های یادگیرنده واقعاً در تشخیص صنعتی کمک می‌کنند و جایی که روش‌های قطعی بهتر می‌مانند: دادهٔ صنعتی با مدل‌ها چه می‌کند، چرا اطمینان و کفایت شواهد دو پرسش متفاوت‌اند، توضیح‌پذیری قابل‌استفاده، معماری لایه‌ای که ایمنی را قطعی نگه می‌دارد، اعتبارسنجی انسانی که نمایش نیست، و حکمرانی مدل شامل بازتولیدپذیری و رانش.",
+      "seoTitle": "هوش مصنوعی صنعتی برای تشخیص خطا و پشتیبانی تصمیم",
+      "seoDescription": "هوش مصنوعی صنعتی در عمل: مدل در برابر روش قطعی، کمبود برچسب، رانش، اطمینان و کفایت شواهد، توضیح‌پذیری، مرزهای ایمن و حکمرانی."
+    },
+    "de": {
+      "title": "Industrielle KI für Fehlerdiagnose und Entscheidungsunterstützung",
+      "subtitle": "Die Konfidenz eines Modells ist eine Aussage über das Modell, nicht über die Welt — und keine gelernte Ausgabe löst eine Sicherheitsfunktion aus",
+      "excerpt": "Wo gelernte Modelle in der industriellen Diagnose wirklich helfen und wo deterministische Verfahren besser bleiben: was Industriedaten mit Modellen anstellen, warum Konfidenz und Beweishinlänglichkeit verschiedene Fragen sind, brauchbare Erklärbarkeit, die geschichtete Architektur, die Sicherheit deterministisch hält, echte statt inszenierter menschlicher Prüfung, und Modell-Governance.",
+      "seoTitle": "Industrielle KI für Fehlerdiagnose und Entscheidungshilfe",
+      "seoDescription": "Industrielle KI in der Praxis: Modell gegen deterministische Verfahren, Labelmangel, Drift, Konfidenz und Beweislage, Erklärbarkeit, sichere Grenzen und Governance."
+    }
+  }
+}

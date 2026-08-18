@@ -1,0 +1,52 @@
+{
+  "slug": "common-causes-industrial-motor-failure",
+  "contentType": "FAILURE_ANALYSIS",
+  "category": "predictive-maintenance",
+  "tags": ["motor-protection", "condition-monitoring", "root-cause-analysis", "diagnostics", "vfd"],
+  "publishedAt": "2026-08-16T13:20:00.000Z",
+  "coverImage": {
+    "file": "journal/motor-failure-causes.jpg",
+    "url": null,
+    "concept": "A motor's cooling fin channels packed with process dust — the slow, unglamorous mechanism behind a large share of winding failures.",
+    "prompt": "Photorealistic close-up photograph of the finned cooling housing of a large industrial motor with dust packed between the fins, weathered paint, cool cyan light on dark cast iron, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Cooling fins of a large industrial motor packed with process dust",
+      "fa": "پره‌های خنک‌کنندهٔ یک موتور صنعتی بزرگ که با گرد و غبار فرایندی پر شده‌اند",
+      "de": "Mit Prozessstaub zugesetzte Kühlrippen eines großen Industriemotors"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "MOTOR",
+    "linkedTechnology": "Motor Failure Mechanisms",
+    "linkedStandard": "IEC 60034",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Common Causes of Industrial Motor Failure",
+      "subtitle": "Motors are usually the victim — the mechanisms are thermal, mechanical and environmental, and the root cause is almost always upstream",
+      "excerpt": "How motors actually fail: insulation ageing driven by temperature, unbalance and single-phasing, bearing damage from lubrication and alignment, cooling obstruction, repeated starts, drive-related stress — and how to read the failed machine for evidence of what killed it.",
+      "seoTitle": "Common Causes of Industrial Motor Failure and Their Mechanisms",
+      "seoDescription": "Motor failure mechanisms: thermal ageing of insulation, unbalance and single-phasing, bearing and lubrication damage, cooling obstruction and drive-related stress."
+    },
+    "fa": {
+      "title": "علل رایج خرابی موتورهای صنعتی",
+      "subtitle": "موتور معمولاً قربانی است — سازوکارها حرارتی، مکانیکی و محیطی‌اند و علت ریشه‌ای تقریباً همیشه بالادست است",
+      "excerpt": "موتورها واقعاً چگونه خراب می‌شوند: پیرشدن عایق تحت تأثیر دما، نامتعادلی و تک‌فاز شدن، آسیب یاتاقان از روانکاری و هم‌محوری، انسداد خنک‌کاری، راه‌اندازی مکرر، تنش مرتبط با درایو — و چگونه ماشین خراب‌شده را برای یافتن شواهد آنچه کشتش بخوانیم.",
+      "seoTitle": "علل رایج خرابی موتورهای صنعتی و سازوکارهای آن",
+      "seoDescription": "سازوکارهای خرابی موتور: پیرشدن حرارتی عایق، نامتعادلی، تک‌فاز شدن، آسیب یاتاقان و روانکاری، آلودگی، راه‌اندازی مکرر و تنش ناشی از درایو."
+    },
+    "de": {
+      "title": "Häufige Ursachen von Motorschäden in der Industrie",
+      "subtitle": "Der Motor ist meist das Opfer — die Mechanismen sind thermisch, mechanisch und umweltbedingt, die Ursache liegt fast immer davor",
+      "excerpt": "Wie Motoren tatsächlich ausfallen: temperaturgetriebene Isolationsalterung, Unsymmetrie und Phasenausfall, Lagerschäden durch Schmierung und Ausrichtung, blockierte Kühlung, häufige Anläufe, umrichterbedingte Belastung — und wie sich die defekte Maschine als Beweismittel lesen lässt.",
+      "seoTitle": "Häufige Ursachen von Motorschäden und ihre Mechanismen",
+      "seoDescription": "Schadensmechanismen an Motoren: thermische Isolationsalterung, Unsymmetrie, Phasenausfall, Lager- und Schmierungsschäden, Verschmutzung, häufige Anläufe, Umrichterstress."
+    }
+  }
+}

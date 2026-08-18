@@ -24,8 +24,31 @@
  * evidence of the 911a2d7 -> cbfa292 transition and must never absorb Phase 102
  * figures; this gate writes its own ledger instead.
  *
- * Any historical mutation fails closed. So does an unreachable baseline commit
- * or unresolvable provenance: "could not check" must never render as "passed".
+ * PHASE 106 AMENDMENT — PINNED FACTS, PRESERVED TREE.
+ * ──────────────────────────────────────────────────
+ * The 69/71/2 figures and every checksum below are now read from the PINNED
+ * TARGET_SHA via git, exactly as the Phase 99.7 gate reads its own — they are
+ * NOT re-derived from whatever the working tree currently holds.
+ *
+ * The reason is a defect this contract shipped with: `target` used to be the
+ * working tree, so the FIRST migration added by any later phase (#72) turned
+ * MIGRATION_TARGET_COUNT, MIGRATION_DELTA_EXACTLY_2 and NEW_MIGRATION_SET_EXACT
+ * red. That made a permanently-failing gate the price of every future schema
+ * change, and pushed the next author toward the one genuinely wrong fix —
+ * rewriting 71 to 72 and enrolling a stranger's migration into the Phase 102
+ * set, which would make this historical record false.
+ *
+ * So the numbers stay frozen at what Phase 102 actually shipped, and the working
+ * tree is checked for PRESERVATION instead: all 71 must still be present and
+ * byte-identical (modulo line endings), and anything beyond them must be a
+ * strictly append-only, correctly-ordered suffix. NOTHING IS WEAKENED — history
+ * mutation, deletion, rename, interleaving, backdating, classification and
+ * provenance all still fail closed. What changes is only that a later phase's
+ * legitimate append is no longer indistinguishable from tampering.
+ *
+ * Any historical mutation fails closed. So does an unreachable baseline or
+ * target commit, or unresolvable provenance: "could not check" must never
+ * render as "passed".
  *
  * Read-only: `git show` / `git log` + the working tree. No database, no
  * network, no Production contact.
@@ -61,6 +84,14 @@ const LEDGER = join(REPO, "docs", "release", "phase102-migration-ledger.json");
  * 99.7 constant so the two contracts can never silently diverge.
  */
 export const BASELINE_SHA = "cbfa2923318827ee42614c07f2e3861a3db8ed99";
+
+/**
+ * The commit at which Phase 102's migration set was COMPLETE: the stable commit
+ * that introduced the last of its two migrations, carrying exactly 71
+ * directories. Pinned (Phase 106) so this contract describes the release it was
+ * written for rather than the current working tree — see the header.
+ */
+export const TARGET_SHA = "3ac287dcd497c55256198f07f7a70b3312cf2ed7";
 export const EXPECTED_BASELINE_COUNT = 69;
 export const EXPECTED_TARGET_COUNT = 71;
 export const EXPECTED_DELTA = 2;
@@ -137,7 +168,21 @@ function main() {
   }
   check("MIGRATION_BASELINE_REACHABLE", true);
 
-  const target = checksumsInWorkingTree(MIGRATIONS_DIR);
+  // ── Pinned target (fail closed if unreachable) ────────────────────────────
+  // The 71-set is a property of TARGET_SHA, not of the working tree: later
+  // phases legitimately append migration #72+ and must not turn this contract
+  // red for doing so. The tree is verified separately, for PRESERVATION.
+  /** @type {Record<string,string>} */
+  let target;
+  try {
+    target = checksumsAtCommit(TARGET_SHA);
+  } catch (err) {
+    check("MIGRATION_TARGET_REACHABLE", false, `cannot read ${TARGET_SHA.slice(0, 12)} — fetch full history (fetch-depth: 0): ${String(err?.message ?? err).slice(0, 160)}`);
+    finish();
+    return;
+  }
+  check("MIGRATION_TARGET_REACHABLE", true);
+
   const baselineNames = Object.keys(baseline).sort();
   const targetNames = Object.keys(target).sort();
 
@@ -149,16 +194,18 @@ function main() {
   check(
     "MIGRATION_TARGET_COUNT",
     targetNames.length === EXPECTED_TARGET_COUNT,
-    `expected ${EXPECTED_TARGET_COUNT}, found ${targetNames.length}`,
+    `expected ${EXPECTED_TARGET_COUNT} at ${TARGET_SHA.slice(0, 12)}, found ${targetNames.length}`,
   );
 
   // ── The gate itself (deployed baseline -> working tree) ───────────────────
   const gate = evaluateMigrationGate({
     migrationsDir: MIGRATIONS_DIR,
     releaseBaseChecksums: baseline,
-    // Pass the normalised target explicitly so both sides of the comparison use
-    // the same identity function (see `migrationIdentity` in the Phase 99.7 gate).
+    // Both sides come from git through the same normalised identity function
+    // (see `migrationIdentity` in the Phase 99.7 gate); nothing in this
+    // comparison depends on the working tree.
     targetChecksums: target,
+    readMigrationSql: (name) => git(["show", `${TARGET_SHA}:prisma/migrations/${name}/migration.sql`]),
   });
 
   check(
@@ -206,6 +253,32 @@ function main() {
 
   const ordering = verifyDeterministicOrdering(targetNames);
   check("MIGRATION_ORDERING_DETERMINISTIC", ordering.ok, ordering.problems.join(" | "));
+
+  // ── Working-tree preservation of the pinned 71-set (Phase 106) ────────────
+  // A later phase may APPEND; it may never touch what Phase 102 shipped. Every
+  // one of the 71 must still be present and byte-identical, and any additional
+  // migration must sort strictly after the last of them — otherwise
+  // `prisma migrate deploy` would try to insert a migration ahead of one the
+  // deployed database has already applied.
+  const current = checksumsInWorkingTree(MIGRATIONS_DIR);
+  const treePreservation = verifyHistoricalPreservation(target, current);
+  check(
+    "TARGET_SET_PRESENT_IN_TREE",
+    treePreservation.missing.length === 0,
+    `Phase 102 migrations deleted or renamed in the working tree: ${treePreservation.missing.join(", ")}`,
+  );
+  check(
+    "TARGET_SET_UNMUTATED_IN_TREE",
+    treePreservation.mutated.length === 0,
+    `Phase 102 migrations mutated in the working tree: ${treePreservation.mutated.join(", ")}`,
+  );
+  check(
+    "FUTURE_MIGRATIONS_APPEND_ONLY",
+    treePreservation.interleaved.length === 0,
+    `migrations sorting before or among the Phase 102 set (last: ${treePreservation.lastHistorical}): ${treePreservation.interleaved.join(", ")}`,
+  );
+  const currentOrdering = verifyDeterministicOrdering(Object.keys(current).sort());
+  check("WORKING_TREE_ORDERING_DETERMINISTIC", currentOrdering.ok, currentOrdering.problems.join(" | "));
 
   // ── Provenance (stable source commit, never a transient merge HEAD) ───────
   /** @type {Record<string,string>} */

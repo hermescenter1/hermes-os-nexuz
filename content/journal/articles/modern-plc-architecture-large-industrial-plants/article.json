@@ -1,0 +1,53 @@
+{
+  "slug": "modern-plc-architecture-large-industrial-plants",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "plc-programming",
+  "tags": ["siemens-s7", "profinet", "redundancy", "iec-61131-3"],
+  "publishedAt": "2026-08-15T06:00:00.000Z",
+  "coverImage": {
+    "file": "journal/modern-plc-architecture.jpg",
+    "url": null,
+    "concept": "Wide shot of a modern MV/LV electrical room with a row of controller cabinets, cool cyan-on-navy lighting, cable trays converging overhead, no readable text on equipment.",
+    "prompt": "Photorealistic wide-angle photograph of a clean industrial control room cabinet lineup at night, dark navy ambience with cyan indicator lighting, structured cable management overhead, shallow depth of field, no visible text or logos, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Row of industrial controller cabinets in a plant electrical room with overhead cable trays",
+      "fa": "ردیف تابلوهای کنترل صنعتی در اتاق برق کارخانه با سینی‌های کابل در سقف",
+      "de": "Reihe von Steuerungsschränken in einem Elektroraum einer Anlage mit Kabeltrassen an der Decke"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "PROFINET",
+    "linkedStandard": "IEC 61131-3",
+    "linkedPLCPlatform": "Multi-vendor",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Modern PLC Architecture for Large Industrial Plants",
+      "subtitle": "How controller partitioning, network topology and I/O placement decide what a single failure costs you",
+      "excerpt": "Controller count, partition boundaries and I/O placement are not sizing details — they set fault containment, maintenance isolation and the production lost to any single controller or link failure. An architectural treatment for plant-scale systems.",
+      "seoTitle": "Modern PLC Architecture for Large Industrial Plants",
+      "seoDescription": "How to partition controllers, place remote I/O and choose network topology in plant-scale PLC systems so a single failure costs one process area, not the plant."
+    },
+    "fa": {
+      "title": "معماری مدرن PLC برای کارخانه‌های بزرگ صنعتی",
+      "subtitle": "چگونه تفکیک کنترلرها، توپولوژی شبکه و جانمایی I/O تعیین می‌کند که یک خرابی چقدر برایتان هزینه دارد",
+      "excerpt": "تعداد کنترلر، مرزهای تفکیک و جانمایی I/O جزئیات سایزینگ نیستند؛ اینها مهار خطا، ایزولاسیون تعمیرات و میزان تولید ازدست‌رفته در هر خرابی کنترلر یا لینک را تعیین می‌کنند. یک بررسی معمارانه برای سیستم‌های در مقیاس کارخانه.",
+      "seoTitle": "معماری مدرن PLC برای کارخانه‌های بزرگ صنعتی",
+      "seoDescription": "تفکیک کنترلرها، جانمایی I/O ریموت و انتخاب توپولوژی شبکه در سیستم‌های PLC مقیاس کارخانه، به‌گونه‌ای که یک خرابی فقط یک ناحیه را متوقف کند نه کل خط."
+    },
+    "de": {
+      "title": "Moderne SPS-Architektur für große Industrieanlagen",
+      "subtitle": "Wie Steuerungsaufteilung, Netztopologie und E/A-Platzierung bestimmen, was ein einzelner Ausfall kostet",
+      "excerpt": "Anzahl der Steuerungen, Schnittgrenzen und E/A-Platzierung sind keine Auslegungsdetails — sie bestimmen Fehlereingrenzung, Instandhaltungsfreischaltung und den Produktionsverlust bei jedem Steuerungs- oder Verbindungsausfall. Eine architektonische Betrachtung für Anlagen im Werksmaßstab.",
+      "seoTitle": "Moderne SPS-Architektur für große Industrieanlagen",
+      "seoDescription": "Steuerungen aufteilen, Remote-E/A platzieren und Netztopologien wählen, sodass ein einzelner Ausfall einen Anlagenteil kostet und nicht das gesamte Werk."
+    }
+  }
+}

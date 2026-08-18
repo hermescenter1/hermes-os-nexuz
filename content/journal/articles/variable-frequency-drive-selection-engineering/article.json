@@ -1,0 +1,52 @@
+{
+  "slug": "variable-frequency-drive-selection-engineering",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "drives-motors",
+  "tags": ["vfd", "motor-protection", "commissioning", "power-quality", "maintainability"],
+  "publishedAt": "2026-08-16T12:10:00.000Z",
+  "coverImage": {
+    "file": "journal/vfd-selection-engineering.jpg",
+    "url": null,
+    "concept": "A drive cabinet's cooling path — the heat sink and airflow that quietly set the real rating of the equipment.",
+    "prompt": "Photorealistic close-up photograph of a large aluminium heat sink and cooling fan assembly inside an industrial drive cabinet, cool cyan indicator glow on dark grey metal, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Aluminium heat sink and cooling fan assembly inside an industrial variable speed drive cabinet",
+      "fa": "هیت‌سینک آلومینیومی و مجموعهٔ فن خنک‌کننده درون تابلوی درایو دور متغیر صنعتی",
+      "de": "Aluminium-Kühlkörper und Lüftereinheit im Schrank eines industriellen Frequenzumrichters"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "VFD",
+    "linkedTechnology": "Variable Frequency Drive",
+    "linkedStandard": "IEC 61800",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Variable Frequency Drive Selection and Engineering",
+      "subtitle": "Selected on current and duty, not on nameplate kilowatts — and the deceleration energy has to go somewhere",
+      "excerpt": "Drive selection as an engineering exercise: load torque characteristic and overload duty, motor cooling at low speed, braking and regeneration, supply and environmental derating, cable and insulation consequences, safe torque off versus isolation, and parameter sets as configuration items.",
+      "seoTitle": "Variable Frequency Drive Selection and Engineering Practice",
+      "seoDescription": "Engineering VFD selection: torque characteristics, overload duty, low-speed cooling, braking and regeneration, supply conditions, derating and safety functions."
+    },
+    "fa": {
+      "title": "انتخاب و مهندسی درایو دور متغیر",
+      "subtitle": "انتخاب بر پایهٔ جریان و دیوتی، نه بر پایهٔ کیلووات پلاک — و انرژی کاهش سرعت باید جایی برود",
+      "excerpt": "انتخاب درایو به‌عنوان یک تمرین مهندسی: مشخصهٔ گشتاور بار و دیوتی اضافه‌بار، خنک‌کاری موتور در دور پایین، ترمز و بازتولید، کاهش رتبه بر اساس منبع و محیط، پیامدهای کابل و عایق، تفاوت safe torque off با ایزوله‌سازی، و مجموعهٔ پارامتر به‌عنوان یک قلم پیکربندی.",
+      "seoTitle": "انتخاب و مهندسی درایو دور متغیر در کاربرد صنعتی",
+      "seoDescription": "مهندسی انتخاب VFD: مشخصهٔ گشتاور، دیوتی اضافه‌بار، خنک‌کاری در دور پایین، ترمز و بازتولید، شرایط منبع، کاهش رتبه، توابع ایمنی و راه‌اندازی."
+    },
+    "de": {
+      "title": "Auswahl und Auslegung von Frequenzumrichtern",
+      "subtitle": "Ausgewählt nach Strom und Betriebsart, nicht nach Typenschild-Kilowatt — und die Bremsenergie muss irgendwohin",
+      "excerpt": "Umrichterauswahl als Ingenieuraufgabe: Lastmomentkennlinie und Überlastbetriebsart, Motorkühlung bei niedriger Drehzahl, Bremsen und Rückspeisung, Netz- und Umgebungsderating, Kabel- und Isolationsfolgen, Safe Torque Off gegenüber Freischalten sowie Parametersätze als Konfigurationsobjekte.",
+      "seoTitle": "Auswahl und Auslegung von Frequenzumrichtern in der Industrie",
+      "seoDescription": "FU-Auswahl auslegen: Momentkennlinien, Überlastbetriebsart, Kühlung bei niedriger Drehzahl, Bremsen und Rückspeisung, Netzbedingungen, Derating und Sicherheitsfunktionen."
+    }
+  }
+}
