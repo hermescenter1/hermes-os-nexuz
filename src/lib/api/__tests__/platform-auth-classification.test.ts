@@ -280,36 +280,199 @@ describe("platform auth — the public contract did NOT change", () => {
   });
 });
 
-describe("platform auth — no credential material is ever logged", () => {
-  it("no access token, cookie value, API key or database message reaches the logger", async () => {
-    const scenarios: Array<[() => void, NextRequest]> = [
-      [() => { mockJwt(null); mockSession(true); mockOrg(null); }, withCookie()],
-      [() => { mockJwt({ sub: "user_1" }); mockSession(false); mockOrg(null); }, withCookie()],
-      [() => { mockJwt({ sub: "user_1" }); mockSession(true); mockOrg("throw"); }, withCookie()],
-      [() => { mockJwt(null); mockSession(true); mockOrg(null); }, req({ "x-api-key": RAW_KEY })],
+/**
+ * NO CREDENTIAL OR DRIVER MATERIAL REACHES THE LOG STREAM.
+ *
+ * The earlier version of this suite asserted this against a MOCK of
+ * `logInfraFailure` that discarded the error argument, so it proved nothing
+ * about what the real logger emits. `logInfraFailure` records
+ * `error.message.slice(0, 300)`, and the logger's scrubber only masks URL
+ * userinfo, `key=value` secrets and JWT-shaped strings — a bare `host:port`, a
+ * table name or a statement fragment inside a driver message is none of those
+ * and would pass straight through.
+ *
+ * These tests therefore exercise the REAL path end to end: the real
+ * `security-events` helpers, the real `logger`, and the real serializer, with
+ * `process.stdout.write` captured so the assertions run against the exact bytes
+ * that would be written in production.
+ */
+describe("platform auth — nothing sensitive reaches the REAL log stream", () => {
+  /** Everything the real logger would write during `fn`. */
+  async function captureLogOutput(fn: () => Promise<unknown>): Promise<string> {
+    const written: string[] = [];
+    const stdoutSpy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(((chunk: unknown) => { written.push(String(chunk)); return true; }) as never);
+    // The logger falls back to console.* when process.stdout is unavailable.
+    const errSpy  = vi.spyOn(console, "error").mockImplementation((...a: unknown[]) => { written.push(a.join(" ")); });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation((...a: unknown[]) => { written.push(a.join(" ")); });
+    const logSpy  = vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => { written.push(a.join(" ")); });
+    try { await fn(); } finally {
+      stdoutSpy.mockRestore(); errSpy.mockRestore(); warnSpy.mockRestore(); logSpy.mockRestore();
+    }
+    return written.join("\n");
+  }
+
+  /** Re-arm the mocks WITHOUT stubbing security-events, so the real logger runs. */
+  function armReal() {
+    // The outer beforeEach mocks security-events; resetModules() clears the
+    // module REGISTRY but not registered mocks, so this must be undone
+    // explicitly or the real logger never runs and the capture is empty.
+    vi.doUnmock("@/lib/logger/security-events");
+    vi.resetModules();
+    vi.doMock("../keys", () => ({ verifyApiKey: async () => null, touchLastUsed: () => {} }));
+  }
+
+  it("a database fault logs the error CLASS and CODE but never the driver message", async () => {
+    armReal();
+    // A realistic Prisma failure: the message carries a host and port, and the
+    // instance carries a stable code.
+    class PrismaClientInitializationError extends Error {
+      code = "P1001";
+      constructor(m: string) { super(m); this.name = "PrismaClientInitializationError"; }
+    }
+    const thrown = new PrismaClientInitializationError(
+      "Can not reach database server at 10.0.0.5 port 5432 — " + DB_SECRET,
+    );
+    mockJwt({ sub: "user_1", sid: "s1" });
+    mockSession(true);
+    vi.doMock("@/lib/db/prisma", () => ({
+      getPrisma: async () => ({ organizationMember: { findFirst: async () => { throw thrown; } } }),
+    }));
+
+    let res: unknown;
+    const out = await captureLogOutput(async () => { res = await callRequire(withCookie()); });
+
+    // Fail-closed behaviour is unchanged.
+    expect(res).toEqual({ error: "Authentication required", status: 401 });
+
+    // The fault IS recorded, and usefully.
+    expect(out).toContain("database.failure");
+    expect(out).toContain("platform.auth.resolve_organization");
+    expect(out).toContain("PrismaClientInitializationError");
+    expect(out).toContain("P1001");
+
+    // …but nothing the driver authored.
+    expect(out).not.toContain(DB_SECRET);
+    expect(out).not.toContain("10.0.0.5");
+    expect(out).not.toContain("Can not reach database server");
+  });
+
+  it("a driver message carrying SQL, a table name or a connection string is never emitted", async () => {
+    const hostile = [
+      "relation OrganizationMember does not exist",
+      "SELECT * FROM User WHERE email = victim@example.com",
+      "postgresql://hermes:hunter2@db.internal:5432/hermes_db",
+    ].join(" | ");
+
+    armReal();
+    mockJwt({ sub: "user_1", sid: "s1" });
+    mockSession(true);
+    vi.doMock("@/lib/db/prisma", () => ({
+      getPrisma: async () => ({
+        organizationMember: { findFirst: async () => { throw new Error(hostile); } },
+      }),
+    }));
+
+    const out = await captureLogOutput(() => callRequire(withCookie()));
+
+    expect(out).toContain("database.failure");
+    for (const fragment of [
+      "does not exist",
+      "SELECT * FROM",
+      "victim@example.com",
+      "hunter2",
+      "db.internal",
+      "hermes_db",
+    ]) {
+      expect(out, "leaked: " + fragment).not.toContain(fragment);
+    }
+  });
+
+  it("no token, cookie value or API key appears in ANY emitted line", async () => {
+    const scenarios: Array<[() => void, () => NextRequest]> = [
+      [() => { mockJwt(null); mockSession(true); mockOrg(null); }, withCookie],
+      [() => { mockJwt({ sub: "user_1" }); mockSession(false); mockOrg(null); }, withCookie],
+      [() => { mockJwt({ sub: "user_1" }); mockSession(true); mockOrg("throw"); }, withCookie],
+      [() => { mockJwt(null); mockSession(true); mockOrg(null); }, () => req({ "x-api-key": RAW_KEY })],
+      [() => { mockJwt(null); mockSession(true); mockOrg(null); }, () => req({ authorization: "Bearer " + RAW_KEY })],
     ];
 
     for (const [setup, request] of scenarios) {
-      vi.resetModules();
-      events = []; infraArgs = [];
-      vi.doMock("@/lib/logger/security-events", () => ({
-        logAuthFailure:  (c: Record<string, unknown>) => { events.push({ channel: "auth_failure", payload: c }); },
-        logAuthzDenial:  (c: Record<string, unknown>) => { events.push({ channel: "authz_denied", payload: c }); },
-        // Only the subsystem/operation labels are captured; the error object is
-        // handed to the real helper, which records the CLASS and message only.
-        logInfraFailure: (...args: unknown[]) => { infraArgs.push([args[0], args[1]]); },
-      }));
-      vi.doMock("../keys", () => ({ verifyApiKey: async () => null, touchLastUsed: () => {} }));
+      armReal();
       setup();
-      await callRequire(request);
+      const out = await captureLogOutput(() => callRequire(request()));
 
-      const serialized = JSON.stringify({ events, infraArgs });
-      expect(serialized).not.toContain(TOKEN);
-      expect(serialized).not.toContain(RAW_KEY);
-      expect(serialized).not.toContain("hk_");
-      expect(serialized).not.toContain(DB_SECRET);
-      expect(serialized.toLowerCase()).not.toContain("cookie");
-      expect(serialized.toLowerCase()).not.toContain("authorization");
+      expect(out).not.toContain(TOKEN);
+      expect(out).not.toContain(RAW_KEY);
+      expect(out).not.toContain("hk_");
+      expect(out).not.toContain(DB_SECRET);
+      // Header names would only appear if a raw request/header bag were logged.
+      expect(out.toLowerCase()).not.toContain("set-cookie");
+      expect(out.toLowerCase()).not.toContain("authorization");
     }
+  });
+});
+
+/**
+ * The sanitizer itself, driven directly with adversarial inputs. This is the
+ * component the guarantee rests on, so it is tested as a unit rather than only
+ * through the route.
+ */
+describe("sanitizeDatabaseError", () => {
+  async function sanitize() {
+    vi.doUnmock("@/lib/logger/security-events");
+    vi.resetModules();
+    vi.doMock("../keys", () => ({ verifyApiKey: async () => null, touchLastUsed: () => {} }));
+    const mod = await import("../auth");
+    return mod.sanitizeDatabaseError;
+  }
+
+  it("keeps the class name and a well-formed code", async () => {
+    const s = await sanitize();
+    class PrismaClientKnownRequestError extends Error { code = "P2021"; }
+    expect(s(new PrismaClientKnownRequestError("boom at 10.0.0.5 port 5432")).message)
+      .toBe("PrismaClientKnownRequestError(P2021)");
+  });
+
+  it("never carries the original message", async () => {
+    const s = await sanitize();
+    const out = s(new Error("connect ECONNREFUSED 10.0.0.5:5432"));
+    expect(out.message).toBe("Error");
+    expect(out.message).not.toContain("ECONNREFUSED");
+    expect(out.message).not.toContain("10.0.0.5");
+  });
+
+  it("drops a code that is not a plain short identifier", async () => {
+    const s = await sanitize();
+    const bad: unknown[] = [
+      "P1001 at postgres://u:p@h/db",
+      "x; DROP TABLE User",
+      "a".repeat(64),
+      "with space",
+      "",
+      123,
+      null,
+      { toString: () => "evil" },
+    ];
+    for (const code of bad) {
+      const err = Object.assign(new Error("secret message"), { code });
+      expect(s(err).message, String(code)).toBe("Error");
+    }
+  });
+
+  it("handles non-Error throws without leaking their contents", async () => {
+    const s = await sanitize();
+    expect(s("connect ECONNREFUSED 10.0.0.5:5432").message).toBe("string");
+    expect(s({ message: "10.0.0.5:5432" }).message).toBe("object");
+    expect(s(null).message).toBe("object");
+    expect(s(undefined).message).toBe("undefined");
+  });
+
+  it("rejects a forged constructor name that is not a plain identifier", async () => {
+    const s = await sanitize();
+    const err = new Error("boom");
+    Object.defineProperty(err.constructor, "name", { value: "Err at 10.0.0.5 port 5432", configurable: true });
+    expect(s(err).message).toBe("UnknownError");
   });
 });

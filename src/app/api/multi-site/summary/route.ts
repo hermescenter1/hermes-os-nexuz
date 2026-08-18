@@ -50,7 +50,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(emptyEnterpriseSummary(ctx.orgId) satisfies EnterpriseSummaryResponse);
   }
 
-  const summary = await getEnterpriseIndustrialSummary(ctx.orgId);
+  // PHASE 43 — the caller's site scope is passed THROUGH to the computation.
+  // Checking only for an empty allow-list and then computing org-wide made this
+  // endpoint the one Phase 43 read surface that was not actually site-scoped: a
+  // member granted one site still received org-wide means, an org-wide site
+  // count and pattern count, and `highestRiskSiteId` — which NAMES a site they
+  // may not access. `undefined` (API-key auth, no user context) applies no
+  // filter, exactly as before.
+  const summary = await getEnterpriseIndustrialSummary(ctx.orgId, allowedSiteIds);
 
   recordAuditEvent({
     userId:     ctx.userId ?? undefined,
