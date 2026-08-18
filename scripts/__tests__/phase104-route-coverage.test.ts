@@ -1,0 +1,240 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+
+import {
+  DESIGN_FAMILIES,
+  EMPTY_FAMILIES,
+  ROUTE_RULES,
+  buildInventory,
+  classify,
+  deriveRoutes,
+} from "../design/phase104-route-inventory.mjs";
+
+/**
+ * PHASE 104-G — route design-coverage gate.
+ *
+ * The failure mode this exists for is not an ugly screen. It is a screen NOBODY
+ * OWNS: a route that predates the design language, inherits nothing, and is
+ * never looked at again because no list says it exists. So every `page.*` under
+ * `src/app` must map to exactly one design family, the count is DERIVED from the
+ * filesystem rather than pinned, and an unmatched route fails closed.
+ *
+ * A future page added without a design owner turns this red, which is the whole
+ * point — the gate is a claim about the product, not about this diff.
+ */
+
+const inventory = buildInventory();
+
+describe("Phase 104 route coverage — every product route has a design owner", () => {
+  it("derives the route list from the filesystem, not from a pinned number", () => {
+    // Deliberately a floor, not an equality: pinning the count would make every
+    // new page a gate edit, and the invariant is coverage, not size.
+    expect(inventory.total).toBeGreaterThan(200);
+    expect(deriveRoutes().length).toBe(inventory.total);
+  });
+
+  it("UNCLASSIFIED_ROUTES = 0", () => {
+    expect(inventory.unclassified).toEqual([]);
+    expect(inventory.covered).toBe(inventory.total);
+  });
+
+  it("every classified route names a family from the declared list", () => {
+    const families = new Set(DESIGN_FAMILIES);
+    const strays = inventory.routes
+      .filter((r) => r.family !== null && !families.has(r.family))
+      .map((r) => `${r.route} → ${r.family}`);
+    expect(strays).toEqual([]);
+  });
+
+  it("every rule declares a known family and a known coverage status", () => {
+    const families = new Set(DESIGN_FAMILIES);
+    const statuses = new Set([
+      "MIGRATED_DIRECTLY",
+      "COVERED_BY_SHARED_LAYOUT",
+      "COVERED_BY_SHARED_TEMPLATE",
+      "VISUAL_ONLY_STATIC_PUBLIC",
+      "INTENTIONALLY_UNCHANGED_WITH_JUSTIFICATION",
+      "BLOCKED_OWNER_TOOLING",
+    ]);
+    for (const rule of ROUTE_RULES) {
+      expect(families.has(rule.family), `family ${rule.family}`).toBe(true);
+      expect(statuses.has(rule.status), `status ${rule.status}`).toBe(true);
+      expect(rule.note.length, `${rule.prefix}.note`).toBeGreaterThan(5);
+    }
+  });
+
+  it("has no duplicate rule prefix at the same specificity", () => {
+    // PHASE 104-D2 — a prefix may now appear twice, once with `exact: true`
+    // and once as a subtree rule, because a route can be directly migrated
+    // while its children are not (Workspace Home). The invariant is unchanged
+    // in substance: no two rules may be indistinguishable, so the key is the
+    // (prefix, exact) pair rather than the prefix alone.
+    const keys = ROUTE_RULES.map((r) => `${r.prefix}::${r.exact === true}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    // …and an exact rule must always precede its own subtree rule, or it can
+    // never match.
+    for (const rule of ROUTE_RULES.filter((r) => r.exact === true)) {
+      const exactIdx = ROUTE_RULES.findIndex(
+        (r) => r.prefix === rule.prefix && r.exact === true,
+      );
+      const subtreeIdx = ROUTE_RULES.findIndex(
+        (r) => r.prefix === rule.prefix && r.exact !== true,
+      );
+      if (subtreeIdx >= 0) expect(exactIdx).toBeLessThan(subtreeIdx);
+    }
+  });
+
+  it("every rule actually matches at least one route (no dead rules)", () => {
+    const used = new Set(
+      inventory.routes.map((r) => classify(r.route)?.prefix).filter(Boolean),
+    );
+    const dead = ROUTE_RULES.map((r) => r.prefix).filter((p) => !used.has(p));
+    expect(dead).toEqual([]);
+  });
+});
+
+describe("Phase 104 route coverage — specificity ordering is real", () => {
+  it("the dashboard subtree rules win over the generic /dashboard rule", () => {
+    // If ordering broke, /dashboard/operations would be classified as workspace
+    // and an entire industrial surface would silently lose its design owner.
+    expect(classify("/dashboard/operations")?.family).toBe(
+      "industrial operations",
+    );
+    expect(classify("/dashboard/ot")?.family).toBe("assets/connectivity");
+    expect(classify("/dashboard")?.family).toBe("workspace/dashboard");
+  });
+
+  it("the locale root matches only the root, never every route", () => {
+    expect(classify("/")?.family).toBe("public/marketing");
+    // A naive "/" prefix rule would swallow the whole product.
+    expect(classify("/assets")?.family).toBe("assets/connectivity");
+  });
+
+  it("an unknown route is unclassified — the gate fails closed", () => {
+    expect(classify("/a-surface-nobody-designed")).toBeNull();
+  });
+});
+
+describe("Phase 104 route coverage — families with no routes are declared, not hidden", () => {
+  it("every declared family either owns routes or is listed as empty with a reason", () => {
+    const owning = new Set(Object.keys(inventory.byFamily));
+    const undeclaredEmpty = DESIGN_FAMILIES.filter(
+      (f) => !owning.has(f) && !(f in EMPTY_FAMILIES),
+    );
+    expect(undeclaredEmpty).toEqual([]);
+  });
+
+  it("no family is listed as empty while actually owning routes", () => {
+    const owning = new Set(Object.keys(inventory.byFamily));
+    const wronglyEmpty = Object.keys(EMPTY_FAMILIES).filter((f) =>
+      owning.has(f),
+    );
+    expect(wronglyEmpty).toEqual([]);
+  });
+
+  it("no family is empty today — every declared family owns at least one route", () => {
+    // CORRECTION (post-review). An earlier revision asserted the opposite for
+    // `alarms` and was wrong: the shipped surface is spelled ALERTS, so a
+    // /alarm/i filename scan missed it and a narrow lexical search became a
+    // confident negative about the whole product.
+    expect(Object.keys(EMPTY_FAMILIES)).toEqual([]);
+    for (const family of DESIGN_FAMILIES) {
+      expect(inventory.byFamily[family], `${family} owns no routes`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("Phase 104 route coverage — the Alarm Center is the Alert Command surface", () => {
+  it("classifies the shipped alert surface as the alarms family", () => {
+    expect(classify("/dashboard/operations/alerts")?.family).toBe("alarms");
+    expect(inventory.byFamily.alarms).toBeGreaterThan(0);
+  });
+
+  it("the alerts rule outranks the generic operations rule", () => {
+    // Without the specificity ordering the Alarm Center vanishes into
+    // "industrial operations" and the alarms family looks empty — the exact
+    // failure that produced the false "no Alarm Center exists" claim.
+    expect(classify("/dashboard/operations")?.family).toBe(
+      "industrial operations",
+    );
+    expect(classify("/dashboard/operations/alerts")?.family).not.toBe(
+      "industrial operations",
+    );
+    const alertsIdx = ROUTE_RULES.findIndex(
+      (r) => r.prefix === "/dashboard/operations/alerts",
+    );
+    const genericIdx = ROUTE_RULES.findIndex(
+      (r) => r.prefix === "/dashboard/operations",
+    );
+    expect(alertsIdx).toBeGreaterThanOrEqual(0);
+    expect(alertsIdx).toBeLessThan(genericIdx);
+  });
+
+  it("the shipped route, client and API all exist at the recorded paths", () => {
+    for (const rel of [
+      "src/app/[locale]/dashboard/operations/alerts/page.tsx",
+      "src/components/operations/AlertCommandClient.tsx",
+      "src/app/api/operations/alerts/route.ts",
+    ]) {
+      expect(existsSync(resolve(process.cwd(), rel)), rel).toBe(true);
+    }
+  });
+
+  it("records that the alerts API exposes no acknowledge mutation", () => {
+    // Requirement: no acknowledgement control may be implemented or faked while
+    // the backend has no mutation to bind it to. This asserts the premise, so if
+    // a POST/PATCH is added later the note stops being true and has to be revisited.
+    const api = readFileSync(
+      resolve(process.cwd(), "src/app/api/operations/alerts/route.ts"),
+      "utf8",
+    );
+    const methods = [...api.matchAll(/^export async function (\w+)\(/gm)].map(
+      (m) => m[1],
+    );
+    expect(methods).toEqual(["GET"]);
+    const rule = ROUTE_RULES.find(
+      (r) => r.prefix === "/dashboard/operations/alerts",
+    );
+    expect(rule?.note).toContain("no acknowledge mutation");
+  });
+});
+
+describe("Phase 104 route coverage — the published document stays in sync", () => {
+  const doc = readFileSync(
+    fileURLToPath(
+      new URL("../../docs/design/phase-104/03-route-coverage.md", import.meta.url),
+    ),
+    "utf8",
+  );
+
+  it("publishes the derived totals verbatim", () => {
+    expect(doc).toContain(
+      `PHASE104_ROUTE_COVERAGE=${inventory.covered}/${inventory.total}`,
+    );
+    expect(doc).toContain(
+      `PHASE104_UNCLASSIFIED_ROUTES=${inventory.unclassified.length}`,
+    );
+  });
+
+  it("publishes every family with its derived route count", () => {
+    for (const [family, count] of Object.entries(inventory.byFamily)) {
+      const line = doc
+        .split("\n")
+        .find((l) => l.includes(`\`${family}\``) && /\|/.test(l));
+      expect(line, `no table row for ${family}`).toBeTruthy();
+      expect(line, `${family} count`).toContain(`| ${count} `);
+    }
+  });
+
+  it("publishes every coverage status with its derived count", () => {
+    for (const [status, count] of Object.entries(inventory.byStatus)) {
+      const line = doc
+        .split("\n")
+        .find((l) => l.includes(`\`${status}\``) && /\|/.test(l));
+      expect(line, `no table row for ${status}`).toBeTruthy();
+      expect(line, `${status} count`).toContain(`| ${count} `);
+    }
+  });
+});

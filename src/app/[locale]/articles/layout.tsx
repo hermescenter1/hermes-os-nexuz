@@ -1,8 +1,15 @@
 import type { ReactNode }  from "react";
-import { ArticlesNav }     from "@/components/articles/ArticlesNav";
 import { getCurrentUser }  from "@/lib/auth/session";
 import { can }             from "@/lib/auth/roles";
+import { JournalShell }    from "@/components/articles/journal/JournalShell";
 
+// PHASE 104-F — this layout owns EVERY `/articles/*` route: the public
+// reading surfaces AND the authenticated author workspace AND the admin
+// editorial tools. The Industrial Journal redesign applies to the public
+// reading system only, so the shell is chosen PER ROUTE by `JournalShell`
+// (a pure resolver in `journal-shell.ts`, fail-closed to the legacy shell for
+// anything private or unknown). The auth/role derivation below is unchanged
+// from 72.5 and is still what gates the legacy sidebar's private links.
 export default async function ArticlesLayout({ children }: { children: ReactNode }) {
   let isAuth  = false;
   let isAdmin = false;
@@ -15,18 +22,8 @@ export default async function ArticlesLayout({ children }: { children: ReactNode
   } catch { /* unauthenticated or auth not configured */ }
 
   return (
-    <div className="flex min-h-screen" style={{ background: "var(--bg)" }}>
-      {/* Sidebar nav — hidden on mobile, visible lg+ */}
-      <aside className="w-64 shrink-0 border-e border-line bg-surface hidden lg:flex flex-col">
-        <div className="sticky top-0 h-screen overflow-y-auto">
-          <ArticlesNav showAuth={isAuth} showEditorial={isAdmin} />
-        </div>
-      </aside>
-
-      {/* Main content area */}
-      <main className="flex-1 overflow-x-hidden min-w-0">
-        {children}
-      </main>
-    </div>
+    <JournalShell showAuth={isAuth} showEditorial={isAdmin}>
+      {children}
+    </JournalShell>
   );
 }

@@ -430,8 +430,29 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            actionFailed, actionConflict, terminalNote, approvedNote),
     //            the 6-value status vocabulary and the 5 transition action
     //            labels. adminAccess is untouched — the account-access
-    //            workflow keeps its own namespace. -> 6171
-    expect(allEn.length).toBe(6223);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24 (3 journal.nav author-entry links, 7 journalEditorial.mod delete flow, 14 journalWriter.media cover upload); JOURNAL-ENGAGEMENT: +24 journal.engagement (reaction bar, comment thread, replies, moderation); JOURNAL-SAVE: +3 journal.engagement (saved / saveFailed / signInToSave); JOURNAL-TOMBSTONE: +1 journal.engagement.removedComment
+    //            workflow keeps its own namespace. -> 6171 on main
+    // 104-E/104-F: +85 leaves on this branch, on top of the same 6151 base:
+    //            publicSite.observatory (planes + gate semantics) and the
+    //            journal.pressroom Evidence Pressroom catalog. -> 6236 here
+    // MERGE (main d1db221 -> design/phase104-dna-token-layer): the two bumps
+    //            are on disjoint namespaces, so the union is 6151 + 20 + 85.
+    //            NOT taken on trust: the merged en.json was re-walked with this
+    //            file's own leaves() and MEASURED 6256, zero duplicate paths.
+    //            -> 6256
+    // JOURNAL-LIFECYCLE / JOURNAL-ENGAGEMENT / JOURNAL-SAVE / JOURNAL-TOMBSTONE
+    //            (PR #70 on main): +24 (3 journal.nav author-entry links,
+    //            7 journalEditorial.mod delete flow, 14 journalWriter.media
+    //            cover upload) + 24 journal.engagement (reaction bar, comment
+    //            thread, replies, moderation) + 3 journal.engagement
+    //            (saved / saveFailed / signInToSave) + 1 removedComment
+    //            -> 6223 on main
+    // MERGE (main 44109b9 -> design/phase104-dna-token-layer): 104-E/F (+85)
+    //            and PR #70 (+52) touch disjoint namespaces; NOT added by hand:
+    //            the merged en/de/fa catalogs were re-walked with this file's
+    //            own leaves() and MEASURED 6308 in all three locales, zero
+    //            duplicate paths, zero duplicate JSON keys, full key parity.
+    //            -> 6308
+    expect(allEn.length).toBe(6308);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; 104-E/F: +85 observatory + journal pressroom; JOURNAL-LIFECYCLE: +24; JOURNAL-ENGAGEMENT: +24; JOURNAL-SAVE: +3; JOURNAL-TOMBSTONE: +1
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -445,14 +466,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6223 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 6308 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6223);
+    ).toBe(6308);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

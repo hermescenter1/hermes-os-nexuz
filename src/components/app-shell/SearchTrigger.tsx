@@ -10,7 +10,10 @@ export function SearchTrigger({ label }: { label: string }) {
     <IconButton
       aria-label={label}
       variant="tertiary"
-      size="md"
+      // PHASE 104-H — `lg` (44×44) not `md` (36×36): the search control is a
+      // primary authenticated action and must meet the 44px target contract.
+      // The glyph inside is unchanged; only the interactive box grew.
+      size="lg"
       onClick={() => window.dispatchEvent(new CustomEvent("hermes:command-palette"))}
       icon={
         <svg

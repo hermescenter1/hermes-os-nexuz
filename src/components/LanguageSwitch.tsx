@@ -21,7 +21,10 @@ export function LanguageSwitch() {
     <button
       type="button"
       onClick={() => router.replace(pathname, { locale: next })}
-      className="flex items-center gap-1.5 rounded-md border border-line px-2 py-1.5 font-mono text-sm text-muted transition-colors hover:text-ink sm:px-3"
+      // PHASE 104-H — measured 27–34px tall; `min-h-11` gives the interactive box
+      // the 44px target. Visual border/padding rhythm unchanged; shared by the
+      // public, Observatory/Journal and legacy headers.
+      className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-md border border-line px-2 py-1.5 font-mono text-sm text-muted transition-colors hover:text-ink sm:px-3"
       aria-label={`Switch language to ${LOCALE_ACCESSIBLE_NAME[next]}`}
       lang={next}
     >

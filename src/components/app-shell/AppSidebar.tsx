@@ -2,13 +2,20 @@
 
 // PHASE 87C — Hermes application sidebar (Figma: Dashboard/Desktop Shell/Sidebar).
 //
-// Geometry from the inspected frame: expanded 264px on bg-surface-primary with
-// border-inline-end; org/site context rows 36px on surface-interactive r6;
-// search trigger 32px on background-base r6 with the ⌘K hint; group labels
-// 11/600 muted uppercase; items 32px r6 — active = surface-interactive fill +
-// 3×18px cyan start bar + primary 13/600 text. Collapsed mode is a 64px icon
-// rail with portaled end-side tooltips. All layout uses LOGICAL utilities so a
-// single markup mirrors under RTL (sidebar right, bar on the inline start).
+// Geometry from the inspected frame: org/site context rows 36px on
+// surface-interactive r6; search trigger 32px on background-base r6 with the
+// ⌘K hint; group labels 11/600 muted uppercase; items 32px r6 — active =
+// surface-interactive fill + the Beacon start bar + primary 13/600 text.
+// Portaled end-side tooltips in collapsed mode. All layout uses LOGICAL
+// utilities so a single markup mirrors under RTL (sidebar right, bar on the
+// inline start).
+//
+// PHASE 104-D — this is the shared Hermes Rail. Width, surface and the
+// inline-end edge now come from the Phase 104 signature variables, so the
+// geometry is no longer restated here: collapsed 72px (--rail-width),
+// expanded 264px (--rail-width-expanded), active bar 2px
+// (--rail-indicator-width, coloured by --beacon-core). The Beacon renders in
+// BOTH collapsed and expanded states — see the note at its call site.
 //
 // The groups arrive ALREADY role-filtered from the server (SiteHeader pattern:
 // no flash, no client role fetch, no hydration mismatch). Visibility here is
@@ -61,12 +68,17 @@ export function AppSidebar({ groups, organizationName, siteName, className }: Ap
   const openPalette = () => window.dispatchEvent(new CustomEvent("hermes:command-palette"));
 
   return (
+    // PHASE 104-D — this is the shared Hermes Rail. Width, surface and the
+    // inline-end Edge now come from the Phase 104 signature variables via
+    // `.hermes-rail`; `data-expanded` selects the drawer width. No literal
+    // geometry or colour is restated here.
     <aside
       data-collapsed={collapsed || undefined}
+      data-expanded={collapsed ? "false" : "true"}
+      data-hermes-signature="rail"
       className={cn(
-        "sticky top-0 hidden h-screen shrink-0 flex-col border-e border-border-default bg-surface-primary lg:flex",
-        "transition-[width] duration-standard ease-hermes motion-reduce:transition-none",
-        collapsed ? "w-16" : "w-[264px]",
+        "hermes-rail sticky top-0 hidden h-screen shrink-0 flex-col border-e lg:flex",
+        "transition-[inline-size] duration-standard ease-hermes motion-reduce:transition-none",
         className,
       )}
     >
@@ -118,7 +130,7 @@ export function AppSidebar({ groups, organizationName, siteName, className }: Ap
                 {t(`nav.groups.${group.groupKey}`)}
               </p>
             )}
-            <ul className="flex flex-col gap-1">
+            <ul className="hermes-rail-items flex flex-col">
               {group.items.map((item) => {
                 const active = item.href === activeHref;
                 const label = t(`nav.items.${item.labelKey}`);
@@ -134,9 +146,24 @@ export function AppSidebar({ groups, organizationName, siteName, className }: Ap
                         : "font-medium text-text-secondary hover:bg-surface-interactive hover:text-text-primary",
                     )}
                   >
-                    {/* Active bar — 3×18 cyan on the inline start (Figma ActiveBar). */}
-                    {active && !collapsed && (
-                      <span aria-hidden="true" className="absolute inset-y-[7px] start-0 w-[3px] rounded-full bg-brand-primary" />
+                    {/* PHASE 104-D — Hermes Beacon as the active-route locator.
+                        Colour and width come from the signature variables; the
+                        computed colour is unchanged.
+
+                        Rendered in BOTH states on purpose. It used to be gated
+                        on `!collapsed`, which left the collapsed rail with no
+                        structural channel at all: the glyph tile is always
+                        `font-semibold`, so the link-level weight change was
+                        invisible and only border/fill/text COLOUR distinguished
+                        the active item. A 2px inline-start bar is geometry, and
+                        geometry survives greyscale and colour-vision deficiency.
+                        `start-0` keeps it logical, so RTL mirrors it. */}
+                    {active && (
+                      <span
+                        aria-hidden="true"
+                        data-hermes-signature="beacon"
+                        className="hermes-rail-beacon absolute inset-y-[7px] start-0 rounded-full"
+                      />
                     )}
                     {collapsed ? (
                       <span

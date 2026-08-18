@@ -108,7 +108,13 @@ describe("AppSidebar — expanded (EN/LTR)", () => {
 
     const aside = container.querySelector("aside")!;
     expect(aside.getAttribute("data-collapsed")).toBe("true");
-    expect(aside.className).toContain("w-16");
+    // PHASE 104-D — the collapsed width moved from the literal `w-16` (64px)
+    // utility to `--rail-width` on `.hermes-rail`, selected by `data-expanded`.
+    // The invariant is unchanged and now stronger: instead of pinning one magic
+    // number in a class list, it pins that the rail consumes the Rail signature
+    // and that collapsing actually flips the width selector.
+    expect(aside.className).toContain("hermes-rail");
+    expect(aside.getAttribute("data-expanded")).toBe("false");
     // control flips to expand semantics
     const expand = container.querySelector(`[aria-label="${en.appShell.shell.expandSidebar}"]`)!;
     expect(expand.getAttribute("aria-expanded")).toBe("false");

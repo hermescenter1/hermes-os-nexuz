@@ -9,3 +9,24 @@ scripts/openbao-operator-backup-static-check.mjs text eol=lf
 # checkout (Windows autocrlf) breaks parsing. Force LF on every platform.
 scripts/security/check-env-example.mjs text eol=lf
 scripts/security/__tests__/check-env-example.test.mjs text eol=lf
+
+# PHASE 104 — the Figma visual-system plugin is fingerprinted by RAW BYTES.
+#
+# `build.mjs` records sha256 over the plugin's own sources and over dist/, and
+# three tests in `scripts/test-dna.mjs` re-hash the checked-out files and compare
+# against `dist/build-report.json`. Those hashes are byte identities, not text
+# comparisons, so any end-of-line conversion changes them.
+#
+# The committed blobs are LF: `dist/code.js` hashes to
+# 78c59d65e0df783a2d343345334f44c91e5b0581d62f6a7dd82d50c9d3eb8de7, exactly the
+# value `build-report.json` expects. With `core.autocrlf=true` a Windows checkout
+# rewrites 2827 line endings and the same, provably correct, artifact hashes to
+# 135007f1550077fec79687f6d374bbc9145ab1bacdd6b2d009b12dc120333d1f — a red test
+# on a green artifact. Pinning the directory to LF makes the checkout byte-exact
+# on every platform. It is a no-op on Linux and on CI, where nothing converted
+# anything in the first place.
+#
+# The fix is here rather than in the tests on purpose: relaxing a byte identity
+# to a text comparison would retire the only check that can catch a tampered or
+# stale plugin bundle.
+tools/figma/hermes-phase104-visual-system/** text eol=lf

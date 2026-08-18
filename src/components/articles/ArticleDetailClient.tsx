@@ -1,211 +1,208 @@
 "use client";
+// PHASE 72.5 — Hermes Industrial Journal article detail (client island).
+//
+// PHASE 104-F — REBUILT as a professional reading instrument. The 72.5
+// composition was a legacy-token page (title block, badge strips, an actions
+// bar, the body, tags, a metadata card, an author card, a related-cards grid,
+// all in pre-104 `text-ink` / `border-line` / `bg-surface2` classes).
+// Everything it DID is preserved, byte-for-byte where it touches the network:
+//   · save        POST /api/articles/saved { articleId } · DELETE /api/articles/saved?articleId=
+//                 (PR #70: page-owned, server-seeded, anonymous → sign-in link)
+//   · reactions   server-truthful, rendered by <ArticleEngagement> (PR #70:
+//                 POST/DELETE /api/articles/{id}/reaction) — no local reaction state here
+//   · discussion  first page server-loaded, replies preserved (PR #70, <ArticleEngagement>)
+//   · follow      POST/DELETE  /api/articles/follow     { authorHandle }
+//   · share       navigator.clipboard.writeText(location.href)
+//   · related articles, author / category / tag links, knowledge metadata,
+//     and the Persian display overlay (now shared via article-display.ts).
+// What changed is the READING architecture:
+//   · a 72ch measure on the body; the body is NEVER inside Glass;
+//   · a reading-progress instrument — a structural bar plus an ARIA
+//     progressbar with a numeric value, so the channel is never colour alone;
+//   · a margin TOC on desktop derived from the article's REAL ## / ###
+//     headings, rendered only when at least one exists; in-flow on mobile,
+//     never an overlay; the active item is the reading Beacon;
+//   · headings inside the body get stable ids for the TOC and deep links;
+//   · a body `# ` heading renders as a level-2 heading, never a second page
+//     title — the 72.5
+//     renderer produced TWO H1s per article, an accessibility defect;
+//   · code blocks are `dir="ltr"` islands with internal scroll only;
+//   · provenance (evidence level, review state, domain, technology, platform,
+//     standard, safety) as a definition list on the page's ONE Glass surface,
+//     with semantic state ticks always paired with a text label;
+//   · related articles as an editorial rail, not a card grid.
+//
+// SECURITY BOUNDARY, unchanged: the body renderer is a plain-text block parser.
+// There is no HTML-injection API call, no raw HTML path, and this rewrite
+// adds none. Content becomes React text nodes.
+//
+// Every visible string is `journal.*`. `formatDate(…, locale)` remains the
+// shared formatter (pinned by format-migration.test.ts).
 
-import { useRef, useState } from "react";
-import Link            from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ArticleDetail, ArticleListItem } from "@/lib/articles/types";
-import { formatDate } from "@/lib/i18n/format";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
+import { cn } from "@/components/ds";
+import { buttonVariants } from "@/components/ds/logic";
+import { getArticleDisplay } from "./article-display";
+// PR #70 — server-truthful reactions + discussion (reply-preserving) and the viewer contract.
 import { ArticleEngagement, type EngagementViewer } from "./ArticleEngagement";
 import type { CommentPage, ReactionSummary } from "@/lib/articles/engagement-types";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+/* ── locale-invariant technical tokens render LTR inside an RTL page ─────── */
+const LTR_TOKEN = /^(PLC|SCADA|HMI|OPC|MQTT|IEC|ISA|DCS|VFD|SIL|OT|IT|S7|TIA|WinCC|Modbus|Profinet|EtherNet)/i;
 
-// Persian ARTICLE CONTENT overlay for seed/mock articles (data, not UI chrome).
-const FA_ARTICLE_MAP: Record<string, { title: string; subtitle?: string; excerpt?: string }> = {
-  "siemens-s7-1500-programming-best-practices": {
-    title:    "بهترین شیوه‌های برنامه‌نویسی PLC زیمنس S7-1500",
-    subtitle: "راهنمای جامع ساختاردهی و بهینه‌سازی پروژه‌های TIA Portal V18",
-  },
-  "scada-modernization-tehran-refinery-case-study": {
-    title:    "مدرن‌سازی SCADA در پالایشگاه تهران: مطالعه موردی",
-    subtitle: "مهاجرت ۱۸ ماهه از DCS قدیمی به SCADA مدرن بدون وقفه تولید",
-  },
-  "predictive-maintenance-vibration-analysis-field-results": {
-    title:    "نگهداری پیش‌بینانه با آنالیز ارتعاشات: نتایج ۱۸ ماهه میدانی",
-    subtitle: "نتایج کمّی پایش آنلاین ارتعاشات روی ۶۴ ماشین دوار در فولاد مبارکه",
-  },
-  "iec-61850-substation-protection-implementation": {
-    title:    "پیاده‌سازی IEC 61850 در حفاظت پست‌های فشار قوی",
-    subtitle: "راهنمای عملی GOOSE Messaging و Sampled Values در طرح‌های حفاظتی مدرن",
-  },
-  "vfd-motor-overheating-high-temperature-troubleshooting": {
-    title:    "عیب‌یابی اضافه‌حرارت موتور VFD در محیط‌های با دمای بالا",
-    subtitle: "تشخیص سیستماتیک تریپ حرارتی موتورهای ۲۵۰kW کمپرسور یک کارخانه سیمان",
-  },
-  "opc-ua-server-implementation-process-integration": {
-    title:    "پیاده‌سازی سرور OPC-UA برای یکپارچه‌سازی داده فرآیندی",
-    subtitle: "معماری امن و مقیاس‌پذیر OPC-UA برای یکپارچه‌سازی داده در سطح کارخانه",
-  },
-  "ai-anomaly-detection-gas-turbine": {
-    title:    "تشخیص ناهنجاری با هوش مصنوعی در سیستم‌های توربین گاز",
-    subtitle: "چگونه مدل‌های یادگیری ماشین تشخیص خرابی در جریان‌های سنسور توربین را متحول می‌کنند",
-  },
-  "digital-twin-pump-station-roi-analysis": {
-    title:    "دوقلوی دیجیتال ایستگاه پمپاژ: تحلیل ROI پس از ۲۴ ماه",
-    subtitle: "بازگشت سرمایه کمّی از دوقلوی دیجیتال با شبیه‌سازی هیدرولیکی آنی",
-  },
-  "ot-cybersecurity-scada-protection": {
-    title:    "امنیت سایبری OT: حفاظت SCADA در برابر تهدیدات مدرن",
-    subtitle: "راهنمای عملی پیاده‌سازی IEC 62443 در محیط‌های فناوری عملیاتی",
-  },
-  "future-industrial-ai-cognitive-automation": {
-    title:    "آینده هوش مصنوعی صنعتی: از سیستم‌های قانون‌محور تا اتوماسیون شناختی",
-    subtitle: "چشم‌انداز مهندسی از مسیر هوش ماشین در سیستم‌های صنعتی",
-  },
-  "bearing-failure-analysis-2mw-induction-motor": {
-    title:    "آنالیز خرابی: شکست فاجعه‌بار بلبرینگ در موتور القایی ۲.۲ مگاواتی",
-    subtitle: "تحلیل ریشه‌ای متالورژیکی و عملیاتی خرابی بلبرینگ موتور کیلن سیمان",
-  },
-  "sil-verification-process-plants-guide": {
-    title:    "تأیید سطح یکپارچگی ایمنی (SIL): راهنمای گام‌به‌گام برای واحدهای فرآیندی",
-    subtitle: "مرور عملی تأیید SIL طبق IEC 61511 برای سیستم ESD فشار بالا",
-  },
-};
-
-function fmtDate(d?: string | null, locale = "en") {
-  if (!d) return "";
-  return formatDate(d, locale, { year: "numeric", month: "long", day: "numeric" });
+/* ── heading ids: stable, unique within one article ─────────────────────── */
+function slugifyHeading(text: string, seen: Map<string, number>) {
+  const base =
+    text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "section";
+  const n = seen.get(base) ?? 0;
+  seen.set(base, n + 1);
+  return n === 0 ? `h-${base}` : `h-${base}-${n + 1}`;
 }
 
-function fmtNum(n: number) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1000) return (n / 1000).toFixed(1) + "k";
-  return String(n);
+interface Heading { id: string; text: string; depth: 2 | 3 }
+
+/**
+ * The plain-text block parser. Same grammar the 72.5 renderer accepted —
+ * `# / ## / ###`, fenced code, `- ` / `* ` lists, paragraphs — plus two blocks
+ * the old renderer let fall through as paragraphs (`> ` quotes and pipe
+ * tables), rendered as their proper elements. Still no HTML path.
+ */
+function parseBlocks(content: string) {
+  const blocks = content.split(/\n{2,}/).filter((b) => b.trim());
+  const headings: Heading[] = [];
+  const seen = new Map<string, number>();
+  const out = blocks.map((raw, i) => {
+    const t = raw.trim();
+    if (/^#{1,3} /.test(t)) {
+      const level: 2 | 3 = t.startsWith("### ") ? 3 : 2;
+      const text = t.replace(/^#{1,3} /, "");
+      const id = slugifyHeading(text, seen);
+      headings.push({ id, text, depth: level });
+      return { kind: "heading" as const, level, text, id, key: i };
+    }
+    if (t.startsWith("```")) {
+      const lang = (t.match(/^```(\w+)/) ?? [])[1] ?? "";
+      const code = t.replace(/^```\w*\n?/, "").replace(/```$/, "").trim();
+      return { kind: "code" as const, code, lang, key: i };
+    }
+    if (t.startsWith("- ") || t.startsWith("* ")) {
+      const items = t.split("\n").map((l) => l.replace(/^[-*] /, "").trim()).filter(Boolean);
+      return { kind: "list" as const, items, key: i };
+    }
+    if (t.startsWith("> ")) {
+      return { kind: "quote" as const, text: t.split("\n").map((l) => l.replace(/^> ?/, "")).join(" "), key: i };
+    }
+    if (/^\|.+\|\s*\n\|[\s:|-]+\|/.test(t)) {
+      const rows = t.split("\n").filter((l) => l.trim().startsWith("|"));
+      const cells = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      return { kind: "table" as const, head: cells(rows[0]), body: rows.slice(2).map(cells), key: i };
+    }
+    return { kind: "para" as const, text: t, key: i };
+  });
+  return { blocks: out, headings };
 }
 
-function contentTypeBadgeColor(t: string) {
-  if (t === "FAILURE_ANALYSIS" || t === "SAFETY_COMPLIANCE_NOTE") return "bg-danger/[0.10] text-danger border-danger/20";
-  if (t === "TROUBLESHOOTING_REPORT") return "bg-warn/[0.10] text-warn border-warn/20";
-  if (t === "INDUSTRIAL_CASE_STUDY")  return "bg-hermes-gold/[0.12] text-hermes-gold border-hermes-gold/20";
-  if (t === "ENGINEERING_OPINION")    return "bg-ice/[0.10] text-ice border-ice/20";
-  return "bg-signal/[0.08] text-signal border-signal/20";
-}
-
-// ── Safe content renderer ─────────────────────────────────────────────────────
-// Renders plain-text markdown as styled React nodes (no HTML injection).
-
-function ArticleContent({ content, isFa }: { content: string; isFa: boolean }) {
-  const blocks = content.split(/\n{2,}/).filter(b => b.trim());
+function ArticleBody({ content }: { content: string }) {
+  const { blocks } = useMemo(() => parseBlocks(content), [content]);
   return (
-    <div className={`space-y-6 ${isFa ? "font-body" : ""}`}>
-      {blocks.map((block, i) => {
-        const t = block.trim();
-        if (t.startsWith("### "))
-          return (
-            <h3 key={i} className="text-xl font-bold text-ink mt-10 mb-3">
-              <span className="inline-flex items-center gap-2">
-                <span className="w-1 h-5 rounded-full bg-signal/50 inline-block" />
-                {t.slice(4)}
-              </span>
-            </h3>
-          );
-        if (t.startsWith("## "))
-          return (
-            <h2 key={i} className="text-2xl font-bold text-ink mt-12 mb-4 pb-3 border-b border-signal/15">
-              {t.slice(3)}
-            </h2>
-          );
-        if (t.startsWith("# "))
-          return <h1 key={i} className="text-3xl font-bold text-ink mt-14 mb-5">{t.slice(2)}</h1>;
-        if (t.startsWith("```")) {
-          const code = t.replace(/^```\w*\n?/, "").replace(/```$/, "").trim();
-          return (
-            <div key={i} className="relative group">
-              <div className="absolute top-3 end-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-[9px] font-mono text-signal/60 uppercase tracking-wider">code</span>
+    <div className="hj-body hj-measure text-body-lg">
+      {blocks.map((b) => {
+        switch (b.kind) {
+          case "heading":
+            return b.level === 3
+              ? <h3 key={b.key} id={b.id} dir="auto" className="text-role-h4">{b.text}</h3>
+              : <h2 key={b.key} id={b.id} dir="auto" className="text-role-h3">{b.text}</h2>;
+          case "code":
+            return <pre key={b.key} dir="ltr" aria-label={b.lang || undefined}><code>{b.code}</code></pre>;
+          case "list":
+            return <ul key={b.key}>{b.items.map((it, j) => <li key={j} dir="auto">{it}</li>)}</ul>;
+          case "quote":
+            return <blockquote key={b.key} dir="auto"><p>{b.text}</p></blockquote>;
+          case "table":
+            return (
+              <div key={b.key} className="hj-table-scroll">
+                <table>
+                  <thead><tr>{b.head.map((h, j) => <th key={j} scope="col" dir="auto">{h}</th>)}</tr></thead>
+                  <tbody>{b.body.map((r, ri) => <tr key={ri}>{r.map((c, ci) => <td key={ci} dir="auto">{c}</td>)}</tr>)}</tbody>
+                </table>
               </div>
-              <pre className="bg-surface2/80 border border-signal/10 rounded-xl p-5 overflow-x-auto text-sm font-mono text-signal/90 leading-relaxed">
-                <code>{code}</code>
-              </pre>
-            </div>
-          );
+            );
+          default:
+            return <p key={b.key} dir="auto">{b.text}</p>;
         }
-        if (t.startsWith("- ") || t.startsWith("* ")) {
-          const items = t.split("\n").filter(l => l.trim().startsWith("- ") || l.trim().startsWith("* "));
-          return (
-            <ul key={i} className="list-none space-y-2.5 ps-0">
-              {items.map((item, j) => (
-                <li key={j} className="flex items-start gap-3 text-muted leading-relaxed">
-                  <span className="mt-2 w-1.5 h-1.5 rounded-full bg-signal/60 shrink-0" />
-                  <span className="text-[0.9375rem]">{item.replace(/^[-*]\s/, "")}</span>
-                </li>
-              ))}
-            </ul>
-          );
-        }
-        return (
-          <p key={i} className="text-muted leading-[1.85] text-[0.9375rem]">{t}</p>
-        );
       })}
     </div>
   );
 }
 
-// ── Trust strip ──────────────────────────────────────────────────────────────
-// Shown only for PUBLISHED + PUBLIC articles (enforced by the page server component).
-// Displays editorial trust badges and key metrics from real DB fields only.
-
-function TrustStrip({ article, isFa }: { article: ArticleDetail; isFa: boolean }) {
-  const locale = useLocale();
-  const t = useTranslations("journal");
-  const showUpdated = article.updatedAt &&
-    article.publishedAt &&
-    // Only show "Updated" when the article was meaningfully re-edited after publish
-    new Date(article.updatedAt).getTime() - new Date(article.publishedAt).getTime() > 86_400_000;
-
+/* ── reading progress: structural bar + ARIA numeric value ───────────────── */
+function ReadingProgress({ target, label }: { target: React.RefObject<HTMLElement | null>; label: string }) {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    const el = target.current;
+    if (!el) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const r = el.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      setPct(total <= 0 ? 1 : Math.min(1, Math.max(0, -r.top / total)));
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, [target]);
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-2 py-3 px-4 rounded-xl border border-signal/10 bg-signal/[0.03]">
-      {/* Editorial Approved badge */}
-      <span className="inline-flex items-center gap-1.5 text-[9px] px-2.5 py-1 rounded-full border border-signal/30 text-signal/90 bg-signal/[0.08] font-mono uppercase tracking-wider">
-        <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 shrink-0">
-          <path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd"/>
-        </svg>
-        {t("detail.editorialApproved")}
-      </span>
-
-      {/* Published Public badge */}
-      <span className="inline-flex items-center gap-1.5 text-[9px] px-2.5 py-1 rounded-full border border-ice/30 text-ice/80 bg-ice/[0.06] font-mono uppercase tracking-wider">
-        <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 shrink-0">
-          <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.536-4.464a.75.75 0 1 0-1.061-1.061 3.5 3.5 0 0 1-4.95 0 .75.75 0 0 0-1.06 1.06 5 5 0 0 0 7.07 0Zm.343-6.555-.144-.143a.75.75 0 0 0-1.06 1.06l.143.144a.75.75 0 0 0 1.061-1.061Zm-6.779-.21a.75.75 0 0 0 0 1.06l.144.144a.75.75 0 1 0 1.06-1.06l-.143-.144a.75.75 0 0 0-1.061 0Z" clipRule="evenodd"/>
-        </svg>
-        {t("detail.publishedArticle")}
-      </span>
-
-      {/* Right-side meta */}
-      <div className="flex flex-wrap items-center gap-3 ms-auto text-[9px] text-metadata font-mono">
-        {article.viewCount > 0 && (
-          <>
-            <span>{fmtNum(article.viewCount)} {t("viewsUnit")}</span>
-            <span className="text-line">·</span>
-          </>
-        )}
-        <span>{article.readingTimeMinutes} {t("minRead")}</span>
-        {article.publishedAt && (
-          <>
-            <span className="text-line">·</span>
-            <span>{t("detail.publishedLabel")} {fmtDate(article.publishedAt, locale)}</span>
-          </>
-        )}
-        {showUpdated && (
-          <>
-            <span className="text-line">·</span>
-            <span>{t("detail.updatedLabel")} {fmtDate(article.updatedAt, locale)}</span>
-          </>
-        )}
-      </div>
+    <div className="hj-progress" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)} style={{ ["--hj-progress" as string]: pct }}>
+      <span />
     </div>
   );
 }
 
-// ── Actions bar ───────────────────────────────────────────────────────────────
+/* ── margin TOC: real headings only; active item = reading Beacon ─────────── */
+function Toc({ headings, title }: { headings: Heading[]; title: string }) {
+  const [active, setActive] = useState<string | null>(null);
+  useEffect(() => {
+    if (!headings.length || typeof IntersectionObserver === "undefined") return;
+    const els = headings.map((h) => document.getElementById(h.id)).filter((x): x is HTMLElement => !!x);
+    const io = new IntersectionObserver((entries) => {
+      const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (vis[0]) setActive(vis[0].target.id);
+    }, { rootMargin: "-20% 0px -65% 0px", threshold: [0, 1] });
+    els.forEach((e) => io.observe(e));
+    return () => io.disconnect();
+  }, [headings]);
+  if (!headings.length) return null;
+  return (
+    <nav aria-label={title} className="hj-toc">
+      <p className="hj-folio ps-3.5 pb-2">{title}</p>
+      <ul>
+        {headings.map((h) => (
+          <li key={h.id}>
+            <a href={`#${h.id}`} dir="auto" data-depth={h.depth} aria-current={active === h.id ? "true" : undefined} className="ds-focus">{h.text}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
 
+/* ── actions: save / share — save is PAGE-owned (PR #70); reactions live in <ArticleEngagement> ── */
 /**
- * Save state is owned by the PAGE, not by this bar.
- *
- * The bar is rendered twice (above and below the article body). When each copy
- * held its own `useState`, bookmarking in one left the other showing the
- * opposite label — two controls for one fact, disagreeing. It is lifted so both
- * render the same value, and so the value can be seeded from the server.
+ * PR #70 — save state is owned by the PAGE, not by this bar. The bar renders
+ * twice (above and below the body); when each copy held its own state, saving
+ * in one left the other showing the opposite label — two controls for one fact.
+ * It is lifted so both render the same value, seeded from the server, and
+ * reverted to server truth on failure. An anonymous reader gets a sign-in link
+ * that returns to this article instead of a toggle. Reactions used to be local
+ * state here; they are server-truthful now and rendered by <ArticleEngagement>,
+ * so this bar keeps save, share and the counters. 104-F chip geometry unchanged.
  */
 interface SaveControl {
   saved:     boolean;
@@ -219,11 +216,9 @@ interface SaveControl {
 
 function ActionsBar({ article, save }: { article: ArticleDetail; save: SaveControl }) {
   const t = useTranslations("journal");
+  const locale = useLocale();
   const [copied, setCopied]   = useState(false);
 
-  // Reactions used to live here as purely local state that never reached the
-  // database. They are now server-truthful and rendered by <ArticleEngagement>,
-  // so this bar keeps only the stats, Save and Share.
   function handleShare() {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href).then(() => {
@@ -233,86 +228,41 @@ function ActionsBar({ article, save }: { article: ArticleDetail; save: SaveContr
     }
   }
 
+  const chip = "ds-focus inline-flex min-h-11 items-center gap-1.5 rounded-sm border px-3 text-label transition-colors motion-reduce:transition-none";
   return (
-    <div className="flex flex-wrap items-center gap-2.5 py-5 border-y border-line/30">
-      {/* Stats */}
-      <div className="flex items-center gap-4 text-xs text-metadata me-auto font-mono">
-        <span>{fmtNum(article.viewCount)} {t("viewsUnit")}</span>
-        <span className="text-line">·</span>
-        <span>{fmtNum(article.saveCount)} {t("detail.savesUnit")}</span>
-        <span className="text-line">·</span>
-        <span>{fmtNum(article.reactionCount)} {t("detail.reactionsUnit")}</span>
-      </div>
-
-      {/* Save. Anonymous readers get a link to sign-in that returns here;
-          everyone else gets a real toggle. The bookmark glyph switches from
-          outline to FILLED and the label changes word, so the saved state is
-          carried by shape and text — never by colour alone. */}
+    <div className="flex flex-wrap items-center gap-2 border-y py-3" style={{ borderColor: "var(--color-border-default)" }}>
+      {/* Save — the glyph switches ▢ → ▣ AND the label changes word, so the state
+          is never colour alone; aria-pressed carries it to assistive tech. */}
       {save.onToggle ? (
-        <button
-          type="button"
-          onClick={save.onToggle}
-          disabled={save.busy}
-          aria-pressed={save.saved}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all border font-medium disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
-            save.saved
-              ? "border-signal bg-signal/12 text-signal"
-              : "border-line/60 text-muted hover:border-signal/30 hover:text-ink"
-          }`}>
-          <svg viewBox="0 0 20 20" fill={save.saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5} aria-hidden="true" className="w-3.5 h-3.5">
-            <path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-2.5L5 18V4Z"/>
-          </svg>
-          {save.saved ? t("engagement.saved") : t("detail.save")}
+        <button type="button" onClick={save.onToggle} disabled={save.busy} aria-pressed={save.saved}
+          className={cn(chip, "text-text-secondary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-60")}
+          style={{ borderColor: save.saved ? "var(--beacon-core)" : "var(--color-border-default)" }}>
+          <span aria-hidden="true">{save.saved ? "▣" : "▢"}</span>{save.saved ? t("engagement.saved") : t("detail.save")}
         </button>
       ) : (
-        <a
-          href={save.authHref ?? "#"}
-          title={t("engagement.signInToSave")}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all border font-medium border-line/60 text-muted hover:border-signal/30 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true" className="w-3.5 h-3.5">
-            <path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-2.5L5 18V4Z"/>
-          </svg>
-          {t("detail.save")}
+        <a href={save.authHref ?? "#"} title={t("engagement.signInToSave")}
+          className={cn(chip, "text-text-secondary hover:text-text-primary")}
+          style={{ borderColor: "var(--color-border-default)" }}>
+          <span aria-hidden="true">▢</span>{t("detail.save")}
         </a>
       )}
-      {save.error && (
-        <span role="alert" className="text-[10px] text-danger font-mono">{save.error}</span>
-      )}
-
-      {/* Share */}
-      <button onClick={handleShare}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all font-medium ${
-          copied
-            ? "border-signal bg-signal/12 text-signal"
-            : "border-line/60 text-muted hover:border-signal/30 hover:text-ink"
-        }`}>
-        {copied ? (
-          <>
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-              <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd"/>
-            </svg>
-            {t("detail.copied")}
-          </>
-        ) : (
-          <>
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-              <path d="M13 4.5a2.5 2.5 0 1 1 .702 1.737L6.97 9.604a2.518 2.518 0 0 1 0 .792l6.733 3.367a2.5 2.5 0 1 1-.671 1.341l-6.733-3.367a2.5 2.5 0 1 1 0-3.474l6.733-3.366A2.52 2.52 0 0 1 13 4.5Z"/>
-            </svg>
-            {t("detail.share")}
-          </>
-        )}
+      {save.error ? <span role="alert" className="text-caption text-state-critical">{save.error}</span> : null}
+      <button type="button" onClick={handleShare} className={cn(chip, "text-text-secondary hover:text-text-primary")} style={{ borderColor: "var(--color-border-default)" }} aria-live="polite">
+        <span aria-hidden="true">⇪</span>{copied ? t("detail.copied") : t("detail.share")}
       </button>
+      <span className="ms-auto flex items-center gap-3 text-caption text-text-muted">
+        <span>{formatNumber(article.saveCount, locale)} {t("detail.savesUnit")}</span>
+        <span>{formatNumber(article.reactionCount, locale)} {t("detail.reactionsUnit")}</span>
+      </span>
     </div>
   );
 }
 
-// ── Author card ───────────────────────────────────────────────────────────────
-
-function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: boolean; locale: string }) {
+/* ── author provenance: follow contract unchanged ─────────────────────────── */
+function AuthorProvenance({ article, locale }: { article: ArticleDetail; locale: string }) {
   const t = useTranslations("journal");
   const [following, setFollowing] = useState(false);
   const { author } = article;
-
   async function handleFollow() {
     const next = !following;
     setFollowing(next);
@@ -323,241 +273,71 @@ function AuthorCard({ article, isFa, locale }: { article: ArticleDetail; isFa: b
         : {}),
     }).catch(() => setFollowing(!next));
   }
-
   return (
-    <div className="rounded-2xl border border-line/40 overflow-hidden"
-      style={{ background: "linear-gradient(145deg, rgba(30,200,164,0.05) 0%, rgba(6,8,13,0.98) 60%)" }}>
-      {/* Top bar */}
-      <div className="h-0.5 bg-gradient-to-r from-signal/60 via-signal/30 to-transparent" />
-
-      <div className="p-6">
-        {/* Author identity */}
-        <div className="flex flex-col sm:flex-row gap-5">
-          {author.avatarUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={author.avatarUrl}
-              alt={`${author.displayName} profile photo`}
-              width={64}
-              height={64}
-              className="w-16 h-16 rounded-full object-cover border-2 border-signal/25 shrink-0"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-signal/30 to-ice/20 border-2 border-signal/25 flex items-center justify-center text-2xl font-bold text-signal shrink-0">
-              {author.displayName.charAt(0)}
-            </div>
-          )}
-
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-              <div>
-                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                  <Link href={`/${locale}/articles/author/${author.handle}`}
-                    className="text-lg font-bold text-ink hover:text-signal transition-colors">
-                    {author.displayName}
-                  </Link>
-                  {author.verifiedExpert && (
-                    <span className="hs-badge hs--knowledge text-[9px]">{t("detail.verifiedExpert")}</span>
-                  )}
-                </div>
-                <p className="text-sm text-muted">{author.roleTitle ?? author.company}</p>
-                {author.location && (
-                  <p className="text-xs text-metadata mt-0.5 flex items-center gap-1">
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 opacity-60">
-                      <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 0 0 .281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 1 0 3 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 0 0 2.273 1.765 11.842 11.842 0 0 0 .994.573l.018.008.006.003ZM10 11.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" clipRule="evenodd"/>
-                    </svg>
-                    {author.location}
-                  </p>
-                )}
-              </div>
-              <button onClick={handleFollow}
-                className={`shrink-0 text-xs px-4 py-2 rounded-lg border-2 transition-all font-semibold ${
-                  following
-                    ? "border-signal bg-signal/12 text-signal"
-                    : "border-signal text-signal hover:bg-signal/8"
-                }`}>
-                {following ? t("detail.following") : t("detail.follow")}
-              </button>
-            </div>
-
-            {/* Stats */}
-            <div className="flex flex-wrap items-center gap-5 text-xs text-metadata mb-3 font-mono">
-              <span>{author.articleCount} {t("articlesUnit")}</span>
-              <span className="text-line">·</span>
-              <span>{fmtNum(author.followerCount)} {t("followersUnit")}</span>
-              <span className="text-line">·</span>
-              <span>{fmtNum(author.totalViews)} {t("viewsUnit")}</span>
-            </div>
-
-            {/* Expertise tags */}
-            {author.expertiseAreas.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {author.expertiseAreas.slice(0, 5).map(area => (
-                  <span key={area}
-                    className="text-[10px] px-2 py-0.5 rounded-full border border-signal/20 text-signal/80 font-mono bg-signal/5">
-                    {area}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Bio */}
-        {author.bio && (
-          <div className="mt-5 pt-4 border-t border-line/20">
-            <p className="text-sm text-muted leading-relaxed line-clamp-3">{author.bio}</p>
-            <Link href={`/${locale}/articles/author/${author.handle}`}
-              className="inline-flex items-center gap-1 text-xs text-signal hover:text-signal/80 transition-colors mt-2.5 font-medium">
-              {t("detail.viewFullProfile")}
-              <svg viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 ${isFa ? "rotate-180" : ""}`}>
-                <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd"/>
-              </svg>
-            </Link>
-          </div>
-        )}
+    <div className="hj-rail">
+      <p className="hj-folio">{t("detail.aboutAuthor")}</p>
+      <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
+        <Link href={`/${locale}/articles/author/${author.handle}`} dir="auto" className="ds-focus text-title-lg font-semibold text-text-primary hover:text-brand-primary">{author.displayName}</Link>
+        {author.verifiedExpert ? <span className="hj-folio text-brand-primary">◆ {t("detail.verifiedExpert")}</span> : null}
+      </p>
+      {author.roleTitle || author.company ? (
+        <p dir="auto" className="mt-1 text-body-compact text-text-secondary">{[author.roleTitle, author.company].filter(Boolean).join(" · ")}</p>
+      ) : null}
+      {author.headline ? <p dir="auto" className="mt-2 max-w-prose text-body-compact text-text-secondary">{author.headline}</p> : null}
+      {author.expertiseAreas.length ? (
+        <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+          {author.expertiseAreas.slice(0, 5).map((x) => <span key={x} dir={LTR_TOKEN.test(x) ? "ltr" : "auto"} className="hj-folio">{x}</span>)}
+        </p>
+      ) : null}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button type="button" onClick={handleFollow} aria-pressed={following} className={cn(buttonVariants(following ? "secondary" : "primary", "md"), "min-h-11")}>
+          {following ? t("detail.following") : t("detail.follow")}
+        </button>
+        <span className="text-caption text-text-muted">{formatNumber(author.followerCount, locale)} {t("followersUnit")}</span>
+        <Link href={`/${locale}/articles/author/${author.handle}`} className="ds-focus inline-flex min-h-11 items-center text-body-compact font-semibold text-brand-primary hover:underline">{t("detail.viewFullProfile")}</Link>
       </div>
     </div>
   );
 }
 
-// ── Knowledge metadata block ──────────────────────────────────────────────────
-
-function KnowledgeMetaBlock({ article }: { article: ArticleDetail }) {
+/* ── related: an editorial rail, not a card grid ─────────────────────────── */
+function RelatedRail({ articles, locale, isFa }: { articles: ArticleListItem[]; locale: string; isFa: boolean }) {
   const t = useTranslations("journal");
-  const km = article.knowledgeMetadata;
-  if (!km || (!km.humanReviewed && !km.knowledgeEligible)) return null;
-
-  const fields: Array<[string, string | null | boolean]> = [
-    [t("detail.km.industrialDomain"),  km.industrialDomain],
-    [t("detail.km.assetType"),         km.linkedAssetType],
-    [t("detail.km.technology"),        km.linkedTechnology],
-    [t("detail.km.plcPlatform"),       km.linkedPLCPlatform],
-    [t("detail.km.vendor"),            km.linkedVendor],
-    [t("detail.km.standard"),          km.linkedStandard],
-    [t("detail.km.maintenanceDomain"), km.linkedMaintenanceDomain],
-  ].filter(([, val]) => !!val) as Array<[string, string]>;
-
   return (
-    <div className="rounded-xl border border-signal/15 overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-3.5 border-b border-signal/10 flex items-center gap-2.5 flex-wrap"
-        style={{ background: "linear-gradient(90deg, rgba(30,200,164,0.08) 0%, rgba(30,200,164,0.02) 100%)" }}>
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-signal/15 border border-signal/25 flex items-center justify-center">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-signal">
-              <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" clipRule="evenodd"/>
-            </svg>
-          </div>
-          <p className="text-xs font-bold text-signal uppercase tracking-wider">
-            {t("detail.knowledgeMetadata")}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 ms-auto flex-wrap">
-          {km.humanReviewed && (
-            <span className="hs-badge hs--knowledge text-[9px]">{t("detail.humanReviewed")}</span>
-          )}
-          {km.safetyCritical && (
-            <span className="hs-badge hs--risk text-[9px]">{t("badge.safetyCritical")}</span>
-          )}
-        </div>
-      </div>
-
-      <div className="p-5 space-y-4">
-        {/* Quality score */}
-        {km.articleQualityScore && (
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="text-[10px] text-metadata uppercase tracking-wider font-mono">
-                {t("detail.contentQualityScore")}
-              </p>
-              <p className="text-xs font-bold font-mono text-signal">{km.articleQualityScore.toFixed(1)}<span className="text-metadata font-normal">/10</span></p>
-            </div>
-            <div className="h-1.5 rounded-full bg-surface3 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-signal to-ice transition-all"
-                style={{ width: `${(km.articleQualityScore / 10) * 100}%` }} />
-            </div>
-          </div>
-        )}
-
-        {/* Fields grid */}
-        {fields.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {fields.map(([label, val]) => (
-              <div key={label} className="bg-surface2/60 rounded-lg px-3 py-2.5 border border-line/20">
-                <p className="text-[9px] text-metadata uppercase tracking-widest mb-1 font-mono">{label}</p>
-                <p className="text-xs text-ink font-semibold truncate">{val}</p>
+    <section aria-labelledby="related-title" className="mt-14">
+      <p className="hj-folio">{t("detail.keepReading")}</p>
+      <h2 id="related-title" dir="auto" className="mt-1 text-role-h4 font-bold text-text-primary">{t("pressroom.relatedTitle")}</h2>
+      <ol className="hj-ledger mt-4">
+        {articles.slice(0, 5).map((a, i) => {
+          const d = getArticleDisplay(a, isFa);
+          return (
+            <li key={a.id} className="hj-entry">
+              <span aria-hidden="true" className="hj-entry-no">{String(i + 1).padStart(2, "0")}</span>
+              <div className="min-w-0">
+                <span dir="auto" className="hj-folio">{t(`contentType.${a.contentType}`)}</span>
+                <h3 dir="auto" className="mt-1 text-title-lg font-semibold leading-snug text-text-primary">
+                  <Link href={`/${locale}/articles/${a.slug}`} className="ds-focus hover:text-brand-primary">{d.title}</Link>
+                </h3>
               </div>
-            ))}
-          </div>
-        )}
-
-        {km.evidenceLevel && (
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-metadata">{t("detail.evidenceLevel")}</span>
-            <span className="text-ink font-medium">{km.evidenceLevel}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Related articles ──────────────────────────────────────────────────────────
-
-function RelatedArticles({ articles, isFa, locale }: { articles: ArticleListItem[]; isFa: boolean; locale: string }) {
-  const t = useTranslations("journal");
-  if (!articles.length) return null;
-  return (
-    <section>
-      <div className="flex items-center gap-2.5 mb-6">
-        <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
-        <div>
-          <p className="eyebrow-mono text-signal text-[9px] mb-0.5">
-            {t("detail.keepReading")}
-          </p>
-          <h2 className="text-sm font-bold text-ink uppercase tracking-wider">
-            {t("detail.relatedArticles")}
-          </h2>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {articles.map(a => (
-          <Link key={a.id} href={`/${locale}/articles/${a.slug}`}
-            className="group flex flex-col gap-3 p-4 rounded-xl border border-line/40 hover:border-signal/20 bg-surface/60 hover:bg-surface2/40 hover:shadow-[0_0_16px_rgba(30,200,164,0.04)] transition-all duration-200 overflow-hidden">
-            <div className="h-0.5 -mx-4 -mt-4 bg-gradient-to-r from-signal/40 to-transparent" />
-            <div className="flex items-center gap-1.5 pt-1">
-              {a.category && (
-                <span className="text-[9px] text-signal/70 font-mono uppercase tracking-wider">
-                  {isFa ? a.category.nameFa : a.category.name}
-                </span>
-              )}
-            </div>
-            <h3 className="text-sm font-bold text-ink group-hover:text-signal transition-colors leading-snug line-clamp-2">
-              {a.title}
-            </h3>
-            <div className="flex items-center gap-2 text-[10px] text-metadata mt-auto font-mono">
-              <span className="truncate max-w-[80px]">{a.author.displayName}</span>
-              <span className="text-line">·</span>
-              <span>{a.readingTimeMinutes} {t("readingUnit")}</span>
-            </div>
-          </Link>
-        ))}
-      </div>
+              <span className="hidden text-caption text-text-secondary md:block" dir="auto">
+                {a.author.displayName}{a.readingTimeMinutes ? ` · ${t("pressroom.readingTime", { minutes: a.readingTimeMinutes })}` : ""}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
     </section>
   );
 }
-
-// ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
   article: ArticleDetail;
   related: ArticleListItem[];
   /**
-   * Reactions and the first page of the discussion, loaded on the server so the
-   * conversation is present in the initial HTML rather than appearing after a
-   * client round-trip. Optional so the mock/offline render path and any other
-   * caller keep working unchanged.
+   * PR #70 — reactions and the first page of the discussion, loaded on the
+   * server so the conversation is present in the initial HTML rather than
+   * appearing after a client round-trip. Optional so the mock/offline render
+   * path and any other caller keep working unchanged.
    */
   engagement?: {
     reactions: ReactionSummary;
@@ -569,24 +349,22 @@ interface Props {
 }
 
 export function ArticleDetailClient({ article, related, engagement }: Props) {
-  // useLocale() reads from the next-intl middleware request context — always a
-  // stable string, never null. Do NOT use usePathname() from next/navigation here:
-  // next-intl middleware rewrites paths before Next.js sees them, so usePathname()
-  // can return null on async re-renders in App Router and crash the component.
+  const t = useTranslations("journal");
   const locale = useLocale();
-  const isFa   = locale === "fa";
-  const t      = useTranslations("journal");
+  const isFa = locale === "fa";
+  const bodyRef = useRef<HTMLElement | null>(null);
+  const { headings } = useMemo(() => parseBlocks(article.content), [article.content]);
+  const display = getArticleDisplay(article, isFa);
+  const km = article.knowledgeMetadata;
+  const cat = article.category;
+  const catName = cat ? (isFa && cat.nameFa ? cat.nameFa : cat.name) : null;
 
-  const typeKey   = `contentType.${article.contentType}`;
-  const typeLabel = t.has(typeKey) ? t(typeKey) : article.contentType;
-  const catHref   = article.category ? `/${locale}/articles/category/${article.category.slug}` : null;
-
-  // ── Bookmark ──────────────────────────────────────────────────────────────
+  // ── Bookmark (PR #70) ────────────────────────────────────────────────────
   // Seeded from the server so the correct label is in the first paint, then
   // kept in step with what the server actually confirmed.
-  const [saved, setSaved]           = useState(engagement?.saved ?? false);
+  const [saved, setSaved]             = useState(engagement?.saved ?? false);
   const [savePending, setSavePending] = useState(false);
-  const [saveError, setSaveError]   = useState<string | null>(null);
+  const [saveError, setSaveError]     = useState<string | null>(null);
   // Synchronous guard — React's disabled={busy} is not instantaneous, so a fast
   // double-click could otherwise fire POST and DELETE out of order.
   const savingRef = useRef(false);
@@ -624,7 +402,7 @@ export function ArticleDetailClient({ article, related, engagement }: Props) {
     }
   }
 
-  const saveControl = {
+  const saveControl: SaveControl = {
     saved,
     busy:  savePending,
     error: saveError,
@@ -636,215 +414,107 @@ export function ArticleDetailClient({ article, related, engagement }: Props) {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Sticky breadcrumb header */}
-      <div className="border-b border-line/30 bg-surface/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-3 flex items-center gap-2 text-xs text-metadata">
-          <Link href={`/${locale}/articles`}
-            className="hover:text-signal transition-colors flex items-center gap-1 font-medium">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-              <path d="M2 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3Z"/>
-            </svg>
-            {t("detail.breadcrumbJournal")}
-          </Link>
-          {article.category && catHref && (
-            <>
-              <span className="text-line">/</span>
-              <Link href={catHref} className="hover:text-signal transition-colors">
-                {isFa ? article.category.nameFa : article.category.name}
-              </Link>
-            </>
-          )}
-          <span className="text-line">/</span>
-          <span className="text-muted line-clamp-1">
-            {(isFa ? FA_ARTICLE_MAP[article.slug]?.title : null) ?? article.title}
-          </span>
-        </div>
-      </div>
+    <div className="hj-page">
+      <ReadingProgress target={bodyRef} label={t("pressroom.readingProgress")} />
+      <div className="mx-auto w-full max-w-[78rem] px-5 md:px-10">
 
-      {/* Article hero area */}
-      <div className="relative border-b border-line/20 overflow-hidden"
-        style={{ background: "linear-gradient(180deg, rgba(30,200,164,0.04) 0%, transparent 100%)" }}>
-        <div className="absolute inset-0 pointer-events-none opacity-20"
-          style={{
-            backgroundImage: "radial-gradient(rgba(30,200,164,0.15) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }} />
-        <div className="absolute -top-10 start-0 w-64 h-64 rounded-full blur-[80px] pointer-events-none opacity-40"
-          style={{ background: "rgba(30,200,164,0.06)" }} />
+        {/* ── folio line ── */}
+        <nav aria-label={t("detail.breadcrumbJournal")} className="pt-6">
+          <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <li><Link href={`/${locale}/articles`} className="ds-focus hj-folio hj-folio-strong inline-flex min-h-11 items-center hover:text-brand-primary">{t("brandUpper")}</Link></li>
+            {catName && cat ? (<><li aria-hidden="true" className="hj-folio">/</li><li><Link href={`/${locale}/articles/category/${cat.slug}`} dir="auto" className="ds-focus hj-folio inline-flex min-h-11 items-center hover:text-brand-primary">{catName}</Link></li></>) : null}
+          </ol>
+        </nav>
+        <div className="hj-rule-heavy w-full" aria-hidden="true" />
 
-        <div className="relative max-w-4xl mx-auto px-6 py-12 md:py-16">
-          {/* Badges */}
-          <div className="flex flex-wrap items-center gap-2 mb-6">
-            <span className={`text-[10px] px-2.5 py-0.5 rounded-full border font-mono uppercase tracking-wider ${contentTypeBadgeColor(article.contentType)}`}>
-              {typeLabel}
-            </span>
-            {catHref && article.category && (
-              <Link href={catHref}
-                className="text-[10px] px-2.5 py-0.5 rounded-full border border-signal/25 text-signal hover:bg-signal/8 transition-colors font-mono uppercase tracking-wider">
-                {isFa ? article.category.nameFa : article.category.name}
-              </Link>
-            )}
-            {article.knowledgeMetadata?.humanReviewed && (
-              <span className="hs-badge hs--knowledge text-[9px]">{t("detail.reviewed")}</span>
-            )}
-            {article.knowledgeMetadata?.safetyCritical && (
-              <span className="hs-badge hs--risk text-[9px]">{t("badge.safetyCritical")}</span>
-            )}
-            {/* article.language is the persisted ArtLanguage field (data, not UI locale) */}
-            <span className="ms-auto text-[9px] text-metadata font-mono uppercase tracking-wider border border-line/40 px-2 py-0.5 rounded-full">
-              {article.language === "FA" ? "فارسی / FA" : "English / EN"}
-            </span>
-          </div>
-
-          {/* Title */}
-          {isFa && FA_ARTICLE_MAP[article.slug] && (
-            <p className="text-[10px] text-metadata font-mono mb-2 opacity-55">{article.title}</p>
-          )}
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-ink leading-tight mb-5 max-w-3xl">
-            {(isFa ? FA_ARTICLE_MAP[article.slug]?.title : null) ?? article.title}
-          </h1>
-
-          {/* Subtitle */}
-          {((isFa ? FA_ARTICLE_MAP[article.slug]?.subtitle : null) ?? article.subtitle) && (
-            <p className="text-lg md:text-xl text-muted leading-relaxed mb-7 max-w-2xl">
-              {(isFa ? FA_ARTICLE_MAP[article.slug]?.subtitle : null) ?? article.subtitle}
-            </p>
-          )}
-
-          {/* Author + meta row */}
-          <div className="flex flex-wrap items-center gap-5 pt-2">
-            <Link href={`/${locale}/articles/author/${article.author.handle}`}
-              className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-signal/30 to-ice/20 border-2 border-signal/25 flex items-center justify-center text-sm font-bold text-signal shrink-0">
-                {article.author.displayName.charAt(0)}
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-bold text-ink group-hover:text-signal transition-colors">
-                    {article.author.displayName}
-                  </p>
-                  {article.author.verifiedExpert && (
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-signal shrink-0">
-                      <path fillRule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd"/>
-                    </svg>
-                  )}
-                </div>
-                <p className="text-xs text-metadata">{article.author.roleTitle ?? article.author.company}</p>
-              </div>
-            </Link>
-
-            {/* Meta */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-metadata font-mono">
-              <span>{fmtDate(article.publishedAt, locale)}</span>
-              <span className="text-line">·</span>
-              <span>{article.readingTimeMinutes} {t("minRead")}</span>
-              {article.knowledgeMetadata?.articleQualityScore && (
-                <>
-                  <span className="text-line">·</span>
-                  <span className="text-signal font-bold">{article.knowledgeMetadata.articleQualityScore.toFixed(1)}<span className="text-metadata font-normal">/10</span></span>
-                </>
-              )}
+        {/* ── title block + provenance ── */}
+        <header className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-14">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span dir="auto" className="hj-folio hj-folio-strong">{t(`contentType.${article.contentType}`)}</span>
+              {km?.safetyCritical ? <span className="hj-state hj-folio" data-state="safety">{t("badge.safetyCritical")}</span> : null}
+              {km?.humanReviewed ? <span className="hj-state hj-folio" data-state="reviewed">{t("detail.humanReviewed")}</span> : null}
             </div>
-          </div>
-        </div>
-      </div>
+            <h1 dir="auto" className="mt-4 max-w-4xl font-display text-role-h1 font-extrabold leading-[1.08] tracking-tight text-text-primary md:text-display">{display.title}</h1>
+            {display.titleEn ? <p dir="ltr" className="mt-2 text-body-compact text-text-muted">{display.titleEn}</p> : null}
+            {display.subtitle ? <p dir="auto" className="mt-4 max-w-2xl text-body-lg text-text-secondary">{display.subtitle}</p> : null}
 
-      <div className="max-w-4xl mx-auto px-6 py-10">
-        {/* Cover image. Decorative by design: the headline immediately above
-            already names the article, so an empty alt is the correct
-            accessible treatment — a screen reader skips the image instead of
-            hearing a restatement of the title. The fixed 16:9 frame reserves
-            its space before the bytes arrive, so the article body does not
-            jump when the image loads. Absent cover => nothing renders and the
-            page keeps its current clean presentation. */}
-        {article.coverImageUrl && (
-          <figure className="mb-8 overflow-hidden rounded-xl border border-line/30 bg-surface2">
+            <dl className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-caption text-text-secondary">
+              <div className="flex gap-2"><dt className="text-text-muted">{t("pressroom.byAuthor")}</dt><dd><Link href={`/${locale}/articles/author/${article.author.handle}`} dir="auto" className="ds-focus font-medium text-text-primary hover:text-brand-primary">{article.author.displayName}</Link>{article.author.verifiedExpert ? <span className="ms-1 text-brand-primary" aria-label={t("detail.verifiedExpert")}>◆</span> : null}</dd></div>
+              {article.publishedAt ? <div className="flex gap-2"><dt className="text-text-muted">{t("pressroom.publishedOn")}</dt><dd><time dateTime={article.publishedAt}>{formatDate(article.publishedAt, locale)}</time></dd></div> : null}
+              {article.updatedAt && article.publishedAt && article.updatedAt.slice(0, 10) !== article.publishedAt.slice(0, 10) ? <div className="flex gap-2"><dt className="text-text-muted">{t("pressroom.updatedOn")}</dt><dd><time dateTime={article.updatedAt}>{formatDate(article.updatedAt, locale)}</time></dd></div> : null}
+              {article.readingTimeMinutes > 0 ? <div><dd dir="auto">{t("pressroom.readingTime", { minutes: article.readingTimeMinutes })}</dd></div> : null}
+            </dl>
+          </div>
+
+          {/* provenance — the article page's ONE Glass surface; never the body */}
+          {km || article.tags.length ? (
+            <aside aria-label={t("pressroom.provenanceTitle")} className="ds-glass-elevated hj-provenance self-start rounded-lg p-4 md:p-5" data-hermes-signature="glass-elevated">
+              <p className="hj-folio">{t("pressroom.provenanceTitle")}</p>
+              <dl className="mt-2">
+                {km?.industrialDomain ? <div className="hj-provenance-row"><dt>{t("pressroom.domainLabel")}</dt><dd dir="auto" className="text-body-compact text-text-primary">{km.industrialDomain}</dd></div> : null}
+                {km?.linkedTechnology ? <div className="hj-provenance-row"><dt>{t("pressroom.technologyLabel")}</dt><dd dir={LTR_TOKEN.test(km.linkedTechnology) ? "ltr" : "auto"} className="text-body-compact text-text-primary">{km.linkedTechnology}</dd></div> : null}
+                {km?.linkedPLCPlatform ? <div className="hj-provenance-row"><dt>{t("pressroom.platformLabel")}</dt><dd dir="ltr" className="text-body-compact text-text-primary">{km.linkedPLCPlatform}</dd></div> : null}
+                {km?.linkedStandard ? <div className="hj-provenance-row"><dt>{t("pressroom.standardLabel")}</dt><dd dir="ltr" className="text-body-compact text-text-primary">{km.linkedStandard}</dd></div> : null}
+                {km?.evidenceLevel ? <div className="hj-provenance-row"><dt>{t("pressroom.evidenceLabel")}</dt><dd className="hj-state text-body-compact text-text-primary" data-state="evidence"><span dir="auto">{km.evidenceLevel}</span></dd></div> : null}
+                {km ? <div className="hj-provenance-row"><dt>{t("pressroom.reviewLabel")}</dt><dd className="hj-state text-body-compact text-text-primary" data-state={km.humanReviewed ? "reviewed" : undefined}><span dir="auto">{km.humanReviewed ? t("pressroom.reviewedByHuman") : t("pressroom.notReviewed")}</span></dd></div> : null}
+                {article.tags.length ? <div className="hj-provenance-row"><dt>{t("pressroom.filedUnder")}</dt><dd className="flex flex-wrap gap-x-3 gap-y-1">{article.tags.map((tg) => <Link key={tg.id} href={`/${locale}/articles/tag/${tg.slug}`} dir={LTR_TOKEN.test(tg.name) ? "ltr" : "auto"} className="ds-focus text-body-compact text-text-secondary hover:text-brand-primary">{isFa && tg.nameFa ? tg.nameFa : tg.name}</Link>)}</dd></div> : null}
+              </dl>
+            </aside>
+          ) : null}
+        </header>
+
+        {/* PR #70 — cover image. Decorative by design: the headline above already
+            names the article, so an empty alt is the correct accessible
+            treatment. The fixed 16:9 frame reserves its space before the bytes
+            arrive, so the reading spread does not jump. Absent cover => nothing. */}
+        {article.coverImageUrl ? (
+          <figure className="mt-8 overflow-hidden rounded-lg border" style={{ borderColor: "var(--color-border-default)" }}>
             <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={article.coverImageUrl}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-              />
+              <img src={article.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
             </div>
           </figure>
-        )}
+        ) : null}
 
-        {/* Trust strip — editorial approval + key metrics (real DB fields only) */}
-        <TrustStrip article={article} isFa={isFa} />
+        <div className="mt-8"><ActionsBar article={article} save={saveControl} /></div>
 
-        {/* Excerpt / lead */}
-        {article.excerpt && (
-          <div className="mb-8 rounded-xl overflow-hidden border border-signal/15 bg-surface/40">
-            <div className="h-0.5 bg-gradient-to-r from-signal/60 to-transparent" />
-            <p className="p-5 text-base text-muted leading-[1.85] italic">{article.excerpt}</p>
+        {/* ── the reading spread: body + margin TOC ── */}
+        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-14">
+          <article ref={bodyRef} className="min-w-0">
+            {headings.length ? <div className="mb-8 lg:hidden"><Toc headings={headings} title={t("pressroom.onThisPage")} /></div> : null}
+            <ArticleBody content={article.content} />
+          </article>
+          <div className="hidden min-w-0 lg:block">
+            <Toc headings={headings} title={t("pressroom.onThisPage")} />
           </div>
-        )}
-
-        {/* Actions bar */}
-        <ActionsBar article={article} save={saveControl} />
-
-        {/* Article content */}
-        <article className="mt-10 mb-12">
-          <ArticleContent content={article.content} isFa={isFa} />
-        </article>
-
-        {/* Tags */}
-        {article.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 py-6 border-t border-line/30">
-            <span className="text-xs text-metadata me-1 font-mono uppercase tracking-wider self-center">
-              {t("detail.tagsLabel")}
-            </span>
-            {article.tags.map(tag => (
-              <Link key={tag.id} href={`/${locale}/articles/tag/${tag.slug}`}
-                className="text-xs px-3 py-1 rounded-full border border-line/50 text-muted hover:border-signal/30 hover:text-signal hover:bg-signal/5 transition-all font-mono">
-                {isFa ? (tag.nameFa ?? tag.name) : tag.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Bottom actions */}
-        <ActionsBar article={article} save={saveControl} />
-
-        {/* Reactions + discussion. Rendered from server-loaded state; absent
-            only on the offline/mock path, where there is no database to hold a
-            conversation in the first place. */}
-        {engagement && (
-          <ArticleEngagement
-            articleId={article.id}
-            articleSlug={article.slug}
-            reactions={engagement.reactions}
-            comments={engagement.comments}
-            viewer={engagement.viewer}
-          />
-        )}
-
-        {/* Knowledge metadata */}
-        {article.knowledgeMetadata && (
-          <div className="mt-10">
-            <KnowledgeMetaBlock article={article} />
-          </div>
-        )}
-
-        {/* Author card */}
-        <div className="mt-12">
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-0.5 h-5 rounded-full bg-gradient-to-b from-signal to-signal/20" />
-            <p className="text-xs font-bold text-ink uppercase tracking-wider">
-              {t("detail.aboutAuthor")}
-            </p>
-          </div>
-          <AuthorCard article={article} isFa={isFa} locale={locale} />
         </div>
 
-        {/* Related articles */}
-        {related.length > 0 && (
-          <div className="mt-14 pt-10 border-t border-line/20">
-            <RelatedArticles articles={related} isFa={isFa} locale={locale} />
+        <div className="mt-10"><ActionsBar article={article} save={saveControl} /></div>
+
+        {/* PR #70 — reactions + discussion (reply-preserving), rendered from
+            server-loaded state; absent only on the offline/mock path, where
+            there is no database to hold a conversation in the first place. */}
+        {engagement ? (
+          <div className="mt-10">
+            <ArticleEngagement
+              articleId={article.id}
+              articleSlug={article.slug}
+              reactions={engagement.reactions}
+              comments={engagement.comments}
+              viewer={engagement.viewer}
+            />
           </div>
-        )}
+        ) : null}
+
+        <div className="mt-10"><AuthorProvenance article={article} locale={locale} /></div>
+        {related.length ? <RelatedRail articles={related} locale={locale} isFa={isFa} /> : null}
+        <div className="mt-12 pb-16">
+          <Link href={`/${locale}/articles`} className="ds-focus inline-flex min-h-11 items-center gap-2 text-body-compact font-semibold text-brand-primary hover:underline">
+            <span aria-hidden="true" className="rtl:-scale-x-100">←</span>{t("pressroom.backToJournal")}
+          </Link>
+          <div className="hj-rule-heavy mt-8 w-full" aria-hidden="true" />
+        </div>
       </div>
     </div>
   );

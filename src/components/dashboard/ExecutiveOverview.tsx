@@ -166,7 +166,20 @@ export function ExecutiveOverview() {
         <h2 className="mb-3 font-display text-sm font-semibold text-muted">
           {t("sectionKpi")}
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* PHASE 104-H — the known "German Dashboard KPI label overflow at
+            320×568". A fixed 2-up gave each card ~128px at 320 (~88px for the
+            eyebrow) and a hard 4-up from `sm` gave ~136px at 768; the German
+            compound WISSENSBIBLIOTHEKEN measures 135px as ONE unbreakable
+            uppercase word, so both states overflowed and no wrap rule can
+            help — splitting a word is forbidden. ONE measured floor governs
+            every width: 135px word + 40px card padding = 175px → 11rem.
+            `auto-fit` then derives the column count from the container:
+            measured 272–342px at 320–390 → 1 column (a whole-word 2-up needs
+            362px, so this is the only honest layout, for every locale — no
+            per-locale rule); 704px at 768 → 4 columns; the fixed `sm:grid-cols-4`
+            is gone because it forced 4 tracks below the floor at 768. Font size
+            and copy are unchanged. */}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3">
           <KpiCard label={t("kpi.totalAnalyses")} value={nf.format(stats?.count ?? 0)} accent />
           <KpiCard label={t("kpi.knownAnalyses")} value={nf.format(stats?.knownCount ?? 0)} />
           <KpiCard label={t("kpi.unknownAnalyses")} value={nf.format(stats?.unknownCount ?? 0)} />

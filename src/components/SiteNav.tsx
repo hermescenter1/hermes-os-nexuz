@@ -68,8 +68,15 @@ export function SiteNav({ role }: { role: Role | null }) {
 
   return (
     <>
-      {/* Desktop grouped nav */}
-      <nav ref={navRef} className="hidden items-center gap-0.5 md:flex">
+      {/* Desktop grouped nav
+          PHASE 104-H (owner decision A) — the full seven-group bar (registry: platform, intelligence, operations, knowledge, journal, services, capabilities) is intrinsically
+          ~795px (en) / ~802px (de) wide and, with logo + actions, needs 1342/1349px
+          at 1024, so it can never fit below its own row. It now renders ONLY from
+          1600px; below that the compact (hamburger) representation is the sole
+          navigation. Both halves key off the SAME `min-[1600px]` variant so no
+          width shows both or neither. Destinations, grouping, order and role
+          filtering are untouched. */}
+      <nav ref={navRef} className="hidden items-center gap-0.5 min-[1600px]:flex">
         {GROUPS.map((g) => {
           const open = openGroup === g.groupKey;
           const isActive = activeGroup === g.groupKey;
@@ -88,7 +95,10 @@ export function SiteNav({ role }: { role: Role | null }) {
                 onClick={() => setOpenGroup(open ? null : g.groupKey)}
                 onFocus={() => setOpenGroup(g.groupKey)}
                 className={[
-                  "flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
+                  // PHASE 104-H — `min-h-11`: disclosure triggers measured 36–38px;
+                  // the interactive box now meets the 44px target. Padding, type
+                  // and menu semantics unchanged.
+                  "flex min-h-11 items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
                   isJournal
                     ? open || isActive
                       ? "bg-signal/10 text-signal border border-signal/20"
@@ -153,7 +163,9 @@ export function SiteNav({ role }: { role: Role | null }) {
         aria-expanded={mobileOpen}
         aria-label={t(mobileOpen ? "close" : "menu")}
         onClick={() => setMobileOpen((v) => !v)}
-        className="flex flex-col justify-center gap-1 rounded-lg border border-line/50 p-2.5 text-muted transition-colors hover:text-ink hover:border-signal/30 md:hidden"
+        // PHASE 104-H — measured 42×36; `min-h-11 min-w-11` gives the hamburger the
+        // 44×44 target. Icon geometry, aria-expanded and label unchanged.
+        className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 rounded-lg border border-line/50 p-2.5 text-muted transition-colors hover:text-ink hover:border-signal/30 min-[1600px]:hidden"
       >
         <span className={`block h-0.5 w-5 bg-current transition-all ${mobileOpen ? "rotate-45 translate-y-1.5" : ""}`} />
         <span className={`block h-0.5 w-5 bg-current transition-all ${mobileOpen ? "opacity-0" : ""}`} />
@@ -163,7 +175,7 @@ export function SiteNav({ role }: { role: Role | null }) {
       {/* Mobile panel */}
       {mobileOpen && (
         <div
-          className="absolute inset-x-0 top-full z-30 border-b border-line/40 shadow-xl shadow-black/40 md:hidden"
+          className="absolute inset-x-0 top-full z-30 border-b border-line/40 shadow-xl shadow-black/40 min-[1600px]:hidden"
           style={{ background: "rgba(7,9,13,0.97)", backdropFilter: "blur(24px)" }}
         >
           <div className="mx-auto max-w-6xl px-6 py-5 space-y-5">
