@@ -63,30 +63,59 @@ function matches(row: Record<string, unknown>, where: Record<string, unknown>): 
   return true;
 }
 
-const MOCKED = ["@/lib/db/prisma", "@/lib/knowledge-graph/builder", "../benchmarks"];
+/**
+ * Each dependency is registered EXACTLY ONCE, hoisted above every import, and
+ * behaviour is varied only through the shared `vi.fn`s.
+ *
+ * The no-benchmark test used to re-register `../benchmarks` inside its body to
+ * override the factory registered in `beforeEach`. That is the same
+ * ordering-dependent pattern that made the platform-auth API-key tests fail on
+ * CI: overriding a registration only works while nothing has resolved the
+ * specifier yet, so which factory wins depends on how vitest packs files into
+ * workers. It passed locally and failed on CI (`expected 'bm_1' to be null`).
+ * One permanent registration removes the race entirely.
+ */
+const { getLatestBenchmarkMock, getLatestSnapshotMock, getPrismaMock } = vi.hoisted(() => ({
+  getLatestBenchmarkMock: vi.fn(),
+  getLatestSnapshotMock:  vi.fn(),
+  getPrismaMock:          vi.fn(),
+}));
+
+vi.mock("@/lib/knowledge-graph/builder", () => ({
+  getLatestSnapshot: (...a: unknown[]) => getLatestSnapshotMock(...a),
+  isStaleSince: () => false,
+}));
+
+vi.mock("../benchmarks", () => ({
+  getLatestBenchmark: (...a: unknown[]) => getLatestBenchmarkMock(...a),
+}));
+
+vi.mock("@/lib/db/prisma", () => ({
+  getPrisma: (...a: unknown[]) => getPrismaMock(...a),
+}));
+
+/** The latest SUCCESS benchmark, whose stored summary is ORG-WIDE. */
+const BENCHMARK = {
+  id: "bm_1",
+  computedAt: "2026-08-01T00:00:00.000Z",
+  stale: false,
+  stalenessWarning: null,
+  // What the endpoint used to hand out verbatim, naming an inaccessible site.
+  summary: { highestRiskSiteId: FORBIDDEN, patternCount: 2 },
+};
 
 beforeEach(() => {
   vi.resetModules();
   captured = {};
 
-  vi.doMock("@/lib/knowledge-graph/builder", () => ({
-    getLatestSnapshot: async () => null,
-    isStaleSince: () => false,
-  }));
+  getLatestSnapshotMock.mockReset();
+  getLatestSnapshotMock.mockResolvedValue(null);
 
-  vi.doMock("../benchmarks", () => ({
-    getLatestBenchmark: async () => ({
-      id: "bm_1",
-      computedAt: "2026-08-01T00:00:00.000Z",
-      stale: false,
-      stalenessWarning: null,
-      // The stored ORG-WIDE summary — what the endpoint used to hand out verbatim.
-      summary: { highestRiskSiteId: FORBIDDEN, patternCount: 2 },
-    }),
-  }));
+  getLatestBenchmarkMock.mockReset();
+  getLatestBenchmarkMock.mockResolvedValue(BENCHMARK);
 
-  vi.doMock("@/lib/db/prisma", () => ({
-    getPrisma: async () => ({
+  getPrismaMock.mockReset();
+  getPrismaMock.mockResolvedValue({
       industrialSite: {
         count: async (a: { where: Record<string, unknown> }) => {
           captured.siteCount = a.where;
@@ -105,18 +134,16 @@ beforeEach(() => {
           return KPI_ROWS.filter((r) => matches(r, a.where));
         },
       },
-      crossSiteFailurePattern: {
-        findMany: async (a: { where: Record<string, unknown> }) => {
-          captured.pattern = a.where;
-          return PATTERN_ROWS;
-        },
+    crossSiteFailurePattern: {
+      findMany: async (a: { where: Record<string, unknown> }) => {
+        captured.pattern = a.where;
+        return PATTERN_ROWS;
       },
-    }),
-  }));
+    },
+  });
 });
 
 afterEach(() => {
-  for (const m of MOCKED) vi.doUnmock(m);
   vi.restoreAllMocks();
 });
 
@@ -223,7 +250,7 @@ describe("enterprise summary — no user context (API-key auth)", () => {
 
 describe("enterprise summary — scoping survives the no-benchmark path", () => {
   it("still reports only accessible sites when no benchmark exists", async () => {
-    vi.doMock("../benchmarks", () => ({ getLatestBenchmark: async () => null }));
+    getLatestBenchmarkMock.mockResolvedValue(null);
     const s = await summarize([ALLOWED]);
 
     expect(s.siteCount).toBe(1);
