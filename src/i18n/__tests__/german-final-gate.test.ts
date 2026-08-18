@@ -21,7 +21,7 @@ const TARGETS = [
 type Target = (typeof TARGETS)[number];
 
 const LEAF_COUNTS: Record<Target, number> = {
-  multiSite: 55, caseStudio: 40, digitalTwin: 35, industrial: 30,
+  multiSite: 67, caseStudio: 40, digitalTwin: 35, industrial: 30,
   unknownCenter: 27, automation: 19, documents: 19, analytics: 15,
   platform: 12, storage: 3,
 };
@@ -53,17 +53,17 @@ const faTarget = new Map<string, string>(TARGETS.flatMap((ns) => nsLeaves(fa, ns
 const icuArgs = (v: string) =>
   [...v.matchAll(/\{\s*([a-zA-Z0-9_]+)/g)].map((m) => m[1]).sort().join("|");
 
-describe("87L.6F — the final 255 leaves", () => {
+describe("87L.6F — the final 267 leaves", () => {
   it.each(TARGETS)("%s has its pinned leaf count", (ns) => {
     expect(nsLeaves(en, ns).length).toBe(LEAF_COUNTS[ns]);
   });
 
-  it("the ten namespaces total exactly 255", () => {
-    expect(Object.values(LEAF_COUNTS).reduce((a, b) => a + b, 0)).toBe(255);
-    expect(targetLeaves.length).toBe(255);
+  it("the ten namespaces total exactly 267", () => {
+    expect(Object.values(LEAF_COUNTS).reduce((a, b) => a + b, 0)).toBe(267);
+    expect(targetLeaves.length).toBe(267);
   });
 
-  it("arithmetic holds per namespace and overall (255 = 241 + 12 + 2)", () => {
+  it("arithmetic holds per namespace and overall (267 = 253 + 12 + 2)", () => {
     let T = 0, I = 0, K = 0;
     for (const ns of TARGETS) {
       let t = 0, i = 0, k = 0;
@@ -78,7 +78,9 @@ describe("87L.6F — the final 255 leaves", () => {
       T += t; I += i; K += k;
     }
     expect({ translated: T, identical: I, token: K })
-      .toEqual({ translated: 241, identical: 12, token: 2 });
+      // MULTI-SITE-BOUNDARY: +12 multiSite state leaves, all genuinely translated
+      // into German (the identical/token allowlists are unchanged).
+      .toEqual({ translated: 253, identical: 12, token: 2 });
   });
 
   it("has zero unapproved carryover, zero Persian, zero empty", () => {
@@ -431,7 +433,7 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            the 6-value status vocabulary and the 5 transition action
     //            labels. adminAccess is untouched — the account-access
     //            workflow keeps its own namespace. -> 6171
-    expect(allEn.length).toBe(6223);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24 (3 journal.nav author-entry links, 7 journalEditorial.mod delete flow, 14 journalWriter.media cover upload); JOURNAL-ENGAGEMENT: +24 journal.engagement (reaction bar, comment thread, replies, moderation); JOURNAL-SAVE: +3 journal.engagement (saved / saveFailed / signInToSave); JOURNAL-TOMBSTONE: +1 journal.engagement.removedComment
+    expect(allEn.length).toBe(6235);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24 (3 journal.nav author-entry links, 7 journalEditorial.mod delete flow, 14 journalWriter.media cover upload); JOURNAL-ENGAGEMENT: +24 journal.engagement (reaction bar, comment thread, replies, moderation); JOURNAL-SAVE: +3 journal.engagement (saved / saveFailed / signInToSave); JOURNAL-TOMBSTONE: +1 journal.engagement.removedComment; MULTI-SITE-BOUNDARY: +12 multiSite (retry/signIn + empty, unauthorized, forbidden, request-error and invalid-response states)
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -445,14 +447,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6223 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 6235 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6223);
+    ).toBe(6235);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

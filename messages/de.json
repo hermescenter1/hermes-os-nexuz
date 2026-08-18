@@ -3608,7 +3608,19 @@
     "kpiNormalizationNote": "Verfügbarkeit, Effizienz und Zustandswert sind Mittelwerte von Raten im Bereich 0–100, je Anlage normalisiert. Direkt standortübergreifend vergleichbar. Rohe Laufzeit-/Stillstandszählwerte sind ausgenommen.",
     "kgStaleWarning": "Der Wissensgraph ist veraltet. Bauen Sie ihn über Industrie → Wissensgraph neu auf, um ihn zu aktualisieren.",
     "loading": "Wird geladen…",
-    "errorLoading": "Daten konnten nicht geladen werden."
+    "errorLoading": "Daten konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "signIn": "Erneut anmelden",
+    "noSiteAccessTitle": "Keine zugänglichen Standorte",
+    "noSiteAccessHint": "In Ihrem Zugriffsbereich ist noch kein aktiver Industriestandort dieser Organisation vorhanden, daher gibt es nichts zusammenzufassen. Registrieren Sie einen Standort oder bitten Sie eine Administratorin oder einen Administrator um Standortzugriff.",
+    "sessionExpiredTitle": "Sitzung abgelaufen",
+    "sessionExpiredHint": "Ihre Sitzung ist für diese Daten nicht mehr gültig. Melden Sie sich erneut an, um die Unternehmensübersicht zu laden.",
+    "accessDeniedTitle": "Zugriff verweigert",
+    "accessDeniedHint": "Ihre Rolle umfasst keine Berechtigung für die standortübergreifende Intelligenz. Wenden Sie sich bei Bedarf an die Organisationsverwaltung.",
+    "requestFailedTitle": "Übersicht konnte nicht geladen werden",
+    "requestFailedHint": "Der Server hat die Unternehmensübersicht nicht zurückgegeben. Das ist meist vorübergehend — versuchen Sie es gleich noch einmal.",
+    "invalidResponseTitle": "Unerwartete Antwort",
+    "invalidResponseHint": "Der Server hat in einem Format geantwortet, das diese Seite nicht kennt. Es werden daher keine Daten angezeigt statt ungeprüfte Zahlen darzustellen."
   },
   "about": {
     "eyebrow": "Über Hermes Novin Mehr IRIC",
