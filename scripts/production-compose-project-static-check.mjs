@@ -359,6 +359,181 @@ gate(
   "ssh must keep `-o StrictHostKeyChecking=yes` on an executable line",
 );
 
+// ── TIER 1b: PHASE 106A — the Journal content import workflow ────────────────
+//
+// Content import deliberately did NOT go into deploy.yml. Tier 1 permits `run`
+// there only for hermes-migrate and `exec` only for read-only SELECTs, which is
+// exactly what makes a deploy safe to approve: it provably cannot write to the
+// database beyond applying migrations. Appending an import step would have
+// erased that property.
+//
+// The cost of a second production workflow is that it lands OUTSIDE both tiers:
+// Tier 1 reads only deploy.yml, and Tier 2 scans docs/, deploy/ and scripts/.
+// An unpinned Compose command here would have been caught by nothing. So the
+// same contract is applied to it, plus the rules its own job needs.
+const IMPORT_WORKFLOW = ".github/workflows/journal-import.yml";
+let importWorkflow = null;
+try {
+  importWorkflow = readNormalized(IMPORT_WORKFLOW);
+} catch {
+  importWorkflow = null;
+}
+gate(importWorkflow !== null, "IMPORT_WORKFLOW_PRESENT", `${IMPORT_WORKFLOW} not found`);
+
+if (importWorkflow !== null) {
+  const importLogical = toLogicalLines(importWorkflow);
+  const importExecutable = importLogical.filter(
+    ({ line }) => line.trim() !== "" && !/^\s*#/.test(line),
+  );
+  const importInvocations = importExecutable.filter(({ line }) => COMPOSE_INVOCATION.test(line));
+
+  // Same pin contract as the deploy path.
+  const IMPORT_ALLOWED_SUBCOMMANDS = new Set(["build", "run", "exec"]);
+  for (const { line, lineNumber } of importInvocations) {
+    const at = `journal-import.yml line ${lineNumber}`;
+    gate(!LEGACY_BINARY.test(line), "IMPORT_COMPOSE_V2", `${at}: use \`docker compose\` (v2)`);
+    gate(/\s-p\s+hermes(?=\s|$)/.test(line), "IMPORT_PROJECT_PIN", `${at}: must pass \`-p hermes\``);
+    gate(/\s-f\s+docker-compose\.prod\.yml(?=\s|$)/.test(line), "IMPORT_COMPOSE_FILE", `${at}: must pass \`-f docker-compose.prod.yml\``);
+    const projectFlagCount = (line.match(/(^|\s)-p\s/g) || []).length;
+    gate(projectFlagCount === 1, "IMPORT_SINGLE_PROJECT_FLAG", `${at}: expected exactly one \`-p <name>\` flag, found ${projectFlagCount}`);
+    gate(!/--project-name/.test(line), "IMPORT_LONG_PROJECT_FLAG", `${at}: use \`-p hermes\`, never \`--project-name\``);
+    gate(/\s--env-file\s+\.env\.production(?=\s|$)/.test(line), "IMPORT_ENV_FILE", `${at}: must pass \`--env-file .env.production\``);
+
+    const sub = composeSubcommand(line);
+    gate(sub !== null && IMPORT_ALLOWED_SUBCOMMANDS.has(sub), "IMPORT_SUBCOMMAND_ALLOWLIST", `${at}: subcommand \`${sub}\` not allowed (only ${[...IMPORT_ALLOWED_SUBCOMMANDS].join("/")})`);
+    // This workflow must never start, recreate or replace a running service.
+    // `up` is absent from the allow-list precisely so it cannot cut anything over.
+    if (sub === "build" || sub === "run") {
+      gate(/\bhermes-journal-import\b/.test(line), "IMPORT_SERVICE_ONLY", `${at}: may only target \`hermes-journal-import\``);
+      gate(/--profile\s+journal-import(?=\s|$)/.test(line), "IMPORT_PROFILE_GATED", `${at}: must be invoked through \`--profile journal-import\``);
+    }
+    if (sub === "run") {
+      gate(/--rm(?=\s|$)/.test(line), "IMPORT_RUN_EPHEMERAL", `${at}: \`run\` must pass \`--rm\``);
+    }
+    // `exec` exists only to READ the outcome back out of postgres.
+    if (sub === "exec") {
+      gate(/\bpostgres\b/.test(line), "IMPORT_EXEC_TARGET", `${at}: \`exec\` is permitted only against \`postgres\``);
+      gate(/(^|\s)-T(?=\s)/.test(line), "IMPORT_EXEC_NON_INTERACTIVE", `${at}: \`exec\` must pass \`-T\``);
+      gate(
+        !/\b(INSERT|UPDATE|DELETE|DROP|TRUNCATE|ALTER|CREATE|GRANT|REVOKE)\b/i.test(line),
+        "IMPORT_EXEC_READ_ONLY",
+        `${at}: verification must be read-only — mutating SQL is forbidden`,
+      );
+    }
+  }
+
+  // Forbidden executable patterns apply here identically.
+  for (const { line, lineNumber } of importExecutable) {
+    for (const [pattern, code] of forbiddenPatterns) {
+      gate(!pattern.test(line), `IMPORT_${code}`, `journal-import.yml line ${lineNumber}: \`${line.trim()}\``);
+    }
+  }
+
+  // Trigger, environment and permission posture — identical to Gate 0A.
+  const importRaw = importWorkflow.split("\n");
+  const importOnIndex = importRaw.findIndex((line) => /^on:\s*$/.test(line));
+  const importTriggers = [];
+  if (importOnIndex !== -1) {
+    for (let i = importOnIndex + 1; i < importRaw.length; i += 1) {
+      const line = importRaw[i];
+      if (line.trim() === "" || /^\s*#/.test(line)) continue;
+      if (/^\S/.test(line)) break;
+      const match = line.match(/^ {2}([A-Za-z_]+):/);
+      if (match) importTriggers.push(match[1]);
+    }
+  }
+  gate(
+    importTriggers.length === 1 && importTriggers[0] === "workflow_dispatch",
+    "IMPORT_DISPATCH_ONLY",
+    `triggers must be exactly [workflow_dispatch], found [${importTriggers.join(", ")}]`,
+  );
+  gate(/^\s*environment:\s*production\s*$/m.test(importWorkflow), "IMPORT_ENVIRONMENT", "the import job must declare `environment: production`");
+  gate(/^\s*cancel-in-progress:\s*false\s*$/m.test(importWorkflow), "IMPORT_NO_CANCEL", "concurrency must keep `cancel-in-progress: false`");
+  gate(
+    importExecutable.some(({ line }) => /StrictHostKeyChecking=yes\b/.test(line)),
+    "IMPORT_STRICT_HOST_KEY",
+    "ssh must keep `-o StrictHostKeyChecking=yes`",
+  );
+  gate(!/^[ \t]+permissions:/m.test(importWorkflow), "IMPORT_NO_JOB_PERMISSIONS", "job-level `permissions:` blocks are forbidden");
+  const importPermIndex = importRaw.findIndex((line) => /^permissions:\s*$/.test(line));
+  const importPerms = [];
+  if (importPermIndex !== -1) {
+    for (let i = importPermIndex + 1; i < importRaw.length; i += 1) {
+      const line = importRaw[i];
+      if (line.trim() === "" || /^\s*#/.test(line)) continue;
+      if (/^\S/.test(line)) break;
+      const match = line.match(/^ {2}([A-Za-z-]+):\s*(\S+)\s*$/);
+      if (match) importPerms.push([match[1], match[2]]);
+    }
+  }
+  gate(
+    importPerms.length === 1 && importPerms[0][0] === "contents" && importPerms[0][1] === "read",
+    "IMPORT_READ_ONLY_PERMISSIONS",
+    `top-level permissions must be exactly \`contents: read\`, found [${importPerms.map(([k, v]) => `${k}: ${v}`).join(", ")}]`,
+  );
+
+  // ── The import-specific safety contract ────────────────────────────────────
+  // A typed confirmation phrase, compared with `=` against the exact literal.
+  gate(
+    /journal_import_confirmation/.test(importWorkflow),
+    "IMPORT_CONFIRMATION_INPUT",
+    "the workflow must expose a `journal_import_confirmation` input",
+  );
+  gate(
+    /"\$CONFIRMATION"\s*=\s*"import-phase106-journal"/.test(importWorkflow),
+    "IMPORT_CONFIRMATION_EXACT",
+    "the real import must be gated on an exact string comparison with `import-phase106-journal`",
+  );
+  // The write step must be conditional on that classification, never default.
+  gate(
+    /if:\s*steps\.mode\.outputs\.real_import\s*==\s*'true'/.test(importWorkflow),
+    "IMPORT_WRITE_IS_CONDITIONAL",
+    "the real-import step must be guarded by the confirmation classification",
+  );
+  // `--commit` is the importer's only write switch. It must appear exactly once
+  // among the EXECUTABLE lines — a second occurrence would mean an unguarded
+  // write. Comments are excluded on purpose: the header documents the switch,
+  // and documenting a dangerous flag must never be what trips the gate.
+  const commitOccurrences = importExecutable.reduce(
+    (n, { line }) => n + (line.match(/--commit(?=\s|$)/g) || []).length,
+    0,
+  );
+  gate(
+    commitOccurrences === 1,
+    "IMPORT_SINGLE_COMMIT_SWITCH",
+    `\`--commit\` must appear exactly once, found ${commitOccurrences}`,
+  );
+  // The dry run must be unconditional: no `if:` may gate it, or a failure path
+  // could skip straight to the write.
+  const dryRunAt = importInvocations.findIndex(
+    ({ line }) => composeSubcommand(line) === "run" && !/--commit/.test(line),
+  );
+  const realImportAt = importInvocations.findIndex(({ line }) => /--commit(?=\s|$)/.test(line));
+  gate(dryRunAt !== -1, "IMPORT_DRY_RUN_PRESENT", "the mandatory dry run is missing");
+  gate(
+    dryRunAt !== -1 && realImportAt !== -1 && dryRunAt < realImportAt,
+    "IMPORT_DRY_RUN_BEFORE_WRITE",
+    "the dry run must execute BEFORE the real import",
+  );
+  // The importer has no --force and no destructive switch; none may be invented
+  // here either. Scanned over EXECUTABLE lines only, for the same reason Tier 2
+  // recognises prohibition prose: the workflow header states these bans in
+  // words, and a rule that punishes its own documentation teaches operators to
+  // delete the documentation.
+  for (const { line, lineNumber } of importExecutable) {
+    gate(
+      !/--force\b/.test(line),
+      "IMPORT_NO_FORCE",
+      `journal-import.yml line ${lineNumber}: \`--force\` is forbidden — the importer has no such switch`,
+    );
+    gate(
+      !/\b(TRUNCATE|DROP\s+TABLE|DELETE\s+FROM)\b/i.test(line),
+      "IMPORT_NO_DESTRUCTIVE_SQL",
+      `journal-import.yml line ${lineNumber}: destructive SQL is forbidden in the import path`,
+    );
+  }
+}
+
 // ── TIER 2: operator surface (runbooks, checklists, shell scripts) ───────────
 // Discover operational files under fixed roots so newly added runbooks are
 // covered automatically. Only .md and .sh are scanned; the `openbao` deny-list

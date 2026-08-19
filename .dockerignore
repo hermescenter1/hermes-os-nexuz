@@ -29,6 +29,23 @@ Thumbs.db
 deploy/
 scripts/
 
+# PHASE 106A — narrow re-include for the journal importer.
+#
+# `scripts/` above stays a blanket exclusion: no other image gets any of it.
+# This exception admits ONLY scripts/journal into the build CONTEXT, which is
+# what the `journal-importer` stage COPYies. Nothing else changes — the runner
+# and migrator stages have no COPY of `scripts/`, so re-including these files
+# cannot put them in the web or migration images.
+#
+# Docker (unlike git) descends into an excluded directory when any `!` exception
+# exists, and the LAST matching pattern wins. So ordering matters twice over:
+# this exception must come AFTER `scripts/` to take effect, and BEFORE the
+# `**/__tests__/` and `**/*.test.ts` rules below so those still strip the
+# importer's own test files back out. Both are proven mechanically by
+# scripts/__tests__/phase106a-journal-import-path.test.ts and by the image
+# audit in the Phase 106A runbook.
+!scripts/journal
+
 # Test files
 **/__tests__/
 **/*.test.ts
