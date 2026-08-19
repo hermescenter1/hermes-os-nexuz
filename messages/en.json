@@ -3608,7 +3608,19 @@
     "kpiNormalizationNote": "Availability, efficiency, and health score are 0–100 rate means, normalized per asset. Directly comparable across sites. Raw runtime/downtime counts are excluded.",
     "kgStaleWarning": "Knowledge graph is stale. Rebuild via Industrial → Knowledge Graph to refresh.",
     "loading": "Loading…",
-    "errorLoading": "Failed to load data."
+    "errorLoading": "Failed to load data.",
+    "retry": "Retry",
+    "signIn": "Sign in again",
+    "noSiteAccessTitle": "No accessible sites",
+    "noSiteAccessHint": "Your organization has no active industrial site in your scope yet, so there is nothing to summarize. Register a site or ask an administrator to grant you site access.",
+    "sessionExpiredTitle": "Session expired",
+    "sessionExpiredHint": "Your session is no longer valid for this data. Sign in again to reload the enterprise summary.",
+    "accessDeniedTitle": "Access denied",
+    "accessDeniedHint": "Your role does not include permission to view multi-site intelligence. Contact an organization administrator if you need it.",
+    "requestFailedTitle": "Could not load the summary",
+    "requestFailedHint": "The server did not return the enterprise summary. This is usually temporary — try again in a moment.",
+    "invalidResponseTitle": "Unexpected response",
+    "invalidResponseHint": "The server replied in a format this page does not recognize, so nothing is displayed rather than showing unverified figures."
   },
   "about": {
     "eyebrow": "About Hermes Novin Mehr IRIC",
