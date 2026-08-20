@@ -1048,6 +1048,13 @@
     "tagline": "Industrial Intelligence Platform"
   },
   "dashboard": {
+    "platformComponents": {
+      "brainEngine": "Brain Engine",
+      "knowledgeCloud": "Knowledge Cloud",
+      "caseEngine": "Case Engine",
+      "telemetry": "Telemetry Binding",
+      "plcConnectivity": "PLC Connectivity"
+    },
     "title": "Factory Dashboard",
     "eyebrow": "Operations",
     "simulated": "Simulated telemetry",
@@ -4013,6 +4020,8 @@
       }
     },
     "nav": {
+      "openMenu": "Open journal navigation",
+      "menuTitle": "Journal navigation",
       "becomeAuthor": "Become an Author",
       "signIn": "Sign in",
       "createAccount": "Request an account",
@@ -8029,5 +8038,14 @@
       "signInRequired": "Sign in to save recordings to your list",
       "failed": "Your list could not be updated. Try again."
     }
+  },
+  "engineeringHub": {
+    "hub": "Engineering Hub",
+    "executiveDashboard": "Executive Dashboard",
+    "intelligenceOverview": "Intelligence Overview",
+    "projects": "Projects",
+    "engineeringMemory": "Engineering Memory",
+    "knowledgeGraph": "Knowledge Graph",
+    "domainExpertise": "Domain Expertise"
   }
 }

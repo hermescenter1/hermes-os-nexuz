@@ -1,5 +1,4 @@
 import { useTranslations } from "next-intl";
-import { AppShell }        from "@/components/app-shell";
 import { GlassCard }       from "@/components/ui/GlassCard";
 import Link                from "next/link";
 import { PLATFORM_FACTS }  from "@/lib/industrial/platform-facts";
@@ -26,12 +25,16 @@ const ENGINE_PILLARS: [string, string][] = [
   ["Auditability",       "All events → AuditLog + meter · engine version ke_v1 in every record"],
 ];
 
+// PHASE 107 — was a local array of hard-coded ENGLISH labels, a second source
+// of truth for the same five components the Copilot and Industrial surfaces
+// render. All four now read `dashboard.platformComponents`, so /de and /fa get
+// German and Persian here too.
 const PLATFORM_COMPONENTS = [
-  { label: "Brain Engine",       state: "online"    },
-  { label: "Knowledge Cloud",    state: "online"    },
-  { label: "Case Engine",        state: "online"    },
-  { label: "Telemetry Binding",  state: "simulated" },
-  { label: "PLC Connectivity",   state: "phase2"    },
+  { key: "brainEngine",     state: "online"    },
+  { key: "knowledgeCloud",  state: "online"    },
+  { key: "caseEngine",      state: "online"    },
+  { key: "telemetry",       state: "simulated" },
+  { key: "plcConnectivity", state: "phase2"    },
 ];
 
 const stateColor: Record<string, string> = {
@@ -47,12 +50,16 @@ const stateDot: Record<string, string> = {
 
 // PHASE 87C — reference integration: this page previously rendered BARE (no
 // header, no navigation — audit "Cluster B"). Wrapping it in the shared
-// AppShell restores global navigation; the page body below is unchanged.
+// AppShell restored global navigation; the page body below is unchanged.
+//
+// PHASE 107 — the shell moved up to ./layout.tsx so the four sub-pages under
+// this segment get it too. Wrapping here as well would nest two shells.
 export default function KnowledgePage() {
   const t = useTranslations("ke");
+  // PHASE 107 — shared with the Copilot and Industrial System Status panels.
+  const tPlatform = useTranslations("dashboard.platformComponents");
 
   return (
-    <AppShell>
     <div className="max-w-7xl mx-auto px-6 sm:px-8 pb-20 pt-8">
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
@@ -159,8 +166,8 @@ export default function KnowledgePage() {
             <h2 className="type-panel-title mb-4">System Health</h2>
             <ul className="space-y-3 mb-5">
               {PLATFORM_COMPONENTS.map((c) => (
-                <li key={c.label} className="flex items-center justify-between gap-2">
-                  <span className="font-body text-sm text-ink">{c.label}</span>
+                <li key={c.key} className="flex items-center justify-between gap-2">
+                  <span className="font-body text-sm text-ink">{tPlatform(c.key)}</span>
                   <span className={`flex items-center gap-1.5 font-body text-xs ${stateColor[c.state]}`}>
                     <span className={`inline-block h-1.5 w-1.5 rounded-full ${stateDot[c.state]}`} />
                     {c.state.charAt(0).toUpperCase() + c.state.slice(1)}
@@ -213,6 +220,5 @@ export default function KnowledgePage() {
         </div>
       </div>
     </div>
-    </AppShell>
   );
 }

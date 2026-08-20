@@ -50,6 +50,8 @@ function Panel({ title, children, className = "", executive = false }: {
 
 export function CopilotClient() {
   const t       = useTranslations("copilot");
+  // PHASE 107 — the System Status rows used to print the raw component key.
+  const tPlatform = useTranslations("dashboard.platformComponents");
   const tDomain = useTranslations("brain.domains");
   const tVendor = useTranslations("brain.vendors");
   const tCase   = useTranslations("brain.cases");
@@ -254,7 +256,7 @@ export function CopilotClient() {
               {PLATFORM_COMPONENTS.map((c) => (
                 <li key={c.key} className="flex items-center justify-between gap-2">
                   <span className="font-body text-sm text-ink">
-                    {c.key.replace(/([A-Z])/g, " $1").trim()}
+                    {tPlatform(c.key)}
                   </span>
                   <span className={`flex items-center gap-1.5 font-body text-xs ${stateColor[c.state]}`}>
                     <span className={`inline-block h-1.5 w-1.5 rounded-full ${stateDot[c.state]}`} />

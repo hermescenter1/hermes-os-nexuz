@@ -14,16 +14,26 @@
  * a UI describing the wrong reality. The segment is an authenticated dashboard
  * route, so it was never usefully static.
  *
- * It adds no markup: the provider renders its children and nothing else.
+ * PHASE 107 — it now also carries the chrome. The four Copilot routes were the
+ * only signed-in AI surface rendering with no sidebar, no topbar and no
+ * `<main>` landmark, because this layout existed purely as a provider and
+ * nothing above it supplies a shell. The provider boundary is unchanged and
+ * still wraps the children; AppShell is composed inside it so the voice
+ * availability context remains available to everything the shell renders.
  */
 
 import type { ReactNode } from "react";
 
+import { AppShell } from "@/components/app-shell";
 import { VoiceAvailabilityProvider } from "@/components/copilot/voice-availability";
 import { isExternalAiEnabled } from "@/lib/copilot/voice/config";
 
 export const dynamic = "force-dynamic";
 
 export default function CopilotLayout({ children }: { children: ReactNode }) {
-  return <VoiceAvailabilityProvider enabled={isExternalAiEnabled()}>{children}</VoiceAvailabilityProvider>;
+  return (
+    <VoiceAvailabilityProvider enabled={isExternalAiEnabled()}>
+      <AppShell>{children}</AppShell>
+    </VoiceAvailabilityProvider>
+  );
 }
