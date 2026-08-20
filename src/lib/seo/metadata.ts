@@ -30,10 +30,12 @@ export interface BuildMetadataOptions {
    * OMIT for a page whose copy comes from `messages/{fa,en,de}.json`: those are
    * genuinely trilingual and keep the historical all-locale behaviour.
    *
-   * PASS for database- or file-backed records that exist in fewer languages
-   * than the platform models — a Journal article (`Article.language` is EN or
-   * FA and never DE), an engineering case (`cases.json` carries `en` and `fa`
-   * only), a media asset (its real `MediaAssetTranslation` rows).
+   * PASS for database- or file-backed records whose set of real languages is a
+   * property of the RECORD rather than of the platform — a Journal article (the
+   * editions that actually exist under its slug; Phase 106 made that up to three
+   * and Phase 106B made the page read the real set instead of assuming one), an
+   * engineering case (`cases.json` carries `en` and `fa` only), a media asset
+   * (its real `MediaAssetTranslation` rows).
    */
   contentLocales?: readonly string[];
 }
