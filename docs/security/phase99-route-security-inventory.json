@@ -127,7 +127,7 @@
       "file": "src/app/api/academy/courses/[id]/enroll/route.ts",
       "classification": "AUTHENTICATED_USER",
       "authEvidence": [
-        "verifyAccessToken"
+        "getAuthRole"
       ],
       "declaredSurface": false,
       "tenantScoped": false,
@@ -140,7 +140,7 @@
       "file": "src/app/api/academy/courses/[id]/progress/route.ts",
       "classification": "AUTHENTICATED_USER",
       "authEvidence": [
-        "verifyAccessToken"
+        "getAuthRole"
       ],
       "declaredSurface": false,
       "tenantScoped": false,
