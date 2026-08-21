@@ -1048,6 +1048,13 @@
     "tagline": "پلتفرم هوش صنعتی"
   },
   "dashboard": {
+    "platformComponents": {
+      "brainEngine": "موتور مغز صنعتی",
+      "knowledgeCloud": "ابر دانش",
+      "caseEngine": "موتور موارد مهندسی",
+      "telemetry": "اتصال تله‌متری",
+      "plcConnectivity": "اتصال PLC"
+    },
     "title": "داشبورد کارخانه",
     "eyebrow": "عملیات",
     "simulated": "تله‌متری شبیه‌سازی‌شده",
@@ -4013,6 +4020,8 @@
       }
     },
     "nav": {
+      "openMenu": "باز کردن فهرست ژورنال",
+      "menuTitle": "فهرست ژورنال",
       "becomeAuthor": "نویسنده شوید",
       "signIn": "ورود",
       "createAccount": "درخواست حساب کاربری",
@@ -8029,5 +8038,14 @@
       "signInRequired": "برای ذخیرهٔ ضبط‌ها در فهرست خود وارد شوید",
       "failed": "فهرست شما به‌روز نشد. دوباره بیازمایید."
     }
+  },
+  "engineeringHub": {
+    "hub": "مرکز مهندسی",
+    "executiveDashboard": "داشبورد مدیریتی",
+    "intelligenceOverview": "نمای کلی هوشمندی",
+    "projects": "پروژه‌ها",
+    "engineeringMemory": "حافظه مهندسی",
+    "knowledgeGraph": "گراف دانش",
+    "domainExpertise": "تخصص حوزه‌ای"
   }
 }

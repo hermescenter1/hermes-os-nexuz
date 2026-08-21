@@ -45,3 +45,13 @@ deploy/ssl/certs/
 # committed: a checked-in verdict is a verdict that goes stale, which is exactly
 # how docs/release/go-no-go-matrix.md came to assert V1_RELEASE_READY: YES.
 /phase100-ga-closure.json
+
+# Phase 107 visual-evidence harness output.
+# The harness refuses to write inside the source tree (see
+# tools/audit/visual-evidence/README.md); this is the belt to that braces, kept
+# scoped to the harness output directory ONLY. A repo-wide `**/_records/` or
+# `*.visual-sweep.lock` would silently hide legitimately-named source anywhere
+# in the tree — a worse failure than an un-ignored artefact.
+/hermes-evidence/
+/hermes-evidence/_records/
+/hermes-evidence/.visual-sweep.lock

@@ -1,6 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import type { ReactNode }   from "react";
-import { PageShell }        from "@/components/PageShell";
+import { AppShell }         from "@/components/app-shell";
 import { OperationsSubNav } from "@/components/operations/OperationsSubNav";
 
 export const metadata = {
@@ -19,7 +19,7 @@ export default async function OperationsLayout({
   setRequestLocale(locale);
 
   return (
-    <PageShell ambient={2}>
+    <AppShell>
       <div className="mx-auto max-w-screen-2xl px-6 sm:px-8 pb-20">
 
         {/* Command header */}
@@ -40,6 +40,6 @@ export default async function OperationsLayout({
         {/* Page content injected here */}
         {children}
       </div>
-    </PageShell>
+    </AppShell>
   );
 }

@@ -1,6 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { cookies }           from "next/headers";
-import { PageShell }         from "@/components/PageShell";
+import { AppShell }          from "@/components/app-shell";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { InvitationsPanel }  from "@/components/organization/InvitationsPanel";
 import { verifyAccessToken }   from "@/lib/auth/jwt";
@@ -43,7 +43,7 @@ export default async function InvitationsPage({ params }: { params: Promise<{ lo
   // ordinary organization/site CONTEXT elsewhere; only this surface is denied.
   return (
     <RequireCapability capability="org_admin">
-      <PageShell>
+      <AppShell>
         <div className="mx-auto max-w-7xl px-6 pt-10">
           <div className="mb-8">
             <p className="font-mono text-sm uppercase tracking-widest text-signal">{t("eyebrow")}</p>
@@ -58,7 +58,7 @@ export default async function InvitationsPage({ params }: { params: Promise<{ lo
             <p className="text-muted">{t("noOrg")}</p>
           )}
         </div>
-      </PageShell>
+      </AppShell>
     </RequireCapability>
   );
 }

@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }        from "@/components/PageShell";
+import { AppShell }         from "@/components/app-shell";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { BillingDashboard } from "@/components/billing/BillingDashboard";
 import { PageHeader }       from "@/components/ui/PageHeader";
@@ -27,7 +27,7 @@ export default async function BillingPage({
   // denial in place if the route ever moves out of the matched prefix.
   return (
     <RequireCapability capability="billing_admin">
-      <PageShell>
+      <AppShell>
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <PageHeader
             eyebrow={t("eyebrow")}
@@ -36,7 +36,7 @@ export default async function BillingPage({
           />
           <BillingDashboard />
         </div>
-      </PageShell>
+      </AppShell>
     </RequireCapability>
   );
 }

@@ -1048,6 +1048,13 @@
     "tagline": "Plattform für industrielle Intelligenz"
   },
   "dashboard": {
+    "platformComponents": {
+      "brainEngine": "Brain-Engine",
+      "knowledgeCloud": "Wissens-Cloud",
+      "caseEngine": "Case-Engine",
+      "telemetry": "Telemetrie-Anbindung",
+      "plcConnectivity": "SPS-Konnektivität"
+    },
     "title": "Werksdashboard",
     "eyebrow": "Betrieb",
     "simulated": "Simulierte Telemetrie",
@@ -4013,6 +4020,8 @@
       }
     },
     "nav": {
+      "openMenu": "Journal-Navigation öffnen",
+      "menuTitle": "Journal-Navigation",
       "becomeAuthor": "Autor werden",
       "signIn": "Anmelden",
       "createAccount": "Konto beantragen",
@@ -8029,5 +8038,14 @@
       "signInRequired": "Melden Sie sich an, um Aufzeichnungen in Ihrer Liste zu speichern",
       "failed": "Ihre Liste ließ sich nicht aktualisieren. Versuchen Sie es erneut."
     }
+  },
+  "engineeringHub": {
+    "hub": "Engineering-Hub",
+    "executiveDashboard": "Management-Dashboard",
+    "intelligenceOverview": "Intelligence-Übersicht",
+    "projects": "Projekte",
+    "engineeringMemory": "Engineering-Wissensspeicher",
+    "knowledgeGraph": "Wissensgraph",
+    "domainExpertise": "Fachdomänen"
   }
 }

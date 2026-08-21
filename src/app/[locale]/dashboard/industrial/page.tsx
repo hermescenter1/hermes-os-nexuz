@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
+import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PLATFORM_COMPONENTS } from "@/lib/industrial/platform-facts";
 
@@ -39,10 +39,12 @@ export default async function IndustrialOverviewPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t    = await getTranslations("industrial");
+  // PHASE 107 — the System Status rows used to print the raw component key.
+  const tPlatform = await getTranslations("dashboard.platformComponents");
   const tFn  = t as unknown as (k: string) => string;
 
   return (
-    <PageShell ambient={2}>
+    <AppShell>
       <div className="mx-auto max-w-7xl px-6 sm:px-8 pb-20">
 
         <PageHeader
@@ -163,7 +165,7 @@ export default async function IndustrialOverviewPage({
                   const label = c.state.charAt(0).toUpperCase() + c.state.slice(1);
                   return (
                     <li key={c.key} className="flex items-center justify-between gap-2">
-                      <span className="font-body text-sm text-ink">{c.key.replace(/([A-Z])/g, " $1").trim()}</span>
+                      <span className="font-body text-sm text-ink">{tPlatform(c.key)}</span>
                       <span className={`flex items-center gap-1.5 font-body text-xs ${tone}`}>
                         <span className={`inline-block h-1.5 w-1.5 rounded-full ${dot}`} />
                         {label}
@@ -200,6 +202,6 @@ export default async function IndustrialOverviewPage({
         </div>
 
       </div>
-    </PageShell>
+    </AppShell>
   );
 }
