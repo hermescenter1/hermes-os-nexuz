@@ -40,7 +40,7 @@ import path from "node:path";
 import os from "node:os";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { EXIT, classifyAccess } from "./contracts.mjs";
+import { EXIT, classifyAccess, checkFinalLocation } from "./contracts.mjs";
 import { RecordStore, acquireLock, assertOutputOutsideRepo, LockHeldError } from "./record-store.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -265,11 +265,20 @@ for (const cell of cells) {
     const target = BASE + cell.url;
     await navigate(target, cell.wait ?? 1800);
 
-    /* Assert we are ON the page before photographing it. A screenshot carries
-       no URL, so without this a mis-timed navigation yields a perfectly valid
-       image of the wrong route. */
+    /*
+     * Assert we are on the RIGHT page before measuring or photographing it.
+     * A screenshot carries no URL, so a mis-timed navigation otherwise yields a
+     * perfectly valid image of the wrong route. Checking only that `location`
+     * was non-empty — the earlier behaviour — let any wrong-but-non-empty page
+     * through, which is how four cells photographed the previous route.
+     *
+     * This runs BEFORE the probe and BEFORE captureScreenshot, so a mismatch
+     * writes neither a PNG nor a record: the cell simply stays INCOMPLETE and
+     * resume re-captures it.
+     */
     const landed = (await S("Runtime.evaluate", { expression: "location.pathname+location.search", returnByValue: true })).result.value;
-    if (!landed || landed === "about:blank") throw new Error(`navigation did not settle (landed on ${landed})`);
+    const location = checkFinalLocation(cell, landed);
+    if (!location.ok) throw new Error(location.reason);
 
     const d = (await S("Runtime.evaluate", { expression: PROBE, returnByValue: true })).result.value;
     if (!d) throw new Error("probe returned nothing (page not ready)");
@@ -286,6 +295,7 @@ for (const cell of cells) {
       httpState: docStatus,
       redirectChain: [...redirects],
       accessState: classifyAccess({ finalUrl: landed, httpState: docStatus, domText: d.text }),
+      finalLocationCheck: location.reason,
       sessionRole,
       screenshotFile: cell.file,
       capturedAt: new Date().toISOString(),
@@ -301,5 +311,13 @@ for (const cell of cells) {
   }
 }
 
-console.log(`\ncaptured ${ok}, failed ${failed}, of ${cells.length}`);
-ws.close(); chrome.kill(); process.exit(EXIT.OK);
+console.log(`\ncaptured ${ok}, failed ${failed}, planned ${cells.length}`);
+ws.close(); chrome.kill();
+
+/*
+ * A run that failed even one cell has NOT succeeded. Exiting 0 here would let a
+ * supervisor record a partial pack as complete — which is exactly the class of
+ * mistake this harness exists to prevent. The verifier remains the final judge
+ * of completeness; the sweep's job is simply not to misreport its own outcome.
+ */
+process.exit(failed > 0 ? EXIT.CAPTURE_INCOMPLETE : EXIT.OK);

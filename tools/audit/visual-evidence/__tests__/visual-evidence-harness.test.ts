@@ -23,7 +23,7 @@ import {
   RecordStore, acquireLock, readLock, reclaimStaleLock,
   assertOutputOutsideRepo, LockHeldError, sha256,
 } from "../record-store.mjs";
-import { explainDuplicateGroup, classifyAccess, isStructurallyComplete, EXIT, ACCESS } from "../contracts.mjs";
+import { explainDuplicateGroup, classifyAccess, isStructurallyComplete, checkFinalLocation, EXIT, ACCESS } from "../contracts.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SWEEP = path.join(HERE, "..", "sweep.mjs");
@@ -139,13 +139,86 @@ describe("atomic per-cell store", () => {
   });
 });
 
-describe("capture preconditions", () => {
-  it("8. a landing path that differs from the request is recorded, not hidden", () => {
-    // The sweep asserts location before photographing; the record keeps both so
-    // a redirect can never be silently presented as a direct hit.
-    const rec = { ...baseRecord("g", "auth/g.png"), requestedUrl: "http://x/en/login", finalUrl: "/en/auth/login" };
-    expect(rec.requestedUrl).not.toContain(rec.finalUrl);
-    expect(classifyAccess({ finalUrl: rec.finalUrl, httpState: 200, domText: "" })).toBe(ACCESS.SESSION_LOST);
+describe("final-location contract", () => {
+  /*
+   * These exercise the REAL function the sweep calls before it photographs and
+   * the verifier re-applies afterwards — not a stand-in object. The earlier
+   * version of this test built a synthetic record and asserted against it,
+   * which proved nothing about the code path that actually guards captures.
+   */
+  it("8. accepts only an exact pathname+search match by default", () => {
+    expect(checkFinalLocation({ url: "/en/dashboard" }, "/en/dashboard").ok).toBe(true);
+    const wrong = checkFinalLocation({ url: "/en/dashboard" }, "/en/dashboard/other");
+    expect(wrong.ok).toBe(false);
+    expect(wrong.reason).toMatch(/^WRONG_FINAL_LOCATION/);
+  });
+
+  it("8b. rejects any wrong-but-non-empty location (the original defect)", () => {
+    // The first implementation only checked that `location` was non-empty, so
+    // every one of these would have been photographed as if correct.
+    for (const landed of ["/en/", "/en/auth/login", "/de/dashboard", "/en/dashboard?x=1"]) {
+      expect(checkFinalLocation({ url: "/en/dashboard" }, landed).ok).toBe(false);
+    }
+  });
+
+  it("8c. rejects an unsettled navigation", () => {
+    for (const landed of ["", "about:blank", undefined, null]) {
+      const r = checkFinalLocation({ url: "/en/dashboard" }, landed as string);
+      expect(r.ok).toBe(false);
+      expect(r.reason).toMatch(/^NAVIGATION_DID_NOT_SETTLE/);
+    }
+  });
+
+  it("8d. permits a redirect ONLY when that cell declares it", () => {
+    const shim = { url: "/en/login", allowedFinalUrls: ["/en/auth/login"] };
+    const ok = checkFinalLocation(shim, "/en/auth/login");
+    expect(ok.ok).toBe(true);
+    expect(ok.reason).toMatch(/^DECLARED_REDIRECT/);
+
+    // The same landing without the declaration is refused — no heuristic, no
+    // "login pages are always fine".
+    expect(checkFinalLocation({ url: "/en/login" }, "/en/auth/login").ok).toBe(false);
+    // And a declaration does not open the door to any other destination.
+    expect(checkFinalLocation(shim, "/en/somewhere-else").ok).toBe(false);
+  });
+
+  it("8e. MUTATION: allowing an arbitrary landing path fails the contract", () => {
+    // Stand-in for the mutation "drop the assertion / accept anything": if the
+    // contract ever returned ok for a non-declared mismatch, this flips red.
+    const mismatch = checkFinalLocation({ url: "/en/a" }, "/en/b");
+    expect(mismatch.ok).toBe(false);
+    expect(mismatch.reason).toContain("planned /en/a");
+    expect(mismatch.reason).toContain("landed /en/b");
+  });
+
+  it("keeps a redirect visible rather than presenting it as a direct hit", () => {
+    expect(classifyAccess({ finalUrl: "/en/auth/login", httpState: 200, domText: "" })).toBe(ACCESS.SESSION_LOST);
+  });
+
+  it("PNG dimensions are checked on BOTH axes", () => {
+    /*
+     * A 1x1 PNG stands in for "right width, wrong height". The verifier's rule
+     * is reproduced here against real IHDR bytes, so the mutation "compare
+     * width only" makes this red: with height dropped, `wrongHeight` passes.
+     */
+    const ihdr = (w: number, h: number) => {
+      const b = Buffer.alloc(24);
+      b.writeUInt32BE(0x89504e47, 0);
+      b.write("IHDR", 12, "ascii");
+      b.writeUInt32BE(w, 16); b.writeUInt32BE(h, 20);
+      return b;
+    };
+    const read = (buf: Buffer) => ({ width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) });
+    const planned = { width: 1440, height: 900 };
+
+    const exact = read(ihdr(1440, 900));
+    const wrongHeight = read(ihdr(1440, 4200));
+    const wrongWidth = read(ihdr(375, 900));
+
+    const matches = (d: { width: number; height: number }) => d.width === planned.width && d.height === planned.height;
+    expect(matches(exact)).toBe(true);
+    expect(matches(wrongHeight)).toBe(false);   // caught only if height is compared
+    expect(matches(wrongWidth)).toBe(false);
   });
 
   it("14. refuses an output directory inside the source tree by default", () => {
@@ -231,6 +304,28 @@ describe("the real binary", () => {
     delete env.HERMES_AUDIT_EMAIL; delete env.HERMES_AUDIT_PASSWORD;
     const r = spawnSync(process.execPath, [SWEEP, cells, dir], { encoding: "utf8", env });
     expect(r.status).toBe(EXIT.NO_CREDENTIALS);
+  });
+
+  it("exits CAPTURE_INCOMPLETE when at least one cell fails", () => {
+    /*
+     * Real binary, real cells, no server listening — so every cell fails. The
+     * run must NOT report success: a supervisor that sees exit 0 would record a
+     * partial pack as complete, which is the whole class of mistake this
+     * harness exists to prevent.
+     *
+     * Chrome is pointed at a path that cannot launch, so the failure is the
+     * capture loop's, not the environment's, and the test needs no browser.
+     */
+    const cells = path.join(dir, "cells.json");
+    fs.writeFileSync(cells, JSON.stringify([
+      { cellId: "c1", file: "auth/c1.png", url: "/en/x", route: "/x", locale: "en", width: 1440, height: 900 },
+    ]));
+    const r = spawnSync(process.execPath, [SWEEP, cells, dir, "--chrome", path.join(dir, "no-such-chrome")], {
+      encoding: "utf8", timeout: 120000,
+      env: { ...process.env, HERMES_AUDIT_EMAIL: "a@example.invalid", HERMES_AUDIT_PASSWORD: "b" },
+    });
+    expect(r.status).not.toBe(EXIT.OK);
+    expect(fs.existsSync(path.join(dir, "auth/c1.png"))).toBe(false);
   });
 
   it("refuses a non-local base URL without an explicit override", () => {

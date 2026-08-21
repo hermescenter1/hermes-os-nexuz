@@ -25,7 +25,54 @@ export const EXIT = {
   NO_CREDENTIALS: 5,
   /** Login did not produce a session. */
   LOGIN_FAILED: 6,
+  /**
+   * At least one cell failed to capture. The run produced real output, so this
+   * is not a hard error — but it is NOT success either, and a supervisor that
+   * treats it as success will report a partial pack as complete.
+   */
+  CAPTURE_INCOMPLETE: 7,
 };
+
+/**
+ * Did the browser end up on the page this cell is supposed to photograph?
+ *
+ * This is the single contract the sweep enforces before it photographs anything
+ * and the verifier re-applies afterwards. It exists because the earlier check
+ * only asked whether `location` was non-empty — so ANY wrong-but-non-empty
+ * page satisfied it, which is precisely the failure that once produced four
+ * screenshots of the wrong route.
+ *
+ * The comparison is exact by default. A redirect is legitimate ONLY when the
+ * cell declares it: `allowedFinalUrls: ["/en/auth/login"]`. There is deliberately
+ * no heuristic — no "same prefix", no "close enough", no automatic trailing
+ * slash forgiveness — because every heuristic here is a way for a wrong page to
+ * pass. `/login → /auth/login` is a real shim, and it is allowed by writing it
+ * down in the cell, not by pattern-matching.
+ *
+ * @param {{url: string, allowedFinalUrls?: string[]}} cell
+ * @param {string} landed  pathname + search actually reached
+ * @returns {{ok: boolean, reason: string}}
+ */
+export function checkFinalLocation(cell, landed) {
+  const planned = cell?.url;
+  if (typeof landed !== "string" || landed === "" || landed === "about:blank") {
+    return { ok: false, reason: `NAVIGATION_DID_NOT_SETTLE: landed on ${JSON.stringify(landed)}` };
+  }
+  if (typeof planned !== "string" || planned === "") {
+    return { ok: false, reason: "CELL_HAS_NO_PLANNED_URL" };
+  }
+  if (landed === planned) return { ok: true, reason: "EXACT_MATCH" };
+
+  const allowed = Array.isArray(cell.allowedFinalUrls) ? cell.allowedFinalUrls : [];
+  if (allowed.includes(landed)) {
+    return { ok: true, reason: `DECLARED_REDIRECT: ${planned} -> ${landed}` };
+  }
+  return {
+    ok: false,
+    reason: `WRONG_FINAL_LOCATION: planned ${planned}, landed ${landed}` +
+      (allowed.length ? ` (declared redirects: ${allowed.join(", ")})` : " (no redirect declared for this cell)"),
+  };
+}
 
 /** Access states a captured cell can legitimately be in. */
 export const ACCESS = {

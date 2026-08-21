@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { RecordStore, sha256 } from "./record-store.mjs";
-import { explainDuplicateGroup, ACCESS } from "./contracts.mjs";
+import { explainDuplicateGroup, checkFinalLocation, ACCESS } from "./contracts.mjs";
 
 const [, , cellsFile, outDir, ...rest] = process.argv;
 if (!cellsFile || !outDir) {
@@ -40,7 +40,7 @@ function pngSize(buf) {
 const counters = {
   PLANNED: cells.length, CAPTURED: 0, MISSING: 0, EXTRA: 0,
   MEASUREMENT_WITHOUT_SCREEN: 0, SCREEN_WITHOUT_MEASUREMENT: 0,
-  HASH_MISMATCH: 0, DUPLICATE_CELL_RECORD: 0, WRONG_DIMENSIONS: 0,
+  HASH_MISMATCH: 0, DUPLICATE_CELL_RECORD: 0, WRONG_DIMENSIONS: 0, WRONG_FINAL_LOCATION: 0,
   SESSION_LOST: 0, UNEXPLAINED_DUPLICATES: 0,
 };
 const manifest = [];
@@ -80,9 +80,26 @@ for (const c of cells) {
     counters.HASH_MISMATCH++; cell.result = "FAIL";
     cell.anomalies.push("screenshot does not match the hash recorded with it");
   }
-  if (!dim || dim.width !== c.width) {
+  /*
+   * BOTH axes. Checking width alone accepts an image of the right width and the
+   * wrong height — a full-page capture where a viewport one was planned, say —
+   * which changes what the reviewer is actually looking at.
+   */
+  if (!dim || dim.width !== c.width || dim.height !== c.height) {
     counters.WRONG_DIMENSIONS++; cell.result = "FAIL";
-    cell.anomalies.push(`width ${dim?.width} != planned ${c.width}`);
+    cell.anomalies.push(
+      `dimensions ${dim ? `${dim.width}x${dim.height}` : "UNREADABLE"} != planned ${c.width}x${c.height}`,
+    );
+  }
+  /*
+   * Re-apply the SAME contract the sweep used before photographing. The sweep
+   * cannot be the only place this is enforced: a record written by an older or
+   * patched binary would otherwise carry an unchallenged finalUrl.
+   */
+  const location = checkFinalLocation(c, rec.finalUrl);
+  if (!location.ok) {
+    counters.WRONG_FINAL_LOCATION++; cell.result = "FAIL";
+    cell.anomalies.push(location.reason);
   }
   if (rec.accessState === ACCESS.SESSION_LOST) {
     counters.SESSION_LOST++; cell.result = "FAIL";
@@ -125,7 +142,7 @@ const pass = counters.CAPTURED === counters.PLANNED &&
   counters.MISSING === 0 && counters.EXTRA === 0 &&
   counters.MEASUREMENT_WITHOUT_SCREEN === 0 && counters.SCREEN_WITHOUT_MEASUREMENT === 0 &&
   counters.HASH_MISMATCH === 0 && counters.DUPLICATE_CELL_RECORD === 0 &&
-  counters.WRONG_DIMENSIONS === 0 && counters.SESSION_LOST === 0 &&
+  counters.WRONG_DIMENSIONS === 0 && counters.WRONG_FINAL_LOCATION === 0 && counters.SESSION_LOST === 0 &&
   counters.UNEXPLAINED_DUPLICATES === 0;
 
 console.log("=== duplicate groups ===");
