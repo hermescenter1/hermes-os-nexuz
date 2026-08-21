@@ -40,7 +40,7 @@ import path from "node:path";
 import os from "node:os";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { EXIT, classifyAccess, checkFinalLocation } from "./contracts.mjs";
+import { EXIT, classifyAccess, checkFinalLocation, captureExitCode } from "./contracts.mjs";
 import { RecordStore, acquireLock, assertOutputOutsideRepo, LockHeldError } from "./record-store.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -320,4 +320,4 @@ ws.close(); chrome.kill();
  * mistake this harness exists to prevent. The verifier remains the final judge
  * of completeness; the sweep's job is simply not to misreport its own outcome.
  */
-process.exit(failed > 0 ? EXIT.CAPTURE_INCOMPLETE : EXIT.OK);
+process.exit(captureExitCode(failed));

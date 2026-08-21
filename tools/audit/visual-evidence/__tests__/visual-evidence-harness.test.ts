@@ -23,7 +23,10 @@ import {
   RecordStore, acquireLock, readLock, reclaimStaleLock,
   assertOutputOutsideRepo, LockHeldError, sha256,
 } from "../record-store.mjs";
-import { explainDuplicateGroup, classifyAccess, isStructurallyComplete, checkFinalLocation, EXIT, ACCESS } from "../contracts.mjs";
+import {
+  explainDuplicateGroup, classifyAccess, isStructurallyComplete,
+  checkFinalLocation, checkDimensions, captureExitCode, EXIT, ACCESS,
+} from "../contracts.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SWEEP = path.join(HERE, "..", "sweep.mjs");
@@ -195,32 +198,6 @@ describe("final-location contract", () => {
     expect(classifyAccess({ finalUrl: "/en/auth/login", httpState: 200, domText: "" })).toBe(ACCESS.SESSION_LOST);
   });
 
-  it("PNG dimensions are checked on BOTH axes", () => {
-    /*
-     * A 1x1 PNG stands in for "right width, wrong height". The verifier's rule
-     * is reproduced here against real IHDR bytes, so the mutation "compare
-     * width only" makes this red: with height dropped, `wrongHeight` passes.
-     */
-    const ihdr = (w: number, h: number) => {
-      const b = Buffer.alloc(24);
-      b.writeUInt32BE(0x89504e47, 0);
-      b.write("IHDR", 12, "ascii");
-      b.writeUInt32BE(w, 16); b.writeUInt32BE(h, 20);
-      return b;
-    };
-    const read = (buf: Buffer) => ({ width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) });
-    const planned = { width: 1440, height: 900 };
-
-    const exact = read(ihdr(1440, 900));
-    const wrongHeight = read(ihdr(1440, 4200));
-    const wrongWidth = read(ihdr(375, 900));
-
-    const matches = (d: { width: number; height: number }) => d.width === planned.width && d.height === planned.height;
-    expect(matches(exact)).toBe(true);
-    expect(matches(wrongHeight)).toBe(false);   // caught only if height is compared
-    expect(matches(wrongWidth)).toBe(false);
-  });
-
   it("14. refuses an output directory inside the source tree by default", () => {
     const inside = path.join(REPO_ROOT, "docs", "evidence-should-not-live-here");
     expect(() => assertOutputOutsideRepo(inside, REPO_ROOT)).toThrow(/inside the source tree/);
@@ -272,6 +249,100 @@ describe("duplicate explanation", () => {
   });
 });
 
+describe("PNG dimensions — proved through the real verifier", () => {
+  const VERIFY = path.join(HERE, "..", "verify.mjs");
+
+  /**
+   * A minimal PNG header carrying real IHDR width/height. `pngSize` in the
+   * verifier reads exactly these bytes, so the fixture exercises the production
+   * path rather than a re-derived comparison.
+   */
+  const pngWith = (w: number, h: number) => {
+    const b = Buffer.alloc(33);
+    b.writeUInt32BE(0x89504e47, 0);
+    b.write("IHDR", 12, "ascii");
+    b.writeUInt32BE(w, 16);
+    b.writeUInt32BE(h, 20);
+    return b;
+  };
+
+  /** Build a one-cell pack whose image has the given real dimensions. */
+  const pack = (actualW: number, actualH: number, plannedW = 1440, plannedH = 900) => {
+    const file = "auth/dim.png";
+    const bytes = pngWith(actualW, actualH);
+    const store = new RecordStore(dir);
+    store.writeCell({
+      runId: "test", cellId: "dim", route: "/x", locale: "en",
+      viewport: `${plannedW}x${plannedH}`,
+      requestedUrl: "/en/x", finalUrl: "/en/x",
+      httpState: 200, accessState: ACCESS.AUTHENTICATED,
+      screenshotFile: file, capturedAt: new Date().toISOString(),
+    }, bytes);
+
+    const cells = path.join(dir, "cells.json");
+    fs.writeFileSync(cells, JSON.stringify([
+      { cellId: "dim", file, url: "/en/x", route: "/x", locale: "en", width: plannedW, height: plannedH },
+    ]));
+    return spawnSync(process.execPath, [VERIFY, cells, dir], { encoding: "utf8" });
+  };
+
+  it("a) 1440×900 against a planned 1440×900 verifies clean", () => {
+    const r = pack(1440, 900);
+    expect(r.stdout).toContain("WRONG_DIMENSIONS=0");
+    expect(r.stdout).toContain("EVIDENCE_VERIFICATION=PASS");
+    expect(r.status).toBe(0);
+  });
+
+  it("b) 1440×4200 (right width, wrong height) is rejected non-zero", () => {
+    const r = pack(1440, 4200);
+    expect(r.stdout).toContain("WRONG_DIMENSIONS=1");
+    expect(r.stdout).toContain("EVIDENCE_VERIFICATION=FAIL");
+    expect(r.status).not.toBe(0);
+  });
+
+  it("c) 390×900 (wrong width) is rejected non-zero", () => {
+    const r = pack(390, 900);
+    expect(r.stdout).toContain("WRONG_DIMENSIONS=1");
+    expect(r.stdout).toContain("EVIDENCE_VERIFICATION=FAIL");
+    expect(r.status).not.toBe(0);
+  });
+
+  it("the shared predicate the verifier consumes reports both axes", () => {
+    // Same function object the verifier imports — not a local re-derivation.
+    expect(checkDimensions({ width: 1440, height: 900 }, { width: 1440, height: 900 }).ok).toBe(true);
+    const tall = checkDimensions({ width: 1440, height: 900 }, { width: 1440, height: 4200 });
+    expect(tall.ok).toBe(false);
+    expect(tall.reason).toContain("actual 1440x4200");
+    expect(tall.reason).toContain("planned 1440x900");
+    expect(checkDimensions({ width: 1440, height: 900 }, null).ok).toBe(false);
+  });
+});
+
+describe("capture exit code", () => {
+  /*
+   * Asserted on the shared function the sweep calls for its own process.exit.
+   * Proving this through the binary alone is not possible honestly: a run with
+   * an unlaunchable browser exits during startup and never reaches the capture
+   * loop, so such a test shows startup failure while appearing to show capture
+   * failure. That was the previous test's overclaim.
+   */
+  it("returns OK only when nothing failed", () => {
+    expect(captureExitCode(0)).toBe(EXIT.OK);
+  });
+
+  it("returns CAPTURE_INCOMPLETE for a single failure", () => {
+    expect(captureExitCode(1)).toBe(EXIT.CAPTURE_INCOMPLETE);
+    expect(captureExitCode(1)).not.toBe(EXIT.OK);
+  });
+
+  it("returns CAPTURE_INCOMPLETE for many failures", () => {
+    for (const n of [2, 7, 792]) {
+      expect(captureExitCode(n)).toBe(EXIT.CAPTURE_INCOMPLETE);
+      expect(captureExitCode(n)).not.toBe(EXIT.OK);
+    }
+  });
+});
+
 describe("the real binary", () => {
   it("12. exits LOCKED when another writer holds the lock", () => {
     acquireLock(dir, "held-by-someone-else");
@@ -306,15 +377,14 @@ describe("the real binary", () => {
     expect(r.status).toBe(EXIT.NO_CREDENTIALS);
   });
 
-  it("exits CAPTURE_INCOMPLETE when at least one cell fails", () => {
+  it("exits non-zero and writes nothing when the browser cannot start", () => {
     /*
-     * Real binary, real cells, no server listening — so every cell fails. The
-     * run must NOT report success: a supervisor that sees exit 0 would record a
-     * partial pack as complete, which is the whole class of mistake this
-     * harness exists to prevent.
-     *
-     * Chrome is pointed at a path that cannot launch, so the failure is the
-     * capture loop's, not the environment's, and the test needs no browser.
+     * Named for what it actually proves. Chrome is pointed at a path that
+     * cannot launch, so the run dies during startup and never reaches the
+     * capture loop — this demonstrates a failed run produces no evidence, NOT
+     * that a capture failure yields EXIT.CAPTURE_INCOMPLETE. That property is
+     * asserted directly against `captureExitCode` above, because claiming it
+     * here would be reading a startup failure as a capture failure.
      */
     const cells = path.join(dir, "cells.json");
     fs.writeFileSync(cells, JSON.stringify([

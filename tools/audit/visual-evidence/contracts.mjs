@@ -34,6 +34,44 @@ export const EXIT = {
 };
 
 /**
+ * Do the captured pixels match the viewport the cell planned?
+ *
+ * BOTH axes, deliberately. Comparing width alone accepts an image of the right
+ * width and the wrong height — a full-page capture where a viewport one was
+ * planned, say — which changes what the reviewer is actually looking at.
+ *
+ * This lives here, and `verify.mjs` calls it, so the rule has exactly one
+ * implementation. A test that re-derived the comparison locally would pass
+ * happily while the verifier did something else entirely.
+ *
+ * @param {{width: number, height: number}} cell     planned viewport
+ * @param {{width: number, height: number}|null} dim actual IHDR dimensions
+ * @returns {{ok: boolean, reason: string}}
+ */
+export function checkDimensions(cell, dim) {
+  if (!dim) return { ok: false, reason: "WRONG_DIMENSIONS: image dimensions unreadable (not a PNG?)" };
+  if (dim.width === cell.width && dim.height === cell.height) {
+    return { ok: true, reason: `EXACT_DIMENSIONS: ${dim.width}x${dim.height}` };
+  }
+  return {
+    ok: false,
+    reason: `WRONG_DIMENSIONS: actual ${dim.width}x${dim.height} != planned ${cell.width}x${cell.height}`,
+  };
+}
+
+/**
+ * The sweep's own exit code, given how many cells failed.
+ *
+ * Extracted so it can be asserted directly. Proving this through the binary
+ * alone is unreliable: a run with an unlaunchable browser exits during startup
+ * and never reaches the capture loop, so such a test demonstrates startup
+ * failure while appearing to demonstrate capture failure.
+ */
+export function captureExitCode(failed) {
+  return failed > 0 ? EXIT.CAPTURE_INCOMPLETE : EXIT.OK;
+}
+
+/**
  * Did the browser end up on the page this cell is supposed to photograph?
  *
  * This is the single contract the sweep enforces before it photographs anything

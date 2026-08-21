@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { RecordStore, sha256 } from "./record-store.mjs";
-import { explainDuplicateGroup, checkFinalLocation, ACCESS } from "./contracts.mjs";
+import { explainDuplicateGroup, checkFinalLocation, checkDimensions, ACCESS } from "./contracts.mjs";
 
 const [, , cellsFile, outDir, ...rest] = process.argv;
 if (!cellsFile || !outDir) {
@@ -80,16 +80,12 @@ for (const c of cells) {
     counters.HASH_MISMATCH++; cell.result = "FAIL";
     cell.anomalies.push("screenshot does not match the hash recorded with it");
   }
-  /*
-   * BOTH axes. Checking width alone accepts an image of the right width and the
-   * wrong height — a full-page capture where a viewport one was planned, say —
-   * which changes what the reviewer is actually looking at.
-   */
-  if (!dim || dim.width !== c.width || dim.height !== c.height) {
+  /* The shared predicate — the same one the fixtures assert against, so a test
+     cannot pass while the verifier applies a different rule. */
+  const dims = checkDimensions(c, dim);
+  if (!dims.ok) {
     counters.WRONG_DIMENSIONS++; cell.result = "FAIL";
-    cell.anomalies.push(
-      `dimensions ${dim ? `${dim.width}x${dim.height}` : "UNREADABLE"} != planned ${c.width}x${c.height}`,
-    );
+    cell.anomalies.push(dims.reason);
   }
   /*
    * Re-apply the SAME contract the sweep used before photographing. The sweep
