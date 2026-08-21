@@ -4990,6 +4990,92 @@
       "disclaimerDecision": "Decision-support report.",
       "disclaimerNotCertified": "Not a certified safety report.",
       "disclaimerVerify": "Verify with qualified personnel and site procedures."
+    },
+    "reference": {
+      "heading": "Phase 101 reference diagnostic",
+      "lede": "A deterministic reference diagnostic. The Phase 101 structural engine replays a curated case against a sealed engineering reference design, walking the structure of that design to separate what was observed, what argues against it, and what is still unknown.",
+      "disclosure": {
+        "badge": "SAMPLE",
+        "title": "Illustrative sample — not live plant telemetry",
+        "body": "These cases come from original synthetic reference designs authored for this platform. No connection is made to any plant, PLC, SCADA or OPC UA server, and nothing here can issue a command."
+      },
+      "relationship": {
+        "heading": "How this relates to the workspace above",
+        "body": "Two separate capabilities share this page. The workspace above analyses a fault report you write yourself. This panel replays a sealed reference case through the Phase 101 structural engine — it reads nothing from a plant, connects to no equipment, and issues no command."
+      },
+      "selector": {
+        "label": "Reference case",
+        "submit": "Run diagnosis",
+        "hint": "The engine is deterministic: the same case always produces the same result."
+      },
+      "case": {
+        "heading": "Selected case",
+        "narrative": "Operator report",
+        "system": "Reference system",
+        "platform": "Control platform",
+        "version": "Source revision",
+        "checksum": "Content checksum",
+        "observations": "Observations supplied",
+        "textLocaleNotice": "Engineering text in this corpus is authored in English and Persian only. The case description and object labels below are therefore shown in English."
+      },
+      "observed": {
+        "heading": "Observed plant state",
+        "empty": "This case supplies no observation that resolves to a corpus object.",
+        "columnNode": "Engineering object",
+        "columnState": "Observed state",
+        "columnLayer": "Layer",
+        "columnSource": "Source reference"
+      },
+      "state": {
+        "TRUE": "Active",
+        "FALSE": "Not active",
+        "NORMAL": "Normal",
+        "ABNORMAL": "Abnormal",
+        "STALE": "Stale",
+        "ABSENT": "Not supplied"
+      },
+      "hypotheses": {
+        "heading": "Ranked fault hypotheses",
+        "empty": "No fault mode in the reference corpus is reachable from these observations. The engine offers no hypothesis rather than a guess.",
+        "rank": "Rank {rank}",
+        "confidence": "Evidence coverage",
+        "score": "Structural score",
+        "faultClass": "Fault class",
+        "subsystem": "Subsystem",
+        "reviewOnly": "Review only — a safety-classified object is involved",
+        "chain": "Reasoning path"
+      },
+      "evidence": {
+        "supporting": "Supporting evidence",
+        "contradicting": "Contradicting evidence",
+        "missing": "Missing evidence",
+        "noneSupporting": "No supplied observation supports this hypothesis.",
+        "noneContradicting": "No supplied observation argues against this hypothesis.",
+        "noneMissing": "Every piece of declared evidence was supplied."
+      },
+      "validation": {
+        "heading": "Human validation gate",
+        "body": "Nothing below is a conclusion. A qualified engineer must confirm every item against the plant before any intervention.",
+        "none": "The engine raised no escalation condition for this case."
+      },
+      "actions": {
+        "heading": "Safe verification actions",
+        "lede": "Read-only inspection steps addressed to a qualified person. The platform cannot perform them.",
+        "verifies": "Distinguishes",
+        "reviewOnly": "Requires a qualified safety engineer",
+        "empty": "The corpus declares no verification action for the ranked hypotheses."
+      },
+      "provenance": {
+        "heading": "Provenance",
+        "engine": "Reasoning engine",
+        "corpus": "Corpus checksum",
+        "citations": "Cited engineering objects",
+        "systems": "Reference systems / objects / relations"
+      },
+      "error": {
+        "heading": "No diagnosis available for that reference",
+        "body": "That reference case is not part of the curated public set, or the identifier was not usable. Choose one of the cases listed above."
+      }
     }
   },
   "assetOperations": {
