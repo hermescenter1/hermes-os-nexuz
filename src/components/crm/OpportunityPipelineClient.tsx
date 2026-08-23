@@ -3,10 +3,17 @@
 // PHASE 87G AMENDMENT 1 — localized pipeline (kanban + list views preserved).
 // Stage VALUES stay API enums; labels come from crm.stage. Money bidi-safe.
 
-import { useState, useEffect } from "react";
+// PHASE 107 STAGE 6-A — a failed load no longer renders as an empty pipeline.
+// Eight stage columns of "no deals" is a plausible-looking screen, which is
+// what made this failure invisible. Endpoint and both views unchanged.
+
+import { useState }            from "react";
 import Link                    from "next/link";
 import { usePathname }         from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { useResource }         from "@/lib/client/use-resource";
+import { requestJson }         from "@/lib/client/resource-request";
 import type { CrmOpportunity, CrmOpportunityStage } from "@/lib/crm/types";
 
 const STAGES: CrmOpportunityStage[] = [
@@ -29,27 +36,34 @@ function fmt(v: number): string {
 export function OpportunityPipelineClient() {
   const t = useTranslations("crm");
   const locale = useLocale();
-  const [opps,    setOpps]    = useState<CrmOpportunity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [view,    setView]    = useState<"kanban" | "list">("kanban");
+  const [view, setView] = useState<"kanban" | "list">("kanban");
   const pathname = usePathname();
   const base = pathname.startsWith("/fa") ? "/fa" : "/en";
 
-  useEffect(() => {
-    fetch("/api/crm/opportunities")
-      .then(r => r.json())
-      .then(d => setOpps(d.opportunities ?? []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const oppsState = useResource<CrmOpportunity[]>(
+    (signal) => requestJson(
+      "/api/crm/opportunities",
+      (body) => (body as { opportunities?: CrmOpportunity[] }).opportunities,
+      { signal },
+    ),
+    [],
+  );
 
   const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
 
-  if (loading) return (
-    <div className="h-64 rounded-xl border border-line bg-surface animate-pulse">
+  if (oppsState.status === "LOADING") return (
+    <div data-async-state="loading" className="h-64 rounded-xl border border-line bg-surface animate-pulse">
       <span className="sr-only" role="status">{t("common.loading")}</span>
     </div>
   );
+
+  if (oppsState.status === "ERROR" && oppsState.failure) return (
+    <div className="rounded-xl border border-line bg-surface">
+      <ResourceFailureNotice code={oppsState.failure} onRetry={oppsState.retry} />
+    </div>
+  );
+
+  const opps = oppsState.data ?? [];
 
   if (view === "list") {
     const columns = [

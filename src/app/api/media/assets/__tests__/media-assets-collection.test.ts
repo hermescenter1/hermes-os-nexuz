@@ -71,11 +71,18 @@ describe("GET /api/media/assets — authentication and membership", () => {
     expect(res.status).toBe(401);
   });
 
-  it("401 when the caller belongs to no organization", async () => {
+  it("409 when the caller belongs to no organization", async () => {
     state.payload = { sub: "orphan", role: "engineer", sid: "s" };
     const { res } = await listGET();
-    // No ACTIVE membership → no server-derived org → the platform guard refuses.
-    expect(res.status).toBe(401);
+    /*
+     * No ACTIVE membership → no server-derived org → the platform guard refuses,
+     * exactly as before. PHASE 107 STAGE 6-A changed only WHICH refusal: this
+     * caller IS authenticated, so 401 told them to sign in again — advice that
+     * cannot help. The property under test, that the guard refuses and serves
+     * nothing, is unchanged.
+     */
+    expect(res.status).toBe(409);
+    expect(state.tables.mediaAsset.length).toBe(0);
   });
 
   it("refuses a membership that is not ACTIVE", async () => {
@@ -84,8 +91,9 @@ describe("GET /api/media/assets — authentication and membership", () => {
     const { res } = await listGET();
     // The org is derived from ACTIVE memberships only, so a suspended member has
     // no server-derived tenant at all and is refused before the membership guard
-    // ever runs. Two independent gates, both fail-closed.
-    expect(res.status).toBe(401);
+    // ever runs. Two independent gates, both fail-closed — and still refused;
+    // only the status now says WHY (409, not "your session ended").
+    expect(res.status).toBe(409);
     expect(state.tables.mediaAsset.length).toBe(0);
   });
 });
@@ -367,10 +375,94 @@ describe("POST /api/media/assets — persistence and audit", () => {
     expect(JSON.stringify(event)).not.toContain("secret summary");
   });
 
-  it("fails closed when the database is unavailable — no org can be derived, so 401", async () => {
+  it("fails closed when the database is unavailable — and says so honestly", async () => {
     state.databaseAvailable = false;
     const { res } = await createPOST({ title: "t" });
-    expect(res.status).toBe(401);
+    /*
+     * PHASE 107 STAGE 6-A — still fails closed, and nothing is written. What
+     * changed is the diagnosis: an unreachable database is the platform's
+     * problem, not the caller's, and answering 401 sent an operator to a login
+     * form in the middle of an outage.
+     */
+    expect(res.status).toBe(500);
     expect(state.tables.mediaAsset.length).toBe(0);
+  });
+});
+
+/**
+ * PHASE 107 STAGE 6-A.1 — the refusal a Media route sends is the one it was given.
+ *
+ * The independent review found eight Media routes that did not forward the
+ * refusal verbatim, in three shapes. The worst hard-coded the STATUS as well as
+ * the code, so three upload routes still answered 401 to a signed-in caller with
+ * no organization — the original defect, alive on the routes that accept files.
+ * Others forwarded a correct 409 while hard-coding
+ * `code: "AUTHENTICATION_REQUIRED"`, so the status and the code contradicted one
+ * another and a client branching on either got a different answer.
+ *
+ * These assert the whole refusal — status AND machine code — plus the two things
+ * that must remain true whatever the code says: nothing is served, and nothing
+ * is written.
+ */
+describe("Stage 6-A.1 — Media forwards the refusal exactly", () => {
+  it("401 with AUTHENTICATION_REQUIRED when there is no session", async () => {
+    state.payload = null;
+    const { res, json } = await listGET();
+    expect(res.status).toBe(401);
+    expect((json as { code?: string }).code).toBe("AUTHENTICATION_REQUIRED");
+    expect((json as { assets?: unknown }).assets).toBeUndefined();
+  });
+
+  it("409 with ORGANIZATION_CONTEXT_REQUIRED — never a contradictory code", async () => {
+    state.payload = { sub: "orphan", role: "engineer", sid: "s" };
+    const { res, json } = await listGET();
+    const code = (json as { code?: string }).code;
+
+    expect(res.status).toBe(409);
+    // The exact contradiction the review caught: 409 carrying "sign in again".
+    expect(code).toBe("ORGANIZATION_CONTEXT_REQUIRED");
+    expect(code).not.toBe("AUTHENTICATION_REQUIRED");
+    expect((json as { assets?: unknown }).assets).toBeUndefined();
+  });
+
+  it("500 with INTERNAL_ERROR when the store is unavailable", async () => {
+    state.databaseAvailable = false;
+    const { res, json } = await listGET();
+    expect(res.status).toBe(500);
+    expect((json as { code?: string }).code).toBe("INTERNAL_ERROR");
+    expect((json as { assets?: unknown }).assets).toBeUndefined();
+  });
+
+  it("a refusal never writes and never discloses another tenant", async () => {
+    seedAsset(state, { id: "asset-other", organizationId: "org-OTHER", slug: "other-tenant-asset" });
+    const beforeCount = state.tables.mediaAsset.length;
+
+    state.payload = { sub: "orphan", role: "engineer", sid: "s" };
+    const { res, json } = await listGET();
+    expect(res.status).toBe(409);
+
+    // Nothing served, nothing written, and no trace of the other tenant.
+    expect(JSON.stringify(json)).not.toMatch(/org-OTHER|asset-other|other-tenant-asset/);
+    expect(state.tables.mediaAsset.length).toBe(beforeCount);
+
+    const write = await createPOST({ title: "t" });
+    expect(write.res.status).toBe(409);
+    expect(state.tables.mediaAsset.length).toBe(beforeCount);
+  });
+
+  it("the three refusal statuses stay distinct", async () => {
+    const seen: number[] = [];
+
+    state.payload = null;
+    seen.push((await listGET()).res.status);
+
+    state.payload = { sub: "orphan", role: "engineer", sid: "s" };
+    seen.push((await listGET()).res.status);
+
+    state.databaseAvailable = false;
+    seen.push((await listGET()).res.status);
+
+    expect(seen).toEqual([401, 409, 500]);
+    expect(new Set(seen).size).toBe(3);
   });
 });

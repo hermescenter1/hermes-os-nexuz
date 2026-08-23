@@ -7257,6 +7257,30 @@
       "body": "Ein unerwarteter Fehler ist aufgetreten. Sie können es erneut versuchen oder zur Startseite zurückkehren.",
       "retry": "Erneut versuchen",
       "home": "Zurück zur Startseite"
+    },
+    "resource": {
+      "orgContextTitle": "Keine Organisation verfügbar",
+      "orgContextHint": "Sie sind angemeldet, aber dieses Konto ist in keiner Organisation aktives Mitglied. Bitten Sie die Administration, Sie hinzuzufügen, oder wählen Sie eine andere Organisation — eine erneute Anmeldung ändert daran nichts.",
+      "siteContextTitle": "Standort auswählen",
+      "siteContextHint": "Sie sind angemeldet, aber es ist kein Standort ausgewählt. Wählen Sie einen Standort, um die Daten zu laden.",
+      "unauthenticatedTitle": "Ihre Sitzung ist abgelaufen",
+      "unauthenticatedHint": "Melden Sie sich erneut an, um diese Daten zu laden. Es wird nichts angezeigt, statt eine unvollständige oder veraltete Ansicht darzustellen.",
+      "forbiddenTitle": "Kein Zugriff auf diese Daten",
+      "forbiddenHint": "Ihr Konto ist angemeldet, hat aber keine Berechtigung für diesen Datensatz. Bitten Sie die Administration um Zugriff.",
+      "notFoundTitle": "Dieser Datensatz existiert nicht mehr",
+      "notFoundHint": "Er wurde möglicherweise gelöscht oder verschoben. Kehren Sie zur Liste zurück, um die derzeit verfügbaren Einträge zu sehen.",
+      "invalidTitle": "Die Anfrage konnte nicht verarbeitet werden",
+      "invalidHint": "Der Server hat die Parameter dieser Ansicht abgelehnt. Laden Sie die Seite neu und melden Sie es, falls es erneut auftritt.",
+      "rateLimitedTitle": "Zu viele Anfragen",
+      "rateLimitedHint": "Diese Ansicht wurde zu häufig aktualisiert. Warten Sie einen Moment, bevor Sie es erneut versuchen.",
+      "unavailableTitle": "Der Dienst ist vorübergehend nicht verfügbar",
+      "unavailableHint": "Der Server beantwortet derzeit keine Anfragen. Das dauert meist nur kurz — versuchen Sie es in Kürze erneut.",
+      "offlineTitle": "Keine Verbindung zum Server",
+      "offlineHint": "Die Anfrage hat Hermes nie erreicht. Prüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.",
+      "failedTitle": "Diese Daten konnten nicht geladen werden",
+      "failedHint": "Der Server hat unerwartet geantwortet. Es wird nichts angezeigt, statt ungeprüfte Daten darzustellen.",
+      "retry": "Erneut versuchen",
+      "signIn": "Erneut anmelden"
     }
   },
   "otEdge": {
@@ -7420,6 +7444,12 @@
     "states": {
       "loadingTitle": "Datensätze werden geladen",
       "loadingFiltered": "Filter werden angewendet",
+      "orgContextTitle": "Kein Organisationskontext",
+      "orgContextBody": "Sie sind angemeldet, aber für dieses Konto ist kein aktiver Organisationskontext verfügbar. Bitten Sie die Administration, Sie einer Organisation hinzuzufügen.",
+      "siteContextTitle": "Standort auswählen",
+      "siteContextBody": "Sie sind angemeldet, aber es ist kein Standort ausgewählt. Wählen Sie einen Standort, um dessen Gateways und Geräte zu laden.",
+      "connectionFailedTitle": "Keine Verbindung zum Server",
+      "connectionFailedBody": "Die Anfrage hat Hermes nie erreicht. Prüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.",
       "emptyGatewaysTitle": "Keine Gateways registriert",
       "emptyGatewaysBody": "Für die Standorte, die Sie einsehen dürfen, ist kein Edge-Gateway registriert.",
       "emptyDevicesTitle": "Keine Geräte registriert",

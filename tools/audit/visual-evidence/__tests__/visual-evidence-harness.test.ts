@@ -26,6 +26,7 @@ import {
 import {
   explainDuplicateGroup, classifyAccess, isStructurallyComplete,
   checkFinalLocation, checkDimensions, captureExitCode, EXIT, ACCESS,
+  findForbiddenMutation, attributeConsoleError,
 } from "../contracts.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -407,5 +408,82 @@ describe("the real binary", () => {
     });
     expect(r.status).toBe(EXIT.USAGE);
     expect(r.stderr).toMatch(/refusing to sweep a non-local host/);
+  });
+});
+
+/**
+ * PHASE 107 STAGE 6-A — the harness may read the page. It may not edit it.
+ *
+ * The Stage 5 driver registered a script on every document that injected
+ * `nextjs-portal{display:none !important}` to hide the Next.js dev overlay, and
+ * threw `TypeError: … appendChild` doing it because neither `document.head` nor
+ * `document.documentElement` exists at that point. That exception was recorded
+ * as a page console error in 35 of 36 unattributed cells, and the anomaly rule
+ * then reported the audit tool's own crash as a product defect.
+ *
+ * Two things follow, and both are pinned here: the harness must contain no
+ * mutation API at all, and a console message must be attributable to its author
+ * so the tool's noise can never again be counted as the product's failure.
+ */
+describe("Stage 6-A — the audit harness does not contaminate the page", () => {
+  const HARNESS_DIR = path.join(HERE, "..");
+  const sources = fs.readdirSync(HARNESS_DIR)
+    .filter((f) => /\.(mjs|js)$/.test(f))
+    .map((f) => ({ file: f, text: fs.readFileSync(path.join(HARNESS_DIR, f), "utf8") }));
+
+  it("ships at least the files this rule is meant to cover", () => {
+    // A scanner that silently found nothing to scan would pass forever.
+    expect(sources.map((s) => s.file)).toEqual(
+      expect.arrayContaining(["sweep.mjs", "contracts.mjs", "probe-expression.js"]),
+    );
+  });
+
+  it("contains no DOM-mutation or script-injection API in any harness source", () => {
+    const hits = sources.flatMap((s) => findForbiddenMutation(s.text, s.file));
+    expect(hits.map((h) => `${h.file}:${h.line} ${h.api}`)).toEqual([]);
+  });
+
+  it("catches the exact script that contaminated Stage 5", () => {
+    const stage5 =
+      'await S("Page.addScriptToEvaluateOnNewDocument", { source: `' +
+      "const hide=()=>{const s=document.createElement('style');s.id='__s5';" +
+      "s.textContent='nextjs-portal{display:none !important}';" +
+      "(document.head||document.documentElement).appendChild(s)};hide();` });";
+    const hits = findForbiddenMutation(stage5, "auth-sweep.mjs");
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.map((h) => h.api)).toEqual(
+      expect.arrayContaining(["Page.addScriptToEvaluateOnNewDocument", "createElement", "appendChild"]),
+    );
+  });
+
+  it("catches the animation freeze that was removed from the capture path", () => {
+    const freeze = "await S(\"Runtime.evaluate\", { expression: \"document.querySelectorAll('*')" +
+      ".forEach(e=>{e.getAnimations().forEach(a=>{a.currentTime=0;a.pause()})})\" });";
+    expect(findForbiddenMutation(freeze, "sweep.mjs").length).toBeGreaterThan(0);
+  });
+
+  it("does not mistake prose about a prohibition for the prohibition", () => {
+    // This repository documents the retired script at length. Comments explaining
+    // why an API is banned must not read as a use of it.
+    expect(findForbiddenMutation("// never call appendChild from the harness", "x.mjs")).toEqual([]);
+    expect(findForbiddenMutation("/* the old hide() used innerHTML */", "x.mjs")).toEqual([]);
+  });
+
+  it("attributes a console message to its author", () => {
+    const stage5Exception =
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)";
+    expect(attributeConsoleError(stage5Exception)).toBe("AUDIT_HARNESS");
+    expect(attributeConsoleError("log: Failed to load resource: net::ERR_CONNECTION_RESET")).toBe("BROWSER_INFRASTRUCTURE");
+    expect(attributeConsoleError("exception: ChunkLoadError: Loading chunk 42 failed")).toBe("BROWSER_INFRASTRUCTURE");
+    expect(attributeConsoleError("log: Failed to load resource: the server responded with a status of 401 (Unauthorized)")).toBe("NETWORK");
+    // Anything the harness cannot claim is the product's until proven otherwise.
+    expect(attributeConsoleError("error: Warning: validateDOMNesting(...)")).toBe("PRODUCT");
+  });
+
+  it("keeps the capture path free of the freeze it used to perform", () => {
+    const sweep = sources.find((s) => s.file === "sweep.mjs")!.text;
+    expect(sweep).not.toMatch(/getAnimations\(\)\.forEach/);
+    // …and still photographs the page.
+    expect(sweep).toMatch(/Page\.captureScreenshot/);
   });
 });

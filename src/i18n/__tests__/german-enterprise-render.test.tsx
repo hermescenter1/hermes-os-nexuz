@@ -142,14 +142,20 @@ describe("87L.6E — Billing surface renders German financial vocabulary", () =>
   afterEach(() => { globalThis.fetch = originalFetch; vi.restoreAllMocks(); });
 
   it("renders the German loading state, then German financial labels", async () => {
+    // PHASE 107 STAGE 6-A — two fidelity corrections to this double, no change
+    // to what the test asserts:
+    //   - `text()` is implemented, as a real Response has it;
+    //   - the usage body uses `summary`, which is what GET /api/billing/usage
+    //     actually returns. The fixture said `usage`, and the component's old
+    //     `uBody.summary ?? {}` quietly accepted the mismatch.
     globalThis.fetch = vi.fn(async (url: unknown) => {
       const u = String(url);
       const body =
         u.includes("plans") ? { plans: [] } :
         u.includes("subscription") ? { subscription: null } :
         u.includes("invoices") ? { invoices: [] } :
-        { usage: {}, statuses: [] };
-      return { ok: true, status: 200, json: async () => body };
+        { summary: {}, statuses: [] };
+      return { ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) };
     }) as unknown as typeof fetch;
 
     const { container } = await mount(withDe(<BillingDashboard />));

@@ -186,11 +186,42 @@ describe("the same-origin gate holds on every voice route", () => {
 
 describe("organisation membership is required and is server-derived", () => {
   for (const route of ROUTES) {
-    it(`${route}: a user with no ACTIVE membership → 401/403, never 200`, async () => {
+    it(`${route}: a user with no ACTIVE membership → 401/403/409, never 200`, async () => {
       // No membership row at all: `requirePlatformAuth` cannot resolve an org.
       const response = await call(route);
-      expect([401, 403]).toContain(response.status);
+      // PHASE 107 STAGE 6-A — a signed-in caller with no organization now answers
+      // 409 ORGANIZATION_CONTEXT_REQUIRED instead of 401: they are authenticated,
+      // so telling them to sign in again cannot help. The property this test
+      // protects — the route REFUSES and serves nothing — is unchanged.
+      expect([401, 403, 409]).toContain(response.status);
       expect(state.entitlementCalls).toEqual([]);
+    });
+
+    it(`${route}: the refusal LABEL agrees with the status it travels with`, async () => {
+      /*
+       * PHASE 107 STAGE 6-A — the guard forwarded `auth.status` while hard-coding
+       * the code. That was consistent only while the guard could answer nothing
+       * but 401. Once a signed-in caller with no organization began receiving
+       * 409, the body still read AUTHENTICATION_REQUIRED — a 409 telling someone
+       * who IS signed in to sign in again, which is the defect this stage exists
+       * to close, reintroduced one layer further out.
+       *
+       * Asserted as a PAIRING rather than a single expected value, so it holds
+       * whichever refusal the chain reaches first and cannot be satisfied by
+       * pinning one status.
+       */
+      const CONSISTENT: Record<number, string[]> = {
+        401: ["AUTHENTICATION_REQUIRED", "SESSION_AUTH_REQUIRED"],
+        403: ["FORBIDDEN", "INSUFFICIENT_PERMISSION"],
+        409: ["ORGANIZATION_SCOPE_REQUIRED"],
+        500: ["COPILOT_UNAVAILABLE"],
+      };
+      const response = await call(route);
+      const body = (await response.json()) as { code?: string };
+      expect(CONSISTENT[response.status]).toBeDefined();
+      expect(CONSISTENT[response.status]).toContain(body.code);
+      // The specific contradiction that shipped, named so a regression is unambiguous.
+      expect(`${response.status}:${body.code}`).not.toBe("409:AUTHENTICATION_REQUIRED");
     });
 
     it(`${route}: a member of ANOTHER organisation cannot act in this one`, async () => {

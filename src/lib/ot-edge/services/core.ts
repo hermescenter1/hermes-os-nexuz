@@ -14,6 +14,14 @@ import type { RepositoryError } from "../persistence/core";
 
 export type ServiceErrorCode =
   | "UNAUTHENTICATED"
+  // PHASE 107 STAGE 6-A — a valid session that has not selected an organization
+  // (or a site) is not an unauthenticated one. Both used to answer 401, which
+  // told a signed-in administrator their session had ended and offered a
+  // sign-in link that could not possibly help. These are 409: the request is
+  // well-formed and the caller is known; what is missing is context they can
+  // supply. Neither code reveals whether any organization or site exists.
+  | "ORGANIZATION_CONTEXT_REQUIRED"
+  | "SITE_CONTEXT_REQUIRED"
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "CONFLICT"

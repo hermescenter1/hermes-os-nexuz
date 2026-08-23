@@ -12,7 +12,7 @@ import { getRateLimitStatus }         from "@/lib/api/rate-limit";
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if ("error" in auth) return NextResponse.json({ error: auth.error, ...("code" in auth ? { code: auth.code } : {}) }, { status: auth.status });
   const { ctx } = auth;
 
   // PHASE 87L.6H.1A — exhaustive fail-closed authorization. Aggregate usage is

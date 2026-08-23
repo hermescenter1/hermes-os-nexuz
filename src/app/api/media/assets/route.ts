@@ -28,7 +28,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requirePlatformAuth } from "@/lib/api/auth";
-import { requireOrgActor } from "@/lib/org/context";
+import { requireOrgActor, orgActorRefusalCode } from "@/lib/org/context";
 import { can, requirePermission, type OrgPermission } from "@/lib/org/rbac";
 import type { OrgRole } from "@/lib/org/types";
 import { enforceEntitlement } from "@/lib/billing-governance/runtime/require-entitlement";
@@ -180,10 +180,10 @@ const listQuerySchema = z
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return json({ error: auth.error, code: "AUTHENTICATION_REQUIRED" }, auth.status);
+  if ("error" in auth) return json({ error: auth.error, code: auth.code }, auth.status);
 
   const member = await requireOrgActor(req, auth.ctx.orgId);
-  if ("error" in member) return json({ error: member.error, code: "ORGANIZATION_SCOPE_REQUIRED" }, member.status);
+  if ("error" in member) return json({ error: member.error, code: orgActorRefusalCode(member.status) }, member.status);
 
   const perm = requirePermission(member.ctx.role, "view_media");
   if (!perm.ok) return json({ error: perm.error, code: "INSUFFICIENT_PERMISSION" }, perm.status);
@@ -366,7 +366,7 @@ async function referenceBelongsToOrg(
 
 export async function POST(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return json({ error: auth.error, code: "AUTHENTICATION_REQUIRED" }, auth.status);
+  if ("error" in auth) return json({ error: auth.error, code: auth.code }, auth.status);
 
   // Same-origin, for cookie-authenticated writes only. A CSRF works because the
   // BROWSER attaches the session cookie unbidden; an API key must be set
@@ -376,7 +376,7 @@ export async function POST(req: NextRequest) {
   if (!originGate.ok) return json({ error: "Forbidden", code: "FORBIDDEN" }, 403);
 
   const member = await requireOrgActor(req, auth.ctx.orgId);
-  if ("error" in member) return json({ error: member.error, code: "ORGANIZATION_SCOPE_REQUIRED" }, member.status);
+  if ("error" in member) return json({ error: member.error, code: orgActorRefusalCode(member.status) }, member.status);
 
   const perm = requirePermission(member.ctx.role, "manage_media");
   if (!perm.ok) return json({ error: perm.error, code: "INSUFFICIENT_PERMISSION" }, perm.status);

@@ -78,6 +78,17 @@ beforeEach(() => {
   events    = [];
   infraArgs = [];
 
+  /*
+   * PHASE 107 STAGE 6-A — this suite describes a DATABASE-mode deployment, where
+   * an unreachable client is an outage (500). Left ambient, the mode came from
+   * the環境 and a session-mode run reclassified those cases as 409. Pinning it
+   * makes each test say which deployment it is talking about.
+   */
+  vi.doMock("@/lib/storage/storage-mode", () => ({
+    getStorageMode: () => "database",
+    isDatabaseMode: () => true,
+  }));
+
   vi.doMock("@/lib/logger/security-events", () => ({
     logAuthFailure: (ctx: Record<string, unknown>) => { events.push({ channel: "auth_failure", payload: ctx }); },
     logAuthzDenial: (ctx: Record<string, unknown>) => { events.push({ channel: "authz_denied", payload: ctx }); },
@@ -150,7 +161,9 @@ describe("platform auth — failure classification", () => {
     mockJwt(null); mockSession(true); mockOrg(null);
     const res = await callRequire(req());
 
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    expect(res).toMatchObject({ error: "Authentication required", status: 401 });
     expect(only().channel).toBe("auth_failure");
     expect(only().payload.reason).toBe("missing_credentials");
     expect(only().payload.operation).toBe("platform.auth");
@@ -161,7 +174,9 @@ describe("platform auth — failure classification", () => {
     mockJwt(null); mockSession(true); mockOrg(null);
     const res = await callRequire(withCookie());
 
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    expect(res).toMatchObject({ error: "Authentication required", status: 401 });
     expect(only().channel).toBe("auth_failure");
     expect(only().payload.reason).toBe("invalid_access_token");
     // Identity was never established, so none is attributed.
@@ -172,7 +187,9 @@ describe("platform auth — failure classification", () => {
     mockJwt({ sub: "user_1", sid: "sess_1" }); mockSession(false); mockOrg({ organizationId: "org_1" });
     const res = await callRequire(withCookie());
 
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    expect(res).toMatchObject({ error: "Authentication required", status: 401 });
     expect(only().channel).toBe("authz_denied");
     expect(only().payload.reason).toBe("inactive_or_revoked_session");
     expect(only().payload.userId).toBe("user_1");
@@ -185,7 +202,9 @@ describe("platform auth — failure classification", () => {
     vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => ({ organizationMember: { findFirst } }) }));
 
     const res = await callRequire(withCookie());
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    expect(res).toMatchObject({ error: "Authentication required", status: 401 });
     expect(findFirst).not.toHaveBeenCalled();
   });
 
@@ -193,7 +212,10 @@ describe("platform auth — failure classification", () => {
     mockJwt({ sub: "user_1", sid: "sess_1" }); mockSession(true); mockOrg(null);
     const res = await callRequire(withCookie());
 
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    // PHASE 107 STAGE 6-A — a signed-in caller with no organization is told what is missing, not to sign in again.
+    expect(res).toMatchObject({ status: 409, code: "ORGANIZATION_CONTEXT_REQUIRED" });
     expect(only().channel).toBe("authz_denied");
     expect(only().payload.reason).toBe("no_active_organization_membership");
     expect(only().payload.userId).toBe("user_1");
@@ -204,7 +226,10 @@ describe("platform auth — failure classification", () => {
     const res = await callRequire(withCookie());
 
     // Fail-closed: still denied.
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    // PHASE 107 STAGE 6-A — a database fault is the platform's problem, not the caller's.
+    expect(res).toMatchObject({ status: 500, code: "INTERNAL_ERROR" });
     // The distinction that made the production 401 undiagnosable.
     expect(reasons()).toContain("organization_resolution_failed");
     expect(reasons()).not.toContain("no_active_organization_membership");
@@ -218,7 +243,10 @@ describe("platform auth — failure classification", () => {
     mockJwt({ sub: "user_1", sid: "sess_1" }); mockSession(true); mockOrg("no-client");
     const res = await callRequire(withCookie());
 
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    // PHASE 107 STAGE 6-A — an unreachable client is an outage, never "you have no organization".
+    expect(res).toMatchObject({ status: 500, code: "INTERNAL_ERROR" });
     expect(only().payload.reason).toBe("organization_resolution_failed");
   });
 
@@ -260,7 +288,9 @@ describe("platform auth — API-key behaviour is unchanged", () => {
     mockJwt(null); mockSession(true); mockOrg(null);
     const res = await callRequire(req({ "x-api-key": RAW_KEY }));
 
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    expect(res).toMatchObject({ error: "Authentication required", status: 401 });
     expect(only().payload.reason).toBe("invalid_api_key");
   });
 
@@ -268,22 +298,43 @@ describe("platform auth — API-key behaviour is unchanged", () => {
     mockJwt(null); mockSession(true); mockOrg(null);
     const res = await callRequire(req({ authorization: `Bearer ${RAW_KEY}` }));
 
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    expect(res).toMatchObject({ error: "Authentication required", status: 401 });
     expect(only().payload.reason).toBe("invalid_api_key");
   });
 });
 
-describe("platform auth — the public contract did NOT change", () => {
-  it("every rejection reason still answers 401 with the same generic message", async () => {
-    const cases: Array<[string, () => void, NextRequest]> = [
-      ["missing",     () => { mockJwt(null); mockSession(true); mockOrg(null); },                          req()],
-      ["bad token",   () => { mockJwt(null); mockSession(true); mockOrg(null); },                          withCookie()],
-      ["revoked",     () => { mockJwt({ sub: "u" }); mockSession(false); mockOrg({ organizationId: "o" }); }, withCookie()],
-      ["no org",      () => { mockJwt({ sub: "u" }); mockSession(true); mockOrg(null); },                   withCookie()],
-      ["db fault",    () => { mockJwt({ sub: "u" }); mockSession(true); mockOrg("throw"); },                withCookie()],
-    ];
+/**
+ * PHASE 107 STAGE 6-A — the semantic change this block used to defer.
+ *
+ * The previous version asserted that ALL SIX reasons answer 401, with the note
+ * "Explicitly NOT 403 — that semantic change is deliberately deferred". It has
+ * now been made, so the contract is pinned at a finer grain — and the security
+ * property that motivated the flattening is asserted MORE strongly than before,
+ * not less.
+ *
+ * The concern was enumeration: a caller who has not proved who they are must not
+ * learn whether an account exists, whether a session was revoked, or whether the
+ * database is degraded. That is preserved exactly, and is now tested explicitly
+ * by requiring the four pre-authentication reasons to be byte-identical to one
+ * another.
+ *
+ * The two remaining reasons are reachable ONLY after the token is verified and
+ * the session confirmed active. They describe the caller's own account, to that
+ * caller. Answering them with 401 is what sent a signed-in administrator to a
+ * login form, and sent an operator there during a database outage.
+ */
+describe("platform auth — pre-authentication refusals stay indistinguishable", () => {
+  const preAuth: Array<[string, () => void, NextRequest]> = [
+    ["missing",   () => { mockJwt(null); mockSession(true); mockOrg(null); },                            req()],
+    ["bad token", () => { mockJwt(null); mockSession(true); mockOrg(null); },                            withCookie()],
+    ["revoked",   () => { mockJwt({ sub: "u" }); mockSession(false); mockOrg({ organizationId: "o" }); }, withCookie()],
+  ];
 
-    for (const [name, setup, request] of cases) {
+  it("answers every pre-authentication reason with one identical 401", async () => {
+    const answers: string[] = [];
+    for (const [name, setup, request] of preAuth) {
       vi.resetModules();
       events = [];
       vi.doMock("@/lib/logger/security-events", () => ({
@@ -293,10 +344,44 @@ describe("platform auth — the public contract did NOT change", () => {
       }));
       setup();
 
-      const res = await callRequire(request);
-      // Explicitly NOT 403 — that semantic change is deliberately deferred.
-      expect(res, name).toEqual({ error: "Authentication required", status: 401 });
+      const res = await callRequire(request) as { error: string; status: number; code?: string };
+      expect(res, name).toMatchObject({ error: "Authentication required", status: 401 });
+      answers.push(JSON.stringify(res));
     }
+    // The whole anti-enumeration property in one line: a prober cannot tell
+    // "no credential" from "bad token" from "revoked session".
+    expect(new Set(answers).size, "pre-authentication answers must be identical").toBe(1);
+  });
+
+  it("answers a verified caller precisely, because they already proved who they are", async () => {
+    const post: Array<[string, () => void, number, string]> = [
+      ["no org",   () => { mockJwt({ sub: "u" }); mockSession(true); mockOrg(null); },    409, "ORGANIZATION_CONTEXT_REQUIRED"],
+      ["db fault", () => { mockJwt({ sub: "u" }); mockSession(true); mockOrg("throw"); }, 500, "INTERNAL_ERROR"],
+    ];
+
+    for (const [name, setup, status, code] of post) {
+      vi.resetModules();
+      events = [];
+      vi.doMock("@/lib/logger/security-events", () => ({
+        logAuthFailure: (c: Record<string, unknown>) => { events.push({ channel: "auth_failure", payload: c }); },
+        logAuthzDenial: (c: Record<string, unknown>) => { events.push({ channel: "authz_denied", payload: c }); },
+        logInfraFailure: () => {},
+      }));
+      setup();
+
+      const res = await callRequire(withCookie()) as { status: number; code?: string };
+      expect(res.status, name).toBe(status);
+      expect(res.code, name).toBe(code);
+      // Never served: a refusal is still a refusal.
+      expect(res).not.toHaveProperty("ctx");
+    }
+  });
+
+  it("never names an organization or a user in the response", async () => {
+    vi.resetModules();
+    mockJwt({ sub: "user-secret" }); mockSession(true); mockOrg(null);
+    const res = await callRequire(withCookie());
+    expect(JSON.stringify(res)).not.toMatch(/user-secret|organizationId/);
   });
 });
 
@@ -363,7 +448,12 @@ describe("platform auth — nothing sensitive reaches the REAL log stream", () =
     const out = await captureLogOutput(async () => { res = await callRequire(withCookie()); });
 
     // Fail-closed behaviour is unchanged.
-    expect(res).toEqual({ error: "Authentication required", status: 401 });
+    // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
+    // UI branches on. The status and sentence are unchanged for this case.
+    // PHASE 107 STAGE 6-A — a driver fault is a 500. What matters here is
+    // unchanged: nothing the driver wrote may reach the caller or the log.
+    expect(res).toMatchObject({ status: 500, code: "INTERNAL_ERROR" });
+    expect(JSON.stringify(res)).not.toMatch(/ECONNREFUSED|10\.0\.0|5432/);
 
     // The fault IS recorded, and usefully.
     expect(out).toContain("database.failure");

@@ -1,0 +1,276 @@
+[
+  {
+    "owner": "src/components/crm/CustomerSuccessClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/crm/customer-success"
+    ],
+    "cells": 9,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE",
+      "STUCK_LOADING"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": false
+  },
+  {
+    "owner": "src/components/crm/OpportunityPipelineClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/crm/opportunities"
+    ],
+    "cells": 8,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE",
+      "STUCK_LOADING"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": false
+  },
+  {
+    "owner": "src/components/customer-portal/CustomerSettingsClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/customer/settings"
+    ],
+    "cells": 6,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": true
+  },
+  {
+    "owner": "src/components/customer-portal/CustomerTrainingClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/customer/training"
+    ],
+    "cells": 6,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": true
+  },
+  {
+    "owner": "src/components/customer-portal/CustomerOverviewClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/customer"
+    ],
+    "cells": 5,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": true,
+    "guardsStale": true
+  },
+  {
+    "owner": "src/components/crm/AccountListClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/crm/accounts"
+    ],
+    "cells": 3,
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": false
+  },
+  {
+    "owner": "src/components/crm/AccountDetailClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/crm/accounts/[id]"
+    ],
+    "cells": 3,
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": false
+  },
+  {
+    "owner": "src/components/crm/LeadDetailClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/crm/leads/[leadId]"
+    ],
+    "cells": 3,
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": true,
+    "guardsStale": false
+  },
+  {
+    "owner": "src/components/crm/OpportunityDetailClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/crm/opportunities/[id]"
+    ],
+    "cells": 3,
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": false
+  },
+  {
+    "owner": "src/components/customer-portal/CustomerAccountClient.tsx",
+    "verdict": "REAL_DEFECT",
+    "routes": [
+      "/customer/account"
+    ],
+    "cells": 1,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "guardsOk": false,
+    "swallows": true,
+    "hasErrorState": false,
+    "terminatesLoading": true,
+    "distinguishes": true,
+    "guardsStale": true
+  },
+  {
+    "owner": "src/components/billing/BillingDashboard.tsx",
+    "verdict": "ALREADY_CORRECT",
+    "routes": [
+      "/dashboard/billing"
+    ],
+    "cells": 6,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "guardsOk": true,
+    "swallows": false,
+    "hasErrorState": true,
+    "terminatesLoading": true,
+    "distinguishes": true,
+    "guardsStale": true
+  },
+  {
+    "owner": "src/components/organization/OrgOverview.tsx",
+    "verdict": "ALREADY_CORRECT",
+    "routes": [
+      "/dashboard/organization"
+    ],
+    "cells": 5,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "guardsOk": true,
+    "swallows": false,
+    "hasErrorState": true,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": true
+  },
+  {
+    "owner": "src/components/api/ApiKeysDashboard.tsx",
+    "verdict": "ALREADY_CORRECT",
+    "routes": [
+      "/dashboard/api"
+    ],
+    "cells": 3,
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "guardsOk": true,
+    "swallows": false,
+    "hasErrorState": true,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": true
+  },
+  {
+    "owner": "src/components/organization/DepartmentsPanel.tsx",
+    "verdict": "ALREADY_CORRECT",
+    "routes": [
+      "/dashboard/organization/departments"
+    ],
+    "cells": 1,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "guardsOk": true,
+    "swallows": false,
+    "hasErrorState": true,
+    "terminatesLoading": true,
+    "distinguishes": false,
+    "guardsStale": true
+  },
+  {
+    "owner": "src/components/admin/AccessRequestActions.tsx",
+    "verdict": "ALREADY_CORRECT",
+    "routes": [
+      "/admin/leads"
+    ],
+    "cells": 1,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "guardsOk": true,
+    "swallows": false,
+    "hasErrorState": true,
+    "terminatesLoading": true,
+    "distinguishes": true,
+    "guardsStale": false
+  },
+  {
+    "owner": "src/components/admin/SalesLeadActions.tsx",
+    "verdict": "ALREADY_CORRECT",
+    "routes": [
+      "/admin/leads"
+    ],
+    "cells": 1,
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "guardsOk": true,
+    "swallows": false,
+    "hasErrorState": true,
+    "terminatesLoading": true,
+    "distinguishes": true,
+    "guardsStale": false
+  }
+]

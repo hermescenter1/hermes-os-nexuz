@@ -21,7 +21,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requirePlatformAuth } from "@/lib/api/auth";
-import { requireOrgActor } from "@/lib/org/context";
+import { requireOrgActor, orgActorRefusalCode } from "@/lib/org/context";
 import { can, requirePermission, type OrgPermission } from "@/lib/org/rbac";
 import type { OrgRole } from "@/lib/org/types";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
@@ -197,11 +197,11 @@ async function resolveActor(
 ): Promise<{ ok: true; actor: Actor } | { ok: false; response: NextResponse }> {
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) {
-    return { ok: false, response: json({ error: auth.error, code: "AUTHENTICATION_REQUIRED" }, auth.status) };
+    return { ok: false, response: json({ error: auth.error, code: auth.code }, auth.status) };
   }
   const member = await requireOrgActor(req, auth.ctx.orgId);
   if ("error" in member) {
-    return { ok: false, response: json({ error: member.error, code: "ORGANIZATION_SCOPE_REQUIRED" }, member.status) };
+    return { ok: false, response: json({ error: member.error, code: orgActorRefusalCode(member.status) }, member.status) };
   }
   const perm = requirePermission(member.ctx.role, permission);
   if (!perm.ok) {

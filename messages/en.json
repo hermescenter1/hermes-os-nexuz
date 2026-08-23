@@ -7257,6 +7257,30 @@
       "body": "An unexpected error occurred. You can try again or return to the homepage.",
       "retry": "Try again",
       "home": "Back to home"
+    },
+    "resource": {
+      "orgContextTitle": "No organization is available",
+      "orgContextHint": "You are signed in, but this account is not an active member of any organization. Ask an administrator to add you, or select a different organization — signing in again will not change this.",
+      "siteContextTitle": "Select a site",
+      "siteContextHint": "You are signed in, but no site is selected. Choose a site to load its data.",
+      "unauthenticatedTitle": "Your session has ended",
+      "unauthenticatedHint": "Sign in again to load this data. Nothing is shown rather than presenting an incomplete or outdated view.",
+      "forbiddenTitle": "You do not have access to this data",
+      "forbiddenHint": "Your account is signed in but does not have permission for this record. Ask your administrator to grant access.",
+      "notFoundTitle": "This record no longer exists",
+      "notFoundHint": "It may have been deleted or moved. Return to the list to see what is currently available.",
+      "invalidTitle": "The request could not be processed",
+      "invalidHint": "The server rejected the parameters for this view. Reload the page, and report it if it happens again.",
+      "rateLimitedTitle": "Too many requests",
+      "rateLimitedHint": "This view was refreshed too often. Wait a moment before trying again.",
+      "unavailableTitle": "The service is temporarily unavailable",
+      "unavailableHint": "The server is not answering requests right now. This is usually brief — try again shortly.",
+      "offlineTitle": "No connection to the server",
+      "offlineHint": "The request never reached Hermes. Check your network connection and try again.",
+      "failedTitle": "This data could not be loaded",
+      "failedHint": "The server replied unexpectedly, so nothing is shown rather than presenting unverified data.",
+      "retry": "Try again",
+      "signIn": "Sign in again"
     }
   },
   "otEdge": {
@@ -7420,6 +7444,12 @@
     "states": {
       "loadingTitle": "Loading records",
       "loadingFiltered": "Applying filters",
+      "orgContextTitle": "No organization context",
+      "orgContextBody": "You are signed in, but no active organization context is available for this account. Ask an administrator to add you to an organization.",
+      "siteContextTitle": "Select a site",
+      "siteContextBody": "You are signed in, but no site is selected. Choose a site to load its gateways and devices.",
+      "connectionFailedTitle": "No connection to the server",
+      "connectionFailedBody": "The request never reached Hermes. Check your network connection and try again.",
       "emptyGatewaysTitle": "No gateways registered",
       "emptyGatewaysBody": "No edge gateway has been registered for the sites you are authorized to see.",
       "emptyDevicesTitle": "No devices registered",

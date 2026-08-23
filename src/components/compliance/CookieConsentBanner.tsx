@@ -91,12 +91,14 @@ export function CookieConsentBanner() {
             </div>
             <div className="flex flex-wrap gap-2 shrink-0">
               <button
+                data-consent-action="customize"
                 onClick={() => setCustomizing(true)}
                 className="rounded-lg border border-line px-4 py-2 text-xs font-mono text-muted hover:text-ink transition-colors"
               >
                 {t("customize")}
               </button>
               <button
+                data-consent-action="reject-non-essential"
                 onClick={() => save({ necessary: true, analytics: false, marketing: false, preferences: false })}
                 disabled={saving}
                 className="rounded-lg border border-line px-4 py-2 text-xs font-mono text-muted hover:text-ink transition-colors disabled:opacity-50"
@@ -104,6 +106,7 @@ export function CookieConsentBanner() {
                 {t("rejectNonEssential")}
               </button>
               <button
+                data-consent-action="accept-all"
                 onClick={() => save({ necessary: true, analytics: true, marketing: true, preferences: true })}
                 disabled={saving}
                 className="rounded-lg bg-signal px-4 py-2 text-xs font-mono font-semibold text-bg hover:bg-signal/90 transition-colors disabled:opacity-50"

@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+// PHASE 107 STAGE 6-A — the load guarded both responses with `if (res.ok)` and
+// no else, so a failed request rendered an API-key dashboard with no keys. On a
+// credentials surface that is the most dangerous possible way to fail silently:
+// it invites the reader to mint a replacement for a key they still have. The
+// create/revoke/rotate paths and every endpoint are unchanged.
+
+import { useState }                          from "react";
 import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
 import { DashboardPanel }                    from "@/components/ui/DashboardPanel";
+import { ResourceFailureNotice }             from "@/components/ui/ResourceFailureNotice";
+import { useResource }                       from "@/lib/client/use-resource";
+import { requestJson }                       from "@/lib/client/resource-request";
 import { ALL_SCOPES, SCOPE_LABELS }          from "@/lib/api/scopes";
 import type { ApiKeyRecord, RateLimitState } from "@/lib/api/types";
 import { formatDate, formatNumber } from "@/lib/i18n/format";
@@ -233,34 +242,29 @@ function RateLimitBar({ label, used, limit }: { label: string; used: number; lim
 export function ApiKeysDashboard() {
   const locale = useLocale();
   const t = useTranslations("apiPlatform");
-  const [keys, setKeys]           = useState<ApiKeyRecord[]>([]);
-  const [rl, setRl]               = useState<RateLimitState | null>(null);
-  const [loading, setLoading]     = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [rawKey, setRawKey]       = useState<string | null>(null);
   const [error, setError]         = useState<string | null>(null);
   const [revoking, setRevoking]   = useState<string | null>(null);
   const [rotating, setRotating]   = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [keysRes, rlRes] = await Promise.all([
-        fetch("/api/platform/keys"),
-        fetch("/api/platform/rate-limits"),
+  const dashboardState = useResource<{ keys: ApiKeyRecord[]; rateLimit: RateLimitState | null }>(
+    async (signal) => {
+      const [keys, rateLimit] = await Promise.all([
+        requestJson("/api/platform/keys", (b) => (b as { keys?: ApiKeyRecord[] }).keys, { signal }),
+        // The rate-limit panel is supplementary. Its absence degrades that one
+        // card and must not hide the key list — but a failure to load the KEYS
+        // is the whole page, and is now reported instead of shown as "no keys".
+        requestJson("/api/platform/rate-limits", (b) => (b as { rateLimit?: RateLimitState }).rateLimit, { signal })
+          .catch(() => null),
       ]);
-      if (keysRes.ok) {
-        const d = await keysRes.json() as { keys: ApiKeyRecord[] };
-        setKeys(d.keys);
-      }
-      if (rlRes.ok) {
-        const d = await rlRes.json() as { rateLimit: RateLimitState };
-        setRl(d.rateLimit);
-      }
-    } finally { setLoading(false); }
-  }, []);
+      return { keys, rateLimit };
+    },
+    [],
+  );
 
-  useEffect(() => { void load(); }, [load]);
+  const keys = dashboardState.data?.keys ?? [];
+  const rl = dashboardState.data?.rateLimit ?? null;
 
   async function revoke(id: string) {
     if (!confirm((t as unknown as (k: string) => string)("keys.confirmRevoke"))) return;
@@ -270,7 +274,7 @@ export function ApiKeysDashboard() {
     const d   = await res.json() as { error?: string };
     if (!res.ok) setError(d.error ?? "Revoke failed");
     setRevoking(null);
-    void load();
+    dashboardState.retry();
   }
 
   async function rotate(id: string) {
@@ -282,19 +286,27 @@ export function ApiKeysDashboard() {
     if (!res.ok) { setError(d.error ?? "Rotate failed"); setRotating(null); return; }
     if (d.key?.rawKey) setRawKey(d.key.rawKey);
     setRotating(null);
-    void load();
+    dashboardState.retry();
   }
 
   function handleCreated(key: string) {
     setShowCreate(false);
     setRawKey(key);
-    void load();
+    dashboardState.retry();
   }
 
-  if (loading) {
+  if (dashboardState.status === "LOADING") {
     return (
       <DashboardPanel title="">
         <p className="text-muted text-sm">{(t as unknown as (k: string) => string)("loading")}</p>
+      </DashboardPanel>
+    );
+  }
+
+  if (dashboardState.status === "ERROR" && dashboardState.failure) {
+    return (
+      <DashboardPanel title="">
+        <ResourceFailureNotice code={dashboardState.failure} onRetry={dashboardState.retry} />
       </DashboardPanel>
     );
   }

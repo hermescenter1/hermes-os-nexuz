@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+// PHASE 107 STAGE 6-A — the load had an `if (res.ok)` with no else, so a failed
+// request set nothing, finished loading, and fell through to "organization not
+// found". The `error` panel below existed but only the SAVE path ever set it.
+// The PATCH path, the endpoint and the copy are unchanged.
+
+import { useEffect, useState } from "react";
 import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
 import { DashboardPanel }                    from "@/components/ui/DashboardPanel";
+import { ResourceFailureNotice }             from "@/components/ui/ResourceFailureNotice";
+import { useResource }                       from "@/lib/client/use-resource";
+import { requestJson }                       from "@/lib/client/resource-request";
 import type { OrgRecord }                    from "@/lib/org/types";
 import { formatDate } from "@/lib/i18n/format";
 
@@ -12,30 +20,32 @@ interface Props { orgId: string }
 export function OrgOverview({ orgId }: Props) {
   const locale = useLocale();
   const t = useTranslations("org");
-  const [org, setOrg]       = useState<OrgRecord | null>(null);
-  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [form, setForm]     = useState({ name: "", description: "", website: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/organizations/${orgId}`);
-      if (res.ok) {
-        const data = await res.json() as { organization: OrgRecord };
-        setOrg(data.organization);
-        setForm({
-          name:        data.organization.name,
-          description: data.organization.description ?? "",
-          website:     data.organization.website     ?? "",
-        });
-      }
-    } finally { setLoading(false); }
-  }, [orgId]);
+  const orgState = useResource<OrgRecord | null>(
+    (signal) => requestJson(
+      `/api/organizations/${orgId}`,
+      (body) => (body as { organization?: OrgRecord | null }).organization,
+      { signal },
+    ),
+    [orgId],
+  );
 
-  useEffect(() => { void load(); }, [load]);
+  // The record is also the edit form's starting point.
+  const [org, setOrg] = useState<OrgRecord | null>(null);
+  useEffect(() => {
+    setOrg(orgState.data);
+    if (orgState.data) {
+      setForm({
+        name:        orgState.data.name,
+        description: orgState.data.description ?? "",
+        website:     orgState.data.website     ?? "",
+      });
+    }
+  }, [orgState.data]);
 
   async function handleSave() {
     setSaving(true);
@@ -55,10 +65,19 @@ export function OrgOverview({ orgId }: Props) {
     } finally { setSaving(false); }
   }
 
-  if (loading) {
+  if (orgState.status === "LOADING") {
     return (
       <DashboardPanel title="">
         <p className="text-muted text-sm">{(t as unknown as (k: string) => string)("loading")}</p>
+      </DashboardPanel>
+    );
+  }
+
+  // A request that failed is not an organization that does not exist.
+  if (orgState.status === "ERROR" && orgState.failure && orgState.failure !== "NOT_FOUND") {
+    return (
+      <DashboardPanel title="">
+        <ResourceFailureNotice code={orgState.failure} onRetry={orgState.retry} />
       </DashboardPanel>
     );
   }

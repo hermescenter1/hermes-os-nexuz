@@ -433,7 +433,7 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            the 6-value status vocabulary and the 5 transition action
     //            labels. adminAccess is untouched — the account-access
     //            workflow keeps its own namespace. -> 6171
-    expect(allEn.length).toBe(6249);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24 (3 journal.nav author-entry links, 7 journalEditorial.mod delete flow, 14 journalWriter.media cover upload); JOURNAL-ENGAGEMENT: +24 journal.engagement (reaction bar, comment thread, replies, moderation); JOURNAL-SAVE: +3 journal.engagement (saved / saveFailed / signInToSave); JOURNAL-TOMBSTONE: +1 journal.engagement.removedComment; MULTI-SITE-BOUNDARY: +12 multiSite (retry/signIn + empty, unauthorized, forbidden, request-error and invalid-response states); PHASE-107-JOURNAL-MOBILE-NAV: +2 journal.nav (openMenu / menuTitle for the below-lg Journal drawer); PHASE-107-ENGINEERING-HUB: +7 engineeringHub (six route titles + hub fallback, previously a hard-coded English map in TopBar.tsx); PHASE-107-PLATFORM-COMPONENTS: +5 dashboard.platformComponents (System Status rows that printed a raw camelCase identifier on all three locales)
+    expect(allEn.length).toBe(6277);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24 (3 journal.nav author-entry links, 7 journalEditorial.mod delete flow, 14 journalWriter.media cover upload); JOURNAL-ENGAGEMENT: +24 journal.engagement (reaction bar, comment thread, replies, moderation); JOURNAL-SAVE: +3 journal.engagement (saved / saveFailed / signInToSave); JOURNAL-TOMBSTONE: +1 journal.engagement.removedComment; MULTI-SITE-BOUNDARY: +12 multiSite (retry/signIn + empty, unauthorized, forbidden, request-error and invalid-response states); PHASE-107-JOURNAL-MOBILE-NAV: +2 journal.nav (openMenu / menuTitle for the below-lg Journal drawer); PHASE-107-ENGINEERING-HUB: +7 engineeringHub (six route titles + hub fallback, previously a hard-coded English map in TopBar.tsx); PHASE-107-PLATFORM-COMPONENTS: +5 dashboard.platformComponents (System Status rows that printed a raw camelCase identifier on all three locales); PHASE-107-STAGE-6A: +18 errors.resource (eight failure codes x title/hint, plus retry and sign-in, so a failed request can say WHICH failure it was in all three locales); PHASE-107-STAGE-6A-OT-CONTEXT: +6 otEdge.states (organization/site context required and offline, so a signed-in operator is told what to select instead of being asked to sign in again); PHASE-107-STAGE-6A-CONTEXT-UI: +4 errors.resource (organization/site context required, so billing and the API-key dashboard stop telling a signed-in administrator to sign in again)
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -447,14 +447,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6249 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 6277 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6249);
+    ).toBe(6277);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

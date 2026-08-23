@@ -249,7 +249,12 @@ describe("§1 the tenant policy is required, scoped and honoured", () => {
     const { POST } = await import("../session/route");
     state.databaseAvailable = false;
     const response = await POST(voiceRequest("session", { locale: "en" }));
-    expect([401, 503]).toContain(response.status);
+    // PHASE 107 STAGE 6-A — the refusal status now names the cause: 500 for an
+    // outage in a database deployment, 409 where there is no organization store
+    // at all, rather than 401 for every case. The property under test is
+    // unchanged and is asserted below: the request is DENIED and no provider is
+    // ever called.
+    expect([401, 409, 500, 503]).toContain(response.status);
     expect(state.providerCalls).toEqual([]);
   });
 });

@@ -36,6 +36,7 @@
  *   --chrome <path>         explicit Chrome binary
  */
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import os from "node:os";
 import { spawn } from "node:child_process";
@@ -204,6 +205,7 @@ async function navigate(url, settle) {
 
 /* Measurement taken in the same load as the screenshot. */
 const PROBE = fs.readFileSync(path.join(HERE, "probe-expression.js"), "utf8");
+const PROBE_SHA256 = crypto.createHash("sha256").update(fs.readFileSync(path.join(HERE, "probe-expression.js"))).digest("hex");
 
 /** Sign in through the real form. Credential values never leave this function. */
 async function login() {
@@ -248,6 +250,34 @@ if (!String(who).startsWith("ROLE:")) {
 const sessionRole = String(who).slice(5);
 console.log(`authenticated as role=${sessionRole}`);
 
+/**
+ * Dismiss the cookie banner the way a person would: by clicking the product's
+ * own button, choosing the privacy-preserving option.
+ *
+ * The banner is fixed to the bottom of every page, so leaving it up would put a
+ * consent dialog in all 168 screenshots. It is NOT hidden, removed or styled
+ * away — hiding UI is exactly the contamination this stage removed. If the
+ * button is not there, nothing happens and the banner stays in the picture,
+ * which is the honest outcome.
+ *
+ * The button is found by `data-consent-action`, a stable product attribute, so
+ * the click does not depend on the reader's language.
+ */
+async function dismissConsent() {
+  const outcome = (await S("Runtime.evaluate", {
+    expression: `(() => {
+      const btn = document.querySelector('[data-consent-action="reject-non-essential"]');
+      if (!btn) return 'NO_BANNER';
+      btn.click();
+      return 'REJECTED_NON_ESSENTIAL';
+    })()`,
+    returnByValue: true,
+  })).result.value;
+  await sleep(1200);
+  return outcome;
+}
+console.log(`cookie consent: ${await dismissConsent()}`);
+
 let ok = 0, failed = 0, n = 0, lastViewport = null;
 for (const cell of cells) {
   n++;
@@ -283,11 +313,37 @@ for (const cell of cells) {
     const d = (await S("Runtime.evaluate", { expression: PROBE, returnByValue: true })).result.value;
     if (!d) throw new Error("probe returned nothing (page not ready)");
 
-    await S("Runtime.evaluate", { expression: "document.querySelectorAll('*').forEach(e=>{try{e.getAnimations&&e.getAnimations().forEach(a=>{a.currentTime=(a.effect&&a.effect.getTiming().duration)||0;a.pause()})}catch(_){}}); 'ok'" });
+    /**
+     * PHASE 107 STAGE 6-A — the page is photographed exactly as it stands.
+     *
+     * This line used to walk every element and force each animation to its end
+     * time, then pause it, so screenshots would be deterministic. That is a
+     * mutation: it changes what the picture shows, and evidence that has been
+     * edited for tidiness is not evidence. A skeleton caught mid-pulse is the
+     * truth; a skeleton frozen at its final frame is a composition.
+     *
+     * The same reasoning retired the Stage 5 driver's `hide()` script, which
+     * injected `nextjs-portal{display:none}` and so could conceal a real error
+     * overlay. Determinism is now bought by capturing a production build, where
+     * there is no dev overlay to hide in the first place.
+     *
+     * `assertNoForbiddenMutation` in contracts.mjs holds this line, and the
+     * fixture test proves the DOM is byte-identical across a probe and capture.
+     */
     const { data } = await S("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
 
     store.writeCell({
       runId: RUN_ID,
+      /*
+       * PHASE 107 FINAL R3 — the AUDITOR that produced this record, by hash.
+       *
+       * Evidence and the rule that interpreted it must be bound together. After
+       * R2 the probe's mtime was newer than the sweeps (mutation proofs rewrite
+       * and restore it), and there was no way to prove the bytes that measured
+       * the estate were the bytes shipped for review. Recording the digest at
+       * capture time makes that checkable instead of argued.
+       */
+      auditorSha256: PROBE_SHA256,
       cellId: cell.cellId ?? cell.file,
       route: cell.route, locale: cell.locale, viewport: vp,
       expectedCapability: cell.capability ?? null,

@@ -28,11 +28,25 @@ import type { DeviceRow, GatewayRow, ListPage } from "./contract";
  */
 export type OtFailureCode =
   | "UNAUTHENTICATED"
+  // PHASE 107 STAGE 6-A — a signed-in user with no organization (or no site)
+  // selected is NOT unauthenticated. Both were previously answered 401, which
+  // put "your session has ended" and a sign-in link in front of an
+  // administrator whose session was perfectly valid.
+  | "ORGANIZATION_CONTEXT_REQUIRED"
+  | "SITE_CONTEXT_REQUIRED"
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "INVALID_QUERY"
   | "RATE_LIMITED"
   | "UNAVAILABLE"
+  // The request never reached the server. Previously folded into FAILED, so a
+  // dropped connection was reported to the operator as a server error.
+  //
+  // NOT named "offline": in an OT console that word is a claim about the
+  // GATEWAY, and this module has no idea whether any device is reachable. It
+  // describes the browser's own request to Hermes and nothing else. The Phase
+  // 94C1 claim-integrity gate catches the confusion if anyone reintroduces it.
+  | "CONNECTION_FAILED"
   | "FAILED";
 
 export class OtRequestError extends Error {
@@ -60,6 +74,10 @@ function classify(status: number, code: unknown): OtFailureCode {
   switch (code) {
     case "UNAUTHENTICATED":
       return "UNAUTHENTICATED";
+    case "ORGANIZATION_CONTEXT_REQUIRED":
+      return "ORGANIZATION_CONTEXT_REQUIRED";
+    case "SITE_CONTEXT_REQUIRED":
+      return "SITE_CONTEXT_REQUIRED";
     case "FORBIDDEN":
     case "CAPABILITY_NOT_ALLOWED":
       return "FORBIDDEN";
@@ -78,6 +96,7 @@ function classify(status: number, code: unknown): OtFailureCode {
   if (status === 403) return "FORBIDDEN";
   if (status === 404) return "NOT_FOUND";
   if (status === 400) return "INVALID_QUERY";
+  if (status === 409) return "ORGANIZATION_CONTEXT_REQUIRED";
   if (status === 429) return "RATE_LIMITED";
   if (status === 503) return "UNAVAILABLE";
   return "FAILED";
@@ -100,7 +119,9 @@ async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
   } catch (error) {
     // An abort is the caller superseding its own request, not a failure.
     if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new OtRequestError("FAILED", 0);
+    // The request never left the browser: that is a connection problem, and
+    // telling an operator the server failed would send them to the wrong place.
+    throw new OtRequestError("CONNECTION_FAILED", 0);
   }
 
   // Parsed defensively: an error page or a proxy response is not JSON, and

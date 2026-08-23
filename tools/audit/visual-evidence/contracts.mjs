@@ -190,3 +190,152 @@ export function classifyAccess({ finalUrl, httpState, domText }) {
   if (httpState === 404) return ACCESS.NOT_FOUND;
   return ACCESS.AUTHENTICATED;
 }
+
+/* ────────────────── anti-contamination (Phase 107 Stage 6-A) ────────────────── */
+
+/**
+ * APIs an audit tool must never reach for.
+ *
+ * WHY THIS EXISTS
+ * The Stage 5 driver registered this on every document:
+ *
+ *   Page.addScriptToEvaluateOnNewDocument({ source:
+ *     "const hide=()=>{...s.textContent='nextjs-portal{display:none !important}';
+ *      (document.head||document.documentElement).appendChild(s)};
+ *      document.addEventListener('DOMContentLoaded',hide);hide();" })
+ *
+ * Two separate harms, both fatal to evidence:
+ *
+ *   1. It HID the Next.js dev error overlay. An audit whose job is to find
+ *      broken pages was suppressing the browser's own report of broken pages.
+ *   2. At the earliest evaluation moment neither `document.head` nor
+ *      `document.documentElement` exists yet, so `hide()` threw
+ *      `TypeError: Cannot read properties of null (reading 'appendChild')`.
+ *      That exception landed in `consoleErrors` for 35 of 36 cells, and the
+ *      Stage 5 anomaly rule — "a console error exists and no error text is on
+ *      screen" — then reported the tool's own crash as a product defect.
+ *
+ * The rule that follows is therefore absolute: the harness reads. It may
+ * measure geometry and state, and it may photograph. It may not change a single
+ * node, style, class or animation, because the moment it does, the picture stops
+ * being the thing the user would have seen.
+ */
+/* @audit-vocabulary-start — the names below ARE the ban list, not a use of it. */
+
+/**
+ * APIs that can only ever change the page. Reading them is not a thing.
+ */
+export const FORBIDDEN_MUTATION_APIS = [
+  // Node-level mutation
+  "appendChild", "insertBefore", "replaceChild", "replaceWith", "removeChild",
+  "insertAdjacentHTML", "createElement",
+  // Presentation mutation
+  "classList.add", "classList.remove", "classList.toggle",
+  "setAttribute", "removeAttribute", "insertRule",
+  // Animation control — freezing a spinner is still editing the picture
+  ".pause()", ".cancel()", ".finish()",
+  // Whole-document script injection
+  "addScriptToEvaluateOnNewDocument", "addBinding",
+];
+
+/**
+ * Properties that are perfectly good to READ and forbidden to WRITE.
+ *
+ * This distinction is the difference between measuring a page and editing one:
+ * `document.documentElement.outerHTML` is how the fixture proves the DOM did not
+ * change, while `el.outerHTML = …` is how you would change it. An earlier
+ * version of this list banned the identifier outright and flagged its own
+ * evidence-gathering reads, which would have pushed the next author toward
+ * deleting the check rather than fixing it.
+ */
+export const FORBIDDEN_WHEN_ASSIGNED = [
+  "innerHTML", "outerHTML", "textContent", "cssText", "currentTime",
+];
+
+/** CDP domains that change the page rather than observe it. */
+export const FORBIDDEN_CDP_METHODS = [
+  "DOM.setOuterHTML",
+  "DOM.setAttributeValue",
+  "DOM.removeNode",
+  "CSS.setStyleTexts",
+  "CSS.createStyleSheet",
+  "Animation.setCurrentTime",
+  "Page.addScriptToEvaluateOnNewDocument",
+];
+/* @audit-vocabulary-end */
+
+/**
+ * Scan harness source for forbidden mutation.
+ *
+ * `text` is the source of one harness file. Comments are stripped first: this
+ * very file documents the banned `hide()` script verbatim so the next reader
+ * understands what went wrong, and prose explaining a prohibition must not read
+ * as a violation of it.
+ *
+ * Returns the offending lines, so a failure names the line rather than merely
+ * asserting that one exists.
+ */
+export function findForbiddenMutation(text, file = "<source>") {
+  const raw = text.split(/\r?\n/);
+  const hits = [];
+
+  // Comments are blanked IN PLACE rather than deleted, for two reasons: the
+  // reported line number stays the real one, and the region sentinels — which
+  // live in comments — survive to be read.
+  let inBlockComment = false;
+  // The ban list has to name the banned APIs, so the region that declares it is
+  // skipped. Everything outside that region is still scanned: this file cannot
+  // exempt itself from its own rule.
+  let inVocabulary = false;
+
+  raw.forEach((original, i) => {
+    if (/@audit-vocabulary-start/.test(original)) { inVocabulary = true; return; }
+    if (/@audit-vocabulary-end/.test(original)) { inVocabulary = false; return; }
+    if (inVocabulary) return;
+
+    let line = original;
+    if (inBlockComment) {
+      const end = line.indexOf("*/");
+      if (end === -1) return;
+      inBlockComment = false;
+      line = line.slice(end + 2);
+    }
+    // Strip any complete block comments, then an opening one, then a line comment.
+    line = line.replace(/\/\*.*?\*\//g, " ");
+    const open = line.indexOf("/*");
+    if (open !== -1) { inBlockComment = true; line = line.slice(0, open); }
+    const lineComment = line.indexOf("//");
+    if (lineComment !== -1) line = line.slice(0, lineComment);
+    if (!line.trim()) return;
+
+    for (const api of [...FORBIDDEN_MUTATION_APIS, ...FORBIDDEN_CDP_METHODS]) {
+      if (line.includes(api)) hits.push({ file, line: i + 1, api, text: line.trim().slice(0, 120) });
+    }
+    // Assignment only: `x.innerHTML = …`, `a.currentTime = …`. A read of the same
+    // property is how this harness measures, and must stay legal.
+    for (const prop of FORBIDDEN_WHEN_ASSIGNED) {
+      if (new RegExp(`\\.${prop}\\s*(=[^=]|\\+=)`).test(line)) {
+        hits.push({ file, line: i + 1, api: `${prop}=`, text: line.trim().slice(0, 120) });
+      }
+    }
+  });
+  return hits;
+}
+
+/**
+ * True when a console message came from the audit tool rather than the product.
+ *
+ * A harness-authored error must never be counted as a page defect, and must
+ * never be silently dropped either: `AUDIT_HARNESS_CONSOLE_ERRORS` is required
+ * to be zero, so the correct response to one is to fix the harness.
+ *
+ * Injected scripts have no source URL, so their frames read `<anonymous>` or
+ * carry the CDP evaluation marker.
+ */
+export function attributeConsoleError(message) {
+  const m = String(message || "");
+  if (/<anonymous>|__s5\b|Runtime\.evaluate/.test(m)) return "AUDIT_HARNESS";
+  if (/net::ERR_|ERR_CONNECTION|ERR_NETWORK_CHANGED|ChunkLoadError/.test(m)) return "BROWSER_INFRASTRUCTURE";
+  if (/Failed to load resource: the server responded with a status of \d+/.test(m)) return "NETWORK";
+  return "PRODUCT";
+}

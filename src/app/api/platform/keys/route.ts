@@ -15,7 +15,7 @@ import { validateScopes }                  from "@/lib/api/scopes";
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if ("error" in auth) return NextResponse.json({ error: auth.error, ...("code" in auth ? { code: auth.code } : {}) }, { status: auth.status });
   const { ctx } = auth;
 
   // Key INVENTORY is session-only: an API key is not an organization member and
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if ("error" in auth) return NextResponse.json({ error: auth.error, ...("code" in auth ? { code: auth.code } : {}) }, { status: auth.status });
   const { ctx } = auth;
 
   // PHASE 87L.6H.1A — exhaustive fail-closed authorization. The previous

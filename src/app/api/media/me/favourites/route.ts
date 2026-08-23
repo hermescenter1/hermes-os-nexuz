@@ -93,7 +93,7 @@ type Gate =
 async function gate(req: NextRequest, units: number): Promise<Gate> {
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) {
-    return { ok: false, response: securityError({ error: auth.error }, auth.status) };
+    return { ok: false, response: securityError({ error: auth.error, code: auth.code }, auth.status) };
   }
   const { ctx } = auth;
 

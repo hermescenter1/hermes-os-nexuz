@@ -2,9 +2,16 @@
 
 // PHASE 87G AMENDMENT 1 — localized lead profile. Same fetch/route; enum
 // values internal; display labels + dates localized; email/score bidi-safe.
+//
+// PHASE 107 STAGE 6-A — "not found" no longer absorbs every failure. The old
+// `d.lead ?? null` turned a 401, a 403 and a dropped connection alike into
+// "Lead not found", which sends the reader looking for a deleted record when
+// the real answer is that their session ended. Endpoint and route unchanged.
 
-import { useState, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { useResource } from "@/lib/client/use-resource";
+import { requestJson } from "@/lib/client/resource-request";
 import type { CrmLead, CrmLeadStatus } from "@/lib/crm/types";
 
 const STATUS_STYLES: Record<CrmLeadStatus, string> = {
@@ -20,25 +27,40 @@ const STATUS_STYLES: Record<CrmLeadStatus, string> = {
 export function LeadDetailClient({ leadId }: { leadId: string }) {
   const t = useTranslations("crm");
   const locale = useLocale();
-  const [lead,    setLead]    = useState<CrmLead | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`/api/crm/leads/${leadId}`)
-      .then(r => r.json())
-      .then(d => setLead(d.lead ?? null))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [leadId]);
+  // `lead` may legitimately be null (the record is gone); an absent key means
+  // the response did not match the contract, which is a failure, not a null.
+  const leadState = useResource<CrmLead | null>(
+    (signal) => requestJson(
+      `/api/crm/leads/${leadId}`,
+      (body) => (body as { lead?: CrmLead | null }).lead,
+      { signal },
+    ),
+    [leadId],
+  );
 
   const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
 
-  if (loading) return (
-    <div className="h-64 rounded-xl border border-line bg-surface animate-pulse">
+  if (leadState.status === "LOADING") return (
+    <div data-async-state="loading" className="h-64 rounded-xl border border-line bg-surface animate-pulse">
       <span className="sr-only" role="status">{t("common.loading")}</span>
     </div>
   );
-  if (!lead) return <div className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">{t("leadDetail.notFound")}</div>;
+
+  // Only a genuine absence keeps the module's own "not found" wording.
+  if (leadState.status === "EMPTY" || leadState.failure === "NOT_FOUND") {
+    return <div data-async-state="not-found" className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">{t("leadDetail.notFound")}</div>;
+  }
+
+  if (leadState.status === "ERROR" && leadState.failure) {
+    return (
+      <div className="rounded-xl border border-line bg-surface">
+        <ResourceFailureNotice code={leadState.failure} onRetry={leadState.retry} />
+      </div>
+    );
+  }
+
+  const lead = leadState.data;
+  if (!lead) return null;
 
   const fields: [string, React.ReactNode][] = [
     [t("leadDetail.email"),    <bdi key="e" dir="ltr">{lead.email}</bdi>],

@@ -5,9 +5,16 @@
 // back to the raw identifier); money/dates bidi-safe; deal/expansion status
 // values remain raw machine identifiers (no verified enum in types).
 
-import { useState, useEffect } from "react";
+// PHASE 107 STAGE 6-A — an unreachable API no longer reads as a deleted
+// account. See LeadDetailClient for the same reasoning; tabs, endpoint and
+// journey mapping unchanged.
+
+import { useState }            from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { HealthScoreCard }     from "./HealthScoreCard";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { useResource }         from "@/lib/client/use-resource";
+import { requestJson }         from "@/lib/client/resource-request";
 import type {
   CrmAccountWithHealth, CrmOpportunity, CrmDeal,
   CrmJourneyEvent, CrmRenewalForecast, CrmExpansionOpportunity,
@@ -37,27 +44,38 @@ type AccountDetail = CrmAccountWithHealth & {
 export function AccountDetailClient({ accountId }: { accountId: string }) {
   const t = useTranslations("crm");
   const locale = useLocale();
-  const [account, setAccount] = useState<AccountDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState<"overview"|"journey"|"deals"|"renewals">("overview");
+  const [tab, setTab] = useState<"overview"|"journey"|"deals"|"renewals">("overview");
 
-  useEffect(() => {
-    fetch(`/api/crm/accounts/${accountId}`)
-      .then(r => r.json())
-      .then(d => setAccount(d.account ?? null))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [accountId]);
+  const accountState = useResource<AccountDetail | null>(
+    (signal) => requestJson(
+      `/api/crm/accounts/${accountId}`,
+      (body) => (body as { account?: AccountDetail | null }).account,
+      { signal },
+    ),
+    [accountId],
+  );
 
   const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
   const nfInt = new Intl.NumberFormat(locale);
 
-  if (loading) return (
-    <div className="h-64 rounded-xl border border-line bg-surface animate-pulse">
+  if (accountState.status === "LOADING") return (
+    <div data-async-state="loading" className="h-64 rounded-xl border border-line bg-surface animate-pulse">
       <span className="sr-only" role="status">{t("common.loading")}</span>
     </div>
   );
-  if (!account) return <div className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">{t("accountDetail.notFound")}</div>;
+
+  if (accountState.status === "EMPTY" || accountState.failure === "NOT_FOUND") {
+    return <div data-async-state="not-found" className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">{t("accountDetail.notFound")}</div>;
+  }
+
+  if (accountState.status === "ERROR" && accountState.failure) return (
+    <div className="rounded-xl border border-line bg-surface">
+      <ResourceFailureNotice code={accountState.failure} onRetry={accountState.retry} />
+    </div>
+  );
+
+  const account = accountState.data;
+  if (!account) return null;
 
   const tierLabel = (tier: string) =>
     tier === "ENTERPRISE" || tier === "PREMIUM" || tier === "STANDARD" ? t(`tier.${tier}`) : tier;

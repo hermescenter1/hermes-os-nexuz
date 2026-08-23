@@ -30,12 +30,24 @@
  * (`logAuthFailure` / `logAuthzDenial` / `logInfraFailure`), exactly as
  * `requireOrgActor` has always done.
  *
- * DELIBERATELY UNCHANGED — this change is observability only:
- *   - the public status codes and response bodies (still 401 "Authentication
- *     required" for every rejection). `requirePlatformAuth` feeds ~80 routes;
- *     re-classifying "authenticated but has no organization" as 403 is a
- *     semantic change that belongs in its own reviewed change, not in a
- *     multi-site hotfix;
+ * PHASE 107 STAGE 6-A — the reviewed change that note anticipated.
+ *
+ * The classification above was correct and the response still discarded it. All
+ * six conditions answered 401, so a signed-in administrator with no organization
+ * was told to sign in again — advice that cannot work — and a DATABASE OUTAGE
+ * was reported as an authentication failure, sending an operator to a login form
+ * during an incident. `requirePlatformAuth` now maps the reason it already knew:
+ *
+ *   missing_credentials / invalid_access_token / invalid_api_key /
+ *   inactive_or_revoked_session   → 401, uniform and indistinguishable
+ *   no_active_organization_membership → 409 ORGANIZATION_CONTEXT_REQUIRED
+ *   organization_resolution_failed    → 500 INTERNAL_ERROR
+ *
+ * The anti-enumeration property is intact: everything reachable BEFORE the
+ * session is verified still answers one identical 401. The two richer answers
+ * require a verified session and describe the caller's own account to them.
+ *
+ * DELIBERATELY UNCHANGED:
  *   - the fail-CLOSED posture — every condition that cannot be positively
  *     confirmed still denies;
  *   - session revocation enforcement (`isPayloadSessionActive`);
@@ -57,6 +69,8 @@
 
 import type { NextRequest }    from "next/server";
 import { verifyAccessToken }   from "@/lib/auth/jwt";
+import { refuse, type ContextRefusal, type RefusedRequest } from "@/lib/auth/context-result";
+import { getStorageMode }      from "@/lib/storage/storage-mode";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
 import { getPrisma }           from "@/lib/db/prisma";
 import { isPayloadSessionActive } from "@/lib/auth/session-store";
@@ -323,8 +337,60 @@ export async function getPlatformContext(
  */
 export async function requirePlatformAuth(
   req: NextRequest,
-): Promise<{ ctx: PlatformActorContext } | { error: string; status: number }> {
-  const ctx = await getPlatformContext(req);
-  if (!ctx) return { error: "Authentication required", status: 401 };
-  return { ctx };
+): Promise<{ ctx: PlatformActorContext } | RefusedRequest> {
+  const result = await resolvePlatformContext(req);
+  if (result.ok) return { ctx: result.ctx };
+
+  logPlatformAuthFailure(req, result.reason, result.userId);
+  return refuse(refusalFor(result.reason));
 }
+
+/**
+ * `organization_resolution_failed` covers two situations that are not the same.
+ *
+ * In DATABASE mode a missing client is an outage: 500, and an operator should be
+ * looking at infrastructure. In SESSION mode there is no organization store at
+ * all, by design — nothing is broken, the caller simply has no organization, so
+ * it is the same 409 that `resolveOrgContext` returns for exactly this case.
+ *
+ * Without this the two unified helpers disagreed: billing answered 409 on a
+ * session-mode deployment while the platform answered 500, claiming an outage
+ * that was not happening.
+ */
+function refusalFor(reason: PlatformAuthFailureReason): ContextRefusal {
+  if (reason === "organization_resolution_failed" && getStorageMode() !== "database") {
+    return "ORGANIZATION_CONTEXT_REQUIRED";
+  }
+  return REASON_TO_REFUSAL[reason];
+}
+
+/**
+ * PHASE 107 STAGE 6-A — the classified reason already existed; only the status
+ * threw it away.
+ *
+ * `resolvePlatformContext` has always distinguished a missing credential from a
+ * revoked session from an account with no organization from a database that
+ * could not be reached. All five collapsed into 401, so:
+ *
+ *   - a signed-in administrator with no organization was told to sign in again,
+ *     which cannot help them; and
+ *   - a DATABASE OUTAGE was reported as an authentication failure, sending an
+ *     operator to a login form during an incident.
+ *
+ * The anti-enumeration property that motivated the flattening is kept intact:
+ * every reason reachable BEFORE the session is verified still answers 401 with
+ * one identical message, so an unauthenticated prober learns nothing. The two
+ * richer answers require a verified session, and describe the caller's own
+ * account to the caller.
+ */
+const REASON_TO_REFUSAL: Record<PlatformAuthFailureReason, ContextRefusal> = {
+  // Pre-authentication: uniform, and deliberately indistinguishable.
+  missing_credentials: "AUTHENTICATION_REQUIRED",
+  invalid_access_token: "AUTHENTICATION_REQUIRED",
+  invalid_api_key: "AUTHENTICATION_REQUIRED",
+  inactive_or_revoked_session: "AUTHENTICATION_REQUIRED",
+  // Post-authentication: the session is good, the context is not.
+  no_active_organization_membership: "ORGANIZATION_CONTEXT_REQUIRED",
+  // Not the caller's problem at all.
+  organization_resolution_failed: "INTERNAL_ERROR",
+};
