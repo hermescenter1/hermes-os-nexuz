@@ -55,6 +55,10 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
   "brain.domains.plc": "protocol-or-standard",
   "dashboard.kpi.oee": "protocol-or-standard",
   "dashboard.overview.oee": "protocol-or-standard",
+  // 104-I3 — public demo-request interest options. Persian keeps the EDMS and
+  // CMMS acronyms verbatim, exactly as the existing brain.domains.* entries do.
+  "demo.form.interests.CMMS": "protocol-or-standard",
+  "demo.form.interests.EDMS": "protocol-or-standard",
   "enterpriseOperations.inventory.columns.sku": "protocol-or-standard",
   "home.capabilities.hmi.name": "protocol-or-standard",
   "journal.discover.type.PLC_SCADA_TUTORIAL": "protocol-or-standard",
@@ -124,16 +128,23 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
   "journalWriter.guide.3.code": "non-linguistic",
   "journalWriter.guide.4.code": "non-linguistic",
   "unknownCenter.metrics.none": "non-linguistic",
+  // PHASE 104-I3 — vendor application placeholders that are literal sample
+  // tokens (a sample company name, a sample e-mail, a sample URL). Persian
+  // renders them unchanged because they are not prose.
+  "vendors.apply.form.contactEmailPlaceholder": "contact-url-or-propernoun",
+  "vendors.apply.form.websiteUrlPlaceholder": "contact-url-or-propernoun",
 };
 
 /** Audit summary (kept in sync by the companion test). */
 export const FA_IDENTICAL_COUNTS: Record<FaIdenticalCategory, number> = {
   // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
   // F2: +4  — the same acronyms in the real public header registry.
-  "protocol-or-standard": 55,
+  // 104-I3: +2 — EDMS/CMMS as demo-request interest options.
+  "protocol-or-standard": 57,
   // Phase 103: +1 — copilot.liveVoice.brand ("Hermes Live Voice Intelligence").
   "brand-or-product": 4,
   "vendor-or-thirdparty": 3,
-  "contact-url-or-propernoun": 11,
+  // 104-I3: +2 — vendor application sample tokens (sample e-mail, sample URL).
+  "contact-url-or-propernoun": 13,
   "non-linguistic": 7
 } as const;

@@ -1,5 +1,19 @@
-#!/usr/bin/env node
 // @ts-check
+//
+// NOTE — deliberately NO `#!/usr/bin/env node` shebang.
+//
+// This module is both a CLI and an importable source of truth: two test suites
+// (scripts/__tests__/phase104-route-coverage.test.ts and
+// src/components/ds/__tests__/phase104-d2-visual-pilot.test.tsx) import
+// ROUTE_RULES / buildInventory / deriveRoutes from it. When Vitest transforms
+// the file it hoists its CJS interop shims onto line 1, which pushes a shebang
+// past the start of the file — and `#!` is only legal as the very first
+// characters. Both suites therefore failed to load at all with
+// "Invalid Character `!`", taking every assertion in them down with it.
+//
+// Nothing invokes this file as `./phase104-route-inventory.mjs`; the workflow
+// and the docs both run it as `node scripts/design/phase104-route-inventory.mjs`,
+// which needs no shebang.
 /**
  * PHASE 104-G — product route design-coverage inventory.
  *
@@ -171,10 +185,18 @@ export const ROUTE_RULES = Object.freeze([
   { prefix: "/careers", family: "customer/vendor/candidate/careers", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public careers pages" },
 
   // ── Public and marketing ────────────────────────────────────────────────
+  // PHASE 104-I1 — the Company family's reference surfaces are directly
+  // migrated: /about is the Engineering Charter & Provenance Ledger and
+  // /contact is the Engineering Engagement Protocol. Both are EXACT (neither
+  // has a child route today, and a future child must not silently inherit
+  // MIGRATED_DIRECTLY); the broad rule below stays as the fail-closed
+  // fallback for any child that appears later.
+  { prefix: "/about", family: "public/marketing", status: "MIGRATED_DIRECTLY", note: "Engineering Charter & Provenance Ledger — Phase 104-I1 Company reference surface", exact: true },
   { prefix: "/about", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
   { prefix: "/platform", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
   { prefix: "/services", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
   { prefix: "/pricing", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
+  { prefix: "/contact", family: "public/marketing", status: "MIGRATED_DIRECTLY", note: "Engineering Engagement Protocol — Phase 104-I1; triage routing map, contact registry and command surface", exact: true },
   { prefix: "/contact", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
   { prefix: "/architecture", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },
   { prefix: "/demo", family: "public/marketing", status: "VISUAL_ONLY_STATIC_PUBLIC", note: "public site" },

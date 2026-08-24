@@ -105,7 +105,13 @@ describe("public header — the desktop/drawer switch is one measured breakpoint
     // only the demo button carries a responsive hide, and only below sm
     const hides = [...cluster.matchAll(/\b(hidden|\w+:hidden)\b/g)].map((m) => m[0]);
     expect(hides).toEqual(["hidden"]);
-    expect(cluster).toMatch(/"hidden sm:inline-flex"/);
+    // PHASE 104-I1 — the demo CTA also carries the 44px operational target
+    // (`min-h-11`), so the class list is no longer the bare adjacent pair. The
+    // guarded invariant is unchanged and asserted directly: hidden below `sm`,
+    // inline-flex from `sm`, on the same element.
+    const demoCls = (cluster.match(/href="\/demo"[^>]*className=\{cn\([^)]*\)[,\s]*"([^"]*)"/) ?? [])[1] ?? "";
+    expect(demoCls.split(/\s+/)).toContain("hidden");
+    expect(demoCls.split(/\s+/)).toContain("sm:inline-flex");
     expect(drawerSrc).toContain('href="/demo"');
   });
 

@@ -452,7 +452,35 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            own leaves() and MEASURED 6308 in all three locales, zero
     //            duplicate paths, zero duplicate JSON keys, full key parity.
     //            -> 6308
-    expect(allEn.length).toBe(6308);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; 104-E/F: +85 observatory + journal pressroom; JOURNAL-LIFECYCLE: +24; JOURNAL-ENGAGEMENT: +24; JOURNAL-SAVE: +3; JOURNAL-TOMBSTONE: +1
+    // 104-I2:    +67 public-estate catalogue leaves, MEASURED not hand-added:
+    //            demo 23 (the /demo page carried an en:/fa: literal pair per
+    //            string, so German fell back to English), careers 28 (the board
+    //            plus the job-detail surface, which was English-only), and
+    //            vendors 16 (/vendors and /vendors/apply were English literals
+    //            in all three locales). All three namespaces are registered in
+    //            de-catalog TRANSLATED_NS, so they are held to zero carryover.
+    //            -> 6375
+    // 104-I3:    +168, MEASURED not hand-added: the vendor directory and the
+    //            partner application form grew from 16 leaves to 139 (+123) once
+    //            their filters, options, card chrome, field labels, hints,
+    //            consent text and every state string moved out of the component
+    //            tree, and careers.apply added 45 for the job-application flow.
+    //            Both namespaces are in de-catalog TRANSLATED_NS, so all 168 are
+    //            held to zero German carryover.
+    //            -> 6543
+    // 104-I3b:   +12 for the public vendor DETAIL route, the last vendor
+    //            surface still shipping English section headings in every
+    //            locale: vendors.detail 7 (six headings + the verified-partner
+    //            badge) and vendors.compliance 5 (the status enum's labels,
+    //            previously a hard-coded map in the component).
+    //            -> 6555
+    // 104-I3c:   +38 for the public demo-request form (demo.form), which held
+    //            its own `isFa ? fa : en` label table — so /de/demo rendered
+    //            German page copy above ENGLISH field labels. 32 strings plus
+    //            6 interest options; company-size ranges stay OUT of the
+    //            catalog because they are numbers formatted per locale.
+    //            -> 6593
+    expect(allEn.length).toBe(6595);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; 104-E/F: +85 observatory + journal pressroom; JOURNAL-LIFECYCLE: +24; JOURNAL-ENGAGEMENT: +24; JOURNAL-SAVE: +3; JOURNAL-TOMBSTONE: +1; 104-I2: +67 demo/careers/vendors; 104-I3: +168 vendor directory/application + careers apply; 104-I3b: +12 vendor detail; 104-I3c: +38 demo form; 104-I3d: +2 ProvenExpert fallback
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -466,14 +494,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6308 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 6595 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6308);
+    ).toBe(6595);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

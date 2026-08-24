@@ -121,7 +121,12 @@ describe("104-F — visualMode isolation", () => {
     // and no other public route opts into either
     for (const rel of ["src/app/[locale]/platform/page.tsx", "src/app/[locale]/about/page.tsx"]) {
       const s = read(rel);
-      expect(s).not.toMatch(/visualMode=/);
+      // PHASE 104-I1 added a fourth, NON-frozen mode ("company") for the
+      // Company family. The guarded invariant is stated precisely: a route may
+      // carry its own family mode, but observatory and journal stay the property
+      // of the two surfaces above. A blanket ban would forbid every future family
+      // mode while proving nothing more about isolation.
+      expect(s, rel + " must not opt into a frozen mode").not.toMatch(/visualMode\s*=\s*"(observatory|journal)"/);
     }
   });
 });

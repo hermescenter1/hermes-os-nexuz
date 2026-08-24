@@ -54,9 +54,9 @@ screen in two directions, not two design surfaces.
 | Coverage status | Routes |
 |---|---|
 | `COVERED_BY_SHARED_LAYOUT` | 239 |
-| `VISUAL_ONLY_STATIC_PUBLIC` | 29 |
+| `VISUAL_ONLY_STATIC_PUBLIC` | 27 |
 | `COVERED_BY_SHARED_TEMPLATE` | 6 |
-| `MIGRATED_DIRECTLY` | 5 |
+| `MIGRATED_DIRECTLY` | 7 |
 
 **Read this table honestly.** `COVERED_BY_SHARED_LAYOUT` is a statement about *how* a route
 would receive the design language — through the shell and shared layout it already renders

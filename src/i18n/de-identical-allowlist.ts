@@ -222,6 +222,12 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "dashboard.status.offline": "accepted-german-loanword",
   "dashboard.status.ok": "german-word-identical",
   "dashboard.status.online": "accepted-german-loanword",
+  // 104-I3 — the public demo-request form. EDMS and CMMS are the same product
+  // acronyms German keeps verbatim (same class as nav.items.capCmms); German
+  // form UI marks non-required fields "optional", spelled as in English.
+  "demo.form.interests.CMMS": "protocol-or-standard",
+  "demo.form.interests.EDMS": "protocol-or-standard",
+  "demo.form.optional": "german-word-identical",
   "digitalTwin.status": "german-word-identical",
   "documents.nav.audit": "german-word-identical",
   "documents.nav.dashboard": "accepted-german-loanword",
@@ -447,6 +453,16 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "services.items.scadaHmi.title": "protocol-or-standard",
   "unknownCenter.eyebrow": "accepted-german-loanword",
   "unknownCenter.metrics.none": "non-linguistic",
+  // PHASE 104-I3 — the vendor directory + partner application surface. Each of
+  // these is correct German that happens to match the English spelling; none
+  // is untranslated carryover.
+  "vendors.apply.form.websiteUrlPlaceholder": "contact-url-or-propernoun",
+  "vendors.regions.Iran": "contact-url-or-propernoun",
+  "vendors.apply.form.websiteUrl": "german-word-identical",
+  "vendors.tiers.STANDARD": "german-word-identical",
+  "vendors.types.DISTRIBUTOR": "german-word-identical",
+  "vendors.card.compliance": "accepted-german-loanword",
+  "vendors.tiers.PREMIUM": "accepted-german-loanword",
 };
 
 /** Audit summary (kept in sync by the companion test). */
@@ -455,13 +471,18 @@ export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   // cards.
   // 104-E: +1 — the same product name as the PROPOSED gate actor.
   "brand-or-product": 69,
-  "contact-url-or-propernoun": 15,
-  "german-word-identical": 103,
+  // 104-I3: +2 — the sample URL and the country name Iran.
+  "contact-url-or-propernoun": 17,
+  // 104-I3: +3 — Website, Standard, Distributor.
+  // 104-I3: +1 — demo.form.optional.
+  "german-word-identical": 107,
   "non-linguistic": 19,
-  "accepted-german-loanword": 74,
+  // 104-I3: +2 — Compliance, Premium.
+  "accepted-german-loanword": 76,
   // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
   // F2: +4  — the same acronyms in the real public header registry.
-  "protocol-or-standard": 88,
+  // 104-I3: +2 — EDMS/CMMS as demo-request interest options.
+  "protocol-or-standard": 90,
   "vendor-or-thirdparty": 16,
   "brand-eyebrow": 8
 } as const;

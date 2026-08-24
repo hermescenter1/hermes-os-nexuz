@@ -351,7 +351,7 @@ export function CoreChapter({
                   </li>
                 ))}
               </ul>
-              <Link href={s.href} className={cn(buttonVariants(s.role === "core" ? "primary" : "secondary", "md"), "mt-5 inline-flex")}>{s.ctaLabel}</Link>
+              <Link href={s.href} className={cn(buttonVariants(s.role === "core" ? "primary" : "secondary", "lg"), "mt-5 inline-flex")}>{s.ctaLabel}</Link>
             </article>
           ))}
         </div>
@@ -530,7 +530,7 @@ export function EditorialChapter({
                 <h3 dir="auto" className="mt-4 max-w-2xl text-role-h1 font-extrabold leading-[1.1] tracking-tight text-text-primary">{feature.name}</h3>
                 <p dir="auto" className="mt-4 max-w-xl text-body-lg text-text-secondary">{feature.desc}</p>
                 <p dir="auto" className="mt-4 font-mono text-caption text-text-muted">{feature.meta}</p>
-                <Link href={feature.href} className={cn(buttonVariants("secondary", "md"), "mt-6 inline-flex")}>{feature.ctaLabel}</Link>
+                <Link href={feature.href} className={cn(buttonVariants("secondary", "lg"), "mt-6 inline-flex")}>{feature.ctaLabel}</Link>
               </div>
             </div>
           </article>

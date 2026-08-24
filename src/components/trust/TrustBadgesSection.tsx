@@ -127,19 +127,14 @@ export function TrustBadgesSection() {
         </TrustSlot>
 
         {/*
-          ProvenExpert — official review widget, untouched configuration. The
-          widget renders at its own natural size (min 220px tall), far larger
-          than the peer badges, so it is contained in a fixed compact viewport
-          (116×84) and reduced with a pure transform (scale 0.38, origin
-          centre). The reserved viewport prevents layout shift and stops the
-          widget from dominating the strip or dictating the footer width.
+          ProvenExpert — official review widget, untouched configuration.
+          The compact 116×84 viewport and its 0.38 transform now live INSIDE
+          ProvenExpertSeal, because only the vendor widget needs shrinking:
+          applying the scale here also shrank the consent-denied fallback link
+          to a 17px target (104-I3).
         */}
         <TrustSlot label={t("provenExpertHeading")}>
-          <div className="flex h-[84px] w-[116px] items-center justify-center overflow-hidden">
-            <div className="w-[300px] shrink-0 origin-center scale-[0.38]">
-              <ProvenExpertSeal />
-            </div>
-          </div>
+          <ProvenExpertSeal />
         </TrustSlot>
       </div>
     </section>

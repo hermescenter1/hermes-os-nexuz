@@ -45,14 +45,20 @@ export interface PublicHeaderProps {
    * `"standard"`, and Observatory remains the homepage's alone. A third mode
    * was chosen over overloading `observatory` because the two surfaces are
    * different publications and must be able to diverge without coupling.
+   *
+   * PHASE 104-I1 — `"company"` is the Company family rail (About, Contact,
+   * Careers, Demo): the same instrument as `"standard"` with the charter
+   * stationery rule on top, so the Company surfaces read as one publication
+   * without diverging from the estate. Observatory and Journal are untouched.
    */
-  visualMode?: "standard" | "observatory" | "journal";
+  visualMode?: "standard" | "observatory" | "journal" | "company";
 }
 
 export function PublicHeader({ visualMode = "standard" }: PublicHeaderProps = {}) {
   const t = useTranslations("publicSite.header");
   const observatory = visualMode === "observatory";
   const journal = visualMode === "journal";
+  const company = visualMode === "company";
 
   return (
     <>
@@ -78,7 +84,9 @@ export function PublicHeader({ visualMode = "standard" }: PublicHeaderProps = {}
             ? "hh-header"
             : journal
               ? "hj-header"
-              : "sticky top-0 z-40 border-b border-surface-glass-border ds-glass",
+              : company
+              ? "hp-header hp-header-company"
+              : "hp-header",
         )}
       >
         {/* PHASE 104-H (owner decision C) — 320px budget of this row, measured on the
@@ -113,7 +121,10 @@ export function PublicHeader({ visualMode = "standard" }: PublicHeaderProps = {}
               <NotificationCenter />
             </span>
             <LanguageSwitch />
-            <Link href="/demo" className={cn(buttonVariants("primary", "md"), "hidden sm:inline-flex")}>
+            {/* PHASE 104-I1 — the shared `md` button variant is 36px tall; this is an
+                operational header control, so it carries the 44px target here. The
+                shared variant is NOT changed: other surfaces keep their own sizing. */}
+            <Link href="/demo" className={cn(buttonVariants("primary", "md"), "hidden min-h-11 items-center sm:inline-flex")}>
               {t("requestDemo")}
             </Link>
           </div>

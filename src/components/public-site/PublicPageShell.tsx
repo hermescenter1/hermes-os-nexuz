@@ -17,14 +17,22 @@ export interface PublicPageShellProps {
   children:   ReactNode;
   ambient?:   1 | 2 | 3;
   noAmbient?: boolean;
+  /**
+   * PHASE 104-I1 — chrome treatment for this route. `"standard"` stays the
+   * DEFAULT for every public route; the Company family (About, Contact,
+   * Careers, Demo) opts into `"company"` explicitly, exactly as Observatory
+   * and Journal opt into theirs. Header and footer receive the same value so
+   * a surface can never open in one mode and close in another.
+   */
+  visualMode?: "standard" | "company";
 }
 
-export function PublicPageShell({ children, ambient = 1, noAmbient }: PublicPageShellProps) {
+export function PublicPageShell({ children, ambient = 1, noAmbient, visualMode = "standard" }: PublicPageShellProps) {
   return (
     <div className="relative flex min-h-screen flex-col bg-background-base">
       {!noAmbient && <AmbientBackground intensity={ambient} />}
       <div className="relative z-10 flex min-h-screen flex-col">
-        <PublicHeader />
+        <PublicHeader visualMode={visualMode} />
         <main id="public-content" tabIndex={-1} className="flex-1 outline-none">
           {children}
         </main>

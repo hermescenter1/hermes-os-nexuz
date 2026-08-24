@@ -2856,3 +2856,533 @@ main [id$="-title"] {
   min-inline-size: var(--rail-item-size);
   min-block-size: var(--rail-item-size);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I1 — HERMES ENGINEERING CHARTER & PROVENANCE LEDGER
+   The Company family's signature (`/about`). Not a card deck: a controlled
+   engineering document — drawing-sheet plate with a real title block, a
+   reasoning spine, a discipline register with measured depth bars, a
+   provenance record and a two-site operating network.
+   Every colour is a Phase 104 DNA variable; every rule is Edge; the only
+   accent is Beacon, and it is always paired with a text or shape channel.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── the sheet: a drawing ground, not a hero image ─────────────────────── */
+.hc-sheet {
+  position: relative;
+  background:
+    linear-gradient(180deg, var(--color-background-deep) 0%, var(--color-background) 100%);
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+}
+/* measured tick band along the sheet head — the instrument language of 104-E,
+   used once and quietly. Decorative: the element carrying it is aria-hidden. */
+.hc-ticks {
+  block-size: 0.75rem;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--edge-structural) 0 1px,
+    transparent 1px 100%
+  );
+  background-size: 3rem 100%;
+  opacity: 0.5;
+}
+.hc-ticks-fine { background-size: 0.75rem 100%; opacity: 0.28; }
+
+/* ── title block: the stamped identity strip of an engineering sheet ───── */
+.hc-titleblock {
+  display: grid;
+  gap: var(--edge-width);
+  background: var(--edge-structural);
+  border: var(--edge-width) solid var(--edge-structural);
+}
+.hc-tb-cell {
+  background: var(--color-background);
+  padding-block: 0.875rem;
+  padding-inline: 1rem;
+  min-inline-size: 0;
+}
+.hc-tb-key {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-metadata);
+}
+.hc-tb-val {
+  display: block;
+  margin-block-start: 0.35rem;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+/* ── reasoning spine: scattered → captured → connected → available ─────── */
+.hc-spine { display: grid; gap: 0; }
+.hc-spine-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  column-gap: 1rem;
+  padding-block: 1.125rem;
+  border-block-start: var(--edge-width) solid var(--edge-hairline);
+}
+.hc-spine-step:first-child { border-block-start: 0; }
+/* the vertical run of the spine, drawn with logical insets so RTL mirrors */
+.hc-spine-step::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 1.125rem;
+  inline-size: var(--edge-width);
+  background: var(--edge-structural);
+}
+.hc-spine-step:first-child::before { inset-block-start: 1.6rem; }
+.hc-spine-step:last-child::before  { inset-block-end: calc(100% - 1.6rem); }
+.hc-spine-node {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+  margin-block-start: 0.9rem;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  margin-inline-start: 0.875rem;
+  border-radius: 999px;
+  background: var(--color-background);
+  box-shadow: 0 0 0 var(--edge-width) var(--edge-structural);
+}
+/* the one decision node carries Beacon — plus a ring and a text label in the
+   markup, so the state is never colour alone */
+.hc-spine-step[data-decision="true"] .hc-spine-node {
+  background: var(--beacon-core);
+  box-shadow: 0 0 0 var(--beacon-ring-width) var(--beacon-rim);
+}
+
+/* ── discipline register: a measured ledger, not four equal cards ──────── */
+.hc-register { border-block-start: var(--edge-width) solid var(--edge-structural); }
+.hc-reg-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem 1.5rem;
+  padding-block: 1.25rem;
+  border-block-end: var(--edge-width) solid var(--edge-hairline);
+}
+@media (min-width: 48rem) {
+  .hc-reg-row { grid-template-columns: 3rem minmax(0, 15rem) minmax(0, 1fr); align-items: start; }
+}
+.hc-reg-ord {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--color-text-metadata);
+  font-variant-numeric: tabular-nums;
+}
+/* depth bar: ordinal position in the register, NOT a fabricated metric. Its
+   width is set from a --hc-depth custom property supplied per row, and the row
+   always states the same fact in words. */
+.hc-reg-depth {
+  display: block;
+  block-size: 0.1875rem;
+  margin-block-start: 0.5rem;
+  inline-size: 100%;
+  background: var(--edge-hairline);
+}
+.hc-reg-depth > span {
+  display: block;
+  block-size: 100%;
+  inline-size: var(--hc-depth, 100%);
+  background: var(--color-brand-primary);
+  opacity: 0.55;
+}
+
+/* ── provenance record: signature block + specimen strip ──────────────── */
+.hc-prov {
+  border: var(--edge-width) solid var(--edge-structural);
+  background: var(--color-surface-primary);
+}
+.hc-prov-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  padding: 1.25rem;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+}
+.hc-prov-body { padding: 1.25rem; display: grid; gap: 1rem; }
+.hc-prov-item {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  column-gap: 0.875rem;
+}
+.hc-prov-no {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  color: var(--color-text-metadata);
+  padding-block-start: 0.2rem;
+}
+/* specimen strip: the verified technical stack, kept LTR inside an RTL page */
+.hc-specimen {
+  padding: 0.875rem 1.25rem;
+  border-block-start: var(--edge-width) solid var(--edge-structural);
+  background: var(--color-background-deep);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+/* ── operating network: two verified sites, drawn in code ─────────────── */
+.hc-network {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border: var(--edge-width) solid var(--edge-structural);
+}
+@media (min-width: 48rem) { .hc-network { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.hc-site {
+  display: grid;
+  gap: 0.3rem;
+  padding-inline-start: 1.125rem;
+  border-inline-start: 0.125rem solid var(--color-brand-primary);
+}
+
+/* ── closure rule ─────────────────────────────────────────────────────── */
+.hc-closure {
+  border-block-start: var(--edge-width) solid var(--edge-structural);
+  background:
+    linear-gradient(180deg, var(--color-background) 0%, var(--color-background-deep) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-sheet, .hc-closure { transition: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I1 — HERMES SYSTEM REGISTRY FOOTER
+   Replaces the generic five-column link dump. Three declared layers:
+   operational identity · system registry · trust and closure. The registry is
+   ruled like an index (hairline rows, monospaced column keys) rather than
+   floating link lists, and the closure layer ends on a code-native network
+   signature. Compact by construction: the registry rows are dense so the
+   footer never grows taller than the content it closes.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.hf-identity {
+  display: grid;
+  gap: 1.5rem;
+  padding-block-end: 1.5rem;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+}
+@media (min-width: 60rem) {
+  .hf-identity { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+}
+
+/* the registry: an index, not a link dump */
+.hf-registry {
+  display: grid;
+  gap: 0;
+  padding-block: 0.5rem;
+}
+@media (min-width: 40rem) { .hf-registry { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2.5rem; } }
+@media (min-width: 64rem) { .hf-registry { grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 2rem; } }
+.hf-reg-col { padding-block: 1rem; min-inline-size: 0; }
+.hf-reg-key {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-block-end: 0.5rem;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-metadata);
+}
+/* the ordinal tick of the column — decorative, always beside a real label */
+.hf-reg-key::before {
+  content: "";
+  inline-size: 0.375rem;
+  block-size: 0.375rem;
+  flex: none;
+  background: var(--color-brand-primary);
+  opacity: 0.6;
+}
+.hf-reg-row { border-block-end: var(--edge-width) solid var(--edge-hairline); }
+.hf-reg-row:last-child { border-block-end: 0; }
+.hf-reg-link {
+  display: block;
+  padding-block: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  transition: color var(--duration-fast, 140ms) ease;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+.hf-reg-link:hover { color: var(--color-text-primary); }
+@media (prefers-reduced-motion: reduce) { .hf-reg-link { transition: none; } }
+
+/* closure: the handoff signature ends the page in code, not decoration */
+.hf-closure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  margin-block-start: 1.5rem;
+  padding-block-start: 1.25rem;
+  border-block-start: var(--edge-width) solid var(--edge-structural);
+}
+.hf-seal { display: block; block-size: 1.25rem; inline-size: auto; }
+.hf-seal-stroke { stroke: var(--edge-structural); stroke-width: 1; fill: none; }
+.hf-seal-core   { fill: var(--beacon-core); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I1 — HERMES PUBLIC INSTRUMENT RAIL (standard + company modes)
+   The 87D bar was a glass strip with a hairline. Observatory (104-E) and the
+   Journal masthead (104-F) already read as instruments; this brings the SAME
+   grammar to the default public header and adds the Company mode, so the whole
+   public estate is one family while each mode keeps its own character:
+     standard   deep bar, coordinate ticks, closure edge
+     company    standard + a heavier structural top rule (charter stationery)
+   Observatory (.hh-header) and Journal (.hj-header) are NOT touched.
+   ══════════════════════════════════════════════════════════════════════════ */
+.hp-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+  background-color: color-mix(in srgb, var(--color-background-deep) 92%, transparent);
+  backdrop-filter: blur(8px) saturate(1.15);
+}
+/* Browsers without color-mix still get an opaque, legible bar. */
+@supports not (background-color: color-mix(in srgb, red 50%, transparent)) {
+  .hp-header { background-color: var(--color-background-deep); }
+}
+/* Coordinate ticks along the bottom edge — the measured-instrument channel. */
+.hp-header::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 5px;
+  background-image: repeating-linear-gradient(90deg, var(--edge-structural) 0 1px, transparent 1px 72px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+/* Closure edge: the rule fades at both ends instead of butting the viewport. */
+.hp-header::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  block-size: 1px;
+  background: linear-gradient(to right, transparent, var(--edge-structural) 15%, var(--edge-structural) 85%, transparent);
+  pointer-events: none;
+}
+/* Company mode — the charter's stationery rule over the same instrument. */
+.hp-header-company { border-block-start: 2px solid var(--edge-structural); }
+
+/* Scroll compaction, tier 2 only: supporting browsers AND motion allowed. The
+   animation ends exactly at the static fallback, so a non-supporting browser
+   at scroll 0 and a supporting one at 100% render the same bar. */
+@keyframes hp-header-compact {
+  from { background-color: color-mix(in srgb, var(--color-background-deep) 62%, transparent); }
+  to   { background-color: color-mix(in srgb, var(--color-background-deep) 92%, transparent); }
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hp-header {
+      animation: hp-header-compact linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 160px;
+    }
+  }
+}
+
+/* Active group signal — never colour alone: an inline-start Beacon tick plus a
+   weight change, on the trigger that owns the current section. */
+.hp-nav-trigger[aria-current="true"],
+.hp-nav-trigger[data-active="true"] {
+  position: relative;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.hp-nav-trigger[aria-current="true"]::before,
+.hp-nav-trigger[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.35rem;
+  inset-block-end: 0.25rem;
+  inline-size: calc(100% - 0.7rem);
+  block-size: var(--rail-indicator-width);
+  border-radius: 999px;
+  background: var(--beacon-core);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I1 — HERMES ENGINEERING ENGAGEMENT PROTOCOL (/contact)
+   Replaces three equal emoji cards. Enquiries are TRIAGED, so the page is
+   drawn as the routing path they actually travel: one spine, three numbered
+   channels branching off it, then the registry of verified contact points and
+   the command surface that submits. No emoji: country marks are ISO codes set
+   in the mono face, channel marks are ordinals. Every address, number and URL
+   is the existing catalogue value — nothing invented.
+   ══════════════════════════════════════════════════════════════════════════ */
+.he-plate {
+  position: relative;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+  background: linear-gradient(180deg, var(--color-background-deep) 0%, var(--color-background) 100%);
+}
+
+/* routing map: one spine, three channels */
+.he-route { border-block-start: var(--edge-width) solid var(--edge-structural); }
+.he-channel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+}
+/* Below the wide breakpoint the row is a 2-column grid but carries FOUR
+   children, so auto-placement dropped the description and the address into the
+   2.75rem ordinal column and squeezed them to 44px. Placement is stated
+   explicitly instead: the node owns column 1, everything that is language owns
+   column 2. No overflow, wrapping or font-size rule is involved. */
+.he-channel > * { grid-column: 2; }
+.he-channel > .he-node { grid-column: 1; grid-row: 1; }
+.he-channel {
+  column-gap: 1rem;
+  padding-block: 1.375rem;
+  border-block-end: var(--edge-width) solid var(--edge-hairline);
+}
+/* The verified addresses are single unbreakable tokens (the longest is 31
+   characters ~= 236px in the mono face). The content column measures
+   viewport - 40 gutter - 44 ordinal - 16 gap, so it drops below that token
+   only under a 336px viewport. There the ordinal channel tightens to the
+   width the node and spine actually occupy (node spans 16-26px, spine sits at
+   21px), which returns 244px of content. Nothing is scaled, hyphenated,
+   broken mid-token, clipped or hidden — the column is simply sized to its
+   real contents. */
+@media (max-width: 21rem) {
+  .he-channel { grid-template-columns: 1.75rem minmax(0, 1fr); column-gap: 0.5rem; }
+}
+@media (min-width: 56rem) {
+  .he-channel { grid-template-columns: 2.75rem minmax(0, 16rem) minmax(0, 1fr) auto; align-items: start; }
+  .he-channel > * { grid-column: auto; }
+  .he-channel > .he-node { grid-column: 1; }
+}
+/* the spine itself, logical so RTL mirrors */
+.he-channel::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 1.3125rem;
+  inline-size: var(--edge-width);
+  background: var(--edge-structural);
+}
+.he-channel:first-child::before { inset-block-start: 1.9rem; }
+.he-channel:last-child::before  { inset-block-end: calc(100% - 1.9rem); }
+.he-node {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+  margin-block-start: 1.5rem;
+  margin-inline-start: 1rem;
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  border-radius: 999px;
+  background: var(--color-background);
+  box-shadow: 0 0 0 var(--edge-width) var(--edge-structural);
+}
+.he-ord {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  color: var(--color-text-metadata);
+  font-variant-numeric: tabular-nums;
+}
+
+/* verified-contact registry: ISO mark + value, ruled rows */
+.he-registry { display: grid; gap: 0; }
+.he-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: baseline;
+  padding-block: 0.625rem;
+  border-block-end: var(--edge-width) solid var(--edge-hairline);
+}
+.he-row:last-child { border-block-end: 0; }
+.he-mark {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  color: var(--color-brand-primary);
+  border: var(--edge-width) solid var(--edge-structural);
+  padding-block: 0.1rem;
+  text-align: center;
+  border-radius: 0.125rem;
+}
+
+/* command surface: the submit instrument, lifted off the page ground */
+.he-command {
+  border: var(--edge-width) solid var(--edge-active);
+  background: var(--color-surface-primary);
+  padding: 1.25rem;
+}
+@media (min-width: 48rem) { .he-command { padding: 1.75rem; } }
+/* WCAG 2.5.5 target size for the shipped form controls (42px as authored).
+   Scoped to this page's command surface: `<ContactForm />` itself is imported
+   unchanged and the shared control styles are untouched. */
+.he-command :is(input, select, textarea) { min-block-size: 2.75rem; }
+.he-command textarea { min-block-size: 8rem; }
+.he-command button[type="submit"] { min-block-size: 2.75rem; }
+.he-command-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding-block-end: 0.875rem;
+  margin-block-end: 1.25rem;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-metadata);
+}
+.he-command-head::before {
+  content: "";
+  inline-size: 0.375rem;
+  block-size: 0.375rem;
+  flex: none;
+  background: var(--beacon-core);
+  border-radius: 999px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I2 — PUBLIC FORM-CONTROL TARGET SIZE (WCAG 2.5.8)
+
+   The Contact command surface received a page-scoped 44px minimum in 104-I1
+   (.he-command, below). The same 42px control height was then measured on the
+   rest of the public estate — the /vendors directory filters and all 63 fields
+   of the vendor application form — so the fix belongs to the public shell, not
+   to a third per-page patch.
+
+   Scoped to `#public-content`, the element PublicPageShell renders, so it can
+   only ever affect public routes; authenticated and dashboard surfaces render
+   their own shell and are untouched. Checkboxes, radios and hidden inputs keep
+   their intrinsic size: stretching a checkbox to 44px would misalign it from
+   its label rather than enlarge the target, and the label association added in
+   104-I1 already gives those inputs a full-width activation area.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#public-content :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  min-block-size: 2.75rem;
+}
+

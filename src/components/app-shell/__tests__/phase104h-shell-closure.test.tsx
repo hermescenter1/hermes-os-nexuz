@@ -404,7 +404,13 @@ describe("104-H — DNA discipline in the changed scope", () => {
       expect(src, `${rel} raw colour`).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);
       expect(src, `${rel} legacy glow`).not.toMatch(/\b(glow-|text-glow|landing-scanlines|shadow-\[)/);
     }
-    const block = css.slice(css.indexOf("PHASE 104-H — RESPONSIVE / RTL / A11Y / MOTION CLOSURE"));
+    // Bound the slice to THIS block: an open-ended slice runs to EOF and would
+    // audit every later phase's CSS as if it were 104-H (104-I1's own header
+    // rail legitimately uses backdrop-filter). Tightening, not weakening — the
+    // 104-H block is still checked in full, and each later phase owns its own gate.
+    const blockStart = css.indexOf("PHASE 104-H — RESPONSIVE / RTL / A11Y / MOTION CLOSURE");
+    const nextBanner = css.indexOf("PHASE 104-", blockStart + "PHASE 104-H".length);
+    const block = css.slice(blockStart, nextBanner === -1 ? undefined : nextBanner);
     expect(block.length).toBeGreaterThan(200);
     const blockNoComments = block.replace(/\/\*[\s\S]*?\*\//g, " ");
     expect(blockNoComments).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);

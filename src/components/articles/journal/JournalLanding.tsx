@@ -208,7 +208,7 @@ export async function JournalLanding({
                     ) : null}
                     {lead.tags.length ? (
                       <div className="hj-provenance-row"><dt>{t("pressroom.filedUnder")}</dt><dd className="flex flex-wrap gap-x-3 gap-y-1">{lead.tags.slice(0, 5).map((tg) => (
-                        <Link key={tg.id} href={`/${locale}/articles/tag/${tg.slug}`} dir={LTR_TOKEN.test(tg.name) ? "ltr" : "auto"} className="ds-focus text-body-compact text-text-secondary hover:text-brand-primary">{isFa && tg.nameFa ? tg.nameFa : tg.name}</Link>
+                        <Link key={tg.id} href={`/${locale}/articles/tag/${tg.slug}`} dir={LTR_TOKEN.test(tg.name) ? "ltr" : "auto"} className="ds-focus inline-flex min-h-11 items-center text-body-compact text-text-secondary hover:text-brand-primary">{isFa && tg.nameFa ? tg.nameFa : tg.name}</Link>
                       ))}</dd></div>
                     ) : null}
                   </dl>

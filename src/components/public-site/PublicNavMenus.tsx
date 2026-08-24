@@ -87,7 +87,7 @@ export function PublicNavMenus() {
                 aria-controls={panelId}
                 aria-current={groupActive ? "true" : undefined}
                 className={cn(
-                  "ds-focus flex h-9 items-center gap-1.5 rounded-sm px-3 text-label font-medium",
+                  "ds-focus flex min-h-11 items-center gap-1.5 rounded-sm px-3 text-label font-medium",
                   "transition-colors duration-standard ease-hermes",
                   isOpen || groupActive
                     ? "text-text-primary"
@@ -140,7 +140,7 @@ export function PublicNavMenus() {
                             href={item.href}
                             aria-current={active ? "page" : undefined}
                             className={cn(
-                              "ds-focus flex min-h-9 items-center whitespace-nowrap rounded-sm px-3 text-label",
+                              "ds-focus flex min-h-11 items-center whitespace-nowrap rounded-sm px-3 text-label",
                               "transition-colors duration-fast",
                               active
                                 ? "bg-surface-interactive font-semibold text-text-primary"

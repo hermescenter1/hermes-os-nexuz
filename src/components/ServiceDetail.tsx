@@ -49,7 +49,7 @@ export async function ServiceDetail({
         <div className="mt-12">
           <Link
             href="/services"
-            className="inline-flex rounded-md border border-line px-5 py-2.5 font-body text-sm text-ink transition-colors hover:border-signal/50"
+            className="ds-focus inline-flex min-h-11 items-center rounded-md border border-line px-5 py-2.5 font-body text-sm text-ink transition-colors hover:border-signal/50"
           >
             <span className="back-arrow" aria-hidden="true" />{c("backToServices")}
           </Link>

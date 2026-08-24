@@ -31,7 +31,7 @@ export default async function CareersLayout({
   setRequestLocale(locale);
 
   return (
-    <PublicPageShell ambient={1}>
+    <PublicPageShell visualMode="company" ambient={1}>
       <div className="mx-auto max-w-screen-xl px-6 sm:px-8 pb-20">
         {children}
       </div>

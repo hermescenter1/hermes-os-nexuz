@@ -92,21 +92,21 @@ export function CookieConsentBanner() {
             <div className="flex flex-wrap gap-2 shrink-0">
               <button
                 onClick={() => setCustomizing(true)}
-                className="rounded-lg border border-line px-4 py-2 text-xs font-mono text-muted hover:text-ink transition-colors"
+                className="ds-focus inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 py-2 text-xs font-mono text-muted hover:text-ink transition-colors"
               >
                 {t("customize")}
               </button>
               <button
                 onClick={() => save({ necessary: true, analytics: false, marketing: false, preferences: false })}
                 disabled={saving}
-                className="rounded-lg border border-line px-4 py-2 text-xs font-mono text-muted hover:text-ink transition-colors disabled:opacity-50"
+                className="ds-focus inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 py-2 text-xs font-mono text-muted hover:text-ink transition-colors disabled:opacity-50"
               >
                 {t("rejectNonEssential")}
               </button>
               <button
                 onClick={() => save({ necessary: true, analytics: true, marketing: true, preferences: true })}
                 disabled={saving}
-                className="rounded-lg bg-signal px-4 py-2 text-xs font-mono font-semibold text-bg hover:bg-signal/90 transition-colors disabled:opacity-50"
+                className="ds-focus inline-flex min-h-11 items-center justify-center rounded-lg bg-signal px-4 py-2 text-xs font-mono font-semibold text-bg hover:bg-signal/90 transition-colors disabled:opacity-50"
               >
                 {saving ? t("saving") : t("acceptAll")}
               </button>
@@ -116,7 +116,7 @@ export function CookieConsentBanner() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-mono text-sm font-semibold text-ink">{t("preferencesTitle")}</h2>
-              <button onClick={() => setCustomizing(false)} className="text-muted hover:text-ink text-xs font-mono transition-colors">{t("back")}</button>
+              <button onClick={() => setCustomizing(false)} className="ds-focus inline-flex min-h-11 items-center text-muted hover:text-ink text-xs font-mono transition-colors">{t("back")}</button>
             </div>
             <div className="space-y-3">
               {([
@@ -148,7 +148,7 @@ export function CookieConsentBanner() {
               <button
                 onClick={() => save(prefs)}
                 disabled={saving}
-                className="rounded-lg bg-signal px-6 py-2 text-xs font-mono font-semibold text-bg hover:bg-signal/90 transition-colors disabled:opacity-50"
+                className="ds-focus inline-flex min-h-11 items-center justify-center rounded-lg bg-signal px-6 py-2 text-xs font-mono font-semibold text-bg hover:bg-signal/90 transition-colors disabled:opacity-50"
               >
                 {saving ? t("saving") : t("savePreferences")}
               </button>

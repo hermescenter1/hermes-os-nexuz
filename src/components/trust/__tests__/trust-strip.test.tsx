@@ -217,6 +217,47 @@ describe("trust strip — ProvenExpert consent gate (PHASE 99.6)", () => {
     expect(container.querySelector("#proSealWidget")).not.toBeNull();
     await unmount();
   });
+
+  /**
+   * PHASE 104-I3 — the 0.38 transform exists to shrink the VENDOR widget, and
+   * it must not also shrink the fallback link. It once did: the link computed
+   * to 44px but rendered 17px tall, making the only target a consent-denying
+   * reader can use the smallest control on every public page. jsdom does not
+   * do layout, so this asserts the structural cause (an ancestor transform)
+   * rather than a measured height.
+   */
+  it("keeps the consent-denied fallback link OUTSIDE the 0.38 vendor scale", async () => {
+    window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ marketing: false }));
+    const { container, unmount } = await mount(withIntl("en", <TrustBadgesSection />));
+
+    const link = [...container.querySelectorAll("a")].find((a) =>
+      a.getAttribute("href")?.includes("provenexpert.com"),
+    );
+    expect(link, "a consent-denied slot must still offer the honest profile link").toBeTruthy();
+    expect(link!.closest('[class*="scale-"]')).toBeNull();
+    expect(link!.className).toContain("min-h-11");
+    await unmount();
+  });
+
+  it("localizes the fallback link and its region label in every locale", async () => {
+    window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ marketing: false }));
+    const seen = new Set<string>();
+    for (const locale of ["en", "de", "fa"] as const) {
+      const { container, unmount } = await mount(withIntl(locale, <TrustBadgesSection />));
+      const link = [...container.querySelectorAll("a")].find((a) =>
+        a.getAttribute("href")?.includes("provenexpert.com"),
+      )!;
+      const text = link.textContent!.trim();
+      expect(text, `${locale} fallback link is empty`).not.toBe("");
+      // The three locales must not share one hard-coded English string.
+      seen.add(text);
+      const region = link.closest("[aria-label]")!;
+      expect(region.getAttribute("label")).toBeNull();
+      expect(region.getAttribute("aria-label")!.trim()).not.toBe("");
+      await unmount();
+    }
+    expect(seen.size, "the link text is identical in all three locales").toBe(3);
+  });
 });
 
 /** the source-file test has nothing mounted to unmount */
