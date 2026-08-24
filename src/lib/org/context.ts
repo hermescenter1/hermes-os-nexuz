@@ -87,6 +87,30 @@ export async function getOrgActorContext(
   }
 }
 
+/**
+ * PHASE 107 STAGE 6-A.2 — the machine code that belongs with an org-actor refusal.
+ *
+ * `requireOrgActor` refuses for TWO different reasons and returns only a status
+ * to say which: **401** when there is no usable session (absent, unverifiable,
+ * or revoked), and **403** when the caller is authenticated but not a member.
+ *
+ * Five call sites forwarded that status correctly and then hard-coded
+ * `ORGANIZATION_SCOPE_REQUIRED` beside it. So a reader whose session had been
+ * revoked received `401 ORGANIZATION_SCOPE_REQUIRED` — the status said "sign in
+ * again", the code said "you lack organization scope", and the UI branches on
+ * the code. It is the same contradiction Stage 6-A was opened to remove, in a
+ * guard that stage never looked at.
+ *
+ * Deriving the code here rather than at each call site means the mapping cannot
+ * drift between them, and a new status added to `requireOrgActor` has exactly
+ * one place to be handled.
+ */
+export function orgActorRefusalCode(status: number): "AUTHENTICATION_REQUIRED" | "ORGANIZATION_SCOPE_REQUIRED" | "FORBIDDEN" {
+  if (status === 401) return "AUTHENTICATION_REQUIRED";
+  if (status === 403) return "ORGANIZATION_SCOPE_REQUIRED";
+  return "FORBIDDEN";
+}
+
 /** Enforces authentication + membership in the specific org. Returns 401/403 on failure. */
 export async function requireOrgActor(
   req:   NextRequest,

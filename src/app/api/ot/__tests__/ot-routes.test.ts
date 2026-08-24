@@ -27,6 +27,15 @@ const h = vi.hoisted(() => ({
 vi.mock("@/lib/billing/context", () => ({
   requireOrgContext: async () =>
     h.org ? { ctx: h.org } : { error: "Authentication required", status: 401 },
+  /*
+   * PHASE 107 STAGE 6-A — `withOtRoute` now asks WHY the context is missing, so
+   * the double has to answer that too. `h.org === null` keeps meaning "no
+   * session", which is what every existing case in this file sets up; a signed-in
+   * user with no organization is a new situation and is covered in
+   * ot-context-semantics.test.ts against the real helper.
+   */
+  resolveOrgContext: async () =>
+    h.org ? { ok: true, ctx: h.org } : { ok: false, reason: "AUTHENTICATION_REQUIRED" },
 }));
 
 vi.mock("@/lib/org/context", () => ({

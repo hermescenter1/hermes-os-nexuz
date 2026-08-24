@@ -267,6 +267,10 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // attachments, upload, editorial workflow, moderation and processing states.
     // Genuinely German throughout; zero English carryover.
     "mediaHub",
+    // PHASE 107 — the Engineering Hub page titles (engineeringHub). Six route
+    // titles plus the hub fallback, previously a hard-coded English lookup in
+    // components/engineering/TopBar.tsx; genuinely German.
+    "engineeringHub",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

@@ -1,0 +1,1244 @@
+[
+  {
+    "path": "src/app/api/billing/invoices/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 1,
+    "removed": 1,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/billing/subscription/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 5,
+    "removed": 5,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/billing/usage/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 2,
+    "removed": 2,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/assets/[id]/poster/upload/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 1,
+    "removed": 1,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/assets/[id]/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 3,
+    "removed": 3,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/assets/[id]/subtitles/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 1,
+    "removed": 1,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/assets/[id]/transitions/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 3,
+    "removed": 3,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/assets/[id]/upload/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 1,
+    "removed": 1,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/assets/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 5,
+    "removed": 5,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/me/favourites/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 1,
+    "removed": 1,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/me/progress/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 1,
+    "removed": 1,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/platform/keys/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 2,
+    "removed": 2,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/platform/rate-limits/route.ts",
+    "tracked": true,
+    "category": "API consumers",
+    "reason": "route forwards the refusal code so the UI can branch on it",
+    "added": 1,
+    "removed": 1,
+    "note": ""
+  },
+  {
+    "path": "tools/audit/visual-evidence/contracts.mjs",
+    "tracked": true,
+    "category": "audit harness",
+    "reason": "the audit tool itself — reads pages, never edits them",
+    "added": 149,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "tools/audit/visual-evidence/fixture-noncontamination.mjs",
+    "tracked": false,
+    "category": "audit harness",
+    "reason": "the audit tool itself — reads pages, never edits them",
+    "added": 211,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "tools/audit/visual-evidence/probe-expression.js",
+    "tracked": true,
+    "category": "audit harness",
+    "reason": "the audit tool itself — reads pages, never edits them",
+    "added": 254,
+    "removed": 7,
+    "note": ""
+  },
+  {
+    "path": "tools/audit/visual-evidence/sweep.mjs",
+    "tracked": true,
+    "category": "audit harness",
+    "reason": "the audit tool itself — reads pages, never edits them",
+    "added": 57,
+    "removed": 1,
+    "note": ""
+  },
+  {
+    "path": "docs/design/stage6a/add-context-resource-messages.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 81,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/add-ot-context-messages.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 76,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/add-resource-messages.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 129,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/build-cells.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 91,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/build-evidence-pack.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 153,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/build-final-review.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 112,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/build-review-pack.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 359,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/build-root-cause-inventory.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 144,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/caller-inventory.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 1795,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/caller-inventory.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 88,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/classification-rules.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 54,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/classify-owners.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 72,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/classify-unattributed.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 118,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/control-char-gate.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 92,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/detector-controls.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 155,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/detector-selfcheck.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 186,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/diff-inventory.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 1244,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/diff-inventory.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 90,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/evidence-integrity.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 136,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/explain-auth-required.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 139,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/extract-unattributed.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 66,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/fault-injection.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 223,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/final-closure.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 196,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/final-sweep-report.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 141,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/fix-media-refusal-forwarding.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 88,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/fix-ot-org-copy.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 98,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/focus-controls.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 319,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/forward-refusal-code.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 70,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/freeze-snapshot.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 147,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/generate-final-report.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 361,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/image-diff.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 129,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/impact-map.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 4007,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/impact-map.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 137,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/instability-evidence.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 138,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/owner-classification.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 276,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/package-verifier-mutations.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 364,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/refusal-contract-probe.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 245,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/refusal-sites.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 322,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/rename-ot-offline-key.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 76,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/report-status-check.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 138,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/ROLLBACK.md",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 83,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/root-cause-inventory.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 750,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/scanner-controls.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 131,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/screenshot-stability.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 77,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/selector-audit.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 221,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/selector-audit.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 311,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/selector-controls.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 189,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/STAGE-6A-REPORT.md",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 1851,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/stage6a-cells.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 1850,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/stage6b-debt.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 338,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/stage6b-debt.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 61,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/test-discovery-parity.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 7951,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/test-discovery-parity.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 149,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/unattributed-cells.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 487,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/unattributed-classification.json",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 542,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/verify-affected-routes.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 230,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/verify-package.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 329,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/verify-stage6a-evidence.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 115,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/visual-debt-gate.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 111,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/zip-review-pack.mjs",
+    "tracked": false,
+    "category": "documentation",
+    "reason": "Stage 6-A analysis scripts and the written report",
+    "added": 112,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "messages/de.json",
+    "tracked": true,
+    "category": "i18n catalogs",
+    "reason": "localized copy for the new refusal states",
+    "added": 30,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "messages/en.json",
+    "tracked": true,
+    "category": "i18n catalogs",
+    "reason": "localized copy for the new refusal states",
+    "added": 30,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "messages/fa.json",
+    "tracked": true,
+    "category": "i18n catalogs",
+    "reason": "localized copy for the new refusal states",
+    "added": 30,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "src/lib/api/auth.ts",
+    "tracked": true,
+    "category": "product auth/context",
+    "reason": "the refusal vocabulary and the helpers that decide it",
+    "added": 76,
+    "removed": 10,
+    "note": ""
+  },
+  {
+    "path": "src/lib/auth/context-result.ts",
+    "tracked": false,
+    "category": "product auth/context",
+    "reason": "the refusal vocabulary and the helpers that decide it",
+    "added": 93,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/auth/refusal-vocabulary.ts",
+    "tracked": false,
+    "category": "product auth/context",
+    "reason": "the refusal vocabulary and the helpers that decide it",
+    "added": 69,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/billing/context.ts",
+    "tracked": true,
+    "category": "product auth/context",
+    "reason": "the refusal vocabulary and the helpers that decide it",
+    "added": 111,
+    "removed": 19,
+    "note": ""
+  },
+  {
+    "path": "src/lib/client/resource-request.ts",
+    "tracked": false,
+    "category": "product auth/context",
+    "reason": "the refusal vocabulary and the helpers that decide it",
+    "added": 234,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/copilot/voice/guard.ts",
+    "tracked": true,
+    "category": "product auth/context",
+    "reason": "the refusal vocabulary and the helpers that decide it",
+    "added": 57,
+    "removed": 3,
+    "note": ""
+  },
+  {
+    "path": "src/lib/org/context.ts",
+    "tracked": true,
+    "category": "product auth/context",
+    "reason": "the refusal vocabulary and the helpers that decide it",
+    "added": 24,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "src/lib/ot-edge/http/route-kit.ts",
+    "tracked": true,
+    "category": "product auth/context",
+    "reason": "the refusal vocabulary and the helpers that decide it",
+    "added": 33,
+    "removed": 4,
+    "note": ""
+  },
+  {
+    "path": "src/lib/ot-edge/services/core.ts",
+    "tracked": true,
+    "category": "product auth/context",
+    "reason": "the refusal vocabulary and the helpers that decide it",
+    "added": 8,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "src/app/[locale]/documents/explorer/page.tsx",
+    "tracked": true,
+    "category": "product route surfaces",
+    "reason": "page or layout whose rendered structure Phase 107 changed",
+    "added": 20,
+    "removed": 3,
+    "note": ""
+  },
+  {
+    "path": "docs/design/stage6a/mutation-proof-context.mjs",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 175,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/mutation-proof-gates.mjs",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 207,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/mutation-proof-harness.mjs",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 294,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/mutation-proof-refusal.mjs",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 326,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "docs/design/stage6a/mutation-proof.mjs",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 208,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/app/api/copilot/voice/__tests__/phase103-voice-guard-chain.test.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 33,
+    "removed": 2,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/copilot/voice/__tests__/phase103-voice-security-contract.test.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 6,
+    "removed": 1,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/assets/__tests__/harness.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 15,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/media/assets/__tests__/media-assets-collection.test.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 99,
+    "removed": 7,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/ot/__tests__/enrollment-routes.test.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 3,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/ot/__tests__/ot-routes.test.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 9,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "src/app/api/ot/__tests__/route-static-security.test.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 7,
+    "removed": 3,
+    "note": ""
+  },
+  {
+    "path": "src/components/__tests__/stage6a-resource-failure-surfaces.test.tsx",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 278,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/components/__tests__/stage6a2-malformed-success.test.tsx",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 337,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/components/crm-experience/__tests__/runtime-crm-subpages.test.tsx",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 16,
+    "removed": 2,
+    "note": ""
+  },
+  {
+    "path": "src/components/ot-edge-operations/__tests__/ot-context-states.test.tsx",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 161,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/i18n/__tests__/german-enterprise-render.test.tsx",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 8,
+    "removed": 2,
+    "note": ""
+  },
+  {
+    "path": "src/i18n/__tests__/german-final-gate.test.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 3,
+    "removed": 3,
+    "note": ""
+  },
+  {
+    "path": "src/lib/api/__tests__/platform-auth-classification.test.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 112,
+    "removed": 22,
+    "note": ""
+  },
+  {
+    "path": "src/lib/auth/__tests__/context-refusal-semantics.test.ts",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 391,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/auth/__tests__/refusal-vocabulary.test.ts",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 92,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/client/__tests__/async-state.test.ts",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 148,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/client/__tests__/resource-request.test.ts",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 169,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/client/__tests__/use-resource.test.tsx",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 202,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/ot-edge/http/__tests__/ot-context-semantics.test.ts",
+    "tracked": false,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 209,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "tools/audit/visual-evidence/__tests__/visual-evidence-harness.test.ts",
+    "tracked": true,
+    "category": "tests/mutations",
+    "reason": "test or mutation proof",
+    "added": 78,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "src/components/api/ApiKeysDashboard.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 38,
+    "removed": 26,
+    "note": ""
+  },
+  {
+    "path": "src/components/billing/BillingDashboard.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 79,
+    "removed": 36,
+    "note": ""
+  },
+  {
+    "path": "src/components/compliance/CookieConsentBanner.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 3,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "src/components/crm/AccountDetailClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 33,
+    "removed": 15,
+    "note": ""
+  },
+  {
+    "path": "src/components/crm/AccountListClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 29,
+    "removed": 15,
+    "note": ""
+  },
+  {
+    "path": "src/components/crm/CustomerSuccessClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 46,
+    "removed": 16,
+    "note": ""
+  },
+  {
+    "path": "src/components/crm/LeadDetailClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 36,
+    "removed": 14,
+    "note": ""
+  },
+  {
+    "path": "src/components/crm/OpportunityDetailClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 32,
+    "removed": 13,
+    "note": ""
+  },
+  {
+    "path": "src/components/crm/OpportunityPipelineClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 27,
+    "removed": 13,
+    "note": ""
+  },
+  {
+    "path": "src/components/customer-portal/CustomerAccountClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 70,
+    "removed": 18,
+    "note": ""
+  },
+  {
+    "path": "src/components/customer-portal/CustomerOverviewClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 55,
+    "removed": 19,
+    "note": ""
+  },
+  {
+    "path": "src/components/customer-portal/CustomerSettingsClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 143,
+    "removed": 43,
+    "note": ""
+  },
+  {
+    "path": "src/components/customer-portal/CustomerTrainingClient.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 27,
+    "removed": 13,
+    "note": ""
+  },
+  {
+    "path": "src/components/ds/ErrorState.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 17,
+    "removed": 4,
+    "note": ""
+  },
+  {
+    "path": "src/components/organization/DepartmentsPanel.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 28,
+    "removed": 17,
+    "note": ""
+  },
+  {
+    "path": "src/components/organization/OrgOverview.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 39,
+    "removed": 20,
+    "note": ""
+  },
+  {
+    "path": "src/components/ot-edge-operations/OtStates.tsx",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 41,
+    "removed": 13,
+    "note": ""
+  },
+  {
+    "path": "src/components/ot-edge-operations/shared.ts",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 6,
+    "removed": 0,
+    "note": ""
+  },
+  {
+    "path": "src/components/ui/ResourceFailureNotice.tsx",
+    "tracked": false,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 114,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/client/async-state.ts",
+    "tracked": false,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 89,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/client/use-resource.ts",
+    "tracked": false,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 106,
+    "removed": 0,
+    "note": "new file"
+  },
+  {
+    "path": "src/lib/ot-operations/api.ts",
+    "tracked": true,
+    "category": "UI async states",
+    "reason": "renders an explicit state instead of silence or emptiness",
+    "added": 22,
+    "removed": 1,
+    "note": ""
+  }
+]

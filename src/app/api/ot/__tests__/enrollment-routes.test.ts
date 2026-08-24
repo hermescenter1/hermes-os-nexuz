@@ -23,6 +23,9 @@ const h = vi.hoisted(() => ({
 
 vi.mock("@/lib/billing/context", () => ({
   requireOrgContext: async () => (h.org ? { ctx: h.org } : { error: "Authentication required", status: 401 }),
+  // PHASE 107 STAGE 6-A — `withOtRoute` now asks WHY the context is missing.
+  // `h.org === null` still means "no session", which is what this file sets up.
+  resolveOrgContext: async () => (h.org ? { ok: true, ctx: h.org } : { ok: false, reason: "AUTHENTICATION_REQUIRED" }),
 }));
 vi.mock("@/lib/org/context", () => ({
   requireOrgActor: async () => (h.actorError ? h.actorError : { ctx: { ...h.org, memberId: "m-1", status: "ACTIVE" } }),

@@ -41,15 +41,29 @@ const OPP: CrmOpportunity & { account: null } = {
   account: null,
 } as unknown as CrmOpportunity & { account: null };
 
+/**
+ * PHASE 107 STAGE 6-A — the double now implements `text()` as well as `json()`.
+ *
+ * A real `Response` has both, and callers that need to tell an empty body from a
+ * malformed one must read the text before parsing it. The previous double
+ * offered only `json()`, which made a faithful reader fail against a fixture
+ * that a browser would have handled. Every assertion in this file is unchanged;
+ * only the fidelity of the fake response is.
+ */
 function stubFetch(map: Record<string, unknown>) {
   const calls: string[] = [];
+  const respond = (ok: boolean, status: number, body: unknown) => ({
+    ok, status,
+    json: async () => body,
+    text: async () => JSON.stringify(body),
+  });
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
       calls.push(String(url));
       const key = Object.keys(map).find((k) => String(url).includes(k));
-      if (!key) return { ok: false, status: 404, json: async () => ({ error: "RAW_SERVER_TRACE" }) };
-      return { ok: true, status: 200, json: async () => map[key] };
+      if (!key) return respond(false, 404, { error: "RAW_SERVER_TRACE" });
+      return respond(true, 200, map[key]);
     }),
   );
   return calls;

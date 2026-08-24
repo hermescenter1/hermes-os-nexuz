@@ -59,6 +59,12 @@ export function useFailureCopy(): Record<OtFailureCode, OtStateCopy> {
   return useMemo(
     () => ({
       UNAUTHENTICATED: { title: t("unauthenticatedTitle"), body: t("unauthenticatedBody") },
+      // PHASE 107 STAGE 6-A — a signed-in operator with no organization or site
+      // selected must not be told to sign in again. The wording points at the
+      // selection they actually need to make.
+      ORGANIZATION_CONTEXT_REQUIRED: { title: t("orgContextTitle"), body: t("orgContextBody") },
+      SITE_CONTEXT_REQUIRED: { title: t("siteContextTitle"), body: t("siteContextBody") },
+      CONNECTION_FAILED: { title: t("connectionFailedTitle"), body: t("connectionFailedBody") },
       FORBIDDEN: { title: t("forbiddenTitle"), body: t("forbiddenBody") },
       NOT_FOUND: { title: t("notFoundTitle"), body: t("notFoundBody") },
       INVALID_QUERY: { title: t("invalidQueryTitle"), body: t("invalidQueryBody") },

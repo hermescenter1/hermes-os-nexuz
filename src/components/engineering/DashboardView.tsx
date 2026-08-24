@@ -39,7 +39,10 @@ export function DashboardView() {
       {/* Page header */}
       <AnimatedSection delay={0}>
         <div>
-          <h1 className="text-xl font-bold text-ink font-display">Executive Dashboard</h1>
+          {/* PHASE 107 — demoted from <h1>: the Engineering TopBar now owns the
+              single page heading for every route in this app family, so a
+              second h1 here would give this one route two. */}
+          <h2 className="text-xl font-bold text-ink font-display">Executive Dashboard</h2>
           <p className="text-xs text-muted mt-0.5" suppressHydrationWarning>
             {data?.generatedAt
               ? `Last updated ${formatDateTime(data.generatedAt, locale)}`

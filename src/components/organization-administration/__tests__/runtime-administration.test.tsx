@@ -127,11 +127,17 @@ describe("catalog + navigation + boundary invariants", () => {
     }
   });
 
-  it("the landing keeps the PHASE 87D PageShell contract and adds no API of its own", () => {
+  it("the landing sits on the authenticated shell and adds no API of its own", () => {
     const page = read("src/app/[locale]/dashboard/organization/page.tsx");
-    // 87D public-shell-rollout contract: authenticated pages keep PageShell
-    expect(page).toContain("@/components/PageShell");
+    // PHASE 107 — was: "keeps the PHASE 87D PageShell contract". That contract
+    // kept authenticated pages OFF the public shell, and expressed it by pinning
+    // them to PageShell. But PageShell renders SiteHeader/SiteFooter, i.e. the
+    // marketing chrome, around a signed-in organisation-administration surface.
+    // The page now uses AppShell; the original intent — no public/marketing
+    // chrome here — is asserted directly instead of by proxy.
+    expect(page).toContain('from "@/components/app-shell"');
     expect(page).not.toContain("@/components/public-site");
+    expect(page).not.toContain("@/components/PageShell");
     // reads go through EXISTING server service functions, not a new endpoint
     expect(page).toContain("@/lib/org/members");
     expect(page).toContain("@/lib/billing/subscriptions");

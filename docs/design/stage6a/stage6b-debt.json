@@ -1,0 +1,338 @@
+[
+  {
+    "file": "src/app/[locale]/dashboard/copilot/page.tsx",
+    "rawParse": true,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/app/[locale]/dashboard/industrial/knowledge-graph/page.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/app/[locale]/dashboard/multi-site/knowledge/page.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/app/[locale]/dashboard/multi-site/page.tsx",
+    "rawParse": false,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/academy/AcademyAdminClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/academy/CertificateViewClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/academy/CourseDetailClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/academy/CoursesBrowserClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/admin/CustomerAdminClient.tsx",
+    "rawParse": true,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/articles/ArticleDetailClient.tsx",
+    "rawParse": false,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/ats/AtsAnalyticsClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/ats/AtsOverviewClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/ats/CandidateListClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/ats/JobListClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/ats/PipelineBoardClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/auth/VerifyEmailClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/candidate/CandidateApplicationsClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/candidate/CandidateDashboardClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/careers/ApplyFormClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/careers/CareersBoardClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/careers/JobDetailClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/compliance/ComplianceDashboardClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/compliance/CookieConsentBanner.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/compliance/PrivacyCenterClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/copilot/CopilotClient.tsx",
+    "rawParse": true,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/crm/LeadListClient.tsx",
+    "rawParse": true,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customer-portal/CustomerActivityClient.tsx",
+    "rawParse": true,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customer-portal/CustomerDocumentsClient.tsx",
+    "rawParse": true,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customer-portal/CustomerProjectDetailClient.tsx",
+    "rawParse": false,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customer-portal/CustomerProjectsClient.tsx",
+    "rawParse": true,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customer-portal/CustomerSubscriptionClient.tsx",
+    "rawParse": true,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customers/AccountListClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customers/CustomerOverviewClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customers/HealthCenterClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customers/RiskCenterClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customers/SuccessPlansClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/customers/UsageAnalyticsClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/industrial/AssetAlertCenter.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/industrial/AssetDetailClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/industrial/AssetMaintenanceBoard.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/industrial/AssetsList.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/industrial/AssetTrendDashboard.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/industrial/ConnectorsList.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/industrial/GatewaysList.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/industrial/SitesList.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/industrial/TelemetryViewer.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/intelligence/UnknownCenterClient.tsx",
+    "rawParse": false,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/knowledge-graph/KnowledgeGraphClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/library/CaseExplorerClient.tsx",
+    "rawParse": false,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/operations/AlertCommandClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/operations/IntelligenceWallClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/operations/OperationsOverviewClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/operations/SitesMonitorClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/operations/WarRoomClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/StorageIndicator.tsx",
+    "rawParse": false,
+    "emptyCatch": true,
+    "usesAuditedLoader": false
+  },
+  {
+    "file": "src/components/vendors/VendorPortalClient.tsx",
+    "rawParse": true,
+    "emptyCatch": false,
+    "usesAuditedLoader": false
+  }
+]

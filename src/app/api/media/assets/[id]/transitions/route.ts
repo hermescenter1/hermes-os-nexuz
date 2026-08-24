@@ -24,7 +24,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requirePlatformAuth } from "@/lib/api/auth";
-import { requireOrgActor } from "@/lib/org/context";
+import { requireOrgActor, orgActorRefusalCode } from "@/lib/org/context";
 import { can, requirePermission, type OrgPermission } from "@/lib/org/rbac";
 import type { OrgRole } from "@/lib/org/types";
 import { checkRateLimit, retryAfter } from "@/lib/auth/rate-limiter";
@@ -79,7 +79,7 @@ const transitionSchema = z
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return json({ error: auth.error, code: "AUTHENTICATION_REQUIRED" }, auth.status);
+  if ("error" in auth) return json({ error: auth.error, code: auth.code }, auth.status);
 
   // Same-origin, for cookie-authenticated writes only. Runs before the id is
   // read, so the refusal is identical for every id.
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!originGate.ok) return json({ error: "Forbidden", code: "FORBIDDEN" }, 403);
 
   const member = await requireOrgActor(req, auth.ctx.orgId);
-  if ("error" in member) return json({ error: member.error, code: "ORGANIZATION_SCOPE_REQUIRED" }, member.status);
+  if ("error" in member) return json({ error: member.error, code: orgActorRefusalCode(member.status) }, member.status);
 
   // Baseline gate: an actor who may not read the library may not move anything
   // inside it. The per-edge permission is enforced below, once the edge is known.

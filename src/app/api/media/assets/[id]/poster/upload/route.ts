@@ -197,7 +197,7 @@ export async function POST(
 
   // ── 2. Authentication, BEFORE the un-scoped lookup ────────────────────────
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return deny(401, "authentication_required");
+  if ("error" in auth) return deny(auth.status, auth.code);
 
   // ── 3. Same-origin, for cookie-authenticated writes ───────────────────────
   const originGate = requireTrustedOrigin(req, auth.ctx.authMethod);

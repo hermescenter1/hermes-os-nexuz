@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState }              from "react";
 import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
 import { DashboardPanel }                    from "@/components/ui/DashboardPanel";
 import { StatCard }                          from "@/components/ui/StatCard";
+import { ResourceFailureNotice }             from "@/components/ui/ResourceFailureNotice";
+import { useResource }                       from "@/lib/client/use-resource";
+import { requestJson }                       from "@/lib/client/resource-request";
 import { formatCurrency }                    from "@/lib/billing/currency";
 import type { PlanRecord, PlanLimits, SubscriptionRecord, InvoiceRecord, Currency } from "@/lib/billing/types";
 import { formatDate, formatNumber } from "@/lib/i18n/format";
@@ -244,44 +247,73 @@ export function BillingDashboard() {
   const [usage,        setUsage]        = useState<UsageSummary>({});
   const [statuses,     setStatuses]     = useState<LimitStatus[]>([]);
   const [cycle,        setCycle]        = useState<"MONTHLY" | "YEARLY">("MONTHLY");
-  const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState<string | null>(null);
   const [changing,     setChanging]     = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [pRes, sRes, iRes, uRes] = await Promise.all([
-        fetch("/api/billing/plans"),
-        fetch("/api/billing/subscription"),
-        fetch("/api/billing/invoices"),
-        fetch("/api/billing/usage"),
+  /**
+   * PHASE 107 STAGE 6-A — only `plans` used to be treated as required. The other
+   * three fell back to `null` / `[]` / `{}` on any non-2xx, so a 401 on the
+   * subscription endpoint told the reader they had no subscription, no invoices
+   * and no usage — on the page where they check what they are paying for. All
+   * four are billing facts about the signed-in organization, so all four are now
+   * required, and a failure names itself instead of being rendered as zero.
+   *
+   * Endpoints, methods and the shape consumed from each are unchanged.
+   */
+  const billingState = useResource<{
+    plans: PlanRecord[];
+    subscription: SubscriptionRecord | null;
+    invoices: InvoiceRecord[];
+    usage: UsageSummary;
+    statuses: LimitStatus[];
+  }>(
+    async (signal) => {
+      const [plans, subscription, invoices, usageBody] = await Promise.all([
+        requestJson("/api/billing/plans", (b) => (b as { plans?: PlanRecord[] }).plans, { signal }),
+        /*
+         * `subscription` is legitimately null for an organization on no plan,
+         * so an explicit null stays a value; only a failed REQUEST is a failure.
+         *
+         * PHASE 107 STAGE 6-A.2 — but ABSENT is not NULL. `?? null` collapsed
+         * the two, so a 2xx that never mentioned a subscription rendered the
+         * billing page as a confident "you are on no plan". On a paid product
+         * that is a wrong answer about money, produced from a response that
+         * said nothing at all. The key must be PRESENT; `undefined` makes
+         * `requestJson` raise FAILED and the page shows its error state.
+         */
+        requestJson(
+          "/api/billing/subscription",
+          (b) => {
+            if (!b || typeof b !== "object" || !("subscription" in b)) return undefined;
+            return (b as { subscription: SubscriptionRecord | null }).subscription ?? null;
+          },
+          { signal },
+        ),
+        requestJson("/api/billing/invoices", (b) => (b as { invoices?: InvoiceRecord[] }).invoices, { signal }),
+        requestJson(
+          "/api/billing/usage",
+          (b) => (b as { summary?: UsageSummary; statuses?: LimitStatus[] }).summary
+            ? (b as { summary: UsageSummary; statuses?: LimitStatus[] })
+            : undefined,
+          { signal },
+        ),
       ]);
-      if (!pRes.ok) throw new Error("plans");
-      const { plans: p }        = await pRes.json() as { plans: PlanRecord[] };
-      const { subscription: s } = sRes.ok
-        ? await sRes.json() as { subscription: SubscriptionRecord | null }
-        : { subscription: null };
-      const { invoices: inv }   = iRes.ok
-        ? await iRes.json() as { invoices: InvoiceRecord[] }
-        : { invoices: [] };
-      const uBody = uRes.ok
-        ? await uRes.json() as { summary: UsageSummary; statuses?: LimitStatus[] }
-        : { summary: {}, statuses: [] };
-      setPlans(p);
-      setSubscription(s);
-      setInvoices(inv);
-      setUsage(uBody.summary ?? {});
-      setStatuses(uBody.statuses ?? []);
-    } catch {
-      setError(t("errors.loadFailed"));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+      return { plans, subscription, invoices, usage: usageBody.summary, statuses: usageBody.statuses ?? [] };
+    },
+    [],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const d = billingState.data;
+    if (!d) return;
+    setPlans(d.plans);
+    setSubscription(d.subscription);
+    setInvoices(d.invoices);
+    setUsage(d.usage);
+    setStatuses(d.statuses);
+  }, [billingState.data]);
+
+  const load = billingState.retry;
 
   async function handlePlanSelect(planId: string) {
     setChanging(true);
@@ -332,16 +364,27 @@ export function BillingDashboard() {
   }
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
-  if (loading) {
+  if (billingState.status === "LOADING") {
     return (
       <div className="space-y-6">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-28 animate-pulse rounded-2xl bg-surface/50 border border-line" />
+          <div key={i} data-async-state="loading" className="h-28 animate-pulse rounded-2xl bg-surface/50 border border-line" />
         ))}
       </div>
     );
   }
 
+  // A billing page that cannot reach billing says so, rather than reporting
+  // zeroes the reader might believe.
+  if (billingState.status === "ERROR" && billingState.failure) {
+    return (
+      <GlassCard className="p-6">
+        <ResourceFailureNotice code={billingState.failure} onRetry={billingState.retry} />
+      </GlassCard>
+    );
+  }
+
+  // Retained for change/cancel failures, which are reported the same way as before.
   if (error) {
     return (
       <GlassCard className="p-6 text-center">

@@ -189,9 +189,12 @@ export function IntelligenceView() {
           <ScoreRing score={overallScore} />
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-3 mb-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-ink font-display">
+              {/* PHASE 107 — demoted from <h1>: the TopBar owns the route
+                  heading. This one only rendered once data had loaded, so the
+                  page was heading-less in its loading and empty states. */}
+              <h2 className="text-2xl font-bold text-ink font-display">
                 System Intelligence
-              </h1>
+              </h2>
               <span className={`text-4xl font-bold metric ${gradeColor(synthData.intelligenceGrade)}`}>
                 {synthData.intelligenceGrade}
               </span>

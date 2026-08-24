@@ -337,7 +337,7 @@ export async function POST(
   // and varies with its outcome describes the row. Proving the caller is
   // authenticated first is id-independent.
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return deny(401, "authentication_required");
+  if ("error" in auth) return deny(auth.status, auth.code);
 
   // ── Same-origin, for cookie-authenticated writes ──────────────────────────
   const originGate = requireTrustedOrigin(req, auth.ctx.authMethod);

@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const result = await requireOrgContext(req);
   if ("error" in result) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({ error: result.error, ...("code" in result ? { code: result.code } : {}) }, { status: result.status });
   }
   const { ctx } = result;
   // PHASE 87L.6G — sensitive billing READ. requireOrgContext establishes
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const result = await requireOrgContext(req);
   if ("error" in result) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({ error: result.error, ...("code" in result ? { code: result.code } : {}) }, { status: result.status });
   }
   const { ctx } = result;
   const perm = requirePermission(ctx.role, "manage_billing");

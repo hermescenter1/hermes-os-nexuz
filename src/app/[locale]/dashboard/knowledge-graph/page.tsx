@@ -6,7 +6,7 @@
  */
 
 import { setRequestLocale } from "next-intl/server";
-import { PageShell }         from "@/components/PageShell";
+import { AppShell }          from "@/components/app-shell";
 import { PageHeader }        from "@/components/ui/PageHeader";
 import { KnowledgeGraphClient } from "@/components/knowledge-graph/KnowledgeGraphClient";
 
@@ -23,7 +23,7 @@ export default async function KnowledgeGraphPage({
   setRequestLocale(locale);
 
   return (
-    <PageShell ambient={2}>
+    <AppShell>
       <div className="mx-auto max-w-screen-2xl px-6 sm:px-8 pb-20">
 
         <PageHeader
@@ -46,6 +46,6 @@ export default async function KnowledgeGraphPage({
         <KnowledgeGraphClient />
 
       </div>
-    </PageShell>
+    </AppShell>
   );
 }

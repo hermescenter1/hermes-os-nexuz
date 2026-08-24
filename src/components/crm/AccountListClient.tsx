@@ -2,12 +2,20 @@
 
 // PHASE 87G AMENDMENT 1 — localized account list. Same fetch/search/routing;
 // tier VALUES stay API enums; labels localized; search accessible.
+//
+// PHASE 107 STAGE 6-A — the load is now an explicit state machine. Previously
+// `.then(r => r.json()).then(d => setAccounts(d.accounts ?? []))` fed an error
+// body straight into the table: a signed-out user saw "no accounts yet" instead
+// of being asked to sign in. Endpoint, query and routing are unchanged.
 
-import { useState, useEffect } from "react";
+import { useState }            from "react";
 import Link                    from "next/link";
 import { usePathname }         from "next/navigation";
 import { useTranslations }     from "next-intl";
 import { HealthScoreCard }     from "./HealthScoreCard";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { useResource }         from "@/lib/client/use-resource";
+import { requestJson }         from "@/lib/client/resource-request";
 import type { CrmAccountWithHealth } from "@/lib/crm/types";
 
 const TIER_STYLES: Record<string, string> = {
@@ -18,20 +26,20 @@ const TIER_STYLES: Record<string, string> = {
 
 export function AccountListClient() {
   const t = useTranslations("crm");
-  const [accounts, setAccounts] = useState<CrmAccountWithHealth[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState("");
+  const [search, setSearch] = useState("");
   const pathname = usePathname();
   const base = pathname.startsWith("/fa") ? "/fa" : "/en";
 
-  useEffect(() => {
-    fetch("/api/crm/accounts")
-      .then(r => r.json())
-      .then(d => setAccounts(d.accounts ?? []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const accountsState = useResource<CrmAccountWithHealth[]>(
+    (signal) => requestJson(
+      "/api/crm/accounts",
+      (body) => (body as { accounts?: CrmAccountWithHealth[] }).accounts,
+      { signal },
+    ),
+    [],
+  );
 
+  const accounts = accountsState.data ?? [];
   const filtered = accounts.filter(a =>
     !search ||
     a.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -56,19 +64,25 @@ export function AccountListClient() {
         className="w-full max-w-xs rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-metadata focus:border-cyan-500/40 focus:outline-none"
       />
 
-      {loading && (
-        <div className="h-64 rounded-xl border border-line bg-surface animate-pulse">
+      {accountsState.status === "LOADING" && (
+        <div data-async-state="loading" className="h-64 rounded-xl border border-line bg-surface animate-pulse">
           <span className="sr-only" role="status">{t("common.loading")}</span>
         </div>
       )}
 
-      {!loading && filtered.length === 0 && (
+      {accountsState.status === "ERROR" && accountsState.failure && (
+        <div className="rounded-xl border border-line bg-surface">
+          <ResourceFailureNotice code={accountsState.failure} onRetry={accountsState.retry} />
+        </div>
+      )}
+
+      {(accountsState.status === "SUCCESS" || accountsState.status === "EMPTY") && filtered.length === 0 && (
         <div className="rounded-xl border border-line bg-surface p-8 text-center text-sm text-muted">
           {t("accounts.empty")}
         </div>
       )}
 
-      {!loading && filtered.length > 0 && (
+      {filtered.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-line bg-surface">
           <table className="w-full text-sm">
             <thead>

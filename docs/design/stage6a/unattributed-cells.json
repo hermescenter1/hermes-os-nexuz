@@ -1,0 +1,487 @@
+[
+  {
+    "route": "/dashboard/ot/devices/[id]",
+    "locale": "en",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]/edit",
+    "locale": "en",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways",
+    "locale": "en",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]",
+    "locale": "en",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]/edit",
+    "locale": "en",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/articles/following",
+    "locale": "de",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/assets/[id]",
+    "locale": "de",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]",
+    "locale": "de",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways",
+    "locale": "de",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: net::ERR_NETWORK_CHANGED",
+      "log: Failed to load resource: net::ERR_NETWORK_CHANGED",
+      "exception: ChunkLoadError: Loading chunk _app-pages-browser_node_modules_next_dist_client_dev_noop-turbopack-hmr_js failed.\n(error: http://localhost:3001/_next/static/chunks/_app-pages-browser_node_modules_next_dist_client_dev_noop-turbopack-hmr_js.js)\n    at _",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/cmms/settings",
+    "locale": "fa",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]",
+    "locale": "fa",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]/edit",
+    "locale": "fa",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways",
+    "locale": "fa",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]",
+    "locale": "fa",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]/edit",
+    "locale": "fa",
+    "viewport": "1440x900",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/crm",
+    "locale": "en",
+    "viewport": "375x812",
+    "kind": "STUCK_LOADING",
+    "anomaly": "page still presenting a loading state after settle — no data, no error, no retry",
+    "consoleErrors": [
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]",
+    "locale": "en",
+    "viewport": "375x812",
+    "kind": "STUCK_LOADING",
+    "anomaly": "page still presenting a loading state after settle — no data, no error, no retry",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]",
+    "locale": "en",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]/edit",
+    "locale": "en",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways",
+    "locale": "en",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]",
+    "locale": "en",
+    "viewport": "375x812",
+    "kind": "STUCK_LOADING",
+    "anomaly": "page still presenting a loading state after settle — no data, no error, no retry",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]",
+    "locale": "en",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]/edit",
+    "locale": "en",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/documents/explorer",
+    "locale": "en",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]",
+    "locale": "de",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways",
+    "locale": "de",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/new",
+    "locale": "de",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/automation/executions/[id]",
+    "locale": "fa",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_RESET",
+      "log: Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/automation/settings",
+    "locale": "fa",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/crm",
+    "locale": "fa",
+    "viewport": "375x812",
+    "kind": "STUCK_LOADING",
+    "anomaly": "page still presenting a loading state after settle — no data, no error, no retry",
+    "consoleErrors": [
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]",
+    "locale": "fa",
+    "viewport": "375x812",
+    "kind": "STUCK_LOADING",
+    "anomaly": "page still presenting a loading state after settle — no data, no error, no retry",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]",
+    "locale": "fa",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]/edit",
+    "locale": "fa",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways",
+    "locale": "fa",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]",
+    "locale": "fa",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]/edit",
+    "locale": "fa",
+    "viewport": "375x812",
+    "kind": "UNHANDLED_FETCH_FAILURE",
+    "anomaly": "a fetch failed but the page shows no error, empty or retry affordance",
+    "consoleErrors": [
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)\n    at <anonymous>:3:56",
+      "log: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "textLen": null
+  }
+]

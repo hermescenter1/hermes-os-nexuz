@@ -42,6 +42,9 @@ export const MOCKED_MODULES = [
   "@/lib/auth/jwt",
   "@/lib/auth/session-store",
   "@/lib/db/prisma",
+  // Unmocked in afterEach with the rest; a leaked storage-mode mock would make
+  // an unrelated suite think it is running against a database.
+  "@/lib/storage/storage-mode",
   "@/lib/audit/audit-service",
   "@/lib/logger/security-events",
   "@/lib/auth/rate-limiter",
@@ -242,6 +245,18 @@ export function installMocks(state: HarnessState): void {
   }));
   vi.doMock("@/lib/auth/session-store", () => ({
     isPayloadSessionActive: async () => state.sessionActive,
+  }));
+  /*
+   * PHASE 107 STAGE 6-A — these suites describe a DATABASE-mode deployment.
+   * `databaseAvailable: false` is meant to simulate an OUTAGE, and an outage is
+   * a 500. Left ambient, the mode came from the environment, so a session-mode
+   * run reclassified the same case as 409 "no organization" — which is correct
+   * for a deployment that has no organization store by design, and wrong as a
+   * description of an outage.
+   */
+  vi.doMock("@/lib/storage/storage-mode", () => ({
+    getStorageMode: () => "database",
+    isDatabaseMode: () => true,
   }));
   vi.doMock("@/lib/db/prisma", () => ({
     getPrisma: async () => (state.databaseAvailable ? buildPrismaDouble(state) : null),
