@@ -4999,6 +4999,92 @@
       "disclaimerDecision": "Entscheidungsunterstützungsbericht.",
       "disclaimerNotCertified": "Kein zertifizierter Sicherheitsbericht.",
       "disclaimerVerify": "Mit qualifiziertem Personal und Standortverfahren verifizieren."
+    },
+    "reference": {
+      "heading": "Referenzdiagnose nach Phase 101",
+      "lede": "Eine deterministische Referenzdiagnose. Die strukturelle Analyseeinheit aus Phase 101 spielt einen kuratierten Fall gegen einen versiegelten technischen Referenzentwurf durch und durchläuft dessen Struktur, um Beobachtetes, Widersprechendes und weiterhin Unbekanntes voneinander zu trennen.",
+      "disclosure": {
+        "badge": "BEISPIEL",
+        "title": "Veranschaulichendes Beispiel — keine Echtzeitdaten einer Anlage",
+        "body": "Diese Fälle stammen aus eigens für diese Plattform erstellten synthetischen Referenzentwürfen. Es besteht keine Verbindung zu einer Anlage, einer PLC, einem SCADA-System oder einem OPC UA Server, und hier kann kein Befehl ausgelöst werden."
+      },
+      "relationship": {
+        "heading": "Verhältnis zum Arbeitsbereich oben",
+        "body": "Auf dieser Seite liegen zwei getrennte Funktionen. Der Arbeitsbereich oben wertet eine selbst verfasste Störungsmeldung aus. Dieses Feld spielt einen versiegelten Referenzfall durch die strukturelle Analyseeinheit aus Phase 101 — es liest nichts aus einer Anlage, verbindet sich mit keiner Ausrüstung und löst keinen Befehl aus."
+      },
+      "selector": {
+        "label": "Referenzfall",
+        "submit": "Diagnose ausführen",
+        "hint": "Die Analyseeinheit ist deterministisch: derselbe Fall liefert stets dasselbe Ergebnis."
+      },
+      "case": {
+        "heading": "Ausgewählter Fall",
+        "narrative": "Meldung des Bedienpersonals",
+        "system": "Referenzsystem",
+        "platform": "Steuerungsplattform",
+        "version": "Quellstand",
+        "checksum": "Inhaltsprüfsumme",
+        "observations": "Übergebene Beobachtungen",
+        "textLocaleNotice": "Die technischen Texte dieses Korpus liegen ausschließlich auf Englisch und Persisch vor. Fallbeschreibung und Objektbezeichnungen erscheinen daher auf Englisch."
+      },
+      "observed": {
+        "heading": "Beobachteter Anlagenzustand",
+        "empty": "Dieser Fall liefert keine Beobachtung, die sich auf ein Korpusobjekt auflösen lässt.",
+        "columnNode": "Technisches Objekt",
+        "columnState": "Beobachteter Zustand",
+        "columnLayer": "Ebene",
+        "columnSource": "Quellverweis"
+      },
+      "state": {
+        "TRUE": "Aktiv",
+        "FALSE": "Nicht aktiv",
+        "NORMAL": "Normal zustand",
+        "ABNORMAL": "Auffällig",
+        "STALE": "Veraltet",
+        "ABSENT": "Nicht übergeben"
+      },
+      "hypotheses": {
+        "heading": "Bewertete Fehlerhypothesen",
+        "empty": "Aus diesen Beobachtungen ist kein Fehlerbild des Referenzkorpus erreichbar. Die Analyseeinheit nennt keine Hypothese statt zu raten.",
+        "rank": "Rang {rank}",
+        "confidence": "Abdeckung der Nachweise",
+        "score": "Strukturbewertung",
+        "faultClass": "Fehlerklasse",
+        "subsystem": "Teilsystem",
+        "reviewOnly": "Nur zur Prüfung — ein sicherheitsklassifiziertes Objekt ist beteiligt",
+        "chain": "Begründungspfad"
+      },
+      "evidence": {
+        "supporting": "Stützende Nachweise",
+        "contradicting": "Widersprechende Nachweise",
+        "missing": "Fehlende Nachweise",
+        "noneSupporting": "Keine übergebene Beobachtung stützt diese Hypothese.",
+        "noneContradicting": "Keine übergebene Beobachtung spricht gegen diese Hypothese.",
+        "noneMissing": "Sämtliche deklarierten Nachweise wurden übergeben."
+      },
+      "validation": {
+        "heading": "Freigabe durch Fachpersonal",
+        "body": "Nichts hiervon ist ein Befund. Eine qualifizierte Fachkraft muss jeden Punkt vor einem Eingriff an der Anlage bestätigen.",
+        "none": "Für diesen Fall wurde keine Eskalationsbedingung ausgelöst."
+      },
+      "actions": {
+        "heading": "Sichere Prüfschritte",
+        "lede": "Rein beobachtende Prüfschritte, gerichtet an eine qualifizierte Person. Die Plattform kann sie nicht ausführen.",
+        "verifies": "Unterscheidet",
+        "reviewOnly": "Erfordert eine qualifizierte Sicherheitsfachkraft",
+        "empty": "Der Korpus nennt für die bewerteten Hypothesen keinen Prüfschritt."
+      },
+      "provenance": {
+        "heading": "Herkunftsnachweis",
+        "engine": "Analyseeinheit",
+        "corpus": "Korpusprüfsumme",
+        "citations": "Zitierte technische Objekte",
+        "systems": "Referenzsysteme / Objekte / Beziehungen"
+      },
+      "error": {
+        "heading": "Für diese Referenz liegt keine Diagnose vor",
+        "body": "Dieser Referenzfall gehört nicht zum kuratierten öffentlichen Umfang, oder die Kennung war nicht verwendbar. Wählen Sie einen der oben aufgeführten Fälle."
+      }
     }
   },
   "assetOperations": {

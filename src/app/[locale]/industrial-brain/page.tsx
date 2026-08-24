@@ -8,6 +8,12 @@ import { getCurrentUserUnified } from "@/lib/auth/current-user";
 import { can }              from "@/lib/auth/roles";
 import { IndustrialBrainWorkspace } from "@/components/industrial-brain/IndustrialBrainWorkspace";
 import { CapabilityLink } from "@/components/analytics/CapabilityLink";
+// PHASE 101-R — the Phase 101 reference corpus and its structural diagnostic
+// engine, executed server-side on this route. Before this the corpus was
+// imported by nothing outside its own test suite.
+import { ReferenceDiagnosticPanel, CASE_QUERY_PARAM } from "@/components/industrial-brain/ReferenceDiagnosticPanel";
+import { ACTIVE_LOCALES } from "@/i18n/locales";
+import type { BridgeLocale } from "@/lib/industrial-knowledge/runtime/bridge";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -80,8 +86,27 @@ const VALUE_PROPS = [
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function IndustrialBrainPage({ params }: { params: Promise<{ locale: string }> }) {
+/**
+ * PHASE 101-R — narrow the route locale to the set the Phase 101 bridge models.
+ *
+ * `[locale]` is a route segment and therefore caller-controlled. The middleware
+ * already restricts it to the active locales, but the bridge is not allowed to
+ * assume that: an unexpected value degrades to English rather than indexing an
+ * object with an untrusted key.
+ */
+function bridgeLocaleOf(locale: string): BridgeLocale {
+  return (ACTIVE_LOCALES as readonly string[]).includes(locale) ? (locale as BridgeLocale) : "en";
+}
+
+export default async function IndustrialBrainPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { locale } = await params;
+  const query = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("industrialBrain");
   const safetyItems = t.raw("safety.items") as string[];
@@ -272,6 +297,16 @@ export default async function IndustrialBrainPage({ params }: { params: Promise<
             </div>
 
           </div>
+
+          {/* ── PHASE 101-R — the sealed reference corpus, actually executed ── */}
+          {/* The raw `?case=` value is handed over untouched — including the
+              array form a repeated parameter produces. Narrowing it here would
+              move a fail-closed decision out of the one module that is tested
+              for it (`runtime/case-query.ts`). */}
+          <ReferenceDiagnosticPanel
+            locale={bridgeLocaleOf(locale)}
+            caseParam={query[CASE_QUERY_PARAM]}
+          />
         </div>
 
       </div>

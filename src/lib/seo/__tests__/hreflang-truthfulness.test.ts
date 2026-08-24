@@ -13,8 +13,12 @@ import { CASE_CONTENT_LOCALES } from "@/lib/industrial/cases";
  * it a claim about the PLATFORM instead of about the DOCUMENT — and for
  * single-language records that claim was simply false. A Persian-only Journal
  * article advertised an English and a German version; both URLs served the same
- * Persian text under different chrome, and `ArtLanguage` has no DE member, so
- * one of them could never exist at all.
+ * Persian text under different chrome, and `ArtLanguage` had no DE member at
+ * the time, so one of them could never exist at all.
+ *
+ * Phase 106 later made translations REAL (`@@unique([slug, language])`, DE
+ * added), which changes the inputs but not the rule: see
+ * `src/lib/articles/__tests__/article-hreflang.test.ts` for the trilingual side.
  *
  * These tests state the contract in both directions: genuinely translated pages
  * keep all three alternates, and single-language records get none.
