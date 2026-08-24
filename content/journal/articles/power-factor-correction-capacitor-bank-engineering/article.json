@@ -1,0 +1,52 @@
+{
+  "slug": "power-factor-correction-capacitor-bank-engineering",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "energy-utilities",
+  "tags": ["power-quality", "harmonics", "commissioning", "maintainability", "condition-monitoring"],
+  "publishedAt": "2026-08-17T09:20:00.000Z",
+  "coverImage": {
+    "file": "journal/power-factor-capacitor-bank.jpg",
+    "url": null,
+    "concept": "A stepped capacitor bank cubicle with its detuning reactors below the capacitor cans — the two components whose relationship decides whether the bank is safe on a distorted network.",
+    "prompt": "Photorealistic photograph inside an industrial capacitor bank cubicle showing cylindrical capacitor cans above iron-core reactors, ventilation louvres, cool cyan light on grey steel, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Industrial capacitor bank cubicle with capacitor cans mounted above iron-core reactors",
+      "fa": "کیوبیکل بانک خازنی صنعتی با خازن‌های استوانه‌ای بالای راکتورهای هسته‌آهنی",
+      "de": "Industrielles Kompensationsfeld mit Kondensatorbechern über eisenkernbewehrten Drosseln"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "PANEL",
+    "linkedTechnology": "Reactive Power Compensation",
+    "linkedStandard": "IEC 61000",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Power Factor Correction and Capacitor Bank Engineering",
+      "subtitle": "Capacitors correct displacement, not distortion — and a stepped bank has a different resonant frequency at every step combination",
+      "excerpt": "Reactive compensation engineered honestly: displacement versus true power factor, why a bank does nothing for a distortion-driven deficit, parallel resonance and what detuning reactors actually do, capacitor-duty switching and stored energy, overcompensation, generator interaction and commissioning measurement.",
+      "seoTitle": "Power Factor Correction and Capacitor Bank Engineering",
+      "seoDescription": "Capacitor bank design: displacement and true power factor, step sizing, switching duty, discharge, parallel resonance, detuning reactors, overcompensation, protection."
+    },
+    "fa": {
+      "title": "اصلاح ضریب توان و مهندسی بانک خازنی",
+      "subtitle": "خازن‌ها جابجایی را اصلاح می‌کنند نه اعوجاج را — و بانک پله‌ای در هر ترکیب پله فرکانس تشدید متفاوتی دارد",
+      "excerpt": "جبران‌سازی توان راکتیو با مهندسی صادقانه: ضریب توان جابجایی در برابر ضریب توان واقعی، چرا بانک برای کمبودی که ریشه در اعوجاج دارد کاری نمی‌کند، تشدید موازی و اینکه راکتور detuning واقعاً چه می‌کند، کلیدزنی با وظیفهٔ خازنی و انرژی ذخیره‌شده، جبران بیش از حد، تعامل با ژنراتور و اندازه‌گیری راه‌اندازی.",
+      "seoTitle": "اصلاح ضریب توان و مهندسی بانک خازنی در صنعت",
+      "seoDescription": "طراحی بانک خازنی: ضریب توان جابجایی و واقعی، اندازهٔ پله، وظیفهٔ کلیدزنی، دشارژ، تشدید موازی، راکتور detuning، جبران بیش از حد و حفاظت."
+    },
+    "de": {
+      "title": "Blindleistungskompensation und Kondensatoranlagen",
+      "subtitle": "Kondensatoren korrigieren die Verschiebung, nicht die Verzerrung — und eine gestufte Anlage hat in jeder Stufenkombination eine andere Resonanzfrequenz",
+      "excerpt": "Blindleistungskompensation ehrlich ausgelegt: Verschiebungsfaktor gegenüber wahrem Leistungsfaktor, warum eine Anlage gegen ein verzerrungsbedingtes Defizit nichts ausrichtet, Parallelresonanz und was Verdrosselung wirklich bewirkt, Schaltbeanspruchung und gespeicherte Energie, Überkompensation und Generatorbetrieb.",
+      "seoTitle": "Blindleistungskompensation und Kondensatoranlagen auslegen",
+      "seoDescription": "Kondensatoranlagen auslegen: Verschiebungsfaktor und wahrer Leistungsfaktor, Stufung, Schaltbeanspruchung, Entladung, Parallelresonanz, Verdrosselung, Überkompensation."
+    }
+  }
+}

@@ -8,6 +8,8 @@ import { ArticleDetailClient }    from "@/components/articles/ArticleDetailClien
 import { buildMetadata }          from "@/lib/seo/metadata";
 import { JsonLd }                 from "@/components/seo/JsonLd";
 import { BASE_URL }               from "@/lib/seo/config";
+import { langTagForArticleLanguage } from "@/lib/articles/locale";
+import { getPublicArticleLanguagesBySlug, resolveArticleContentLocales } from "@/lib/articles/seo";
 import type { ArticleDetail }     from "@/lib/articles/types";
 
 /**
@@ -25,7 +27,17 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale, slug } = await params;
-  const article = await getArticleDetailBySlug(slug);
+  // Phase 106: resolve the edition this locale reads, so the title, description
+  // and og: fields describe the page that is actually served — not a sibling
+  // translation that happened to be found first.
+  //
+  // Phase 106B: the translation group is read ALONGSIDE it, not after it. Both
+  // reads normalise the same route slug, so they address the same group without
+  // the second one waiting on the first.
+  const [article, groupLocales] = await Promise.all([
+    getArticleDetailBySlug(slug, locale),
+    getPublicArticleLanguagesBySlug(slug),
+  ]);
   if (!article || article.status !== "PUBLISHED" || article.visibility !== "PUBLIC") {
     return { title: "Article Not Found", robots: { index: false, follow: false } };
   }
@@ -46,14 +58,30 @@ export async function generateMetadata({
     ogType:        "article",
     publishedTime: article.publishedAt ?? undefined,
     modifiedTime:  article.updatedAt,
-    // DISCOVERY-2A — an article exists in exactly ONE language. `Article.slug`
-    // is globally unique and `getArticleDetailBySlug` has no language filter, so
-    // /fa, /en and /de all render the SAME text under different chrome. Declaring
-    // three hreflang alternates claimed three translations that do not exist and
-    // never can (`ArtLanguage` is EN | FA — there is no DE). Passing the row's
-    // real language collapses the three URLs onto one canonical and emits no
-    // alternates at all.
-    contentLocales: [article.language.toLowerCase()],
+    // WHICH TRANSLATIONS THIS TOPIC REALLY HAS — DISCOVERY-2A's RULE, PHASE 106's
+    // DATA MODEL.
+    //
+    // DISCOVERY-2A established the rule and it has not changed: hreflang is a
+    // factual claim about the DOCUMENT, so a page may only advertise editions
+    // that exist. At that time it was also true that `Article.slug` was globally
+    // unique, that `ArtLanguage` was EN | FA, and that a translation therefore
+    // could not exist — so the rule was implemented as `[article.language]`.
+    //
+    // Phase 106 invalidated those *facts* (not the rule): uniqueness moved to
+    // `@@unique([slug, language])`, `ArtLanguage` gained DE, and one slug now
+    // identifies a translation GROUP of up to three persisted editions. The
+    // scalar kept claiming "no siblings exist" for topics that have two, which
+    // is how 50 genuinely trilingual topics shipped with hreflang = NONE.
+    //
+    // The set now comes from the database: the served edition's own language,
+    // plus every sibling edition that is PUBLISHED, PUBLIC and indexable. A
+    // legacy single-language topic still yields exactly one locale and therefore
+    // still emits no alternates at all.
+    contentLocales: resolveArticleContentLocales({
+      requestedLocale: locale,
+      servedLanguage:  article.language,
+      siblingLocales:  groupLocales,
+    }),
   });
 }
 
@@ -82,7 +110,9 @@ function buildArticleJsonLd(article: ArticleDetail, locale: string) {
     datePublished:  article.publishedAt ?? undefined,
     dateModified:   article.updatedAt,
     url:            `${BASE_URL}/${locale}/articles/${article.slug}`,
-    inLanguage:     article.language === "FA" ? "fa" : "en",
+    // The language the article is WRITTEN IN, from the row — not the route
+    // locale, and no longer an EN-or-FA guess that silently mislabelled German.
+    inLanguage:     langTagForArticleLanguage(article.language),
     keywords:       article.tags.map(t => t.name).join(", "),
     articleSection: article.category?.name ?? undefined,
   };
@@ -97,8 +127,8 @@ export default async function ArticleDetailPage({
   setRequestLocale(locale);
 
   const [article, feed] = await Promise.all([
-    getArticleDetailBySlug(slug),
-    getArticleFeed(),
+    getArticleDetailBySlug(slug, locale),
+    getArticleFeed(locale),
   ]);
 
   if (!article || article.status !== "PUBLISHED" || article.visibility !== "PUBLIC") {

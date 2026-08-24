@@ -56,13 +56,35 @@ const PROTECTED_KEEP_LEGACY = [
   "src/app/[locale]/knowledge/case-studio/page.tsx",
   "src/app/[locale]/knowledge/studio/page.tsx",
   "src/app/[locale]/candidate/layout.tsx",
+  "src/components/auth/RequireCapability.tsx",
+];
+
+/**
+ * PHASE 107 — /dashboard surfaces that moved from the legacy PageShell to the
+ * canonical AUTHENTICATED shell (AppShell).
+ *
+ * These entries used to sit in PROTECTED_KEEP_LEGACY. That list exists to stop
+ * authenticated surfaces from being handed the PUBLIC marketing shell, and it
+ * expressed that by requiring them to keep PageShell — which was the only other
+ * option when the list was written. PageShell, however, renders SiteHeader and
+ * SiteFooter: the marketing header with its "Request a Demo" call to action and
+ * the public footer with legal links and trust seals. Authenticated dashboard
+ * routes were therefore already wearing the public chrome, just composed through
+ * a different file.
+ *
+ * The invariant is unchanged and still enforced below — no public shell on an
+ * authenticated surface. What changed is the destination: these routes now get
+ * AppShell (sidebar, topbar, command palette, breadcrumbs), and the assertion
+ * checks that positively rather than by proxy, so a regression back to either
+ * the public shell OR the legacy marketing shell fails here.
+ */
+const PROTECTED_ON_APP_SHELL = [
   "src/app/[locale]/dashboard/billing/page.tsx",
   "src/app/[locale]/dashboard/industrial/page.tsx",
   "src/app/[locale]/dashboard/organization/page.tsx",
   "src/app/[locale]/dashboard/ats/layout.tsx",
   "src/app/[locale]/dashboard/customers/layout.tsx",
   "src/app/[locale]/dashboard/operations/layout.tsx",
-  "src/components/auth/RequireCapability.tsx",
 ];
 
 describe("public shell rollout — migrated public consumers", () => {
@@ -79,11 +101,23 @@ describe("public shell rollout — migrated public consumers", () => {
     }
   });
 
-  it("authenticated/dashboard/specialized consumers keep the legacy PageShell and never import the public shell", () => {
+  it("authenticated/specialized consumers keep the legacy PageShell and never import the public shell", () => {
     for (const rel of PROTECTED_KEEP_LEGACY) {
       const src = read(rel);
       expect(src, `${rel} must keep the legacy PageShell`).toContain("@/components/PageShell");
       expect(src, `${rel} must not receive the public shell`).not.toContain("@/components/public-site");
+    }
+  });
+
+  it("dashboard consumers on AppShell carry neither the public shell nor the marketing PageShell", () => {
+    for (const rel of PROTECTED_ON_APP_SHELL) {
+      const src = read(rel);
+      expect(src, `${rel} must use the authenticated AppShell`).toContain('from "@/components/app-shell"');
+      expect(src, `${rel} must not receive the public shell`).not.toContain("@/components/public-site");
+      // The marketing shell composes SiteHeader/SiteFooter — the exact chrome an
+      // authenticated workspace route must never render.
+      expect(src, `${rel} must not fall back to the marketing PageShell`).not.toContain("@/components/PageShell");
+      expect(src, `${rel} must not render <PageShell>`).not.toMatch(/<PageShell[\s/>]/);
     }
   });
 

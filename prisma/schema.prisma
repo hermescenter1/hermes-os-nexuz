@@ -6330,9 +6330,15 @@ enum ArtContentType {
   SAFETY_COMPLIANCE_NOTE
 }
 
+// The language an article edition is WRITTEN IN — content data, not UI locale.
+// DE was added in Phase 106 so the Journal can carry a genuine German edition
+// alongside EN/FA; German has been an ACTIVE public locale since Phase 87L.6,
+// so a German-language row is now representable end-to-end (routing, hreflang,
+// sitemap, IndexNow) rather than silently unstorable.
 enum ArtLanguage {
   EN
   FA
+  DE
 }
 
 enum ArtReactionType {
@@ -6342,10 +6348,22 @@ enum ArtReactionType {
   PRACTICAL
 }
 
+// PHASE 106 — SLUG IS THE TRANSLATION-GROUP KEY.
+//
+// The three language editions of one article share ONE slug and differ only by
+// `language`. That is what makes the SEO layer correct without changing it:
+// `buildMetadata` already advertises `/{fa,en,de}/articles/{slug}` as reciprocal
+// hreflang alternates, and `lib/articles/seo.ts` already emits exactly those
+// three sitemap URLs per article. Before this phase those claims were false —
+// one row served identical content under all three locales. Now they hold.
+//
+// Consequence: `slug` alone is NOT unique; `(slug, language)` is. A legacy
+// single-language article is simply a group of one and still resolves at every
+// locale (see `getArticleDetailBySlug`, which falls back to any language).
 model Article {
   id                 String         @id @default(cuid())
   title              String
-  slug               String         @unique
+  slug               String
   subtitle           String?
   excerpt            String?
   content            String         @db.Text
@@ -6388,12 +6406,17 @@ model Article {
   knowledgeMetadata  ArticleKnowledgeMetadata?
   readingHistory     ArticleReadingHistory[]
 
+  @@unique([slug, language])
   @@index([status, visibility])
   @@index([authorId])
   @@index([categoryId])
   @@index([slug])
   @@index([publishedAt])
   @@index([language])
+  // The public feed and every listing page read PUBLISHED + PUBLIC rows for one
+  // language, newest first. Without this the planner sorts the whole published
+  // set on every request once the corpus is trilingual.
+  @@index([status, visibility, language, publishedAt])
 }
 
 model ArticleAuthorProfile {
@@ -6432,6 +6455,10 @@ model ArticleCategory {
   slug        String   @unique
   name        String
   nameFa      String
+  // Phase 106: German is an active public locale, so a category rendered on a
+  // /de page needs a German name. Nullable on purpose — existing rows keep
+  // falling back to `name` until a German label is supplied.
+  nameDe      String?
   description String?
   color       String   @default("signal")
   isActive    Boolean  @default(true)

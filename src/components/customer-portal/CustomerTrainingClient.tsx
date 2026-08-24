@@ -1,9 +1,16 @@
 "use client";
 
+// PHASE 107 STAGE 6-A — a failed load no longer reads as "you are enrolled in
+// nothing". With no error state at all, an expired session produced a training
+// page that looked complete and said the learner had no courses and no
+// certificates. Endpoint and payload shape unchanged.
+
 import { useLocale } from "next-intl";
-import { useEffect, useState } from "react";
 import { Link }                from "@/i18n/navigation";
 import { formatDate } from "@/lib/i18n/format";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { useResource } from "@/lib/client/use-resource";
+import { requestJson } from "@/lib/client/resource-request";
 
 interface Course {
   id:             string;
@@ -44,27 +51,34 @@ const STATUS_COLORS: Record<string, string> = {
 
 export function CustomerTrainingClient() {
   const locale = useLocale();
-  const [data, setData]       = useState<TrainingData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const trainingState = useResource<TrainingData | null>(
+    (signal) => requestJson(
+      "/api/customer/training",
+      (body) => (body as { training?: TrainingData | null }).training,
+      { signal },
+    ),
+    [],
+  );
 
-  useEffect(() => {
-    fetch("/api/customer/training")
-      .then((r) => r.json())
-      .then((d: { training?: TrainingData }) => setData(d.training ?? null))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
+  if (trainingState.status === "LOADING") {
     return (
       <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-xl border border-line bg-surface animate-pulse" />
+          <div key={i} data-async-state="loading" className="h-24 rounded-xl border border-line bg-surface animate-pulse" />
         ))}
       </div>
     );
   }
 
+  if (trainingState.status === "ERROR" && trainingState.failure) {
+    return (
+      <div className="rounded-xl border border-line bg-surface">
+        <ResourceFailureNotice code={trainingState.failure} onRetry={trainingState.retry} />
+      </div>
+    );
+  }
+
+  const data = trainingState.data;
   const enrollments  = data?.enrollments  ?? [];
   const certificates = data?.certificates ?? [];
 

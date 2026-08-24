@@ -1,0 +1,52 @@
+{
+  "slug": "vfd-harmonics-emc-motor-cables",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "drives-motors",
+  "tags": ["harmonics", "power-quality", "earthing", "vfd", "signal-integrity"],
+  "publishedAt": "2026-08-16T12:20:00.000Z",
+  "coverImage": {
+    "file": "journal/vfd-harmonics-emc-cables.jpg",
+    "url": null,
+    "concept": "A shielded motor cable terminated with a 360-degree gland — the single detail that decides where common-mode current goes.",
+    "prompt": "Photorealistic macro photograph of a shielded industrial motor cable entering an EMC gland, braid fanned and clamped fully around the circumference, cool cyan light on dark metal, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Shielded motor cable braid clamped fully around the circumference in an EMC gland",
+      "fa": "بافت شیلد کابل موتور که به‌طور کامل دور تا دور در گلند EMC گیره شده است",
+      "de": "Geschirmtes Motorkabel mit rundum aufgelegtem Schirmgeflecht in einer EMV-Verschraubung"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "VFD",
+    "linkedTechnology": "Power Quality and EMC",
+    "linkedStandard": "IEC 61000",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "VFD Harmonics, EMC and Motor Cable Engineering",
+      "subtitle": "Two different physics problems that share a cabinet — low-frequency distortion in the supply, high-frequency current looking for a way home",
+      "excerpt": "Mechanisms rather than limits: why current distortion is the drive's property and voltage distortion is the installation's, how capacitors turn a harmonic problem into a resonance, what reflected waves and common-mode current actually do, and why the shield termination decides whether bearings survive.",
+      "seoTitle": "VFD Harmonics, EMC and Motor Cable Engineering Practice",
+      "seoDescription": "Drive power quality and EMC: rectifier harmonics, voltage distortion and resonance, line reactors and filters, dv/dt, reflected waves, common-mode current and bearings."
+    },
+    "fa": {
+      "title": "هارمونیک VFD، EMC و مهندسی کابل موتور",
+      "subtitle": "دو مسئلهٔ فیزیکی متفاوت که یک تابلو را شریک‌اند — اعوجاج فرکانس پایین در شبکه، و جریان فرکانس بالا که دنبال راه بازگشت می‌گردد",
+      "excerpt": "سازوکارها به‌جای حدود عددی: چرا اعوجاج جریان خاصیت درایو و اعوجاج ولتاژ خاصیت تأسیسات است، چگونه خازن‌ها یک مسئلهٔ هارمونیکی را به تشدید تبدیل می‌کنند، موج بازتابی و جریان مود مشترک واقعاً چه می‌کنند، و چرا خاتمهٔ شیلد تعیین می‌کند یاتاقان‌ها دوام بیاورند یا نه.",
+      "seoTitle": "هارمونیک VFD، EMC و مهندسی کابل موتور در صنعت",
+      "seoDescription": "کیفیت توان و EMC درایو: هارمونیک یکسوساز، اعوجاج ولتاژ و تشدید، راکتور و فیلتر، dv/dt، موج بازتابی، جریان مود مشترک و یاتاقان."
+    },
+    "de": {
+      "title": "Oberschwingungen, EMV und Motorleitungen bei Frequenzumrichtern",
+      "subtitle": "Zwei verschiedene physikalische Probleme in einem Schrank — niederfrequente Verzerrung im Netz und hochfrequenter Strom auf der Suche nach dem Rückweg",
+      "excerpt": "Mechanismen statt Grenzwerte: warum Stromverzerrung eine Eigenschaft des Umrichters und Spannungsverzerrung eine der Installation ist, wie Kondensatoren aus einem Oberschwingungsproblem eine Resonanz machen, was Wellenreflexion und Gleichtaktstrom bewirken — und warum die Schirmauflage über die Lager entscheidet.",
+      "seoTitle": "Oberschwingungen, EMV und Motorleitungen bei Umrichtern",
+      "seoDescription": "Netzqualität und EMV bei Antrieben: Gleichrichteroberschwingungen, Spannungsverzerrung und Resonanz, Drosseln und Filter, du/dt, Wellenreflexion, Gleichtaktstrom, Lager."
+    }
+  }
+}

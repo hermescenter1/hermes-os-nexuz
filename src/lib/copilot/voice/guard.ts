@@ -50,7 +50,7 @@ import { requirePlatformAuth } from "@/lib/api/auth";
 import type { PlatformActorContext } from "@/lib/api/types";
 import { checkRateLimit, retryAfter, type RateLimitAction } from "@/lib/auth/rate-limiter";
 import { enforceEntitlement } from "@/lib/billing-governance/runtime/require-entitlement";
-import { requireOrgActor } from "@/lib/org/context";
+import { requireOrgActor, orgActorRefusalCode } from "@/lib/org/context";
 import { requirePermission } from "@/lib/org/rbac";
 import type { OrgRole } from "@/lib/org/types";
 import { requireTrustedOrigin } from "@/lib/security/request-guards";
@@ -107,6 +107,27 @@ function refuse(error: string, code: VoiceErrorCode, status: number, headers?: H
 }
 
 /**
+ * PHASE 107 STAGE 6-A.2 — one refusal for `requireOrgActor`, derived from its status.
+ *
+ * That helper refuses with 401 (no usable session — absent, unverifiable or
+ * REVOKED) or 403 (authenticated, but not a member). This branch used to label
+ * both `ORGANIZATION_SCOPE_REQUIRED`, so a revoked session produced a 401 whose
+ * body told the reader they lacked organization scope. The UI branches on the
+ * code, not the status, so that is what the reader was shown.
+ *
+ * The status -> code mapping lives beside `requireOrgActor` and cannot drift
+ * from the statuses it actually returns; the sentence is derived FROM the code,
+ * so the two can never disagree either.
+ */
+function refuseOrgActor(status: number) {
+  const code = orgActorRefusalCode(status) as VoiceErrorCode;
+  const message = code === "AUTHENTICATION_REQUIRED"
+    ? "Authentication required"
+    : "Organization membership required";
+  return refuse(message, code, status);
+}
+
+/**
  * Run the full chain. Returns the actor, or the exact response to send back.
  *
  * No branch here returns a resource id, a role list, an organisation name, a
@@ -119,7 +140,30 @@ export async function requireVoiceCopilotActor(options: VoiceGuardOptions): Prom
   // ── 1. Authentication ──────────────────────────────────────────────────────
   const auth = await requirePlatformAuth(req);
   if ("error" in auth) {
-    return { ok: false, response: refuse("Authentication required", "AUTHENTICATION_REQUIRED", auth.status) };
+    /*
+     * PHASE 107 STAGE 6-A — the label must agree with the status it travels with.
+     *
+     * This branch forwarded `auth.status` while hard-coding the code. That was
+     * consistent only while the guard could answer nothing but 401. It now
+     * answers 409 when a signed-in caller has no organization and 500 when the
+     * organization store is unreachable, so a hard-coded code would put
+     * "Authentication required" on a 409 — telling someone who is already
+     * signed in to sign in again, which is the defect this stage exists to close.
+     *
+     * Every PRE-authentication cause still collapses to one code and one status,
+     * so an unauthenticated prober learns nothing about whether an account
+     * exists. The two codes that differ are reachable only AFTER identity has
+     * been proven.
+     */
+    const code: VoiceErrorCode =
+      auth.code === "ORGANIZATION_CONTEXT_REQUIRED" ? "ORGANIZATION_SCOPE_REQUIRED"
+      : auth.code === "INTERNAL_ERROR" ? "COPILOT_UNAVAILABLE"
+      : "AUTHENTICATION_REQUIRED";
+    const message =
+      code === "ORGANIZATION_SCOPE_REQUIRED" ? "Organization context required"
+      : code === "COPILOT_UNAVAILABLE" ? "Voice copilot unavailable"
+      : "Authentication required";
+    return { ok: false, response: refuse(message, code, auth.status) };
   }
   const ctx: PlatformActorContext = auth.ctx;
 
@@ -145,7 +189,17 @@ export async function requireVoiceCopilotActor(options: VoiceGuardOptions): Prom
   if ("error" in member) {
     return {
       ok: false,
-      response: refuse("Organization membership required", "ORGANIZATION_SCOPE_REQUIRED", member.status),
+      /*
+       * PHASE 107 STAGE 6-A.2 — `requireOrgActor` refuses with 401 (no usable
+       * session) or 403 (authenticated, not a member), and this branch used to
+       * label both `ORGANIZATION_SCOPE_REQUIRED`. A revoked session therefore
+       * produced a 401 whose body told the reader they lacked organization
+       * scope, and the UI branches on the code, not the status.
+       *
+       * The mapping lives beside `requireOrgActor` so it cannot drift from the
+       * statuses that function actually returns.
+       */
+      response: refuseOrgActor(member.status),
     };
   }
 

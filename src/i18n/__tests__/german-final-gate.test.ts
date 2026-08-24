@@ -21,7 +21,7 @@ const TARGETS = [
 type Target = (typeof TARGETS)[number];
 
 const LEAF_COUNTS: Record<Target, number> = {
-  multiSite: 55, caseStudio: 40, digitalTwin: 35, industrial: 30,
+  multiSite: 67, caseStudio: 40, digitalTwin: 35, industrial: 30,
   unknownCenter: 27, automation: 19, documents: 19, analytics: 15,
   platform: 12, storage: 3,
 };
@@ -53,17 +53,17 @@ const faTarget = new Map<string, string>(TARGETS.flatMap((ns) => nsLeaves(fa, ns
 const icuArgs = (v: string) =>
   [...v.matchAll(/\{\s*([a-zA-Z0-9_]+)/g)].map((m) => m[1]).sort().join("|");
 
-describe("87L.6F — the final 255 leaves", () => {
+describe("87L.6F — the final 267 leaves", () => {
   it.each(TARGETS)("%s has its pinned leaf count", (ns) => {
     expect(nsLeaves(en, ns).length).toBe(LEAF_COUNTS[ns]);
   });
 
-  it("the ten namespaces total exactly 255", () => {
-    expect(Object.values(LEAF_COUNTS).reduce((a, b) => a + b, 0)).toBe(255);
-    expect(targetLeaves.length).toBe(255);
+  it("the ten namespaces total exactly 267", () => {
+    expect(Object.values(LEAF_COUNTS).reduce((a, b) => a + b, 0)).toBe(267);
+    expect(targetLeaves.length).toBe(267);
   });
 
-  it("arithmetic holds per namespace and overall (255 = 241 + 12 + 2)", () => {
+  it("arithmetic holds per namespace and overall (267 = 253 + 12 + 2)", () => {
     let T = 0, I = 0, K = 0;
     for (const ns of TARGETS) {
       let t = 0, i = 0, k = 0;
@@ -78,7 +78,9 @@ describe("87L.6F — the final 255 leaves", () => {
       T += t; I += i; K += k;
     }
     expect({ translated: T, identical: I, token: K })
-      .toEqual({ translated: 241, identical: 12, token: 2 });
+      // MULTI-SITE-BOUNDARY: +12 multiSite state leaves, all genuinely translated
+      // into German (the identical/token allowlists are unchanged).
+      .toEqual({ translated: 253, identical: 12, token: 2 });
   });
 
   it("has zero unapproved carryover, zero Persian, zero empty", () => {
@@ -480,7 +482,35 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            6 interest options; company-size ranges stay OUT of the
     //            catalog because they are numbers formatted per locale.
     //            -> 6593
-    expect(allEn.length).toBe(6595);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; 104-E/F: +85 observatory + journal pressroom; JOURNAL-LIFECYCLE: +24; JOURNAL-ENGAGEMENT: +24; JOURNAL-SAVE: +3; JOURNAL-TOMBSTONE: +1; 104-I2: +67 demo/careers/vendors; 104-I3: +168 vendor directory/application + careers apply; 104-I3b: +12 vendor detail; 104-I3c: +38 demo form; 104-I3d: +2 ProvenExpert fallback
+    // PHASE 101-R: +60 leaves under industrialBrain.reference — the Phase 101
+    //            reference diagnostic run on the public Industrial Brain page
+    //            (sample disclosure, case selector, observed-state table, the
+    //            ranked-hypothesis block with its supporting/contradicting/
+    //            missing evidence split, the human-validation gate, the safe
+    //            verification actions, the provenance footer and the two
+    //            fail-closed error states). Nested inside the already-
+    //            TRANSLATED_NS `industrialBrain` namespace, so no new catalog
+    //            entry is needed. All 60 genuinely German, zero carryover.
+    //            Engineering PROSE is not duplicated here: case titles,
+    //            narratives and object labels are read from the sealed corpus
+    //            at render time, which is why 60 chrome leaves cover a surface
+    //            this large. -> 6295
+    // MAIN-INTEGRATION: the two additions are disjoint. Phase 107 added 42
+    //            leaves and Phase 101-R added 60; zero keys overlap and
+    //            neither side modified a pre-existing leaf, so the union is
+    //            6235 + 42 + 60. Verified by recounting the merged catalogs
+    //            with this file's own `leaves` semantics, not by arithmetic
+    //            on the two pinned numbers. -> 6337
+    // MERGE (main a8b3988 -> design/phase104-dna-token-layer): the Phase 107 /
+    //            Phase 101-R additions on main (+114 over base c924ce3) and the
+    //            104-E/F + 104-I additions on this branch (+372) touch disjoint
+    //            key paths: a three-way key-set comparison found ZERO keys added
+    //            by both sides and ZERO deletions on either side. NOT taken on
+    //            trust: the merged en/de/fa catalogs were re-walked with this
+    //            file's own leaves() semantics and MEASURED 6709 in all three
+    //            locales, zero duplicate paths, full 3-way key parity.
+    //            -> 6709
+    expect(allEn.length).toBe(6709);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24; JOURNAL-ENGAGEMENT: +24; JOURNAL-SAVE: +3; JOURNAL-TOMBSTONE: +1; MULTI-SITE-BOUNDARY: +12 multiSite; PHASE-107-JOURNAL-MOBILE-NAV: +2 journal.nav; PHASE-107-ENGINEERING-HUB: +7 engineeringHub; PHASE-107-PLATFORM-COMPONENTS: +5 dashboard.platformComponents; PHASE-107-STAGE-6A: +18 errors.resource; PHASE-107-STAGE-6A-OT-CONTEXT: +6 otEdge.states; PHASE-107-STAGE-6A-CONTEXT-UI: +4 errors.resource; PHASE-101-R: +60 industrialBrain.reference; 104-E/F: +85 observatory + journal pressroom; 104-I2: +67 demo/careers/vendors; 104-I3: +168 vendor directory/application + careers apply; 104-I3b: +12 vendor detail; 104-I3c: +38 demo form; 104-I3d: +2 ProvenExpert fallback
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -494,14 +524,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6595 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 6709 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6595);
+    ).toBe(6709);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

@@ -1,0 +1,227 @@
+[
+  {
+    "file": "src/components/api/ApiKeysDashboard.tsx",
+    "url": "/api/platform/keys",
+    "line": 254,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/api/ApiKeysDashboard.tsx",
+    "url": "/api/platform/rate-limits",
+    "line": 258,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/billing/BillingDashboard.tsx",
+    "url": "/api/billing/plans",
+    "line": 272,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/billing/BillingDashboard.tsx",
+    "url": "/api/billing/subscription",
+    "line": 284,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [
+      "subscription"
+    ],
+    "hasFallback": true,
+    "guardedFallback": true,
+    "classification": "SAFE — presence proven before the fallback"
+  },
+  {
+    "file": "src/components/billing/BillingDashboard.tsx",
+    "url": "/api/billing/invoices",
+    "line": 292,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/billing/BillingDashboard.tsx",
+    "url": "/api/billing/usage",
+    "line": 293,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/crm/AccountDetailClient.tsx",
+    "url": "(dynamic)",
+    "line": 50,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/crm/AccountListClient.tsx",
+    "url": "/api/crm/accounts",
+    "line": 34,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/crm/CustomerSuccessClient.tsx",
+    "url": "/api/crm/customer-success",
+    "line": 47,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/crm/LeadDetailClient.tsx",
+    "url": "(dynamic)",
+    "line": 33,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/crm/OpportunityDetailClient.tsx",
+    "url": "(dynamic)",
+    "line": 38,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/crm/OpportunityPipelineClient.tsx",
+    "url": "/api/crm/opportunities",
+    "line": 44,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/customer-portal/CustomerAccountClient.tsx",
+    "url": "/api/customer/account",
+    "line": 25,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [
+      "account",
+      "noAccount",
+      "contacts"
+    ],
+    "hasFallback": true,
+    "guardedFallback": true,
+    "classification": "SAFE — presence proven before the fallback"
+  },
+  {
+    "file": "src/components/customer-portal/CustomerOverviewClient.tsx",
+    "url": "/api/customer/overview",
+    "line": 28,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [
+      "overview"
+    ],
+    "hasFallback": false,
+    "guardedFallback": true,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/customer-portal/CustomerSettingsClient.tsx",
+    "url": "/api/customer/settings",
+    "line": 38,
+    "analysed": true,
+    "earlyValueReturns": [
+      {
+        "kind": "fallback on unproven field(s): preference — proven: envelope",
+        "text": "return d.preference ?? DEFAULT_PREFERENCE;",
+        "at": 4216
+      }
+    ],
+    "provenKeys": [
+      "envelope"
+    ],
+    "hasFallback": true,
+    "guardedFallback": true,
+    "classification": "REQUIRED FIX — fallback on unproven field(s): preference — proven: envelope"
+  },
+  {
+    "file": "src/components/customer-portal/CustomerSettingsClient.tsx",
+    "url": "/api/customer/settings",
+    "line": 99,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/customer-portal/CustomerTrainingClient.tsx",
+    "url": "/api/customer/training",
+    "line": 55,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/organization/DepartmentsPanel.tsx",
+    "url": "(dynamic)",
+    "line": 28,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  },
+  {
+    "file": "src/components/organization/OrgOverview.tsx",
+    "url": "(dynamic)",
+    "line": 29,
+    "analysed": true,
+    "earlyValueReturns": [],
+    "provenKeys": [],
+    "hasFallback": false,
+    "guardedFallback": false,
+    "classification": "SAFE — absence reaches undefined"
+  }
+]

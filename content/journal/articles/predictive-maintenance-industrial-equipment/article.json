@@ -1,0 +1,52 @@
+{
+  "slug": "predictive-maintenance-industrial-equipment",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "predictive-maintenance",
+  "tags": ["condition-monitoring", "diagnostics", "root-cause-analysis", "time-series", "maintainability"],
+  "publishedAt": "2026-08-17T12:40:00.000Z",
+  "coverImage": {
+    "file": "journal/condition-monitoring-route.jpg",
+    "url": null,
+    "concept": "A permanently mounted accelerometer on a pump bearing housing beside its junction box — the fixed acquisition point that makes one reading comparable with the next.",
+    "prompt": "Photorealistic photograph of a stud-mounted industrial accelerometer on a pump bearing housing with its armoured cable and small junction box, worn machine paint, cool cyan light, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Permanently mounted accelerometer on a pump bearing housing with cable and junction box",
+      "fa": "شتاب‌سنج نصب‌شدهٔ دائم روی محفظهٔ بلبرینگ پمپ همراه با کابل و جعبهٔ اتصال",
+      "de": "Fest montierter Beschleunigungsaufnehmer am Lagergehäuse einer Pumpe mit Kabel und Anschlusskasten"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "MAINTENANCE",
+    "linkedAssetType": "MOTOR",
+    "linkedTechnology": "Condition Monitoring",
+    "linkedStandard": "ISO 17359",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Predictive Maintenance Architecture for Industrial Equipment",
+      "subtitle": "Strategy is chosen per failure mode, not per asset — and the programme fails at the hand-off from a detection to a work order, never at the sensor",
+      "excerpt": "Condition-based maintenance as a programme rather than a technology purchase: choosing a strategy per failure mode using the P-F interval, criticality-driven coverage, what each technique detects and is blind to, the data-quality and context problem, baselines and thresholds as business decisions, the detection-to-work-order workflow, and the credibility budget that false positives spend.",
+      "seoTitle": "Predictive Maintenance Architecture for Industrial Plant",
+      "seoDescription": "Condition-based maintenance programmes: P-F interval, criticality, technique coverage, data quality, baselines and thresholds, CMMS workflow and false alarms."
+    },
+    "fa": {
+      "title": "معماری نگه‌داری پیش‌بینانه برای تجهیزات صنعتی",
+      "subtitle": "راهبرد به ازای هر حالت خرابی انتخاب می‌شود نه به ازای هر دارایی — و برنامه در تحویل از تشخیص به دستور کار شکست می‌خورد، نه در سنسور",
+      "excerpt": "نگه‌داری مبتنی بر وضعیت به‌عنوان یک برنامه و نه یک خرید فناوری: انتخاب راهبرد به ازای هر حالت خرابی با استفاده از بازهٔ P-F، پوشش مبتنی بر بحرانیت، هر تکنیک چه چیزی را تشخیص می‌دهد و به چه چیزی نابیناست، مسئلهٔ کیفیت داده و زمینه، مبنا و آستانه به‌عنوان تصمیم کسب‌وکاری، گردش کار از تشخیص تا دستور کار، و بودجهٔ اعتباری که هشدارهای کاذب خرجش می‌کنند.",
+      "seoTitle": "معماری نگه‌داری پیش‌بینانه برای تجهیزات صنعتی",
+      "seoDescription": "برنامهٔ نگه‌داری مبتنی بر وضعیت: بازهٔ P-F، بحرانیت، پوشش تکنیک‌ها، کیفیت داده، مبنا و آستانه، گردش کار تا CMMS و مدیریت هشدار کاذب."
+    },
+    "de": {
+      "title": "Architektur der vorausschauenden Instandhaltung",
+      "subtitle": "Die Strategie wird je Ausfallart gewählt, nicht je Anlage — und das Programm scheitert an der Übergabe von der Erkennung zum Arbeitsauftrag, nie am Sensor",
+      "excerpt": "Zustandsorientierte Instandhaltung als Programm statt als Technologiekauf: Strategiewahl je Ausfallart über das P-F-Intervall, kritikalitätsgesteuerte Abdeckung, was jedes Verfahren erkennt und wofür es blind ist, Datenqualität und Kontext, Basiswerte und Grenzwerte als betriebswirtschaftliche Entscheidung, der Weg von der Erkennung zum Arbeitsauftrag und das Glaubwürdigkeitsbudget.",
+      "seoTitle": "Architektur der vorausschauenden Instandhaltung",
+      "seoDescription": "Zustandsorientierte Instandhaltung: P-F-Intervall, Kritikalität, Verfahrensabdeckung, Datenqualität, Basiswerte und Grenzwerte, CMMS-Anbindung, Fehlalarmsteuerung."
+    }
+  }
+}

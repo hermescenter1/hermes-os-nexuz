@@ -48,6 +48,7 @@ import { cn } from "@/components/ds";
 import { buttonVariants } from "@/components/ds/logic";
 import { getArticleDisplay } from "./article-display";
 // PR #70 — server-truthful reactions + discussion (reply-preserving) and the viewer contract.
+import { parseArticleContent, type InlineSpan } from "./article-content";
 import { ArticleEngagement, type EngagementViewer } from "./ArticleEngagement";
 import type { CommentPage, ReactionSummary } from "@/lib/articles/engagement-types";
 
@@ -65,74 +66,85 @@ function slugifyHeading(text: string, seen: Map<string, number>) {
 
 interface Heading { id: string; text: string; depth: 2 | 3 }
 
-/**
- * The plain-text block parser. Same grammar the 72.5 renderer accepted —
- * `# / ## / ###`, fenced code, `- ` / `* ` lists, paragraphs — plus two blocks
- * the old renderer let fall through as paragraphs (`> ` quotes and pipe
- * tables), rendered as their proper elements. Still no HTML path.
- */
-function parseBlocks(content: string) {
-  const blocks = content.split(/\n{2,}/).filter((b) => b.trim());
-  const headings: Heading[] = [];
+
+
+/* ── the body renderer: 104-F pressroom shell over MAIN's tested parser ────
+   Blocks and inline spans come from ./article-content — the parser main
+   ships and unit-tests. That preserves, verbatim, main's content semantics:
+   inline strong/code, ordered lists whose ASCII or Persian-Indic markers
+   become a real <ol> (marker digits localize in CSS via :lang(fa), so no
+   locale ternary lives here), authored column alignment, and the single-h1
+   rule — a body "# " renders as an h2 element; the page's only h1 is the title.
+   The pressroom look (hj-* typography, per-block dir="auto", the internal
+   table scroll) stays 104-F. Heading ids for the margin TOC are derived
+   with the same slug rule as before. */
+function spanText(spans: InlineSpan[]) {
+  return spans.map((sp) => sp.value).join("");
+}
+
+function Inline({ spans }: { spans: InlineSpan[] }) {
+  return (
+    <>
+      {spans.map((span, i) => {
+        if (span.type === "strong") return <strong key={i}>{span.value}</strong>;
+        if (span.type === "code")
+          // dir="ltr": a tag name, block name or register address must not
+          // reorder visually inside Persian prose (.hj-body code isolates too —
+          // belt and braces, both pinned by article-content.test.ts).
+          return <code key={i} dir="ltr">{span.value}</code>;
+        return <span key={i}>{span.value}</span>;
+      })}
+    </>
+  );
+}
+
+function articleModel(content: string) {
+  const blocks = parseArticleContent(content);
   const seen = new Map<string, number>();
-  const out = blocks.map((raw, i) => {
-    const t = raw.trim();
-    if (/^#{1,3} /.test(t)) {
-      const level: 2 | 3 = t.startsWith("### ") ? 3 : 2;
-      const text = t.replace(/^#{1,3} /, "");
-      const id = slugifyHeading(text, seen);
-      headings.push({ id, text, depth: level });
-      return { kind: "heading" as const, level, text, id, key: i };
-    }
-    if (t.startsWith("```")) {
-      const lang = (t.match(/^```(\w+)/) ?? [])[1] ?? "";
-      const code = t.replace(/^```\w*\n?/, "").replace(/```$/, "").trim();
-      return { kind: "code" as const, code, lang, key: i };
-    }
-    if (t.startsWith("- ") || t.startsWith("* ")) {
-      const items = t.split("\n").map((l) => l.replace(/^[-*] /, "").trim()).filter(Boolean);
-      return { kind: "list" as const, items, key: i };
-    }
-    if (t.startsWith("> ")) {
-      return { kind: "quote" as const, text: t.split("\n").map((l) => l.replace(/^> ?/, "")).join(" "), key: i };
-    }
-    if (/^\|.+\|\s*\n\|[\s:|-]+\|/.test(t)) {
-      const rows = t.split("\n").filter((l) => l.trim().startsWith("|"));
-      const cells = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
-      return { kind: "table" as const, head: cells(rows[0]), body: rows.slice(2).map(cells), key: i };
-    }
-    return { kind: "para" as const, text: t, key: i };
+  const headings: Heading[] = [];
+  const ids = blocks.map((b) => {
+    if (b.type !== "heading") return null;
+    const text = spanText(b.spans);
+    const id = slugifyHeading(text, seen);
+    headings.push({ id, text, depth: b.level === 3 ? 3 : 2 });
+    return id;
   });
-  return { blocks: out, headings };
+  return { blocks, ids, headings };
 }
 
 function ArticleBody({ content }: { content: string }) {
-  const { blocks } = useMemo(() => parseBlocks(content), [content]);
+  const { blocks, ids } = useMemo(() => articleModel(content), [content]);
   return (
     <div className="hj-body hj-measure text-body-lg">
-      {blocks.map((b) => {
-        switch (b.kind) {
+      {blocks.map((block, i) => {
+        switch (block.type) {
           case "heading":
-            return b.level === 3
-              ? <h3 key={b.key} id={b.id} dir="auto" className="text-role-h4">{b.text}</h3>
-              : <h2 key={b.key} id={b.id} dir="auto" className="text-role-h3">{b.text}</h2>;
+            return block.level === 3
+              ? <h3 key={i} id={ids[i]!} dir="auto" className="text-role-h4"><Inline spans={block.spans} /></h3>
+              : <h2 key={i} id={ids[i]!} dir="auto" className="text-role-h3"><Inline spans={block.spans} /></h2>;
           case "code":
-            return <pre key={b.key} dir="ltr" aria-label={b.lang || undefined}><code>{b.code}</code></pre>;
+            return <pre key={i} dir="ltr" aria-label={block.language || undefined}><code>{block.code}</code></pre>;
           case "list":
-            return <ul key={b.key}>{b.items.map((it, j) => <li key={j} dir="auto">{it}</li>)}</ul>;
+            return block.ordered
+              ? <ol key={i}>{block.items.map((item, j) => <li key={j} dir="auto"><Inline spans={item} /></li>)}</ol>
+              : <ul key={i}>{block.items.map((item, j) => <li key={j} dir="auto"><Inline spans={item} /></li>)}</ul>;
           case "quote":
-            return <blockquote key={b.key} dir="auto"><p>{b.text}</p></blockquote>;
+            return <blockquote key={i} dir="auto"><p><Inline spans={block.spans} /></p></blockquote>;
           case "table":
             return (
-              <div key={b.key} className="hj-table-scroll">
-                <table>
-                  <thead><tr>{b.head.map((h, j) => <th key={j} scope="col" dir="auto">{h}</th>)}</tr></thead>
-                  <tbody>{b.body.map((r, ri) => <tr key={ri}>{r.map((c, ci) => <td key={ci} dir="auto">{c}</td>)}</tr>)}</tbody>
+              <div key={i} className="hj-table-scroll overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>{block.head.map((cell, j) => <th key={j} scope="col" dir="auto" style={{ textAlign: block.align[j] }}><Inline spans={cell} /></th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {block.rows.map((row, j) => <tr key={j}>{row.map((cell, k) => <td key={k} dir="auto" style={{ textAlign: block.align[k] }}><Inline spans={cell} /></td>)}</tr>)}
+                  </tbody>
                 </table>
               </div>
             );
           default:
-            return <p key={b.key} dir="auto">{b.text}</p>;
+            return <p key={i} dir="auto"><Inline spans={block.spans} /></p>;
         }
       })}
     </div>
@@ -353,7 +365,7 @@ export function ArticleDetailClient({ article, related, engagement }: Props) {
   const locale = useLocale();
   const isFa = locale === "fa";
   const bodyRef = useRef<HTMLElement | null>(null);
-  const { headings } = useMemo(() => parseBlocks(article.content), [article.content]);
+  const { headings } = useMemo(() => articleModel(article.content), [article.content]);
   const display = getArticleDisplay(article, isFa);
   const km = article.knowledgeMetadata;
   const cat = article.category;

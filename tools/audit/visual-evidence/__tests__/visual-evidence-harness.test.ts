@@ -1,0 +1,489 @@
+/**
+ * Phase 107 visual-evidence harness — the properties that keep evidence honest.
+ *
+ * These are not tests of a screenshot tool's convenience features. Each one
+ * pins a rule whose absence has already destroyed evidence in this repository:
+ * a concurrent second writer erased 618 measurements, and a pack of 764 images
+ * backed by 146 records still looked complete in a file listing.
+ *
+ * The suite deliberately does not launch Chrome. What failed was the
+ * bookkeeping — locking, atomicity, and the completion rule — so that is what
+ * is tested, plus one spawn of the real sweep binary to prove it fails closed
+ * under a held lock.
+ */
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
+
+import {
+  RecordStore, acquireLock, readLock, reclaimStaleLock,
+  assertOutputOutsideRepo, LockHeldError, sha256,
+} from "../record-store.mjs";
+import {
+  explainDuplicateGroup, classifyAccess, isStructurallyComplete,
+  checkFinalLocation, checkDimensions, captureExitCode, EXIT, ACCESS,
+  findForbiddenMutation, attributeConsoleError,
+} from "../contracts.mjs";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const SWEEP = path.join(HERE, "..", "sweep.mjs");
+const REPO_ROOT = path.resolve(HERE, "..", "..", "..", "..");
+
+let dir: string;
+beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), "hermes-audit-test-")); });
+afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); });
+
+const png = (name: string) => Buffer.from(`png-bytes-${name}`);
+const baseRecord = (cellId: string, file: string) => ({
+  runId: "test", cellId, route: "/x", locale: "en", viewport: "1440x900",
+  requestedUrl: "http://localhost:3000/en/x", finalUrl: "/en/x",
+  httpState: 200, accessState: ACCESS.AUTHENTICATED,
+  screenshotFile: file, capturedAt: new Date().toISOString(), status: "COMPLETE",
+});
+
+describe("single-writer lock", () => {
+  it("1. refuses a second writer while the lock is held", () => {
+    acquireLock(dir, "run-a");
+    expect(() => acquireLock(dir, "run-b")).toThrow(LockHeldError);
+  });
+
+  it("2. never clears a lock whose owner is still alive", () => {
+    acquireLock(dir, "run-a");
+    const outcome = reclaimStaleLock(dir, () => false);   // owner alive
+    expect(outcome).toBe("owner-alive");
+    expect(readLock(dir)).not.toBeNull();
+  });
+
+  it("3. reclaims a lock only once the owner is proven dead", () => {
+    acquireLock(dir, "run-a");
+    expect(reclaimStaleLock(dir, () => true)).toBe("reclaimed");
+    expect(readLock(dir)).toBeNull();
+    expect(() => acquireLock(dir, "run-b")).not.toThrow();
+  });
+
+  it("3b. treats an unattributable lock as unknown, never as dead", () => {
+    fs.writeFileSync(path.join(dir, ".visual-sweep.lock"), "{ not json");
+    expect(reclaimStaleLock(dir, () => true)).toBe("unknown-owner");
+    expect(readLock(dir)).not.toBeNull();
+  });
+
+  it("carries runId, pid, createdAt and worktree", () => {
+    acquireLock(dir, "run-a");
+    const lock = readLock(dir)!;
+    for (const k of ["runId", "pid", "createdAt", "worktree"]) expect(lock).toHaveProperty(k);
+  });
+});
+
+describe("atomic per-cell store", () => {
+  it("4. a crash before the PNG lands leaves no COMPLETE record", () => {
+    const store = new RecordStore(dir);
+    // Nothing written at all — the cell simply is not complete.
+    expect(store.completed().done.size).toBe(0);
+  });
+
+  it("5. a crash between PNG and record is INCOMPLETE on resume", () => {
+    const store = new RecordStore(dir);
+    const file = "auth/a.png";
+    fs.mkdirSync(path.join(dir, "auth"), { recursive: true });
+    fs.writeFileSync(path.join(dir, file), png("a"));   // image, no record
+    expect(store.completed().done.has(file)).toBe(false);
+  });
+
+  it("6. rejects a record whose hash does not match its screenshot", () => {
+    const store = new RecordStore(dir);
+    const file = "auth/b.png";
+    store.writeCell(baseRecord("b", file), png("b"));
+    fs.writeFileSync(path.join(dir, file), png("TAMPERED"));
+    const r = store.completed();
+    expect(r.done.has(file)).toBe(false);
+    expect(r.hashMismatch).toBe(1);
+  });
+
+  it("7. rejects a record whose screenshot is missing", () => {
+    const store = new RecordStore(dir);
+    const file = "auth/c.png";
+    store.writeCell(baseRecord("c", file), png("c"));
+    fs.unlinkSync(path.join(dir, file));
+    const r = store.completed();
+    expect(r.done.has(file)).toBe(false);
+    expect(r.missingPng).toBe(1);
+  });
+
+  it("never treats a half-written *.tmp record as COMPLETE", () => {
+    const store = new RecordStore(dir);
+    const file = "auth/d.png";
+    fs.mkdirSync(path.join(dir, "auth"), { recursive: true });
+    fs.writeFileSync(path.join(dir, file), png("d"));
+    fs.writeFileSync(store.recordPath("d") + ".tmp", JSON.stringify(baseRecord("d", file)));
+    expect(store.completed().done.has(file)).toBe(false);
+  });
+
+  it("reports a duplicate cellId instead of double-counting it", () => {
+    const store = new RecordStore(dir);
+    const f1 = "auth/e1.png", f2 = "auth/e2.png";
+    store.writeCell(baseRecord("SAME", f1), png("e1"));
+    // second record, same cellId, different file
+    const rec = { ...baseRecord("SAME", f2), screenshotSha256: sha256(png("e2")) };
+    fs.writeFileSync(path.join(dir, "_records", "SAME__dup.json"), JSON.stringify(rec));
+    fs.writeFileSync(path.join(dir, f2), png("e2"));
+    expect(store.completed().duplicates).toBe(1);
+  });
+
+  it("a completed cell round-trips: record + screenshot + matching hash", () => {
+    const store = new RecordStore(dir);
+    const file = "auth/f.png";
+    const written = store.writeCell(baseRecord("f", file), png("f"));
+    expect(written.screenshotSha256).toBe(sha256(png("f")));
+    expect(isStructurallyComplete(written)).toBe(true);
+    expect(store.completed().done.has(file)).toBe(true);
+  });
+});
+
+describe("final-location contract", () => {
+  /*
+   * These exercise the REAL function the sweep calls before it photographs and
+   * the verifier re-applies afterwards — not a stand-in object. The earlier
+   * version of this test built a synthetic record and asserted against it,
+   * which proved nothing about the code path that actually guards captures.
+   */
+  it("8. accepts only an exact pathname+search match by default", () => {
+    expect(checkFinalLocation({ url: "/en/dashboard" }, "/en/dashboard").ok).toBe(true);
+    const wrong = checkFinalLocation({ url: "/en/dashboard" }, "/en/dashboard/other");
+    expect(wrong.ok).toBe(false);
+    expect(wrong.reason).toMatch(/^WRONG_FINAL_LOCATION/);
+  });
+
+  it("8b. rejects any wrong-but-non-empty location (the original defect)", () => {
+    // The first implementation only checked that `location` was non-empty, so
+    // every one of these would have been photographed as if correct.
+    for (const landed of ["/en/", "/en/auth/login", "/de/dashboard", "/en/dashboard?x=1"]) {
+      expect(checkFinalLocation({ url: "/en/dashboard" }, landed).ok).toBe(false);
+    }
+  });
+
+  it("8c. rejects an unsettled navigation", () => {
+    for (const landed of ["", "about:blank", undefined, null]) {
+      const r = checkFinalLocation({ url: "/en/dashboard" }, landed as string);
+      expect(r.ok).toBe(false);
+      expect(r.reason).toMatch(/^NAVIGATION_DID_NOT_SETTLE/);
+    }
+  });
+
+  it("8d. permits a redirect ONLY when that cell declares it", () => {
+    const shim = { url: "/en/login", allowedFinalUrls: ["/en/auth/login"] };
+    const ok = checkFinalLocation(shim, "/en/auth/login");
+    expect(ok.ok).toBe(true);
+    expect(ok.reason).toMatch(/^DECLARED_REDIRECT/);
+
+    // The same landing without the declaration is refused — no heuristic, no
+    // "login pages are always fine".
+    expect(checkFinalLocation({ url: "/en/login" }, "/en/auth/login").ok).toBe(false);
+    // And a declaration does not open the door to any other destination.
+    expect(checkFinalLocation(shim, "/en/somewhere-else").ok).toBe(false);
+  });
+
+  it("8e. MUTATION: allowing an arbitrary landing path fails the contract", () => {
+    // Stand-in for the mutation "drop the assertion / accept anything": if the
+    // contract ever returned ok for a non-declared mismatch, this flips red.
+    const mismatch = checkFinalLocation({ url: "/en/a" }, "/en/b");
+    expect(mismatch.ok).toBe(false);
+    expect(mismatch.reason).toContain("planned /en/a");
+    expect(mismatch.reason).toContain("landed /en/b");
+  });
+
+  it("keeps a redirect visible rather than presenting it as a direct hit", () => {
+    expect(classifyAccess({ finalUrl: "/en/auth/login", httpState: 200, domText: "" })).toBe(ACCESS.SESSION_LOST);
+  });
+
+  it("14. refuses an output directory inside the source tree by default", () => {
+    const inside = path.join(REPO_ROOT, "docs", "evidence-should-not-live-here");
+    expect(() => assertOutputOutsideRepo(inside, REPO_ROOT)).toThrow(/inside the source tree/);
+    expect(() => assertOutputOutsideRepo(inside, REPO_ROOT, { allowInsideRepo: true })).not.toThrow();
+    expect(() => assertOutputOutsideRepo(dir, REPO_ROOT)).not.toThrow();
+  });
+});
+
+describe("duplicate explanation", () => {
+  const cell = (over: Record<string, unknown>) => ({
+    locale: "en", finalUrl: "/en/a", httpState: 200, accessState: ACCESS.AUTHENTICATED, ...over,
+  });
+
+  it("9. accepts a duplicate whose members resolved to the same document", () => {
+    const r = explainDuplicateGroup([cell({}), cell({})]);
+    expect(r.explained).toBe(true);
+    expect(r.reason).toMatch(/^SAME_DOCUMENT/);
+  });
+
+  it("9b. accepts a shared localized 404 boundary", () => {
+    const r = explainDuplicateGroup([
+      cell({ finalUrl: "/en/a", httpState: 404 }),
+      cell({ finalUrl: "/en/b", httpState: 404 }),
+    ]);
+    expect(r.explained).toBe(true);
+    expect(r.reason).toMatch(/^SHARED_NOT_FOUND_BOUNDARY/);
+  });
+
+  it("10. rejects a duplicate whose members resolved to different documents", () => {
+    const r = explainDuplicateGroup([cell({ finalUrl: "/en/a" }), cell({ finalUrl: "/en/b" })]);
+    expect(r.explained).toBe(false);
+    expect(r.reason).toMatch(/^UNEXPLAINED/);
+  });
+
+  it("11. never auto-accepts an identical image across locales", () => {
+    const r = explainDuplicateGroup([
+      cell({ locale: "en", finalUrl: "/en/a" }),
+      cell({ locale: "de", finalUrl: "/de/a" }),
+    ]);
+    expect(r.explained).toBe(false);
+    expect(r.reason).toMatch(/^CROSS_LOCALE_IDENTICAL/);
+  });
+
+  it("keeps 404, denied, session-lost and authenticated apart", () => {
+    expect(classifyAccess({ finalUrl: "/en/x", httpState: 404, domText: "" })).toBe(ACCESS.NOT_FOUND);
+    expect(classifyAccess({ finalUrl: "/en/x", httpState: 200, domText: "Access restricted" })).toBe(ACCESS.DENIED_BY_CAPABILITY);
+    expect(classifyAccess({ finalUrl: "/en/auth/login", httpState: 200, domText: "" })).toBe(ACCESS.SESSION_LOST);
+    expect(classifyAccess({ finalUrl: "/en/x", httpState: 200, domText: "hello" })).toBe(ACCESS.AUTHENTICATED);
+  });
+});
+
+describe("PNG dimensions — proved through the real verifier", () => {
+  const VERIFY = path.join(HERE, "..", "verify.mjs");
+
+  /**
+   * A minimal PNG header carrying real IHDR width/height. `pngSize` in the
+   * verifier reads exactly these bytes, so the fixture exercises the production
+   * path rather than a re-derived comparison.
+   */
+  const pngWith = (w: number, h: number) => {
+    const b = Buffer.alloc(33);
+    b.writeUInt32BE(0x89504e47, 0);
+    b.write("IHDR", 12, "ascii");
+    b.writeUInt32BE(w, 16);
+    b.writeUInt32BE(h, 20);
+    return b;
+  };
+
+  /** Build a one-cell pack whose image has the given real dimensions. */
+  const pack = (actualW: number, actualH: number, plannedW = 1440, plannedH = 900) => {
+    const file = "auth/dim.png";
+    const bytes = pngWith(actualW, actualH);
+    const store = new RecordStore(dir);
+    store.writeCell({
+      runId: "test", cellId: "dim", route: "/x", locale: "en",
+      viewport: `${plannedW}x${plannedH}`,
+      requestedUrl: "/en/x", finalUrl: "/en/x",
+      httpState: 200, accessState: ACCESS.AUTHENTICATED,
+      screenshotFile: file, capturedAt: new Date().toISOString(),
+    }, bytes);
+
+    const cells = path.join(dir, "cells.json");
+    fs.writeFileSync(cells, JSON.stringify([
+      { cellId: "dim", file, url: "/en/x", route: "/x", locale: "en", width: plannedW, height: plannedH },
+    ]));
+    return spawnSync(process.execPath, [VERIFY, cells, dir], { encoding: "utf8" });
+  };
+
+  it("a) 1440×900 against a planned 1440×900 verifies clean", () => {
+    const r = pack(1440, 900);
+    expect(r.stdout).toContain("WRONG_DIMENSIONS=0");
+    expect(r.stdout).toContain("EVIDENCE_VERIFICATION=PASS");
+    expect(r.status).toBe(0);
+  });
+
+  it("b) 1440×4200 (right width, wrong height) is rejected non-zero", () => {
+    const r = pack(1440, 4200);
+    expect(r.stdout).toContain("WRONG_DIMENSIONS=1");
+    expect(r.stdout).toContain("EVIDENCE_VERIFICATION=FAIL");
+    expect(r.status).not.toBe(0);
+  });
+
+  it("c) 390×900 (wrong width) is rejected non-zero", () => {
+    const r = pack(390, 900);
+    expect(r.stdout).toContain("WRONG_DIMENSIONS=1");
+    expect(r.stdout).toContain("EVIDENCE_VERIFICATION=FAIL");
+    expect(r.status).not.toBe(0);
+  });
+
+  it("the shared predicate the verifier consumes reports both axes", () => {
+    // Same function object the verifier imports — not a local re-derivation.
+    expect(checkDimensions({ width: 1440, height: 900 }, { width: 1440, height: 900 }).ok).toBe(true);
+    const tall = checkDimensions({ width: 1440, height: 900 }, { width: 1440, height: 4200 });
+    expect(tall.ok).toBe(false);
+    expect(tall.reason).toContain("actual 1440x4200");
+    expect(tall.reason).toContain("planned 1440x900");
+    expect(checkDimensions({ width: 1440, height: 900 }, null).ok).toBe(false);
+  });
+});
+
+describe("capture exit code", () => {
+  /*
+   * Asserted on the shared function the sweep calls for its own process.exit.
+   * Proving this through the binary alone is not possible honestly: a run with
+   * an unlaunchable browser exits during startup and never reaches the capture
+   * loop, so such a test shows startup failure while appearing to show capture
+   * failure. That was the previous test's overclaim.
+   */
+  it("returns OK only when nothing failed", () => {
+    expect(captureExitCode(0)).toBe(EXIT.OK);
+  });
+
+  it("returns CAPTURE_INCOMPLETE for a single failure", () => {
+    expect(captureExitCode(1)).toBe(EXIT.CAPTURE_INCOMPLETE);
+    expect(captureExitCode(1)).not.toBe(EXIT.OK);
+  });
+
+  it("returns CAPTURE_INCOMPLETE for many failures", () => {
+    for (const n of [2, 7, 792]) {
+      expect(captureExitCode(n)).toBe(EXIT.CAPTURE_INCOMPLETE);
+      expect(captureExitCode(n)).not.toBe(EXIT.OK);
+    }
+  });
+});
+
+describe("the real binary", () => {
+  it("12. exits LOCKED when another writer holds the lock", () => {
+    acquireLock(dir, "held-by-someone-else");
+    const cells = path.join(dir, "cells.json");
+    fs.writeFileSync(cells, "[]");
+    const r = spawnSync(process.execPath, [SWEEP, cells, dir], {
+      encoding: "utf8",
+      env: { ...process.env, HERMES_AUDIT_EMAIL: "x@example.invalid", HERMES_AUDIT_PASSWORD: "unused" },
+    });
+    expect(r.status).toBe(EXIT.LOCKED);
+    expect(r.stderr).toMatch(/another sweep holds the lock/);
+  });
+
+  it("13. never prints the credential on stdout or stderr", () => {
+    const secret = crypto.randomBytes(18).toString("base64url");
+    const cells = path.join(dir, "cells.json");
+    fs.writeFileSync(cells, "[]");
+    acquireLock(dir, "held");        // exit early, before any browser work
+    const r = spawnSync(process.execPath, [SWEEP, cells, dir], {
+      encoding: "utf8",
+      env: { ...process.env, HERMES_AUDIT_EMAIL: "audit@example.invalid", HERMES_AUDIT_PASSWORD: secret },
+    });
+    expect(`${r.stdout}${r.stderr}`).not.toContain(secret);
+  });
+
+  it("refuses to run without credentials in the environment", () => {
+    const cells = path.join(dir, "cells.json");
+    fs.writeFileSync(cells, "[]");
+    const env = { ...process.env };
+    delete env.HERMES_AUDIT_EMAIL; delete env.HERMES_AUDIT_PASSWORD;
+    const r = spawnSync(process.execPath, [SWEEP, cells, dir], { encoding: "utf8", env });
+    expect(r.status).toBe(EXIT.NO_CREDENTIALS);
+  });
+
+  it("exits non-zero and writes nothing when the browser cannot start", () => {
+    /*
+     * Named for what it actually proves. Chrome is pointed at a path that
+     * cannot launch, so the run dies during startup and never reaches the
+     * capture loop — this demonstrates a failed run produces no evidence, NOT
+     * that a capture failure yields EXIT.CAPTURE_INCOMPLETE. That property is
+     * asserted directly against `captureExitCode` above, because claiming it
+     * here would be reading a startup failure as a capture failure.
+     */
+    const cells = path.join(dir, "cells.json");
+    fs.writeFileSync(cells, JSON.stringify([
+      { cellId: "c1", file: "auth/c1.png", url: "/en/x", route: "/x", locale: "en", width: 1440, height: 900 },
+    ]));
+    const r = spawnSync(process.execPath, [SWEEP, cells, dir, "--chrome", path.join(dir, "no-such-chrome")], {
+      encoding: "utf8", timeout: 120000,
+      env: { ...process.env, HERMES_AUDIT_EMAIL: "a@example.invalid", HERMES_AUDIT_PASSWORD: "b" },
+    });
+    expect(r.status).not.toBe(EXIT.OK);
+    expect(fs.existsSync(path.join(dir, "auth/c1.png"))).toBe(false);
+  });
+
+  it("refuses a non-local base URL without an explicit override", () => {
+    const cells = path.join(dir, "cells.json");
+    fs.writeFileSync(cells, "[]");
+    const r = spawnSync(process.execPath, [SWEEP, cells, dir, "--base", "https://www.hermesnovin.com"], {
+      encoding: "utf8",
+      env: { ...process.env, HERMES_AUDIT_EMAIL: "a@example.invalid", HERMES_AUDIT_PASSWORD: "b" },
+    });
+    expect(r.status).toBe(EXIT.USAGE);
+    expect(r.stderr).toMatch(/refusing to sweep a non-local host/);
+  });
+});
+
+/**
+ * PHASE 107 STAGE 6-A — the harness may read the page. It may not edit it.
+ *
+ * The Stage 5 driver registered a script on every document that injected
+ * `nextjs-portal{display:none !important}` to hide the Next.js dev overlay, and
+ * threw `TypeError: … appendChild` doing it because neither `document.head` nor
+ * `document.documentElement` exists at that point. That exception was recorded
+ * as a page console error in 35 of 36 unattributed cells, and the anomaly rule
+ * then reported the audit tool's own crash as a product defect.
+ *
+ * Two things follow, and both are pinned here: the harness must contain no
+ * mutation API at all, and a console message must be attributable to its author
+ * so the tool's noise can never again be counted as the product's failure.
+ */
+describe("Stage 6-A — the audit harness does not contaminate the page", () => {
+  const HARNESS_DIR = path.join(HERE, "..");
+  const sources = fs.readdirSync(HARNESS_DIR)
+    .filter((f) => /\.(mjs|js)$/.test(f))
+    .map((f) => ({ file: f, text: fs.readFileSync(path.join(HARNESS_DIR, f), "utf8") }));
+
+  it("ships at least the files this rule is meant to cover", () => {
+    // A scanner that silently found nothing to scan would pass forever.
+    expect(sources.map((s) => s.file)).toEqual(
+      expect.arrayContaining(["sweep.mjs", "contracts.mjs", "probe-expression.js"]),
+    );
+  });
+
+  it("contains no DOM-mutation or script-injection API in any harness source", () => {
+    const hits = sources.flatMap((s) => findForbiddenMutation(s.text, s.file));
+    expect(hits.map((h) => `${h.file}:${h.line} ${h.api}`)).toEqual([]);
+  });
+
+  it("catches the exact script that contaminated Stage 5", () => {
+    const stage5 =
+      'await S("Page.addScriptToEvaluateOnNewDocument", { source: `' +
+      "const hide=()=>{const s=document.createElement('style');s.id='__s5';" +
+      "s.textContent='nextjs-portal{display:none !important}';" +
+      "(document.head||document.documentElement).appendChild(s)};hide();` });";
+    const hits = findForbiddenMutation(stage5, "auth-sweep.mjs");
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.map((h) => h.api)).toEqual(
+      expect.arrayContaining(["Page.addScriptToEvaluateOnNewDocument", "createElement", "appendChild"]),
+    );
+  });
+
+  it("catches the animation freeze that was removed from the capture path", () => {
+    const freeze = "await S(\"Runtime.evaluate\", { expression: \"document.querySelectorAll('*')" +
+      ".forEach(e=>{e.getAnimations().forEach(a=>{a.currentTime=0;a.pause()})})\" });";
+    expect(findForbiddenMutation(freeze, "sweep.mjs").length).toBeGreaterThan(0);
+  });
+
+  it("does not mistake prose about a prohibition for the prohibition", () => {
+    // This repository documents the retired script at length. Comments explaining
+    // why an API is banned must not read as a use of it.
+    expect(findForbiddenMutation("// never call appendChild from the harness", "x.mjs")).toEqual([]);
+    expect(findForbiddenMutation("/* the old hide() used innerHTML */", "x.mjs")).toEqual([]);
+  });
+
+  it("attributes a console message to its author", () => {
+    const stage5Exception =
+      "exception: TypeError: Cannot read properties of null (reading 'appendChild')\n    at hide (<anonymous>:2:212)";
+    expect(attributeConsoleError(stage5Exception)).toBe("AUDIT_HARNESS");
+    expect(attributeConsoleError("log: Failed to load resource: net::ERR_CONNECTION_RESET")).toBe("BROWSER_INFRASTRUCTURE");
+    expect(attributeConsoleError("exception: ChunkLoadError: Loading chunk 42 failed")).toBe("BROWSER_INFRASTRUCTURE");
+    expect(attributeConsoleError("log: Failed to load resource: the server responded with a status of 401 (Unauthorized)")).toBe("NETWORK");
+    // Anything the harness cannot claim is the product's until proven otherwise.
+    expect(attributeConsoleError("error: Warning: validateDOMNesting(...)")).toBe("PRODUCT");
+  });
+
+  it("keeps the capture path free of the freeze it used to perform", () => {
+    const sweep = sources.find((s) => s.file === "sweep.mjs")!.text;
+    expect(sweep).not.toMatch(/getAnimations\(\)\.forEach/);
+    // …and still photographs the page.
+    expect(sweep).toMatch(/Page\.captureScreenshot/);
+  });
+});

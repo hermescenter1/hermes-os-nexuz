@@ -4,11 +4,19 @@
 // health + renewal-status enums map to localized labels (values internal;
 // expansion type/status remain raw machine identifiers — no verified enum).
 
-import { useState, useEffect }  from "react";
+// PHASE 107 STAGE 6-A — the generic "unavailable" panel no longer stands in for
+// every outcome. It was previously reached by a 401, a 403, a 500 and a dropped
+// connection alike, and `data.healthSummary` was read straight after, so a
+// contract change would have thrown during render. Tabs and endpoint unchanged.
+
+import { useState }             from "react";
 import Link                     from "next/link";
 import { usePathname }          from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { HealthScoreCard }      from "./HealthScoreCard";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { useResource }          from "@/lib/client/use-resource";
+import { requestJson }          from "@/lib/client/resource-request";
 import type {
   CrmCustomerSuccessOverview, CrmRenewalForecast,
   CrmExpansionOpportunity, CrmSuccessManager,
@@ -31,27 +39,35 @@ function fmt(v: number): string {
 export function CustomerSuccessClient() {
   const t = useTranslations("crm");
   const locale = useLocale();
-  const [data,    setData]    = useState<CrmCustomerSuccessOverview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState<"health"|"renewals"|"expansions"|"managers">("health");
+  const [tab, setTab] = useState<"health"|"renewals"|"expansions"|"managers">("health");
   const pathname = usePathname();
   const base = pathname.startsWith("/fa") ? "/fa" : "/en";
 
-  useEffect(() => {
-    fetch("/api/crm/customer-success")
-      .then(r => r.json())
-      .then(d => setData(d.overview ?? null))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const overviewState = useResource<CrmCustomerSuccessOverview | null>(
+    (signal) => requestJson(
+      "/api/crm/customer-success",
+      (body) => (body as { overview?: CrmCustomerSuccessOverview | null }).overview,
+      { signal },
+    ),
+    [],
+  );
 
   const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
 
-  if (loading) return (
-    <div className="h-64 rounded-xl border border-line bg-surface animate-pulse">
+  if (overviewState.status === "LOADING") return (
+    <div data-async-state="loading" className="h-64 rounded-xl border border-line bg-surface animate-pulse">
       <span className="sr-only" role="status">{t("common.loading")}</span>
     </div>
   );
+
+  if (overviewState.status === "ERROR" && overviewState.failure) return (
+    <div className="rounded-xl border border-line bg-surface">
+      <ResourceFailureNotice code={overviewState.failure} onRetry={overviewState.retry} />
+    </div>
+  );
+
+  const data = overviewState.data;
+  // A 200 that genuinely carries no overview keeps the module's own wording.
   if (!data) return <div className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">{t("cs.unavailable")}</div>;
 
   const { healthSummary } = data;
@@ -89,8 +105,22 @@ export function CustomerSuccessClient() {
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-line" role="tablist">
+      {/*
+        Tabs.
+
+        PHASE 107 STAGE 6-B — the row scrolls instead of widening the page.
+
+        At 390px the German labels made this flex row about 440px wide, and
+        because nothing clipped it the whole document scrolled sideways: every
+        other element on the page shifted under a horizontal scrollbar caused by
+        one strip of tabs. The table below was already inside `overflow-x-auto`
+        and was never the cause, despite being the widest element on the page.
+
+        `overflow-x-auto` confines the scrolling to the strip, and `shrink-0`
+        keeps each label on one line rather than letting German wrap into a
+        two-line tab. The same pattern the CRM tables already use.
+      */}
+      <div className="flex gap-2 overflow-x-auto border-b border-line" role="tablist">
         {tabs.map(tb => (
           <button
             key={tb.id}
@@ -98,7 +128,7 @@ export function CustomerSuccessClient() {
             aria-selected={tab === tb.id}
             onClick={() => setTab(tb.id as typeof tab)}
             className={[
-              "rounded-t-lg border-b-2 px-4 py-2 text-sm font-medium transition-colors -mb-px",
+              "shrink-0 rounded-t-lg border-b-2 px-4 py-2 text-sm font-medium transition-colors -mb-px",
               tab === tb.id
                 ? "border-cyan-500 text-cyan-400"
                 : "border-transparent text-muted hover:text-ink",

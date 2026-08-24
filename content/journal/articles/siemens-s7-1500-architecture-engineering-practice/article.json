@@ -1,0 +1,54 @@
+{
+  "slug": "siemens-s7-1500-architecture-engineering-practice",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "plc-programming",
+  "tags": ["siemens-s7", "tia-portal", "opc-ua", "profinet", "functional-safety"],
+  "publishedAt": "2026-08-16T00:00:00.000Z",
+  "coverImage": {
+    "file": "journal/s7-1500-architecture.jpg",
+    "url": null,
+    "concept": "Close-up of a modern modular controller rack on a DIN rail — CPU plus signal modules in a clean panel, cyan status indicators against dark grey, cable duct below.",
+    "prompt": "Photorealistic macro photograph of a modern modular industrial controller rack on a DIN rail inside a clean control panel, grey modules with small cyan status LEDs, neat wiring duct below, cool technical lighting, shallow depth of field, no readable text or branding, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Modular industrial controller rack with CPU and signal modules mounted on a DIN rail",
+      "fa": "رک ماژولار کنترلر صنعتی با CPU و ماژول‌های سیگنال روی ریل دین",
+      "de": "Modulares Steuerungsrack mit CPU und Signalbaugruppen auf einer Hutschiene"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "PLC",
+    "linkedTechnology": "SIMATIC S7-1500",
+    "linkedStandard": "IEC 61131-3",
+    "linkedVendor": "Siemens",
+    "linkedPLCPlatform": "TIA Portal",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "S7-1500 Architecture and Engineering Practice",
+      "subtitle": "Optimised blocks, the memory model, OB priority classes and the integrated OPC UA server — and what each one costs you if you get it wrong",
+      "excerpt": "The S7-1500 rewards engineering that works with its architecture and punishes habits carried over from the S7-300. Symbolic addressing, optimised block access, priority classes, retentivity and the built-in OPC UA server, treated as design decisions rather than checkboxes.",
+      "seoTitle": "S7-1500 Architecture and Engineering Practice",
+      "seoDescription": "Engineering the SIMATIC S7-1500 properly: optimised block access, the memory model, OB priority classes, retentivity, diagnostics and the integrated OPC UA server."
+    },
+    "fa": {
+      "title": "معماری S7-1500 و شیوهٔ مهندسی آن",
+      "subtitle": "بلوک‌های Optimized، مدل حافظه، کلاس‌های اولویت OB و سرور داخلی OPC UA — و هزینهٔ هر اشتباه در آنها",
+      "excerpt": "S7-1500 به مهندسی‌ای پاداش می‌دهد که با معماری‌اش هم‌راستا باشد و عادت‌های به‌ارث‌رسیده از S7-300 را جریمه می‌کند. آدرس‌دهی سمبلیک، دسترسی Optimized، کلاس‌های اولویت، ماندگاری داده و سرور OPC UA داخلی — به‌عنوان تصمیم طراحی، نه تیک در چک‌لیست.",
+      "seoTitle": "معماری S7-1500 و شیوهٔ مهندسی آن در TIA Portal",
+      "seoDescription": "مهندسی درست SIMATIC S7-1500: دسترسی Optimized، مدل حافظه، کلاس‌های اولویت OB، ماندگاری داده، عیب‌یابی و سرور OPC UA یکپارچه."
+    },
+    "de": {
+      "title": "S7-1500: Architektur und Engineering-Praxis",
+      "subtitle": "Optimierte Bausteine, Speichermodell, OB-Prioritätsklassen und der integrierte OPC-UA-Server — und was jeder Fehler davon kostet",
+      "excerpt": "Die S7-1500 belohnt Engineering, das ihrer Architektur folgt, und bestraft aus der S7-300 übernommene Gewohnheiten. Symbolische Adressierung, optimierter Bausteinzugriff, Prioritätsklassen, Remanenz und der integrierte OPC-UA-Server als Entwurfsentscheidungen statt als Häkchen.",
+      "seoTitle": "S7-1500: Architektur und Engineering-Praxis",
+      "seoDescription": "Die SIMATIC S7-1500 richtig projektieren: optimierter Bausteinzugriff, Speichermodell, OB-Prioritätsklassen, Remanenz, Diagnose und integrierter OPC-UA-Server."
+    }
+  }
+}

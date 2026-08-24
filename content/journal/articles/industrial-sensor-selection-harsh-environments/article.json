@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-sensor-selection-harsh-environments",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "instrumentation",
+  "tags": ["diagnostics", "redundancy", "maintainability", "commissioning", "condition-monitoring"],
+  "publishedAt": "2026-08-17T12:20:00.000Z",
+  "coverImage": {
+    "file": "journal/harsh-environment-sensor.jpg",
+    "url": null,
+    "concept": "A process transmitter on a heavily insulated line with its thermowell, impulse tubing and cable gland visible — the three components that fail long before the sensing element does.",
+    "prompt": "Photorealistic photograph of a stainless steel process transmitter mounted on an insulated industrial pipeline, thermowell and impulse tubing visible, weathered metal surfaces, cool cyan daylight, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Stainless steel process transmitter with thermowell and impulse tubing on an industrial pipeline",
+      "fa": "ترانسمیتر فرایندی فولاد زنگ‌نزن با ترموول و لولهٔ ضربه روی خط لولهٔ صنعتی",
+      "de": "Prozessmessumformer aus Edelstahl mit Schutzrohr und Wirkdruckleitung an einer Industrieleitung"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "INSTRUMENTATION",
+    "linkedAssetType": "TRANSMITTER",
+    "linkedTechnology": "Process Sensors",
+    "linkedStandard": "IEC 60529",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Sensor Selection for Harsh Industrial Environments",
+      "subtitle": "Almost nothing fails because the sensor was inaccurate — it fails because the principle was wrong for the medium, or the environment attacked something nobody specified",
+      "excerpt": "Selecting measuring devices for real industrial conditions: accuracy versus repeatability versus stability, installed response time, the four environmental attacks, what each measurement family is blind to, why many technologies infer rather than measure, diverse versus duplicated redundancy, and the difference between failing obviously and failing plausibly.",
+      "seoTitle": "Sensor Selection for Harsh Industrial Environments",
+      "seoDescription": "Selecting industrial sensors: accuracy versus repeatability, installed response, ingress and chemical attack, measuring principles and diverse redundancy."
+    },
+    "fa": {
+      "title": "انتخاب سنسور برای محیط‌های صنعتی سخت",
+      "subtitle": "تقریباً هیچ‌چیز به دلیل بی‌دقتی سنسور خراب نمی‌شود — خراب می‌شود چون اصل اندازه‌گیری برای آن سیال نادرست بود، یا محیط به چیزی حمله کرد که کسی مشخصاتش را ننوشته بود",
+      "excerpt": "انتخاب وسایل اندازه‌گیری برای شرایط واقعی صنعتی: دقت در برابر تکرارپذیری در برابر پایداری، زمان پاسخ نصب‌شده، چهار حملهٔ محیطی، هر خانوادهٔ اندازه‌گیری به چه چیزی نابیناست، چرا بسیاری از فناوری‌ها به‌جای اندازه‌گیری استنتاج می‌کنند، افزونگی متنوع در برابر افزونگی تکراری، و تفاوت میان خرابی آشکار و خرابی باورپذیر.",
+      "seoTitle": "انتخاب سنسور برای محیط‌های صنعتی سخت و خورنده",
+      "seoDescription": "انتخاب سنسور صنعتی: دقت در برابر تکرارپذیری، زمان پاسخ نصب‌شده، نفوذ و حملهٔ شیمیایی، اصول اندازه‌گیری، افزونگی متنوع و رفتار خرابی."
+    },
+    "de": {
+      "title": "Sensorauswahl für raue industrielle Umgebungen",
+      "subtitle": "Fast nichts fällt aus, weil der Sensor ungenau war — es fällt aus, weil das Messprinzip nicht zum Medium passte oder die Umgebung etwas angriff, das niemand spezifiziert hatte",
+      "excerpt": "Messgeräte für reale Industriebedingungen auswählen: Genauigkeit gegenüber Wiederholbarkeit und Langzeitstabilität, eingebaute Ansprechzeit, die vier Umgebungsangriffe, wofür jede Messfamilie blind ist, warum viele Verfahren ableiten statt messen, diversitäre gegenüber gedoppelter Redundanz und der Unterschied zwischen offensichtlichem und plausiblem Versagen.",
+      "seoTitle": "Sensorauswahl für raue industrielle Umgebungen",
+      "seoDescription": "Industriesensoren auswählen: Genauigkeit und Wiederholbarkeit, Ansprechzeit, Eindringen und chemischer Angriff, Messprinzipien, diversitäre Redundanz, Ausfallverhalten."
+    }
+  }
+}

@@ -1,32 +1,84 @@
 "use client";
 
+// PHASE 107 STAGE 6-A — "No Account Found" is now reserved for the API actually
+// saying so. It previously also appeared when the request failed, which told a
+// paying customer their account did not exist. `noAccount` remains the API's own
+// signal and keeps its own wording; endpoint and payload shape are unchanged.
+
 import { useLocale } from "next-intl";
-import { useEffect, useState } from "react";
 import type { CustomerAccount, CustomerContact } from "@/lib/customer-portal/types";
 import { formatDate } from "@/lib/i18n/format";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { useResource } from "@/lib/client/use-resource";
+import { requestJson } from "@/lib/client/resource-request";
+
+interface AccountPayload {
+  account: CustomerAccount | null;
+  contacts: CustomerContact[];
+  noAccount: boolean;
+}
 
 export function CustomerAccountClient() {
   const locale = useLocale();
-  const [account, setAccount]   = useState<CustomerAccount | null>(null);
-  const [contacts, setContacts] = useState<CustomerContact[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [noAccount, setNoAccount] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/customer/account")
-      .then((r) => r.json())
-      .then((d: { account?: CustomerAccount | null; contacts?: CustomerContact[]; noAccount?: boolean }) => {
-        if (d.noAccount) { setNoAccount(true); return; }
-        setAccount(d.account ?? null);
-        setContacts(d.contacts ?? []);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const accountState = useResource<AccountPayload>(
+    (signal) => requestJson(
+      "/api/customer/account",
+      (body) => {
+        const d = body as {
+          account?: CustomerAccount | null;
+          contacts?: CustomerContact[];
+          noAccount?: boolean;
+        };
+        // Neither key present means this is not the account envelope at all.
+        if (d.account === undefined && d.noAccount === undefined) return undefined;
 
-  if (loading) return <div className="h-64 rounded-xl border border-line bg-surface animate-pulse" />;
+        /*
+         * PHASE 107 FINAL — `contacts` is required in the shape that has an
+         * account, and legitimately absent in the shape that does not.
+         *
+         * The route (src/app/api/customer/account/route.ts) answers exactly:
+         *     { account: null, noAccount: true }   — no portal account, no contacts key
+         *     { account, contacts }                — both always present
+         *
+         * `contacts ?? []` treated those two as one, so a truncated or
+         * regressed account response rendered a confident "no contacts" for a
+         * customer who may well have them. Proving `account` says nothing about
+         * `contacts`; each field needs its own proof, which is what the
+         * order-sensitive selector audit now requires.
+         */
+        if (d.noAccount) {
+          return { account: d.account ?? null, contacts: [], noAccount: true };
+        }
+        if (d.contacts === undefined) return undefined;
+        return {
+          account: d.account ?? null,
+          contacts: d.contacts,
+          noAccount: false,
+        };
+      },
+      { signal },
+    ),
+    [],
+    { isEmpty: (v) => v.noAccount || v.account === null },
+  );
 
-  if (noAccount || !account) {
+  if (accountState.status === "LOADING") {
+    return <div data-async-state="loading" className="h-64 rounded-xl border border-line bg-surface animate-pulse" />;
+  }
+
+  if (accountState.status === "ERROR" && accountState.failure) {
+    return (
+      <div className="rounded-xl border border-line bg-surface">
+        <ResourceFailureNotice code={accountState.failure} onRetry={accountState.retry} />
+      </div>
+    );
+  }
+
+  const account = accountState.data?.account ?? null;
+  const contacts = accountState.data?.contacts ?? [];
+
+  if (!account) {
     return (
       <div className="rounded-xl border border-line bg-surface px-8 py-16 text-center">
         <h2 className="text-lg font-bold text-ink">No Account Found</h2>

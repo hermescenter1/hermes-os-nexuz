@@ -1,6 +1,11 @@
 /**
  * PHASE 105 — the Journal's public sitemap surface.
  *
+ * PHASE 106B extended it into the Journal's TRANSLATION-GROUP authority: the
+ * article detail page asks this module which editions of a slug genuinely exist
+ * and may be advertised, so page hreflang and sitemap alternates are derived
+ * from one predicate instead of two hand-kept copies.
+ *
  * THIS MODULE EXTENDS THE EXISTING SEO LAYER — IT DOES NOT REPLACE IT. The
  * domain comes from `@/lib/seo/config`, the locale list from `LOCALES`, and the
  * alternates are built the same way `app/sitemap.ts` builds them for every other
@@ -33,7 +38,9 @@
 
 import type { MetadataRoute } from "next";
 import { getPrisma } from "@/lib/db/prisma";
-import { BASE_URL, LOCALES } from "@/lib/seo/config";
+import { BASE_URL, DEFAULT_LOCALE, LOCALES } from "@/lib/seo/config";
+import { localeForArticleLanguage } from "./locale";
+import { normalizeArticleSlug } from "./slug";
 
 /** Hard ceiling on rows pulled into the sitemap. */
 export const ARTICLE_SITEMAP_MAX = 5000;
@@ -43,18 +50,26 @@ export interface ArticleSitemapItem {
   /** ISO 8601, or null when the row carries no usable timestamp. */
   lastModified: string | null;
   /**
-   * DISCOVERY-2A — the article's OWN language, lower-cased ("fa" | "en").
+   * The languages this topic ACTUALLY exists in, lower-cased, deduplicated.
    *
-   * An article exists in exactly one language: `Article.language` is
-   * `ArtLanguage`, whose members are EN and FA — there is no DE and there cannot
-   * be one. `Article.slug` is globally unique and `getArticleDetailBySlug` has no
-   * language filter, so /fa, /en and /de all render the SAME text under different
-   * chrome. Emitting three URLs with reciprocal `alternates` therefore claimed
-   * two translations that do not exist, tripled the URL count for one document,
-   * and contradicted `@/lib/seo/indexnow-lifecycle`, which has always refused to
-   * fabricate the very same URLs.
+   * DISCOVERY-2A established the rule this field enforces: never advertise a
+   * locale the article was not written in, and never emit reciprocal
+   * `alternates` for translations that do not exist. At that time an article
+   * was necessarily single-language, so the rule was expressed as one scalar
+   * language per row.
+   *
+   * Phase 106 makes the multi-language case real — `ArtLanguage` gains DE and
+   * uniqueness moves to `@@unique([slug, language])`, so one slug is now a
+   * translation GROUP of up to three genuine editions. The rule is unchanged;
+   * only its input is. A legacy single-language topic still yields exactly one
+   * URL with no alternates, and a translated topic yields one URL per edition
+   * with reciprocal alternates that are now true.
+   *
+   * Reading a scalar here would have forced a choice between reintroducing
+   * fabricated alternates for legacy rows and hiding the Phase 106 editions, so
+   * the field carries the set instead of one member of it.
    */
-  language: string;
+  languages: string[];
 }
 
 export interface AuthorSitemapItem {
@@ -98,20 +113,167 @@ export async function listPublicArticleSitemapItems(): Promise<ArticleSitemapIte
       orderBy: { publishedAt: "desc" },
       take: ARTICLE_SITEMAP_MAX,
     });
-    return rows
-      .map((row) => ({
-        slug: typeof row.slug === "string" ? row.slug : "",
-        language: typeof row.language === "string" ? row.language.toLowerCase() : "",
-        // `updatedAt` is the more accurate "last modified" of the two; fall
-        // back to publication time, and omit entirely if neither is usable.
-        lastModified: asIso(row.updatedAt) ?? asIso(row.publishedAt),
-      }))
-      // A row with no usable language cannot be addressed honestly, so it is
-      // dropped rather than defaulted onto a locale it may not be written in.
-      .filter((item) => item.slug.length > 0 && item.language.length > 0);
+    // ONE ENTRY PER TRANSLATION GROUP, ADDRESSED ONLY IN ITS REAL LANGUAGES.
+    //
+    // Two corrections meet here and both are required.
+    //
+    // DISCOVERY-2A: a row may only be advertised under the locale it is written
+    // in, so a row whose language is unusable is dropped rather than defaulted
+    // onto a locale it may not be written in.
+    //
+    // Phase 106: a topic is now up to three rows (EN/FA/DE) sharing one slug,
+    // and `articleSitemapEntries` expands each item across the locales it is
+    // given. Returning one item per ROW would emit the same slug once per
+    // edition, so the rows are folded into one item per slug carrying the set of
+    // languages that slug genuinely has. Found by the PostgreSQL rehearsal: with
+    // a single-language corpus each slug had exactly one row, so the duplication
+    // was invisible until real multilingual data existed.
+    //
+    // The group's `lastModified` is the NEWEST across its editions: translating
+    // an article genuinely changes what that URL set offers.
+    const byGroup = new Map<string, { lastModified: string | null; languages: string[] }>();
+    for (const row of rows) {
+      const slug = typeof row.slug === "string" ? row.slug : "";
+      const language = typeof row.language === "string" ? row.language.toLowerCase() : "";
+      if (slug.length === 0 || language.length === 0) continue;
+      const modified = asIso(row.updatedAt) ?? asIso(row.publishedAt);
+      const group = byGroup.get(slug);
+      if (!group) {
+        byGroup.set(slug, { lastModified: modified, languages: [language] });
+        continue;
+      }
+      if (!group.languages.includes(language)) group.languages.push(language);
+      if (modified && (!group.lastModified || modified > group.lastModified)) {
+        group.lastModified = modified;
+      }
+    }
+    return [...byGroup].map(([slug, group]) => ({
+      slug,
+      lastModified: group.lastModified,
+      languages: group.languages,
+    }));  } catch {
+    return [];
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * PHASE 106B — THE TRANSLATION GROUP OF ONE SLUG, FOR THE ARTICLE PAGE ITSELF.
+ *
+ * The sitemap above learned in Phase 106 that one slug is a GROUP of editions.
+ * `articles/[slug]/page.tsx` did not: it still passed the single served row's
+ * language as `contentLocales`, so a trilingual topic emitted a canonical and
+ * NO hreflang at all — production HTML showed `canonical = present,
+ * hreflang = NONE` for all 50 Phase 106 topics.
+ *
+ * The lookup lives HERE, next to `ARTICLE_SITEMAP_WHERE`, precisely so the page
+ * and the sitemap cannot disagree about which editions are advertisable: they
+ * read the same predicate constant. That is the whole of the coupling — the
+ * page does not reuse the sitemap's grouping or URL construction.
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Upper bound on one translation group's rows.
+ *
+ * `@@unique([slug, language])` already caps a group at one row per article
+ * language, so this can never truncate a real group; it exists so a corrupted
+ * or future-widened corpus still cannot turn a page render into a scan.
+ */
+export const ARTICLE_TRANSLATION_GROUP_MAX = LOCALES.length;
+
+/**
+ * The locales in which a PUBLIC, INDEXABLE edition of `slug` genuinely exists.
+ *
+ * PROJECTION: `language` only. An hreflang set needs nothing else, and a detail
+ * page must never drag up to three full article bodies through the driver just
+ * to learn which languages exist.
+ *
+ * PREDICATE: `ARTICLE_SITEMAP_WHERE` — PUBLISHED + PUBLIC + not de-indexed. A
+ * draft, private or `noIndex` sibling is not an advertisable alternate: linking
+ * to one tells a crawler to fetch a page that then refuses to be indexed.
+ *
+ * The slug is normalised with the SAME helper the detail read uses, so an
+ * encoded or NFD route param resolves to the same group the page resolved.
+ *
+ * Returns `[]` — never throws — when the database is unavailable, so metadata
+ * degrades to "no alternates" rather than failing the render.
+ */
+export async function getPublicArticleLanguagesBySlug(slug: string): Promise<string[]> {
+  const lookupSlug = normalizeArticleSlug(slug);
+  if (!lookupSlug) return [];
+
+  const prisma = await getPrisma();
+  if (!prisma) return [];
+  try {
+    const rows = await (prisma as unknown as { article: { findMany: FindMany } }).article.findMany({
+      where: { ...ARTICLE_SITEMAP_WHERE, slug: lookupSlug },
+      select: { language: true },
+      take: ARTICLE_TRANSLATION_GROUP_MAX,
+    });
+    const locales: string[] = [];
+    for (const row of rows) {
+      // `ArtLanguage` -> locale goes through the one mapping the whole Journal
+      // uses, not a `.toLowerCase()` coincidence: a language the platform does
+      // not route is not a locale and must not become an hreflang.
+      const locale = typeof row.language === "string" ? localeForArticleLanguage(row.language) : null;
+      if (!locale || !(LOCALES as readonly string[]).includes(locale)) continue;
+      if (!locales.includes(locale)) locales.push(locale);
+    }
+    return locales;
   } catch {
     return [];
   }
+}
+
+/**
+ * The `contentLocales` an article detail page must declare.
+ *
+ * INPUTS
+ *  - `servedLanguage` — `Article.language` of the row this request ACTUALLY
+ *    rendered. Always a real representation, so it is always in the result:
+ *    the page's own canonical has to be able to point at the text it served.
+ *  - `siblingLocales` — the indexable group from
+ *    {@link getPublicArticleLanguagesBySlug}. The served row is normally a
+ *    member; when it is not (an editor de-indexed exactly this edition) the
+ *    page still canonicalises to itself while its `noIndex` robots directive
+ *    keeps it out of the index. Its siblings, computing their own sets, do not
+ *    advertise it.
+ *
+ * ORDER matters because `buildMetadata` treats the first entry as the primary
+ * representation: it is `x-default`, and it is the canonical target for a
+ * locale with no edition of its own.
+ *
+ * Two cases, deliberately different:
+ *  - The requested locale owns the served edition (the normal case). Order is
+ *    the platform's own locale order, default locale first, so every member of
+ *    a group agrees on one stable `x-default`.
+ *  - The requested locale has NO edition and is being served a fallback
+ *    (`getArticleDetailBySlug` step 2). The served language leads, so the
+ *    canonical points at the URL that really serves this text instead of at a
+ *    sibling whose prose the reader never saw.
+ */
+export function resolveArticleContentLocales(opts: {
+  requestedLocale: string;
+  servedLanguage: string;
+  siblingLocales: readonly string[];
+}): string[] {
+  const served = localeForArticleLanguage(opts.servedLanguage);
+  const present = new Set<string>();
+  if (served && (LOCALES as readonly string[]).includes(served)) present.add(served);
+  for (const locale of opts.siblingLocales) {
+    if ((LOCALES as readonly string[]).includes(locale)) present.add(locale);
+  }
+  if (present.size === 0) return [];
+
+  // Default locale first, then the remaining active locales in platform order —
+  // never the order PostgreSQL happened to return rows in.
+  const canonicalOrder = [DEFAULT_LOCALE, ...LOCALES].filter(
+    (locale, i, all) => all.indexOf(locale) === i && present.has(locale),
+  );
+
+  if (served && present.has(served) && served !== opts.requestedLocale) {
+    return [served, ...canonicalOrder.filter((locale) => locale !== served)];
+  }
+  return canonicalOrder;
 }
 
 /**
@@ -183,14 +345,17 @@ function localeEntries(
  * One URL per article, under the article's own language.
  *
  * DISCOVERY-2A: was three URLs per article with reciprocal alternates. See
- * {@link ArticleSitemapItem.language} for why that was a false claim. This now
- * matches exactly what `articles/[slug]/page.tsx` emits through
- * `buildMetadata({ contentLocales: [article.language] })`, so the sitemap and
- * the page's own canonical can no longer disagree.
+ * {@link ArticleSitemapItem.languages} for why that was a false claim, and why
+ * the field is now the SET of a slug's real editions rather than one scalar.
+ *
+ * Phase 106B: `articles/[slug]/page.tsx` derives its own `contentLocales` from
+ * {@link getPublicArticleLanguagesBySlug}, which reads the same
+ * {@link ARTICLE_SITEMAP_WHERE} predicate this listing does. Page and sitemap
+ * therefore describe the same translation group and cannot disagree.
  */
 export function articleSitemapEntries(items: ArticleSitemapItem[]): MetadataRoute.Sitemap {
   return items.flatMap((item) =>
-    localeEntries(`/articles/${item.slug}`, 0.75, "monthly", item.lastModified, [item.language]),
+    localeEntries(`/articles/${item.slug}`, 0.75, "monthly", item.lastModified, item.languages),
   );
 }
 

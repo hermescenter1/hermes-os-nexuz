@@ -2,9 +2,14 @@
 
 // PHASE 87G AMENDMENT 1 — localized opportunity detail. Same fetch/route;
 // stage values internal; labels/dates localized; money bidi-safe.
+//
+// PHASE 107 STAGE 6-A — an unreachable API no longer reads as a deleted deal.
+// See LeadDetailClient for the same reasoning; endpoint and route unchanged.
 
-import { useState, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { useResource } from "@/lib/client/use-resource";
+import { requestJson } from "@/lib/client/resource-request";
 import type { CrmOpportunity, CrmAccount, CrmOpportunityStage } from "@/lib/crm/types";
 
 const STAGE_STYLES: Record<CrmOpportunityStage, string> = {
@@ -27,25 +32,39 @@ function fmt(v: number): string {
 export function OpportunityDetailClient({ oppId }: { oppId: string }) {
   const t = useTranslations("crm");
   const locale = useLocale();
-  const [opp,     setOpp]     = useState<(CrmOpportunity & { account: CrmAccount | null }) | null>(null);
-  const [loading, setLoading] = useState(true);
+  type OpportunityRecord = CrmOpportunity & { account: CrmAccount | null };
 
-  useEffect(() => {
-    fetch(`/api/crm/opportunities/${oppId}`)
-      .then(r => r.json())
-      .then(d => setOpp(d.opportunity ?? null))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [oppId]);
+  const oppState = useResource<OpportunityRecord | null>(
+    (signal) => requestJson(
+      `/api/crm/opportunities/${oppId}`,
+      (body) => (body as { opportunity?: OpportunityRecord | null }).opportunity,
+      { signal },
+    ),
+    [oppId],
+  );
 
   const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
 
-  if (loading) return (
-    <div className="h-64 rounded-xl border border-line bg-surface animate-pulse">
+  if (oppState.status === "LOADING") return (
+    <div data-async-state="loading" className="h-64 rounded-xl border border-line bg-surface animate-pulse">
       <span className="sr-only" role="status">{t("common.loading")}</span>
     </div>
   );
-  if (!opp) return <div className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">{t("oppDetail.notFound")}</div>;
+
+  if (oppState.status === "EMPTY" || oppState.failure === "NOT_FOUND") {
+    return <div data-async-state="not-found" className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">{t("oppDetail.notFound")}</div>;
+  }
+
+  if (oppState.status === "ERROR" && oppState.failure) {
+    return (
+      <div className="rounded-xl border border-line bg-surface">
+        <ResourceFailureNotice code={oppState.failure} onRetry={oppState.retry} />
+      </div>
+    );
+  }
+
+  const opp = oppState.data;
+  if (!opp) return null;
 
   const rows: [string, React.ReactNode][] = [
     [t("common.probability"),     <span key="p" dir="ltr">{`${opp.probability}%`}</span>],

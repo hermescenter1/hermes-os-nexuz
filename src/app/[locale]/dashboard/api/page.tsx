@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }        from "@/components/PageShell";
+import { AppShell }         from "@/components/app-shell";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { ApiKeysDashboard } from "@/components/api/ApiKeysDashboard";
 import { PageHeader }       from "@/components/ui/PageHeader";
@@ -26,7 +26,7 @@ export default async function ApiPlatformPage({
   // API keys are credentials: never rely on navigation hiding alone.
   return (
     <RequireCapability capability="api_admin">
-      <PageShell>
+      <AppShell>
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <PageHeader
             eyebrow={t("eyebrow")}
@@ -36,7 +36,7 @@ export default async function ApiPlatformPage({
           />
           <ApiKeysDashboard />
         </div>
-      </PageShell>
+      </AppShell>
     </RequireCapability>
   );
 }

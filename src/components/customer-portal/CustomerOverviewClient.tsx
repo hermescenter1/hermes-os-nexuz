@@ -1,10 +1,16 @@
 "use client";
 
+// PHASE 107 STAGE 6-A — the portal's landing screen no longer greets a failed
+// request with "No Account Found". `noAccount` stays the API's own signal and
+// keeps its wording; every other outcome now says what actually happened.
+
 import { useLocale } from "next-intl";
-import { useEffect, useState } from "react";
 import { Link }                from "@/i18n/navigation";
 import type { CustomerOverview } from "@/lib/customer-portal/types";
 import { formatDate, formatNumber } from "@/lib/i18n/format";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { useResource } from "@/lib/client/use-resource";
+import { requestJson } from "@/lib/client/resource-request";
 
 function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -18,32 +24,62 @@ function KpiCard({ label, value, sub }: { label: string; value: string | number;
 
 export function CustomerOverviewClient() {
   const locale = useLocale();
-  const [data, setData]       = useState<CustomerOverview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [noAccount, setNoAccount] = useState(false);
+  const overviewState = useResource<CustomerOverview | null>(
+    (signal) => requestJson(
+      "/api/customer/overview",
+      (body) => {
+        if (!body || typeof body !== "object") return undefined;
+        const d = body as { overview?: CustomerOverview | null; noAccount?: boolean };
 
-  useEffect(() => {
-    fetch("/api/customer/overview")
-      .then((r) => r.json())
-      .then((d: { overview?: CustomerOverview | null; noAccount?: boolean }) => {
-        if (d.noAccount) { setNoAccount(true); return; }
-        setData(d.overview ?? null);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+        /*
+         * PHASE 107 STAGE 6-A.3 — the PRESENCE CHECK COMES FIRST.
+         *
+         * `if (d.noAccount) return null` ran before the envelope was verified,
+         * so a malformed `200 {"noAccount": true}` short-circuited to `null` and
+         * the reader was told they have no portal account — a statement about
+         * their account derived from a body that never described it.
+         *
+         * The route (src/app/api/customer/overview/route.ts) has exactly two
+         * success shapes and BOTH carry `overview`:
+         *     { overview: null, noAccount: true }
+         *     { overview }
+         * so its absence is a broken contract in every shape.
+         *
+         * Found by the order-sensitive selector audit, which reads statements in
+         * sequence; the previous text-matching version certified this as safe
+         * because a presence check appeared *somewhere* in the function.
+         */
+        if (d.overview === undefined) return undefined;
 
-  if (loading) {
+        if (d.noAccount) return null;
+        return d.overview;
+      },
+      { signal },
+    ),
+    [],
+  );
+
+  if (overviewState.status === "LOADING") {
     return (
       <div className="space-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-xl border border-line bg-surface animate-pulse" />
+          <div key={i} data-async-state="loading" className="h-24 rounded-xl border border-line bg-surface animate-pulse" />
         ))}
       </div>
     );
   }
 
-  if (noAccount || !data?.account) {
+  if (overviewState.status === "ERROR" && overviewState.failure) {
+    return (
+      <div className="rounded-2xl border border-line bg-surface">
+        <ResourceFailureNotice code={overviewState.failure} onRetry={overviewState.retry} />
+      </div>
+    );
+  }
+
+  const data = overviewState.data;
+
+  if (!data?.account) {
     return (
       <div className="rounded-2xl border border-line bg-surface px-8 py-16 text-center space-y-4">
         <p className="font-mono text-xs uppercase tracking-widest text-muted">Customer Portal</p>

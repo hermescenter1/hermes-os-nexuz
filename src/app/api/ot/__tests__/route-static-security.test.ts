@@ -173,7 +173,7 @@ describe("94B4.1 — the gateway route authenticates a MACHINE, not a person", (
 
   it("requires no session, no membership and no human permission", () => {
     for (const forbidden of [
-      /withOtRoute/, /requireOrgContext/, /requireOrgActor/, /requirePermission/,
+      /withOtRoute/, /requireOrgContext/, /resolveOrgContext/, /requireOrgActor/, /requirePermission/,
       /manage_ot_gateway/, /getCurrentUser/, /getAuthRole/, /buildOtServiceContext/,
       /cookies\(/, /permission:\s*"/,
     ]) {
@@ -284,8 +284,12 @@ describe("94B4 — the shared kit carries the guarantees", () => {
     // in a different order and would make the comparison meaningless.
     const fn = kit.slice(kit.indexOf("export async function withOtRoute"));
     const at = (needle: string) => fn.indexOf(needle);
-    expect(at("requireOrgContext(req)")).toBeGreaterThan(-1);
-    expect(at("requireOrgContext(req)")).toBeLessThan(at("requireOrgActor(req"));
+    // PHASE 107 STAGE 6-A — the resolver is now `resolveOrgContext`, which
+    // reports WHY the context is missing. The ordering rule this gate exists to
+    // protect is unchanged: identity is established before membership, which is
+    // established before permission.
+    expect(at("resolveOrgContext(req)")).toBeGreaterThan(-1);
+    expect(at("resolveOrgContext(req)")).toBeLessThan(at("requireOrgActor(req"));
     expect(at("requireOrgActor(req")).toBeLessThan(at("can(actor.ctx.role"));
     // Rate limiting AFTER authentication, so an anonymous flood cannot consume
     // a real user's budget.

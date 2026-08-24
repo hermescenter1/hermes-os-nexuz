@@ -1,57 +1,148 @@
 "use client";
 
+// PHASE 107 STAGE 6-A — two invisible failures closed here.
+//   1. The load fed an error body into the form, so a signed-out user was told
+//      "No Account Found" instead of being asked to sign in.
+//   2. The save checked `r.ok` but did nothing when it was false, and its catch
+//      was empty. A rejected save looked exactly like a successful one, except
+//      the confirmation never appeared — the worst possible outcome for a write.
+// The PATCH body, the endpoint and the default preferences are unchanged.
+
 import { useEffect, useState } from "react";
 import { Link }                from "@/i18n/navigation";
 import type { CustomerPortalPreference } from "@/lib/customer-portal/types";
+import { ResourceFailureNotice, useResourceFailureCopy } from "@/components/ui/ResourceFailureNotice";
+import { useResource } from "@/lib/client/use-resource";
+import { requestJson, ResourceRequestError, type ResourceFailureCode } from "@/lib/client/resource-request";
+
+/** Used when the account exists but has never stored a preference row. */
+const DEFAULT_PREFERENCE = {
+  id: "", accountId: "", userId: null,
+  language: "en", timezone: "Asia/Tehran",
+  emailNotifications: true, ticketUpdates: true,
+  projectUpdates: true, documentAlerts: true, marketingEmails: false,
+} as CustomerPortalPreference;
+
+/** A short, localized line beside the save button. */
+function SaveFailure({ code }: { code: ResourceFailureCode }) {
+  const { title } = useResourceFailureCopy(code);
+  return <p role="alert" className="text-sm text-status-danger">{title}</p>;
+}
 
 export function CustomerSettingsClient() {
-  const [prefs, setPrefs]         = useState<CustomerPortalPreference | null>(null);
-  const [loading, setLoading]     = useState(true);
-  const [saving, setSaving]       = useState(false);
-  const [saved, setSaved]         = useState(false);
-  const [noAccount, setNoAccount] = useState(false);
+  const [saving, setSaving]             = useState(false);
+  const [saved, setSaved]               = useState(false);
+  const [saveFailure, setSaveFailure]   = useState<ResourceFailureCode | null>(null);
 
-  useEffect(() => {
-    fetch("/api/customer/settings")
-      .then((r) => r.json())
-      .then((d: { preference?: CustomerPortalPreference | null; noAccount?: boolean }) => {
-        if (d.noAccount) { setNoAccount(true); return; }
-        setPrefs(d.preference ?? {
-          id: "", accountId: "", userId: null,
-          language: "en", timezone: "Asia/Tehran",
-          emailNotifications: true, ticketUpdates: true,
-          projectUpdates: true, documentAlerts: true, marketingEmails: false,
-        } as CustomerPortalPreference);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const prefsState = useResource<CustomerPortalPreference | null>(
+    (signal) => requestJson(
+      "/api/customer/settings",
+      (body) => {
+        /*
+         * PHASE 107 STAGE 6-A.2 — ABSENT is not the same as NULL.
+         *
+         * `d.preference ?? DEFAULT_PREFERENCE` turned a 2xx body that mentions
+         * no preference at all into a full set of default settings. The reader
+         * then saw a populated, editable form built from nothing the server
+         * sent, and saving it would have written those invented values back.
+         *
+         * The route's contract (src/app/api/customer/settings/route.ts) has
+         * exactly two success shapes, and both are honoured here:
+         *   { preference: null, noAccount: true }  — no portal account
+         *   { preference }                         — may itself be null
+         * Anything else is a broken contract, and `undefined` makes
+         * `requestJson` raise FAILED rather than invent data.
+         */
+        if (!body || typeof body !== "object") return undefined;
+        const d = body as { preference?: CustomerPortalPreference | null; noAccount?: boolean };
+
+        /*
+         * PHASE 107 STAGE 6-A.3 — the PRESENCE CHECK COMES FIRST.
+         *
+         * This previously accepted `d.noAccount` before proving that the
+         * documented `preference` key existed at all, so a malformed
+         * `200 {"noAccount": true}` short-circuited to `null` and the reader was
+         * shown a confident "No Account Found" — a statement about their
+         * account derived from a body that never described it.
+         *
+         * Both documented success envelopes carry `preference`:
+         *     { preference: null, noAccount: true }   no portal account
+         *     { preference }                          may itself be null
+         * so its absence is a broken contract in EVERY shape, and checking it
+         * first is what makes that true for the no-account path too.
+         */
+        if (!("preference" in d)) return undefined;
+
+        // The API's own "this org has no portal account" signal.
+        if (d.noAccount) return null;
+
+        // Present but null IS legitimate: the account exists with no saved row
+        // yet, and seeding the form with defaults is the intended behaviour.
+        return d.preference ?? DEFAULT_PREFERENCE;
+      },
+      { signal },
+    ),
+    [],
+  );
+
+  // The form is editable, so the loaded record seeds a local draft rather than
+  // being rendered directly.
+  const [prefs, setPrefs] = useState<CustomerPortalPreference | null>(null);
+  useEffect(() => { setPrefs(prefsState.data); }, [prefsState.data]);
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!prefs) return;
     setSaving(true);
+    setSaveFailure(null);
     try {
-      const r = await fetch("/api/customer/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          language:           prefs.language,
-          timezone:           prefs.timezone,
-          emailNotifications: prefs.emailNotifications,
-          ticketUpdates:      prefs.ticketUpdates,
-          projectUpdates:     prefs.projectUpdates,
-          documentAlerts:     prefs.documentAlerts,
-          marketingEmails:    prefs.marketingEmails,
-        }),
-      });
-      if (r.ok) {
-        const d = await r.json() as { preference?: CustomerPortalPreference };
-        if (d.preference) setPrefs(d.preference);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      }
-    } catch { /* ignore */ } finally { setSaving(false); }
+      const updated = await requestJson<CustomerPortalPreference>(
+        "/api/customer/settings",
+        /*
+         * PHASE 107 STAGE 6-A.2 — a save is confirmed by what came BACK.
+         *
+         * This read `.preference ?? null`, and the caller then ran
+         * `if (updated) setPrefs(updated); setSaved(true);` unconditionally. A
+         * 2xx carrying no preference — a proxy's empty 200, a truncated body,
+         * a route regression — therefore showed "Saved" for a write nobody
+         * could confirm had happened, which is the one lie a settings form
+         * must never tell.
+         *
+         * The route returns the upserted record on every success, so requiring
+         * a real object here matches the contract exactly. `undefined` raises
+         * FAILED, and the existing `SaveFailure` line renders in place.
+         */
+        (body) => {
+          if (!body || typeof body !== "object") return undefined;
+          const d = body as { preference?: CustomerPortalPreference | null };
+          if (!d.preference || typeof d.preference !== "object") return undefined;
+          return d.preference;
+        },
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            language:           prefs.language,
+            timezone:           prefs.timezone,
+            emailNotifications: prefs.emailNotifications,
+            ticketUpdates:      prefs.ticketUpdates,
+            projectUpdates:     prefs.projectUpdates,
+            documentAlerts:     prefs.documentAlerts,
+            marketingEmails:    prefs.marketingEmails,
+          }),
+        },
+      );
+      // `updated` is now guaranteed non-null by the selector above; a response
+      // that failed to carry the saved record never reaches this line.
+      setPrefs(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      // A save that did not happen must never look like one that did.
+      setSaveFailure(error instanceof ResourceRequestError ? error.code : "FAILED");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function Toggle({ label, field }: { label: string; field: keyof CustomerPortalPreference }) {
@@ -74,9 +165,17 @@ export function CustomerSettingsClient() {
     );
   }
 
-  if (loading) return <div className="h-64 rounded-xl border border-line bg-surface animate-pulse" />;
+  if (prefsState.status === "LOADING") return <div data-async-state="loading" className="h-64 rounded-xl border border-line bg-surface animate-pulse" />;
 
-  if (noAccount || !prefs) {
+  if (prefsState.status === "ERROR" && prefsState.failure) {
+    return (
+      <div className="rounded-xl border border-line bg-surface">
+        <ResourceFailureNotice code={prefsState.failure} onRetry={prefsState.retry} />
+      </div>
+    );
+  }
+
+  if (!prefs) {
     return (
       <div className="rounded-xl border border-line bg-surface px-8 py-16 text-center">
         <h2 className="text-lg font-bold text-ink">No Account Found</h2>
@@ -151,6 +250,7 @@ export function CustomerSettingsClient() {
           {saving ? "Saving…" : "Save Settings"}
         </button>
         {saved && <p className="text-sm text-signal">Settings saved.</p>}
+        {saveFailure && <SaveFailure code={saveFailure} />}
       </div>
     </form>
   );

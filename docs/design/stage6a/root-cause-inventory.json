@@ -1,0 +1,750 @@
+[
+  {
+    "route": "/crm/customer-success",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE",
+      "STUCK_LOADING"
+    ],
+    "cells": 9,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src/components/crm/CustomerSuccessClient.tsx",
+    "sites": [
+      {
+        "line": 41,
+        "endpoint": "/api/crm/customer-success",
+        "snippet": "fetch(\"/api/crm/customer-success\")",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/customer/account",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "en"
+    ],
+    "owner": "src/components/customer-portal/CustomerAccountClient.tsx",
+    "sites": [
+      {
+        "line": 16,
+        "endpoint": "/api/customer/account",
+        "snippet": "fetch(\"/api/customer/account\")",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/customer/settings",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 6,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src/components/customer-portal/CustomerSettingsClient.tsx",
+    "sites": [
+      {
+        "line": 15,
+        "endpoint": "/api/customer/settings",
+        "snippet": "fetch(\"/api/customer/settings\")",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      },
+      {
+        "line": 35,
+        "endpoint": "/api/customer/settings",
+        "snippet": "const r = await fetch(\"/api/customer/settings\", {",
+        "checksOk": true,
+        "parsesUnconditionally": false,
+        "hasCatch": false,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/customer/training",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 6,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src/components/customer-portal/CustomerTrainingClient.tsx",
+    "sites": [
+      {
+        "line": 51,
+        "endpoint": "/api/customer/training",
+        "snippet": "fetch(\"/api/customer/training\")",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/dashboard/billing",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 6,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src/components/billing/BillingDashboard.tsx",
+    "sites": [
+      {
+        "line": 256,
+        "endpoint": "/api/billing/plans",
+        "snippet": "fetch(\"/api/billing/plans\"),",
+        "checksOk": true,
+        "parsesUnconditionally": false,
+        "hasCatch": false,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      },
+      {
+        "line": 257,
+        "endpoint": "/api/billing/subscription",
+        "snippet": "fetch(\"/api/billing/subscription\"),",
+        "checksOk": true,
+        "parsesUnconditionally": false,
+        "hasCatch": false,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      },
+      {
+        "line": 258,
+        "endpoint": "/api/billing/invoices",
+        "snippet": "fetch(\"/api/billing/invoices\"),",
+        "checksOk": true,
+        "parsesUnconditionally": false,
+        "hasCatch": false,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      },
+      {
+        "line": 259,
+        "endpoint": "/api/billing/usage",
+        "snippet": "fetch(\"/api/billing/usage\"),",
+        "checksOk": true,
+        "parsesUnconditionally": false,
+        "hasCatch": false,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      },
+      {
+        "line": 294,
+        "endpoint": "/api/billing/subscription",
+        "snippet": "const res = await fetch(\"/api/billing/subscription\", { method, headers: { \"Content-Type\": \"application/json\" }, body });",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": false,
+        "hasFinally": true,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      },
+      {
+        "line": 311,
+        "endpoint": "/api/billing/subscription",
+        "snippet": "const res = await fetch(\"/api/billing/subscription\", { method: \"DELETE\" });",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": false,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      },
+      {
+        "line": 320,
+        "endpoint": "/api/billing/subscription",
+        "snippet": "const res = await fetch(\"/api/billing/subscription\", { method: \"PUT\" });",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": false,
+        "hasFinally": true,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/dashboard/organization/departments",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "en"
+    ],
+    "owner": "src/components/organization/DepartmentsPanel.tsx",
+    "sites": [
+      {
+        "line": 24,
+        "endpoint": "/api/organizations/${orgId}/departments",
+        "snippet": "const res = await fetch(`/api/organizations/${orgId}/departments`);",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": false,
+        "hasFinally": true,
+        "setsLoadingFalse": true,
+        "setsError": true,
+        "guardsAbort": false
+      },
+      {
+        "line": 38,
+        "endpoint": "/api/organizations/${orgId}/departments",
+        "snippet": "const res = await fetch(`/api/organizations/${orgId}/departments`, {",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": false,
+        "hasFinally": true,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE",
+      "STUCK_LOADING"
+    ],
+    "cells": 8,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src\\app\\[locale]\\dashboard\\ot\\devices\\[id]\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/dashboard/ot/devices/[id]/edit",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 4,
+    "locales": [
+      "en",
+      "fa"
+    ],
+    "owner": "src\\app\\[locale]\\dashboard\\ot\\devices\\[id]\\edit\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/dashboard/ot/gateways",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 6,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src\\app\\[locale]\\dashboard\\ot\\gateways\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE",
+      "STUCK_LOADING"
+    ],
+    "cells": 5,
+    "locales": [
+      "en",
+      "fa"
+    ],
+    "owner": "src\\app\\[locale]\\dashboard\\ot\\gateways\\[id]\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/dashboard/ot/gateways/[id]/edit",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 4,
+    "locales": [
+      "en",
+      "fa"
+    ],
+    "owner": "src\\app\\[locale]\\dashboard\\ot\\gateways\\[id]\\edit\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/admin/leads",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "de"
+    ],
+    "owner": "src/components/admin/AccessRequestActions.tsx",
+    "sites": [
+      {
+        "line": 32,
+        "endpoint": "/api/admin/access-requests/${leadId}/${action}",
+        "snippet": "const res = await fetch(`/api/admin/access-requests/${leadId}/${action}`, {",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/admin/leads",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "de"
+    ],
+    "owner": "src/components/admin/SalesLeadActions.tsx",
+    "sites": [
+      {
+        "line": 47,
+        "endpoint": "/api/admin/sales/leads/${leadId}",
+        "snippet": "const res = await fetch(`/api/admin/sales/leads/${leadId}`, {",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/articles/following",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "de"
+    ],
+    "owner": "src\\app\\[locale]\\articles\\following\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/assets/[id]",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "de"
+    ],
+    "owner": "src\\app\\[locale]\\assets\\[id]\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/crm/opportunities",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE",
+      "STUCK_LOADING"
+    ],
+    "cells": 8,
+    "locales": [
+      "de",
+      "fa",
+      "en"
+    ],
+    "owner": "src/components/crm/OpportunityPipelineClient.tsx",
+    "sites": [
+      {
+        "line": 39,
+        "endpoint": "/api/crm/opportunities",
+        "snippet": "fetch(\"/api/crm/opportunities\")",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/customer",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 5,
+    "locales": [
+      "de",
+      "fa",
+      "en"
+    ],
+    "owner": "src/components/customer-portal/CustomerOverviewClient.tsx",
+    "sites": [
+      {
+        "line": 26,
+        "endpoint": "/api/customer/overview",
+        "snippet": "fetch(\"/api/customer/overview\")",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/dashboard/organization",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 5,
+    "locales": [
+      "de",
+      "fa",
+      "en"
+    ],
+    "owner": "src/components/organization/OrgOverview.tsx",
+    "sites": [
+      {
+        "line": 25,
+        "endpoint": "/api/organizations/${orgId}",
+        "snippet": "const res = await fetch(`/api/organizations/${orgId}`);",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": false,
+        "hasFinally": true,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      },
+      {
+        "line": 44,
+        "endpoint": "/api/organizations/${orgId}",
+        "snippet": "const res = await fetch(`/api/organizations/${orgId}`, {",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": true,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/cmms/settings",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "fa"
+    ],
+    "owner": "src\\app\\[locale]\\cmms\\settings\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/crm",
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "cells": 2,
+    "locales": [
+      "en",
+      "fa"
+    ],
+    "owner": "src\\app\\[locale]\\crm\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/crm/accounts",
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "cells": 3,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src/components/crm/AccountListClient.tsx",
+    "sites": [
+      {
+        "line": 28,
+        "endpoint": "/api/crm/accounts",
+        "snippet": "fetch(\"/api/crm/accounts\")",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/crm/accounts/[id]",
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "cells": 3,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src/components/crm/AccountDetailClient.tsx",
+    "sites": [
+      {
+        "line": 45,
+        "endpoint": "/api/crm/accounts/${accountId}",
+        "snippet": "fetch(`/api/crm/accounts/${accountId}`)",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/crm/leads/[leadId]",
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "cells": 3,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src/components/crm/LeadDetailClient.tsx",
+    "sites": [
+      {
+        "line": 27,
+        "endpoint": "/api/crm/leads/${leadId}",
+        "snippet": "fetch(`/api/crm/leads/${leadId}`)",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/crm/opportunities/[id]",
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "cells": 3,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src/components/crm/OpportunityDetailClient.tsx",
+    "sites": [
+      {
+        "line": 34,
+        "endpoint": "/api/crm/opportunities/${oppId}",
+        "snippet": "fetch(`/api/crm/opportunities/${oppId}`)",
+        "checksOk": false,
+        "parsesUnconditionally": true,
+        "hasCatch": true,
+        "hasFinally": false,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/dashboard/api",
+    "kinds": [
+      "STUCK_LOADING"
+    ],
+    "cells": 3,
+    "locales": [
+      "en",
+      "de",
+      "fa"
+    ],
+    "owner": "src/components/api/ApiKeysDashboard.tsx",
+    "sites": [
+      {
+        "line": 120,
+        "endpoint": "/api/platform/keys",
+        "snippet": "const res = await fetch(\"/api/platform/keys\", {",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": false,
+        "hasFinally": true,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      },
+      {
+        "line": 249,
+        "endpoint": "/api/platform/keys",
+        "snippet": "fetch(\"/api/platform/keys\"),",
+        "checksOk": true,
+        "parsesUnconditionally": false,
+        "hasCatch": false,
+        "hasFinally": true,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      },
+      {
+        "line": 250,
+        "endpoint": "/api/platform/rate-limits",
+        "snippet": "fetch(\"/api/platform/rate-limits\"),",
+        "checksOk": true,
+        "parsesUnconditionally": false,
+        "hasCatch": false,
+        "hasFinally": true,
+        "setsLoadingFalse": true,
+        "setsError": false,
+        "guardsAbort": false
+      },
+      {
+        "line": 269,
+        "endpoint": "/api/platform/keys/${id}",
+        "snippet": "const res = await fetch(`/api/platform/keys/${id}`, { method: \"DELETE\" });",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": false,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      },
+      {
+        "line": 280,
+        "endpoint": "/api/platform/keys/${id}/rotate",
+        "snippet": "const res = await fetch(`/api/platform/keys/${id}/rotate`, { method: \"POST\" });",
+        "checksOk": true,
+        "parsesUnconditionally": true,
+        "hasCatch": false,
+        "hasFinally": false,
+        "setsLoadingFalse": false,
+        "setsError": true,
+        "guardsAbort": false
+      }
+    ]
+  },
+  {
+    "route": "/documents/explorer",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "en"
+    ],
+    "owner": "src\\app\\[locale]\\documents\\explorer\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/dashboard/ot/gateways/new",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "de"
+    ],
+    "owner": "src\\app\\[locale]\\dashboard\\ot\\gateways\\new\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/automation/executions/[id]",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "fa"
+    ],
+    "owner": "src\\app\\[locale]\\automation\\executions\\[id]\\page.tsx",
+    "sites": []
+  },
+  {
+    "route": "/automation/settings",
+    "kinds": [
+      "UNHANDLED_FETCH_FAILURE"
+    ],
+    "cells": 1,
+    "locales": [
+      "fa"
+    ],
+    "owner": "src\\app\\[locale]\\automation\\settings\\page.tsx",
+    "sites": []
+  }
+]

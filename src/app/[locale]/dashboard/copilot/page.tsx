@@ -43,6 +43,8 @@ const stateDot: Record<string, string> = {
 
 export default function CopilotPage() {
   const t      = useTranslations("copilot");
+  // PHASE 107 — the System Status rows used to print the raw component key.
+  const tPlatform = useTranslations("dashboard.platformComponents");
   const td     = useTranslations("brain.domains");
   const locale = useLocale();
   const [data, setData] = useState<BrainResponse | null>(null);
@@ -214,7 +216,7 @@ export default function CopilotPage() {
               {PLATFORM_COMPONENTS.map((c) => (
                 <li key={c.key} className="flex items-center justify-between gap-2">
                   <span className="font-body text-sm text-ink">
-                    {c.key.replace(/([A-Z])/g, " $1").trim()}
+                    {tPlatform(c.key)}
                   </span>
                   <span className={`flex items-center gap-1.5 font-body text-xs ${stateColor[c.state]}`}>
                     <span className={`inline-block h-1.5 w-1.5 rounded-full ${stateDot[c.state]}`} />

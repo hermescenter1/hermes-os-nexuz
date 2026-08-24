@@ -1,0 +1,4007 @@
+[
+  {
+    "file": "src/app/api/billing/checkout/route.ts",
+    "route": "/api/billing/checkout",
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "result",
+        "line": 30,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/billing/invoices/route.ts",
+    "route": "/api/billing/invoices",
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "result",
+        "line": 17,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/billing/overrides/route.ts",
+    "route": "/api/billing/overrides",
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "result",
+        "line": 22,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "result",
+        "line": 45,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/billing/overrides/[id]/route.ts",
+    "route": "/api/billing/overrides/[id]",
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "result",
+        "line": 21,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/billing/payments/route.ts",
+    "route": "/api/billing/payments",
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "result",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "result",
+        "line": 66,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/billing/payments/[id]/refund/route.ts",
+    "route": "/api/billing/payments/[id]/refund",
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "result",
+        "line": 22,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/billing/portal/route.ts",
+    "route": "/api/billing/portal",
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "result",
+        "line": 31,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/billing/subscription/route.ts",
+    "route": "/api/billing/subscription",
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 5,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "result",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "result",
+        "line": 49,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "result",
+        "line": 86,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "result",
+        "line": 113,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "result",
+        "line": 133,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/billing/usage/route.ts",
+    "route": "/api/billing/usage",
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "result",
+        "line": 19,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "result",
+        "line": 44,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/copilot/conversations/route.ts",
+    "route": "/api/copilot/conversations",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 10,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 14,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 25,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/copilot/conversations/[id]/route.ts",
+    "route": "/api/copilot/conversations/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 13,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 17,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 33,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/copilot/query/route.ts",
+    "route": "/api/copilot/query",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 11,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/digital-twin/graph/route.ts",
+    "route": "/api/digital-twin/graph",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 10,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 14,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/digital-twin/layout/route.ts",
+    "route": "/api/digital-twin/layout",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 10,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 14,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 25,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/digital-twin/nodes/route.ts",
+    "route": "/api/digital-twin/nodes",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 13,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 17,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 30,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 34,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/digital-twin/nodes/[id]/route.ts",
+    "route": "/api/digital-twin/nodes/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 19,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 34,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 38,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/digital-twin/relations/route.ts",
+    "route": "/api/digital-twin/relations",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 14,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 18,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 32,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 36,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/digital-twin/relations/[id]/route.ts",
+    "route": "/api/digital-twin/relations/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 13,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 17,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 33,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/digital-twin/tags/route.ts",
+    "route": "/api/digital-twin/tags",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 10,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 14,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 27,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 31,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/digital-twin/tags/[id]/route.ts",
+    "route": "/api/digital-twin/tags/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 13,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 17,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 33,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/alerts/route.ts",
+    "route": "/api/industrial/alerts",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 10,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/assets/analytics/route.ts",
+    "route": "/api/industrial/assets/analytics",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 10,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 16,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/assets/route.ts",
+    "route": "/api/industrial/assets",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 5,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 14,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 37,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 48,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 69,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/alerts/route.ts",
+    "route": "/api/industrial/assets/[id]/alerts",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 13,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 18,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/alerts/[alertId]/route.ts",
+    "route": "/api/industrial/assets/[id]/alerts/[alertId]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 13,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 23,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/intelligence/route.ts",
+    "route": "/api/industrial/assets/[id]/intelligence",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 3,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 30,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/maintenance/route.ts",
+    "route": "/api/industrial/assets/[id]/maintenance",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 18,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 23,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 50,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 59,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/route.ts",
+    "route": "/api/industrial/assets/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 6,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 16,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 21,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 32,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 43,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 52,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 60,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/trends/route.ts",
+    "route": "/api/industrial/assets/[id]/trends",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/automation/run/route.ts",
+    "route": "/api/industrial/automation/run",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 10,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 19,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/connectors/route.ts",
+    "route": "/api/industrial/connectors",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 5,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 21,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 36,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 45,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 65,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/connectors/[id]/route.ts",
+    "route": "/api/industrial/connectors/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 6,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 30,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 41,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 46,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 57,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/gateways/route.ts",
+    "route": "/api/industrial/gateways",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 5,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 14,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 35,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 44,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 65,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/gateways/[id]/heartbeat/route.ts",
+    "route": "/api/industrial/gateways/[id]/heartbeat",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 26,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/gateways/[id]/route.ts",
+    "route": "/api/industrial/gateways/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 9,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 30,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 41,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 46,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 57,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 89,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 94,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 105,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/sites/route.ts",
+    "route": "/api/industrial/sites",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 14,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 34,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 43,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/sites/[id]/route.ts",
+    "route": "/api/industrial/sites/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 6,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 26,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 39,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 44,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "siteAuth",
+        "line": 50,
+        "statusSource": "deliberate-404",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial/telemetry/route.ts",
+    "route": "/api/industrial/telemetry",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 3,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 30,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 93,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 103,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial-graph/assets/[assetId]/route.ts",
+    "route": "/api/industrial-graph/assets/[assetId]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 32,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 36,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial-graph/failures/[failureModeId]/route.ts",
+    "route": "/api/industrial-graph/failures/[failureModeId]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 33,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial-graph/path/route.ts",
+    "route": "/api/industrial-graph/path",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 28,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 32,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial-graph/procedures/[procedureId]/route.ts",
+    "route": "/api/industrial-graph/procedures/[procedureId]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 33,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial-graph/rebuild/route.ts",
+    "route": "/api/industrial-graph/rebuild",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 25,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial-graph/root-causes/[rootCauseId]/route.ts",
+    "route": "/api/industrial-graph/root-causes/[rootCauseId]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 33,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/industrial-graph/route.ts",
+    "route": "/api/industrial-graph",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 26,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 30,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/knowledge/articles/route.ts",
+    "route": "/api/knowledge/articles",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 19,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 42,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 46,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/knowledge/articles/[id]/route.ts",
+    "route": "/api/knowledge/articles/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 17,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 21,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 36,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 40,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/knowledge/cases/route.ts",
+    "route": "/api/knowledge/cases",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 14,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 18,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 42,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 46,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/knowledge/cases/[id]/route.ts",
+    "route": "/api/knowledge/cases/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 16,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 37,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 41,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/knowledge/failures/route.ts",
+    "route": "/api/knowledge/failures",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 16,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 50,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 54,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/knowledge/failures/[id]/route.ts",
+    "route": "/api/knowledge/failures/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 17,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 21,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 44,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 48,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/knowledge/procedures/route.ts",
+    "route": "/api/knowledge/procedures",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 16,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 50,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 54,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/knowledge/procedures/[id]/route.ts",
+    "route": "/api/knowledge/procedures/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 16,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 35,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 39,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/knowledge/search/route.ts",
+    "route": "/api/knowledge/search",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 19,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/media/assets/route.ts",
+    "route": "/api/media/assets",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 183,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 186,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 369,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 379,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/poster/upload/route.ts",
+    "route": "/api/media/assets/[id]/poster/upload",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 200,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "actor",
+        "line": 211,
+        "statusSource": "deliberate-404",
+        "codeSource": "absent",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": [
+          "not_found"
+        ]
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/route.ts",
+    "route": "/api/media/assets/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 199,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 203,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/subtitles/route.ts",
+    "route": "/api/media/assets/[id]/subtitles",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 340,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "actor",
+        "line": 351,
+        "statusSource": "deliberate-404",
+        "codeSource": "absent",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": [
+          "not_found"
+        ]
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/transitions/route.ts",
+    "route": "/api/media/assets/[id]/transitions",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 82,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 90,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/upload/route.ts",
+    "route": "/api/media/assets/[id]/upload",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 290,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "actor",
+        "line": 301,
+        "statusSource": "deliberate-404",
+        "codeSource": "absent",
+        "exception": false,
+        "statusLiterals": [
+          404
+        ],
+        "codeLiterals": [
+          "not_found"
+        ]
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/media/me/favourites/route.ts",
+    "route": "/api/media/me/favourites",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 95,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 108,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/media/me/progress/route.ts",
+    "route": "/api/media/me/progress",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 114,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 128,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/multi-site/benchmarks/route.ts",
+    "route": "/api/multi-site/benchmarks",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 35,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 39,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 91,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 95,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/multi-site/failure-patterns/route.ts",
+    "route": "/api/multi-site/failure-patterns",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 33,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/multi-site/knowledge-coverage/route.ts",
+    "route": "/api/multi-site/knowledge-coverage",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 33,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/multi-site/kpis/route.ts",
+    "route": "/api/multi-site/kpis",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 28,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 32,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/multi-site/risk/route.ts",
+    "route": "/api/multi-site/risk",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 29,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 33,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/multi-site/summary/route.ts",
+    "route": "/api/multi-site/summary",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 27,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 31,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/platform/keys/route.ts",
+    "route": "/api/platform/keys",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 18,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 34,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/platform/keys/[id]/rotate/route.ts",
+    "route": "/api/platform/keys/[id]/rotate",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 19,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/platform/keys/[id]/route.ts",
+    "route": "/api/platform/keys/[id]",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 19,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/platform/rate-limits/route.ts",
+    "route": "/api/platform/rate-limits",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/platform/usage/route.ts",
+    "route": "/api/platform/usage",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 1,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 15,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/predictive/baselines/route.ts",
+    "route": "/api/predictive/baselines",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 4,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 24,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 28,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "auth",
+        "line": 56,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 60,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/predictive/failure/route.ts",
+    "route": "/api/predictive/failure",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 24,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/predictive/recommendations/route.ts",
+    "route": "/api/predictive/recommendations",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 21,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 25,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/predictive/risk/route.ts",
+    "route": "/api/predictive/risk",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 24,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/app/api/predictive/rul/route.ts",
+    "route": "/api/predictive/rul",
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 20,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 24,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/lib/api/auth.ts",
+    "route": null,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 0,
+    "forwardsRefusalVerbatim": false,
+    "forwardsCode": false,
+    "forwardingExceptions": 0,
+    "sites": [],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/lib/billing/context.ts",
+    "route": null,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 0,
+    "forwardsRefusalVerbatim": false,
+    "forwardsCode": false,
+    "forwardingExceptions": 0,
+    "sites": [],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  },
+  {
+    "file": "src/lib/copilot/voice/guard.ts",
+    "route": null,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "reachable": [
+      "401",
+      "403",
+      "404",
+      "409",
+      "500"
+    ],
+    "refusalSites": 2,
+    "forwardsRefusalVerbatim": true,
+    "forwardsCode": true,
+    "forwardingExceptions": 0,
+    "sites": [
+      {
+        "guard": "auth",
+        "line": 142,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      },
+      {
+        "guard": "member",
+        "line": 189,
+        "statusSource": "forwarded",
+        "codeSource": "forwarded",
+        "exception": false,
+        "statusLiterals": [],
+        "codeLiterals": []
+      }
+    ],
+    "branchesOnStatus": false,
+    "redirectsOnRefusal": false,
+    "retriesOnRefusal": false,
+    "loadingOwner": "client"
+  }
+]

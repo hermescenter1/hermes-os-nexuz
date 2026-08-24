@@ -1,0 +1,52 @@
+{
+  "slug": "high-performance-hmi-design",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "scada-hmi",
+  "tags": ["hmi", "isa-101", "situational-awareness", "scada", "maintainability"],
+  "publishedAt": "2026-08-16T06:50:00.000Z",
+  "coverImage": {
+    "file": "journal/high-performance-hmi.jpg",
+    "url": null,
+    "concept": "A calm control-room console at low light — deliberately muted greys with only a couple of meaningful accents, the visual opposite of a rainbow mimic diagram.",
+    "prompt": "Photorealistic photograph of a modern control room console in low ambient light, several large displays showing muted grey abstract shapes with one or two subtle amber accents, no readable text, calm and uncluttered, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Control room console with muted low-contrast displays and few colour accents",
+      "fa": "کنسول اتاق کنترل با نمایشگرهای کم‌کنتراست و تعداد اندکی لهجهٔ رنگی",
+      "de": "Leitwartenkonsole mit kontrastarmen Anzeigen und wenigen Farbakzenten"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "OPERATIONS",
+    "linkedAssetType": "HMI",
+    "linkedTechnology": "HMI Design",
+    "linkedStandard": "ISA-101",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Designing High-Performance HMI Systems",
+      "subtitle": "Colour as a scarce resource, hierarchy as navigation, and why a realistic-looking graphic is usually the least informative one",
+      "excerpt": "A high-performance HMI is not a prettier mimic diagram. It is an interface engineered around what an operator must notice, decide and do — with colour rationed, deviation shown rather than value, and a display hierarchy that matches how operators actually work.",
+      "seoTitle": "Designing High-Performance HMI Systems for Operations",
+      "seoDescription": "Engineer HMI for operator performance: ration colour, show deviation not raw value, build a display hierarchy, design faceplates and trends, keep graphics maintainable."
+    },
+    "fa": {
+      "title": "طراحی سیستم‌های HMI با کارایی بالا",
+      "subtitle": "رنگ به‌عنوان منبعی کمیاب، سلسله‌مراتب به‌عنوان ناوبری، و چرا گرافیک واقع‌نما معمولاً کم‌اطلاع‌ترین گرافیک است",
+      "excerpt": "HMI با کارایی بالا یک مimic دیاگرام زیباتر نیست. واسطی است مهندسی‌شده حول آنچه اپراتور باید ببیند، تصمیم بگیرد و انجام دهد — با رنگِ جیره‌بندی‌شده، نمایش انحراف به‌جای مقدار، و سلسله‌مراتبی از نمایش‌ها که با شیوهٔ واقعی کار اپراتور بخواند.",
+      "seoTitle": "طراحی سیستم‌های HMI با کارایی بالا در صنعت",
+      "seoDescription": "مهندسی HMI برای کارایی اپراتور: جیره‌بندی رنگ، نمایش انحراف به‌جای مقدار خام، ساخت سلسله‌مراتب نمایش، طراحی فیس‌پلیت و ترند، و نگهداشت‌پذیری گرافیک."
+    },
+    "de": {
+      "title": "High-Performance-HMI-Systeme entwerfen",
+      "subtitle": "Farbe als knappe Ressource, Hierarchie als Navigation — und warum das realistisch wirkende Bild meist das uninformativste ist",
+      "excerpt": "Ein High-Performance-HMI ist kein hübscheres Fließbild. Es ist eine Oberfläche, die um das herum ausgelegt ist, was das Bedienpersonal bemerken, entscheiden und tun muss — mit rationierter Farbe, Abweichung statt Rohwert und einer Bildhierarchie, die zur realen Arbeitsweise passt.",
+      "seoTitle": "High-Performance-HMI-Systeme richtig entwerfen",
+      "seoDescription": "HMI auf Bedienleistung auslegen: Farbe rationieren, Abweichung statt Rohwert zeigen, Bildhierarchie aufbauen, Faceplates und Trends entwerfen, Grafiken wartbar halten."
+    }
+  }
+}

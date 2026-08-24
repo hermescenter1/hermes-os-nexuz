@@ -1,0 +1,52 @@
+{
+  "slug": "4-20-ma-current-loops-diagnostics-failure-modes",
+  "contentType": "TROUBLESHOOTING_REPORT",
+  "category": "instrumentation",
+  "tags": ["4-20ma", "signal-integrity", "diagnostics", "earthing", "commissioning"],
+  "publishedAt": "2026-08-15T09:00:00.000Z",
+  "coverImage": {
+    "file": "journal/4-20ma-loops.jpg",
+    "url": null,
+    "concept": "Close-up of a field junction box interior with terminal blocks and shielded instrument cable, a multimeter lead resting on a terminal, cool technical lighting.",
+    "prompt": "Photorealistic macro photograph of an industrial field junction box interior, grey terminal blocks with shielded instrument cable and drain wire, a test lead touching one terminal, cool blue-grey technical lighting, shallow depth of field, no readable text, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Interior of a field junction box with terminal blocks, shielded instrument cable and a test lead",
+      "fa": "نمای داخلی جعبه تقسیم فیلد با ترمینال‌ها، کابل شیلددار ابزار دقیق و پروب تست",
+      "de": "Innenansicht eines Feldverteilers mit Reihenklemmen, geschirmter Messleitung und einer Prüfspitze"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "INSTRUMENTATION",
+    "linkedAssetType": "TRANSMITTER",
+    "linkedTechnology": "4-20 mA",
+    "linkedFailureMode": "SIGNAL_DRIFT",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "4–20 mA Current Loops: Diagnostics and Failure Modes",
+      "subtitle": "Why the loop survived fifty years of newer technology, and how to read one with a meter and a method",
+      "excerpt": "The current loop is diagnosable by design: every fault leaves a measurable signature in the loop current. A systematic method for finding drift, offset, intermittents and earth-loop noise, and for the two failures the loop cannot reveal by itself.",
+      "seoTitle": "4–20 mA Current Loops: Diagnostics and Failure Modes",
+      "seoDescription": "Diagnose 4–20 mA loops systematically: loop budget, drift, offset, intermittents, earth-loop noise, and the two failure modes the loop current alone cannot reveal."
+    },
+    "fa": {
+      "title": "حلقه‌های جریان ۴ تا ۲۰ میلی‌آمپر: عیب‌یابی و حالت‌های خرابی",
+      "subtitle": "چرا این حلقه پنجاه سال در برابر فناوری‌های جدیدتر دوام آورد، و چگونه با یک مولتی‌متر و یک روش آن را بخوانیم",
+      "excerpt": "حلقهٔ جریان ذاتاً قابل عیب‌یابی طراحی شده است: هر خطا امضایی قابل اندازه‌گیری روی جریان حلقه می‌گذارد. روشی نظام‌مند برای یافتن دریفت، آفست، قطع‌ووصل متناوب و نویز حلقهٔ زمین — و دو خرابی که خود حلقه نمی‌تواند آشکارشان کند.",
+      "seoTitle": "حلقهٔ جریان ۴ تا ۲۰ میلی‌آمپر: عیب‌یابی و حالت‌های خرابی",
+      "seoDescription": "عیب‌یابی نظام‌مند حلقهٔ ۴ تا ۲۰ میلی‌آمپر: بودجهٔ حلقه، دریفت، آفست، قطع متناوب، نویز حلقهٔ زمین و دو خرابی که جریان حلقه به‌تنهایی آشکار نمی‌کند."
+    },
+    "de": {
+      "title": "4–20-mA-Stromschleifen: Diagnose und Fehlerbilder",
+      "subtitle": "Warum sich die Stromschleife fünfzig Jahre gegen neuere Technik behauptet hat — und wie man sie mit Messgerät und Methode liest",
+      "excerpt": "Die Stromschleife ist konstruktiv diagnosefähig: Jeder Fehler hinterlässt eine messbare Signatur im Schleifenstrom. Eine systematische Methode für Drift, Offset, Wackelkontakte und Erdschleifenrauschen — und für die zwei Fehler, die die Schleife allein nicht zeigt.",
+      "seoTitle": "4–20-mA-Stromschleifen: Diagnose und Fehlerbilder",
+      "seoDescription": "4–20-mA-Schleifen systematisch diagnostizieren: Schleifenbudget, Drift, Offset, Wackelkontakte, Erdschleifenrauschen und zwei Fehler, die der Strom allein nicht zeigt."
+    }
+  }
+}

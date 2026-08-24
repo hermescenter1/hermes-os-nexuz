@@ -1362,6 +1362,13 @@
     "tagline": "Industrial Intelligence Platform"
   },
   "dashboard": {
+    "platformComponents": {
+      "brainEngine": "Brain Engine",
+      "knowledgeCloud": "Knowledge Cloud",
+      "caseEngine": "Case Engine",
+      "telemetry": "Telemetry Binding",
+      "plcConnectivity": "PLC Connectivity"
+    },
     "title": "Factory Dashboard",
     "eyebrow": "Operations",
     "simulated": "Simulated telemetry",
@@ -3922,7 +3929,19 @@
     "kpiNormalizationNote": "Availability, efficiency, and health score are 0–100 rate means, normalized per asset. Directly comparable across sites. Raw runtime/downtime counts are excluded.",
     "kgStaleWarning": "Knowledge graph is stale. Rebuild via Industrial → Knowledge Graph to refresh.",
     "loading": "Loading…",
-    "errorLoading": "Failed to load data."
+    "errorLoading": "Failed to load data.",
+    "retry": "Retry",
+    "signIn": "Sign in again",
+    "noSiteAccessTitle": "No accessible sites",
+    "noSiteAccessHint": "Your organization has no active industrial site in your scope yet, so there is nothing to summarize. Register a site or ask an administrator to grant you site access.",
+    "sessionExpiredTitle": "Session expired",
+    "sessionExpiredHint": "Your session is no longer valid for this data. Sign in again to reload the enterprise summary.",
+    "accessDeniedTitle": "Access denied",
+    "accessDeniedHint": "Your role does not include permission to view multi-site intelligence. Contact an organization administrator if you need it.",
+    "requestFailedTitle": "Could not load the summary",
+    "requestFailedHint": "The server did not return the enterprise summary. This is usually temporary — try again in a moment.",
+    "invalidResponseTitle": "Unexpected response",
+    "invalidResponseHint": "The server replied in a format this page does not recognize, so nothing is displayed rather than showing unverified figures."
   },
   "about": {
     "eyebrow": "About Hermes Novin Mehr IRIC",
@@ -4315,6 +4334,8 @@
       }
     },
     "nav": {
+      "openMenu": "Open journal navigation",
+      "menuTitle": "Journal navigation",
       "becomeAuthor": "Become an Author",
       "signIn": "Sign in",
       "createAccount": "Request an account",
@@ -5340,6 +5361,92 @@
       "disclaimerDecision": "Decision-support report.",
       "disclaimerNotCertified": "Not a certified safety report.",
       "disclaimerVerify": "Verify with qualified personnel and site procedures."
+    },
+    "reference": {
+      "heading": "Phase 101 reference diagnostic",
+      "lede": "A deterministic reference diagnostic. The Phase 101 structural engine replays a curated case against a sealed engineering reference design, walking the structure of that design to separate what was observed, what argues against it, and what is still unknown.",
+      "disclosure": {
+        "badge": "SAMPLE",
+        "title": "Illustrative sample — not live plant telemetry",
+        "body": "These cases come from original synthetic reference designs authored for this platform. No connection is made to any plant, PLC, SCADA or OPC UA server, and nothing here can issue a command."
+      },
+      "relationship": {
+        "heading": "How this relates to the workspace above",
+        "body": "Two separate capabilities share this page. The workspace above analyses a fault report you write yourself. This panel replays a sealed reference case through the Phase 101 structural engine — it reads nothing from a plant, connects to no equipment, and issues no command."
+      },
+      "selector": {
+        "label": "Reference case",
+        "submit": "Run diagnosis",
+        "hint": "The engine is deterministic: the same case always produces the same result."
+      },
+      "case": {
+        "heading": "Selected case",
+        "narrative": "Operator report",
+        "system": "Reference system",
+        "platform": "Control platform",
+        "version": "Source revision",
+        "checksum": "Content checksum",
+        "observations": "Observations supplied",
+        "textLocaleNotice": "Engineering text in this corpus is authored in English and Persian only. The case description and object labels below are therefore shown in English."
+      },
+      "observed": {
+        "heading": "Observed plant state",
+        "empty": "This case supplies no observation that resolves to a corpus object.",
+        "columnNode": "Engineering object",
+        "columnState": "Observed state",
+        "columnLayer": "Layer",
+        "columnSource": "Source reference"
+      },
+      "state": {
+        "TRUE": "Active",
+        "FALSE": "Not active",
+        "NORMAL": "Normal",
+        "ABNORMAL": "Abnormal",
+        "STALE": "Stale",
+        "ABSENT": "Not supplied"
+      },
+      "hypotheses": {
+        "heading": "Ranked fault hypotheses",
+        "empty": "No fault mode in the reference corpus is reachable from these observations. The engine offers no hypothesis rather than a guess.",
+        "rank": "Rank {rank}",
+        "confidence": "Evidence coverage",
+        "score": "Structural score",
+        "faultClass": "Fault class",
+        "subsystem": "Subsystem",
+        "reviewOnly": "Review only — a safety-classified object is involved",
+        "chain": "Reasoning path"
+      },
+      "evidence": {
+        "supporting": "Supporting evidence",
+        "contradicting": "Contradicting evidence",
+        "missing": "Missing evidence",
+        "noneSupporting": "No supplied observation supports this hypothesis.",
+        "noneContradicting": "No supplied observation argues against this hypothesis.",
+        "noneMissing": "Every piece of declared evidence was supplied."
+      },
+      "validation": {
+        "heading": "Human validation gate",
+        "body": "Nothing below is a conclusion. A qualified engineer must confirm every item against the plant before any intervention.",
+        "none": "The engine raised no escalation condition for this case."
+      },
+      "actions": {
+        "heading": "Safe verification actions",
+        "lede": "Read-only inspection steps addressed to a qualified person. The platform cannot perform them.",
+        "verifies": "Distinguishes",
+        "reviewOnly": "Requires a qualified safety engineer",
+        "empty": "The corpus declares no verification action for the ranked hypotheses."
+      },
+      "provenance": {
+        "heading": "Provenance",
+        "engine": "Reasoning engine",
+        "corpus": "Corpus checksum",
+        "citations": "Cited engineering objects",
+        "systems": "Reference systems / objects / relations"
+      },
+      "error": {
+        "heading": "No diagnosis available for that reference",
+        "body": "That reference case is not part of the curated public set, or the identifier was not usable. Choose one of the cases listed above."
+      }
     }
   },
   "assetOperations": {
@@ -7669,6 +7776,30 @@
       "body": "An unexpected error occurred. You can try again or return to the homepage.",
       "retry": "Try again",
       "home": "Back to home"
+    },
+    "resource": {
+      "orgContextTitle": "No organization is available",
+      "orgContextHint": "You are signed in, but this account is not an active member of any organization. Ask an administrator to add you, or select a different organization — signing in again will not change this.",
+      "siteContextTitle": "Select a site",
+      "siteContextHint": "You are signed in, but no site is selected. Choose a site to load its data.",
+      "unauthenticatedTitle": "Your session has ended",
+      "unauthenticatedHint": "Sign in again to load this data. Nothing is shown rather than presenting an incomplete or outdated view.",
+      "forbiddenTitle": "You do not have access to this data",
+      "forbiddenHint": "Your account is signed in but does not have permission for this record. Ask your administrator to grant access.",
+      "notFoundTitle": "This record no longer exists",
+      "notFoundHint": "It may have been deleted or moved. Return to the list to see what is currently available.",
+      "invalidTitle": "The request could not be processed",
+      "invalidHint": "The server rejected the parameters for this view. Reload the page, and report it if it happens again.",
+      "rateLimitedTitle": "Too many requests",
+      "rateLimitedHint": "This view was refreshed too often. Wait a moment before trying again.",
+      "unavailableTitle": "The service is temporarily unavailable",
+      "unavailableHint": "The server is not answering requests right now. This is usually brief — try again shortly.",
+      "offlineTitle": "No connection to the server",
+      "offlineHint": "The request never reached Hermes. Check your network connection and try again.",
+      "failedTitle": "This data could not be loaded",
+      "failedHint": "The server replied unexpectedly, so nothing is shown rather than presenting unverified data.",
+      "retry": "Try again",
+      "signIn": "Sign in again"
     }
   },
   "otEdge": {
@@ -7832,6 +7963,12 @@
     "states": {
       "loadingTitle": "Loading records",
       "loadingFiltered": "Applying filters",
+      "orgContextTitle": "No organization context",
+      "orgContextBody": "You are signed in, but no active organization context is available for this account. Ask an administrator to add you to an organization.",
+      "siteContextTitle": "Select a site",
+      "siteContextBody": "You are signed in, but no site is selected. Choose a site to load its gateways and devices.",
+      "connectionFailedTitle": "No connection to the server",
+      "connectionFailedBody": "The request never reached Hermes. Check your network connection and try again.",
       "emptyGatewaysTitle": "No gateways registered",
       "emptyGatewaysBody": "No edge gateway has been registered for the sites you are authorized to see.",
       "emptyDevicesTitle": "No devices registered",
@@ -8777,5 +8914,14 @@
         "successCta": "Browse the partner directory"
       }
     }
+  },
+  "engineeringHub": {
+    "hub": "Engineering Hub",
+    "executiveDashboard": "Executive Dashboard",
+    "intelligenceOverview": "Intelligence Overview",
+    "projects": "Projects",
+    "engineeringMemory": "Engineering Memory",
+    "knowledgeGraph": "Knowledge Graph",
+    "domainExpertise": "Domain Expertise"
   }
 }

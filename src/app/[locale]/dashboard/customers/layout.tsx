@@ -1,6 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import type { ReactNode }   from "react";
-import { PageShell }        from "@/components/PageShell";
+import { AppShell }         from "@/components/app-shell";
 import { CustomerSubNav }   from "@/components/customers/CustomerSubNav";
 
 export const metadata = {
@@ -19,7 +19,7 @@ export default async function CustomersLayout({
   setRequestLocale(locale);
 
   return (
-    <PageShell ambient={2}>
+    <AppShell>
       <div className="mx-auto max-w-screen-2xl px-6 sm:px-8 pb-20">
         <div className="page-header-premium">
           <p className="eyebrow-label mb-2">
@@ -34,6 +34,6 @@ export default async function CustomersLayout({
         <CustomerSubNav />
         {children}
       </div>
-    </PageShell>
+    </AppShell>
   );
 }

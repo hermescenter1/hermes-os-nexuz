@@ -229,8 +229,11 @@ describe("104-F — DNA discipline", () => {
    ══════════════════════════════════════════════════════════════════════════ */
 describe("104-F — article detail semantics and behaviour", () => {
   it("renders ONE h1: body '# ' and '## ' become <h2>, '### ' becomes <h3>", () => {
-    expect(src.detail).toMatch(/\/\^#\{1,3\} \/\.test\(t\)/);
-    expect(src.detail).toContain("t.startsWith(\"### \") ? 3 : 2");
+    // MERGE(a8b3988): block parsing lives in ./article-content — main's tested
+    // parser. The renderer maps level 3 -> <h3> and every other heading level
+    // -> <h2>, so a body "# " can never mint a second <h1>.
+    expect(src.detail).toContain('import { parseArticleContent, type InlineSpan } from "./article-content";');
+    expect(src.detail).toContain("block.level === 3");
     // the only literal <h1 in the file is the page title
     expect((src.detail.match(/<h1\b/g) ?? []).length).toBe(1);
   });
@@ -301,7 +304,7 @@ describe("104-F — article detail semantics and behaviour", () => {
     expect(src.detail).toContain('role="progressbar"');
     expect(src.detail).toContain("aria-valuenow=");
     expect(src.detail).toContain("if (!headings.length) return null;");
-    expect(src.detail).toContain('<pre key={b.key} dir="ltr"');
+    expect(src.detail).toContain('<pre key={i} dir="ltr"');
     expect(src.detail).toContain('className="hj-body hj-measure');
     expect(cssF).toMatch(/\.hj-measure \{ max-inline-size: 7[0-6]ch; \}/);
   });

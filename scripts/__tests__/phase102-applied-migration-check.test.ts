@@ -28,6 +28,7 @@ import {
   EXPECTED_COMPLETED_MIGRATIONS,
   PHASE102_MIGRATION,
   PHASE102_MIGRATIONS,
+  POST_PHASE102_MIGRATIONS,
   assertDisposableDatabase,
   evaluateAppliedMigrations,
 } from "../ci/phase102-applied-migration-check.mjs";
@@ -208,6 +209,81 @@ describe("PHASE102_APPLIED_EVALUATOR", () => {
     const verdict = evaluateAppliedMigrations({ rows: long });
     expect(labelsOf(verdict).PHASE102_COMPLETED_MIGRATION_COUNT).toBe(false);
     expect(verdict.completedCount).toBe(EXPECTED_TARGET_COUNT + 1);
+  });
+
+  // ── The post-Phase-102 allowlist ───────────────────────────────────────────
+  //
+  // Phase 102's completed-count check is an equality against a pinned total, so
+  // the first later phase to reach a real database made it red for a reason
+  // that had nothing to do with the media hub — and only PostgreSQL could show
+  // it, so no offline gate caught it. The allowlist keeps the equality; these
+  // tests keep the allowlist honest.
+
+  it("declares only migrations that really exist and really come after Phase 102", () => {
+    const onDisk = new Set(
+      readdirSync(join(REPO, "prisma", "migrations"), { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .map((e) => e.name),
+    );
+    const lastPhase102 = PHASE102_MIGRATIONS[PHASE102_MIGRATIONS.length - 1];
+    for (const name of POST_PHASE102_MIGRATIONS) {
+      expect(onDisk.has(name), `${name} is declared but absent from prisma/migrations`).toBe(true);
+      // Timestamp prefixes are ordinals in this repository, but they are still
+      // the applied ORDER. A "later" migration that sorts before Phase 102 is
+      // not later at all, and subtracting it would hide a missing migration.
+      expect(name > lastPhase102, `${name} does not sort after ${lastPhase102}`).toBe(true);
+    }
+  });
+
+  it("accepts a database carrying a DECLARED later-phase migration", () => {
+    const rows = [
+      ...healthyRows(),
+      {
+        migration_name: POST_PHASE102_MIGRATIONS[0],
+        finished_at: FINISHED,
+        rolled_back_at: null,
+      },
+    ];
+    const verdict = evaluateAppliedMigrations({ rows });
+    expect(verdict.checks.filter((c) => !c.ok)).toEqual([]);
+    expect(verdict.ok).toBe(true);
+    // The raw total grew; the Phase 102 era did not.
+    expect(verdict.completedCount).toBe(EXPECTED_TARGET_COUNT + 1);
+    expect(verdict.eraCompletedCount).toBe(EXPECTED_TARGET_COUNT);
+  });
+
+  it("still fails when a later migration is UNDECLARED", () => {
+    const rows = [
+      ...healthyRows(),
+      { migration_name: "20260901000000_undeclared_later", finished_at: FINISHED, rolled_back_at: null },
+    ];
+    const verdict = evaluateAppliedMigrations({ rows });
+    expect(labelsOf(verdict).PHASE102_COMPLETED_MIGRATION_COUNT).toBe(false);
+    expect(verdict.ok).toBe(false);
+  });
+
+  it("does not let a declared migration paper over a MISSING Phase 102-era one", () => {
+    // Swap one historical row for the declared later migration: the total is
+    // unchanged, so a `>=` or a raw-total comparison would pass. The era count
+    // must still catch it.
+    const rows = [
+      ...healthyRows().slice(0, EXPECTED_TARGET_COUNT - 1),
+      { migration_name: POST_PHASE102_MIGRATIONS[0], finished_at: FINISHED, rolled_back_at: null },
+    ];
+    const verdict = evaluateAppliedMigrations({ rows });
+    expect(verdict.completedCount).toBe(EXPECTED_TARGET_COUNT);
+    expect(labelsOf(verdict).PHASE102_COMPLETED_MIGRATION_COUNT).toBe(false);
+    expect(verdict.ok).toBe(false);
+  });
+
+  it("reports a declared migration that is unfinished, rather than subtracting it away", () => {
+    const rows = [
+      ...healthyRows(),
+      { migration_name: POST_PHASE102_MIGRATIONS[0], finished_at: null, rolled_back_at: null },
+    ];
+    const verdict = evaluateAppliedMigrations({ rows });
+    expect(labelsOf(verdict).PHASE102_NO_FAILED_MIGRATION).toBe(false);
+    expect(verdict.ok).toBe(false);
   });
 
   it("fails closed on an empty or non-array result", () => {

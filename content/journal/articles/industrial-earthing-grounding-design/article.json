@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-earthing-grounding-design",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "electrical-engineering",
+  "tags": ["earthing", "signal-integrity", "commissioning", "diagnostics", "maintainability"],
+  "publishedAt": "2026-08-17T10:00:00.000Z",
+  "coverImage": {
+    "file": "journal/industrial-earthing-bar.jpg",
+    "url": null,
+    "concept": "A main earthing bar in an industrial switchroom with multiple bonding conductors landed on it — the physical point where several different earthing functions are deliberately brought together rather than kept apart.",
+    "prompt": "Photorealistic photograph of a copper main earthing bar mounted on insulators in an industrial switchroom, several green-yellow bonding conductors terminated with cable lugs, cool cyan light on grey concrete, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Copper main earthing bar in an industrial switchroom with multiple bonding conductors terminated on it",
+      "fa": "شینهٔ اصلی ارت مسی در اتاق تابلوی صنعتی با چند هادی هم‌بندی متصل به آن",
+      "de": "Kupferne Haupterdungsschiene in einem industriellen Schaltraum mit mehreren angeschlossenen Potentialausgleichsleitern"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "SWITCHBOARD",
+    "linkedTechnology": "Earthing and Bonding",
+    "linkedStandard": "IEC 60364",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial Earthing and Grounding Design",
+      "subtitle": "Five different jobs share one word, one colour and sometimes one conductor — and almost every earthing failure begins by treating them as one thing",
+      "excerpt": "Protective earthing, equipotential bonding, system earthing, functional reference and lightning dispersion are separate engineering functions with separate requirements. This article separates them, works through TN, TT and IT arrangements, explains what an earth electrode does and does not do, and shows why a separate clean earth is both a hazard and a noise source.",
+      "seoTitle": "Industrial Earthing and Grounding Design in Practice",
+      "seoDescription": "Protective earthing, bonding, TN/TT/IT arrangements, earth electrodes, functional reference and shield termination — separated, with verification and failure modes."
+    },
+    "fa": {
+      "title": "طراحی سیستم ارت و زمین در تأسیسات صنعتی",
+      "subtitle": "پنج وظیفهٔ متفاوت یک نام، یک رنگ و گاهی یک هادی مشترک دارند — و تقریباً هر خرابی ارت با یکی دانستن آن‌ها آغاز می‌شود",
+      "excerpt": "ارت حفاظتی، هم‌بندی هم‌پتانسیل، ارت سیستم، مرجع عملکردی و تخلیهٔ صاعقه پنج کارکرد مهندسی جدا با الزامات جدا هستند. این مقاله آن‌ها را تفکیک می‌کند، آرایش‌های TN و TT و IT را می‌کاود، توضیح می‌دهد الکترود زمین چه می‌کند و چه نمی‌کند، و نشان می‌دهد چرا «ارت تمیز» جداگانه هم خطرناک است و هم منبع نویز.",
+      "seoTitle": "طراحی سیستم ارت و زمین در تأسیسات صنعتی و کارخانه",
+      "seoDescription": "ارت حفاظتی، هم‌بندی، آرایش‌های TN و TT و IT، الکترود زمین، مرجع عملکردی و اتصال شیلد — تفکیک‌شده، همراه با آزمون و حالت‌های شکست."
+    },
+    "de": {
+      "title": "Erdung und Potentialausgleich in Industrieanlagen",
+      "subtitle": "Fünf verschiedene Aufgaben teilen sich ein Wort, eine Farbe und mitunter einen Leiter — und fast jeder Erdungsfehler beginnt damit, sie für eine Sache zu halten",
+      "excerpt": "Schutzerdung, Potentialausgleich, Systemerdung, Funktionserdung und Blitzstromableitung sind getrennte ingenieurtechnische Aufgaben mit getrennten Anforderungen. Dieser Beitrag trennt sie, arbeitet TN-, TT- und IT-Systeme durch, erklärt, was ein Erder leistet und was nicht, und zeigt, warum eine separate „saubere Erde“ Gefahr und Störquelle zugleich ist.",
+      "seoTitle": "Erdung und Potentialausgleich in Industrieanlagen planen",
+      "seoDescription": "Schutzerdung, Potentialausgleich, TN-, TT- und IT-Systeme, Erder, Funktionserdung und Schirmanbindung — getrennt betrachtet, mit Prüfung und Fehlermodi."
+    }
+  }
+}

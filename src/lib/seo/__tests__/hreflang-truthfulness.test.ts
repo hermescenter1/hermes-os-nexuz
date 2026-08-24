@@ -13,8 +13,12 @@ import { CASE_CONTENT_LOCALES } from "@/lib/industrial/cases";
  * it a claim about the PLATFORM instead of about the DOCUMENT — and for
  * single-language records that claim was simply false. A Persian-only Journal
  * article advertised an English and a German version; both URLs served the same
- * Persian text under different chrome, and `ArtLanguage` has no DE member, so
- * one of them could never exist at all.
+ * Persian text under different chrome, and `ArtLanguage` had no DE member at
+ * the time, so one of them could never exist at all.
+ *
+ * Phase 106 later made translations REAL (`@@unique([slug, language])`, DE
+ * added), which changes the inputs but not the rule: see
+ * `src/lib/articles/__tests__/article-hreflang.test.ts` for the trilingual side.
  *
  * These tests state the contract in both directions: genuinely translated pages
  * keep all three alternates, and single-language records get none.
@@ -162,7 +166,7 @@ describe("D4 — defensive behaviour", () => {
 describe("D5 — the sitemap tells the same story as the page", () => {
   it("one article produces exactly one sitemap URL, under its own language", () => {
     const entries = articleSitemapEntries([
-      { slug: "plc-alarm-flood", language: "fa", lastModified: "2026-01-02T00:00:00.000Z" },
+      { slug: "plc-alarm-flood", languages: ["fa"], lastModified: "2026-01-02T00:00:00.000Z" },
     ]);
     expect(entries).toHaveLength(1);
     expect(entries[0].url).toBe(`${BASE_URL}/fa/articles/plc-alarm-flood`);
@@ -171,8 +175,8 @@ describe("D5 — the sitemap tells the same story as the page", () => {
 
   it("two articles in different languages produce one URL each, never cross-linked", () => {
     const entries = articleSitemapEntries([
-      { slug: "a", language: "fa", lastModified: null },
-      { slug: "b", language: "en", lastModified: null },
+      { slug: "a", languages: ["fa"], lastModified: null },
+      { slug: "b", languages: ["en"], lastModified: null },
     ]);
     expect(entries.map((e) => e.url)).toEqual([
       `${BASE_URL}/fa/articles/a`,

@@ -12,7 +12,7 @@
 // from a request body or query string.
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrgContext } from "@/lib/billing/context";
+import { resolveOrgContext } from "@/lib/billing/context";
 import { requireOrgActor } from "@/lib/org/context";
 import { getAllowedSiteIds } from "@/lib/site/context";
 import { checkRateLimit, type RateLimitAction } from "@/lib/auth/rate-limiter";
@@ -41,6 +41,11 @@ export function privateJson(body: unknown, status = 200): NextResponse {
  */
 export const HTTP_STATUS: Record<ServiceErrorCode, number> = {
   UNAUTHENTICATED: 401,
+  // 409: the caller is known and the request is well-formed; what is missing is
+  // a selection only they can make. Deliberately not 401 (nothing to re-
+  // authenticate) and not 403 (nothing has been refused).
+  ORGANIZATION_CONTEXT_REQUIRED: 409,
+  SITE_CONTEXT_REQUIRED: 409,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
@@ -62,6 +67,8 @@ export const HTTP_STATUS: Record<ServiceErrorCode, number> = {
 
 const MESSAGE: Record<ServiceErrorCode, string> = {
   UNAUTHENTICATED: "Authentication required.",
+  ORGANIZATION_CONTEXT_REQUIRED: "An organization must be selected for this request.",
+  SITE_CONTEXT_REQUIRED: "A site must be selected for this request.",
   FORBIDDEN: "You do not have permission to perform this operation.",
   NOT_FOUND: "The requested resource was not found.",
   CONFLICT: "The request conflicts with the current state of the resource.",
@@ -129,9 +136,31 @@ export async function withOtRoute(
 ): Promise<NextResponse> {
   // 1. Authentication + the organization the actor actually belongs to. The
   //    org is RESOLVED here; it is never read from the request.
-  const org = await requireOrgContext(req);
-  if ("error" in org) {
-    return privateJson({ ok: false, code: "UNAUTHENTICATED", message: MESSAGE.UNAUTHENTICATED }, 401);
+  //
+  //    PHASE 107 STAGE 6-A — this used to answer 401 for both "no session" and
+  //    "valid session, no organization". Every OT page therefore told a
+  //    signed-in administrator their session had expired and offered a sign-in
+  //    link that could not help: the session was fine, the organization was
+  //    missing. `resolveOrgContext` separates the two causes; the authorization
+  //    itself is unchanged — same session verification, same ACTIVE-membership
+  //    requirement, same server-derived tenant.
+  const org = await resolveOrgContext(req);
+  if (!org.ok) {
+    /*
+     * Three causes, three answers. A ternary with an "everything else" branch
+     * would have folded a database outage into 401 the moment `INTERNAL_ERROR`
+     * was added to the union — sending an operator to a login form during an
+     * incident, which is the same class of mistake this whole stage is closing.
+     */
+    const code = ({
+      AUTHENTICATION_REQUIRED: "UNAUTHENTICATED",
+      ORGANIZATION_CONTEXT_REQUIRED: "ORGANIZATION_CONTEXT_REQUIRED",
+      INTERNAL_ERROR: "INTERNAL_FAILURE",
+    } as const)[org.reason];
+
+    // Every caller in the same position gets the same answer, so none of these
+    // reveals whether a particular organization exists.
+    return privateJson({ ok: false, code, message: MESSAGE[code] }, HTTP_STATUS[code]);
   }
 
   // 2. Membership must still be active (suspended members lose access).

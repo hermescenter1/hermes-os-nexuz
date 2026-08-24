@@ -47,17 +47,49 @@ const UNCERTAINTY_COLORS = {
 };
 
 // ─── Demo-ready sample scenarios ───────────────────────────────────────────────
-// Bilingual demo dataset that fills the form. `labelEn/labelFa` are the button
-// captions and `en/fa` are the sample field values loaded into the form — this
-// is locale content data (like a stored bilingual record), so the isFa lookups
-// against it below are data selection, not display strings.
+// Trilingual demo dataset that fills the form. `labels` are the button captions
+// and the per-locale field maps are the sample values loaded into the form —
+// this is locale content data (like a stored multilingual record), so the
+// lookups against it below are data selection, not display strings.
+//
+// PHASE 107 — German added. This dataset is frontend-owned product copy, and
+// with only en/fa present the German page fell back to English: the three
+// sample buttons and every field they loaded rendered in English on
+// /de/industrial-brain, which was the most visible part of the German gap.
+//
+// Two classes of value are deliberately NOT translated:
+//   * vendor and platform identifiers (Siemens S7-1500, Allen-Bradley
+//     ControlLogix, Mitsubishi FX / GOT HMI) — these are product names;
+//   * productionImpact / safetyImpact — these are the IMPACT_LEVELS enum
+//     posted to the analyze API, not prose. Translating them would fail
+//     validation at the HTTP boundary. Persian already treats them the same way.
+//
+// This does NOT make German analysis OUTPUT exist: the deterministic analyzer
+// emits only `x` / `xFa` pairs and has no German field, which
+// lib/industrial-brain/request-contract.ts documents explicitly. German users
+// get a German form with German samples and an English analysis report.
 
 type SampleFields = Record<string, string>;
 
-const SAMPLE_SCENARIOS: Record<string, { labelEn: string; labelFa: string; en: SampleFields; fa: SampleFields }> = {
+/** The locales the demo dataset carries content for; anything else uses `en`. */
+type SampleLocale = "en" | "fa" | "de";
+
+function sampleLocale(locale: string): SampleLocale {
+  return locale === "fa" ? "fa" : locale === "de" ? "de" : "en";
+}
+
+const SAMPLE_SCENARIOS: Record<string, {
+  labels: Record<SampleLocale, string>;
+  en: SampleFields;
+  fa: SampleFields;
+  de: SampleFields;
+}> = {
   conveyor: {
-    labelEn: "Load conveyor motor sample",
-    labelFa: "بارگذاری نمونه موتور کانوایر",
+    labels: {
+      en: "Load conveyor motor sample",
+      fa: "بارگذاری نمونه موتور کانوایر",
+      de: "Beispiel Förderbandmotor laden",
+    },
     en: {
       problemTitle: "Conveyor motor does not start after replacement",
       assetType: "22kW Conveyor Motor",
@@ -94,10 +126,31 @@ const SAMPLE_SCENARIOS: Record<string, { labelEn: string; labelFa: string; en: S
       alreadyChecked: "فرمان HMI، صفحه خطای PLC، چرخش آزاد مکانیکی اولیه.",
       additionalInfo: "موتور اخیراً تعویض شده است. تست الکتریکی دقیق ثبت نشده است.",
     },
+    de: {
+      problemTitle: "Förderbandmotor startet nach dem Austausch nicht",
+      assetType: "Förderbandmotor 22 kW",
+      systemArea: "Produktionslinie 1, Beladebereich",
+      plcPlatform: "Siemens S7-1500",
+      observedSymptoms: "Der Startbefehl am HMI ist aktiv. Die SPS zeigt keine anstehende Störung. Der Motor dreht nicht. Der Motor wurde kürzlich getauscht.",
+      recentChanges: "Motortausch und mechanische Ausrichtung.",
+      activeAlarms: "Keine anstehende SPS-Störmeldung.",
+      hmiCommandState: "Startbefehl aktiv",
+      plcOutputState: "Unbekannt",
+      vfdMccState: "Unbekannt",
+      interlockStatus: "Unbekannt",
+      sensorFeedback: "Unbekannt",
+      productionImpact: "HIGH",
+      safetyImpact: "LOW",
+      alreadyChecked: "HMI-Befehl, SPS-Störungsseite, grundlegende mechanische Freigängigkeit.",
+      additionalInfo: "Der Motor wurde kürzlich getauscht. Eine detaillierte elektrische Prüfung wurde nicht dokumentiert.",
+    },
   },
   vfdPump: {
-    labelEn: "Load VFD pump fault sample",
-    labelFa: "بارگذاری نمونه خرابی VFD پمپ",
+    labels: {
+      en: "Load VFD pump fault sample",
+      fa: "بارگذاری نمونه خرابی VFD پمپ",
+      de: "Beispiel FU-Pumpenstörung laden",
+    },
     en: {
       problemTitle: "Pump stops intermittently with VFD overcurrent alarm",
       assetType: "Centrifugal Pump, 11kW",
@@ -134,10 +187,31 @@ const SAMPLE_SCENARIOS: Record<string, { labelEn: string; labelFa: string; en: S
       alreadyChecked: "کد خطای VFD ثبت شده، بازرسی چشمی اولیه کوپلینگ.",
       additionalInfo: "تعمیرات کوپلینگ یک هفته قبل از شروع علائم انجام شده است.",
     },
+    de: {
+      problemTitle: "Pumpe schaltet sporadisch ab mit FU-Überstromalarm",
+      assetType: "Kreiselpumpe, 11 kW",
+      systemArea: "Kühlwasser-Pumpstation",
+      plcPlatform: "Allen-Bradley ControlLogix",
+      observedSymptoms: "Die Pumpe schaltet sporadisch ab. Der Frequenzumrichter meldet Überstrom/Überlast. Der Motorstrom überschreitet zeitweise den Nennstrom laut Typenschild.",
+      recentChanges: "Kürzlich Instandhaltung an der Ausrichtung der Pumpenkupplung.",
+      activeAlarms: "FU-Überstromalarm, sporadisch.",
+      hmiCommandState: "Startbefehl aktiv",
+      plcOutputState: "Aktiv",
+      vfdMccState: "Störung / sporadisch ausgelöst",
+      interlockStatus: "Unbekannt",
+      sensorFeedback: "Unbekannt",
+      productionImpact: "HIGH",
+      safetyImpact: "LOW",
+      alreadyChecked: "FU-Fehlercode protokolliert, einfache Sichtprüfung der Kupplung.",
+      additionalInfo: "Die Kupplungsinstandhaltung erfolgte eine Woche vor Auftreten der Symptome.",
+    },
   },
   sensorFeedback: {
-    labelEn: "Load sensor feedback sample",
-    labelFa: "بارگذاری نمونه فیدبک سنسور",
+    labels: {
+      en: "Load sensor feedback sample",
+      fa: "بارگذاری نمونه فیدبک سنسور",
+      de: "Beispiel Sensorrückmeldung laden",
+    },
     en: {
       problemTitle: "Cylinder reaches position but PLC/HMI shows no feedback",
       assetType: "Pneumatic Cylinder with Proximity Sensor",
@@ -173,6 +247,24 @@ const SAMPLE_SCENARIOS: Record<string, { labelEn: string; labelFa: string; en: S
       safetyImpact: "LOW",
       alreadyChecked: "موقعیت فیزیکی توسط اپراتور تأیید شده، LED سنسور بررسی نشده.",
       additionalInfo: "پس از تعویض سنسور، تغییری در نقشه سیم‌بندی ثبت نشده است.",
+    },
+    de: {
+      problemTitle: "Zylinder erreicht die Position, SPS/HMI zeigt keine Rückmeldung",
+      assetType: "Pneumatikzylinder mit Näherungsschalter",
+      systemArea: "Verpackungszelle 3",
+      plcPlatform: "Mitsubishi FX / GOT HMI",
+      observedSymptoms: "Der Zylinder erreicht die Position mechanisch. Keine sichtbare Blockierung. SPS/HMI erhält keine Positionsrückmeldung. Der Sensor wurde kürzlich getauscht.",
+      recentChanges: "Näherungsschalter in der letzten Schicht getauscht.",
+      activeAlarms: "Keine anstehende SPS-Störmeldung.",
+      hmiCommandState: "Startbefehl aktiv",
+      plcOutputState: "Aktiv",
+      vfdMccState: "Unbekannt",
+      interlockStatus: "Unbekannt",
+      sensorFeedback: "Sensor getauscht, am SPS-Eingang ist kein Rückmeldesignal sichtbar",
+      productionImpact: "MEDIUM",
+      safetyImpact: "LOW",
+      alreadyChecked: "Position vom Bediener bestätigt, Sensor-LED nicht geprüft.",
+      additionalInfo: "Nach dem Sensortausch wurde keine Änderung am Klemmenplan dokumentiert.",
     },
   },
 };
@@ -347,6 +439,11 @@ function ConfidenceBar({ value, color }: { value: number; color: string }) {
 }
 
 function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor: string }) {
+  // PHASE 107 — `htmlFor` is what makes the visible caption an ACCESSIBLE name.
+  // Without it these labels were decorative text sitting next to an unlabelled
+  // control, and every field in the fault-report form announced as blank.
+  // (104-D2 keeps the association but derives ids with useId via fid(), so a
+  // twice-rendered form can never produce duplicate DOM ids.)
   return <label htmlFor={htmlFor} className="block text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 mb-1.5">{children}</label>;
 }
 
@@ -1153,10 +1250,14 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
   const resultRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // PHASE 107 — keyed off the actual locale rather than a fa/not-fa boolean, so
+  // German gets German samples instead of silently falling through to English.
+  const sampleLang = sampleLocale(locale);
+
   function loadSample(key: keyof typeof SAMPLE_SCENARIOS) {
     if (!formRef.current) return;
-    // Data lookup into the bilingual demo dataset, not display text.
-    fillSampleForm(formRef.current, SAMPLE_SCENARIOS[key][isFa ? "fa" : "en"]);
+    // Data lookup into the multilingual demo dataset, not display text.
+    fillSampleForm(formRef.current, SAMPLE_SCENARIOS[key][sampleLang]);
     setError(null);
   }
 
@@ -1255,8 +1356,8 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
               onClick={() => loadSample(key)}
               className="ds-focus inline-flex min-h-11 items-center text-[11px] font-mono px-3 py-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12] hover:border-cyan-400/35 transition-all"
             >
-              {/* Bilingual demo-dataset caption (locale content data). */}
-              {isFa ? SAMPLE_SCENARIOS[key].labelFa : SAMPLE_SCENARIOS[key].labelEn}
+              {/* Multilingual demo-dataset caption (locale content data). */}
+              {SAMPLE_SCENARIOS[key].labels[sampleLang]}
             </button>
           ))}
         </div>

@@ -1,0 +1,1795 @@
+[
+  {
+    "file": "src/app/api/billing/checkout/route.ts",
+    "route": "/api/billing/checkout",
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "manage_billing"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      404,
+      409,
+      422,
+      500,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/billing/invoices/route.ts",
+    "route": "/api/billing/invoices",
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_billing"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/billing/overrides/route.ts",
+    "route": "/api/billing/overrides",
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "manage_billing"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/billing/overrides/[id]/route.ts",
+    "route": "/api/billing/overrides/[id]",
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [
+      "DELETE"
+    ],
+    "capability": [
+      "manage_billing"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/billing/payments/route.ts",
+    "route": "/api/billing/payments",
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [
+      "POST",
+      "GET"
+    ],
+    "capability": [
+      "manage_billing"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      404,
+      422
+    ]
+  },
+  {
+    "file": "src/app/api/billing/payments/[id]/refund/route.ts",
+    "route": "/api/billing/payments/[id]/refund",
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "manage_billing"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/billing/portal/route.ts",
+    "route": "/api/billing/portal",
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "manage_billing"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404,
+      500,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/billing/subscription/route.ts",
+    "route": "/api/billing/subscription",
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [
+      "GET",
+      "POST",
+      "PATCH",
+      "PUT",
+      "DELETE"
+    ],
+    "capability": [
+      "view_billing",
+      "manage_billing"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      409,
+      422
+    ]
+  },
+  {
+    "file": "src/app/api/billing/usage/route.ts",
+    "route": "/api/billing/usage",
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_billing",
+      "manage_billing"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/copilot/conversations/route.ts",
+    "route": "/api/copilot/conversations",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_copilot"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/copilot/conversations/[id]/route.ts",
+    "route": "/api/copilot/conversations/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_copilot"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/copilot/query/route.ts",
+    "route": "/api/copilot/query",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "view_copilot"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400
+    ]
+  },
+  {
+    "file": "src/app/api/digital-twin/graph/route.ts",
+    "route": "/api/digital-twin/graph",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_digital_twin"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/digital-twin/layout/route.ts",
+    "route": "/api/digital-twin/layout",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_digital_twin",
+      "manage_digital_twin"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/digital-twin/nodes/route.ts",
+    "route": "/api/digital-twin/nodes",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_digital_twin",
+      "manage_digital_twin"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/digital-twin/nodes/[id]/route.ts",
+    "route": "/api/digital-twin/nodes/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_digital_twin",
+      "manage_digital_twin"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/digital-twin/relations/route.ts",
+    "route": "/api/digital-twin/relations",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_digital_twin",
+      "manage_digital_twin"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      404,
+      422
+    ]
+  },
+  {
+    "file": "src/app/api/digital-twin/relations/[id]/route.ts",
+    "route": "/api/digital-twin/relations/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_digital_twin",
+      "manage_digital_twin"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/digital-twin/tags/route.ts",
+    "route": "/api/digital-twin/tags",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_digital_twin",
+      "manage_digital_twin"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      422
+    ]
+  },
+  {
+    "file": "src/app/api/digital-twin/tags/[id]/route.ts",
+    "route": "/api/digital-twin/tags/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_digital_twin",
+      "manage_digital_twin"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/alerts/route.ts",
+    "route": "/api/industrial/alerts",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/industrial/assets/analytics/route.ts",
+    "route": "/api/industrial/assets/analytics",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/industrial/assets/route.ts",
+    "route": "/api/industrial/assets",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_industrial",
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      404,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/alerts/route.ts",
+    "route": "/api/industrial/assets/[id]/alerts",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/alerts/[alertId]/route.ts",
+    "route": "/api/industrial/assets/[id]/alerts/[alertId]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "PATCH"
+    ],
+    "capability": [
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      403,
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/intelligence/route.ts",
+    "route": "/api/industrial/assets/[id]/intelligence",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/maintenance/route.ts",
+    "route": "/api/industrial/assets/[id]/maintenance",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_industrial",
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      404,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/route.ts",
+    "route": "/api/industrial/assets/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_industrial",
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      403,
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/assets/[id]/trends/route.ts",
+    "route": "/api/industrial/assets/[id]/trends",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/automation/run/route.ts",
+    "route": "/api/industrial/automation/run",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      403
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/connectors/route.ts",
+    "route": "/api/industrial/connectors",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_industrial",
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      404,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/connectors/[id]/route.ts",
+    "route": "/api/industrial/connectors/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_industrial",
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/gateways/route.ts",
+    "route": "/api/industrial/gateways",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_industrial",
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      404,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/gateways/[id]/heartbeat/route.ts",
+    "route": "/api/industrial/gateways/[id]/heartbeat",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      403
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/gateways/[id]/route.ts",
+    "route": "/api/industrial/gateways/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "capability": [
+      "view_industrial",
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/sites/route.ts",
+    "route": "/api/industrial/sites",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_industrial",
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/sites/[id]/route.ts",
+    "route": "/api/industrial/sites/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_industrial",
+      "manage_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial/telemetry/route.ts",
+    "route": "/api/industrial/telemetry",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST",
+      "GET"
+    ],
+    "capability": [
+      "view_industrial"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      422
+    ]
+  },
+  {
+    "file": "src/app/api/industrial-graph/assets/[assetId]/route.ts",
+    "route": "/api/industrial-graph/assets/[assetId]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_knowledge_graph"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/industrial-graph/failures/[failureModeId]/route.ts",
+    "route": "/api/industrial-graph/failures/[failureModeId]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_knowledge_graph"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/industrial-graph/path/route.ts",
+    "route": "/api/industrial-graph/path",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_knowledge_graph"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400
+    ]
+  },
+  {
+    "file": "src/app/api/industrial-graph/procedures/[procedureId]/route.ts",
+    "route": "/api/industrial-graph/procedures/[procedureId]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_knowledge_graph"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/industrial-graph/rebuild/route.ts",
+    "route": "/api/industrial-graph/rebuild",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "manage_knowledge_graph"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      409,
+      500
+    ]
+  },
+  {
+    "file": "src/app/api/industrial-graph/root-causes/[rootCauseId]/route.ts",
+    "route": "/api/industrial-graph/root-causes/[rootCauseId]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_knowledge_graph"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/industrial-graph/route.ts",
+    "route": "/api/industrial-graph",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_knowledge_graph"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/knowledge/articles/route.ts",
+    "route": "/api/knowledge/articles",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_knowledge",
+      "manage_knowledge"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      500
+    ]
+  },
+  {
+    "file": "src/app/api/knowledge/articles/[id]/route.ts",
+    "route": "/api/knowledge/articles/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_knowledge",
+      "manage_knowledge"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404,
+      500
+    ]
+  },
+  {
+    "file": "src/app/api/knowledge/cases/route.ts",
+    "route": "/api/knowledge/cases",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_knowledge",
+      "manage_knowledge"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      500
+    ]
+  },
+  {
+    "file": "src/app/api/knowledge/cases/[id]/route.ts",
+    "route": "/api/knowledge/cases/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_knowledge",
+      "manage_knowledge"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/knowledge/failures/route.ts",
+    "route": "/api/knowledge/failures",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_knowledge",
+      "manage_knowledge"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      404,
+      500
+    ]
+  },
+  {
+    "file": "src/app/api/knowledge/failures/[id]/route.ts",
+    "route": "/api/knowledge/failures/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_knowledge",
+      "manage_knowledge"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/knowledge/procedures/route.ts",
+    "route": "/api/knowledge/procedures",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_knowledge",
+      "manage_knowledge"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      404,
+      500
+    ]
+  },
+  {
+    "file": "src/app/api/knowledge/procedures/[id]/route.ts",
+    "route": "/api/knowledge/procedures/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [
+      "view_knowledge",
+      "manage_knowledge"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/knowledge/search/route.ts",
+    "route": "/api/knowledge/search",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_knowledge"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400
+    ]
+  },
+  {
+    "file": "src/app/api/media/assets/route.ts",
+    "route": "/api/media/assets",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_media",
+      "manage_media"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      409,
+      413,
+      415,
+      500,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/poster/upload/route.ts",
+    "route": "/api/media/assets/[id]/poster/upload",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "manage_media"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/route.ts",
+    "route": "/api/media/assets/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "capability": [],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      404,
+      409,
+      413,
+      415,
+      500,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/subtitles/route.ts",
+    "route": "/api/media/assets/[id]/subtitles",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "manage_media"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/transitions/route.ts",
+    "route": "/api/media/assets/[id]/transitions",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "view_media"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      404,
+      409,
+      413,
+      415,
+      500,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/media/assets/[id]/upload/route.ts",
+    "route": "/api/media/assets/[id]/upload",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "manage_media"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/media/me/favourites/route.ts",
+    "route": "/api/media/me/favourites",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST",
+      "DELETE"
+    ],
+    "capability": [
+      "view_media"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      404,
+      413,
+      415,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/media/me/progress/route.ts",
+    "route": "/api/media/me/progress",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "PUT"
+    ],
+    "capability": [
+      "view_media"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      403,
+      404,
+      413,
+      415,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/multi-site/benchmarks/route.ts",
+    "route": "/api/multi-site/benchmarks",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_multi_site"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404,
+      409,
+      500
+    ]
+  },
+  {
+    "file": "src/app/api/multi-site/failure-patterns/route.ts",
+    "route": "/api/multi-site/failure-patterns",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_multi_site"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/multi-site/knowledge-coverage/route.ts",
+    "route": "/api/multi-site/knowledge-coverage",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_multi_site"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/multi-site/kpis/route.ts",
+    "route": "/api/multi-site/kpis",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_multi_site"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/multi-site/risk/route.ts",
+    "route": "/api/multi-site/risk",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_multi_site"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404,
+      503
+    ]
+  },
+  {
+    "file": "src/app/api/multi-site/summary/route.ts",
+    "route": "/api/multi-site/summary",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_multi_site"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/platform/keys/route.ts",
+    "route": "/api/platform/keys",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_api_keys",
+      "manage_api_keys"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      400,
+      422
+    ]
+  },
+  {
+    "file": "src/app/api/platform/keys/[id]/rotate/route.ts",
+    "route": "/api/platform/keys/[id]/rotate",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "POST"
+    ],
+    "capability": [
+      "manage_api_keys"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      422
+    ]
+  },
+  {
+    "file": "src/app/api/platform/keys/[id]/route.ts",
+    "route": "/api/platform/keys/[id]",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "DELETE"
+    ],
+    "capability": [
+      "manage_api_keys"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      422
+    ]
+  },
+  {
+    "file": "src/app/api/platform/rate-limits/route.ts",
+    "route": "/api/platform/rate-limits",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_api_usage"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/platform/usage/route.ts",
+    "route": "/api/platform/usage",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_api_usage"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/app/api/predictive/baselines/route.ts",
+    "route": "/api/predictive/baselines",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "capability": [
+      "view_predictive"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      400,
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/predictive/failure/route.ts",
+    "route": "/api/predictive/failure",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_predictive"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/predictive/recommendations/route.ts",
+    "route": "/api/predictive/recommendations",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_predictive"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/predictive/risk/route.ts",
+    "route": "/api/predictive/risk",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_predictive"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/app/api/predictive/rul/route.ts",
+    "route": "/api/predictive/rul",
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [
+      "GET"
+    ],
+    "capability": [
+      "view_predictive"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      404
+    ]
+  },
+  {
+    "file": "src/lib/api/auth.ts",
+    "route": null,
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [],
+    "capability": [],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/lib/api/__tests__/platform-auth-classification.test.ts",
+    "route": null,
+    "isTest": true,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [],
+    "capability": [],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      401,
+      409,
+      500
+    ]
+  },
+  {
+    "file": "src/lib/auth/__tests__/context-refusal-semantics.test.ts",
+    "route": null,
+    "isTest": true,
+    "helpers": [
+      "requireOrgContext",
+      "requirePlatformAuth"
+    ],
+    "methods": [],
+    "capability": [],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      401,
+      409,
+      500
+    ]
+  },
+  {
+    "file": "src/lib/billing/context.ts",
+    "route": null,
+    "isTest": false,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [],
+    "capability": [],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/lib/copilot/voice/guard.ts",
+    "route": null,
+    "isTest": false,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [],
+    "capability": [],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": [
+      401,
+      403
+    ]
+  },
+  {
+    "file": "src/lib/copilot/voice/__tests__/phase103-voice-source-invariants.test.ts",
+    "route": null,
+    "isTest": true,
+    "helpers": [
+      "requirePlatformAuth"
+    ],
+    "methods": [],
+    "capability": [],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": false,
+    "currentRefusalStatuses": []
+  },
+  {
+    "file": "src/lib/ot-edge/http/__tests__/ot-context-semantics.test.ts",
+    "route": null,
+    "isTest": true,
+    "helpers": [
+      "requireOrgContext"
+    ],
+    "methods": [],
+    "capability": [
+      "view_ot_gateway"
+    ],
+    "needsSession": true,
+    "needsOrganization": true,
+    "needsSite": true,
+    "currentRefusalStatuses": [
+      401,
+      403,
+      409
+    ]
+  }
+]

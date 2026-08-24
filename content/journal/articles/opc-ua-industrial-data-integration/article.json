@@ -1,0 +1,52 @@
+{
+  "slug": "opc-ua-industrial-data-integration",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "industrial-networks",
+  "tags": ["opc-ua", "information-modelling", "iec-62443", "scada", "isa-95"],
+  "publishedAt": "2026-08-16T10:10:00.000Z",
+  "coverImage": {
+    "file": "journal/opc-ua-integration.jpg",
+    "url": null,
+    "concept": "A patch panel where structured cabling from the plant floor meets the supervisory layer — the physical location of an integration boundary, deliberately abstract.",
+    "prompt": "Photorealistic close-up photograph of a structured fibre patch panel in an industrial network cabinet, neatly dressed cables converging into ports, cool cyan link indicators against dark grey, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Structured fibre patch panel in an industrial network cabinet with neatly dressed cabling",
+      "fa": "پچ‌پنل فیبر ساختاریافته در تابلوی شبکهٔ صنعتی با کابل‌کشی مرتب",
+      "de": "Strukturiertes Glasfaser-Patchfeld in einem Industrie-Netzwerkschrank mit sauberer Kabelführung"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "GATEWAY",
+    "linkedTechnology": "OPC UA",
+    "linkedStandard": "IEC 62443",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "OPC UA Architecture for Industrial Data Integration",
+      "subtitle": "Information modelling, namespace strategy and certificate reality — plus an honest account of where OPC UA is the wrong answer",
+      "excerpt": "OPC UA's value is the information model, not the transport. Address space and namespace design, subscriptions and monitored items, certificate trust that actually gets operated, and the cases where a simpler protocol or a gateway is the better engineering choice.",
+      "seoTitle": "OPC UA Architecture for Industrial Data Integration",
+      "seoDescription": "Design OPC UA properly: information modelling, namespace strategy, subscriptions and monitored items, certificate trust, security modes, performance and gateway patterns."
+    },
+    "fa": {
+      "title": "معماری OPC UA برای یکپارچه‌سازی دادهٔ صنعتی",
+      "subtitle": "مدل‌سازی اطلاعات، راهبرد namespace و واقعیت گواهی‌ها — به‌علاوهٔ روایتی صادقانه از جایی که OPC UA پاسخ اشتباه است",
+      "excerpt": "ارزش OPC UA مدل اطلاعات است، نه لایهٔ انتقال. طراحی address space و namespace، اشتراک‌ها و monitored items، اعتماد گواهی که واقعاً بهره‌برداری می‌شود، و مواردی که پروتکل ساده‌تر یا یک gateway انتخاب مهندسی بهتری است.",
+      "seoTitle": "معماری OPC UA برای یکپارچه‌سازی دادهٔ صنعتی",
+      "seoDescription": "طراحی درست OPC UA: مدل‌سازی اطلاعات، راهبرد namespace، اشتراک و monitored items، اعتماد گواهی، مُدهای امنیتی، کارایی و الگوهای gateway."
+    },
+    "de": {
+      "title": "OPC-UA-Architektur für industrielle Datenintegration",
+      "subtitle": "Informationsmodellierung, Namespace-Strategie und Zertifikatsrealität — samt einer ehrlichen Einordnung, wo OPC UA die falsche Antwort ist",
+      "excerpt": "Der Wert von OPC UA liegt im Informationsmodell, nicht im Transport. Adressraum- und Namespace-Entwurf, Subscriptions und Monitored Items, ein Zertifikatsvertrauen, das im Betrieb auch gelebt wird — und die Fälle, in denen ein einfacheres Protokoll die bessere Wahl ist.",
+      "seoTitle": "OPC-UA-Architektur für industrielle Datenintegration",
+      "seoDescription": "OPC UA richtig auslegen: Informationsmodellierung, Namespace-Strategie, Subscriptions und Monitored Items, Zertifikatsvertrauen, Sicherheitsmodi und Gateway-Muster."
+    }
+  }
+}

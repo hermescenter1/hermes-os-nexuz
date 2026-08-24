@@ -1,0 +1,52 @@
+{
+  "slug": "industrial-motor-protection-failure-diagnostics",
+  "contentType": "FAILURE_ANALYSIS",
+  "category": "drives-motors",
+  "tags": ["motor-protection", "condition-monitoring", "diagnostics", "root-cause-analysis", "protection-coordination"],
+  "publishedAt": "2026-08-16T12:30:00.000Z",
+  "coverImage": {
+    "file": "journal/motor-protection-diagnostics.jpg",
+    "url": null,
+    "concept": "The terminal box of a large industrial motor, cable glands and earthing bond visible — where the electrical evidence and the mechanical machine meet.",
+    "prompt": "Photorealistic photograph of the opened terminal box of a large industrial induction motor, heavy cable glands and earth bonding visible, cool cyan rim light on dark cast iron, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Opened terminal box of a large industrial induction motor with cable glands and earth bonding",
+      "fa": "جعبه ترمینال باز یک موتور القایی صنعتی بزرگ با گلندهای کابل و اتصال زمین",
+      "de": "Geöffneter Klemmenkasten eines großen Industrie-Asynchronmotors mit Kabelverschraubungen und Erdung"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "ELECTRICAL",
+    "linkedAssetType": "MOTOR",
+    "linkedTechnology": "Motor Protection and Diagnostics",
+    "linkedStandard": "IEC 60947",
+    "safetyCritical": true,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Industrial Motor Protection and Failure Diagnostics",
+      "subtitle": "Every protection function is a model of something it cannot measure — knowing which blind spot you are standing in is the whole diagnosis",
+      "excerpt": "Protection engineering and evidence-based fault finding in one place: what each function detects and what it cannot see, why voltage unbalance is a rotor-heating problem, how to separate a nuisance trip from a real one, and how to avoid replacing a healthy motor.",
+      "seoTitle": "Industrial Motor Protection and Failure Diagnostics Practice",
+      "seoDescription": "Motor protection and diagnostics: thermal models, unbalance and phase loss, locked rotor, earth fault, temperature sensing and reading trip evidence correctly."
+    },
+    "fa": {
+      "title": "حفاظت موتور صنعتی و تشخیص خرابی",
+      "subtitle": "هر تابع حفاظتی مدلی از چیزی است که نمی‌تواند اندازه بگیرد — دانستن اینکه در کدام نقطهٔ کور ایستاده‌اید تمام تشخیص است",
+      "excerpt": "مهندسی حفاظت و عیب‌یابی شواهدمحور در یک جا: هر تابع چه چیزی را تشخیص می‌دهد و چه چیزی را نمی‌بیند، چرا نامتعادلی ولتاژ یک مسئلهٔ گرمایش روتور است، چگونه trip مزاحم را از trip واقعی جدا کنیم، و چگونه از تعویض یک موتور سالم پرهیز کنیم.",
+      "seoTitle": "حفاظت موتور صنعتی و تشخیص خرابی بر پایهٔ شواهد",
+      "seoDescription": "حفاظت و تشخیص موتور: مدل حرارتی، نامتعادلی و فقدان فاز، قفل روتور، خطای زمین، حس دما، شواهد trip و تفکیک trip مزاحم از واقعی."
+    },
+    "de": {
+      "title": "Motorschutz und Fehlerdiagnose in der Industrie",
+      "subtitle": "Jede Schutzfunktion ist ein Modell von etwas, das sie nicht messen kann — zu wissen, in welchem blinden Fleck man steht, ist die eigentliche Diagnose",
+      "excerpt": "Schutztechnik und belegbasierte Fehlersuche in einem: Was jede Funktion erkennt und was sie nicht sieht, warum Spannungsunsymmetrie ein Rotorerwärmungsproblem ist, wie sich eine unnötige von einer echten Auslösung trennen lässt — und wie man den Tausch eines gesunden Motors vermeidet.",
+      "seoTitle": "Motorschutz und Fehlerdiagnose in der Industrie",
+      "seoDescription": "Motorschutz und Diagnose: thermische Modelle, Unsymmetrie und Phasenausfall, blockierter Läufer, Erdschluss, Temperaturerfassung und Bewertung von Auslösungen."
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell }      from "@/components/PageShell";
+import { AppShell }       from "@/components/app-shell";
 import { TelemetryViewer } from "@/components/industrial/TelemetryViewer";
 
 export default async function IndustrialTelemetryPage({
@@ -10,7 +10,7 @@ export default async function IndustrialTelemetryPage({
   const t = await getTranslations("industrial");
 
   return (
-    <PageShell>
+    <AppShell>
       <div className="mx-auto max-w-7xl px-6 pt-10">
         <div className="mb-8">
           <p className="font-mono text-sm uppercase tracking-widest text-signal">
@@ -25,6 +25,6 @@ export default async function IndustrialTelemetryPage({
         </div>
         <TelemetryViewer />
       </div>
-    </PageShell>
+    </AppShell>
   );
 }

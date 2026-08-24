@@ -20,16 +20,19 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { journalShellMode } from "../journal-shell";
 import { ArticlesNav } from "../ArticlesNav";
+import { ArticlesMobileNav } from "../ArticlesMobileNav";
 import { PublicHeader, PublicFooter } from "@/components/public-site";
 
 export function JournalShell({
   children,
   showAuth,
   showEditorial,
+  brandTitle,
 }: {
   children: ReactNode;
   showAuth: boolean;
   showEditorial: boolean;
+  brandTitle: string;
 }) {
   const pathname = usePathname() ?? "";
   const mode = journalShellMode(pathname);
@@ -53,9 +56,26 @@ export function JournalShell({
           <ArticlesNav showAuth={showAuth} showEditorial={showEditorial} />
         </div>
       </aside>
-      <main className="flex-1 overflow-x-hidden min-w-0">
-        {children}
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/*
+          PHASE 107 — below `lg` the rail above is display:none, which left the
+          Journal with no navigation at all. This bar is the mobile counterpart
+          and is hidden the moment the rail appears, so the two are never both
+          on screen. Carried into the 104-F shell switch unchanged: it belongs
+          to the LEGACY branch only, because the journal branch's PublicHeader
+          already navigates at every breakpoint.
+        */}
+        <div className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-surface/95 px-3 py-2 backdrop-blur lg:hidden">
+          <ArticlesMobileNav showAuth={showAuth} showEditorial={showEditorial} />
+          <p className="min-w-0 truncate font-display text-sm font-semibold text-ink">
+            {brandTitle}
+          </p>
+        </div>
+
+        <main className="flex-1 overflow-x-hidden min-w-0">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

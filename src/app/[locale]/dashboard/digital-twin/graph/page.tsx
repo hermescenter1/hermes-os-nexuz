@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { PageShell } from "@/components/PageShell";
+import { AppShell } from "@/components/app-shell";
 import GraphView     from "@/components/digital-twin/GraphView";
 
 export default async function DigitalTwinGraphPage({
@@ -12,7 +12,7 @@ export default async function DigitalTwinGraphPage({
   const t = await getTranslations("digitalTwin");
 
   return (
-    <PageShell>
+    <AppShell>
       <div className="mx-auto max-w-7xl px-6 pt-10">
         <div className="mb-8">
           <p className="font-mono text-sm uppercase tracking-widest text-signal">
@@ -32,6 +32,6 @@ export default async function DigitalTwinGraphPage({
           {(t as unknown as (k: string) => string)("selectSitePrompt")}
         </p>
       </div>
-    </PageShell>
+    </AppShell>
   );
 }

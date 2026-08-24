@@ -80,7 +80,20 @@ export function RegisterClient({ locale }: Props) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-      {/* Honeypot — hidden from real users, bots tend to fill every field */}
+      {/*
+        Honeypot — hidden from real users, bots tend to fill every field.
+
+        PHASE 107: parked off the top rather than off the left. Browsers ignore
+        overflow past the inline START of the page, so `-left-[9999px]` costs
+        nothing under LTR — but under RTL the inline start is the RIGHT edge, so
+        the same offset became overflow past the END and gave /fa/auth/register a
+        9,846px horizontal scrollbar. Nothing else on the Persian estate
+        overflowed; this one element was the entire finding.
+
+        The block axis has no such asymmetry: negative `top` is ignored in both
+        directions. The honeypot's behaviour is unchanged — still off-screen,
+        still zero-opacity, still untabbable and aria-hidden.
+      */}
       <input
         type="text"
         value={gotcha}
@@ -88,7 +101,7 @@ export function RegisterClient({ locale }: Props) {
         tabIndex={-1}
         autoComplete="off"
         aria-hidden="true"
-        className="absolute -left-[9999px] h-px w-px opacity-0"
+        className="absolute -top-[9999px] h-px w-px opacity-0"
       />
 
       <AuthField

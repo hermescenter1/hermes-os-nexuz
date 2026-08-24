@@ -1,5 +1,5 @@
 import { setRequestLocale }  from "next-intl/server";
-import { PageShell }         from "@/components/PageShell";
+import { AppShell }          from "@/components/app-shell";
 import { AssetDetailClient } from "@/components/industrial/AssetDetailClient";
 import { Link }              from "@/i18n/navigation";
 
@@ -12,7 +12,7 @@ export default async function AssetDetailPage({
   setRequestLocale(locale);
 
   return (
-    <PageShell>
+    <AppShell>
       <div className="mx-auto max-w-5xl px-6 pt-10 pb-16">
         {/* Back link */}
         <div className="mb-6">
@@ -29,6 +29,6 @@ export default async function AssetDetailPage({
 
         <AssetDetailClient assetId={id} />
       </div>
-    </PageShell>
+    </AppShell>
   );
 }

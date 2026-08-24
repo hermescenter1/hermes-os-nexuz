@@ -29,7 +29,7 @@ export default async function ArticlesPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const feed = await getArticleFeed();
+  const feed = await getArticleFeed(locale);
   let canWrite = false;
   try { canWrite = !!(await getCurrentUser()); } catch { /* unauthenticated */ }
   return <JournalLanding feed={feed} locale={locale} canWrite={canWrite} />;

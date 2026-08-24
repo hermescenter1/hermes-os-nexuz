@@ -1,4 +1,5 @@
 import type { ReactNode }  from "react";
+import { getTranslations } from "next-intl/server";
 import { getCurrentUser }  from "@/lib/auth/session";
 import { can }             from "@/lib/auth/roles";
 import { JournalShell }    from "@/components/articles/journal/JournalShell";
@@ -11,6 +12,7 @@ import { JournalShell }    from "@/components/articles/journal/JournalShell";
 // anything private or unknown). The auth/role derivation below is unchanged
 // from 72.5 and is still what gates the legacy sidebar's private links.
 export default async function ArticlesLayout({ children }: { children: ReactNode }) {
+  const t = await getTranslations("journal.nav");
   let isAuth  = false;
   let isAdmin = false;
   try {
@@ -22,7 +24,7 @@ export default async function ArticlesLayout({ children }: { children: ReactNode
   } catch { /* unauthenticated or auth not configured */ }
 
   return (
-    <JournalShell showAuth={isAuth} showEditorial={isAdmin}>
+    <JournalShell showAuth={isAuth} showEditorial={isAdmin} brandTitle={t("brandTitle")}>
       {children}
     </JournalShell>
   );

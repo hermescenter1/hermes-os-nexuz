@@ -1,0 +1,52 @@
+{
+  "slug": "it-ot-convergence-modern-factories",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "industrial-automation",
+  "tags": ["isa-95", "network-segmentation", "iec-62443", "historian", "scada"],
+  "publishedAt": "2026-08-16T11:40:00.000Z",
+  "coverImage": {
+    "file": "journal/it-ot-convergence.jpg",
+    "url": null,
+    "concept": "A glazed control-room wall with the plant beyond it — two environments in one frame, connected by sight and separated by structure.",
+    "prompt": "Photorealistic photograph looking through a glazed control room partition toward a dimly lit industrial process area beyond, cool cyan interior light against warm plant lighting, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "View through a glazed control room partition toward an industrial process area beyond",
+      "fa": "نمای عبور از پارتیشن شیشه‌ای اتاق کنترل به‌سوی محوطهٔ فرایندی صنعتی",
+      "de": "Blick durch eine verglaste Leitwarten-Trennwand auf einen dahinterliegenden Prozessbereich"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "OPERATIONS",
+    "linkedAssetType": "NETWORK",
+    "linkedTechnology": "IT/OT Integration",
+    "linkedStandard": "ISA-95",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "IT/OT Convergence Architecture for Modern Factories",
+      "subtitle": "Every connection that adds visibility adds a dependency — and the test of the architecture is whether the plant still runs when the link is down",
+      "excerpt": "Convergence as an engineering account rather than a slogan: northbound data versus southbound control, the industrial DMZ and one-way replication, identity and patching boundaries, edge and cloud placement, and the availability dependencies that quietly get created.",
+      "seoTitle": "IT/OT Convergence Architecture for Modern Industrial Plants",
+      "seoDescription": "Engineering IT/OT convergence: northbound and southbound flows, industrial DMZ, historian replication, MES integration, identity, patching boundaries, edge and cloud."
+    },
+    "fa": {
+      "title": "معماری هم‌گرایی IT و OT برای کارخانه‌های مدرن",
+      "subtitle": "هر اتصالی که دید اضافه می‌کند یک وابستگی هم اضافه می‌کند — و آزمون معماری این است که آیا کارخانه با قطع لینک همچنان کار می‌کند",
+      "excerpt": "هم‌گرایی به‌عنوان یک حسابرسی مهندسی نه یک شعار: دادهٔ رو به بالا در برابر کنترل رو به پایین، DMZ صنعتی و تکثیر یک‌طرفه، مرزهای هویت و وصله‌گذاری، جایگاه edge و cloud، و وابستگی‌های دسترس‌پذیری که بی‌صدا ساخته می‌شوند.",
+      "seoTitle": "معماری هم‌گرایی IT و OT برای کارخانه‌های صنعتی مدرن",
+      "seoDescription": "مهندسی هم‌گرایی IT و OT: جریان رو به بالا و رو به پایین، DMZ صنعتی، تکثیر historian، یکپارچه‌سازی MES، هویت، مرزهای وصله‌گذاری، edge و cloud."
+    },
+    "de": {
+      "title": "IT/OT-Konvergenzarchitektur für moderne Fabriken",
+      "subtitle": "Jede Verbindung, die Sichtbarkeit schafft, schafft eine Abhängigkeit — und die Prüffrage lautet, ob die Anlage bei getrennter Verbindung weiterläuft",
+      "excerpt": "Konvergenz als ingenieurtechnische Bilanz statt als Schlagwort: Datenfluss nach oben gegenüber Steuerung nach unten, industrielle DMZ und einseitige Replikation, Identitäts- und Patch-Grenzen, Edge- und Cloud-Platzierung sowie die still entstehenden Verfügbarkeitsabhängigkeiten.",
+      "seoTitle": "IT/OT-Konvergenzarchitektur für moderne Industriebetriebe",
+      "seoDescription": "IT/OT-Konvergenz auslegen: Flüsse nach oben und unten, industrielle DMZ, Historian-Replikation, MES-Anbindung, Identität, Patch-Grenzen, Edge und Cloud."
+    }
+  }
+}

@@ -2627,6 +2627,11 @@ main [id$="-title"] {
 }
 .hj-body h3 { margin-block: 1.75em 0.5em; font-weight: 600; }
 .hj-body ul, .hj-body ol { margin-block: 1em; padding-inline-start: 1.5em; }
+/* generated ordered-list markers localize with the page language (main's
+   Persian-digit fix, carried into the 104-F body as CSS rather than a locale
+   ternary in the renderer): ۱ ۲ ۳ on the Persian edition, 1 2 3 elsewhere. */
+.hj-body ol { list-style-type: decimal; }
+.hj-body ol:lang(fa) { list-style-type: persian; }
 .hj-body li { margin-block: 0.35em; }
 .hj-body blockquote {
   margin-block: 1.5em;

@@ -1,0 +1,52 @@
+{
+  "slug": "secure-plc-scada-communication",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "cybersecurity-ot",
+  "tags": ["iec-62443", "network-segmentation", "scada", "modbus-tcp", "commissioning"],
+  "publishedAt": "2026-08-16T10:20:00.000Z",
+  "coverImage": {
+    "file": "journal/secure-plc-scada-communication.jpg",
+    "url": null,
+    "concept": "A sealed cabinet boundary — the physical expression of a trust boundary between two zones, with the cable transition as the only crossing point.",
+    "prompt": "Photorealistic photograph of a heavy industrial control cabinet gland plate where armoured cables cross a sealed boundary, cool cyan edge lighting against dark steel, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Sealed gland plate of an industrial control cabinet where armoured cables cross the enclosure boundary",
+      "fa": "صفحهٔ گلند آب‌بند تابلوی کنترل صنعتی، جایی که کابل‌های زرهی از مرز محفظه عبور می‌کنند",
+      "de": "Abgedichtete Verschraubungsplatte eines Industrieschaltschranks, an der armierte Kabel die Gehäusegrenze durchqueren"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "NETWORK",
+    "linkedTechnology": "OT Network Security",
+    "linkedStandard": "IEC 62443",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "Engineering Secure PLC-to-SCADA Communication",
+      "subtitle": "Trust boundaries, direction of initiation, read/write separation and containment that does not trip the plant",
+      "excerpt": "The link between a controller and its supervisory system is a conduit, not a cable. How to decide who may initiate, in which direction, with what authority — and how to keep engineering access, legacy protocols and incident containment from undermining the design.",
+      "seoTitle": "Engineering Secure PLC-to-SCADA Communication in OT Networks",
+      "seoDescription": "Defensive OT architecture for the PLC-SCADA link: trust boundaries, segmentation, firewall policy, read/write separation, engineering access and containment."
+    },
+    "fa": {
+      "title": "مهندسی ارتباط ایمن PLC تا SCADA",
+      "subtitle": "مرزهای اعتماد، جهت آغاز اتصال، تفکیک خواندن از نوشتن و مهاری که خط تولید را از کار نمی‌اندازد",
+      "excerpt": "پیوند میان کنترلر و سامانهٔ نظارتی یک conduit است، نه یک کابل. اینکه چه کسی اجازهٔ آغاز اتصال دارد، در چه جهتی و با چه اختیاری — و اینکه دسترسی مهندسی، پروتکل‌های قدیمی و مهار حادثه چگونه می‌توانند این طراحی را بی‌اثر کنند.",
+      "seoTitle": "مهندسی ارتباط ایمن PLC تا SCADA در شبکه‌های صنعتی",
+      "seoDescription": "معماری دفاعی OT برای پیوند PLC و SCADA: مرزهای اعتماد، بخش‌بندی، سیاست فایروال، تفکیک خواندن و نوشتن، دسترسی مهندسی، پروتکل‌های قدیمی، پایش و مهار حادثه."
+    },
+    "de": {
+      "title": "Sichere PLC-SCADA-Kommunikation entwerfen",
+      "subtitle": "Vertrauensgrenzen, Verbindungsrichtung, Trennung von Lesen und Schreiben — und eine Eindämmung, die die Anlage nicht stillsetzt",
+      "excerpt": "Die Verbindung zwischen Steuerung und Leitsystem ist ein Conduit, kein Kabel. Wer darf eine Verbindung aufbauen, in welche Richtung und mit welcher Befugnis — und wie Engineering-Zugriff, Altprotokolle und Vorfallseindämmung den Entwurf wieder aushebeln können.",
+      "seoTitle": "Sichere PLC-SCADA-Kommunikation in OT-Netzen entwerfen",
+      "seoDescription": "Defensive OT-Architektur für die PLC-SCADA-Verbindung: Vertrauensgrenzen, Segmentierung, Firewall-Regeln, Lese-Schreib-Trennung und Vorfallseindämmung."
+    }
+  }
+}

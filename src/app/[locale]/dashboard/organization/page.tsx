@@ -15,7 +15,7 @@
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { cookies }     from "next/headers";
-import { PageShell }   from "@/components/PageShell";
+import { AppShell }    from "@/components/app-shell";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { OrgOverview } from "@/components/organization/OrgOverview";
 import { PageHeader }  from "@/components/ui/PageHeader";
@@ -86,7 +86,7 @@ export default async function OrgPage({ params }: { params: Promise<{ locale: st
   // ordinary organization/site CONTEXT elsewhere; only this surface is denied.
   return (
     <RequireCapability capability="org_admin">
-      <PageShell>
+      <AppShell>
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <PageHeader
             eyebrow={oa("header.eyebrow")}
@@ -110,7 +110,7 @@ export default async function OrgPage({ params }: { params: Promise<{ locale: st
             <p className="mt-6 text-muted">{oa("states.noOrganization")}</p>
           )}
         </div>
-      </PageShell>
+      </AppShell>
     </RequireCapability>
   );
 }

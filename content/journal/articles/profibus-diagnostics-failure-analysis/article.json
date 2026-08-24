@@ -1,0 +1,52 @@
+{
+  "slug": "profibus-diagnostics-failure-analysis",
+  "contentType": "TECHNICAL_ARTICLE",
+  "category": "troubleshooting",
+  "tags": ["profibus", "diagnostics", "signal-integrity", "earthing", "root-cause-analysis"],
+  "publishedAt": "2026-08-16T10:50:00.000Z",
+  "coverImage": {
+    "file": "journal/profibus-diagnostics.jpg",
+    "url": null,
+    "concept": "An opened fieldbus connector on a bench, shield clamp and conductors exposed — the single most common location of a fault that presents as a network problem.",
+    "prompt": "Photorealistic macro photograph of an opened industrial fieldbus connector on a workbench, shield clamp and twisted-pair conductors visible, purple cable jacket, cool cyan rim light against dark background, no readable text or labels, shallow depth of field, premium editorial photography, 16:9",
+    "dimensions": "1920x1080",
+    "alt": {
+      "en": "Opened industrial fieldbus connector on a workbench with shield clamp and twisted-pair conductors visible",
+      "fa": "کانکتور باز فیلدباس صنعتی روی میز کار با گیرهٔ شیلد و هادی‌های زوج‌تابیده",
+      "de": "Geöffneter industrieller Feldbus-Steckverbinder auf der Werkbank mit sichtbarer Schirmklemme und verdrillten Adern"
+    }
+  },
+  "knowledge": {
+    "knowledgeEligible": true,
+    "reviewedForKnowledge": false,
+    "industrialDomain": "AUTOMATION",
+    "linkedAssetType": "NETWORK",
+    "linkedTechnology": "PROFIBUS DP",
+    "linkedStandard": "IEC 61158",
+    "safetyCritical": false,
+    "humanReviewed": false
+  },
+  "editions": {
+    "en": {
+      "title": "PROFIBUS Diagnostics and Failure Analysis",
+      "subtitle": "Retries as the leading indicator, termination that depends on power, and a fault-isolation method that does not start by replacing devices",
+      "excerpt": "A PROFIBUS segment usually degrades for months before it drops a station. How to read the evidence — retry rates, signal quality, dropout patterns — and isolate a physical-layer fault systematically instead of swapping hardware until the symptom moves.",
+      "seoTitle": "PROFIBUS Diagnostics and Failure Analysis for Industrial Segments",
+      "seoDescription": "Evidence-based PROFIBUS troubleshooting: retry rates, termination and shielding faults, reflections, connector defects, repeaters and systematic fault isolation."
+    },
+    "fa": {
+      "title": "تشخیص و تحلیل خرابی PROFIBUS",
+      "subtitle": "retry به‌عنوان شاخص پیشرو، ترمیناسیونی که به برق وابسته است، و روش جداسازی خطا که با تعویض قطعه شروع نمی‌شود",
+      "excerpt": "یک سگمنت PROFIBUS معمولاً ماه‌ها تنزل می‌کند پیش از آنکه ایستگاهی را از دست بدهد. چگونه شواهد را بخوانیم — نرخ retry، کیفیت سیگنال، الگوی dropout — و خطای لایهٔ فیزیکی را نظام‌مند جدا کنیم، به‌جای تعویض سخت‌افزار تا وقتی نشانه جابه‌جا شود.",
+      "seoTitle": "تشخیص و تحلیل خرابی PROFIBUS در سگمنت‌های صنعتی",
+      "seoDescription": "عیب‌یابی شواهدمحور PROFIBUS: نرخ retry، خطای ترمیناسیون و شیلد، بازتاب، نقص کانکتور، ریپیتر، تفسیر سیگنال و روش جداسازی خطا."
+    },
+    "de": {
+      "title": "PROFIBUS-Diagnose und Fehleranalyse",
+      "subtitle": "Wiederholungen als Frühindikator, spannungsabhängiger Abschluss und eine Fehlereingrenzung, die nicht mit Gerätetausch beginnt",
+      "excerpt": "Ein PROFIBUS-Segment degradiert meist über Monate, bevor eine Station ausfällt. Wie sich die Belege lesen lassen — Wiederholungsraten, Signalqualität, Ausfallmuster — und wie ein Fehler der physikalischen Ebene systematisch eingegrenzt wird.",
+      "seoTitle": "PROFIBUS-Diagnose und Fehleranalyse in Industriesegmenten",
+      "seoDescription": "Belegbasierte PROFIBUS-Fehlersuche: Wiederholungsraten, Abschluss- und Schirmungsfehler, Reflexionen, Steckverbinderdefekte, Repeater, Signaldeutung und Eingrenzung."
+    }
+  }
+}

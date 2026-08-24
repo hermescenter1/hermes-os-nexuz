@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+// PHASE 107 STAGE 6-A — the load had an `if (res.ok)` with no else, so a failed
+// request left the list empty and finished loading: a signed-out reader was
+// shown an organization with no departments. The create path and the endpoint
+// are unchanged; the refresh after a create runs through the same state machine.
+
+import { useState }                          from "react";
 import { useTranslations }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
 import { DashboardPanel }                    from "@/components/ui/DashboardPanel";
+import { ResourceFailureNotice }             from "@/components/ui/ResourceFailureNotice";
+import { useResource }                       from "@/lib/client/use-resource";
+import { requestJson }                       from "@/lib/client/resource-request";
 import type { DeptRecord }                   from "@/lib/org/types";
 import { DEPT_TYPES }                        from "@/lib/org/types";
 
@@ -11,25 +19,20 @@ interface Props { orgId: string; canManage: boolean }
 
 export function DepartmentsPanel({ orgId, canManage }: Props) {
   const t = useTranslations("org");
-  const [departments, setDepartments] = useState<DeptRecord[]>([]);
-  const [loading, setLoading]   = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm]         = useState({ name: "", description: "", type: "automation" });
   const [creating, setCreating] = useState(false);
   const [error, setError]       = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/organizations/${orgId}/departments`);
-      if (res.ok) {
-        const data = await res.json() as { departments: DeptRecord[] };
-        setDepartments(data.departments);
-      }
-    } finally { setLoading(false); }
-  }, [orgId]);
-
-  useEffect(() => { void load(); }, [load]);
+  const deptState = useResource<DeptRecord[]>(
+    (signal) => requestJson(
+      `/api/organizations/${orgId}/departments`,
+      (body) => (body as { departments?: DeptRecord[] }).departments,
+      { signal },
+    ),
+    [orgId],
+  );
+  const departments = deptState.data ?? [];
 
   async function createDept() {
     setCreating(true);
@@ -44,14 +47,22 @@ export function DepartmentsPanel({ orgId, canManage }: Props) {
       if (!res.ok) { setError(data.error ?? "Failed"); return; }
       setShowForm(false);
       setForm({ name: "", description: "", type: "automation" });
-      void load();
+      deptState.retry();
     } finally { setCreating(false); }
   }
 
-  if (loading) {
+  if (deptState.status === "LOADING") {
     return (
       <DashboardPanel title="">
         <p className="text-muted text-sm">{(t as unknown as (k: string) => string)("loading")}</p>
+      </DashboardPanel>
+    );
+  }
+
+  if (deptState.status === "ERROR" && deptState.failure) {
+    return (
+      <DashboardPanel title="">
+        <ResourceFailureNotice code={deptState.failure} onRetry={deptState.retry} />
       </DashboardPanel>
     );
   }

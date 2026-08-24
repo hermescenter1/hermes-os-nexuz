@@ -1362,6 +1362,13 @@
     "tagline": "Plattform für industrielle Intelligenz"
   },
   "dashboard": {
+    "platformComponents": {
+      "brainEngine": "Brain-Engine",
+      "knowledgeCloud": "Wissens-Cloud",
+      "caseEngine": "Case-Engine",
+      "telemetry": "Telemetrie-Anbindung",
+      "plcConnectivity": "SPS-Konnektivität"
+    },
     "title": "Werksdashboard",
     "eyebrow": "Betrieb",
     "simulated": "Simulierte Telemetrie",
@@ -3922,7 +3929,19 @@
     "kpiNormalizationNote": "Verfügbarkeit, Effizienz und Zustandswert sind Mittelwerte von Raten im Bereich 0–100, je Anlage normalisiert. Direkt standortübergreifend vergleichbar. Rohe Laufzeit-/Stillstandszählwerte sind ausgenommen.",
     "kgStaleWarning": "Der Wissensgraph ist veraltet. Bauen Sie ihn über Industrie → Wissensgraph neu auf, um ihn zu aktualisieren.",
     "loading": "Wird geladen…",
-    "errorLoading": "Daten konnten nicht geladen werden."
+    "errorLoading": "Daten konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "signIn": "Erneut anmelden",
+    "noSiteAccessTitle": "Keine zugänglichen Standorte",
+    "noSiteAccessHint": "In Ihrem Zugriffsbereich ist noch kein aktiver Industriestandort dieser Organisation vorhanden, daher gibt es nichts zusammenzufassen. Registrieren Sie einen Standort oder bitten Sie eine Administratorin oder einen Administrator um Standortzugriff.",
+    "sessionExpiredTitle": "Sitzung abgelaufen",
+    "sessionExpiredHint": "Ihre Sitzung ist für diese Daten nicht mehr gültig. Melden Sie sich erneut an, um die Unternehmensübersicht zu laden.",
+    "accessDeniedTitle": "Zugriff verweigert",
+    "accessDeniedHint": "Ihre Rolle umfasst keine Berechtigung für die standortübergreifende Intelligenz. Wenden Sie sich bei Bedarf an die Organisationsverwaltung.",
+    "requestFailedTitle": "Übersicht konnte nicht geladen werden",
+    "requestFailedHint": "Der Server hat die Unternehmensübersicht nicht zurückgegeben. Das ist meist vorübergehend — versuchen Sie es gleich noch einmal.",
+    "invalidResponseTitle": "Unerwartete Antwort",
+    "invalidResponseHint": "Der Server hat in einem Format geantwortet, das diese Seite nicht kennt. Es werden daher keine Daten angezeigt statt ungeprüfte Zahlen darzustellen."
   },
   "about": {
     "eyebrow": "Über Hermes Novin Mehr IRIC",
@@ -4315,6 +4334,8 @@
       }
     },
     "nav": {
+      "openMenu": "Journal-Navigation öffnen",
+      "menuTitle": "Journal-Navigation",
       "becomeAuthor": "Autor werden",
       "signIn": "Anmelden",
       "createAccount": "Konto beantragen",
@@ -5340,6 +5361,92 @@
       "disclaimerDecision": "Entscheidungsunterstützungsbericht.",
       "disclaimerNotCertified": "Kein zertifizierter Sicherheitsbericht.",
       "disclaimerVerify": "Mit qualifiziertem Personal und Standortverfahren verifizieren."
+    },
+    "reference": {
+      "heading": "Referenzdiagnose nach Phase 101",
+      "lede": "Eine deterministische Referenzdiagnose. Die strukturelle Analyseeinheit aus Phase 101 spielt einen kuratierten Fall gegen einen versiegelten technischen Referenzentwurf durch und durchläuft dessen Struktur, um Beobachtetes, Widersprechendes und weiterhin Unbekanntes voneinander zu trennen.",
+      "disclosure": {
+        "badge": "BEISPIEL",
+        "title": "Veranschaulichendes Beispiel — keine Echtzeitdaten einer Anlage",
+        "body": "Diese Fälle stammen aus eigens für diese Plattform erstellten synthetischen Referenzentwürfen. Es besteht keine Verbindung zu einer Anlage, einer PLC, einem SCADA-System oder einem OPC UA Server, und hier kann kein Befehl ausgelöst werden."
+      },
+      "relationship": {
+        "heading": "Verhältnis zum Arbeitsbereich oben",
+        "body": "Auf dieser Seite liegen zwei getrennte Funktionen. Der Arbeitsbereich oben wertet eine selbst verfasste Störungsmeldung aus. Dieses Feld spielt einen versiegelten Referenzfall durch die strukturelle Analyseeinheit aus Phase 101 — es liest nichts aus einer Anlage, verbindet sich mit keiner Ausrüstung und löst keinen Befehl aus."
+      },
+      "selector": {
+        "label": "Referenzfall",
+        "submit": "Diagnose ausführen",
+        "hint": "Die Analyseeinheit ist deterministisch: derselbe Fall liefert stets dasselbe Ergebnis."
+      },
+      "case": {
+        "heading": "Ausgewählter Fall",
+        "narrative": "Meldung des Bedienpersonals",
+        "system": "Referenzsystem",
+        "platform": "Steuerungsplattform",
+        "version": "Quellstand",
+        "checksum": "Inhaltsprüfsumme",
+        "observations": "Übergebene Beobachtungen",
+        "textLocaleNotice": "Die technischen Texte dieses Korpus liegen ausschließlich auf Englisch und Persisch vor. Fallbeschreibung und Objektbezeichnungen erscheinen daher auf Englisch."
+      },
+      "observed": {
+        "heading": "Beobachteter Anlagenzustand",
+        "empty": "Dieser Fall liefert keine Beobachtung, die sich auf ein Korpusobjekt auflösen lässt.",
+        "columnNode": "Technisches Objekt",
+        "columnState": "Beobachteter Zustand",
+        "columnLayer": "Ebene",
+        "columnSource": "Quellverweis"
+      },
+      "state": {
+        "TRUE": "Aktiv",
+        "FALSE": "Nicht aktiv",
+        "NORMAL": "Normal zustand",
+        "ABNORMAL": "Auffällig",
+        "STALE": "Veraltet",
+        "ABSENT": "Nicht übergeben"
+      },
+      "hypotheses": {
+        "heading": "Bewertete Fehlerhypothesen",
+        "empty": "Aus diesen Beobachtungen ist kein Fehlerbild des Referenzkorpus erreichbar. Die Analyseeinheit nennt keine Hypothese statt zu raten.",
+        "rank": "Rang {rank}",
+        "confidence": "Abdeckung der Nachweise",
+        "score": "Strukturbewertung",
+        "faultClass": "Fehlerklasse",
+        "subsystem": "Teilsystem",
+        "reviewOnly": "Nur zur Prüfung — ein sicherheitsklassifiziertes Objekt ist beteiligt",
+        "chain": "Begründungspfad"
+      },
+      "evidence": {
+        "supporting": "Stützende Nachweise",
+        "contradicting": "Widersprechende Nachweise",
+        "missing": "Fehlende Nachweise",
+        "noneSupporting": "Keine übergebene Beobachtung stützt diese Hypothese.",
+        "noneContradicting": "Keine übergebene Beobachtung spricht gegen diese Hypothese.",
+        "noneMissing": "Sämtliche deklarierten Nachweise wurden übergeben."
+      },
+      "validation": {
+        "heading": "Freigabe durch Fachpersonal",
+        "body": "Nichts hiervon ist ein Befund. Eine qualifizierte Fachkraft muss jeden Punkt vor einem Eingriff an der Anlage bestätigen.",
+        "none": "Für diesen Fall wurde keine Eskalationsbedingung ausgelöst."
+      },
+      "actions": {
+        "heading": "Sichere Prüfschritte",
+        "lede": "Rein beobachtende Prüfschritte, gerichtet an eine qualifizierte Person. Die Plattform kann sie nicht ausführen.",
+        "verifies": "Unterscheidet",
+        "reviewOnly": "Erfordert eine qualifizierte Sicherheitsfachkraft",
+        "empty": "Der Korpus nennt für die bewerteten Hypothesen keinen Prüfschritt."
+      },
+      "provenance": {
+        "heading": "Herkunftsnachweis",
+        "engine": "Analyseeinheit",
+        "corpus": "Korpusprüfsumme",
+        "citations": "Zitierte technische Objekte",
+        "systems": "Referenzsysteme / Objekte / Beziehungen"
+      },
+      "error": {
+        "heading": "Für diese Referenz liegt keine Diagnose vor",
+        "body": "Dieser Referenzfall gehört nicht zum kuratierten öffentlichen Umfang, oder die Kennung war nicht verwendbar. Wählen Sie einen der oben aufgeführten Fälle."
+      }
     }
   },
   "assetOperations": {
@@ -7669,6 +7776,30 @@
       "body": "Ein unerwarteter Fehler ist aufgetreten. Sie können es erneut versuchen oder zur Startseite zurückkehren.",
       "retry": "Erneut versuchen",
       "home": "Zurück zur Startseite"
+    },
+    "resource": {
+      "orgContextTitle": "Keine Organisation verfügbar",
+      "orgContextHint": "Sie sind angemeldet, aber dieses Konto ist in keiner Organisation aktives Mitglied. Bitten Sie die Administration, Sie hinzuzufügen, oder wählen Sie eine andere Organisation — eine erneute Anmeldung ändert daran nichts.",
+      "siteContextTitle": "Standort auswählen",
+      "siteContextHint": "Sie sind angemeldet, aber es ist kein Standort ausgewählt. Wählen Sie einen Standort, um die Daten zu laden.",
+      "unauthenticatedTitle": "Ihre Sitzung ist abgelaufen",
+      "unauthenticatedHint": "Melden Sie sich erneut an, um diese Daten zu laden. Es wird nichts angezeigt, statt eine unvollständige oder veraltete Ansicht darzustellen.",
+      "forbiddenTitle": "Kein Zugriff auf diese Daten",
+      "forbiddenHint": "Ihr Konto ist angemeldet, hat aber keine Berechtigung für diesen Datensatz. Bitten Sie die Administration um Zugriff.",
+      "notFoundTitle": "Dieser Datensatz existiert nicht mehr",
+      "notFoundHint": "Er wurde möglicherweise gelöscht oder verschoben. Kehren Sie zur Liste zurück, um die derzeit verfügbaren Einträge zu sehen.",
+      "invalidTitle": "Die Anfrage konnte nicht verarbeitet werden",
+      "invalidHint": "Der Server hat die Parameter dieser Ansicht abgelehnt. Laden Sie die Seite neu und melden Sie es, falls es erneut auftritt.",
+      "rateLimitedTitle": "Zu viele Anfragen",
+      "rateLimitedHint": "Diese Ansicht wurde zu häufig aktualisiert. Warten Sie einen Moment, bevor Sie es erneut versuchen.",
+      "unavailableTitle": "Der Dienst ist vorübergehend nicht verfügbar",
+      "unavailableHint": "Der Server beantwortet derzeit keine Anfragen. Das dauert meist nur kurz — versuchen Sie es in Kürze erneut.",
+      "offlineTitle": "Keine Verbindung zum Server",
+      "offlineHint": "Die Anfrage hat Hermes nie erreicht. Prüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.",
+      "failedTitle": "Diese Daten konnten nicht geladen werden",
+      "failedHint": "Der Server hat unerwartet geantwortet. Es wird nichts angezeigt, statt ungeprüfte Daten darzustellen.",
+      "retry": "Erneut versuchen",
+      "signIn": "Erneut anmelden"
     }
   },
   "otEdge": {
@@ -7832,6 +7963,12 @@
     "states": {
       "loadingTitle": "Datensätze werden geladen",
       "loadingFiltered": "Filter werden angewendet",
+      "orgContextTitle": "Kein Organisationskontext",
+      "orgContextBody": "Sie sind angemeldet, aber für dieses Konto ist kein aktiver Organisationskontext verfügbar. Bitten Sie die Administration, Sie einer Organisation hinzuzufügen.",
+      "siteContextTitle": "Standort auswählen",
+      "siteContextBody": "Sie sind angemeldet, aber es ist kein Standort ausgewählt. Wählen Sie einen Standort, um dessen Gateways und Geräte zu laden.",
+      "connectionFailedTitle": "Keine Verbindung zum Server",
+      "connectionFailedBody": "Die Anfrage hat Hermes nie erreicht. Prüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.",
       "emptyGatewaysTitle": "Keine Gateways registriert",
       "emptyGatewaysBody": "Für die Standorte, die Sie einsehen dürfen, ist kein Edge-Gateway registriert.",
       "emptyDevicesTitle": "Keine Geräte registriert",
@@ -8777,5 +8914,14 @@
         "successCta": "Partnerverzeichnis ansehen"
       }
     }
+  },
+  "engineeringHub": {
+    "hub": "Engineering-Hub",
+    "executiveDashboard": "Management-Dashboard",
+    "intelligenceOverview": "Intelligence-Übersicht",
+    "projects": "Projekte",
+    "engineeringMemory": "Engineering-Wissensspeicher",
+    "knowledgeGraph": "Wissensgraph",
+    "domainExpertise": "Fachdomänen"
   }
 }
