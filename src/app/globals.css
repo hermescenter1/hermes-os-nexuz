@@ -3135,6 +3135,18 @@ main [id$="-title"] {
 .hf-reg-link:hover { color: var(--color-text-primary); }
 @media (prefers-reduced-motion: reduce) { .hf-reg-link { transition: none; } }
 
+/* Touch targets: at 0.5rem padding over a 1.4 line-height these links measure
+   34px and sit 1px apart, which is comfortable with a mouse and hazardous with
+   a thumb. The size is raised only where the pointer is coarse or the viewport
+   is narrow, so the desktop rhythm the footer was designed around is unchanged. */
+@media (pointer: coarse), (max-width: 767px) {
+  .hf-reg-link {
+    display: flex;
+    align-items: center;
+    min-block-size: 2.75rem;
+  }
+}
+
 /* closure: the handoff signature ends the page in code, not decoration */
 .hf-closure {
   display: flex;
