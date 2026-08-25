@@ -1,54 +1,40 @@
 import { NextResponse } from "next/server";
-import { getJobById }   from "@/lib/ats/db";
-import { JOBS }         from "@/lib/ats/mock-data";
+import { getPublicJobDetail } from "@/lib/ats/public-jobs";
 
+const NO_STORE = { "Cache-Control": "no-store" } as const;
+
+/**
+ * PHASE 104-B1.1 — the public job detail serves the DETAIL projection:
+ * every body field from the requested locale's COMPLETE AtsJobTranslation
+ * row (title, summary, description, department label, responsibilities,
+ * requirements, preferred experience, localized skill labels). The legacy
+ * English AtsJob content columns are never consulted, so DE/FA can never
+ * silently read English. `benefits` is absent by contract — it has no
+ * translated model (see PublicJobDetail in public-jobs.ts).
+ *
+ * Refusals are unchanged from B1: an unknown id, a DRAFT, a private posting,
+ * a CLOSED posting, an expired closingDate and a locale without a complete
+ * translation ALL answer the identical 404 — the endpoint is not an oracle
+ * for what exists. The store being unreachable is the one different answer
+ * (503), because an outage is not a fact about the posting. No fixture
+ * fallback exists.
+ */
 export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ jobId: string }> }
+  req: Request,
+  { params }: { params: Promise<{ jobId: string }> },
 ) {
   const { jobId } = await params;
+  const locale = new URL(req.url).searchParams.get("locale") ?? "en";
 
-  const dbJob = await getJobById(jobId);
-  if (dbJob !== null) {
-    // PHASE 99 SECURITY — this is the PUBLIC careers surface. `getJobById` is a
-    // generic lookup shared with authenticated routes and filters only
-    // `deletedAt`, so without this gate a DRAFT/CLOSED or non-public posting —
-    // including its organizationId, internal requirements and salary bands —
-    // was returned to any anonymous caller holding the id. The sibling list
-    // endpoint already pins both predicates (`getPublicJobs`); mirror it here,
-    // and answer 404 rather than 403 so the endpoint reveals nothing about the
-    // existence of a posting the caller may not see.
-    if (dbJob.status !== "OPEN" || dbJob.isPublic !== true) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
-    }
-    return NextResponse.json({ job: dbJob, source: "db" });
+  const job = await getPublicJobDetail(jobId, locale);
+  if (job === "UNAVAILABLE") {
+    return NextResponse.json(
+      { error: "The careers service is temporarily unavailable." },
+      { status: 503, headers: NO_STORE },
+    );
   }
-
-  // Mock fallback
-  const job = JOBS.find((j) => j.id === jobId);
-  if (!job) {
-    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+  if (job === null) {
+    return NextResponse.json({ error: "Job not found" }, { status: 404, headers: NO_STORE });
   }
-
-  const mockJob = {
-    id: job.id,
-    title: job.title,
-    description: job.description,
-    department: job.department,
-    location: job.location,
-    locationType: "onsite",
-    salaryCurrency: job.currency,
-    salaryMin: job.salaryMin,
-    salaryMax: job.salaryMax,
-    skills: job.requiredSkills,
-    requirements: job.requiredSkills,
-    responsibilities: [],
-    benefits: [],
-    status: "OPEN",
-    isPublic: true,
-    createdAt: new Date(job.openedAt),
-    updatedAt: new Date(job.openedAt),
-  };
-
-  return NextResponse.json({ job: mockJob, source: "mock" });
+  return NextResponse.json({ job, source: "db" }, { headers: NO_STORE });
 }

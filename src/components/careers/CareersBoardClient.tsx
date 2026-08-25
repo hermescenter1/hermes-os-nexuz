@@ -1,76 +1,76 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useState, useEffect, useCallback } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
+import { requestJson, ResourceRequestError, type ResourceFailureCode } from "@/lib/client/resource-request";
+import { parsePublicJobCards, type PublicJobCard } from "./public-job-contract";
 
-interface JobRow {
-  id: string;
-  title: string;
-  department: string;
-  location: string;
-  locationType: string;
-  salaryCurrency: string;
-  salaryMin: number | null;
-  salaryMax: number | null;
-  skills: string[];
-  status: string;
-  createdAt: string;
-}
+/*
+ * B1.3 §2 — the card contract and its EXACT validation live in
+ * ./public-job-contract. No salary on a card (compensation is a detail-page
+ * fact); `department` is the STABLE filter value and `departmentLabel` is
+ * the only department string a person ever sees. ONE malformed card
+ * invalidates the whole response — a partially-good list is not a list.
+ */
 
-interface ApiResponse {
-  jobs: JobRow[];
-  total: number;
-  source: "db" | "mock";
-}
-
-const DEPT_COLORS: Record<string, string> = {
-  "Automation Engineering": "bg-signal/10 text-signal",
-  "Field Services":         "bg-ice/10 text-ice",
-  "Software Engineering":   "bg-purple-400/10 text-purple-300",
-  "Project Management":     "bg-amber-400/10 text-amber-300",
-  "Human Resources":        "bg-pink-400/10 text-pink-300",
-  "Sales & Business Dev":   "bg-emerald-400/10 text-emerald-300",
-};
-
-function deptColor(d: string) {
-  return DEPT_COLORS[d] ?? "bg-surface text-muted";
-}
+/** B1.2 — the explicit async-state union (same contract as the detail page). */
+type BoardState =
+  | { phase: "loading" }
+  | { phase: "ready"; jobs: PublicJobCard[] }
+  | { phase: "failed"; code: ResourceFailureCode };
 
 export function CareersBoardClient() {
   const t = useTranslations("careers");
-  const [jobs, setJobs] = useState<JobRow[]>([]);
-  const [source, setSource] = useState<"db" | "mock" | null>(null);
+  const locale = useLocale();
+  const [state, setState] = useState<BoardState>({ phase: "loading" });
   const [search, setSearch] = useState("");
   const [dept, setDept] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((a) => a + 1), []);
 
   useEffect(() => {
+    // Any dependency change first RETURNS TO LOADING, so stale results — or a
+    // stale language — can never survive a failed follow-up request.
+    setState({ phase: "loading" });
+    const controller = new AbortController();
     const p = new URLSearchParams();
+    p.set("locale", locale);
     if (dept) p.set("department", dept);
     if (search) p.set("search", search);
-    setLoading(true);
-    fetch(`/api/careers/jobs?${p}`)
-      .then((r) => r.json() as Promise<ApiResponse>)
-      .then((d) => {
-        // PHASE 104-I1 — DB-only public rendering. Only display records when
-        // the source is verifiably the database. If the API falls back to mock
-        // data, suppress all record display and show an honest non-live state.
-        setSource(d.source);
-        if (d.source === "db") {
-          setJobs(d.jobs ?? []);
-        } else {
-          setJobs([]);
+    (async () => {
+      try {
+        const payload = await requestJson<{ jobs?: unknown; source?: string }>(
+          `/api/careers/jobs?${p}`,
+          (body) => (body && typeof body === "object" ? (body as { jobs?: unknown; source?: string }) : undefined),
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted) return;
+        if (payload.source !== "db") {
+          setState({ phase: "failed", code: "FAILED" });
+          return;
         }
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }, [search, dept]);
+        const jobs = parsePublicJobCards(payload);
+        setState(jobs ? { phase: "ready", jobs } : { phase: "failed", code: "FAILED" });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        const code: ResourceFailureCode =
+          error instanceof ResourceRequestError ? error.code : "FAILED";
+        // the LIST has no per-id enumeration concern: a 404 here is still an
+        // outage-class failure, never an invented empty board
+        setState({ phase: "failed", code });
+      }
+    })();
+    return () => controller.abort();
+  }, [search, dept, locale, attempt]);
 
-  const departments = [...new Set(jobs.map((j) => j.department))].sort();
-  const isLive = source === "db";
+  const jobs = state.phase === "ready" ? state.jobs : [];
+  // value = stable department code; label = the locale's translation
+  const departments = [...new Map(jobs.map((j) => [j.department, j.departmentLabel])).entries()].sort((a, b) =>
+    a[1].localeCompare(b[1]),
+  );
 
   return (
     <div>
@@ -83,33 +83,35 @@ export function CareersBoardClient() {
         </p>
       </div>
 
-      {/* When live: show filters. When non-live: omit them. */}
-      {isLive && jobs.length > 0 && (
+      {/* Filters — shown while a successful list is on screen */}
+      {state.phase === "ready" && (jobs.length > 0 || search || dept) && (
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("searchPlaceholder")}
-            className="flex-1 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-signal"
+            aria-label={t("searchPlaceholder")}
+            className="flex-1 rounded-lg border border-line bg-surface px-4 py-2.5 min-h-11 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-signal"
           />
           <select
             value={dept}
             onChange={(e) => setDept(e.target.value)}
-            className="rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal sm:w-64"
+            aria-label={t("allDepartments")}
+            className="rounded-lg border border-line bg-surface px-3 py-2.5 min-h-11 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-signal sm:w-64"
           >
             <option value="">{t("allDepartments")}</option>
-            {departments.map((d) => (
-              <option key={d} value={d}>
-                {d}
+            {departments.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
               </option>
             ))}
           </select>
         </div>
       )}
 
-      {/* KPI strip — only when live and have jobs */}
-      {isLive && jobs.length > 0 && (
+      {/* KPI strip — only for a non-empty successful list */}
+      {state.phase === "ready" && jobs.length > 0 && (
         <div className="global-ops-strip mb-8">
           <div className="global-ops-cell">
             <span className="kpi-label">{t("openRolesLabel")}</span>
@@ -128,23 +130,22 @@ export function CareersBoardClient() {
         </div>
       )}
 
-      {/* Job cards or state messaging */}
-      {loading ? (
+      {/* The four async states, kept apart on purpose (B1.2 §2):
+          loading / outage (with retry) / genuine empty / results. A 503 or a
+          dead connection NEVER wears the empty-board clothes. */}
+      {state.phase === "loading" ? (
         <div className="py-20 text-center text-muted text-sm">
           {t("loading")}
         </div>
-      ) : !isLive ? (
-        /* Non-live state: honest messaging, no synthetic data */
-        <div className="py-20 text-center text-muted text-sm">
-          {t("noLiveData")}
+      ) : state.phase === "failed" ? (
+        <div className="py-12">
+          <ResourceFailureNotice code={state.code} onRetry={retry} />
         </div>
       ) : jobs.length === 0 ? (
-        /* Live but no results */
         <div className="py-20 text-center text-muted text-sm">
           {t("noResults")}
         </div>
       ) : (
-        /* Live with jobs: render the grid */
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {jobs.map((job) => (
             <JobCard key={job.id} job={job} t={t} />
@@ -155,14 +156,12 @@ export function CareersBoardClient() {
   );
 }
 
-/**
- * A single job opportunity card. Extracted for clarity and testability.
- */
+/** A single job card — every visible string is locale-true. */
 function JobCard({
   job,
   t,
 }: {
-  job: JobRow;
+  job: PublicJobCard;
   t: ReturnType<typeof useTranslations>;
 }) {
   return (
@@ -174,14 +173,14 @@ function JobCard({
         <h2 className="font-mono text-sm font-semibold text-ink group-hover:text-signal transition-colors leading-snug">
           {job.title}
         </h2>
-        <span
-          className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide ${deptColor(
-            job.department
-          )}`}
-        >
-          {job.department.split(" ")[0]}
+        {/* B1.2 §7 — the badge is the LOCALIZED department label; the stable
+            English code is a filter value, never display copy */}
+        <span className="shrink-0 rounded-md px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide bg-signal/10 text-signal">
+          {job.departmentLabel}
         </span>
       </div>
+
+      <p className="text-xs text-muted leading-relaxed line-clamp-2">{job.shortSummary}</p>
 
       <div className="flex flex-wrap gap-1.5">
         {(Array.isArray(job.skills) ? job.skills : []).slice(0, 3).map((s) => (
@@ -196,33 +195,18 @@ function JobCard({
 
       <div className="mt-auto flex items-center justify-between text-xs text-muted font-mono">
         <span>{job.location}</span>
-        <span className="text-signal/70">
-          {formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, t)}
-        </span>
       </div>
 
+      {/* B1.4 §1 — the card promises exactly what the click does: it opens the
+          posting. It said "View and apply" while the server refused every
+          application, so the word "apply" is gone from the card entirely —
+          not hidden behind a flag, because a job card never submits anything
+          and has no business advertising an apply journey either way. */}
       <div className="pt-2 border-t border-line">
         <span className="text-xs text-signal font-mono group-hover:underline">
-          {t("viewAndApply")} →
+          {t("viewDetails")} →
         </span>
       </div>
     </Link>
   );
-}
-
-/**
- * Format salary range for display. When both min and max are null or zero,
- * display "Competitive" (or the translated equivalent).
- */
-function formatSalary(
-  min: number | null,
-  max: number | null,
-  cur: string,
-  t: ReturnType<typeof useTranslations>
-): string {
-  if (!min && !max) return t("competitive");
-  if (min && max)
-    return `${cur} ${(min / 1000).toFixed(0)}k – ${(max / 1000).toFixed(0)}k`;
-  if (min) return `${cur} ${(min / 1000).toFixed(0)}k+`;
-  return "";
 }

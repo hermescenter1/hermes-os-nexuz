@@ -84,7 +84,12 @@ export const EXPECTED_COMPLETED_MIGRATIONS = EXPECTED_TARGET_COUNT;
  * `prisma/migrations/` and sort after the last Phase 102 migration; the
  * regression suite proves both, so this list cannot become a rubber stamp.
  */
-export const POST_PHASE102_MIGRATIONS = ["20260823000000_phase106_journal_multilingual_editions"];
+export const POST_PHASE102_MIGRATIONS = [
+  "20260823000000_phase106_journal_multilingual_editions",
+  // Phase 104-B1 — recruitment foundation (additive; declared, not silently
+  // absorbed, so the completed-count equality stays an equality).
+  "20260824000000_phase104_b1_recruitment_foundation",
+];
 
 /**
  * Hosts a rehearsal database may live on. A rehearsal runs either against the

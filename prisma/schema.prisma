@@ -730,6 +730,9 @@ model OrganizationMember {
   user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   department     Department?              @relation("DepartmentMembers", fields: [departmentId], references: [id], onDelete: SetNull)
   managedDepts   Department[]             @relation("DepartmentManager")
+  hiringManagerJobs AtsJob[] @relation("AtsJobHiringManager")
+  // B1.2 — the composite target the hiring-manager tenant FK references.
+  @@unique([organizationId, id])
 
   @@unique([organizationId, userId])
   @@index([userId])
@@ -2378,24 +2381,140 @@ model AtsJob {
   benefits         Json           @default("[]")
   skills           Json           @default("[]")
   location         String
-  locationType     String         @default("onsite")  // onsite | remote | hybrid
+  locationType     String?        // onsite | remote | hybrid — B1: owner-gated, no silent default
   department       String
-  salaryCurrency   String         @default("USD")
+  salaryCurrency   String?        // B1: no invented USD; null until the owner sets a real currency
   salaryMin        Int?
   salaryMax        Int?
   status           AtsJobStatus   @default(DRAFT)
   closingDate      DateTime?
   postedById       String?
-  isPublic         Boolean        @default(true)
+  isPublic         Boolean        // B1.1: NO default — publication is always an explicit write, never implied
+
+  // ── PHASE 104-B1 — recruitment foundation (all additive, all nullable;
+  //    owner-gated fields hold NO invented value until the owner decides) ──
+  requisitionKey       String?    // stable org-scoped upsert key; importer will REQUIRE it
+  externalKey          String?
+  slug                 String?
+  employmentType       String?    // owner-gated
+  contractType         String?    // owner-gated
+  numberOfOpenings     Int?       // owner-gated — never defaulted
+  hiringManagerId      String?    // OrganizationMember.id — tenant safety re-checked in the domain service
+  publishedAt          DateTime?  // set ONLY by an explicit publish action; never backfilled from createdAt
+  addressLocality      String?
+  addressRegion        String?
+  addressCountry       String?
+  workingHoursSchedule String?    // owner-gated
+  educationRequirement String?    // owner-gated
+  minimumExperience    String?    // owner-gated
   deletedAt        DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   applications     AtsApplication[]
+  translations     AtsJobTranslation[]
+  // B1.2 — the relation carries the TENANT: (organizationId, hiringManagerId)
+  // references OrganizationMember(organizationId, id), matching the SQL
+  // composite FK exactly. What Prisma CANNOT express is the referential
+  // action's COLUMN LIST — the SQL is `ON DELETE SET NULL ("hiringManagerId")`
+  // (nulls only the manager link, never the NOT NULL tenant column). That one
+  // construct is migration-only, declared as NoAction here and machine-gated
+  // by prisma/__tests__/phase104b12-schema-sql-parity.test.ts.
+  hiringManager    OrganizationMember? @relation("AtsJobHiringManager", fields: [organizationId, hiringManagerId], references: [organizationId, id], onDelete: NoAction, onUpdate: Cascade, map: "AtsJob_hiringManager_tenant_fkey")
+  idempotencyClaims RecruitmentIdempotencyKey[]
 
+  @@unique([organizationId, id])
+  @@unique([organizationId, requisitionKey])
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
   @@index([status, isPublic])
+}
+
+// ── AtsJobTranslation — PHASE 104-B1, content model Option A ──────────────────
+//
+// One vacancy has ONE lifecycle (AtsJob.status / isPublic / publishedAt); the
+// three locales are rows here, never separate jobs. EN may be mirrored into the
+// legacy AtsJob columns for compatibility, but locale rendering must read the
+// translation row of that locale. localizedSkills is an OBJECT keyed by stable
+// skillCode — positional arrays cannot survive reordering.
+
+enum AtsJobLanguage {
+  EN
+  DE
+  FA
+}
+
+model AtsJobTranslation {
+  id                  String         @id @default(cuid())
+  jobId               String
+  language            AtsJobLanguage
+  title               String
+  shortSummary        String
+  description         String
+  departmentLabel     String
+  responsibilities    Json           @default("[]")
+  requirements        Json           @default("[]")
+  preferredExperience Json           @default("[]")
+  localizedSkills     Json           @default("{}")
+  seoTitle            String
+  seoDescription      String
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  job                 AtsJob         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, language])
+  @@index([language])
+}
+
+// ── RecruitmentIdempotencyKey — PHASE 104-B1 ──────────────────────────────────
+//
+// Atomic claim store for /api/careers/apply. NEVER stores the raw key: keyHash
+// is SHA-256 of the client key, payloadHash is an HMAC-SHA-256 fingerprint of
+// the CANONICAL validated payload (volatile fields excluded, deterministic
+// field order). Same key + same fingerprint replays the stored result with no
+// second write; same key + different fingerprint is refused generically.
+// Expired rows (24h) are treated as unseen.
+
+model RecruitmentIdempotencyKey {
+  id             String   @id @default(cuid())
+  organizationId String
+  jobId          String
+  keyHash        String
+  payloadHash    String
+  status         String   // CLAIMED | COMPLETED
+  resultId       String?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  // B1.2 — tenant-bound: a claim can only reference a job of its OWN
+  // organization; mirrors the SQL composite FK (ON DELETE CASCADE).
+  job            AtsJob   @relation(fields: [organizationId, jobId], references: [organizationId, id], onDelete: Cascade, onUpdate: Cascade, map: "RecruitmentIdempotencyKey_job_tenant_fkey")
+
+  @@unique([organizationId, jobId, keyHash])
+  @@index([expiresAt])
+}
+
+// ── RecruitmentOtpChallenge — PHASE 104-B1 ────────────────────────────────────
+//
+// Withdrawal one-time-code store. No plaintext anywhere: codeHmac is an
+// HMAC-SHA-256 under a VERSIONED server secret, identifierHmac is a keyed HMAC
+// of the normalised identifier (the raw email never lands in this table).
+// Reissue invalidates the previous row; consume is atomic in a transaction.
+
+model RecruitmentOtpChallenge {
+  id             String    @id @default(cuid())
+  identifierHmac String
+  purpose        String    // WITHDRAWAL
+  codeHmac       String
+  secretVersion  String
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(5)
+  expiresAt      DateTime
+  invalidatedAt  DateTime?
+  consumedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([identifierHmac, purpose, createdAt])
+  @@index([expiresAt])
 }
 
 // ── AtsCandidate ──────────────────────────────────────────────────────────────
@@ -2417,7 +2536,7 @@ model AtsCandidate {
   summary           String?
   skills            Json           @default("[]")
   languages         Json           @default("[]")
-  workAuthorization String         @default("citizen")
+  workAuthorization String?        // B1: null = NOT_COLLECTED; never fabricate "citizen" for a silent applicant
   deletedAt         DateTime?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
@@ -2878,6 +2997,12 @@ enum LegalDocumentType {
 //   candidate_privacy | academy_terms | marketing | data_processing
 // Append-only — never update, never delete (compliance requirement).
 
+enum ConsentRecordNature {
+  ACKNOWLEDGEMENT
+  ATTESTATION
+  CONSENT
+}
+
 model ConsentRecord {
   id             String        @id @default(cuid())
   userId         String?
@@ -2885,6 +3010,10 @@ model ConsentRecord {
   organizationId String?
   consentType    String
   consentVersion String        @default("1.0")
+  // PHASE 104-B1 — typed nature of the record. Nullable ONLY because historical
+  // rows have unknown provenance and may not be invented; every NEW recruitment
+  // write must set it (the write path fails closed without one).
+  recordNature   ConsentRecordNature?
   granted        Boolean
   locale         String        @default("en")
   ipAddress      String?

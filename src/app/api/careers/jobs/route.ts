@@ -1,47 +1,46 @@
 import { NextResponse } from "next/server";
-import { getPublicJobs } from "@/lib/ats/db";
-import { JOBS }          from "@/lib/ats/mock-data";
+import { listPublicJobCards } from "@/lib/ats/public-jobs";
 
+const NO_STORE = { "Cache-Control": "no-store" } as const;
+
+/**
+ * PHASE 104-B1 — the public careers list is DB-backed ONLY.
+ *
+ * The fixture fallback is gone: a search engine, a candidate and a test all
+ * see the same truth. Eligibility is the ONE shared predicate
+ * (`publicJobWhere` — OPEN + isPublic + published + unexpired + not deleted),
+ * and a job appears in a locale only with a COMPLETE translation for that
+ * locale. When the store is unreachable the route says so honestly (503) —
+ * it neither invents an empty list nor serves invented vacancies.
+ *
+ * `Cache-Control: no-store` until an invalidation design exists: a cached
+ * list that outlives a job's closingDate would advertise a vacancy that is
+ * no longer real.
+ */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const department = searchParams.get("department") ?? undefined;
-  const search     = searchParams.get("search")     ?? undefined;
+  const search = searchParams.get("search") ?? undefined;
+  const locale = searchParams.get("locale") ?? "en";
 
-  // Try DB first, fall back to mock data
-  const dbJobs = await getPublicJobs({ department, search });
-
-  if (dbJobs !== null) {
-    return NextResponse.json({ jobs: dbJobs, total: dbJobs.length, source: "db" });
+  const cards = await listPublicJobCards(locale, { department });
+  if (cards === null) {
+    return NextResponse.json(
+      { error: "The careers service is temporarily unavailable." },
+      { status: 503, headers: NO_STORE },
+    );
   }
 
-  // Mock fallback
-  let jobs = JOBS.filter((j) => j.status === "open");
-  if (department) jobs = jobs.filter((j) => j.department === department);
+  let jobs = cards;
   if (search) {
     const q = search.toLowerCase();
     jobs = jobs.filter(
       (j) =>
         j.title.toLowerCase().includes(q) ||
-        j.department.toLowerCase().includes(q) ||
-        j.location.toLowerCase().includes(q)
+        j.departmentLabel.toLowerCase().includes(q) ||
+        j.location.toLowerCase().includes(q),
     );
   }
 
-  const mockJobs = jobs.map((j) => ({
-    id: j.id,
-    title: j.title,
-    department: j.department,
-    location: j.location,
-    locationType: "onsite",
-    salaryCurrency: j.currency,
-    salaryMin: j.salaryMin,
-    salaryMax: j.salaryMax,
-    skills: j.requiredSkills,
-    status: "OPEN",
-    isPublic: true,
-    createdAt: new Date(j.openedAt),
-    updatedAt: new Date(j.openedAt),
-  }));
-
-  return NextResponse.json({ jobs: mockJobs, total: mockJobs.length, source: "mock" });
+  return NextResponse.json({ jobs, total: jobs.length, source: "db" }, { headers: NO_STORE });
 }

@@ -3,7 +3,7 @@ import { JobDetailClient }    from "@/components/careers/JobDetailClient";
 import { JsonLd }             from "@/components/seo/JsonLd";
 import { jobPostingSchema }   from "@/lib/seo/schemas";
 import { buildMetadata, noIndexMetadata } from "@/lib/seo/metadata";
-import { getPublicJobById, isoOrUndefined, jobSkills } from "@/lib/ats/public-jobs";
+import { getPublicJobPosting } from "@/lib/ats/public-jobs";
 import { BASE_URL }           from "@/lib/seo/config";
 
 /**
@@ -11,27 +11,31 @@ import { BASE_URL }           from "@/lib/seo/config";
  *
  * WHAT CHANGED AND WHY
  * --------------------
- * This file used to `import { JOBS } from "@/lib/ats/mock-data"` and hand five
+ * HISTORICAL (pre-B1): this file imported `{ JOBS } from "@/lib/ats/mock-data"` and handed five
  * invented vacancies — with invented salary bands, cities, sponsorship and
  * posting dates — straight into `JobPosting` structured data, the exact format
  * Google Jobs ingests. It read the fixture directly and never consulted the
  * database, even though `AtsJob` and `getPublicJobs()` exist and carry the
  * correct public predicate.
  *
- * The authority is now `@/lib/ats/public-jobs`, which never touches the fixture:
+ * The authority is `@/lib/ats/public-jobs`, and since B1 there is no fixture
+ * anywhere in this path:
  *
- *   - a real, public, OPEN `AtsJob` → indexable, with `JobPosting` structured
- *     data whose every property comes from a column, and `validThrough` from
+ *   - an ELIGIBLE posting (OPEN, public, published, unexpired) whose requested
+ *     locale has a COMPLETE translation → indexable, with `JobPosting`
+ *     structured data whose every property comes from a column or that
+ *     translation, `datePosted` from `publishedAt` and `validThrough` from
  *     `AtsJob.closingDate`;
- *   - anything else (unknown id, DRAFT/CLOSED, non-public, database
- *     unavailable, or an id that exists only in the development fixture) →
- *     the page still RENDERS, because `JobDetailClient` fetches
- *     `/api/careers/jobs/{id}` and that route keeps its documented fixture
- *     fallback for development, but it is `noindex` and emits NO `JobPosting`.
+ *   - anything else (unknown id, DRAFT/CLOSED, non-public, unpublished,
+ *     expired, or a locale without a complete translation) → `noindex`, NO
+ *     canonical and NO `JobPosting`. `JobDetailClient` fetches
+ *     `/api/careers/jobs/{id}?locale=…`, which is DB-only: it answers 404 for
+ *     an ineligible posting and 503 for an unreachable store, so the page
+ *     renders an honest unavailable or outage state rather than invented copy.
  *
- * So the page keeps working in development and the search index only ever learns
- * about vacancies the database can prove. `/careers` itself remains a normal
- * public company page.
+ * The search index therefore only ever learns about vacancies the database can
+ * prove, in the locales that really have a page. `/careers` itself remains a
+ * normal public company page.
  */
 
 export async function generateMetadata({
@@ -44,19 +48,27 @@ export async function generateMetadata({
   const tMeta = await getTranslations({ locale, namespace: "meta" });
   const p = tMeta.raw("pages") as Record<string, Record<string, string>>;
 
-  const job = await getPublicJobById(jobId);
-  if (!job) {
-    // No authoritative vacancy: never advertise this URL. `noIndexMetadata`
-    // deliberately emits no canonical, so a fixture-only page cannot claim one.
+  // B1.1 — metadata, the rendered UI and the JobPosting JSON-LD all read the
+  // SAME projection: the requested locale's COMPLETE translation of an
+  // eligible, published row. No legacy English column is consulted, so a DE
+  // page cannot carry an English <title>. A locale without a complete
+  // translation gets noindex, NO canonical and no JobPosting.
+  const posting = await getPublicJobPosting(jobId, locale);
+  if (!posting) {
     return noIndexMetadata(p.careersJob.notFoundTitle);
   }
 
   return buildMetadata({
     locale,
-    path:        `/careers/${job.id}`,
-    title:       p.careersJob.titleTemplate.replace("{name}", job.title),
-    description: job.description,
-    keywords:    [...jobSkills(job), p.careersJob.keywordsSuffix].join(", "),
+    path:        `/careers/${jobId}`,
+    title:       posting.seoTitle,
+    description: posting.seoDescription,
+    keywords:    [...posting.localizedSkillLabels, p.careersJob.keywordsSuffix].join(", "),
+    // B1.2 — hreflang/canonical/OG alternates claim ONLY the locales whose
+    // translation is really complete (the same truth record the sitemap and
+    // the UI derive from). An EN-only job advertises no DE/FA alternates and
+    // no multi-member x-default.
+    contentLocales: posting.availableLocales,
   });
 }
 
@@ -71,37 +83,37 @@ export default async function JobDetailPage({
   const bc = bcT.raw("breadcrumbs") as Record<string, string>;
   const pJob = bcT.raw("pages") as Record<string, Record<string, string>>;
 
-  const job = await getPublicJobById(jobId);
-
-  // `datePosted` is REQUIRED by the JobPosting vocabulary and there is no honest
-  // substitute for it, so an unusable timestamp suppresses the whole block
-  // rather than being replaced by a placeholder date.
-  const datePosted = job ? isoOrUndefined(job.createdAt) : undefined;
+  // PHASE 104-B1 — JobPosting is built ONLY from the posting projection:
+  // an eligible row, published (datePosted := publishedAt, never createdAt),
+  // a COMPLETE translation for THIS locale, the stable org-scoped
+  // requisitionKey and all three structured address fields. Anything short of
+  // that emits no JobPosting at all — a property the record cannot back is
+  // omitted, never defaulted.
+  const posting = await getPublicJobPosting(jobId, locale);
 
   return (
     <>
-      {job && datePosted && (
+      {posting && (
         <JsonLd
           data={jobPostingSchema({
-            id:           job.id,
-            title:        job.title,
-            description:  job.description,
-            location:     job.location,
-            // Salary is published only when BOTH bounds are present; the columns
-            // are nullable and a half-known band is not a fact.
-            currency:     job.salaryCurrency,
-            salaryMin:    job.salaryMin,
-            salaryMax:    job.salaryMax,
-            // `AtsJob` has `locationType` (onsite/remote/hybrid), which is NOT an
-            // employment type. There is no column for one, so none is claimed.
-            datePosted,
-            validThrough: isoOrUndefined(job.closingDate),
-            skills:       jobSkills(job),
+            requisitionKey:  posting.requisitionKey,
+            title:           posting.title,
+            description:     posting.description,
+            addressLocality: posting.addressLocality,
+            addressRegion:   posting.addressRegion,
+            addressCountry:  posting.addressCountry,
+            currency:        posting.currency,
+            salaryMin:       posting.salaryMin,
+            salaryMax:       posting.salaryMax,
+            employmentType:  posting.employmentType,
+            datePosted:      posting.datePosted,
+            validThrough:    posting.validThrough,
+            skills:          posting.skills,
           })}
         />
       )}
       {/* The breadcrumb describes the URL the visitor is on and asserts nothing
-          about employment, so it is emitted for a fixture-backed page too. */}
+          about employment, so it is emitted even when no posting is verified. */}
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -109,7 +121,7 @@ export default async function JobDetailPage({
           itemListElement: [
             { "@type": "ListItem", position: 1, name: bc.home,    item: `${BASE_URL}/${locale}` },
             { "@type": "ListItem", position: 2, name: bc.careers, item: `${BASE_URL}/${locale}/careers` },
-            { "@type": "ListItem", position: 3, name: job?.title ?? pJob.careersJob.notFoundTitle, item: `${BASE_URL}/${locale}/careers/${jobId}` },
+            { "@type": "ListItem", position: 3, name: posting?.title ?? pJob.careersJob.notFoundTitle, item: `${BASE_URL}/${locale}/careers/${jobId}` },
           ],
         }}
       />

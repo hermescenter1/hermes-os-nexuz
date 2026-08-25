@@ -61,7 +61,7 @@ function jsonReq(path: string, body: unknown): Request {
 // ── ATS internal creation — authoring gate ───────────────────────────────────
 
 const ATS_MOCK_ROUTES = [
-  { name: "/api/ats/jobs", path: "../../../app/api/ats/jobs/route", body: { title: "X" } },
+  { name: "/api/ats/jobs", path: "../../../app/api/ats/jobs/route", body: { title: "X" }, b1: true },
   { name: "/api/ats/candidates", path: "../../../app/api/ats/candidates/route", body: { name: "X" } },
   { name: "/api/ats/score", path: "../../../app/api/ats/score/route", body: { jobId: "job-1" } },
 ];
@@ -82,13 +82,24 @@ describe("ATS internal creation requires the authoring capability", () => {
       expect(res.status).toBe(403);
     });
 
-    it(`${route.name}: authoring role (engineer) → success`, async () => {
+    it(`${route.name}: authoring role (engineer) → ${(route as { b1?: boolean }).b1 ? "org refusal (B1)" : "success"}`, async () => {
       mockAuthRole("engineer");
       const { POST } = await import(route.path);
-      const res = await POST(jsonReq(route.name, route.body));
-      expect([200, 201, 404]).toContain(res.status); // score→404 for unknown job is fine
-      expect(res.status).not.toBe(401);
-      expect(res.status).not.toBe(403);
+      const req = jsonReq(route.name, route.body);
+      if ((route as { b1?: boolean }).b1) {
+        // PHASE 104-B1 — /api/ats/jobs writes through createJobDraft() behind
+        // resolveOrgContext. An authoring capability WITHOUT an organization
+        // session is refused; the in-memory 201 fabrication is gone.
+        Object.defineProperty(req, "cookies", { value: { get: () => undefined } });
+        const res = await POST(req);
+        expect(res.status).toBe(401);
+        expect(res.headers.get("Cache-Control")).toBe("no-store");
+      } else {
+        const res = await POST(req);
+        expect([200, 201, 404]).toContain(res.status); // score→404 for unknown job is fine
+        expect(res.status).not.toBe(401);
+        expect(res.status).not.toBe(403);
+      }
     });
   }
 });
@@ -334,11 +345,33 @@ describe("POST /api/careers/apply — public, rate limited & bounded", () => {
     return { createCandidate, createApplication };
   }
 
-  it("valid application within the limit → 201", async () => {
-    setup();
+  // PHASE 104-B1 — the Stage-1 payload with the mandatory records and the
+  // payload-bound idempotency key header. Acceptance is NOT authorized in B1,
+  // so even a fully valid payload refuses generically with zero writes.
+  const B1_BODY = {
+    jobId: "job-1",
+    fullName: "A B",
+    email: "a@b.co",
+    privacyNoticeAcknowledged: true,
+    accuracyConfirmed: true,
+  };
+  const B1_KEY = "9f2c1d3e4b5a6978a0b1c2d3e4f50617";
+  function b1Req(ip = "10.0.0.1") {
+    return new Request("http://localhost/api/careers/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-real-ip": ip, "idempotency-key": B1_KEY },
+      body: JSON.stringify(B1_BODY),
+    });
+  }
+
+  it("a valid Stage-1 application within the limit refuses GENERICALLY in B1 — never 401, zero writes", async () => {
+    const spies = setup();
     const { POST } = await import(ROUTE);
-    const res = await POST(jsonReq("/api/careers/apply", { jobId: "job-1", name: "A", email: "a@b.co" }));
-    expect(res.status).toBe(201);
+    const res = await POST(b1Req());
+    expect(res.status).toBe(503);
+    expect(res.status).not.toBe(401);
+    expect(spies.createCandidate).not.toHaveBeenCalled();
+    expect(spies.createApplication).not.toHaveBeenCalled();
   });
 
   it("unsupported content-type → 415 before any write", async () => {
@@ -354,31 +387,27 @@ describe("POST /api/careers/apply — public, rate limited & bounded", () => {
     expect(spies.createCandidate).not.toHaveBeenCalled();
   });
 
-  it("exceeding the per-IP limit → 429, no candidate created past the cap", async () => {
+  it("exceeding the per-IP limit → 429, and no write ever happens", async () => {
     const spies = setup();
     const { POST } = await import(ROUTE);
     let last: Response | undefined;
     for (let i = 0; i < 6; i++) {
-      last = await POST(jsonReq("/api/careers/apply", { jobId: "job-1", name: "A", email: "a@b.co" }));
+      last = await POST(b1Req());
     }
     expect(last!.status).toBe(429);
     expect(last!.headers.get("retry-after")).toBeTruthy();
-    expect(spies.createCandidate.mock.calls.length).toBeLessThanOrEqual(5);
+    expect(spies.createCandidate).not.toHaveBeenCalled();
   });
 
-  it("a different client IP uses a separate bucket", async () => {
+  it("a different client IP uses a separate bucket (no 429; still the generic B1 refusal)", async () => {
     setup();
     const { POST } = await import(ROUTE);
     for (let i = 0; i < 5; i++) {
-      await POST(jsonReq("/api/careers/apply", { jobId: "job-1", name: "A", email: "a@b.co" }));
+      await POST(b1Req("10.0.0.1"));
     }
-    const other = new Request("http://localhost/api/careers/apply", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-real-ip": "10.0.0.2" },
-      body: JSON.stringify({ jobId: "job-1", name: "B", email: "b@b.co" }),
-    });
-    const res = await POST(other);
-    expect(res.status).toBe(201);
+    const res = await POST(b1Req("10.0.0.2"));
+    expect(res.status).not.toBe(429);
+    expect(res.status).toBe(503);
   });
 });
 

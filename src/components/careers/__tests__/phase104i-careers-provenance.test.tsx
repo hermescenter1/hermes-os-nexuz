@@ -28,12 +28,14 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 // Mock fetch globally. The ARGUMENTS keep the real `fetch` signature, so a
-// call-site that starts passing something else stops compiling; the RESULT is
-// narrowed to the single member the component consumes. Narrowing is what makes
-// the stub honest — the day the component reads `res.ok`, this test has to say
-// so rather than silently resolving `undefined`. One explicit assertion, on the
-// assignment below, replaces six casts at the call sites.
-type StubResponse = Pick<Response, "json">;
+// call-site that starts passing something else stops compiling; the RESULT
+// carries exactly the members the component consumes.
+//
+// PHASE 104-B1.2 — that day arrived: the board now goes through
+// `requestJson`, which reads `ok`, `status` and the body, so a 5xx, a
+// rejected fetch and a malformed 2xx can be told apart from an empty list.
+// The stub says so, exactly as the previous note demanded.
+type StubResponse = Pick<Response, "json" | "ok" | "status" | "text">;
 const mockFetch = vi.fn<(...args: Parameters<typeof fetch>) => Promise<StubResponse>>();
 globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
 
@@ -43,14 +45,47 @@ describe("PHASE 104-I1 — Careers page provenance boundary", () => {
   });
 
   it("renders job records when source is 'db'", async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
       json: async () => ({
         jobs: [
           {
             id: "job-001",
             title: "Senior PLC Engineer",
+            shortSummary: "Summary for Senior PLC Engineer",
+            publishedAt: "2026-05-02T00:00:00.000Z",
             department: "Automation Engineering",
+            departmentLabel: "Automation Engineering",
             location: "Frankfurt, Germany",
+            addressLocality: null,
+            addressRegion: null,
+            addressCountry: null,
+            locationType: "onsite",
+            salaryCurrency: "EUR",
+            salaryMin: 65000,
+            salaryMax: 85000,
+            skills: ["Siemens TIA Portal", "PLC Programming"],
+            status: "OPEN",
+            createdAt: "2026-05-01",
+          },
+        ],
+        total: 1,
+        source: "db",
+      }),
+      text: async () => JSON.stringify({
+        jobs: [
+          {
+            id: "job-001",
+            title: "Senior PLC Engineer",
+            shortSummary: "Summary for Senior PLC Engineer",
+            publishedAt: "2026-05-02T00:00:00.000Z",
+            department: "Automation Engineering",
+            departmentLabel: "Automation Engineering",
+            location: "Frankfurt, Germany",
+            addressLocality: null,
+            addressRegion: null,
+            addressCountry: null,
             locationType: "onsite",
             salaryCurrency: "EUR",
             salaryMin: 65000,
@@ -81,14 +116,47 @@ describe("PHASE 104-I1 — Careers page provenance boundary", () => {
   });
 
   it("renders empty state when source is 'mock' (non-live)", async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
       json: async () => ({
         jobs: [
           {
             id: "job-002",
             title: "SCADA Architect",
+            shortSummary: "Summary for SCADA Architect",
+            publishedAt: "2026-05-02T00:00:00.000Z",
             department: "Automation Engineering",
+            departmentLabel: "Automation Engineering",
             location: "Dubai, UAE",
+            addressLocality: null,
+            addressRegion: null,
+            addressCountry: null,
+            locationType: "onsite",
+            salaryCurrency: "USD",
+            salaryMin: 85000,
+            salaryMax: 120000,
+            skills: ["SCADA", "Wonderware"],
+            status: "OPEN",
+            createdAt: "2026-05-15",
+          },
+        ],
+        total: 1,
+        source: "mock",
+      }),
+      text: async () => JSON.stringify({
+        jobs: [
+          {
+            id: "job-002",
+            title: "SCADA Architect",
+            shortSummary: "Summary for SCADA Architect",
+            publishedAt: "2026-05-02T00:00:00.000Z",
+            department: "Automation Engineering",
+            departmentLabel: "Automation Engineering",
+            location: "Dubai, UAE",
+            addressLocality: null,
+            addressRegion: null,
+            addressCountry: null,
             locationType: "onsite",
             salaryCurrency: "USD",
             salaryMin: 85000,
@@ -115,8 +183,12 @@ describe("PHASE 104-I1 — Careers page provenance boundary", () => {
     // The fabricated job should NOT render
     expect(text).not.toContain("SCADA Architect");
     expect(text).not.toContain("Dubai, UAE");
-    // Instead, show the honest non-live message
-    expect(text).toContain("No verified engineering positions are currently published");
+    // B1.2 — a response that is not verifiably the database's projection is
+    // MALFORMED (outage class), so the board shows the Stage 6-A failure
+    // surface with a retry. It must still never show invented postings, and
+    // it must never claim "no positions" for what is really a broken read.
+    expect(text).not.toContain("No verified engineering positions are currently published");
+    expect(mounted.container.querySelector('[role="alert"]')).not.toBeNull();
 
     await mounted.unmount();
   });
@@ -126,8 +198,14 @@ describe("PHASE 104-I1 — Careers page provenance boundary", () => {
       {
         id: "job-003",
         title: "Automation Technician",
+        shortSummary: "Summary for Automation Technician",
+        publishedAt: "2026-05-02T00:00:00.000Z",
         department: "Field Services",
+        departmentLabel: "Field Services",
         location: "Paris, France",
+        addressLocality: null,
+        addressRegion: null,
+        addressCountry: null,
         locationType: "onsite",
         salaryCurrency: "EUR",
         salaryMin: 38000,
@@ -139,8 +217,14 @@ describe("PHASE 104-I1 — Careers page provenance boundary", () => {
       {
         id: "job-004",
         title: "Industrial Software Developer",
+        shortSummary: "Summary for Industrial Software Developer",
+        publishedAt: "2026-05-02T00:00:00.000Z",
         department: "Software Engineering",
+        departmentLabel: "Software Engineering",
         location: "Berlin, Germany",
+        addressLocality: null,
+        addressRegion: null,
+        addressCountry: null,
         locationType: "remote",
         salaryCurrency: "EUR",
         salaryMin: 70000,
@@ -151,8 +235,15 @@ describe("PHASE 104-I1 — Careers page provenance boundary", () => {
       },
     ];
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
       json: async () => ({
+        jobs: mockJobs,
+        total: 2,
+        source: "mock",
+      }),
+      text: async () => JSON.stringify({
         jobs: mockJobs,
         total: 2,
         source: "mock",
@@ -182,14 +273,47 @@ describe("PHASE 104-I1 — Careers page provenance boundary", () => {
 
   it("shows different content when live (source='db') vs non-live (source='mock')", async () => {
     // Test: live shows jobs, non-live shows empty state
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
       json: async () => ({
         jobs: [
           {
             id: "job-005",
             title: "Test Role",
+            shortSummary: "Summary for Test Role",
+            publishedAt: "2026-05-02T00:00:00.000Z",
             department: "Automation Engineering",
+            departmentLabel: "Automation Engineering",
             location: "Test City",
+            addressLocality: null,
+            addressRegion: null,
+            addressCountry: null,
+            locationType: "onsite",
+            salaryCurrency: "EUR",
+            salaryMin: 50000,
+            salaryMax: 70000,
+            skills: ["Test"],
+            status: "OPEN",
+            createdAt: "2026-07-01",
+          },
+        ],
+        total: 1,
+        source: "db",
+      }),
+      text: async () => JSON.stringify({
+        jobs: [
+          {
+            id: "job-005",
+            title: "Test Role",
+            shortSummary: "Summary for Test Role",
+            publishedAt: "2026-05-02T00:00:00.000Z",
+            department: "Automation Engineering",
+            departmentLabel: "Automation Engineering",
+            location: "Test City",
+            addressLocality: null,
+            addressRegion: null,
+            addressCountry: null,
             locationType: "onsite",
             salaryCurrency: "EUR",
             salaryMin: 50000,
@@ -221,8 +345,15 @@ describe("PHASE 104-I1 — Careers page provenance boundary", () => {
   });
 
   it("suppresses filters and KPI strip when non-live (source='mock')", async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
       json: async () => ({
+        jobs: [],
+        total: 0,
+        source: "mock",
+      }),
+      text: async () => JSON.stringify({
         jobs: [],
         total: 0,
         source: "mock",
@@ -247,8 +378,15 @@ describe("PHASE 104-I1 — Careers page provenance boundary", () => {
   });
 
   it("uses i18n: board title is translated from the careers namespace", async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
       json: async () => ({
+        jobs: [],
+        total: 0,
+        source: "db",
+      }),
+      text: async () => JSON.stringify({
         jobs: [],
         total: 0,
         source: "db",

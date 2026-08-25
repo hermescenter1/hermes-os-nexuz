@@ -463,6 +463,10 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "vendors.types.DISTRIBUTOR": "german-word-identical",
   "vendors.card.compliance": "accepted-german-loanword",
   "vendors.tiers.PREMIUM": "accepted-german-loanword",
+  // PHASE 104-B1.2 — German keeps the English loanwords for these two work
+  // modes; only "onsite" translates ("Vor Ort"). Genuine German usage.
+  "careers.locationTypeLabels.remote": "accepted-german-loanword",
+  "careers.locationTypeLabels.hybrid": "accepted-german-loanword",
 };
 
 /** Audit summary (kept in sync by the companion test). */
@@ -478,7 +482,8 @@ export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   "german-word-identical": 107,
   "non-linguistic": 19,
   // 104-I3: +2 — Compliance, Premium.
-  "accepted-german-loanword": 76,
+  // B1.2: +2 — Remote, Hybrid (work-mode labels; German uses both loanwords).
+  "accepted-german-loanword": 78,
   // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
   // F2: +4  — the same acronyms in the real public header registry.
   // 104-I3: +2 — EDMS/CMMS as demo-request interest options.

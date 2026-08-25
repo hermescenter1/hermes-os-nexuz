@@ -912,7 +912,9 @@
       "method": "GET",
       "file": "src/app/api/ats/jobs/route.ts",
       "classification": "PUBLIC_READ",
-      "authEvidence": [],
+      "authEvidence": [
+        "getAuthRole"
+      ],
       "declaredSurface": true,
       "tenantScoped": false,
       "mutates": false,

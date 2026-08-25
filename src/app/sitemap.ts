@@ -248,7 +248,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const { listPublicJobSitemapItems } = await import("@/lib/ats/public-jobs");
     for (const job of await listPublicJobSitemapItems()) {
-      entries.push(...localeEntries(`/careers/${job.id}`, 0.8, "weekly"));
+      // B1.1 — ONLY the locales whose translation is complete. A blanket
+      // three-locale expansion would advertise German/Persian pages that
+      // answer noindex (or 404 content) for a job translated only in English.
+      entries.push(...localeEntries(`/careers/${job.id}`, 0.8, "weekly", job.locales));
     }
   } catch {
     // DISCOVERY-2B: unreachable database — this family is omitted and the rest

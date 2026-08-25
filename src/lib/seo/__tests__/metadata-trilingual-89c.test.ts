@@ -42,6 +42,58 @@ vi.mock("next/navigation", () => ({
  * `getPublicJobById`) so the real OPEN + isPublic predicate still runs on the
  * way through.
  */
+/**
+ * B1.1 — the careers job page now reads the PRISMA posting projection
+ * (translation-complete, locale-specific), so the authoritative row lives in
+ * a prisma mock: one eligible job with three COMPLETE translations whose
+ * seoTitle/seoDescription differ per locale. getJobById stays stubbed for
+ * legacy callers.
+ */
+const B1_TRANSLATIONS = [
+  { language: "EN", title: "SCADA Architect", shortSummary: "s", description: "Designs enterprise SCADA systems.", departmentLabel: "Automation Engineering", seoTitle: "SCADA Architect — Careers at Hermes OS", seoDescription: "Architect enterprise SCADA for industrial plants.", localizedSkills: { scada: "SCADA" }, responsibilities: [], requirements: [], preferredExperience: [] },
+  { language: "DE", title: "SCADA-Architekt", shortSummary: "s", description: "Entwirft Enterprise-SCADA-Systeme.", departmentLabel: "Automatisierungstechnik", seoTitle: "SCADA-Architekt — Karriere bei Hermes OS", seoDescription: "Enterprise-SCADA für Industrieanlagen entwerfen.", localizedSkills: { scada: "SCADA" }, responsibilities: [], requirements: [], preferredExperience: [] },
+  { language: "FA", title: "معمار اسکادا", shortSummary: "s", description: "طراحی سامانه‌های اسکادای سازمانی.", departmentLabel: "مهندسی اتوماسیون", seoTitle: "معمار اسکادا — فرصت‌های شغلی هرمس", seoDescription: "طراحی اسکادای سازمانی برای کارخانه‌های صنعتی.", localizedSkills: { scada: "اسکادا" }, responsibilities: [], requirements: [], preferredExperience: [] },
+];
+const B1_JOB = {
+  id: "job-db-1",
+  organizationId: "org-1",
+  status: "OPEN",
+  isPublic: true,
+  deletedAt: null,
+  publishedAt: new Date("2026-05-02T00:00:00.000Z"),
+  closingDate: null,
+  department: "Automation Engineering",
+  location: "Isfahan",
+  addressLocality: "Isfahan",
+  addressRegion: "Isfahan Province",
+  addressCountry: "IR",
+  locationType: null,
+  salaryCurrency: null,
+  salaryMin: null,
+  salaryMax: null,
+  skills: ["scada"],
+  requisitionKey: "HNM-SCADA-1",
+  employmentType: null,
+  createdAt: new Date("2026-05-01T00:00:00.000Z"),
+};
+vi.mock("@/lib/db/prisma", () => ({
+  getPrisma: async () => ({
+    atsJob: {
+      findFirst: async (a: { where?: { id?: string }; include?: { translations?: { where?: { language?: string } } } }) => {
+        const lang = a.include?.translations?.where?.language;
+        if (a.where?.id === "job-en-only") {
+          // complete EN, nothing else — the DE/FA pages must be noindex
+          const enOnly = B1_TRANSLATIONS.filter((t) => t.language === "EN");
+          return { ...B1_JOB, id: "job-en-only", translations: lang ? enOnly.filter((t) => t.language === lang) : enOnly };
+        }
+        if (a.where?.id !== "job-db-1") return null;
+        return { ...B1_JOB, translations: lang ? B1_TRANSLATIONS.filter((t) => t.language === lang) : B1_TRANSLATIONS };
+      },
+      findMany: async () => [],
+    },
+  }),
+}));
+
 vi.mock("@/lib/ats/db", () => ({
   getPublicJobs: async () => [],
   getJobById: async (id: string) =>
@@ -65,6 +117,11 @@ vi.mock("@/lib/ats/db", () => ({
           closingDate: null,
           postedById: null,
           isPublic: true,
+          // PHASE 104-B1 — the public predicate now also requires a real,
+          // non-future publishedAt; without it this authoritative row would
+          // correctly stop being public.
+          publishedAt: new Date("2026-05-02T00:00:00.000Z"),
+          deletedAt: null,
           createdAt: new Date("2026-05-01T00:00:00.000Z"),
           updatedAt: new Date("2026-05-01T00:00:00.000Z"),
         }
@@ -183,14 +240,37 @@ describe("89C — demo, careers job, library article, academy fallback, privacy-
     // assertion's INTENT — "the German title template is applied, not English"
     // — is unchanged; it is now proven against an AUTHORITATIVE `AtsJob` row.
     const { generateMetadata } = await import("@/app/[locale]/careers/[jobId]/page");
-    const m = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: "job-db-1" }) });
-    expect(String(m.title)).toBe("SCADA Architect — Karriere bei Hermes OS");
+    // B1.1 — three locales, three DIFFERENT titles/descriptions, each from
+    // THAT locale's translation row (never the legacy English column, never a
+    // template over an untranslated name).
+    const en = await generateMetadata({ params: Promise.resolve({ locale: "en", jobId: "job-db-1" }) });
+    const de = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: "job-db-1" }) });
+    const fa = await generateMetadata({ params: Promise.resolve({ locale: "fa", jobId: "job-db-1" }) });
+    expect(String(en.title)).toBe("SCADA Architect — Careers at Hermes OS");
+    expect(String(de.title)).toBe("SCADA-Architekt — Karriere bei Hermes OS");
+    expect(String(fa.title)).toBe("معمار اسکادا — فرصت‌های شغلی هرمس");
+    expect(new Set([String(en.title), String(de.title), String(fa.title)]).size).toBe(3);
+    expect(en.description).toBe("Architect enterprise SCADA for industrial plants.");
+    expect(de.description).toBe("Enterprise-SCADA für Industrieanlagen entwerfen.");
+    expect(fa.description).toBe("طراحی اسکادای سازمانی برای کارخانه‌های صنعتی.");
+    expect(new Set([en.description, de.description, fa.description]).size).toBe(3);
+    const m = de;
+    void m;
 
     // An id with no authoritative row keeps the localized not-found title AND
     // is refused indexing — a fixture-only page must never be advertised.
     const missing = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: "nope" }) });
     expect(String(missing.title)).toBe("Stelle nicht gefunden");
     expect(missing.robots).toEqual({ index: false, follow: false });
+
+    // B1.1 — a job translated ONLY in English is noindex on de/fa: no
+    // canonical, no localized title, and NEVER an English fallback title.
+    const deOfEnOnly = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: "job-en-only" }) });
+    expect(deOfEnOnly.robots).toEqual({ index: false, follow: false });
+    expect(String(deOfEnOnly.title)).not.toContain("SCADA Architect");
+    expect(deOfEnOnly.alternates?.canonical ?? undefined).toBeUndefined();
+    const enOfEnOnly = await generateMetadata({ params: Promise.resolve({ locale: "en", jobId: "job-en-only" }) });
+    expect(String(enOfEnOnly.title)).toBe("SCADA Architect — Careers at Hermes OS");
   });
 
   it("library article title suffix is localized; not-found title is localized", async () => {

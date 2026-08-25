@@ -196,14 +196,45 @@ describe("P99-INT-003 — candidate profile accepts only self-service fields", (
 
 // ── P99-INT-004 — public careers detail must be published-only ────────────────
 describe("P99-INT-004 — public job detail is published-only", () => {
+  // PHASE 104-B1 — the route reads the store through the ONE shared public
+  // predicate (publicJobWhere: OPEN + isPublic + published + unexpired + not
+  // deleted) with the locale's translation joined, so the mock moves from
+  // getJobById to the prisma model. The CONTRACT this finding pinned is
+  // unchanged and stricter: a draft or non-public record is a 404 that leaks
+  // nothing, and only a genuinely published posting is served.
   const job = (over: Record<string, unknown>) => ({
-    id: "job-1", organizationId: "org-A", title: "Internal", status: "OPEN", isPublic: true, ...over,
+    id: "job-1", organizationId: "org-A", title: "Internal", status: "OPEN", isPublic: true,
+    deletedAt: null, publishedAt: new Date(Date.now() - 86_400_000), closingDate: null,
+    department: "automation", location: "Isfahan, Iran",
+    addressLocality: null, addressRegion: null, addressCountry: null,
+    locationType: null, salaryCurrency: null, salaryMin: null, salaryMax: null,
+    skills: [],
+    translations: [{
+      language: "EN", title: "Automation Engineer", shortSummary: "s", description: "d",
+      departmentLabel: "Automation", seoTitle: "st", seoDescription: "sd",
+    }],
+    ...over,
   });
+
+  const eligible = (row: Record<string, unknown>): boolean =>
+    row.status === "OPEN" && row.isPublic === true && row.deletedAt === null &&
+    row.publishedAt instanceof Date && (row.publishedAt as Date).getTime() <= Date.now() &&
+    (row.closingDate === null || (row.closingDate as Date).getTime() >= Date.now());
+
+  const mockStore = (row: Record<string, unknown>) =>
+    vi.doMock("@/lib/db/prisma", () => ({
+      getPrisma: async () => ({
+        atsJob: {
+          findFirst: async (a: { where: { id?: string } }) =>
+            a.where.id === row.id && eligible(row) ? row : null,
+        },
+      }),
+    }));
 
   beforeEach(() => vi.resetModules());
 
   it("404s a DRAFT posting instead of returning the record", async () => {
-    vi.doMock("@/lib/ats/db", () => ({ getJobById: async () => job({ status: "DRAFT" }) }));
+    mockStore(job({ status: "DRAFT" }));
     const { GET } = await import("@/app/api/careers/jobs/[jobId]/route");
     const res = await GET(new Request("https://app.example/api/careers/jobs/job-1"), { params: Promise.resolve({ jobId: "job-1" }) });
     expect(res.status).toBe(404);
@@ -211,16 +242,23 @@ describe("P99-INT-004 — public job detail is published-only", () => {
   });
 
   it("404s a non-public posting", async () => {
-    vi.doMock("@/lib/ats/db", () => ({ getJobById: async () => job({ isPublic: false }) }));
+    mockStore(job({ isPublic: false }));
     const { GET } = await import("@/app/api/careers/jobs/[jobId]/route");
     const res = await GET(new Request("https://app.example/api/careers/jobs/job-1"), { params: Promise.resolve({ jobId: "job-1" }) });
     expect(res.status).toBe(404);
   });
 
-  it("still serves an OPEN, public posting", async () => {
-    vi.doMock("@/lib/ats/db", () => ({ getJobById: async () => job({}) }));
+  it("404s an UNPUBLISHED posting even when OPEN and public (B1: publishedAt is part of the contract)", async () => {
+    mockStore(job({ publishedAt: null }));
     const { GET } = await import("@/app/api/careers/jobs/[jobId]/route");
     const res = await GET(new Request("https://app.example/api/careers/jobs/job-1"), { params: Promise.resolve({ jobId: "job-1" }) });
+    expect(res.status).toBe(404);
+  });
+
+  it("still serves an OPEN, public, PUBLISHED posting", async () => {
+    mockStore(job({}));
+    const { GET } = await import("@/app/api/careers/jobs/[jobId]/route");
+    const res = await GET(new Request("https://app.example/api/careers/jobs/job-1?locale=en"), { params: Promise.resolve({ jobId: "job-1" }) });
     expect(res.status).toBe(200);
     expect((await res.json()).job.id).toBe("job-1");
   });
