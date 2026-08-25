@@ -3390,4 +3390,3 @@ main [id$="-title"] {
 #public-content :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
   min-block-size: 2.75rem;
 }
-
