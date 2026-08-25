@@ -141,6 +141,26 @@ display overlay; `getArticleFeed()`'s `PUBLISHED + PUBLIC` filter.
 
 ## 10. Rollback
 
+Phase 104-F is a single commit — `ed5a1e4ae3b6a6a7d786412136562e8e12cd3cb0`
+(*feat(design-system): deliver Phase 104-F Hermes Industrial Journal*, 23 files). Undo it by reverting that commit. Do not restore
+whole directories and do not delete paths by hand: both discard unrelated
+uncommitted work elsewhere in the tree.
+
 ```bash
-cd E:/hermes-os-phase104a && git restore src docs messages scripts && rm -rf src/components/articles/journal src/components/articles/journal-shell.ts src/components/articles/article-display.ts src/components/articles/__tests__/phase104f-journal-contract.test.ts docs/design/phase-104/08-industrial-journal.md
+git revert --no-commit ed5a1e4ae3b6a6a7d786412136562e8e12cd3cb0
+git commit -m "revert: remove Phase 104-F Hermes Industrial Journal"
 ```
+
+The command is repo-relative and carries no machine path, so it runs in any
+clone or worktree from any directory inside the repository.
+
+If later commits touched the same files the revert stops with conflicts.
+Resolve them and run `git revert --continue`, or step back with
+`git revert --abort`; either way the working tree stays recoverable and
+nothing is deleted outright.
+
+> This section previously carried an absolute machine path together with a
+> broad `git restore` and a recursive delete. Neither was portable and the
+> pair was destructive well beyond Phase 104-F.
+> `phase104f-rollback-portability.test.ts` now rejects any drive-letter path
+> or broad destructive command inside a Phase 104 rollback block.
