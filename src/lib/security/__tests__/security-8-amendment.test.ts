@@ -203,6 +203,12 @@ describe("Part 3 — PATCH routes reject injected tenant/ownership fields", () =
 
   it("academy/courses/[id]: injected id/createdAt never reach updateCourse", async () => {
     vi.doMock("@/lib/auth/rbac-server", () => ({ getAuthRole: async () => "admin" }));
+    // The route now also resolves the caller's organization — being AN admin is
+    // not being an admin OF THIS COURSE'S tenant. The allow-list assertion below
+    // is unchanged; it just needs a resolved scope to reach updateCourse.
+    vi.doMock("@/lib/academy/request-scope", () => ({
+      resolveAcademyScope: async () => ({ userId: "u1", orgId: "org-A" }),
+    }));
     const updateCourse = vi.fn(async () => ({ id: "c1" }));
     vi.doMock("@/lib/academy/db", () => ({ updateCourse }));
     const { PATCH } = await import("../../../app/api/academy/courses/[id]/route");

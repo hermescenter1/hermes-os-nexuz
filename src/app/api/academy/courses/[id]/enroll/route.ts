@@ -1,53 +1,50 @@
 import { NextResponse }       from "next/server";
 import type { NextRequest }    from "next/server";
-import { verifyAccessToken }   from "@/lib/auth/jwt";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
-import { getPrisma }           from "@/lib/db/prisma";
+import { getAuthRole }         from "@/lib/auth/rbac-server";
 import { getCourseById, getEnrollment, enrollUser } from "@/lib/academy/db";
-
-async function resolveUser(req: NextRequest) {
-  const db = await getPrisma();
-  if (!db) return null;
-  const at = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!at) return null;
-  const payload = await verifyAccessToken(at);
-  if (!payload?.sub) return null;
-  const memberModel = (db as Record<string, unknown>).organizationMember as {
-    findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
-  };
-  const row = await memberModel.findFirst({
-    where: { userId: payload.sub, status: "ACTIVE" },
-    orderBy: { createdAt: "asc" },
-  });
-  return row ? { userId: payload.sub, orgId: String(row.organizationId) } : null;
-}
+import { resolveAcademyScope } from "@/lib/academy/request-scope";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const ctx = await resolveUser(req);
-  if (!ctx) {
+  // PHASE 99 SECURITY — this endpoint gated on `isPublished` alone and never
+  // compared the course's organization with the caller's, while the sibling
+  // detail endpoint already applied exactly that predicate. A member of org B
+  // holding a course id from org A could therefore enroll in it: enrollUser()
+  // stamps the CALLER's organizationId onto the row, so a local enrollment
+  // ended up pointing at a foreign course, and the progress path later read
+  // that course's title back out through the issued certificate. Apply the
+  // detail endpoint's predicate and answer 404 — never 403 — so the response
+  // cannot be used as an existence oracle for another tenant's ids. The scope
+  // resolver this route carried inline was a verbatim copy of
+  // resolveAcademyScope, so it is gone in favour of the shared definition.
+  const role = await getAuthRole(req);
+  if (!role) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  const scope = await resolveAcademyScope(req);
+  if (!scope) {
+    return NextResponse.json({ error: "Course not found or not available" }, { status: 404 });
   }
 
   const { id: courseId } = await params;
 
   const course = await getCourseById(courseId);
-  if (!course || !course.isPublished) {
+  if (!course || course.organizationId !== scope.orgId || !course.isPublished) {
     return NextResponse.json({ error: "Course not found or not available" }, { status: 404 });
   }
 
   // Check if already enrolled
-  const existing = await getEnrollment(courseId, ctx.userId);
+  const existing = await getEnrollment(courseId, scope.userId);
   if (existing) {
     return NextResponse.json({ enrollment: existing, alreadyEnrolled: true });
   }
 
   const enrollment = await enrollUser({
     courseId,
-    organizationId: ctx.orgId,
-    userId:         ctx.userId,
+    organizationId: scope.orgId,
+    userId:         scope.userId,
     source:         "self",
   });
 

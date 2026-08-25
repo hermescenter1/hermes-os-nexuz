@@ -23,6 +23,8 @@ scripts/backups/
 *.sql.gz
 # Prisma migration files must be committed so deployments can run migrate deploy
 !prisma/migrations/**/*.sql
+# Reviewed read-only diagnostic queries — never dumps, and no data of any kind
+!scripts/security/*.sql
 
 # SSL certificates — managed by Certbot on the VPS
 deploy/ssl/certs/

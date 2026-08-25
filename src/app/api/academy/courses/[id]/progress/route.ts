@@ -1,9 +1,8 @@
 import { NextResponse }        from "next/server";
 import type { NextRequest }     from "next/server";
-import { verifyAccessToken }    from "@/lib/auth/jwt";
-import { ACCESS_TOKEN_COOKIE }  from "@/lib/auth/config";
-import { getPrisma }            from "@/lib/db/prisma";
+import { getAuthRole }          from "@/lib/auth/rbac-server";
 import {
+  getCourseById,
   getEnrollment,
   getLessonProgress,
   getCourseLessons,
@@ -11,33 +10,34 @@ import {
   hasPassed,
   getCertificateByEnrollment,
 } from "@/lib/academy/db";
-
-async function resolveUser(req: NextRequest) {
-  const db = await getPrisma();
-  if (!db) return null;
-  const at = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!at) return null;
-  const payload = await verifyAccessToken(at);
-  if (!payload?.sub) return null;
-  const memberModel = (db as Record<string, unknown>).organizationMember as {
-    findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
-  };
-  const row = await memberModel.findFirst({
-    where: { userId: payload.sub, status: "ACTIVE" },
-    orderBy: { createdAt: "asc" },
-  });
-  return row ? { userId: payload.sub, orgId: String(row.organizationId) } : null;
-}
+import { resolveAcademyScope } from "@/lib/academy/request-scope";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const ctx = await resolveUser(req);
-  if (!ctx) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  // PHASE 99 SECURITY — the enrollment lookup below is keyed on (courseId,
+  // userId) only, with no organization predicate anywhere in the handler, so a
+  // caller holding a foreign course id read that course's lesson and quiz set
+  // straight back out of getCourseLessons()/getCourseQuizzes() as soon as an
+  // enrollment row existed for the pair — which is exactly the row the sibling
+  // enroll endpoint used to let a foreign tenant create. Bind the course to the
+  // caller's organization first, and answer 404 for both an unknown and a
+  // foreign id so the two cases stay indistinguishable.
+  const role = await getAuthRole(req);
+  if (!role) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+
+  const scope = await resolveAcademyScope(req);
+  if (!scope) return NextResponse.json({ error: "Course not found" }, { status: 404 });
 
   const { id: courseId } = await params;
-  const enrollment = await getEnrollment(courseId, ctx.userId);
+
+  const course = await getCourseById(courseId);
+  if (!course || course.organizationId !== scope.orgId) {
+    return NextResponse.json({ error: "Course not found" }, { status: 404 });
+  }
+
+  const enrollment = await getEnrollment(courseId, scope.userId);
   if (!enrollment) return NextResponse.json({ enrolled: false, progress: [] });
 
   const [progress, lessons, quizzes] = await Promise.all([
