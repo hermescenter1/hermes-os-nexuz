@@ -88,9 +88,16 @@ export function ApplyFormClient({ jobId }: { jobId: string }) {
   }, [jobId, locale, attempt]);
 
   if (state.phase === "verifying") {
+    /*
+      Final.1.2 §E — see JobDetailClient: this is the branch the server
+      renders, so it is the branch that decides whether the delivered
+      document has a heading. aria-busy stays on the region that is actually
+      pending, not on the heading.
+    */
     return (
-      <div className="py-24 text-center text-sm text-muted" aria-busy="true">
-        {t("verifying")}
+      <div className="py-24">
+        <h1 className="type-page-title mb-4 text-center">{t("titleGeneric")}</h1>
+        <p className="text-center text-sm text-muted" aria-busy="true">{t("verifying")}</p>
       </div>
     );
   }
@@ -99,7 +106,12 @@ export function ApplyFormClient({ jobId }: { jobId: string }) {
   if (state.phase === "failed") {
     return (
       <div className="mx-auto max-w-xl py-20">
-        <h1 className="sr-only">{t("titleGeneric")}</h1>
+        {/*
+          Final.1.2 §E — visible heading above the alert, same reasoning as
+          the job detail outage: identity first, failure second. The string,
+          the accessible name and the fail-closed behaviour are unchanged.
+        */}
+        <h1 className="type-page-title mb-4 text-center">{t("titleGeneric")}</h1>
         <ResourceFailureNotice code={state.code} onRetry={retry} />
       </div>
     );

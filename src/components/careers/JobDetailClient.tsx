@@ -89,7 +89,22 @@ export function JobDetailClient({ jobId }: { jobId: string }) {
   }, [jobId, locale, attempt]);
 
   if (state.phase === "loading") {
-    return <div className="py-20 text-center text-muted text-sm">{t("jobLoading")}</div>;
+    /*
+      Final.1.2 §E — the loading state carries the heading too.
+
+      Server-rendered HTML always shows THIS branch: whether the posting
+      exists is only known after the client's fetch answers. Without a
+      heading here the page ships to search engines, to a reader on a slow
+      link, and to anyone with JavaScript disabled as a document with no h1
+      at all — the hierarchy defect the outage fix was meant to close, just
+      one state earlier. Same translated string, same level, no new key.
+    */
+    return (
+      <div className="py-20">
+        <h1 className="type-page-title mb-4 text-center">{t("boardTitle")}</h1>
+        <p className="text-center text-muted text-sm">{t("jobLoading")}</p>
+      </div>
+    );
   }
 
   if (state.phase === "failed") {
@@ -97,7 +112,17 @@ export function JobDetailClient({ jobId }: { jobId: string }) {
     // named 44px retry) — NEVER the "job unavailable" copy.
     return (
       <div className="py-20">
-        <h1 className="sr-only">{t("boardTitle")}</h1>
+        {/*
+          Final.1.2 §E — the heading is VISIBLE, not sr-only.
+
+          A sighted visitor who lands here from a search result previously saw
+          only an alert box: correct, but with no page identity above it. The
+          heading now says where they are, the alert says what went wrong, and
+          the hierarchy reads in that order. The accessible name is unchanged,
+          role="alert" still owns the failure message, and nothing about the
+          fail-closed behaviour moves.
+        */}
+        <h1 className="type-page-title mb-4 text-center">{t("boardTitle")}</h1>
         <ResourceFailureNotice code={state.code} onRetry={retry} />
       </div>
     );
