@@ -24,26 +24,6 @@ export async function getRoleFromRequest(request: NextRequest): Promise<Role | n
   return null;
 }
 
-/** Synchronous quick-decode (does NOT verify signature — middleware pre-check only). */
-export function getRoleFromRequestSync(request: NextRequest): Role | null {
-  const at = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!at) return null;
-  try {
-    const parts = at.split(".");
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(
-      Buffer.from(parts[1], "base64url").toString()
-    ) as Record<string, unknown>;
-    // Reject expired tokens even in sync decode
-    const exp = typeof payload.exp === "number" ? payload.exp : 0;
-    if (exp > 0 && exp < Math.floor(Date.now() / 1000)) return null;
-    const role = String(payload.role ?? "");
-    return isRole(role) ? role : null;
-  } catch {
-    return null;
-  }
-}
-
 // ── Segment-safe route matching (Phase 85) ────────────────────────────────────
 //
 // A protected route prefix may only match COMPLETE path segments: the route

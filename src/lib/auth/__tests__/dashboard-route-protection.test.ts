@@ -36,16 +36,17 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   isProtectedPath,
   isAuthorizedForPath,
-  getRoleFromRequestSync,
+  getRoleFromRequest,
 } from "@/lib/auth/rbac";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
+import { signAccessToken } from "@/lib/auth/jwt";
 import type { Role } from "@/lib/auth/roles";
 
 // The next-intl v4 middleware entry imports `next/server` with a bare
 // specifier that Vitest's resolver cannot follow, so importing the real
 // middleware would fail on an unrelated locale-routing dependency. Stub only
 // that layer with a pass-through so the REAL auth branch under test (protected
-// -path check, sync session decode, authorization, login redirect) executes
+// -path check, signature verification, authorization, login redirect) executes
 // unchanged. The stub returns a 200 NextResponse.next(), matching next-intl's
 // non-redirect behavior for the already-localized URLs used here.
 vi.mock("next-intl/middleware", () => ({
@@ -91,12 +92,20 @@ const ADMIN_SURFACE_ROUTES = [
   "/dashboard/api",
 ] as const;
 
-// The sync middleware decoder parses (but does not signature-verify) the JWT,
-// so an unsigned three-part token exercises the exact decode path.
-function fakeToken(payload: Record<string, unknown>): string {
+// A structurally valid but untrusted token exercises signature rejection.
+function forgedToken(payload: Record<string, unknown>): string {
   const enc = (o: Record<string, unknown>) =>
     Buffer.from(JSON.stringify(o)).toString("base64url");
   return `${enc({ alg: "HS256", typ: "JWT" })}.${enc(payload)}.test-signature`;
+}
+
+function signedToken(role: Role): Promise<string> {
+  return signAccessToken({
+    sub: `test-${role}`,
+    email: `${role}@example.test`,
+    role,
+    name: `Test ${role}`,
+  });
 }
 
 function requestFor(path: string, token?: string): NextRequest {
@@ -107,7 +116,6 @@ function requestFor(path: string, token?: string): NextRequest {
   });
 }
 
-const FUTURE_EXP = Math.floor(Date.now() / 1000) + 3600;
 const PAST_EXP = 1_000_000_000; // 2001 — deterministically expired
 
 // ── Path protection ───────────────────────────────────────────────────────────
@@ -227,50 +235,50 @@ describe("dashboard route protection — isAuthorizedForPath", () => {
   });
 });
 
-// ── Session decoding (middleware pre-check) ──────────────────────────────────
+// ── Session verification (middleware pre-check) ──────────────────────────────
 
-describe("dashboard route protection — session decoding", () => {
-  it("rejects a missing session", () => {
-    expect(getRoleFromRequestSync(requestFor("/fa/dashboard"))).toBeNull();
+describe("dashboard route protection — session verification", () => {
+  it("rejects a missing session", async () => {
+    expect(await getRoleFromRequest(requestFor("/fa/dashboard"))).toBeNull();
   });
 
-  it("rejects a malformed session token", () => {
+  it("rejects a malformed session token", async () => {
     expect(
-      getRoleFromRequestSync(requestFor("/fa/dashboard", "not-a-jwt")),
+      await getRoleFromRequest(requestFor("/fa/dashboard", "not-a-jwt")),
     ).toBeNull();
     expect(
-      getRoleFromRequestSync(requestFor("/fa/dashboard", "a.b")),
+      await getRoleFromRequest(requestFor("/fa/dashboard", "a.b")),
     ).toBeNull();
   });
 
-  it("rejects a tampered payload", () => {
+  it("rejects a tampered payload or forged role", async () => {
     expect(
-      getRoleFromRequestSync(
+      await getRoleFromRequest(
         requestFor("/fa/dashboard", "header.%%%not-base64-json%%%.sig"),
       ),
     ).toBeNull();
     expect(
-      getRoleFromRequestSync(
+      await getRoleFromRequest(
         requestFor(
           "/fa/dashboard",
-          fakeToken({ role: "not-a-real-role", exp: FUTURE_EXP }),
+          forgedToken({ role: "superadmin", exp: Math.floor(Date.now() / 1000) + 3600 }),
         ),
       ),
     ).toBeNull();
   });
 
-  it("rejects an expired session", () => {
+  it("rejects an expired unsigned session", async () => {
     expect(
-      getRoleFromRequestSync(
-        requestFor("/fa/dashboard", fakeToken({ role: "admin", exp: PAST_EXP })),
+      await getRoleFromRequest(
+        requestFor("/fa/dashboard", forgedToken({ role: "admin", exp: PAST_EXP })),
       ),
     ).toBeNull();
   });
 
-  it("decodes a well-formed unexpired session role", () => {
+  it("accepts a correctly signed unexpired session role", async () => {
     expect(
-      getRoleFromRequestSync(
-        requestFor("/fa/dashboard", fakeToken({ role: "admin", exp: FUTURE_EXP })),
+      await getRoleFromRequest(
+        requestFor("/fa/dashboard", await signedToken("admin")),
       ),
     ).toBe("admin");
   });
@@ -279,32 +287,32 @@ describe("dashboard route protection — session decoding", () => {
 // ── Real middleware behavior ─────────────────────────────────────────────────
 
 describe("dashboard route protection — middleware redirects", () => {
-  it("anonymous /fa/dashboard receives a 307 to the Persian login with `from`", () => {
-    const response = middleware(requestFor("/fa/dashboard"));
+  it("anonymous /fa/dashboard receives a 307 to the Persian login with `from`", async () => {
+    const response = await middleware(requestFor("/fa/dashboard"));
     expect(response.status).toBe(307);
     const location = new URL(response.headers.get("location") ?? "");
     expect(location.pathname).toBe("/fa/auth/login");
     expect(location.searchParams.get("from")).toBe("/fa/dashboard");
   });
 
-  it("anonymous nested /en/dashboard/operations receives a 307 to the English login with `from`", () => {
-    const response = middleware(requestFor("/en/dashboard/operations"));
+  it("anonymous nested /en/dashboard/operations receives a 307 to the English login with `from`", async () => {
+    const response = await middleware(requestFor("/en/dashboard/operations"));
     expect(response.status).toBe(307);
     const location = new URL(response.headers.get("location") ?? "");
     expect(location.pathname).toBe("/en/auth/login");
     expect(location.searchParams.get("from")).toBe("/en/dashboard/operations");
   });
 
-  it("query strings do not bypass protection", () => {
-    const response = middleware(requestFor("/fa/dashboard?tab=operations&x=1"));
+  it("query strings do not bypass protection", async () => {
+    const response = await middleware(requestFor("/fa/dashboard?tab=operations&x=1"));
     expect(response.status).toBe(307);
     const location = new URL(response.headers.get("location") ?? "");
     expect(location.pathname).toBe("/fa/auth/login");
   });
 
-  it("an expired session is redirected to login like an anonymous request", () => {
-    const response = middleware(
-      requestFor("/en/dashboard", fakeToken({ role: "admin", exp: PAST_EXP })),
+  it("a forged session is redirected to login like an anonymous request", async () => {
+    const response = await middleware(
+      requestFor("/en/dashboard", forgedToken({ role: "admin", exp: PAST_EXP })),
     );
     expect(response.status).toBe(307);
     expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
@@ -312,10 +320,10 @@ describe("dashboard route protection — middleware redirects", () => {
     );
   });
 
-  it("a role without the dashboard capability is redirected to login", () => {
+  it("a signed role without the dashboard capability is redirected to login", async () => {
     for (const role of NON_DASHBOARD_ROLES) {
-      const response = middleware(
-        requestFor("/fa/dashboard", fakeToken({ role, exp: FUTURE_EXP })),
+      const response = await middleware(
+        requestFor("/fa/dashboard", await signedToken(role)),
       );
       expect(response.status, `role ${role}`).toBe(307);
       expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
@@ -324,10 +332,10 @@ describe("dashboard route protection — middleware redirects", () => {
     }
   });
 
-  it("an authorized session is not redirected to login", () => {
+  it("an authorized signed session is not redirected to login", async () => {
     for (const role of DASHBOARD_ROLES) {
-      const response = middleware(
-        requestFor("/fa/dashboard", fakeToken({ role, exp: FUTURE_EXP })),
+      const response = await middleware(
+        requestFor("/fa/dashboard", await signedToken(role)),
       );
       const location = response.headers.get("location");
       expect(
