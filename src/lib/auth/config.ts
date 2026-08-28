@@ -31,15 +31,25 @@ export const ACCESS_TOKEN_COOKIE = "hermes_at";
 /** Refresh token cookie (Phase 28). */
 export const REFRESH_TOKEN_COOKIE = "hermes_rt";
 
-/** JWT signing secret. Resolution order: JWT_SECRET → JWT_ACCESS_SECRET → AUTH_SECRET → NEXTAUTH_SECRET → insecure default. */
+/**
+ * JWT signing secret.
+ *
+ * Production must provide an explicit secret. The deterministic fallback is
+ * intentionally limited to development and test so a missing deployment
+ * secret fails closed instead of silently issuing verifiable tokens.
+ */
 export function jwtSecret(): string {
-  return (
+  const configured =
     process.env.JWT_SECRET ||
     process.env.JWT_ACCESS_SECRET ||
     process.env.AUTH_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    "hermes-dev-jwt-insecure-not-for-production"
-  );
+    process.env.NEXTAUTH_SECRET;
+
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT signing secret is required in production");
+  }
+  return "hermes-dev-jwt-insecure-not-for-production";
 }
 
 /** Access token TTL seconds. */

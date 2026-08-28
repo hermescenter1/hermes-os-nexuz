@@ -5,7 +5,7 @@ import type { ActiveLocale } from "./i18n/locales";
 import {
   isProtectedPath,
   isAuthorizedForPath,
-  getRoleFromRequestSync,
+  getRoleFromRequest,
 } from "./lib/auth/rbac";
 import { isExternalAiEnabled } from "./lib/copilot/voice/config";
 
@@ -103,12 +103,13 @@ function buildCSP(nonce: string): string {
   ].join("; ");
 }
 
-export function middleware(request: NextRequest): NextResponse {
+export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
-  // Auth protection — sync JWT decode (edge-safe, no DB round-trip)
+  // Auth protection — cryptographically verify the JWT before trusting role
+  // claims. This remains edge-safe and requires no DB round-trip.
   if (isProtectedPath(pathname)) {
-    const role = getRoleFromRequestSync(request);
+    const role = await getRoleFromRequest(request);
     if (!role || !isAuthorizedForPath(role, pathname)) {
       const segments = pathname.split("/").filter(Boolean);
       const locale   = routing.locales.includes(segments[0] as ActiveLocale)
