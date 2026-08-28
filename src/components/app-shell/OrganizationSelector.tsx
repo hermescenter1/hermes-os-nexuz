@@ -16,6 +16,13 @@ import { cn, Skeleton, TechnicalValue } from "@/components/ds";
 interface ContextSelectorProps {
   /** Current context name resolved server-side; null = no context. */
   name?: string | null;
+  /**
+   * PHASE 104 R1 (V-M7) - the context could not be RESOLVED (store down or
+   * the query failed), which is NOT the same as the account having none.
+   * Rendering an outage as an empty state states a fact about the user that
+   * was never established.
+   */
+  unavailable?: boolean;
   /** Optional technical code (site codes stay LTR inside RTL). */
   code?: string | null;
   loading?: boolean;
@@ -26,29 +33,36 @@ function ContextRow({
   label,
   empty,
   name,
+  unavailable,
   code,
   loading,
   className,
 }: ContextSelectorProps & { label: string; empty: string }) {
   const t = useTranslations("appShell.shell");
+  /* Three distinct states, never collapsed: a name, an honest empty, or an
+     explicit "could not be determined". */
+  const value = name ?? (unavailable ? t("contextUnresolved") : empty);
   return (
     <div
       // A non-interactive context display — deliberately NOT a button, so it is
       // never announced as an actionable selector while switching is impossible.
-      aria-label={`${label}: ${name ?? empty}`}
-      title={t("contextUnavailable")}
+      aria-label={`${label}: ${value}`}
+      // The full value, so nothing depends on the rendered width.
+      title={name ? `${label}: ${name}` : t("contextUnavailable")}
       className={cn(
-        "flex h-9 w-full items-center gap-2 rounded-sm border border-border-default",
+        // PHASE 104 R1 (V-M7) - `h-9` + `truncate` cut the empty state itself
+        // to "No organizatio...". The row now grows to fit its content.
+        "flex min-h-9 w-full items-start gap-2 rounded-sm border border-border-default py-1.5",
         "bg-surface-interactive px-3",
         className,
       )}
     >
-      <span className="text-label-compact font-semibold uppercase text-text-muted">{label}</span>
+      <span className="mt-px shrink-0 text-label-compact font-semibold uppercase text-text-muted">{label}</span>
       {loading ? (
         <Skeleton shape="text" width="60%" />
       ) : (
-        <span className={cn("truncate text-label", name ? "font-semibold text-text-primary" : "text-text-muted")}>
-          {name ?? empty}
+        <span className={cn("min-w-0 break-words text-label", name ? "font-semibold text-text-primary" : "text-text-muted")}>
+          {value}
           {name && code ? (
             <>
               {" · "}

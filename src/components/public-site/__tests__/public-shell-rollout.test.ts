@@ -136,7 +136,9 @@ describe("public shell rollout — migrated public consumers", () => {
     const adapter = read("src/components/public-site/PublicPageShell.tsx");
     expect(adapter).toContain("ambient?:");
     expect(adapter).toContain("noAmbient?:");
-    expect(adapter).toContain("<PublicHeader />");
+    // PHASE 104-I1 — the adapter forwards ONE visual mode to the header so a
+    // surface cannot open in one mode and close in another.
+    expect(adapter).toContain("<PublicHeader visualMode={visualMode} />");
     expect(adapter).toContain("<PublicFooter />");
     expect(adapter).toContain('id="public-content"');
     expect(adapter).toContain("AmbientBackground");

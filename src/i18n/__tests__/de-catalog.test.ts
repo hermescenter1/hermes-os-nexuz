@@ -231,6 +231,14 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // PHASE 87L.6 FINAL AMENDMENT — every remaining PUBLIC-route namespace
     "about", "services", "architecture", "library", "modules",
     "knowledgeCases", "caseExplorer",
+    // PHASE 104-I1 — the Careers public route with i18n enforcement (DB-only rendering).
+    "careers",
+    // PHASE 104-I2 — the remaining public routes whose page-owned copy moved out
+    // of the component tree and into the catalogue: /demo (was an en/fa literal
+    // pair per string) and /vendors + /vendors/apply (were English literals in
+    // every locale). Registering them here holds them to the same zero-carryover
+    // German standard as the rest of the public estate.
+    "demo", "vendors",
     // PHASE 87L.6B — the authenticated shell (every /de workspace page)
     "appShell",
     // PHASE 87L.6C — command + industrial operations surfaces

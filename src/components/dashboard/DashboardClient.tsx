@@ -7,7 +7,7 @@ import { ExecutiveOverview } from "./ExecutiveOverview";
 import { DashboardCommandSurface } from "./DashboardCommandSurface";
 import { ExecKpiStrip }     from "@/components/ui/ExecKpiStrip";
 import { HermesSignal }     from "@/components/hermes/HermesSignal";
-import { PLATFORM_FACTS }   from "@/lib/industrial/platform-facts";
+import { usePlatformFacts } from "@/lib/industrial/use-platform-facts";
 import { EcosystemStatus }  from "@/components/hermes/EcosystemStatus";
 import { DashboardSkeleton, DataUnavailableState } from "@/components/dashboard-experience";
 import type {
@@ -129,6 +129,9 @@ function MetricRows({ list, nf }: { list: MetricSeries[]; nf: Intl.NumberFormat 
 export function DashboardClient() {
   const t      = useTranslations("dashboard");
   const locale = useLocale();
+  /* PHASE 104 R1 (V-M5) - shared with the ribbon and the Executive Overview,
+     so this screen cannot print two different values for one quantity. */
+  const facts  = usePlatformFacts();
   const [snap, setSnap]   = useState<DashboardSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -220,15 +223,15 @@ export function DashboardClient() {
         </div>
         <div className="global-ops-cell">
           <p className="kpi-label mb-1.5">{t("command.globalOps.knowledgeVolume")}</p>
-          <p className="exec-kpi-value">{nf.format(PLATFORM_FACTS.knowledgeLibraries)}</p>
+          <p className="exec-kpi-value">{nf.format(facts.knowledgeLibraries)}</p>
         </div>
         <div className="global-ops-cell">
           <p className="kpi-label mb-1.5">{t("command.globalOps.engineeringCases")}</p>
-          <p className="exec-kpi-value">{nf.format(PLATFORM_FACTS.engineeringCases)}</p>
+          <p className="exec-kpi-value">{nf.format(facts.engineeringCases)}</p>
         </div>
         <div className="global-ops-cell">
           <p className="kpi-label mb-1.5">{t("command.globalOps.supportedVendors")}</p>
-          <p className="exec-kpi-value">{nf.format(PLATFORM_FACTS.supportedVendors)}</p>
+          <p className="exec-kpi-value">{nf.format(facts.supportedVendors)}</p>
         </div>
         <div className="global-ops-cell">
           <p className="kpi-label mb-1.5">{t("command.globalOps.platformPosture")}</p>

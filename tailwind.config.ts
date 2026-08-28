@@ -83,6 +83,33 @@ export default {
 
         "focus-ring": "var(--color-focus-ring)",
         "focus-halo": "var(--color-focus-halo)",
+
+        /* ── PHASE 104 — Hermes Design DNA new semantic layer (additive) ──
+           Derived from tools/figma/hermes-phase104-visual-system/src/lib/dna-tokens.js
+           and gated by src/components/ds/__tests__/phase104-token-contract.test.ts.
+
+           `state-*` / `reasoning-*-text` split indicator from readable type.
+           The bare state token is an indicator (>=3:1 on every surface,
+           SC 1.4.11). Indicator-only tokens are not universally text-safe across
+           all canonical surfaces; failure on any supported surface prohibits
+           their use as a general text token. Use the `-text` partner instead.
+           (state-offline and state-maintenance clear 4.5:1 on the two darkest
+           surfaces and fail on the other three; state-critical fails on all five.)
+           `horizon-*` are atmosphere gradient stops, prohibited as any
+           foreground — they are below 3:1 on EVERY canonical surface. ── */
+        "state-degraded":         "var(--color-state-degraded)",
+        "state-critical":         "var(--color-state-critical)",
+        "state-critical-text":    "var(--color-state-critical-text)",
+        "state-maintenance":      "var(--color-state-maintenance)",
+        "state-maintenance-text": "var(--color-state-maintenance-text)",
+        "state-offline":          "var(--color-state-offline)",
+
+        "reasoning-evidence-text":      "var(--color-reasoning-evidence-text)",
+        "reasoning-hypothesis-text":    "var(--color-reasoning-hypothesis-text)",
+        "reasoning-contradiction-text": "var(--color-reasoning-contradiction-text)",
+
+        "horizon-ember-fade": "var(--color-horizon-ember-fade)",
+        "horizon-ember-core": "var(--color-horizon-ember-core)",
       },
       fontFamily: {
         display: ["var(--font-display)", "system-ui", "sans-serif"],

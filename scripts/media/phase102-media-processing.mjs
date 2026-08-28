@@ -1,4 +1,15 @@
-#!/usr/bin/env node
+// NOTE — deliberately NO `#!/usr/bin/env node` shebang.
+//
+// scripts/__tests__/phase102-media-processing.test.ts imports parseArgs,
+// loadMediaModules, runMediaProcessing and verifyStoredBytes from this file.
+// Vitest hoists its CJS interop shims onto line 1 when it transforms the module,
+// which pushes a shebang past the start of the file — and `#!` is only legal as
+// the very first characters. The whole suite therefore failed to load with
+// "SyntaxError: Invalid or unexpected token", reporting zero tests rather than a
+// real failure, which is why it looked like an unexplained environment quirk.
+//
+// The CLI entry point is `npm run media:processing`, i.e.
+// `node scripts/media/phase102-media-processing.mjs` — no shebang required.
 /**
  * PHASE 102 — media processing operator CLI.
  *

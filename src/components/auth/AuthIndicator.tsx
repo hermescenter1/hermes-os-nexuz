@@ -50,11 +50,18 @@ export function AuthIndicator() {
   // Not configured → render nothing (keeps the header uncrowded in V1).
   if (!state || !state.authConfigured) return null;
 
+  // PHASE 104-H — the sign-in / sign-out controls were bare text (a 16px tall
+  // target, measured). They keep their exact behaviour and copy; the
+  // interactive box now meets the 44px target via inline-flex + min-block/inline
+  // size only — NO extra padding: this component is shared with the frozen
+  // Observatory/Journal PublicHeader, whose 320px row has exactly 0px of slack
+  // (measured: a 12px padding here overflowed it in en/de). Text width already
+  // exceeds 44px in en/de; `min-w-11` covers the short Persian labels.
   if (!state.user) {
     return (
       <Link
         href="/login"
-        className="font-mono text-xs text-muted transition-colors hover:text-ink"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center font-mono text-xs text-muted transition-colors hover:text-ink"
       >
         {t("login")}
       </Link>
@@ -64,7 +71,10 @@ export function AuthIndicator() {
   return (
     <span className="flex items-center gap-2 font-mono text-xs text-muted">
       <span className="hidden sm:inline">{state.user.name}</span>
-      <button onClick={logout} className="transition-colors hover:text-ink">
+      <button
+        onClick={logout}
+        className="inline-flex min-h-11 min-w-11 items-center justify-center transition-colors hover:text-ink"
+      >
         {t("logout")}
       </button>
     </span>

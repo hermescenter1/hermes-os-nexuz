@@ -7,6 +7,7 @@
  * take an injected Link so they stay locale-correct without importing routing.
  */
 export { DashboardSection, type DashboardSectionProps } from "./DashboardSection";
+export { TriadGroup, TRIAD_INTENTS, type TriadGroupProps, type TriadIntent } from "./TriadGroup";
 export { OperationalStatusHeader, type OperationalStatusHeaderProps } from "./OperationalStatusHeader";
 export { AttentionPanel, type AttentionItem } from "./AttentionPanel";
 export { RiskEvidence, type RiskEvidenceProps, type RiskFactor } from "./RiskEvidence";

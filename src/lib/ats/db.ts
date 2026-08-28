@@ -8,6 +8,7 @@
 
 import { getPrisma } from "@/lib/db/prisma";
 import { randomUUID } from "node:crypto";
+import { publicJobWhere } from "./eligibility";
 import type {
   AtsJobStatus,
   AtsApplicationStatus,
@@ -31,9 +32,9 @@ export interface DbAtsJob {
   benefits: unknown;
   skills: unknown;
   location: string;
-  locationType: string;
+  locationType: string | null;
   department: string;
-  salaryCurrency: string;
+  salaryCurrency: string | null;
   salaryMin: number | null;
   salaryMax: number | null;
   status: string;
@@ -56,7 +57,7 @@ export interface DbAtsCandidate {
   summary: string | null;
   skills: unknown;
   languages: unknown;
-  workAuthorization: string;
+  workAuthorization: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -194,9 +195,9 @@ export async function getPublicJobs(opts?: {
   try {
     const rows = await m.job.findMany({
       where: {
-        status: "OPEN",
-        isPublic: true,
-        deletedAt: null,
+        // PHASE 104-B1 — the shared public contract: also requires a real,
+        // non-future publishedAt and an unexpired closingDate.
+        ...publicJobWhere(new Date()),
         ...(opts?.department ? { department: opts.department } : {}),
       },
       orderBy: { createdAt: "desc" },
@@ -239,54 +240,14 @@ export async function getOrgJobs(organizationId: string, opts?: {
   } catch { return null; }
 }
 
-export async function createJob(data: {
-  organizationId: string;
-  title: string;
-  description: string;
-  department: string;
-  location: string;
-  locationType?: string;
-  salaryMin?: number;
-  salaryMax?: number;
-  salaryCurrency?: string;
-  skills?: string[];
-  requirements?: string[];
-  responsibilities?: string[];
-  benefits?: string[];
-  status?: string;
-  postedById?: string;
-  closingDate?: Date;
-}): Promise<DbAtsJob | null> {
-  const m = await models();
-  if (!m) return null;
-  try {
-    return await m.job.create({
-      data: {
-        id: randomUUID(),
-        organizationId: data.organizationId,
-        title: data.title,
-        description: data.description,
-        department: data.department,
-        location: data.location,
-        locationType: data.locationType ?? "onsite",
-        salaryMin: data.salaryMin,
-        salaryMax: data.salaryMax,
-        salaryCurrency: data.salaryCurrency ?? "USD",
-        skills: data.skills ?? [],
-        requirements: data.requirements ?? [],
-        responsibilities: data.responsibilities ?? [],
-        benefits: data.benefits ?? [],
-        status: data.status ?? "DRAFT",
-        postedById: data.postedById,
-        closingDate: data.closingDate,
-        isPublic: true,
-      },
-    });
-  } catch { return null; }
-}
-
-// ── Candidates ────────────────────────────────────────────────────────────────
-
+/**
+ * PHASE 104-B1 — the legacy `createJob()` was REMOVED, not repaired.
+ * It had zero callers (finding F11), fabricated `locationType="onsite"` and
+ * `salaryCurrency="USD"`, accepted a caller-supplied status and required no
+ * requisitionKey, no translations, no audit and no membership check. Job
+ * creation now goes through `createJobDraft()` in `./recruitment.ts`,
+ * which is transactional, tenant-checked, DRAFT/private-only and audited.
+ */
 export async function getCandidateByEmail(email: string): Promise<DbAtsCandidate | null> {
   const m = await models();
   if (!m) return null;
@@ -326,7 +287,9 @@ export async function createCandidate(data: {
         location: data.location,
         summary: data.summary,
         skills: data.skills ?? [],
-        workAuthorization: data.workAuthorization ?? "citizen",
+        // PHASE 104-B1 — never fabricate an authorization the applicant did
+        // not state. null = NOT_COLLECTED.
+        workAuthorization: data.workAuthorization ?? null,
       },
     });
   } catch { return null; }

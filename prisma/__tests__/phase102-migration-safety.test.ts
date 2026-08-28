@@ -402,7 +402,17 @@ describe("102 — migration ordering", () => {
    *   replaces Article's global unique slug with a composite (slug, language),
    *   and adds a nullable German category label. Touches no Phase 102 table.
    */
-  const LATER_PHASE_MIGRATIONS = ["20260823000000_phase106_journal_multilingual_editions"];
+  /**
+   *   Phase 104-B1 — recruitment foundation: nullable owner-gated AtsJob
+   *   columns, the AtsJobTranslation model, ConsentRecord.recordNature,
+   *   idempotency and OTP stores. Purely additive; drops two misleading
+   *   DEFAULTs (onsite/USD) without touching stored rows. Touches no
+   *   Phase 102 table.
+   */
+  const LATER_PHASE_MIGRATIONS = [
+    "20260823000000_phase106_journal_multilingual_editions",
+    "20260824000000_phase104_b1_recruitment_foundation",
+  ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {
     const all = dirs();

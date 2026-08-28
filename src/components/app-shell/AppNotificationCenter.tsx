@@ -15,6 +15,10 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 export function AppNotificationCenter() {
   const t = useTranslations("appShell.notifications");
   return (
+    // PHASE 104-H — the wrapper reaches the shared bell button (see the
+    // .hermes-topbar-bell rule in globals.css) to give it a 44×44 target
+    // without editing NotificationCenter, which two public headers also render.
+    <span className="hermes-topbar-bell inline-flex">
     <NotificationCenter
       labels={{
         title: t("title"),
@@ -42,5 +46,6 @@ export function AppNotificationCenter() {
         retry: t("retry"),
       }}
     />
+    </span>
   );
 }

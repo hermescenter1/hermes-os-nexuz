@@ -39,7 +39,11 @@ export default async function LocalizedNotFound() {
   const t = await getTranslations({ locale, namespace: "errors" });
 
   return (
-    <div
+    // PHASE 104-I3 — a landmark, not a bare <div>. Measured on the running
+    // server, this route rendered ZERO <main> elements, so a screen-reader
+    // user landing on a 404 had no main region to jump to and the public
+    // shell's "skip to content" affordance had nothing to target here.
+    <main
       lang={locale}
       dir={dir}
       className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 text-center"
@@ -73,7 +77,7 @@ export default async function LocalizedNotFound() {
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
             href={`/${locale}`}
-            className="ds-focus inline-flex items-center gap-2 rounded-xl bg-signal px-5 py-2.5 text-sm font-bold text-bg shadow-[0_0_20px_rgba(30,200,164,0.12)] transition-colors hover:bg-signal/90"
+            className="ds-focus inline-flex min-h-11 items-center gap-2 rounded-xl bg-signal px-5 py-2.5 text-sm font-bold text-bg shadow-[0_0_20px_rgba(30,200,164,0.12)] transition-colors hover:bg-signal/90"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="h-4 w-4">
               <path
@@ -86,6 +90,6 @@ export default async function LocalizedNotFound() {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

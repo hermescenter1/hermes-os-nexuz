@@ -673,7 +673,21 @@ h6 { font-weight: 550; letter-spacing: 0; }
   letter-spacing:  0.10em;
   text-transform:  uppercase;
   border:          1px solid transparent;
-  white-space:     nowrap;
+  /* PHASE 104-H — `white-space: nowrap` made a badge carrying a full German
+     sentence ("EREIGNISSE MIT HOHER PRIORITÄT", 225px) unable to fit a 230px
+     flex row on a 320 viewport; it pushed past its parent and, through three
+     overflow:visible ancestors, widened the DOCUMENT to 336 — the last of the
+     four causes of the known German Dashboard 320 overflow. A badge may now
+     wrap BETWEEN words under real pressure but never inside a word. Blast
+     radius was measured on the production build before changing this shared
+     rule: of 16 dashboard badges, exactly ONE changes height (the one that was
+     already broken) in every locale; the 15 short pills are unaffected. Font
+     size and copy untouched. */
+  white-space:     normal;
+  overflow-wrap:   normal;
+  word-break:      normal;
+  hyphens:         none;
+  min-inline-size: 0;
   line-height:     1.4;
 }
 
@@ -886,6 +900,17 @@ h6 { font-weight: 550; letter-spacing: 0; }
   text-transform: uppercase;
   color:          var(--muted);
   line-height:    1.2;
+  /* PHASE 104-H — the known "German Dashboard KPI label overflow at 320×568":
+     "4/4 Linien aktiv" set as one unbreakable uppercase-mono line outgrew its
+     KPI cell by 16px and widened the DOCUMENT (scrollWidth 336 on a 320
+     viewport). The label may now wrap at spaces; it must never break inside a
+     word, and neither the font size nor the German copy is touched. Logical
+     min-inline-size:0 lets a flex/grid cell actually shrink to its track. */
+  min-inline-size: 0;
+  overflow-wrap:   normal;
+  word-break:      normal;
+  hyphens:         none;
+  white-space:     normal;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -915,9 +940,11 @@ h6 { font-weight: 550; letter-spacing: 0; }
   flex:         1;
   min-width:    130px;
   padding:      1rem 1.25rem;
-  border-right: 1px solid rgba(var(--signal-rgb), 0.07);
+  /* PHASE 104 R1 - logical, not physical: a `border-right` sat on the wrong
+     side of every cell under RTL. */
+  border-inline-end: 1px solid rgba(var(--signal-rgb), 0.07);
 }
-.global-ops-cell:last-child { border-right: none; }
+.global-ops-cell:last-child { border-inline-end: none; }
 
 /* ── Ecosystem Layer Card ────────────────────────────────────────────────
    Each of the 5 Hermes ecosystem layers rendered as a status row.
@@ -1248,10 +1275,193 @@ h6 { font-weight: 550; letter-spacing: 0; }
   --motion-ease-out:  cubic-bezier(0.16, 1, 0.3, 1);      /* entrance (out-expo) */
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104 — HERMES DESIGN DNA new semantic layer (additive)
+   ───────────────────────────────────────────────────────────────────────────
+   The eleven values Phase 104 introduces on top of the Phase 87B canonical
+   layer above. Nothing here replaces or renumbers a Phase 87B token; every
+   canonical token keeps its exact value and every existing page renders
+   unchanged. Adding these tokens produces NO visual change on its own —
+   no component consumes them yet.
+
+   Source of truth (machine-derived, not hand-copied):
+     tools/figma/hermes-phase104-visual-system/src/lib/dna-tokens.js
+   Contract + gate:
+     src/components/ds/phase104-token-contract.ts
+     src/components/ds/__tests__/phase104-token-contract.test.ts
+   Rationale for each value (why a new hue was unavoidable):
+     docs/design/phase-104/01-hermes-design-dna.md
+   Mapping table:
+     docs/design/phase-104/02-token-integration.md
+
+   Two rules are machine-enforced by the contract test, not merely written here:
+     1. INDICATOR vs TEXT is not interchangeable.
+        Indicator-only tokens are not universally text-safe across all canonical
+        surfaces; failure on any supported surface prohibits their use as a general
+        text token.
+        Note this is an EXISTENTIAL claim, not a universal one — state-offline and
+        state-maintenance do clear 4.5:1 on the two darkest surfaces and fail on
+        the other three; only state-critical is below 4.5:1 on all five. Since a
+        component cannot choose its backdrop out of that set at will, failing
+        anywhere disqualifies the token as type everywhere. Use the `-text` partner.
+     2. COLOUR IS NEVER THE ONLY CHANNEL. Every state below also carries a
+        glyph and an outline treatment (see the state ladder in the machine
+        source), so severity survives greyscale and colour-vision deficiency.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Industrial state ladder — new states ──
+     `-text` variants are the readable partners; the bare token is the
+     indicator (dot / bar / border / chart mark) and is not universally
+     text-safe. Ranges below are worst-case → best-case across the five
+     canonical surfaces, computed by the contract test. */
+  --color-state-degraded:            #C9B06A;  /* Industrial Brass — running below nominal, NOT "act now" (6.99–9.38:1) */
+  --color-state-critical:            #E03144;  /* Safety Red Urgent — indicator only; sub-AA on 5 of 5 surfaces (3.31–4.45:1) */
+  --color-state-critical-text:       #FF8A94;  /* readable partner (6.58:1 worst case) */
+  --color-state-maintenance:         #5F7E9E;  /* Maintenance Steel — indicator only; sub-AA on 3 of 5 surfaces (3.51–4.7:1) */
+  --color-state-maintenance-text:    #93AEC8;  /* readable partner (6.45:1 worst case) */
+  --color-state-offline:             #6B7F8D;  /* Offline Slate — indicator only; sub-AA on 3 of 5 surfaces (3.56–4.78:1); never --color-text-disabled */
+
+  /* ── Reasoning ladder — readable partners ──
+     The canonical --color-reasoning-* values stay the indicator/border; these
+     carry the same meaning at text-legible luminance. These three DO clear
+     4.5:1 on all five canonical surfaces (worst case quoted). */
+  --color-reasoning-evidence-text:      #7FB0FF;  /* (6.75:1 worst case) */
+  --color-reasoning-hypothesis-text:    #A99BFF;  /* (6.23:1 worst case) */
+  --color-reasoning-contradiction-text: #FF7C86;  /* (5.99:1 worst case) */
+
+  /* ── Horizon atmosphere — background gradient stops ONLY ──
+     PROHIBITED as a foreground: never text, never an icon, never a border,
+     never a data-surface fill. Text never sits directly on Horizon; it sits on
+     a Hermes Glass surface composited over it. Unlike the indicator tokens
+     above this prohibition is universal and asserted as such: both values are
+     below 3:1 on EVERY canonical surface (best case 1.3:1 and 2.14:1). */
+  --color-horizon-ember-fade: #34201C;
+  --color-horizon-ember-core: #6B3A22;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-C — HERMES DNA SIGNATURE VARIABLES (additive, zero visual change)
+   ───────────────────────────────────────────────────────────────────────────
+   Phase 104-A brought the eleven new HUES into the product. This block brings
+   the SIGNATURES: the values that Glass, Edge, Beacon, Rail, Command and Triad
+   are built from, so a component can express "elevated glass" instead of
+   restating an rgba() nobody can trace.
+
+   ── A DIVERGENCE THAT IS RECORDED, NOT SILENTLY RESOLVED ──
+   `GLASS.tiers` in the machine source is a SPECIFICATION and it does not match
+   what actually ships. The spec says soft = rgba(12,23,32,0.55) with a 10px
+   blur; the shipped soft tier is rgba(12,23,32,0.72) with a sheen
+   gradient and NO blur, because the 87L.1 filled-glass system deliberately
+   dropped backdrop-filter on the app tiers (blur has nothing to sample on a
+   solid dark shell and only costs compositing time on dense dashboards).
+
+   The variables below therefore carry the SHIPPED values, byte for byte. This
+   increment is a tokenisation, not a redesign: adopting the spec numbers would
+   change how every card in the product renders, which is a visual decision for
+   the owner and not something to smuggle in under the word "migration". The
+   divergence is asserted by the signature contract test so it stays visible,
+   and it is listed as an open owner decision in the Phase 104 docs.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Hermes Glass — the five shipped tiers, decomposed ──
+     Fill/sheen/border/inner-highlight per tier. Values are exactly those the
+     87L.1 rules used as literals; the rules below now read them from here. */
+  --glass-soft-fill:            rgba(12, 23, 32, 0.72);
+  --glass-soft-sheen-from:      rgba(237, 247, 250, 0.03);
+  --glass-soft-border:          rgba(139, 244, 248, 0.07);
+  --glass-soft-inner:           rgba(237, 247, 250, 0.05);
+
+  --glass-card-fill-from:       rgba(17, 33, 44, 0.94);
+  --glass-card-fill-to:         rgba(12, 23, 32, 0.90);
+  --glass-card-sheen-from:      rgba(237, 247, 250, 0.05);
+  --glass-card-sheen-mid:       rgba(237, 247, 250, 0.015);
+  --glass-card-border:          rgba(139, 244, 248, 0.10);
+  --glass-card-inner:           rgba(237, 247, 250, 0.07);
+  --glass-card-drop:            0 2px 10px rgba(0, 0, 0, 0.28);
+
+  --glass-elevated-fill-from:   rgba(20, 38, 50, 0.96);
+  --glass-elevated-fill-to:     rgba(12, 23, 32, 0.92);
+  --glass-elevated-sheen-from:  rgba(237, 247, 250, 0.07);
+  --glass-elevated-sheen-mid:   rgba(237, 247, 250, 0.02);
+  --glass-elevated-border:      rgba(139, 244, 248, 0.14);
+  --glass-elevated-inner:       rgba(237, 247, 250, 0.09);
+  --glass-elevated-drop:        0 8px 24px rgba(0, 0, 0, 0.40);
+
+  --glass-hero-fill-from:       rgba(20, 38, 50, 0.88);
+  --glass-hero-fill-to:         rgba(7, 16, 24, 0.82);
+  --glass-hero-sheen-from:      rgba(237, 247, 250, 0.08);
+  --glass-hero-sheen-mid:       rgba(237, 247, 250, 0.02);
+  --glass-hero-border:          rgba(139, 244, 248, 0.16);
+  --glass-hero-inner:           rgba(237, 247, 250, 0.10);
+  --glass-hero-drop:            0 16px 48px rgba(0, 0, 0, 0.45);
+
+  /* Hero is the ONLY app tier that blurs — it is the only one that sits over
+     imagery or a gradient rather than a solid shell. */
+  --glass-hero-backdrop: blur(18px) saturate(1.25);
+
+  /* ── Hermes Edge — semantic borders ──
+     Aliases, not new values: Edge is a naming layer over shipped tokens. */
+  --edge-structural: var(--color-border-default);
+  --edge-hairline:   var(--color-surface-glass-border);
+  --edge-active:     var(--color-border-active);
+  --edge-danger:     var(--color-border-danger);
+  --edge-width:      1px;
+  /* Edge illumination is a LINEAR TOP HIGHLIGHT, never an outer glow. Outer
+     glow, bloom and coloured box-shadow spread stay retired. */
+  --edge-illumination-from: rgba(139, 244, 248, 0.14);
+  --edge-illumination-to:   rgba(139, 244, 248, 0.00);
+  --edge-illumination-span: 40%;
+
+  /* ── Hermes Beacon — focus and the single primary action ──
+     Alias layer over the brand tokens. Beacon is a focus device, not decoration:
+     at most one primary Beacon per view (asserted by the signature contract). */
+  --beacon-core:      var(--color-brand-primary);
+  --beacon-rise:      var(--color-brand-primary-hover);
+  --beacon-deep:      var(--color-brand-primary-pressed);
+  --beacon-halo:      var(--color-selection);
+  --beacon-rim:       var(--color-brand-border);
+  --beacon-wash:      var(--color-brand-subtle);
+  --beacon-on:        var(--color-brand-on-brand);
+  --beacon-ring-width: 2px;
+  --beacon-ring-offset: 2px;
+
+  /* ── Hermes Rail — the icon-only persistent navigation rail ── */
+  --rail-width:            72px;
+  --rail-width-expanded:  264px;
+  --rail-item-size:        44px;   /* WCAG 2.2 SC 2.5.8 target size */
+  --rail-item-gap:          6px;
+  --rail-icon-size:        20px;
+  --rail-indicator-width:   2px;
+  --rail-surface:          var(--color-surface-primary);
+  --rail-edge:             var(--color-border-default);
+
+  /* ── Hermes Command — the signature AI command/search field ── */
+  --command-width:          720px;
+  --command-width-tablet:   640px;
+  --command-width-mobile:   342px;
+  --command-height:          64px;
+  --command-height-mobile:   56px;
+  --command-radius:         var(--radius-xl);
+  --command-mark-size:       24px;
+  --command-palette-max-height: 480px;
+
+  /* ── Hermes Triad — exactly three workspace cards, one intent each ── */
+  --triad-card-width:  384px;
+  --triad-card-height: 260px;
+  --triad-gap:          24px;
+  --triad-radius:      var(--radius-2xl);
+}
+
 /* ── Selection colour for the new system ── */
 ::selection { background: var(--color-selection); }
 
 /* ── Controlled glass — overlays only (modal, toolbar, command, context) ── */
+/* NOT tokenised on purpose. `foundation.test.ts` pins the literal
+   `backdrop-filter: blur(` inside this rule, and that gate exists to prove the
+   overlay tier really blurs. Replacing the literal with a variable would hide
+   the value from the gate — satisfying a check by making it unable to see what
+   it checks is the wrong direction, so the older overlay utility keeps its
+   literals while the 87L.1 tier family below moves to variables. */
 .ds-glass {
   background: var(--color-surface-glass);
   border: 1px solid var(--color-surface-glass-border);
@@ -1269,39 +1479,39 @@ h6 { font-weight: 550; letter-spacing: 0; }
 .ds-glass-card,
 .ds-glass-interactive {
   background:
-    linear-gradient(180deg, rgba(237, 247, 250, 0.05) 0%, rgba(237, 247, 250, 0.015) 30%, rgba(237, 247, 250, 0) 100%),
-    linear-gradient(180deg, rgba(17, 33, 44, 0.94) 0%, rgba(12, 23, 32, 0.90) 100%);
-  border: 1px solid rgba(139, 244, 248, 0.10);
+    linear-gradient(180deg, var(--glass-card-sheen-from) 0%, var(--glass-card-sheen-mid) 30%, rgba(237, 247, 250, 0) 100%),
+    linear-gradient(180deg, var(--glass-card-fill-from) 0%, var(--glass-card-fill-to) 100%);
+  border: var(--edge-width) solid var(--glass-card-border);
   box-shadow:
-    inset 0 1px 0 rgba(237, 247, 250, 0.07),
-    0 2px 10px rgba(0, 0, 0, 0.28);
+    inset 0 1px 0 var(--glass-card-inner),
+    var(--glass-card-drop);
 }
 .ds-glass-soft {
   background:
-    linear-gradient(180deg, rgba(237, 247, 250, 0.03) 0%, rgba(237, 247, 250, 0) 60%),
-    rgba(12, 23, 32, 0.72);
-  border: 1px solid rgba(139, 244, 248, 0.07);
-  box-shadow: inset 0 1px 0 rgba(237, 247, 250, 0.05);
+    linear-gradient(180deg, var(--glass-soft-sheen-from) 0%, rgba(237, 247, 250, 0) 60%),
+    var(--glass-soft-fill);
+  border: var(--edge-width) solid var(--glass-soft-border);
+  box-shadow: inset 0 1px 0 var(--glass-soft-inner);
 }
 .ds-glass-elevated {
   background:
-    linear-gradient(180deg, rgba(237, 247, 250, 0.07) 0%, rgba(237, 247, 250, 0.02) 32%, rgba(237, 247, 250, 0) 100%),
-    linear-gradient(180deg, rgba(20, 38, 50, 0.96) 0%, rgba(12, 23, 32, 0.92) 100%);
-  border: 1px solid rgba(139, 244, 248, 0.14);
+    linear-gradient(180deg, var(--glass-elevated-sheen-from) 0%, var(--glass-elevated-sheen-mid) 32%, rgba(237, 247, 250, 0) 100%),
+    linear-gradient(180deg, var(--glass-elevated-fill-from) 0%, var(--glass-elevated-fill-to) 100%);
+  border: var(--edge-width) solid var(--glass-elevated-border);
   box-shadow:
-    inset 0 1px 0 rgba(237, 247, 250, 0.09),
-    0 8px 24px rgba(0, 0, 0, 0.40);
+    inset 0 1px 0 var(--glass-elevated-inner),
+    var(--glass-elevated-drop);
 }
 .ds-glass-hero {
   background:
-    linear-gradient(180deg, rgba(237, 247, 250, 0.08) 0%, rgba(237, 247, 250, 0.02) 38%, rgba(237, 247, 250, 0) 100%),
-    linear-gradient(165deg, rgba(20, 38, 50, 0.88) 0%, rgba(7, 16, 24, 0.82) 100%);
-  border: 1px solid rgba(139, 244, 248, 0.16);
+    linear-gradient(180deg, var(--glass-hero-sheen-from) 0%, var(--glass-hero-sheen-mid) 38%, rgba(237, 247, 250, 0) 100%),
+    linear-gradient(165deg, var(--glass-hero-fill-from) 0%, var(--glass-hero-fill-to) 100%);
+  border: var(--edge-width) solid var(--glass-hero-border);
   box-shadow:
-    inset 0 1px 0 rgba(237, 247, 250, 0.10),
-    0 16px 48px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(18px) saturate(1.25);
-  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+    inset 0 1px 0 var(--glass-hero-inner),
+    var(--glass-hero-drop);
+  backdrop-filter: var(--glass-hero-backdrop);
+  -webkit-backdrop-filter: var(--glass-hero-backdrop);
 }
 .ds-glass-interactive {
   transition:
@@ -1522,4 +1732,1675 @@ h6 { font-weight: 550; letter-spacing: 0; }
 html[lang^="en"] {
   --font-display: var(--font-inter, "Inter"), system-ui, sans-serif;
   --font-body:    var(--font-inter, "Inter"), system-ui, sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-D — SHARED APP-SHELL ADOPTION (Rail · Command · Beacon · Edge)
+   ───────────────────────────────────────────────────────────────────────────
+   The first intentionally VISIBLE Phase 104 adoption. These selectors do one
+   job: let the shared shell CONSUME the signature variables declared by the
+   104-C layer. They introduce no colour, no shadow recipe, no gradient and no
+   motion constant of their own — every value below is a `var()` reference into
+   the machine-derived contract, so a component can express "the Rail" instead
+   of restating a pixel nobody can trace.
+
+   Owned and asserted by:
+     src/components/ds/phase104-signature-contract.ts
+     src/components/ds/__tests__/phase104-app-shell-adoption.test.tsx
+
+   Deliberately NOT adopted, and why:
+     --rail-item-size (44px)  The shipped nav rows are 264×32 expanded and
+                              72×32 collapsed. Both clear WCAG 2.2 SC 2.5.8
+                              (24×24 minimum) comfortably, and forcing 44px
+                              would cut roughly a third of the visible
+                              navigation on a 900px viewport. The increment
+                              brief forbids reducing information density, so
+                              the row height is left alone and this variable
+                              stays unconsumed rather than quietly applied.
+     --rail-icon-size (20px)  The collapsed rail renders a 28px initial-letter
+                              tile, not a 20px icon. Applying the icon metric
+                              to a glyph tile would be a false adoption.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hermes Rail — the shared persistent navigation rail ── */
+/* The `border-e` utility stays on the element: it is a LOGICAL edge utility and
+   the Phase 87C shell gate pins it there to prove the rail never uses physical
+   left/right. This rule supplies its width and colour from the Rail and Edge
+   signatures instead of restating them. */
+.hermes-rail {
+  inline-size: var(--rail-width);
+  background: var(--rail-surface);
+  border-inline-end-width: var(--edge-width);
+  border-inline-end-color: var(--rail-edge);
+}
+.hermes-rail[data-expanded="true"] {
+  inline-size: var(--rail-width-expanded);
+}
+.hermes-rail-items {
+  gap: var(--rail-item-gap);
+}
+/* The active-route locator. `--beacon-core` aliases the shipped brand primary,
+   so this is a semantic adoption, not a colour change: the computed value is
+   identical to what the rail already rendered. Beacon is a FOCUS/LOCATOR
+   device — it marks the current route and nothing else in this shell. */
+.hermes-rail-beacon {
+  inline-size: var(--rail-indicator-width);
+  background: var(--beacon-core);
+}
+
+/* ── Hermes Command — the shared command/search surface ──
+   Deliberately larger than any other control in the product; that scale is
+   what makes the signature recognisable.
+
+   BOTH AXES ARE CONTAINED. Width was clamped from the start; height was not,
+   and the arithmetic said so: a 96px top offset + the 56px field + the 480px
+   result list + padding totals ~700px, which overflows a 320x568 phone by
+   132px. The surface is therefore a column flex container capped to the
+   available viewport height, and the result list is the part allowed to
+   shrink and scroll. `min-block-size: 0` is what actually lets a flex child
+   shrink below its content — without it the list would refuse to compress and
+   the cap would do nothing.
+
+   `100dvh` is declared after a `100vh` fallback so a browser without dynamic
+   viewport units still gets a real cap rather than no cap at all. The offsets
+   reuse the shipped spacing scale (`--space-page` = the 96px top offset that
+   used to be a `mt-24` utility, `--space-card` = the bottom gutter).
+
+   `align-self: flex-start` is load-bearing, not tidiness. The portal root is a
+   ROW flex container (`fixed inset-0 flex justify-center`), whose default
+   cross-axis alignment is `stretch` — so an auto block size stretches all the
+   way to the cap even when the content is far shorter. At 1440x900 that cap is
+   784px against roughly 604px of natural content: about 180px of empty panel.
+   Opting out of stretch is what makes the surface take its NATURAL height on a
+   tall viewport while the cap above still contains it on a short one.
+
+   (An earlier revision blamed `h-fit` for this. That was wrong: a max-size
+   clamps a `fit-content` size perfectly well. Default flex stretching was
+   always the cause.) */
+.hermes-command-surface {
+  inline-size: min(var(--command-width), calc(100vw - var(--space-card) - var(--space-card)));
+  border-radius: var(--command-radius);
+  display: flex;
+  flex-direction: column;
+  align-self: flex-start;
+  overflow: hidden;
+  margin-block-start: var(--space-page);
+  max-block-size: calc(100vh - var(--space-page) - var(--space-card));
+  max-block-size: calc(100dvh - var(--space-page) - var(--space-card));
+}
+.hermes-command-field {
+  block-size: var(--command-height-mobile);
+}
+.hermes-command-list {
+  max-block-size: var(--command-palette-max-height);
+  min-block-size: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-D2 — WORKSPACE & AUTHENTICATION VISUAL PILOT
+   ───────────────────────────────────────────────────────────────────────────
+   The first route-content adoption. Two surfaces only: the canonical Login
+   (Horizon + Glass) and Workspace Home (Triad). Everything below consumes the
+   Phase 104 signature variables; no colour, gradient stop colour or shadow
+   recipe is invented here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hermes Horizon — the cinematic atmosphere layer ──
+   Permitted on the Login pilot ONLY. Three hard rules from the machine source
+   are encoded structurally rather than trusted to prose:
+
+     1. The warm ember band may not exceed 22% of the frame. It starts at 78%,
+        so the band is exactly 22% and the gate recomputes that from
+        `HORIZON.emberBandMaxHeightRatio` rather than from a written number.
+     2. The vignette is MANDATORY. It is the first (topmost) background layer
+        here, so it composites OVER the ember and pins attention to the centre.
+     3. Text never sits on Horizon. This layer is `position: absolute`,
+        `pointer-events: none` and `aria-hidden` at the call site; content sits
+        on a Glass surface stacked above it.
+
+   The ember stops are `--color-horizon-ember-*`, the two atmosphere-only
+   tokens from 104-A that are proven below 3:1 on every canonical surface and
+   are therefore prohibited as any foreground. */
+.hermes-horizon {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 120% 78% at 50% 34%,
+      transparent 0%,
+      var(--color-background-deep) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 78%,
+      var(--color-horizon-ember-fade) 88%,
+      var(--color-horizon-ember-core) 96%,
+      var(--color-background-deep) 100%
+    );
+}
+
+/* ── Hermes Triad — the three Workspace Home intents ──
+   Exactly three, equal weight, one intent each. Below the DNA's `stackBelow`
+   breakpoint the composition becomes a vertical stack: reading order is the
+   decision order (operate → understand → act), so the stack is the same
+   hierarchy, not a degraded one. */
+.hermes-triad {
+  display: grid;
+  gap: var(--triad-gap);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .hermes-triad {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+/* An intent group is Edge-separated, not Glass-stacked: the panels inside it
+   already carry their own surface, and wrapping glass around glass is the
+   "card inside card" noise the brief forbids. */
+.hermes-triad-group {
+  border-radius: var(--triad-radius);
+  border: var(--edge-width) solid var(--edge-structural);
+  min-inline-size: 0;
+  /* Makes the group a query container so its CONTENT can respond to the group's
+     own width instead of the viewport's. Without this, a nested `sm:grid-cols-2`
+     sees a 768px viewport and splits a ~192px column in two. */
+  container-type: inline-size;
+}
+
+/* ── Container-driven grid for content nested inside a Triad group ──
+   Opt-in, via an explicit `layout="container"` prop on the primitive — NOT a
+   descendant override. `SafeActionGrid` and `AttentionPanel` have six other
+   consumers outside the Dashboard, and those must keep their viewport layout
+   exactly; a blanket rule would silently restyle all of them.
+
+   One column until the group is genuinely wide enough for two. 20rem = 320px:
+   at the ~192px a group gets on a 768px viewport this stays single-column,
+   and at ~357px on desktop it becomes two usable tracks. There is deliberately
+   NO four-column step — four action tracks inside one third of the container
+   is the ~80px collapse this replaces. */
+.hermes-cq-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@container (min-width: 20rem) {
+  .hermes-cq-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* The two-column divider belongs to the two-column state, so it is bound to
+     the SAME container threshold as the grid itself. A `sm:` divider survived
+     the first correction: at a 768px viewport the Triad group is ~192px and
+     correctly renders one column, yet the viewport-driven rule still drew a
+     side border and inset the pane as if a second column were beside it.
+     Logical properties, so RTL mirrors without a second rule. */
+  .hermes-cq-divide {
+    border-inline-start: var(--edge-width) solid var(--color-border-subtle);
+    padding-inline-start: var(--space-card);
+  }
+}
+/* The Beacon marks the intent that currently needs a decision. It is one
+   inline-start bar, the same locator grammar as the Rail. */
+.hermes-triad-group[data-beacon="true"] {
+  border-inline-start-color: var(--beacon-core);
+  border-inline-start-width: var(--rail-indicator-width);
+}
+@media (min-width: 768px) {
+  .hermes-command-field {
+    block-size: var(--command-height);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-E ROUND 3 — HERMES INDUSTRIAL INTELLIGENCE OBSERVATORY
+   ───────────────────────────────────────────────────────────────────────────
+   Round 2 was CONDITIONALLY ACCEPTED: the direction, the bespoke signature,
+   the eight-chapter narrative and the production evidence discipline all
+   stand. Its defect was that visual power lived almost entirely in the hero;
+   after the fold the page fell back to text, hairlines, columns and lists.
+
+   Round 3 keeps the architecture and carries the graphic language through
+   every chapter: each one now owns a real drawing, the signature is stronger
+   and instrumented, three Glass surfaces mark genuine depth, and semantic
+   reasoning tokens appear ONLY at their meaning (evidence / contradiction /
+   missing / hypothesis / decision) — never as decoration.
+
+   Rules kept, unchanged:
+     - NO new custom property in a gated family (--glass-*, --edge-*,
+       --beacon-*, --rail-*, --command-*, --triad-*, --color-horizon-*).
+       Local names are --hh-*; every colour is READ from a shipped token.
+     - Every animation is inside prefers-reduced-motion: no-preference.
+     - No ember/Horizon token anywhere on the homepage.
+     - No hardcoded text inside any SVG.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── THE DEEP FIELD ── the observatory's air, four layers of shipped tokens.
+   Stronger than round 2: the overhead pool is brighter, the shafts read, and
+   the horizon band has a visible floor line. */
+.hh-deepfield {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -10%, var(--color-surface-interactive) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 18% 30%, var(--color-surface-elevated) 0%, transparent 70%),
+    linear-gradient(to bottom, var(--color-background-deep) 0%, var(--color-background-base) 100%);
+}
+.hh-deepfield::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(107deg, transparent 32%, var(--color-surface-elevated) 42%, transparent 53%),
+    linear-gradient(72deg, transparent 56%, var(--color-surface-primary) 65%, transparent 75%);
+  opacity: 0.7;
+}
+.hh-deepfield::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 58%;
+  block-size: 42%;
+  background:
+    linear-gradient(to bottom, var(--edge-illumination-to) 0%, transparent 2px, transparent 100%),
+    radial-gradient(ellipse 70% 100% at 50% 0%, var(--color-surface-interactive) 0%, transparent 72%);
+}
+/* A quieter variant for mid-page chapters that want depth without the full
+   overhead pool. */
+.hh-deepfield[data-tone="mid"] {
+  background:
+    radial-gradient(ellipse 80% 55% at 85% 20%, var(--color-surface-elevated) 0%, transparent 65%),
+    linear-gradient(to bottom, var(--color-background-base) 0%, var(--color-background-deep) 50%, var(--color-background-base) 100%);
+}
+.hh-deepfield[data-tone="mid"]::before { opacity: 0.35; }
+.hh-deepfield[data-tone="mid"]::after  { display: none; }
+
+/* ── TEXTURE ── a CSS-only industrial grain, no asset. Very low amplitude:
+   it exists to stop large navy areas reading as flat digital fill. */
+.hh-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 2px, var(--color-text-primary) 2px 3px),
+    repeating-linear-gradient(90deg, transparent 0 3px, var(--color-text-primary) 3px 4px);
+  mix-blend-mode: overlay;
+}
+
+/* ── ENGINEERING PLATE ── drafting coordinates. */
+.hh-plate { position: relative; isolation: isolate; }
+.hh-plate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--color-border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border-subtle) 1px, transparent 1px);
+  background-size: 72px 72px;
+  opacity: 0.6;
+  mask-image: radial-gradient(ellipse 85% 65% at 50% 30%, black, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 65% at 50% 30%, black, transparent 80%);
+}
+/* Low-opacity coordinate ticks along the plate's top edge — technical
+   annotation, not decoration. Purely CSS. */
+.hh-plate[data-ticks="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  block-size: 6px;
+  pointer-events: none;
+  z-index: -1;
+  background-image: repeating-linear-gradient(90deg, var(--edge-structural) 0 1px, transparent 1px 36px);
+  opacity: 0.6;
+}
+
+/* ── THE SIGNATURE DIAGRAM GRAMMAR ──
+   Three stroke weights make a HIERARCHY the owner could not see in round 2:
+     bus       2.5  the main signal path, full brand contrast
+     track     1.25 secondary connections
+     dim       1    dimension / provenance lines
+   And the semantic reasoning tokens, at their meaning ONLY. */
+.hh-sig-bus     { fill: none; stroke: var(--beacon-core); stroke-width: 2.5; stroke-linecap: round; }
+.hh-sig-flow    { fill: none; stroke: var(--color-text-primary); stroke-width: 2.5; stroke-linecap: round; opacity: 0.85; }
+.hh-sig-track   { fill: none; stroke: var(--color-border-default); stroke-width: 1.25; }
+.hh-sig-dim     { fill: none; stroke: var(--edge-structural); stroke-width: 1; }
+.hh-sig-prov    { fill: none; stroke: var(--beacon-core); stroke-width: 1; opacity: 0.45; }
+.hh-sig-plate   { fill: var(--color-surface-primary); stroke: var(--color-border-default); stroke-width: 1.25; }
+.hh-sig-plate-2 { fill: var(--color-surface-elevated); stroke: var(--edge-hairline); stroke-width: 1; }
+.hh-sig-plate-3 { fill: var(--color-surface-interactive); stroke: var(--color-border-default); stroke-width: 1; }
+.hh-sig-core    { fill: var(--color-surface-elevated); stroke: var(--beacon-core); stroke-width: 1.75; }
+.hh-sig-core-2  { fill: var(--color-surface-interactive); stroke: var(--beacon-core); stroke-width: 1.25; }
+.hh-sig-gate    { fill: none; stroke: var(--beacon-core); stroke-width: 2.25; }
+.hh-sig-mark    { fill: var(--beacon-core); }
+.hh-sig-ink     { fill: var(--color-text-primary); }
+.hh-sig-ink-2   { fill: var(--color-text-secondary); }
+/* semantic states — the ONLY places these tokens appear on the homepage */
+.hh-sig-evidence      { fill: var(--color-reasoning-evidence); stroke: var(--color-reasoning-evidence); }
+.hh-sig-contradiction { fill: var(--color-reasoning-contradiction); stroke: var(--color-reasoning-contradiction); }
+.hh-sig-missing       { fill: none; stroke: var(--color-reasoning-missing); stroke-dasharray: 3 3; }
+.hh-sig-hypothesis    { fill: var(--color-reasoning-hypothesis); stroke: var(--color-reasoning-hypothesis); }
+.hh-sig-decision      { fill: var(--color-reasoning-decision); stroke: var(--color-reasoning-decision); }
+.hh-sig-scan          { fill: none; stroke: var(--color-reasoning-evidence); stroke-width: 1.5; opacity: 0.9; }
+
+/* Motion is opt-in ONLY. */
+@media (prefers-reduced-motion: no-preference) {
+  .hh-sig-flow { stroke-dasharray: 6 40; animation: hh-packet 7s linear infinite; }
+  .hh-sig-gate { animation: hh-gate-ready 4.5s ease-in-out infinite; }
+}
+@keyframes hh-packet     { from { stroke-dashoffset: 46; } to { stroke-dashoffset: 0; } }
+@keyframes hh-gate-ready { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* The signature mirrors with the writing direction. Safe because the drawing
+   contains NO text; pure geometry flips without producing reversed glyphs. */
+[dir="rtl"] .hh-sig-frame { transform: scaleX(-1); }
+
+/* ── HERO INSTRUMENTATION OVERLAY ── Glass surface #1 of three. */
+.hh-instrument {
+  position: relative;
+  border-radius: var(--triad-radius);
+  overflow: hidden;
+}
+.hh-instrument-readout {
+  border-inline-start: 2px solid var(--edge-structural);
+  padding-inline-start: 0.75rem;
+}
+.hh-instrument-readout[data-state="evidence"]      { border-inline-start-color: var(--color-reasoning-evidence); }
+.hh-instrument-readout[data-state="contradiction"] { border-inline-start-color: var(--color-reasoning-contradiction); }
+.hh-instrument-readout[data-state="missing"]       { border-inline-start-color: var(--color-reasoning-missing); border-inline-start-style: dashed; }
+.hh-instrument-readout[data-state="hypothesis"]    { border-inline-start-color: var(--color-reasoning-hypothesis); }
+.hh-instrument-readout[data-state="decision"]      { border-inline-start-color: var(--color-reasoning-decision); }
+
+/* ── OBSERVATORY HEADER ── opt-in only; the default header is untouched.
+   Not "the old header at lower opacity": a thin instrument rail whose bottom
+   edge is a coordinate rule continuing the hero plate, with a scrim that
+   compacts as content scrolls beneath it. */
+/* PROGRESSIVE ENHANCEMENT, in three tiers, so no browser gets a broken bar:
+     1. BASE (every browser): a legible scrim — a solid-enough deep-navy fill
+        with a soft lower fade — plus a subtle Edge rule. This is what a
+        browser without `animation-timeline` support shows at every scroll
+        position, and it is fully usable on its own.
+     2. `@supports (animation-timeline)` + motion allowed: the bar starts
+        transparent over the hero and compacts to the base scrim over the
+        first 160px of scroll.
+     3. reduced-motion: the base scrim, no animation.
+   `background` (not `background-color`) is set here so the keyframe below can
+   animate the colour without fighting a gradient shorthand. */
+.hh-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--edge-structural);
+  background-color: color-mix(in srgb, var(--color-background-deep) 90%, transparent);
+  background-image: linear-gradient(to bottom, var(--color-background-deep) 0%, transparent 100%);
+  backdrop-filter: blur(6px);
+}
+/* Browsers without color-mix still get an opaque, legible bar. */
+@supports not (background-color: color-mix(in srgb, red 50%, transparent)) {
+  .hh-header { background-color: var(--color-background-deep); }
+}
+.hh-header::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  block-size: 1px;
+  background: linear-gradient(to right, transparent, var(--edge-structural) 15%, var(--edge-structural) 85%, transparent);
+  pointer-events: none;
+}
+/* Coordinate ticks along the header's bottom edge, continuing the plate. */
+.hh-header::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 5px;
+  background-image: repeating-linear-gradient(90deg, var(--edge-structural) 0 1px, transparent 1px 72px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+/* Tier 2 — scroll-driven compaction where supported AND motion is allowed.
+   The animation runs FROM transparent-over-hero TO the base scrim, so its end
+   state equals the fallback exactly: a supporting browser at scroll=100% and a
+   non-supporting browser at scroll=0 render the same bar. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hh-header {
+      animation: hh-header-compact linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 160px;
+    }
+  }
+}
+@keyframes hh-header-compact {
+  from {
+    background-color: transparent;
+    border-color: transparent;
+  }
+  to {
+    background-color: color-mix(in srgb, var(--color-background-deep) 90%, transparent);
+    border-color: var(--edge-structural);
+  }
+}
+
+/* ── OBSERVATORY FOOTER ── opt-in only. */
+.hh-footer {
+  position: relative;
+  border-top: 1px solid var(--edge-structural);
+  background: linear-gradient(to bottom, var(--color-background-base) 0%, var(--color-background-deep) 100%);
+}
+
+/* ── CHAPTER 2 — THE INCIDENT RAIL ──
+   Not a text spine: a continuous rail whose steps are drawn instrument
+   readings. Each step carries a semantic state marker (state tokens at their
+   meaning ONLY) and the decision step is the chapter's Beacon. */
+.hh-incident { position: relative; }
+.hh-incident::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 1.25rem;
+  inset-block: 0.5rem 0.5rem;
+  inline-size: 2px;
+  background: linear-gradient(to bottom, transparent, var(--color-border-default) 4%, var(--color-border-default) 96%, transparent);
+}
+.hh-incident-step {
+  position: relative;
+  padding-inline-start: 3.5rem;
+}
+.hh-incident-step::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(1.25rem - 6px);
+  inset-block-start: 0.55rem;
+  inline-size: 14px;
+  block-size: 14px;
+  border-radius: 50%;
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--color-border-default);
+}
+.hh-incident-step[data-state="evidence"]::before      { border-color: var(--color-reasoning-evidence); }
+.hh-incident-step[data-state="contradiction"]::before { border-color: var(--color-reasoning-contradiction); background: var(--color-reasoning-contradiction); }
+.hh-incident-step[data-state="missing"]::before       { border-color: var(--color-reasoning-missing); border-style: dashed; background: transparent; }
+.hh-incident-step[data-state="hypothesis"]::before    { border-color: var(--color-reasoning-hypothesis); }
+.hh-incident-step[data-state="risk"]::before          { border-color: var(--color-status-warning); }
+.hh-incident-step[data-state="decision"]::before {
+  border-color: var(--beacon-core);
+  background: var(--beacon-core);
+  inline-size: 18px;
+  block-size: 18px;
+  inset-inline-start: calc(1.25rem - 8px);
+}
+.hh-incident-step[data-state="action"]::before        { border-color: var(--color-status-success); background: var(--color-status-success); }
+
+/* ── CHAPTER 3 — THE FOUR PLANES ── connected strata on one signal spine.
+   Each plane is a band with input / process / output / limit cells; a vertical
+   signal path threads through all four so the structure reads as one system. */
+.hh-planes { position: relative; }
+.hh-planes::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 2.25rem;
+  inset-block: 0;
+  inline-size: 2px;
+  background: var(--beacon-core);
+  opacity: 0.55;
+}
+.hh-plane {
+  position: relative;
+  padding-inline-start: 4.5rem;
+  padding-block: clamp(1.25rem, 3vw, 2rem);
+}
+.hh-plane + .hh-plane { border-block-start: 1px solid var(--edge-structural); }
+.hh-plane::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(2.25rem - 8px);
+  inset-block-start: calc(clamp(1.25rem, 3vw, 2rem) + 0.35rem);
+  inline-size: 18px;
+  block-size: 18px;
+  border-radius: 3px;
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--beacon-core);
+  transform: rotate(45deg);
+}
+.hh-plane[data-depth="1"] { background: linear-gradient(90deg, var(--color-surface-primary) 0%, transparent 55%); }
+.hh-plane[data-depth="2"] { background: linear-gradient(90deg, var(--color-surface-elevated) 0%, transparent 62%); }
+.hh-plane[data-depth="3"] { background: linear-gradient(90deg, var(--color-surface-interactive) 0%, transparent 70%); }
+.hh-plane[data-depth="4"] { background: linear-gradient(90deg, var(--color-surface-elevated) 0%, transparent 78%); }
+[dir="rtl"] .hh-plane[data-depth="1"] { background: linear-gradient(270deg, var(--color-surface-primary) 0%, transparent 55%); }
+[dir="rtl"] .hh-plane[data-depth="2"] { background: linear-gradient(270deg, var(--color-surface-elevated) 0%, transparent 62%); }
+[dir="rtl"] .hh-plane[data-depth="3"] { background: linear-gradient(270deg, var(--color-surface-interactive) 0%, transparent 70%); }
+[dir="rtl"] .hh-plane[data-depth="4"] { background: linear-gradient(270deg, var(--color-surface-elevated) 0%, transparent 78%); }
+.hh-plane-cell {
+  border-inline-start: 1px solid var(--edge-structural);
+  padding-inline-start: 0.875rem;
+}
+.hh-plane-cell[data-kind="constraint"] { border-inline-start-color: var(--color-status-warning); }
+
+/* ── CHAPTER 4 — ENGINEERING BACKBONE ── the plant-to-platform map. */
+.hh-backbone-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.hh-backbone { min-inline-size: 52rem; }
+.hh-bb-tier {
+  position: relative;
+  border-radius: var(--triad-radius);
+  border: 1px solid var(--edge-structural);
+  background: linear-gradient(to bottom, var(--color-surface-primary), transparent);
+}
+.hh-bb-tier[data-tier="plant"]    { background: linear-gradient(to bottom, var(--color-surface-elevated), var(--color-surface-primary)); }
+.hh-bb-tier[data-tier="hermes"]   { border-color: var(--beacon-core); }
+.hh-bb-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 3px;
+  border: 1px solid var(--edge-hairline);
+  background: var(--color-surface-elevated);
+  padding: 0.2rem 0.5rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+.hh-bb-tag[data-live="true"] { border-color: var(--beacon-core); color: var(--color-brand-primary); }
+
+/* ── CHAPTER 5 — THE INTELLIGENCE CORE ── one shared drawing. */
+.hh-core-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.hh-core { min-inline-size: 40rem; }
+
+/* ── CHAPTER 6 — VALIDATION GATE ── */
+.hh-gate-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  padding-block: 1rem;
+  border-block-end: 1px solid var(--edge-structural);
+  align-items: start;
+}
+.hh-gate-row[data-beacon="true"] {
+  border-inline-start: var(--rail-indicator-width) solid var(--beacon-core);
+  padding-inline-start: 1rem;
+  background: linear-gradient(90deg, var(--color-surface-elevated), transparent 60%);
+}
+[dir="rtl"] .hh-gate-row[data-beacon="true"] { background: linear-gradient(270deg, var(--color-surface-elevated), transparent 60%); }
+.hh-gate-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hh-gate-state::before {
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--color-border-default);
+}
+.hh-gate-state[data-state="pending"]::before  { background: var(--color-status-warning); }
+.hh-gate-state[data-state="decision"]::before { background: var(--beacon-core); }
+.hh-gate-state[data-state="released"]::before { background: var(--color-status-success); }
+
+/* ── CHAPTER 7 — EDITORIAL SPREAD ── */
+.hh-editorial-cover {
+  position: relative;
+  border: 1px solid var(--edge-structural);
+  border-radius: var(--triad-radius);
+  background: linear-gradient(135deg, var(--color-surface-elevated) 0%, var(--color-background-deep) 100%);
+  overflow: hidden;
+}
+.hh-editorial-issue {
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.hh-editorial-rule { block-size: 2px; background: var(--color-text-primary); }
+
+/* ── UTILITIES ── */
+.hh-rule { block-size: 1px; background: linear-gradient(to right, var(--edge-structural), transparent); }
+[dir="rtl"] .hh-rule { background: linear-gradient(to left, var(--edge-structural), transparent); }
+.hh-mono-label {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ── CHAPTER 6 — gate table (md+) and gate accordion (<md) ──
+   Both representations exist in the DOM; at each supported viewport exactly
+   one is rendered and exposed to the accessibility tree (the other is
+   `display:none` via the breakpoint utilities). The Beacon row/summary carries
+   the same inline-start indicator grammar as the Rail; state is a marker AND a
+   text label everywhere. */
+.hh-gate-table th, .hh-gate-table td { border-block-end: 1px solid var(--edge-structural); }
+.hh-gate-table thead th { border-block-end-color: var(--color-border-default); }
+.hh-gate-tr[data-beacon="true"] > th { box-shadow: inset var(--rail-indicator-width) 0 0 0 var(--beacon-core); padding-inline-start: 0.875rem; }
+[dir="rtl"] .hh-gate-tr[data-beacon="true"] > th { box-shadow: inset calc(-1 * var(--rail-indicator-width)) 0 0 0 var(--beacon-core); }
+.hh-gate-tr[data-beacon="true"] { background: linear-gradient(90deg, var(--color-surface-elevated), transparent 55%); }
+[dir="rtl"] .hh-gate-tr[data-beacon="true"] { background: linear-gradient(270deg, var(--color-surface-elevated), transparent 55%); }
+
+.hh-gate-acc { border-block-end: 1px solid var(--edge-structural); }
+.hh-gate-acc[data-beacon="true"] {
+  border-inline-start: var(--rail-indicator-width) solid var(--beacon-core);
+  padding-inline-start: 0.75rem;
+  background: linear-gradient(90deg, var(--color-surface-elevated), transparent 70%);
+}
+[dir="rtl"] .hh-gate-acc[data-beacon="true"] { background: linear-gradient(270deg, var(--color-surface-elevated), transparent 70%); }
+.hh-gate-acc > summary::-webkit-details-marker { display: none; }
+.hh-gate-acc[open] > summary .hh-gate-chevron { transform: rotate(180deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .hh-gate-chevron { transition: transform 160ms ease; }
+}
+.hh-gate-state[data-state="validated"]::before { background: var(--color-reasoning-evidence); }
+
+/* ── ANCHOR OFFSET UNDER THE STICKY HEADER ──
+   Every chapter heading is a fragment target (`#case-title`, `#gate-title`,
+   …), and the skip link targets `#public-content`. A sticky header would park
+   the target's first line UNDER the bar on direct-hash load and on anchor
+   click. The offset below is derived, not guessed:
+
+     header block-size  = 4rem (`h-16` = 64px on md+; 3.5rem on mobile, and
+                          the larger value is used so no viewport under-shoots)
+     safe gap           = var(--space-card) = 20px, from the shipped scale
+
+   Logical property, so RTL needs no second rule. `--hh-anchor-offset` is a
+   homepage-local name and not part of any gated token family. */
+:root { --hh-anchor-offset: calc(4rem + var(--space-card)); }
+#public-content,
+main [id$="-title"] {
+  scroll-margin-block-start: var(--hh-anchor-offset);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-F — HERMES INDUSTRIAL JOURNAL · THE INDUSTRIAL EVIDENCE PRESSROOM
+   ───────────────────────────────────────────────────────────────────────────
+   The public reading and discovery system of the Journal, redesigned as an
+   engineering publication: a technical field journal crossed with an evidence
+   ledger. It shares the Hermes DNA with the Observatory homepage but is a
+   DIFFERENT publication — no signal bus, no chapters, no atmospheric field. Its
+   ground is a PAGE: baseline rules, margin annotation rails, a folio spine and
+   the typographic measure of a printed engineering dossier.
+
+   Namespace `.hj-*` (hermes journal). Rules, all structural:
+     - NO new custom property in a gated family (--glass-*, --edge-*,
+       --beacon-*, --rail-*, --command-*, --triad-*, --color-horizon-*).
+       Every colour is READ from a shipped token; there is no raw hex/rgba here.
+     - The homepage class namespace is never used on Journal surfaces.
+     - Every animation is inside prefers-reduced-motion: no-preference.
+     - No atmosphere-only token from the login allowlist. Rail / Command / Triad are not consumed.
+     - Glass appears in exactly TWO places: the featured dossier and author
+       provenance. The article body is never inside Glass.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── THE PAGE GROUND ── the reading space: base navy with a faint baseline
+   grid, like ruled drafting paper. Present but never competing with type. */
+.hj-page {
+  position: relative;
+  isolation: isolate;
+  background: var(--color-background-base);
+}
+.hj-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(1.75rem - 1px),
+    var(--color-border-subtle) calc(1.75rem - 1px),
+    var(--color-border-subtle) 1.75rem
+  );
+  opacity: 0.55;
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+}
+
+/* ── MASTHEAD RULES ── the publication's identity is drawn with rules, not
+   boxes: a heavy rule, a hairline, and a mono folio line between them. */
+.hj-rule-heavy { block-size: 3px; background: var(--color-text-primary); }
+.hj-rule       { block-size: 1px; background: var(--color-border-default); }
+.hj-rule-hair  { block-size: 1px; background: var(--color-border-subtle); }
+
+/* ── FOLIO LINE ── mono, tracked, uppercase; the running header of a dossier. */
+.hj-folio {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.hj-folio-strong { color: var(--color-text-secondary); }
+
+/* ── ANNOTATION RAIL ── the margin column of an engineering dossier: a hairline
+   at the inline start with hanging marginalia. Mirrors under RTL through
+   logical properties alone. */
+.hj-rail {
+  border-inline-start: 1px solid var(--color-border-default);
+  padding-inline-start: clamp(1rem, 3vw, 1.75rem);
+}
+.hj-marginalia {
+  position: relative;
+}
+.hj-marginalia::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(-1 * clamp(1rem, 3vw, 1.75rem) - 3px);
+  inset-block-start: 0.6em;
+  inline-size: 5px;
+  block-size: 5px;
+  border-radius: 50%;
+  background: var(--color-border-default);
+}
+
+/* ── DISPATCH LEDGER ── numbered entries on one continuous ledger. Each entry
+   is a ROW with a hanging number, not a card: rule-separated, natural height. */
+.hj-ledger { border-block-start: 1px solid var(--color-border-default); }
+.hj-entry {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  column-gap: 1rem;
+  padding-block: 1.25rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+@media (min-width: 768px) {
+  .hj-entry {
+    grid-template-columns: 4rem minmax(0, 1fr) 11rem;
+    column-gap: 1.5rem;
+    padding-block: 1.5rem;
+  }
+}
+.hj-entry-no {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  padding-block-start: 0.35rem;
+}
+/* the LEAD entry is typographically heavier — hierarchy without a box */
+.hj-entry[data-lead="true"] { padding-block: 1.75rem; }
+
+/* ── DISCIPLINE INDEX ── an index column of disciplines with counts, drawn as a
+   contents table: dotted leader between name and count. */
+.hj-index-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  min-block-size: 2.75rem;
+  padding-block: 0.4rem;
+}
+/* the row's LINK is the pointer target and must itself be >= 44px tall
+   (WCAG 2.5.8) — a tall row around a short inline anchor is not enough */
+.hj-index-row > a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+}
+.hj-leader {
+  flex: 1 1 auto;
+  border-block-end: 1px dotted var(--color-border-default);
+  transform: translateY(-0.35em);
+  min-inline-size: 1.5rem;
+}
+/* the SELECTED discipline is the index's Beacon */
+.hj-index-row[aria-current="true"] {
+  box-shadow: inset var(--rail-indicator-width) 0 0 0 var(--beacon-core);
+  padding-inline-start: 0.75rem;
+}
+[dir="rtl"] .hj-index-row[aria-current="true"] {
+  box-shadow: inset calc(-1 * var(--rail-indicator-width)) 0 0 0 var(--beacon-core);
+}
+
+/* ── EVIDENCE FOLIO SIGNATURE ── stroke grammar for the Journal's own drawing.
+   No reuse of the homepage signature grammar: this is a different instrument. */
+.hj-sig-stroke   { fill: none; stroke: var(--color-border-default); stroke-width: 1.25; }
+.hj-sig-hair     { fill: none; stroke: var(--color-border-subtle); stroke-width: 1; }
+.hj-sig-ink      { fill: none; stroke: var(--color-text-primary); stroke-width: 1.5; stroke-linecap: round; }
+.hj-sig-ink-2    { fill: none; stroke: var(--color-text-secondary); stroke-width: 1.25; }
+.hj-sig-sheet    { fill: var(--color-surface-primary); stroke: var(--color-border-default); stroke-width: 1; }
+.hj-sig-sheet-2  { fill: var(--color-surface-elevated); stroke: var(--color-border-default); stroke-width: 1; }
+.hj-sig-mark     { fill: var(--beacon-core); }
+.hj-sig-mark-ring{ fill: none; stroke: var(--beacon-core); stroke-width: 1.5; }
+.hj-sig-signal   { fill: none; stroke: var(--color-reasoning-evidence); stroke-width: 1.5; }
+.hj-sig-annot    { fill: none; stroke: var(--color-brand-primary); stroke-width: 1; stroke-dasharray: 3 3; }
+.hj-sig-seal     { fill: var(--color-surface-interactive); stroke: var(--color-brand-primary); stroke-width: 1.25; }
+/* the reviewed-folio seal pulses only when motion is allowed */
+@media (prefers-reduced-motion: no-preference) {
+  .hj-sig-seal { animation: hj-seal 5s ease-in-out infinite; }
+}
+@keyframes hj-seal { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+/* the drawing contains NO text, so mirroring is safe under RTL */
+[dir="rtl"] .hj-sig-frame { transform: scaleX(-1); }
+
+/* ── ARTICLE READING INSTRUMENT ── */
+/* Measure: 68–76ch as required. `ch` on the body font. */
+.hj-measure { max-inline-size: 72ch; }
+.hj-measure-wide { max-inline-size: 76ch; }
+
+/* Reading progress: a structural bar (height) + the mono percent label lives
+   in HTML beside it, so the channel is never colour alone. */
+.hj-progress {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  block-size: 3px;
+  background: var(--color-border-subtle);
+}
+.hj-progress > span {
+  display: block;
+  block-size: 100%;
+  background: var(--beacon-core);
+  transform-origin: 0 50%;
+  inline-size: 100%;
+  transform: scaleX(var(--hj-progress, 0));
+}
+[dir="rtl"] .hj-progress > span { transform-origin: 100% 50%; }
+@media (prefers-reduced-motion: no-preference) {
+  .hj-progress > span { transition: transform 120ms linear; }
+}
+
+/* the article body: dossier typography, NEVER inside Glass */
+.hj-body { color: var(--color-text-primary); }
+.hj-body p { margin-block: 1.1em; line-height: 1.75; }
+.hj-body h2 {
+  margin-block: 2.25em 0.75em;
+  padding-block-end: 0.5rem;
+  border-block-end: 1px solid var(--color-border-default);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.hj-body h3 { margin-block: 1.75em 0.5em; font-weight: 600; }
+.hj-body ul, .hj-body ol { margin-block: 1em; padding-inline-start: 1.5em; }
+/* generated ordered-list markers localize with the page language (main's
+   Persian-digit fix, carried into the 104-F body as CSS rather than a locale
+   ternary in the renderer): ۱ ۲ ۳ on the Persian edition, 1 2 3 elsewhere. */
+.hj-body ol { list-style-type: decimal; }
+.hj-body ol:lang(fa) { list-style-type: persian; }
+.hj-body li { margin-block: 0.35em; }
+.hj-body blockquote {
+  margin-block: 1.5em;
+  padding-inline-start: 1.25rem;
+  border-inline-start: 3px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+}
+/* code and tables: internal scroll ONLY, the document never overflows */
+.hj-body pre {
+  margin-block: 1.5em;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-primary);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  direction: ltr;
+  text-align: start;
+}
+.hj-body code { font-family: var(--font-mono), monospace; font-size: 0.9em; direction: ltr; unicode-bidi: isolate; }
+.hj-body table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.hj-body .hj-table-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  margin-block: 1.5em;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+}
+.hj-body th, .hj-body td {
+  padding: 0.55rem 0.85rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+  text-align: start;
+  vertical-align: top;
+}
+.hj-body th { font-weight: 600; color: var(--color-text-secondary); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.hj-body figure { margin-block: 1.75em; }
+.hj-body figcaption { margin-block-start: 0.5rem; font-size: 0.8125rem; color: var(--color-text-muted); }
+
+/* desktop margin TOC — sticky under the header, hairline rail, active item is
+   the reading Beacon (structural bar + aria-current, not colour alone) */
+.hj-toc {
+  position: sticky;
+  top: calc(4rem + 3px + var(--space-card));
+  max-block-size: calc(100vh - 4rem - 3px - var(--space-card) * 2);
+  overflow-y: auto;
+  border-inline-start: 1px solid var(--color-border-default);
+}
+.hj-toc a {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.75rem; /* 44px target (WCAG 2.5.8) */
+  padding: 0.35rem 0 0.35rem 0.875rem;
+  padding-inline-start: 0.875rem;
+  padding-inline-end: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  border-inline-start: 2px solid transparent;
+  margin-inline-start: -1px;
+}
+.hj-toc a[aria-current="true"] {
+  color: var(--color-text-primary);
+  border-inline-start-color: var(--beacon-core);
+}
+.hj-toc a[data-depth="3"] { padding-inline-start: 1.75rem; font-size: 0.75rem; }
+
+/* provenance seal — the ONE Glass surface on the article page */
+/* provenance rows: a two-column ledger where the container is wide enough (the
+   landing dossier), a stacked label-over-value form where it is not (the
+   article's margin aside). Container-driven, so neither layout guesses about the
+   viewport. */
+.hj-provenance { container-type: inline-size; }
+.hj-provenance-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.15rem 1rem;
+  padding-block: 0.55rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+@container (min-width: 22rem) {
+  .hj-provenance-row { grid-template-columns: 8.5rem minmax(0, 1fr); gap: 0.5rem 1rem; }
+}
+.hj-provenance-row dt {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+/* the semantic-state ticks — evidence level / human review — reasoning tokens
+   at their MEANING only, and always paired with a text label */
+.hj-state {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.hj-state::before {
+  content: ""; inline-size: 8px; block-size: 8px; border-radius: 2px;
+  background: var(--color-border-default);
+}
+.hj-state[data-state="reviewed"]::before  { background: var(--color-status-success); }
+.hj-state[data-state="evidence"]::before  { background: var(--color-reasoning-evidence); }
+.hj-state[data-state="safety"]::before    { background: var(--color-status-warning); }
+.hj-state[data-state="knowledge"]::before { background: var(--color-reasoning-decision); }
+
+/* anchor offset under the sticky masthead — DERIVED, not guessed:
+     header block-size 4rem (h-16) + the 3px running-head top rule + --space-card.
+   Logical property, so RTL needs no second rule. */
+.hj-page :is(h1, h2, h3, h4)[id],
+.hj-page [id$="-title"] {
+  scroll-margin-block-start: calc(4rem + 3px + var(--space-card));
+}
+
+/* mobile: the ledger's third column collapses; the TOC becomes in-flow */
+@media (max-width: 767.98px) {
+  .hj-toc { position: static; max-block-size: none; overflow: visible; }
+}
+
+/* ── JOURNAL HEADER / FOOTER (opt-in only; defaults untouched) ──
+   The masthead rail: sticky, on the page ground, ruled like a running head —
+   a heavy rule above the bar, a hairline below. No glass, no scrim animation:
+   a publication's running head does not compact. Height, contents, landmarks
+   and the skip link are the shared header's. */
+.hj-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background-color: var(--color-background-base);
+  border-top: 3px solid var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-default);
+}
+.hj-footer {
+  border-top: 3px solid var(--color-text-primary);
+  background: var(--color-background-base);
+}
+
+/* ── Evidence Folio stage labels: whole words only ──
+   `hyphens: none` + `word-break: normal` + `overflow-wrap: normal` forbid any
+   break inside a word; wrapping at spaces stays allowed. The track floor is
+   MEASURED, not guessed: the widest single word any locale carries is German
+   "Ingenieurtechnische", which renders at ~117px (7.3rem) at the 0.8125rem
+   label size; 7.5rem is that width, not a padded guess. The floor is exactly
+   the longest word and nothing more, so en/fa keep five tracks aligned one-to-
+   one with the five drawing nodes on desktop, while German — whose longest word
+   physically needs a wider track — reflows to four via `auto-fit` rather than
+   ever splitting the word. One rule for every locale; no override, no masking,
+   no ellipsis, no font-size step. */
+.hj-folio-stages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  column-gap: 1rem;
+  row-gap: 0.375rem;
+  hyphens: none;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-H — RESPONSIVE / RTL / A11Y / MOTION CLOSURE
+   ───────────────────────────────────────────────────────────────────────────
+   Shared-shell presentation only. No new destination, command, API call or
+   role rule lives here; every value below is READ from a shipped token.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Drawer panel: safe small-screen geometry ──
+   `inset-y-0` alone measures against 100vh, which on mobile browsers includes
+   the area under the collapsing URL bar — so the last navigation rows could
+   sit below the visible viewport with no way to reach them. Fallback chain:
+   `100vh` first for engines without dynamic units, then `100dvh`. The header
+   and the scroller (not the document) absorb the safe-area insets so notch and
+   home-indicator regions never cover a control. Logical properties throughout;
+   the drawer keeps `start-0` / `end-0` from the primitive for RTL. */
+.ds-drawer-panel {
+  block-size: 100vh;
+  block-size: 100dvh;
+  max-block-size: 100vh;
+  max-block-size: 100dvh;
+  padding-block-start: env(safe-area-inset-top, 0px);
+  padding-block-end: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Authenticated mobile navigation (AppMobileNav) ──
+   The active destination carries FOUR channels: `aria-current="page"` for AT,
+   a structural Beacon bar (the same inline-start locator grammar as the Rail),
+   a surface lift, and semibold type — colour is never the only signal. The bar
+   is `--rail-indicator-width` × `--beacon-core`, both contract-owned; nothing
+   here declares a raw colour. */
+.hermes-mobile-nav-item {
+  position: relative;
+  min-block-size: var(--rail-item-size);          /* 44px — WCAG 2.5.8 target */
+}
+.hermes-mobile-nav-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 0.45rem;
+  inline-size: var(--rail-indicator-width);
+  border-radius: 999px;
+  background: var(--beacon-core);
+}
+
+/* ── Topbar hit-target expansion ──
+   The search, notification and account controls kept 32–36px visual bodies
+   from Phase 87C. WCAG 2.5.8 wants ≥44×44 for the interactive TARGET; the
+   visual mark may stay smaller. `.hermes-topbar-target` guarantees the target
+   box without redrawing the icon, so the bar's rhythm is preserved. */
+.hermes-topbar-target {
+  min-inline-size: var(--rail-item-size);
+  min-block-size: var(--rail-item-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Authenticated notification bell: hit-target only ──
+   `NotificationCenter` is a SHARED component (public SiteHeader, PublicHeader
+   and the app-shell adapter) that owns live fetch/SSE/mark-read behaviour, so it
+   is not edited. The app-shell adapter wraps it in `.hermes-topbar-bell`, and
+   this rule reaches the bell button — the root's first direct child — to give
+   the interactive box the 44px target the authenticated topbar requires. The
+   two public consumers are untouched because they never carry the wrapper. */
+.hermes-topbar-bell > div > button:first-of-type {
+  min-inline-size: var(--rail-item-size);
+  min-block-size: var(--rail-item-size);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I1 — HERMES ENGINEERING CHARTER & PROVENANCE LEDGER
+   The Company family's signature (`/about`). Not a card deck: a controlled
+   engineering document — drawing-sheet plate with a real title block, a
+   reasoning spine, a discipline register with measured depth bars, a
+   provenance record and a two-site operating network.
+   Every colour is a Phase 104 DNA variable; every rule is Edge; the only
+   accent is Beacon, and it is always paired with a text or shape channel.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── the sheet: a drawing ground, not a hero image ─────────────────────── */
+.hc-sheet {
+  position: relative;
+  background:
+    linear-gradient(180deg, var(--color-background-deep) 0%, var(--color-background) 100%);
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+}
+/* measured tick band along the sheet head — the instrument language of 104-E,
+   used once and quietly. Decorative: the element carrying it is aria-hidden. */
+.hc-ticks {
+  block-size: 0.75rem;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--edge-structural) 0 1px,
+    transparent 1px 100%
+  );
+  background-size: 3rem 100%;
+  opacity: 0.5;
+}
+.hc-ticks-fine { background-size: 0.75rem 100%; opacity: 0.28; }
+
+/* ── title block: the stamped identity strip of an engineering sheet ───── */
+.hc-titleblock {
+  display: grid;
+  gap: var(--edge-width);
+  background: var(--edge-structural);
+  border: var(--edge-width) solid var(--edge-structural);
+}
+.hc-tb-cell {
+  background: var(--color-background);
+  padding-block: 0.875rem;
+  padding-inline: 1rem;
+  min-inline-size: 0;
+}
+.hc-tb-key {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-metadata);
+}
+.hc-tb-val {
+  display: block;
+  margin-block-start: 0.35rem;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+/* ── reasoning spine: scattered → captured → connected → available ─────── */
+.hc-spine { display: grid; gap: 0; }
+.hc-spine-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  column-gap: 1rem;
+  padding-block: 1.125rem;
+  border-block-start: var(--edge-width) solid var(--edge-hairline);
+}
+.hc-spine-step:first-child { border-block-start: 0; }
+/* the vertical run of the spine, drawn with logical insets so RTL mirrors */
+.hc-spine-step::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 1.125rem;
+  inline-size: var(--edge-width);
+  background: var(--edge-structural);
+}
+.hc-spine-step:first-child::before { inset-block-start: 1.6rem; }
+.hc-spine-step:last-child::before  { inset-block-end: calc(100% - 1.6rem); }
+.hc-spine-node {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+  margin-block-start: 0.9rem;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  margin-inline-start: 0.875rem;
+  border-radius: 999px;
+  background: var(--color-background);
+  box-shadow: 0 0 0 var(--edge-width) var(--edge-structural);
+}
+/* the one decision node carries Beacon — plus a ring and a text label in the
+   markup, so the state is never colour alone */
+.hc-spine-step[data-decision="true"] .hc-spine-node {
+  background: var(--beacon-core);
+  box-shadow: 0 0 0 var(--beacon-ring-width) var(--beacon-rim);
+}
+
+/* ── discipline register: a measured ledger, not four equal cards ──────── */
+.hc-register { border-block-start: var(--edge-width) solid var(--edge-structural); }
+.hc-reg-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem 1.5rem;
+  padding-block: 1.25rem;
+  border-block-end: var(--edge-width) solid var(--edge-hairline);
+}
+@media (min-width: 48rem) {
+  .hc-reg-row { grid-template-columns: 3rem minmax(0, 15rem) minmax(0, 1fr); align-items: start; }
+}
+.hc-reg-ord {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--color-text-metadata);
+  font-variant-numeric: tabular-nums;
+}
+/* depth bar: ordinal position in the register, NOT a fabricated metric. Its
+   width is set from a --hc-depth custom property supplied per row, and the row
+   always states the same fact in words. */
+.hc-reg-depth {
+  display: block;
+  block-size: 0.1875rem;
+  margin-block-start: 0.5rem;
+  inline-size: 100%;
+  background: var(--edge-hairline);
+}
+.hc-reg-depth > span {
+  display: block;
+  block-size: 100%;
+  inline-size: var(--hc-depth, 100%);
+  background: var(--color-brand-primary);
+  opacity: 0.55;
+}
+
+/* ── provenance record: signature block + specimen strip ──────────────── */
+.hc-prov {
+  border: var(--edge-width) solid var(--edge-structural);
+  background: var(--color-surface-primary);
+}
+.hc-prov-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  padding: 1.25rem;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+}
+.hc-prov-body { padding: 1.25rem; display: grid; gap: 1rem; }
+.hc-prov-item {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  column-gap: 0.875rem;
+}
+.hc-prov-no {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  color: var(--color-text-metadata);
+  padding-block-start: 0.2rem;
+}
+/* specimen strip: the verified technical stack, kept LTR inside an RTL page */
+.hc-specimen {
+  padding: 0.875rem 1.25rem;
+  border-block-start: var(--edge-width) solid var(--edge-structural);
+  background: var(--color-background-deep);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+/* ── operating network: two verified sites, drawn in code ─────────────── */
+.hc-network {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border: var(--edge-width) solid var(--edge-structural);
+}
+@media (min-width: 48rem) { .hc-network { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.hc-site {
+  display: grid;
+  gap: 0.3rem;
+  padding-inline-start: 1.125rem;
+  border-inline-start: 0.125rem solid var(--color-brand-primary);
+}
+
+/* ── closure rule ─────────────────────────────────────────────────────── */
+.hc-closure {
+  border-block-start: var(--edge-width) solid var(--edge-structural);
+  background:
+    linear-gradient(180deg, var(--color-background) 0%, var(--color-background-deep) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-sheet, .hc-closure { transition: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I1 — HERMES SYSTEM REGISTRY FOOTER
+   Replaces the generic five-column link dump. Three declared layers:
+   operational identity · system registry · trust and closure. The registry is
+   ruled like an index (hairline rows, monospaced column keys) rather than
+   floating link lists, and the closure layer ends on a code-native network
+   signature. Compact by construction: the registry rows are dense so the
+   footer never grows taller than the content it closes.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.hf-identity {
+  display: grid;
+  gap: 1.5rem;
+  padding-block-end: 1.5rem;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+}
+@media (min-width: 60rem) {
+  .hf-identity { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+}
+
+/* the registry: an index, not a link dump */
+.hf-registry {
+  display: grid;
+  gap: 0;
+  padding-block: 0.5rem;
+}
+@media (min-width: 40rem) { .hf-registry { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2.5rem; } }
+@media (min-width: 64rem) { .hf-registry { grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 2rem; } }
+.hf-reg-col { padding-block: 1rem; min-inline-size: 0; }
+.hf-reg-key {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-block-end: 0.5rem;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-metadata);
+}
+/* the ordinal tick of the column — decorative, always beside a real label */
+.hf-reg-key::before {
+  content: "";
+  inline-size: 0.375rem;
+  block-size: 0.375rem;
+  flex: none;
+  background: var(--color-brand-primary);
+  opacity: 0.6;
+}
+.hf-reg-row { border-block-end: var(--edge-width) solid var(--edge-hairline); }
+.hf-reg-row:last-child { border-block-end: 0; }
+.hf-reg-link {
+  display: block;
+  padding-block: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  transition: color var(--duration-fast, 140ms) ease;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+.hf-reg-link:hover { color: var(--color-text-primary); }
+@media (prefers-reduced-motion: reduce) { .hf-reg-link { transition: none; } }
+
+/* Touch targets: at 0.5rem padding over a 1.4 line-height these links measure
+   34px and sit 1px apart, which is comfortable with a mouse and hazardous with
+   a thumb. The size is raised only where the pointer is coarse or the viewport
+   is narrow, so the desktop rhythm the footer was designed around is unchanged. */
+@media (pointer: coarse), (max-width: 767px) {
+  .hf-reg-link {
+    display: flex;
+    align-items: center;
+    min-block-size: 2.75rem;
+  }
+}
+
+/* closure: the handoff signature ends the page in code, not decoration */
+.hf-closure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  margin-block-start: 1.5rem;
+  padding-block-start: 1.25rem;
+  border-block-start: var(--edge-width) solid var(--edge-structural);
+}
+.hf-seal { display: block; block-size: 1.25rem; inline-size: auto; }
+.hf-seal-stroke { stroke: var(--edge-structural); stroke-width: 1; fill: none; }
+.hf-seal-core   { fill: var(--beacon-core); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I1 — HERMES PUBLIC INSTRUMENT RAIL (standard + company modes)
+   The 87D bar was a glass strip with a hairline. Observatory (104-E) and the
+   Journal masthead (104-F) already read as instruments; this brings the SAME
+   grammar to the default public header and adds the Company mode, so the whole
+   public estate is one family while each mode keeps its own character:
+     standard   deep bar, coordinate ticks, closure edge
+     company    standard + a heavier structural top rule (charter stationery)
+   Observatory (.hh-header) and Journal (.hj-header) are NOT touched.
+   ══════════════════════════════════════════════════════════════════════════ */
+.hp-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+  background-color: color-mix(in srgb, var(--color-background-deep) 92%, transparent);
+  backdrop-filter: blur(8px) saturate(1.15);
+}
+/* Browsers without color-mix still get an opaque, legible bar. */
+@supports not (background-color: color-mix(in srgb, red 50%, transparent)) {
+  .hp-header { background-color: var(--color-background-deep); }
+}
+/* Coordinate ticks along the bottom edge — the measured-instrument channel. */
+.hp-header::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 5px;
+  background-image: repeating-linear-gradient(90deg, var(--edge-structural) 0 1px, transparent 1px 72px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+/* Closure edge: the rule fades at both ends instead of butting the viewport. */
+.hp-header::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  block-size: 1px;
+  background: linear-gradient(to right, transparent, var(--edge-structural) 15%, var(--edge-structural) 85%, transparent);
+  pointer-events: none;
+}
+/* Company mode — the charter's stationery rule over the same instrument. */
+.hp-header-company { border-block-start: 2px solid var(--edge-structural); }
+
+/* Scroll compaction, tier 2 only: supporting browsers AND motion allowed. The
+   animation ends exactly at the static fallback, so a non-supporting browser
+   at scroll 0 and a supporting one at 100% render the same bar. */
+@keyframes hp-header-compact {
+  from { background-color: color-mix(in srgb, var(--color-background-deep) 62%, transparent); }
+  to   { background-color: color-mix(in srgb, var(--color-background-deep) 92%, transparent); }
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hp-header {
+      animation: hp-header-compact linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 160px;
+    }
+  }
+}
+
+/* Active group signal — never colour alone: an inline-start Beacon tick plus a
+   weight change, on the trigger that owns the current section. */
+.hp-nav-trigger[aria-current="true"],
+.hp-nav-trigger[data-active="true"] {
+  position: relative;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.hp-nav-trigger[aria-current="true"]::before,
+.hp-nav-trigger[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.35rem;
+  inset-block-end: 0.25rem;
+  inline-size: calc(100% - 0.7rem);
+  block-size: var(--rail-indicator-width);
+  border-radius: 999px;
+  background: var(--beacon-core);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I1 — HERMES ENGINEERING ENGAGEMENT PROTOCOL (/contact)
+   Replaces three equal emoji cards. Enquiries are TRIAGED, so the page is
+   drawn as the routing path they actually travel: one spine, three numbered
+   channels branching off it, then the registry of verified contact points and
+   the command surface that submits. No emoji: country marks are ISO codes set
+   in the mono face, channel marks are ordinals. Every address, number and URL
+   is the existing catalogue value — nothing invented.
+   ══════════════════════════════════════════════════════════════════════════ */
+.he-plate {
+  position: relative;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+  background: linear-gradient(180deg, var(--color-background-deep) 0%, var(--color-background) 100%);
+}
+
+/* routing map: one spine, three channels */
+.he-route { border-block-start: var(--edge-width) solid var(--edge-structural); }
+.he-channel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+}
+/* Below the wide breakpoint the row is a 2-column grid but carries FOUR
+   children, so auto-placement dropped the description and the address into the
+   2.75rem ordinal column and squeezed them to 44px. Placement is stated
+   explicitly instead: the node owns column 1, everything that is language owns
+   column 2. No overflow, wrapping or font-size rule is involved. */
+.he-channel > * { grid-column: 2; }
+.he-channel > .he-node { grid-column: 1; grid-row: 1; }
+.he-channel {
+  column-gap: 1rem;
+  padding-block: 1.375rem;
+  border-block-end: var(--edge-width) solid var(--edge-hairline);
+}
+/* The verified addresses are single unbreakable tokens (the longest is 31
+   characters ~= 236px in the mono face). The content column measures
+   viewport - 40 gutter - 44 ordinal - 16 gap, so it drops below that token
+   only under a 336px viewport. There the ordinal channel tightens to the
+   width the node and spine actually occupy (node spans 16-26px, spine sits at
+   21px), which returns 244px of content. Nothing is scaled, hyphenated,
+   broken mid-token, clipped or hidden — the column is simply sized to its
+   real contents. */
+@media (max-width: 21rem) {
+  .he-channel { grid-template-columns: 1.75rem minmax(0, 1fr); column-gap: 0.5rem; }
+}
+@media (min-width: 56rem) {
+  .he-channel { grid-template-columns: 2.75rem minmax(0, 16rem) minmax(0, 1fr) auto; align-items: start; }
+  .he-channel > * { grid-column: auto; }
+  .he-channel > .he-node { grid-column: 1; }
+}
+/* the spine itself, logical so RTL mirrors */
+.he-channel::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 1.3125rem;
+  inline-size: var(--edge-width);
+  background: var(--edge-structural);
+}
+.he-channel:first-child::before { inset-block-start: 1.9rem; }
+.he-channel:last-child::before  { inset-block-end: calc(100% - 1.9rem); }
+.he-node {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+  margin-block-start: 1.5rem;
+  margin-inline-start: 1rem;
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  border-radius: 999px;
+  background: var(--color-background);
+  box-shadow: 0 0 0 var(--edge-width) var(--edge-structural);
+}
+.he-ord {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  color: var(--color-text-metadata);
+  font-variant-numeric: tabular-nums;
+}
+
+/* verified-contact registry: ISO mark + value, ruled rows */
+.he-registry { display: grid; gap: 0; }
+.he-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: baseline;
+  padding-block: 0.625rem;
+  border-block-end: var(--edge-width) solid var(--edge-hairline);
+}
+.he-row:last-child { border-block-end: 0; }
+.he-mark {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  color: var(--color-brand-primary);
+  border: var(--edge-width) solid var(--edge-structural);
+  padding-block: 0.1rem;
+  text-align: center;
+  border-radius: 0.125rem;
+}
+
+/* command surface: the submit instrument, lifted off the page ground */
+.he-command {
+  border: var(--edge-width) solid var(--edge-active);
+  background: var(--color-surface-primary);
+  padding: 1.25rem;
+}
+@media (min-width: 48rem) { .he-command { padding: 1.75rem; } }
+/* WCAG 2.5.5 target size for the shipped form controls (42px as authored).
+   Scoped to this page's command surface: `<ContactForm />` itself is imported
+   unchanged and the shared control styles are untouched. */
+.he-command :is(input, select, textarea) { min-block-size: 2.75rem; }
+.he-command textarea { min-block-size: 8rem; }
+.he-command button[type="submit"] { min-block-size: 2.75rem; }
+.he-command-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding-block-end: 0.875rem;
+  margin-block-end: 1.25rem;
+  border-block-end: var(--edge-width) solid var(--edge-structural);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-metadata);
+}
+.he-command-head::before {
+  content: "";
+  inline-size: 0.375rem;
+  block-size: 0.375rem;
+  flex: none;
+  background: var(--beacon-core);
+  border-radius: 999px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 104-I2 — PUBLIC FORM-CONTROL TARGET SIZE (WCAG 2.5.8)
+
+   The Contact command surface received a page-scoped 44px minimum in 104-I1
+   (.he-command, below). The same 42px control height was then measured on the
+   rest of the public estate — the /vendors directory filters and all 63 fields
+   of the vendor application form — so the fix belongs to the public shell, not
+   to a third per-page patch.
+
+   Scoped to `#public-content`, the element PublicPageShell renders, so it can
+   only ever affect public routes; authenticated and dashboard surfaces render
+   their own shell and are untouched. Checkboxes, radios and hidden inputs keep
+   their intrinsic size: stretching a checkbox to 44px would misalign it from
+   its label rather than enlarge the target, and the label association added in
+   104-I1 already gives those inputs a full-width activation area.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#public-content :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  min-block-size: 2.75rem;
 }

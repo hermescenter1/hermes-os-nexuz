@@ -37,7 +37,12 @@ export function FooterLangSwitch() {
               lang={opt.code}
               aria-label={`Switch language to ${opt.accessibleName}`}
               aria-current={isActive ? "true" : undefined}
-              className={`inline-flex items-center gap-1.5 font-body text-xs transition-colors ${
+              /* PHASE 104-I1 — the locale controls were a 16px-tall inline row
+                 (measured 51x16 / 65x16 / 71x16). They are operational controls in
+                 the footer's identity layer, not inline prose links, so they now
+                 carry the 44px target via min-h-11 plus logical padding. Type,
+                 flag, order, aria-label and aria-current are unchanged. */
+              className={`ds-focus inline-flex min-h-11 items-center gap-1.5 rounded-sm px-1.5 font-body text-xs transition-colors motion-reduce:transition-none ${
                 isActive ? "text-signal" : "text-muted/50 hover:text-muted"
               }`}
             >

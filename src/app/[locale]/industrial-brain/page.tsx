@@ -8,6 +8,7 @@ import { getCurrentUserUnified } from "@/lib/auth/current-user";
 import { can }              from "@/lib/auth/roles";
 import { IndustrialBrainWorkspace } from "@/components/industrial-brain/IndustrialBrainWorkspace";
 import { CapabilityLink } from "@/components/analytics/CapabilityLink";
+import { PublicPageShell } from "@/components/public-site";
 // PHASE 101-R — the Phase 101 reference corpus and its structural diagnostic
 // engine, executed server-side on this route. Before this the corpus was
 // imported by nothing outside its own test suite.
@@ -117,6 +118,12 @@ export default async function IndustrialBrainPage({
   const canSaveCase = can(user?.role, "authoring");
 
   return (
+    // PHASE 104-I2 — /industrial-brain joins the public estate. This is a public
+    // product surface that was rendering with no public header, navigation or
+    // footer, so a visitor arriving from search had no route onward. `noAmbient`
+    // keeps the page's own gradient/dot-grid treatment authoritative instead of
+    // stacking a second ambient layer behind it.
+    <PublicPageShell noAmbient>
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #04080F 0%, #060A16 100%)" }}>
 
       {/* ── Dot grid background ───────────────────────────────────────────── */}
@@ -173,7 +180,7 @@ export default async function IndustrialBrainPage({
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/demo"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider"
+                  className="ds-focus inline-flex min-h-11 items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider"
                   style={{
                     background: "linear-gradient(135deg, rgba(30,200,164,0.85) 0%, rgba(96,180,240,0.85) 100%)",
                     color: "#04080F",
@@ -181,7 +188,7 @@ export default async function IndustrialBrainPage({
                   {t("hero.requestDemo")}
                 </Link>
                 <Link href="/articles/discover"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider border border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 transition-colors">
+                  className="ds-focus inline-flex min-h-11 items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider border border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 transition-colors">
                   {t("hero.exploreKnowledge")}
                 </Link>
               </div>
@@ -193,7 +200,7 @@ export default async function IndustrialBrainPage({
                 from="industrialBrain"
                 kind="related"
                 to="brain"
-                className="mt-5 inline-flex items-center gap-1.5 font-mono text-[11px] text-cyan-400 hover:underline"
+                className="ds-focus mt-5 inline-flex min-h-11 items-center gap-1.5 font-mono text-[11px] text-cyan-400 hover:underline"
               >
                 {t("crossLink")}
                 <span aria-hidden="true" className="rtl:-scale-x-100">→</span>
@@ -256,7 +263,7 @@ export default async function IndustrialBrainPage({
                   {t("deploy.desc")}
                 </p>
                 <Link href="/demo"
-                  className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
+                  className="ds-focus inline-flex min-h-11 items-center gap-2 text-xs font-mono font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
                   {t("deploy.requestDemo")}
                   <svg viewBox="0 0 16 16" fill="none" className="w-3 h-3">
                     <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -311,5 +318,6 @@ export default async function IndustrialBrainPage({
 
       </div>
     </div>
+    </PublicPageShell>
   );
 }

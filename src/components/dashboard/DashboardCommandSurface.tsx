@@ -12,11 +12,11 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
-  DashboardSection,
   OperationalStatusHeader,
   AttentionPanel,
   RiskEvidence,
   SafeActionGrid,
+  TriadGroup,
   type AttentionItem,
   type SafeAction,
 } from "@/components/dashboard-experience";
@@ -92,12 +92,26 @@ export function DashboardCommandSurface({ snap }: { snap: DashboardSnapshot }) {
         autoNote={t("autoNote")}
       />
 
-      <DashboardSection id="attention" title={t("attention.title")}>
-        <AttentionPanel items={attentionItems} emptyLabel={t("attention.empty")} LinkComponent={DashLink} />
-      </DashboardSection>
+      {/* ── PHASE 104-D2 — the Hermes Triad ──────────────────────────────────
+             Exactly three intents in decision order: what is happening
+             (operate), what the evidence says (understand), what a human may
+             safely do next (act). Nothing here is new content — each group
+             wraps the section this surface already rendered from the same
+             already-authorized snapshot. The `operate` group carries the
+             Beacon only when the model itself says attention is required, and
+             the posture label is the textual channel that carries it too. */}
+      <div className="hermes-triad" data-hermes-signature="triad">
+        <TriadGroup
+          intent="operate"
+          id="attention"
+          title={t("attention.title")}
+          beacon={attentionItems.length > 0}
+          note={attentionItems.length > 0 ? t(`posture.${model.posture}`) : undefined}
+        >
+          <AttentionPanel items={attentionItems} emptyLabel={t("attention.empty")} LinkComponent={DashLink} />
+        </TriadGroup>
 
-      <DashboardSection id="risk-evidence" title={t("riskEvidence.title")}>
-        <div className="ds-glass-card rounded-lg p-5">
+        <TriadGroup intent="understand" id="risk-evidence" title={t("riskEvidence.title")}>
           <RiskEvidence
             score={model.risk.score}
             trendLabel={tRiskTrend(model.risk.trend)}
@@ -118,13 +132,14 @@ export function DashboardCommandSurface({ snap }: { snap: DashboardSnapshot }) {
             readiness={{ label: t(`riskEvidence.${readinessLabelKey[model.readiness]}`), tone: model.readiness }}
             formatNumber={nf.format}
             pct={pct}
+            layout="container"
           />
-        </div>
-      </DashboardSection>
+        </TriadGroup>
 
-      <DashboardSection id="safe-actions" title={t("actions.title")}>
-        <SafeActionGrid actions={actions} LinkComponent={DashLink} />
-      </DashboardSection>
+        <TriadGroup intent="act" id="safe-actions" title={t("actions.title")}>
+          <SafeActionGrid actions={actions} LinkComponent={DashLink} layout="container" />
+        </TriadGroup>
+      </div>
     </div>
   );
 }

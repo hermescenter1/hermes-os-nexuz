@@ -6,16 +6,16 @@
     "pluginId": "com.hermesnovin.phase104-visual-system",
     "headSha": "2e100aa09266eeef74435f26c42ac308fc3c6d84",
     "headShaShort": "2e100aa09266",
-    "branch": "agent/phase104-hermes-visual-figma-system",
-    "dirty": false,
-    "sourcesSha": "c86fab85f077779dbd1aabe15747e42ee672bc8d0f91f88a9acb6a124f096032",
-    "sourcesShaShort": "c86fab85f077"
+    "branch": "design/phase104-dna-token-layer",
+    "dirty": true,
+    "sourcesSha": "010099dd7e5ba677aa3cddd200a6204074d1537fc38d31bbf271ffaa4704b0d1",
+    "sourcesShaShort": "010099dd7e5b"
   },
   "manifestPath": "manifest.json",
   "sha256": {
     "manifest": "f8de0d64035b9851ac1de1842b38a62a48019eb2417c942c42573773d5fb3c2d",
-    "code": "78c59d65e0df783a2d343345334f44c91e5b0581d62f6a7dd82d50c9d3eb8de7",
-    "ui": "aae839df33d834c3cce3167959e0a9fc053b1029bd23fb81d6d40e654ee35b59"
+    "code": "e3faea2512824817668a0795fd712d72bf393dd83d25ef236b79396b146893d3",
+    "ui": "161a60273e371d206030f808164086c00c476f64123fb9b46da20ae5078ebd9d"
   },
   "builtFrom": [
     {
@@ -44,7 +44,7 @@
     },
     {
       "file": "src/lib/dna-tokens.js",
-      "sha256": "d08b4e11de0bb2d8bca4ed1afac5efe3fa438e1d608191213a797f0884dc5e16"
+      "sha256": "e34c3888b13e2e56644593843eb2226dec2bb0a0b8958ee08738c8ac4f41257f"
     },
     {
       "file": "src/lib/dna-structure.js",

@@ -1,33 +1,18 @@
 "use client";
 
 import { useEffect }               from "react";
-import { useLocale }               from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link }                    from "@/i18n/navigation";
 import { track }                   from "@/lib/analytics/events";
-import type { VendorDetailItem, VendorType, VendorTier, VendorComplianceStatus } from "@/lib/vendors/types";
+import type { VendorDetailItem, VendorTier } from "@/lib/vendors/types";
 
-const TYPE_LABELS: Record<VendorType, string> = {
-  TECHNOLOGY_PROVIDER: "Technology Provider",
-  SYSTEM_INTEGRATOR:   "System Integrator",
-  SERVICE_PROVIDER:    "Service Provider",
-  MANUFACTURER:        "Manufacturer",
-  DISTRIBUTOR:         "Distributor",
-  CONSULTANT:          "Consultant",
-  TRAINING_PROVIDER:   "Training Provider",
-};
-
+// PHASE 104-I3 — the partner-type, tier and compliance LABELS moved to the
+// catalogue (vendors.types / vendors.tiers / vendors.compliance). Only the
+// colour mapping stays here: it is presentation, not language.
 const TIER_COLORS: Record<VendorTier, string> = {
   PREMIUM:   "border-amber-400/30 bg-amber-400/10 text-amber-400",
   CERTIFIED: "border-signal/30 bg-signal/10 text-signal",
   STANDARD:  "border-line bg-surface/50 text-muted",
-};
-
-const COMPLIANCE_LABELS: Record<VendorComplianceStatus, string> = {
-  COMPLIANT:     "Compliant",
-  NON_COMPLIANT: "Non-Compliant",
-  PENDING:       "Under Review",
-  UNDER_REVIEW:  "Under Review",
-  EXEMPT:        "Exempt",
 };
 
 interface VendorDetailClientProps {
@@ -36,6 +21,10 @@ interface VendorDetailClientProps {
 
 export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
   const locale = useLocale();
+  const t   = useTranslations("vendors.detail");
+  const tt  = useTranslations("vendors.types");
+  const tr  = useTranslations("vendors.tiers");
+  const tc  = useTranslations("vendors.compliance");
 
   const name        = locale === "fa" && vendor.nameFa ? vendor.nameFa : vendor.nameEn;
   const description = locale === "fa" && vendor.descriptionFa ? vendor.descriptionFa : vendor.descriptionEn;
@@ -51,11 +40,11 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`rounded border px-2.5 py-1 text-xs font-mono font-semibold uppercase tracking-wider ${TIER_COLORS[vendor.tier]}`}>
-              {vendor.tier}
+              {tr(vendor.tier)}
             </span>
             {vendor.isVerified && (
               <span className="inline-flex items-center gap-1 rounded border border-signal/30 bg-signal/10 px-2.5 py-1 text-xs font-mono text-signal">
-                ✓ Verified Partner
+                <span aria-hidden="true">✓</span> {t("verifiedPartner")}
               </span>
             )}
             {vendor.isFeatured && (
@@ -65,7 +54,7 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
             )}
           </div>
           <h1 className="type-page-title">{name}</h1>
-          <p className="text-sm text-muted">{TYPE_LABELS[vendor.vendorType]}</p>
+          <p className="text-sm text-muted">{tt(vendor.vendorType)}</p>
           {vendor.headquartersCity && (
             <p className="text-sm text-muted">{vendor.headquartersCity}, {vendor.headquartersCountry}</p>
           )}
@@ -103,7 +92,7 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
       {/* Description */}
       {description && (
         <div className="rounded-xl border border-line bg-surface p-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">About</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">{t("about")}</h2>
           <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{description}</p>
         </div>
       )}
@@ -111,10 +100,10 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
       {/* Stats bar */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Services",      value: vendor._count.services },
-          { label: "Products",      value: vendor._count.products },
-          { label: "Capabilities",  value: vendor._count.capabilities },
-          { label: "Compliance",    value: COMPLIANCE_LABELS[vendor.complianceStatus] },
+          { label: t("services"),     value: vendor._count.services },
+          { label: t("products"),     value: vendor._count.products },
+          { label: t("capabilities"), value: vendor._count.capabilities },
+          { label: t("compliance"),   value: tc(vendor.complianceStatus) },
         ].map(({ label, value }) => (
           <div key={label} className="rounded-xl border border-line bg-surface p-4 text-center">
             <p className="text-xl font-bold text-ink tabular-nums">{value}</p>
@@ -126,7 +115,7 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
       {/* Services */}
       {vendor.services.length > 0 && (
         <div className="rounded-xl border border-line bg-surface p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">Services</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">{t("services")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {vendor.services.map((s) => (
               <div key={s.id} className="rounded-lg border border-line bg-bg/60 p-4">
@@ -148,7 +137,7 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
       {/* Products */}
       {vendor.products.length > 0 && (
         <div className="rounded-xl border border-line bg-surface p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">Products</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">{t("products")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {vendor.products.map((p) => (
               <div key={p.id} className="rounded-lg border border-line bg-bg/60 p-4">
@@ -168,7 +157,7 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
       {/* Capabilities */}
       {vendor.capabilities.length > 0 && (
         <div className="rounded-xl border border-line bg-surface p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">Capabilities</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">{t("capabilities")}</h2>
           <div className="flex flex-wrap gap-2">
             {vendor.capabilities.map((c) => (
               <span
@@ -190,7 +179,7 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
       {/* Compliance Records */}
       {vendor.complianceRecords.length > 0 && (
         <div className="rounded-xl border border-line bg-surface p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">Compliance & Certifications</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">{t("compliance")}</h2>
           <div className="space-y-3">
             {vendor.complianceRecords.map((r) => (
               <div key={r.id} className="flex items-center justify-between gap-4 rounded-lg border border-line bg-bg/60 px-4 py-3">
@@ -203,7 +192,7 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
                   : r.status === "NON_COMPLIANT" ? "border-red-400/30 bg-red-400/10 text-red-400"
                   : "border-line text-muted"
                 }`}>
-                  {COMPLIANCE_LABELS[r.status]}
+                  {tc(r.status)}
                 </span>
               </div>
             ))}
@@ -214,7 +203,7 @@ export function VendorDetailClient({ vendor }: VendorDetailClientProps) {
       {/* Regions */}
       {vendor.regionsServed.length > 0 && (
         <div className="rounded-xl border border-line bg-surface p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">Regions Served</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">{t("regions")}</h2>
           <div className="flex flex-wrap gap-2">
             {vendor.regionsServed.map((r) => (
               <span key={r} className="rounded-full border border-line bg-surface/50 px-3 py-1 text-xs text-ink">

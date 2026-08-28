@@ -283,17 +283,24 @@ export function articleSchema(opts: ArticleSchemaOptions) {
 /* ── JobPosting ──────────────────────────────────────────────────────────── */
 
 export interface JobPostingSchemaOptions {
-  id: string;
+  /** The organization-scoped stable requisition key — never a database id. */
+  requisitionKey: string;
+  /** Localized title/description of the SERVED locale's complete translation. */
   title: string;
   description: string;
-  location: string;
+  /** Three independent address fields; no free-text city guessing. */
+  addressLocality: string;
+  addressRegion: string;
+  addressCountry: string;
   /** Both salary bounds and the currency, or none of them. */
-  currency?: string;
+  currency?: string | null;
   salaryMin?: number | null;
   salaryMax?: number | null;
-  /** Omitted when the record carries no employment-type column. */
-  contractType?: string;
+  /** Only an owner-approved stored value; unknown values are omitted. */
+  employmentType?: string | null;
+  /** From AtsJob.publishedAt ONLY — never createdAt, never "now". */
   datePosted: string;
+  /** From a real closingDate ONLY. */
   validThrough?: string;
   skills: string[];
 }
@@ -311,6 +318,25 @@ export interface JobPostingSchemaOptions {
  * missing optional property as missing; it treats a wrong one as a wrong fact.
  */
 export function jobPostingSchema(opts: JobPostingSchemaOptions) {
+  /*
+   * PHASE 104-B1 — structured data is built from PUBLISHED truth only.
+   *
+   *   - the caller must hold an ELIGIBLE row (shared predicate) with a
+   *     complete translation; this builder never re-checks and never invents;
+   *   - datePosted comes from publishedAt only — a caller without one has no
+   *     JobPosting to emit;
+   *   - identifier is the org-scoped requisitionKey, stable across reposts;
+   *   - salary appears only when min + max + currency are ALL present
+   *     (unitText YEAR completes the claim); a half-known band is not a fact;
+   *   - employmentType appears only when a stored, owner-approved value maps
+   *     cleanly onto the schema.org vocabulary; nothing is defaulted;
+   *   - NO remote/hybrid inference: jobLocationType and
+   *     applicantLocationRequirements are never emitted here. Mapping a
+   *     fully-remote role is an explicit owner decision, not a guess.
+   *
+   * Valid markup makes a page ELIGIBLE for a rich result; it does not
+   * produce one, and no placement is promised anywhere in this repository.
+   */
   const hasSalary =
     typeof opts.currency === "string" &&
     opts.currency.length > 0 &&
@@ -318,7 +344,7 @@ export function jobPostingSchema(opts: JobPostingSchemaOptions) {
     typeof opts.salaryMax === "number";
 
   const employmentType =
-    opts.contractType === undefined ? undefined : contractTypeToSchema(opts.contractType);
+    opts.employmentType == null ? undefined : contractTypeToSchema(opts.employmentType);
 
   return {
     "@context": "https://schema.org",
@@ -328,7 +354,7 @@ export function jobPostingSchema(opts: JobPostingSchemaOptions) {
     identifier: {
       "@type": "PropertyValue",
       name: ORG_NAME,
-      value: opts.id,
+      value: opts.requisitionKey,
     },
     hiringOrganization: {
       "@type": "Organization",
@@ -339,7 +365,12 @@ export function jobPostingSchema(opts: JobPostingSchemaOptions) {
     },
     jobLocation: {
       "@type": "Place",
-      address: { "@type": "PostalAddress", addressLocality: opts.location },
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: opts.addressLocality,
+        addressRegion: opts.addressRegion,
+        addressCountry: opts.addressCountry,
+      },
     },
     ...(hasSalary
       ? {

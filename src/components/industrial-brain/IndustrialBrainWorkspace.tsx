@@ -2,7 +2,7 @@
 
 import { formatDateTime } from "@/lib/i18n/format";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useId } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { IndustrialBrainAnalysis, UncertaintyLevel } from "@/lib/industrial-brain/types";
@@ -438,10 +438,12 @@ function ConfidenceBar({ value, color }: { value: number; color: string }) {
   );
 }
 
-function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
+function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor: string }) {
   // PHASE 107 — `htmlFor` is what makes the visible caption an ACCESSIBLE name.
   // Without it these labels were decorative text sitting next to an unlabelled
   // control, and every field in the fault-report form announced as blank.
+  // (104-D2 keeps the association but derives ids with useId via fid(), so a
+  // twice-rendered form can never produce duplicate DOM ids.)
   return <label htmlFor={htmlFor} className="block text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 mb-1.5">{children}</label>;
 }
 
@@ -1237,6 +1239,10 @@ interface Props { locale: string; isFa: boolean; canSaveCase?: boolean }
 
 export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: Props) {
   const t = useTranslations("industrialBrain");
+  // One stable id per field, derived from the control's own `name`, so a
+  // label can never point at a field that was renamed underneath it.
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<IndustrialBrainAnalysis | null>(null);
@@ -1348,7 +1354,7 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
               key={key}
               type="button"
               onClick={() => loadSample(key)}
-              className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12] hover:border-cyan-400/35 transition-all"
+              className="ds-focus inline-flex min-h-11 items-center text-[11px] font-mono px-3 py-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12] hover:border-cyan-400/35 transition-all"
             >
               {/* Multilingual demo-dataset caption (locale content data). */}
               {SAMPLE_SCENARIOS[key].labels[sampleLang]}
@@ -1363,35 +1369,35 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
         {/* Problem title + asset */}
         <FormSection title={t("form.faultIdentification")}>
           <div>
-            <FieldLabel htmlFor="problemTitle">{t("form.problemTitle")}</FieldLabel>
-            <input id="problemTitle" name="problemTitle" required minLength={3} maxLength={200} className={IC} style={{ colorScheme: "dark" }}
+            <FieldLabel htmlFor={fid("problemTitle")}>{t("form.problemTitle")}</FieldLabel>
+            <input id={fid("problemTitle")} name="problemTitle" required minLength={3} maxLength={200} className={IC} style={{ colorScheme: "dark" }}
               placeholder={t("form.problemTitlePh")}
             />
           </div>
           <FormRow>
             <div>
-              <FieldLabel htmlFor="assetType">{t("form.assetType")}</FieldLabel>
-              <input id="assetType" name="assetType" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("assetType")}>{t("form.assetType")}</FieldLabel>
+              <input id={fid("assetType")} name="assetType" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.assetTypePh")}
               />
             </div>
             <div>
-              <FieldLabel htmlFor="systemArea">{t("form.systemArea")}</FieldLabel>
-              <input id="systemArea" name="systemArea" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("systemArea")}>{t("form.systemArea")}</FieldLabel>
+              <input id={fid("systemArea")} name="systemArea" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.systemAreaPh")}
               />
             </div>
           </FormRow>
           <FormRow>
             <div>
-              <FieldLabel htmlFor="plcPlatform">{t("form.plcPlatform")}</FieldLabel>
-              <input id="plcPlatform" name="plcPlatform" maxLength={100} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("plcPlatform")}>{t("form.plcPlatform")}</FieldLabel>
+              <input id={fid("plcPlatform")} name="plcPlatform" maxLength={100} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.plcPlatformPh")}
               />
             </div>
             <div>
-              <FieldLabel htmlFor="recentChanges">{t("form.recentChanges")}</FieldLabel>
-              <input id="recentChanges" name="recentChanges" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("recentChanges")}>{t("form.recentChanges")}</FieldLabel>
+              <input id={fid("recentChanges")} name="recentChanges" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.recentChangesPh")}
               />
             </div>
@@ -1401,14 +1407,14 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
         {/* Symptoms + alarms */}
         <FormSection title={t("form.symptomsSection")}>
           <div>
-            <FieldLabel htmlFor="observedSymptoms">{t("form.observedSymptoms")}</FieldLabel>
-            <textarea id="observedSymptoms" name="observedSymptoms" required minLength={5} maxLength={3000} rows={4} className={TC} style={{ colorScheme: "dark" }}
+            <FieldLabel htmlFor={fid("observedSymptoms")}>{t("form.observedSymptoms")}</FieldLabel>
+            <textarea id={fid("observedSymptoms")} name="observedSymptoms" required minLength={5} maxLength={3000} rows={4} className={TC} style={{ colorScheme: "dark" }}
               placeholder={t("form.observedSymptomsPh")}
             />
           </div>
           <div>
-            <FieldLabel htmlFor="activeAlarms">{t("form.alarms")}</FieldLabel>
-            <textarea id="activeAlarms" name="activeAlarms" maxLength={1500} rows={3} className={TC} style={{ colorScheme: "dark" }}
+            <FieldLabel htmlFor={fid("activeAlarms")}>{t("form.alarms")}</FieldLabel>
+            <textarea id={fid("activeAlarms")} name="activeAlarms" maxLength={1500} rows={3} className={TC} style={{ colorScheme: "dark" }}
               placeholder={t("form.alarmsPh")}
             />
           </div>
@@ -1421,42 +1427,42 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
           </p>
           <FormRow>
             <div>
-              <FieldLabel htmlFor="hmiCommandState">{t("form.hmiCommand")}</FieldLabel>
-              <input id="hmiCommandState" name="hmiCommandState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("hmiCommandState")}>{t("form.hmiCommand")}</FieldLabel>
+              <input id={fid("hmiCommandState")} name="hmiCommandState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.hmiCommandPh")}
               />
             </div>
             <div>
-              <FieldLabel htmlFor="plcOutputState">{t("form.plcOutput")}</FieldLabel>
-              <input id="plcOutputState" name="plcOutputState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("plcOutputState")}>{t("form.plcOutput")}</FieldLabel>
+              <input id={fid("plcOutputState")} name="plcOutputState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.plcOutputPh")}
               />
             </div>
           </FormRow>
           <FormRow>
             <div>
-              <FieldLabel htmlFor="vfdMccState">{t("form.vfdMcc")}</FieldLabel>
-              <input id="vfdMccState" name="vfdMccState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("vfdMccState")}>{t("form.vfdMcc")}</FieldLabel>
+              <input id={fid("vfdMccState")} name="vfdMccState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.vfdMccPh")}
               />
             </div>
             <div>
-              <FieldLabel htmlFor="interlockStatus">{t("form.interlock")}</FieldLabel>
-              <input id="interlockStatus" name="interlockStatus" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("interlockStatus")}>{t("form.interlock")}</FieldLabel>
+              <input id={fid("interlockStatus")} name="interlockStatus" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.interlockPh")}
               />
             </div>
           </FormRow>
           <FormRow>
             <div>
-              <FieldLabel htmlFor="sensorFeedback">{t("form.sensorFeedback")}</FieldLabel>
-              <input id="sensorFeedback" name="sensorFeedback" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("sensorFeedback")}>{t("form.sensorFeedback")}</FieldLabel>
+              <input id={fid("sensorFeedback")} name="sensorFeedback" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.sensorFeedbackPh")}
               />
             </div>
             <div>
-              <FieldLabel htmlFor="observedSignals">{t("form.otherSignals")}</FieldLabel>
-              <input id="observedSignals" name="observedSignals" maxLength={1000} className={IC} style={{ colorScheme: "dark" }}
+              <FieldLabel htmlFor={fid("observedSignals")}>{t("form.otherSignals")}</FieldLabel>
+              <input id={fid("observedSignals")} name="observedSignals" maxLength={1000} className={IC} style={{ colorScheme: "dark" }}
                 placeholder={t("form.otherSignalsPh")}
               />
             </div>
@@ -1467,14 +1473,14 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
         <FormSection title={t("form.impactAssessment")}>
           <FormRow>
             <div>
-              <FieldLabel htmlFor="productionImpact">{t("form.productionImpact")}</FieldLabel>
-              <select id="productionImpact" name="productionImpact" className={SC} style={{ colorScheme: "dark" }}>
+              <FieldLabel htmlFor={fid("productionImpact")}>{t("form.productionImpact")}</FieldLabel>
+              <select id={fid("productionImpact")} name="productionImpact" className={SC} style={{ colorScheme: "dark" }}>
                 {impactOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
               </select>
             </div>
             <div>
-              <FieldLabel htmlFor="safetyImpact">{t("form.safetyImpact")}</FieldLabel>
-              <select id="safetyImpact" name="safetyImpact" className={SC} style={{ colorScheme: "dark" }}>
+              <FieldLabel htmlFor={fid("safetyImpact")}>{t("form.safetyImpact")}</FieldLabel>
+              <select id={fid("safetyImpact")} name="safetyImpact" className={SC} style={{ colorScheme: "dark" }}>
                 {impactOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
               </select>
             </div>
@@ -1484,14 +1490,14 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
         {/* Already checked + additional */}
         <FormSection title={t("form.alreadyCheckedSection")}>
           <div>
-            <FieldLabel htmlFor="alreadyChecked">{t("form.alreadyChecked")}</FieldLabel>
-            <textarea id="alreadyChecked" name="alreadyChecked" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
+            <FieldLabel htmlFor={fid("alreadyChecked")}>{t("form.alreadyChecked")}</FieldLabel>
+            <textarea id={fid("alreadyChecked")} name="alreadyChecked" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
               placeholder={t("form.alreadyCheckedPh")}
             />
           </div>
           <div>
-            <FieldLabel htmlFor="additionalInfo">{t("form.additionalInfo")}</FieldLabel>
-            <textarea id="additionalInfo" name="additionalInfo" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
+            <FieldLabel htmlFor={fid("additionalInfo")}>{t("form.additionalInfo")}</FieldLabel>
+            <textarea id={fid("additionalInfo")} name="additionalInfo" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
               placeholder={t("form.additionalInfoPh")}
             />
           </div>

@@ -432,7 +432,56 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            actionFailed, actionConflict, terminalNote, approvedNote),
     //            the 6-value status vocabulary and the 5 transition action
     //            labels. adminAccess is untouched — the account-access
-    //            workflow keeps its own namespace. -> 6171
+    //            workflow keeps its own namespace. -> 6171 on main
+    // 104-E/104-F: +85 leaves on this branch, on top of the same 6151 base:
+    //            publicSite.observatory (planes + gate semantics) and the
+    //            journal.pressroom Evidence Pressroom catalog. -> 6236 here
+    // MERGE (main d1db221 -> design/phase104-dna-token-layer): the two bumps
+    //            are on disjoint namespaces, so the union is 6151 + 20 + 85.
+    //            NOT taken on trust: the merged en.json was re-walked with this
+    //            file's own leaves() and MEASURED 6256, zero duplicate paths.
+    //            -> 6256
+    // JOURNAL-LIFECYCLE / JOURNAL-ENGAGEMENT / JOURNAL-SAVE / JOURNAL-TOMBSTONE
+    //            (PR #70 on main): +24 (3 journal.nav author-entry links,
+    //            7 journalEditorial.mod delete flow, 14 journalWriter.media
+    //            cover upload) + 24 journal.engagement (reaction bar, comment
+    //            thread, replies, moderation) + 3 journal.engagement
+    //            (saved / saveFailed / signInToSave) + 1 removedComment
+    //            -> 6223 on main
+    // MERGE (main 44109b9 -> design/phase104-dna-token-layer): 104-E/F (+85)
+    //            and PR #70 (+52) touch disjoint namespaces; NOT added by hand:
+    //            the merged en/de/fa catalogs were re-walked with this file's
+    //            own leaves() and MEASURED 6308 in all three locales, zero
+    //            duplicate paths, zero duplicate JSON keys, full key parity.
+    //            -> 6308
+    // 104-I2:    +67 public-estate catalogue leaves, MEASURED not hand-added:
+    //            demo 23 (the /demo page carried an en:/fa: literal pair per
+    //            string, so German fell back to English), careers 28 (the board
+    //            plus the job-detail surface, which was English-only), and
+    //            vendors 16 (/vendors and /vendors/apply were English literals
+    //            in all three locales). All three namespaces are registered in
+    //            de-catalog TRANSLATED_NS, so they are held to zero carryover.
+    //            -> 6375
+    // 104-I3:    +168, MEASURED not hand-added: the vendor directory and the
+    //            partner application form grew from 16 leaves to 139 (+123) once
+    //            their filters, options, card chrome, field labels, hints,
+    //            consent text and every state string moved out of the component
+    //            tree, and careers.apply added 45 for the job-application flow.
+    //            Both namespaces are in de-catalog TRANSLATED_NS, so all 168 are
+    //            held to zero German carryover.
+    //            -> 6543
+    // 104-I3b:   +12 for the public vendor DETAIL route, the last vendor
+    //            surface still shipping English section headings in every
+    //            locale: vendors.detail 7 (six headings + the verified-partner
+    //            badge) and vendors.compliance 5 (the status enum's labels,
+    //            previously a hard-coded map in the component).
+    //            -> 6555
+    // 104-I3c:   +38 for the public demo-request form (demo.form), which held
+    //            its own `isFa ? fa : en` label table — so /de/demo rendered
+    //            German page copy above ENGLISH field labels. 32 strings plus
+    //            6 interest options; company-size ranges stay OUT of the
+    //            catalog because they are numbers formatted per locale.
+    //            -> 6593
     // PHASE 101-R: +60 leaves under industrialBrain.reference — the Phase 101
     //            reference diagnostic run on the public Industrial Brain page
     //            (sample disclosure, case selector, observed-state table, the
@@ -452,7 +501,16 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            6235 + 42 + 60. Verified by recounting the merged catalogs
     //            with this file's own `leaves` semantics, not by arithmetic
     //            on the two pinned numbers. -> 6337
-    expect(allEn.length).toBe(6337);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24 (3 journal.nav author-entry links, 7 journalEditorial.mod delete flow, 14 journalWriter.media cover upload); JOURNAL-ENGAGEMENT: +24 journal.engagement (reaction bar, comment thread, replies, moderation); JOURNAL-SAVE: +3 journal.engagement (saved / saveFailed / signInToSave); JOURNAL-TOMBSTONE: +1 journal.engagement.removedComment; MULTI-SITE-BOUNDARY: +12 multiSite (retry/signIn + empty, unauthorized, forbidden, request-error and invalid-response states); PHASE-107-JOURNAL-MOBILE-NAV: +2 journal.nav (openMenu / menuTitle for the below-lg Journal drawer); PHASE-107-ENGINEERING-HUB: +7 engineeringHub (six route titles + hub fallback, previously a hard-coded English map in TopBar.tsx); PHASE-107-PLATFORM-COMPONENTS: +5 dashboard.platformComponents (System Status rows that printed a raw camelCase identifier on all three locales); PHASE-107-STAGE-6A: +18 errors.resource (eight failure codes x title/hint, plus retry and sign-in, so a failed request can say WHICH failure it was in all three locales); PHASE-107-STAGE-6A-OT-CONTEXT: +6 otEdge.states (organization/site context required and offline, so a signed-in operator is told what to select instead of being asked to sign in again); PHASE-107-STAGE-6A-CONTEXT-UI: +4 errors.resource (organization/site context required, so billing and the API-key dashboard stop telling a signed-in administrator to sign in again)
+    // MERGE (main a8b3988 -> design/phase104-dna-token-layer): the Phase 107 /
+    //            Phase 101-R additions on main (+114 over base c924ce3) and the
+    //            104-E/F + 104-I additions on this branch (+372) touch disjoint
+    //            key paths: a three-way key-set comparison found ZERO keys added
+    //            by both sides and ZERO deletions on either side. NOT taken on
+    //            trust: the merged en/de/fa catalogs were re-walked with this
+    //            file's own leaves() semantics and MEASURED 6709, then 6710 after B1.1 added careers.preferredExperience (one leaf, all three locales), in all three
+    //            locales, zero duplicate paths, full 3-way key parity.
+    //            -> 6718  (B1.1: +1 careers.preferredExperience; B1.2: +4 locationTypeLabels + salaryPerYear; B1.3: +3 careers.apply.notAccepting{Title,Body,Cta}; B1.4: +2 careers.viewDetails/applicationsNotOpen − 1 retired careers.viewAndApply)
+    expect(allEn.length).toBe(6737);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24; JOURNAL-ENGAGEMENT: +24; JOURNAL-SAVE: +3; JOURNAL-TOMBSTONE: +1; MULTI-SITE-BOUNDARY: +12 multiSite; PHASE-107-JOURNAL-MOBILE-NAV: +2 journal.nav; PHASE-107-ENGINEERING-HUB: +7 engineeringHub; PHASE-107-PLATFORM-COMPONENTS: +5 dashboard.platformComponents; PHASE-107-STAGE-6A: +18 errors.resource; PHASE-107-STAGE-6A-OT-CONTEXT: +6 otEdge.states; PHASE-107-STAGE-6A-CONTEXT-UI: +4 errors.resource; PHASE-101-R: +60 industrialBrain.reference; 104-E/F: +85 observatory + journal pressroom; 104-I2: +67 demo/careers/vendors; 104-I3: +168 vendor directory/application + careers apply; 104-I3b: +12 vendor detail; 104-I3c: +38 demo form; 104-I3d: +2 ProvenExpert fallback; 104-R1: +18 dashboard.commandRibbon/ecosystem, +1 appShell.shell.contextUnresolved
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -466,14 +524,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6337 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies 6718 = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6337);
+    ).toBe(6737);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

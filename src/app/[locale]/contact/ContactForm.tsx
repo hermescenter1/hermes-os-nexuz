@@ -57,10 +57,11 @@ export function ContactForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block font-body text-xs text-muted">
+              <label htmlFor="contact-name" className="mb-1.5 block font-body text-xs text-muted">
                 {t("formName")} *
               </label>
               <input
+                id="contact-name"
                 type="text"
                 required
                 value={name}
@@ -69,10 +70,11 @@ export function ContactForm() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block font-body text-xs text-muted">
+              <label htmlFor="contact-company" className="mb-1.5 block font-body text-xs text-muted">
                 {t("formCompany")}
               </label>
               <input
+                id="contact-company"
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
@@ -83,10 +85,11 @@ export function ContactForm() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block font-body text-xs text-muted">
+              <label htmlFor="contact-email" className="mb-1.5 block font-body text-xs text-muted">
                 {t("formEmail")} *
               </label>
               <input
+                id="contact-email"
                 type="email"
                 required
                 value={email}
@@ -95,10 +98,11 @@ export function ContactForm() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block font-body text-xs text-muted">
+              <label htmlFor="contact-phone" className="mb-1.5 block font-body text-xs text-muted">
                 {t("formPhone")}
               </label>
               <input
+                id="contact-phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -108,10 +112,11 @@ export function ContactForm() {
           </div>
 
           <div>
-            <label className="mb-1.5 block font-body text-xs text-muted">
+            <label htmlFor="contact-type" className="mb-1.5 block font-body text-xs text-muted">
               {t("formType")}
             </label>
             <select
+              id="contact-type"
               value={type}
               onChange={(e) => setType(e.target.value as EnquiryType)}
               className={inputClass}
@@ -125,10 +130,11 @@ export function ContactForm() {
           </div>
 
           <div>
-            <label className="mb-1.5 block font-body text-xs text-muted">
+            <label htmlFor="contact-message" className="mb-1.5 block font-body text-xs text-muted">
               {t("formMessage")} *
             </label>
             <textarea
+              id="contact-message"
               required
               rows={4}
               value={message}

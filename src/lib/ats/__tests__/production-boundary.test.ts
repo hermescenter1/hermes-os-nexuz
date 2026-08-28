@@ -131,6 +131,7 @@ describe("F2 — the discovery surfaces read the authoritative source", () => {
     const mod = await import("../public-jobs");
     const base = {
       id: "j1",
+      location: "Isfahan, Iran",
       organizationId: "o1",
       title: "t",
       description: "d",
@@ -138,7 +139,9 @@ describe("F2 — the discovery surfaces read the authoritative source", () => {
       responsibilities: [],
       benefits: [],
       skills: [],
-      location: "Isfahan",
+      addressLocality: "Isfahan",
+      addressRegion: "Isfahan Province",
+      addressCountry: "IR",
       locationType: "onsite",
       department: "Automation",
       salaryCurrency: "EUR",
@@ -150,10 +153,28 @@ describe("F2 — the discovery surfaces read the authoritative source", () => {
       updatedAt: new Date(),
     };
 
-    expect(mod.isPubliclyListedJob({ ...base, status: "OPEN", isPublic: true })).toBe(true);
-    expect(mod.isPubliclyListedJob({ ...base, status: "DRAFT", isPublic: true })).toBe(false);
-    expect(mod.isPubliclyListedJob({ ...base, status: "CLOSED", isPublic: true })).toBe(false);
-    expect(mod.isPubliclyListedJob({ ...base, status: "OPEN", isPublic: false })).toBe(false);
+    // PHASE 104-B1 — the public contract is STRICTER now: OPEN + isPublic
+    // alone no longer suffice. A row must also carry a real, non-future
+    // publishedAt, and an expired closingDate withdraws it.
+    const now = new Date("2026-08-24T12:00:00.000Z");
+    const published = new Date("2026-08-01T00:00:00.000Z");
+    const open = { ...base, status: "OPEN", isPublic: true };
+
+    expect(mod.isPubliclyListedJob({ ...open, publishedAt: published }, now)).toBe(true);
+    // No publishedAt → not public, even when OPEN + isPublic.
+    expect(mod.isPubliclyListedJob(open, now)).toBe(false);
+    // A FUTURE publishedAt is not a publication.
+    expect(mod.isPubliclyListedJob({ ...open, publishedAt: new Date("2026-09-01T00:00:00.000Z") }, now)).toBe(false);
+    // An expired closingDate withdraws the posting.
+    expect(
+      mod.isPubliclyListedJob(
+        { ...open, publishedAt: published, closingDate: new Date("2026-08-10T00:00:00.000Z") },
+        now,
+      ),
+    ).toBe(false);
+    expect(mod.isPubliclyListedJob({ ...base, status: "DRAFT", isPublic: true, publishedAt: published }, now)).toBe(false);
+    expect(mod.isPubliclyListedJob({ ...base, status: "CLOSED", isPublic: true, publishedAt: published }, now)).toBe(false);
+    expect(mod.isPubliclyListedJob({ ...base, status: "OPEN", isPublic: false, publishedAt: published }, now)).toBe(false);
   });
 
   it("public discovery FAILS EMPTY when the database is unreachable", async () => {
@@ -169,10 +190,12 @@ describe("F2 — the discovery surfaces read the authoritative source", () => {
 describe("F3 — JobPosting never publishes a value the source cannot back", () => {
   it("omits baseSalary when either bound is null", () => {
     const schema = jobPostingSchema({
-      id: "j1",
+      requisitionKey: "HNM-TEST-001",
       title: "Senior PLC Engineer",
       description: "d",
-      location: "Isfahan",
+      addressLocality: "Isfahan",
+      addressRegion: "Isfahan Province",
+      addressCountry: "IR",
       currency: "EUR",
       salaryMin: null,
       salaryMax: null,
@@ -184,10 +207,12 @@ describe("F3 — JobPosting never publishes a value the source cannot back", () 
 
   it("emits baseSalary only when currency and both bounds are present", () => {
     const schema = jobPostingSchema({
-      id: "j1",
+      requisitionKey: "HNM-TEST-001",
       title: "t",
       description: "d",
-      location: "Isfahan",
+      addressLocality: "Isfahan",
+      addressRegion: "Isfahan Province",
+      addressCountry: "IR",
       currency: "EUR",
       salaryMin: 65000,
       salaryMax: 85000,
@@ -197,15 +222,17 @@ describe("F3 — JobPosting never publishes a value the source cannot back", () 
     expect(schema).toHaveProperty("baseSalary");
   });
 
-  it("omits employmentType when the record has no contract type", () => {
+  it("omits employmentType when the record has no owner-approved value", () => {
     // `AtsJob` has `locationType` (onsite/remote/hybrid) and NO employment-type
     // column. The old builder defaulted an unknown contract to FULL_TIME, which
     // published a term the platform had never been told.
     const schema = jobPostingSchema({
-      id: "j1",
+      requisitionKey: "HNM-TEST-001",
       title: "t",
       description: "d",
-      location: "Isfahan",
+      addressLocality: "Isfahan",
+      addressRegion: "Isfahan Province",
+      addressCountry: "IR",
       datePosted: "2026-01-01T00:00:00.000Z",
       skills: [],
     });
@@ -214,11 +241,13 @@ describe("F3 — JobPosting never publishes a value the source cannot back", () 
 
   it("an unrecognised contract type is dropped, not defaulted to FULL_TIME", () => {
     const schema = jobPostingSchema({
-      id: "j1",
+      requisitionKey: "HNM-TEST-001",
       title: "t",
       description: "d",
-      location: "Isfahan",
-      contractType: "who-knows",
+      addressLocality: "Isfahan",
+      addressRegion: "Isfahan Province",
+      addressCountry: "IR",
+      employmentType: "who-knows",
       datePosted: "2026-01-01T00:00:00.000Z",
       skills: [],
     });
@@ -227,10 +256,12 @@ describe("F3 — JobPosting never publishes a value the source cannot back", () 
 
   it("carries validThrough when the source has a closing date", () => {
     const schema = jobPostingSchema({
-      id: "j1",
+      requisitionKey: "HNM-TEST-001",
       title: "t",
       description: "d",
-      location: "Isfahan",
+      addressLocality: "Isfahan",
+      addressRegion: "Isfahan Province",
+      addressCountry: "IR",
       datePosted: "2026-01-01T00:00:00.000Z",
       validThrough: "2026-03-01T00:00:00.000Z",
       skills: [],

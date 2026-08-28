@@ -21,7 +21,11 @@ const LEAF_COUNTS: Record<(typeof TARGETS)[number], number> = {
   // PHASE 107: +5 dashboard.platformComponents — the System Status rows on the
   // Copilot, Industrial and Knowledge surfaces, which used to print a raw
   // camelCase identifier in every locale. All five are genuinely German.
-  dashboard: 188,
+  // PHASE 104 R1 (V-M6): +18 dashboard.commandRibbon + dashboard.ecosystem -
+  // the intelligence strip and Intelligence Network panel, which printed
+  // English literals on the Persian and German dashboards. All 18 are
+  // genuinely German.
+  dashboard: 206,
   assetMaintenance: 141,
   engineeringDocuments: 76,
   businessOps: 63,
@@ -88,7 +92,7 @@ describe("87L.6C — exact namespace arithmetic", () => {
       expect(flatten((de as Tree)[ns]).size, `${ns} de`).toBe(LEAF_COUNTS[ns]);
       total += e.size;
     }
-    expect(total).toBe(554);
+    expect(total).toBe(572);
   });
 
   it("reconciles: translated + intentional-identical = every leaf, carryover = 0", () => {
@@ -107,7 +111,7 @@ describe("87L.6C — exact namespace arithmetic", () => {
       }
     }
     expect(unapproved, "unapproved English carryover").toEqual([]);
-    expect(translated + identical).toBe(554);
+    expect(translated + identical).toBe(572);
     expect(translated).toBeGreaterThan(500);
   });
 

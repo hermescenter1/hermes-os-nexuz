@@ -179,8 +179,9 @@ describe("Organization.logo is intentionally omitted", () => {
 
   it("the JobPosting hiring organisation also omits it", () => {
     const job = jobPostingSchema({
-      id: "j1", title: "t", description: "d", location: "Tehran",
-      currency: "USD", salaryMin: 1, salaryMax: 2, contractType: "full-time",
+      requisitionKey: "HNM-TEST-001", title: "t", description: "d",
+      addressLocality: "Isfahan", addressRegion: "Isfahan Province", addressCountry: "IR",
+      currency: "USD", salaryMin: 1, salaryMax: 2, employmentType: "full-time",
       datePosted: "2026-01-01", skills: ["PLC"],
     }) as Record<string, unknown>;
     const hiring = job.hiringOrganization as Record<string, unknown>;

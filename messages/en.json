@@ -1,150 +1,152 @@
 {
-    "trustBadges": {
-      "sectionTitle": "Trust & Verification",
-      "enamadHeading": "Trust Seal",
-      "saashubHeading": "Software Listing",
-      "provenExpertHeading": "Customer Reviews"
+  "trustBadges": {
+    "sectionTitle": "Trust & Verification",
+    "enamadHeading": "Trust Seal",
+    "saashubHeading": "Software Listing",
+    "provenExpertHeading": "Customer Reviews",
+    "provenExpertLink": "View Hermes OS on ProvenExpert",
+    "provenExpertRegion": "Hermes OS customer reviews on ProvenExpert"
+  },
+  "observability": {
+    "eyebrow": "Operations",
+    "title": "SRE Control Room",
+    "lede": "Live operational health, dependency probes, security and error signals, incident reconstruction and backup posture — every value is measured, never simulated.",
+    "posture": {
+      "healthy": "All systems operational",
+      "degraded": "Operating with degradation",
+      "critical": "Critical attention required",
+      "detail": "Derived from live probes and in-process signals · as of {at}"
     },
-    "observability": {
-      "eyebrow": "Operations",
-      "title": "SRE Control Room",
-      "lede": "Live operational health, dependency probes, security and error signals, incident reconstruction and backup posture — every value is measured, never simulated.",
-      "posture": {
-        "healthy": "All systems operational",
-        "degraded": "Operating with degradation",
-        "critical": "Critical attention required",
-        "detail": "Derived from live probes and in-process signals · as of {at}"
-      },
-      "kpi": {
-        "database": "Database",
-        "redis": "Cache",
-        "activeAlerts": "Active alerts",
-        "activeAlertsSub": "currently firing",
-        "errorEvents": "Error events",
-        "securityEvents": "Security events",
-        "uptime": "Process uptime",
-        "cumulative": "cumulative"
-      },
-      "status": {
-        "unknown": "Unknown",
-        "notConfigured": "Not configured",
-        "up": "Up",
-        "down": "Down",
-        "operational": "Operational",
-        "clear": "Clear",
-        "fallback": "Fallback active",
-        "redisBacked": "Redis-backed"
-      },
-      "labels": {
-        "liveProbe": "live probe",
-        "count": "count",
-        "time": "Time",
-        "event": "Event",
-        "severity": "Severity",
-        "outcome": "Outcome",
-        "reason": "Reason",
-        "operation": "Operation",
-        "lastSeen": "Last seen",
-        "source": "Source",
-        "action": "Action",
-        "dataSource": "Data source"
-      },
-      "sections": {
-        "topology": "Dependency topology",
-        "latency": "Dependency latency",
-        "httpLatency": "HTTP request latency",
-        "httpRate": "HTTP request rate",
-        "alerts": "Active alerts",
-        "securityRecent": "Recent security events",
-        "errors": "Error fingerprints",
-        "incident": "Incident timeline",
-        "audit": "Audit explorer",
-        "backup": "Backup status",
-        "startup": "Startup validation",
-        "runtime": "Runtime"
-      },
-      "topology": {
-        "application": "Application",
-        "database": "Database",
-        "redis": "Redis (cache)",
-        "apiLimiter": "API rate limiter",
-        "authLimiter": "Auth rate limiter",
-        "self": "self",
-        "rateLimiter": "rate limiter",
-        "externalNote": "Nginx, mail and OpenBao are not probed from the application and are intentionally omitted; add a real probe before showing their health."
-      },
-      "charts": {
-        "latencyAvg": "Average",
-        "latencySamples": "Samples",
-        "latencyThreshold": "Warn / critical",
-        "latencyEmpty": "No probe samples recorded yet — the readiness endpoint records database probe latency when it is called.",
-        "errorsBySeverity": "Errors by severity",
-        "securityByEvent": "Security events by type",
-        "authActivity": "Authentication & session activity",
-        "authFailures": "Authentication failures",
-        "authzDenials": "Authorization denials",
-        "sessionOps": "Session operations",
-        "alertDelivery": "Alert delivery"
-      },
-      "notInstrumented": {
-        "badge": "Not instrumented",
-        "httpRequestLatency": "HTTP request latency",
-        "httpRequestRate": "HTTP request rate",
-        "explanation": "This signal has no recording call-site and no durable time-series store, so no real data exists. It is shown as not measured — deliberately not as zero, which would falsely imply traffic was observed.",
-        "sourceValue": "Prometheus scrape · /api/metrics",
-        "action": "Operator action: enable a Prometheus scrape of /api/metrics and add real HTTP instrumentation (tracked as a separate follow-up)."
-      },
-      "empties": {
-        "noErrors": "No errors recorded.",
-        "noSecurity": "No security events recorded.",
-        "noData": "No data recorded yet.",
-        "noAlerts": "No active alerts.",
-        "noAudit": "No audit events match.",
-        "auditError": "The audit store is unavailable — this panel is degraded."
-      },
-      "severities": {
-        "info": "Info",
-        "warning": "Warning",
-        "error": "Error",
-        "critical": "Critical"
-      },
-      "incidentLookup": {
-        "label": "Look up an incident by correlation ID",
-        "placeholder": "for example 3f2a-b19c",
-        "submit": "Reconstruct",
-        "invalid": "Malformed correlation ID",
-        "empty": "No events for this correlation ID"
-      },
-      "audit": {
-        "filterLabel": "Filter by action or outcome",
-        "filterPlaceholder": "for example login or denied",
-        "results": "{shown} of {total} shown",
-        "outcomeDistribution": "Outcome distribution"
-      },
-      "backup": {
-        "verified": "Verified",
-        "notVerified": "Not verified",
-        "noBackup": "No backup found",
-        "noBackupHint": "No .dump file was found in BACKUP_DIR — confirm the backup cron is running.",
-        "lastBackup": "Last backup",
-        "age": "Age",
-        "size": "Size",
-        "verifiedAt": "Verified at",
-        "neverVerified": "never verified",
-        "file": "File"
-      },
-      "startup": {
-        "fatal": "{n} fatal",
-        "ok": "Passed",
-        "notRun": "Did not run"
-      },
-      "runtime": {
-        "environment": "Environment",
-        "uptime": "Uptime",
-        "rss": "Resident memory",
-        "heap": "Heap used / total"
-      }
+    "kpi": {
+      "database": "Database",
+      "redis": "Cache",
+      "activeAlerts": "Active alerts",
+      "activeAlertsSub": "currently firing",
+      "errorEvents": "Error events",
+      "securityEvents": "Security events",
+      "uptime": "Process uptime",
+      "cumulative": "cumulative"
     },
+    "status": {
+      "unknown": "Unknown",
+      "notConfigured": "Not configured",
+      "up": "Up",
+      "down": "Down",
+      "operational": "Operational",
+      "clear": "Clear",
+      "fallback": "Fallback active",
+      "redisBacked": "Redis-backed"
+    },
+    "labels": {
+      "liveProbe": "live probe",
+      "count": "count",
+      "time": "Time",
+      "event": "Event",
+      "severity": "Severity",
+      "outcome": "Outcome",
+      "reason": "Reason",
+      "operation": "Operation",
+      "lastSeen": "Last seen",
+      "source": "Source",
+      "action": "Action",
+      "dataSource": "Data source"
+    },
+    "sections": {
+      "topology": "Dependency topology",
+      "latency": "Dependency latency",
+      "httpLatency": "HTTP request latency",
+      "httpRate": "HTTP request rate",
+      "alerts": "Active alerts",
+      "securityRecent": "Recent security events",
+      "errors": "Error fingerprints",
+      "incident": "Incident timeline",
+      "audit": "Audit explorer",
+      "backup": "Backup status",
+      "startup": "Startup validation",
+      "runtime": "Runtime"
+    },
+    "topology": {
+      "application": "Application",
+      "database": "Database",
+      "redis": "Redis (cache)",
+      "apiLimiter": "API rate limiter",
+      "authLimiter": "Auth rate limiter",
+      "self": "self",
+      "rateLimiter": "rate limiter",
+      "externalNote": "Nginx, mail and OpenBao are not probed from the application and are intentionally omitted; add a real probe before showing their health."
+    },
+    "charts": {
+      "latencyAvg": "Average",
+      "latencySamples": "Samples",
+      "latencyThreshold": "Warn / critical",
+      "latencyEmpty": "No probe samples recorded yet — the readiness endpoint records database probe latency when it is called.",
+      "errorsBySeverity": "Errors by severity",
+      "securityByEvent": "Security events by type",
+      "authActivity": "Authentication & session activity",
+      "authFailures": "Authentication failures",
+      "authzDenials": "Authorization denials",
+      "sessionOps": "Session operations",
+      "alertDelivery": "Alert delivery"
+    },
+    "notInstrumented": {
+      "badge": "Not instrumented",
+      "httpRequestLatency": "HTTP request latency",
+      "httpRequestRate": "HTTP request rate",
+      "explanation": "This signal has no recording call-site and no durable time-series store, so no real data exists. It is shown as not measured — deliberately not as zero, which would falsely imply traffic was observed.",
+      "sourceValue": "Prometheus scrape · /api/metrics",
+      "action": "Operator action: enable a Prometheus scrape of /api/metrics and add real HTTP instrumentation (tracked as a separate follow-up)."
+    },
+    "empties": {
+      "noErrors": "No errors recorded.",
+      "noSecurity": "No security events recorded.",
+      "noData": "No data recorded yet.",
+      "noAlerts": "No active alerts.",
+      "noAudit": "No audit events match.",
+      "auditError": "The audit store is unavailable — this panel is degraded."
+    },
+    "severities": {
+      "info": "Info",
+      "warning": "Warning",
+      "error": "Error",
+      "critical": "Critical"
+    },
+    "incidentLookup": {
+      "label": "Look up an incident by correlation ID",
+      "placeholder": "for example 3f2a-b19c",
+      "submit": "Reconstruct",
+      "invalid": "Malformed correlation ID",
+      "empty": "No events for this correlation ID"
+    },
+    "audit": {
+      "filterLabel": "Filter by action or outcome",
+      "filterPlaceholder": "for example login or denied",
+      "results": "{shown} of {total} shown",
+      "outcomeDistribution": "Outcome distribution"
+    },
+    "backup": {
+      "verified": "Verified",
+      "notVerified": "Not verified",
+      "noBackup": "No backup found",
+      "noBackupHint": "No .dump file was found in BACKUP_DIR — confirm the backup cron is running.",
+      "lastBackup": "Last backup",
+      "age": "Age",
+      "size": "Size",
+      "verifiedAt": "Verified at",
+      "neverVerified": "never verified",
+      "file": "File"
+    },
+    "startup": {
+      "fatal": "{n} fatal",
+      "ok": "Passed",
+      "notRun": "Did not run"
+    },
+    "runtime": {
+      "environment": "Environment",
+      "uptime": "Uptime",
+      "rss": "Resident memory",
+      "heap": "Heap used / total"
+    }
+  },
   "meta": {
     "title": "Hermes OS — Industrial AI Platform",
     "description": "Enterprise industrial automation platform: PLC, SCADA, HMI, AI copilot, and intelligent operations — built for Persian and English plant floors.",
@@ -542,7 +544,7 @@
     "disclaimerVerify": "Verify with qualified personnel and site procedures"
   },
   "common": {
-    "switchLanguage": "فارسی",
+    "switchLanguage": "Change language",
     "comingSoon": "Coming soon",
     "explore": "Explore",
     "backToServices": "All services",
@@ -769,185 +771,497 @@
         "name": "Digital Twin",
         "title": "Digital Twin — a queryable model of your plant, grounded in real data",
         "lede": "A node-and-relation graph of your assets and lines, overlaid with the latest reported telemetry and a computed health state — not a rendering exercise, a queryable model your other Hermes capabilities reason over.",
-        "problem": { "body": "Asset relationships — which pump feeds which line, which sensor belongs to which machine — usually live in someone's head or in a drawing that's out of date. When a fault happens, reconstructing the physical context costs time the plant doesn't have." },
-        "whatItDoes": { "bullets": [
-          { "name": "Node & relation graph", "desc": "Assets, lines and equipment modeled as nodes with typed relationships between them, editable through a dedicated graph and layout workspace." },
-          { "name": "Telemetry overlay", "desc": "Tag values and a computed health score attach to the twin from the latest telemetry each gateway has reported, so the model shows the most recent known state rather than a static diagram. Readings that have gone stale lower that score instead of being presented as current." },
-          { "name": "Site-scoped layouts", "desc": "Saved visual layouts per site keep the twin readable as the asset graph grows." }
-        ] },
-        "connects": { "items": [
-          { "name": "Predictive Maintenance", "desc": "Twin context — what's connected to what — is the structure predictive risk scoring reasons over." },
-          { "name": "CMMS", "desc": "Twin nodes map onto the same assets CMMS schedules and tracks maintenance work for." },
-          { "name": "Industrial Brain", "desc": "Diagnostic reasoning anchors its evidence to the twin's asset and relationship model, not a guess at plant layout." }
-        ] },
-        "value": { "items": [
-          { "name": "Faster fault context", "desc": "Engineers see what's actually connected before they walk the floor." },
-          { "name": "One model, many consumers", "desc": "The same twin backs analytics, health scoring and diagnostic reasoning — no duplicate asset lists to keep in sync." },
-          { "name": "Auditable structure", "desc": "Relationships are explicit and versioned, not tribal knowledge." }
-        ] },
-        "automation": { "body": "Graph updates and telemetry overlays are computed automatically; changing what a node represents in the physical plant remains an engineer's decision." },
-        "cta": { "title": "See how Digital Twin fits your architecture" }
+        "problem": {
+          "body": "Asset relationships — which pump feeds which line, which sensor belongs to which machine — usually live in someone's head or in a drawing that's out of date. When a fault happens, reconstructing the physical context costs time the plant doesn't have."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Node & relation graph",
+              "desc": "Assets, lines and equipment modeled as nodes with typed relationships between them, editable through a dedicated graph and layout workspace."
+            },
+            {
+              "name": "Telemetry overlay",
+              "desc": "Tag values and a computed health score attach to the twin from the latest telemetry each gateway has reported, so the model shows the most recent known state rather than a static diagram. Readings that have gone stale lower that score instead of being presented as current."
+            },
+            {
+              "name": "Site-scoped layouts",
+              "desc": "Saved visual layouts per site keep the twin readable as the asset graph grows."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "Predictive Maintenance",
+              "desc": "Twin context — what's connected to what — is the structure predictive risk scoring reasons over."
+            },
+            {
+              "name": "CMMS",
+              "desc": "Twin nodes map onto the same assets CMMS schedules and tracks maintenance work for."
+            },
+            {
+              "name": "Industrial Brain",
+              "desc": "Diagnostic reasoning anchors its evidence to the twin's asset and relationship model, not a guess at plant layout."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Faster fault context",
+              "desc": "Engineers see what's actually connected before they walk the floor."
+            },
+            {
+              "name": "One model, many consumers",
+              "desc": "The same twin backs analytics, health scoring and diagnostic reasoning — no duplicate asset lists to keep in sync."
+            },
+            {
+              "name": "Auditable structure",
+              "desc": "Relationships are explicit and versioned, not tribal knowledge."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Graph updates and telemetry overlays are computed automatically; changing what a node represents in the physical plant remains an engineer's decision."
+        },
+        "cta": {
+          "title": "See how Digital Twin fits your architecture"
+        }
       },
       "predictiveMaintenance": {
         "name": "Predictive Maintenance",
         "title": "Predictive Maintenance — remaining life and risk, computed from real telemetry",
         "lede": "Baselines, degradation tracking, risk scoring and remaining-useful-life estimation, run against the asset telemetry Hermes OS already collects — not a black-box score with no explanation.",
-        "problem": { "body": "Most maintenance is either reactive (fix it after it breaks) or calendar-based (replace it whether it needs it or not). Both waste either uptime or good parts, because neither looks at how the asset is actually degrading." },
-        "whatItDoes": { "bullets": [
-          { "name": "Remaining useful life (RUL)", "desc": "Estimates how much service life an asset has left, derived from its telemetry history." },
-          { "name": "Risk scoring", "desc": "Ranks assets by failure risk so maintenance attention goes where it matters first." },
-          { "name": "Baselines & degradation tracking", "desc": "Learns an asset's normal operating envelope and tracks its drift away from it over time." }
-        ] },
-        "connects": { "items": [
-          { "name": "Digital Twin", "desc": "Reads the same asset and relationship context the twin maintains, so a risk score is tied to a real position in the plant." },
-          { "name": "CMMS", "desc": "A recommendation is only useful once it becomes a scheduled work order — the two share the same asset identity." },
-          { "name": "Multi-Site Operations", "desc": "Risk snapshots roll up across sites for portfolio-level prioritization." }
-        ] },
-        "value": { "items": [
-          { "name": "Fewer surprise failures", "desc": "Degradation is visible before it becomes downtime." },
-          { "name": "Less wasted maintenance", "desc": "Parts and labor go to assets that actually need attention, not a fixed calendar." },
-          { "name": "Explainable, not a black box", "desc": "Every score traces back to the baseline and telemetry it was computed from." }
-        ] },
-        "automation": { "body": "RUL estimates, risk scores and baselines are calculated automatically from telemetry; deciding to shut down a line or override a warning stays with the engineer responsible for it." },
-        "cta": { "title": "See Predictive Maintenance on your assets" }
+        "problem": {
+          "body": "Most maintenance is either reactive (fix it after it breaks) or calendar-based (replace it whether it needs it or not). Both waste either uptime or good parts, because neither looks at how the asset is actually degrading."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Remaining useful life (RUL)",
+              "desc": "Estimates how much service life an asset has left, derived from its telemetry history."
+            },
+            {
+              "name": "Risk scoring",
+              "desc": "Ranks assets by failure risk so maintenance attention goes where it matters first."
+            },
+            {
+              "name": "Baselines & degradation tracking",
+              "desc": "Learns an asset's normal operating envelope and tracks its drift away from it over time."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "Digital Twin",
+              "desc": "Reads the same asset and relationship context the twin maintains, so a risk score is tied to a real position in the plant."
+            },
+            {
+              "name": "CMMS",
+              "desc": "A recommendation is only useful once it becomes a scheduled work order — the two share the same asset identity."
+            },
+            {
+              "name": "Multi-Site Operations",
+              "desc": "Risk snapshots roll up across sites for portfolio-level prioritization."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Fewer surprise failures",
+              "desc": "Degradation is visible before it becomes downtime."
+            },
+            {
+              "name": "Less wasted maintenance",
+              "desc": "Parts and labor go to assets that actually need attention, not a fixed calendar."
+            },
+            {
+              "name": "Explainable, not a black box",
+              "desc": "Every score traces back to the baseline and telemetry it was computed from."
+            }
+          ]
+        },
+        "automation": {
+          "body": "RUL estimates, risk scores and baselines are calculated automatically from telemetry; deciding to shut down a line or override a warning stays with the engineer responsible for it."
+        },
+        "cta": {
+          "title": "See Predictive Maintenance on your assets"
+        }
       },
       "cmms": {
         "name": "CMMS",
         "title": "CMMS — maintenance work, tracked in one governed system",
         "lede": "Work orders, preventive schedules, spare parts and maintenance cost — one governed record instead of a spreadsheet per shift.",
-        "problem": { "body": "When maintenance history lives in paper logs or personal spreadsheets, a failure's cause and prior repairs aren't queryable — they're whatever the technician who was there remembers." },
-        "whatItDoes": { "bullets": [
-          { "name": "Work order lifecycle", "desc": "From reported failure to scheduled task to completed work, with history retained." },
-          { "name": "Preventive scheduling", "desc": "Maintenance plans and calendars that trigger work before failure, not after." },
-          { "name": "Spares & cost tracking", "desc": "Spare-part usage and maintenance cost recorded against the asset they were spent on." }
-        ] },
-        "connects": { "items": [
-          { "name": "Predictive Maintenance", "desc": "Risk-driven recommendations become CMMS work orders instead of staying a dashboard nobody acts on." },
-          { "name": "EDMS", "desc": "Work against an asset can reference the same controlled procedures and drawings EDMS governs." },
-          { "name": "Multi-Site Operations", "desc": "Failure and downtime records feed the cross-site failure-pattern comparison." }
-        ] },
-        "value": { "items": [
-          { "name": "One maintenance record", "desc": "History, cost and cause live in one place, not several people's memory." },
-          { "name": "Less unplanned downtime", "desc": "Preventive schedules catch work before it becomes an outage." },
-          { "name": "Cost visibility", "desc": "Spend by asset, by site, is queryable rather than reconstructed after the fact." }
-        ] },
-        "automation": { "body": "Scheduling and history-tracking run automatically; approving completed work and signing off on safety remain a technician's and supervisor's responsibility." },
-        "cta": { "title": "See CMMS on your maintenance workflow" }
+        "problem": {
+          "body": "When maintenance history lives in paper logs or personal spreadsheets, a failure's cause and prior repairs aren't queryable — they're whatever the technician who was there remembers."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Work order lifecycle",
+              "desc": "From reported failure to scheduled task to completed work, with history retained."
+            },
+            {
+              "name": "Preventive scheduling",
+              "desc": "Maintenance plans and calendars that trigger work before failure, not after."
+            },
+            {
+              "name": "Spares & cost tracking",
+              "desc": "Spare-part usage and maintenance cost recorded against the asset they were spent on."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "Predictive Maintenance",
+              "desc": "Risk-driven recommendations become CMMS work orders instead of staying a dashboard nobody acts on."
+            },
+            {
+              "name": "EDMS",
+              "desc": "Work against an asset can reference the same controlled procedures and drawings EDMS governs."
+            },
+            {
+              "name": "Multi-Site Operations",
+              "desc": "Failure and downtime records feed the cross-site failure-pattern comparison."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "One maintenance record",
+              "desc": "History, cost and cause live in one place, not several people's memory."
+            },
+            {
+              "name": "Less unplanned downtime",
+              "desc": "Preventive schedules catch work before it becomes an outage."
+            },
+            {
+              "name": "Cost visibility",
+              "desc": "Spend by asset, by site, is queryable rather than reconstructed after the fact."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Scheduling and history-tracking run automatically; approving completed work and signing off on safety remain a technician's and supervisor's responsibility."
+        },
+        "cta": {
+          "title": "See CMMS on your maintenance workflow"
+        }
       },
       "multiSite": {
         "name": "Multi-Site Operations",
         "title": "Multi-Site Operations — one picture across every plant",
         "lede": "Benchmarks, KPI comparison, risk roll-up and cross-site failure-pattern detection — so a lesson learned at one plant doesn't stay stuck there.",
-        "problem": { "body": "Different plants running the same equipment usually have no shared view: a failure pattern discovered at one site has no path to reach the engineers running the same machine somewhere else." },
-        "whatItDoes": { "bullets": [
-          { "name": "Cross-site KPI comparison", "desc": "The same metrics, computed the same way, across every site in the organization." },
-          { "name": "Cross-site failure patterns", "desc": "Detects when the same failure signature is showing up at more than one plant." },
-          { "name": "Benchmarking & risk roll-up", "desc": "Aggregates site-level risk into one organization-wide view." }
-        ] },
-        "connects": { "items": [
-          { "name": "CMMS", "desc": "Cross-site failure detection is built from the same work-order and failure records CMMS tracks per site." },
-          { "name": "Predictive Maintenance", "desc": "Site risk snapshots aggregate the same risk scores computed per asset." },
-          { "name": "Industrial Brain", "desc": "Reasoning has organization-wide context to draw on, not just one site's history." }
-        ] },
-        "value": { "items": [
-          { "name": "Shared lessons", "desc": "A failure pattern found once is visible everywhere it applies." },
-          { "name": "Comparable KPIs", "desc": "Sites are measured the same way, so comparisons mean something." },
-          { "name": "Portfolio-level risk view", "desc": "Leadership sees where risk concentrates across the whole operation, not one plant at a time." }
-        ] },
-        "automation": { "body": "Aggregation and pattern detection run automatically across sites; acting on a cross-site finding — changing a procedure, escalating a risk — remains a human decision at the responsible site." },
-        "cta": { "title": "See Multi-Site Operations across your plants" }
+        "problem": {
+          "body": "Different plants running the same equipment usually have no shared view: a failure pattern discovered at one site has no path to reach the engineers running the same machine somewhere else."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Cross-site KPI comparison",
+              "desc": "The same metrics, computed the same way, across every site in the organization."
+            },
+            {
+              "name": "Cross-site failure patterns",
+              "desc": "Detects when the same failure signature is showing up at more than one plant."
+            },
+            {
+              "name": "Benchmarking & risk roll-up",
+              "desc": "Aggregates site-level risk into one organization-wide view."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "CMMS",
+              "desc": "Cross-site failure detection is built from the same work-order and failure records CMMS tracks per site."
+            },
+            {
+              "name": "Predictive Maintenance",
+              "desc": "Site risk snapshots aggregate the same risk scores computed per asset."
+            },
+            {
+              "name": "Industrial Brain",
+              "desc": "Reasoning has organization-wide context to draw on, not just one site's history."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Shared lessons",
+              "desc": "A failure pattern found once is visible everywhere it applies."
+            },
+            {
+              "name": "Comparable KPIs",
+              "desc": "Sites are measured the same way, so comparisons mean something."
+            },
+            {
+              "name": "Portfolio-level risk view",
+              "desc": "Leadership sees where risk concentrates across the whole operation, not one plant at a time."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Aggregation and pattern detection run automatically across sites; acting on a cross-site finding — changing a procedure, escalating a risk — remains a human decision at the responsible site."
+        },
+        "cta": {
+          "title": "See Multi-Site Operations across your plants"
+        }
       },
       "edms": {
         "name": "EDMS",
         "title": "EDMS — engineering documents, under version control",
         "lede": "Controlled documents with approvals, revisions, retention and audit trail — so the drawing an engineer is working from is the approved one.",
-        "problem": { "body": "Engineering documents scattered across email, shared drives and printed binders make it hard to know which revision is current, who approved it, and whether it's still valid." },
-        "whatItDoes": { "bullets": [
-          { "name": "Version-controlled documents", "desc": "Revisions, approvals and check-out are tracked, not overwritten." },
-          { "name": "Retention & audit trail", "desc": "Retention policy and a record of who accessed or changed a document are built in." },
-          { "name": "Search, folders & templates", "desc": "Documents are organized and searchable rather than named by convention and hope." }
-        ] },
-        "connects": { "items": [
-          { "name": "CMMS", "desc": "Maintenance work can reference the same controlled procedures and drawings, not an uncontrolled copy." },
-          { "name": "ERP", "desc": "Project documentation shares the same document-control model as operational records." },
-          { "name": "Industrial Brain", "desc": "Diagnostic recommendations anchor to approved revisions of the documents they cite, not whatever copy happens to be on hand." }
-        ] },
-        "value": { "items": [
-          { "name": "One current version", "desc": "Everyone works from the approved revision, not an email attachment from last year." },
-          { "name": "Compliance-ready trail", "desc": "Retention and audit history are already there when someone asks for them." },
-          { "name": "Findable documents", "desc": "Search and structure replace tribal knowledge of where things are saved." }
-        ] },
-        "automation": { "body": "Versioning, retention timers and audit logging happen automatically; approving a document for release stays a named person's decision." },
-        "cta": { "title": "See EDMS on your document set" }
+        "problem": {
+          "body": "Engineering documents scattered across email, shared drives and printed binders make it hard to know which revision is current, who approved it, and whether it's still valid."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Version-controlled documents",
+              "desc": "Revisions, approvals and check-out are tracked, not overwritten."
+            },
+            {
+              "name": "Retention & audit trail",
+              "desc": "Retention policy and a record of who accessed or changed a document are built in."
+            },
+            {
+              "name": "Search, folders & templates",
+              "desc": "Documents are organized and searchable rather than named by convention and hope."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "CMMS",
+              "desc": "Maintenance work can reference the same controlled procedures and drawings, not an uncontrolled copy."
+            },
+            {
+              "name": "ERP",
+              "desc": "Project documentation shares the same document-control model as operational records."
+            },
+            {
+              "name": "Industrial Brain",
+              "desc": "Diagnostic recommendations anchor to approved revisions of the documents they cite, not whatever copy happens to be on hand."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "One current version",
+              "desc": "Everyone works from the approved revision, not an email attachment from last year."
+            },
+            {
+              "name": "Compliance-ready trail",
+              "desc": "Retention and audit history are already there when someone asks for them."
+            },
+            {
+              "name": "Findable documents",
+              "desc": "Search and structure replace tribal knowledge of where things are saved."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Versioning, retention timers and audit logging happen automatically; approving a document for release stays a named person's decision."
+        },
+        "cta": {
+          "title": "See EDMS on your document set"
+        }
       },
       "erp": {
         "name": "ERP",
         "title": "ERP — engineering projects, inventory and approvals on one tenancy",
         "lede": "Project and task management, inventory tracking, approval workflows and operational KPIs — the enterprise workflows around the plant, on the same access model as everything else in Hermes OS.",
-        "problem": { "body": "Engineering and operations teams often run projects and inventory in a separate system from the one that understands the plant, so the two views of the same work drift apart." },
-        "whatItDoes": { "bullets": [
-          { "name": "Project & task management", "desc": "Projects, tasks and milestones tracked against the same organization and site model as the rest of the platform." },
-          { "name": "Inventory tracking", "desc": "Inventory items and their movements recorded, not reconciled by spreadsheet at month end." },
-          { "name": "Approvals & operational KPIs", "desc": "Multi-step approval workflows and operational KPI tracking built in." }
-        ] },
-        "connects": { "items": [
-          { "name": "CRM", "desc": "A won opportunity can become a tracked project without leaving the platform." },
-          { "name": "EDMS", "desc": "Project documentation follows the same controlled-document model as engineering records." },
-          { "name": "Multi-Site Operations", "desc": "Projects and resources are visible in the same cross-site operational picture." }
-        ] },
-        "value": { "items": [
-          { "name": "One tenancy, one access model", "desc": "No second login, no second permission system for enterprise workflows." },
-          { "name": "Inventory that's current", "desc": "Movements are recorded as they happen, not reconstructed at count time." },
-          { "name": "Approvals with a trail", "desc": "Who approved what, and when, is part of the record." }
-        ] },
-        "automation": { "body": "KPI computation and movement logging run automatically; approving a request or releasing budget remains a named approver's decision." },
-        "cta": { "title": "See ERP on your projects and inventory" }
+        "problem": {
+          "body": "Engineering and operations teams often run projects and inventory in a separate system from the one that understands the plant, so the two views of the same work drift apart."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Project & task management",
+              "desc": "Projects, tasks and milestones tracked against the same organization and site model as the rest of the platform."
+            },
+            {
+              "name": "Inventory tracking",
+              "desc": "Inventory items and their movements recorded, not reconciled by spreadsheet at month end."
+            },
+            {
+              "name": "Approvals & operational KPIs",
+              "desc": "Multi-step approval workflows and operational KPI tracking built in."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "CRM",
+              "desc": "A won opportunity can become a tracked project without leaving the platform."
+            },
+            {
+              "name": "EDMS",
+              "desc": "Project documentation follows the same controlled-document model as engineering records."
+            },
+            {
+              "name": "Multi-Site Operations",
+              "desc": "Projects and resources are visible in the same cross-site operational picture."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "One tenancy, one access model",
+              "desc": "No second login, no second permission system for enterprise workflows."
+            },
+            {
+              "name": "Inventory that's current",
+              "desc": "Movements are recorded as they happen, not reconstructed at count time."
+            },
+            {
+              "name": "Approvals with a trail",
+              "desc": "Who approved what, and when, is part of the record."
+            }
+          ]
+        },
+        "automation": {
+          "body": "KPI computation and movement logging run automatically; approving a request or releasing budget remains a named approver's decision."
+        },
+        "cta": {
+          "title": "See ERP on your projects and inventory"
+        }
       },
       "otEdge": {
         "name": "OT Edge",
         "title": "OT Edge — a governed registry for gateways and devices, read-only by design",
         "lede": "Gateway and device registration with secure credential enrollment and rotation — a records-and-observability layer for the OT edge, not a control channel.",
-        "problem": { "body": "Bringing operational-technology gateways and devices into an IT-adjacent system safely is hard: most integrations either expose more than they should or stay so locked down nobody can see what's actually connected." },
-        "whatItDoes": { "bullets": [
-          { "name": "Gateway & device registry", "desc": "Every registered gateway and device profile is tracked in one place, per site." },
-          { "name": "Secure credential lifecycle", "desc": "Enrollment, rotation and revocation of gateway credentials, so a compromised credential can be cut off without a site visit." },
-          { "name": "Read-only engineering export", "desc": "Models exported engineering metadata and gateway registration only — by design, nothing here can express a write, a setpoint change or a control command." }
-        ] },
-        "connects": { "items": [
-          { "name": "Digital Twin", "desc": "Gateway-reported telemetry is what keeps the twin's overlay current." },
-          { "name": "Predictive Maintenance", "desc": "The same telemetry stream is what risk scoring and RUL estimation are computed from." },
-          { "name": "Industrial Brain", "desc": "Evidence used in diagnostic reasoning traces back to a registered, credentialed source, not an anonymous feed." }
-        ] },
-        "value": { "items": [
-          { "name": "Visibility without exposure", "desc": "Security and engineering teams can see what's connected without granting write access to it." },
-          { "name": "Credential hygiene", "desc": "Rotating or revoking a gateway credential doesn't require physically reaching the device." },
-          { "name": "An honest safety boundary", "desc": "The read-only design is enforced in the interface, not just promised in a document." }
-        ] },
-        "automation": { "body": "Registration, health checks and credential rotation are automated; every control action on real equipment is explicitly out of scope for this layer — that boundary is a design decision, not a current limitation." },
-        "cta": { "title": "See OT Edge on your gateway estate" }
+        "problem": {
+          "body": "Bringing operational-technology gateways and devices into an IT-adjacent system safely is hard: most integrations either expose more than they should or stay so locked down nobody can see what's actually connected."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Gateway & device registry",
+              "desc": "Every registered gateway and device profile is tracked in one place, per site."
+            },
+            {
+              "name": "Secure credential lifecycle",
+              "desc": "Enrollment, rotation and revocation of gateway credentials, so a compromised credential can be cut off without a site visit."
+            },
+            {
+              "name": "Read-only engineering export",
+              "desc": "Models exported engineering metadata and gateway registration only — by design, nothing here can express a write, a setpoint change or a control command."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "Digital Twin",
+              "desc": "Gateway-reported telemetry is what keeps the twin's overlay current."
+            },
+            {
+              "name": "Predictive Maintenance",
+              "desc": "The same telemetry stream is what risk scoring and RUL estimation are computed from."
+            },
+            {
+              "name": "Industrial Brain",
+              "desc": "Evidence used in diagnostic reasoning traces back to a registered, credentialed source, not an anonymous feed."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Visibility without exposure",
+              "desc": "Security and engineering teams can see what's connected without granting write access to it."
+            },
+            {
+              "name": "Credential hygiene",
+              "desc": "Rotating or revoking a gateway credential doesn't require physically reaching the device."
+            },
+            {
+              "name": "An honest safety boundary",
+              "desc": "The read-only design is enforced in the interface, not just promised in a document."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Registration, health checks and credential rotation are automated; every control action on real equipment is explicitly out of scope for this layer — that boundary is a design decision, not a current limitation."
+        },
+        "cta": {
+          "title": "See OT Edge on your gateway estate"
+        }
       },
       "crm": {
         "name": "CRM",
         "title": "CRM — the sales pipeline, on the same platform as the plant",
         "lede": "Leads, opportunities, accounts and deal activity — the commercial side of Hermes OS, sharing its tenancy and access model with everything else.",
-        "problem": { "body": "A sales team using a separate CRM has no natural path back into the same platform their prospects will eventually run on, so early context — what a prospect asked about, what mattered to them — gets lost at handoff." },
-        "whatItDoes": { "bullets": [
-          { "name": "Lead & opportunity pipeline", "desc": "Leads progress through a defined pipeline into tracked opportunities and deals." },
-          { "name": "Account & contact management", "desc": "Accounts and their contacts are recorded against the same organization model as every other module." },
-          { "name": "Activity & renewal tracking", "desc": "Lead activity history and renewal forecasting are built in, not bolted on." }
-        ] },
-        "connects": { "items": [
-          { "name": "ERP", "desc": "A won deal can hand off into a tracked project on the same tenancy, not a data export." },
-          { "name": "EDMS", "desc": "Proposals and contracts move into the same document-control model as engineering records." },
-          { "name": "Hermes OS Platform", "desc": "CRM runs under the same organization, role and site access model as the rest of the platform." }
-        ] },
-        "value": { "items": [
-          { "name": "Context that survives handoff", "desc": "What a prospect cared about is still there once they become a customer." },
-          { "name": "One access model", "desc": "Sales, engineering and operations share the same tenancy and permission system." },
-          { "name": "A pipeline that's queryable", "desc": "Deal stage and history are records, not a spreadsheet someone maintains by hand." }
-        ] },
-        "automation": { "body": "Activity logging and renewal forecasting are computed automatically; qualifying a lead or closing a deal remains a salesperson's judgment call." },
-        "cta": { "title": "See CRM on your sales pipeline" }
+        "problem": {
+          "body": "A sales team using a separate CRM has no natural path back into the same platform their prospects will eventually run on, so early context — what a prospect asked about, what mattered to them — gets lost at handoff."
+        },
+        "whatItDoes": {
+          "bullets": [
+            {
+              "name": "Lead & opportunity pipeline",
+              "desc": "Leads progress through a defined pipeline into tracked opportunities and deals."
+            },
+            {
+              "name": "Account & contact management",
+              "desc": "Accounts and their contacts are recorded against the same organization model as every other module."
+            },
+            {
+              "name": "Activity & renewal tracking",
+              "desc": "Lead activity history and renewal forecasting are built in, not bolted on."
+            }
+          ]
+        },
+        "connects": {
+          "items": [
+            {
+              "name": "ERP",
+              "desc": "A won deal can hand off into a tracked project on the same tenancy, not a data export."
+            },
+            {
+              "name": "EDMS",
+              "desc": "Proposals and contracts move into the same document-control model as engineering records."
+            },
+            {
+              "name": "Hermes OS Platform",
+              "desc": "CRM runs under the same organization, role and site access model as the rest of the platform."
+            }
+          ]
+        },
+        "value": {
+          "items": [
+            {
+              "name": "Context that survives handoff",
+              "desc": "What a prospect cared about is still there once they become a customer."
+            },
+            {
+              "name": "One access model",
+              "desc": "Sales, engineering and operations share the same tenancy and permission system."
+            },
+            {
+              "name": "A pipeline that's queryable",
+              "desc": "Deal stage and history are records, not a spreadsheet someone maintains by hand."
+            }
+          ]
+        },
+        "automation": {
+          "body": "Activity logging and renewal forecasting are computed automatically; qualifying a lead or closing a deal remains a salesperson's judgment call."
+        },
+        "cta": {
+          "title": "See CRM on your sales pipeline"
+        }
       }
     }
   },
@@ -1312,6 +1626,42 @@
         "title": "Operational data unavailable",
         "body": "The telemetry summary could not be loaded. No cached operational data is available to display.",
         "hint": "The dashboard reconnects automatically. If this persists, check the telemetry integration status."
+      }
+    },
+    "commandRibbon": {
+      "ariaLabel": "Platform operational status",
+      "network": "Hermes Intelligence Network",
+      "scope": "Global Ops",
+      "activeSubsystems": "Active Subsystems",
+      "signals": {
+        "reasoningActive": "Reasoning Active",
+        "knowledgeActive": "Knowledge Active",
+        "telemetryActive": "Telemetry Active",
+        "systemOffline": "System Offline"
+      }
+    },
+    "ecosystem": {
+      "layers": {
+        "reasoningEngine": {
+          "name": "Hermes Reasoning Engine",
+          "description": "Active inference · Root cause analysis · Fault detection"
+        },
+        "knowledgeCloud": {
+          "name": "Hermes Knowledge Cloud",
+          "description": "Engineering library · Domain expertise · Case repository"
+        },
+        "memoryEngine": {
+          "name": "Hermes Memory Engine",
+          "description": "Case intelligence · Historical patterns · Retention layer"
+        },
+        "telemetryNetwork": {
+          "name": "Hermes Telemetry Network",
+          "description": "Industrial sensors · OT data streams · Live signal"
+        },
+        "industrialGraph": {
+          "name": "Hermes Industrial Graph",
+          "description": "PLC connectivity · Asset topology · Field device registry"
+        }
       }
     }
   },
@@ -4144,6 +4494,54 @@
         "standard": "Standard",
         "maintenanceDomain": "Maintenance Domain"
       }
+    },
+    "pressroom": {
+      "standfirst": "Engineering evidence transformed into durable technical knowledge.",
+      "mastheadNote": "Field observations, failure analyses, commissioning notes and case studies from PLC, SCADA/HMI, instrumentation, electrical and industrial-AI practice — reviewed before they are published.",
+      "folio": {
+        "signal": "Raw signal",
+        "fragment": "Evidence fragment",
+        "annotation": "Engineering annotation",
+        "folio": "Reviewed technical folio",
+        "knowledge": "Published knowledge",
+        "ariaLabel": "How a field observation becomes published knowledge"
+      },
+      "marks": {
+        "lead": "Lead dossier",
+        "dispatch": "Dispatch ledger",
+        "disciplines": "Discipline index",
+        "provenance": "Authority and provenance",
+        "paths": "Publication paths",
+        "empty": "Nothing has been published yet",
+        "emptyBody": "The Journal shows only reviewed, published articles. There are none to show right now."
+      },
+      "dispatchIntro": "Recently published, in order of appearance.",
+      "disciplinesIntro": "Every discipline below is a real category with at least one published article.",
+      "provenanceIntro": "Every article carries its author’s engineering identity and, where reviewed, its evidence level and review state.",
+      "pathsIntro": "Where to go next.",
+      "readingProgress": "Reading progress",
+      "onThisPage": "On this page",
+      "provenanceTitle": "Provenance",
+      "domainLabel": "Industrial domain",
+      "technologyLabel": "Linked technology",
+      "platformLabel": "PLC platform",
+      "standardLabel": "Standard",
+      "evidenceLabel": "Evidence level",
+      "reviewLabel": "Review state",
+      "reviewedByHuman": "Human reviewed",
+      "notReviewed": "Not yet reviewed",
+      "safetyLabel": "Safety-critical content",
+      "publishedOn": "Published",
+      "updatedOn": "Updated",
+      "readingTime": "{minutes} min read",
+      "byAuthor": "By",
+      "filedUnder": "Filed under",
+      "relatedTitle": "Further reading",
+      "backToJournal": "Back to the Journal",
+      "filterAll": "All disciplines",
+      "searchLabel": "Search the Journal",
+      "results": "{count} results",
+      "entry": "Entry"
     }
   },
   "journalWriter": {
@@ -6110,6 +6508,7 @@
       "noOrganizationContext": "No organization context",
       "noSiteContext": "No site selected",
       "contextUnavailable": "Switching is not available yet",
+      "contextUnresolved": "Context unavailable",
       "account": "Account",
       "accountMenuLabel": "Account menu",
       "signOut": "Sign out",
@@ -6445,6 +6844,77 @@
     "demoCta": {
       "title": "See Hermes reason over your plant",
       "requestDemo": "Request a Demo"
+    },
+    "observatory": {
+      "planesLede": "Four assurance planes connected by one evidence-to-action spine.",
+      "coreLede": "One evidence-bound reasoning core, with assistance kept outside the decision gate.",
+      "planeHeads": {
+        "input": "Input",
+        "process": "Process",
+        "output": "Output",
+        "constraint": "Constraint"
+      },
+      "planes": {
+        "evidence": {
+          "input": "Industrial data",
+          "process": "Evidence correlation and contradiction surfacing",
+          "output": "Evidence-bound report",
+          "constraint": "Missing evidence remains explicit"
+        },
+        "reasoning": {
+          "input": "Weighed evidence",
+          "process": "Deterministic rules with labelled model inference",
+          "output": "Ranked hypotheses with confidence",
+          "constraint": "Every conclusion traces to its evidence"
+        },
+        "model": {
+          "input": "Ranked hypotheses",
+          "process": "Simulation and model-assisted estimation",
+          "output": "Risk assessment",
+          "constraint": "Model output is quarantined from observed fact"
+        },
+        "safety": {
+          "input": "Risk assessment",
+          "process": "Validation gates and human approval",
+          "output": "Safe action path",
+          "constraint": "No plant state changes without explicit approval"
+        }
+      },
+      "gateHeads": {
+        "gate": "Gate",
+        "actor": "Actor",
+        "evidence": "Evidence requirement",
+        "block": "Blocking condition",
+        "state": "State"
+      },
+      "gateStates": {
+        "pending": "Pending",
+        "validated": "Validated",
+        "decision": "Decision",
+        "released": "Released"
+      },
+      "gates": {
+        "proposed": {
+          "actor": "Industrial Brain",
+          "evidence": "Correlated evidence with contradictions surfaced",
+          "block": "Missing evidence not yet declared"
+        },
+        "validated": {
+          "actor": "Validation rules",
+          "evidence": "Confidence above threshold and traceable",
+          "block": "Unresolved contradiction"
+        },
+        "approval": {
+          "actor": "Responsible engineer",
+          "evidence": "Risk assessment and action rationale",
+          "block": "No explicit human approval"
+        },
+        "executed": {
+          "actor": "Safe action path",
+          "evidence": "Approval record and audit trail",
+          "block": "Released only after approval"
+        }
+      }
     },
     "footer": {
       "tagline": "Industrial Intelligence. Engineered for Action.",
@@ -8153,6 +8623,344 @@
       "remove": "Remove “{title}” from my list",
       "signInRequired": "Sign in to save recordings to your list",
       "failed": "Your list could not be updated. Try again."
+    }
+  },
+  "demo": {
+    "tagline": "HERMES OS · INDUSTRIAL BRAIN",
+    "title": "Request an Industrial Brain Demo",
+    "lede": "See how Hermes OS transforms your industrial operations with data-driven intelligence.",
+    "capabilitiesLabel": "KEY CAPABILITIES",
+    "whyHermesLabel": "WHY HERMES?",
+    "formTitle": "Demo Request Form",
+    "formHint": "Fields marked with * are required.",
+    "capabilities": {
+      "faultAnalysis": "Fault Analysis",
+      "faultAnalysisDesc": "AI-driven root-cause analysis for industrial equipment failures",
+      "industrialKnowledge": "Industrial Knowledge",
+      "industrialKnowledgeDesc": "Case reasoning engine for maintenance, commissioning, and operations",
+      "plcScada": "PLC / SCADA Intelligence",
+      "plcScadaDesc": "Structured knowledge for automation systems, interlocks, and control logic",
+      "edmsCmms": "EDMS / CMMS Integration",
+      "edmsCmmsDesc": "Ready-to-connect document management and maintenance systems",
+      "enterpriseArch": "Enterprise Architecture",
+      "enterpriseArchDesc": "Multi-language, multi-tenant, role-based industrial SaaS platform",
+      "expertNetwork": "Expert Network",
+      "expertNetworkDesc": "Industrial journal and verified expert knowledge exchange platform"
+    },
+    "trust": {
+      "built": "Built for Industrial Operations",
+      "bilingual": "Trilingual FA / EN / DE",
+      "enterprise": "Enterprise-Ready Architecture",
+      "secure": "Secure Admin Follow-Up"
+    },
+    "form": {
+      "labelFullName": "Full name",
+      "labelEmail": "Email",
+      "labelPhone": "Phone",
+      "labelCompany": "Company",
+      "labelRole": "Role / Title",
+      "labelCountry": "Country",
+      "labelIndustry": "Industry",
+      "labelCompanySize": "Company size",
+      "labelInterest": "Main interest",
+      "labelUseCase": "Use case / Problem description",
+      "labelPreferred": "Preferred demo time",
+      "labelMessage": "Additional message",
+      "optional": "optional",
+      "required": "required",
+      "selectPlease": "Select …",
+      "phFullName": "First and last name",
+      "phEmail": "name@company.com",
+      "phPhone": "+1 555 000 0000",
+      "phCompany": "Your company's legal name",
+      "phRole": "e.g. Automation Manager",
+      "phCountry": "e.g. Germany, Iran",
+      "phIndustry": "e.g. Industrial automation, Oil & Gas, Power",
+      "phUseCase": "Describe your current challenge or automation need …",
+      "phPreferred": "e.g. next week, Thursday morning",
+      "phMessage": "Anything else we should know …",
+      "submit": "Request demo",
+      "submitting": "Sending …",
+      "errorGeneric": "The request could not be sent. Please check your details and try again.",
+      "errorNetwork": "Could not reach the server. Please check your connection and try again.",
+      "successTitle": "Request received",
+      "successBody": "Thank you. Your demo request has been recorded and our team will review it.",
+      "privacy": "We use your details only to answer this demo request.",
+      "interests": {
+        "INDUSTRIAL_BRAIN": "Industrial Brain",
+        "PREDICTIVE_MAINT": "Predictive maintenance",
+        "EDMS": "EDMS",
+        "CMMS": "CMMS",
+        "EXPERT_NETWORK": "Expert network",
+        "ENTERPRISE_SAAS": "Enterprise SaaS"
+      }
+    }
+  },
+  "careers": {
+    "boardTitle": "Open Positions",
+    "boardLede": "Join the team building industrial intelligence for PLC, SCADA and plant-floor operations. Every role below is a live, verified opening.",
+    "searchPlaceholder": "Search roles, skills, locations",
+    "departmentLabel": "Department",
+    "allDepartments": "All departments",
+    "openRolesLabel": "OPEN ROLES",
+    "departmentsLabel": "DEPARTMENTS",
+    "globalOfficesLabel": "LOCATIONS",
+    "loading": "Loading open positions…",
+    "noResults": "No position matches these filters. Clear the search or pick another department.",
+    "noLiveData": "No verified engineering positions are currently published. Open roles appear here as soon as they are approved — nothing is listed before then.",
+    "viewDetails": "View details",
+    "applicationsNotOpen": "Applications are not currently open",
+    "competitive": "Competitive",
+    "jobLoading": "Loading this position…",
+    "jobUnavailable": "This position is not available",
+    "jobUnavailableBody": "This posting is not published, or it has been closed. Open roles are listed on the careers board.",
+    "backToBoard": "All positions",
+    "aboutRole": "About the role",
+    "responsibilities": "Responsibilities",
+    "requirements": "Requirements",
+    "preferredExperience": "Preferred experience",
+    "locationTypeLabels": {
+      "onsite": "On-site",
+      "remote": "Remote",
+      "hybrid": "Hybrid"
+    },
+    "salaryPerYear": "{amount} per year",
+    "benefits": "Benefits",
+    "positionDetails": "Position details",
+    "locationLabel": "LOCATION",
+    "typeLabel": "TYPE",
+    "departmentDetailLabel": "DEPARTMENT",
+    "compensationLabel": "COMPENSATION",
+    "keySkills": "Key skills",
+    "applyCta": "Apply for this role",
+    "apply": {
+      "eyebrow": "HERMES OS · CAREERS · APPLICATION",
+      "titleFor": "Apply — {title}",
+      "titleGeneric": "Apply for this position",
+      "backToJob": "Back to the position",
+      "verifying": "Verifying this position…",
+      "notAcceptingTitle": "Applications are not open for this position",
+      "notAcceptingBody": "This posting is published, but the application process is not accepting submissions at this time. Nothing you enter here would be received, so no form is offered.",
+      "notAcceptingCta": "Browse open positions",
+      "unavailableTitle": "This position cannot be verified",
+      "unavailableBody": "Applications are only accepted for published, verified openings. This posting could not be confirmed, so the application form is not available.",
+      "unavailableCta": "See open positions",
+      "personalSection": "Personal information",
+      "personalSectionHint": "How we reach you about this application.",
+      "fullName": "Full name",
+      "emailAddress": "Email address",
+      "phone": "Phone",
+      "currentLocation": "Current location",
+      "currentLocationPlaceholder": "City, country",
+      "profileSection": "Professional profile",
+      "profileSectionHint": "Your engineering background as it relates to this role.",
+      "yearsExperience": "Years of experience",
+      "workAuthorization": "Work authorization",
+      "workAuth": {
+        "citizen": "Citizen",
+        "permanent-resident": "Permanent resident",
+        "work-visa": "Work visa",
+        "requires-sponsorship": "Requires sponsorship"
+      },
+      "keySkills": "Key skills",
+      "keySkillsHint": "Separate each skill with a comma.",
+      "keySkillsPlaceholder": "PLC, SCADA, OPC UA",
+      "resume": "Résumé / CV",
+      "resumeHint": "Paste the text of your résumé. File upload is not available on this form.",
+      "resumePlaceholder": "Paste your résumé text here…",
+      "coverLetterSection": "Cover letter",
+      "coverLetterHint": "Optional. What draws you to this role and this team.",
+      "coverLetterPlaceholder": "Tell us how your experience fits this position…",
+      "requiredMark": "required",
+      "cancel": "Cancel",
+      "submit": "Submit application",
+      "submitting": "Submitting…",
+      "errorHeading": "The application was not submitted",
+      "errorRequired": "Enter your full name and email address before submitting.",
+      "errorGeneric": "The application could not be submitted. Check your details and try again.",
+      "errorNetwork": "The request did not reach the server, so nothing was submitted. Try again.",
+      "successTitle": "Application submitted",
+      "successBodyFor": "Your application for {title} has been recorded. We will contact you at the email address you provided.",
+      "successBody": "Your application has been recorded. We will contact you at the email address you provided.",
+      "successAllJobs": "See open positions",
+      "successMyApplications": "My applications"
+    }
+  },
+  "vendors": {
+    "eyebrow": "Vendor Ecosystem",
+    "title": "Vendor Directory",
+    "lede": "Certified industrial technology partners — automation specialists, system integrators and enterprise software providers reviewed by the Hermes OS team.",
+    "applyCta": "Apply to join",
+    "directory": {
+      "searchPlaceholder": "Search partners…",
+      "searchLabel": "Search the partner directory",
+      "searchSubmit": "Search",
+      "typeLabel": "Partner type",
+      "allTypes": "All types",
+      "tierLabel": "Partnership tier",
+      "allTiers": "All tiers",
+      "loading": "Loading the partner directory…",
+      "resultCount": "{count} partners listed",
+      "resultCountOne": "1 partner listed",
+      "emptyEyebrow": "Vendor Directory",
+      "emptyFiltered": "No partner matches these filters",
+      "emptyFilteredBody": "Clear the search term or choose a different type and tier.",
+      "emptyNone": "No partners are listed yet",
+      "emptyNoneBody": "Approved partners appear here once their compliance review is complete. Nothing is listed before then.",
+      "emptyCta": "Become a partner"
+    },
+    "types": {
+      "TECHNOLOGY_PROVIDER": "Technology provider",
+      "SYSTEM_INTEGRATOR": "System integrator",
+      "SERVICE_PROVIDER": "Service provider",
+      "MANUFACTURER": "Manufacturer",
+      "DISTRIBUTOR": "Distributor",
+      "CONSULTANT": "Consultant",
+      "TRAINING_PROVIDER": "Training provider"
+    },
+    "tiers": {
+      "PREMIUM": "Premium",
+      "CERTIFIED": "Certified",
+      "STANDARD": "Standard"
+    },
+    "card": {
+      "featured": "Featured",
+      "verified": "Verified",
+      "services": "Services",
+      "skills": "Capabilities",
+      "compliance": "Compliance",
+      "compliant": "Compliance review passed",
+      "notCompliant": "Compliance review not recorded",
+      "tierLabel": "Partnership tier: {tier}",
+      "open": "Open the {name} partner profile"
+    },
+    "detail": {
+      "verifiedPartner": "Verified partner",
+      "about": "Profile",
+      "services": "Services",
+      "products": "Products",
+      "capabilities": "Capabilities",
+      "compliance": "Compliance & certifications",
+      "regions": "Regions served"
+    },
+    "compliance": {
+      "COMPLIANT": "Compliant",
+      "NON_COMPLIANT": "Not compliant",
+      "PENDING": "Under review",
+      "UNDER_REVIEW": "Under review",
+      "EXEMPT": "Exempt"
+    },
+    "regions": {
+      "Iran": "Iran",
+      "Middle East (MENA)": "Middle East (MENA)",
+      "Central Asia": "Central Asia",
+      "Europe": "Europe",
+      "Asia Pacific": "Asia Pacific",
+      "North America": "North America",
+      "Global": "Global"
+    },
+    "services": {
+      "PLC Engineering": "PLC engineering",
+      "SCADA Design & Integration": "SCADA design & integration",
+      "HMI Development": "HMI development",
+      "Industrial Cybersecurity": "Industrial cybersecurity",
+      "Industrial AI Solutions": "Industrial AI solutions",
+      "IIoT Platform Integration": "IIoT platform integration",
+      "Control Panel Manufacturing": "Control panel manufacturing",
+      "Field Instrumentation": "Field instrumentation",
+      "Commissioning & Start-up": "Commissioning & start-up",
+      "Maintenance & Support": "Maintenance & support",
+      "Training & Certification": "Training & certification",
+      "Digital Transformation Consulting": "Digital transformation consulting"
+    },
+    "expertise": {
+      "PLC Programming": "PLC programming",
+      "SCADA Systems": "SCADA systems",
+      "HMI Design": "HMI design",
+      "OT Cybersecurity": "OT cybersecurity",
+      "Industrial AI": "Industrial AI",
+      "IIoT Connectivity": "IIoT connectivity",
+      "Process Automation": "Process automation",
+      "Electrical Engineering": "Electrical engineering",
+      "Instrumentation": "Instrumentation",
+      "Industrial Networking": "Industrial networking",
+      "MES/ERP Integration": "MES/ERP integration",
+      "Digital Twin": "Digital twin",
+      "Predictive Maintenance": "Predictive maintenance",
+      "Energy Management": "Energy management",
+      "Safety Systems (SIL)": "Safety systems (SIL)"
+    },
+    "apply": {
+      "back": "Vendor directory",
+      "eyebrow": "Partner Program",
+      "title": "Become a Vendor Partner",
+      "lede": "Join the Hermes OS Vendor Ecosystem and reach enterprise clients across the industrial technology sector.",
+      "metaTitle": "Become a Vendor Partner — Hermes OS",
+      "metaDescription": "Apply to join the Hermes OS Vendor Ecosystem. We partner with industrial technology companies, system integrators and service providers.",
+      "benefits": {
+        "verifiedTitle": "Verified badge",
+        "verifiedDesc": "A verified partner badge is shown on your profile once the compliance review is complete.",
+        "reachTitle": "Enterprise reach",
+        "reachDesc": "Reach enterprise clients who are actively sourcing industrial technology.",
+        "panelTitle": "Admin panel",
+        "panelDesc": "Manage your vendor profile, service catalogue and performance metrics."
+      },
+      "form": {
+        "requiredMark": "required",
+        "companySection": "Company information",
+        "companySectionHint": "Your legal company identity as it should appear in the directory.",
+        "companyNameEn": "Company name (English)",
+        "companyNameEnPlaceholder": "Company name in Latin script",
+        "companyNameFa": "Company name (Persian)",
+        "companyNameFaPlaceholder": "Company name in Persian script",
+        "bilingualHint": "The directory stores partner names in English and Persian. Leave a field blank if it does not apply.",
+        "websiteUrl": "Website",
+        "websiteUrlPlaceholder": "https://example.com",
+        "vendorType": "Partner type",
+        "country": "Country",
+        "countryPlaceholder": "Country of registration",
+        "city": "City",
+        "cityPlaceholder": "Headquarters city",
+        "foundedYear": "Year founded",
+        "employeeCount": "Company size",
+        "selectRange": "Select a range",
+        "contactSection": "Primary contact",
+        "contactSectionHint": "The person we should reach about this application.",
+        "contactNameEn": "Full name (English)",
+        "contactNameEnPlaceholder": "Given name and family name",
+        "contactNameFa": "Full name (Persian)",
+        "contactNameFaPlaceholder": "Full name in Persian script",
+        "contactEmail": "Email address",
+        "contactEmailPlaceholder": "name@company.com",
+        "contactPhone": "Phone",
+        "contactTitle": "Role / title",
+        "contactTitlePlaceholder": "Business development manager",
+        "expertiseSection": "Industrial expertise & services",
+        "expertiseSectionHint": "Select everything your organisation delivers directly.",
+        "servicesOffered": "Services offered",
+        "industrialExpertise": "Industrial expertise",
+        "regionsServed": "Regions served",
+        "certifications": "Certifications",
+        "certificationsHint": "Standard designations and partner marks are listed in their registered form.",
+        "toggleHint": "{count} selected",
+        "descriptionSection": "Company description",
+        "descriptionEn": "Description (English)",
+        "descriptionEnPlaceholder": "Describe your capabilities, delivery model and the industries you serve…",
+        "descriptionFa": "Description (Persian)",
+        "descriptionFaPlaceholder": "Description in Persian script…",
+        "legalSection": "Legal & compliance",
+        "privacyAccepted": "I have read and accept the Privacy Policy",
+        "termsAccepted": "I accept the Terms of Service",
+        "gdprAccepted": "I consent to GDPR-compliant processing of the data in this application",
+        "submit": "Submit application",
+        "submitting": "Submitting…",
+        "errorHeading": "The application was not submitted",
+        "errorGeneric": "The application could not be submitted. Check the highlighted fields and try again.",
+        "errorNetwork": "The request did not reach the server, so nothing was submitted. Try again.",
+        "successTitle": "Application received",
+        "successBody": "Your application has been recorded. We will contact you at the email address you provided once the review is complete.",
+        "successCta": "Browse the partner directory"
+      }
     }
   },
   "engineeringHub": {

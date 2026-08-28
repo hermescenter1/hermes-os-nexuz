@@ -222,6 +222,12 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "dashboard.status.offline": "accepted-german-loanword",
   "dashboard.status.ok": "german-word-identical",
   "dashboard.status.online": "accepted-german-loanword",
+  // 104-I3 — the public demo-request form. EDMS and CMMS are the same product
+  // acronyms German keeps verbatim (same class as nav.items.capCmms); German
+  // form UI marks non-required fields "optional", spelled as in English.
+  "demo.form.interests.CMMS": "protocol-or-standard",
+  "demo.form.interests.EDMS": "protocol-or-standard",
+  "demo.form.optional": "german-word-identical",
   "digitalTwin.status": "german-word-identical",
   "documents.nav.audit": "german-word-identical",
   "documents.nav.dashboard": "accepted-german-loanword",
@@ -440,24 +446,48 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "services.capabilities.predictiveMaintenance.connects.items.1.name": "protocol-or-standard",
   "services.items.knowledgeCloud.name": "brand-or-product",
   "services.items.knowledgeCloud.title": "brand-or-product",
+  // 104-E: the Observatory gate table names the Industrial Brain as the actor
+  // of the PROPOSED gate — the same product name R2 already reviewed above.
+  "publicSite.observatory.gates.proposed.actor": "brand-or-product",
   "services.items.scadaHmi.name": "protocol-or-standard",
   "services.items.scadaHmi.title": "protocol-or-standard",
   "unknownCenter.eyebrow": "accepted-german-loanword",
   "unknownCenter.metrics.none": "non-linguistic",
+  // PHASE 104-I3 — the vendor directory + partner application surface. Each of
+  // these is correct German that happens to match the English spelling; none
+  // is untranslated carryover.
+  "vendors.apply.form.websiteUrlPlaceholder": "contact-url-or-propernoun",
+  "vendors.regions.Iran": "contact-url-or-propernoun",
+  "vendors.apply.form.websiteUrl": "german-word-identical",
+  "vendors.tiers.STANDARD": "german-word-identical",
+  "vendors.types.DISTRIBUTOR": "german-word-identical",
+  "vendors.card.compliance": "accepted-german-loanword",
+  "vendors.tiers.PREMIUM": "accepted-german-loanword",
+  // PHASE 104-B1.2 — German keeps the English loanwords for these two work
+  // modes; only "onsite" translates ("Vor Ort"). Genuine German usage.
+  "careers.locationTypeLabels.remote": "accepted-german-loanword",
+  "careers.locationTypeLabels.hybrid": "accepted-german-loanword",
 };
 
 /** Audit summary (kept in sync by the companion test). */
 export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   // R2: +4 — "Industrial Brain" (existing product name) in capability connect
   // cards.
-  "brand-or-product": 68,
-  "contact-url-or-propernoun": 15,
-  "german-word-identical": 103,
+  // 104-E: +1 — the same product name as the PROPOSED gate actor.
+  "brand-or-product": 69,
+  // 104-I3: +2 — the sample URL and the country name Iran.
+  "contact-url-or-propernoun": 17,
+  // 104-I3: +3 — Website, Standard, Distributor.
+  // 104-I3: +1 — demo.form.optional.
+  "german-word-identical": 107,
   "non-linguistic": 19,
-  "accepted-german-loanword": 74,
+  // 104-I3: +2 — Compliance, Premium.
+  // B1.2: +2 — Remote, Hybrid (work-mode labels; German uses both loanwords).
+  "accepted-german-loanword": 78,
   // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
   // F2: +4  — the same acronyms in the real public header registry.
-  "protocol-or-standard": 88,
+  // 104-I3: +2 — EDMS/CMMS as demo-request interest options.
+  "protocol-or-standard": 90,
   "vendor-or-thirdparty": 16,
   "brand-eyebrow": 8
 } as const;

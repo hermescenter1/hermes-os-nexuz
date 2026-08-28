@@ -49,7 +49,16 @@ export function PublicNavMenus() {
     <nav
       ref={navRef}
       aria-label={t("navLabel")}
-      className="ms-6 hidden lg:block"
+      // PHASE 104-F — the full desktop bar switches on at `xl` (1280px), not
+      // `lg` (1024px). This breakpoint is MEASURED, not chosen: the intrinsic
+      // width of logo + six disclosure groups + the action cluster is ~1213px
+      // in en, ~1197px in de and ~962px in fa. At 1024px the en/de bar
+      // overflowed the document by ~137px on every public route. `xl` clears
+      // every locale with margin, and it is locale-INDEPENDENT — a per-locale
+      // breakpoint would still leave German overflowing at some width. Below
+      // `xl` the drawer (PublicMobileNav) carries the same grouped IA and its
+      // own Request Demo, so nothing becomes unreachable in 1024–1279.
+      className="ms-6 hidden xl:block"
       onKeyDown={(e) => {
         if (e.key === "Escape" && open) {
           e.stopPropagation();
@@ -78,7 +87,7 @@ export function PublicNavMenus() {
                 aria-controls={panelId}
                 aria-current={groupActive ? "true" : undefined}
                 className={cn(
-                  "ds-focus flex h-9 items-center gap-1.5 rounded-sm px-3 text-label font-medium",
+                  "ds-focus flex min-h-11 items-center gap-1.5 rounded-sm px-3 text-label font-medium",
                   "transition-colors duration-standard ease-hermes",
                   isOpen || groupActive
                     ? "text-text-primary"
@@ -131,7 +140,7 @@ export function PublicNavMenus() {
                             href={item.href}
                             aria-current={active ? "page" : undefined}
                             className={cn(
-                              "ds-focus flex min-h-9 items-center whitespace-nowrap rounded-sm px-3 text-label",
+                              "ds-focus flex min-h-11 items-center whitespace-nowrap rounded-sm px-3 text-label",
                               "transition-colors duration-fast",
                               active
                                 ? "bg-surface-interactive font-semibold text-text-primary"

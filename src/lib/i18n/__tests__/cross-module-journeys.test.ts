@@ -158,7 +158,11 @@ describe("raw-enum inventory — occurrence-exact, reconciled arithmetic", () =>
     "src/components/knowledge-graph/RelationshipExplorer.tsx":  { count: 2, kind: "deferred-ui: knowledge graph" },
     "src/components/knowledge/ArticleCard.tsx":                 { count: 1, kind: "deferred-ui: knowledge library card" },
     "src/components/operations/IntelligenceWallClient.tsx":     { count: 2, kind: "deferred-ui: operations wall" },
-    "src/components/vendors/VendorApplicationForm.tsx":         { count: 1, kind: "deferred-ui: public vendor form" },
+    // PHASE 104-I3 — RESOLVED, entry removed rather than re-pinned. The public
+    // partner-application form rendered the VendorType enum raw, de-underscored
+    // (`t.replace(/_/g, " ")`), so every locale showed "TECHNOLOGY PROVIDER".
+    // It now reads vendors.types.<ENUM> from the catalogue, so the leak is gone
+    // and this file must NOT appear in the live inventory any more.
     "src/lib/eng-graph/builder.ts":                             { count: 1, kind: "deferred-ui: graph edge labels via eng-graph API" },
     // 89C: vendors/[vendorId]/page.tsx dropped out — its single occurrence
     // (vendorType.replace in SEO keywords) was ELIMINATED when the profile
@@ -176,14 +180,19 @@ describe("raw-enum inventory — occurrence-exact, reconciled arithmetic", () =>
     expect(liveMap).toEqual(Object.fromEntries(Object.entries(REMAINING).map(([k, v]) => [k, v.count])));
   });
 
-  it("arithmetic reconciles: 52 baseline = 28 corrected + 23 remaining + 1 eliminated", () => {
+  it("arithmetic reconciles: 52 baseline = 28 corrected + 22 remaining + 2 eliminated", () => {
     const remaining = Object.values(REMAINING).reduce((s, v) => s + v.count, 0);
-    expect(remaining).toBe(23);
-    expect(Object.keys(REMAINING)).toHaveLength(16);
-    // corrected = the 17 journey-reachable files migrated to enumLabel;
-    // eliminated = vendors/[vendorId] keywords replace removed by 89C metadata localization.
-    const CORRECTED_FILES = 17, CORRECTED_OCCURRENCES = 28, ELIMINATED_89C = 1, BASELINE = 52;
-    expect(CORRECTED_OCCURRENCES + remaining + ELIMINATED_89C).toBe(BASELINE);
+    expect(remaining).toBe(22);
+    expect(Object.keys(REMAINING)).toHaveLength(15);
+    // corrected  = the 17 journey-reachable files migrated to enumLabel;
+    // eliminated = two raw-enum renderings removed outright rather than relabelled:
+    //   89C    — vendors/[vendorId] SEO keywords, removed by metadata localization;
+    //   104-I3 — the public partner-application form's VendorType select, which
+    //            de-underscored the enum for display and now reads the catalogue.
+    // BASELINE is deliberately unchanged: an eliminated occurrence moves between
+    // buckets, it does not shrink the population that was originally audited.
+    const CORRECTED_FILES = 17, CORRECTED_OCCURRENCES = 28, ELIMINATED = 2, BASELINE = 52;
+    expect(CORRECTED_OCCURRENCES + remaining + ELIMINATED).toBe(BASELINE);
     void CORRECTED_FILES;
   });
 

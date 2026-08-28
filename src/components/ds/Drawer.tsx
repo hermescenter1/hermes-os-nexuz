@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "./cn";
 import { useOverlayBehavior } from "./overlay";
+import { layerStyle } from "./layers";
 
 /** Logical side: `start`/`end` mirror correctly under RTL. */
 export type DrawerSide = "start" | "end";
@@ -19,6 +20,13 @@ export interface DrawerProps {
   /** Panel width (px or CSS length). Default 360. */
   width?: number | string;
   className?: string;
+  /**
+   * PHASE 104-H — stable element id for the dialog panel, so an external
+   * trigger can reference it with `aria-controls`. Optional and additive: the
+   * three existing consumers keep working unchanged, and a caller that wants
+   * the trigger↔panel relationship exposed simply passes the same id to both.
+   */
+  id?: string;
 }
 
 /**
@@ -26,7 +34,7 @@ export interface DrawerProps {
  * appears on the correct side under both LTR and RTL. Same focus-trap / Escape
  * / backdrop behaviour as Dialog; portal + mount-gate keep it SSR-safe.
  */
-export function Drawer({ open, onClose, side = "end", title, children, footer, width = 360, className }: DrawerProps) {
+export function Drawer({ open, onClose, side = "end", title, children, footer, width = 360, className, id }: DrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const [mounted, setMounted] = useState(false);
@@ -47,7 +55,10 @@ export function Drawer({ open, onClose, side = "end", title, children, footer, w
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100]"
+      // PHASE 104 R1 - z-index comes from the layer contract, not a literal.
+      // See components/ds/layers.ts for the full ordering.
+      style={layerStyle("overlay")}
+      className="fixed inset-0"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -55,13 +66,18 @@ export function Drawer({ open, onClose, side = "end", title, children, footer, w
       <div aria-hidden="true" className="absolute inset-0 bg-black/60" />
       <div
         ref={panelRef}
+        id={id}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
         style={{ width, maxWidth: "100%" }}
+        // PHASE 104-H — `.ds-drawer-panel` supplies the small-screen geometry
+        // (100vh→100dvh fallback chain, safe-area insets) so the panel never
+        // hides its own bottom rows under a mobile browser's chrome. Presentation
+        // only: focus trap, Escape, backdrop and restore are unchanged above.
         className={cn(
-          "absolute inset-y-0 flex flex-col border-border-default bg-surface-elevated shadow-e3 outline-none",
+          "ds-drawer-panel absolute inset-y-0 flex flex-col border-border-default bg-surface-elevated shadow-e3 outline-none",
           side === "start" ? "start-0 border-e" : "end-0 border-s",
           className,
         )}

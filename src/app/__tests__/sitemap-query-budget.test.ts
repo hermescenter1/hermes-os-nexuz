@@ -162,24 +162,55 @@ describe("ATS jobs use the sitemap reader, not the shared API reader", () => {
     expect(jobs[0].take).toBe(JOB_SITEMAP_MAX_POSTINGS);
   });
 
-  it("selects ONLY id — never description or a Json payload column", async () => {
+  it("selects id + the SIX completeness fields per translation — one shared predicate, no Json column", async () => {
     await generateAndCollect();
     const [args] = argsFor("atsJob");
-    expect(args.select).toEqual({ id: true });
-    const projected = Object.keys((args.select ?? {}) as Args);
+    // B1.2 — completeness is decided by the ONE in-memory primitive
+    // (completeLocalesOf, trim-based), so the reader loads exactly the six
+    // fields that primitive inspects, plus the language tag. There is NO
+    // nested where: a DB-side clause would be a second, drift-prone predicate
+    // (the old one accepted whitespace-only values). The job row itself still
+    // projects only `id` — no legacy body, no Json payload column.
+    const select = args.select as { id?: boolean; translations?: { where?: unknown; select?: Record<string, boolean> } };
+    expect(select.id).toBe(true);
+    expect(select.translations?.where).toBeUndefined();
+    expect(select.translations?.select).toEqual({
+      language: true,
+      title: true,
+      shortSummary: true,
+      description: true,
+      departmentLabel: true,
+      seoTitle: true,
+      seoDescription: true,
+    });
+    const projected = Object.keys(select as Record<string, unknown>);
     for (const heavy of ["description", "requirements", "responsibilities", "benefits", "skills"]) {
-      expect(projected, `sitemap must not load ${heavy}`).not.toContain(heavy);
+      expect(projected, `the JOB row must not load ${heavy}`).not.toContain(heavy);
+    }
+    const nested = Object.keys(select.translations?.select ?? {});
+    for (const heavy of ["responsibilities", "requirements", "preferredExperience", "localizedSkills"]) {
+      expect(nested, `the translation row must not load ${heavy}`).not.toContain(heavy);
     }
   });
 
   it("keeps the exact public eligibility predicate", async () => {
-    const { JOB_SITEMAP_WHERE } = await import("@/lib/ats/public-jobs");
     await generateAndCollect();
     const [args] = argsFor("atsJob");
-    expect(args.where).toEqual(JOB_SITEMAP_WHERE);
     // Restated literally: a widened predicate must fail here, not just differ
-    // from a constant that was widened alongside it.
-    expect(args.where).toEqual({ status: "OPEN", isPublic: true, deletedAt: null });
+    // from a helper that was widened alongside it. PHASE 104-B1 made the
+    // public contract STRICTER — a job must also be published (non-future)
+    // and unexpired before the sitemap may advertise it.
+    const where = args.where as Record<string, unknown>;
+    expect(where.status).toBe("OPEN");
+    expect(where.isPublic).toBe(true);
+    expect(where.deletedAt).toBeNull();
+    const publishedAt = where.publishedAt as { not: unknown; lte: unknown };
+    expect(publishedAt.not).toBeNull();
+    expect(publishedAt.lte).toBeInstanceOf(Date);
+    const or = where.OR as Array<Record<string, unknown>>;
+    expect(or[0]).toEqual({ closingDate: null });
+    expect((or[1].closingDate as { gte: unknown }).gte).toBeInstanceOf(Date);
+    expect(Object.keys(where).sort()).toEqual(["OR", "deletedAt", "isPublic", "publishedAt", "status"]);
   });
 });
 
