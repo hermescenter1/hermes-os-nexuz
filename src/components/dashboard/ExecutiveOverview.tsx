@@ -3,12 +3,8 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { BrainMemoryStats } from "@/lib/services/types";
-import {
-  PLATFORM_FACTS,
-  PLATFORM_COMPONENTS,
-  getDynamicPlatformFacts,
-  type ComponentState,
-} from "@/lib/industrial/platform-facts";
+import { PLATFORM_COMPONENTS, type ComponentState } from "@/lib/industrial/platform-facts";
+import { usePlatformFacts } from "@/lib/industrial/use-platform-facts";
 
 interface RecentRow {
   id: string;
@@ -105,19 +101,11 @@ export function ExecutiveOverview() {
   const td = useTranslations("brain.domains");
   const locale = useLocale();
   const [data, setData] = useState<BrainStatsResponse | null>(null);
-  // Phase 11B-B: database-mode live counts; defaults to (and falls back to)
-  // the static PLATFORM_FACTS baseline so this never blocks rendering.
-  const [facts, setFacts] = useState(PLATFORM_FACTS);
-
-  useEffect(() => {
-    let live = true;
-    getDynamicPlatformFacts().then((f) => {
-      if (live) setFacts(f);
-    });
-    return () => {
-      live = false;
-    };
-  }, []);
+  /* PHASE 104 R1 (V-M5) - the same hook the ribbon and the KPI band use, so
+     the three surfaces on this screen cannot report different counts for the
+     same quantity. Phase 11B-B behaviour is unchanged: static baseline first,
+     live database counts when available. */
+  const facts = usePlatformFacts();
 
   useEffect(() => {
     let live = true;

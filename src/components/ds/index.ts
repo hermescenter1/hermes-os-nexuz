@@ -11,6 +11,8 @@
 
 // ── Foundations ──
 export { cn, type ClassValue } from "./cn";
+// PHASE 104 R1 - the application layer contract (see ./layers).
+export { LAYER, layerStyle, type LayerName } from "./layers";
 export { FOCUS_RING, VisuallyHidden, describedBy } from "./a11y";
 export { directionForLocale, isRtl, useDirection, type Direction } from "./direction";
 export { TechnicalValue, type TechnicalValueProps } from "./TechnicalValue";

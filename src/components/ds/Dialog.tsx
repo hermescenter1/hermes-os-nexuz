@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "./cn";
 import { useOverlayBehavior } from "./overlay";
+import { layerStyle } from "./layers";
 
 export type DialogSize = "sm" | "md" | "lg";
 
@@ -51,7 +52,10 @@ export function Dialog({ open, onClose, title, description, children, footer, si
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      // PHASE 104 R1 - z-index comes from the layer contract, not a literal.
+      // See components/ds/layers.ts for the full ordering.
+      style={layerStyle("overlay")}
+      className="fixed inset-0 flex items-center justify-center p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

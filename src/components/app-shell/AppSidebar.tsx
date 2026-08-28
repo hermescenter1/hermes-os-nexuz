@@ -35,11 +35,13 @@ export interface AppSidebarProps {
   /** Role-filtered groups (server-resolved — never filter on the client). */
   groups: AppNavGroup[];
   organizationName?: string | null;
+  /** True when the context could not be RESOLVED, as opposed to being absent. */
+  organizationUnavailable?: boolean;
   siteName?: string | null;
   className?: string;
 }
 
-export function AppSidebar({ groups, organizationName, siteName, className }: AppSidebarProps) {
+export function AppSidebar({ groups, organizationName, organizationUnavailable, siteName, className }: AppSidebarProps) {
   const t = useTranslations("appShell");
   const locale = useLocale();
   const pathname = usePathname();
@@ -97,7 +99,7 @@ export function AppSidebar({ groups, organizationName, siteName, className }: Ap
       {/* ── Workspace context (org / site) + search ── */}
       {!collapsed && (
         <div className="flex shrink-0 flex-col gap-2 px-4 pb-3">
-          <OrganizationSelector name={organizationName} />
+          <OrganizationSelector name={organizationName} unavailable={organizationUnavailable} />
           <SiteSelector name={siteName} />
           <button
             type="button"

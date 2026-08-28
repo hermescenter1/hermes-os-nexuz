@@ -28,7 +28,16 @@ interface ExecKpiStripProps {
 export function ExecKpiStrip({ items, className = "", children }: ExecKpiStripProps) {
   return (
     <div
-      className={`flex items-stretch divide-x divide-line border border-line rounded-xl overflow-x-auto mb-6 ${className}`}
+      /* PHASE 104 R1 (V-M4) - the strip was `overflow-x-auto` with five 10rem
+         cells. Five cells need 800px; the dashboard content column is ~712px
+         at the 1024 desktop class, so the fifth metric (POWER DRAW) was cut
+         mid-value at a REQUIRED viewport, with only a scrollbar to say so.
+         It now wraps, which is what `.global-ops-strip` two sections below
+         has done since 89C: cells keep their measured floor and drop to a
+         second row instead of being clipped. `divide-x` is replaced by a
+         LOGICAL per-cell border so the dividers stay correct under RTL and
+         survive wrapping. */
+      className={`flex flex-wrap items-stretch border border-line rounded-xl overflow-hidden mb-6 ${className}`}
       style={{ background: "var(--surface)" }}
       role="region"
       aria-label="Key performance indicators"
@@ -42,7 +51,7 @@ export function ExecKpiStrip({ items, className = "", children }: ExecKpiStripPr
         // 113px + 40px cell padding = 153px → 10rem. en (106px) / fa fit inside
         // it. The strip still scrolls horizontally as before; only the per-cell
         // floor changed. Font size and copy untouched.
-        <div key={i} className="flex-1 min-w-[10rem] px-5 py-4">
+        <div key={i} className="flex-1 min-w-[10rem] border-s border-line px-5 py-4 first:border-s-0">
           <p className="kpi-label mb-2">{item.label}</p>
           <div className="flex items-baseline gap-1.5 flex-wrap">
             <span

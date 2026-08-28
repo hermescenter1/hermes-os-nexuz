@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/components/ds";
 import { useOverlayBehavior } from "@/components/ds/overlay";
+import { layerStyle } from "@/components/ds/layers";
 import type { AppNavGroup } from "@/lib/navigation/app-nav";
 
 export interface AppCommandPaletteProps {
@@ -116,7 +117,10 @@ export function AppCommandPalette({ groups }: AppCommandPaletteProps) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex justify-center"
+      // PHASE 104 R1 - z-index comes from the layer contract, not a literal.
+      // See components/ds/layers.ts for the full ordering.
+      style={layerStyle("overlay")}
+      className="fixed inset-0 flex justify-center"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

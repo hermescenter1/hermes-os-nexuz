@@ -544,7 +544,7 @@
     "disclaimerVerify": "با پرسنل متخصص و رویه‌های ایمنی سایت راستی‌آزمایی شود"
   },
   "common": {
-    "switchLanguage": "English",
+    "switchLanguage": "تغییر زبان",
     "comingSoon": "به‌زودی",
     "explore": "مشاهده",
     "backToServices": "همهٔ خدمات",
@@ -1626,6 +1626,42 @@
         "title": "دادهٔ عملیاتی در دسترس نیست",
         "body": "خلاصهٔ تله‌متری بارگیری نشد. هیچ دادهٔ عملیاتی ذخیره‌شده‌ای برای نمایش موجود نیست.",
         "hint": "داشبورد به‌صورت خودکار مجدداً متصل می‌شود. در صورت تداوم، وضعیت یکپارچه‌سازی تله‌متری را بررسی کنید."
+      }
+    },
+    "commandRibbon": {
+      "ariaLabel": "وضعیت عملیاتی پلتفرم",
+      "network": "شبکهٔ هوش هرمس",
+      "scope": "عملیات سراسری",
+      "activeSubsystems": "زیرسامانه‌های فعال",
+      "signals": {
+        "reasoningActive": "استدلال فعال",
+        "knowledgeActive": "دانش فعال",
+        "telemetryActive": "تله‌متری فعال",
+        "systemOffline": "سامانه آفلاین"
+      }
+    },
+    "ecosystem": {
+      "layers": {
+        "reasoningEngine": {
+          "name": "موتور استدلال هرمس",
+          "description": "استنتاج فعال · تحلیل ریشه‌ای خرابی · تشخیص عیب"
+        },
+        "knowledgeCloud": {
+          "name": "ابر دانش هرمس",
+          "description": "کتابخانهٔ مهندسی · تخصص حوزه · مخزن سوابق"
+        },
+        "memoryEngine": {
+          "name": "موتور حافظهٔ هرمس",
+          "description": "هوش سوابق · الگوهای تاریخی · لایهٔ نگهداشت"
+        },
+        "telemetryNetwork": {
+          "name": "شبکهٔ تله‌متری هرمس",
+          "description": "حسگرهای صنعتی · جریان‌های دادهٔ OT · سیگنال زنده"
+        },
+        "industrialGraph": {
+          "name": "گراف صنعتی هرمس",
+          "description": "اتصال PLC · توپولوژی دارایی · ثبت تجهیزات میدانی"
+        }
       }
     }
   },
@@ -6472,6 +6508,7 @@
       "noOrganizationContext": "زمینه سازمانی موجود نیست",
       "noSiteContext": "سایتی انتخاب نشده است",
       "contextUnavailable": "تغییر زمینه هنوز در دسترس نیست",
+      "contextUnresolved": "زمینه در دسترس نیست",
       "account": "حساب کاربری",
       "accountMenuLabel": "منوی حساب کاربری",
       "signOut": "خروج",

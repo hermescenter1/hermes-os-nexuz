@@ -23,6 +23,7 @@ import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { visibleAppNavGroups } from "@/lib/navigation/app-nav";
+import { getShellOrgContext, type ShellOrgContext } from "@/lib/organizations/shell-context";
 import { Link } from "@/i18n/navigation";
 import { AppSidebar } from "./AppSidebar";
 import { AppTopbar } from "./AppTopbar";
@@ -61,8 +62,23 @@ export async function AppShell({
   }
   const groups = visibleAppNavGroups(user?.role ?? null);
 
-  // No org/site context backend is available to the shell yet (see header note).
-  const organizationName: string | null = null;
+  /* PHASE 104 R1 (V-M7) - the shell used to hardcode `null` here, so an ACTIVE
+     OWNER of an organization was shown "No organization context". The context
+     is now resolved server-side from the caller's earliest ACTIVE membership,
+     with the same predicate the API path uses. An outage stays distinguishable
+     from an empty account - see lib/organizations/shell-context.ts.
+
+     Site context is still genuinely unbuilt: no per-request site selection
+     exists, so the site chip keeps its honest empty state rather than being
+     given a value it cannot have. */
+  let orgContext: ShellOrgContext = { state: "none" };
+  try {
+    orgContext = await getShellOrgContext(user?.id ?? null);
+  } catch {
+    orgContext = { state: "unavailable" };
+  }
+  const organizationName = orgContext.state === "resolved" ? orgContext.organizationName : null;
+  const organizationUnavailable = orgContext.state === "unavailable";
   const siteName: string | null = null;
 
   const skipLink = <SkipLink label={t("skipToContent")} />;
@@ -100,12 +116,13 @@ export async function AppShell({
     <div className="min-h-screen bg-background-base text-text-primary">
       {skipLink}
       <div className="flex">
-        <AppSidebar groups={groups} organizationName={organizationName} siteName={siteName} />
+        <AppSidebar groups={groups} organizationName={organizationName} organizationUnavailable={organizationUnavailable} siteName={siteName} />
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <AppTopbar
             groups={groups}
             user={user ? { name: user.name, email: user.email, role: user.role } : null}
             organizationName={organizationName}
+            organizationUnavailable={organizationUnavailable}
             siteName={siteName}
             actions={topbarActions}
           />

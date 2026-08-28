@@ -544,7 +544,7 @@
     "disclaimerVerify": "Mit qualifiziertem Personal und den Standortprozeduren verifizieren"
   },
   "common": {
-    "switchLanguage": "English",
+    "switchLanguage": "Sprache wechseln",
     "comingSoon": "Demnächst verfügbar",
     "explore": "Entdecken",
     "backToServices": "Alle Services",
@@ -1626,6 +1626,42 @@
         "title": "Betriebsdaten nicht verfügbar",
         "body": "Die Telemetrieübersicht konnte nicht geladen werden. Es sind keine zwischengespeicherten Betriebsdaten zur Anzeige vorhanden.",
         "hint": "Das Dashboard verbindet sich automatisch neu. Falls dies anhält, den Status der Telemetrie-Integration prüfen."
+      }
+    },
+    "commandRibbon": {
+      "ariaLabel": "Betriebsstatus der Plattform",
+      "network": "Hermes Intelligenznetz",
+      "scope": "Globaler Betrieb",
+      "activeSubsystems": "Aktive Teilsysteme",
+      "signals": {
+        "reasoningActive": "Inferenz aktiv",
+        "knowledgeActive": "Wissensbasis aktiv",
+        "telemetryActive": "Telemetrie aktiv",
+        "systemOffline": "System offline"
+      }
+    },
+    "ecosystem": {
+      "layers": {
+        "reasoningEngine": {
+          "name": "Hermes Inferenzmaschine",
+          "description": "Aktive Inferenz · Ursachenanalyse · Fehlererkennung"
+        },
+        "knowledgeCloud": {
+          "name": "Hermes Wissens-Cloud",
+          "description": "Engineering-Bibliothek · Fachwissen · Fallarchiv"
+        },
+        "memoryEngine": {
+          "name": "Hermes Gedächtnismaschine",
+          "description": "Fallintelligenz · Historische Muster · Aufbewahrungsebene"
+        },
+        "telemetryNetwork": {
+          "name": "Hermes Telemetrienetz",
+          "description": "Industriesensoren · OT-Datenströme · Live-Signal"
+        },
+        "industrialGraph": {
+          "name": "Hermes Industriegraph",
+          "description": "SPS-Anbindung · Anlagentopologie · Feldgeräteregister"
+        }
       }
     }
   },
@@ -6472,6 +6508,7 @@
       "noOrganizationContext": "Kein Organisationskontext",
       "noSiteContext": "Kein Standort ausgewählt",
       "contextUnavailable": "Wechseln ist noch nicht verfügbar",
+      "contextUnresolved": "Kontext nicht verfügbar",
       "account": "Konto",
       "accountMenuLabel": "Kontomenü",
       "signOut": "Abmelden",

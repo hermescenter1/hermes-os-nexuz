@@ -280,7 +280,9 @@ describe("104-F — article detail semantics and behaviour", () => {
     // both actions bars share ONE page-owned save control (never two disagreeing controls)
     expect((d.match(/<ActionsBar article=\{article\} save=\{saveControl\} \/>/g) ?? []).length).toBe(2);
     // order in the reading spread: body → bottom actions → engagement → author provenance → related
-    const iBody = d.indexOf("<ArticleBody content={article.content} />");
+    // PHASE 104 R1 (V-M8): ArticleBody now also receives the title so it can
+    // drop a leading heading that merely repeats it. Reading order unchanged.
+    const iBody = d.indexOf("<ArticleBody content={article.content} title={display.title} />");
     const iBottom = d.lastIndexOf("<ActionsBar article={article} save={saveControl} />");
     const iEng = d.indexOf("<ArticleEngagement", iBottom);   // the rendered element, not the header-comment mention
     const iAuthor = d.indexOf("<AuthorProvenance article={article}");

@@ -42,6 +42,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { dropDuplicateLeadingTitle } from "./article-headings";
 import type { ArticleDetail, ArticleListItem } from "@/lib/articles/types";
 import { formatDate, formatNumber } from "@/lib/i18n/format";
 import { cn } from "@/components/ds";
@@ -98,8 +99,13 @@ function Inline({ spans }: { spans: InlineSpan[] }) {
   );
 }
 
-function articleModel(content: string) {
-  const blocks = parseArticleContent(content);
+function articleModel(content: string, title?: string) {
+  /* PHASE 104 R1 (V-M8) - the body and the TOC both come from here, so the
+     leading heading that merely repeats the page title is dropped once, for
+     both. The rule itself lives in ./article-headings so it can be tested
+     directly. */
+  const blocks = dropDuplicateLeadingTitle(parseArticleContent(content), title, (b) =>
+    b.type === "heading" ? spanText(b.spans) : "");
   const seen = new Map<string, number>();
   const headings: Heading[] = [];
   const ids = blocks.map((b) => {
@@ -112,8 +118,8 @@ function articleModel(content: string) {
   return { blocks, ids, headings };
 }
 
-function ArticleBody({ content }: { content: string }) {
-  const { blocks, ids } = useMemo(() => articleModel(content), [content]);
+function ArticleBody({ content, title }: { content: string; title?: string }) {
+  const { blocks, ids } = useMemo(() => articleModel(content, title), [content, title]);
   return (
     <div className="hj-body hj-measure text-body-lg">
       {blocks.map((block, i) => {
@@ -365,8 +371,12 @@ export function ArticleDetailClient({ article, related, engagement }: Props) {
   const locale = useLocale();
   const isFa = locale === "fa";
   const bodyRef = useRef<HTMLElement | null>(null);
-  const { headings } = useMemo(() => articleModel(article.content), [article.content]);
   const display = getArticleDisplay(article, isFa);
+  // Same title the h1 renders, so body and TOC drop exactly the heading it repeats.
+  const { headings } = useMemo(
+    () => articleModel(article.content, display.title),
+    [article.content, display.title],
+  );
   const km = article.knowledgeMetadata;
   const cat = article.category;
   const catName = cat ? (isFa && cat.nameFa ? cat.nameFa : cat.name) : null;
@@ -495,7 +505,7 @@ export function ArticleDetailClient({ article, related, engagement }: Props) {
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-14">
           <article ref={bodyRef} className="min-w-0">
             {headings.length ? <div className="mb-8 lg:hidden"><Toc headings={headings} title={t("pressroom.onThisPage")} /></div> : null}
-            <ArticleBody content={article.content} />
+            <ArticleBody content={article.content} title={display.title} />
           </article>
           <div className="hidden min-w-0 lg:block">
             <Toc headings={headings} title={t("pressroom.onThisPage")} />

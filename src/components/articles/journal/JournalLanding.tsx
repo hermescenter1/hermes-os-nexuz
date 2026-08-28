@@ -217,7 +217,13 @@ export async function JournalLanding({
             ) : null}
 
             {/* ═══ 03 · DISPATCH LEDGER + 04 · DISCIPLINE INDEX ═══ */}
-            <div className="mt-16 grid gap-14 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-16 md:mt-20">
+            {/* PHASE 104 R1 (V-M9) - the discipline index reserved a second column
+                even with nothing in it, leaving a ~1200px empty gutter beside the
+                article list under a heading that promised "every discipline below".
+                With no disciplines the grid is a single column and the aside is not
+                rendered at all; the Tags destination moves next to "see all" so it
+                is never lost. */}
+            <div className={`mt-16 grid gap-14 lg:gap-16 md:mt-20 ${disciplines.length ? "lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]" : ""}`}>
               <section aria-labelledby="journal-dispatch-title" className="min-w-0">
                 <Mark no="03" label={t("pressroom.marks.dispatch")} />
                 <h2 id="journal-dispatch-title" dir="auto" className="mt-3 text-role-h3 font-bold text-text-primary">{t("sections.latestArticles")}</h2>
@@ -245,15 +251,20 @@ export async function JournalLanding({
                   <Link href={`/${locale}/articles/latest`} className="ds-focus inline-flex min-h-11 items-center gap-2 text-body-compact font-semibold text-brand-primary hover:underline">
                     {t("seeAll")}<span aria-hidden="true" className="rtl:-scale-x-100">→</span>
                   </Link>
+                  {disciplines.length ? null : (
+                    <Link href={`/${locale}/articles/tags`} className="ds-focus inline-flex min-h-11 items-center gap-2 text-body-compact font-semibold text-brand-primary hover:underline">
+                      {t("nav.tags")}<span aria-hidden="true" className="rtl:-scale-x-100">→</span>
+                    </Link>
+                  )}
                 </div>
               </section>
 
+              {disciplines.length ? (
               <aside aria-labelledby="journal-disciplines-title" className="min-w-0 lg:pt-1">
                 <Mark no="04" label={t("pressroom.marks.disciplines")} />
                 <h2 id="journal-disciplines-title" dir="auto" className="mt-3 text-role-h4 font-bold text-text-primary">{t("sections.categories")}</h2>
                 <p dir="auto" className="mt-1 text-body-compact text-text-muted">{t("pressroom.disciplinesIntro")}</p>
-                {disciplines.length ? (
-                  <ul className="mt-5">
+                <ul className="mt-5">
                     {disciplines.map((c) => (
                       <li key={c.id} className="hj-index-row min-w-0">
                         <Link href={`/${locale}/articles/category/${c.slug}`} dir="auto" className="ds-focus min-w-0 truncate text-body text-text-primary hover:text-brand-primary">
@@ -262,13 +273,13 @@ export async function JournalLanding({
                         <span aria-hidden="true" className="hj-leader" />
                         <span className="hj-folio shrink-0">{formatNumber(c.articleCount ?? 0, locale)}</span>
                       </li>
-                    ))}
-                  </ul>
-                ) : null}
+                  ))}
+                </ul>
                 <Link href={`/${locale}/articles/tags`} className="ds-focus mt-4 inline-flex min-h-11 items-center gap-2 text-body-compact font-semibold text-brand-primary hover:underline">
                   {t("nav.tags")}<span aria-hidden="true" className="rtl:-scale-x-100">→</span>
                 </Link>
               </aside>
+              ) : null}
             </div>
 
             {/* ═══ 05 · AUTHORITY AND PROVENANCE — a byline register ═══ */}

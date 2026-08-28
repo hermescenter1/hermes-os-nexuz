@@ -940,9 +940,11 @@ h6 { font-weight: 550; letter-spacing: 0; }
   flex:         1;
   min-width:    130px;
   padding:      1rem 1.25rem;
-  border-right: 1px solid rgba(var(--signal-rgb), 0.07);
+  /* PHASE 104 R1 - logical, not physical: a `border-right` sat on the wrong
+     side of every cell under RTL. */
+  border-inline-end: 1px solid rgba(var(--signal-rgb), 0.07);
 }
-.global-ops-cell:last-child { border-right: none; }
+.global-ops-cell:last-child { border-inline-end: none; }
 
 /* ── Ecosystem Layer Card ────────────────────────────────────────────────
    Each of the 5 Hermes ecosystem layers rendered as a status row.

@@ -31,10 +31,11 @@ import { OrganizationSelector, SiteSelector } from "./OrganizationSelector";
 export interface AppMobileNavProps {
   groups: AppNavGroup[];
   organizationName?: string | null;
+  organizationUnavailable?: boolean;
   siteName?: string | null;
 }
 
-export function AppMobileNav({ groups, organizationName, siteName }: AppMobileNavProps) {
+export function AppMobileNav({ groups, organizationName, organizationUnavailable, siteName }: AppMobileNavProps) {
   const t = useTranslations("appShell");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -67,7 +68,7 @@ export function AppMobileNav({ groups, organizationName, siteName }: AppMobileNa
         id={panelId}
       >
         <div className="-m-1 flex flex-col gap-2 pb-2">
-          <OrganizationSelector name={organizationName} />
+          <OrganizationSelector name={organizationName} unavailable={organizationUnavailable} />
           <SiteSelector name={siteName} />
         </div>
         <nav aria-label={t("shell.primaryNavLabel")}>

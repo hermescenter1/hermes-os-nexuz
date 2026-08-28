@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { nextActiveLocale, LOCALE_ACCESSIBLE_NAME } from "@/i18n/locales";
+import { nextActiveLocale, LOCALE_ACCESSIBLE_NAME, LOCALE_NATIVE_NAME } from "@/i18n/locales";
 import { cn, TechnicalValue } from "@/components/ds";
 
 export interface AppUserMenuProps {
@@ -145,7 +145,8 @@ export function AppUserMenu({ name, email, role }: AppUserMenuProps) {
               aria-label={`${tCommon("switchLanguage")} — ${LOCALE_ACCESSIBLE_NAME[next]}`}
               className="ds-focus flex min-h-9 w-full items-center rounded-sm px-2.5 text-start text-label text-text-secondary transition-colors duration-fast hover:bg-surface-interactive hover:text-text-primary"
             >
-              {tCommon("switchLanguage")}
+              {/* PHASE 104 R1 (V-M10) - target endonym, same `next` as `lang`. */}
+              {LOCALE_NATIVE_NAME[next]}
             </button>
             <button
               type="button"

@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "./cn";
 import { useOverlayBehavior } from "./overlay";
+import { layerStyle } from "./layers";
 
 /** Logical side: `start`/`end` mirror correctly under RTL. */
 export type DrawerSide = "start" | "end";
@@ -54,7 +55,10 @@ export function Drawer({ open, onClose, side = "end", title, children, footer, w
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100]"
+      // PHASE 104 R1 - z-index comes from the layer contract, not a literal.
+      // See components/ds/layers.ts for the full ordering.
+      style={layerStyle("overlay")}
+      className="fixed inset-0"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

@@ -544,7 +544,7 @@
     "disclaimerVerify": "Verify with qualified personnel and site procedures"
   },
   "common": {
-    "switchLanguage": "فارسی",
+    "switchLanguage": "Change language",
     "comingSoon": "Coming soon",
     "explore": "Explore",
     "backToServices": "All services",
@@ -1626,6 +1626,42 @@
         "title": "Operational data unavailable",
         "body": "The telemetry summary could not be loaded. No cached operational data is available to display.",
         "hint": "The dashboard reconnects automatically. If this persists, check the telemetry integration status."
+      }
+    },
+    "commandRibbon": {
+      "ariaLabel": "Platform operational status",
+      "network": "Hermes Intelligence Network",
+      "scope": "Global Ops",
+      "activeSubsystems": "Active Subsystems",
+      "signals": {
+        "reasoningActive": "Reasoning Active",
+        "knowledgeActive": "Knowledge Active",
+        "telemetryActive": "Telemetry Active",
+        "systemOffline": "System Offline"
+      }
+    },
+    "ecosystem": {
+      "layers": {
+        "reasoningEngine": {
+          "name": "Hermes Reasoning Engine",
+          "description": "Active inference · Root cause analysis · Fault detection"
+        },
+        "knowledgeCloud": {
+          "name": "Hermes Knowledge Cloud",
+          "description": "Engineering library · Domain expertise · Case repository"
+        },
+        "memoryEngine": {
+          "name": "Hermes Memory Engine",
+          "description": "Case intelligence · Historical patterns · Retention layer"
+        },
+        "telemetryNetwork": {
+          "name": "Hermes Telemetry Network",
+          "description": "Industrial sensors · OT data streams · Live signal"
+        },
+        "industrialGraph": {
+          "name": "Hermes Industrial Graph",
+          "description": "PLC connectivity · Asset topology · Field device registry"
+        }
       }
     }
   },
@@ -6472,6 +6508,7 @@
       "noOrganizationContext": "No organization context",
       "noSiteContext": "No site selected",
       "contextUnavailable": "Switching is not available yet",
+      "contextUnresolved": "Context unavailable",
       "account": "Account",
       "accountMenuLabel": "Account menu",
       "signOut": "Sign out",
