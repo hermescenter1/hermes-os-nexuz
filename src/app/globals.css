@@ -3404,3 +3404,129 @@ main [id$="-title"] {
 #public-content :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
   min-block-size: 2.75rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 109-B0 — SIMULATED-DATA DISCLOSURE (Executive Dashboard)
+
+   The dashboard renders values shaped like plant data that were computed by a
+   local demo adapter. Three visual layers say so, and none of them relies on
+   colour alone — every one carries words:
+
+     .hermes-sim-chip-bar   persistent, high-contrast mode chip. Sticky, so it
+                            stays on screen while the operational surface
+                            scrolls; a reader who scrolls past the page header
+                            never loses the disclosure.
+     .hermes-sim-watermark  a repeated SIMULATED DATA stamp laid over the whole
+                            operational surface, so a screenshot of ANY region
+                            of it carries the stamp. Pointer-events none, so it
+                            changes no interaction, and aria-hidden, because the
+                            per-value accessible markers already cover assistive
+                            technology.
+     .hermes-sim-provenance the frame's own provenance block.
+
+   Contrast: #FBBF24 on --surface (#0C1420) measures ≈10:1, well above the 4.5:1
+   normal-text requirement, and the chip additionally carries a solid inline bar
+   and a glyph so the state survives a monochrome print.
+
+   Overflow: the watermark is absolutely positioned inside a clipped, relatively
+   positioned surface, so its rotated tiles can never widen the document — the
+   320px viewport requirement is unaffected.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.hermes-sim-chip-bar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 30;
+  margin-block-end: 1rem;
+  padding-block: 0.5rem;
+  background: var(--bg);
+}
+
+.hermes-sim-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid rgba(var(--warn-rgb), 0.55);
+  border-inline-start-width: 4px;
+  border-radius: 0.5rem;
+  background: rgba(var(--warn-rgb), 0.12);
+  color: #FBBF24;
+}
+
+.hermes-sim-chip__glyph {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.hermes-sim-chip__label {
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.hermes-sim-chip__detail {
+  font-size: 0.75rem;
+  color: var(--ink);
+  opacity: 0.85;
+}
+
+.hermes-sim-surface {
+  position: relative;
+  overflow: hidden;
+}
+
+.hermes-sim-surface__content {
+  position: relative;
+  z-index: 1;
+}
+
+.hermes-sim-watermark {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
+  gap: 3rem 2.5rem;
+  padding: 4rem 1rem;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+.hermes-sim-watermark__tile {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: clamp(0.9rem, 2.4vw, 1.6rem);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  white-space: nowrap;
+  color: #FBBF24;
+  opacity: 0.13;
+  transform: rotate(-24deg);
+}
+
+.hermes-sim-provenance {
+  border: 1px solid rgba(var(--warn-rgb), 0.22);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  padding: 1rem 1.25rem;
+}
+
+.hermes-sim-provenance__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem 1.25rem;
+}
+
+.hermes-sim-provenance__row {
+  min-width: 0;
+}
+
+.hermes-sim-provenance__row dd {
+  margin-block-start: 0.2rem;
+  overflow-wrap: anywhere;
+}

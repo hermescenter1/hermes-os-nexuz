@@ -39,7 +39,21 @@ const REASON_KEY = {
   assetDue: "reasonAssetDue",
 } as const;
 
-export function DashboardCommandSurface({ snap }: { snap: DashboardSnapshot }) {
+export function DashboardCommandSurface({
+  snap,
+  valueMarker,
+  pathPrefix,
+}: {
+  snap: DashboardSnapshot;
+  /**
+   * PHASE 109-B0 — the localized "simulated value" marker. It is threaded into
+   * the shared primitives so every operational value on this surface carries
+   * the marker in its own accessible name, not merely somewhere on the page.
+   */
+  valueMarker?: string;
+  /** Snapshot-path prefix for this surface's derived outputs, e.g. "command". */
+  pathPrefix?: string;
+}) {
   const t = useTranslations("dashboard.command");
   const tSev = useTranslations("dashboard.severity");
   const tAlarms = useTranslations("dashboard.alarmsP.msgs");
@@ -90,6 +104,8 @@ export function DashboardCommandSurface({ snap }: { snap: DashboardSnapshot }) {
         lastUpdatedLabel={t("lastUpdated")}
         lastUpdatedValue={tf.format(model.ts)}
         autoNote={t("autoNote")}
+        valueMarker={valueMarker}
+        pathPrefix={pathPrefix}
       />
 
       {/* ── PHASE 104-D2 — the Hermes Triad ──────────────────────────────────
@@ -106,9 +122,27 @@ export function DashboardCommandSurface({ snap }: { snap: DashboardSnapshot }) {
           id="attention"
           title={t("attention.title")}
           beacon={attentionItems.length > 0}
-          note={attentionItems.length > 0 ? t(`posture.${model.posture}`) : undefined}
+          note={
+            attentionItems.length > 0 ? (
+              <span
+                data-hermes-operational-value={valueMarker ? "simulated" : undefined}
+                data-hermes-snapshot-path={
+                  valueMarker && pathPrefix ? `${pathPrefix}.beaconNote` : undefined
+                }
+              >
+                {t(`posture.${model.posture}`)}
+                {valueMarker ? <span className="sr-only"> {valueMarker}</span> : null}
+              </span>
+            ) : undefined
+          }
         >
-          <AttentionPanel items={attentionItems} emptyLabel={t("attention.empty")} LinkComponent={DashLink} />
+          <AttentionPanel
+            items={attentionItems}
+            emptyLabel={t("attention.empty")}
+            LinkComponent={DashLink}
+            valueMarker={valueMarker}
+            pathPrefix={pathPrefix}
+          />
         </TriadGroup>
 
         <TriadGroup intent="understand" id="risk-evidence" title={t("riskEvidence.title")}>
@@ -133,6 +167,8 @@ export function DashboardCommandSurface({ snap }: { snap: DashboardSnapshot }) {
             formatNumber={nf.format}
             pct={pct}
             layout="container"
+            valueMarker={valueMarker}
+            pathPrefix={pathPrefix}
           />
         </TriadGroup>
 

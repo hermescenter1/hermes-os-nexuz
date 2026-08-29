@@ -510,7 +510,16 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
     //            file's own leaves() semantics and MEASURED 6709, then 6710 after B1.1 added careers.preferredExperience (one leaf, all three locales), in all three
     //            locales, zero duplicate paths, full 3-way key parity.
     //            -> 6718  (B1.1: +1 careers.preferredExperience; B1.2: +4 locationTypeLabels + salaryPerYear; B1.3: +3 careers.apply.notAccepting{Title,Body,Cta}; B1.4: +2 careers.viewDetails/applicationsNotOpen − 1 retired careers.viewAndApply)
-    expect(allEn.length).toBe(6737);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24; JOURNAL-ENGAGEMENT: +24; JOURNAL-SAVE: +3; JOURNAL-TOMBSTONE: +1; MULTI-SITE-BOUNDARY: +12 multiSite; PHASE-107-JOURNAL-MOBILE-NAV: +2 journal.nav; PHASE-107-ENGINEERING-HUB: +7 engineeringHub; PHASE-107-PLATFORM-COMPONENTS: +5 dashboard.platformComponents; PHASE-107-STAGE-6A: +18 errors.resource; PHASE-107-STAGE-6A-OT-CONTEXT: +6 otEdge.states; PHASE-107-STAGE-6A-CONTEXT-UI: +4 errors.resource; PHASE-101-R: +60 industrialBrain.reference; 104-E/F: +85 observatory + journal pressroom; 104-I2: +67 demo/careers/vendors; 104-I3: +168 vendor directory/application + careers apply; 104-I3b: +12 vendor detail; 104-I3c: +38 demo form; 104-I3d: +2 ProvenExpert fallback; 104-R1: +18 dashboard.commandRibbon/ecosystem, +1 appShell.shell.contextUnresolved
+    // PHASE 109-B0: +15 dashboard leaves, MEASURED not hand-added:
+    //            dashboard.provenance 14 (the simulated-data disclosure copy —
+    //            chip, watermark, per-value accessible marker, provenance block
+    //            labels and the demo scenario name) and
+    //            dashboard.commandRibbon.signals.telemetrySimulated 1. The
+    //            retired dashboard.command.reconnecting is replaced 1-for-1 by
+    //            dashboard.command.preparingDemo, so the rename is leaf-neutral.
+    //            All inside the already-TRANSLATED_NS `dashboard` namespace, all
+    //            genuinely German, zero carryover. -> 6752
+    expect(allEn.length).toBe(6752);  // 89A: +9 errors; 89C: +18 meta; 93B: +6 Copilot; 96: +21 pricing; 97: +74 complianceCenter; TRUST: +4; 102: +162 mediaHub + 1 nav; 103: +40 liveVoice; R2: +240 capability pages; R2-fix: +17 discovery paths; LEAD-REVIEW: +20 lead review; JOURNAL-LIFECYCLE: +24; JOURNAL-ENGAGEMENT: +24; JOURNAL-SAVE: +3; JOURNAL-TOMBSTONE: +1; MULTI-SITE-BOUNDARY: +12 multiSite; PHASE-107-JOURNAL-MOBILE-NAV: +2 journal.nav; PHASE-107-ENGINEERING-HUB: +7 engineeringHub; PHASE-107-PLATFORM-COMPONENTS: +5 dashboard.platformComponents; PHASE-107-STAGE-6A: +18 errors.resource; PHASE-107-STAGE-6A-OT-CONTEXT: +6 otEdge.states; PHASE-107-STAGE-6A-CONTEXT-UI: +4 errors.resource; PHASE-101-R: +60 industrialBrain.reference; 104-E/F: +85 observatory + journal pressroom; 104-I2: +67 demo/careers/vendors; 104-I3: +168 vendor directory/application + careers apply; 104-I3b: +12 vendor detail; 104-I3c: +38 demo form; 104-I3d: +2 ProvenExpert fallback; 104-R1: +18 dashboard.commandRibbon/ecosystem, +1 appShell.shell.contextUnresolved
     const all = Object.values(buckets).flat().map((s) => s.split(" = ")[0]);
     expect(new Set(all).size, "a leaf was classified twice").toBe(all.length);
   });
@@ -524,14 +533,14 @@ describe("87L.6F — full 5,136-leaf reconciliation (§2)", () => {
   });
 
 
-  it("satisfies 6718 = translations + identicals + tokens + numeric/unit", () => {
+  it("satisfies the pinned leaf total = translations + identicals + tokens + numeric/unit", () => {
 
     const { germanTranslation, intentionalIdentical, technicalToken, numericOrUnit } = buckets;
     expect(
       germanTranslation.length + intentionalIdentical.length +
       technicalToken.length + numericOrUnit.length
 
-    ).toBe(6737);
+    ).toBe(6752);
 
     // the overwhelming majority must be real translation, not "preserved"
     expect(germanTranslation.length).toBeGreaterThan(4500);

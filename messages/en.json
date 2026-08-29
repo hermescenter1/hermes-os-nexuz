@@ -1559,7 +1559,7 @@
       "summaryTitle": "Operational summary",
       "lastUpdated": "Last updated",
       "autoNote": "Simulated telemetry · refreshes automatically",
-      "reconnecting": "Reconnecting automatically…",
+      "preparingDemo": "Preparing the local demo scenario…",
       "attention": {
         "title": "Requires attention",
         "empty": "Nothing needs attention right now. Critical and high-priority queues are clear.",
@@ -1624,8 +1624,8 @@
       },
       "unavailable": {
         "title": "Operational data unavailable",
-        "body": "The telemetry summary could not be loaded. No cached operational data is available to display.",
-        "hint": "The dashboard reconnects automatically. If this persists, check the telemetry integration status."
+        "body": "The dashboard could not confirm where its data came from, so no operational values are shown.",
+        "hint": "This screen runs a local Hermes demo scenario. It is not connected to a plant and is not attempting to connect to one."
       }
     },
     "commandRibbon": {
@@ -1637,7 +1637,8 @@
         "reasoningActive": "Reasoning Active",
         "knowledgeActive": "Knowledge Active",
         "telemetryActive": "Telemetry Active",
-        "systemOffline": "System Offline"
+        "systemOffline": "System Offline",
+        "telemetrySimulated": "Telemetry Simulated"
       }
     },
     "ecosystem": {
@@ -1656,13 +1657,29 @@
         },
         "telemetryNetwork": {
           "name": "Hermes Telemetry Network",
-          "description": "Industrial sensors · OT data streams · Live signal"
+          "description": "Industrial sensors · OT data streams · Simulated signal"
         },
         "industrialGraph": {
           "name": "Hermes Industrial Graph",
           "description": "PLC connectivity · Asset topology · Field device registry"
         }
       }
+    },
+    "provenance": {
+      "chipLabel": "Simulated data",
+      "chipDetail": "This dashboard is not connected to a plant.",
+      "watermark": "SIMULATED DATA",
+      "valueMarker": "simulated value, not measured",
+      "title": "Data provenance",
+      "body": "Every value on this screen was generated locally by a Hermes demo scenario. No plant, gateway, PLC, historian or network source was contacted.",
+      "scenarioName": "Hermes Demo Scenario 01",
+      "scenarioLabel": "Scenario",
+      "classificationLabel": "Record classification",
+      "connectionLabel": "Connection mode",
+      "qualityLabel": "Data quality",
+      "acquisitionLabel": "Acquisition time",
+      "receivedLabel": "Generated at",
+      "adapterLabel": "Produced by"
     }
   },
   "knowledge": {

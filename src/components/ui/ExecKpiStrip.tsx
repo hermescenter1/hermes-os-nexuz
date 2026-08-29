@@ -8,6 +8,14 @@ export interface KpiItem {
   delta?:  string;
   accent?: "signal" | "warn" | "danger" | "neutral";
   note?:   string;
+  /**
+   * PHASE 109-B0 (correction round 2) — the snapshot leaf this cell's VALUE
+   * came from, e.g. `overview.oee`. Emitted only when `valueNote` is also set,
+   * so a consumer rendering real data is untouched.
+   */
+  path?:      string;
+  /** The snapshot leaf the delta/note LINE came from, when it has one. */
+  deltaPath?: string;
 }
 
 const ACCENT_VALUE: Record<string, string> = {
@@ -23,9 +31,16 @@ interface ExecKpiStripProps {
   items:       KpiItem[];
   className?:  string;
   children?:   ReactNode;
+  /**
+   * PHASE 109-B0 — optional, visually hidden marker appended to EVERY value in
+   * this strip so the value carries the marker in its OWN accessible name.
+   * Every consumer that renders real data omits it and therefore renders
+   * exactly as it did before this prop existed.
+   */
+  valueNote?:  string;
 }
 
-export function ExecKpiStrip({ items, className = "", children }: ExecKpiStripProps) {
+export function ExecKpiStrip({ items, className = "", children, valueNote }: ExecKpiStripProps) {
   return (
     <div
       /* PHASE 104 R1 (V-M4) - the strip was `overflow-x-auto` with five 10rem
@@ -58,20 +73,38 @@ export function ExecKpiStrip({ items, className = "", children }: ExecKpiStripPr
               className={`exec-kpi-value ${
                 item.accent ? (ACCENT_VALUE[item.accent] ?? "text-ink") : "text-ink"
               }`}
+              data-hermes-operational-value={valueNote ? "simulated" : undefined}
+              data-hermes-snapshot-path={valueNote ? item.path : undefined}
             >
               {item.value}
+              {valueNote ? <span className="sr-only"> {valueNote}</span> : null}
             </span>
             {item.unit && (
               <span className="font-mono text-xs text-muted">{item.unit}</span>
             )}
           </div>
           {item.delta && item.trend && (
-            <p className={`mt-1.5 kpi-label ${TREND_CLASS[item.trend]}`}>
+            <p
+              className={`mt-1.5 kpi-label ${TREND_CLASS[item.trend]}`}
+              data-hermes-operational-value={valueNote && item.deltaPath ? "simulated" : undefined}
+              data-hermes-snapshot-path={valueNote ? item.deltaPath : undefined}
+            >
               {TREND_ICON[item.trend]} {item.delta}
+              {valueNote && item.deltaPath ? <span className="sr-only"> {valueNote}</span> : null}
             </p>
           )}
+          {/* A note line is marked ONLY when it carries a snapshot leaf. The
+              "lines" caption is static copy, and claiming it is simulated data
+              would be a false statement in the other direction. */}
           {item.note && !item.delta && (
-            <p className="mt-1.5 kpi-label text-metadata">{item.note}</p>
+            <p
+              className="mt-1.5 kpi-label text-metadata"
+              data-hermes-operational-value={valueNote && item.deltaPath ? "simulated" : undefined}
+              data-hermes-snapshot-path={valueNote ? item.deltaPath : undefined}
+            >
+              {item.note}
+              {valueNote && item.deltaPath ? <span className="sr-only"> {valueNote}</span> : null}
+            </p>
           )}
         </div>
       ))}

@@ -9,9 +9,14 @@ import type {
  *
  * Values are smooth functions of wall-clock time (sine layers + deterministic
  * jitter), so consecutive polls look like a real plant trending, not random
- * noise. NO real device communication happens here. Phase 2 replaces this
- * module with the Historian + gateway services behind the same
- * TelemetryService interface.
+ * noise. NO real device communication happens here: this module reaches no
+ * gateway, no device, no broker and no database.
+ *
+ * PHASE 109-B0 — the anonymous `/api/telemetry` route that used to serve this
+ * output was retired. The only consumer is now the isolated local demo adapter
+ * in `src/lib/dashboard-demo`, which wraps every snapshot in a frame that
+ * declares it SIMULATED. Nothing here may be used as a fallback for a real
+ * source, and no authenticated acquisition path exists in this product today.
  */
 
 const HISTORY_LEN = 24;

@@ -159,11 +159,13 @@ export const PUBLIC_SURFACE = [
   { path: "/api/customers/risks", methods: ["GET"], justification: "Derived from the static customer-success demo fixtures. No database access." },
   { path: "/api/customers/success-plans", methods: ["GET"], justification: "Static customer-success demo fixtures. No database access." },
   { path: "/api/customers/usage", methods: ["GET"], justification: "Derived from the static customer-success demo fixtures. No database access." },
-  {
-    path: "/api/telemetry",
-    methods: ["GET"],
-    justification: "Pure mathematical simulator (simulateSnapshot). Imports only a type; reaches no gateway, device or database.",
-  },
+  // PHASE 109-B0 — /api/telemetry was REMOVED, not re-declared. Being harmless
+  // to the database is not the same as being a defensible public surface: the
+  // route served plant-shaped values (OEE, alarms, PLC scan times, SCADA
+  // latency) with no tenant, no site, no source identity, no acquisition
+  // semantics and no provenance, so an anonymous caller could not tell what the
+  // numbers were. The dashboard demonstration it existed for now runs entirely
+  // in-process behind authentication; nothing replaced the endpoint.
 
   // ── Derived public engineering graph ─────────────────────────────────────
   {
