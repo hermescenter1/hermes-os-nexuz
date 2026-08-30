@@ -78,11 +78,20 @@ export function CommandRibbon() {
 
   const reasoningOn = brainState === "online";
   const knowledgeOn = knowledgeState === "online";
-  const telemetryOn = telemetryState === "online" || telemetryState === "simulated";
+  const telemetrySimulated = telemetryState === "simulated";
+  const telemetryOn = telemetryState === "online" || telemetrySimulated;
 
   const reasoningSignal: HermesSignalType = reasoningOn ? "reasoning-active" : "system-offline";
   const knowledgeSignal: HermesSignalType = knowledgeOn ? "knowledge-active" : "system-offline";
   const telemetrySignal: HermesSignalType = telemetryOn ? "telemetry-active" : "system-offline";
+  /* PHASE 109-B0 — the telemetry subsystem ships SIMULATED, and this chip used
+     to read "Telemetry Active" regardless, which is a live-connectivity claim
+     over synthetic values. The label now follows the actual component state. */
+  const telemetryLabel = telemetrySimulated
+    ? t("signals.telemetrySimulated")
+    : telemetryOn
+      ? t("signals.telemetryActive")
+      : t("signals.systemOffline");
 
   return (
     <div className="hermes-command-ribbon" role="banner" aria-label={t("ariaLabel")}>
@@ -152,7 +161,7 @@ export function CommandRibbon() {
           />
           <HermesSignal
             type={telemetrySignal}
-            label={telemetryOn ? t("signals.telemetryActive") : t("signals.systemOffline")}
+            label={telemetryLabel}
           />
         </div>
 

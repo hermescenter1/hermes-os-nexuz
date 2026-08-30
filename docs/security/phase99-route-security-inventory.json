@@ -15,10 +15,10 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 377,
-    "handlers": 527,
+    "routeFiles": 376,
+    "handlers": 526,
     "byClassification": {
-      "PUBLIC_READ": 40,
+      "PUBLIC_READ": 39,
       "PUBLIC_WRITE": 14,
       "AUTHENTICATED_USER": 215,
       "TENANT_MEMBER": 125,
@@ -6972,17 +6972,6 @@
       "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": true
-    },
-    {
-      "apiPath": "/api/telemetry",
-      "method": "GET",
-      "file": "src/app/api/telemetry/route.ts",
-      "classification": "PUBLIC_READ",
-      "authEvidence": [],
-      "declaredSurface": true,
-      "tenantScoped": false,
-      "mutates": false,
-      "senderAuthenticated": null
     },
     {
       "apiPath": "/api/unknown",

@@ -28,10 +28,21 @@ export function AttentionPanel({
   items,
   emptyLabel,
   LinkComponent,
+  valueMarker,
+  pathPrefix,
 }: {
   items: AttentionItem[];
   emptyLabel: string;
   LinkComponent: React.ComponentType<{ href: string; className?: string; children: React.ReactNode }>;
+  /**
+   * PHASE 109-B0 — optional, visually hidden marker appended to each attention
+   * row, so a row derived from an operational snapshot states what it is in its
+   * OWN accessible name. Consumers rendering real data omit it and render
+   * exactly as before.
+   */
+  valueMarker?: string;
+  /** Snapshot-path prefix, e.g. "command". Emitted only alongside valueMarker. */
+  pathPrefix?: string;
 }) {
   if (items.length === 0) {
     return (
@@ -44,10 +55,16 @@ export function AttentionPanel({
 
   return (
     <ul className="flex flex-col gap-2">
-      {items.map((item) => {
+      {items.map((item, ii) => {
         const Link = LinkComponent;
         return (
-          <li key={item.id}>
+          <li
+            key={item.id}
+            data-hermes-operational-value={valueMarker ? "simulated" : undefined}
+            data-hermes-snapshot-path={
+              valueMarker && pathPrefix ? `${pathPrefix}.attention[${ii}]` : undefined
+            }
+          >
             <Link
               href={item.href}
               className={cn(
@@ -81,6 +98,7 @@ export function AttentionPanel({
               </span>
               <span aria-hidden="true" className="mt-0.5 shrink-0 text-label text-brand-primary rtl:-scale-x-100">→</span>
               <span className="sr-only">{item.viewLabel}</span>
+              {valueMarker ? <span className="sr-only"> {valueMarker}</span> : null}
             </Link>
           </li>
         );

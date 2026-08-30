@@ -5,6 +5,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 // is unchanged.
 import { AppShell }        from "@/components/app-shell";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
+import { resolveDashboardSource } from "@/lib/dashboard-demo";
 import { PageHeader, PageStatusBadge } from "@/components/ui/PageHeader";
 import { CommandRibbon }   from "@/components/hermes/CommandRibbon";
 
@@ -16,6 +17,13 @@ export default async function DashboardPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("dashboard");
+
+  /* PHASE 109-B0 — the data source is resolved HERE, on the server, and handed
+     to the client surface as an immutable descriptor. There is no search
+     parameter, no cookie, no toggle and no client branch that can select a
+     different mode, and the mode is not inferred from the absence of a real
+     source: it is written literally as SIMULATED in the local demo adapter. */
+  const source = resolveDashboardSource();
 
   return (
     <AppShell>
@@ -30,7 +38,7 @@ export default async function DashboardPage({
         />
       </div>
       <CommandRibbon />
-      <DashboardClient />
+      <DashboardClient source={source} />
     </AppShell>
   );
 }

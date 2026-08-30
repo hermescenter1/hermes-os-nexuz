@@ -144,10 +144,14 @@ describe("DashboardCommandSurface — Persian (RTL) + bidi safety", () => {
 
 describe("Dashboard states — distinct loading vs unavailable", () => {
   it("skeleton announces politely and hides shimmer from AT", async () => {
-    const { container, unmount } = await mount(withIntl("en", <DashboardSkeleton label={en.dashboard.command.reconnecting} />));
+    // PHASE 109-B0 — the key was renamed: the dashboard is not "reconnecting"
+    // to anything, it is preparing a local demo scenario. The assertion below
+    // is unchanged and still proves the skeleton announces exactly one polite
+    // status label and hides its shimmer bars from assistive technology.
+    const { container, unmount } = await mount(withIntl("en", <DashboardSkeleton label={en.dashboard.command.preparingDemo} />));
     const status = container.querySelector('[role="status"]')!;
     expect(status.getAttribute("aria-live")).toBe("polite");
-    expect(status.textContent).toBe(en.dashboard.command.reconnecting);
+    expect(status.textContent).toBe(en.dashboard.command.preparingDemo);
     expect(container.querySelector('[aria-hidden="true"]')).toBeTruthy();
     await unmount();
   });

@@ -1559,7 +1559,7 @@
       "summaryTitle": "Betriebsübersicht",
       "lastUpdated": "Zuletzt aktualisiert",
       "autoNote": "Simulierte Telemetrie · aktualisiert sich automatisch",
-      "reconnecting": "Verbindung wird automatisch wiederhergestellt…",
+      "preparingDemo": "Lokales Demoszenario wird vorbereitet…",
       "attention": {
         "title": "Erfordert Aufmerksamkeit",
         "empty": "Derzeit ist nichts zu beachten. Die Warteschlangen für kritische und hochpriorisierte Ereignisse sind leer.",
@@ -1624,8 +1624,8 @@
       },
       "unavailable": {
         "title": "Betriebsdaten nicht verfügbar",
-        "body": "Die Telemetrieübersicht konnte nicht geladen werden. Es sind keine zwischengespeicherten Betriebsdaten zur Anzeige vorhanden.",
-        "hint": "Das Dashboard verbindet sich automatisch neu. Falls dies anhält, den Status der Telemetrie-Integration prüfen."
+        "body": "Das Dashboard konnte die Herkunft seiner Daten nicht bestätigen; daher werden keine Betriebswerte angezeigt.",
+        "hint": "Dieser Bildschirm führt ein lokales Hermes-Demoszenario aus. Er ist mit keiner Anlage verbunden und versucht auch nicht, sich zu verbinden."
       }
     },
     "commandRibbon": {
@@ -1637,7 +1637,8 @@
         "reasoningActive": "Inferenz aktiv",
         "knowledgeActive": "Wissensbasis aktiv",
         "telemetryActive": "Telemetrie aktiv",
-        "systemOffline": "System offline"
+        "systemOffline": "System offline",
+        "telemetrySimulated": "Telemetrie simuliert"
       }
     },
     "ecosystem": {
@@ -1656,13 +1657,29 @@
         },
         "telemetryNetwork": {
           "name": "Hermes Telemetrienetz",
-          "description": "Industriesensoren · OT-Datenströme · Live-Signal"
+          "description": "Industriesensoren · OT-Datenströme · Simuliertes Signal"
         },
         "industrialGraph": {
           "name": "Hermes Industriegraph",
           "description": "SPS-Anbindung · Anlagentopologie · Feldgeräteregister"
         }
       }
+    },
+    "provenance": {
+      "chipLabel": "Simulierte Daten",
+      "chipDetail": "Dieses Dashboard ist mit keiner Anlage verbunden.",
+      "watermark": "SIMULIERTE DATEN",
+      "valueMarker": "simulierter Wert, nicht gemessen",
+      "title": "Datenherkunft",
+      "body": "Jeder Wert auf diesem Bildschirm wurde lokal von einem Hermes-Demoszenario erzeugt. Es wurde keine Anlage, kein Gateway, keine SPS, kein Historian und keine Netzwerkquelle kontaktiert.",
+      "scenarioName": "Hermes-Demoszenario 01",
+      "scenarioLabel": "Szenario",
+      "classificationLabel": "Datensatzklassifikation",
+      "connectionLabel": "Verbindungsmodus",
+      "qualityLabel": "Datenqualität",
+      "acquisitionLabel": "Erfassungszeit",
+      "receivedLabel": "Erzeugt um",
+      "adapterLabel": "Erzeugt von"
     }
   },
   "knowledge": {

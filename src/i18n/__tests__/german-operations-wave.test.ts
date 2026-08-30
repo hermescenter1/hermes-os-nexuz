@@ -25,7 +25,15 @@ const LEAF_COUNTS: Record<(typeof TARGETS)[number], number> = {
   // the intelligence strip and Intelligence Network panel, which printed
   // English literals on the Persian and German dashboards. All 18 are
   // genuinely German.
-  dashboard: 206,
+  // PHASE 109-B0: +15 — dashboard.provenance 14 (the simulated-data disclosure:
+  // mode chip, watermark, the per-value accessible marker, the provenance block
+  // labels and the demo scenario name) and
+  // dashboard.commandRibbon.signals.telemetrySimulated 1, which replaces a
+  // "Telemetry Active" chip that claimed live connectivity over a subsystem
+  // shipping SIMULATED. The retired dashboard.command.reconnecting is replaced
+  // 1-for-1 by dashboard.command.preparingDemo, so the rename is leaf-neutral.
+  // All 15 are genuinely German; none is allowlisted as identical.
+  dashboard: 221,
   assetMaintenance: 141,
   engineeringDocuments: 76,
   businessOps: 63,
@@ -92,7 +100,7 @@ describe("87L.6C — exact namespace arithmetic", () => {
       expect(flatten((de as Tree)[ns]).size, `${ns} de`).toBe(LEAF_COUNTS[ns]);
       total += e.size;
     }
-    expect(total).toBe(572);
+    expect(total).toBe(587);
   });
 
   it("reconciles: translated + intentional-identical = every leaf, carryover = 0", () => {
@@ -111,7 +119,7 @@ describe("87L.6C — exact namespace arithmetic", () => {
       }
     }
     expect(unapproved, "unapproved English carryover").toEqual([]);
-    expect(translated + identical).toBe(572);
+    expect(translated + identical).toBe(587);
     expect(translated).toBeGreaterThan(500);
   });
 

@@ -27,6 +27,15 @@ export interface RiskEvidenceProps {
   pct: string;
   /** Grid basis: viewport breakpoints (default) or this element's own width. */
   layout?: "viewport" | "container";
+  /**
+   * PHASE 109-B0 — optional, visually hidden marker appended to each numeric
+   * value rendered here, so the value states in its OWN accessible name what
+   * kind of data it is. Consumers rendering real data omit it and render
+   * exactly as before.
+   */
+  valueMarker?: string;
+  /** Snapshot-path prefix, e.g. "command". Emitted only alongside valueMarker. */
+  pathPrefix?: string;
 }
 
 const READINESS_TONE = {
@@ -46,7 +55,11 @@ export function RiskEvidence(props: RiskEvidenceProps) {
   // OWN width instead of the viewport, which is what a Triad group needs.
   // Defaults to "viewport" so every existing consumer renders identically.
   const layout = props.layout ?? "viewport";
-  const { score, formatNumber, pct } = props;
+  const { score, formatNumber, pct, valueMarker } = props;
+  const mark = valueMarker ? <span className="sr-only"> {valueMarker}</span> : null;
+  const markAttr = valueMarker ? "simulated" : undefined;
+  const p = (leaf: string) =>
+    valueMarker && props.pathPrefix ? `${props.pathPrefix}.${leaf}` : undefined;
   const scoreTone = score >= 75 ? "text-status-danger" : score >= 50 ? "text-status-warning" : "text-status-success";
 
   return (
@@ -55,24 +68,43 @@ export function RiskEvidence(props: RiskEvidenceProps) {
       <div>
         <p className="text-label-compact font-semibold uppercase tracking-wide text-text-muted">{props.riskLabel}</p>
         <div className="mt-1 flex items-baseline gap-2">
-          <span className={cn("text-kpi-lg font-bold tabular-nums", scoreTone)} dir="ltr">
+          <span
+            className={cn("text-kpi-lg font-bold tabular-nums", scoreTone)}
+            dir="ltr"
+            data-hermes-operational-value={markAttr}
+            data-hermes-snapshot-path={p("risk.score")}
+          >
             {formatNumber(Math.round(score))}
+            {mark}
           </span>
           <span className="text-caption text-text-muted">{props.postureLabel}</span>
         </div>
-        <p className="mt-0.5 text-caption text-text-secondary">{props.trendLabel}</p>
+        <p
+          className="mt-0.5 text-caption text-text-secondary"
+          data-hermes-operational-value={markAttr}
+          data-hermes-snapshot-path={p("risk.trend")}
+        >
+          {props.trendLabel}
+          {mark}
+        </p>
 
         <p className="mt-4 text-label-compact font-semibold uppercase tracking-wide text-text-muted">
           {props.factorsTitle}
         </p>
         <ul className="mt-2 flex flex-col gap-2.5">
-          {props.factors.map((f) => (
+          {props.factors.map((f, fi) => (
             <li key={f.key}>
               <div className="flex items-baseline justify-between gap-2 text-caption">
                 <span className="text-text-secondary" dir="auto">{f.label}</span>
-                <span className="tabular-nums text-text-primary" dir="ltr">
+                <span
+                  className="tabular-nums text-text-primary"
+                  dir="ltr"
+                  data-hermes-operational-value={markAttr}
+                  data-hermes-snapshot-path={p(`risk.factors[${fi}]`)}
+                >
                   {formatNumber(Math.round(f.weight * 100))}
                   {pct}
+                  {mark}
                 </span>
               </div>
               <div className="mt-1 h-1 rounded-full bg-surface-interactive">
@@ -105,13 +137,19 @@ export function RiskEvidence(props: RiskEvidenceProps) {
             { label: props.evidence.supportedLabel, n: props.evidence.supported, dot: "bg-status-success", glyph: "✓" },
             { label: props.evidence.watchLabel, n: props.evidence.watch, dot: "bg-status-warning", glyph: "◆" },
             { label: props.evidence.missingLabel, n: props.evidence.missing, dot: "bg-text-muted/50", glyph: "…" },
-          ].map((row) => (
+          ].map((row, ri) => (
             <li key={row.label} className="flex items-center gap-2.5">
               <span aria-hidden="true" className={cn("inline-block h-2 w-2 rounded-full", row.dot)} />
               <span aria-hidden="true" className="w-3 text-center text-caption text-text-muted">{row.glyph}</span>
               <span className="flex-1 text-caption text-text-secondary" dir="auto">{row.label}</span>
-              <span className="tabular-nums text-body-compact font-semibold text-text-primary" dir="ltr">
+              <span
+                className="tabular-nums text-body-compact font-semibold text-text-primary"
+                dir="ltr"
+                data-hermes-operational-value={markAttr}
+                data-hermes-snapshot-path={p(`evidence[${ri}]`)}
+              >
                 {formatNumber(row.n)}
+                {mark}
               </span>
             </li>
           ))}
@@ -119,8 +157,14 @@ export function RiskEvidence(props: RiskEvidenceProps) {
 
         <div className="mt-4 ds-glass-card rounded-lg p-3">
           <p className="text-caption text-text-muted">{props.confidenceLabel}</p>
-          <p className={cn("mt-0.5 text-title font-semibold", READINESS_TONE[props.readiness.tone])} dir="auto">
+          <p
+            className={cn("mt-0.5 text-title font-semibold", READINESS_TONE[props.readiness.tone])}
+            dir="auto"
+            data-hermes-operational-value={markAttr}
+            data-hermes-snapshot-path={p("readiness")}
+          >
             {props.readiness.label}
+            {mark}
           </p>
         </div>
       </div>
