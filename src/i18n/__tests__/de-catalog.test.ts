@@ -279,6 +279,11 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // titles plus the hub fallback, previously a hard-coded English lookup in
     // components/engineering/TopBar.tsx; genuinely German.
     "engineeringHub",
+    // GATE B.1 F03 — the ATS surface (ats) and the customer success plans
+    // (customerSuccess). Genuinely German throughout; the single identical
+    // value, ats.navPipeline, is a reviewed loanword in the allowlist.
+    "ats",
+    "customerSuccess",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

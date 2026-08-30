@@ -21,19 +21,19 @@ const LEAF_COUNTS: Record<(typeof TARGETS)[number], number> = {
   // PHASE 107: +5 dashboard.platformComponents — the System Status rows on the
   // Copilot, Industrial and Knowledge surfaces, which used to print a raw
   // camelCase identifier in every locale. All five are genuinely German.
-  // PHASE 104 R1 (V-M6): +18 dashboard.commandRibbon + dashboard.ecosystem -
-  // the intelligence strip and Intelligence Network panel, which printed
-  // English literals on the Persian and German dashboards. All 18 are
-  // genuinely German.
-  // PHASE 109-B0: +15 — dashboard.provenance 14 (the simulated-data disclosure:
-  // mode chip, watermark, the per-value accessible marker, the provenance block
-  // labels and the demo scenario name) and
-  // dashboard.commandRibbon.signals.telemetrySimulated 1, which replaces a
-  // "Telemetry Active" chip that claimed live connectivity over a subsystem
-  // shipping SIMULATED. The retired dashboard.command.reconnecting is replaced
-  // 1-for-1 by dashboard.command.preparingDemo, so the rename is leaf-neutral.
-  // All 15 are genuinely German; none is allowlisted as identical.
-  dashboard: 221,
+  // PHASE 104-I.D2: +54 for the Gate A reference surfaces — dashboard.operations
+  // (family band, sub-navigation and the five page headings the layout used to
+  // own) and dashboard.alarms (the Alarm Center: severity vocabulary, filter,
+  // queue, evidence rail, every distinct state and the provenance footer).
+  // All 54 are genuinely German; none is on the identical-by-design list.
+  // PHASE 104-I.D localization: +4 dashboard.operations.intelligenceTabs — the
+  // Intelligence Wall's own four tabs, which rendered English in all three
+  // locales while the Operations rail above them was correctly localized.
+  // D.0-R3 MAIN-COMPAT: +33 from current main (Phase 109-B0 simulation
+  // disclosure copy on this same dashboard namespace). Re-derived from the
+  // MERGED catalogue, not copied: Phase 104's 246 would drop main's 33 keys and
+  // main's 279 is only correct because it already contains Phase 104's 54 + 4.
+  dashboard: 279,
   assetMaintenance: 141,
   engineeringDocuments: 76,
   businessOps: 63,
@@ -100,7 +100,7 @@ describe("87L.6C — exact namespace arithmetic", () => {
       expect(flatten((de as Tree)[ns]).size, `${ns} de`).toBe(LEAF_COUNTS[ns]);
       total += e.size;
     }
-    expect(total).toBe(587);
+    expect(total).toBe(645);
   });
 
   it("reconciles: translated + intentional-identical = every leaf, carryover = 0", () => {
@@ -119,7 +119,7 @@ describe("87L.6C — exact namespace arithmetic", () => {
       }
     }
     expect(unapproved, "unapproved English carryover").toEqual([]);
-    expect(translated + identical).toBe(587);
+    expect(translated + identical).toBe(645);
     expect(translated).toBeGreaterThan(500);
   });
 

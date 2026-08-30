@@ -167,8 +167,21 @@ export default function MultiSiteSummaryPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
+      {/*
+        `flex-wrap` and `min-w-0` are load-bearing at 320px.
+
+        This row did not wrap, and the heading block could not shrink below its
+        intrinsic width, so the call-to-action was pushed past the viewport and
+        the DOCUMENT scrolled sideways: +74px in German, where
+        "Standort-Benchmarks" is materially longer than the English label. EN and
+        FA happened to fit, which is exactly why a single-locale check would have
+        missed it.
+
+        Proven before this edit: removing the row took document overflow to 0,
+        and constraining it this way in the live page took +74 to 0.
+      */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-white">{t("enterpriseSummary")}</h1>
           <p className="text-sm text-white/50 mt-1">{t("enterpriseSummaryDesc")}</p>
         </div>

@@ -38,9 +38,9 @@ const TRANSLATED = [
 // R2 (gap-closure): brain +1 — `crossLink`, the reciprocal note pointing to
 // Hermes Industrial Brain (see src/app/[locale]/brain/page.tsx). Genuinely
 // German, not identical-by-design, so it only moves `translated`, not
-// `identical`. Wave total 529 -> 530.
+// `identical`. Wave total 529 -> 530; B1-F01 added 13 knowledgeGraph state leaves -> 546.
 const LEAF_COUNTS: Record<string, number> = {
-  brain: 119, copilot: 97, ke: 79, knowledgeGraph: 63,
+  brain: 119, copilot: 97, ke: 79, knowledgeGraph: 79,
   predictive: 111, knowledgeStudio: 52, industrialBrainReport: 9,
   knowledge: 480,
 };
@@ -85,7 +85,7 @@ describe("87L.6D — exact wave arithmetic", () => {
       }
       total += LEAF_COUNTS[ns];
     }
-    expect(total, "translated this wave").toBe(530);
+    expect(total, "translated this wave").toBe(546);
   });
 
   it("reconciles: translated + intentional-identical = every leaf, carryover = 0", () => {
@@ -101,7 +101,7 @@ describe("87L.6D — exact wave arithmetic", () => {
       }
     }
     expect(unapproved, "unapproved English carryover").toEqual([]);
-    expect(translated + identical).toBe(530);
+    expect(translated + identical).toBe(546);
     expect(translated).toBeGreaterThan(450);
   });
 

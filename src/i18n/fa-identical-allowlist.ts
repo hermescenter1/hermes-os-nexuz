@@ -110,6 +110,9 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
   "landing.pricing.paymentMastercard": "vendor-or-thirdparty",
   "landing.pricing.paymentStripe": "vendor-or-thirdparty",
   "landing.pricing.paymentVisa": "vendor-or-thirdparty",
+  // B1-F03 R3: candidate-source platform names, rendered verbatim in Persian.
+  "ats.sourceLinkedin": "vendor-or-thirdparty",
+  "ats.sourceIndeed": "vendor-or-thirdparty",
   "about.website": "contact-url-or-propernoun",
   "auth.emailPlaceholder": "contact-url-or-propernoun",
   "authExperience.forgot.emailPlaceholder": "contact-url-or-propernoun",
@@ -143,7 +146,8 @@ export const FA_IDENTICAL_COUNTS: Record<FaIdenticalCategory, number> = {
   "protocol-or-standard": 57,
   // Phase 103: +1 — copilot.liveVoice.brand ("Hermes Live Voice Intelligence").
   "brand-or-product": 4,
-  "vendor-or-thirdparty": 3,
+  // B1-F03 R3: +2 — LinkedIn and Indeed as candidate-source labels.
+  "vendor-or-thirdparty": 5,
   // 104-I3: +2 — vendor application sample tokens (sample e-mail, sample URL).
   "contact-url-or-propernoun": 13,
   "non-linguistic": 7

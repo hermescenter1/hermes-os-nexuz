@@ -361,6 +361,13 @@ export const SSRF_SINK_ALLOWLIST = [
       "Alert transport parameter. Every caller passes config().webhookUrl, which is read only from ALERT_WEBHOOK_URL and validated by validWebhookUrl(); no request value reaches it. The call already sets redirect:'error' and a 5s AbortSignal, so a 3xx cannot bounce the POST to another host.",
   },
   {
+    file: "src/lib/dashboard/load-state.ts",
+    expression: "url",
+    line: 72,
+    justification:
+      "Browser-side dashboard read wrapper (Gate B.1 F01). Same contract as ot-operations/api.ts, with the caller review ENFORCED rather than assumed: loadJson refuses any url that is not a same-origin absolute path before fetch is reached, rejecting protocol-relative //host and /\host as well as absolute URLs, so no argument can select a host. Every one of its five importers is a \"use client\" page passing an /api/... string literal. Covered by src/lib/dashboard/__tests__/load-state.test.ts.",
+  },
+  {
     file: "src/lib/ot-operations/api.ts",
     expression: "path",
     line: 89,
