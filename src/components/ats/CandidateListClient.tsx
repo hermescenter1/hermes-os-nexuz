@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useEffect, useMemo } from "react";
 import type { Candidate, PipelineStage } from "@/lib/ats/types";
 import { STAGE_LABELS, STAGE_ORDER }     from "@/lib/ats/types";
@@ -22,12 +22,18 @@ const STAGE_BADGE: Record<PipelineStage, string> = {
   rejected:           "hs-badge hs--risk",
 };
 
-const SOURCE_LABEL: Record<string, string> = {
-  linkedin: "LinkedIn", indeed: "Indeed", referral: "Referral",
-  direct: "Direct", agency: "Agency", internal: "Internal",
+/*
+ * GATE B.1 F03 — stored enum value -> CATALOGUE KEY. LinkedIn and Indeed are
+ * platform proper nouns and stay verbatim in every locale, so they resolve to
+ * keys whose value is the name itself.
+ */
+const SOURCE_LABEL_KEY: Record<string, string> = {
+  linkedin: "sourceLinkedin", indeed: "sourceIndeed", referral: "sourceReferral",
+  direct: "sourceDirect", agency: "sourceAgency", internal: "sourceInternal",
 };
 
 export function CandidateListClient() {
+  const t = useTranslations("ats");
   const locale = useLocale();
   const [data,       setData]       = useState<CandidatesResponse | null>(null);
   const [loading,    setLoading]    = useState(true);
@@ -68,7 +74,7 @@ export function CandidateListClient() {
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="text"
-          placeholder="Search candidates, skills, location…"
+          placeholder={t("searchPlaceholder")}
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="rounded border border-line bg-bg px-3 py-1.5 text-xs text-ink placeholder:text-metadata focus:outline-none focus:border-signal/50 w-56"
@@ -121,7 +127,7 @@ export function CandidateListClient() {
                         <span className={STAGE_BADGE[c.stage]}>{STAGE_LABELS[c.stage]}</span>
                       </div>
                       <p className="kpi-label text-metadata mt-0.5">
-                        {c.location} · {c.experienceYears}y exp · {SOURCE_LABEL[c.source]}
+                        {c.location} · {t("yearsExpShort", { years: c.experienceYears })} · {t(SOURCE_LABEL_KEY[c.source])}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
@@ -146,7 +152,7 @@ export function CandidateListClient() {
                 </button>
               ))}
               {visible.length === 0 && (
-                <p className="kpi-label text-metadata py-8 text-center">No candidates match your filters</p>
+                <p className="kpi-label text-metadata py-8 text-center">{t("noCandidatesMatch")}</p>
               )}
             </div>
           )}
@@ -159,7 +165,7 @@ export function CandidateListClient() {
               {/* Header */}
               <div className="border-b border-line pb-3">
                 <p className="font-body text-sm font-semibold text-ink">{selected.name}</p>
-                <p className="kpi-label text-metadata mt-0.5">{selected.location} · {selected.experienceYears}y experience</p>
+                <p className="kpi-label text-metadata mt-0.5">{selected.location} · {t("yearsExperience", { years: selected.experienceYears })}</p>
                 <span className={`${STAGE_BADGE[selected.stage]} mt-1.5 inline-block`}>
                   {STAGE_LABELS[selected.stage]}
                 </span>
@@ -171,12 +177,12 @@ export function CandidateListClient() {
               {/* Contact + meta */}
               <div className="border-t border-line pt-3 space-y-1.5">
                 {[
-                  { label: "Email",        value: selected.email           },
-                  { label: "Phone",        value: selected.phone           },
-                  { label: "Auth",         value: selected.workAuthorization.replace(/-/g, " ") },
-                  { label: "Salary",       value: `${formatNumber(selected.salaryExpectation, locale)} — expectation` },
-                  { label: "Source",       value: SOURCE_LABEL[selected.source] },
-                  { label: "Applied",      value: selected.appliedAt       },
+                  { label: t("email"),        value: selected.email           },
+                  { label: t("phone"),        value: selected.phone           },
+                  { label: t("auth"),         value: selected.workAuthorization.replace(/-/g, " ") },
+                  { label: t("salary"),       value: `${formatNumber(selected.salaryExpectation, locale)} — expectation` },
+                  { label: t("source"),       value: t(SOURCE_LABEL_KEY[selected.source]) },
+                  { label: t("applied"),      value: selected.appliedAt       },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between gap-2">
                     <span className="kpi-label text-metadata flex-shrink-0">{row.label}</span>
@@ -186,14 +192,14 @@ export function CandidateListClient() {
               </div>
 
               <div>
-                <p className="kpi-label mb-1.5">CV Summary</p>
+                <p className="kpi-label mb-1.5">{t("cvSummary")}</p>
                 <p className="font-body text-xs text-metadata leading-relaxed">{selected.cvSummary}</p>
               </div>
             </div>
           ) : (
             <div className="rounded-xl border border-line bg-surface px-4 py-8 flex flex-col items-center justify-center text-center">
-              <p className="kpi-label text-metadata">Select a candidate</p>
-              <p className="kpi-label text-metadata mt-1">Click any row to view ATS score breakdown</p>
+              <p className="kpi-label text-metadata">{t("selectCandidate")}</p>
+              <p className="kpi-label text-metadata mt-1">{t("selectCandidateHint")}</p>
             </div>
           )}
         </div>

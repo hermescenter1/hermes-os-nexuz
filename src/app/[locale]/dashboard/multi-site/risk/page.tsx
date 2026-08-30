@@ -11,6 +11,9 @@ import { useTranslations, useLocale }     from "next-intl";
 import { GlassCard }           from "@/components/ui/GlassCard";
 import Link                    from "next/link";
 import { formatDateTime } from "@/lib/i18n/format";
+import { loadJson, type LoadState } from "@/lib/dashboard/load-state";
+import { classifyEmpty, isEmptySiteCollection } from "@/lib/dashboard/empty-contract";
+import { LoadStatePanel } from "@/components/dashboard/LoadStatePanel";
 
 interface SiteRisk {
   id:               string;
@@ -43,23 +46,40 @@ function riskColor(score: number | null): string {
   return "text-green-400";
 }
 
+function isRiskResponse(v: unknown): v is RiskResponse {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return typeof o.benchmarkId === "string"
+    && typeof o.computedAt === "string"
+    && typeof o.stale === "boolean"
+    && Array.isArray(o.sites);
+}
+
 export default function SiteRiskPage() {
   const locale = useLocale();
   const t = useTranslations("multiSite");
-  const [data,    setData]    = useState<RiskResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState<string | null>(null);
+  const [state, setState] = useState<LoadState<RiskResponse>>({ kind: "loading" });
+  // Kept so the existing render paths below continue to read `data`, but it is
+  // now non-null ONLY in the success state. A failed or malformed response can
+  // no longer reach a render that expects a payload.
+  const data = state.kind === "success" ? state.data : null;
 
   useEffect(() => {
-    fetch("/api/multi-site/risk")
-      .then(r => {
-        if (r.status === 404) return null;
-        return r.json() as Promise<RiskResponse>;
+    const controller = new AbortController();
+    setState({ kind: "loading" });
+    loadJson<RiskResponse>("/api/multi-site/risk", isRiskResponse, controller.signal)
+      .then((next) => {
+        // A valid payload carrying nothing is EMPTY, which is a different fact
+        // from the request having failed.
+        setState(classifyEmpty(next, isEmptySiteCollection));
       })
-      .then(d => setData(d))
-      .catch(() => setError(t("errorLoading")))
-      .finally(() => setLoading(false));
-  }, [t]);
+      .catch((err: unknown) => {
+        // AbortError means a newer request or an unmount owns the state now.
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setState({ kind: "requestError" });
+      });
+    return () => controller.abort();
+  }, []);
 
   const okSites   = data?.sites.filter(s => s.dataStatus !== "insufficientData") ?? [];
   const badSites  = data?.sites.filter(s => s.dataStatus === "insufficientData") ?? [];
@@ -79,15 +99,35 @@ export default function SiteRiskPage() {
         </Link>
       </div>
 
-      {loading && (
+      {state.kind === "loading" && (
         <GlassCard className="p-6 text-center text-white/50">{t("loading")}</GlassCard>
       )}
-      {error && (
-        <GlassCard className="p-6 border-red-500/30">
-          <p className="text-red-400 text-sm">{error}</p>
-        </GlassCard>
+      {state.kind === "unauthorized" && (
+        <LoadStatePanel
+          testId="unauthorized"
+          tone="warning"
+          title={t("sessionExpiredTitle")}
+          hint={t("sessionExpiredHint")}
+          action={
+            <Link href="/auth/login" className="text-cyan-400 text-sm underline">
+              {t("signIn")}
+            </Link>
+          }
+        />
       )}
-      {!loading && !error && !data && (
+      {state.kind === "forbidden" && (
+        <LoadStatePanel testId="forbidden" tone="warning" title={t("accessDeniedTitle")} hint={t("accessDeniedHint")} />
+      )}
+      {state.kind === "notFound" && (
+        <LoadStatePanel testId="not-found" title={t("noBenchmark")} />
+      )}
+      {state.kind === "invalidResponse" && (
+        <LoadStatePanel testId="invalid-response" tone="danger" title={t("invalidResponseTitle")} hint={t("invalidResponseHint")} />
+      )}
+      {state.kind === "requestError" && (
+        <LoadStatePanel testId="request-error" tone="danger" title={t("requestFailedTitle")} hint={t("requestFailedHint")} />
+      )}
+      {state.kind === "empty" && (
         <GlassCard className="p-6 text-center">
           <p className="text-white/50">{t("noBenchmark")}</p>
           <Link href="/dashboard/multi-site/benchmarks" className="text-cyan-400 text-sm mt-2 block">

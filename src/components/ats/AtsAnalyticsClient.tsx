@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import type { AtsAnalytics }   from "@/lib/ats/types";
 
 export function AtsAnalyticsClient() {
+  const t = useTranslations("ats");
   const [data,    setData]    = useState<AtsAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +34,7 @@ export function AtsAnalyticsClient() {
   if (!data) {
     return (
       <div className="rounded-xl border border-danger/30 bg-surface px-5 py-4">
-        <p className="font-mono text-sm text-danger">Analytics data unavailable</p>
+        <p className="font-mono text-sm text-danger">{t("analyticsUnavailable")}</p>
       </div>
     );
   }
@@ -49,13 +51,13 @@ export function AtsAnalyticsClient() {
       {/* KPI Strip */}
       <div className="global-ops-strip">
         {[
-          { label: "Open Jobs",        value: data.openJobs,            color: "text-signal" },
-          { label: "Total Candidates", value: data.totalCandidates,     color: "text-ink"    },
-          { label: "Avg ATS Score",    value: `${data.averageAtsScore}`, color: "text-warn"  },
-          { label: "Hired",            value: data.hiredCandidates,     color: "text-signal" },
-          { label: "Rejected",         value: data.rejectedCandidates,  color: "text-danger" },
-          { label: "Velocity (days)",  value: data.hiringVelocityDays,  color: "text-metadata"  },
-          { label: "Hire Rate",        value: `${data.totalCandidates > 0 ? Math.round((data.hiredCandidates / data.totalCandidates) * 100) : 0}%`, color: "text-signal" },
+          { label: t("openJobs"),        value: data.openJobs,            color: "text-signal" },
+          { label: t("totalCandidates"), value: data.totalCandidates,     color: "text-ink"    },
+          { label: t("avgScore"),    value: `${data.averageAtsScore}`, color: "text-warn"  },
+          { label: t("hired"),            value: data.hiredCandidates,     color: "text-signal" },
+          { label: t("rejected"),         value: data.rejectedCandidates,  color: "text-danger" },
+          { label: t("velocityDays"),  value: data.hiringVelocityDays,  color: "text-metadata"  },
+          { label: t("hireRate"),        value: `${data.totalCandidates > 0 ? Math.round((data.hiredCandidates / data.totalCandidates) * 100) : 0}%`, color: "text-signal" },
         ].map(kpi => (
           <div key={kpi.label} className="global-ops-cell">
             <p className="kpi-label mb-1.5">{kpi.label}</p>
@@ -70,7 +72,7 @@ export function AtsAnalyticsClient() {
         {/* Pipeline funnel */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
           <div className="h-layer-sep mb-4">
-            <span className="kpi-label">Pipeline Funnel</span>
+            <span className="kpi-label">{t("pipelineFunnel")}</span>
           </div>
           <div className="space-y-2.5">
             {data.byStage.map(s => (
@@ -91,7 +93,7 @@ export function AtsAnalyticsClient() {
         {/* Score distribution */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
           <div className="h-layer-sep mb-4">
-            <span className="kpi-label">ATS Score Distribution</span>
+            <span className="kpi-label">{t("scoreDistribution")}</span>
           </div>
           <div className="space-y-2.5">
             {data.scoreDistribution.map(s => {
@@ -123,7 +125,7 @@ export function AtsAnalyticsClient() {
         {/* Top skills */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
           <div className="h-layer-sep mb-4">
-            <span className="kpi-label">Top Candidate Skills</span>
+            <span className="kpi-label">{t("topSkills")}</span>
           </div>
           <div className="space-y-2">
             {data.topSkills.map(s => (
@@ -144,7 +146,7 @@ export function AtsAnalyticsClient() {
         {/* Application sources */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
           <div className="h-layer-sep mb-4">
-            <span className="kpi-label">Application Sources</span>
+            <span className="kpi-label">{t("applicationSources")}</span>
           </div>
           <div className="space-y-2.5">
             {data.bySources.map(s => (
@@ -172,7 +174,7 @@ export function AtsAnalyticsClient() {
         {/* Department breakdown */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
           <div className="h-layer-sep mb-4">
-            <span className="kpi-label">By Department</span>
+            <span className="kpi-label">{t("byDepartment")}</span>
           </div>
           <div className="space-y-3">
             {data.byDepartment.map(d => (
@@ -198,7 +200,7 @@ export function AtsAnalyticsClient() {
         {/* Rejection reasons */}
         <div className="rounded-xl border border-line bg-surface px-5 py-5">
           <div className="h-layer-sep mb-4">
-            <span className="kpi-label">Rejection Reasons</span>
+            <span className="kpi-label">{t("rejectionReasons")}</span>
           </div>
           {data.rejectionReasons.length > 0 ? (
             <div className="space-y-2">
@@ -221,7 +223,7 @@ export function AtsAnalyticsClient() {
               })}
             </div>
           ) : (
-            <p className="kpi-label text-metadata">No rejections yet</p>
+            <p className="kpi-label text-metadata">{t("noRejections")}</p>
           )}
         </div>
       </div>

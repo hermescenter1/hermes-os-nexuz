@@ -1680,6 +1680,96 @@
       "acquisitionLabel": "Erfassungszeit",
       "receivedLabel": "Erzeugt um",
       "adapterLabel": "Erzeugt von"
+    },
+    "alarms": {
+      "detail": {
+        "caseRef": "Verknüpfter Fall",
+        "category": "Kategorie",
+        "device": "Gerät",
+        "heading": "Nachweis",
+        "observedAt": "Beobachtet am",
+        "prompt": "Wählen Sie einen Alarm, um seinen Nachweis zu prüfen.",
+        "vendor": "Hersteller"
+      },
+      "filter": {
+        "all": "Alle",
+        "clear": "Alle Schweregrade anzeigen",
+        "legend": "Nach Schweregrad filtern"
+      },
+      "heat": {
+        "heading": "Verteilung nach Kategorie"
+      },
+      "ledger": {
+        "categories": "Kategorien",
+        "posture": {
+          "critical": "Kritische Aufmerksamkeit erforderlich",
+          "info": "Nur informativ",
+          "warning": "Erhöht — Prüfung erforderlich"
+        },
+        "total": "Alarme im Betrachtungsbereich",
+        "vendors": "Betroffene Hersteller"
+      },
+      "provenance": {
+        "fresh": "Aktuell",
+        "readOnly": "Nur Lesen — keine Quittierung über diese Oberfläche",
+        "source": "Quelle: Engineering-Wissensgraph",
+        "stale": "Veraltet",
+        "unknownTime": "Erstellungszeit unbekannt"
+      },
+      "queue": {
+        "heading": "Alarmliste",
+        "showing": "{shown} angezeigt, nach Schweregrad geordnet"
+      },
+      "severity": {
+        "critical": "Kritisch",
+        "info": "Hinweis",
+        "warning": "Warnung"
+      },
+      "state": {
+        "emptyBody": "Der Wissensgraph leitet derzeit keine Alarmknoten ab. Das ist ein gemeldetes Ergebnis, kein Verbindungsfehler.",
+        "emptyTitle": "Keine Alarme abgeleitet",
+        "errorBody": "Die Alarmdaten konnten nicht gelesen werden. Der Alarmzustand ist UNBEKANNT — dies ist keine Meldung, dass die Anlage störungsfrei ist.",
+        "errorTitle": "Alarmdaten nicht verfügbar",
+        "loadingBody": "Der Engineering-Wissensgraph wird neu aufgebaut.",
+        "loadingTitle": "Alarmdaten werden geladen",
+        "noMatchBody": "Kein Alarm entspricht {severity}. {total, plural, one {# Alarm verbleibt} other {# Alarme verbleiben}} mit anderen Schweregraden im Betrachtungsbereich.",
+        "noMatchTitle": "Keine Alarme mit diesem Schweregrad",
+        "rateLimitedBody": "Zu viele Anfragen haben den Endpunkt des abgeleiteten Graphen erreicht. Der Alarmzustand bleibt UNBEKANNT bis zum nächsten erfolgreichen Abruf.",
+        "rateLimitedTitle": "Alarmdaten gedrosselt",
+        "retry": "Erneut versuchen"
+      },
+      "unknown": "Nicht erfasst",
+      "unknownTimestamp": "Vom Datendienst nicht geliefert"
+    },
+    "operations": {
+      "family": {
+        "description": "Unternehmensweite Industrieintelligenz: Standortlage, Alarmuntersuchung, Engineering-Wissen und das strategische Lagezentrum.",
+        "eyebrow": "HERMES INTELLIGENCE NETWORK · GLOBALER BETRIEB"
+      },
+      "intelligenceTabs": {
+        "alarms": "Alarmanalyse",
+        "graph": "Wissensgraph",
+        "platform": "Plattformstatus",
+        "vendors": "Herstellerintelligenz"
+      },
+      "nav": {
+        "alertCenter": "ALARMZENTRALE",
+        "globalOps": "GLOBALER BETRIEB",
+        "intelligence": "LAGEBILD",
+        "label": "Bereiche der Betriebszentrale",
+        "siteMonitor": "STANDORTMONITOR",
+        "warRoom": "LAGEZENTRUM"
+      },
+      "pageLeads": {
+        "alertCenter": "Nur-Lese-Untersuchung aller Alarme, die der Engineering-Wissensgraph derzeit ableitet. Hermes berät, die Ingenieurin oder der Ingenieur entscheidet."
+      },
+      "pageTitles": {
+        "alertCenter": "Alarmzentrale",
+        "globalOps": "Globaler Betrieb",
+        "intelligence": "Lagebildwand",
+        "siteMonitor": "Standortmonitor",
+        "warRoom": "Strategisches Lagezentrum"
+      }
     }
   },
   "knowledge": {
@@ -3606,7 +3696,7 @@
       "estimated": "Geschätzt"
     },
     "recommendations": {
-      "title": "Instandhaltungsempfehlungen",
+      "title": "Instandhaltungs­empfehlungen",
       "subtitle": "Evidenzgestützte Empfehlungen, abgeleitet aus Telemetrie-, Zustands- und KPI-Analyse.",
       "priority": "Priorität",
       "type": "Typ",
@@ -3888,7 +3978,23 @@
       "idempotentDesc": "Ein zweifacher Neuaufbau mit unveränderten Daten erzeugt denselben Graphen.",
       "transaction": "Transaktional",
       "transactionDesc": "Der vollständige Neuaufbau läuft in einer DB-Transaktion. Ein fehlgeschlagener Neuaufbau lässt den bisherigen Graphen unverändert."
-    }
+    },
+    "engineeringPageEyebrow": "HERMES WISSENSGRAPH-ENGINE · PHASE 56",
+    "engineeringPageSubtitle": "Deterministischer Beziehungsgraph, der Lieferanten, Protokolle, Anlagen, Alarme, Grundursachen und Lösungswissen über 16 Knotentypen und 11 Beziehungstypen hinweg verbindet.",
+    "engineeringPageTitle": "Technischer Wissensgraph",
+    "stateEmptyHint": "Der Graph wurde erfolgreich gelesen und enthält derzeit keine Knoten.",
+    "stateEmptyTitle": "Graph ist leer",
+    "stateForbiddenHint": "Ihr Konto hat keine Berechtigung, den Wissensgraphen dieser Organisation zu lesen.",
+    "stateForbiddenTitle": "Zugriff verweigert",
+    "stateInvalidResponseHint": "Der Server hat in einem Format geantwortet, das diese Seite nicht kennt. Es wird nichts angezeigt, statt ungeprüfte Werte darzustellen.",
+    "stateInvalidResponseTitle": "Unerwartete Antwort",
+    "stateNotFoundHint": "Für diese Organisation wurde noch kein Wissensgraph aufgebaut.",
+    "stateNotFoundTitle": "Kein Graph verfügbar",
+    "stateRequestErrorHint": "Der Wissensgraph konnte nicht erreicht werden. Das ist ein Verbindungs- oder Serverproblem und kein leerer Graph.",
+    "stateRequestErrorTitle": "Graph nicht erreichbar",
+    "stateSignIn": "Anmelden",
+    "stateUnauthorizedHint": "Melden Sie sich erneut an, um den Engineering-Wissensgraphen zu laden. Es werden keine Werte angezeigt, die keiner Sitzung zugeordnet werden können.",
+    "stateUnauthorizedTitle": "Ihre Sitzung ist abgelaufen"
   },
   "siteSecurity": {
     "siteRole": "Standortrolle",
@@ -8988,5 +9094,127 @@
     "engineeringMemory": "Engineering-Wissensspeicher",
     "knowledgeGraph": "Wissensgraph",
     "domainExpertise": "Fachdomänen"
+  },
+  "ats": {
+    "analyticsUnavailable": "Auswertungsdaten nicht verfügbar",
+    "applicationSources": "Bewerbungsquellen",
+    "applied": "Beworben",
+    "auth": "Erlaubnis",
+    "authorization": "Arbeitserlaubnis",
+    "available": "Verfügbar",
+    "avgScore": "Durchschnittliche Bewertung",
+    "byDepartment": "Nach Abteilung",
+    "cancelled": "Abgesagt",
+    "candidateProfile": "Bewerberprofil",
+    "completed": "Abgeschlossen",
+    "contractContract": "Werkvertrag",
+    "contractFullTime": "Vollzeit",
+    "contractInternship": "Praktikum",
+    "contractPartTime": "Teilzeit",
+    "cvSummary": "Lebenslauf-Zusammenfassung",
+    "email": "E-Mail",
+    "emptyColumn": "Leer",
+    "experience": "Berufserfahrung",
+    "hireRate": "Einstellungsquote",
+    "hired": "Eingestellt",
+    "inPipeline": "In der Pipeline",
+    "industry": "Branche",
+    "interviewNotes": "Gesprächsnotizen",
+    "location": "Standort",
+    "metaTitle": "ATS — Enterprise-Recruiting-Plattform · Hermes OS",
+    "minExperience": "Mindesterfahrung",
+    "navAnalytics": "AUSWERTUNG",
+    "navCandidates": "BEWERBER",
+    "navInterviews": "GESPRÄCHE",
+    "navJobs": "STELLEN",
+    "navOverview": "ÜBERSICHT",
+    "navPipeline": "PIPELINE",
+    "niceToHave": "Wünschenswert",
+    "noCandidatesMatch": "Keine Bewerber entsprechen Ihren Filtern",
+    "noInterviewsMatch": "Keine Gespräche entsprechen diesem Filter",
+    "noRejections": "Noch keine Ablehnungen",
+    "notOffered": "Nicht angeboten",
+    "notScheduled": "Nicht terminiert",
+    "offersExtended": "Angebote unterbreitet",
+    "openJobs": "Offene Stellen",
+    "openPositions": "Offene Stellen",
+    "opened": "Veröffentlicht",
+    "pageEyebrow": "HERMES OS · ENTERPRISE-RECRUITING-PLATTFORM · PHASE 58",
+    "pageSubtitle": "Industrielle Talent-Pipeline · Regelbasiertes ATS-Scoring · Keine KI-Inferenz · Deterministische Recruiting-Intelligenz",
+    "pageTitle": "ATS — Bewerbermanagementsystem",
+    "pending": "Ausstehend",
+    "phone": "Telefon",
+    "pipelineFunnel": "Pipeline-Trichter",
+    "pipelineOverview": "Übersicht der Einstellungs-Pipeline",
+    "pipelineUnavailable": "Pipeline-Daten nicht verfügbar",
+    "recentActivity": "Letzte Einstellungsaktivität",
+    "rejected": "Abgelehnt",
+    "rejectionReasons": "Ablehnungsgründe",
+    "requiredSkills": "Erforderliche Fähigkeiten",
+    "riskFlags": "RISIKOHINWEISE",
+    "salary": "Gehalt",
+    "salaryExp": "Gehaltsvorstellung",
+    "salaryFit": "Gehaltspassung",
+    "scheduled": "Terminiert",
+    "scoreAnalysis": "Analyse der Bewertung",
+    "scoreDistribution": "Verteilung der Bewertungen",
+    "scoreRationale": "Begründung der Bewertung",
+    "searchPlaceholder": "Bewerber, Fähigkeiten, Standort suchen…",
+    "selectCandidate": "Bewerber auswählen",
+    "selectCandidateHint": "Klicken Sie eine Zeile an, um die Bewertung aufzuschlüsseln",
+    "skillMatch": "Fachliche Passung",
+    "skills": "Fähigkeiten",
+    "source": "Quelle",
+    "sourceAgency": "Agentur",
+    "sourceDirect": "Direkt",
+    "sourceIndeed": "Indeed",
+    "sourceInternal": "Intern",
+    "sourceLinkedin": "LinkedIn",
+    "sourceReferral": "Empfehlung",
+    "statusCancelled": "Storniert",
+    "statusCompleted": "Abgeschlossen",
+    "statusPending": "Ausstehend",
+    "statusScheduled": "Geplant",
+    "statusTotal": "Gesamt",
+    "topOpenPositions": "Wichtigste offene Stellen",
+    "topSkills": "Häufigste Fähigkeiten",
+    "total": "Gesamt",
+    "totalCandidates": "Bewerber gesamt",
+    "unavailable": "Bewerbungsdaten nicht verfügbar",
+    "velocityDays": "Dauer (Tage)",
+    "visaSponsorship": "Visum-Unterstützung",
+    "workAuth": "Arbeitserlaubnis",
+    "yearsExpShort": "{years} J. Erf.",
+    "yearsExperience": "{years} Jahre Erfahrung"
+  },
+  "customerSuccess": {
+    "created": "Erstellt",
+    "due": "Fällig",
+    "dueDate": "Fälligkeitsdatum",
+    "filterAll": "Alle",
+    "metaTitle": "Kundenerfolgszentrum · Hermes OS",
+    "milestoneProgress": "Fortschritt der Meilensteine",
+    "milestones": "Meilensteine",
+    "milestonesDone": "Erreichte Meilensteine",
+    "navAccounts": "Konten",
+    "navHealth": "Zustand",
+    "navOverview": "Übersicht",
+    "navRisks": "Risiken",
+    "navSuccessPlans": "Erfolgspläne",
+    "navUsage": "Nutzung",
+    "nextAction": "NÄCHSTER SCHRITT",
+    "noPlansMatch": "Keine Erfolgspläne entsprechen dem gewählten Filter",
+    "owner": "Verantwortlich",
+    "pageEyebrow": "HERMES OS · KUNDENERFOLGSZENTRUM · PHASE 59",
+    "pageSubtitle": "Zustandsüberwachung · Nutzungsanalyse · Risikointelligenz · Verwaltung von Erfolgsplänen · Deterministische Bewertung",
+    "pageTitle": "Kundenerfolgszentrum",
+    "percentComplete": "{pct}% abgeschlossen",
+    "plansCount": "{count} Pläne",
+    "statusAtRisk": "Gefährdet",
+    "statusCompleted": "Abgeschlossen",
+    "statusDelayed": "Verzögert",
+    "statusOnTrack": "Im Plan",
+    "totalPlans": "Pläne gesamt",
+    "unavailable": "Daten zum Erfolgsplan nicht verfügbar"
   }
 }

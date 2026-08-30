@@ -43,6 +43,14 @@ export type DeIdenticalCategory =
 
 /** Leaf key path → reviewed category. 362 entries (Phase 88 audit). */
 export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
+  // B1-F03: the ATS pipeline tab. German industrial HR usage keeps
+  // "Pipeline" as a loanword, exactly as the neighbouring multiSite surface does.
+  "ats.navPipeline": "accepted-german-loanword",
+  // B1-F03 R3: candidate-source platform names. Proper nouns, rendered
+  // verbatim in every locale; they are catalogue entries so the component
+  // maps a stored enum to a KEY rather than to a hard-coded label.
+  "ats.sourceLinkedin": "contact-url-or-propernoun",
+  "ats.sourceIndeed": "contact-url-or-propernoun",
   "about.companyTitle": "brand-or-product",
   "about.founderName": "contact-url-or-propernoun",
   "about.locationIran": "contact-url-or-propernoun",
@@ -476,14 +484,16 @@ export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   // 104-E: +1 — the same product name as the PROPOSED gate actor.
   "brand-or-product": 69,
   // 104-I3: +2 — the sample URL and the country name Iran.
-  "contact-url-or-propernoun": 17,
+  // B1-F03 R3: +2 — ats.sourceLinkedin, ats.sourceIndeed.
+  "contact-url-or-propernoun": 19,
   // 104-I3: +3 — Website, Standard, Distributor.
   // 104-I3: +1 — demo.form.optional.
   "german-word-identical": 107,
   "non-linguistic": 19,
   // 104-I3: +2 — Compliance, Premium.
   // B1.2: +2 — Remote, Hybrid (work-mode labels; German uses both loanwords).
-  "accepted-german-loanword": 78,
+  // B1-F03: +1 — ats.navPipeline.
+  "accepted-german-loanword": 79,
   // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
   // F2: +4  — the same acronyms in the real public header registry.
   // 104-I3: +2 — EDMS/CMMS as demo-request interest options.

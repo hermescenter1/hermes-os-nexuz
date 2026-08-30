@@ -1,5 +1,11 @@
 import { SitesMonitorClient } from "@/components/operations/SitesMonitorClient";
+import { OperationsPageTitle } from "@/components/operations/OperationsPageTitle";
 
 export default function SitesMonitorPage() {
-  return <SitesMonitorClient />;
+  return (
+    <>
+      <OperationsPageTitle titleKey="siteMonitor" />
+      <SitesMonitorClient />
+    </>
+  );
 }

@@ -1,18 +1,25 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 
+/*
+ * The KEY is the contract, not the label: it addresses the catalogue entry and
+ * survives translation, so a German or Persian rendering can never reorder or
+ * rename a tab.
+ */
 const TABS = [
-  { href: "/dashboard/ats",             label: "OVERVIEW"   },
-  { href: "/dashboard/ats/jobs",        label: "JOBS"       },
-  { href: "/dashboard/ats/candidates",  label: "CANDIDATES" },
-  { href: "/dashboard/ats/pipeline",    label: "PIPELINE"   },
-  { href: "/dashboard/ats/interviews",  label: "INTERVIEWS" },
-  { href: "/dashboard/ats/analytics",   label: "ANALYTICS"  },
-];
+  { href: "/dashboard/ats",             key: "navOverview"   },
+  { href: "/dashboard/ats/jobs",        key: "navJobs"       },
+  { href: "/dashboard/ats/candidates",  key: "navCandidates" },
+  { href: "/dashboard/ats/pipeline",    key: "navPipeline"   },
+  { href: "/dashboard/ats/interviews",  key: "navInterviews" },
+  { href: "/dashboard/ats/analytics",   key: "navAnalytics"  },
+] as const;
 
 export function AtsSubNav() {
   const pathname = usePathname();
+  const t = useTranslations("ats");
 
   return (
     <nav className="flex items-center gap-0 border-b border-line mb-6 overflow-x-auto">
@@ -30,7 +37,7 @@ export function AtsSubNav() {
                 : "border-transparent text-muted hover:text-ink"
             }`}
           >
-            <span className="kpi-label">{tab.label}</span>
+            <span className="kpi-label">{t(tab.key)}</span>
           </Link>
         );
       })}

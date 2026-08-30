@@ -5,7 +5,7 @@
  * Server component. Renders KnowledgeGraphClient which fetches /api/eng-graph.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { AppShell }          from "@/components/app-shell";
 import { PageHeader }        from "@/components/ui/PageHeader";
 import { KnowledgeGraphClient } from "@/components/knowledge-graph/KnowledgeGraphClient";
@@ -21,15 +21,21 @@ export default async function KnowledgeGraphPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  /*
+   * GATE B.2 (B0-F04) — this page owns its header copy: it passes the eyebrow,
+   * title and subtitle to PageHeader, which only renders what it is handed.
+   * All three rendered the English string in DE and FA before this change.
+   */
+  const t = await getTranslations("knowledgeGraph");
 
   return (
     <AppShell>
       <div className="mx-auto max-w-screen-2xl px-6 sm:px-8 pb-20">
 
         <PageHeader
-          eyebrow="HERMES KNOWLEDGE GRAPH ENGINE · PHASE 56"
-          title="Engineering Knowledge Graph"
-          subtitle="Deterministic relationship graph connecting vendors, protocols, assets, alarms, root causes, and resolution knowledge across 16 node types and 11 relationship types."
+          eyebrow={t("engineeringPageEyebrow")}
+          title={t("engineeringPageTitle")}
+          subtitle={t("engineeringPageSubtitle")}
           level="page"
         />
 

@@ -42,6 +42,12 @@
  */
 
 import type { ReactNode } from "react";
+import type {
+  DashboardSnapshot,
+  DeviceStatus,
+  HealthStatus,
+  LineStatus,
+} from "@/lib/services/types";
 
 /** Stable hooks for the disclosure gates; also used by the browser evidence run. */
 export const SIMULATED_MODE_ATTR = "data-hermes-simulated-mode";
@@ -160,7 +166,52 @@ export function SimulatedValue({
  * print), the visually-hidden text is the word channel, and the marker travels
  * with both.
  */
-const STATUS_GLYPH: Record<string, string> = {
+/**
+ * PHASE 104-I.D / D.0-R3 — the accepted status/tone TYPE discipline, ported.
+ *
+ * Phase 104-I.D2 split one `Record<string, string>` into per-domain records
+ * keyed by closed unions, because the single record served lifecycle status AND
+ * risk-trend direction at once: the literal `"down"` mapped to the SUCCESS
+ * accent, which is correct for falling risk and dangerously wrong for a device
+ * that is down. Keyed by `string`, both readings type-checked.
+ *
+ * That discipline is re-established here, on the component newer main actually
+ * uses. `StatusDot` is NOT restored — it carried state by hue alone and was
+ * `aria-hidden`, and removing it was deliberate. What is ported is the typing,
+ * not the component.
+ *
+ * The tone vocabulary is not invented: `signal | muted | warn | danger` are the
+ * accepted values read off the Phase 104 tables, and the class strings they map
+ * to are the accepted ones. A caller now names a SEMANTIC tone and cannot pass
+ * an arbitrary class, so tone is no longer a free string arriving from a lookup
+ * that might have missed.
+ */
+export type StatusTone = "signal" | "muted" | "warn" | "danger";
+
+/** The single place a tone becomes a colour. */
+export const STATUS_TONE_CLASS = {
+  signal: "text-signal",
+  muted: "text-muted",
+  warn: "text-warn",
+  danger: "text-danger",
+} satisfies Record<StatusTone, string>;
+
+/**
+ * Every status value this component can be asked to render — the union of the
+ * three snapshot domains that actually reach it.
+ *
+ * `risk.trend` is deliberately NOT a member. It is a direction, not a lifecycle
+ * state, it never reaches `SimulatedStatus`, and folding it in here is exactly
+ * how the two meanings of `"down"` collided in the first place.
+ */
+export type SimulatedStatusValue = LineStatus | DeviceStatus | HealthStatus;
+
+/**
+ * The shape channel. `satisfies` keeps the literal glyph types while making the
+ * record exhaustive over the union: adding a status without a glyph fails the
+ * build instead of silently falling back to a generic dot.
+ */
+export const STATUS_GLYPH = {
   running: "▶",
   online: "●",
   ok: "●",
@@ -169,6 +220,46 @@ const STATUS_GLYPH: Record<string, string> = {
   degraded: "▲",
   fault: "■",
   offline: "■",
+} satisfies Record<SimulatedStatusValue, string>;
+
+/** Direction of the RISK score, taken from the snapshot rather than restated. */
+export type RiskTrend = DashboardSnapshot["risk"]["trend"];
+
+/**
+ * Status tone, split by semantic domain.
+ *
+ * Each domain is keyed by its own closed union and valued by the closed tone
+ * union, so a status can only be coloured by the meaning it actually has, every
+ * key is exhaustive, and a new member of any union fails the build instead of
+ * silently rendering unstyled.
+ *
+ * The tables live here rather than in the consumer because the tone vocabulary,
+ * the glyph table and the mappings are one contract: splitting them across
+ * modules is how a status came to have a glyph but no tone.
+ */
+export const LINE_TONE: Record<LineStatus, StatusTone> = {
+  running: "signal",
+  idle: "muted",
+  fault: "danger",
+};
+
+export const DEVICE_TONE: Record<DeviceStatus, StatusTone> = {
+  online: "signal",
+  offline: "danger",
+  fault: "danger",
+};
+
+export const HEALTH_TONE: Record<HealthStatus, StatusTone> = {
+  ok: "signal",
+  warning: "warn",
+  degraded: "warn",
+};
+
+/** Falling risk is the good outcome, which is why this is its own domain. */
+export const RISK_TREND_TONE: Record<RiskTrend, StatusTone> = {
+  up: "danger",
+  down: "signal",
+  flat: "muted",
 };
 
 export function SimulatedStatus({
@@ -176,23 +267,32 @@ export function SimulatedStatus({
   label,
   marker,
   path,
-  toneClassName = "",
+  tone,
 }: {
-  /** The raw snapshot enum, used only to choose the shape. */
-  status: string;
+  /**
+   * The snapshot enum, used to choose the shape.
+   *
+   * UNTRUSTED_RUNTIME_STATUS never reaches this prop: `validateDashboardFrame`
+   * checks every status against its closed union and REJECTS the whole frame
+   * fail-closed, so what arrives here is TYPE_SAFE_INTERNAL_STATUS. That is why
+   * there is no generic-dot fallback below — a valid status without a glyph is
+   * now a build failure rather than an invisible one.
+   */
+  status: SimulatedStatusValue;
   /** The LOCALIZED status word. */
   label: string;
   marker: string;
   path: string;
-  toneClassName?: string;
+  /** Semantic tone, not a class name. */
+  tone: StatusTone;
 }) {
   return (
     <span
-      className={`hermes-sim-status ${toneClassName}`}
+      className={`hermes-sim-status ${STATUS_TONE_CLASS[tone]}`}
       {...{ [OPERATIONAL_VALUE_ATTR]: "simulated", [SNAPSHOT_PATH_ATTR]: path }}
     >
       <span aria-hidden="true" className="hermes-sim-status__glyph">
-        {STATUS_GLYPH[status] ?? "●"}
+        {STATUS_GLYPH[status]}
       </span>
       <span className="sr-only">{label} {marker}</span>
     </span>
