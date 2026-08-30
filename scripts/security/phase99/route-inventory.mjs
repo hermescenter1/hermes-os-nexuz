@@ -1,7 +1,7 @@
 /**
  * PHASE 99 — static route-security inventory.
  *
- * Enumerates every Next.js App Router API handler (`src/app/api/**\/route.ts`) and
+ * Enumerates every Next.js App Router route handler (`src/app/**\/route.ts`) and
  * derives, PER (path, method), the security posture that the source code actually
  * proves. Nothing here is inferred from UI affordances: a hidden button is not an
  * authorization control, so only guard calls inside the handler body count.
@@ -14,14 +14,56 @@
  * Pure Node stdlib, offline, deterministic, no network, no secrets.
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, lstatSync, existsSync } from "node:fs";
 import { join, dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { PUBLIC_SURFACE, HEALTH_SURFACE, WEBHOOK_SURFACE } from "./public-surface.mjs";
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const API_ROOT = join(REPO_ROOT, "src", "app", "api");
+
+/**
+ * The App Router root — the enumeration root for route modules.
+ *
+ * FINDING-109B0-001: this used to be `src/app/api`, which silently excluded
+ * every route handler served from outside the `/api` prefix. Two real, publicly
+ * reachable endpoints were therefore absent from the security inventory:
+ * `/llms.txt` and `/indexnow-key.txt`. Their directory names contain a dot
+ * because the segment name IS the public URL, which made the omission look like
+ * a dot-filtering bug. It was not: there is no dot predicate anywhere in this
+ * walk and there never was. The cause was the enumeration ROOT.
+ *
+ * An attack-surface inventory scoped to a URL prefix is not an attack-surface
+ * inventory, so the root is now the App Router itself.
+ */
+export const APP_ROOT = join(REPO_ROOT, "src", "app");
+
+/**
+ * Directories that never contain product route source.
+ *
+ * Exclusion is by EXACT directory-name identity, never by a heuristic such as
+ * "the name contains a dot" — that heuristic is precisely what would drop
+ * `llms.txt` while happily walking a build directory named without one.
+ * Comparison is case-sensitive against the name `readdir` actually returned, so
+ * it is deterministic on both Windows and POSIX; the repository names all of
+ * these in lower case and nothing here depends on the filesystem's own case
+ * folding.
+ */
+export const NON_SOURCE_DIRECTORIES = Object.freeze([
+  "__tests__",
+  "node_modules",
+  ".git",
+  ".next",
+  ".turbo",
+  ".vercel",
+  ".claude",
+  "dist",
+  "build",
+  "coverage",
+]);
+
+/** Route module filenames Next.js recognises for a route handler. */
+export const ROUTE_MODULE_NAMES = Object.freeze(["route.ts", "route.tsx"]);
 
 export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 
@@ -124,23 +166,48 @@ export const MUTATION_TOKENS = [
   "$transaction(",
 ];
 
-/** Recursively collect `route.ts` files under src/app/api. */
-export function collectRouteFiles(apiRoot = API_ROOT) {
+/**
+ * Recursively collect every App Router route module under `appRoot`.
+ *
+ * Rules, all of them deliberate:
+ *   - the root is the App Router, not a URL prefix (FINDING-109B0-001);
+ *   - a directory is skipped only when its name is an EXACT member of
+ *     {@link NON_SOURCE_DIRECTORIES}; a dot in the name means nothing;
+ *   - `lstat` is used, and symlinks are never followed, so a link into
+ *     `node_modules` or out of the repository cannot inject or duplicate routes;
+ *   - ordering is by the POSIX-normalised path relative to the root, so the
+ *     generated inventory is byte-identical on Windows and Linux. Sorting the
+ *     native absolute paths would order `a-b` against `a/c` differently under
+ *     `\` and `/`.
+ */
+export function collectRouteFiles(appRoot = APP_ROOT) {
   const out = [];
-  if (!existsSync(apiRoot)) return out;
+  if (!existsSync(appRoot)) return out;
+  const excluded = new Set(NON_SOURCE_DIRECTORIES);
   const walk = (dir) => {
     for (const name of readdirSync(dir).sort()) {
       const full = join(dir, name);
-      if (statSync(full).isDirectory()) {
-        if (name === "__tests__" || name === "node_modules") continue;
+      const st = lstatSync(full);
+      if (st.isSymbolicLink()) continue;
+      if (st.isDirectory()) {
+        if (excluded.has(name)) continue;
         walk(full);
-      } else if (name === "route.ts" || name === "route.tsx") {
+      } else if (st.isFile() && ROUTE_MODULE_NAMES.includes(name)) {
         out.push(full);
       }
     }
   };
-  walk(apiRoot);
-  return out.sort();
+  walk(appRoot);
+  return out.sort((a, b) => {
+    const ka = toPosixRelative(a, appRoot);
+    const kb = toPosixRelative(b, appRoot);
+    return ka < kb ? -1 : ka > kb ? 1 : 0;
+  });
+}
+
+/** Path relative to `from`, with POSIX separators, stable on every platform. */
+export function toPosixRelative(absPath, from) {
+  return relative(from, absPath).split(sep).join("/");
 }
 
 /** `src/app/api/foo/[id]/route.ts` → `/api/foo/[id]` (POSIX, stable on Windows). */
@@ -358,7 +425,7 @@ export function hasMutation(body) {
 
 /** Build the full inventory. Deterministic ordering. */
 export function buildRouteInventory({ repoRoot = REPO_ROOT } = {}) {
-  const files = collectRouteFiles(join(repoRoot, "src", "app", "api"));
+  const files = collectRouteFiles(join(repoRoot, "src", "app"));
   const routes = [];
   for (const abs of files) {
     const apiPath = toApiPath(abs, repoRoot);

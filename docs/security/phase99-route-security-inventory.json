@@ -15,10 +15,10 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 376,
-    "handlers": 526,
+    "routeFiles": 378,
+    "handlers": 528,
     "byClassification": {
-      "PUBLIC_READ": 39,
+      "PUBLIC_READ": 41,
       "PUBLIC_WRITE": 14,
       "AUTHENTICATED_USER": 215,
       "TENANT_MEMBER": 125,
@@ -7068,6 +7068,28 @@
       "method": "POST",
       "file": "src/app/api/vendors/apply/route.ts",
       "classification": "PUBLIC_WRITE",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/indexnow-key.txt",
+      "method": "GET",
+      "file": "src/app/indexnow-key.txt/route.ts",
+      "classification": "PUBLIC_READ",
+      "authEvidence": [],
+      "declaredSurface": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/llms.txt",
+      "method": "GET",
+      "file": "src/app/llms.txt/route.ts",
+      "classification": "PUBLIC_READ",
       "authEvidence": [],
       "declaredSurface": true,
       "tenantScoped": false,

@@ -474,27 +474,26 @@ describe("109-B0 · security inventory and documentation", () => {
       (f) => !existsSync(path.join(ROOT, f))
     );
     expect(missing).toEqual([]);
-    // And every route file in the source tree must be listed, except a
-    // documented PRE-EXISTING gap in the canonical generator
-    // (FINDING-109B0-001, reported separately and NOT introduced here): it omits
-    // routes whose parent DIRECTORY name contains a dot. Verified at the pinned
-    // base 1191c8b7 as well, where the generator reported 377 of 379 route
-    // modules on disk.
-    const GENERATOR_BLIND_SPOT = [
+    // And every route file in the source tree must be listed — with NO
+    // exceptions. B0 recorded a carve-out here for two root-level route modules
+    // the canonical generator could not see (FINDING-109B0-001). That finding is
+    // closed in B0.1: the generator now enumerates the App Router root instead
+    // of the `/api` subtree, so the exclusion list is gone rather than merely
+    // shortened. A carve-out that outlives its cause is how a real deletion
+    // hides.
+    const rootLevelRoutes = [
       "src/app/indexnow-key.txt/route.ts",
       "src/app/llms.txt/route.ts",
     ];
-    // The exclusion may not hide a deletion, and may not hide a telemetry
-    // surface: both files must still exist and neither may reach a plant-shaped
-    // producer.
-    for (const f of GENERATOR_BLIND_SPOT) {
+    for (const f of rootLevelRoutes) {
       expect(existsSync(path.join(ROOT, f)), `${f} disappeared`).toBe(true);
       expect(reachesPlantShapedProducer(closureOf(path.join(ROOT, f)))).toEqual([]);
     }
     const listed = new Set(inv.routes.map((r) => r.file));
-    const unlisted = ROUTE_MODULES.map(rel)
-      .filter((f) => !listed.has(f))
-      .filter((f) => !GENERATOR_BLIND_SPOT.includes(f));
+    for (const f of rootLevelRoutes) {
+      expect(listed.has(f), `${f} is still missing from the inventory`).toBe(true);
+    }
+    const unlisted = ROUTE_MODULES.map(rel).filter((f) => !listed.has(f));
     expect(unlisted).toEqual([]);
   });
 
