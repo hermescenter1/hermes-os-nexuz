@@ -1,16 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import type { IntelligenceStats, AlertSeverity } from "@/lib/operations/types";
 
 type TabKey = "graph" | "vendors" | "alarms" | "platform";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "graph",    label: "KNOWLEDGE GRAPH"   },
-  { key: "vendors",  label: "VENDOR INTELLIGENCE"},
-  { key: "alarms",   label: "ALARM ANALYSIS"    },
-  { key: "platform", label: "PLATFORM STATUS"   },
-];
+/*
+ * PHASE 104-I.D — the labels are looked up, not literals.
+ *
+ * These four were hard-coded English and rendered as English in EN, DE and FA
+ * alike, while the Operations rail directly above them was correctly localized.
+ * The KEYS are the contract: each addresses both its catalog entry and its
+ * `data-phase104-intelligence-tab` attribute, so a translation can never
+ * silently move a tab or rename what the visual harness measures.
+ */
+const TAB_KEYS: TabKey[] = ["graph", "vendors", "alarms", "platform"];
 
 const SEV_COLOR: Record<AlertSeverity, string> = {
   critical: "text-danger",
@@ -43,6 +48,41 @@ export function IntelligenceWallClient() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
   const [tab,     setTab]     = useState<TabKey>("graph");
+  // The same catalog the Operations rail reads from
+  // (`dashboard.operations.nav`), so there is one localization system, not two.
+  const t = useTranslations("dashboard.operations.intelligenceTabs");
+  const stripRef  = useRef<HTMLDivElement | null>(null);
+  const activeRef = useRef<HTMLButtonElement | null>(null);
+
+  /*
+   * Keep the SELECTED tab fully inside the strip.
+   *
+   * A click does not scroll a horizontal scroller on its own, so selecting a
+   * tab that sits past the visible edge left it selected but only partly
+   * readable. This is the same treatment the Operations rail already applies to
+   * its active route, and it is deliberately geometry-based: it compares
+   * bounding rectangles rather than reading `scrollLeft`, whose sign convention
+   * differs between engines under RTL. `scrollBy` moves the STRIP, never the
+   * document — `scrollIntoView` would scroll the page and fight the layout.
+   */
+  useEffect(() => {
+    const strip = stripRef.current;
+    const active = activeRef.current;
+    if (!strip || !active) return;
+
+    const stripBox = strip.getBoundingClientRect();
+    const tabBox = active.getBoundingClientRect();
+    const overflowsEnd = tabBox.right > stripBox.right;
+    const overflowsStart = tabBox.left < stripBox.left;
+    if (!overflowsEnd && !overflowsStart) return;
+
+    // Overshoot: the strip clamps to its own scroll range, so a generous margin
+    // can only help the tab clear the edge completely rather than almost.
+    const delta = overflowsEnd
+      ? tabBox.right - stripBox.right + 24
+      : tabBox.left - stripBox.left - 24;
+    strip.scrollBy({ left: delta, behavior: "auto" });
+  }, [tab]);
 
   useEffect(() => {
     fetch("/api/operations/intelligence")
@@ -92,21 +132,63 @@ export function IntelligenceWallClient() {
         ))}
       </div>
 
-      {/* Tab navigation */}
-      <div className="flex items-center gap-0 border-b border-line">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2.5 border-b-2 transition-colors flex-shrink-0 ${
-              tab === t.key
-                ? "border-signal text-signal"
-                : "border-transparent text-muted hover:text-ink"
-            }`}
-          >
-            <span className="kpi-label">{t.label}</span>
-          </button>
-        ))}
+      {/*
+        Tab navigation.
+
+        PHASE 104-I.D — mobile page-level horizontal overflow.
+
+        These four buttons are `flex-shrink-0` inside a container that had no
+        scroll of its own, so the strip laid out at its intrinsic width — 552px
+        in EN and DE, 471px in FA — inside a 288px content column, and widened
+        the DOCUMENT. Measured before the fix: +248px at 320, +208 at 360, +178
+        at 390 (EN and DE); +167 / +127 / +97 (FA). Those baselines were taken
+        while all four labels were hard-coded English in every locale, which is
+        why FA differed at all: identical Latin strings simply set narrower in
+        the Persian font stack. The labels are localized now, so the intrinsic
+        widths differ per locale on their own merits and the strip must keep
+        working for whichever is widest.
+
+        Root cause was isolated by removal, not inferred: hiding this strip in
+        the live page dropped document overflow to 0 in all three locales, while
+        hiding the cookie-consent banner — which also measured 568px wide and
+        sorted top of the offender list — changed nothing. A `position: fixed`
+        element simply sizes itself to the visual viewport once the page is
+        already too wide, so it is a passenger, not the cause.
+
+        The strip now owns its horizontal scroll, exactly as the operations rail
+        above it does. Labels are neither truncated nor shrunk: a half-read
+        destination is worse than one the reader scrolls to. `pe-2` is
+        the same trailing pad the rail carries, so the last tab clears the edge
+        completely rather than almost.
+      */}
+      <div className="relative">
+        <div
+          ref={stripRef}
+          data-phase104-intelligence-tabs="true"
+          className="flex items-center gap-0 overflow-x-auto overscroll-x-contain border-b border-line pe-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {TAB_KEYS.map(key => (
+            <button
+              key={key}
+              ref={key === tab ? activeRef : undefined}
+              onClick={() => setTab(key)}
+              data-phase104-intelligence-tab={key}
+              data-phase104-intelligence-tab-active={tab === key ? "true" : "false"}
+              className={`px-4 py-2.5 border-b-2 transition-colors flex-shrink-0 whitespace-nowrap min-h-11 sm:min-h-0 ${
+                tab === key
+                  ? "border-signal text-signal"
+                  : "border-transparent text-muted hover:text-ink"
+              }`}
+            >
+              <span className="kpi-label">{t(key)}</span>
+            </button>
+          ))}
+        </div>
+        {/* Decorative: signals that the strip continues, and cannot take a tap. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 end-0 w-8 bg-gradient-to-l from-bg to-transparent rtl:bg-gradient-to-r"
+        />
       </div>
 
       {/* Tab: Knowledge Graph */}

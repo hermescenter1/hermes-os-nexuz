@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect }  from "react";
+import { useState, useEffect }  from "react";
+import { useTranslations } from "next-intl";
 import type { AtsOverview, PipelineStage } from "@/lib/ats/types";
 import { STAGE_LABELS, STAGE_ORDER } from "@/lib/ats/types";
 
@@ -22,6 +23,7 @@ const ACT_BADGE: Record<string, string> = {
 };
 
 export function AtsOverviewClient() {
+  const t = useTranslations("ats");
   const [data,    setData]    = useState<AtsOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +55,7 @@ export function AtsOverviewClient() {
   if (!data) {
     return (
       <div className="rounded-xl border border-danger/30 bg-surface px-5 py-4">
-        <p className="font-mono text-sm text-danger">ATS data unavailable</p>
+        <p className="font-mono text-sm text-danger">{t("unavailable")}</p>
       </div>
     );
   }
@@ -64,13 +66,13 @@ export function AtsOverviewClient() {
       {/* KPI strip */}
       <div className="global-ops-strip">
         {[
-          { label: "Open Positions",    value: data.openJobs,            color: "text-signal" },
-          { label: "Total Candidates",  value: data.totalCandidates,     color: "text-ink"    },
-          { label: "Avg ATS Score",     value: `${data.averageScore}/100`, color: "text-warn" },
-          { label: "In Pipeline",       value: data.totalCandidates - (data.byStage.hired + data.byStage.rejected), color: "text-ink" },
-          { label: "Offers Extended",   value: data.byStage.offer,       color: "text-warn"   },
-          { label: "Hired",             value: data.byStage.hired,       color: "text-signal" },
-          { label: "Velocity (days)",   value: data.hiringVelocityDays,  color: "text-metadata"  },
+          { label: t("openPositions"),    value: data.openJobs,            color: "text-signal" },
+          { label: t("totalCandidates"),  value: data.totalCandidates,     color: "text-ink"    },
+          { label: t("avgScore"),     value: `${data.averageScore}/100`, color: "text-warn" },
+          { label: t("inPipeline"),       value: data.totalCandidates - (data.byStage.hired + data.byStage.rejected), color: "text-ink" },
+          { label: t("offersExtended"),   value: data.byStage.offer,       color: "text-warn"   },
+          { label: t("hired"),             value: data.byStage.hired,       color: "text-signal" },
+          { label: t("velocityDays"),   value: data.hiringVelocityDays,  color: "text-metadata"  },
         ].map(kpi => (
           <div key={kpi.label} className="global-ops-cell">
             <p className="kpi-label mb-1.5">{kpi.label}</p>
@@ -85,7 +87,7 @@ export function AtsOverviewClient() {
         {/* Stage funnel */}
         <div className="lg:col-span-2 rounded-xl border border-line bg-surface px-5 py-5">
           <div className="h-layer-sep mb-4">
-            <span className="kpi-label">Hiring Pipeline Overview</span>
+            <span className="kpi-label">{t("pipelineOverview")}</span>
           </div>
           <div className="space-y-2.5">
             {STAGE_ORDER.map(stage => {
@@ -112,7 +114,7 @@ export function AtsOverviewClient() {
         {/* Top jobs */}
         <div className="rounded-xl border border-line bg-surface px-4 py-5">
           <div className="h-layer-sep mb-4">
-            <span className="kpi-label">Top Open Positions</span>
+            <span className="kpi-label">{t("topOpenPositions")}</span>
           </div>
           <div className="space-y-2">
             {data.topJobs.map((j, i) => (
@@ -131,7 +133,7 @@ export function AtsOverviewClient() {
       {/* Recent activity */}
       <div className="rounded-xl border border-line bg-surface px-5 py-5">
         <div className="h-layer-sep mb-4">
-          <span className="kpi-label">Recent Hiring Activity</span>
+          <span className="kpi-label">{t("recentActivity")}</span>
         </div>
         <div className="divide-y divide-line">
           {data.recentActivity.map(act => (

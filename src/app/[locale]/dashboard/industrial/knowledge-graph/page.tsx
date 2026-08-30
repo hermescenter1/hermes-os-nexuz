@@ -11,6 +11,9 @@ import { useTranslations, useLocale }     from "next-intl";
 import { GlassCard }           from "@/components/ui/GlassCard";
 import Link                    from "next/link";
 import { formatDateTime } from "@/lib/i18n/format";
+import { loadJson, type LoadState } from "@/lib/dashboard/load-state";
+import { classifyEmpty, isEmptyGraphOverview } from "@/lib/dashboard/empty-contract";
+import { LoadStatePanel } from "@/components/dashboard/LoadStatePanel";
 
 interface GraphOverview {
   nodeCount:   number;
@@ -22,6 +25,21 @@ interface GraphOverview {
     stale:            boolean;
     stalenessWarning: string | null;
   };
+}
+
+function isGraphOverview(v: unknown): v is GraphOverview {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  // staleness is read as `data?.staleness.stale`, where the optional chain
+  // guards `data` but NOT `staleness`. That is precisely how a 401 envelope
+  // reached render and threw, so the nested object is validated here.
+  const st = o.staleness as Record<string, unknown> | undefined;
+  return typeof o.nodeCount === "number"
+    && typeof o.edgeCount === "number"
+    && typeof o.nodesByType === "object" && o.nodesByType !== null
+    && typeof o.edgesByType === "object" && o.edgesByType !== null
+    && typeof st === "object" && st !== null
+    && typeof st.stale === "boolean";
 }
 
 const NODE_TYPE_COLORS: Record<string, string> = {
@@ -50,16 +68,24 @@ const EDGE_TYPE_COLORS: Record<string, string> = {
 export default function KnowledgeGraphPage() {
   const locale = useLocale();
   const t = useTranslations("knowledgeGraph");
-  const [data,    setData]    = useState<GraphOverview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState<string | null>(null);
+  const [loadState, setLoadState] = useState<LoadState<GraphOverview>>({ kind: "loading" });
+  // Non-null only in the success state, so no failed or malformed response can
+  // reach a render that expects a payload.
+  const data = loadState.kind === "success" ? loadState.data : null;
 
   useEffect(() => {
-    fetch("/api/industrial-graph")
-      .then(r => r.json())
-      .then((d: GraphOverview) => setData(d))
-      .catch(() => setError("Failed to load graph"))
-      .finally(() => setLoading(false));
+    const controller = new AbortController();
+    setLoadState({ kind: "loading" });
+    loadJson<GraphOverview>("/api/industrial-graph", isGraphOverview, controller.signal)
+      // A valid graph with no nodes and no edges is EMPTY, which is a different
+      // fact from the request having failed. The page already renders that state;
+      // until now nothing could produce it.
+      .then((next) => setLoadState(classifyEmpty(next, isEmptyGraphOverview)))
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setLoadState({ kind: "requestError" });
+      });
+    return () => controller.abort();
   }, []);
 
   const nav = [
@@ -105,10 +131,30 @@ export default function KnowledgeGraphPage() {
       </div>
 
       {/* Stats row */}
-      {loading ? (
+      {loadState.kind === "loading" ? (
         <div className="text-white/30 text-sm">{t("loading")}</div>
-      ) : error ? (
-        <div className="text-red-400 text-sm">{error}</div>
+      ) : loadState.kind === "unauthorized" ? (
+        <LoadStatePanel
+          testId="unauthorized"
+          tone="warning"
+          title={t("stateUnauthorizedTitle")}
+          hint={t("stateUnauthorizedHint")}
+          action={
+            <Link href="/auth/login" className="text-cyan-400 text-sm underline">
+              {t("stateSignIn")}
+            </Link>
+          }
+        />
+      ) : loadState.kind === "forbidden" ? (
+        <LoadStatePanel testId="forbidden" tone="warning" title={t("stateForbiddenTitle")} hint={t("stateForbiddenHint")} />
+      ) : loadState.kind === "notFound" ? (
+        <LoadStatePanel testId="not-found" title={t("stateNotFoundTitle")} hint={t("stateNotFoundHint")} />
+      ) : loadState.kind === "invalidResponse" ? (
+        <LoadStatePanel testId="invalid-response" tone="danger" title={t("stateInvalidResponseTitle")} hint={t("stateInvalidResponseHint")} />
+      ) : loadState.kind === "requestError" ? (
+        <LoadStatePanel testId="request-error" tone="danger" title={t("stateRequestErrorTitle")} hint={t("stateRequestErrorHint")} />
+      ) : loadState.kind === "empty" ? (
+        <LoadStatePanel testId="empty" title={t("stateEmptyTitle")} hint={t("stateEmptyHint")} />
       ) : data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard className="px-4 py-3">

@@ -10,6 +10,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
 import { formatDateTime } from "@/lib/i18n/format";
+import Link from "next/link";
+import { loadJson, type LoadState } from "@/lib/dashboard/load-state";
+import { classifyEmpty, isEmptyBenchmark } from "@/lib/dashboard/empty-contract";
+import { LoadStatePanel } from "@/components/dashboard/LoadStatePanel";
 
 interface BenchmarkRecord {
   id:            string;
@@ -31,26 +35,44 @@ interface BenchmarkResponse {
   computing:       boolean;
 }
 
+function isBenchmarkResponse(v: unknown): v is BenchmarkResponse {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  // Every field the render dereferences: benchmark is read as
+  // data.benchmark.stale and data.benchmark.stalenessWarning, and the three
+  // collections are iterated.
+  const b = o.benchmark as Record<string, unknown> | undefined;
+  return typeof b === "object" && b !== null
+    && typeof b.stale === "boolean"
+    && Array.isArray(o.riskRanking)
+    && Array.isArray(o.kpiComparison)
+    && Array.isArray(o.failurePatterns)
+    && typeof o.computing === "boolean";
+}
+
 export default function BenchmarksPage() {
   const locale = useLocale();
   const t = useTranslations("multiSite");
-  const [data,      setData]      = useState<BenchmarkResponse | null>(null);
-  const [loading,   setLoading]   = useState(true);
+  const [loadState, setLoadState] = useState<LoadState<BenchmarkResponse>>({ kind: "loading" });
+  // Non-null only in the success state.
+  const data = loadState.kind === "success" ? loadState.data : null;
   const [running,   setRunning]   = useState(false);
-  const [error,     setError]     = useState<string | null>(null);
+
   const [trigErr,   setTrigErr]   = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setLoading(true);
-    fetch("/api/multi-site/benchmarks")
-      .then(r => {
-        if (r.status === 404) return null;
-        return r.json() as Promise<BenchmarkResponse>;
+    setLoadState({ kind: "loading" });
+    loadJson<BenchmarkResponse>("/api/multi-site/benchmarks", isBenchmarkResponse)
+      .then((next) => {
+        // A benchmark that ran but produced no comparable sites is EMPTY, which
+        // is a different fact from the request having failed.
+        setLoadState(classifyEmpty(next, isEmptyBenchmark));
       })
-      .then(d => setData(d))
-      .catch(() => setError(t("errorLoading")))
-      .finally(() => setLoading(false));
-  }, [t]);
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setLoadState({ kind: "requestError" });
+      });
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -95,11 +117,24 @@ export default function BenchmarksPage() {
         </GlassCard>
       )}
 
-      {loading && (
+      {loadState.kind === "loading" && (
         <GlassCard className="p-6 text-center text-white/50">{t("loading")}</GlassCard>
       )}
 
-      {!loading && !error && !data && (
+      {loadState.kind === "unauthorized" && (
+        <LoadStatePanel testId="unauthorized" tone="warning" title={t("sessionExpiredTitle")} hint={t("sessionExpiredHint")}
+          action={<Link href="/auth/login" className="text-cyan-400 text-sm underline">{t("signIn")}</Link>} />
+      )}
+      {loadState.kind === "forbidden" && (
+        <LoadStatePanel testId="forbidden" tone="warning" title={t("accessDeniedTitle")} hint={t("accessDeniedHint")} />
+      )}
+      {loadState.kind === "invalidResponse" && (
+        <LoadStatePanel testId="invalid-response" tone="danger" title={t("invalidResponseTitle")} hint={t("invalidResponseHint")} />
+      )}
+      {loadState.kind === "requestError" && (
+        <LoadStatePanel testId="request-error" tone="danger" title={t("requestFailedTitle")} hint={t("requestFailedHint")} />
+      )}
+      {(loadState.kind === "empty" || loadState.kind === "notFound") && (
         <GlassCard className="p-6 text-center">
           <p className="text-white/50">{t("noBenchmark")}</p>
           <p className="text-xs text-white/30 mt-2">{t("noBenchmarkHint")}</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useState, useEffect } from "react";
 import type { Interview, InterviewStatus, InterviewType } from "@/lib/ats/types";
@@ -24,6 +24,7 @@ const TYPE_BADGE: Record<InterviewType, string> = {
 const STATUS_ORDER: InterviewStatus[] = ["scheduled", "pending", "completed", "cancelled"];
 
 export function InterviewPlannerClient() {
+  const t = useTranslations("ats");
   const locale = useLocale();
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading,    setLoading]    = useState(true);
@@ -127,13 +128,13 @@ export function InterviewPlannerClient() {
       {/* Summary strip */}
       <div className="global-ops-strip">
         {[
-          { label: "Total",     value: interviews.length, color: "text-ink"    },
-          { label: "Scheduled", value: counts.scheduled,  color: "text-warn"   },
-          { label: "Pending",   value: counts.pending,    color: "text-metadata"  },
-          { label: "Completed", value: counts.completed,  color: "text-signal" },
-          { label: "Cancelled", value: counts.cancelled,  color: "text-danger" },
+          { id: "statusTotal",     label: t("statusTotal"),     value: interviews.length, color: "text-ink"      },
+          { id: "statusScheduled", label: t("statusScheduled"), value: counts.scheduled,  color: "text-warn"     },
+          { id: "statusPending",   label: t("statusPending"),   value: counts.pending,    color: "text-metadata" },
+          { id: "statusCompleted", label: t("statusCompleted"), value: counts.completed,  color: "text-signal"   },
+          { id: "statusCancelled", label: t("statusCancelled"), value: counts.cancelled,  color: "text-danger"   },
         ].map(kpi => (
-          <div key={kpi.label} className="global-ops-cell">
+          <div key={kpi.id} className="global-ops-cell">
             <p className="kpi-label mb-1.5">{kpi.label}</p>
             <p className={`exec-kpi-value ${kpi.color}`}>{kpi.value}</p>
           </div>
@@ -192,7 +193,7 @@ export function InterviewPlannerClient() {
                       </p>
                     </>
                   ) : (
-                    <p className="kpi-label text-metadata">Not scheduled</p>
+                    <p className="kpi-label text-metadata">{t("notScheduled")}</p>
                   )}
                   <p className="kpi-label text-metadata mt-0.5">{interview.durationMinutes} min</p>
                 </div>
@@ -201,14 +202,14 @@ export function InterviewPlannerClient() {
 
             {expanded === interview.id && interview.notes && (
               <div className="border-t border-line px-5 py-3 bg-bg">
-                <p className="kpi-label mb-1">Interview Notes</p>
+                <p className="kpi-label mb-1">{t("interviewNotes")}</p>
                 <p className="font-body text-xs text-metadata leading-relaxed">{interview.notes}</p>
               </div>
             )}
           </div>
         ))}
         {visible.length === 0 && (
-          <p className="kpi-label text-metadata py-8 text-center">No interviews match this filter</p>
+          <p className="kpi-label text-metadata py-8 text-center">{t("noInterviewsMatch")}</p>
         )}
       </div>
     </div>

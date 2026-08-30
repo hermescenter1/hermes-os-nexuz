@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useEffect }          from "react";
 import type { PipelineColumn, Candidate, PipelineStage } from "@/lib/ats/types";
 import { AtsScoreCard }                 from "./AtsScoreCard";
@@ -34,6 +34,9 @@ const COL_COUNT_COLOR: Record<PipelineStage, string> = {
 function CandidateCard({
   candidate, isSelected, onClick,
 }: { candidate: Candidate; isSelected: boolean; onClick: () => void }) {
+  // This card is declared above PipelineBoardClient, so it needs its own hook —
+  // the parent's `t` is not in scope here.
+  const t = useTranslations("ats");
   return (
     <button
       onClick={onClick}
@@ -50,12 +53,13 @@ function CandidateCard({
         </span>
       </div>
       <p className="kpi-label text-metadata truncate">{candidate.location}</p>
-      <p className="kpi-label text-metadata">{candidate.experienceYears}y exp</p>
+      <p className="kpi-label text-metadata">{t("yearsExpShort", { years: candidate.experienceYears })}</p>
     </button>
   );
 }
 
 export function PipelineBoardClient() {
+  const t = useTranslations("ats");
   const locale = useLocale();
   const [data,       setData]       = useState<PipelineResponse | null>(null);
   const [loading,    setLoading]    = useState(true);
@@ -85,7 +89,7 @@ export function PipelineBoardClient() {
   if (!data) {
     return (
       <div className="rounded-xl border border-danger/30 bg-surface px-5 py-4">
-        <p className="font-mono text-sm text-danger">Pipeline data unavailable</p>
+        <p className="font-mono text-sm text-danger">{t("pipelineUnavailable")}</p>
       </div>
     );
   }
@@ -119,7 +123,7 @@ export function PipelineBoardClient() {
                 />
               ))}
               {col.count === 0 && (
-                <p className="kpi-label text-metadata text-center py-4">Empty</p>
+                <p className="kpi-label text-metadata text-center py-4">{t("emptyColumn")}</p>
               )}
             </div>
           </div>
@@ -131,15 +135,15 @@ export function PipelineBoardClient() {
         <div className="rounded-xl border border-signal/20 bg-surface px-5 py-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <div className="h-layer-sep mb-3">
-              <span className="kpi-label">Candidate Profile</span>
+              <span className="kpi-label">{t("candidateProfile")}</span>
             </div>
             <p className="font-body text-sm font-semibold text-ink mb-1">{selected.name}</p>
-            <p className="kpi-label text-metadata mb-3">{selected.location} · {selected.experienceYears}y experience</p>
+            <p className="kpi-label text-metadata mb-3">{selected.location} · {t("yearsExperience", { years: selected.experienceYears })}</p>
             <div className="space-y-1">
               {[
-                { label: "Work Auth", value: selected.workAuthorization.replace(/-/g, " ") },
-                { label: "Salary Exp.", value: `${formatNumber(selected.salaryExpectation, locale)}` },
-                { label: "Applied",    value: selected.appliedAt },
+                { label: t("workAuth"), value: selected.workAuthorization.replace(/-/g, " ") },
+                { label: t("salaryExp"), value: `${formatNumber(selected.salaryExpectation, locale)}` },
+                { label: t("applied"),    value: selected.appliedAt },
               ].map(row => (
                 <div key={row.label} className="flex justify-between gap-2">
                   <span className="kpi-label text-metadata">{row.label}</span>
@@ -148,7 +152,7 @@ export function PipelineBoardClient() {
               ))}
             </div>
             <div className="mt-3">
-              <p className="kpi-label mb-1.5">Skills</p>
+              <p className="kpi-label mb-1.5">{t("skills")}</p>
               <div className="flex flex-wrap gap-1">
                 {selected.skills.slice(0, 8).map(s => (
                   <span key={s} className="hs-badge hs--knowledge">{s}</span>
@@ -159,14 +163,14 @@ export function PipelineBoardClient() {
 
           <div>
             <div className="h-layer-sep mb-3">
-              <span className="kpi-label">ATS Score Analysis</span>
+              <span className="kpi-label">{t("scoreAnalysis")}</span>
             </div>
             <AtsScoreCard score={selected.atsScore} />
           </div>
 
           <div>
             <div className="h-layer-sep mb-3">
-              <span className="kpi-label">CV Summary</span>
+              <span className="kpi-label">{t("cvSummary")}</span>
             </div>
             <p className="font-body text-xs text-metadata leading-relaxed">{selected.cvSummary}</p>
           </div>

@@ -19,6 +19,11 @@ import {
   SimulatedStatus,
   SimulatedValue,
   SimulatedWatermark,
+  DEVICE_TONE,
+  HEALTH_TONE,
+  LINE_TONE,
+  RISK_TREND_TONE,
+  STATUS_TONE_CLASS,
 } from "./SimulatedDataDisclosure";
 import { ExecKpiStrip }     from "@/components/ui/ExecKpiStrip";
 import { HermesSignal }     from "@/components/hermes/HermesSignal";
@@ -47,10 +52,13 @@ function Panel({
   compact?:    boolean;
   executive?:  boolean;
 }) {
+  // PHASE 104-I.D2 — elevation now comes from the DNA scale (--shadow-e2/e3)
+  // instead of two hand-written rgba() shadows. The literals bypassed the token
+  // layer entirely, so this panel could not follow a theme change and its depth
+  // drifted from every other surface in the shell.
   return (
     <section
-      className={`rounded-xl border ${executive ? "border-signal/10 bg-surface h-s3" : "border-line bg-surface"} ${compact ? "p-4" : "p-5"} ${className}`}
-      style={{ boxShadow: executive ? "0 2px 16px rgba(0,0,0,0.28), 0 0 0 1px rgba(30,200,164,0.04)" : "0 2px 8px rgba(0,0,0,0.18)" }}
+      className={`rounded-xl border ${executive ? "border-signal/10 bg-surface h-s3 shadow-e3" : "border-line bg-surface shadow-e2"} ${compact ? "p-4" : "p-5"} ${className}`}
     >
       <h2 className={executive ? "intel-title mb-4" : "type-panel-title mb-4"}>{title}</h2>
       {children}
@@ -58,19 +66,28 @@ function Panel({
   );
 }
 
-const statusColor: Record<string, string> = {
-  running:  "text-signal",
-  online:   "text-signal",
-  ok:       "text-signal",
-  idle:     "text-muted",
-  flat:     "text-muted",
-  warning:  "text-warn",
-  degraded: "text-warn",
-  up:       "text-danger",
-  fault:    "text-danger",
-  offline:  "text-danger",
-  down:     "text-signal",
-};
+/**
+ * PHASE 104-I.D / D.0-R3 — status tone, split by semantic domain.
+ *
+ * This was ONE `Record<string, string>` serving four unrelated domains at once:
+ * line lifecycle, device lifecycle, network health AND risk-trend direction.
+ * That is how `down: "text-signal"` came to sit beside `offline: "text-danger"`
+ * and `fault: "text-danger"` in the same table — correct for "risk trending
+ * down", the opposite of correct for a device that is down. Because the record
+ * was keyed by `string`, both readings type-checked and nothing could flag the
+ * collision. Two of the five call sites also had no fallback, so a miss emitted
+ * the class name `undefined` into `className`.
+ *
+ * The replacement — `LINE_TONE`, `DEVICE_TONE`, `HEALTH_TONE`,
+ * `RISK_TREND_TONE` and the tone vocabulary itself — lives beside the glyph
+ * table in `SimulatedDataDisclosure`, because tone, shape and word are one
+ * contract and are tested as one.
+ *
+ * `sevColor` and `sevText` below are already keyed by `Severity` and are left
+ * exactly as they are: their values are severity ramps (`bg-danger/70`,
+ * `text-danger/80`), not members of the accepted tone vocabulary, and inventing
+ * tone names for them is not what this stage was asked to do.
+ */
 
 const sevColor: Record<Severity, string> = {
   critical: "bg-danger",
@@ -454,7 +471,7 @@ export function DashboardClient({ source }: { source: DashboardSourceDescriptor 
                             label={t(`status.${l.status}`)}
                             marker={marker}
                             path={`lines[${li}].status`}
-                            toneClassName={statusColor[l.status] ?? ""}
+                            tone={LINE_TONE[l.status]}
                           />
                           <SimulatedValue marker={marker} path={`lines[${li}].throughput`} className="metric text-sm text-ink" dir="ltr">
                             {nf.format(l.throughput)}<span className="font-body text-[0.65rem] text-muted">/{nf.format(l.target)}</span>
@@ -538,7 +555,7 @@ export function DashboardClient({ source }: { source: DashboardSourceDescriptor 
             {/* Risk score hero */}
             <div className="text-center py-3 mb-4 border-b border-line">
               <SimulatedValue as="p" marker={marker} path="risk.score" className="cmd-kpi-value">{nf.format(s.risk.score)}</SimulatedValue>
-              <SimulatedValue as="p" marker={marker} path="risk.trend" className={`mt-2 kpi-label ${statusColor[s.risk.trend]}`}>
+              <SimulatedValue as="p" marker={marker} path="risk.trend" className={`mt-2 kpi-label ${STATUS_TONE_CLASS[RISK_TREND_TONE[s.risk.trend]]}`}>
                 {t(`riskP.trend.${s.risk.trend}`)}
               </SimulatedValue>
             </div>
@@ -703,7 +720,7 @@ export function DashboardClient({ source }: { source: DashboardSourceDescriptor 
                       label={t(`status.${sv.status}`)}
                       marker={marker}
                       path={`scada.servers[${si}].status`}
-                      toneClassName={statusColor[sv.status] ?? ""}
+                      tone={DEVICE_TONE[sv.status]}
                     />
                   </span>
                 </span>
@@ -728,7 +745,7 @@ export function DashboardClient({ source }: { source: DashboardSourceDescriptor 
                     label={t(`status.${p.status}`)}
                     marker={marker}
                     path={`plc[${pi}].status`}
-                    toneClassName={statusColor[p.status] ?? ""}
+                    tone={DEVICE_TONE[p.status]}
                   />
                 </span>
               </SimulatedValue>
@@ -744,7 +761,7 @@ export function DashboardClient({ source }: { source: DashboardSourceDescriptor 
             </div>
             <div className="flex items-center justify-between text-xs mt-1.5">
               <span className="text-muted">{t("networkP.ids")}</span>
-              <SimulatedValue marker={marker} path="network.ids" className={`font-body text-xs ${statusColor[s.network.ids]}`}>{t(`status.${s.network.ids}`)}</SimulatedValue>
+              <SimulatedValue marker={marker} path="network.ids" className={`font-body text-xs ${STATUS_TONE_CLASS[HEALTH_TONE[s.network.ids]]}`}>{t(`status.${s.network.ids}`)}</SimulatedValue>
             </div>
             <div className="flex items-center justify-between text-xs mt-1.5">
               <span className="text-muted">{t("networkP.blocked")}</span>

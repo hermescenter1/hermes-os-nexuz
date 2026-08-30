@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import type { SuccessPlan, PlanStatus } from "@/lib/customers/types";
 
 interface PlansData {
@@ -18,14 +19,20 @@ const STATUS_BADGE: Record<PlanStatus, string> = {
   completed:  "hs-badge hs--confident",
 };
 
-const STATUS_LABELS: Record<PlanStatus, string> = {
-  "on-track": "On Track",
-  "at-risk":  "At Risk",
-  delayed:    "Delayed",
-  completed:  "Completed",
+/*
+ * GATE B.1 F03 — stored enum value -> CATALOGUE KEY. The stored values
+ * ("on-track", "at-risk", "delayed", "completed") are NOT mutated; only the
+ * rendered label is resolved through next-intl.
+ */
+const STATUS_LABEL_KEY: Record<PlanStatus, string> = {
+  "on-track": "statusOnTrack",
+  "at-risk":  "statusAtRisk",
+  delayed:    "statusDelayed",
+  completed:  "statusCompleted",
 };
 
 export function SuccessPlansClient() {
+  const t = useTranslations("customerSuccess");
   const [data,    setData]    = useState<PlansData | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter,  setFilter]  = useState<PlanStatus | "all">("all");
@@ -64,12 +71,12 @@ export function SuccessPlansClient() {
       {/* KPI strip */}
       <div className="global-ops-strip">
         <div className="global-ops-cell">
-          <p className="kpi-label mb-1.5">Total Plans</p>
+          <p className="kpi-label mb-1.5">{t("totalPlans")}</p>
           <p className="exec-kpi-value text-ink">{data.total}</p>
         </div>
         {(["on-track", "at-risk", "delayed", "completed"] as PlanStatus[]).map(s => (
           <div key={s} className="global-ops-cell">
-            <p className="kpi-label mb-1.5">{STATUS_LABELS[s]}</p>
+            <p className="kpi-label mb-1.5">{t(STATUS_LABEL_KEY[s])}</p>
             <p className={`exec-kpi-value ${
               s === "on-track" ? "text-signal" : s === "completed" ? "text-signal" :
               s === "at-risk" ? "text-warn" : "text-danger"
@@ -77,11 +84,11 @@ export function SuccessPlansClient() {
           </div>
         ))}
         <div className="global-ops-cell">
-          <p className="kpi-label mb-1.5">Milestones Done</p>
+          <p className="kpi-label mb-1.5">{t("milestonesDone")}</p>
           <p className="exec-kpi-value text-ink">{data.completedMilestones}/{data.totalMilestones}</p>
         </div>
         <div className="global-ops-cell">
-          <p className="kpi-label mb-1.5">Milestone Progress</p>
+          <p className="kpi-label mb-1.5">{t("milestoneProgress")}</p>
           <p className="exec-kpi-value text-signal">{completedPct}%</p>
         </div>
       </div>
@@ -98,10 +105,10 @@ export function SuccessPlansClient() {
                 : "border-line text-muted hover:text-ink"
             }`}
           >
-            {s === "all" ? "ALL" : STATUS_LABELS[s as PlanStatus].toUpperCase()}
+            {s === "all" ? t("filterAll") : t(STATUS_LABEL_KEY[s as PlanStatus])}
           </button>
         ))}
-        <span className="ml-auto kpi-label text-metadata">{filtered.length} plans</span>
+        <span className="ml-auto kpi-label text-metadata">{t("plansCount", { count: filtered.length })}</span>
       </div>
 
       {/* Plan list */}
@@ -126,22 +133,22 @@ export function SuccessPlansClient() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <p className="font-body text-sm font-semibold text-ink">{plan.companyName}</p>
-                      <span className={STATUS_BADGE[plan.status]}>{STATUS_LABELS[plan.status]}</span>
+                      <span className={STATUS_BADGE[plan.status]}>{t(STATUS_LABEL_KEY[plan.status])}</span>
                     </div>
                     <p className="kpi-label text-metadata truncate">{plan.goal}</p>
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0">
                     {/* Milestone progress */}
                     <div className="text-right hidden sm:block">
-                      <p className="kpi-label text-metadata">Milestones</p>
+                      <p className="kpi-label text-metadata">{t("milestones")}</p>
                       <p className="font-mono text-sm font-bold text-ink">{done}/{total}</p>
                     </div>
                     <div className="text-right hidden sm:block">
-                      <p className="kpi-label text-metadata">Due</p>
+                      <p className="kpi-label text-metadata">{t("due")}</p>
                       <p className="font-mono text-xs text-ink">{plan.dueDate}</p>
                     </div>
                     <div className="text-right hidden sm:block">
-                      <p className="kpi-label text-metadata">Owner</p>
+                      <p className="kpi-label text-metadata">{t("owner")}</p>
                       <p className="font-mono text-xs text-ink">{plan.owner}</p>
                     </div>
                     <span className="kpi-label text-metadata">{isOpen ? "▲" : "▼"}</span>
@@ -159,7 +166,7 @@ export function SuccessPlansClient() {
                   />
                 </div>
                 <div className="flex justify-between mt-0.5">
-                  <span className="kpi-label text-metadata">{pct}% complete</span>
+                  <span className="kpi-label text-metadata">{t("percentComplete", { pct })}</span>
                   <span className="kpi-label text-metadata">{done}/{total} milestones</span>
                 </div>
               </button>
@@ -170,7 +177,7 @@ export function SuccessPlansClient() {
 
                   {/* Milestones */}
                   <div className="mb-4">
-                    <p className="kpi-label text-metadata mb-2">Milestones</p>
+                    <p className="kpi-label text-metadata mb-2">{t("milestones")}</p>
                     <div className="space-y-2">
                       {plan.milestones.map(m => (
                         <div key={m.id} className="flex items-center gap-3">
@@ -192,21 +199,21 @@ export function SuccessPlansClient() {
 
                   {/* Next action */}
                   <div className="rounded border border-signal/30 bg-signal/5 px-4 py-3">
-                    <p className="kpi-label text-signal mb-1">NEXT ACTION</p>
+                    <p className="kpi-label text-signal mb-1">{t("nextAction")}</p>
                     <p className="font-body text-xs text-ink">{plan.nextAction}</p>
                   </div>
 
                   <div className="mt-3 grid grid-cols-3 gap-3">
                     <div>
-                      <p className="kpi-label text-metadata">Owner</p>
+                      <p className="kpi-label text-metadata">{t("owner")}</p>
                       <p className="font-mono text-xs text-ink">{plan.owner}</p>
                     </div>
                     <div>
-                      <p className="kpi-label text-metadata">Due Date</p>
+                      <p className="kpi-label text-metadata">{t("dueDate")}</p>
                       <p className="font-mono text-xs text-ink">{plan.dueDate}</p>
                     </div>
                     <div>
-                      <p className="kpi-label text-metadata">Created</p>
+                      <p className="kpi-label text-metadata">{t("created")}</p>
                       <p className="font-mono text-xs text-ink">{plan.createdAt}</p>
                     </div>
                   </div>
@@ -218,7 +225,7 @@ export function SuccessPlansClient() {
 
         {filtered.length === 0 && (
           <div className="rounded-xl border border-line bg-surface px-5 py-8 text-center">
-            <p className="kpi-label text-metadata">No success plans match the selected filter</p>
+            <p className="kpi-label text-metadata">{t("noPlansMatch")}</p>
           </div>
         )}
       </div>

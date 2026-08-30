@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import type { Job, JobStatus }  from "@/lib/ats/types";
 import { formatNumber } from "@/lib/i18n/format";
@@ -14,14 +14,19 @@ const STATUS_BADGE: Record<JobStatus, string> = {
   closed: "hs-badge hs--risk",
 };
 
-const CONTRACT_LABEL: Record<string, string> = {
-  "full-time":  "Full-Time",
-  "part-time":  "Part-Time",
-  "contract":   "Contract",
-  "internship": "Internship",
+/*
+ * GATE B.1 F03 — stored enum value -> CATALOGUE KEY, never a label. The stored
+ * values are unchanged; the rendered text is resolved through next-intl.
+ */
+const CONTRACT_LABEL_KEY: Record<string, string> = {
+  "full-time":  "contractFullTime",
+  "part-time":  "contractPartTime",
+  "contract":   "contractContract",
+  "internship": "contractInternship",
 };
 
 export function JobListClient() {
+  const t = useTranslations("ats");
   const locale = useLocale();
   const [data,     setData]     = useState<JobsResponse | null>(null);
   const [loading,  setLoading]  = useState(true);
@@ -90,7 +95,7 @@ export function JobListClient() {
                       <span className={STATUS_BADGE[job.status]}>{job.status}</span>
                     </div>
                     <p className="kpi-label text-metadata">
-                      {job.department} · {job.location} · {CONTRACT_LABEL[job.contractType]}
+                      {job.department} · {job.location} · {t(CONTRACT_LABEL_KEY[job.contractType])}
                     </p>
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0 text-right">
@@ -123,7 +128,7 @@ export function JobListClient() {
                 <div className="border-t border-line px-5 py-4 bg-bg">
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-4">
                     <div>
-                      <p className="kpi-label mb-2">Required Skills</p>
+                      <p className="kpi-label mb-2">{t("requiredSkills")}</p>
                       <div className="flex flex-wrap gap-1">
                         {job.requiredSkills.map(s => (
                           <span key={s} className="hs-badge hs--knowledge">{s}</span>
@@ -131,7 +136,7 @@ export function JobListClient() {
                       </div>
                     </div>
                     <div>
-                      <p className="kpi-label mb-2">Nice to Have</p>
+                      <p className="kpi-label mb-2">{t("niceToHave")}</p>
                       <div className="flex flex-wrap gap-1">
                         {job.niceToHaveSkills.map(s => (
                           <span key={s} className="hs-badge hs--nominal">{s}</span>
@@ -140,9 +145,9 @@ export function JobListClient() {
                     </div>
                     <div className="space-y-1.5">
                       {[
-                        { label: "Min Experience",     value: `${job.minExperienceYears}+ years`          },
-                        { label: "Visa Sponsorship",   value: job.visaSponsorship ? "Available" : "Not offered" },
-                        { label: "Opened",             value: job.openedAt                                },
+                        { label: t("minExperience"),     value: `${job.minExperienceYears}+ years`          },
+                        { label: t("visaSponsorship"),   value: job.visaSponsorship ? "Available" : "Not offered" },
+                        { label: t("opened"),             value: job.openedAt                                },
                       ].map(row => (
                         <div key={row.label} className="flex justify-between gap-2">
                           <span className="kpi-label text-metadata">{row.label}</span>

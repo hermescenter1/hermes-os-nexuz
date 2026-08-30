@@ -1,4 +1,5 @@
 import type { AtsScore } from "@/lib/ats/types";
+import { useTranslations } from "next-intl";
 
 const SCORE_COLOR = (s: number) =>
   s >= 80 ? "text-signal" : s >= 60 ? "text-warn" : "text-danger";
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export function AtsScoreCard({ score, compact = false }: Props) {
+  const t = useTranslations("ats");
   if (compact) {
     return (
       <div className="flex items-center gap-2">
@@ -59,22 +61,22 @@ export function AtsScoreCard({ score, compact = false }: Props) {
           </div>
         </div>
         <div className="flex-1 space-y-1.5">
-          <ScoreBar label="Skill Match"       value={score.skillScore}         weight="35%" />
-          <ScoreBar label="Experience"        value={score.experienceScore}    weight="20%" />
-          <ScoreBar label="Authorization"     value={score.authorizationScore} weight="15%" />
+          <ScoreBar label={t("skillMatch")}       value={score.skillScore}         weight="35%" />
+          <ScoreBar label={t("experience")}        value={score.experienceScore}    weight="20%" />
+          <ScoreBar label={t("authorization")}     value={score.authorizationScore} weight="15%" />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <ScoreBar label="Location"   value={score.locationScore} weight="10%" />
-        <ScoreBar label="Salary Fit" value={score.salaryScore}   weight="10%" />
-        <ScoreBar label="Industry"   value={score.industryScore} weight="10%" />
+        <ScoreBar label={t("location")}   value={score.locationScore} weight="10%" />
+        <ScoreBar label={t("salaryFit")} value={score.salaryScore}   weight="10%" />
+        <ScoreBar label={t("industry")}   value={score.industryScore} weight="10%" />
       </div>
 
       {/* Risk flags */}
       {score.riskFlags.length > 0 && (
         <div className="rounded border border-danger/20 bg-danger/[0.04] px-3 py-2.5">
-          <p className="kpi-label text-danger mb-1.5">RISK FLAGS</p>
+          <p className="kpi-label text-danger mb-1.5">{t("riskFlags")}</p>
           {score.riskFlags.map((f, i) => (
             <p key={i} className="font-body text-xs text-danger/80 leading-snug">{f}</p>
           ))}
@@ -83,7 +85,7 @@ export function AtsScoreCard({ score, compact = false }: Props) {
 
       {/* Explanations */}
       <div>
-        <p className="kpi-label mb-2">Score Rationale</p>
+        <p className="kpi-label mb-2">{t("scoreRationale")}</p>
         <div className="space-y-1">
           {score.explanations.map((e, i) => (
             <div key={i} className="flex items-start gap-1.5">

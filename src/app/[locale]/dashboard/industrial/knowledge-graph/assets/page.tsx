@@ -72,7 +72,14 @@ export default function AssetGraphPage() {
             onChange={e => setAssetId(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSearch()}
             placeholder={t("assetIdPlaceholder")}
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
+            /*
+             * min-w-0 is load-bearing. A flex child defaults to min-width:auto,
+             * so this input refused to shrink below its intrinsic width and
+             * pushed the Search button past the viewport: +33px EN, +8px DE,
+             * +9px FA at 320. Proven by removal and by constraining the input
+             * in the live page before this edit.
+             */
+            className="min-w-0 flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
           />
           <button
             onClick={handleSearch}
