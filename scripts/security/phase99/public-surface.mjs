@@ -263,4 +263,22 @@ export const PUBLIC_SURFACE = [
     methods: ["POST"],
     justification: "Public contact form. Honeypot-guarded and rate limited on an un-spoofable client IP (P99-INT-008); writes a SalesLead only.",
   },
+
+  // ── Root-level protocol files (FINDING-109B0-001) ────────────────────────
+  //
+  // These two are NOT new endpoints. They have been served since Phase 87L.6 and
+  // were simply invisible to the inventory, which enumerated only the `/api`
+  // subtree. Widening the enumeration to the App Router root exposed them, so
+  // each is declared here on the same terms as every other entry: read the
+  // handler, state what it returns, and justify why that is public.
+  {
+    path: "/llms.txt",
+    methods: ["GET"],
+    justification: "Public AI-discovery document. Renders a fixed map of PUBLIC canonical marketing URLs from src/lib/seo/config and the active locale list. No database access, no request input, no identifiers — the response is a function of committed constants only.",
+  },
+  {
+    path: "/indexnow-key.txt",
+    methods: ["GET"],
+    justification: "IndexNow host-ownership verification file, which the protocol requires to be publicly fetchable on the host it verifies. Returns INDEXNOW_KEY verbatim and 404s when it is unset. That key is an ownership proof, not an access credential: it grants no capability, and the submission trigger /api/seo/indexnow is separately gated by the distinct INDEXNOW_TRIGGER_SECRET.",
+  },
 ];

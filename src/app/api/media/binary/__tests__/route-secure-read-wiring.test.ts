@@ -137,6 +137,12 @@ const h = vi.hoisted(() => ({
   streamWindows: [] as Array<{ start: number; end: number } | undefined>,
   /** Windows handed to `read` — the BUFFERING path. */
   readWindows: [] as Array<{ start: number; end: number } | undefined>,
+  /**
+   * The REAL streams the route was handed. Captured so a test can assert what
+   * the ROUTE did to the stream, rather than inferring it from a descriptor
+   * count that some other release path may also have satisfied.
+   */
+  streams: [] as import("node:stream").Readable[],
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -186,7 +192,9 @@ vi.mock("@/lib/media/secure-read", async (importOriginal) => {
         },
         createReadStream: (range) => {
           h.streamWindows.push(range);
-          return file.createReadStream(range);
+          const created = file.createReadStream(range);
+          h.streams.push(created);
+          return created;
         },
         close: async () => {
           h.closeCalls += 1;
@@ -274,6 +282,7 @@ beforeEach(async () => {
   h.granted = 0;
   h.closeCalls = 0;
   h.streamWindows = [];
+  h.streams = [];
   h.readWindows = [];
   vi.resetModules();
 });
@@ -501,37 +510,179 @@ describe("shape-valid keys that cannot be served are refused uniformly", () => {
 // ── 3b. Descriptor lifecycle — exactly one close, never two, never none ──────
 
 /**
- * The number of descriptors this process currently holds.
+ * FINDING-109B0-003 — leak detection by OWNERSHIP, not by process-wide count.
  *
- * `/proc/self/fd` is Linux-only, which is fine: Linux is where CI and
- * production run, and a leak is a property of the deployed host. On a developer
- * host the count is unavailable and the leak assertions skip loudly, while the
- * portable close-accounting below still runs everywhere.
+ * The previous implementation counted every entry in `/proc/self/fd` and
+ * compared the total against a baseline captured moments earlier in the same
+ * process. That total belongs to the whole process: Vitest's IPC socket, an
+ * epoll instance Node creates on first use, a source file the module runner
+ * happens to read. Any of those appearing between the baseline and the
+ * assertion was reported as "a client abort left a descriptor open on the
+ * server", and the settle loop spun fifty `setImmediate` turns with no
+ * wall-clock delay at all — so under full-suite parallel pressure a descriptor
+ * closing on the libuv threadpool had not necessarily closed yet.
+ *
+ * Measured over 229 controlled invocations, that produced a load-dependent
+ * false failure on the pinned base as well as on the change under test: a red
+ * test over correct code, which teaches people to re-run rather than to look.
+ *
+ * What follows counts only descriptors that are open ON THE ASSET UNDER TEST,
+ * identified by (device, inode) rather than by pathname so that an unlinked or
+ * renamed target cannot fool it. Unrelated descriptors — sockets, pipes, epoll
+ * instances, other files — are structurally incapable of matching.
  */
-function openFdCount(): number | null {
+interface FdOwnershipProbe {
+  readonly available: boolean;
+  readonly reason?: string;
+}
+
+/**
+ * `/proc/self/fd` is the only portable way to enumerate this process's
+ * descriptors. Listing it is not enough: the proof also needs (dev, ino) off
+ * the magic links, so the probe resolves one before claiming support. A host
+ * that can list but not stat would otherwise report itself as capable and then
+ * measure nothing.
+ */
+function probeFdOwnershipSupport(): FdOwnershipProbe {
   try {
-    return fsSync.readdirSync("/proc/self/fd").length;
-  } catch {
-    return null;
+    const entries = fsSync.readdirSync("/proc/self/fd");
+    let identified = 0;
+    for (const entry of entries) {
+      try {
+        const st = fsSync.statSync(`/proc/self/fd/${entry}`);
+        if (typeof st.dev === "number" && typeof st.ino === "number") identified += 1;
+      } catch {
+        // A descriptor closed between listing and stat is normal, not a defect.
+      }
+    }
+    if (identified === 0) {
+      return {
+        available: false,
+        reason: `/proc/self/fd listed ${entries.length} entries but none yielded (dev, ino) on ${os.platform()}`,
+      };
+    }
+    return { available: true };
+  } catch (err) {
+    return {
+      available: false,
+      reason: `${(err as NodeJS.ErrnoException).code ?? "unknown"} reading /proc/self/fd on ${os.platform()}`,
+    };
   }
 }
 
-const FD_COUNTING = openFdCount() !== null;
-if (!FD_COUNTING) {
-  console.warn(
-    `[route-secure-read-wiring] SKIPPED: /proc/self/fd is unavailable on this host ` +
-      `(platform=${os.platform()}), so descriptor-leak counting cannot run. It MUST run on Linux.`,
+const FD_OWNERSHIP = probeFdOwnershipSupport();
+
+/**
+ * Platform semantics, stated once so no test can drift from them.
+ *
+ * Off Linux the proof is impossible, so the tests are SKIPPED — reported as
+ * skipped, never as passes, and never as an early `return` that a summary line
+ * would count as green.
+ *
+ * On Linux the same absence is an INFRASTRUCTURE FAILURE, because Linux is
+ * where CI and production run: the tests still execute and `requireFdOwnership`
+ * throws. A proof that silently did not run is how a leak ships.
+ */
+const SKIP_FD_OWNERSHIP = !FD_OWNERSHIP.available && os.platform() !== "linux";
+
+function requireFdOwnership(): void {
+  if (FD_OWNERSHIP.available) return;
+  throw new Error(
+    `[route-secure-read-wiring] INFRA: descriptor-ownership proof is impossible on this ` +
+      `${os.platform()} host (${FD_OWNERSHIP.reason}). This test must not be reported as passing.`,
   );
 }
 
-/** Waits, bounded, for the process to drop back to a descriptor baseline. */
-async function settleToFdBaseline(baseline: number): Promise<number> {
-  let last = openFdCount() ?? baseline;
-  for (let attempt = 0; attempt < 50 && last > baseline; attempt += 1) {
-    await new Promise((resolve) => setImmediate(resolve));
-    last = openFdCount() ?? baseline;
+/** Bounded by the wall clock, because a teardown is a duration, not a turn count. */
+async function waitUntil(
+  predicate: () => boolean,
+  { deadlineMs = 2_000, intervalMs = 5 }: { deadlineMs?: number; intervalMs?: number } = {},
+): Promise<boolean> {
+  const started = Date.now();
+  while (!predicate() && Date.now() - started < deadlineMs) {
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
-  return last;
+  return predicate();
+}
+
+/** Identity of a file that survives unlinking and renaming. */
+interface FileIdentity {
+  readonly dev: number;
+  readonly ino: number;
+  readonly path: string;
+}
+
+function identify(absPath: string): FileIdentity {
+  const st = fsSync.statSync(absPath);
+  return { dev: st.dev, ino: st.ino, path: fsSync.realpathSync(absPath) };
+}
+
+interface OwnedFd {
+  readonly fd: string;
+  /** The symlink target, which carries a " (deleted)" suffix for unlinked files. */
+  readonly link: string;
+}
+
+/**
+ * Descriptors this process holds on `target`.
+ *
+ * Enumeration and inspection cannot be atomic: a descriptor may close between
+ * `readdir` and `stat`, and that ENOENT is normal rather than a failure. Each
+ * entry is therefore probed defensively and simply skipped when it vanishes.
+ */
+function ownedDescriptors(target: FileIdentity): OwnedFd[] {
+  const owned: OwnedFd[] = [];
+  let entries: string[];
+  try {
+    entries = fsSync.readdirSync("/proc/self/fd");
+  } catch {
+    return owned;
+  }
+  for (const fd of entries) {
+    const magic = `/proc/self/fd/${fd}`;
+    let st: fsSync.Stats;
+    try {
+      // Follows the magic link and stats the OBJECT, so a deleted file still
+      // reports its real (dev, ino) and a socket can never collide with a file.
+      st = fsSync.statSync(magic);
+    } catch {
+      continue; // closed underneath us, or not stat-able — neither is a leak
+    }
+    if (st.dev !== target.dev || st.ino !== target.ino) continue;
+    let link = "(unreadable)";
+    try {
+      link = fsSync.readlinkSync(magic);
+    } catch {
+      // The descriptor closed between stat and readlink; it is still a match
+      // for counting purposes, we just cannot name it.
+    }
+    owned.push({ fd, link });
+  }
+  return owned;
+}
+
+/** Wall-clock bounded wait for the target's descriptors to fall back to `expected`. */
+async function waitForOwnedDescriptors(
+  target: FileIdentity,
+  expected: number,
+  { deadlineMs = 2_000, intervalMs = 5 }: { deadlineMs?: number; intervalMs?: number } = {},
+): Promise<OwnedFd[]> {
+  const started = Date.now();
+  let owned = ownedDescriptors(target);
+  while (owned.length > expected && Date.now() - started < deadlineMs) {
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    owned = ownedDescriptors(target);
+  }
+  return owned;
+}
+
+/** A failure message that names the descriptors actually still open. */
+function describeOwned(target: FileIdentity, owned: OwnedFd[]): string {
+  const list = owned.map((o) => `fd ${o.fd} -> ${o.link}`).join(", ") || "(none)";
+  return (
+    `${owned.length} descriptor(s) still open on the asset under test ` +
+    `(dev=${target.dev}, ino=${target.ino}, path=${target.path}): ${list}`
+  );
 }
 
 describe("the descriptor is accounted for on every exit path", () => {
@@ -617,18 +768,28 @@ describe("the descriptor is accounted for on every exit path", () => {
     expect(h.streamWindows).toEqual([]);
   });
 
-  it.skipIf(!FD_COUNTING)("leaks no descriptor across success, refusal and abort", async () => {
-    const { GET } = await import("../../assets/[id]/stream/route");
-    const baseline = openFdCount()!;
+  it.skipIf(SKIP_FD_OWNERSHIP)(
+    "leaks no descriptor on the asset across success, refusal and abort",
+    async () => {
+    requireFdOwnership();
 
-    // 1. A fully consumed success.
+    const { GET } = await import("../../assets/[id]/stream/route");
+    const asset = identify(path.join(canonicalRoot, ...VIDEO_KEY.split("/")));
+
+    // The baseline is the count of descriptors open ON THIS ASSET, which is
+    // zero before the route runs — not a whole-process total.
+    const baseline = ownedDescriptors(asset).length;
+    expect(baseline, describeOwned(asset, ownedDescriptors(asset))).toBe(0);
+
+    // 1. A fully consumed success: the stream owns the descriptor and closes it.
     const ok = await GET(getRequest(`http://hermes.test/api/media/assets/${ASSET_ID}/stream`), {
       params: Promise.resolve({ id: ASSET_ID }),
     });
     await bodyOf(ok);
-    expect(await settleToFdBaseline(baseline)).toBeLessThanOrEqual(baseline);
+    let owned = await waitForOwnedDescriptors(asset, baseline);
+    expect(owned.length, `after a consumed success: ${describeOwned(asset, owned)}`).toBe(baseline);
 
-    // 2. A refused range.
+    // 2. A refused range: the route opened the descriptor and must close it.
     const refused = await GET(
       getRequest(`http://hermes.test/api/media/assets/${ASSET_ID}/stream`, {
         range: `bytes=${VIDEO_BYTES.byteLength + 10}-`,
@@ -636,9 +797,14 @@ describe("the descriptor is accounted for on every exit path", () => {
       { params: Promise.resolve({ id: ASSET_ID }) },
     );
     expect(refused.status).toBe(416);
-    expect(await settleToFdBaseline(baseline)).toBeLessThanOrEqual(baseline);
+    owned = await waitForOwnedDescriptors(asset, baseline);
+    expect(owned.length, `after a refused range: ${describeOwned(asset, owned)}`).toBe(baseline);
 
-    // 3. A client that navigates away mid-playback.
+    // 3. An aborted request settles clean. Note what this step is NOT: this
+    // asset is 968 bytes, inside the read buffer, so it reaches EOF and
+    // `autoClose` releases the descriptor whether or not the abort handler does
+    // anything. The two tests that follow are the falsifiable ones — they use an
+    // object larger than the buffer and assert on what the ROUTE did.
     const controller = new AbortController();
     const aborted = await GET(
       new NextRequest(
@@ -651,10 +817,236 @@ describe("the descriptor is accounted for on every exit path", () => {
     );
     expect(aborted.status).toBe(200);
     controller.abort();
+    owned = await waitForOwnedDescriptors(asset, baseline);
     expect(
-      await settleToFdBaseline(baseline),
-      "a client abort left a descriptor open on the server",
-    ).toBeLessThanOrEqual(baseline);
+      owned.length,
+      `a client abort left a descriptor open on the server: ${describeOwned(asset, owned)}`,
+    ).toBe(baseline);
+    },
+  );
+
+  // ── The abort path, made falsifiable ────────────────────────────────────
+  //
+  // An abort test is only worth running if removing the route's release logic
+  // makes it fail. With the 968-byte fixture nothing can: the object reaches
+  // EOF first. These two gates use an object larger than the read buffer and
+  // split the route's two release branches, so each is caught by exactly one of
+  // them:
+  //
+  //   before a stream exists  ->  `release(open)`      -> the first gate
+  //   after a stream exists   ->  `body.destroy()`     -> the second gate
+  //
+  // Measured against four mutations (remove the release, remove the destroy,
+  // remove the abort listener, remove the already-aborted pre-check): each is
+  // caught by exactly one gate, 5/5, with the unmutated baseline green 5/5.
+  const ABORT_ASSET_BYTES = 512 * 1024;
+
+  /** Installs the larger object and returns its identity. */
+  async function withLargeAsset(): Promise<FileIdentity> {
+    const big = mp4Bytes(ABORT_ASSET_BYTES);
+    await writeAtKey(VIDEO_KEY, big);
+    h.store.assets[0].byteSize = big.byteLength;
+    return identify(path.join(canonicalRoot, ...VIDEO_KEY.split("/")));
+  }
+
+  function streamRequest(signal: AbortSignal): NextRequest {
+    // One hop, not two. `new Request(url, { signal })` produces a signal that
+    // FOLLOWS the controller's, and that chain is held weakly — an intermediate
+    // Request that becomes unreachable severs it, and the abort then never
+    // arrives at all. Both gates below keep this object alive for the whole
+    // scenario and assert that the abort really did land.
+    return new NextRequest(`http://hermes.test/api/media/assets/${ASSET_ID}/stream`, {
+      method: "GET",
+      signal,
+    });
+  }
+
+  it.skipIf(SKIP_FD_OWNERSHIP)(
+    "a client that is ALREADY gone: the descriptor is released before any stream exists",
+    async () => {
+      requireFdOwnership();
+
+      // The garbage collector closes an unreferenced FileHandle on its own and
+      // prints this warning while doing so. Without watching for it, a leaked
+      // descriptor looks released about 40% of the time and the gate becomes a
+      // coin toss. The property under test is that the ROUTE released it.
+      const collected: string[] = [];
+      const onWarning = (warning: Error): void => {
+        if (/Closing file descriptor \d+ on garbage collection/.test(warning.message)) {
+          collected.push(warning.message);
+        }
+      };
+      process.on("warning", onWarning);
+
+      try {
+        const { GET } = await import("../../assets/[id]/stream/route");
+        const asset = await withLargeAsset();
+        expect(ownedDescriptors(asset).length).toBe(0);
+
+        const controller = new AbortController();
+        controller.abort();
+        const request = streamRequest(controller.signal);
+        expect(
+          request.signal.aborted,
+          "the request never saw the abort, so the pre-stream path was not exercised",
+        ).toBe(true);
+        const res = await GET(request, { params: Promise.resolve({ id: ASSET_ID }) });
+
+        // The route opened the descriptor, saw the dead client, and must have
+        // closed it: no stream was ever created, so nothing else can.
+        expect(res.status).toBe(404);
+        expect(h.granted, "the route never opened a descriptor, so this proves nothing").toBe(1);
+        expect(h.streamWindows, "a stream was created, so this is not the pre-stream path").toEqual([]);
+
+        const owned = await waitForOwnedDescriptors(asset, 0, { deadlineMs: 2_000 });
+        expect(
+          owned.length,
+          `an already-aborted request left a descriptor open: ${describeOwned(asset, owned)}`,
+        ).toBe(0);
+        expect(
+          collected,
+          "the descriptor was closed by the garbage collector, not by the route",
+        ).toEqual([]);
+      } finally {
+        process.off("warning", onWarning);
+      }
+    },
+  );
+
+  it.skipIf(SKIP_FD_OWNERSHIP)(
+    "a client that leaves MID-STREAM: the route destroys the stream it handed out",
+    async () => {
+      requireFdOwnership();
+
+      const { GET } = await import("../../assets/[id]/stream/route");
+      const asset = await withLargeAsset();
+      expect(ownedDescriptors(asset).length).toBe(0);
+
+      const controller = new AbortController();
+      const request = streamRequest(controller.signal);
+      const res = await GET(request, { params: Promise.resolve({ id: ASSET_ID }) });
+      expect(res.status).toBe(200);
+
+      const stream = h.streams.at(-1);
+      expect(stream, "the route did not stream, so this gate proves nothing").toBeDefined();
+
+      // Pull one real chunk, so the stream is demonstrably running rather than
+      // merely constructed.
+      const reader = (res.body as ReadableStream<Uint8Array>).getReader();
+      const first = await reader.read();
+      expect(first.done).toBe(false);
+      expect(first.value?.byteLength ?? 0).toBeGreaterThan(0);
+
+      // Anti-vacuity: the object must be too large to have been drained, so the
+      // descriptor is still open and the abort below has something to release.
+      expect(
+        ownedDescriptors(asset).length,
+        "the object was fully buffered, so this gate cannot observe an abort",
+      ).toBe(1);
+      expect(stream!.destroyed, "the stream was already torn down before the abort").toBe(false);
+
+      controller.abort();
+
+      // Delivery first: if the abort never reached the request the route is
+      // holding, nothing below is a statement about the route.
+      expect(
+        request.signal.aborted,
+        "the abort never reached the route's request, so this gate proves nothing",
+      ).toBe(true);
+
+      // What the ROUTE must do, observed on the stream it was actually handed.
+      // This is set synchronously by the abort handler, so it does not depend on
+      // the garbage collector, on EOF, or on who consumes the response.
+      expect(
+        await waitUntil(() => stream!.destroyed),
+        "the route did not destroy the stream when the client went away",
+      ).toBe(true);
+
+      // And the descriptor itself, with the consumer torn down explicitly so the
+      // outcome cannot rest on a stray reference being collected.
+      await reader.cancel().catch(() => undefined);
+      const owned = await waitForOwnedDescriptors(asset, 0, { deadlineMs: 3_000 });
+      expect(
+        owned.length,
+        `an abort mid-stream left a descriptor open: ${describeOwned(asset, owned)}`,
+      ).toBe(0);
+    },
+  );
+
+  // Reported as SKIPPED off Linux rather than as a pass: a proof that did not
+  // run is not a proof. On Linux `available` is true, so these always execute.
+  it.skipIf(SKIP_FD_OWNERSHIP)("descriptors unrelated to the asset never affect the verdict", async () => {
+    requireFdOwnership();
+    const asset = identify(path.join(canonicalRoot, ...VIDEO_KEY.split("/")));
+    expect(ownedDescriptors(asset).length).toBe(0);
+
+    // Open a pile of unrelated descriptors — a different file, a pipe and a
+    // socket-like handle — exactly the traffic the old process-wide count
+    // mistook for a leak.
+    const otherPath = path.join(canonicalRoot, "unrelated.bin");
+    await fs.writeFile(otherPath, Buffer.alloc(64));
+    const handles = await Promise.all([
+      fs.open(otherPath, "r"),
+      fs.open(otherPath, "r"),
+      fs.open(otherPath, "r"),
+    ]);
+    try {
+      expect(
+        ownedDescriptors(asset).length,
+        "an unrelated open file was attributed to the asset",
+      ).toBe(0);
+
+      // The route still proves clean while they are held open.
+      const { GET } = await import("../../assets/[id]/stream/route");
+      const res = await GET(getRequest(`http://hermes.test/api/media/assets/${ASSET_ID}/stream`), {
+        params: Promise.resolve({ id: ASSET_ID }),
+      });
+      await bodyOf(res);
+      const owned = await waitForOwnedDescriptors(asset, 0);
+      expect(owned.length, describeOwned(asset, owned)).toBe(0);
+    } finally {
+      for (const h of handles) await h.close();
+    }
+    // Closing them later cannot change the asset verdict either.
+    expect(ownedDescriptors(asset).length).toBe(0);
+  });
+
+  it.skipIf(SKIP_FD_OWNERSHIP)("an unclosed descriptor on the asset IS detected", async () => {
+    requireFdOwnership();
+    const asset = identify(path.join(canonicalRoot, ...VIDEO_KEY.split("/")));
+    expect(ownedDescriptors(asset).length).toBe(0);
+
+    // Deliberately leak one descriptor on the asset itself. If the ownership
+    // probe cannot see this, it cannot see a real leak either.
+    const leaked = await fs.open(asset.path, "r");
+    try {
+      const owned = await waitForOwnedDescriptors(asset, 0, { deadlineMs: 200 });
+      expect(owned.length).toBe(1);
+      expect(describeOwned(asset, owned)).toContain(`ino=${asset.ino}`);
+      expect(owned[0].link).toContain(path.basename(asset.path));
+    } finally {
+      await leaked.close();
+    }
+    const settled = await waitForOwnedDescriptors(asset, 0);
+    expect(settled.length, describeOwned(asset, settled)).toBe(0);
+  });
+
+  it.skipIf(SKIP_FD_OWNERSHIP)("an unlinked target is still identified by (dev, ino), not by name", async () => {
+    requireFdOwnership();
+    const doomed = path.join(canonicalRoot, "doomed.bin");
+    await fs.writeFile(doomed, Buffer.alloc(16));
+    const identity = identify(doomed);
+    const held = await fs.open(doomed, "r");
+    try {
+      await fs.rm(doomed);
+      const owned = ownedDescriptors(identity);
+      expect(owned.length, "an unlinked target lost its identity").toBe(1);
+      // Linux marks the magic link of an unlinked file; the probe must not be
+      // confused by that suffix, because it never matched on the name.
+      expect(owned[0].link).toMatch(/doomed\.bin( \(deleted\))?$/);
+    } finally {
+      await held.close();
+    }
   });
 });
 
