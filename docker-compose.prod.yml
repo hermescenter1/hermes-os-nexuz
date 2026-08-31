@@ -181,6 +181,8 @@ services:
       - "443:443"
     volumes:
       - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Dedicated HTTPS vhost for Stalwart mail/account UI.
+      - ./deploy/nginx/mail.conf:/etc/nginx/conf.d/mail.conf:ro
       # Certbot SSL certificates (managed by Certbot on the VPS — see deploy/ssl/README.md)
       - /etc/letsencrypt:/etc/letsencrypt:ro
       # Certbot ACME webroot challenge directory
@@ -189,6 +191,7 @@ services:
       - hermes-web
     networks:
       - hermes_internal
+      - stalwart_external
     healthcheck:
       test: ["CMD-SHELL", "nginx -t 2>/dev/null && wget -qO- http://localhost/api/health || exit 1"]
       interval: 30s
@@ -226,3 +229,9 @@ volumes:
 networks:
   hermes_internal:
     driver: bridge
+
+  # Existing Stalwart network used only by Hermes Nginx for the
+  # mail.hermesnovin.com reverse proxy.
+  stalwart_external:
+    external: true
+    name: stalwart-mail_default
