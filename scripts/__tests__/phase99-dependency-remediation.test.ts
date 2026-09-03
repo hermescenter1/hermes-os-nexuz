@@ -7,9 +7,10 @@
  * machine — so this reads the committed lockfile and checks the resolved version
  * of every package that carried a HIGH advisory, including EVERY copy of it.
  *
- * Two of the fixes are not reachable by a version bump alone and are held by an
- * npm `overrides` entry: next pins postcss exactly, and declares sharp as an
- * optional dependency whose range excludes the fixed line. The overrides are
+ * Three of the fixes are not reachable by a version bump alone and are held by an
+ * npm `overrides` entry: next pins postcss exactly and declares sharp as an
+ * optional dependency whose range excludes the fixed line, and prisma pins
+ * mysql2 to an exact version below the fixed line. The overrides are
  * asserted here too, because deleting one would silently reintroduce both
  * advisories while every version spec still looked current.
  *
@@ -60,12 +61,14 @@ function gte(a: string, b: string): boolean {
  */
 const HIGH_ADVISORY_FIXES = [
   { finding: "P99-DEP-001", name: "brace-expansion", vulnerable: "<=1.1.17 || 3.0.0 - 5.0.8", minimumByLine: { "1": "1.1.18", "5": "5.0.9" } },
-  { finding: "P99-DEP-002", name: "fast-uri", minimum: "3.1.5" },
+  { finding: "P99-DEP-002", name: "fast-uri", minimum: "3.1.6" },
   { finding: "P99-DEP-003", name: "js-yaml", minimum: "4.3.1" },
   { finding: "P99-DEP-004", name: "next", minimum: "15.5.23" },
   { finding: "P99-DEP-005", name: "postcss", minimum: "8.5.23" },
   { finding: "P99-DEP-006", name: "sharp", minimum: "0.35.0" },
   { finding: "P99-DEP-007", name: "undici", minimum: "7.28.1" },
+  { finding: "P99-DEP-013", name: "browserslist", minimum: "4.28.7" },
+  { finding: "P99-DEP-014", name: "mysql2", minimum: "3.24.0" },
 ];
 
 describe("PHASE 99 — every HIGH dependency advisory is gone from the resolved lockfile", () => {
@@ -89,17 +92,17 @@ describe("PHASE 99 — every HIGH dependency advisory is gone from the resolved 
     });
   }
 
-  it("resolves a single copy of next, postcss and sharp — no vulnerable nested duplicate survives", () => {
+  it("resolves a single copy of next, postcss, sharp and mysql2 — no vulnerable nested duplicate survives", () => {
     // The whole point of the overrides is deduplication onto the fixed line. A
     // second copy would mean something still pulls a vulnerable version.
-    for (const name of ["next", "postcss", "sharp"]) {
+    for (const name of ["next", "postcss", "sharp", "mysql2"]) {
       expect(resolvedVersions(name), `${name} resolves to more than one version`).toHaveLength(1);
     }
   });
 });
 
 describe("PHASE 99 — the overrides holding the transitive fixes are present", () => {
-  it("pins postcss and sharp, which no version spec can otherwise reach", () => {
+  it("pins postcss, sharp and mysql2, which no version spec can otherwise reach", () => {
     // next pins postcss exactly and declares sharp as an optional dependency on a
     // range that excludes the fixed line, so removing either override silently
     // reintroduces P99-DEP-005 and P99-DEP-006.
@@ -107,6 +110,12 @@ describe("PHASE 99 — the overrides holding the transitive fixes are present", 
     expect(pkg.overrides?.sharp, "sharp override missing").toBeDefined();
     expect(gte(pkg.overrides!.postcss, "8.5.23")).toBe(true);
     expect(gte(pkg.overrides!.sharp, "0.35.0")).toBe(true);
+    // prisma pins mysql2 EXACTLY (3.15.3 at prisma@7.8.0, unchanged through
+    // 7.10.0), so the fixed line is unreachable by any version spec and the
+    // override is the whole fix. Deleting it silently reintroduces the
+    // credential-leak advisory while prisma still looks current.
+    expect(pkg.overrides?.mysql2, "mysql2 override missing").toBeDefined();
+    expect(gte(pkg.overrides!.mysql2, "3.24.0")).toBe(true);
   });
 
   it("keeps next on the remediated patch release", () => {

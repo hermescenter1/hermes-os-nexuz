@@ -8,15 +8,15 @@
     "all": {
       "CRITICAL": 0,
       "HIGH": 0,
-      "MEDIUM": 5,
-      "LOW": 0,
+      "MEDIUM": 6,
+      "LOW": 1,
       "INFO": 0,
       "UNKNOWN": 0
     },
     "productionOnly": {
       "CRITICAL": 0,
       "HIGH": 0,
-      "MEDIUM": 5,
+      "MEDIUM": 6,
       "LOW": 0,
       "INFO": 0,
       "UNKNOWN": 0
@@ -43,6 +43,18 @@
       "direct": false,
       "fixAvailable": true,
       "advisories": [],
+      "productionReachable": true,
+      "fixWithoutMajor": true
+    },
+    {
+      "package": "fflate",
+      "reportedSeverity": "moderate",
+      "severity": "MEDIUM",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        "https://github.com/advisories/GHSA-px8p-9vwx-vf98"
+      ],
       "productionReachable": true,
       "fixWithoutMajor": true
     },
@@ -84,6 +96,18 @@
         "https://github.com/advisories/GHSA-5qjj-4xww-7phc"
       ],
       "productionReachable": true,
+      "fixWithoutMajor": true
+    },
+    {
+      "package": "postcss-selector-parser",
+      "reportedSeverity": "low",
+      "severity": "LOW",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        "https://github.com/advisories/GHSA-w9m9-85wc-3x92"
+      ],
+      "productionReachable": false,
       "fixWithoutMajor": true
     }
   ]
