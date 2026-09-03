@@ -17,6 +17,7 @@ const TITLE_KEYS: Record<string, string> = {
   "/engineering/memory":          "engineeringMemory",
   "/engineering/knowledge-graph": "knowledgeGraph",
   "/engineering/domains":         "domainExpertise",
+  "/engineering/studio":          "studio",
 };
 
 interface TopBarProps {

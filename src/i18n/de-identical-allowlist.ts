@@ -469,6 +469,15 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "vendors.apply.form.websiteUrl": "german-word-identical",
   "vendors.tiers.STANDARD": "german-word-identical",
   "vendors.types.DISTRIBUTOR": "german-word-identical",
+
+  // PHASE 109-C1 — Automation Engineering Studio. Three leaves whose German is
+  // spelled exactly like the English, reviewed one by one:
+  //   Simulation — identical German noun (die Simulation)
+  //   Name       — identical German noun (der Name)
+  //   Global     — identical German adjective, standard in this scope sense
+  "automationStudio.mode.simulation": "german-word-identical",
+  "automationStudio.inspector.propertyName": "german-word-identical",
+  "automationStudio.symbols.scopeGlobal": "german-word-identical",
   "vendors.card.compliance": "accepted-german-loanword",
   "vendors.tiers.PREMIUM": "accepted-german-loanword",
   // PHASE 104-B1.2 — German keeps the English loanwords for these two work
@@ -488,7 +497,8 @@ export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   "contact-url-or-propernoun": 19,
   // 104-I3: +3 — Website, Standard, Distributor.
   // 104-I3: +1 — demo.form.optional.
-  "german-word-identical": 107,
+  // 109-C1: +3 — Simulation, Name, Global in the Automation Engineering Studio.
+  "german-word-identical": 110,
   "non-linguistic": 19,
   // 104-I3: +2 — Compliance, Premium.
   // B1.2: +2 — Remote, Hybrid (work-mode labels; German uses both loanwords).

@@ -9093,7 +9093,8 @@
     "projects": "Projects",
     "engineeringMemory": "Engineering Memory",
     "knowledgeGraph": "Knowledge Graph",
-    "domainExpertise": "Domain Expertise"
+    "domainExpertise": "Domain Expertise",
+    "studio": "Automation Studio"
   },
   "ats": {
     "analyticsUnavailable": "Analytics data unavailable",
@@ -9216,5 +9217,253 @@
     "statusOnTrack": "On Track",
     "totalPlans": "Total Plans",
     "unavailable": "Success plan data unavailable"
+  },
+  "automationStudio": {
+    "title": "Automation Engineering Studio",
+    "eyebrow": "Engineering workspace",
+    "subtitle": "A fast engineering environment for controller, HMI and SCADA projects. It complements vendor engineering tools and does not compile, download or certify anything.",
+    "disclosure": {
+      "simulationWorkspace": "Simulation workspace",
+      "noLiveController": "No live controller is connected",
+      "noDownload": "Changes are not downloaded to any device",
+      "heading": "Data disclosure",
+      "body": "Every value in this workspace is simulated and generated locally for demonstration. Nothing here originates from real equipment."
+    },
+    "authority": {
+      "banner": "Engineering authority remains with the authorized engineer.",
+      "label": "Engineer authority"
+    },
+    "mode": {
+      "label": "Workspace mode",
+      "simulation": "Simulation",
+      "review": "Review",
+      "readOnly": "Read-only"
+    },
+    "commandBar": {
+      "project": "Project",
+      "site": "Line",
+      "target": "Controller target",
+      "version": "Working version",
+      "saveState": "Save state",
+      "saved": "All changes kept locally",
+      "validation": "Validation",
+      "openPalette": "Open the command palette",
+      "paletteHint": "Command palette",
+      "paletteShortcut": "Ctrl K"
+    },
+    "explorer": {
+      "title": "Project explorer",
+      "treeLabel": "Project artifacts",
+      "filterLabel": "Filter artifacts",
+      "filterPlaceholder": "Filter by name",
+      "expandAll": "Expand all folders",
+      "collapseAll": "Collapse all folders",
+      "modified": "Modified",
+      "noMatches": "No artifact matches this filter.",
+      "selected": "Selected artifact"
+    },
+    "editor": {
+      "label": "Source of the selected artifact",
+      "tabsLabel": "Open artifacts",
+      "adapterDescription": "Plain source view with line numbers and diagnostics markers. Syntax colouring, folding and a minimap are not available in this round.",
+      "capabilities": "Editor capabilities",
+      "available": "Available",
+      "unavailable": "Not available in this round",
+      "noSelection": "Select an artifact in the project explorer to view its source.",
+      "readOnlyNotice": "This artifact is read-only.",
+      "nonTextual": "This artifact has no textual source in this round.",
+      "findLabel": "Find in this artifact",
+      "findPlaceholder": "Find text",
+      "findResults": "{count} matching lines",
+      "lineColumn": "Line",
+      "closeTab": "Close this artifact",
+      "undo": "Undo",
+      "redo": "Redo",
+      "saveLocally": "Save locally",
+      "save": {
+        "unchanged": "No local changes",
+        "modified": "Unsaved changes",
+        "locallySaved": "Saved in this session"
+      },
+      "refusal": {
+        "mode-not-simulation": "Editing is available in the simulation mode only.",
+        "version-not-draft": "Only a draft version can be edited.",
+        "artifact-read-only": "This artifact is read-only.",
+        "no-textual-source": "This artifact has no textual source in this round."
+      }
+    },
+    "inspector": {
+      "title": "Inspector",
+      "tabsLabel": "Inspector sections",
+      "properties": "Properties",
+      "crossReference": "Cross-reference",
+      "diagnostics": "Diagnostics",
+      "aiReview": "AI review",
+      "noSelection": "Nothing is selected.",
+      "propertyName": "Name",
+      "propertyPath": "Path",
+      "propertyKind": "Type",
+      "propertyVersion": "Version",
+      "propertyChecksum": "Checksum",
+      "propertyModifiedBy": "Last changed by",
+      "propertyOrigin": "Data origin",
+      "propertyProducer": "Produced by",
+      "provenanceMissing": "No provenance recorded for this artifact.",
+      "symbolLabel": "Symbol",
+      "declaredIn": "Declared in",
+      "notDeclared": "Not declared anywhere in this project",
+      "reads": "Reads",
+      "writes": "Writes",
+      "bindings": "Interface bindings",
+      "alarms": "Alarm references",
+      "noReferences": "This symbol is not referenced."
+    },
+    "ai": {
+      "heading": "Advisory review",
+      "generated": "AI-generated advisory",
+      "approval": "Engineer approval required",
+      "noChange": "No change has been applied",
+      "note": "These observations are produced locally from the project structure for demonstration. No external service was contacted and nothing was modified.",
+      "findingTimeout": "The run-feedback timeout has no engineering unit recorded, so its value cannot be reviewed against the process requirement.",
+      "findingInterlock": "The interlock summary reads a stop condition that is not declared in this project.",
+      "findingValve": "The valve open command drives an output with no position feedback, so a failure to open cannot be detected."
+    },
+    "bottom": {
+      "title": "Workspace output",
+      "tabsLabel": "Output sections",
+      "problems": "Problems",
+      "validation": "Validation",
+      "references": "References",
+      "tests": "Test results",
+      "output": "Output",
+      "toggle": "Toggle the output panel",
+      "empty": "Nothing to report.",
+      "columnSeverity": "Severity",
+      "columnCode": "Code",
+      "columnMessage": "Description",
+      "columnSource": "Source",
+      "columnLine": "Line",
+      "checked": "{artifacts} artifacts, {symbols} symbols and {references} references checked.",
+      "passedChecks": "Checks that found nothing: {codes}",
+      "runLabel": "Validation run {run}",
+      "scopeNote": "Round 1 checks the project model: symbols, references, provenance and origin. Edited source text is tracked and checksummed but not parsed, so a defect typed into the editor is not reported here.",
+      "outputLine": "Workspace loaded from the local demonstration adapter. No network request was made."
+    },
+    "severity": {
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Information"
+    },
+    "diagnostics": {
+      "unresolvedSymbol": "Symbol {symbol} is used but never declared.",
+      "duplicateSymbol": "Symbol {symbol} is declared {count} times.",
+      "unusedSymbol": "Symbol {symbol} is declared but never used.",
+      "bindingWithoutSymbol": "Interface binding refers to {symbol}, which no controller block declares.",
+      "alarmWithoutPriority": "The alarm for {symbol} has no priority.",
+      "commandWithoutFeedback": "Command {symbol} has no feedback signal.",
+      "quantityWithoutUnit": "{symbol} is a {dataType} quantity with no engineering unit recorded.",
+      "writeToReadOnly": "{symbol} is declared read-only but is written here.",
+      "artifactWithoutProvenance": "Artifact {artifact} has no provenance record.",
+      "simulatedWithoutDisclosure": "Artifact {artifact} is simulated but does not disclose it.",
+      "forbiddenLiveOrigin": "Artifact {artifact} claims the origin {origin}, which this round does not permit."
+    },
+    "palette": {
+      "title": "Command palette",
+      "placeholder": "Type a command",
+      "inputLabel": "Search commands",
+      "listLabel": "Available commands",
+      "close": "Close the command palette",
+      "noResults": "No command matches.",
+      "openArtifact": "Open artifact",
+      "searchSymbols": "Search symbols",
+      "showDiagnostics": "Show diagnostics",
+      "goToDefinition": "Go to definition",
+      "findReferences": "Find references",
+      "validateWorkspace": "Validate workspace",
+      "toggleBottomPanel": "Toggle the output panel",
+      "switchMode": "Switch workspace mode",
+      "projectOverview": "Open project overview",
+      "unavailableReason": "Select a symbol first"
+    },
+    "symbols": {
+      "title": "Symbols",
+      "searchLabel": "Search symbols",
+      "searchPlaceholder": "Search by symbol name",
+      "scope": "Scope",
+      "dataType": "Data type",
+      "anyScope": "Any scope",
+      "anyType": "Any type",
+      "onlyProblems": "Only symbols with findings",
+      "resultCount": "{count} symbols",
+      "none": "No symbol matches this search.",
+      "scopeGlobal": "Global",
+      "scopeBlockLocal": "Block-local",
+      "scopeHmi": "Operator interface",
+      "scopeScada": "Supervisory",
+      "unresolved": "Not declared",
+      "duplicate": "Declared more than once",
+      "orphan": "Never used",
+      "unit": "Engineering unit",
+      "noUnit": "No unit recorded"
+    },
+    "versions": {
+      "title": "Versions",
+      "baseline": "Baseline",
+      "working": "Working version",
+      "author": "Author",
+      "modifiedCount": "{count} changed artifacts",
+      "approvalLabel": "Approval state",
+      "draft": "Draft",
+      "reviewed": "Reviewed",
+      "approved": "Approved",
+      "commissioned": "Commissioned",
+      "editableNotice": "This version is a draft and can be edited.",
+      "lockedNotice": "This version is not a draft and is shown read-only.",
+      "summary": {
+        "baseline": "Commissioned state of the line.",
+        "working": "Valve logic and interlock summary under revision.",
+        "reviewed": "Operator screen corrections after the review."
+      }
+    },
+    "tests": {
+      "title": "Test scenarios",
+      "passed": "Passed",
+      "failed": "Failed",
+      "notRun": "Not run",
+      "covers": "Covers {count} symbols",
+      "motorStart": "Start command energises the contactor and confirms feedback.",
+      "motorTimeout": "Missing run feedback trips the drive within the timeout.",
+      "interlock": "Interlock summary blocks the line when a stop condition is active."
+    },
+    "overview": {
+      "title": "Project overview",
+      "artifacts": "Artifacts",
+      "symbols": "Symbols",
+      "references": "References",
+      "findings": "Open findings",
+      "errors": "Errors",
+      "warnings": "Warnings",
+      "disciplines": "Disciplines",
+      "backToSource": "Back to the source view"
+    },
+    "boundaries": {
+      "heading": "What this workspace does not do",
+      "noCompile": "It does not compile projects.",
+      "noDownload": "It does not download to a controller.",
+      "noOnline": "It does not go online or write to equipment.",
+      "complement": "It complements vendor engineering tools rather than replacing them."
+    },
+    "a11y": {
+      "skipToWorkspace": "Skip to the workspace",
+      "regionExplorer": "Project explorer",
+      "regionEditor": "Source view",
+      "regionInspector": "Inspector",
+      "regionOutput": "Workspace output"
+    },
+    "companion": {
+      "heading": "Companion view",
+      "note": "On a small screen this workspace shows the project summary, findings and symbol lookup. Source editing needs a larger screen."
+    },
+    "metaTitle": "Automation Engineering Studio"
   }
 }

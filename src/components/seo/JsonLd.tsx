@@ -1,10 +1,32 @@
-import { headers } from "next/headers";
-
 /**
  * JsonLd — injects one or more JSON-LD <script> blocks into the page head.
  * This is a React Server Component (no "use client").
  * Safe: dangerouslySetInnerHTML is used only for structured-data blobs
  * that are serialised from our own schema builders — never from user input.
+ *
+ * NO NONCE, DELIBERATELY.
+ *
+ * A `<script type="application/ld+json">` is a DATA BLOCK. The browser never
+ * prepares or executes it — the "prepare the script element" algorithm returns
+ * as soon as it sees a type that is not JavaScript, a module or an import map,
+ * and that return happens BEFORE the Content-Security-Policy check. So
+ * `script-src` never applies to this element and a nonce on it protects
+ * nothing: it is inert for the policy and inert for crawlers, which read the
+ * text regardless.
+ *
+ * It was not inert for React. Under a header-delivered CSP the browser HIDES
+ * every nonce content attribute once the element is connected — `getAttribute
+ * ("nonce")` returns "" while `element.nonce` keeps the value — and React's
+ * hydration diff reads the attribute. The server had rendered the real nonce,
+ * the DOM reported an empty one, and every page carried a hydration mismatch
+ * on this element. The authenticated browser matrix reported it in all twelve
+ * cells.
+ *
+ * Removing the nonce from a data block removes the only thing about this
+ * element the browser could disagree with, and changes nothing the policy
+ * governs. The nonce is still applied, unchanged, to the inline scripts that
+ * DO execute (see `src/app/[locale]/layout.tsx`), and the policy itself is
+ * built in `src/middleware.ts` exactly as before.
  */
 
 type SchemaObject = Record<string, unknown>;
@@ -39,20 +61,20 @@ function serializeSchema(schema: SchemaObject): string {
 
 interface JsonLdProps {
   data: SchemaObject | SchemaObject[];
-  nonce?: string;
 }
 
-export async function JsonLd({ data, nonce }: JsonLdProps) {
-  const requestNonce =
-    nonce ?? (await headers()).get("x-nonce") ?? undefined;
-
+/**
+ * Pure: the output is a function of `data` alone. Nothing request-scoped —
+ * no header, no nonce — can enter the markup, so the server's HTML and the
+ * client's hydration tree cannot disagree about this element.
+ */
+export function JsonLd({ data }: JsonLdProps) {
   const schemas = Array.isArray(data) ? data : [data];
   return (
     <>
       {schemas.map((schema, i) => (
         <script
           key={i}
-          nonce={requestNonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeSchema(schema) }}
         />

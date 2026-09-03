@@ -37,6 +37,7 @@ export type FaIdenticalCategory =
   | "non-linguistic";
 
 export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
+  "automationStudio.commandBar.paletteShortcut": "non-linguistic",
   "adminOperations.seo.robotsTxt": "protocol-or-standard",
   "adminOperations.seo.webManifest": "protocol-or-standard",
   "adminOperations.seo.xmlSitemap": "protocol-or-standard",
@@ -150,5 +151,8 @@ export const FA_IDENTICAL_COUNTS: Record<FaIdenticalCategory, number> = {
   "vendor-or-thirdparty": 5,
   // 104-I3: +2 — vendor application sample tokens (sample e-mail, sample URL).
   "contact-url-or-propernoun": 13,
-  "non-linguistic": 7
+  // 109-C1: +1 — the command-palette keyboard shortcut. Persian keyboards use
+  // the Latin key name, so "Ctrl K" is correct Persian usage rather than
+  // untranslated English. German differs ("Strg K").
+  "non-linguistic": 8
 } as const;

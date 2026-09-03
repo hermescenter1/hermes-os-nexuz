@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { usePathname } from "@/i18n/navigation";
 import { Link }        from "@/i18n/navigation";
 
@@ -10,10 +12,26 @@ const NAV = [
   { href: "/engineering/memory",          label: "Memory",          icon: IconMemory,       exact: false },
   { href: "/engineering/knowledge-graph", label: "Knowledge Graph", icon: IconGraph,        exact: false },
   { href: "/engineering/domains",         label: "Domains",         icon: IconDomains,      exact: false },
+  // PHASE 109-C1 — the Automation Engineering Studio. Its label is resolved
+  // from the catalogue (labelKey); the entries above are pre-existing English
+  // literals and are not rewritten as a side effect of adding one route.
+  { href: "/engineering/studio",          labelKey: "studio",       icon: IconStudio,       exact: false },
 ];
+
+function IconStudio({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4 flex-none" aria-hidden="true">
+      <rect x="2" y="2.5" width="12" height="11" rx="1.5"
+        stroke={active ? "var(--signal)" : "currentColor"} strokeWidth="1.5"/>
+      <path d="M6 2.5v11M2 6h12"
+        stroke={active ? "var(--signal)" : "currentColor"} strokeWidth="1" opacity="0.55"/>
+    </svg>
+  );
+}
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
+  const t = useTranslations("engineeringHub");
 
   return (
     <aside className="sidebar-bg h-full w-60 flex flex-col flex-none">
@@ -53,7 +71,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         <p className="px-2 pb-2 text-[0.65rem] font-body font-semibold tracking-[0.08em] uppercase text-metadata">
           Modules
         </p>
-        {NAV.map(({ href, label, icon: Icon, exact }) => {
+        {NAV.map(({ href, label, labelKey, icon: Icon, exact }) => {
           const active = exact
             ? pathname === href
             : pathname === href || pathname.startsWith(href + "/");
@@ -69,7 +87,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
               ].join(" ")}
             >
               <Icon active={active} />
-              <span className="truncate">{label}</span>
+              <span className="truncate">{labelKey ? t(labelKey) : label}</span>
             </Link>
           );
         })}
