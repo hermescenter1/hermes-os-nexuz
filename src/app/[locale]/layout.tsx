@@ -166,8 +166,12 @@ export default async function LocaleLayout({
         {/* Structured data — the canonical entity graph, global on every page.
             One @graph (Organization + founder + WebSite + Hermes OS), all
             cross-referenced by stable @id, so any public page a crawler lands
-            on carries the full company↔product relationship. */}
-        <JsonLd data={siteEntityGraph()} nonce={nonce} />
+            on carries the full company↔product relationship.
+            No nonce: a JSON-LD data block is never executed, so script-src
+            never applies to it, and under a header CSP the browser hides the
+            attribute from hydration (see JsonLd.tsx). The nonce stays on the
+            inline scripts below that DO execute. */}
+        <JsonLd data={siteEntityGraph()} />
         {/* Canonical entity IDs are locale-independent: the fa/en/de pages
             describe the SAME organisation and product, never three of each. */}
         {/* Performance: DNS prefetch for canonical domain */}

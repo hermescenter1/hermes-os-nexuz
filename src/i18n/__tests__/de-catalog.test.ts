@@ -284,6 +284,12 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // value, ats.navPipeline, is a reviewed loanword in the allowlist.
     "ats",
     "customerSuccess",
+    // PHASE 109-C1 — the Automation Engineering Studio (automationStudio).
+    // 187 leaves, genuinely German throughout: workspace chrome, project
+    // structure, source view, inspector, diagnostics vocabulary, command
+    // palette, versions and the simulated-data disclosure. The three identical
+    // values (Simulation, Name, Global) are reviewed allowlist entries.
+    "automationStudio",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

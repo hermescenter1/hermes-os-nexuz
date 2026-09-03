@@ -9093,7 +9093,8 @@
     "projects": "Projekte",
     "engineeringMemory": "Engineering-Wissensspeicher",
     "knowledgeGraph": "Wissensgraph",
-    "domainExpertise": "Fachdomänen"
+    "domainExpertise": "Fachdomänen",
+    "studio": "Automatisierungsstudio"
   },
   "ats": {
     "analyticsUnavailable": "Auswertungsdaten nicht verfügbar",
@@ -9216,5 +9217,253 @@
     "statusOnTrack": "Im Plan",
     "totalPlans": "Pläne gesamt",
     "unavailable": "Daten zum Erfolgsplan nicht verfügbar"
+  },
+  "automationStudio": {
+    "title": "Studio für Automatisierungstechnik",
+    "eyebrow": "Engineering-Arbeitsbereich",
+    "subtitle": "Eine schnelle Engineering-Umgebung für Steuerungs-, Bedien- und Leitsystemprojekte. Sie ergänzt die Werkzeuge des Herstellers und übersetzt, lädt oder zertifiziert nichts.",
+    "disclosure": {
+      "simulationWorkspace": "Simulationsarbeitsbereich",
+      "noLiveController": "Es ist keine Steuerung verbunden",
+      "noDownload": "Änderungen werden auf kein Gerät geladen",
+      "heading": "Datenherkunft",
+      "body": "Alle Werte in diesem Arbeitsbereich sind simuliert und werden lokal zu Demonstrationszwecken erzeugt. Nichts davon stammt aus realer Anlagentechnik."
+    },
+    "authority": {
+      "banner": "Die technische Verantwortung verbleibt bei der berechtigten Fachkraft.",
+      "label": "Technische Verantwortung"
+    },
+    "mode": {
+      "label": "Betriebsart des Arbeitsbereichs",
+      "simulation": "Simulation",
+      "review": "Prüfung",
+      "readOnly": "Nur Lesen"
+    },
+    "commandBar": {
+      "project": "Projekt",
+      "site": "Linie",
+      "target": "Zielsteuerung",
+      "version": "Arbeitsstand",
+      "saveState": "Speicherstand",
+      "saved": "Alle Änderungen lokal gehalten",
+      "validation": "Prüfung",
+      "openPalette": "Befehlspalette öffnen",
+      "paletteHint": "Befehlspalette",
+      "paletteShortcut": "Strg K"
+    },
+    "explorer": {
+      "title": "Projektstruktur",
+      "treeLabel": "Projektbestandteile",
+      "filterLabel": "Bestandteile filtern",
+      "filterPlaceholder": "Nach Namen filtern",
+      "expandAll": "Alle Ordner aufklappen",
+      "collapseAll": "Alle Ordner zuklappen",
+      "modified": "Geändert",
+      "noMatches": "Kein Bestandteil entspricht diesem Filter.",
+      "selected": "Ausgewählter Bestandteil"
+    },
+    "editor": {
+      "label": "Quelltext des ausgewählten Bestandteils",
+      "tabsLabel": "Geöffnete Bestandteile",
+      "adapterDescription": "Einfache Quelltextansicht mit Zeilennummern und Prüfmarkierungen. Farbliche Hervorhebung, Faltung und Übersichtsleiste stehen in dieser Runde nicht zur Verfügung.",
+      "capabilities": "Funktionen der Ansicht",
+      "available": "Verfügbar",
+      "unavailable": "In dieser Runde nicht verfügbar",
+      "noSelection": "Wählen Sie in der Projektstruktur einen Bestandteil aus, um seinen Quelltext zu sehen.",
+      "readOnlyNotice": "Dieser Bestandteil ist schreibgeschützt.",
+      "nonTextual": "Dieser Bestandteil hat in dieser Runde keinen Quelltext.",
+      "findLabel": "In diesem Bestandteil suchen",
+      "findPlaceholder": "Text suchen",
+      "findResults": "{count} Treffer­zeilen",
+      "lineColumn": "Zeile",
+      "closeTab": "Diesen Bestandteil schließen",
+      "undo": "Rückgängig",
+      "redo": "Wiederholen",
+      "saveLocally": "Lokal sichern",
+      "save": {
+        "unchanged": "Keine lokalen Änderungen",
+        "modified": "Nicht gesicherte Änderungen",
+        "locallySaved": "In dieser Sitzung gesichert"
+      },
+      "refusal": {
+        "mode-not-simulation": "Bearbeiten ist nur in der Betriebsart Simulation möglich.",
+        "version-not-draft": "Nur ein Entwurf kann bearbeitet werden.",
+        "artifact-read-only": "Dieser Bestandteil ist schreibgeschützt.",
+        "no-textual-source": "Dieser Bestandteil hat in dieser Runde keinen Quelltext."
+      }
+    },
+    "inspector": {
+      "title": "Eigenschaften",
+      "tabsLabel": "Bereiche der Eigenschaftsansicht",
+      "properties": "Merkmale",
+      "crossReference": "Querverweis",
+      "diagnostics": "Prüfergebnisse",
+      "aiReview": "KI-Begutachtung",
+      "noSelection": "Es ist nichts ausgewählt.",
+      "propertyName": "Name",
+      "propertyPath": "Pfad",
+      "propertyKind": "Art",
+      "propertyVersion": "Stand",
+      "propertyChecksum": "Prüfsumme",
+      "propertyModifiedBy": "Zuletzt geändert von",
+      "propertyOrigin": "Datenherkunft",
+      "propertyProducer": "Erzeugt von",
+      "provenanceMissing": "Für diesen Bestandteil ist keine Herkunft hinterlegt.",
+      "symbolLabel": "Signal",
+      "declaredIn": "Vereinbart in",
+      "notDeclared": "In diesem Projekt nirgends vereinbart",
+      "reads": "Lesende Zugriffe",
+      "writes": "Schreibende Zugriffe",
+      "bindings": "Verknüpfungen der Bedienoberfläche",
+      "alarms": "Meldungsbezüge",
+      "noReferences": "Auf dieses Signal wird nicht zugegriffen."
+    },
+    "ai": {
+      "heading": "Begutachtung mit Hinweischarakter",
+      "generated": "Von der KI erzeugter Hinweis",
+      "approval": "Freigabe durch die Fachkraft erforderlich",
+      "noChange": "Es wurde keine Änderung vorgenommen",
+      "note": "Diese Beobachtungen werden zu Demonstrationszwecken lokal aus der Projektstruktur abgeleitet. Es wurde kein externer Dienst angesprochen und nichts verändert.",
+      "findingTimeout": "Für die Überwachungszeit der Rückmeldung ist keine technische Einheit hinterlegt, sodass der Wert nicht gegen die Prozessanforderung geprüft werden kann.",
+      "findingInterlock": "Die Verriegelungsauswertung liest eine Abschaltbedingung, die in diesem Projekt nicht vereinbart ist.",
+      "findingValve": "Der Öffnungsbefehl des Ventils steuert einen Ausgang ohne Stellungsrückmeldung, sodass ein Ausbleiben der Öffnung nicht erkannt werden kann."
+    },
+    "bottom": {
+      "title": "Ausgaben des Arbeitsbereichs",
+      "tabsLabel": "Ausgabebereiche",
+      "problems": "Beanstandungen",
+      "validation": "Prüfung",
+      "references": "Verweise",
+      "tests": "Prüfergebnisse der Abläufe",
+      "output": "Protokoll",
+      "toggle": "Ausgabebereich ein- und ausblenden",
+      "empty": "Nichts zu berichten.",
+      "columnSeverity": "Gewichtung",
+      "columnCode": "Kennung",
+      "columnMessage": "Beschreibung",
+      "columnSource": "Quelle",
+      "columnLine": "Zeile",
+      "checked": "{artifacts} Bestandteile, {symbols} Signale und {references} Verweise geprüft.",
+      "passedChecks": "Prüfungen ohne Beanstandung: {codes}",
+      "runLabel": "Prüflauf {run}",
+      "scopeNote": "Stufe 1 prüft das Projektmodell: Signale, Verweise, Herkunft und Ursprung. Bearbeiteter Quelltext wird nachgehalten und mit einer Prüfsumme versehen, aber nicht ausgewertet; ein im Editor eingetippter Fehler erscheint hier deshalb nicht.",
+      "outputLine": "Arbeitsbereich aus dem lokalen Demonstrationsadapter geladen. Es wurde keine Netzwerkanfrage gestellt."
+    },
+    "severity": {
+      "error": "Fehler",
+      "warning": "Warnung",
+      "info": "Hinweis"
+    },
+    "diagnostics": {
+      "unresolvedSymbol": "Signal {symbol} wird verwendet, aber nirgends vereinbart.",
+      "duplicateSymbol": "Signal {symbol} ist {count}-mal vereinbart.",
+      "unusedSymbol": "Signal {symbol} ist vereinbart, wird aber nicht verwendet.",
+      "bindingWithoutSymbol": "Eine Verknüpfung verweist auf {symbol}; kein Steuerungsbaustein vereinbart dieses Signal.",
+      "alarmWithoutPriority": "Die Meldung zu {symbol} hat keine Priorität.",
+      "commandWithoutFeedback": "Befehl {symbol} hat keine Rückmeldung.",
+      "quantityWithoutUnit": "{symbol} ist eine Größe vom Typ {dataType} ohne hinterlegte technische Einheit.",
+      "writeToReadOnly": "{symbol} ist als schreibgeschützt vereinbart, wird hier aber beschrieben.",
+      "artifactWithoutProvenance": "Für {artifact} ist keine Herkunft hinterlegt.",
+      "simulatedWithoutDisclosure": "{artifact} ist simuliert, weist dies aber nicht aus.",
+      "forbiddenLiveOrigin": "{artifact} gibt die Herkunft {origin} an, die in dieser Runde nicht zulässig ist."
+    },
+    "palette": {
+      "title": "Befehlspalette",
+      "placeholder": "Befehl eingeben",
+      "inputLabel": "Befehle durchsuchen",
+      "listLabel": "Verfügbare Befehle",
+      "close": "Befehlspalette schließen",
+      "noResults": "Kein Befehl passt dazu.",
+      "openArtifact": "Bestandteil öffnen",
+      "searchSymbols": "Signale durchsuchen",
+      "showDiagnostics": "Prüfergebnisse anzeigen",
+      "goToDefinition": "Zur Vereinbarung springen",
+      "findReferences": "Verweise suchen",
+      "validateWorkspace": "Arbeitsbereich prüfen",
+      "toggleBottomPanel": "Ausgabebereich ein- und ausblenden",
+      "switchMode": "Betriebsart wechseln",
+      "projectOverview": "Projektübersicht öffnen",
+      "unavailableReason": "Wählen Sie zuerst ein Signal aus"
+    },
+    "symbols": {
+      "title": "Signale",
+      "searchLabel": "Signale durchsuchen",
+      "searchPlaceholder": "Nach Signalnamen suchen",
+      "scope": "Geltungsbereich",
+      "dataType": "Datentyp",
+      "anyScope": "Beliebiger Geltungsbereich",
+      "anyType": "Beliebiger Typ",
+      "onlyProblems": "Nur Signale mit Beanstandungen",
+      "resultCount": "{count} Signale",
+      "none": "Kein Signal entspricht dieser Suche.",
+      "scopeGlobal": "Global",
+      "scopeBlockLocal": "Bausteinlokal",
+      "scopeHmi": "Bedienoberfläche",
+      "scopeScada": "Leitebene",
+      "unresolved": "Nicht vereinbart",
+      "duplicate": "Mehrfach vereinbart",
+      "orphan": "Nie verwendet",
+      "unit": "Technische Einheit",
+      "noUnit": "Keine Einheit hinterlegt"
+    },
+    "versions": {
+      "title": "Stände",
+      "baseline": "Ausgangsstand",
+      "working": "Arbeitsstand",
+      "author": "Bearbeiter",
+      "modifiedCount": "{count} geänderte Bestandteile",
+      "approvalLabel": "Freigabestand",
+      "draft": "Entwurf",
+      "reviewed": "Geprüft",
+      "approved": "Freigegeben",
+      "commissioned": "In Betrieb genommen",
+      "editableNotice": "Dieser Stand ist ein Entwurf und kann bearbeitet werden.",
+      "lockedNotice": "Dieser Stand ist kein Entwurf und wird schreibgeschützt angezeigt.",
+      "summary": {
+        "baseline": "In Betrieb genommener Zustand der Linie.",
+        "working": "Ventillogik und Verriegelungsauswertung in Überarbeitung.",
+        "reviewed": "Korrekturen an den Bedienbildern nach der Prüfung."
+      }
+    },
+    "tests": {
+      "title": "Prüfabläufe",
+      "passed": "Bestanden",
+      "failed": "Fehlgeschlagen",
+      "notRun": "Nicht ausgeführt",
+      "covers": "Deckt {count} Signale ab",
+      "motorStart": "Der Startbefehl zieht das Schütz an und bestätigt die Rückmeldung.",
+      "motorTimeout": "Eine ausbleibende Rückmeldung schaltet den Antrieb innerhalb der Überwachungszeit ab.",
+      "interlock": "Die Verriegelungsauswertung sperrt die Linie bei aktiver Abschaltbedingung."
+    },
+    "overview": {
+      "title": "Projektübersicht",
+      "artifacts": "Bestandteile",
+      "symbols": "Signale",
+      "references": "Verweise",
+      "findings": "Offene Beanstandungen",
+      "errors": "Fehler",
+      "warnings": "Warnungen",
+      "disciplines": "Gewerke",
+      "backToSource": "Zurück zur Quelltextansicht"
+    },
+    "boundaries": {
+      "heading": "Was dieser Arbeitsbereich nicht leistet",
+      "noCompile": "Er übersetzt keine Projekte.",
+      "noDownload": "Er lädt nichts in eine Steuerung.",
+      "noOnline": "Er geht nicht online und schreibt nicht auf Anlagentechnik.",
+      "complement": "Er ergänzt die Engineering-Werkzeuge des Herstellers, statt sie zu ersetzen."
+    },
+    "a11y": {
+      "skipToWorkspace": "Zum Arbeitsbereich springen",
+      "regionExplorer": "Projektstruktur",
+      "regionEditor": "Quelltextansicht",
+      "regionInspector": "Eigenschaften",
+      "regionOutput": "Ausgaben des Arbeitsbereichs"
+    },
+    "companion": {
+      "heading": "Begleitansicht",
+      "note": "Auf einem kleinen Bildschirm zeigt dieser Arbeitsbereich die Projektübersicht, die Beanstandungen und die Signalsuche. Das Bearbeiten von Quelltext benötigt einen größeren Bildschirm."
+    },
+    "metaTitle": "Studio für Automatisierungstechnik"
   }
 }
