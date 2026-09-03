@@ -284,7 +284,7 @@
       "releaseBlocker": false,
       "riskAcceptanceReference": null,
       "riskAcceptanceExpiresAt": null,
-      "evidenceHash": "ffe0541e2ff0d91e7a91c48aa0370dbd442475a212c0d216ce6a254a121d525a"
+      "evidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f"
     },
     {
       "findingId": "P99-DEP-002",
@@ -299,12 +299,12 @@
       "description": "Reported by npm audit against the committed package-lock.json. Advisory identifiers are recorded in the sanitized dependency-review artifact. The package is present in the production dependency tree.",
       "impact": "Reachability into the running application must be assessed per advisory; the package is installed in the production tree.",
       "remediationReference": "package.json; package-lock.json",
-      "remediationSummary": "Resolved to fast-uri@3.1.5 by in-range transitive update. Verified against the resolved lockfile (every copy, not just the top-level one) and by a fresh npm ci followed by npm audit, which now reports 0 critical and 0 high.",
+      "remediationSummary": "Resolved to fast-uri@3.1.7 by in-range transitive update. The earlier 3.1.5 resolution was superseded: GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf and GHSA-jqff-g426-hqxp are fixed only in 3.1.6, so 3.1.5 was itself vulnerable. Verified against the resolved lockfile (every copy, not just the top-level one) and by a fresh npm ci followed by npm audit, which now reports 0 critical and 0 high.",
       "retestReference": "scripts/__tests__/phase99-dependency-remediation.test.ts",
       "releaseBlocker": false,
       "riskAcceptanceReference": null,
       "riskAcceptanceExpiresAt": null,
-      "evidenceHash": "ffe0541e2ff0d91e7a91c48aa0370dbd442475a212c0d216ce6a254a121d525a"
+      "evidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f"
     },
     {
       "findingId": "P99-DEP-003",
@@ -324,7 +324,7 @@
       "releaseBlocker": false,
       "riskAcceptanceReference": null,
       "riskAcceptanceExpiresAt": null,
-      "evidenceHash": "ffe0541e2ff0d91e7a91c48aa0370dbd442475a212c0d216ce6a254a121d525a"
+      "evidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f"
     },
     {
       "findingId": "P99-DEP-004",
@@ -344,7 +344,7 @@
       "releaseBlocker": false,
       "riskAcceptanceReference": null,
       "riskAcceptanceExpiresAt": null,
-      "evidenceHash": "ffe0541e2ff0d91e7a91c48aa0370dbd442475a212c0d216ce6a254a121d525a"
+      "evidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f"
     },
     {
       "findingId": "P99-DEP-005",
@@ -364,7 +364,7 @@
       "releaseBlocker": false,
       "riskAcceptanceReference": null,
       "riskAcceptanceExpiresAt": null,
-      "evidenceHash": "ffe0541e2ff0d91e7a91c48aa0370dbd442475a212c0d216ce6a254a121d525a"
+      "evidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f"
     },
     {
       "findingId": "P99-DEP-006",
@@ -384,7 +384,7 @@
       "releaseBlocker": false,
       "riskAcceptanceReference": null,
       "riskAcceptanceExpiresAt": null,
-      "evidenceHash": "ffe0541e2ff0d91e7a91c48aa0370dbd442475a212c0d216ce6a254a121d525a"
+      "evidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f"
     },
     {
       "findingId": "P99-DEP-007",
@@ -404,7 +404,7 @@
       "releaseBlocker": false,
       "riskAcceptanceReference": null,
       "riskAcceptanceExpiresAt": null,
-      "evidenceHash": "ffe0541e2ff0d91e7a91c48aa0370dbd442475a212c0d216ce6a254a121d525a"
+      "evidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f"
     },
     {
       "findingId": "P99-DEP-008",
@@ -505,6 +505,46 @@
       "riskAcceptanceReference": null,
       "riskAcceptanceExpiresAt": null,
       "evidenceHash": null
+    },
+    {
+      "findingId": "P99-DEP-013",
+      "title": "Dependency advisory in browserslist (high)",
+      "sourceReference": "docs/security/phase99-dependency-review.json#browserslist",
+      "affectedSurface": "package-lock.json → browserslist (development dependency tree, via autoprefixer)",
+      "description": "Reported by npm audit against the committed package-lock.json. GHSA-c83g-rgw3-j3cx (unbounded memory growth, no cache eviction) and GHSA-73wf-gq98-2v4g (uncaught crash / prototype write via untrusted browserslist-stats.json) affect all versions up to and including 4.28.6. The package is not present in the production dependency tree.",
+      "impact": "Build-time only. Reached by autoprefixer during PostCSS processing; a malicious browserslist-stats.json or a pathological query set could crash or exhaust memory in the build, not in the running application.",
+      "remediationReference": "package-lock.json",
+      "remediationSummary": "Resolved to browserslist@4.28.8 by in-range transitive update inside autoprefixer’s ^4.23.3 range — no manifest change required. Verified against the resolved lockfile (every copy) and by a fresh npm ci followed by npm audit, which reports 0 critical and 0 high.",
+      "source": "DEPENDENCY_REVIEW",
+      "severity": "HIGH",
+      "category": "DEPENDENCY",
+      "firstObservedAt": "2026-09-03",
+      "status": "VERIFIED_FIXED",
+      "retestReference": "scripts/__tests__/phase99-dependency-remediation.test.ts",
+      "releaseBlocker": false,
+      "riskAcceptanceReference": null,
+      "riskAcceptanceExpiresAt": null,
+      "evidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f"
+    },
+    {
+      "findingId": "P99-DEP-014",
+      "title": "Dependency advisory in mysql2 (high)",
+      "sourceReference": "docs/security/phase99-dependency-review.json#mysql2",
+      "affectedSurface": "package-lock.json → mysql2 (production dependency tree, pinned by the prisma CLI)",
+      "description": "Reported by npm audit against the committed package-lock.json. GHSA-3f6p-5ww8-9rcr (auth-plugin downgrade to mysql_clear_password leaking plaintext credentials, fixed in 3.22.0) and GHSA-rgwj-5xj2-c3m3 (unbounded zlib inflate in the compressed protocol handler, fixed after 3.23.0). prisma@7.8.0 pins mysql2 to exactly 3.15.3.",
+      "impact": "Hermes OS connects only to PostgreSQL via @prisma/adapter-pg, so no MySQL connection is opened and neither advisory is reachable at runtime. The package is nevertheless installed in the production tree and must not remain on a vulnerable line.",
+      "remediationReference": "package.json; package-lock.json",
+      "remediationSummary": "Resolved to mysql2@3.24.3 by a narrowly scoped npm override. prisma pins mysql2 to an exact version (3.15.3 at 7.8.0, unchanged through 7.10.0), so no version spec can reach the fixed line and npm’s own suggestion was a prisma major DOWNGRADE to 6.19.3, which was rejected. Prisma stays on 7.8.0. Verified against the resolved lockfile (single copy) and by a fresh npm ci followed by npm audit, which reports 0 critical and 0 high.",
+      "source": "DEPENDENCY_REVIEW",
+      "severity": "HIGH",
+      "category": "DEPENDENCY",
+      "firstObservedAt": "2026-09-03",
+      "status": "VERIFIED_FIXED",
+      "retestReference": "scripts/__tests__/phase99-dependency-remediation.test.ts",
+      "releaseBlocker": false,
+      "riskAcceptanceReference": null,
+      "riskAcceptanceExpiresAt": null,
+      "evidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f"
     },
     {
       "findingId": "P99-INT-014",
