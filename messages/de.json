@@ -6400,7 +6400,28 @@
       "moveActionUp": "Aktion {position} nach vorn verschieben",
       "moveActionDown": "Aktion {position} nach hinten verschieben",
       "fieldLabel": "Feld",
-      "valueLabel": "Wert"
+      "valueLabel": "Wert",
+      "conditionTypeOptions": {
+        "ALWAYS": "Immer",
+        "FIELD_EQUALS": "Feld ist gleich",
+        "FIELD_NOT_EQUALS": "Feld ist ungleich",
+        "FIELD_GREATER_THAN": "Feld größer als",
+        "FIELD_LESS_THAN": "Feld kleiner als",
+        "STATUS_IS": "Status ist",
+        "ROLE_IS": "Rolle ist",
+        "HEALTH_SCORE_BELOW": "Gesundheitswert unter",
+        "PRIORITY_IS": "Priorität ist"
+      },
+      "configLabels": {
+        "message": "Nachricht",
+        "title": "Titel",
+        "priority": "Priorität",
+        "activityType": "Aktivitätstyp",
+        "status": "Zustand",
+        "strategy": "Strategie",
+        "event": "Ereignis",
+        "severity": "Schweregrad"
+      }
     },
     "pages": {
       "dashboardTitle": "Workflow-Automatisierung",

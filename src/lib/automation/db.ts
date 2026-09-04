@@ -7,11 +7,38 @@ import {
 } from "./mock-data";
 import { BUILT_IN_TEMPLATES }  from "./templates";
 import { simulateWorkflow, runWorkflow } from "./engine";
+
 import type {
   WorkflowDefinition, WorkflowDefinitionFull, WorkflowExecution,
   WorkflowExecutionFull, WorkflowTemplate, WorkflowWebhookEndpoint,
   AutomationOverview, SimulateResult,
 } from "./types";
+
+/**
+ * Structural write shapes. This layer deliberately does not import the zod
+ * inferred types: the routes validate first, and keeping the persistence
+ * contract structural lets other trusted callers — the template copy path —
+ * pass their own shapes without a cast.
+ */
+type ConditionInput = {
+  type: string; field?: string | null; operator?: string | null;
+  value?: string | null; logicGroup?: number;
+};
+type ActionInput = { type: string; config?: Record<string, unknown> };
+
+/**
+ * Why a workflow write did not happen. Collapsing all three into `null` is how
+ * a failed transaction used to surface to the client as 404 "not found", which
+ * told an operator their workflow had vanished when in fact nothing had been
+ * written.
+ */
+export type WorkflowWriteFailure = "not_found" | "unavailable" | "write_failed";
+export type WorkflowWriteResult =
+  | { ok: true;  workflow: WorkflowDefinitionFull }
+  | { ok: false; reason: WorkflowWriteFailure };
+
+/** Thrown inside a transaction so the rollback and the 404 stay in agreement. */
+class WorkflowNotFoundError extends Error {}
 
 type AnyModel = Record<string, (...args: unknown[]) => Promise<unknown>>;
 
@@ -33,6 +60,52 @@ async function m() {
 function toIso(v: unknown): string {
   if (v instanceof Date) return v.toISOString();
   return String(v);
+}
+
+// ── Workflow write helpers (PAGE 08 persistence closure) ─────────────────────
+
+/** Minimal structural view of the transaction client this module needs. */
+type TxModel = {
+  updateMany: (args: unknown) => Promise<unknown>;
+  findFirst:  (args: unknown) => Promise<unknown>;
+  deleteMany: (args: unknown) => Promise<unknown>;
+  createMany: (args: unknown) => Promise<unknown>;
+};
+type WorkflowTx = {
+  workflowDefinition: Pick<TxModel, "updateMany" | "findFirst">;
+  workflowCondition:  Pick<TxModel, "deleteMany" | "createMany">;
+  workflowAction:     Pick<TxModel, "deleteMany" | "createMany">;
+};
+type WorkflowTxClient = { $transaction: <T>(fn: (tx: WorkflowTx) => Promise<T>) => Promise<T> };
+
+const CHILDREN_INCLUDE = {
+  conditions: true,
+  actions: { orderBy: { order: "asc" } },
+} as const;
+
+function conditionCreate(c: ConditionInput) {
+  return {
+    type:       c.type,
+    field:      c.field ?? null,
+    operator:   c.operator ?? null,
+    value:      c.value ?? null,
+    logicGroup: c.logicGroup ?? 0,
+  };
+}
+
+/** Execution order is the 1-based array position, never a client-sent number. */
+function actionCreate(a: ActionInput, index: number) {
+  return { type: a.type, order: index + 1, config: a.config ?? {} };
+}
+
+function normalizeFull(row: WorkflowDefinitionFull): WorkflowDefinitionFull {
+  return {
+    ...row,
+    createdAt:  toIso(row.createdAt),
+    updatedAt:  toIso(row.updatedAt),
+    conditions: (row.conditions ?? []).map(c => ({ ...c, createdAt: toIso(c.createdAt), updatedAt: toIso(c.updatedAt) })),
+    actions:    (row.actions ?? []).map(a => ({ ...a, createdAt: toIso(a.createdAt), updatedAt: toIso(a.updatedAt) })),
+  };
 }
 
 // ── Overview ──────────────────────────────────────────────────────────────────
@@ -120,35 +193,120 @@ export async function getWorkflowById(id: string): Promise<WorkflowDefinitionFul
   return MOCK_WORKFLOWS_WITH_DETAILS.find(w => w.id === id) ?? null;
 }
 
+/**
+ * PAGE 08 — a workflow is created with its conditions and ordered actions in
+ * one nested write, so Prisma runs the whole thing in a single transaction and
+ * a failing child can never leave a headless parent behind.
+ *
+ * Execution order is the array position (1-based), never a client-supplied
+ * number, so the stored sequence is always dense and deterministic.
+ */
 export async function createWorkflow(data: {
   name: string; description?: string | null; triggerType: string;
   organizationId?: string | null; createdBy?: string | null; templateId?: string | null;
-}): Promise<WorkflowDefinition | null> {
+  conditions?: ConditionInput[]; actions?: ActionInput[];
+}): Promise<WorkflowDefinitionFull | null> {
+  const { conditions, actions, ...scalars } = data;
   try {
     const db = await m();
     if (db?.wf) {
       const row = await db.wf.create({
-        data: { ...data, status: "DRAFT", updatedAt: new Date() },
-      } as never) as WorkflowDefinition;
-      return { ...row, createdAt: toIso(row.createdAt), updatedAt: toIso(row.updatedAt) };
+        data: {
+          ...scalars,
+          status: "DRAFT",
+          updatedAt: new Date(),
+          ...(conditions?.length ? { conditions: { create: conditions.map(conditionCreate) } } : {}),
+          ...(actions?.length    ? { actions:    { create: actions.map(actionCreate) } }       : {}),
+        },
+        include: CHILDREN_INCLUDE,
+      } as never) as WorkflowDefinitionFull;
+      return normalizeFull(row);
     }
   } catch { /* fall through */ }
   return null;
 }
 
+/**
+ * PAGE 08 — scalar fields and both child collections update together inside one
+ * transaction. A collection that is absent from `data` is left untouched
+ * (PATCH semantics); a collection that is present replaces what is stored, so
+ * removed conditions and actions actually disappear instead of lingering.
+ */
 export async function updateWorkflow(id: string, data: Partial<{
-  name: string; description: string | null; status: string;
-}>): Promise<WorkflowDefinition | null> {
-  try {
-    const db = await m();
-    if (db?.wf) {
-      const row = await db.wf.update({
-        where: { id }, data: { ...data, updatedAt: new Date() },
-      } as never) as WorkflowDefinition;
-      return { ...row, createdAt: toIso(row.createdAt), updatedAt: toIso(row.updatedAt) };
+  name: string; description: string | null; status: string; triggerType: string;
+  conditions: ConditionInput[]; actions: ActionInput[];
+}>): Promise<WorkflowWriteResult> {
+  const { conditions, actions, ...scalars } = data;
+  const scalarData = { ...scalars, updatedAt: new Date() };
+
+  const db = await getPrisma();
+  if (!db) return { ok: false, reason: "unavailable" };
+  const wf = (db as Record<string, unknown>).workflowDefinition as
+    | { updateMany: (a: unknown) => Promise<unknown>; findFirst: (a: unknown) => Promise<unknown> }
+    | undefined;
+  if (!wf) return { ok: false, reason: "unavailable" };
+
+  /**
+   * `updateMany` rather than `update`: it reports a row count instead of
+   * throwing, and its `where` can carry `deletedAt: null`, so a soft-deleted
+   * workflow reads as absent instead of being silently resurrected.
+   */
+  const applyScalars = async (
+    model: { updateMany: (a: unknown) => Promise<unknown> },
+  ) => {
+    const res = await model.updateMany({ where: { id, deletedAt: null }, data: scalarData }) as { count?: number };
+    if ((res?.count ?? 0) === 0) throw new WorkflowNotFoundError();
+  };
+
+  // Status-only transitions (activate / pause) never touch the children, so
+  // they need no transaction.
+  if (conditions === undefined && actions === undefined) {
+    try {
+      await applyScalars(wf);
+      const row = await wf.findFirst({ where: { id, deletedAt: null }, include: CHILDREN_INCLUDE }) as WorkflowDefinitionFull | null;
+      if (!row) return { ok: false, reason: "not_found" };
+      return { ok: true, workflow: normalizeFull(row) };
+    } catch (err) {
+      return { ok: false, reason: err instanceof WorkflowNotFoundError ? "not_found" : "write_failed" };
     }
-  } catch { /* fall through */ }
-  return null;
+  }
+
+  const client = db as unknown as WorkflowTxClient;
+  if (typeof client.$transaction !== "function") return { ok: false, reason: "unavailable" };
+
+  try {
+    const row = await client.$transaction(async (tx) => {
+      await applyScalars(tx.workflowDefinition);
+
+      if (conditions !== undefined) {
+        await tx.workflowCondition.deleteMany({ where: { workflowId: id } });
+        if (conditions.length) {
+          await tx.workflowCondition.createMany({
+            data: conditions.map(c => ({ workflowId: id, ...conditionCreate(c) })),
+          });
+        }
+      }
+
+      if (actions !== undefined) {
+        await tx.workflowAction.deleteMany({ where: { workflowId: id } });
+        if (actions.length) {
+          await tx.workflowAction.createMany({
+            data: actions.map((a, i) => ({ workflowId: id, ...actionCreate(a, i) })),
+          });
+        }
+      }
+
+      return tx.workflowDefinition.findFirst({
+        where: { id, deletedAt: null },
+        include: CHILDREN_INCLUDE,
+      });
+    });
+
+    if (!row) return { ok: false, reason: "not_found" };
+    return { ok: true, workflow: normalizeFull(row as WorkflowDefinitionFull) };
+  } catch (err) {
+    return { ok: false, reason: err instanceof WorkflowNotFoundError ? "not_found" : "write_failed" };
+  }
 }
 
 export async function deleteWorkflow(id: string): Promise<boolean> {

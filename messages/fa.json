@@ -6400,7 +6400,28 @@
       "moveActionUp": "انتقال اقدام {position} به مرتبهٔ جلوتر",
       "moveActionDown": "انتقال اقدام {position} به مرتبهٔ عقب‌تر",
       "fieldLabel": "فیلد",
-      "valueLabel": "مقدار"
+      "valueLabel": "مقدار",
+      "conditionTypeOptions": {
+        "ALWAYS": "همیشه",
+        "FIELD_EQUALS": "فیلد برابر است با",
+        "FIELD_NOT_EQUALS": "فیلد برابر نیست با",
+        "FIELD_GREATER_THAN": "فیلد بزرگ‌تر از",
+        "FIELD_LESS_THAN": "فیلد کوچک‌تر از",
+        "STATUS_IS": "وضعیت برابر است با",
+        "ROLE_IS": "نقش برابر است با",
+        "HEALTH_SCORE_BELOW": "امتیاز سلامت کمتر از",
+        "PRIORITY_IS": "اولویت برابر است با"
+      },
+      "configLabels": {
+        "message": "پیام",
+        "title": "عنوان",
+        "priority": "اولویت",
+        "activityType": "نوع فعالیت",
+        "status": "وضعیت",
+        "strategy": "راهبرد",
+        "event": "رویداد",
+        "severity": "شدت"
+      }
     },
     "pages": {
       "dashboardTitle": "خودکارسازی گردش‌کار",

@@ -6400,7 +6400,28 @@
       "moveActionUp": "Move action {position} earlier",
       "moveActionDown": "Move action {position} later",
       "fieldLabel": "Field",
-      "valueLabel": "Value"
+      "valueLabel": "Value",
+      "conditionTypeOptions": {
+        "ALWAYS": "Always",
+        "FIELD_EQUALS": "Field equals",
+        "FIELD_NOT_EQUALS": "Field does not equal",
+        "FIELD_GREATER_THAN": "Field greater than",
+        "FIELD_LESS_THAN": "Field less than",
+        "STATUS_IS": "Status is",
+        "ROLE_IS": "Role is",
+        "HEALTH_SCORE_BELOW": "Health score below",
+        "PRIORITY_IS": "Priority is"
+      },
+      "configLabels": {
+        "message": "Message",
+        "title": "Title",
+        "priority": "Priority",
+        "activityType": "Activity type",
+        "status": "Status",
+        "strategy": "Strategy",
+        "event": "Event",
+        "severity": "Severity"
+      }
     },
     "pages": {
       "dashboardTitle": "Workflow Automation",
