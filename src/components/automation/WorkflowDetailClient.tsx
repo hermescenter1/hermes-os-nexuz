@@ -1,10 +1,11 @@
 "use client";
 
 import Link            from "next/link";
-import { useState }    from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { WorkflowDefinitionFull, WorkflowExecution } from "@/lib/automation/types";
 import { formatDate, formatDateTime } from "@/lib/i18n/format";
+import { formatRedactedConfig } from "@/lib/automation/redaction";
 
 type Tab = "overview" | "conditions" | "actions" | "executions";
 
@@ -29,9 +30,11 @@ export function WorkflowDetailClient({
   workflow:   WorkflowDefinitionFull;
   executions: WorkflowExecution[];
 }) {
-  const [tab, setTab]   = useState<Tab>("overview");
-  const locale          = useLocale();
-  const t               = useTranslations("automationOperations");
+  const [tab, setTab]      = useState<Tab>("overview");
+  const tabContainerRef    = useRef<HTMLDivElement>(null);
+  const activeTabRef       = useRef<HTMLButtonElement>(null);
+  const locale             = useLocale();  // for translation key resolution
+  const t                  = useTranslations("automationOperations");
 
   const TABS: { id: Tab; label: string }[] = [
     { id: "overview",   label: t("workflowDetail.tabOverview") },
@@ -39,6 +42,14 @@ export function WorkflowDetailClient({
     { id: "actions",    label: t("workflowDetail.tabActions", { count: workflow.actions.length }) },
     { id: "executions", label: t("workflowDetail.tabExecutions", { count: executions.length }) },
   ];
+
+  // Scroll active tab into view on mobile
+  useEffect(() => {
+    if (activeTabRef.current) {
+      // Use scrollIntoView with smooth behavior for accessibility
+      activeTabRef.current.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [tab]);
 
   return (
     <div className="space-y-6">
@@ -70,12 +81,20 @@ export function WorkflowDetailClient({
         </div>
       </div>
 
-      <div className="flex gap-1 border-b">
+      <div
+        ref={tabContainerRef}
+        className="flex gap-1 border-b overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        role="tablist"
+      >
         {TABS.map(tb => (
           <button
             key={tb.id}
+            ref={tab === tb.id ? activeTabRef : null}
             onClick={() => setTab(tb.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            role="tab"
+            aria-selected={tab === tb.id}
+            aria-controls={`panel-${tb.id}`}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap flex-shrink-0 ${
               tab === tb.id
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -87,7 +106,7 @@ export function WorkflowDetailClient({
       </div>
 
       {tab === "overview" && (
-        <div className="grid md:grid-cols-2 gap-4">
+        <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" className="grid md:grid-cols-2 gap-4">
           <div className="rounded-xl border bg-card p-4 space-y-3">
             <h3 className="font-semibold">{t("workflowDetail.trigger")}</h3>
             <p className="text-sm font-mono text-muted-foreground">{workflow.triggerType}</p>
@@ -119,7 +138,7 @@ export function WorkflowDetailClient({
       )}
 
       {tab === "conditions" && (
-        <div className="space-y-3">
+        <div id="panel-conditions" role="tabpanel" aria-labelledby="tab-conditions" className="space-y-3">
           {workflow.conditions.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("workflowDetail.noConditions")}</p>
           ) : (
@@ -135,7 +154,7 @@ export function WorkflowDetailClient({
       )}
 
       {tab === "actions" && (
-        <div className="space-y-3">
+        <div id="panel-actions" role="tabpanel" aria-labelledby="tab-actions" className="space-y-3">
           {workflow.actions.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("workflowDetail.noActions")}</p>
           ) : (
@@ -147,7 +166,7 @@ export function WorkflowDetailClient({
                 </div>
                 {Object.keys(a.config).length > 0 && (
                   <pre className="text-xs text-muted-foreground bg-muted rounded p-2 overflow-auto">
-                    {JSON.stringify(a.config, null, 2)}
+                    {formatRedactedConfig(a.config)}
                   </pre>
                 )}
               </div>
@@ -157,7 +176,7 @@ export function WorkflowDetailClient({
       )}
 
       {tab === "executions" && (
-        <div className="rounded-xl border overflow-hidden">
+        <div id="panel-executions" role="tabpanel" aria-labelledby="tab-executions" className="rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
