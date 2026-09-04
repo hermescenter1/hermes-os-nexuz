@@ -654,8 +654,8 @@ describe("locale configuration and prior work unchanged", () => {
     expect(activeLocaleOptions().map((o) => o.nativeName)).toContain("Deutsch");
   });
 
-  it("prior namespace leaf counts unchanged (automation 253, asset 209, maintenance 233)", () => {
-    expect(flatten((en as Tree).automationOperations).size).toBe(253);
+  it("prior namespace leaf counts unchanged (automation 260, asset 209, maintenance 233)", () => {
+    expect(flatten((en as Tree).automationOperations).size).toBe(260);
     expect(flatten((en as Tree).assetOperations).size).toBe(209);
     expect(flatten((en as Tree).maintenanceOperations).size).toBe(233);
   });

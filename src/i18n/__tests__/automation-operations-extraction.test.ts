@@ -100,11 +100,11 @@ const faAO = (fa as Tree).automationOperations;
 const deAO = (de as Tree).automationOperations;
 
 describe("automationOperations namespace — three-locale parity", () => {
-  it("exists in all three catalogs with exactly 253 leaves", () => {
+  it("exists in all three catalogs with exactly 260 leaves", () => {
     expect(enAO).toBeTruthy();
     expect(faAO).toBeTruthy();
     expect(deAO).toBeTruthy();
-    expect(flatten(enAO).size).toBe(253);
+    expect(flatten(enAO).size).toBe(260);
   });
 
   it("fa and de mirror en key paths and shapes exactly", () => {
@@ -360,14 +360,31 @@ describe("Automation components and pages are fully catalog-backed", () => {
 });
 
 describe("Automation behavior and raw values are preserved (allowlisted)", () => {
-  it("keeps raw enum option arrays and status/category maps unchanged", () => {
+  it("keeps raw enum option arrays and status maps unchanged", () => {
     const builder = read("src/components/automation/WorkflowBuilderClient.tsx");
-    expect(builder).toMatch(/"ALWAYS","FIELD_EQUALS"/);
-    expect(builder).toMatch(/"CREATE_NOTIFICATION"/);
-    expect(builder).toMatch(/"DRAFT","ACTIVE","PAUSED","ARCHIVED"/);
-    // Raw JSON placeholder + default config are code, intentionally not extracted.
-    expect(builder).toContain('{"key":"value"}');
-    expect(builder).toContain('{"channel":"in_app","message":""}');
+    expect(builder).toMatch(/"DRAFT", "ACTIVE", "PAUSED", "ARCHIVED"/);
+    // Condition and action vocabularies are rendered through
+    // builder.conditionTypeOptions.* / builder.actionLabels.*, so the raw enum
+    // values themselves live in one place (lib/automation/validation) and the
+    // component never hardcodes an English label.
+    expect(builder).toMatch(/builder\.conditionTypeOptions\./);
+    expect(builder).toMatch(/builder\.actionLabels\./);
+  });
+
+  /**
+   * PAGE 08: the free-form JSON config editor is gone on purpose. It invited
+   * operators to type credentials into a plaintext Json column, and the write
+   * path now refuses credential-shaped keys outright. Action configuration is
+   * edited through the per-type fields the engine actually reads, and any
+   * stored key without an editor is displayed through the Page 07 redaction
+   * layer rather than echoed raw.
+   */
+  it("ships no free-form action-config JSON editor in the builder", () => {
+    const builder = read("src/components/automation/WorkflowBuilderClient.tsx");
+    expect(builder).not.toContain('{"key":"value"}');
+    expect(builder).not.toContain('{"channel":"in_app","message":""}');
+    expect(builder).toContain("redactActionConfig");
+    expect(builder).toContain("ACTION_CONFIG_FIELDS");
   });
 
   it("keeps API fetch URLs and HTTP methods unchanged", () => {
@@ -376,14 +393,17 @@ describe("Automation behavior and raw values are preserved (allowlisted)", () =>
     expect(webhooks).toMatch(/method:\s*"POST"/);
     const builder = read("src/components/automation/WorkflowBuilderClient.tsx");
     expect(builder).toContain("/api/automation/workflows");
-    expect(builder).toMatch(/initial \? "PATCH" : "POST"/);
+    expect(builder).toMatch(/isEdit \? "PATCH" : "POST"/);
   });
 
-  it("keeps the raw enum trigger values (order preserved) in the builder", () => {
+  it("keeps the raw enum trigger values (order preserved) for the builder", () => {
+    // PAGE 08: the vocabularies moved to lib/automation/validation so the write
+    // path and the builder cannot disagree about which triggers exist.
     const builder = read("src/components/automation/WorkflowBuilderClient.tsx");
-    expect(builder).toMatch(/TRIGGER_OPTION_VALUES/);
-    expect(builder).toMatch(/"MANUAL",/);
-    expect(builder).toMatch(/"KNOWLEDGE_ARTICLE_CREATED",/);
+    expect(builder).toMatch(/TRIGGER_TYPES/);
+    const validation = read("src/lib/automation/validation.ts");
+    expect(validation).toMatch(/"MANUAL",/);
+    expect(validation).toMatch(/"KNOWLEDGE_ARTICLE_CREATED",/);
   });
 });
 
