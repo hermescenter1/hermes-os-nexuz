@@ -6315,10 +6315,7 @@
       "triggerLabel": "Auslöser",
       "triggerHint": "Dieser Workflow wird ausgelöst, sobald das ausgewählte Ereignis in Hermes OS eintritt.",
       "conditions": "Bedingungen",
-      "add": "+ Hinzufügen",
       "noConditions": "Keine Bedingungen — der Workflow wird bei Auslösung immer ausgeführt.",
-      "fieldPlaceholder": "Feld (z. B. status)",
-      "valuePlaceholder": "Wert (z. B. ACTIVE)",
       "actions": "Aktionen",
       "noActions": "Keine Aktionen konfiguriert.",
       "review": "Überprüfung",
@@ -6401,6 +6398,9 @@
       "moveActionDown": "Aktion {position} nach hinten verschieben",
       "fieldLabel": "Feld",
       "valueLabel": "Wert",
+      "fieldPlaceholder": "Feld (z. B. status)",
+      "valuePlaceholder": "Wert (z. B. ACTIVE)",
+      "extraConfigNote": "Gespeicherte Konfiguration, für die dieser Aktionstyp keinen Editor hat. Sie bleibt beim Speichern unverändert.",
       "conditionTypeOptions": {
         "ALWAYS": "Immer",
         "FIELD_EQUALS": "Feld ist gleich",
@@ -6421,7 +6421,14 @@
         "strategy": "Strategie",
         "event": "Ereignis",
         "severity": "Schweregrad"
-      }
+      },
+      "eyebrow": "Workflow-Editor",
+      "subtitleNew": "Legen Sie Identität, Auslöser und die geordneten Schritte dieses Workflows fest.",
+      "subtitleEdit": "Passen Sie Identität, Auslöser, Bedingungen und geordnete Schritte dieses Workflows an.",
+      "summaryTitle": "Workflow-Übersicht",
+      "stageCompleted": "abgeschlossen",
+      "stepProgress": "{current} von {total}",
+      "validationNextAction": "Öffnen Sie „01 Grundlagen“ und geben Sie einen Namen ein."
     },
     "pages": {
       "dashboardTitle": "Workflow-Automatisierung",

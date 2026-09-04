@@ -6315,10 +6315,7 @@
       "triggerLabel": "Trigger",
       "triggerHint": "This workflow fires whenever the selected event occurs in Hermes OS.",
       "conditions": "Conditions",
-      "add": "+ Add",
       "noConditions": "No conditions — workflow always executes when triggered.",
-      "fieldPlaceholder": "field (e.g. status)",
-      "valuePlaceholder": "value (e.g. ACTIVE)",
       "actions": "Actions",
       "noActions": "No actions configured.",
       "review": "Review",
@@ -6401,6 +6398,9 @@
       "moveActionDown": "Move action {position} later",
       "fieldLabel": "Field",
       "valueLabel": "Value",
+      "fieldPlaceholder": "field (e.g. status)",
+      "valuePlaceholder": "value (e.g. ACTIVE)",
+      "extraConfigNote": "Stored configuration this action type has no editor for. It is kept unchanged when you save.",
       "conditionTypeOptions": {
         "ALWAYS": "Always",
         "FIELD_EQUALS": "Field equals",
@@ -6421,7 +6421,14 @@
         "strategy": "Strategy",
         "event": "Event",
         "severity": "Severity"
-      }
+      },
+      "eyebrow": "Workflow Builder",
+      "subtitleNew": "Define the identity, trigger and ordered steps this workflow will run.",
+      "subtitleEdit": "Adjust the identity, trigger, conditions and ordered steps of this workflow.",
+      "summaryTitle": "Workflow summary",
+      "stageCompleted": "completed",
+      "stepProgress": "{current} of {total}",
+      "validationNextAction": "Open 01 Basics and enter a name."
     },
     "pages": {
       "dashboardTitle": "Workflow Automation",

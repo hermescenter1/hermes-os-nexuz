@@ -6315,10 +6315,7 @@
       "triggerLabel": "محرک",
       "triggerHint": "این گردش‌کار هر زمان که رویداد انتخاب‌شده در Hermes OS رخ دهد، اجرا می‌شود.",
       "conditions": "شرط‌ها",
-      "add": "+ افزودن",
       "noConditions": "بدون شرط — گردش‌کار هنگام فعال‌شدن همیشه اجرا می‌شود.",
-      "fieldPlaceholder": "فیلد (مثلاً status)",
-      "valuePlaceholder": "مقدار (مثلاً ACTIVE)",
       "actions": "اقدامات",
       "noActions": "هیچ اقدامی پیکربندی نشده است.",
       "review": "بازبینی",
@@ -6401,6 +6398,9 @@
       "moveActionDown": "انتقال اقدام {position} به مرتبهٔ عقب‌تر",
       "fieldLabel": "فیلد",
       "valueLabel": "مقدار",
+      "fieldPlaceholder": "فیلد (مثلاً status)",
+      "valuePlaceholder": "مقدار (مثلاً ACTIVE)",
+      "extraConfigNote": "پیکربندی ذخیره‌شده‌ای که این نوع اقدام ویرایشگری برای آن ندارد. هنگام ذخیره دست‌نخورده می‌ماند.",
       "conditionTypeOptions": {
         "ALWAYS": "همیشه",
         "FIELD_EQUALS": "فیلد برابر است با",
@@ -6421,7 +6421,14 @@
         "strategy": "راهبرد",
         "event": "رویداد",
         "severity": "شدت"
-      }
+      },
+      "eyebrow": "سازندهٔ گردش‌کار",
+      "subtitleNew": "شناسه، رویداد آغازگر و گام‌های ترتیبی‌ای که این گردش‌کار اجرا می‌کند را تعریف کنید.",
+      "subtitleEdit": "شناسه، رویداد آغازگر، شرط‌ها و گام‌های ترتیبی این گردش‌کار را تنظیم کنید.",
+      "summaryTitle": "خلاصهٔ گردش‌کار",
+      "stageCompleted": "تکمیل‌شده",
+      "stepProgress": "{current} از {total}",
+      "validationNextAction": "به گام «۰۱ اطلاعات پایه» بروید و نام را وارد کنید."
     },
     "pages": {
       "dashboardTitle": "خودکارسازی گردش‌کار",
