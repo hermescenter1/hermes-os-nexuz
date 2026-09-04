@@ -100,11 +100,11 @@ const faAO = (fa as Tree).automationOperations;
 const deAO = (de as Tree).automationOperations;
 
 describe("automationOperations namespace — three-locale parity", () => {
-  it("exists in all three catalogs with exactly 260 leaves", () => {
+  it("exists in all three catalogs with exactly 276 leaves", () => {
     expect(enAO).toBeTruthy();
     expect(faAO).toBeTruthy();
     expect(deAO).toBeTruthy();
-    expect(flatten(enAO).size).toBe(260);
+    expect(flatten(enAO).size).toBe(276);
   });
 
   it("fa and de mirror en key paths and shapes exactly", () => {
