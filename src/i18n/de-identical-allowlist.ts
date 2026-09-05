@@ -246,6 +246,7 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "engineeringDocuments.revisionType.MAJOR": "accepted-german-loanword",
   "engineeringDocuments.revisionType.MINOR": "accepted-german-loanword",
   "engineeringDocuments.revisionType.PATCH": "accepted-german-loanword",
+  "engineeringHub.nav.dashboard": "accepted-german-loanword",
   "enterpriseOperations.inventory.columns.name": "german-word-identical",
   "enterpriseOperations.inventory.columns.sku": "protocol-or-standard",
   "enterpriseOperations.inventory.columns.status": "german-word-identical",
@@ -503,7 +504,12 @@ export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   // 104-I3: +2 — Compliance, Premium.
   // B1.2: +2 — Remote, Hybrid (work-mode labels; German uses both loanwords).
   // B1-F03: +1 — ats.navPipeline.
-  "accepted-german-loanword": 79,
+  // ENGINEERING-HUB-TRILINGUAL: +1 — engineeringHub.nav.dashboard. The sibling
+  // nav label engineeringHub.nav.intelligence is NOT listed: "Intelligence" is
+  // not German, and this catalogue already translates the same nav label
+  // elsewhere (nav.groups.intelligence = "Intelligenz"), so it was translated
+  // rather than allowlisted.
+  "accepted-german-loanword": 80,
   // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
   // F2: +4  — the same acronyms in the real public header registry.
   // 104-I3: +2 — EDMS/CMMS as demo-request interest options.
