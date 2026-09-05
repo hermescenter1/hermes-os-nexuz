@@ -9107,7 +9107,112 @@
     "engineeringMemory": "Engineering-Wissensspeicher",
     "knowledgeGraph": "Wissensgraph",
     "domainExpertise": "Fachdomänen",
-    "studio": "Automatisierungsstudio"
+    "studio": "Automatisierungsstudio",
+    "nav": {
+      "heading": "Module",
+      "dashboard": "Dashboard",
+      "intelligence": "Intelligence",
+      "projects": "Projekte",
+      "memory": "Wissensspeicher",
+      "knowledgeGraph": "Wissensgraph",
+      "domains": "Fachdomänen",
+      "backToSite": "Zurück zur Hauptseite",
+      "openMenu": "Navigationsmenü öffnen",
+      "closeMenu": "Navigationsmenü schließen"
+    },
+    "dashboard": {
+      "lastUpdated": "Zuletzt aktualisiert {timestamp}",
+      "loadingMetrics": "Systemkennzahlen werden geladen…",
+      "sourceLabel": "Datenquelle",
+      "source": {
+        "database": "Datenbank",
+        "session": "Sitzung"
+      },
+      "metrics": {
+        "systemHealth": "Systemzustand",
+        "totalProjects": "Projekte gesamt",
+        "activeProjects": "Aktive Projekte",
+        "memories": "Wissenseinträge",
+        "domains": "Fachdomänen",
+        "riskLevel": "Risikostufe"
+      },
+      "risk": {
+        "title": "Risikoübersicht",
+        "subtitle": "Bewertung des Systemrisikos",
+        "highRiskProjects": "{count, plural, one {# Projekt mit hohem Risiko} other {# Projekte mit hohem Risiko}}",
+        "avgFailureRate": "Durchschnittliche Fehlerquote: {rate}",
+        "statusBreakdown": "{active} aktiv · {completed} abgeschlossen · {archived} archiviert",
+        "memoryHealth": "Zustand Wissensspeicher",
+        "projectsHealth": "Zustand Projekte",
+        "graphHealth": "Zustand Graph",
+        "emptyTitle": "Keine Risikodaten",
+        "emptyMessage": "Dashboard-Daten sind nicht verfügbar.",
+        "levels": {
+          "low": "NIEDRIG",
+          "medium": "MITTEL",
+          "high": "HOCH",
+          "critical": "KRITISCH"
+        }
+      },
+      "intelligence": {
+        "title": "Systemintelligenz",
+        "loading": "Agenten werden ausgeführt…",
+        "coherence": "Kohärenz {score}",
+        "grade": "Note",
+        "panelTitle": "Multi-Agent-Intelligenz",
+        "overall": "Gesamt {score}",
+        "scoreOutOf": "{score} von 100",
+        "emptyTitle": "Keine Agentendaten",
+        "emptyMessage": "Die Intelligence-Agenten wurden noch nicht ausgeführt.",
+        "agents": {
+          "memory": "Wissensspeicher",
+          "project": "Projekt",
+          "domain": "Fachdomäne",
+          "synthesis": "Synthese"
+        },
+        "status": {
+          "success": "in Ordnung",
+          "degraded": "eingeschränkt"
+        }
+      },
+      "benchmark": {
+        "title": "Benchmark-Rangliste",
+        "subtitle": "{count, plural, one {# Projekt bewertet} other {# Projekte bewertet}}",
+        "leader": "Spitzenreiter",
+        "emptyTitle": "Keine Benchmarks",
+        "emptyMessage": "Legen Sie Projekte an, um Leistungsranglisten zu sehen.",
+        "unavailableTitle": "Keine Benchmark-Daten",
+        "unavailableMessage": "Benchmark-Daten sind nicht verfügbar."
+      },
+      "domainHealth": {
+        "title": "Zustand der Fachdomänen",
+        "subtitle": "{count, plural, one {# Fachdomäne} other {# Fachdomänen}}",
+        "more": "{count, plural, one {# weitere Fachdomäne} other {# weitere Fachdomänen}}",
+        "memories": "{count, plural, one {# Wissenseintrag} other {# Wissenseinträge}}",
+        "confidence": "Konfidenz {value}",
+        "successRate": "Erfolg {value}",
+        "emptyTitle": "Keine Fachdomänen",
+        "emptyMessage": "Fachdomänen erscheinen, sobald Wissenseinträge verknüpft sind.",
+        "unavailableTitle": "Keine Domänendaten",
+        "unavailableMessage": "Domänendaten sind nicht verfügbar."
+      },
+      "graph": {
+        "title": "Zustand des Wissensgraphen",
+        "overall": "Gesamt",
+        "coverage": "Abdeckung",
+        "connectivity": "Vernetzung",
+        "quality": "Qualität",
+        "hubNodes": "{count, plural, one {# zentraler Knoten} other {# zentrale Knoten}}",
+        "domains": "{count, plural, one {# Fachdomäne} other {# Fachdomänen}}",
+        "emptyTitle": "Keine Graphdaten",
+        "emptyMessage": "Führen Sie Abfragen aus, um den Wissensgraphen aufzubauen."
+      },
+      "states": {
+        "errorTitle": "Es ist ein Fehler aufgetreten",
+        "errorMessage": "Daten konnten nicht geladen werden",
+        "retry": "Erneut versuchen"
+      }
+    }
   },
   "ats": {
     "analyticsUnavailable": "Auswertungsdaten nicht verfügbar",
