@@ -5259,6 +5259,15 @@
       "description": "Hermes Industrial Brain — deterministische Fehleranalyse, Alarmintelligenz, Signalmatrix und neuronale Reasoning-Map für den industriellen Betrieb."
     },
     "crossLink": "Suchen Sie stattdessen allgemeines industrielles Engineering-Wissen? Entdecken Sie Hermes Brain.",
+    "nav": {
+      "heading": "Abschnitte des Arbeitsbereichs",
+      "analyze": "Analyse",
+      "reasoning": "Herleitung",
+      "evidence": "Nachweise",
+      "actions": "Sichere Maßnahmen",
+      "report": "Bericht",
+      "reference": "Referenzdiagnose"
+    },
     "status": {
       "heading": "SYSTEMSTATUS",
       "online": "ONLINE",
@@ -5325,7 +5334,9 @@
     },
     "workspace": {
       "header": "FEHLERANALYSE-ARBEITSBEREICH — INDUSTRIELLE SIGNALERFASSUNG",
-      "online": "ONLINE"
+      "online": "ONLINE",
+      "awaitingHeading": "Es wurde noch keine Analyse ausgeführt",
+      "awaitingBody": "Beschreiben Sie die Störung oben und starten Sie die Analyse. Herleitung, Nachweise samt ihren Lücken, sicherer Prüfpfad und technischer Bericht erscheinen anschließend an dieser Stelle."
     },
     "sections": {
       "alarmIntelligence": "Alarmintelligenz",
@@ -5338,7 +5349,9 @@
       "safeActionPath": "Sicherer Maßnahmenpfad",
       "relatedKnowledge": "Zugehöriges Wissen und Fälle",
       "executiveSummary": "Management-Zusammenfassung",
-      "evidenceGaps": "Evidenzlücken"
+      "evidenceGaps": "Evidenzlücken",
+      "primaryHypothesis": "Führende Hypothese",
+      "alternativeHypotheses": "Alternative Hypothesen"
     },
     "alarm": {
       "none": "Es wurde kein Alarm gemeldet. Das Fehlen eines gemeldeten Alarms bestätigt keinen betriebsbereiten Zustand — prüfen Sie Feldverdrahtung, VFD, MCC oder den mechanischen Zustand separat."

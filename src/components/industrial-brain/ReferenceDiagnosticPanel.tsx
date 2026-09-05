@@ -70,7 +70,7 @@ function Block({
 }) {
   return (
     <section aria-labelledby={id} className="rounded-xl border border-white/8 bg-white/2 p-4">
-      <h3 id={id} className="text-[11px] font-mono uppercase tracking-[0.2em] text-slate-400 mb-3">
+      <h3 id={id} className="text-[12px] font-mono uppercase tracking-[0.2em] text-slate-400 mb-3">
         {title}
       </h3>
       {children}
@@ -89,14 +89,14 @@ function Block({
 function Citation({ citation, stateLabel }: { citation: EvidenceCitation; stateLabel?: string }) {
   return (
     <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1 py-1.5 border-b border-white/5 last:border-0">
-      <span className="text-[12px] text-slate-200">{citation.label}</span>
-      <Identifier className="text-[10px] text-slate-500">{citation.nodeId}</Identifier>
+      <span className="text-[13px] text-slate-200">{citation.label}</span>
+      <Identifier className="text-[12px] text-slate-400">{citation.nodeId}</Identifier>
       {stateLabel ? (
-        <span className="text-[10px] font-semibold text-slate-300 rounded px-1.5 py-0.5 border border-white/10">
+        <span className="text-[12px] font-semibold text-slate-300 rounded px-1.5 py-0.5 border border-white/10">
           {stateLabel}
         </span>
       ) : null}
-      <Identifier className="text-[10px] text-slate-600">
+      <Identifier className="text-[12px] text-slate-400">
         {citation.domain} · {citation.sourceId}
       </Identifier>
     </li>
@@ -113,7 +113,7 @@ function CitationList({
   stateLabels: Record<string, string>;
 }) {
   if (citations.length === 0) {
-    return <p className="text-[11px] text-slate-500">{emptyLabel}</p>;
+    return <p className="text-[12px] text-slate-400">{emptyLabel}</p>;
   }
   return (
     <ul className="space-y-0">
@@ -174,18 +174,18 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
         >
           {t("heading")}
         </h2>
-        <p className="mt-2 text-[12px] leading-relaxed text-slate-400">{t("lede")}</p>
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-400">{t("lede")}</p>
       </div>
 
       {/* ── Sample disclosure. Stated in words, before any result. ────────── */}
       <div className="px-5 py-4 border-b border-white/6 bg-amber-500/5">
         <p className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400 border border-amber-500/40 rounded px-2 py-0.5">
+          <span className="text-[12px] font-mono font-bold uppercase tracking-widest text-amber-400 border border-amber-500/40 rounded px-2 py-0.5">
             {t("disclosure.badge")}
           </span>
-          <span className="text-[12px] font-semibold text-amber-200">{t("disclosure.title")}</span>
+          <span className="text-[13px] font-semibold text-amber-200">{t("disclosure.title")}</span>
         </p>
-        <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{t("disclosure.body")}</p>
+        <p className="mt-2 text-[12px] leading-relaxed text-slate-400">{t("disclosure.body")}</p>
       </div>
 
       {/* ── What this panel is, next to the analyser above it ─────────────
@@ -196,8 +196,8 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
           leaving a reader to infer it from two similar-looking cards — is the
           difference between a demonstration and a misleading one. */}
       <div className="px-5 py-4 border-b border-white/6">
-        <p className="text-[11px] font-semibold text-slate-300">{t("relationship.heading")}</p>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+        <p className="text-[12px] font-semibold text-slate-300">{t("relationship.heading")}</p>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-slate-400">
           {t("relationship.body")}
         </p>
       </div>
@@ -207,7 +207,7 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
         <div className="flex-1 min-w-[240px]">
           <label
             htmlFor="phase101-case"
-            className="block text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 mb-1.5"
+            className="block text-[12px] font-mono uppercase tracking-[0.2em] text-slate-400 mb-1.5"
           >
             {t("selector.label")}
           </label>
@@ -215,7 +215,7 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
             id="phase101-case"
             name={CASE_QUERY_PARAM}
             defaultValue={outcome.status === "OK" ? outcome.case.caseId : defaultPublicCaseId()}
-            className="w-full min-h-[44px] rounded-lg border border-white/12 bg-[#04080F] px-3 text-[12px] text-slate-200"
+            className="w-full min-h-[44px] rounded-lg border border-white/12 bg-[#04080F] px-3 text-[13px] text-slate-200"
           >
             {/* The option label is the localised case TITLE only. An `<option>`
                 cannot carry a child element, so a Latin-script case id inside a
@@ -230,12 +230,12 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
         </div>
         <button
           type="submit"
-          className="min-h-[44px] rounded-lg px-5 text-[12px] font-mono font-semibold uppercase tracking-wider"
+          className="min-h-[44px] rounded-lg px-5 text-[13px] font-mono font-semibold uppercase tracking-wider"
           style={{ background: "rgba(30,200,164,0.9)", color: "#04080F" }}
         >
           {t("selector.submit")}
         </button>
-        <p className="w-full text-[10px] text-slate-600">{t("selector.hint")}</p>
+        <p className="w-full text-[12px] text-slate-400">{t("selector.hint")}</p>
       </form>
 
       {outcome.status !== "OK" ? (
@@ -247,21 +247,21 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
            answering a different question than the one asked is worse still. */
         <div role="status" className="px-5 py-6">
           <p className="text-[13px] font-semibold text-rose-300">{t("error.heading")}</p>
-          <p className="mt-2 text-[12px] text-slate-400">{t("error.body")}</p>
+          <p className="mt-2 text-[13px] text-slate-400">{t("error.body")}</p>
         </div>
       ) : (
         <div className="px-5 py-5 space-y-4">
           {/* ── The case, with the provenance of the system it belongs to ─── */}
           <Block id="phase101-case-heading" title={t("case.heading")}>
             <p className="text-[13px] font-semibold text-slate-100">{outcome.case.title}</p>
-            <p className="mt-1 text-[10px] font-mono uppercase tracking-widest text-slate-600">
+            <p className="mt-1 text-[12px] font-mono uppercase tracking-widest text-slate-400">
               {t("case.narrative")}
             </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-slate-400">
+            <p className="mt-1 text-[13px] leading-relaxed text-slate-400">
               {outcome.case.narrative}
             </p>
             {isCorpusTextForeign(locale) ? (
-              <p className="mt-3 text-[10px] leading-relaxed text-slate-500 border-s-2 border-white/10 ps-2">
+              <p className="mt-3 text-[12px] leading-relaxed text-slate-400 border-s-2 border-white/10 ps-2">
                 {t("case.textLocaleNotice")}
               </p>
             ) : null}
@@ -277,10 +277,10 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                 [t("case.observations"), String(outcome.case.observationCount)],
               ].map(([label, value]) => (
                 <div key={label} className="flex flex-wrap items-baseline gap-2">
-                  <dt className="text-[10px] font-mono uppercase tracking-wider text-slate-600">
+                  <dt className="text-[12px] font-mono uppercase tracking-wider text-slate-400">
                     {label}
                   </dt>
-                  <dd className="text-[11px] text-slate-300">
+                  <dd className="text-[12px] text-slate-300">
                     <Identifier>{value}</Identifier>
                   </dd>
                 </div>
@@ -291,7 +291,7 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
           {/* ── What was actually observed ─────────────────────────────────── */}
           <Block id="phase101-observed-heading" title={t("observed.heading")}>
             {outcome.diagnosis.observedFacts.length === 0 ? (
-              <p className="text-[11px] text-slate-500">{t("observed.empty")}</p>
+              <p className="text-[12px] text-slate-400">{t("observed.empty")}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-start border-collapse">
@@ -306,7 +306,7 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                         <th
                           key={heading}
                           scope="col"
-                          className="py-2 pe-4 text-start text-[10px] font-mono uppercase tracking-wider text-slate-600 whitespace-nowrap"
+                          className="py-2 pe-4 text-start text-[12px] font-mono uppercase tracking-wider text-slate-400 whitespace-nowrap"
                         >
                           {heading}
                         </th>
@@ -316,19 +316,19 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                   <tbody>
                     {outcome.diagnosis.observedFacts.map((fact) => (
                       <tr key={fact.nodeId} className="border-b border-white/5 last:border-0">
-                        <td className="py-2 pe-4 text-[12px] text-slate-200">
+                        <td className="py-2 pe-4 text-[13px] text-slate-200">
                           {fact.label}
-                          <Identifier className="block text-[10px] text-slate-600">
+                          <Identifier className="block text-[12px] text-slate-400">
                             {fact.nodeId}
                           </Identifier>
                         </td>
-                        <td className="py-2 pe-4 text-[11px] font-semibold text-slate-300 whitespace-nowrap">
+                        <td className="py-2 pe-4 text-[12px] font-semibold text-slate-300 whitespace-nowrap">
                           {fact.state ? stateLabels[fact.state] : "—"}
                         </td>
-                        <td className="py-2 pe-4 text-[11px] text-slate-400">
+                        <td className="py-2 pe-4 text-[12px] text-slate-400">
                           <Identifier>{fact.domain}</Identifier>
                         </td>
-                        <td className="py-2 text-[11px] text-slate-500">
+                        <td className="py-2 text-[12px] text-slate-400">
                           <Identifier>{fact.sourceId}</Identifier>
                         </td>
                       </tr>
@@ -342,7 +342,7 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
           {/* ── Ranked hypotheses, each with its evidence split ────────────── */}
           <Block id="phase101-hypotheses-heading" title={t("hypotheses.heading")}>
             {outcome.diagnosis.hypotheses.length === 0 ? (
-              <p className="text-[11px] text-slate-500">{t("hypotheses.empty")}</p>
+              <p className="text-[12px] text-slate-400">{t("hypotheses.empty")}</p>
             ) : (
               <ol className="space-y-3">
                 {outcome.diagnosis.hypotheses.map((hypothesis: Hypothesis, position: number) => (
@@ -350,13 +350,13 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                     key={hypothesis.faultModeId}
                     className="rounded-lg border border-white/8 bg-black/20 p-3"
                   >
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-cyan-400">
+                    <p className="text-[12px] font-mono uppercase tracking-widest text-cyan-400">
                       {t("hypotheses.rank", { rank: position + 1 })}
                     </p>
                     <h4 className="mt-1 text-[13px] font-semibold text-slate-100">
                       {hypothesis.label}
                     </h4>
-                    <Identifier className="block text-[10px] text-slate-600">
+                    <Identifier className="block text-[12px] text-slate-400">
                       {hypothesis.faultModeId}
                     </Identifier>
 
@@ -368,10 +368,10 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                         [t("hypotheses.subsystem"), hypothesis.subsystem],
                       ].map(([label, value]) => (
                         <div key={label} className="flex items-baseline gap-1.5">
-                          <dt className="text-[10px] font-mono uppercase tracking-wider text-slate-600">
+                          <dt className="text-[12px] font-mono uppercase tracking-wider text-slate-400">
                             {label}
                           </dt>
-                          <dd className="text-[11px] font-semibold text-slate-300">
+                          <dd className="text-[12px] font-semibold text-slate-300">
                             <Identifier>{value}</Identifier>
                           </dd>
                         </div>
@@ -379,14 +379,14 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                     </dl>
 
                     {hypothesis.reviewOnly ? (
-                      <p className="mt-2 text-[10px] font-semibold text-amber-300 border border-amber-500/30 rounded px-2 py-1 inline-block">
+                      <p className="mt-2 text-[12px] font-semibold text-amber-300 border border-amber-500/30 rounded px-2 py-1 inline-block">
                         {t("hypotheses.reviewOnly")}
                       </p>
                     ) : null}
 
                     <div className="mt-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
                       <div>
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 mb-1">
+                        <p className="text-[12px] font-mono uppercase tracking-wider text-emerald-400 mb-1">
                           {t("evidence.supporting")}
                         </p>
                         <CitationList
@@ -396,7 +396,7 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                         />
                       </div>
                       <div>
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-rose-400 mb-1">
+                        <p className="text-[12px] font-mono uppercase tracking-wider text-rose-400 mb-1">
                           {t("evidence.contradicting")}
                         </p>
                         <CitationList
@@ -406,7 +406,7 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                         />
                       </div>
                       <div>
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-1">
+                        <p className="text-[12px] font-mono uppercase tracking-wider text-slate-400 mb-1">
                           {t("evidence.missing")}
                         </p>
                         <CitationList
@@ -419,12 +419,12 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
 
                     {hypothesis.chains.length > 0 ? (
                       <div className="mt-3">
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 mb-1">
+                        <p className="text-[12px] font-mono uppercase tracking-wider text-slate-400 mb-1">
                           {t("hypotheses.chain")}
                         </p>
                         <ul className="space-y-0.5">
                           {hypothesis.chains.map((chain) => (
-                            <li key={chain.nodeId} className="text-[10px] text-slate-500">
+                            <li key={chain.nodeId} className="text-[12px] text-slate-400">
                               <Identifier>
                                 {chain.nodeId} → {chain.edgeIds.join(" → ")}
                               </Identifier>
@@ -441,13 +441,13 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
 
           {/* ── The human gate, deliberately BEFORE the actions ────────────── */}
           <Block id="phase101-validation-heading" title={t("validation.heading")}>
-            <p className="text-[12px] leading-relaxed text-amber-200">{t("validation.body")}</p>
+            <p className="text-[13px] leading-relaxed text-amber-200">{t("validation.body")}</p>
             {outcome.diagnosis.escalationConditions.length === 0 ? (
-              <p className="mt-2 text-[11px] text-slate-500">{t("validation.none")}</p>
+              <p className="mt-2 text-[12px] text-slate-400">{t("validation.none")}</p>
             ) : (
               <ul className="mt-2 space-y-1.5">
                 {outcome.diagnosis.escalationConditions.map((condition) => (
-                  <li key={condition} className="flex gap-2 text-[11px] text-slate-400">
+                  <li key={condition} className="flex gap-2 text-[12px] text-slate-400">
                     <span aria-hidden="true" className="text-amber-500 shrink-0">
                       ▸
                     </span>
@@ -460,9 +460,9 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
 
           {/* ── Advisory verification steps. Never controls. ───────────────── */}
           <Block id="phase101-actions-heading" title={t("actions.heading")}>
-            <p className="text-[11px] text-slate-500 mb-2">{t("actions.lede")}</p>
+            <p className="text-[12px] text-slate-400 mb-2">{t("actions.lede")}</p>
             {outcome.diagnosis.safeVerificationActions.length === 0 ? (
-              <p className="text-[11px] text-slate-500">{t("actions.empty")}</p>
+              <p className="text-[12px] text-slate-400">{t("actions.empty")}</p>
             ) : (
               <ul className="space-y-2">
                 {outcome.diagnosis.safeVerificationActions.map((action) => (
@@ -470,16 +470,16 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                     key={action.nodeId}
                     className="rounded-lg border border-white/8 bg-black/20 p-3"
                   >
-                    <p className="text-[12px] text-slate-200">{action.label}</p>
-                    <Identifier className="block text-[10px] text-slate-600">
+                    <p className="text-[13px] text-slate-200">{action.label}</p>
+                    <Identifier className="block text-[12px] text-slate-400">
                       {action.nodeId}
                     </Identifier>
-                    <p className="mt-1 text-[10px] text-slate-500">
+                    <p className="mt-1 text-[12px] text-slate-400">
                       {t("actions.verifies")}:{" "}
                       <Identifier>{action.verifies.join(", ")}</Identifier>
                     </p>
                     {action.reviewOnly ? (
-                      <p className="mt-1 text-[10px] font-semibold text-amber-300">
+                      <p className="mt-1 text-[12px] font-semibold text-amber-300">
                         {t("actions.reviewOnly")}
                       </p>
                     ) : null}
@@ -502,10 +502,10 @@ export async function ReferenceDiagnosticPanel({ locale, caseParam }: PanelProps
                 ],
               ].map(([label, value]) => (
                 <div key={label} className="flex flex-wrap items-baseline gap-2">
-                  <dt className="text-[10px] font-mono uppercase tracking-wider text-slate-600">
+                  <dt className="text-[12px] font-mono uppercase tracking-wider text-slate-400">
                     {label}
                   </dt>
-                  <dd className="text-[11px] text-slate-300">
+                  <dd className="text-[12px] text-slate-300">
                     <Identifier>{value}</Identifier>
                   </dd>
                 </div>

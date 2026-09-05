@@ -12,7 +12,7 @@ import { PublicPageShell } from "@/components/public-site";
 // PHASE 101-R — the Phase 101 reference corpus and its structural diagnostic
 // engine, executed server-side on this route. Before this the corpus was
 // imported by nothing outside its own test suite.
-import { ReferenceDiagnosticPanel, CASE_QUERY_PARAM } from "@/components/industrial-brain/ReferenceDiagnosticPanel";
+import { ReferenceDiagnosticPanel, CASE_QUERY_PARAM, bridgeFingerprint } from "@/components/industrial-brain/ReferenceDiagnosticPanel";
 import { ACTIVE_LOCALES } from "@/i18n/locales";
 import type { BridgeLocale } from "@/lib/industrial-knowledge/runtime/bridge";
 
@@ -29,30 +29,18 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export const dynamic = "force-dynamic";
 
-// ─── Brain status modules ─────────────────────────────────────────────────────
-// Labels come from the catalog (status.modules.<key>); `status` is a non-display
-// enum that selects the indicator colour.
+// ─── Capability pipeline ──────────────────────────────────────────────────────
+// The six capabilities, in the order the workspace actually applies them:
+// intake → interpretation → reasoning → uncertainty → verification → knowledge.
+//
+// DASHBOARD ALIGNMENT: these were six equal-weight marketing cards stacked in a
+// tall left column that ran out before the reasoning output did. They are the
+// same six capabilities reading the same catalog strings; only the presentation
+// changed, from a card stack into a numbered workflow rail that reads as the map
+// of the analysis beside it. Title and description come from the catalog
+// (capabilities.items.<key>); icon and accent are presentation-only.
 
-const STATUS_MODULES = [
-  { key: "signalIntake",       status: "ONLINE"  },
-  { key: "alarmIntelligence",  status: "READY"   },
-  { key: "signalMatrix",       status: "ACTIVE"  },
-  { key: "evidenceEntropy",    status: "ACTIVE"  },
-  { key: "neuralReasoningMap", status: "ACTIVE"  },
-  { key: "safeActionPath",     status: "READY"   },
-] as const;
-
-const STATUS_COLORS: Record<string, { dot: string; text: string }> = {
-  ONLINE: { dot: "bg-emerald-400",   text: "text-emerald-400" },
-  READY:  { dot: "bg-cyan-400",      text: "text-cyan-400" },
-  ACTIVE: { dot: "bg-sky-400",       text: "text-sky-400" },
-};
-
-// ─── Value propositions ───────────────────────────────────────────────────────
-// Title + description come from the catalog (capabilities.items.<key>); icon and
-// accent are presentation-only.
-
-const VALUE_PROPS = [
+const CAPABILITY_PIPELINE = [
   {
     key: "alarmIntelligence",
     icon: <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd"/></svg>,
@@ -110,12 +98,24 @@ export default async function IndustrialBrainPage({
   const query = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("industrialBrain");
-  const safetyItems = t.raw("safety.items") as string[];
 
   // Phase 82: page stays fully public — auth only decides whether the
   // report shows an active "Save as Engineering Case" button or a sign-in CTA.
   const user = await getCurrentUserUnified();
   const canSaveCase = can(user?.role, "authoring");
+
+  /* DASHBOARD ALIGNMENT — the header strip states PROVENANCE, not liveness.
+     What stood here was a row of constants ("ONLINE", "ACTIVE", "READY") with
+     pulsing dots: presentation literals dressed as telemetry, on a page that
+     reads nothing from a plant. These values are MEASURED instead — each one is
+     derived from the sealed corpus by `bridgeFingerprint()` at render time, and
+     it is the same fingerprint the reference panel below cites. */
+  const fingerprint = bridgeFingerprint();
+  const provenance = [
+    { label: t("reference.provenance.engine"),  value: fingerprint.engineVersion },
+    { label: t("reference.provenance.corpus"),  value: fingerprint.corpusChecksum.slice(0, 16) },
+    { label: t("reference.provenance.systems"), value: `${fingerprint.systems} / ${fingerprint.nodes} / ${fingerprint.edges}` },
+  ];
 
   return (
     // PHASE 104-I2 — /industrial-brain joins the public estate. This is a public
@@ -134,174 +134,171 @@ export default async function IndustrialBrainPage({
         }}
       />
 
-      {/* ── Ambient glows ─────────────────────────────────────────────────── */}
+      {/* ── Ambient glow ──────────────────────────────────────────────────
+          One, not two. The second glow sat behind the reasoning column and
+          competed with the confidence bars it was supposed to sit under. */}
       <div className="fixed top-0 start-1/4 w-96 h-96 rounded-full blur-[160px] pointer-events-none print:hidden" aria-hidden="true"
         style={{ background: "rgba(30,200,164,0.04)" }} />
-      <div className="fixed top-40 end-0 w-80 h-80 rounded-full blur-[140px] pointer-events-none print:hidden" aria-hidden="true"
-        style={{ background: "rgba(96,180,240,0.04)" }} />
 
       <div className="relative z-10">
 
-        {/* ── Brain status strip ────────────────────────────────────────────── */}
-        <div className="border-b border-white/6 overflow-x-auto print:hidden"
-          style={{ background: "rgba(4,8,15,0.92)", backdropFilter: "blur(16px)" }}>
-          <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-6 min-w-max">
-            <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-slate-600 shrink-0">
-              {t("status.heading")}
-            </span>
-            {STATUS_MODULES.map(mod => {
-              const c = STATUS_COLORS[mod.status];
-              return (
-                <div key={mod.key} className="flex items-center gap-1.5 shrink-0">
-                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${c.dot}`} />
-                  <span className={`text-[9px] font-mono ${c.text}`}>{t(`status.modules.${mod.key}`)}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* ── Compact intelligence header ───────────────────────────────────
+            Was a 14-unit-tall hero that pushed the analysis form below the
+            first viewport at every desktop width. Identity, advisory boundary
+            and provenance now share one band, and the work starts above it. */}
+        <header className="border-b border-white/8 print:hidden">
+          <div className="mx-auto w-full max-w-[1600px] px-6 lg:px-8 py-7 lg:py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-10 gap-y-6">
 
-        {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <div className="relative border-b border-white/6 overflow-hidden py-14 px-6 print:hidden">
-          <div className="max-w-7xl mx-auto">
-            <div className="max-w-3xl">
-              <p className="text-[9px] font-mono uppercase tracking-[0.25em] text-cyan-400 mb-4">
-                {t("hero.eyebrow")}
-              </p>
-              <h1 className="font-bold leading-tight mb-3"
-                style={{ fontSize: "clamp(1.8rem,4vw,3rem)", color: "#E8F4FF" }}>
-                {t("hero.title")}
-              </h1>
-              <p className="text-slate-400 mb-1" style={{ fontSize: "clamp(0.9rem,2vw,1.1rem)" }}>
-                {t("hero.subtitle")}
-              </p>
-              <p className="text-xs text-slate-600 font-mono mb-6">
-                {t("hero.tagline")}
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/demo"
-                  className="ds-focus inline-flex min-h-11 items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(30,200,164,0.85) 0%, rgba(96,180,240,0.85) 100%)",
-                    color: "#04080F",
-                  }}>
-                  {t("hero.requestDemo")}
-                </Link>
-                <Link href="/articles/discover"
-                  className="ds-focus inline-flex min-h-11 items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider border border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 transition-colors">
-                  {t("hero.exploreKnowledge")}
-                </Link>
+              <div className="lg:col-span-7 xl:col-span-8 min-w-0">
+                <p className="text-[12px] font-mono uppercase tracking-[0.22em] text-cyan-300">
+                  {t("hero.eyebrow")}
+                </p>
+                <h1 className="mt-2.5 font-bold leading-tight"
+                  style={{ fontSize: "clamp(1.75rem,3.2vw,2.5rem)", color: "#E8F4FF" }}>
+                  {t("hero.title")}
+                </h1>
+                <p className="mt-2 text-slate-300" style={{ fontSize: "clamp(0.95rem,1.4vw,1.125rem)" }}>
+                  {t("hero.subtitle")}
+                </p>
+                <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-slate-400">
+                  {t("hero.tagline")}
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <a href="#ib-analyze"
+                    className="ds-focus inline-flex min-h-11 items-center gap-2 rounded-xl px-5 py-2.5 font-mono text-[13px] font-semibold uppercase tracking-wider"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(30,200,164,0.85) 0%, rgba(96,180,240,0.85) 100%)",
+                      color: "#04080F",
+                    }}>
+                    {t("nav.analyze")}
+                  </a>
+                  <a href="#ib-reference"
+                    className="ds-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/12 px-5 py-2.5 font-mono text-[13px] font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-white/25 hover:text-slate-100">
+                    {t("nav.reference")}
+                  </a>
+                </div>
+
+                {/* Marketing routes stay reachable, but subordinate to the work. */}
+                <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1">
+                  <Link href="/demo"
+                    className="ds-focus inline-flex min-h-11 items-center font-mono text-[13px] text-cyan-300 underline-offset-4 hover:underline">
+                    {t("hero.requestDemo")}
+                  </Link>
+                  <Link href="/articles/discover"
+                    className="ds-focus inline-flex min-h-11 items-center font-mono text-[13px] text-slate-400 underline-offset-4 transition-colors hover:text-slate-200 hover:underline">
+                    {t("hero.exploreKnowledge")}
+                  </Link>
+                  {/* R5 — human-facing reciprocal link. Machine-facing distinction
+                      (canonical, sitemap, llms.txt) is Phase 105's; this is the
+                      piece Phase 105 deliberately left out of scope. */}
+                  <CapabilityLink
+                    href="/brain"
+                    from="industrialBrain"
+                    kind="related"
+                    to="brain"
+                    className="ds-focus inline-flex min-h-11 items-center gap-1.5 font-mono text-[13px] text-cyan-400 hover:underline"
+                  >
+                    {t("crossLink")}
+                    <span aria-hidden="true" className="rtl:-scale-x-100">→</span>
+                  </CapabilityLink>
+                </div>
               </div>
-              {/* R5 — human-facing reciprocal link. Machine-facing distinction
-                  (canonical, sitemap, llms.txt) is Phase 105's; this is the
-                  piece Phase 105 deliberately left out of scope. */}
-              <CapabilityLink
-                href="/brain"
-                from="industrialBrain"
-                kind="related"
-                to="brain"
-                className="ds-focus mt-5 inline-flex min-h-11 items-center gap-1.5 font-mono text-[11px] text-cyan-400 hover:underline"
-              >
-                {t("crossLink")}
-                <span aria-hidden="true" className="rtl:-scale-x-100">→</span>
-              </CapabilityLink>
+
+              {/* ── Measured provenance, never a liveness claim ────────────── */}
+              <div className="lg:col-span-5 xl:col-span-4 min-w-0">
+                <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4">
+                  <p className="text-[12px] font-mono uppercase tracking-[0.2em] text-slate-400">
+                    {t("reference.provenance.heading")}
+                  </p>
+                  <dl className="mt-3 space-y-2.5">
+                    {provenance.map(entry => (
+                      <div key={entry.label} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <dt className="text-[13px] text-slate-400">{entry.label}</dt>
+                        <dd className="text-[13px] font-mono tabular-nums text-slate-200 break-all" dir="ltr">
+                          {entry.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+
             </div>
           </div>
-        </div>
+        </header>
 
         {/* ── Main workspace ───────────────────────────────────────────────── */}
-        <div className="max-w-7xl mx-auto px-6 py-10 print:p-0 print:max-w-none">
-          <div className="grid grid-cols-1 xl:grid-cols-5 gap-8 print:block">
+        <div className="mx-auto w-full max-w-[1600px] px-6 lg:px-8 py-6 lg:py-7 print:p-0 print:max-w-none">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 print:block">
 
-            {/* ── Left: Value props ────────────────────────────────────────── */}
-            <div className="xl:col-span-2 space-y-6 print:hidden">
-              <div>
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-600 mb-4">
-                  {t("capabilities.heading")}
-                </p>
-                <div className="space-y-2">
-                  {VALUE_PROPS.map((vp) => (
-                    <div key={vp.key} className="flex gap-3 p-3 rounded-xl border border-white/6 bg-white/2">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ background: `${vp.accent}15`, border: `1px solid ${vp.accent}25`, color: vp.accent }}>
-                        {vp.icon}
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-bold text-slate-200">{t(`capabilities.items.${vp.key}.title`)}</p>
-                        <p className="text-[10px] text-slate-600 mt-0.5 leading-relaxed">{t(`capabilities.items.${vp.key}.desc`)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Safety notice */}
-              <div className="rounded-xl border border-amber-500/20 bg-amber-500/4 p-4">
-                <p className="text-[9px] font-mono uppercase tracking-widest text-amber-500 mb-2">
-                  {t("safety.heading")}
-                </p>
-                <ul className="space-y-1.5">
-                  {safetyItems.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-[10px]">
-                      <span className="text-amber-500 shrink-0">▸</span>
-                      <span className="text-slate-500">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Demo CTA panel */}
-              <div className="rounded-xl border border-cyan-500/20 p-4"
-                style={{ background: "rgba(30,200,164,0.04)" }}>
-                <p className="text-[9px] font-mono uppercase tracking-widest text-cyan-400 mb-2">
-                  {t("deploy.eyebrow")}
-                </p>
-                <p className="text-sm font-bold text-slate-200 mb-1">
-                  {t("deploy.title")}
-                </p>
-                <p className="text-[10px] text-slate-600 mb-3">
-                  {t("deploy.desc")}
-                </p>
-                <Link href="/demo"
-                  className="ds-focus inline-flex min-h-11 items-center gap-2 text-xs font-mono font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
-                  {t("deploy.requestDemo")}
-                  <svg viewBox="0 0 16 16" fill="none" className="w-3 h-3">
-                    <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </Link>
-              </div>
+            {/* ── Main column: workspace → reasoning → report ─────────────
+                The advisory boundary now opens the workspace card itself, so
+                it is read immediately before the input on every viewport
+                instead of sitting in a sidebar below six capability cards. */}
+            <div className="xl:col-span-8 2xl:col-span-9 min-w-0 print:col-span-1">
+              <IndustrialBrainWorkspace locale={locale} isFa={locale === "fa"} canSaveCase={canSaveCase} />
             </div>
 
-            {/* ── Right: Fault input workspace ─────────────────────────────── */}
-            <div className="xl:col-span-3 print:col-span-1">
-              <div className="rounded-2xl border border-white/8 overflow-hidden print:!bg-white print:!border-slate-300 print:rounded-none"
-                style={{ background: "rgba(7,16,26,0.85)", backdropFilter: "blur(16px)" }}>
-                {/* Workspace header */}
-                <div className="border-b border-white/6 px-5 py-4 flex items-center gap-3 print:hidden">
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-                  </div>
-                  <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-500 flex-1 text-center">
-                    {t("workspace.header")}
+            {/* ── Context rail: the capability pipeline and the deploy route ──
+                DOM order puts it AFTER the workspace, so the phone layout is
+                input-first instead of six capability cards ahead of the form. */}
+            <aside className="xl:col-span-4 2xl:col-span-3 min-w-0 print:hidden"
+              aria-labelledby="ib-pipeline-heading">
+              <div className="xl:sticky xl:top-24 space-y-5">
+                <div className="rounded-2xl border border-white/8 p-4"
+                  style={{ background: "rgba(7,16,26,0.80)" }}>
+                  <p id="ib-pipeline-heading" className="text-[12px] font-mono uppercase tracking-[0.2em] text-slate-400">
+                    {t("capabilities.heading")}
                   </p>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full animate-pulse bg-emerald-400" />
-                    <span className="text-[9px] font-mono text-emerald-400">
-                      {t("workspace.online")}
-                    </span>
-                  </div>
+                  <ol className="mt-3">
+                    {CAPABILITY_PIPELINE.map((cap, i) => (
+                      <li key={cap.key} className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ background: `${cap.accent}18`, border: `1px solid ${cap.accent}30`, color: cap.accent }}>
+                            {cap.icon}
+                          </span>
+                          {i < CAPABILITY_PIPELINE.length - 1 && (
+                            <span aria-hidden="true" className="my-1 w-px flex-1 bg-white/10" />
+                          )}
+                        </div>
+                        <div className="min-w-0 pb-4">
+                          <p className="text-[13px] font-semibold text-slate-100">
+                            {t(`capabilities.items.${cap.key}.title`)}
+                          </p>
+                          <p className="mt-0.5 text-[13px] leading-relaxed text-slate-400">
+                            {t(`capabilities.items.${cap.key}.desc`)}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
 
-                {/* Gradient accent line */}
-                <div className="h-px print:hidden" style={{ background: "linear-gradient(90deg, #1EC8A4, #60B4F0, #818CF8)" }} />
-
-                <div className="px-5 py-6 print:p-0">
-                  <IndustrialBrainWorkspace locale={locale} isFa={locale === "fa"} canSaveCase={canSaveCase} />
+                {/* Deploy route */}
+                <div className="rounded-2xl border border-cyan-500/20 p-4"
+                  style={{ background: "rgba(30,200,164,0.04)" }}>
+                  <p className="text-[12px] font-mono uppercase tracking-[0.2em] text-cyan-300">
+                    {t("deploy.eyebrow")}
+                  </p>
+                  <p className="mt-2 text-[15px] font-bold text-slate-100">
+                    {t("deploy.title")}
+                  </p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-slate-400">
+                    {t("deploy.desc")}
+                  </p>
+                  <Link href="/demo"
+                    className="ds-focus mt-2 inline-flex min-h-11 items-center gap-2 font-mono text-[13px] font-semibold text-cyan-300 transition-colors hover:text-cyan-200">
+                    {t("deploy.requestDemo")}
+                    <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5 rtl:-scale-x-100" aria-hidden="true">
+                      <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </Link>
                 </div>
               </div>
-            </div>
+            </aside>
 
           </div>
 
@@ -310,10 +307,12 @@ export default async function IndustrialBrainPage({
               array form a repeated parameter produces. Narrowing it here would
               move a fail-closed decision out of the one module that is tested
               for it (`runtime/case-query.ts`). */}
-          <ReferenceDiagnosticPanel
-            locale={bridgeLocaleOf(locale)}
-            caseParam={query[CASE_QUERY_PARAM]}
-          />
+          <div id="ib-reference" className="scroll-mt-32">
+            <ReferenceDiagnosticPanel
+              locale={bridgeLocaleOf(locale)}
+              caseParam={query[CASE_QUERY_PARAM]}
+            />
+          </div>
         </div>
 
       </div>

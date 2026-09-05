@@ -13,15 +13,15 @@ type Translator = ReturnType<typeof useTranslations>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const IC = "w-full rounded-xl px-3 py-2.5 text-sm bg-[#0C1420] text-slate-100 border border-white/10 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/20 transition-all font-mono";
+const IC = "w-full rounded-xl px-3 py-2.5 text-sm bg-[#0C1420] text-slate-100 border border-white/10 placeholder:text-slate-400 focus:outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/20 transition-all font-mono";
 const SC = "w-full rounded-xl px-3 py-2 text-sm bg-[#0C1420] text-slate-100 border border-white/10 focus:outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/20 transition-all font-mono";
-const TC = "w-full rounded-xl px-3 py-2.5 text-sm bg-[#0C1420] text-slate-100 border border-white/10 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/20 transition-all resize-none font-mono";
+const TC = "w-full rounded-xl px-3 py-2.5 text-sm bg-[#0C1420] text-slate-100 border border-white/10 placeholder:text-slate-400 focus:outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/20 transition-all resize-none font-mono";
 
 const STATUS_COLORS = {
   NORMAL:   { bg: "bg-emerald-500/10",   border: "border-emerald-500/30",   text: "text-emerald-400",   dot: "bg-emerald-400" },
   WARNING:  { bg: "bg-amber-500/10",     border: "border-amber-500/30",     text: "text-amber-400",     dot: "bg-amber-400" },
   CRITICAL: { bg: "bg-rose-500/10",      border: "border-rose-500/30",      text: "text-rose-400",      dot: "bg-rose-400" },
-  UNKNOWN:  { bg: "bg-slate-500/10",     border: "border-slate-500/30",     text: "text-slate-500",     dot: "bg-slate-500" },
+  UNKNOWN:  { bg: "bg-slate-500/10",     border: "border-slate-500/30",     text: "text-slate-400",     dot: "bg-slate-500" },
 };
 
 const ALARM_COLORS = {
@@ -405,14 +405,64 @@ function fillSampleForm(form: HTMLFormElement, data: SampleFields) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+// DASHBOARD ALIGNMENT — a section title is now a real <h3>, not a <p> styled to
+// look like one. The result document is long enough that a screen-reader user
+// navigating it by heading had nothing to navigate: page h1 → workspace h2 →
+// section h3 is the outline the printed report already implies.
 function SectionHeader({ title, accent }: { title: string; accent: string }) {
   return (
     <div className="flex items-center gap-3 mb-4">
-      <div className="w-0.5 h-5 rounded-full shrink-0" style={{ background: accent }} />
-      <p className="text-[9px] font-mono uppercase tracking-[0.2em]" style={{ color: accent }}>
+      <div className="w-0.5 h-5 rounded-full shrink-0" aria-hidden="true" style={{ background: accent }} />
+      <h3 className="text-[12px] font-mono uppercase tracking-[0.2em]" style={{ color: accent }}>
         {title}
-      </p>
+      </h3>
     </div>
+  );
+}
+
+/**
+ * Local navigation for a long analytical document.
+ *
+ * Every entry resolves to an element that is ACTUALLY on the page at the moment
+ * the list is rendered: the four result anchors appear only once an analysis
+ * exists, because an anchor that scrolls nowhere is worse than one that is
+ * absent. `#ib-reference` targets the server-rendered reference panel, which is
+ * present on every render.
+ *
+ * There is no active-section state. Deriving one would mean a scroll observer
+ * and a re-render per scroll frame on a page whose whole point is that it does
+ * no continuous work, and the list is short enough to read as a contents list.
+ */
+function SectionNav({ hasAnalysis }: { hasAnalysis: boolean }) {
+  const t = useTranslations("industrialBrain");
+  const items = [
+    { href: "#ib-analyze",   label: t("nav.analyze"),   resultOnly: false },
+    { href: "#ib-reasoning", label: t("nav.reasoning"), resultOnly: true },
+    { href: "#ib-evidence",  label: t("nav.evidence"),  resultOnly: true },
+    { href: "#ib-actions",   label: t("nav.actions"),   resultOnly: true },
+    { href: "#ib-report",    label: t("nav.report"),    resultOnly: true },
+    { href: "#ib-reference", label: t("nav.reference"), resultOnly: false },
+  ].filter(item => hasAnalysis || !item.resultOnly);
+
+  return (
+    <nav
+      aria-label={t("nav.heading")}
+      className="ib-print-hide sticky top-16 z-20 mb-5 rounded-xl border border-white/8"
+      style={{ background: "rgba(4,8,15,0.92)", backdropFilter: "blur(12px)" }}
+    >
+      <ul className="flex items-center gap-1 overflow-x-auto px-2 py-1.5">
+        {items.map(item => (
+          <li key={item.href} className="shrink-0">
+            <a
+              href={item.href}
+              className="ds-focus inline-flex min-h-11 items-center rounded-lg px-3 text-[13px] font-mono text-slate-300 transition-colors hover:bg-white/5 hover:text-cyan-200"
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
@@ -444,7 +494,7 @@ function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor:
   // control, and every field in the fault-report form announced as blank.
   // (104-D2 keeps the association but derives ids with useId via fid(), so a
   // twice-rendered form can never produce duplicate DOM ids.)
-  return <label htmlFor={htmlFor} className="block text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 mb-1.5">{children}</label>;
+  return <label htmlFor={htmlFor} className="block text-[11px] font-mono uppercase tracking-[0.18em] text-slate-400 mb-1.5">{children}</label>;
 }
 
 function FormRow({ children }: { children: React.ReactNode }) {
@@ -454,7 +504,7 @@ function FormRow({ children }: { children: React.ReactNode }) {
 function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border border-white/6 rounded-xl p-4 space-y-4">
-      <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-cyan-400/70">{title}</p>
+      <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-cyan-400/70">{title}</p>
       {children}
     </div>
   );
@@ -468,7 +518,7 @@ function AlarmPanel({ analysis }: { analysis: IndustrialBrainAnalysis }) {
     return (
       <Panel>
         <SectionHeader title={t("sections.alarmIntelligence")} accent="#38BDF8" />
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-[13px] text-slate-400 leading-relaxed">
           {t("alarm.none")}
         </p>
       </Panel>
@@ -485,16 +535,16 @@ function AlarmPanel({ analysis }: { analysis: IndustrialBrainAnalysis }) {
               <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                 <p className="text-sm font-mono text-slate-100 leading-snug">{alarm.alarmText}</p>
                 <div className="flex gap-2 shrink-0">
-                  <span className={`text-[9px] px-2 py-0.5 rounded border font-mono uppercase ${cls.bg} ${cls.border} ${cls.text}`}>
+                  <span className={`text-[11px] px-2 py-0.5 rounded border font-mono uppercase ${cls.bg} ${cls.border} ${cls.text}`}>
                     {alarm.severity}
                   </span>
-                  <span className="text-[9px] px-2 py-0.5 rounded border bg-white/5 border-white/10 text-slate-500 font-mono">
+                  <span className="text-[11px] px-2 py-0.5 rounded border bg-white/5 border-white/10 text-slate-400 font-mono">
                     {alarm.source}
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed mb-1">{alarm.interpretation}</p>
-              <p className="text-[11px] text-slate-500 leading-relaxed italic">{alarm.possibleMeaning}</p>
+              <p className="text-[13px] text-slate-300 leading-relaxed mb-1">{alarm.interpretation}</p>
+              <p className="text-[12px] text-slate-400 leading-relaxed italic">{alarm.possibleMeaning}</p>
               <ConfidenceBar value={alarm.confidence} color="#38BDF8" />
             </div>
           );
@@ -510,7 +560,7 @@ function SignalMatrixPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
     <Panel>
       <SectionHeader title={t("sections.signalMatrix")} accent="#1EC8A4" />
       <div className="overflow-x-auto">
-        <table className="w-full text-[11px] font-mono">
+        <table className="w-full text-[12px] font-mono">
           <thead>
             <tr className="border-b border-white/8">
               {[
@@ -520,7 +570,7 @@ function SignalMatrixPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
                 t("signalTable.status"),
                 t("signalTable.conf"),
               ].map(h => (
-                <th key={h} className="py-2 px-2 text-left text-[9px] uppercase tracking-widest text-slate-600 font-normal whitespace-nowrap">
+                <th key={h} className="py-2 px-2 text-left text-[11px] uppercase tracking-widest text-slate-400 font-normal whitespace-nowrap">
                   {h}
                 </th>
               ))}
@@ -534,12 +584,12 @@ function SignalMatrixPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
                   <td className="py-2.5 px-2 text-slate-200 whitespace-nowrap font-semibold">
                     {isFa ? sig.signalNameFa : sig.signalName}
                   </td>
-                  <td className="py-2.5 px-2 text-slate-500 whitespace-nowrap">{sig.source}</td>
+                  <td className="py-2.5 px-2 text-slate-400 whitespace-nowrap">{sig.source}</td>
                   <td className="py-2.5 px-2 text-slate-300 max-w-[200px]">
                     <span className="truncate block" title={sig.observedValue}>{sig.observedValue}</span>
                   </td>
                   <td className="py-2.5 px-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] uppercase ${cls.bg} ${cls.border} ${cls.text}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] uppercase ${cls.bg} ${cls.border} ${cls.text}`}>
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cls.dot}`} />
                       {sig.status}
                     </span>
@@ -550,9 +600,9 @@ function SignalMatrixPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
                         <div className="w-12 h-1 rounded-full bg-white/5 overflow-hidden">
                           <div className="h-full rounded-full bg-cyan-400" style={{ width: `${sig.confidence}%` }} />
                         </div>
-                        <span className="text-slate-500">{sig.confidence}%</span>
+                        <span className="text-slate-400">{sig.confidence}%</span>
                       </div>
-                    ) : <span className="text-slate-600">—</span>}
+                    ) : <span className="text-slate-400">—</span>}
                   </td>
                 </tr>
               );
@@ -563,11 +613,11 @@ function SignalMatrixPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
       {/* Next-check hints on hover */}
       <div className="mt-4 space-y-2">
         {analysis.signalMatrix.filter(s => s.status === "UNKNOWN" || s.status === "CRITICAL").slice(0,3).map((sig, i) => (
-          <div key={i} className="flex gap-2 text-[10px]">
-            <span className={`shrink-0 font-mono ${sig.status === "CRITICAL" ? "text-rose-400" : "text-slate-500"}`}>
+          <div key={i} className="flex gap-2 text-[12px]">
+            <span className={`shrink-0 font-mono ${sig.status === "CRITICAL" ? "text-rose-400" : "text-slate-400"}`}>
               ▸ {isFa ? sig.signalNameFa : sig.signalName}:
             </span>
-            <span className="text-slate-500 leading-relaxed">{sig.nextCheck}</span>
+            <span className="text-slate-400 leading-relaxed">{sig.nextCheck}</span>
           </div>
         ))}
       </div>
@@ -580,7 +630,7 @@ function ReasoningMapPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
   const { reasoningMap } = analysis;
   const nodeTypeColors: Record<string, string> = {
     PRESENT:    "border-cyan-500/40 bg-cyan-500/6 text-cyan-300",
-    ABSENT:     "border-slate-500/40 bg-slate-500/6 text-slate-500",
+    ABSENT:     "border-slate-500/40 bg-slate-500/6 text-slate-400",
     CONFLICTING:"border-amber-500/40 bg-amber-500/6 text-amber-300",
   };
   const priorityColors: Record<string, string> = {
@@ -598,81 +648,90 @@ function ReasoningMapPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalys
   return (
     <Panel>
       <SectionHeader title={t("sections.reasoningMap")} accent="#818CF8" />
-      <p className="text-[10px] text-slate-600 font-mono mb-4">
+      <p className="text-[12px] text-slate-400 font-mono mb-4">
         {t("reasoning.subtitle")}
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+      {/* ── Row 1: the causal chain, one stage per column ──────────────────
+          Evidence → Cause hypotheses → Risk. The three stages carry the same
+          nodes, labels, colours and order as before; what changed is that the
+          fourth grid cell — a bare horizontal rule with a ▶ glyph floating in
+          otherwise empty space — is gone, and Action nodes no longer share a
+          quarter-width column with Risk. The stage boundary is now drawn by a
+          logical inline-start rule, which mirrors correctly under RTL, and the
+          only remaining chevrons sit ON the adjacency they describe. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Evidence */}
-        <div>
-          <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
+        <div className="min-w-0">
+          <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-2">
             {t("reasoning.evidenceNodes")}
           </p>
           <div className="space-y-1.5">
             {reasoningMap.evidenceNodes.map(ev => (
-              <div key={ev.id} className={`rounded-lg border px-2 py-1.5 text-[10px] font-mono ${nodeTypeColors[ev.type]}`}>
+              <div key={ev.id} className={`rounded-lg border px-2 py-1.5 text-[12px] font-mono ${nodeTypeColors[ev.type]}`}>
                 <p className="font-semibold truncate">{isFa ? ev.labelFa : ev.label}</p>
-                <p className="text-[9px] opacity-60 truncate">{ev.type}</p>
+                <p className="text-[11px] opacity-60 truncate">{ev.type}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Arrow */}
-        <div className="hidden lg:flex items-center justify-center">
-          <div className="w-full h-px bg-white/10 relative">
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-600">▶</div>
-          </div>
-        </div>
-
         {/* Cause hypotheses */}
-        <div>
-          <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
+        <div className="min-w-0 lg:border-s lg:border-white/8 lg:ps-4">
+          <p className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-2">
+            <span aria-hidden="true" className="hidden lg:inline text-slate-500 rtl:-scale-x-100">→</span>
             {t("reasoning.causeHypotheses")}
           </p>
           <div className="space-y-1.5">
             {reasoningMap.causeNodes.map(c => (
-              <div key={c.id} className="rounded-lg border border-indigo-500/30 bg-indigo-500/6 px-2 py-1.5 text-[10px] font-mono">
+              <div key={c.id} className="rounded-lg border border-indigo-500/30 bg-indigo-500/6 px-2 py-1.5 text-[12px] font-mono">
                 <p className="text-indigo-300 font-semibold leading-snug">{isFa ? c.labelFa : c.label}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <div className="flex-1 h-0.5 rounded-full bg-white/5">
                     <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${c.confidence}%` }} />
                   </div>
-                  <span className="text-indigo-400 text-[9px]">{c.confidence}%</span>
+                  <span className="text-indigo-400 text-[11px]">{c.confidence}%</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Risk + Action */}
-        <div className="space-y-3">
-          <div>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
-              {t("reasoning.riskNodes")}
-            </p>
-            <div className="space-y-1.5">
-              {reasoningMap.riskNodes.map(r => (
-                <div key={r.id} className={`rounded-lg border px-2 py-1.5 text-[10px] font-mono ${riskLevelColors[r.level]}`}>
-                  <p className="font-semibold">{isFa ? r.labelFa : r.label}</p>
-                  <p className="text-[9px] opacity-60">{r.level}</p>
-                </div>
-              ))}
-            </div>
+        {/* Risk */}
+        <div className="min-w-0 lg:border-s lg:border-white/8 lg:ps-4">
+          <p className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-2">
+            <span aria-hidden="true" className="hidden lg:inline text-slate-500 rtl:-scale-x-100">→</span>
+            {t("reasoning.riskNodes")}
+          </p>
+          <div className="space-y-1.5">
+            {reasoningMap.riskNodes.map(r => (
+              <div key={r.id} className={`rounded-lg border px-2 py-1.5 text-[12px] font-mono ${riskLevelColors[r.level]}`}>
+                <p className="font-semibold">{isFa ? r.labelFa : r.label}</p>
+                <p className="text-[11px] opacity-60">{r.level}</p>
+              </div>
+            ))}
           </div>
-          <div>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
-              {t("reasoning.actionNodes")}
-            </p>
-            <div className="space-y-1.5">
-              {reasoningMap.actionNodes.map(a => (
-                <div key={a.id} className={`rounded-lg border px-2 py-1.5 text-[10px] font-mono ${priorityColors[a.priority]}`}>
-                  <p className="font-semibold leading-snug">{isFa ? a.labelFa : a.label}</p>
-                  <p className="text-[9px] opacity-60">{a.priority}</p>
-                </div>
-              ))}
+        </div>
+      </div>
+
+      {/* ── Row 2: the actions that chain follows, across the full width ────
+          An action node is an operational instruction, often a full sentence
+          with a LOTO precondition in it. In a quarter-width column those
+          wrapped to a dozen lines each; here they get the whole reasoning-map
+          width, two per row from `lg` up and one below it. The ↓ marker sits on
+          the real Risk → Action boundary rather than in empty space. */}
+      <div className="mt-5 pt-5 border-t border-white/8">
+        <p className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-2">
+          <span aria-hidden="true" className="text-slate-500">↓</span>
+          {t("reasoning.actionNodes")}
+        </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+          {reasoningMap.actionNodes.map(a => (
+            <div key={a.id} className={`min-w-0 rounded-lg border px-3 py-2.5 text-[12px] font-mono ${priorityColors[a.priority]}`}>
+              <p className="font-semibold leading-relaxed">{isFa ? a.labelFa : a.label}</p>
+              <p className="text-[11px] opacity-60 mt-1">{a.priority}</p>
             </div>
-          </div>
+          ))}
         </div>
       </div>
     </Panel>
@@ -691,17 +750,17 @@ function UncertaintyPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysi
           <span className={`w-2 h-2 rounded-full animate-pulse ${cls.text.replace("text-","bg-")}`} />
           {t(`uncertaintyLevel.${unc.level}`)}
         </div>
-        <p className="flex-1 text-xs text-slate-400 leading-relaxed">{isFa ? unc.explanationFa : unc.explanation}</p>
+        <p className="flex-1 text-[13px] text-slate-400 leading-relaxed">{isFa ? unc.explanationFa : unc.explanation}</p>
       </div>
 
       {unc.missingCriticalSignals.length > 0 && (
         <div className="mb-4">
-          <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
+          <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-2">
             {t("uncertainty.missingCritical")}
           </p>
           <div className="flex flex-wrap gap-2">
             {(isFa ? unc.missingCriticalSignalsFa : unc.missingCriticalSignals).map((s, i) => (
-              <span key={i} className="text-[10px] px-2 py-0.5 rounded border bg-rose-500/8 border-rose-500/25 text-rose-400 font-mono">
+              <span key={i} className="text-[12px] px-2 py-0.5 rounded border bg-rose-500/8 border-rose-500/25 text-rose-400 font-mono">
                 ⬡ {s}
               </span>
             ))}
@@ -711,24 +770,24 @@ function UncertaintyPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysi
 
       {unc.conflictingSignals.length > 0 && (
         <div className="mb-4">
-          <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
+          <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-2">
             {t("uncertainty.conflicting")}
           </p>
           <div className="space-y-1">
             {unc.conflictingSignals.map((s, i) => (
-              <p key={i} className="text-[11px] text-amber-400 font-mono">⚠ {s}</p>
+              <p key={i} className="text-[12px] text-amber-400 font-mono">⚠ {s}</p>
             ))}
           </div>
         </div>
       )}
 
       <div>
-        <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-2">
+        <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-2">
           {t("uncertainty.recommendedEvidence")}
         </p>
         <div className="space-y-1.5">
           {unc.recommendedEvidenceToReduceUncertainty.map((e, i) => (
-            <div key={i} className="flex gap-2 text-[11px]">
+            <div key={i} className="flex gap-2 text-[12px]">
               <span className="text-cyan-500 shrink-0 mt-0.5">▸</span>
               <span className="text-slate-400 leading-relaxed">{e}</span>
             </div>
@@ -753,14 +812,14 @@ function RiskPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa
       <SectionHeader title={t("sections.riskUrgency")} accent="#F87171" />
       <div className="flex items-center gap-3 mb-4">
         <span className={`text-lg font-bold font-mono uppercase ${urg}`}>{isFa ? risk.urgencyFa : risk.urgency}</span>
-        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-mono uppercase ${urg.replace("text-","border-").replace("400","400/30")} bg-current/10`}>
+        <span className={`text-[11px] px-2 py-0.5 rounded-full border font-mono uppercase ${urg.replace("text-","border-").replace("400","400/30")} bg-current/10`}>
           {risk.urgencyLevel}
         </span>
       </div>
       <div className="space-y-2">
         {items.map(it => (
-          <div key={it.label} className="flex gap-3 text-xs">
-            <span className="text-slate-600 font-mono w-36 shrink-0">{it.label}</span>
+          <div key={it.label} className="flex gap-3 text-[13px]">
+            <span className="text-slate-400 font-mono w-36 shrink-0">{it.label}</span>
             <span className="text-slate-300 leading-relaxed">{it.value}</span>
           </div>
         ))}
@@ -769,54 +828,153 @@ function RiskPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa
   );
 }
 
-function LikelyCausesPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
+/**
+ * The single most-supported hypothesis, given the weight the rest of the page
+ * asks the reader to give it.
+ *
+ * This does NOT duplicate the ranked list: when this panel renders rank 1, the
+ * list beside it starts at rank 2 (`skipFirst`). No cause is shown twice and
+ * none is dropped. The evidence split is exactly what the deterministic
+ * analyzer produces — supporting, missing, suggested check. It has no
+ * "contradicting" field, so none is invented here; contradiction at the
+ * analysis level is reported by `uncertainty.conflictingSignals` in the
+ * Evidence Entropy panel, which is where it is actually computed.
+ */
+function PrimaryHypothesisPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; isFa: boolean }) {
   const t = useTranslations("industrialBrain");
+  const cause = analysis.likelyCauses[0];
+  if (!cause) return null;
+
+  return (
+    <Panel className="border-violet-400/30">
+      <SectionHeader title={t("sections.primaryHypothesis")} accent="#C084FC" />
+
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-mono text-violet-300/80">#1</p>
+          <p className="mt-1 text-lg font-bold leading-snug text-slate-100">
+            {isFa ? cause.titleFa : cause.title}
+          </p>
+        </div>
+        <div className="shrink-0 text-end">
+          <p className="text-[12px] font-mono uppercase tracking-widest text-slate-400">
+            {t("causes.conf")}
+          </p>
+          <p className="text-2xl font-bold font-mono tabular-nums text-violet-300">{cause.confidence}%</p>
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <ConfidenceBar value={cause.confidence} color="#C084FC" />
+      </div>
+
+      <p className="mt-4 text-sm leading-relaxed text-slate-300">
+        {isFa ? cause.explanationFa : cause.explanation}
+      </p>
+
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <p className="text-[12px] font-mono uppercase tracking-widest text-emerald-400 mb-1.5">
+            {t("causes.supporting")}
+          </p>
+          {cause.supportingEvidence.length > 0 ? (
+            <ul className="space-y-1">
+              {cause.supportingEvidence.map((e, j) => (
+                <li key={j} className="flex gap-2 text-[13px] leading-relaxed text-emerald-300/90">
+                  <span aria-hidden="true" className="shrink-0 font-mono">✓</span>
+                  <span>{e}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[13px] text-slate-400">—</p>
+          )}
+        </div>
+        <div>
+          <p className="text-[12px] font-mono uppercase tracking-widest text-slate-400 mb-1.5">
+            {t("causes.missing")}
+          </p>
+          {cause.missingEvidence.length > 0 ? (
+            <ul className="space-y-1">
+              {cause.missingEvidence.map((e, j) => (
+                <li key={j} className="flex gap-2 text-[13px] leading-relaxed text-slate-300">
+                  <span aria-hidden="true" className="shrink-0 font-mono">○</span>
+                  <span>{e}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[13px] text-slate-400">—</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.05] p-3">
+        <p className="text-[12px] font-mono uppercase tracking-widest text-cyan-300 mb-1">
+          {t("causes.suggestedCheck")}
+        </p>
+        <p className="text-[13px] leading-relaxed text-slate-200">
+          {isFa ? cause.suggestedCheckFa : cause.suggestedCheck}
+        </p>
+      </div>
+    </Panel>
+  );
+}
+
+function LikelyCausesPanel({ analysis, isFa, skipFirst = false }: { analysis: IndustrialBrainAnalysis; isFa: boolean; skipFirst?: boolean }) {
+  const t = useTranslations("industrialBrain");
+  // `skipFirst` hands rank 1 to PrimaryHypothesisPanel; the ranks shown here
+  // keep their ORIGINAL numbering so a reader comparing the two sees one list.
+  const offset = skipFirst ? 1 : 0;
+  const causes = skipFirst ? analysis.likelyCauses.slice(1) : analysis.likelyCauses;
+  if (skipFirst && causes.length === 0) return null;
+
   return (
     <Panel>
-      <SectionHeader title={t("sections.likelyCauses")} accent="#C084FC" />
+      <SectionHeader title={t(skipFirst ? "sections.alternativeHypotheses" : "sections.likelyCauses")} accent="#C084FC" />
       <div className="space-y-4">
-        {analysis.likelyCauses.map((cause, i) => (
+        {causes.map((cause, i) => (
           <div key={cause.id} className="border border-white/8 rounded-xl p-4">
             <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-[9px] font-mono text-slate-600">#{i + 1}</span>
+                <span className="text-[12px] font-mono text-slate-400">#{i + 1 + offset}</span>
                 <p className="text-sm font-semibold text-slate-100">{isFa ? cause.titleFa : cause.title}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[9px] font-mono text-slate-500">{t("causes.conf")}</span>
+                <span className="text-[11px] font-mono text-slate-400">{t("causes.conf")}</span>
                 <span className="text-sm font-bold font-mono text-violet-300">{cause.confidence}%</span>
               </div>
             </div>
             <ConfidenceBar value={cause.confidence} color="#C084FC" />
-            <p className="text-xs text-slate-400 leading-relaxed mt-3">{isFa ? cause.explanationFa : cause.explanation}</p>
+            <p className="text-[13px] text-slate-400 leading-relaxed mt-3">{isFa ? cause.explanationFa : cause.explanation}</p>
 
             {cause.supportingEvidence.length > 0 && (
               <div className="mt-3">
-                <p className="text-[9px] font-mono uppercase tracking-widest text-emerald-600 mb-1.5">
+                <p className="text-[11px] font-mono uppercase tracking-widest text-emerald-600 mb-1.5">
                   {t("causes.supporting")}
                 </p>
                 {cause.supportingEvidence.map((e, j) => (
-                  <p key={j} className="text-[11px] text-emerald-400/80 font-mono">✓ {e}</p>
+                  <p key={j} className="text-[12px] text-emerald-400/80 font-mono">✓ {e}</p>
                 ))}
               </div>
             )}
 
             {cause.missingEvidence.length > 0 && (
               <div className="mt-2">
-                <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1.5">
+                <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-1.5">
                   {t("causes.missing")}
                 </p>
                 {cause.missingEvidence.map((e, j) => (
-                  <p key={j} className="text-[11px] text-slate-500 font-mono">○ {e}</p>
+                  <p key={j} className="text-[12px] text-slate-400 font-mono">○ {e}</p>
                 ))}
               </div>
             )}
 
             <div className="mt-3 pt-3 border-t border-white/6">
-              <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
+              <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-1">
                 {t("causes.suggestedCheck")}
               </p>
-              <p className="text-xs text-slate-400 leading-relaxed">{isFa ? cause.suggestedCheckFa : cause.suggestedCheck}</p>
+              <p className="text-[13px] text-slate-400 leading-relaxed">{isFa ? cause.suggestedCheckFa : cause.suggestedCheck}</p>
             </div>
           </div>
         ))}
@@ -837,21 +995,18 @@ function ChecklistPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis;
   return (
     <Panel>
       <SectionHeader title={t("sections.inspectionChecklist")} accent="#34D399" />
-      <p className="text-[10px] text-slate-600 font-mono mb-4">
-        {t("checklist.warning")}
-      </p>
       <div className="space-y-4">
         {Object.entries(byCategory).map(([cat, items]) => (
           <div key={cat}>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-emerald-500/70 mb-2">{cat}</p>
+            <p className="text-[11px] font-mono uppercase tracking-widest text-emerald-500/70 mb-2">{cat}</p>
             <div className="space-y-2">
               {items.map(item => (
-                <div key={item.id} className="flex gap-3 text-xs">
+                <div key={item.id} className="flex gap-3 text-[13px]">
                   <span className="text-emerald-500 shrink-0 mt-0.5 font-mono">□</span>
                   <span className="text-slate-300 leading-relaxed">
                     {isFa ? item.textFa : item.text}
                     {item.requiresQualifiedPersonnel && (
-                      <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono">
+                      <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono">
                         {t("checklist.qualified")}
                       </span>
                     )}
@@ -876,13 +1031,13 @@ function ActionsPanel({ analysis, isFa }: { analysis: IndustrialBrainAnalysis; i
           <div key={group.category}>
             <div className="flex items-center gap-2 mb-2">
               <span>{group.icon}</span>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-sky-400/80">
+              <p className="text-[12px] font-mono uppercase tracking-widest text-sky-400/80">
                 {isFa ? group.categoryFa : group.category}
               </p>
             </div>
             <div className="space-y-1.5 ml-6">
               {group.items.map((item, j) => (
-                <div key={j} className="flex gap-2 text-xs">
+                <div key={j} className="flex gap-2 text-[13px]">
                   <span className="text-sky-500 shrink-0 mt-0.5 font-mono">▸</span>
                   <span className="text-slate-300 leading-relaxed">{isFa ? item.fa : item.en}</span>
                 </div>
@@ -901,7 +1056,7 @@ function RelatedKnowledgePanel({ analysis }: { analysis: IndustrialBrainAnalysis
     <Panel>
       <SectionHeader title={t("sections.relatedKnowledge")} accent="#A78BFA" />
       {analysis.relatedKnowledge.length === 0 ? (
-        <p className="text-xs text-slate-600 font-mono">
+        <p className="text-[13px] text-slate-400 font-mono">
           {t("related.empty")}
         </p>
       ) : (
@@ -911,21 +1066,63 @@ function RelatedKnowledgePanel({ analysis }: { analysis: IndustrialBrainAnalysis
               <div className="flex items-start justify-between gap-2 mb-1">
                 <p className="text-sm font-semibold text-slate-200">{k.title}</p>
                 <div className="flex gap-1 shrink-0">
-                  <span className="text-[9px] px-1.5 py-0.5 rounded border bg-violet-500/10 border-violet-500/25 text-violet-400 font-mono">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded border bg-violet-500/10 border-violet-500/25 text-violet-400 font-mono">
                     {k.type}
                   </span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded border bg-white/4 border-white/8 text-slate-500 font-mono">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded border bg-white/4 border-white/8 text-slate-400 font-mono">
                     {k.relevanceScore}%
                   </span>
                 </div>
               </div>
-              {k.summary && <p className="text-[11px] text-slate-500 leading-relaxed">{k.summary}</p>}
-              {k.domain && <p className="text-[9px] font-mono text-violet-500/60 mt-1 uppercase">{k.domain}</p>}
+              {k.summary && <p className="text-[12px] text-slate-400 leading-relaxed">{k.summary}</p>}
+              {k.domain && <p className="text-[11px] font-mono text-violet-500/60 mt-1 uppercase">{k.domain}</p>}
             </div>
           ))}
         </div>
       )}
     </Panel>
+  );
+}
+
+/**
+ * The human gate, rendered BETWEEN the reasoning and the recommendations.
+ *
+ * The qualified-personnel / LOTO condition used to be an 10px footnote inside
+ * the checklist panel — that is, AFTER the reader had already started reading
+ * steps. It is the same catalog string (`checklist.warning`); what changed is
+ * that it now stands on its own, ahead of every recommended action, matching
+ * the ordering the Phase 101 reference panel already enforces.
+ */
+function ValidationGate() {
+  const t = useTranslations("industrialBrain");
+  return (
+    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-5">
+      <h3 className="text-[12px] font-mono uppercase tracking-[0.2em] text-amber-400">
+        {t("reference.validation.heading")}
+      </h3>
+      <p className="mt-2 text-[13px] leading-relaxed text-amber-100">
+        {t("checklist.warning")}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * What the result region shows before an analysis has been requested.
+ *
+ * The region is not empty markup: it is the target the local navigation and the
+ * post-submit scroll both use, so it has to exist on first paint. It states
+ * only what is true — nothing has been analysed yet — and claims no readiness.
+ */
+function AwaitingAnalysis() {
+  const t = useTranslations("industrialBrain");
+  return (
+    <div className="ib-print-hide mt-8 rounded-2xl border border-dashed border-white/12 p-8 text-center">
+      <p className="text-[15px] font-semibold text-slate-200">{t("workspace.awaitingHeading")}</p>
+      <p className="mx-auto mt-2 max-w-xl text-[13px] leading-relaxed text-slate-400">
+        {t("workspace.awaitingBody")}
+      </p>
+    </div>
   );
 }
 
@@ -941,17 +1138,17 @@ function ReportHeader({ meta, isFa, locale }: { meta: ReportMeta; isFa: boolean;
     <Panel className="border-cyan-500/25 ib-report-header">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div>
-          <p className="text-[9px] font-mono uppercase tracking-[0.22em] text-cyan-400 mb-1.5">
+          <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-cyan-400 mb-1.5">
             {t("reportHeader.eyebrow")}
           </p>
-          <p className="text-lg font-bold text-slate-100">{t("reportHeader.engineeringReport")}</p>
-          <p className="text-xs text-slate-500 mt-0.5">{t("reportHeader.evidencePack")}</p>
+          <h2 id="ib-report-heading" className="text-lg font-bold text-slate-100">{t("reportHeader.engineeringReport")}</h2>
+          <p className="text-[13px] text-slate-400 mt-0.5">{t("reportHeader.evidencePack")}</p>
         </div>
         <div className="text-end shrink-0">
-          <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600">
+          <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400">
             {t("reportHeader.generated")}
           </p>
-          <p className="text-xs font-mono text-slate-400">{fmtDateTime(meta.generatedAt, locale)}</p>
+          <p className="text-[13px] font-mono text-slate-400">{fmtDateTime(meta.generatedAt, locale)}</p>
         </div>
       </div>
 
@@ -960,14 +1157,14 @@ function ReportHeader({ meta, isFa, locale }: { meta: ReportMeta; isFa: boolean;
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pb-4 border-b border-white/6">
         {fields.map(f => (
           <div key={f.label}>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">{f.label}</p>
-            <p className="text-xs text-slate-300 break-words">{f.value || notReported}</p>
+            <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-1">{f.label}</p>
+            <p className="text-[13px] text-slate-300 break-words">{f.value || notReported}</p>
           </div>
         ))}
       </div>
 
       <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/6 p-3">
-        <p className="text-[10px] text-amber-400 leading-relaxed font-mono">
+        <p className="text-[12px] text-amber-400 leading-relaxed font-mono">
           {t("reportHeader.disclaimer")}
         </p>
       </div>
@@ -1020,7 +1217,7 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
     }
   }
 
-  const btnBase = "flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-mono text-[11px] font-semibold uppercase tracking-wider border transition-all disabled:opacity-40 disabled:cursor-not-allowed";
+  const btnBase = "flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-mono text-[12px] font-semibold uppercase tracking-wider border transition-all disabled:opacity-40 disabled:cursor-not-allowed";
 
   const saveLabel =
     saveState === "saving" ? t("actions.saving")
@@ -1088,7 +1285,7 @@ function ReportActions({ analysis, meta, isFa, locale, canSaveCase }: {
             </Link>
             <Link
               href="/auth/register"
-              className="shrink-0 text-[11px] font-mono text-slate-500 hover:text-slate-300 underline underline-offset-4 transition-colors"
+              className="shrink-0 text-[12px] font-mono text-slate-400 hover:text-slate-300 underline underline-offset-4 transition-colors"
             >
               {t("actions.requestAccess")}
             </Link>
@@ -1105,13 +1302,13 @@ function AnalysisDemoCTA() {
     <Panel className="border-cyan-500/20">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-cyan-400 mb-1">
+          <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-cyan-400 mb-1">
             {t("demoCta.eyebrow")}
           </p>
           <p className="text-base font-bold text-slate-100">
             {t("demoCta.title")}
           </p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-[13px] text-slate-400 mt-1">
             {t("demoCta.desc")}
           </p>
         </div>
@@ -1142,93 +1339,128 @@ function AnalysisResult({ analysis, meta, isFa, locale, canSaveCase }: {
   canSaveCase: boolean;
 }) {
   const t = useTranslations("industrialBrain");
+  /* DASHBOARD ALIGNMENT — the result document is now ordered by decision
+     weight rather than by the order the analyzer happens to emit fields:
+
+        decision summary → primary hypothesis → alternatives
+          → evidence and uncertainty → risk → human gate
+          → safe verification path → report actions and provenance
+
+     Every panel that existed before still renders, with the same data and the
+     same strings. Two things MOVED, deliberately: the report action row now
+     sits with the report at the end instead of above the reasoning it acts on,
+     and the qualified-personnel gate stands between the reasoning and the
+     recommendations instead of inside the checklist. */
   return (
     <div className="ib-report-print space-y-5 mt-8">
-      <ReportHeader meta={meta} isFa={isFa} locale={locale} />
-      <ReportActions analysis={analysis} meta={meta} isFa={isFa} locale={locale} canSaveCase={canSaveCase} />
 
-      {/* Executive Summary + Classification */}
-      <Panel>
-        <SectionHeader title={t("sections.executiveSummary")} accent="#1EC8A4" />
-        <p className="text-sm text-slate-300 leading-relaxed mb-4">{isFa ? analysis.summaryFa : analysis.summary}</p>
+      {/* ── 1. Decision summary ─────────────────────────────────────────── */}
+      <section id="ib-reasoning" className="scroll-mt-32 space-y-5">
+        <ReportHeader meta={meta} isFa={isFa} locale={locale} />
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-white/6">
-          <div>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
-              {t("summary.primaryDomain")}
-            </p>
-            <p className="text-sm font-bold text-cyan-300 font-mono">
-              {isFa ? analysis.classification.domainFa : analysis.classification.domain}
-            </p>
-          </div>
-          <div>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
-              {t("summary.severity")}
-            </p>
-            <p className={`text-sm font-bold font-mono ${
-              analysis.classification.severity === "CRITICAL" ? "text-rose-400" :
-              analysis.classification.severity === "HIGH" ? "text-orange-400" :
-              analysis.classification.severity === "MEDIUM" ? "text-amber-400" : "text-emerald-400"
-            }`}>{analysis.classification.severity}</p>
-          </div>
-          <div>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
-              {t("summary.diagnosticConfidence")}
-            </p>
-            <p className="text-sm font-bold text-violet-300 font-mono">{analysis.confidence}%</p>
-          </div>
-          <div>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1">
-              {t("summary.evidenceEntropy")}
-            </p>
-            <p className={`text-sm font-bold font-mono ${UNCERTAINTY_COLORS[analysis.uncertainty.level].text}`}>
-              {t(`uncertaintyLevel.${analysis.uncertainty.level}`)}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-3">
-          <p className="text-[9px] font-mono uppercase tracking-widest text-slate-600 mb-1.5">
-            {t("summary.overallConfidence")}
-          </p>
-          <ConfidenceBar value={analysis.confidence} color="linear-gradient(90deg, #1EC8A4, #60B4F0)" />
-          <p className="text-[10px] text-slate-600 font-mono mt-1">
-            {t("summary.engineFootnote", { ms: String(analysis.processingMs) })}
-          </p>
-        </div>
-      </Panel>
-
-      <AlarmPanel analysis={analysis} />
-      <SignalMatrixPanel analysis={analysis} isFa={isFa} />
-      <ReasoningMapPanel analysis={analysis} isFa={isFa} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <UncertaintyPanel analysis={analysis} isFa={isFa} />
-        <RiskPanel analysis={analysis} isFa={isFa} />
-      </div>
-
-      <LikelyCausesPanel analysis={analysis} isFa={isFa} />
-
-      {analysis.evidenceGaps.length > 0 && (
+        {/* Executive Summary + Classification */}
         <Panel>
-          <SectionHeader title={t("sections.evidenceGaps")} accent="#FB923C" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {analysis.evidenceGaps.map((gap, i) => (
-              <div key={i} className="border border-orange-500/15 rounded-xl p-3 bg-orange-500/4">
-                <p className="text-sm font-semibold text-orange-300 mb-1">
-                  {isFa ? gap.signalFa : gap.signal}
-                </p>
-                <p className="text-[11px] text-slate-500 leading-relaxed">{gap.reason}</p>
-              </div>
-            ))}
+          <SectionHeader title={t("sections.executiveSummary")} accent="#1EC8A4" />
+          <p className="text-sm text-slate-300 leading-relaxed mb-4">{isFa ? analysis.summaryFa : analysis.summary}</p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-white/6">
+            <div>
+              <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-1">
+                {t("summary.primaryDomain")}
+              </p>
+              <p className="text-sm font-bold text-cyan-300 font-mono">
+                {isFa ? analysis.classification.domainFa : analysis.classification.domain}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-1">
+                {t("summary.severity")}
+              </p>
+              <p className={`text-sm font-bold font-mono ${
+                analysis.classification.severity === "CRITICAL" ? "text-rose-400" :
+                analysis.classification.severity === "HIGH" ? "text-orange-400" :
+                analysis.classification.severity === "MEDIUM" ? "text-amber-400" : "text-emerald-400"
+              }`}>{analysis.classification.severity}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-1">
+                {t("summary.diagnosticConfidence")}
+              </p>
+              <p className="text-sm font-bold text-violet-300 font-mono">{analysis.confidence}%</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-1">
+                {t("summary.evidenceEntropy")}
+              </p>
+              <p className={`text-sm font-bold font-mono ${UNCERTAINTY_COLORS[analysis.uncertainty.level].text}`}>
+                {t(`uncertaintyLevel.${analysis.uncertainty.level}`)}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mb-1.5">
+              {t("summary.overallConfidence")}
+            </p>
+            <ConfidenceBar value={analysis.confidence} color="linear-gradient(90deg, #1EC8A4, #60B4F0)" />
+            <p className="text-[12px] text-slate-400 font-mono mt-1">
+              {t("summary.engineFootnote", { ms: String(analysis.processingMs) })}
+            </p>
           </div>
         </Panel>
-      )}
 
-      <ChecklistPanel analysis={analysis} isFa={isFa} />
-      <ActionsPanel analysis={analysis} isFa={isFa} />
-      <RelatedKnowledgePanel analysis={analysis} />
-      <AnalysisDemoCTA />
+        {/* ── 2. The hypothesis the reader is being asked to act on ───────── */}
+        {analysis.likelyCauses.length === 0 ? (
+          <LikelyCausesPanel analysis={analysis} isFa={isFa} />
+        ) : (
+          <>
+            <PrimaryHypothesisPanel analysis={analysis} isFa={isFa} />
+            <ReasoningMapPanel analysis={analysis} isFa={isFa} />
+            <LikelyCausesPanel analysis={analysis} isFa={isFa} skipFirst />
+          </>
+        )}
+      </section>
+
+      {/* ── 3. What was observed, and what is still unknown ──────────────
+          Signals, alarms, entropy and gaps read as one evidence workspace
+          rather than four equal cards scattered through the document. */}
+      <section id="ib-evidence" className="scroll-mt-32 space-y-5">
+        <SignalMatrixPanel analysis={analysis} isFa={isFa} />
+        <AlarmPanel analysis={analysis} />
+        <UncertaintyPanel analysis={analysis} isFa={isFa} />
+
+        {analysis.evidenceGaps.length > 0 && (
+          <Panel>
+            <SectionHeader title={t("sections.evidenceGaps")} accent="#FB923C" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {analysis.evidenceGaps.map((gap, i) => (
+                <div key={i} className="border border-orange-500/15 rounded-xl p-3 bg-orange-500/4">
+                  <p className="text-sm font-semibold text-orange-300 mb-1">
+                    {isFa ? gap.signalFa : gap.signal}
+                  </p>
+                  <p className="text-[13px] text-slate-400 leading-relaxed">{gap.reason}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        )}
+      </section>
+
+      {/* ── 4. Risk, then the human gate, then advisory verification ─────
+          No recommendation is reachable without passing the gate first. */}
+      <section id="ib-actions" className="scroll-mt-32 space-y-5">
+        <RiskPanel analysis={analysis} isFa={isFa} />
+        <ValidationGate />
+        <ChecklistPanel analysis={analysis} isFa={isFa} />
+        <ActionsPanel analysis={analysis} isFa={isFa} />
+      </section>
+
+      {/* ── 5. The report itself: what to take away, and where it came from */}
+      <section id="ib-report" className="scroll-mt-32 space-y-5">
+        <ReportActions analysis={analysis} meta={meta} isFa={isFa} locale={locale} canSaveCase={canSaveCase} />
+        <RelatedKnowledgePanel analysis={analysis} />
+        <AnalysisDemoCTA />
+      </section>
     </div>
   );
 }
@@ -1239,6 +1471,10 @@ interface Props { locale: string; isFa: boolean; canSaveCase?: boolean }
 
 export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: Props) {
   const t = useTranslations("industrialBrain");
+  // The safety boundary is read here rather than passed down from the route:
+  // it belongs to the workspace it constrains, and reading it from the same
+  // namespace keeps the route free of a prop that only forwards catalog text.
+  const safetyItems = t.raw("safety.items") as string[];
   // One stable id per field, derived from the control's own `name`, so a
   // label can never point at a field that was renamed underneath it.
   const uid = useId();
@@ -1317,7 +1553,14 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
         plcPlatform: body.plcPlatform ?? "",
         generatedAt: new Date(),
       });
-      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+      // Scroll behaviour is unchanged; focus is added. Moving the caret into
+      // the result region means a keyboard or screen-reader user continues
+      // from the answer instead of from the submit button they just left,
+      // and `preventScroll` keeps the smooth scroll below authoritative.
+      setTimeout(() => {
+        resultRef.current?.focus({ preventScroll: true });
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
     } catch {
       // Network/abort only — a non-2xx response is handled above.
       setError(t("form.connectionError"));
@@ -1343,205 +1586,261 @@ export function IndustrialBrainWorkspace({ locale, isFa, canSaveCase = false }: 
 
   return (
     <div>
-      {/* ── Demo-ready examples ────────────────────────────────────────────── */}
-      <div className="print:hidden mb-5 rounded-xl border border-white/8 p-3.5" style={{ background: "rgba(7,16,26,0.6)" }}>
-        <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500 mb-2.5">
-          {t("form.demoExamples")}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {(Object.keys(SAMPLE_SCENARIOS) as Array<keyof typeof SAMPLE_SCENARIOS>).map(key => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => loadSample(key)}
-              className="ds-focus inline-flex min-h-11 items-center text-[11px] font-mono px-3 py-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12] hover:border-cyan-400/35 transition-all"
-            >
-              {/* Multilingual demo-dataset caption (locale content data). */}
-              {SAMPLE_SCENARIOS[key].labels[sampleLang]}
-            </button>
-          ))}
+      <SectionNav hasAnalysis={Boolean(analysis && reportMeta)} />
+
+      {/* ── Fault analysis workspace ───────────────────────────────────────
+          The workspace owns its own card now. It used to be wrapped by the
+          route in a chrome bar carrying three inert window dots and a pulsing
+          "ONLINE" badge — decoration and a liveness claim on a surface with no
+          live connection. What remains is the heading the bar already had. */}
+      <section
+        id="ib-analyze"
+        aria-labelledby="ib-analyze-heading"
+        className="scroll-mt-32 rounded-2xl border border-white/8 overflow-hidden print:hidden"
+        style={{ background: "rgba(7,16,26,0.85)" }}
+      >
+        <div className="border-b border-white/6 px-5 py-4">
+          <h2 id="ib-analyze-heading" className="text-[13px] font-mono uppercase tracking-[0.18em] text-slate-300">
+            {t("workspace.header")}
+          </h2>
         </div>
-      </div>
+        {/* Gradient accent line */}
+        <div className="h-px" aria-hidden="true" style={{ background: "linear-gradient(90deg, #1EC8A4, #60B4F0, #818CF8)" }} />
 
-      {/* ── Input Form ─────────────────────────────────────────────────────── */}
-      <form ref={formRef} onSubmit={handleSubmit} className="print:hidden space-y-5">
-
-        {/* Problem title + asset */}
-        <FormSection title={t("form.faultIdentification")}>
-          <div>
-            <FieldLabel htmlFor={fid("problemTitle")}>{t("form.problemTitle")}</FieldLabel>
-            <input id={fid("problemTitle")} name="problemTitle" required minLength={3} maxLength={200} className={IC} style={{ colorScheme: "dark" }}
-              placeholder={t("form.problemTitlePh")}
-            />
-          </div>
-          <FormRow>
-            <div>
-              <FieldLabel htmlFor={fid("assetType")}>{t("form.assetType")}</FieldLabel>
-              <input id={fid("assetType")} name="assetType" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.assetTypePh")}
-              />
-            </div>
-            <div>
-              <FieldLabel htmlFor={fid("systemArea")}>{t("form.systemArea")}</FieldLabel>
-              <input id={fid("systemArea")} name="systemArea" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.systemAreaPh")}
-              />
-            </div>
-          </FormRow>
-          <FormRow>
-            <div>
-              <FieldLabel htmlFor={fid("plcPlatform")}>{t("form.plcPlatform")}</FieldLabel>
-              <input id={fid("plcPlatform")} name="plcPlatform" maxLength={100} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.plcPlatformPh")}
-              />
-            </div>
-            <div>
-              <FieldLabel htmlFor={fid("recentChanges")}>{t("form.recentChanges")}</FieldLabel>
-              <input id={fid("recentChanges")} name="recentChanges" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.recentChangesPh")}
-              />
-            </div>
-          </FormRow>
-        </FormSection>
-
-        {/* Symptoms + alarms */}
-        <FormSection title={t("form.symptomsSection")}>
-          <div>
-            <FieldLabel htmlFor={fid("observedSymptoms")}>{t("form.observedSymptoms")}</FieldLabel>
-            <textarea id={fid("observedSymptoms")} name="observedSymptoms" required minLength={5} maxLength={3000} rows={4} className={TC} style={{ colorScheme: "dark" }}
-              placeholder={t("form.observedSymptomsPh")}
-            />
-          </div>
-          <div>
-            <FieldLabel htmlFor={fid("activeAlarms")}>{t("form.alarms")}</FieldLabel>
-            <textarea id={fid("activeAlarms")} name="activeAlarms" maxLength={1500} rows={3} className={TC} style={{ colorScheme: "dark" }}
-              placeholder={t("form.alarmsPh")}
-            />
-          </div>
-        </FormSection>
-
-        {/* Signal states */}
-        <FormSection title={t("form.signalStates")}>
-          <p className="text-[10px] text-slate-600 font-mono -mt-1">
-            {t("form.signalStatesNote")}
+        {/* ── The advisory boundary, immediately above the input ──────────
+            It used to sit in a sidebar under six capability cards, which on a
+            phone put it AFTER the form and, on desktop, in the column a reader
+            scanning the form never looks at. Same catalog strings; it now
+            opens the workspace it constrains. */}
+        <div className="border-b border-amber-500/20 bg-amber-500/[0.05] px-4 sm:px-5 py-3.5">
+          <p className="text-[12px] font-mono uppercase tracking-[0.2em] text-amber-400">
+            {t("safety.heading")}
           </p>
-          <FormRow>
-            <div>
-              <FieldLabel htmlFor={fid("hmiCommandState")}>{t("form.hmiCommand")}</FieldLabel>
-              <input id={fid("hmiCommandState")} name="hmiCommandState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.hmiCommandPh")}
-              />
-            </div>
-            <div>
-              <FieldLabel htmlFor={fid("plcOutputState")}>{t("form.plcOutput")}</FieldLabel>
-              <input id={fid("plcOutputState")} name="plcOutputState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.plcOutputPh")}
-              />
-            </div>
-          </FormRow>
-          <FormRow>
-            <div>
-              <FieldLabel htmlFor={fid("vfdMccState")}>{t("form.vfdMcc")}</FieldLabel>
-              <input id={fid("vfdMccState")} name="vfdMccState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.vfdMccPh")}
-              />
-            </div>
-            <div>
-              <FieldLabel htmlFor={fid("interlockStatus")}>{t("form.interlock")}</FieldLabel>
-              <input id={fid("interlockStatus")} name="interlockStatus" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.interlockPh")}
-              />
-            </div>
-          </FormRow>
-          <FormRow>
-            <div>
-              <FieldLabel htmlFor={fid("sensorFeedback")}>{t("form.sensorFeedback")}</FieldLabel>
-              <input id={fid("sensorFeedback")} name="sensorFeedback" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.sensorFeedbackPh")}
-              />
-            </div>
-            <div>
-              <FieldLabel htmlFor={fid("observedSignals")}>{t("form.otherSignals")}</FieldLabel>
-              <input id={fid("observedSignals")} name="observedSignals" maxLength={1000} className={IC} style={{ colorScheme: "dark" }}
-                placeholder={t("form.otherSignalsPh")}
-              />
-            </div>
-          </FormRow>
-        </FormSection>
+          <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+            {safetyItems.map((item, i) => (
+              <li key={i} className="flex gap-2 text-[13px] leading-relaxed">
+                <span aria-hidden="true" className="text-amber-500 shrink-0">▸</span>
+                <span className="text-slate-300">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-        {/* Impact */}
-        <FormSection title={t("form.impactAssessment")}>
-          <FormRow>
-            <div>
-              <FieldLabel htmlFor={fid("productionImpact")}>{t("form.productionImpact")}</FieldLabel>
-              <select id={fid("productionImpact")} name="productionImpact" className={SC} style={{ colorScheme: "dark" }}>
-                {impactOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
-              </select>
+        <div className="px-4 sm:px-5 py-6">
+          {/* ── Demo-ready examples ────────────────────────────────────────────── */}
+          <div className="print:hidden mb-5 rounded-xl border border-white/8 p-3.5" style={{ background: "rgba(7,16,26,0.6)" }}>
+            <p className="text-[12px] font-mono uppercase tracking-[0.18em] text-slate-400 mb-2.5">
+              {t("form.demoExamples")}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(SAMPLE_SCENARIOS) as Array<keyof typeof SAMPLE_SCENARIOS>).map(key => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => loadSample(key)}
+                  className="ds-focus inline-flex min-h-11 items-center text-[12px] font-mono px-3 py-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/[0.12] hover:border-cyan-400/35 transition-all"
+                >
+                  {/* Multilingual demo-dataset caption (locale content data). */}
+                  {SAMPLE_SCENARIOS[key].labels[sampleLang]}
+                </button>
+              ))}
             </div>
-            <div>
-              <FieldLabel htmlFor={fid("safetyImpact")}>{t("form.safetyImpact")}</FieldLabel>
-              <select id={fid("safetyImpact")} name="safetyImpact" className={SC} style={{ colorScheme: "dark" }}>
-                {impactOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
-              </select>
-            </div>
-          </FormRow>
-        </FormSection>
-
-        {/* Already checked + additional */}
-        <FormSection title={t("form.alreadyCheckedSection")}>
-          <div>
-            <FieldLabel htmlFor={fid("alreadyChecked")}>{t("form.alreadyChecked")}</FieldLabel>
-            <textarea id={fid("alreadyChecked")} name="alreadyChecked" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
-              placeholder={t("form.alreadyCheckedPh")}
-            />
           </div>
-          <div>
-            <FieldLabel htmlFor={fid("additionalInfo")}>{t("form.additionalInfo")}</FieldLabel>
-            <textarea id={fid("additionalInfo")} name="additionalInfo" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
-              placeholder={t("form.additionalInfoPh")}
-            />
-          </div>
-        </FormSection>
 
-        {/* Warning */}
-        <p className="text-[10px] text-slate-600 font-mono text-center">
-          {t("form.privacyWarning")}
-        </p>
+          {/* ── Input Form ─────────────────────────────────────────────────────── */}
+          <form ref={formRef} onSubmit={handleSubmit} className="print:hidden space-y-5">
 
-        {error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-rose-500/30 bg-rose-500/6 px-4 py-3 text-sm text-rose-400 font-mono"
-          >
-            {error}
-          </div>
-        )}
+            {/* Problem title + asset */}
+            <FormSection title={t("form.faultIdentification")}>
+              <div>
+                <FieldLabel htmlFor={fid("problemTitle")}>{t("form.problemTitle")}</FieldLabel>
+                <input id={fid("problemTitle")} name="problemTitle" required minLength={3} maxLength={200} className={IC} style={{ colorScheme: "dark" }}
+                  placeholder={t("form.problemTitlePh")}
+                />
+              </div>
+              <FormRow>
+                <div>
+                  <FieldLabel htmlFor={fid("assetType")}>{t("form.assetType")}</FieldLabel>
+                  <input id={fid("assetType")} name="assetType" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.assetTypePh")}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor={fid("systemArea")}>{t("form.systemArea")}</FieldLabel>
+                  <input id={fid("systemArea")} name="systemArea" maxLength={150} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.systemAreaPh")}
+                  />
+                </div>
+              </FormRow>
+              <FormRow>
+                <div>
+                  <FieldLabel htmlFor={fid("plcPlatform")}>{t("form.plcPlatform")}</FieldLabel>
+                  <input id={fid("plcPlatform")} name="plcPlatform" maxLength={100} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.plcPlatformPh")}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor={fid("recentChanges")}>{t("form.recentChanges")}</FieldLabel>
+                  <input id={fid("recentChanges")} name="recentChanges" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.recentChangesPh")}
+                  />
+                </div>
+              </FormRow>
+            </FormSection>
 
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full h-12 rounded-xl font-mono font-bold text-sm uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
-          style={{
-            background: busy
-              ? "rgba(30,200,164,0.12)"
-              : "linear-gradient(135deg, rgba(30,200,164,0.85) 0%, rgba(96,180,240,0.85) 100%)",
-            color: busy ? "#1EC8A4" : "#050816",
-            border: "1px solid rgba(30,200,164,0.30)",
-          }}
-        >
-          {busy && (
-            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.25" />
-              <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-          )}
-          {busy ? t("form.analyzing") : t("form.analyze")}
-        </button>
-      </form>
+            {/* Symptoms + alarms */}
+            <FormSection title={t("form.symptomsSection")}>
+              <div>
+                <FieldLabel htmlFor={fid("observedSymptoms")}>{t("form.observedSymptoms")}</FieldLabel>
+                <textarea id={fid("observedSymptoms")} name="observedSymptoms" required minLength={5} maxLength={3000} rows={4} className={TC} style={{ colorScheme: "dark" }}
+                  placeholder={t("form.observedSymptomsPh")}
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor={fid("activeAlarms")}>{t("form.alarms")}</FieldLabel>
+                <textarea id={fid("activeAlarms")} name="activeAlarms" maxLength={1500} rows={3} className={TC} style={{ colorScheme: "dark" }}
+                  placeholder={t("form.alarmsPh")}
+                />
+              </div>
+            </FormSection>
 
-      {/* ── Analysis result ────────────────────────────────────────────────── */}
-      <div ref={resultRef}>
-        {analysis && reportMeta && <AnalysisResult analysis={analysis} meta={reportMeta} isFa={isFa} locale={locale} canSaveCase={canSaveCase} />}
+            {/* Signal states */}
+            <FormSection title={t("form.signalStates")}>
+              <p className="text-[12px] text-slate-400 font-mono -mt-1">
+                {t("form.signalStatesNote")}
+              </p>
+              <FormRow>
+                <div>
+                  <FieldLabel htmlFor={fid("hmiCommandState")}>{t("form.hmiCommand")}</FieldLabel>
+                  <input id={fid("hmiCommandState")} name="hmiCommandState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.hmiCommandPh")}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor={fid("plcOutputState")}>{t("form.plcOutput")}</FieldLabel>
+                  <input id={fid("plcOutputState")} name="plcOutputState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.plcOutputPh")}
+                  />
+                </div>
+              </FormRow>
+              <FormRow>
+                <div>
+                  <FieldLabel htmlFor={fid("vfdMccState")}>{t("form.vfdMcc")}</FieldLabel>
+                  <input id={fid("vfdMccState")} name="vfdMccState" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.vfdMccPh")}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor={fid("interlockStatus")}>{t("form.interlock")}</FieldLabel>
+                  <input id={fid("interlockStatus")} name="interlockStatus" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.interlockPh")}
+                  />
+                </div>
+              </FormRow>
+              <FormRow>
+                <div>
+                  <FieldLabel htmlFor={fid("sensorFeedback")}>{t("form.sensorFeedback")}</FieldLabel>
+                  <input id={fid("sensorFeedback")} name="sensorFeedback" maxLength={500} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.sensorFeedbackPh")}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor={fid("observedSignals")}>{t("form.otherSignals")}</FieldLabel>
+                  <input id={fid("observedSignals")} name="observedSignals" maxLength={1000} className={IC} style={{ colorScheme: "dark" }}
+                    placeholder={t("form.otherSignalsPh")}
+                  />
+                </div>
+              </FormRow>
+            </FormSection>
+
+            {/* Impact */}
+            <FormSection title={t("form.impactAssessment")}>
+              <FormRow>
+                <div>
+                  <FieldLabel htmlFor={fid("productionImpact")}>{t("form.productionImpact")}</FieldLabel>
+                  <select id={fid("productionImpact")} name="productionImpact" className={SC} style={{ colorScheme: "dark" }}>
+                    {impactOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel htmlFor={fid("safetyImpact")}>{t("form.safetyImpact")}</FieldLabel>
+                  <select id={fid("safetyImpact")} name="safetyImpact" className={SC} style={{ colorScheme: "dark" }}>
+                    {impactOptions.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                  </select>
+                </div>
+              </FormRow>
+            </FormSection>
+
+            {/* Already checked + additional */}
+            <FormSection title={t("form.alreadyCheckedSection")}>
+              <div>
+                <FieldLabel htmlFor={fid("alreadyChecked")}>{t("form.alreadyChecked")}</FieldLabel>
+                <textarea id={fid("alreadyChecked")} name="alreadyChecked" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
+                  placeholder={t("form.alreadyCheckedPh")}
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor={fid("additionalInfo")}>{t("form.additionalInfo")}</FieldLabel>
+                <textarea id={fid("additionalInfo")} name="additionalInfo" maxLength={1000} rows={2} className={TC} style={{ colorScheme: "dark" }}
+                  placeholder={t("form.additionalInfoPh")}
+                />
+              </div>
+            </FormSection>
+
+            {/* Warning */}
+            <p className="text-[12px] text-slate-400 font-mono text-center">
+              {t("form.privacyWarning")}
+            </p>
+
+            {error && (
+              <div
+                role="alert"
+                className="rounded-xl border border-rose-500/30 bg-rose-500/6 px-4 py-3 text-sm text-rose-400 font-mono"
+              >
+                {error}
+              </div>
+            )}
+
+            {/* The busy state was conveyed only by a spinner and a changed button
+                caption on a control that is simultaneously disabled — which no
+                screen reader reliably announces. This says it once, politely. */}
+            <p role="status" aria-live="polite" className="sr-only">
+              {busy ? t("form.analyzing") : ""}
+            </p>
+
+            <button
+              type="submit"
+              disabled={busy}
+              aria-busy={busy}
+              className="ds-focus w-full h-12 rounded-xl font-mono font-bold text-sm uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+              style={{
+                background: busy
+                  ? "rgba(30,200,164,0.12)"
+                  : "linear-gradient(135deg, rgba(30,200,164,0.85) 0%, rgba(96,180,240,0.85) 100%)",
+                color: busy ? "#1EC8A4" : "#050816",
+                border: "1px solid rgba(30,200,164,0.30)",
+              }}
+            >
+              {busy && (
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.25" />
+                  <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              )}
+              {busy ? t("form.analyzing") : t("form.analyze")}
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* ── Analysis result ──────────────────────────────────────────────────
+          The container is rendered unconditionally: it is the scroll target the
+          submit handler focuses and the anchor the local navigation resolves,
+          so it has to exist before the first analysis, not after it. */}
+      <div ref={resultRef} tabIndex={-1} className="outline-none">
+        {analysis && reportMeta
+          ? <AnalysisResult analysis={analysis} meta={reportMeta} isFa={isFa} locale={locale} canSaveCase={canSaveCase} />
+          : <AwaitingAnalysis />}
       </div>
     </div>
   );

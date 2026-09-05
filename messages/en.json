@@ -5259,6 +5259,15 @@
       "description": "Hermes Industrial Brain — deterministic fault analysis, alarm intelligence, signal matrix, and neural reasoning map for industrial operations."
     },
     "crossLink": "Looking for general industrial engineering knowledge instead? Explore Hermes Brain.",
+    "nav": {
+      "heading": "Workspace sections",
+      "analyze": "Analyze",
+      "reasoning": "Reasoning",
+      "evidence": "Evidence",
+      "actions": "Safe actions",
+      "report": "Report",
+      "reference": "Reference diagnostics"
+    },
     "status": {
       "heading": "SYSTEM STATUS",
       "online": "ONLINE",
@@ -5325,7 +5334,9 @@
     },
     "workspace": {
       "header": "FAULT ANALYSIS WORKSPACE — INDUSTRIAL SIGNAL INTAKE",
-      "online": "ONLINE"
+      "online": "ONLINE",
+      "awaitingHeading": "No analysis has been run yet",
+      "awaitingBody": "Describe the fault above and run the analysis. The reasoning, the evidence and its gaps, the safe verification path and the engineering report all appear here."
     },
     "sections": {
       "alarmIntelligence": "Alarm Intelligence",
@@ -5338,7 +5349,9 @@
       "safeActionPath": "Safe Action Path",
       "relatedKnowledge": "Related Knowledge and Cases",
       "executiveSummary": "Executive Summary",
-      "evidenceGaps": "Evidence Gaps"
+      "evidenceGaps": "Evidence Gaps",
+      "primaryHypothesis": "Primary Hypothesis",
+      "alternativeHypotheses": "Alternative Hypotheses"
     },
     "alarm": {
       "none": "No alarm was reported. The absence of a reported alarm does not confirm healthy operation — check field wiring, VFD, MCC, or mechanical state separately."
