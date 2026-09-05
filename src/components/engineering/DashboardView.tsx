@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useQuery }              from "@tanstack/react-query";
 import { AnimatedSection }       from "@/components/ui/AnimatedSection";
 import { MetricGrid }            from "./widgets/MetricGrid";
@@ -11,6 +11,7 @@ import { BenchmarkPanel }        from "./widgets/BenchmarkPanel";
 import { GraphHealthPanel }      from "./widgets/GraphHealthPanel";
 import { AgentSummaryPanel }     from "./widgets/AgentSummaryPanel";
 import { formatDateTime } from "@/lib/i18n/format";
+import { enumLabel } from "@/lib/i18n/enum-label";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,7 @@ interface DashboardMeta {
 
 export function DashboardView() {
   const locale = useLocale();
+  const t = useTranslations("engineeringHub");
   const { data } = useQuery<DashboardMeta>({
     queryKey: ["dashboard"],
     queryFn:  async () => {
@@ -42,14 +44,21 @@ export function DashboardView() {
           {/* PHASE 107 — demoted from <h1>: the Engineering TopBar now owns the
               single page heading for every route in this app family, so a
               second h1 here would give this one route two. */}
-          <h2 className="text-xl font-bold text-ink font-display">Executive Dashboard</h2>
-          <p className="text-xs text-muted mt-0.5" suppressHydrationWarning>
+          <h2 className="text-xl font-bold text-ink font-display">{t("executiveDashboard")}</h2>
+          <p className="text-[0.8125rem] text-muted mt-0.5" suppressHydrationWarning>
             {data?.generatedAt
-              ? `Last updated ${formatDateTime(data.generatedAt, locale)}`
-              : "Loading system metrics…"}
+              ? t("dashboard.lastUpdated", { timestamp: formatDateTime(data.generatedAt, locale) })
+              : t("dashboard.loadingMetrics")}
             {data?.storageMode && (
-              <span className="ms-2 text-[10px] font-mono uppercase tracking-widest text-signal/60">
-                {data.storageMode}
+              <span
+                className="ms-2 text-[0.6875rem] font-medium uppercase tracking-widest text-signal/70"
+                title={t("dashboard.sourceLabel")}
+              >
+                <span className="sr-only">{t("dashboard.sourceLabel")}: </span>
+                {/* Closed two-value enum ("database" | "session"). Routed through
+                    the catalogue; an unrecognised value falls back to a
+                    humanized form rather than leaking a raw identifier. */}
+                {enumLabel(t, "dashboard.source", data.storageMode)}
               </span>
             )}
           </p>

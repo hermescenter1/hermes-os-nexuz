@@ -9107,7 +9107,112 @@
     "engineeringMemory": "حافظه مهندسی",
     "knowledgeGraph": "گراف دانش",
     "domainExpertise": "تخصص حوزه‌ای",
-    "studio": "استودیوی اتوماسیون"
+    "studio": "استودیوی اتوماسیون",
+    "nav": {
+      "heading": "ماژول‌ها",
+      "dashboard": "داشبورد",
+      "intelligence": "هوشمندی",
+      "projects": "پروژه‌ها",
+      "memory": "حافظه",
+      "knowledgeGraph": "گراف دانش",
+      "domains": "حوزه‌ها",
+      "backToSite": "بازگشت به وب‌سایت اصلی",
+      "openMenu": "باز کردن منوی ناوبری",
+      "closeMenu": "بستن منوی ناوبری"
+    },
+    "dashboard": {
+      "lastUpdated": "آخرین به‌روزرسانی {timestamp}",
+      "loadingMetrics": "در حال بارگذاری سنجه‌های سامانه…",
+      "sourceLabel": "منبع داده",
+      "source": {
+        "database": "پایگاه داده",
+        "session": "نشست"
+      },
+      "metrics": {
+        "systemHealth": "سلامت سامانه",
+        "totalProjects": "کل پروژه‌ها",
+        "activeProjects": "پروژه‌های فعال",
+        "memories": "حافظه‌ها",
+        "domains": "حوزه‌ها",
+        "riskLevel": "سطح ریسک"
+      },
+      "risk": {
+        "title": "نمای کلی ریسک",
+        "subtitle": "ارزیابی ریسک سامانه",
+        "highRiskProjects": "{count, plural, one {# پروژهٔ پرریسک} other {# پروژهٔ پرریسک}}",
+        "avgFailureRate": "میانگین نرخ شکست: {rate}",
+        "statusBreakdown": "{active} فعال · {completed} تکمیل‌شده · {archived} بایگانی‌شده",
+        "memoryHealth": "سلامت حافظه",
+        "projectsHealth": "سلامت پروژه‌ها",
+        "graphHealth": "سلامت گراف",
+        "emptyTitle": "داده‌ای برای ریسک نیست",
+        "emptyMessage": "داده‌های داشبورد در دسترس نیست.",
+        "levels": {
+          "low": "پایین",
+          "medium": "متوسط",
+          "high": "بالا",
+          "critical": "بحرانی"
+        }
+      },
+      "intelligence": {
+        "title": "هوشمندی سامانه",
+        "loading": "در حال اجرای عامل‌ها…",
+        "coherence": "انسجام {score}",
+        "grade": "درجه",
+        "panelTitle": "هوشمندی چندعاملی",
+        "overall": "کلی {score}",
+        "scoreOutOf": "{score} از ۱۰۰",
+        "emptyTitle": "داده‌ای از عامل‌ها نیست",
+        "emptyMessage": "عامل‌های هوشمندی هنوز اجرا نشده‌اند.",
+        "agents": {
+          "memory": "حافظه",
+          "project": "پروژه",
+          "domain": "حوزه",
+          "synthesis": "ترکیب"
+        },
+        "status": {
+          "success": "سالم",
+          "degraded": "تنزل‌یافته"
+        }
+      },
+      "benchmark": {
+        "title": "رتبه‌بندی عملکرد",
+        "subtitle": "{count, plural, one {# پروژه رتبه‌بندی شد} other {# پروژه رتبه‌بندی شد}}",
+        "leader": "پیشرو",
+        "emptyTitle": "رتبه‌بندی موجود نیست",
+        "emptyMessage": "برای دیدن رتبه‌بندی عملکرد، پروژه اضافه کنید.",
+        "unavailableTitle": "داده‌ای برای رتبه‌بندی نیست",
+        "unavailableMessage": "داده‌های رتبه‌بندی در دسترس نیست."
+      },
+      "domainHealth": {
+        "title": "سلامت حوزه‌ها",
+        "subtitle": "{count, plural, one {# حوزه} other {# حوزه}}",
+        "more": "{count, plural, one {# حوزهٔ دیگر} other {# حوزهٔ دیگر}}",
+        "memories": "{count, plural, one {# حافظه} other {# حافظه}}",
+        "confidence": "اطمینان {value}",
+        "successRate": "موفقیت {value}",
+        "emptyTitle": "حوزه‌ای ثبت نشده است",
+        "emptyMessage": "حوزه‌ها با پیوند خوردن حافظه‌ها نمایان می‌شوند.",
+        "unavailableTitle": "داده‌ای برای حوزه‌ها نیست",
+        "unavailableMessage": "داده‌های حوزه در دسترس نیست."
+      },
+      "graph": {
+        "title": "سلامت گراف دانش",
+        "overall": "کلی",
+        "coverage": "پوشش",
+        "connectivity": "هم‌بندی",
+        "quality": "کیفیت",
+        "hubNodes": "{count, plural, one {# گرهٔ کانونی} other {# گرهٔ کانونی}}",
+        "domains": "{count, plural, one {# حوزه} other {# حوزه}}",
+        "emptyTitle": "داده‌ای از گراف نیست",
+        "emptyMessage": "برای ساخت گراف دانش، پرس‌وجو اجرا کنید."
+      },
+      "states": {
+        "errorTitle": "خطایی رخ داد",
+        "errorMessage": "بارگذاری داده‌ها ناموفق بود",
+        "retry": "تلاش دوباره"
+      }
+    }
   },
   "ats": {
     "analyticsUnavailable": "داده‌های تحلیل در دسترس نیست",

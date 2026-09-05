@@ -5,17 +5,22 @@ import { useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
 import { Link }        from "@/i18n/navigation";
 
+/**
+ * ENGINEERING-HUB-TRILINGUAL — every module label now resolves through the
+ * catalogue. Six of these were English string literals, so /de and /fa rendered
+ * "Dashboard · Intelligence · Projects · Memory · Knowledge Graph · Domains"
+ * verbatim beside a Persian or German page title. `labelKey` is the only form
+ * left; the destinations, order, icons and active-matching are unchanged.
+ */
 const NAV = [
-  { href: "/engineering",                 label: "Dashboard",       icon: IconDashboard,    exact: true  },
-  { href: "/engineering/intelligence",    label: "Intelligence",    icon: IconIntelligence, exact: false },
-  { href: "/engineering/projects",        label: "Projects",        icon: IconProjects,     exact: false },
-  { href: "/engineering/memory",          label: "Memory",          icon: IconMemory,       exact: false },
-  { href: "/engineering/knowledge-graph", label: "Knowledge Graph", icon: IconGraph,        exact: false },
-  { href: "/engineering/domains",         label: "Domains",         icon: IconDomains,      exact: false },
-  // PHASE 109-C1 — the Automation Engineering Studio. Its label is resolved
-  // from the catalogue (labelKey); the entries above are pre-existing English
-  // literals and are not rewritten as a side effect of adding one route.
-  { href: "/engineering/studio",          labelKey: "studio",       icon: IconStudio,       exact: false },
+  { href: "/engineering",                 labelKey: "nav.dashboard",      icon: IconDashboard,    exact: true  },
+  { href: "/engineering/intelligence",    labelKey: "nav.intelligence",   icon: IconIntelligence, exact: false },
+  { href: "/engineering/projects",        labelKey: "nav.projects",       icon: IconProjects,     exact: false },
+  { href: "/engineering/memory",          labelKey: "nav.memory",         icon: IconMemory,       exact: false },
+  { href: "/engineering/knowledge-graph", labelKey: "nav.knowledgeGraph", icon: IconGraph,        exact: false },
+  { href: "/engineering/domains",         labelKey: "nav.domains",        icon: IconDomains,      exact: false },
+  // PHASE 109-C1 — the Automation Engineering Studio.
+  { href: "/engineering/studio",          labelKey: "studio",             icon: IconStudio,       exact: false },
 ];
 
 function IconStudio({ active }: { active: boolean }) {
@@ -49,15 +54,15 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
             </span>
             <span className="font-display text-sm font-bold tracking-tight text-ink">Hermes OS</span>
           </div>
-          <p className="text-[0.65rem] font-body font-medium text-metadata tracking-[0.05em] uppercase ps-[34px]">
+          <p className="text-[0.6875rem] font-body font-medium text-metadata tracking-[0.05em] uppercase ps-[34px]">
             Engineering Hub
           </p>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden text-metadata hover:text-muted transition-colors p-1.5 rounded"
-            aria-label="Close menu"
+            className="ds-focus lg:hidden inline-flex h-11 w-11 items-center justify-center text-metadata hover:text-muted transition-colors rounded"
+            aria-label={t("nav.closeMenu")}
           >
             <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4">
               <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -68,10 +73,10 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
-        <p className="px-2 pb-2 text-[0.65rem] font-body font-semibold tracking-[0.08em] uppercase text-metadata">
-          Modules
+        <p className="px-2 pb-2 text-[0.6875rem] font-body font-semibold tracking-[0.08em] uppercase text-metadata">
+          {t("nav.heading")}
         </p>
-        {NAV.map(({ href, label, labelKey, icon: Icon, exact }) => {
+        {NAV.map(({ href, labelKey, icon: Icon, exact }) => {
           const active = exact
             ? pathname === href
             : pathname === href || pathname.startsWith(href + "/");
@@ -80,14 +85,14 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
               key={href}
               href={href as Parameters<typeof Link>[0]["href"]}
               className={[
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 border-s-2",
+                "ds-focus flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 border-s-2",
                 active
                   ? "border-s-signal bg-white/[0.05] text-ink font-medium"
                   : "border-s-transparent text-muted hover:text-ink hover:bg-white/[0.03] font-normal",
               ].join(" ")}
             >
               <Icon active={active} />
-              <span className="truncate">{labelKey ? t(labelKey) : label}</span>
+              <span className="truncate">{t(labelKey)}</span>
             </Link>
           );
         })}
@@ -97,12 +102,12 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       <div className="px-3 py-4 border-t border-line">
         <Link
           href="/"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-metadata hover:text-muted transition-colors"
+          className="ds-focus flex min-h-11 items-center gap-2 px-3 py-2 rounded-lg text-xs text-metadata hover:text-muted transition-colors"
         >
-          <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5 flex-none">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="w-3.5 h-3.5 flex-none rtl:-scale-x-100">
             <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span>Back to main site</span>
+          <span>{t("nav.backToSite")}</span>
         </Link>
       </div>
     </aside>

@@ -1,6 +1,9 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useQuery }        from "@tanstack/react-query";
+import { formatNumber } from "@/lib/i18n/format";
+import { enumLabel } from "@/lib/i18n/enum-label";
 import { DashboardPanel }  from "@/components/ui/DashboardPanel";
 import { LoadingState }    from "@/components/ui/LoadingState";
 import { ErrorState }      from "@/components/ui/ErrorState";
@@ -31,13 +34,6 @@ interface IntelligenceResponse {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-const AGENT_LABELS: Record<string, string> = {
-  memory:    "Memory",
-  project:   "Project",
-  domain:    "Domain",
-  synthesis: "Synthesis",
-};
-
 function scoreColor(s: number) {
   return s >= 75 ? "var(--signal)" : s >= 50 ? "var(--warn)" : "var(--danger)";
 }
@@ -45,20 +41,26 @@ function scoreColor(s: number) {
 // ── Content ───────────────────────────────────────────────────────────────
 
 function Content({ data }: { data: IntelligenceResponse }) {
+  const t = useTranslations("engineeringHub");
+  const locale = useLocale();
   const agents = [data.memory, data.project, data.domain, data.synthesis];
   const synthData = data.synthesis.data;
+  const num = (v: number) => formatNumber(v, locale);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between text-xs pb-3 border-b border-line">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-muted">Coherence</span>
-          <span className="font-mono font-bold" style={{ color: scoreColor(synthData.systemCoherenceScore) }}>
-            {synthData.systemCoherenceScore}/100
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[0.8125rem] pb-3 border-b border-line">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* One localized sentence with the score inside it, not a label
+              fragment glued to a number. */}
+          <span className="font-medium tabular-nums" style={{ color: scoreColor(synthData.systemCoherenceScore) }}>
+            {t("dashboard.intelligence.coherence", {
+              score: t("dashboard.intelligence.scoreOutOf", { score: num(synthData.systemCoherenceScore) }),
+            })}
           </span>
         </div>
-        <span className="font-mono text-muted">
-          Grade{" "}
+        <span className="text-muted">
+          {t("dashboard.intelligence.grade")}{" "}
           <span className={`font-bold ${
             synthData.intelligenceGrade === "A" || synthData.intelligenceGrade === "B"
               ? "text-signal"
@@ -74,8 +76,8 @@ function Content({ data }: { data: IntelligenceResponse }) {
       <div className="space-y-3">
         {agents.map(agent => (
           <div key={agent.agentId} className="flex items-center gap-3">
-            <span className="text-xs font-mono text-muted w-20 flex-none">
-              {AGENT_LABELS[agent.agentId] ?? agent.agentId}
+            <span className="text-[0.8125rem] text-muted w-24 flex-none truncate">
+              {enumLabel(t, "dashboard.intelligence.agents", agent.agentId)}
             </span>
             <div className="flex-1 h-1 rounded-full bg-line overflow-hidden">
               <div
@@ -84,15 +86,17 @@ function Content({ data }: { data: IntelligenceResponse }) {
               />
             </div>
             <div className="flex items-center gap-2 flex-none">
-              <span className="text-xs font-mono font-bold" style={{ color: scoreColor(agent.score) }}>
-                {agent.score}
+              <span className="text-[0.8125rem] font-bold tabular-nums" style={{ color: scoreColor(agent.score) }}>
+                {num(agent.score)}
               </span>
-              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full border ${
+              {/* The status is carried by the WORD, from the catalogue — the
+                  colour is an additional cue, never the only one. */}
+              <span className={`text-[0.6875rem] px-1.5 py-0.5 rounded-full border ${
                 agent.status === "success"
                   ? "text-signal bg-signal/10 border-signal/20"
                   : "text-[--warn] bg-[--warn]/10 border-[--warn]/20"
               }`}>
-                {agent.status}
+                {enumLabel(t, "dashboard.intelligence.status", agent.status)}
               </span>
             </div>
           </div>
@@ -105,7 +109,7 @@ function Content({ data }: { data: IntelligenceResponse }) {
             .filter(a => a.findings.length > 0)
             .slice(0, 2)
             .map(a => (
-              <p key={a.agentId} className="text-[10px] text-muted flex gap-2">
+              <p key={a.agentId} className="text-[0.6875rem] text-muted flex gap-2" dir="auto">
                 <span className="text-signal flex-none">·</span>
                 <span className="leading-relaxed">{a.findings[0]}</span>
               </p>
@@ -119,6 +123,7 @@ function Content({ data }: { data: IntelligenceResponse }) {
 // ── Widget ────────────────────────────────────────────────────────────────
 
 export function AgentSummaryPanel() {
+  const t = useTranslations("engineeringHub");
   const { data, isPending, isError, refetch } = useQuery<IntelligenceResponse>({
     queryKey: ["intelligence-agents"],
     queryFn:  async () => {
@@ -132,16 +137,24 @@ export function AgentSummaryPanel() {
   return (
     <AnimatedSection delay={0.2}>
       <DashboardPanel
-        title="Multi-Agent Intelligence"
-        subtitle={data ? `Overall ${data.overallScore}/100` : undefined}
+        title={t("dashboard.intelligence.panelTitle")}
+        subtitle={data ? t("dashboard.intelligence.overall", { score: data.overallScore }) : undefined}
         className="h-full"
       >
         {isPending ? (
-          <LoadingState compact />
+          <LoadingState compact label={t("dashboard.intelligence.loading")} />
         ) : isError ? (
-          <ErrorState onRetry={() => refetch()} />
+          <ErrorState
+            title={t("dashboard.states.errorTitle")}
+            message={t("dashboard.states.errorMessage")}
+            retryLabel={t("dashboard.states.retry")}
+            onRetry={() => refetch()}
+          />
         ) : !data ? (
-          <EmptyState title="No agent data" message="Intelligence agents have not run yet." />
+          <EmptyState
+            title={t("dashboard.intelligence.emptyTitle")}
+            message={t("dashboard.intelligence.emptyMessage")}
+          />
         ) : (
           <Content data={data} />
         )}

@@ -22,7 +22,7 @@ export function Shell({ children }: { children: ReactNode }) {
         className={[
           "fixed inset-y-0 start-0 z-30 flex-none transition-transform duration-300 ease-out",
           "lg:static lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full [dir=rtl]:translate-x-full lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "max-lg:-translate-x-full max-lg:rtl:translate-x-full",
         ].join(" ")}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />

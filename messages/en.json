@@ -9107,7 +9107,112 @@
     "engineeringMemory": "Engineering Memory",
     "knowledgeGraph": "Knowledge Graph",
     "domainExpertise": "Domain Expertise",
-    "studio": "Automation Studio"
+    "studio": "Automation Studio",
+    "nav": {
+      "heading": "Modules",
+      "dashboard": "Dashboard",
+      "intelligence": "Intelligence",
+      "projects": "Projects",
+      "memory": "Memory",
+      "knowledgeGraph": "Knowledge Graph",
+      "domains": "Domains",
+      "backToSite": "Back to main site",
+      "openMenu": "Open navigation menu",
+      "closeMenu": "Close navigation menu"
+    },
+    "dashboard": {
+      "lastUpdated": "Last updated {timestamp}",
+      "loadingMetrics": "Loading system metrics…",
+      "sourceLabel": "Data source",
+      "source": {
+        "database": "Database",
+        "session": "Session"
+      },
+      "metrics": {
+        "systemHealth": "System Health",
+        "totalProjects": "Total Projects",
+        "activeProjects": "Active Projects",
+        "memories": "Memories",
+        "domains": "Domains",
+        "riskLevel": "Risk Level"
+      },
+      "risk": {
+        "title": "Risk Overview",
+        "subtitle": "System risk assessment",
+        "highRiskProjects": "{count, plural, one {# high-risk project} other {# high-risk projects}}",
+        "avgFailureRate": "Average failure rate: {rate}",
+        "statusBreakdown": "{active} active · {completed} completed · {archived} archived",
+        "memoryHealth": "Memory health",
+        "projectsHealth": "Projects health",
+        "graphHealth": "Graph health",
+        "emptyTitle": "No risk data",
+        "emptyMessage": "Dashboard data unavailable.",
+        "levels": {
+          "low": "LOW",
+          "medium": "MEDIUM",
+          "high": "HIGH",
+          "critical": "CRITICAL"
+        }
+      },
+      "intelligence": {
+        "title": "System Intelligence",
+        "loading": "Running agents…",
+        "coherence": "Coherence {score}",
+        "grade": "Grade",
+        "panelTitle": "Multi-Agent Intelligence",
+        "overall": "Overall {score}",
+        "scoreOutOf": "{score} out of 100",
+        "emptyTitle": "No agent data",
+        "emptyMessage": "Intelligence agents have not run yet.",
+        "agents": {
+          "memory": "Memory",
+          "project": "Project",
+          "domain": "Domain",
+          "synthesis": "Synthesis"
+        },
+        "status": {
+          "success": "healthy",
+          "degraded": "degraded"
+        }
+      },
+      "benchmark": {
+        "title": "Benchmark Rankings",
+        "subtitle": "{count, plural, one {# project ranked} other {# projects ranked}}",
+        "leader": "Leader",
+        "emptyTitle": "No benchmarks",
+        "emptyMessage": "Add projects to see performance rankings.",
+        "unavailableTitle": "No benchmark data",
+        "unavailableMessage": "Benchmark data unavailable."
+      },
+      "domainHealth": {
+        "title": "Domain Health",
+        "subtitle": "{count, plural, one {# domain} other {# domains}}",
+        "more": "{count, plural, one {# further domain} other {# further domains}}",
+        "memories": "{count, plural, one {# memory} other {# memories}}",
+        "confidence": "Confidence {value}",
+        "successRate": "Success {value}",
+        "emptyTitle": "No domains",
+        "emptyMessage": "Domains appear as memories are linked.",
+        "unavailableTitle": "No domain data",
+        "unavailableMessage": "Domain data unavailable."
+      },
+      "graph": {
+        "title": "Knowledge Graph Health",
+        "overall": "Overall",
+        "coverage": "Coverage",
+        "connectivity": "Connectivity",
+        "quality": "Quality",
+        "hubNodes": "{count, plural, one {# hub node} other {# hub nodes}}",
+        "domains": "{count, plural, one {# domain} other {# domains}}",
+        "emptyTitle": "No graph data",
+        "emptyMessage": "Run queries to build the knowledge graph."
+      },
+      "states": {
+        "errorTitle": "Something went wrong",
+        "errorMessage": "Failed to load data",
+        "retry": "Try again"
+      }
+    }
   },
   "ats": {
     "analyticsUnavailable": "Analytics data unavailable",

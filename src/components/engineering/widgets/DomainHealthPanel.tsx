@@ -1,6 +1,8 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useQuery }        from "@tanstack/react-query";
+import { formatNumber, formatPercent } from "@/lib/i18n/format";
 import { DashboardPanel }  from "@/components/ui/DashboardPanel";
 import { GlassCard }       from "@/components/ui/GlassCard";
 import { LoadingState }    from "@/components/ui/LoadingState";
@@ -32,6 +34,8 @@ function scoreColor(s: number) {
 // ── Content ───────────────────────────────────────────────────────────────
 
 function Content({ domains, total }: { domains: Domain[]; total: number }) {
+  const t = useTranslations("engineeringHub");
+  const locale = useLocale();
   const top5 = [...domains]
     .sort((a, b) => b.healthScore - a.healthScore)
     .slice(0, 5);
@@ -39,8 +43,8 @@ function Content({ domains, total }: { domains: Domain[]; total: number }) {
   if (top5.length === 0) {
     return (
       <EmptyState
-        title="No domains"
-        message="Domains appear as memories are linked."
+        title={t("dashboard.domainHealth.emptyTitle")}
+        message={t("dashboard.domainHealth.emptyMessage")}
         icon="◈"
       />
     );
@@ -51,11 +55,12 @@ function Content({ domains, total }: { domains: Domain[]; total: number }) {
       {top5.map(d => (
         <GlassCard key={d.name} className="px-4 py-3 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono font-medium text-ink capitalize">{d.name}</span>
-            <div className="flex items-center gap-3 text-[10px] font-mono">
-              <span className="text-muted">{d.memoryCount}m</span>
-              <span className="font-bold" style={{ color: scoreColor(d.healthScore) }}>
-                {d.healthScore}
+          {/* Domain names are user data — capitalised, never translated. */}
+            <span className="text-[0.8125rem] font-medium text-ink capitalize min-w-0 truncate" dir="auto">{d.name}</span>
+            <div className="flex items-center gap-3 text-[0.6875rem] flex-none">
+              <span className="text-muted">{t("dashboard.domainHealth.memories", { count: d.memoryCount })}</span>
+              <span className="font-bold tabular-nums" style={{ color: scoreColor(d.healthScore) }}>
+                {formatNumber(d.healthScore, locale)}
               </span>
             </div>
           </div>
@@ -65,15 +70,15 @@ function Content({ domains, total }: { domains: Domain[]; total: number }) {
               style={{ width: `${d.healthScore}%`, background: scoreColor(d.healthScore) }}
             />
           </div>
-          <div className="flex gap-4 text-[10px] font-mono text-muted">
-            <span>conf {d.avgConfidence}%</span>
-            <span>success {d.successRate}%</span>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[0.6875rem] text-muted">
+            <span>{t("dashboard.domainHealth.confidence", { value: formatPercent(d.avgConfidence / 100, locale) })}</span>
+            <span>{t("dashboard.domainHealth.successRate", { value: formatPercent(d.successRate / 100, locale) })}</span>
           </div>
         </GlassCard>
       ))}
       {total > 5 && (
-        <p className="text-[10px] font-mono text-muted text-center pt-1">
-          +{total - 5} more domains
+        <p className="text-[0.6875rem] text-muted text-center pt-1">
+          {t("dashboard.domainHealth.more", { count: total - 5 })}
         </p>
       )}
     </div>
@@ -83,6 +88,7 @@ function Content({ domains, total }: { domains: Domain[]; total: number }) {
 // ── Widget ────────────────────────────────────────────────────────────────
 
 export function DomainHealthPanel() {
+  const t = useTranslations("engineeringHub");
   const { data, isPending, isError, refetch } = useQuery<DomainsResponse>({
     queryKey: ["domains"],
     queryFn:  async () => {
@@ -96,16 +102,25 @@ export function DomainHealthPanel() {
   return (
     <AnimatedSection delay={0.12}>
       <DashboardPanel
-        title="Domain Health"
-        subtitle={data ? `${data.totalDomains} domain${data.totalDomains !== 1 ? "s" : ""}` : undefined}
+        title={t("dashboard.domainHealth.title")}
+        subtitle={data ? t("dashboard.domainHealth.subtitle", { count: data.totalDomains }) : undefined}
         className="h-full"
       >
         {isPending ? (
-          <LoadingState compact />
+          <LoadingState compact label={t("dashboard.loadingMetrics")} />
         ) : isError ? (
-          <ErrorState onRetry={() => refetch()} />
+          <ErrorState
+            title={t("dashboard.states.errorTitle")}
+            message={t("dashboard.states.errorMessage")}
+            retryLabel={t("dashboard.states.retry")}
+            onRetry={() => refetch()}
+          />
         ) : !data ? (
-          <EmptyState title="No domain data" message="Domain data unavailable." icon="◈" />
+          <EmptyState
+            title={t("dashboard.domainHealth.unavailableTitle")}
+            message={t("dashboard.domainHealth.unavailableMessage")}
+            icon="◈"
+          />
         ) : (
           <Content domains={data.domains} total={data.totalDomains} />
         )}

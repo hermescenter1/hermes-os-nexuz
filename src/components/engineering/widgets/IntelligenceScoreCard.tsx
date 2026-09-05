@@ -1,13 +1,14 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useQuery }        from "@tanstack/react-query";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { GlassCard }       from "@/components/ui/GlassCard";
 import { LoadingState }    from "@/components/ui/LoadingState";
 import { ErrorState }      from "@/components/ui/ErrorState";
-import { formatDate } from "@/lib/i18n/format";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
+import { enumLabel } from "@/lib/i18n/enum-label";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -47,12 +48,12 @@ function gradeClass(g: string) {
 
 // ── Score ring ────────────────────────────────────────────────────────────
 
-function ScoreRing({ score }: { score: number }) {
+function ScoreRing({ score, display, label }: { score: number; display: string; label: string }) {
   const r   = 34;
   const c   = 2 * Math.PI * r;
   const pct = Math.min(100, Math.max(0, score));
   return (
-    <svg width="88" height="88" viewBox="0 0 88 88" className="flex-none">
+    <svg width="88" height="88" viewBox="0 0 88 88" className="flex-none" role="img" aria-label={label}>
       <circle cx="44" cy="44" r={r} fill="none" stroke="var(--line)" strokeWidth="6" />
       <circle
         cx="44" cy="44" r={r} fill="none"
@@ -62,12 +63,12 @@ function ScoreRing({ score }: { score: number }) {
         transform="rotate(-90 44 44)"
         style={{ transition: "stroke-dasharray 1s ease" }}
       />
-      <text x="44" y="41" textAnchor="middle" dominantBaseline="middle"
+      <text x="44" y="41" textAnchor="middle" dominantBaseline="middle" aria-hidden="true"
         fill="var(--ink)" fontSize="18" fontWeight="700" fontFamily="var(--font-display)">
-        {score}
+        {display}
       </text>
-      <text x="44" y="56" textAnchor="middle" dominantBaseline="middle"
-        fill="var(--muted)" fontSize="8" fontFamily="var(--font-mono)">
+      <text x="44" y="57" textAnchor="middle" dominantBaseline="middle" aria-hidden="true"
+        direction="ltr" fill="var(--muted)" fontSize="11" fontFamily="var(--font-mono)">
         /100
       </text>
     </svg>
@@ -78,21 +79,29 @@ function ScoreRing({ score }: { score: number }) {
 
 function Content({ data }: { data: IntelligenceResponse }) {
   const locale = useLocale();
+  const t = useTranslations("engineeringHub");
   const synthData = data.synthesis.data;
   const agents    = [data.memory, data.project, data.domain, data.synthesis];
+  const num = (v: number) => formatNumber(v, locale);
 
   return (
     <div className="flex flex-wrap items-center gap-6">
-      <ScoreRing score={data.overallScore} />
+      <ScoreRing
+        score={data.overallScore}
+        display={num(data.overallScore)}
+        label={t("dashboard.intelligence.scoreOutOf", { score: num(data.overallScore) })}
+      />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-3 mb-2 flex-wrap">
-          <h2 className="text-lg font-bold text-ink">System Intelligence</h2>
+          <h2 className="text-lg font-bold text-ink">{t("dashboard.intelligence.title")}</h2>
           <span className={`text-3xl font-bold metric ${gradeClass(synthData.intelligenceGrade)}`}>
             {synthData.intelligenceGrade}
           </span>
         </div>
-        <p className="text-xs text-muted mb-3" suppressHydrationWarning>
-          Coherence {synthData.systemCoherenceScore}/100
+        <p className="text-[0.8125rem] text-muted mb-3" suppressHydrationWarning>
+          {t("dashboard.intelligence.coherence", {
+            score: t("dashboard.intelligence.scoreOutOf", { score: num(synthData.systemCoherenceScore) }),
+          })}
           {" · "}
           {formatDate(data.generatedAt, locale, { timeStyle: "medium" })}
         </p>
@@ -102,9 +111,14 @@ function Content({ data }: { data: IntelligenceResponse }) {
               <span className={`w-1.5 h-1.5 rounded-full flex-none ${
                 a.status === "success" ? "bg-signal" : "bg-[--warn]"
               }`} />
-              <span className="text-[10px] font-mono text-muted capitalize">{a.agentId}</span>
-              <span className="text-[10px] font-mono font-bold" style={{ color: scoreColor(a.score) }}>
-                {a.score}
+              <span className="text-[0.6875rem] text-muted">
+                {enumLabel(t, "dashboard.intelligence.agents", a.agentId)}
+              </span>
+              <span className="text-[0.6875rem] font-bold tabular-nums" style={{ color: scoreColor(a.score) }}>
+                {num(a.score)}
+              </span>
+              <span className="sr-only">
+                {enumLabel(t, "dashboard.intelligence.status", a.status)}
               </span>
             </div>
           ))}
@@ -117,6 +131,7 @@ function Content({ data }: { data: IntelligenceResponse }) {
 // ── Widget ────────────────────────────────────────────────────────────────
 
 export function IntelligenceScoreCard() {
+  const t = useTranslations("engineeringHub");
   const { data, isPending, isError, refetch } = useQuery<IntelligenceResponse>({
     queryKey: ["intelligence-agents"],
     queryFn:  async () => {
@@ -130,8 +145,15 @@ export function IntelligenceScoreCard() {
   return (
     <AnimatedSection delay={0.04}>
       <GlassCard neon className="p-6 h-full">
-        {isPending && <LoadingState compact label="Running agents…" />}
-        {isError   && <ErrorState onRetry={() => refetch()} />}
+        {isPending && <LoadingState compact label={t("dashboard.intelligence.loading")} />}
+        {isError   && (
+          <ErrorState
+            title={t("dashboard.states.errorTitle")}
+            message={t("dashboard.states.errorMessage")}
+            retryLabel={t("dashboard.states.retry")}
+            onRetry={() => refetch()}
+          />
+        )}
         {data      && <Content data={data} />}
       </GlassCard>
     </AnimatedSection>

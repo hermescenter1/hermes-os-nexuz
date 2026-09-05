@@ -34,10 +34,10 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       {/* Hamburger — mobile only */}
       <button
         onClick={onMenuClick}
-        className="lg:hidden text-muted hover:text-ink transition-colors p-1 rounded"
-        aria-label="Toggle menu"
+        className="ds-focus lg:hidden inline-flex h-11 w-11 items-center justify-center text-muted hover:text-ink transition-colors rounded"
+        aria-label={t("nav.openMenu")}
       >
-        <svg viewBox="0 0 20 20" fill="none" className="w-5 h-5">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="w-5 h-5">
           <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       </button>
@@ -56,11 +56,12 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         <h1 className="text-sm font-semibold text-ink tracking-tight">{title}</h1>
       </div>
 
-      {/* System status — neutral, static */}
-      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded border border-line">
-        <span className="w-1.5 h-1.5 rounded-full bg-signal/70" />
-        <span className="text-[0.65rem] font-body font-medium text-metadata tracking-[0.04em]">Online</span>
-      </div>
+      {/* The header carries no status indicator. The one that stood here was a
+          hard-coded "Online" pill with a coloured dot and no data source behind
+          it; nothing in this shell subscribes to a liveness signal, so it was an
+          unsupported runtime claim rather than a measurement. Removed outright
+          rather than relabelled — a shell that knows nothing about liveness
+          should say nothing about it. */}
     </header>
   );
 }
