@@ -1,12 +1,23 @@
 "use client";
 
+/**
+ * ENGINEERING-HUB-TRILINGUAL — `title` and `retryLabel` are ADDITIVE optional
+ * props. The two strings they replace were hard-coded here with no way for a
+ * caller to localize them, so every locale rendered "Something went wrong" and
+ * "Try again" in English. The defaults are the previous literals verbatim, so
+ * the five existing consumers that pass neither prop render exactly as before.
+ */
 interface ErrorStateProps {
-  message?: string;
-  onRetry?: () => void;
+  title?:      string;
+  message?:    string;
+  retryLabel?: string;
+  onRetry?:    () => void;
 }
 
 export function ErrorState({
+  title = "Something went wrong",
   message = "Failed to load data",
+  retryLabel = "Try again",
   onRetry,
 }: ErrorStateProps) {
   return (
@@ -33,17 +44,17 @@ export function ErrorState({
       </div>
 
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-ink">Something went wrong</p>
+        <p className="text-sm font-semibold text-ink">{title}</p>
         <p className="text-xs text-muted max-w-xs leading-relaxed">{message}</p>
       </div>
 
       {onRetry && (
         <button
           onClick={onRetry}
-          className="text-xs text-signal hover:text-ink transition-colors font-mono underline underline-offset-2"
+          className="ds-focus inline-flex min-h-11 items-center text-xs text-signal hover:text-ink transition-colors font-mono underline underline-offset-2"
           style={{ transition: "color var(--t-fast)" }}
         >
-          Try again
+          {retryLabel}
         </button>
       )}
     </div>
