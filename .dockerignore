@@ -46,6 +46,20 @@ scripts/
 # audit in the Phase 106A runbook.
 !scripts/journal
 
+# PHASE 109-C2.1 — narrow re-include for the parser sidecar build script.
+#
+# Same rule, same reason, same placement as the exception above: AFTER the
+# blanket `scripts/` exclusion so it takes effect, and BEFORE the `**/__tests__/`
+# rules so nothing else is dragged back in. It admits exactly ONE FILE.
+#
+# The builder stage runs it to emit dist/parser, which the parser stage COPYies.
+# Without this line `RUN node scripts/build-parser-sidecar.mjs` fails with
+# "Cannot find module" — the R1 image build did exactly that, because the script
+# ran fine from the working tree and the build CONTEXT is a different file set.
+# No other image COPYies `scripts/`, so this cannot reach the web, migrator or
+# journal-importer images.
+!scripts/build-parser-sidecar.mjs
+
 # Test files
 **/__tests__/
 **/*.test.ts

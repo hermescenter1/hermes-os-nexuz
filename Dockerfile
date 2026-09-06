@@ -1,3 +1,19 @@
+# PHASE 109-C2.1 — the parser sidecar stage is pinned to an immutable image
+# digest rather than the floating `node:20-alpine` tag:
+#
+#   node@sha256:afdf98210b07b586eb71fa22ba2e432e058e4cd1304d31ed60888755b8c865fb
+#   = linux/amd64, Node v20.20.2
+#
+# `zlib.crc32` — which archive ingestion requires and asserts at startup — landed
+# in Node 20.15.0, and the floating tag has no minor floor. The digest was
+# resolved from the REGISTRY manifest index, not from a local tag: the local tag
+# reported its own image id as its "RepoDigest", which is not a registry digest.
+#
+# The other stages deliberately keep `node:20-alpine`. Pinning them too is a
+# strict improvement, but the Phase 99.7 and 106A release gates match that exact
+# string, so changing them is a separate, owner-approved change rather than a
+# side effect of this one.
+
 # ── Stage 1: deps ─────────────────────────────────────────────────────────────
 # Install production + dev deps, build tools for native modules, generate Prisma client.
 FROM node:20-alpine AS deps
@@ -63,6 +79,15 @@ ENV APP_URL="https://placeholder.build"
 ENV HERMES_STORAGE_MODE="session"
 
 RUN npm run build
+
+# Phase 109-C2.1: compile the parser sidecar.
+#
+# `output: "standalone"` traces only what the APPLICATION imports, and the web
+# process deliberately never imports the sidecar — so standalone output does not
+# contain it. This step emits deterministic CommonJS to dist/parser and fails the
+# build if the artifact contains TypeScript, a source map, a dynamic import, or a
+# require outside the declared runtime set.
+RUN node scripts/build-parser-sidecar.mjs --verify
 
 # ── Stage 3: migrator (Phase 99.7) ────────────────────────────────────────────
 # Pinned, target-derived migration runner. The runner image deliberately ships
@@ -143,6 +168,34 @@ USER importer
 # exits without opening a database connection. Writing requires an operator to
 # type the flag. There is deliberately no --force in the importer.
 CMD ["node", "scripts/journal/import-articles.mjs"]
+
+# ── Stage 3c: parser sidecar (Phase 109-C2.1) ──────────────────────────────────
+# The archive parser. It is the only component that touches hostile bytes, and
+# it is deployed as a separate long-lived container so that a kill, an OOM or a
+# crash cannot reach the web process.
+#
+# It carries the compiled artifact and exactly three runtime packages. Nothing
+# else is copied: no application code, no Prisma, no Next output, no source.
+FROM node@sha256:afdf98210b07b586eb71fa22ba2e432e058e4cd1304d31ed60888755b8c865fb AS parser
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# 1. the compiled parser artifact (CommonJS; no TypeScript reaches the runtime)
+COPY --from=builder /app/dist/parser ./dist/parser
+
+# 2. yauzl — the ZIP reader, and its only dependency, pend
+COPY --from=deps /app/node_modules/yauzl ./node_modules/yauzl
+COPY --from=deps /app/node_modules/pend  ./node_modules/pend
+
+# 3. zod — the child/supervisor message schemas
+COPY --from=deps /app/node_modules/zod   ./node_modules/zod
+
+# Non-root, and the same uid/gid that owns the IPC socket directory. The
+# parser-ipc-init service chowns /ipc to this id before this container starts.
+USER 65532:65532
+
+CMD ["node", "/app/dist/parser/tia-archive-ingest/sidecar/supervisor-entry.js"]
 
 # ── Stage 4: runner ───────────────────────────────────────────────────────────
 # Minimal production image using Next.js standalone output.

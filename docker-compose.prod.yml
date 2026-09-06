@@ -63,11 +63,31 @@ services:
       # owner step is required on the live host to populate this new volume from any
       # data currently on the container's writable layer (see the DR runbook).
       - documents_data:/app/.data/documents
+      # Phase 109-C2.1: the Unix domain socket to the archive parser. This is the
+      # ONLY channel between web and parser; the parser itself has no network.
+      #
+      # READ-ONLY, and 0710 on the directory. Connecting to a Unix socket needs
+      # SEARCH on the directory and read/write on the socket inode — it writes
+      # nothing to the filesystem — so the web side needs neither directory write
+      # nor a writable mount. Removing both means web cannot create, unlink,
+      # rename or bind anything in /ipc, and therefore cannot substitute its own
+      # socket for the parser's. Proven by container probes, not assumed.
+      - parser_ipc:/ipc:ro
+    # The socket is 0660 owned by 65532:65532. This image runs as nextjs
+    # (uid 1001, gid 1001), so WITHOUT this supplementary group the web process
+    # gets EACCES on connect — measured, not assumed: uid 1001 gid 65532
+    # connects, uid 1001 gid 1001 is refused. A supplementary group is the
+    # minimal fix: it changes no image, no uid, and does not widen the socket
+    # mode, which loosening to 0666 would have done.
+    group_add:
+      - "65532"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      hermes-parser:
+        condition: service_started
     networks:
       - hermes_internal
     healthcheck:
@@ -76,6 +96,86 @@ services:
       timeout: 10s
       retries: 3
       start_period: 45s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ── Phase 109-C2.1 — archive parser sidecar ─────────────────────────────
+  #
+  # Runs once, as root, and touches exactly one path: /ipc. It mounts no other
+  # volume, so it is structurally incapable of reaching any other data — the
+  # guarantee comes from the mount set, not from the command string.
+  hermes-parser-ipc-init:
+    # Pinned to the immutable linux/amd64 registry manifest digest, resolved from
+    # the registry index rather than a local tag. alpine 3.20.10.
+    image: alpine@sha256:c64c687cbea9300178b30c95835354e34c4e4febc4badfe27102879de0483b5e
+    user: "0:0"
+    network_mode: none
+    read_only: true
+    command:
+      - /bin/sh
+      - -c
+      - 'chown 65532:65532 /ipc && chmod 0710 /ipc'
+    volumes:
+      - parser_ipc:/ipc
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # The only component that touches hostile archive bytes.
+  #
+  # NO env_file, and that is deliberate: this container must inherit no secret,
+  # no database URL and no token. It has no network at all, so there is nowhere
+  # for anything it learned to go — but it is given nothing to learn.
+  #
+  # The memory limit is the containment boundary. Node flags are not: a worker's
+  # resourceLimits and --max-old-space-size bound the V8 heap only, and were
+  # measured letting 400-600 MB of external allocation through a 48 MB limit.
+  # The cgroup limit is what actually stops a decompression bomb, and the child
+  # raises its own oom_score_adj to 1000 so the kernel takes the child rather
+  # than this supervisor.
+  hermes-parser:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: parser
+    restart: always
+    # A REAL INIT AS PID 1, so orphaned grandchildren are reaped.
+    #
+    # A hostile child can spawn a detached descendant; when the child exits the
+    # descendant is reparented to PID 1. Node is not an init and never calls
+    # wait() for a process it did not spawn, so each one becomes a permanent
+    # zombie. MEASURED: eight such parses left nine zombies and pids.current at
+    # 19 of a 64 limit — roughly fifty more requests would exhaust the pid
+    # controller and the sidecar could no longer fork at all.
+    #
+    # With `init`, PID 1 is a real reaper and the supervisor runs as PID 2.
+    # This does not replace the orphan sweep: init reaps the dead, the sweep
+    # removes a live descendant still holding the inherited stdout.
+    init: true
+    depends_on:
+      hermes-parser-ipc-init:
+        condition: service_completed_successfully
+    user: "65532:65532"
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 1.0
+    volumes:
+      - parser_ipc:/ipc
     logging:
       driver: "json-file"
       options:
@@ -225,6 +325,9 @@ volumes:
   uploads_data:
   # Phase 98: durable document/export storage (see hermes-web volumes above).
   documents_data:
+  # Phase 109-C2.1: carries only the parser Unix domain socket. No archive data
+  # and no extracted content is ever written here.
+  parser_ipc:
 
 networks:
   hermes_internal:

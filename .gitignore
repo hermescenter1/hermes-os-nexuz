@@ -55,3 +55,8 @@ deploy/ssl/certs/
 /hermes-evidence/
 /hermes-evidence/_records/
 /hermes-evidence/.visual-sweep.lock
+
+# Phase 109-C2.1: compiled parser sidecar artifact.
+# Regenerated deterministically by scripts/build-parser-sidecar.mjs, and built
+# inside the image by the Dockerfile builder stage. Never committed.
+/dist/

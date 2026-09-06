@@ -76,6 +76,7 @@
     "resend": "^6.14.0",
     "stripe": "^22.2.3",
     "three": "^0.184.0",
+    "yauzl": "3.4.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -87,6 +88,7 @@
     "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
     "@types/three": "^0.184.1",
+    "@types/yauzl": "3.4.0",
     "autoprefixer": "10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.5.19",
@@ -102,5 +104,8 @@
     "sharp": "0.35.3",
     "deepmerge-ts": "^8.0.0",
     "mysql2": "3.24.3"
+  },
+  "engines": {
+    "node": ">=20.15.0"
   }
 }

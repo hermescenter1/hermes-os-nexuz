@@ -1,0 +1,50 @@
+{
+  "//": [
+    "PHASE 109-C2.1 — build config for the parser sidecar artifact.",
+    "",
+    "SEPARATE FROM tsconfig.json ON PURPOSE. The application config sets",
+    "noEmit:true, module:esnext and moduleResolution:bundler, because Next",
+    "bundles the app. None of that can produce a runnable sidecar: the parser is",
+    "a plain Node program that must run from CommonJS files inside a container",
+    "with no bundler present.",
+    "",
+    "NO PATH ALIASES. tsc does not rewrite them on emit, so a compiled",
+    "require(\"@/lib/...\") would fail at runtime. Every module reachable from the",
+    "sidecar imports relatively for that reason.",
+    "",
+    "Emission is deterministic: no source maps, no declarations, LF newlines, so",
+    "two clean builds produce byte-identical artifacts."
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": false,
+    "inlineSourceMap": false,
+    "inlineSources": false,
+    "removeComments": false,
+    "newLine": "lf",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "dist/parser",
+    "rootDir": "src/lib",
+    "types": ["node"]
+  },
+  "include": [
+    "src/lib/tia-archive-ingest/**/*.ts",
+    "src/lib/tia-companion/canonical.ts",
+    "src/lib/tia-companion/contract.ts",
+    "src/lib/tia-companion/diagnostics.ts"
+  ],
+  "exclude": [
+    "src/lib/tia-archive-ingest/__tests__/**",
+    "src/lib/tia-archive-ingest/testing/**",
+    "src/lib/tia-companion/__tests__/**",
+    "src/lib/tia-companion/testing/**"
+  ]
+}
