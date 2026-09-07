@@ -20,6 +20,57 @@
  * IF THIS FAILS AND C1 REALLY DID CHANGE, the digest is re-pinned HERE, in the
  * same commit, with the reason written down. That is the point: the lock does
  * not forbid a future change to C1, it forbids an unnoticed one.
+ *
+ * RE-PINNED — PHASE 109-C-UI.1 (design/UX stage for /[locale]/engineering/studio)
+ * ----------------------------------------------------------------------------
+ * C1 really did change, deliberately and under review. The baseline this file
+ * was authored against (27 files, 1af814de…) is therefore no longer the tree it
+ * describes, and leaving it in place would have made this lock a permanent red
+ * rather than a signal.
+ *
+ * WHAT CHANGED. Four files were added and six edited under the three C1 roots:
+ *
+ *   + components/automation-studio/ArtifactSurface.tsx      the central pane for
+ *     the fourteen artifacts that have no textual source and previously rendered
+ *     a single centred sentence in an empty pane;
+ *   + lib/automation-studio/artifact-dossier.ts             an allowlisted
+ *     PROJECTION of an artifact — identity, provenance, declared symbols,
+ *     references, related tests — plus the ArtifactKind and DataOrigin label
+ *     maps;
+ *   + two test suites for the above;
+ *   ~ StudioWorkspace / SourceView / Inspector / OutputPanel / ProjectExplorer /
+ *     index.ts to render them, to make the inspector reachable below `xl`, to
+ *     add a changes-and-versions surface, and to stop rendering raw union
+ *     members (`hmi-screen`, `binding`, `simulated`) as visible text.
+ *
+ * WHAT DID NOT CHANGE, and is what this file actually guards: C1's Round 1
+ * ORIGIN POLICY. `PERMITTED_ORIGINS_ROUND_1` still admits exactly `simulated`
+ * and `authored`; `assertPermittedOrigin` still refuses everything else,
+ * `imported` included; no live origin is admitted anywhere. Those are the
+ * thirteen behavioural and textual assertions in this file, and every one of
+ * them passed both before and after the change — only the file COUNT and the
+ * source DIGEST moved, which is arithmetic over a file list, not a policy
+ * decision.
+ *
+ * The new module is deliberately built so it cannot weaken that policy: its
+ * origin label map is DERIVED from `ALL_DATA_ORIGINS` rather than written out,
+ * precisely so that no live-origin literal appears in an admit position — which
+ * `phase109c1-invariants` independently enforces.
+ *
+ * RE-PINNED AGAIN — 109-C-UI.1 R2. The Codex review of R1 found two
+ * accessibility defects in the same C1 roots: opening the inspector as a drawer
+ * left focus outside it (so Escape had nothing to bubble from and a keyboard
+ * user was stranded), and the toggle's `aria-expanded` was read once at mount
+ * and went stale on resize. Both are fixed in `StudioWorkspace.tsx`, with new
+ * behavioural tests beside them. The file COUNT is unchanged at 31 — R2 added
+ * no file — and only the digest moved.
+ *
+ * The origin policy is STILL untouched by R2, which is what the thirteen
+ * behavioural and textual assertions in this file check and what they continue
+ * to prove.
+ *
+ * Both values below were measured with this file's own algorithm against the
+ * delivered tree and reproduced independently before being written here.
  */
 
 import { createHash } from "node:crypto";
@@ -207,7 +258,10 @@ describe("109-C2.0 · C1's source is byte-identical", () => {
 
   it("covers the file set the lock was measured over", () => {
     const files = c1Files();
-    expect(files.length).toBe(27);
+    // 27 at the C2.0 baseline; 31 after 109-C-UI.1 added ArtifactSurface.tsx,
+    // artifact-dossier.ts and their two suites. R2 added no file, so 31 stands.
+    // See the re-pin note at the top.
+    expect(files.length).toBe(31);
     // Spot-check the three roots are all represented, so a walk that silently
     // stopped early could not still produce the right count.
     expect(files.some((f) => f.startsWith("src/lib/automation-studio/"))).toBe(true);
@@ -215,7 +269,7 @@ describe("109-C2.0 · C1's source is byte-identical", () => {
     expect(files.some((f) => f.includes("engineering/studio/"))).toBe(true);
   });
 
-  it("hashes to the digest measured at the C2.0 baseline", () => {
+  it("hashes to the digest re-pinned for 109-C-UI.1 R2", () => {
     const files = c1Files();
     const outer = createHash("sha256");
     for (const path of files) {
@@ -227,9 +281,14 @@ describe("109-C2.0 · C1's source is byte-identical", () => {
       outer.update(createHash("sha256").update(normalised, "utf8").digest("hex"), "utf8");
       outer.update("\n");
     }
-    // Measured at b411d1dd425956720e802e45cabb8fd01e90561a over 27 files.
+    // C2.0 baseline: 1af814de46ed07c8fe6ce079a7e5f9d659e18a447dbae404e563a552c460b1eb
+    //                measured at b411d1dd425956720e802e45cabb8fd01e90561a over 27 files.
+    // 109-C-UI.1 R1: 92a8158c307437b356bb38314101858ff1e50a824cb68a3a8afc7363679d454e
+    // RE-PINNED for 109-C-UI.1 R2 (the keyboard-drawer and aria-expanded
+    // corrections), measured over the same 31 files. This is NOT the C2.0
+    // baseline any more, and the name of the test says so.
     expect(outer.digest("hex")).toBe(
-      "1af814de46ed07c8fe6ce079a7e5f9d659e18a447dbae404e563a552c460b1eb",
+      "a064dd381083c40228ce7c09bbd70a6acb2f1cb2f584afd857daacecf7fccb13",
     );
   });
 });

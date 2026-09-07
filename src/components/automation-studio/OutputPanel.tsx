@@ -11,11 +11,26 @@ import { useTranslations } from "next-intl";
 
 import { cn } from "@/components/ds/cn";
 import { FOCUS_RING } from "@/components/ds/a11y";
-import type { DiagnosticFinding, SymbolEntry, TestScenario, ValidationRun } from "@/lib/automation-studio";
+import type {
+  DiagnosticFinding,
+  EngineeringArtifact,
+  ProjectVersion,
+  SymbolEntry,
+  TestScenario,
+  ValidationRun,
+} from "@/lib/automation-studio";
 
-export type OutputTab = "problems" | "validation" | "references" | "tests" | "output";
+export type OutputTab = "problems" | "validation" | "references" | "changes" | "tests" | "output";
 
-const TABS: readonly OutputTab[] = ["problems", "validation", "references", "tests", "output"];
+const TABS: readonly OutputTab[] = ["problems", "validation", "references", "changes", "tests", "output"];
+
+/** Approval state to its message key. Exhaustive over the contract's union. */
+const APPROVAL_KEY = {
+  draft: "draft",
+  reviewed: "reviewed",
+  approved: "approved",
+  commissioned: "commissioned",
+} as const;
 
 interface OutputPanelProps {
   readonly tab: OutputTab;
@@ -35,6 +50,17 @@ interface OutputPanelProps {
   readonly symbol: SymbolEntry | null;
   readonly artifactPathById: ReadonlyMap<string, string>;
   readonly onNavigate: (artifactId: string, line: number) => void;
+  /**
+   * Every version the workspace knows, newest last, plus what THIS session has
+   * changed. Round 1 rendered neither: the catalogue already carried the whole
+   * versions vocabulary and nothing on screen used it, so an engineer could not
+   * see which artifacts differ from the baseline without opening each one.
+   */
+  readonly versions: readonly ProjectVersion[];
+  readonly workingVersionId: string;
+  readonly baselineVersionId: string;
+  /** Artifacts edited in this browser session, from the edit model. */
+  readonly locallyModified: readonly EngineeringArtifact[];
 }
 
 export function OutputPanel({
@@ -47,6 +73,10 @@ export function OutputPanel({
   symbol,
   artifactPathById,
   onNavigate,
+  versions,
+  workingVersionId,
+  baselineVersionId,
+  locallyModified,
 }: OutputPanelProps) {
   const t = useTranslations("automationStudio");
 
@@ -172,7 +202,9 @@ export function OutputPanel({
                     <span dir="ltr" className="font-mono text-cyan-200/80">
                       {artifactPathById.get(r.artifactId) ?? r.artifactId}:{r.line}
                     </span>
-                    <span className="ms-2 text-white/50">{r.access}</span>
+                    {/* Translated. The raw union member was an English
+                        identifier rendered verbatim in all three locales. */}
+                    <span className="ms-2 text-white/50">{t(`access.${r.access}`)}</span>
                   </button>
                 </li>
               ))}
@@ -180,6 +212,89 @@ export function OutputPanel({
           ) : (
             <p className="p-3 text-xs text-white/50">{t("inspector.noSelection")}</p>
           )
+        )}
+
+        {tab === "changes" && (
+          <div className="space-y-4 p-3">
+            <div>
+              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-white/50">
+                {t("versions.title")}
+              </h3>
+              <ul className="space-y-1.5">
+                {[...versions].reverse().map((version) => (
+                  <li key={version.id} className="rounded border border-white/10 p-2 text-[11px]">
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span dir="ltr" className="font-mono text-white/85">{version.label}</span>
+                      <span className="rounded bg-white/10 px-1 text-[10px] text-white/80">
+                        {t(`versions.${APPROVAL_KEY[version.approval]}`)}
+                      </span>
+                      {version.id === workingVersionId && (
+                        <span className="rounded bg-cyan-400/15 px-1 text-[10px] text-cyan-100">
+                          {t("versions.working")}
+                        </span>
+                      )}
+                      {version.id === baselineVersionId && (
+                        <span className="rounded bg-white/[0.07] px-1 text-[10px] text-white/80">
+                          {t("versions.baseline")}
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-white/70">{t(version.summaryKey)}</p>
+                    <p className="mt-0.5 text-white/50">
+                      {t("versions.author")}: <span dir="ltr">{version.author}</span>
+                      {" · "}
+                      {t("versions.modifiedCount", { count: version.modifiedArtifactIds.length })}
+                    </p>
+                    {version.modifiedArtifactIds.length > 0 && (
+                      <ul className="mt-1 space-y-0.5">
+                        {version.modifiedArtifactIds.map((artifactId) => (
+                          <li key={artifactId}>
+                            <button
+                              type="button"
+                              onClick={() => onNavigate(artifactId, 1)}
+                              className={cn(
+                                "w-full truncate rounded px-1.5 py-0.5 text-start font-mono text-[11px] text-cyan-200/80 hover:bg-white/[0.06]",
+                                FOCUS_RING,
+                              )}
+                            >
+                              <span dir="ltr">{artifactPathById.get(artifactId) ?? artifactId}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-white/50">
+                {t("versions.locallyModified")}{" "}
+                <span className="text-white/50">({locallyModified.length})</span>
+              </h3>
+              {locallyModified.length === 0 ? (
+                <p className="text-[11px] text-white/50">{t("versions.noLocalChanges")}</p>
+              ) : (
+                <ul className="space-y-0.5">
+                  {locallyModified.map((artifact) => (
+                    <li key={artifact.id}>
+                      <button
+                        type="button"
+                        onClick={() => onNavigate(artifact.id, 1)}
+                        className={cn(
+                          "w-full truncate rounded px-1.5 py-0.5 text-start text-[11px] hover:bg-white/[0.06]",
+                          FOCUS_RING,
+                        )}
+                      >
+                        <span dir="ltr" className="font-mono text-cyan-200/80">{artifact.path}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         )}
 
         {tab === "tests" && (

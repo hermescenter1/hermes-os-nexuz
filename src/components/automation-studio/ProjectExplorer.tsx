@@ -18,7 +18,7 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/components/ds/cn";
 import { FOCUS_RING } from "@/components/ds/a11y";
 import type { DiagnosticFinding, TreeNode } from "@/lib/automation-studio";
-import { visibleNodes, worstSeverity } from "@/lib/automation-studio";
+import { KIND_MESSAGE_KEY, visibleNodes, worstSeverity } from "@/lib/automation-studio";
 
 interface ProjectExplorerProps {
   readonly tree: readonly TreeNode[];
@@ -217,6 +217,17 @@ export function ProjectExplorer({
                     {glyph}
                   </span>
                   <span className="truncate" dir="ltr">{node.label}</span>
+                  {/*
+                    The kind was carried ONLY by the glyph, and the glyph is
+                    aria-hidden — so a screen-reader user heard eighteen bare
+                    names with no way to tell a faceplate from a historian. The
+                    glyph stays decorative; the fact is announced.
+                  */}
+                  {node.artifact && (
+                    <span className="sr-only">
+                      {t(`kinds.${KIND_MESSAGE_KEY[node.artifact.kind]}`)}
+                    </span>
+                  )}
 
                   {isModified && (
                     <span className="ms-auto shrink-0 rounded bg-amber-400/15 px-1 text-[10px] text-amber-200">
