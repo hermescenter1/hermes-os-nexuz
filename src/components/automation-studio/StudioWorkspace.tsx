@@ -19,7 +19,7 @@
  * polling and no persistence anywhere in this tree.
  */
 
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/components/ds/cn";
@@ -27,6 +27,7 @@ import { FOCUS_RING } from "@/components/ds/a11y";
 import {
   allFolderIds,
   applyEdit,
+  buildArtifactDossier,
   applyEditsToBlocks,
   buildSymbolIndex,
   buildTree,
@@ -40,6 +41,7 @@ import {
   editRefusal,
   EMPTY_EDIT_MODEL,
   findingsByArtifact,
+  KIND_MESSAGE_KEY,
   querySymbols,
   redo as redoIn,
   saveLocally,
@@ -48,13 +50,16 @@ import {
   undo as undoIn,
   validateProject,
   workspaceSaveState,
+  type ArtifactDossier,
   type DiagnosticFinding,
   type EditModel,
   type EngineeringArtifact,
+  type SymbolScope,
   type WorkspaceMode,
 } from "@/lib/automation-studio";
 import type { WorkspaceSourceDescriptor } from "@/lib/automation-studio";
 
+import { ArtifactSurface } from "./ArtifactSurface";
 import { CommandPalette, type PaletteCommand } from "./CommandPalette";
 import { FALLBACK_EDITOR_ADAPTER } from "./editor-adapter";
 import { SYMBOL_SEARCH_TARGETS, focusFirstVisible } from "./focus-target";
@@ -63,6 +68,40 @@ import { OutputPanel, type OutputTab } from "./OutputPanel";
 import { ProjectExplorer } from "./ProjectExplorer";
 import { SourceView } from "./SourceView";
 import { rendersCompanion, rendersWorkspace, useViewportMode } from "./viewport-mode";
+
+/** The inspector column's stable id. The toggle points `aria-controls` here. */
+const INSPECTOR_COLUMN_ID = "studio-inspector-column";
+
+/**
+ * The drawer's close control.
+ *
+ * It carries `xl:hidden`, so it is PAINTED exactly when the inspector is a
+ * drawer and absent from layout when the inspector is an inline column. That
+ * makes it the honest test for "is this a drawer right now" — a CSS fact asked
+ * of the DOM rather than re-derived from a breakpoint the product would then
+ * have to track with a second media query.
+ */
+const INSPECTOR_CLOSE_ID = "studio-inspector-close";
+
+/**
+ * Is the element PAINTED right now?
+ *
+ * `offsetParent` is null for anything in a `display: none` subtree, which is
+ * exactly how the inspector's breakpoint default is expressed. Read only from
+ * effects and event handlers, never during render.
+ *
+ * Deliberately NOT a second `matchMedia` call. The Studio's contract — pinned by
+ * `phase109c1-viewport-mode`, which this stage may not edit — is that the
+ * product consults EXACTLY ONE media query, the `lg` one that decides which
+ * responsive branch mounts. Adding an `xl` query to learn something CSS already
+ * knows would have broken that contract to re-derive a fact the DOM can be asked
+ * for directly.
+ */
+function isPainted(id: string): boolean {
+  if (typeof document === "undefined") return false;
+  const node = document.getElementById(id) as HTMLElement | null;
+  return Boolean(node && node.offsetParent !== null);
+}
 
 interface StudioWorkspaceProps {
   /** Resolved on the SERVER. The client cannot select a different source. */
@@ -257,10 +296,162 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("properties");
   const [outputTab, setOutputTab] = useState<OutputTab>("problems");
   const [outputOpen, setOutputOpen] = useState(true);
+  /**
+   * Whether the inspector column is shown. `null` means "let the breakpoint
+   * decide" and is the state until the engineer says otherwise.
+   *
+   * Round 1 gated the column on `xl:` alone, so between 1024 and 1279 px the
+   * inspector was not narrow — it was ABSENT, and with it the properties,
+   * cross-reference, diagnostics and AI-review surfaces. A width is not a
+   * reason to REMOVE a panel; it is a reason to let the engineer close it.
+   *
+   * The first correction opened it unconditionally, and measurement at 1024
+   * showed why that was wrong too: explorer + inspector left the source pane
+   * about 300 px wide, with the meta bar wrapped onto three rows and roughly one
+   * line of code visible. Reachable is not the same as usable.
+   *
+   * The second correction was the layout itself. Below `xl` the panel now
+   * OVERLAYS the workspace instead of taking a share of it: at 1024 px the app
+   * content is about 784 px, the explorer takes about 240, and an inline
+   * inspector took 288 more — leaving the centre around 256 px. Defaulting it
+   * closed only postponed that until the reader pressed the button. As a drawer
+   * it costs the centre nothing at any width, and above `xl`, where there is
+   * room, it is the same inline column it always was.
+   *
+   * The DEFAULT stays the breakpoint's, expressed in CSS, which is what keeps
+   * the server HTML, the hydrated tree and the painted layout identical — no
+   * flash, no layout shift. Once the engineer toggles, their choice wins.
+   */
+  const [inspectorOpen, setInspectorOpen] = useState<boolean | null>(null);
+  /**
+   * What the breakpoint default resolves to, measured once after mount.
+   *
+   * Only `aria-expanded` consumes it. The LAYOUT is CSS's throughout, so this
+   * value can never make the panel appear or disappear — at worst it makes the
+   * toggle announce a stale state to assistive technology after the reader has
+   * dragged the window across 1280 px without ever pressing it. The ACTION is
+   * never stale: the toggle re-measures at click time.
+   */
+  const [inspectorAutoOpen, setInspectorAutoOpen] = useState(false);
+  useEffect(() => {
+    // The engineer's own choice wins; there is nothing to read while it stands.
+    if (inspectorOpen !== null) return;
+
+    const sync = () => setInspectorAutoOpen(isPainted(INSPECTOR_COLUMN_ID));
+    sync();
+
+    /*
+      R1 read this ONCE at mount, so dragging the window across 1280 px without
+      touching the toggle left `aria-expanded` describing the old width — the
+      panel appeared or vanished and the control kept announcing the previous
+      state. A `resize` listener is the smallest thing that fixes it: no second
+      media query (the Studio's contract, pinned by `phase109c1-viewport-mode`,
+      is that it consults exactly one), no ResizeObserver, no polling, no
+      dependency. It is also removed the moment the engineer expresses a choice,
+      because from then on there is no breakpoint left to track.
+    */
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, [inspectorOpen]);
+
+  /** What is on screen: the engineer's choice, else the breakpoint's. */
+  const inspectorVisible = inspectorOpen ?? inspectorAutoOpen;
+
+  /**
+   * Who opened the drawer, so focus can be given back to them.
+   *
+   * A ref rather than state: it must not cause a render, and it is read in the
+   * same tick it is written.
+   */
+  const inspectorOpenerRef = useRef<HTMLElement | null>(null);
+  /** Bumped on every OPEN request, so two opens in a row both move focus. */
+  const [inspectorFocusNonce, setInspectorFocusNonce] = useState(0);
+
+  /**
+   * Open the inspector and remember who asked.
+   *
+   * The opener is `document.activeElement`, which is the control the engineer
+   * just operated — a real click focuses the button it lands on, and a keyboard
+   * activation never leaves it. Reading it here rather than taking it as a
+   * parameter is what lets the artifact surface's rows participate without
+   * changing their contract.
+   */
+  const openInspector = useCallback(() => {
+    const active = typeof document === "undefined" ? null : document.activeElement;
+    inspectorOpenerRef.current =
+      active instanceof HTMLElement && active !== document.body ? active : null;
+    setInspectorOpen(true);
+    setInspectorFocusNonce((n) => n + 1);
+  }, []);
+
+  /**
+   * Close the inspector and give focus back to the exact control that opened it.
+   *
+   * Synchronously, inside the handler: the drawer is still painted at this
+   * moment, so moving focus out of it before React hides it is what stops focus
+   * falling to `<body>`. Without this, closing with Escape stranded a keyboard
+   * user at the top of the document.
+   */
+  const closeInspector = useCallback(() => {
+    setInspectorOpen(false);
+    const opener = inspectorOpenerRef.current;
+    inspectorOpenerRef.current = null;
+    if (opener && opener.isConnected) opener.focus();
+  }, []);
+
+  const toggleInspector = useCallback(() => {
+    // Measured at press time, so the first press always does the obvious thing
+    // whatever the width and whatever the reader resized to.
+    const visible = inspectorOpen ?? isPainted(INSPECTOR_COLUMN_ID);
+    if (visible) closeInspector();
+    else openInspector();
+  }, [inspectorOpen, closeInspector, openInspector]);
+
+  /**
+   * Move focus INTO the drawer when it opens.
+   *
+   * Only when it is a drawer: at `xl` the inspector is a column of the
+   * workspace, and yanking focus into a panel that was already on screen would
+   * be a worse defect than the one this fixes. `INSPECTOR_CLOSE_ID` is painted
+   * exactly in drawer mode, so it is both the test and the destination.
+   *
+   * R1 opened the drawer and left focus wherever it was — usually on the status
+   * bar toggle, outside the panel — so a keyboard user had to tab through the
+   * whole workspace to reach what they had just opened, and Escape did nothing
+   * because no descendant had focus.
+   */
+  useEffect(() => {
+    if (inspectorFocusNonce === 0) return;
+    if (typeof document === "undefined") return;
+    const close = document.getElementById(INSPECTOR_CLOSE_ID) as HTMLElement | null;
+    if (!close || close.offsetParent === null) return;
+    close.focus();
+  }, [inspectorFocusNonce]);
   const [symbolQuery, setSymbolQuery] = useState("");
+  /**
+   * Scope, data-type and problems-only filters.
+   *
+   * `querySymbols` has supported all three since Round 1 and the catalogue
+   * already carried every label for them; nothing on screen offered them. A
+   * capability the product has, translated in three languages, and unreachable
+   * is the same defect as a control that does nothing — just pointing the other
+   * way.
+   */
+  const [symbolScope, setSymbolScope] = useState<SymbolScope | "any">("any");
+  const [symbolType, setSymbolType] = useState<string>("any");
+  const [symbolOnlyProblems, setSymbolOnlyProblems] = useState(false);
   /** Which right-hand surface the palette last opened. */
   const [symbolsOpen, setSymbolsOpen] = useState(false);
   const [showOverview, setShowOverview] = useState(false);
+  /**
+   * Which artifact the COMPANION is inspecting, or null for the list.
+   *
+   * Deliberately separate from `state.activeId`. The companion is read-only and
+   * has no editor, so letting it drive the workspace's active artifact would
+   * mean a phone visit silently changed which file the desktop session had open
+   * the next time the viewport widened.
+   */
+  const [companionArtifactId, setCompanionArtifactId] = useState<string | null>(null);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -317,14 +508,74 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
     return currentChecksum(state.edits, activeArtifact, activeBaseline);
   }, [activeArtifact, activeBaseline, state.edits]);
 
+  /**
+   * The projection for the active artifact when it has NO textual source.
+   *
+   * Null for a block: the source branch is the right surface there, and
+   * building a dossier nobody renders would be work done to be discarded. Also
+   * null when nothing is selected.
+   */
+  const activeDossier: ArtifactDossier | null = useMemo(() => {
+    if (!activeArtifact || activeBaseline !== null) return null;
+    return buildArtifactDossier(project, activeArtifact, workspace.tests);
+  }, [activeArtifact, activeBaseline, project, workspace.tests]);
+
   const artifactFindings = useMemo(
     () => (activeArtifact ? (findingsByArtifactId.get(activeArtifact.id) ?? []) : []),
     [activeArtifact, findingsByArtifactId],
   );
 
   const symbolResults = useMemo(
-    () => querySymbols(index, { text: symbolQuery }).slice(0, 200),
-    [index, symbolQuery],
+    () =>
+      querySymbols(index, {
+        text: symbolQuery,
+        scope: symbolScope,
+        dataType: symbolType,
+        onlyProblems: symbolOnlyProblems,
+      }).slice(0, 200),
+    [index, symbolQuery, symbolScope, symbolType, symbolOnlyProblems],
+  );
+
+  /** The data types this project actually declares. Never a hard-coded list. */
+  const symbolDataTypes = useMemo(() => {
+    const seen = new Set<string>();
+    for (const entry of index.entries) {
+      for (const declaration of entry.declarations) seen.add(declaration.dataType);
+    }
+    return [...seen].sort();
+  }, [index]);
+
+  /** Artifacts edited in THIS session, for the changes surface. */
+  const locallyModified = useMemo(
+    () => dirtyArtifactIds(state.edits)
+      .map((id) => artifactById.get(id))
+      .filter((a): a is EngineeringArtifact => Boolean(a)),
+    [state.edits, artifactById],
+  );
+
+  /**
+   * Checksum of an artifact AS IT NOW STANDS — edits included for blocks.
+   *
+   * Keyed by ID rather than by the artifact object, because the companion holds
+   * an allowlisted PROJECTION of the artifact, not the contract object.
+   */
+  const checksumOf = useCallback(
+    (artifactId: string) => {
+      const artifact = artifactById.get(artifactId);
+      if (!artifact) return "";
+      const block = blockById.get(artifactId);
+      if (!block) return artifact.checksum;
+      return currentChecksum(state.edits, artifact, sourceOf(block));
+    },
+    [artifactById, blockById, state.edits],
+  );
+
+  const companionArtifact = companionArtifactId
+    ? (artifactById.get(companionArtifactId) ?? null)
+    : null;
+  const companionDossier = useMemo(
+    () => (companionArtifact ? buildArtifactDossier(project, companionArtifact, workspace.tests) : null),
+    [companionArtifact, project, workspace.tests],
   );
 
   const severity = countBySeverity(run);
@@ -334,6 +585,23 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
   const navigate = useCallback((artifactId: string, line: number) => {
     dispatch({ type: "navigate", artifactId, line });
   }, []);
+
+  /**
+   * Inspect a symbol.
+   *
+   * Three things at once, because any one of them alone is what made the
+   * artifact surface's rows look dead: SELECT the symbol, OPEN the inspector
+   * (below `xl` it is closed by default, so the result of a press was off
+   * screen), and switch to CROSS-REFERENCE (the default tab is Properties,
+   * which shows the artifact and never mentions the symbol that was clicked).
+   */
+  const inspectSymbol = useCallback((name: string) => {
+    dispatch({ type: "selectSymbol", name });
+    setInspectorTab("crossReference");
+    // Goes through the same opener as the toggle, so a symbol inspected from
+    // the keyboard lands focus in the drawer and gets it back on Escape.
+    openInspector();
+  }, [openInspector]);
 
   /**
    * The pending focus move. The nonce makes two requests for the SAME id
@@ -504,36 +772,56 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
           <div className="min-w-0">
             {/* The engineering TopBar owns this page's single <h1>; the
                 workspace identity sits one level below it. */}
-            <h2 className="truncate text-sm font-semibold text-white">{t("title")}</h2>
+            <p className="truncate text-[10px] uppercase tracking-[0.18em] text-cyan-200/70">
+              {t("eyebrow")}
+            </p>
+            <h2 className="truncate text-[15px] font-semibold leading-tight text-white">
+              {t("title")}
+            </h2>
             <p className="truncate text-[11px] text-white/50">
               <span dir="ltr">{project.name}</span> · <span dir="ltr">{project.site}</span>
             </p>
           </div>
 
-          <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
-            <div className="flex items-center gap-1">
-              <dt className="text-white/50">{t("commandBar.target")}:</dt>
-              <dd dir="ltr" className="font-mono text-white/80">{project.target.name}</dd>
-            </div>
-            <div className="flex items-center gap-1">
-              <dt className="text-white/50">{t("commandBar.version")}:</dt>
-              <dd dir="ltr" className="font-mono text-white/80">{workspace.workingVersion.label}</dd>
-            </div>
-            <div className="flex items-center gap-1">
-              <dt className="text-white/50">{t("mode.label")}:</dt>
-              <dd className="text-white/80">{t(`mode.${state.mode === "read-only" ? "readOnly" : state.mode}`)}</dd>
-            </div>
-            <div className="flex items-center gap-1">
-              <dt className="text-white/50">{t("commandBar.validation")}:</dt>
-              <dd className="text-white/80">
-                {severity.error} {t("severity.error")} · {severity.warning} {t("severity.warning")}
-              </dd>
-            </div>
-            <div className="flex items-center gap-1">
-              <dt className="text-white/50">{t("commandBar.saveState")}:</dt>
-              {/* Derived from content. It cannot claim "saved" for unsaved work. */}
-              <dd className="text-white/80">{t(`editor.save.${workspaceSave}`)}</dd>
-            </div>
+          {/*
+            The instrument cluster. Round 1 ran the five facts together as one
+            unbroken 11 px line, so target, version, mode, validation and save
+            state read as a single sentence — the reader had to parse punctuation
+            to find the number they came for. Each fact now has a label above its
+            value and a rule between it and the next, which is how an engineering
+            status strip is read at a glance.
+          */}
+          <dl className="flex flex-wrap items-stretch gap-y-1">
+            {([
+              ["commandBar.target", <span key="t" dir="ltr" className="font-mono">{project.target.name}</span>, false],
+              ["commandBar.version", <span key="v" dir="ltr" className="font-mono">{workspace.workingVersion.label}</span>, false],
+              ["mode.label", t(`mode.${state.mode === "read-only" ? "readOnly" : state.mode}`), false],
+              [
+                "commandBar.validation",
+                <span key="s">
+                  <span className={severity.error > 0 ? "text-rose-200" : undefined}>
+                    {severity.error} {t("severity.error")}
+                  </span>
+                  {" · "}
+                  <span className={severity.warning > 0 ? "text-amber-200" : undefined}>
+                    {severity.warning} {t("severity.warning")}
+                  </span>
+                </span>,
+                true,
+              ],
+              // Derived from content. It cannot claim "saved" for unsaved work.
+              ["commandBar.saveState", t(`editor.save.${workspaceSave}`), false],
+            ] as const).map(([key, value]) => (
+              <div
+                key={key}
+                className="flex min-w-0 flex-col justify-center border-s border-white/10 px-3 first:border-s-0 first:ps-0"
+              >
+                <dt className="truncate text-[10px] uppercase tracking-wide text-white/50">
+                  {t(key)}
+                </dt>
+                <dd className="truncate text-[12px] text-white/85">{value}</dd>
+              </div>
+            ))}
           </dl>
 
           <button
@@ -558,8 +846,19 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
           </span>
           <span className="text-amber-100/85">{t("disclosure.noLiveController")}</span>
           <span className="text-amber-100/85">{t("disclosure.noDownload")}</span>
+          {/*
+            The classification, read as a LABEL and shown as a CODE — the same
+            shape the product already uses for a diagnostic: a translated
+            sentence beside its stable identifier. The raw token used to be the
+            only visible text here, which put an English word in the Persian and
+            German headers; it stays on screen because it IS the classification's
+            name, and because `phase109c1-runtime` requires the descriptor's
+            value to be readable, not merely present in an attribute.
+          */}
           <span className="text-white/50">
-            {t("inspector.propertyOrigin")}: <span dir="ltr">{source.classification}</span>
+            {t("classification.label")}:{" "}
+            <span className="text-white/80">{t("classification.simulated")}</span>{" "}
+            <span dir="ltr" className="font-mono text-white/50">{source.classification}</span>
           </span>
           <span className="ms-auto text-cyan-100/80">{t("authority.banner")}</span>
         </div>
@@ -601,6 +900,80 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
               </div>
             ))}
           </dl>
+
+          {/*
+            ARTIFACT INSPECTION SITS HERE, second, directly after the project
+            overview — not last.
+
+            It used to follow eight findings and up to twenty-five symbol
+            results, which put the start of the companion's only navigation
+            roughly two screens down on a 390 px phone and off every screenshot
+            in the matrix. A capability nobody scrolls to is not a capability.
+            Problems and symbol lookup keep everything they had; only the order
+            changed, and only in this branch — the desktop DOM is untouched.
+          */}
+          {/* ── artifact inspection ───────────────────────────────────── */}
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">
+            {t("companion.artifacts")}
+          </h3>
+          {companionDossier ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => setCompanionArtifactId(null)}
+                className={cn(
+                  "mb-3 flex min-h-[44px] w-full items-center rounded border border-white/15 px-3 text-xs text-white/80 hover:bg-white/10",
+                  FOCUS_RING,
+                )}
+              >
+                {t("companion.backToList")}
+              </button>
+              <ArtifactSurface
+                dossier={companionDossier}
+                checksum={checksumOf(companionDossier.artifact.id)}
+                findings={findingsByArtifactId.get(companionDossier.artifact.id) ?? []}
+                translateFinding={translateFinding}
+                artifactPathById={artifactPathById}
+                variant="companion"
+                /* No `onInspectSymbol`: the companion has no inspector to open,
+                   so a control that promised to inspect would be a control that
+                   does nothing. The rows render as text instead. */
+                sourceNote={
+                  blockById.has(companionDossier.artifact.id)
+                    ? t("companion.note")
+                    : t("editor.nonTextual")
+                }
+                noReferencesLabel={t("artifact.noReferencesOfKind")}
+              />
+            </div>
+          ) : (
+            <>
+              <p className="mb-2 text-[11px] text-white/50">{t("companion.artifactHint")}</p>
+              <ul data-studio-companion-section="artifacts" className="mb-5 space-y-1">
+                {project.artifacts.map((artifact) => (
+                  <li key={artifact.id}>
+                    <button
+                      type="button"
+                      onClick={() => setCompanionArtifactId(artifact.id)}
+                      /* 44 px minimum hit area: this list is the companion's
+                         primary navigation and it is used with a thumb. */
+                      className={cn(
+                        "flex min-h-[44px] w-full flex-col justify-center rounded border border-white/10 px-3 py-1.5 text-start hover:bg-white/[0.06]",
+                        FOCUS_RING,
+                      )}
+                    >
+                      <span dir="ltr" className="truncate font-mono text-[12px] text-white/85">
+                        {artifact.name}
+                      </span>
+                      <span className="truncate text-[11px] text-white/50">
+                        {t(`kinds.${KIND_MESSAGE_KEY[artifact.kind]}`)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
 
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">{t("bottom.problems")}</h3>
           <ul data-studio-companion-section="diagnostics" className="mb-5 space-y-1.5">
@@ -655,11 +1028,13 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
       {/* ── desktop / tablet workspace ──────────────────────────────────── */}
       {rendersWorkspace(viewport) && (
       <div data-studio-surface="workspace" className="hidden min-h-0 flex-1 lg:flex lg:flex-col">
-        <div className="flex min-h-0 flex-1">
+        {/* `relative` so the inspector can overlay this row below `xl` without
+            taking a share of its width. */}
+        <div className="relative flex min-h-0 flex-1">
           <nav
             data-studio-surface="explorer"
             aria-label={t("a11y.regionExplorer")}
-            className="w-64 shrink-0 border-e border-white/10 bg-black/20 xl:w-72"
+            className="w-56 shrink-0 border-e border-white/10 bg-black/20 lg:w-60 xl:w-72"
           >
             <ProjectExplorer
               tree={tree}
@@ -722,6 +1097,10 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
                 canUndo={Boolean(state.activeId) && canUndoIn(state.edits, state.activeId!)}
                 canRedo={Boolean(state.activeId) && canRedoIn(state.edits, state.activeId!)}
                 saveState={activeSaveState}
+                dossier={activeDossier}
+                checksum={activeChecksum}
+                artifactPathById={artifactPathById}
+                onInspectSymbol={inspectSymbol}
               />
             )}
 
@@ -742,9 +1121,75 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
                     FOCUS_RING,
                   )}
                 />
-                <p className="mt-1 text-[11px] text-white/50">
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px]">
+                  <span className="flex items-center gap-1">
+                    <label htmlFor="studio-symbol-scope" className="text-white/50">
+                      {t("symbols.scope")}
+                    </label>
+                    <select
+                      id="studio-symbol-scope"
+                      value={symbolScope}
+                      onChange={(e) => setSymbolScope(e.target.value as SymbolScope | "any")}
+                      className={cn(
+                        "rounded border border-white/15 bg-black/30 px-1.5 py-0.5 text-white",
+                        FOCUS_RING,
+                      )}
+                    >
+                      <option value="any">{t("symbols.anyScope")}</option>
+                      <option value="global">{t("symbols.scopeGlobal")}</option>
+                      <option value="block-local">{t("symbols.scopeBlockLocal")}</option>
+                      <option value="hmi">{t("symbols.scopeHmi")}</option>
+                      <option value="scada">{t("symbols.scopeScada")}</option>
+                    </select>
+                  </span>
+
+                  <span className="flex items-center gap-1">
+                    <label htmlFor="studio-symbol-type" className="text-white/50">
+                      {t("symbols.dataType")}
+                    </label>
+                    <select
+                      id="studio-symbol-type"
+                      value={symbolType}
+                      onChange={(e) => setSymbolType(e.target.value)}
+                      className={cn(
+                        "rounded border border-white/15 bg-black/30 px-1.5 py-0.5 text-white",
+                        FOCUS_RING,
+                      )}
+                    >
+                      <option value="any">{t("symbols.anyType")}</option>
+                      {/* Derived from the project, so a type the fixture does not
+                          declare is never offered as a filter that finds nothing. */}
+                      {symbolDataTypes.map((dataType) => (
+                        <option key={dataType} value={dataType}>{dataType}</option>
+                      ))}
+                    </select>
+                  </span>
+
+                  <span className="flex items-center gap-1">
+                    <input
+                      id="studio-symbol-problems"
+                      type="checkbox"
+                      checked={symbolOnlyProblems}
+                      onChange={(e) => setSymbolOnlyProblems(e.target.checked)}
+                      className={cn("h-3.5 w-3.5 accent-cyan-400", FOCUS_RING)}
+                    />
+                    <label htmlFor="studio-symbol-problems" className="text-white/50">
+                      {t("symbols.onlyProblems")}
+                    </label>
+                  </span>
+                </div>
+                <p
+                  id="studio-symbol-result-count"
+                  /* The count as a value beside the translated sentence, so a
+                     harness never has to parse three locales' wording. */
+                  data-result-count={symbolResults.length}
+                  className="mt-1 text-[11px] text-white/50"
+                >
                   {t("symbols.resultCount", { count: symbolResults.length })}
                 </p>
+                {symbolResults.length === 0 && (
+                  <p className="mt-1 text-[11px] text-white/50">{t("symbols.none")}</p>
+                )}
                 <ul className="mt-1">
                   {symbolResults.slice(0, 40).map((entry) => (
                     <li key={entry.name}>
@@ -763,25 +1208,88 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
           </main>
 
           <div
+            id={INSPECTOR_COLUMN_ID}
             data-studio-surface="inspector"
-            className="hidden w-72 shrink-0 border-s border-white/10 bg-black/20 xl:block"
+            data-inspector-open={inspectorOpen === null ? "auto" : String(inspectorOpen)}
+            /*
+              Escape closes it, but only where it is a DRAWER. At `xl` the panel
+              is a column of the workspace, not an overlay, and a column that
+              vanished on Escape would be a surprise rather than an affordance.
+              Which one it is, is a CSS fact — so it is asked of the DOM at key
+              time (the close control is `xl:hidden`, so it is painted exactly
+              when the panel is a drawer) rather than re-derived from a
+              breakpoint the product would then have to track.
+            */
+            /*
+              Escape closes it, but only where it is a DRAWER. At `xl` the panel
+              is a column of the workspace, not an overlay, and a column that
+              vanished on Escape would be a surprise rather than an affordance.
+              Which one it is, is a CSS fact — so it is asked of the DOM at key
+              time via the close control, which is painted exactly in drawer
+              mode.
+
+              The handler is on the container and fires for a keypress from ANY
+              focused descendant, which is how a real keyboard user reaches it:
+              the open moves focus to the close button INSIDE this element, so
+              the event bubbles here from there.
+            */
+            onKeyDown={(event) => {
+              if (event.key !== "Escape") return;
+              if (!isPainted(INSPECTOR_CLOSE_ID)) return;
+              event.stopPropagation();
+              closeInspector();
+            }}
+            className={cn(
+              /*
+                DRAWER below `xl`: absolutely positioned on the logical END edge,
+                so it mirrors correctly under a Persian page and takes ZERO
+                width from the centre. Opaque background and a border, because an
+                overlay over source code has to be readable, not translucent.
+                COLUMN at `xl`: `static` puts it back in the flex row exactly as
+                before.
+              */
+              "absolute inset-y-0 end-0 z-30 w-72 border-s border-white/15",
+              "bg-[#0b1220] shadow-[0_0_40px_rgba(0,0,0,0.55)]",
+              "xl:static xl:z-auto xl:w-80 xl:shrink-0 xl:border-white/10 xl:bg-black/20 xl:shadow-none",
+              inspectorOpen === null ? "hidden xl:block" : inspectorOpen ? "block" : "hidden",
+            )}
           >
-            <Inspector
-              tab={inspectorTab}
-              onTabChange={setInspectorTab}
-              artifact={activeArtifact}
-              checksum={activeChecksum}
-              symbol={selectedSymbolEntry}
-              findings={artifactFindings}
-              translateFinding={translateFinding}
-              artifactPathById={artifactPathById}
-              onNavigate={navigate}
-            />
+            <div className="flex h-full min-h-0 flex-col">
+              {/* A keyboard-reachable way out of the drawer. At `xl` the panel
+                  is a column and there is nothing to close, so the control is
+                  not rendered rather than merely hidden. */}
+              <div className="flex shrink-0 items-center justify-end border-b border-white/10 px-2 py-1 xl:hidden">
+                <button
+                  id={INSPECTOR_CLOSE_ID}
+                  type="button"
+                  onClick={closeInspector}
+                  className={cn(
+                    "rounded px-2 py-1 text-[11px] text-white/70 hover:bg-white/10 hover:text-white",
+                    FOCUS_RING,
+                  )}
+                >
+                  {t("inspector.close")}
+                </button>
+              </div>
+              <div className="min-h-0 flex-1">
+                <Inspector
+                  tab={inspectorTab}
+                  onTabChange={setInspectorTab}
+                  artifact={activeArtifact}
+                  checksum={activeChecksum}
+                  symbol={selectedSymbolEntry}
+                  findings={artifactFindings}
+                  translateFinding={translateFinding}
+                  artifactPathById={artifactPathById}
+                  onNavigate={navigate}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         {outputOpen && (
-          <div className="h-56 shrink-0 border-t border-white/10 bg-black/25">
+          <div className="h-40 shrink-0 border-t border-white/10 bg-black/25 lg:h-48 xl:h-56">
             <OutputPanel
               tab={outputTab}
               onTabChange={setOutputTab}
@@ -792,6 +1300,10 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
               symbol={selectedSymbolEntry}
               artifactPathById={artifactPathById}
               onNavigate={navigate}
+              versions={workspace.versions}
+              workingVersionId={workspace.workingVersion.id}
+              baselineVersionId={workspace.baselineVersion.id}
+              locallyModified={locallyModified}
             />
           </div>
         )}
@@ -803,6 +1315,21 @@ export function StudioWorkspace({ source }: StudioWorkspaceProps) {
             className={cn("rounded px-1.5 py-0.5 hover:bg-white/10 hover:text-white", FOCUS_RING)}
           >
             {t("bottom.toggle")}
+          </button>
+          <button
+            type="button"
+            onClick={toggleInspector}
+            aria-controls="studio-inspector-column"
+            /*
+              Determinate, and correct at every width: `inspectorVisible` is the
+              engineer's choice when they have made one and the measured
+              breakpoint answer otherwise. The earlier version could not say
+              anything before the first press.
+            */
+            aria-expanded={inspectorVisible}
+            className={cn("rounded px-1.5 py-0.5 hover:bg-white/10 hover:text-white", FOCUS_RING)}
+          >
+            {t("inspector.toggle")}
           </button>
           <span>
             {activeRefusal === null ? t("versions.editableNotice") : t(`editor.refusal.${activeRefusal}`)}

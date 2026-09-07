@@ -106,6 +106,19 @@ export {
   type SaveState,
 } from "./edit-state";
 
+export {
+  ARTIFACT_PROJECTION_KEYS,
+  buildArtifactDossier,
+  disciplineOf,
+  KIND_MESSAGE_KEY,
+  ORIGIN_MESSAGE_KEY,
+  PROVENANCE_PROJECTION_KEYS,
+  type ArtifactDiscipline,
+  type ArtifactDossier,
+  type ArtifactProjection,
+  type ProvenanceProjection,
+} from "./artifact-dossier";
+
 export { countBySeverity, validateProject } from "./validation";
 
 export {
