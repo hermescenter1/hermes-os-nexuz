@@ -7,7 +7,7 @@ import { DashboardPanel }                    from "@/components/ui/DashboardPane
 import { StatCard }                          from "@/components/ui/StatCard";
 import { ResourceFailureNotice }             from "@/components/ui/ResourceFailureNotice";
 import { useResource }                       from "@/lib/client/use-resource";
-import { requestJson }                       from "@/lib/client/resource-request";
+import { requestJson, withTenantPrecondition } from "@/lib/client/resource-request";
 import { formatCurrency }                    from "@/lib/billing/currency";
 import type { PlanRecord, PlanLimits, SubscriptionRecord, InvoiceRecord, Currency } from "@/lib/billing/types";
 import { formatDate, formatNumber } from "@/lib/i18n/format";
@@ -323,7 +323,28 @@ export function BillingDashboard() {
         ? JSON.stringify({ planId })
         : JSON.stringify({ planId, billingCycle: cycle });
 
-      const res = await fetch("/api/billing/subscription", { method, headers: { "Content-Type": "application/json" }, body });
+      /*
+       * PHASE 110-A1.0b R3 (R3-2) — every one of these three mutations goes out
+       * with the organization THIS PAGE rendered, as a precondition.
+       *
+       * This component is the traced consequence in the R3 report, not a
+       * hypothetical. `handleCancel` below sends `DELETE
+       * /api/billing/subscription` with no body and no organization; before
+       * this change, a second tab still displaying organization A cancelled
+       * organization B's subscription after the first tab switched, because the
+       * server resolved the tenant from a cookie every tab shares. The reader
+       * was authorized in B throughout — which is exactly why authorization
+       * could not catch it.
+       *
+       * The reads above already carry it: they go through `requestJson`, which
+       * attaches the same header. These three take the raw `Response` because
+       * they branch on the refusal body, so they attach it explicitly through
+       * the same helper rather than re-deriving the value here.
+       */
+      const res = await fetch(
+        "/api/billing/subscription",
+        withTenantPrecondition({ method, headers: { "Content-Type": "application/json" }, body }),
+      );
       if (!res.ok) {
         const { error: e } = await res.json() as { error?: string };
         setError(e ?? t("errors.changeFailed"));
@@ -340,7 +361,10 @@ export function BillingDashboard() {
   async function handleCancel() {
     if (!subscription) return;
     if (!window.confirm("Cancel subscription?")) return;
-    const res = await fetch("/api/billing/subscription", { method: "DELETE" });
+    const res = await fetch(
+      "/api/billing/subscription",
+      withTenantPrecondition({ method: "DELETE" }),
+    );
     if (!res.ok) { setError(t("errors.cancelFailed")); return; }
     await load();
   }
@@ -349,7 +373,10 @@ export function BillingDashboard() {
     if (!subscription) return;
     setChanging(true);
     try {
-      const res = await fetch("/api/billing/subscription", { method: "PUT" });
+      const res = await fetch(
+        "/api/billing/subscription",
+        withTenantPrecondition({ method: "PUT" }),
+      );
       if (!res.ok) {
         const { error: e } = await res.json() as { error?: string };
         setError(e ?? t("errors.changeFailed"));

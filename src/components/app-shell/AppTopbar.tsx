@@ -21,12 +21,16 @@ export interface AppTopbarProps {
   user: { name: string; email?: string | null; role?: string | null } | null;
   organizationName?: string | null;
   organizationUnavailable?: boolean;
+  /** PHASE 110-A1.0b - several memberships, none chosen. */
+  organizationSelectionRequired?: boolean;
+  /** PHASE 110-A1.0b - a context is resolved AND alternatives exist. */
+  organizationSelectable?: boolean;
   siteName?: string | null;
   /** Page-provided actions slot (product-agnostic). */
   actions?: ReactNode;
 }
 
-export async function AppTopbar({ groups, user, organizationName, organizationUnavailable, siteName, actions }: AppTopbarProps) {
+export async function AppTopbar({ groups, user, organizationName, organizationUnavailable, organizationSelectionRequired, organizationSelectable, siteName, actions }: AppTopbarProps) {
   const t = await getTranslations("appShell.shell");
 
   return (
@@ -36,7 +40,7 @@ export async function AppTopbar({ groups, user, organizationName, organizationUn
         "bg-surface-primary px-4 md:px-6",
       )}
     >
-      <AppMobileNav groups={groups} organizationName={organizationName} organizationUnavailable={organizationUnavailable} siteName={siteName} />
+      <AppMobileNav groups={groups} organizationName={organizationName} organizationUnavailable={organizationUnavailable} organizationSelectionRequired={organizationSelectionRequired} organizationSelectable={organizationSelectable} siteName={siteName} />
       <AppBreadcrumbs groups={groups} className="hidden md:block" />
       <div className="min-w-0 flex-1" />
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}

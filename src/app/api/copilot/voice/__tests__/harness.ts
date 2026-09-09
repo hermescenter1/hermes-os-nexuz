@@ -95,6 +95,19 @@ export function freshState(): HarnessState {
     logCalls: [],
     tables: {
       organizationMember: [],
+      /*
+       * PHASE 110-A1.0b R5 — the tenant resolver LOADS the organization row.
+       *
+       * `requirePlatformAuth` used to read `organizationMember` alone; it now
+       * goes through the Phase 110-A1.0 resolver, which proves the organization
+       * exists and can be loaded before granting a context. Without this table
+       * every voice request refused with 409 BEFORE reaching the same-origin
+       * gate, so nine origin cases failed reporting 409 where they expect 403 —
+       * a harness gap that looked exactly like a reordered guard chain.
+       *
+       * `seedMember` seeds it automatically, so no test needed changing.
+       */
+      organization: [],
       aiProviderPolicy: [],
     },
   };
@@ -372,6 +385,12 @@ export function seedMember(
   state: HarnessState,
   input: { userId: string; organizationId: string; role: string; status?: string },
 ): void {
+  // PHASE 110-A1.0b R5 — a membership implies an organization that LOADS.
+  const orgs = (state.tables.organization ??= []);
+  if (!orgs.some((o) => o.id === input.organizationId)) {
+    orgs.push({ id: input.organizationId, slug: `slug-${input.organizationId}` });
+  }
+
   state.tables.organizationMember.push({
     id: `member-${state.tables.organizationMember.length + 1}`,
     userId: input.userId,
@@ -435,6 +454,11 @@ export interface VoiceRequestOptions {
   apiKey?: string;
   /** Omit the session cookie entirely. */
   anonymous?: boolean;
+  /**
+   * PHASE 110-A1.0b R6 — the organization the calling page was rendered for.
+   * Defaults to ORG_ID; `null` omits it, for cases about the requirement.
+   */
+  precondition?: string | null;
 }
 
 export function voiceRequest(
@@ -449,6 +473,14 @@ export function voiceRequest(
   if (contentType !== null) headers["content-type"] = contentType;
   const origin = options.origin === undefined ? ALLOWED_ORIGIN : options.origin;
   if (origin !== null) headers.origin = origin;
+  /*
+   * PHASE 110-A1.0b R6 — a browser WRITE states the organization the page was
+   * rendered for, and every voice route is a POST. Sent by default so each case
+   * keeps testing its own subject; `precondition: null` omits it for a case
+   * about the requirement itself.
+   */
+  const precondition = options.precondition === undefined ? ORG_ID : options.precondition;
+  if (precondition !== null && !options.apiKey) headers["x-hermes-organization"] = precondition;
 
   return new NextRequest(`http://localhost/api/copilot/voice/${route}`, {
     method: "POST",

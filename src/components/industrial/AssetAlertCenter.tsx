@@ -1,5 +1,9 @@
 "use client";
 
+// PHASE 110-A1.0b R6 — a browser WRITE must state the organization the page
+// was rendered for. The server refuses one that states nothing (428), so a
+// stale tab can no longer act in a tenant it is not showing.
+import { withTenantPrecondition } from "@/lib/client/resource-request";
 import { useLocale } from "next-intl";
 import { useState, useEffect, useCallback } from "react";
 import type { AssetAlertRecord }            from "@/lib/industrial/alerts";
@@ -88,8 +92,10 @@ export function AssetAlertCenter({ assetId }: AssetAlertCenterProps) {
   useEffect(() => { load(); }, [load]);
 
   const dismiss = (alertId: string) => {
-    fetch(`/api/industrial/assets/${assetId}/alerts/${alertId}`, { method: "PATCH" })
-      .then(() => load());
+    fetch(
+      `/api/industrial/assets/${assetId}/alerts/${alertId}`,
+      withTenantPrecondition({ method: "PATCH" }),
+    ).then(() => load());
   };
 
   const active = alerts.filter((a) => !a.dismissed);

@@ -21,8 +21,11 @@
 
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
+import { cookies } from "next/headers";
+
 import { getCurrentUser } from "@/lib/auth/session";
 import { visibleAppNavGroups } from "@/lib/navigation/app-nav";
+import { TENANT_RENDERED_ORGANIZATION_ATTRIBUTE } from "@/lib/tenant-selection/contract";
 import { getShellOrgContext, type ShellOrgContext } from "@/lib/organizations/shell-context";
 import { Link } from "@/i18n/navigation";
 import { AppSidebar } from "./AppSidebar";
@@ -63,29 +66,58 @@ export async function AppShell({
   const groups = visibleAppNavGroups(user?.role ?? null);
 
   /* PHASE 104 R1 (V-M7) - the shell used to hardcode `null` here, so an ACTIVE
-     OWNER of an organization was shown "No organization context". The context
-     is now resolved server-side from the caller's earliest ACTIVE membership,
-     with the same predicate the API path uses. An outage stays distinguishable
-     from an empty account - see lib/organizations/shell-context.ts.
+     OWNER of an organization was shown "No organization context".
+
+     PHASE 110-A1.0b - it is no longer "the caller's earliest ACTIVE membership"
+     either. That was an arbitrary pick the reader could neither see nor change,
+     and it was made TWICE: once here for the chip and once in the API path for
+     the data, with nothing keeping the two answers the same. Both now come from
+     one resolver and one selection, so the organization named in the sidebar is
+     by construction the organization the next request will be scoped to.
+
+     The user id is no longer passed in: the resolver establishes identity from
+     the session itself, including the revocation check the old path skipped.
 
      Site context is still genuinely unbuilt: no per-request site selection
      exists, so the site chip keeps its honest empty state rather than being
      given a value it cannot have. */
   let orgContext: ShellOrgContext = { state: "none" };
   try {
-    orgContext = await getShellOrgContext(user?.id ?? null);
+    orgContext = await getShellOrgContext(await cookies());
   } catch {
     orgContext = { state: "unavailable" };
   }
   const organizationName = orgContext.state === "resolved" ? orgContext.organizationName : null;
   const organizationUnavailable = orgContext.state === "unavailable";
+  /* Several memberships, none chosen. Distinct from "no organization": the chip
+     must invite a choice, not report an absence the reader could disprove. */
+  const organizationSelectionRequired = orgContext.state === "selection";
+  const organizationSelectable = orgContext.state === "resolved" && orgContext.selectable;
   const siteName: string | null = null;
+
+  /*
+   * PHASE 110-A1.0b R3 (R3-2) — the rendered tenant, stamped into the markup.
+   *
+   * This is the value the browser wrapper sends back as a PRECONDITION on every
+   * request it makes from this page. It has to come from the server render,
+   * because the question it answers is "which organization is the reader
+   * looking at?" — and only the render knows that. A value held in client state
+   * could be updated by a background refresh while the visible page still shows
+   * the old tenant, which is precisely the failure being closed.
+   *
+   * It is not a secret and it grants nothing: it is the caller's own already-
+   * resolved organization, echoed back to them, and the server re-resolves and
+   * re-proves the tenant on every request regardless.
+   */
+  const renderedOrganizationId =
+    orgContext.state === "resolved" ? orgContext.organizationId : undefined;
+  const tenantStamp = { [TENANT_RENDERED_ORGANIZATION_ATTRIBUTE]: renderedOrganizationId };
 
   const skipLink = <SkipLink label={t("skipToContent")} />;
 
   if (mode === "engineering") {
     return (
-      <div className="flex min-h-screen flex-col bg-background-deep text-text-primary">
+      <div className="flex min-h-screen flex-col bg-background-deep text-text-primary" {...tenantStamp}>
         {skipLink}
         <header
           aria-label={t("engineeringModeLabel")}
@@ -113,16 +145,18 @@ export async function AppShell({
   }
 
   return (
-    <div className="min-h-screen bg-background-base text-text-primary">
+    <div className="min-h-screen bg-background-base text-text-primary" {...tenantStamp}>
       {skipLink}
       <div className="flex">
-        <AppSidebar groups={groups} organizationName={organizationName} organizationUnavailable={organizationUnavailable} siteName={siteName} />
+        <AppSidebar groups={groups} organizationName={organizationName} organizationUnavailable={organizationUnavailable} organizationSelectionRequired={organizationSelectionRequired} organizationSelectable={organizationSelectable} siteName={siteName} />
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <AppTopbar
             groups={groups}
             user={user ? { name: user.name, email: user.email, role: user.role } : null}
             organizationName={organizationName}
             organizationUnavailable={organizationUnavailable}
+            organizationSelectionRequired={organizationSelectionRequired}
+            organizationSelectable={organizationSelectable}
             siteName={siteName}
             actions={topbarActions}
           />

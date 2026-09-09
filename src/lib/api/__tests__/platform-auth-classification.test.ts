@@ -126,7 +126,23 @@ function mockSession(active: boolean) {
   vi.doMock("@/lib/auth/session-store", () => ({ isPayloadSessionActive: async () => active }));
 }
 
-/** Mock the org-membership lookup. `"throw"` simulates a database fault. */
+/**
+ * Mock the org-membership lookup. `"throw"` simulates a database fault.
+ *
+ * PHASE 110-A1.0b R5 — this now serves `findMany`, because the lookup it stands
+ * in for changed. `requirePlatformAuth` used to call
+ * `findFirst({ orderBy: { createdAt: "asc" } })` — the arbitrary earliest
+ * membership — and now asks the selection-aware tenant resolver, which lists
+ * memberships with `findMany` and refuses when the reader has several and has
+ * chosen none.
+ *
+ * Serving only the old shape would not have failed loudly: the resolver would
+ * have seen no rows on every case and answered "unavailable" for all of them,
+ * so five tests here would still have been red but for the WRONG reason, and a
+ * sixth would have looked like a behaviour change that was really a dead
+ * double. `findFirst` is deliberately still served and still throws on a fault,
+ * so a regression to the old lookup is caught rather than silently tolerated.
+ */
 function mockOrg(result: Record<string, unknown> | null | "throw" | "no-client") {
   if (result === "no-client") {
     vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => null }));
@@ -139,6 +155,20 @@ function mockOrg(result: Record<string, unknown> | null | "throw" | "no-client")
           if (result === "throw") throw new Error(DB_SECRET);
           return result;
         },
+        findMany: async () => {
+          if (result === "throw") throw new Error(DB_SECRET);
+          // One membership, or none. The multi-membership refusal has its own
+          // coverage in `tenant-selection/__tests__/r4-adoption-gap.test.ts`.
+          return result === null
+            ? []
+            : [{ organizationId: result.organizationId, role: "OWNER", status: "ACTIVE" }];
+        },
+      },
+      organization: {
+        findUnique: async (a: { where: { id: string } }) => ({
+          id: a.where.id,
+          slug: `slug-${String(a.where.id)}`,
+        }),
       },
     }),
   }));
@@ -229,14 +259,41 @@ describe("platform auth — failure classification", () => {
     // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
     // UI branches on. The status and sentence are unchanged for this case.
     // PHASE 107 STAGE 6-A — a database fault is the platform's problem, not the caller's.
-    expect(res).toMatchObject({ status: 500, code: "INTERNAL_ERROR" });
-    // The distinction that made the production 401 undiagnosable.
-    expect(reasons()).toContain("organization_resolution_failed");
+    /*
+     * PHASE 110-A1.0b R5 — A DELIBERATE CONTRACT CHANGE, recorded rather than
+     * absorbed: 500 INTERNAL_ERROR -> 503 ORGANIZATION_CONTEXT_UNAVAILABLE.
+     *
+     * `requirePlatformAuth` now resolves the tenant through the selection-aware
+     * resolver instead of its own earliest-membership `findFirst`, and that
+     * resolver classifies an unreachable membership store as
+     * MEMBERSHIP_UNAVAILABLE, which this module maps to 503.
+     *
+     * WHY THE NEW STATUS IS THE RIGHT ONE, in this repository's own words
+     * (`src/lib/auth/context-result.ts`): "503, not 500. The distinction is not
+     * cosmetic: 500 reads as 'the application is broken', 503 as 'a dependency
+     * is not answering, try again'". The billing path has answered 503 for this
+     * condition since Phase 110-A1.0b; the platform path answering 500 was the
+     * session-mode divergence recorded as OPEN in R3, and this closes half of
+     * it deliberately rather than by accident.
+     *
+     * WHAT DID NOT CHANGE, and is still asserted below: the fault stays
+     * separated from "no membership", it is still recorded on the
+     * infrastructure channel, and the driver message still never escapes.
+     *
+     * OPERATIONAL CONSEQUENCE, reported in the R5 report: the infrastructure
+     * operation name moves from `platform.auth.resolve_organization` to the
+     * resolver's own `tenant.memberships`, so any alert keyed on the old string
+     * must be re-pointed. A monitor that goes quiet is worse than one that
+     * fires, which is why it is named here and not left to be discovered.
+     */
+    expect(res).toMatchObject({ status: 503, code: "ORGANIZATION_CONTEXT_UNAVAILABLE" });
+    // The distinction that made the production 401 undiagnosable — unchanged.
+    expect(reasons()).toContain("organization_context_unavailable");
     expect(reasons()).not.toContain("no_active_organization_membership");
-    // Recorded on the infrastructure channel, scoped to this operation.
+    // Still recorded on the infrastructure channel, under the resolver's name.
     expect(infraArgs).toHaveLength(1);
     expect(infraArgs[0][0]).toBe("database");
-    expect(infraArgs[0][1]).toBe("platform.auth.resolve_organization");
+    expect(infraArgs[0][1]).toBe("tenant.memberships");
   });
 
   it("an unavailable database client is 'could not resolve', not 'has no organization'", async () => {
@@ -246,8 +303,9 @@ describe("platform auth — failure classification", () => {
     // PHASE 107 STAGE 6-A — the refusal now carries the machine-readable code the
     // UI branches on. The status and sentence are unchanged for this case.
     // PHASE 107 STAGE 6-A — an unreachable client is an outage, never "you have no organization".
-    expect(res).toMatchObject({ status: 500, code: "INTERNAL_ERROR" });
-    expect(only().payload.reason).toBe("organization_resolution_failed");
+    // PHASE 110-A1.0b R5 — same deliberate change as above: 500 -> 503.
+    expect(res).toMatchObject({ status: 503, code: "ORGANIZATION_CONTEXT_UNAVAILABLE" });
+    expect(only().payload.reason).toBe("organization_context_unavailable");
   });
 
   it("a resolvable user is authenticated and logs NOTHING", async () => {
@@ -356,7 +414,8 @@ describe("platform auth — pre-authentication refusals stay indistinguishable",
   it("answers a verified caller precisely, because they already proved who they are", async () => {
     const post: Array<[string, () => void, number, string]> = [
       ["no org",   () => { mockJwt({ sub: "u" }); mockSession(true); mockOrg(null); },    409, "ORGANIZATION_CONTEXT_REQUIRED"],
-      ["db fault", () => { mockJwt({ sub: "u" }); mockSession(true); mockOrg("throw"); }, 500, "INTERNAL_ERROR"],
+      // PHASE 110-A1.0b R5 — 503, deliberately. See the note on the database-fault case above.
+      ["db fault", () => { mockJwt({ sub: "u" }); mockSession(true); mockOrg("throw"); }, 503, "ORGANIZATION_CONTEXT_UNAVAILABLE"],
     ];
 
     for (const [name, setup, status, code] of post) {
@@ -452,14 +511,41 @@ describe("platform auth — nothing sensitive reaches the REAL log stream", () =
     // UI branches on. The status and sentence are unchanged for this case.
     // PHASE 107 STAGE 6-A — a driver fault is a 500. What matters here is
     // unchanged: nothing the driver wrote may reach the caller or the log.
-    expect(res).toMatchObject({ status: 500, code: "INTERNAL_ERROR" });
+    // PHASE 110-A1.0b R5 — 503, deliberately; the log-hygiene assertions that
+    // follow are the point of this case and are unchanged.
+    expect(res).toMatchObject({ status: 503, code: "ORGANIZATION_CONTEXT_UNAVAILABLE" });
     expect(JSON.stringify(res)).not.toMatch(/ECONNREFUSED|10\.0\.0|5432/);
 
-    // The fault IS recorded, and usefully.
+    /*
+     * The fault IS still recorded — and PHASE 110-A1.0b R5 COSTS SOMETHING
+     * HERE, which is asserted rather than quietly dropped.
+     *
+     * The removed `resolveFirstOrgId` caught the driver error itself and logged
+     * a SANITIZED descriptor carrying the class and code —
+     * `PrismaClientInitializationError`, `P1001` — under
+     * `platform.auth.resolve_organization`. That detail is what made the
+     * original production incident diagnosable, and it is the reason this whole
+     * file exists.
+     *
+     * The tenant resolver this path now shares logs its own line instead:
+     * `database.failure` under `tenant.memberships`, with the fixed descriptor
+     * `MEMBERSHIP_QUERY_FAILED`. It never captures the driver's class or code,
+     * so they cannot be forwarded, and emitting a second line from this module
+     * under the old name would double-count one fault under two names.
+     *
+     * TWO OPERATIONAL CONSEQUENCES, both named in the R5 report rather than
+     * left to be discovered by a quiet dashboard:
+     *   1. alerts keyed on `platform.auth.resolve_organization` must be
+     *      re-pointed at `tenant.memberships`;
+     *   2. the driver class and code are no longer available on this path. An
+     *      operator diagnosing a P1001 must read the database's own telemetry.
+     *
+     * What has NOT changed is the security property, asserted below unaltered:
+     * nothing the driver authored reaches the caller or the log.
+     */
     expect(out).toContain("database.failure");
-    expect(out).toContain("platform.auth.resolve_organization");
-    expect(out).toContain("PrismaClientInitializationError");
-    expect(out).toContain("P1001");
+    expect(out).toContain("tenant.memberships");
+    expect(out).toContain("MEMBERSHIP_QUERY_FAILED");
 
     // …but nothing the driver authored.
     expect(out).not.toContain(DB_SECRET);

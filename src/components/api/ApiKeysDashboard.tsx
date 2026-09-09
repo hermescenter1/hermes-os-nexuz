@@ -6,6 +6,7 @@
 // it invites the reader to mint a replacement for a key they still have. The
 // create/revoke/rotate paths and every endpoint are unchanged.
 
+import { withTenantPrecondition } from "@/lib/client/resource-request";
 import { useState }                          from "react";
 import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
@@ -126,11 +127,20 @@ function CreateKeyForm({ onCreated, onCancel }: CreateFormProps) {
     setCreating(true);
     setError(null);
     try {
-      const res = await fetch("/api/platform/keys", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ name: name.trim(), scopes, expiresAt: expires || undefined }),
-      });
+      /*
+       * PHASE 110-A1.0b R6 — a browser WRITE states the organization the page
+       * was rendered for. Minting an API key is exactly the operation that
+       * must not happen in a tenant the reader is not looking at: the key
+       * would carry that organization for the rest of its life.
+       */
+      const res = await fetch(
+        "/api/platform/keys",
+        withTenantPrecondition({
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ name: name.trim(), scopes, expiresAt: expires || undefined }),
+        }),
+      );
       const data = await res.json() as { key?: { rawKey: string }; error?: string };
       if (!res.ok) { setError(data.error ?? "Failed"); return; }
       if (data.key?.rawKey) onCreated(data.key.rawKey);
@@ -270,7 +280,10 @@ export function ApiKeysDashboard() {
     if (!confirm((t as unknown as (k: string) => string)("keys.confirmRevoke"))) return;
     setRevoking(id);
     setError(null);
-    const res = await fetch(`/api/platform/keys/${id}`, { method: "DELETE" });
+    const res = await fetch(
+      `/api/platform/keys/${id}`,
+      withTenantPrecondition({ method: "DELETE" }),
+    );
     const d   = await res.json() as { error?: string };
     if (!res.ok) setError(d.error ?? "Revoke failed");
     setRevoking(null);
@@ -281,7 +294,10 @@ export function ApiKeysDashboard() {
     if (!confirm((t as unknown as (k: string) => string)("keys.confirmRotate"))) return;
     setRotating(id);
     setError(null);
-    const res = await fetch(`/api/platform/keys/${id}/rotate`, { method: "POST" });
+    const res = await fetch(
+      `/api/platform/keys/${id}/rotate`,
+      withTenantPrecondition({ method: "POST" }),
+    );
     const d   = await res.json() as { key?: { rawKey: string }; error?: string };
     if (!res.ok) { setError(d.error ?? "Rotate failed"); setRotating(null); return; }
     if (d.key?.rawKey) setRawKey(d.key.rawKey);

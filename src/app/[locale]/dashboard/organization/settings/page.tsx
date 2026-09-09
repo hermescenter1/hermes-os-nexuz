@@ -1,11 +1,8 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { cookies }     from "next/headers";
 import { AppShell }    from "@/components/app-shell";
 import { RequireCapability } from "@/components/auth/RequireCapability";
+import { getOrgPageContext, ORG_PAGE_STATE_KEY } from "../org-page-context";
 import { OrgOverview } from "@/components/organization/OrgOverview";
-import { verifyAccessToken }   from "@/lib/auth/jwt";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
-import { getPrisma }           from "@/lib/db/prisma";
 
 /**
  * PHASE 87L.6G — explicit noindex. The route is already unreachable to
@@ -16,26 +13,12 @@ import { getPrisma }           from "@/lib/db/prisma";
  */
 export const metadata = { robots: { index: false, follow: false } };
 
-type MemberModel = { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
-
-async function getOrgIdForUser(): Promise<string | null> {
-  const jar = await cookies();
-  const token = jar.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) return null;
-  const payload = await verifyAccessToken(token);
-  if (!payload?.sub) return null;
-  const db = await getPrisma();
-  if (!db) return null;
-  const m = (db as Record<string, unknown>).organizationMember as MemberModel;
-  const row = await m.findFirst({ where: { userId: payload.sub }, orderBy: { createdAt: "asc" } }).catch(() => null);
-  return row ? String(row.organizationId) : null;
-}
 
 export default async function OrgSettingsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("org");
-  const orgId = await getOrgIdForUser();
+  const ctx = await getOrgPageContext("org_admin");
 
   // PHASE 87L.6G — organization ADMINISTRATION surface: admin/superadmin
   // only, matching the "org_admin" middleware gate. Engineer keeps its
@@ -48,10 +31,16 @@ export default async function OrgSettingsPage({ params }: { params: Promise<{ lo
             <p className="font-mono text-sm uppercase tracking-widest text-signal">{t("eyebrow")}</p>
             <h1 className="mt-2 font-display text-3xl font-bold">{t("settings.title")}</h1>
           </div>
-          {orgId ? (
-            <OrgOverview orgId={orgId} />
+          {ctx.state === "resolved" ? (
+            <OrgOverview orgId={ctx.organizationId} />
           ) : (
-            <p className="text-muted">{t("noOrg")}</p>
+            /* PHASE 110-A1.0b — the four non-resolved states are no longer one
+               sentence. "You have no organization" was shown to a reader whose
+               session had ended, to one who belongs to three organizations, and
+               during a database outage; only one of those three was true. */
+            <p className="text-muted" data-org-state={ctx.state}>
+              {t(ORG_PAGE_STATE_KEY[ctx.state])}
+            </p>
           )}
         </div>
       </AppShell>

@@ -384,7 +384,16 @@ describe("POST /api/media/assets — persistence and audit", () => {
      * problem, not the caller's, and answering 401 sent an operator to a login
      * form in the middle of an outage.
      */
-    expect(res.status).toBe(500);
+    /*
+     * PHASE 110-A1.0b R5 — 503, deliberately. `requirePlatformAuth` now resolves
+     * the tenant through the selection-aware resolver, which classifies an
+     * unreachable membership store as MEMBERSHIP_UNAVAILABLE -> 503, matching
+     * what the billing path has answered since Phase 110-A1.0b. The property
+     * this case exists for is unchanged and still asserted: it fails CLOSED,
+     * nothing is written, and it is never 401.
+     */
+    expect(res.status).toBe(503);
+    expect(res.status).not.toBe(401);
     expect(state.tables.mediaAsset.length).toBe(0);
   });
 });
@@ -425,11 +434,17 @@ describe("Stage 6-A.1 — Media forwards the refusal exactly", () => {
     expect((json as { assets?: unknown }).assets).toBeUndefined();
   });
 
-  it("500 with INTERNAL_ERROR when the store is unavailable", async () => {
+  it("503 with ORGANIZATION_CONTEXT_UNAVAILABLE when the store is unavailable", async () => {
     state.databaseAvailable = false;
     const { res, json } = await listGET();
-    expect(res.status).toBe(500);
-    expect((json as { code?: string }).code).toBe("INTERNAL_ERROR");
+    /*
+     * PHASE 110-A1.0b R5 — 503, deliberately, and the code with it. The point
+     * of this case is that Media FORWARDS the refusal it was given rather than
+     * inventing one, and that is asserted more strongly now: both halves move
+     * together, so a route that hard-coded either would fail here.
+     */
+    expect(res.status).toBe(503);
+    expect((json as { code?: string }).code).toBe("ORGANIZATION_CONTEXT_UNAVAILABLE");
     expect((json as { assets?: unknown }).assets).toBeUndefined();
   });
 
@@ -462,7 +477,9 @@ describe("Stage 6-A.1 — Media forwards the refusal exactly", () => {
     state.databaseAvailable = false;
     seen.push((await listGET()).res.status);
 
-    expect(seen).toEqual([401, 409, 500]);
+    // PHASE 110-A1.0b R5 — the outage moved from 500 to 503. What this case is
+    // about is that the three stay DISTINCT, which is asserted below unchanged.
+    expect(seen).toEqual([401, 409, 503]);
     expect(new Set(seen).size).toBe(3);
   });
 });

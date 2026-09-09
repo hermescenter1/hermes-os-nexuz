@@ -289,48 +289,25 @@ describe("V-M5 — one authoritative source for the platform counts", () => {
 
 // ───────────────────────────────────────────────────────────────────────────
 describe("V-M7 — organization context for a real member", () => {
-  const fakeDb = (impl: () => Promise<unknown>) => ({ organizationMember: { findFirst: impl } });
-
-  beforeEach(() => { vi.resetModules(); });
-
-  async function withPrisma(db: unknown, mode: "database" | "session" = "database") {
-    vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => db }));
-    vi.doMock("@/lib/storage/storage-mode", () => ({ getStorageMode: () => mode }));
-    return (await import("@/lib/organizations/shell-context")).getShellOrgContext;
-  }
-
-  it("resolves the name of the caller's ACTIVE organization", async () => {
-    const get = await withPrisma(fakeDb(async () => ({
-      organizationId: "org_1", organization: { name: "Hermes Novin Mehr IRIC" },
-    })));
-    await expect(get("user_1")).resolves.toEqual({
-      state: "resolved", organizationId: "org_1", organizationName: "Hermes Novin Mehr IRIC",
-    });
-  });
-
-  it("asks only for ACTIVE memberships", async () => {
-    let seen: { where?: { status?: string; userId?: string } } | undefined;
-    const get = await withPrisma(fakeDb(async (...args: unknown[]) => {
-      seen = args[0] as typeof seen;
-      return null;
-    }) as unknown as Record<string, unknown>);
-    await get("user_1");
-    expect(seen?.where?.status).toBe("ACTIVE");
-    expect(seen?.where?.userId).toBe("user_1");
-  });
-
-  it("reports an empty account as none", async () => {
-    const get = await withPrisma(fakeDb(async () => null));
-    await expect(get("user_1")).resolves.toEqual({ state: "none" });
-  });
-
-  it("never reports an outage as an empty account", async () => {
-    const thrower = await withPrisma(fakeDb(async () => { throw new Error("db down"); }));
-    await expect(thrower("user_1")).resolves.toEqual({ state: "unavailable" });
-
-    const noStore = await withPrisma(null, "database");
-    await expect(noStore("user_1")).resolves.toEqual({ state: "unavailable" });
-  });
+  /*
+   * PHASE 110-A1.0b — THE SERVER-SIDE HALF OF THIS BLOCK MOVED, AND HAD TO.
+   *
+   * `getShellOrgContext` now delegates to the Phase 110-A1.0 resolver, and that
+   * module calls `assertServerOnly("src/lib/tenant/context.ts")`, which THROWS
+   * in a browser realm. This file is `// @vitest-environment jsdom`, so merely
+   * importing the shell context here now fails — correctly. The shell context
+   * became genuinely server-only when it stopped doing its own lookup, and a
+   * jsdom test proving otherwise would be proving the boundary is broken.
+   *
+   * The five resolution cases therefore live in
+   * `src/lib/organizations/__tests__/shell-context.test.ts`, which runs in the
+   * node environment, and are STRONGER there than they were here: they add the
+   * multi-membership case this block could not express. Nothing was deleted to
+   * make a suite green.
+   *
+   * What stays below is what belongs in a jsdom file — how the CHIP renders the
+   * states it is given.
+   */
 
   it("shows the unresolved state, not the empty state, when the context is unavailable", async () => {
     vi.resetModules();
