@@ -24,12 +24,14 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/components/ds/cn";
 import { FOCUS_RING } from "@/components/ds/a11y";
 import type {
+  ArtifactDossier,
   DiagnosticFinding,
   EditRefusal,
   EngineeringArtifact,
   SaveState,
 } from "@/lib/automation-studio";
 import { linesOf } from "@/lib/automation-studio";
+import { ArtifactSurface } from "./ArtifactSurface";
 import {
   FALLBACK_EDITOR_ADAPTER,
   findInDocument,
@@ -56,6 +58,19 @@ interface SourceViewProps {
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly saveState: SaveState;
+  /**
+   * The projection for an artifact with no textual source. Null for a block
+   * (the source branch renders instead) and null when nothing is selected.
+   */
+  readonly dossier: ArtifactDossier | null;
+  readonly checksum: string;
+  readonly artifactPathById: ReadonlyMap<string, string>;
+  /**
+   * Inspect a symbol from the artifact surface: select it, open the inspector
+   * and show its cross-reference. Not a navigation: every reference on that
+   * surface belongs to the artifact already on screen.
+   */
+  readonly onInspectSymbol: (name: string) => void;
 }
 
 export function SourceView({
@@ -75,6 +90,10 @@ export function SourceView({
   canUndo,
   canRedo,
   saveState,
+  dossier,
+  checksum,
+  artifactPathById,
+  onInspectSymbol,
 }: SourceViewProps) {
   const t = useTranslations("automationStudio");
   const [query, setQuery] = useState("");
@@ -168,13 +187,8 @@ export function SourceView({
         </div>
       )}
 
-      {!doc ? (
-        <p className="flex flex-1 items-center justify-center px-6 py-10 text-center text-sm text-white/50">
-          {activeArtifact ? t("editor.nonTextual") : t("editor.noSelection")}
-        </p>
-      ) : (
-        <>
-          <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-white/10 px-3 py-1.5 text-[11px] text-white/50">
+      {doc && (
+        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-white/10 px-3 py-1.5 text-[11px] text-white/50">
             <span dir="ltr" className="font-mono">{doc.path}</span>
 
             {/* The save state is DERIVED from content; it never says "saved"
@@ -250,12 +264,14 @@ export function SourceView({
                 <span aria-live="polite">{t("editor.findResults", { count: hits.length })}</span>
               )}
             </span>
-          </div>
+        </div>
+      )}
 
-          <div
-            id="source-tabpanel"
-            role="tabpanel"
-            aria-labelledby={activeArtifact ? `source-tab-${activeArtifact.id}` : undefined}
+      <div
+        id="source-tabpanel"
+        {...(activeArtifact
+          ? { role: "tabpanel" as const, "aria-labelledby": `source-tab-${activeArtifact.id}` }
+          : {})}
             /*
               Focusable only when it has to be. The editable branch contains a
               textarea, so a tab stop on the panel itself would just be an extra
@@ -265,11 +281,35 @@ export function SourceView({
               "go to definition" somewhere real to land when the declaration
               lives in an artifact with no editable source.
             */
-            tabIndex={editable ? -1 : 0}
-            className="min-h-0 flex-1 overflow-auto bg-black/30"
-            dir="ltr"
-          >
-            {editable ? (
+        tabIndex={editable ? -1 : 0}
+        className="min-h-0 flex-1 overflow-auto bg-black/30"
+        /*
+          LTR is a property of SOURCE, not of the panel. The code branch must be
+          left-to-right whatever the page direction, but the artifact surface is
+          prose plus identifiers — the identifiers carry their own dir, and
+          forcing the whole surface LTR would lay Persian sentences out
+          backwards.
+        */
+        dir={doc ? "ltr" : undefined}
+      >
+        {!doc ? (
+          dossier ? (
+            <ArtifactSurface
+              dossier={dossier}
+              checksum={checksum}
+              findings={findings.filter((f) => f.artifactId === dossier.artifact.id)}
+              translateFinding={translateFinding}
+              artifactPathById={artifactPathById}
+              onInspectSymbol={onInspectSymbol}
+              sourceNote={t("editor.nonTextual")}
+              noReferencesLabel={t("artifact.noReferencesOfKind")}
+            />
+          ) : (
+            <p className="flex h-full items-center justify-center px-6 py-10 text-center text-sm text-white/50">
+              {t("editor.noSelection")}
+            </p>
+          )
+        ) : editable ? (
               <div className="flex min-h-full">
                 {/* Line numbers as a separate, decorative column. They are
                     aria-hidden: the textarea already exposes the text, and a
@@ -331,18 +371,18 @@ export function SourceView({
                   );
                 })}
               </ol>
-            )}
-          </div>
+        )}
+      </div>
 
-          <p id="studio-editor-capabilities" className="shrink-0 border-t border-white/10 px-3 py-1.5 text-[11px] text-white/50">
-            <span className="font-medium text-white/60">{t("editor.capabilities")}: </span>
-            {t("editor.adapterDescription")}
-            <span className="sr-only">
-              {" "}
-              {caps.editable ? t("editor.available") : t("editor.unavailable")}
-            </span>
-          </p>
-        </>
+      {doc && (
+        <p id="studio-editor-capabilities" className="shrink-0 border-t border-white/10 px-3 py-1.5 text-[11px] text-white/50">
+          <span className="font-medium text-white/70">{t("editor.capabilities")}: </span>
+          {t("editor.adapterDescription")}
+          <span className="sr-only">
+            {" "}
+            {caps.editable ? t("editor.available") : t("editor.unavailable")}
+          </span>
+        </p>
       )}
     </section>
   );

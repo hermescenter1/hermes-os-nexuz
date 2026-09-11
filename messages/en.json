@@ -9433,6 +9433,8 @@
       }
     },
     "inspector": {
+      "close": "Close the inspector",
+      "toggle": "Inspector panel",
       "title": "Inspector",
       "tabsLabel": "Inspector sections",
       "properties": "Properties",
@@ -9469,6 +9471,7 @@
       "findingValve": "The valve open command drives an output with no position feedback, so a failure to open cannot be detected."
     },
     "bottom": {
+      "changes": "Changes",
       "title": "Workspace output",
       "tabsLabel": "Output sections",
       "problems": "Problems",
@@ -9547,11 +9550,13 @@
       "noUnit": "No unit recorded"
     },
     "versions": {
+      "noLocalChanges": "Nothing has been edited in this session.",
+      "locallyModified": "Modified in this session",
       "title": "Versions",
       "baseline": "Baseline",
       "working": "Working version",
       "author": "Author",
-      "modifiedCount": "{count} changed artifacts",
+      "modifiedCount": "{count, plural, one {# changed artifact} other {# changed artifacts}}",
       "approvalLabel": "Approval state",
       "draft": "Draft",
       "reviewed": "Reviewed",
@@ -9601,8 +9606,58 @@
       "regionOutput": "Workspace output"
     },
     "companion": {
+      "backToList": "Back to the artifact list",
+      "artifactHint": "Select an artifact to inspect what the project records about it.",
+      "artifacts": "Project artifacts",
       "heading": "Companion view",
       "note": "On a small screen this workspace shows the project summary, findings and symbol lookup. Source editing needs a larger screen."
+    },
+    "kinds": {
+      "programBlock": "Program block",
+      "dataBlock": "Data block",
+      "udt": "User-defined type",
+      "tagTable": "Tag table",
+      "hmiScreen": "Operator screen",
+      "hmiFaceplate": "Operator faceplate",
+      "hmiAlarm": "Alarm list",
+      "hmiTrend": "Trend list",
+      "scadaArea": "Supervisory area",
+      "scadaHistorian": "Process historian",
+      "scadaReport": "Shift report",
+      "testScenario": "Test scenario",
+      "document": "Document"
+    },
+    "access": {
+      "read": "Read",
+      "write": "Write",
+      "binding": "Binding",
+      "alarm": "Alarm"
+    },
+    "artifact": {
+      "inspectSymbol": "Inspect symbol",
+      "noReferencesOfKind": "This artifact makes no reference of this kind.",
+      "identityHeading": "Identity",
+      "readOnlyBadge": "Read-only",
+      "referenceTotal": "{count, plural, one {# reference} other {# references}}",
+      "disclosureLabel": "Disclosure",
+      "declaredSymbols": "Declared symbols",
+      "noDeclaredSymbols": "This artifact declares no symbols.",
+      "findingsHeading": "Findings against this artifact",
+      "noFindings": "No finding refers to this artifact.",
+      "relatedTests": "Tests covering these symbols",
+      "noRelatedTests": "No test scenario covers a symbol this artifact touches.",
+      "locationLabel": "Location in the project"
+    },
+    "origins": {
+      "simulated": "Simulated",
+      "imported": "Imported",
+      "authored": "Authored by an engineer",
+      "liveReadonly": "Live, read-only",
+      "liveControlled": "Live, controlled"
+    },
+    "classification": {
+      "label": "Data classification",
+      "simulated": "Simulated data"
     },
     "metaTitle": "Automation Engineering Studio"
   }

@@ -19,6 +19,7 @@ import type {
   SymbolEntry,
   SymbolReference,
 } from "@/lib/automation-studio";
+import { KIND_MESSAGE_KEY, ORIGIN_MESSAGE_KEY } from "@/lib/automation-studio";
 
 export type InspectorTab = "properties" | "crossReference" | "diagnostics" | "aiReview";
 
@@ -129,26 +130,52 @@ export function Inspector({
       >
         {tab === "properties" && (
           artifact ? (
-            <dl className="space-y-2 text-xs">
+            <dl className="space-y-2 text-xs" data-artifact-kind={artifact.kind}>
+              {/*
+                `ltr` is a property of the VALUE, not of the list.
+                Name, path, checksum and the engineer's name are identifiers and
+                stay left-to-right and monospaced whatever the page direction.
+                The KIND is a translated word and must follow the page, so it is
+                not forced into an LTR monospaced run alongside them — which is
+                where it sat when it was still the raw `hmi-screen` union member.
+              */}
               {([
-                ["inspector.propertyName", artifact.name],
-                ["inspector.propertyPath", artifact.path],
-                ["inspector.propertyKind", artifact.kind],
-                ["inspector.propertyVersion", String(artifact.version)],
-                ["inspector.propertyChecksum", checksum],
-                ["inspector.propertyModifiedBy", artifact.modifiedBy],
-              ] as const).map(([key, value]) => (
+                ["inspector.propertyName", artifact.name, true],
+                ["inspector.propertyPath", artifact.path, true],
+                ["inspector.propertyKind", t(`kinds.${KIND_MESSAGE_KEY[artifact.kind]}`), false],
+                ["inspector.propertyVersion", String(artifact.version), true],
+                ["inspector.propertyChecksum", checksum, true],
+                ["inspector.propertyModifiedBy", artifact.modifiedBy, true],
+              ] as const).map(([key, value, ltr]) => (
                 <div key={key}>
                   <dt className="text-[10px] uppercase tracking-wide text-white/50">{t(key)}</dt>
-                  <dd dir="ltr" className="break-all font-mono text-white/85">{value}</dd>
+                  <dd
+                    data-property={key}
+                    {...(ltr ? { dir: "ltr" as const } : {})}
+                    className={cn("break-all text-white/85", ltr && "font-mono")}
+                  >
+                    {value}
+                  </dd>
                 </div>
               ))}
               <div>
                 <dt className="text-[10px] uppercase tracking-wide text-white/50">{t("inspector.propertyOrigin")}</dt>
-                <dd className="text-white/85">
-                  {artifact.provenance
-                    ? `${artifact.provenance.origin} — ${artifact.provenance.producer}`
-                    : <span className="text-rose-200">{t("inspector.provenanceMissing")}</span>}
+                {/* Origin is a word and is translated; producer is an adapter
+                    identifier and is not. They were one LTR string before. */}
+                <dd
+                  data-property="inspector.propertyOrigin"
+                  data-origin={artifact.provenance?.origin ?? "none"}
+                  className="text-white/85"
+                >
+                  {artifact.provenance ? (
+                    <>
+                      <span>{t(`origins.${ORIGIN_MESSAGE_KEY[artifact.provenance.origin]}`)}</span>
+                      <span className="text-white/50"> · </span>
+                      <span dir="ltr" className="font-mono">{artifact.provenance.producer}</span>
+                    </>
+                  ) : (
+                    <span className="text-rose-200">{t("inspector.provenanceMissing")}</span>
+                  )}
                 </dd>
               </div>
             </dl>

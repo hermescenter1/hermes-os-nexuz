@@ -9433,6 +9433,8 @@
       }
     },
     "inspector": {
+      "close": "Inspektor schließen",
+      "toggle": "Inspektorbereich",
       "title": "Eigenschaften",
       "tabsLabel": "Bereiche der Eigenschaftsansicht",
       "properties": "Merkmale",
@@ -9469,6 +9471,7 @@
       "findingValve": "Der Öffnungsbefehl des Ventils steuert einen Ausgang ohne Stellungsrückmeldung, sodass ein Ausbleiben der Öffnung nicht erkannt werden kann."
     },
     "bottom": {
+      "changes": "Änderungen",
       "title": "Ausgaben des Arbeitsbereichs",
       "tabsLabel": "Ausgabebereiche",
       "problems": "Beanstandungen",
@@ -9547,11 +9550,13 @@
       "noUnit": "Keine Einheit hinterlegt"
     },
     "versions": {
+      "noLocalChanges": "In dieser Sitzung wurde nichts bearbeitet.",
+      "locallyModified": "In dieser Sitzung geändert",
       "title": "Stände",
       "baseline": "Ausgangsstand",
       "working": "Arbeitsstand",
       "author": "Bearbeiter",
-      "modifiedCount": "{count} geänderte Bestandteile",
+      "modifiedCount": "{count, plural, one {# geänderter Bestandteil} other {# geänderte Bestandteile}}",
       "approvalLabel": "Freigabestand",
       "draft": "Entwurf",
       "reviewed": "Geprüft",
@@ -9601,8 +9606,58 @@
       "regionOutput": "Ausgaben des Arbeitsbereichs"
     },
     "companion": {
+      "backToList": "Zurück zur Bestandteilliste",
+      "artifactHint": "Wählen Sie einen Bestandteil, um die hinterlegten Angaben zu prüfen.",
+      "artifacts": "Projektbestandteile",
       "heading": "Begleitansicht",
       "note": "Auf einem kleinen Bildschirm zeigt dieser Arbeitsbereich die Projektübersicht, die Beanstandungen und die Signalsuche. Das Bearbeiten von Quelltext benötigt einen größeren Bildschirm."
+    },
+    "kinds": {
+      "programBlock": "Programmbaustein",
+      "dataBlock": "Datenbaustein",
+      "udt": "Anwenderdefinierter Datentyp",
+      "tagTable": "Variablentabelle",
+      "hmiScreen": "Bedienbild",
+      "hmiFaceplate": "Bedienbaustein",
+      "hmiAlarm": "Meldeliste",
+      "hmiTrend": "Kurvenliste",
+      "scadaArea": "Leitebenen-Bereich",
+      "scadaHistorian": "Prozessarchiv",
+      "scadaReport": "Schichtbericht",
+      "testScenario": "Testszenario",
+      "document": "Dokument"
+    },
+    "access": {
+      "read": "Lesen",
+      "write": "Schreiben",
+      "binding": "Verknüpfung",
+      "alarm": "Meldung"
+    },
+    "artifact": {
+      "inspectSymbol": "Signal prüfen",
+      "noReferencesOfKind": "Dieser Bestandteil enthält keinen Verweis dieser Art.",
+      "identityHeading": "Kenndaten",
+      "readOnlyBadge": "Schreibgeschützt",
+      "referenceTotal": "{count, plural, one {# Verweis} other {# Verweise}}",
+      "disclosureLabel": "Offenlegung",
+      "declaredSymbols": "Vereinbarte Signale",
+      "noDeclaredSymbols": "Dieser Bestandteil vereinbart keine Signale.",
+      "findingsHeading": "Befunde zu diesem Bestandteil",
+      "noFindings": "Kein Befund bezieht sich auf diesen Bestandteil.",
+      "relatedTests": "Tests für diese Signale",
+      "noRelatedTests": "Kein Testszenario deckt ein Signal dieses Bestandteils ab.",
+      "locationLabel": "Ablageort im Projekt"
+    },
+    "origins": {
+      "simulated": "Simuliert",
+      "imported": "Importiert",
+      "authored": "Von einer Fachkraft erstellt",
+      "liveReadonly": "Im Betrieb, nur lesend",
+      "liveControlled": "Im Betrieb, steuernd"
+    },
+    "classification": {
+      "label": "Datenklassifizierung",
+      "simulated": "Simulierte Daten"
     },
     "metaTitle": "Studio für Automatisierungstechnik"
   }
