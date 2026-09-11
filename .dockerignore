@@ -46,6 +46,19 @@ scripts/
 # audit in the Phase 106A runbook.
 !scripts/journal
 
+# PHASE 109-C-UI.2-R8 — a second narrow re-include, for the metering worker.
+#
+# Same reasoning and the SAME ordering constraints as the block above: after
+# `scripts/` so it takes effect, and before the `**/__tests__/` and
+# `**/*.test.ts` rules so the worker's own tests are still stripped out.
+#
+# Unlike the importer, this one IS copied into the runner image, because the
+# metering worker service runs the web image with a different command. The file
+# it admits is a single dependency-free .mjs that only calls fetch — it holds no
+# credentials and opens no database connection, so putting it in the web image
+# adds no reachable surface to the running server.
+!scripts/industrial
+
 # Test files
 **/__tests__/
 **/*.test.ts

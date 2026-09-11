@@ -15,8 +15,8 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 378,
-    "handlers": 528,
+    "routeFiles": 380,
+    "handlers": 530,
     "byClassification": {
       "PUBLIC_READ": 41,
       "PUBLIC_WRITE": 14,
@@ -24,7 +24,7 @@
       "TENANT_MEMBER": 125,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
-      "PLATFORM_ADMIN": 129,
+      "PLATFORM_ADMIN": 131,
       "WEBHOOK": 2,
       "INTERNAL_HEALTH": 2,
       "UNKNOWN": 0
@@ -35,11 +35,11 @@
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 254,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 254,
-    "TENANT_IDENTITY_SERVER_DERIVED": 254,
+    "TENANT_BOUND_HANDLERS_TOTAL": 256,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 256,
+    "TENANT_IDENTITY_SERVER_DERIVED": 256,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 254,
+    "OBJECT_SCOPED_HANDLERS": 256,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -5065,11 +5065,13 @@
       "authEvidence": [
         "requireOrgActor",
         "requirePermission",
-        "requirePlatformAuth"
+        "requirePlatformAuth",
+        "requireSiteActor",
+        "requireSitePermission"
       ],
       "declaredSurface": false,
       "tenantScoped": false,
-      "mutates": false,
+      "mutates": true,
       "senderAuthenticated": null
     },
     {
@@ -5228,6 +5230,32 @@
       "classification": "PLATFORM_ADMIN",
       "authEvidence": [
         "requirePlatformAuth"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/metering/deliver",
+      "method": "POST",
+      "file": "src/app/api/industrial/metering/deliver/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizeWorkerRequest"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial/metering/health",
+      "method": "GET",
+      "file": "src/app/api/industrial/metering/health/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizeWorkerRequest"
       ],
       "declaredSurface": false,
       "tenantScoped": false,

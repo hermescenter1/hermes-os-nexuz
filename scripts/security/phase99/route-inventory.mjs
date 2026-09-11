@@ -127,6 +127,22 @@ export const GUARD_TOKENS = [
   { token: "requirePlatformSuperadmin", scope: "platform" },
   { token: "authorizePlatformActor", scope: "platform" },
   { token: "requireAdmin", scope: "platform" },
+  // PHASE 109-C-UI.2-R8 — the industrial metering worker guard. Registered for
+  // the same reason as `requireVoiceCopilotActor` above: it COMPOSES existing
+  // platform-scope checks into one fail-closed helper shared by the two worker
+  // routes, and a classifier that cannot see through the delegation would call
+  // those routes UNKNOWN while they are in fact the strictest surface in the
+  // industrial API.
+  //
+  // What this entry vouches for: a constant-time comparison against a token that
+  // exists ONLY in the environment, or `getCurrentUser` plus `can(role,"admin")`.
+  // Neither is ever derived from the request, and with neither configured nor
+  // present it answers 401. It is the same two-key shape `/api/metrics` uses.
+  //
+  // scripts/__tests__/phase109cui2r8-worker-registration.test.ts locks both
+  // halves — that the routes really delegate to it, and that it really performs
+  // the checks claimed here.
+  { token: "authorizeWorkerRequest", scope: "platform" },
   // Authenticated identity
   { token: "getCurrentUser", scope: "user" },
   { token: "getAuthRole", scope: "user" },

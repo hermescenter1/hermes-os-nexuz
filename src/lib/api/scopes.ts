@@ -18,6 +18,13 @@ export const ALL_SCOPES = [
   "telemetry.write",
   "industrial.read",     // Phase 35 Edge Gateway
   "industrial.write",    // Phase 35 Edge Gateway
+  // PHASE 109-C-UI.2-R3 — organisation-wide execution of the intelligence
+  // automation engine, on the machine axis. NOTE the documented "admin"
+  // superset above still applies to it: an admin key satisfies this scope. That
+  // is the recorded contract of this module and is not quietly changed here —
+  // the route additionally requires an explicit confirmation and a reason, so
+  // an admin key still cannot trigger an org-wide run by accident.
+  "industrial.run_org_wide",
   "digital_twin.read",   // Phase 36 Digital Twin read access
   "digital_twin.write",  // Phase 36 Digital Twin write access
   "analytics.read",      // Phase 37 Time Series Analytics
@@ -41,6 +48,7 @@ export const SCOPE_LABELS: Record<string, string> = {
   "telemetry.write":     "Telemetry — Write",
   "industrial.read":     "Industrial Gateway — Read (Phase 35)",
   "industrial.write":    "Industrial Gateway — Write (Phase 35)",
+  "industrial.run_org_wide": "Industrial Automation — Organisation-wide execution (Phase 109-C-UI.2-R3)",
   "admin":               "Admin — All Scopes",
 };
 

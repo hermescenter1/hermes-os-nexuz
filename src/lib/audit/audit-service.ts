@@ -121,6 +121,11 @@ export const INDUSTRIAL_AUDIT = {
   TELEMETRY_INGESTED:  "industrial.telemetry.ingested",
   CONNECTOR_CREATED:   "industrial.connector.created",
   CONNECTOR_UPDATED:   "industrial.connector.updated",
+  // PHASE 109-C-UI.2-R3 — intelligence automation execution. Two actions, not
+  // one with a field: an organisation-wide run is a materially different event
+  // from a site run and must be findable on its own in an audit search.
+  AUTOMATION_RUN_SITE:     "industrial.automation.run.site",
+  AUTOMATION_RUN_ORG_WIDE: "industrial.automation.run.organisation_wide",
 } as const;
 
 /**
@@ -341,6 +346,68 @@ function rowToEvent(r: Record<string, unknown>): AuditEvent {
 }
 
 /** Record an audit event. Never throws. */
+/**
+ * Record an audit event, THROWING if it cannot be persisted.
+ *
+ * PHASE 109-C-UI.2-R5. `recordAuditEvent` below swallows persistence failures
+ * by design — for most callers an unwritten audit row must not break the user's
+ * request. For an operation whose authorisation rests on being audited that
+ * trade is inverted: an organisation-wide industrial run that leaves no trail
+ * is not a successful run, it is an unaccountable one.
+ *
+ * `client` lets the caller pass a transaction, so the audit row and the records
+ * the run produced commit or roll back together. Without it there is a window
+ * in which the analysis is durable and the trail is not.
+ *
+ * The in-process ring buffer is written FIRST and unconditionally, so a
+ * throwing persistence failure still leaves the running session able to see
+ * what was attempted.
+ */
+export async function recordAuditEventOrThrow(
+  input: AuditInput,
+  client?: unknown,
+): Promise<void> {
+  const event: AuditEvent = {
+    id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    userId: input.userId ?? null,
+    action: input.action,
+    entityType: input.entityType,
+    entityId: input.entityId ?? null,
+    metadata: input.metadata ?? {},
+    createdAt: now(),
+    organizationId: input.organizationId ?? null,
+    outcome: input.outcome ?? null,
+    correlationId: input.correlationId ?? null,
+  };
+
+  const buf = buffer();
+  buf.unshift(event);
+  if (buf.length > 500) buf.length = 500;
+
+  if (getStorageMode() !== "database") return;
+
+  const m = client
+    ? ((client as Record<string, unknown>).auditLog as AuditModel | undefined)
+    : await model();
+  // No model at all is not "nothing to do": in database mode it means the write
+  // could not even be attempted, which is exactly the case this function exists
+  // to surface.
+  if (!m) throw new Error("AUDIT_MODEL_UNAVAILABLE");
+
+  await m.create({
+    data: {
+      userId: event.userId,
+      action: event.action,
+      entityType: event.entityType,
+      entityId: event.entityId,
+      metadata: event.metadata,
+      organizationId: event.organizationId,
+      outcome: event.outcome,
+      correlationId: event.correlationId,
+    },
+  });
+}
+
 export async function recordAuditEvent(input: AuditInput): Promise<void> {
   const event: AuditEvent = {
     id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,

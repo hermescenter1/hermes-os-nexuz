@@ -4,6 +4,7 @@ import { requireOrgActor }          from "@/lib/org/context";
 import { hasScope } from "@/lib/api/scopes";
 import { requirePermission }        from "@/lib/org/rbac";
 import { dismissAlert }             from "@/lib/industrial/alerts";
+import { getAllowedSiteIds }        from "@/lib/site/context";
 
 type Params = { params: Promise<{ id: string; alertId: string }> };
 
@@ -26,7 +27,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     userId = member.ctx.userId;
   }
 
-  const alert = await dismissAlert(alertId, ctx.orgId, userId);
+  /*
+    PHASE 109-C-UI.2-R1 (F-02) — the write path. A member holding a grant for
+    site A could dismiss an alert raised on equipment in site B: silencing an
+    alarm on a plant they have no access to. `dismissAlert` returns null for an
+    out-of-scope alert, which is the same answer as "no such alert", so the 404
+    below discloses nothing either way.
+  */
+  const allowedSiteIds = userId ? await getAllowedSiteIds(userId, ctx.orgId) : undefined;
+
+  const alert = await dismissAlert(alertId, ctx.orgId, userId, { allowedSiteIds });
   if (!alert) return NextResponse.json({ error: "Alert not found" }, { status: 404 });
   return NextResponse.json({ alert });
 }

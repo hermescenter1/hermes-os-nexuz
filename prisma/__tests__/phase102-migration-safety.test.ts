@@ -409,9 +409,20 @@ describe("102 — migration ordering", () => {
    *   DEFAULTs (onsite/USD) without touching stored rows. Touches no
    *   Phase 102 table.
    */
+  /**
+   *   Phase 109-C-UI.2-R3 — industrial automation execution record: two new
+   *   enum types and the IndustrialAutomationRun table, which give the run
+   *   endpoint a durable idempotency key and a concurrency guard that survives
+   *   a crash and more than one replica. Strictly additive — it alters no
+   *   existing table, column, index, constraint or default, and touches no
+   *   Phase 102 table.
+   */
   const LATER_PHASE_MIGRATIONS = [
     "20260823000000_phase106_journal_multilingual_editions",
     "20260824000000_phase104_b1_recruitment_foundation",
+    "20260825000000_phase109_cui2_r3_automation_run_scope",
+    "20260826000000_phase109_cui2_r7_asset_fk_and_metering_outbox",
+    "20260827000000_phase109_cui2_r8_worker_lease",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

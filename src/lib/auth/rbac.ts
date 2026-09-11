@@ -61,6 +61,10 @@ export function localePathPattern(
 // Shared by isProtectedPath() and isAuthorizedForPath() so the protection
 // check and the role check can never drift apart.
 const ENGINEERING           = localePathPattern("engineering");
+// PHASE 109-C-UI.2 — Live Operations. A top-level route is PUBLIC until it is
+// named here AND branched on in isAuthorizedForPath; this page reads
+// tenant-scoped plant records, so omitting it would publish them anonymously.
+const LIVE_OPERATIONS       = localePathPattern("live-operations");
 const ADMIN                 = localePathPattern("admin");
 const KNOWLEDGE_CASE_STUDIO = localePathPattern("knowledge/case-studio");
 const KNOWLEDGE_STUDIO      = localePathPattern("knowledge/studio");
@@ -138,6 +142,7 @@ const VIDEOS_PUBLIC          = localePathPattern("videos");
 /** Paths that require authentication (locale-aware). */
 export const PROTECTED_PATHS = [
   ENGINEERING,
+  LIVE_OPERATIONS,
   ADMIN,
   KNOWLEDGE_CASE_STUDIO,
   KNOWLEDGE_STUDIO,
@@ -196,6 +201,7 @@ export function isProtectedPath(pathname: string): boolean {
  */
 export const PROTECTED_ROUTE_PREFIXES: readonly string[] = [
   "engineering",
+  "live-operations",
   "admin",
   "knowledge/case-studio",
   "knowledge/studio",
@@ -260,6 +266,13 @@ export function isAuthorizedForPath(
   pathname: string
 ): boolean {
   if (ENGINEERING.test(pathname)) {
+    return canAccessEngineering(role);
+  }
+  // Live Operations is an engineering surface: the same platform roles that
+  // may open the engineering estate may open it. The ORGANIZATION permission
+  // (`view_industrial`) and the site boundary are enforced again inside the
+  // page — middleware proves a platform role, never a tenant.
+  if (LIVE_OPERATIONS.test(pathname)) {
     return canAccessEngineering(role);
   }
   if (ADMIN.test(pathname)) {

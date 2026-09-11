@@ -89,6 +89,17 @@ export const POST_PHASE102_MIGRATIONS = [
   // Phase 104-B1 — recruitment foundation (additive; declared, not silently
   // absorbed, so the completed-count equality stays an equality).
   "20260824000000_phase104_b1_recruitment_foundation",
+  // Phase 109-C-UI.2-R3 — the industrial automation execution record. Additive:
+  // two types and one table, no existing object touched. Declared here for the
+  // same reason as the line above — an undeclared row would fail the era-count
+  // equality, and silently widening that check to `>=` would retire the gate.
+  "20260825000000_phase109_cui2_r3_automation_run_scope",
+  // Phase 109-C-UI.2-R7 — the asset foreign keys and the metering outbox.
+  // Declared for the same reason: an undeclared row breaks the era-count
+  // equality, and widening that check to `>=` would retire the gate.
+  "20260826000000_phase109_cui2_r7_asset_fk_and_metering_outbox",
+  // Phase 109-C-UI.2-R8 — the worker lease. One additive table.
+  "20260827000000_phase109_cui2_r8_worker_lease",
 ];
 
 /**

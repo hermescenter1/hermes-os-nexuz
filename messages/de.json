@@ -6593,6 +6593,7 @@
         "assets": "Anlagen",
         "sites": "Standorte",
         "operationsCenter": "Betriebszentrale",
+        "liveOperations": "Betriebsübersicht",
         "automation": "Automatisierung",
         "multiSite": "Standortübergreifend",
         "maintenance": "Instandhaltung (CMMS)",
@@ -9335,6 +9336,126 @@
     "statusOnTrack": "Im Plan",
     "totalPlans": "Pläne gesamt",
     "unavailable": "Daten zum Erfolgsplan nicht verfügbar"
+  },
+  "liveOperations": {
+    "metaTitle": "Betriebsübersicht",
+    "eyebrow": "Betrieb",
+    "title": "Betriebsübersicht",
+    "subtitle": "Betriebsaufzeichnungen für",
+    "boundary": {
+      "advisory": "Beratende Ansicht",
+      "noControl": "Diese Oberfläche kann keine Anlagentechnik ansteuern",
+      "humanValidation": "Jede Maßnahme erfordert menschliche Freigabe und eine Erlaubnis"
+    },
+    "state": {
+      "OK": "Gemessen",
+      "NO_DATA": "Keine Daten",
+      "NOT_CONNECTED": "Nicht verbunden",
+      "STALE": "Veraltet",
+      "UNKNOWN": "Unbekannt",
+      "SIMULATED": "Simuliert"
+    },
+    "freshness": {
+      "FRESH": "Aktuell",
+      "AGEING": "Alternd",
+      "STALE": "Veraltet",
+      "UNKNOWN": "Aktualität unbekannt"
+    },
+    "degraded": {
+      "notConnectedHeading": "Keine Quelle erreicht",
+      "partialHeading": "Dieses Bild ist unvollständig",
+      "notAnAllClear": "Ein leerer Bildschirm ist hier keine Entwarnung. Mindestens eine Quelle konnte nicht gelesen werden; diese Seite kann daher nicht sagen, ob die Anlage ruhig ist."
+    },
+    "summary": {
+      "heading": "Betriebsübersicht",
+      "activeSignals": "Aktive Signale",
+      "unresolvedIssues": "Offene Beanstandungen",
+      "staleSources": "Veraltete Quellen",
+      "pendingValidations": "Ausstehende menschliche Freigaben",
+      "recentEvents": "Jüngste Ereignisse"
+    },
+    "filters": {
+      "label": "Filter",
+      "allSeverities": "Alle Schweregrade",
+      "allAcknowledgements": "Alle Quittierungszustände",
+      "allSites": "Alle Standorte"
+    },
+    "severity": {
+      "CRITICAL": "Kritisch",
+      "HIGH": "Hoch",
+      "MEDIUM": "Mittel",
+      "LOW": "Niedrig"
+    },
+    "range": {
+      "1h": "Letzte Stunde",
+      "24h": "Letzte 24 Stunden",
+      "7d": "Letzte 7 Tage",
+      "30d": "Letzte 30 Tage"
+    },
+    "acknowledgement": {
+      "UNACKNOWLEDGED": "Nicht quittiert",
+      "ACKNOWLEDGED": "Quittiert",
+      "RESOLVED": "Erledigt"
+    },
+    "origin": {
+      "PLANT_RECORD": "Anlagenaufzeichnung",
+      "DERIVED": "Abgeleitet",
+      "CATALOGUE": "Referenzkatalog"
+    },
+    "events": {
+      "heading": "Ereignisse"
+    },
+    "event": {
+      "observedAt": "Vom Server erfasst",
+      "site": "Standort",
+      "owner": "Zuständig",
+      "noOwner": "Nicht zugewiesen",
+      "unattributed": "Keinem Standort zugeordnet",
+      "evidence": "Nachweise"
+    },
+    "empty": {
+      "notConnected": {
+        "heading": "Keine Quelle erreicht",
+        "body": "Diese Seite konnte keine Betriebsquelle lesen und kann daher nicht sagen, ob Ereignisse vorliegen. Das ist nicht dasselbe wie: es liegen keine vor."
+      },
+      "noSiteAccess": {
+        "heading": "Kein Standort in Ihrem Bereich",
+        "body": "Ihre Mitgliedschaft gewährt in dieser Organisation Zugriff auf keinen Standort; es kann daher keine Betriebsaufzeichnung angezeigt werden. Eine Administration kann den Standortzugriff erteilen."
+      },
+      "noMatches": {
+        "heading": "Keine Ereignisse für diesen Filter",
+        "body": "Die Quellen haben geantwortet, und im gewählten Zeitraum, Schweregrad oder Standort passte nichts. Erweitern Sie den Zeitraum, um mehr zu sehen."
+      }
+    },
+    "capabilities": {
+      "heading": "Was diese Oberfläche nicht kann",
+      "liveStream": "Sie liest aufgezeichnete Ereignisse. Sie abonniert keinen laufenden Gateway-, Archiv- oder SPS-Datenstrom.",
+      "acknowledgeFromThisSurface": "Die Quittierung wird so angezeigt, wie sie an anderer Stelle erfasst wurde. Hier kann sie nicht geändert werden.",
+      "safeActionExecution": "Aus Hermes heraus kann keine Steueraktion ausgelöst werden. Sichere Maßnahmen werden an der Anlage unter Erlaubnisschein ausgeführt."
+    },
+    "refusal": {
+      "unauthenticated": {
+        "heading": "Anmeldung erforderlich",
+        "body": "Dies ist eine angemeldete Betriebsoberfläche. Melden Sie sich an, um fortzufahren."
+      },
+      "noOrganization": {
+        "heading": "Keine aktive Organisation",
+        "body": "Ihr Konto hat keine aktive Organisationsmitgliedschaft; es gibt daher keine Anlage anzuzeigen. Eine Administration kann Sie einladen."
+      },
+      "multipleOrganizations": {
+        "heading": "Organisation auswählen",
+        "body": "Ihr Konto ist in mehreren Organisationen aktiv. Betriebsdaten werden niemals organisationsübergreifend zusammengeführt; es muss daher zuerst eine ausgewählt werden."
+      },
+      "membershipUnavailable": {
+        "heading": "Mitgliedschaft nicht lesbar",
+        "body": "Der Mitgliedschaftsspeicher war nicht erreichbar; diese Seite kann daher nicht feststellen, für welche Organisation Sie handeln.",
+        "notAnAllClear": "Es wird nichts angezeigt, weil nichts gelesen werden konnte. Das ist keine Entwarnung."
+      },
+      "forbidden": {
+        "heading": "Nicht berechtigt",
+        "body": "Ihre Rolle in dieser Organisation umfasst keine Berechtigung zur Einsicht in Industriedaten."
+      }
+    }
   },
   "automationStudio": {
     "title": "Studio für Automatisierungstechnik",

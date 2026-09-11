@@ -106,6 +106,11 @@ export const ROUTE_RULES = Object.freeze([
   // operations" and the alarms family looks empty — which is exactly the
   // mistake this rule corrects.
   { prefix: "/dashboard/operations/alerts", family: "alarms", status: "COVERED_BY_SHARED_LAYOUT", note: "Alert Command — the shipped Alarm Center (AlertCommandClient over GET /api/operations/alerts; that API exposes GET only, so there is no acknowledge mutation to bind a control to)" },
+  // PHASE 109-C-UI.2 — roadmap page 09. Deliberately NOT inside
+  // /dashboard/operations: that cluster renders the static engineering
+  // catalogue (/api/operations/*, no tenant scope), while this route reads
+  // tenant- and site-scoped plant records with explicit provenance.
+  { prefix: "/live-operations", family: "industrial operations", status: "COVERED_BY_SHARED_LAYOUT", note: "Live Operations — Phase 109-C-UI.2; server-rendered, tenant- and site-scoped, every value carries a data state and provenance. NOT MIGRATED_DIRECTLY: that status names the closed Phase 104-D2 visual-pilot set, which this route is not part of", exact: true },
   { prefix: "/dashboard/operations", family: "industrial operations", status: "COVERED_BY_SHARED_LAYOUT", note: "live operations surface" },
   { prefix: "/dashboard/industrial", family: "industrial operations", status: "COVERED_BY_SHARED_LAYOUT", note: "industrial engineering surface" },
   { prefix: "/dashboard/predictive", family: "reports/analytics", status: "COVERED_BY_SHARED_LAYOUT", note: "predictive maintenance analytics" },

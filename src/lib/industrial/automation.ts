@@ -2,14 +2,37 @@
  * Phase 49 — Asset Intelligence Automation Engine.
  *
  * Recalculates risk scores, health scores, maintenance recommendations,
- * alerts, and intelligence snapshots for all assets in an organisation.
+ * alerts, and intelligence snapshots for the assets IN A GIVEN SCOPE.
  *
  * SAFETY INVARIANT: READ / ANALYZE / ALERT ONLY.
  * This engine never writes to PLCs, gateways, connectors, or any control
  * system. All outputs are advisory records in the Hermes database.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * PHASE 109-C-UI.2-R3 — SCOPE (F-04) AND COUNTERS (F-06)
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * This engine used to take an organisation id and nothing else, and its own
+ * docblock said "all assets in an organisation". A caller holding a grant for
+ * one site therefore caused durable records to be written against every other
+ * site's equipment — the same shape Phase 99 closed on POST /api/industrial/assets,
+ * where `manage_industrial` alone was found insufficient to write to a site.
+ *
+ * The scope is now a REQUIRED parameter, not an option with a default. There is
+ * no overload that means "everything": an organisation-wide run is expressed by
+ * the caller passing every site it is entitled to, having proved a separate
+ * capability and confirmed it. The engine cannot widen what it is given, and a
+ * caller cannot forget to narrow it.
+ *
+ * The counters are separated for the same reason of honesty. `assetsProcessed`
+ * used to be the length of the fetched array, so a run in which every asset
+ * threw still reported them all as processed. Discovered, attempted, processed
+ * and failed are now four different numbers, and each is incremented where the
+ * thing it counts actually happens.
  */
 
 import { getPrisma } from "@/lib/db/prisma";
+import { emptyCounters, type RunCounters } from "./automation-scope";
 
 // ── Criticality multipliers by asset type ─────────────────────────────────────
 const CRITICALITY: Record<string, number> = {
@@ -97,76 +120,134 @@ export interface AssetRunResult {
   healthScore: number | null;
   alertsCreated: number;
   maintenanceCreated: number;
+  riskScoreCreated: boolean;
   snapshotCreated: boolean;
+}
+
+/** One asset that could not be processed. Id and a code — never a stack trace. */
+export interface AssetFailure {
+  assetId: string;
+  code:    string;
 }
 
 export interface AutomationRunResult {
   organizationId: string;
-  assetsProcessed: number;
-  alertsCreated:   number;
-  maintenanceCreated: number;
-  snapshotsCreated: number;
-  errors:          string[];
+  /** The exact sites this run covered. Never a wildcard, never implied. */
+  siteIds:         string[];
+  counters:        RunCounters;
+  failures:        AssetFailure[];
   durationMs:      number;
   runAt:           string;
+  /** Set when the run itself could not proceed, as opposed to an asset failing. */
+  failureCode:     string | null;
+}
+
+/**
+ * The scope of one run. REQUIRED — there is no default and no null.
+ *
+ * `siteIds` is the complete, already-authorised list. Resolving and authorising
+ * it is the caller's job; widening it is nobody's.
+ */
+export interface AutomationScope {
+  siteIds: readonly string[];
 }
 
 // ── Main engine ───────────────────────────────────────────────────────────────
 
 export async function runIntelligenceAutomation(
-  organizationId: string
+  organizationId: string,
+  scope: AutomationScope,
+  /**
+   * PHASE 109-C-UI.2-R5. An injected Prisma client — in practice a transaction.
+   * When the caller supplies one, every record this run writes lives or dies
+   * with whatever else that transaction contains, which is how an audit failure
+   * can take the analysis writes down with it.
+   *
+   * It carries a DEFAULT rather than a `?`, because `Function.length` counts an
+   * optional parameter that has no default: written `client?: unknown` the
+   * engine's arity silently became 3 and the control asserting that a SCOPE is
+   * mandatory broke. With the default it stays 2 and the control keeps meaning
+   * what it meant.
+   */
+  client: unknown = undefined,
 ): Promise<AutomationRunResult> {
   const start = Date.now();
-  const errors: string[] = [];
-  let alertsCreated = 0;
-  let maintenanceCreated = 0;
-  let snapshotsCreated = 0;
+  const failures: AssetFailure[] = [];
+  const counters = emptyCounters();
+  const siteIds = [...new Set(scope.siteIds)];
 
-  const db = await getPrisma();
-  if (!db) {
-    return {
-      organizationId,
-      assetsProcessed: 0,
-      alertsCreated: 0,
-      maintenanceCreated: 0,
-      snapshotsCreated: 0,
-      errors: ["Database unavailable"],
-      durationMs: Date.now() - start,
-      runAt: new Date().toISOString(),
-    };
-  }
+  const finish = (failureCode: string | null): AutomationRunResult => ({
+    organizationId,
+    siteIds,
+    counters,
+    failures,
+    durationMs: Date.now() - start,
+    runAt: new Date().toISOString(),
+    failureCode,
+  });
+
+  // An empty scope is not "everything". It is a run with nothing to do, and it
+  // is reported as such rather than being widened by a helpful default.
+  if (siteIds.length === 0) return finish("EMPTY_SCOPE");
+
+  const db = client ?? (await getPrisma());
+  if (!db) return finish("DATABASE_UNAVAILABLE");
 
   const r = db as unknown as Db;
 
-  // Fetch all assets for the org
+  // BOTH predicates, in the query. Organisation alone was the defect; filtering
+  // the rows afterwards would leave any future `take` or count describing assets
+  // outside the scope.
   const assets = await (r.industrialAsset as FM).findMany({
-    where:  { organizationId },
+    where:  { organizationId, siteId: { in: siteIds } },
     select: { id: true, assetType: true, siteId: true, gatewayId: true },
   });
+
+  counters.assetsDiscovered = assets.length;
 
   for (const rawAsset of assets) {
     const assetId   = rawAsset.id as string;
     const assetType = (rawAsset.assetType as string) ?? "OTHER";
+    // Defence in depth: the query already constrained this, and an asset that
+    // still arrives outside the scope is a bug somewhere else — it is dropped
+    // rather than processed on the strength of the query alone.
+    if (!siteIds.includes(String(rawAsset.siteId))) {
+      failures.push({ assetId, code: "OUT_OF_SCOPE" });
+      counters.assetsAttempted += 1;
+      counters.assetsFailed += 1;
+      continue;
+    }
+
+    counters.assetsAttempted += 1;
     try {
       const result = await processAsset(r, organizationId, assetId, assetType);
-      alertsCreated      += result.alertsCreated;
-      maintenanceCreated += result.maintenanceCreated;
-      if (result.snapshotCreated) snapshotsCreated++;
+      // Incremented HERE — after the work succeeded, never from the length of
+      // the array that was fetched.
+      counters.assetsProcessed += 1;
+      counters.alertsCreated += result.alertsCreated;
+      counters.recommendationsCreated += result.maintenanceCreated;
+      if (result.riskScoreCreated) counters.riskScoresCreated += 1;
+      if (result.snapshotCreated) counters.snapshotsCreated += 1;
     } catch (e) {
-      errors.push(`asset ${assetId}: ${String(e)}`);
+      counters.assetsFailed += 1;
+      failures.push({ assetId, code: failureCodeOf(e) });
     }
   }
 
-  return {
-    organizationId,
-    assetsProcessed:    assets.length,
-    alertsCreated,
-    maintenanceCreated,
-    snapshotsCreated,
-    errors,
-    durationMs: Date.now() - start,
-    runAt: new Date().toISOString(),
-  };
+  return finish(null);
+}
+
+/**
+ * A stable, non-revealing code for a per-asset failure.
+ *
+ * The old engine pushed `String(e)` into the response, which publishes whatever
+ * the driver put in the message — table names, column names, occasionally a
+ * value. The code is enough to triage; the detail belongs in the server log.
+ */
+function failureCodeOf(e: unknown): string {
+  const code = (e as { code?: unknown })?.code;
+  if (typeof code === "string" && /^[A-Za-z0-9_]{1,32}$/.test(code)) return code;
+  return "ASSET_PROCESSING_FAILED";
 }
 
 // ── Per-asset processing ──────────────────────────────────────────────────────
@@ -456,6 +537,7 @@ async function processAsset(
     healthScore:       currentHealthScore,
     alertsCreated,
     maintenanceCreated,
+    riskScoreCreated:  true,
     snapshotCreated:   true,
   };
 }

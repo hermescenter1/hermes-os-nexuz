@@ -290,6 +290,12 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // palette, versions and the simulated-data disclosure. The three identical
     // values (Simulation, Name, Global) are reviewed allowlist entries.
     "automationStudio",
+    // PHASE 109-C-UI.2 — Live Operations (liveOperations). 71 leaves,
+    // genuinely German throughout: the advisory boundary, the data-state and
+    // freshness vocabularies, the operational summary, filters, event fields,
+    // the four empty/refusal states and the capability disclosures. Zero
+    // English carryover; no allowlist entry was needed.
+    "liveOperations",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

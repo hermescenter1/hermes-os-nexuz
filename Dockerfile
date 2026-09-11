@@ -144,6 +144,33 @@ USER importer
 # type the flag. There is deliberately no --force in the importer.
 CMD ["node", "scripts/journal/import-articles.mjs"]
 
+# ── PHASE 109-C-UI.2-R8: metering worker ─────────────────────────────────────
+# The scheduler that drives the industrial metering outbox.
+#
+# WHY ITS OWN STAGE, and not the runner image with a different command:
+# `scripts/__tests__/phase106a-journal-import-path.test.ts` asserts that the
+# runner and migrator stages copy NO scripts at all. That contract was written
+# after Phase 106 shipped an importer that could reach production content, and
+# it is worth more than the convenience of reusing one image. So the worker gets
+# a stage of its own and the guard stays absolute.
+#
+# The image is deliberately tiny: no node_modules, no Prisma, no application
+# code. The worker is one .mjs file that calls `fetch` — it holds no database
+# credential and cannot reach PostgreSQL at all. Everything it does goes through
+# the authenticated, audited HTTP entrypoint, so a compromised worker container
+# can trigger delivery and nothing else.
+FROM node:20-alpine AS metering-worker
+WORKDIR /app
+
+RUN addgroup -g 1001 -S nodejs && adduser -S worker -u 1001
+
+COPY scripts/industrial ./scripts/industrial
+
+USER worker
+
+# Polls forever by default. `--once` is available for a cron-style invocation.
+CMD ["node", "scripts/industrial/metering-outbox-worker.mjs"]
+
 # ── Stage 4: runner ───────────────────────────────────────────────────────────
 # Minimal production image using Next.js standalone output.
 # NOTE: runner MUST remain the LAST stage — a bare `docker build .` (and the
