@@ -32,12 +32,16 @@ stated. **One was not, and it is reported as measured rather than as requested.*
 | worker registration 16/16 | 16/16, exit 0 | confirmed |
 | `Compose config EXIT=0` | **1** in this worktree | **not confirmed — see §4** |
 
-`docker compose -f docker-compose.prod.yml config` exits **1** here because
-`.env.production` does not exist in this worktree, and the brief forbids working
-around that with an invented secret. The compose file itself is valid: parsed in
-isolation outside the repository, with an empty file carrying no key and no
-value, it resolves cleanly and the worker service comes out with the right build
-target, command and health dependency. Both results are in §4.
+`docker compose -p hermes -f docker-compose.prod.yml config` exits **1** here
+because `.env.production` does not exist in this worktree, and the brief forbids
+working around that with an invented secret. That EXIT 1 is the result for this
+worktree and it is not restated as anything else.
+
+A **separate** measurement, on a copy of the compose file placed outside the
+repository beside an empty file carrying no key and no value, returns EXIT 0 and
+resolves the worker service with the right build target, command and health
+dependency. That is a structural parse of the file, not a run in this worktree,
+and the two results are reported apart rather than merged. Both are in §4.
 
 The verdict is PASS because every requirement of R8 is implemented and proven,
 and the single non-zero exit is the absence of a production secrets file — which
@@ -124,7 +128,7 @@ re-measured here, and this document does not fold it into the 98.
 ### In this worktree — EXIT 1
 
 ```text
-docker compose -f docker-compose.prod.yml config
+docker compose -p hermes -f docker-compose.prod.yml config
 EXIT 1
 env file E:\hermes-os-phase109-cui2-liveops\.env.production not found
 ```
@@ -141,8 +145,12 @@ outside the repository and parsed beside an **empty** file — zero bytes, no ke
 no value, nothing resembling a credential:
 
 ```text
-docker compose -f docker-compose.prod.yml config     EXIT 0
+docker compose -p hermes -f docker-compose.prod.yml config     EXIT 0
 ```
+
+This EXIT 0 belongs to that isolated copy only. It does **not** replace the
+EXIT 1 recorded above for this worktree, and neither number is a substitute for
+the other.
 
 and the worker service resolves as intended:
 
@@ -279,19 +287,29 @@ deployed. No Docker volume or container was deleted.
 
 ## 9. Cleanup owed
 
-Removal was **not** performed — the brief forbids deleting any Docker volume or
-container without an explicit instruction.
+Removal was **not** performed. The brief forbids deleting any Docker volume or
+container without an explicit instruction, so the resources this phase created
+remain in place and are recorded here rather than removed.
 
-```bash
-docker rm -f hermes-109cui2r8-pg hermes-109cui2r7-pg hermes-109cui2r6-pg hermes-109cui2r5b-pg
-docker volume rm hermes-109cui2r8-vol hermes-109cui2r7-vol hermes-109cui2r6-vol hermes-109cui2r5b-vol
+Still present, by exact name:
+
+```text
+containers   hermes-109cui2r8-pg · hermes-109cui2r7-pg
+             hermes-109cui2r6-pg · hermes-109cui2r5b-pg
+volumes      hermes-109cui2r8-vol · hermes-109cui2r7-vol
+             hermes-109cui2r6-vol · hermes-109cui2r5b-vol
 ```
 
-**No blanket command is safe on this host.** Containers and volumes belonging to
-other work are running here — `hermes-r8-pg`, `premium-marketplace-db`,
-`premium-marketplace-redis`. `docker system prune`, `docker volume prune`, or
-anything selecting by age or by "unused" would destroy them. Only the eight names
-above.
+No removal instruction is written out here on purpose, so that nothing in this
+document can be copied and run against a host by accident.
+
+**Sweeping removal of any kind is unsafe on this host**, and the reason is
+factual rather than cautious: containers and volumes belonging to other work are
+running beside these — `hermes-r8-pg`, `premium-marketplace-db`,
+`premium-marketplace-redis`. Any operation that selects Docker resources in bulk,
+by age, or by whether they appear unused would take those with it. Only the eight
+names listed above belong to this phase, and each must be named individually by
+whoever removes them.
 
 ---
 
