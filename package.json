@@ -65,7 +65,7 @@
     "framer-motion": "^12.40.0",
     "ioredis": "^5.11.1",
     "jose": "^6.2.3",
-    "next": "15.5.23",
+    "next": "15.5.25",
     "next-intl": "4.13.2",
     "nodemailer": "^9.0.1",
     "openai": "^6.43.0",
@@ -99,7 +99,7 @@
   },
   "overrides": {
     "postcss": "8.5.26",
-    "sharp": "0.35.3",
+    "sharp": "0.35.4",
     "deepmerge-ts": "^8.0.0",
     "mysql2": "3.24.3"
   }
