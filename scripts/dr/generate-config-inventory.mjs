@@ -41,7 +41,25 @@ if (checkOnly) {
     console.error("RESULT phase98_config_inventory=FAIL (committed JSON missing — run the generator)");
     process.exit(1);
   }
-  if (current !== serialized) {
+  /*
+   * PHASE 110-A2.1-R3 — compare CONTENT, not line endings.
+   *
+   * `serialized` is built in memory and always uses LF. The committed file is
+   * materialised by the checkout, and this repository sets `core.autocrlf=true`,
+   * so on Windows it arrives with CRLF. A raw comparison therefore failed for
+   * every Windows developer while the two documents were byte-identical after
+   * normalisation — measured: regenerating produced exactly the bytes in HEAD.
+   *
+   * ONLY the newline convention is normalised. No trim, no whitespace
+   * collapsing, no JSON reparse: a changed value, a removed entry or a truncated
+   * document must still fail, and the controls in the R3 evidence show that they
+   * do.
+   */
+  const CR = String.fromCharCode(13);
+  const LF = String.fromCharCode(10);
+  const withoutCarriageReturns = (text) => text.split(CR + LF).join(LF);
+
+  if (withoutCarriageReturns(current) !== withoutCarriageReturns(serialized)) {
     console.error("RESULT phase98_config_inventory=FAIL (committed JSON is stale — run the generator)");
     process.exit(1);
   }

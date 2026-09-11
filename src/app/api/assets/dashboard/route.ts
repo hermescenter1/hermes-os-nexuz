@@ -2,6 +2,7 @@ import { NextResponse }      from "next/server";
 import { getCurrentUser }    from "@/lib/auth/session";
 import { can }               from "@/lib/auth/roles";
 import { getAssetDashboard } from "@/lib/assets/db";
+import { readOrRefuse } from "@/lib/data-access/route-refusal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,5 @@ export async function GET(): Promise<NextResponse> {
   if (!can(user.role, "admin") && !can(user.role, "authoring"))
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const data = await getAssetDashboard();
-  return NextResponse.json(data);
+  return readOrRefuse(() => getAssetDashboard());
 }

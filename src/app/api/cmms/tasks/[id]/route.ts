@@ -1,4 +1,5 @@
 import { NextResponse }        from "next/server";
+import { refusalResponse, notFoundResponse, validationResponse } from "@/lib/data-access/route-refusal";
 import { z }                  from "zod";
 import { getCurrentUser }      from "@/lib/auth/session";
 import { can }                 from "@/lib/auth/roles";
@@ -32,8 +33,17 @@ export async function GET(
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const { id } = await params;
-  const task   = await getTaskById(id);
-  if (!task) return NextResponse.json({ error: "not found" }, { status: 404 });
+  /*
+   * One answer for "no such id" and "not yours" — see the PATCH below. A caller
+   * must not be able to tell the two apart.
+   */
+  let task;
+  try {
+    task = await getTaskById(id);
+  } catch (err) {
+    return refusalResponse(err);
+  }
+  if (!task) return notFoundResponse();
   return NextResponse.json(task);
 }
 
@@ -49,9 +59,24 @@ export async function PATCH(
   const { id } = await params;
   const body   = await req.json().catch(() => ({}));
   const parsed = UpdateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  if (!parsed.success) return validationResponse(parsed.error);
 
-  const task = await updateTask(id, parsed.data);
-  if (!task) return NextResponse.json({ error: "Could not update — mock mode" }, { status: 202 });
+  /*
+   * PHASE 110-A2.0 — `null` now means "no such task, or not this organization's".
+   *
+   * It used to mean "the layer fell back to a mock", and the route answered 202
+   * Accepted. After the repair a cross-tenant PATCH lands here, and answering
+   * 202 would tell the caller their write had been accepted when nothing was
+   * written. It is a 404, and it is the SAME 404 a genuinely missing id gets:
+   * distinguishing them would let a caller probe which task ids exist in
+   * another organization.
+   */
+  let task;
+  try {
+    task = await updateTask(id, parsed.data);
+  } catch (err) {
+    return refusalResponse(err);
+  }
+  if (!task) return notFoundResponse();
   return NextResponse.json(task);
 }

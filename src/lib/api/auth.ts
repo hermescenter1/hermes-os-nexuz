@@ -234,13 +234,41 @@ class SanitizedDatabaseError extends Error {
  * would be scope this round was not given. It is reported in the R5 report as a
  * follow-up for whoever owns the logging contract — not left silent.
  */
+/*
+ * PHASE 110-A2.0 — EVERY READ HERE IS GUARDED, and that is not decoration.
+ *
+ * This function runs on the FAILURE path. The value it receives came out of a
+ * `catch`, so it can be anything: a string, an object whose `code` getter
+ * throws, a `Proxy` whose traps throw on every access. The previous version
+ * read `err.constructor?.name` and `(err as {code?}).code` directly, and both
+ * are property accesses — on such a value they raise a SECOND exception, inside
+ * the handler whose whole job is to stop the first one escaping. The refusal
+ * path then becomes an unhandled crash, which is worse than the leak this
+ * function exists to prevent.
+ *
+ * Found by the A2.0 error-boundary suite, which drives a throwing getter and a
+ * throwing Proxy through it; both made this throw before this change.
+ */
+function readSafely(value: unknown, key: string): unknown {
+  if (value === null || (typeof value !== "object" && typeof value !== "function")) return undefined;
+  try {
+    return (value as Record<string, unknown>)[key];
+  } catch {
+    return undefined;
+  }
+}
+
 export function sanitizeDatabaseError(err: unknown): SanitizedDatabaseError {
-  const rawClass =
-    err instanceof Error ? err.constructor?.name : typeof err;
+  let rawClass: unknown;
+  try {
+    rawClass = err instanceof Error ? err.constructor?.name : typeof err;
+  } catch {
+    rawClass = undefined;
+  }
   const cls =
     typeof rawClass === "string" && SAFE_CLASS_RE.test(rawClass) ? rawClass : "UnknownError";
 
-  const rawCode = (err as { code?: unknown } | null | undefined)?.code;
+  const rawCode = readSafely(err, "code");
   const code = typeof rawCode === "string" && SAFE_CODE_RE.test(rawCode) ? rawCode : null;
 
   return new SanitizedDatabaseError(code ? `${cls}(${code})` : cls);
