@@ -21,7 +21,24 @@ const NAV = [
   { href: "/engineering/domains",         labelKey: "nav.domains",        icon: IconDomains,      exact: false },
   // PHASE 109-C1 — the Automation Engineering Studio.
   { href: "/engineering/studio",          labelKey: "studio",             icon: IconStudio,       exact: false },
+  // PHASE 109-C-UI.3 — the SCADA Control Room. A page nobody can navigate to is
+  // not delivered, so the entry ships with the route rather than after it.
+  { href: "/engineering/scada-control-room", labelKey: "nav.controlRoom", icon: IconControlRoom, exact: false },
 ];
+
+/** A panel with a signal ring — a control desk, not another document icon. */
+function IconControlRoom({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4 flex-none" aria-hidden="true">
+      <rect x="1.5" y="3" width="13" height="8" rx="1.5"
+        stroke={active ? "var(--signal)" : "currentColor"} strokeWidth="1.5"/>
+      <circle cx="8" cy="7" r="1.75"
+        stroke={active ? "var(--signal)" : "currentColor"} strokeWidth="1.25"/>
+      <path d="M5 13.5h6"
+        stroke={active ? "var(--signal)" : "currentColor"} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
 
 function IconStudio({ active }: { active: boolean }) {
   return (
