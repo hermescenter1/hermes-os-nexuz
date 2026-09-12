@@ -42,6 +42,24 @@ const COPY: Record<DataScopeRefusal, { title: string; hint: string }> = {
    * `TypeError` in our own code sends the reader round a loop. The existing
    * generic failure copy says the right thing and adds no catalogue leaf.
    */
+  /*
+   * PHASE 110-A2.3 — the three a WRITE refusal can carry.
+   *
+   * Added because `DataScopeRefusal` widened, and this Record is total on
+   * purpose so that widening it cannot leave a state unrendered. Every key
+   * below ALREADY EXISTS in `errors.resource` — `orgConflict*` and
+   * `orgPrecondition*` were added by 110-A1.0b for the browser-side vocabulary,
+   * `forbidden*` has been there since Phase 107 — so this adds no leaf to the
+   * three catalogues and does not move the German gate's pinned count.
+   *
+   * These three cannot occur on the five asset section pages this component
+   * renders for, which are reads. They are here because the type says they are
+   * possible, and a total map that is right if it is ever reached is cheaper
+   * than a cast that hides the question.
+   */
+  ORGANIZATION_CONTEXT_CONFLICT: { title: "orgConflictTitle", hint: "orgConflictHint" },
+  ORGANIZATION_PRECONDITION_REQUIRED: { title: "orgPreconditionTitle", hint: "orgPreconditionHint" },
+  FORBIDDEN: { title: "forbiddenTitle", hint: "forbiddenHint" },
   INTERNAL_ERROR: { title: "failedTitle", hint: "failedHint" },
 };
 
@@ -58,6 +76,11 @@ const DATA_STATE: Record<DataScopeRefusal, string> = {
   ORGANIZATION_CONTEXT_REQUIRED: "org-context-required",
   ORGANIZATION_SELECTION_REQUIRED: "org-selection-required",
   ORGANIZATION_CONTEXT_UNAVAILABLE: "server-error",
+  // The same three values `ASYNC_STATE` in `ResourceFailureNotice` already uses
+  // for the same conditions, so one vocabulary still describes both halves.
+  ORGANIZATION_CONTEXT_CONFLICT: "org-context-conflict",
+  ORGANIZATION_PRECONDITION_REQUIRED: "org-precondition-required",
+  FORBIDDEN: "forbidden",
   INTERNAL_ERROR: "server-error",
 };
 

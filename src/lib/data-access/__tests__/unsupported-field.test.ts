@@ -21,6 +21,22 @@ import { describe, expect, it, vi } from "vitest";
 
 import { rejectUnsupportedFields, UnsupportedFieldError } from "../relation-ownership";
 
+/**
+ * PHASE 110-A2.3 — the five write functions now take the scope their ROUTE
+ * verified, instead of resolving a tenant of their own.
+ *
+ * These direct-call tests therefore supply one. It is the same shape
+ * `requireWriteScope` returns and nothing here weakens what is asserted: the
+ * subject of every case below is still the payload refusal or the rollback, and
+ * the scope only names the organization the write runs in — which these cases
+ * already assumed was Alpha.
+ */
+const VERIFIED = {
+  organizationId: "org_alpha",
+  userId: "u1",
+  organizationRole: "ADMIN",
+  verifiedFor: "manage_industrial",
+} as never;
 const ENGINE = Symbol("engineConfig");
 
 function makeClient(opts: { relationResolves?: boolean } = {}) {
@@ -93,7 +109,7 @@ describe("A2.0 — the data layer refuses fields the caller may not set", () => 
     const { client, created } = makeClient();
     await withLayer(client, async ({ createTask }) => {
       await expect(
-        createTask({ title: "chosen tenant", organizationId: "org_beta" } as never),
+        createTask(VERIFIED, { title: "chosen tenant", organizationId: "org_beta" } as never),
       ).rejects.toMatchObject({ code: "UNSUPPORTED_FIELD", status: 400 });
     });
     expect(created, "the refusal must happen before the insert").toHaveLength(0);
@@ -103,7 +119,7 @@ describe("A2.0 — the data layer refuses fields the caller may not set", () => 
     const { client, created } = makeClient();
     await withLayer(client, async ({ updateTask }) => {
       await expect(
-        updateTask("a20_task_alpha", { organizationId: "org_beta" } as never),
+        updateTask(VERIFIED, "a20_task_alpha", { organizationId: "org_beta" } as never),
       ).rejects.toMatchObject({ code: "UNSUPPORTED_FIELD" });
     });
     expect(created).toHaveLength(0);
@@ -122,7 +138,7 @@ describe("A2.0 — the data layer refuses fields the caller may not set", () => 
     const { client, created } = makeClient({ relationResolves: false });
 
     await withLayer(client, async ({ updateTask }) => {
-      await expect(updateTask("a20_task_alpha", { assetId: "a_beta" } as never)).rejects.toMatchObject({
+      await expect(updateTask(VERIFIED, "a20_task_alpha", { assetId: "a_beta" } as never)).rejects.toMatchObject({
         code: "INVALID_RELATION",
         status: 400,
         field: "assetId",
@@ -134,7 +150,7 @@ describe("A2.0 — the data layer refuses fields the caller may not set", () => 
   it("a legitimate payload still passes, so the previous assertions are not vacuous", async () => {
     const { client, created } = makeClient();
     const row = await withLayer(client, ({ createTask }) =>
-      createTask({ title: "ordinary", assetId: "a_alpha" } as never),
+      createTask(VERIFIED, { title: "ordinary", assetId: "a_alpha" } as never),
     );
     expect(row).toBeTruthy();
     expect(created).toHaveLength(1);

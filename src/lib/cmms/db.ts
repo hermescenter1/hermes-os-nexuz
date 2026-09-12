@@ -54,6 +54,7 @@ import type {
 } from "./types";
 import { computeKpis, computeDowntimeTrend } from "./kpi";
 import { isPrismaCode, requireDatabase, requireTenantScope, runScoped } from "@/lib/data-access/tenant-scope";
+import type { CmmsWriteScope } from "@/lib/data-access/write-guard";
 import {
   assertRelationsOwned, rejectUnsupportedFields,
   TASK_RELATIONS, PLAN_RELATIONS, FAILURE_RELATIONS, DOWNTIME_RELATIONS,
@@ -109,6 +110,29 @@ async function scope(operation: string) {
   return { organizationId, db };
 }
 
+/**
+ * PHASE 110-A2.3 — a WRITE uses the scope its route already verified.
+ *
+ * The five write functions below used to call `scope()` like every read, which
+ * resolved the tenant a second time. That second resolution was the whole
+ * problem: the route could check a precondition and a permission against one
+ * organization and the write could then be performed in whatever the cookie said
+ * at the moment the layer asked. Two resolutions are two answers.
+ *
+ * They now take the organization the route verified. There is no parameter here
+ * that a request body could reach: `VerifiedWriteScope` is produced only by
+ * `requireWriteScope`, from the session and the selection cookie, and the route
+ * cannot construct one from anything a caller sent.
+ *
+ * Authorization therefore happens in exactly one place — `write-guard.ts`,
+ * called by the route — and connects to the write by being the value the write
+ * uses. A caller that skipped the guard has no scope to pass.
+ */
+async function writeScope(operation: string, verified: CmmsWriteScope) {
+  const db = await requireDatabase(operation);
+  return { organizationId: verified.organizationId, db };
+}
+
 /** A model whose own row carries `organizationId`. */
 const own = (organizationId: string) => ({ organizationId });
 
@@ -116,12 +140,21 @@ const own = (organizationId: string) => ({ organizationId });
  * Create a row whose FOREIGN KEYS are proven to belong here too.
  *
  * The ownership checks and the insert run in ONE interactive transaction at
- * `Serializable`, so they see a single snapshot: a concurrent attempt to move a
- * referenced row into another organization between the check and the write
- * becomes a serialization failure rather than a silent success. That is the
- * strongest guarantee available without a composite `(organizationId, id)`
- * foreign key, which is a schema change this slice forbids — the limit is
- * recorded in `relation-ownership.ts` rather than papered over.
+ * `Serializable`, so the checks and the insert see a single snapshot.
+ *
+ * WHAT THAT DOES NOT GUARANTEE — corrected in PHASE 110-A2.3-R1. An earlier
+ * version of this comment said a concurrent attempt to move a referenced row
+ * into another organization "becomes a serialization failure rather than a
+ * silent success". That was measured FALSE in the A2.0 concurrency probe: with
+ * two connections and a barrier, a plain AUTOCOMMIT `UPDATE` that re-parented
+ * the referenced row committed, and so did this transaction. `Serializable`
+ * protects against anomalies between serializable transactions; it does not
+ * make an autocommit writer wait for this one. The window between the ownership
+ * read and the insert is therefore real, and it is narrow rather than closed.
+ *
+ * The durable fix is a composite foreign key `(organizationId, id)`, a schema
+ * change this slice forbids. The limit is recorded in `relation-ownership.ts`
+ * and here, rather than papered over by an isolation level that does not close it.
  */
 async function createOwned<T>(
   operation: string,
@@ -241,8 +274,11 @@ export async function getPlanById(id: string): Promise<MaintenancePlan | null> {
  * re-stating the scope is what makes that impossible. Every `create` here does
  * it in this order for that reason.
  */
-export async function createPlan(data: Partial<MaintenancePlan>): Promise<MaintenancePlan> {
-  const { organizationId, db } = await scope("cmms.createPlan");
+export async function createPlan(
+  verified: CmmsWriteScope,
+  data: Partial<MaintenancePlan>,
+): Promise<MaintenancePlan> {
+  const { organizationId, db } = await writeScope("cmms.createPlan", verified);
   return createOwned("cmms.createPlan", organizationId, db, "maintenancePlan", data, PLAN_RELATIONS);
 }
 
@@ -289,8 +325,11 @@ export async function getTaskById(id: string): Promise<MaintenanceTask | null> {
   return row ? (ts([row])[0] as MaintenanceTask) : null;
 }
 
-export async function createTask(data: Partial<MaintenanceTask>): Promise<MaintenanceTask> {
-  const { organizationId, db } = await scope("cmms.createTask");
+export async function createTask(
+  verified: CmmsWriteScope,
+  data: Partial<MaintenanceTask>,
+): Promise<MaintenanceTask> {
+  const { organizationId, db } = await writeScope("cmms.createTask", verified);
   return createOwned("cmms.createTask", organizationId, db, "maintenanceTask", data, TASK_RELATIONS);
 }
 
@@ -328,8 +367,12 @@ export async function createTask(data: Partial<MaintenanceTask>): Promise<Mainte
  * are validated against this organization before the write, in the same
  * transaction, for the reason given in `relation-ownership.ts`.
  */
-export async function updateTask(id: string, data: Partial<MaintenanceTask>): Promise<MaintenanceTask | null> {
-  const { organizationId, db } = await scope("cmms.updateTask");
+export async function updateTask(
+  verified: CmmsWriteScope,
+  id: string,
+  data: Partial<MaintenanceTask>,
+): Promise<MaintenanceTask | null> {
+  const { organizationId, db } = await writeScope("cmms.updateTask", verified);
   const patch = rejectUnsupportedFields(data as Record<string, unknown>);
 
   /*
@@ -402,8 +445,11 @@ export async function getFailureById(id: string): Promise<MaintenanceFailure | n
   return row ? (ts([row])[0] as MaintenanceFailure) : null;
 }
 
-export async function createFailure(data: Partial<MaintenanceFailure>): Promise<MaintenanceFailure> {
-  const { organizationId, db } = await scope("cmms.createFailure");
+export async function createFailure(
+  verified: CmmsWriteScope,
+  data: Partial<MaintenanceFailure>,
+): Promise<MaintenanceFailure> {
+  const { organizationId, db } = await writeScope("cmms.createFailure", verified);
   return createOwned("cmms.createFailure", organizationId, db, "maintenanceFailure", data, FAILURE_RELATIONS);
 }
 
@@ -424,8 +470,11 @@ export async function getDowntime(assetId?: string, reason?: string): Promise<Ma
   return ts(rows) as MaintenanceDowntime[];
 }
 
-export async function createDowntime(data: Partial<MaintenanceDowntime>): Promise<MaintenanceDowntime> {
-  const { organizationId, db } = await scope("cmms.createDowntime");
+export async function createDowntime(
+  verified: CmmsWriteScope,
+  data: Partial<MaintenanceDowntime>,
+): Promise<MaintenanceDowntime> {
+  const { organizationId, db } = await writeScope("cmms.createDowntime", verified);
   return createOwned("cmms.createDowntime", organizationId, db, "maintenanceDowntime", data, DOWNTIME_RELATIONS);
 }
 

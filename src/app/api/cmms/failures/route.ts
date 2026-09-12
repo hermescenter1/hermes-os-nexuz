@@ -4,6 +4,7 @@ import { z }              from "zod";
 import { getCurrentUser }  from "@/lib/auth/session";
 import { can }             from "@/lib/auth/roles";
 import { getFailures, createFailure } from "@/lib/cmms/db";
+import { requireWriteScope, type CmmsWriteScope } from "@/lib/data-access/write-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,30 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (!can(user.role, "admin") && !can(user.role, "authoring"))
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
+  /*
+   * PHASE 110-A2.3 — AUTHORIZATION FOR THIS WRITE, BEFORE ANY WORK.
+   *
+   * Two axes, both required and neither able to substitute for the other:
+   *   - the PLATFORM role, checked above, exactly as before;
+   *   - the ORGANIZATION role plus the tenant-intent precondition, checked here.
+   *
+   * `requireWriteScope` resolves the tenant from the session and the selection
+   * cookie, refuses a state-changing request that asserts no organization (428)
+   * or asserts a different one than was resolved (409), and refuses a caller
+   * whose proven role in that organization may not manage industrial records
+   * (403). It runs BEFORE the body is read, so a request that will be refused
+   * does no work first.
+   *
+   * The scope it returns is the one the write uses. It is not re-derived, and
+   * the layer no longer resolves a tenant of its own for this operation.
+   */
+  let verified: CmmsWriteScope;
+  try {
+    verified = await requireWriteScope(req, "manage_industrial");
+  } catch (err) {
+    return refusalResponse(err);
+  }
+
   const body   = await req.json().catch(() => ({}));
   const parsed = CreateSchema.safeParse(body);
   if (!parsed.success) return validationResponse(parsed.error);
@@ -70,7 +95,7 @@ export async function POST(req: Request): Promise<NextResponse> {
    */
   let failure;
   try {
-    failure = await createFailure({ ...parsed.data, reportedBy: user.id });
+    failure = await createFailure(verified, { ...parsed.data, reportedBy: user.id });
   } catch (err) {
     return refusalResponse(err);
   }

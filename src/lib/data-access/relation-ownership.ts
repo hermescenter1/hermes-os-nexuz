@@ -112,7 +112,47 @@ interface Finder {
  * only the FIELD — never the id, never whether it exists elsewhere — so a
  * caller cannot use this to discover which ids live in another organization.
  */
+/**
+ * PHASE 110-A2.3 (F3) — the brand both classes in this file carry.
+ *
+ * `instanceof` compares constructors, so two module registries disagree about
+ * it, and — the reason it had to change here — `instanceof` walks the prototype
+ * chain, which is a Proxy trap. A revoked Proxy or one whose `getPrototypeOf`
+ * trap throws made the recogniser itself raise, and both recognisers are the
+ * FIRST two lines of `refusalResponse`, so the raise happened inside the very
+ * handler that exists to turn an error into an answer.
+ *
+ * `DataScopeError` already carried a registry symbol for the first reason. This
+ * gives the other two the same treatment for both.
+ */
+export const DATA_RELATION_ERROR = Symbol.for("hermes.dataRelationError");
+
+/**
+ * Read a property off a value that may be actively hostile.
+ *
+ * Declared here rather than imported. This module has no imports at all today,
+ * and `tenant-scope.ts` — which owns the identical helper — reasons about the
+ * cycle between the two files in its own comments. One small duplicated function
+ * is cheaper than an import edge that has to be argued about every time either
+ * file changes, and the two are pinned to identical behaviour by
+ * `hostile-recognition.test.ts`.
+ *
+ * A `catch` can receive anything: a string, a revoked `Proxy`, an object whose
+ * getter detonates. Every one of those makes a plain property access raise, so
+ * the access is wrapped and a failure reads as "absent" rather than as a second
+ * exception.
+ */
+function safeRead(value: unknown, key: string | symbol): unknown {
+  if (value === null || (typeof value !== "object" && typeof value !== "function")) return undefined;
+  try {
+    return (value as Record<string | symbol, unknown>)[key];
+  } catch {
+    return undefined;
+  }
+}
+
 export class InvalidRelationError extends Error {
+  readonly [DATA_RELATION_ERROR] = "INVALID_RELATION" as const;
   readonly code = "INVALID_RELATION" as const;
   readonly status = 400;
   readonly field: string;
@@ -125,7 +165,7 @@ export class InvalidRelationError extends Error {
 }
 
 export const isInvalidRelationError = (e: unknown): e is InvalidRelationError =>
-  e instanceof InvalidRelationError;
+  safeRead(e, DATA_RELATION_ERROR) === "INVALID_RELATION";
 
 /**
  * Refuse the whole write unless every supplied foreign key belongs here.
@@ -195,6 +235,7 @@ export async function assertRelationsOwned(
  * direct-call test exercises.
  */
 export class UnsupportedFieldError extends Error {
+  readonly [DATA_RELATION_ERROR] = "UNSUPPORTED_FIELD" as const;
   readonly code = "UNSUPPORTED_FIELD" as const;
   readonly status = 400;
   readonly fields: readonly string[];
@@ -207,13 +248,29 @@ export class UnsupportedFieldError extends Error {
 }
 
 export const isUnsupportedFieldError = (e: unknown): e is UnsupportedFieldError =>
-  e instanceof UnsupportedFieldError;
+  safeRead(e, DATA_RELATION_ERROR) === "UNSUPPORTED_FIELD";
 
 /** Foreign keys these layers cannot verify, and therefore will not accept. */
 const UNSUPPORTED_FIELDS = ["vendorId", "erpWorkOrderId"] as const;
 
 /** Fields only the server may decide. A body that names one is refused. */
 const SERVER_OWNED_FIELDS = ["organizationId", "id"] as const;
+
+/**
+ * PHASE 110-A2.3-R1 — the ONLY names an `UnsupportedFieldError` can carry.
+ *
+ * `rejectUnsupportedFields` builds its `fields` from this list and nothing else,
+ * so this is the real contract of that error, published so the HTTP mapping can
+ * validate a `fields` value against it instead of echoing whatever a branded
+ * object happens to hold. Frozen: a consumer holding the array cannot grow it.
+ */
+export const REFUSABLE_FIELDS: readonly string[] = Object.freeze([
+  ...UNSUPPORTED_FIELDS,
+  ...SERVER_OWNED_FIELDS,
+]);
+
+export const isRefusableField = (v: unknown): v is string =>
+  typeof v === "string" && REFUSABLE_FIELDS.includes(v);
 
 /**
  * Refuse a body that tries to set what it may not, then hand back the rest.
@@ -231,7 +288,7 @@ const SERVER_OWNED_FIELDS = ["organizationId", "id"] as const;
  * `null` clears the foreign key and has no owner to verify.
  */
 export function rejectUnsupportedFields(data: Record<string, unknown>): Record<string, unknown> {
-  const offending = [...UNSUPPORTED_FIELDS, ...SERVER_OWNED_FIELDS].filter(
+  const offending = REFUSABLE_FIELDS.filter(
     (f) => Object.prototype.hasOwnProperty.call(data, f) && data[f] !== undefined,
   );
   if (offending.length > 0) throw new UnsupportedFieldError(offending);

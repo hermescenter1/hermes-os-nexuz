@@ -48,6 +48,7 @@ import { cookies } from "next/headers";
 
 import { sanitizeDatabaseError } from "@/lib/api/auth";
 import type { ContextRefusal } from "@/lib/auth/context-result";
+import type { OrganizationRole } from "@/lib/tenant/contract";
 import { REFUSAL_MESSAGE, REFUSAL_STATUS } from "@/lib/auth/context-result";
 import { logInfraFailure } from "@/lib/logger/security-events";
 import { resolveTenantDecisionFromSession } from "@/lib/tenant-selection/selection";
@@ -66,6 +67,19 @@ export type DataScopeRefusal =
       | "ORGANIZATION_CONTEXT_REQUIRED"
       | "ORGANIZATION_SELECTION_REQUIRED"
       | "ORGANIZATION_CONTEXT_UNAVAILABLE"
+      /*
+       * PHASE 110-A2.3 — the three a WRITE can add.
+       *
+       * Not a new vocabulary and not new statuses: all three already exist in
+       * `ContextRefusal`, with their own entries in `REFUSAL_STATUS` (409, 428,
+       * 403) and `REFUSAL_MESSAGE`, because the platform and billing paths have
+       * answered with them since A1.0b R6. Widening this subset lets a
+       * data-layer refusal carry the SAME code for the SAME condition instead of
+       * inventing a second vocabulary for the CMMS routes.
+       */
+      | "ORGANIZATION_CONTEXT_CONFLICT"
+      | "ORGANIZATION_PRECONDITION_REQUIRED"
+      | "FORBIDDEN"
       | "INTERNAL_ERROR"
     >;
 
@@ -147,7 +161,7 @@ export const isDataScopeError = (e: unknown): e is DataScopeError =>
  * path, and the A2.0 error-boundary suite drives a throwing getter and a
  * throwing Proxy through it.
  */
-function safeRead(value: unknown, key: string | symbol): unknown {
+export function safeRead(value: unknown, key: string | symbol): unknown {
   if (value === null || (typeof value !== "object" && typeof value !== "function")) return undefined;
   try {
     return (value as Record<string | symbol, unknown>)[key];
@@ -177,6 +191,19 @@ export function isPrismaCode(err: unknown, code: string): boolean {
 export interface TenantScope {
   readonly organizationId: string;
   readonly userId: string;
+  /**
+   * The caller's role IN THAT ORGANIZATION, carried rather than discarded.
+   *
+   * PHASE 110-A2.3 — the resolver has always produced this and this function
+   * used to drop it. Dropping it is why the CMMS write routes authorized on the
+   * PLATFORM role alone: there was nothing else to consult without resolving the
+   * tenant a second time, and a second resolution is a second chance to resolve
+   * something different.
+   *
+   * It grants nothing by itself. It is the caller's own proven role; the
+   * permission check that reads it lives in `write-guard.ts`.
+   */
+  readonly organizationRole: OrganizationRole;
 }
 
 /**
@@ -192,7 +219,11 @@ export async function requireTenantScope(): Promise<TenantScope> {
   const decision = await resolveTenantDecisionFromSession(jar);
 
   if (decision.granted) {
-    return { organizationId: decision.organizationId, userId: decision.userId };
+    return {
+      organizationId: decision.organizationId,
+      userId: decision.userId,
+      organizationRole: decision.organizationRole,
+    };
   }
 
   throw new DataScopeError(decision.code);
@@ -268,7 +299,22 @@ export async function runScoped<T>(operation: string, query: () => Promise<T>): 
      * Anything this module or its callers threw on purpose passes through
      * untouched. Only an error nobody chose becomes an outage.
      */
-    if (err instanceof DataScopeError) throw err;
+    /*
+     * PHASE 110-A2.3 (F3) — RECOGNISED BY ITS BRAND, NOT BY `instanceof`.
+     *
+     * `instanceof` walks the prototype chain, and `[[GetPrototypeOf]]` is a
+     * Proxy trap. A revoked Proxy or one whose `getPrototypeOf` trap throws made
+     * THIS LINE raise — from inside the catch block that exists to stop the
+     * first error escaping. Measured before the fix: `runScoped` threw
+     * `TypeError: Cannot perform 'getPrototypeOf' on a proxy that has been
+     * revoked` straight out, so the sanitiser, the log line and the correlation
+     * id were all skipped.
+     *
+     * `isDataScopeError` reads the branded symbol through `safeRead`, which
+     * cannot throw, and the class already carries that brand for an unrelated
+     * reason (two module registries, two constructors).
+     */
+    if (isDataScopeError(err)) throw err;
     if (isDeliberateRefusal(err)) throw err;
 
     /*

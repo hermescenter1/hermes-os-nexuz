@@ -4,6 +4,7 @@ import { z }                  from "zod";
 import { getCurrentUser }      from "@/lib/auth/session";
 import { can }                 from "@/lib/auth/roles";
 import { getTaskById, updateTask } from "@/lib/cmms/db";
+import { requireWriteScope, type CmmsWriteScope } from "@/lib/data-access/write-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +57,24 @@ export async function PATCH(
   if (!can(user.role, "admin") && !can(user.role, "authoring"))
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
+  /*
+   * PHASE 110-A2.3 — AUTHORIZATION FOR THIS WRITE, BEFORE ANY WORK.
+   *
+   * Identical to the four create routes and for the same reasons: the platform
+   * role above, and here the tenant-intent precondition plus the caller's proven
+   * ORGANIZATION role. A PATCH is a write, so an absent header is 428 and a
+   * mismatched one is 409 — a stale tab must not edit a record in whichever
+   * organization another tab happened to select.
+   *
+   * The verified scope is what the update runs in; it is not re-derived.
+   */
+  let verified: CmmsWriteScope;
+  try {
+    verified = await requireWriteScope(req, "manage_industrial");
+  } catch (err) {
+    return refusalResponse(err);
+  }
+
   const { id } = await params;
   const body   = await req.json().catch(() => ({}));
   const parsed = UpdateSchema.safeParse(body);
@@ -73,7 +92,7 @@ export async function PATCH(
    */
   let task;
   try {
-    task = await updateTask(id, parsed.data);
+    task = await updateTask(verified, id, parsed.data);
   } catch (err) {
     return refusalResponse(err);
   }

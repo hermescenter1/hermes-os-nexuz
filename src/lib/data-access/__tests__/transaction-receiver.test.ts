@@ -25,6 +25,22 @@
 
 import { describe, expect, it, vi } from "vitest";
 
+/**
+ * PHASE 110-A2.3 — the five write functions now take the scope their ROUTE
+ * verified, instead of resolving a tenant of their own.
+ *
+ * These direct-call tests therefore supply one. It is the same shape
+ * `requireWriteScope` returns and nothing here weakens what is asserted: the
+ * subject of every case below is still the payload refusal or the rollback, and
+ * the scope only names the organization the write runs in — which these cases
+ * already assumed was Alpha.
+ */
+const VERIFIED = {
+  organizationId: "org_alpha",
+  userId: "u1",
+  organizationRole: "ADMIN",
+  verifiedFor: "manage_industrial",
+} as never;
 /** A private field only reachable through a correct receiver. */
 const ENGINE = Symbol("engineConfig");
 
@@ -109,13 +125,13 @@ describe("A2.0 — $transaction is called as a method, not a detached reference"
       const actual = await importOriginal<typeof import("@/lib/data-access/tenant-scope")>();
       return {
         ...actual,
-        requireTenantScope: async () => ({ organizationId: "org_alpha", userId: "u1" }),
+        requireTenantScope: async () => ({ organizationId: "org_alpha", userId: "u1", organizationRole: "ADMIN" }),
         requireDatabase: async () => client as unknown as Record<string, unknown>,
       };
     });
 
     const { createTask } = await import("@/lib/cmms/db");
-    const row = await createTask({ title: "t", assetId: "a_alpha" } as never);
+    const row = await createTask(VERIFIED, { title: "t", assetId: "a_alpha" } as never);
 
     expect(row, "a detached $transaction would have thrown before reaching here").toBeTruthy();
     expect(recorded.committed).toBe(true);
@@ -136,14 +152,14 @@ describe("A2.0 — $transaction is called as a method, not a detached reference"
       const actual = await importOriginal<typeof import("@/lib/data-access/tenant-scope")>();
       return {
         ...actual,
-        requireTenantScope: async () => ({ organizationId: "org_alpha", userId: "u1" }),
+        requireTenantScope: async () => ({ organizationId: "org_alpha", userId: "u1", organizationRole: "ADMIN" }),
         requireDatabase: async () => client as unknown as Record<string, unknown>,
       };
     });
 
     const { createTask } = await import("@/lib/cmms/db");
 
-    await expect(createTask({ title: "t", assetId: "a_beta" } as never)).rejects.toMatchObject({
+    await expect(createTask(VERIFIED, { title: "t", assetId: "a_beta" } as never)).rejects.toMatchObject({
       code: "INVALID_RELATION",
       field: "assetId",
     });

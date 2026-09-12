@@ -58,6 +58,7 @@ describe("A2.1 — a refusal from the layer becomes a response, on every collect
   afterEach(() => {
     vi.doUnmock("@/lib/auth/session");
     vi.doUnmock("@/lib/cmms/db");
+    vi.doUnmock("@/lib/logger/security-events");
     vi.resetModules();
   });
 
@@ -97,14 +98,50 @@ describe("A2.1 — a refusal from the layer becomes a response, on every collect
       });
     }
 
-    it(`${r.name} does NOT swallow an unknown error — it reaches the boundary`, async () => {
+    it(`${r.name} does NOT swallow an unknown error — it is answered as a controlled 500 AND logged safely`, async () => {
+      /*
+       * PHASE 110-A2.3-R1 — THIS ASSERTION REVERSED, and it is stricter now.
+       *
+       * The A2.1 version pinned a REJECTION: the unknown error was to escape the
+       * handler and "reach the boundary". The boundary for these routes is Next's
+       * own handler, which in development renders the raw message verbatim —
+       * measured on a value shaped like a connection string. So an unmapped error
+       * is now answered by the mapper itself, and this case pins the three
+       * things that matter about that, none of which the old pin checked:
+       *
+       *   1. it is NOT swallowed into a success — the status is 500 and the
+       *      code is INTERNAL_ERROR, with a local correlation id;
+       *   2. the raw message is NOT echoed to the caller;
+       *   3. a SAFE log line is written, carrying the class and never the
+       *      message, and joinable to the response by the correlation id.
+       *
+       * "Not swallowed" still means exactly what it meant: nothing here becomes
+       * a 200, an empty list or a fabricated outage.
+       */
       vi.resetModules();
+      const lines: unknown[][] = [];
+      vi.doMock("@/lib/logger/security-events", () => ({
+        logInfraFailure: (...args: unknown[]) => { lines.push(args); },
+      }));
       mockDeps({ fn: r.fn, make: () => new TypeError("something nobody mapped") });
 
       const mod = await import(r.route);
-      await expect(
-        (mod as { GET: (req: Request) => Promise<Response> }).GET(request("http://localhost:3000/api/cmms/x")),
-      ).rejects.toThrow(/something nobody mapped/);
+      const res = await (mod as { GET: (req: Request) => Promise<Response> }).GET(
+        request("http://localhost:3000/api/cmms/x"),
+      );
+
+      expect(res.status, "an unknown error is not a success and not an outage").toBe(500);
+      const body = await res.json();
+      expect(body.code).toBe("INTERNAL_ERROR");
+      expect(typeof body.correlationId).toBe("string");
+      expect(JSON.stringify(body), "the raw message must never reach the caller").not.toMatch(/something nobody mapped/);
+
+      const unknownLine = lines.find((l) => typeof l[1] === "string" && (l[1] as string).startsWith("refusal.unknown#"));
+      expect(unknownLine, "the safe log line must be written").toBeTruthy();
+      const [subsystem, operation, logged] = unknownLine as [string, string, Error];
+      expect(subsystem).toBe("database");
+      expect(operation).toContain(body.correlationId);
+      expect(logged.message, "class by construction, never the message").toBe("TypeError");
     });
   }
 });
