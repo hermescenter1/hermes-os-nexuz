@@ -37,7 +37,12 @@ const LEAF_COUNTS: Record<(typeof TARGETS)[number], number> = {
   assetMaintenance: 141,
   engineeringDocuments: 76,
   businessOps: 63,
-  orgAdministration: 86,
+  // PHASE 110-A1.0b R3 (R3-3): 86 -> 89. states.sectionUnavailable,
+  // states.sectionForbidden and states.summaryIncomplete, so the organization
+  // overview can say a section FAILED or is REFUSED for this reader's role
+  // instead of rendering the refusal as an empty success. All three are
+  // genuinely German; none is on the identical-by-design list.
+  orgAdministration: 89,
 };
 
 /**
@@ -100,7 +105,7 @@ describe("87L.6C — exact namespace arithmetic", () => {
       expect(flatten((de as Tree)[ns]).size, `${ns} de`).toBe(LEAF_COUNTS[ns]);
       total += e.size;
     }
-    expect(total).toBe(645);
+    expect(total).toBe(648);
   });
 
   it("reconciles: translated + intentional-identical = every leaf, carryover = 0", () => {
@@ -119,7 +124,7 @@ describe("87L.6C — exact namespace arithmetic", () => {
       }
     }
     expect(unapproved, "unapproved English carryover").toEqual([]);
-    expect(translated + identical).toBe(645);
+    expect(translated + identical).toBe(648);
     expect(translated).toBeGreaterThan(500);
   });
 

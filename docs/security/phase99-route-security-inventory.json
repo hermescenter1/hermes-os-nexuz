@@ -15,13 +15,13 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 378,
-    "handlers": 528,
+    "routeFiles": 379,
+    "handlers": 530,
     "byClassification": {
       "PUBLIC_READ": 41,
       "PUBLIC_WRITE": 14,
       "AUTHENTICATED_USER": 215,
-      "TENANT_MEMBER": 125,
+      "TENANT_MEMBER": 127,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 129,
@@ -30,16 +30,16 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 125,
+    "tenantBoundHandlers": 127,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 254,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 254,
-    "TENANT_IDENTITY_SERVER_DERIVED": 254,
+    "TENANT_BOUND_HANDLERS_TOTAL": 256,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 256,
+    "TENANT_IDENTITY_SERVER_DERIVED": 256,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 254,
+    "OBJECT_SCOPED_HANDLERS": 256,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -6972,6 +6972,33 @@
       "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": true
+    },
+    {
+      "apiPath": "/api/tenant/context",
+      "method": "GET",
+      "file": "src/app/api/tenant/context/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "resolveTenantDecision"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/tenant/context",
+      "method": "PUT",
+      "file": "src/app/api/tenant/context/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "resolveTenantBase",
+        "selectFromResolved"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
     },
     {
       "apiPath": "/api/unknown",

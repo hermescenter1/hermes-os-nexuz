@@ -28,7 +28,19 @@ const can = vi.fn();
 vi.mock("@/lib/auth/rbac-server", () => ({ getAuthRole: (r: unknown) => getAuthRole(r) }));
 vi.mock("@/lib/auth/jwt", () => ({ verifyAccessToken: (t: unknown) => verifyAccessToken(t) }));
 vi.mock("@/lib/db/prisma", () => ({ getPrisma: () => getPrisma() }));
-vi.mock("@/lib/org/context", () => ({ requireOrgActor: (...a: unknown[]) => requireOrgActor(...a) }));
+/*
+ * PHASE 110-A1.0b — `getUserIdFromRequest` belongs in this mock now.
+ *
+ * `resolveOrgContext` takes identity from it rather than from a bare
+ * `verifyAccessToken`, because it also checks session revocation. This module
+ * mock REPLACES the whole module, so leaving the export out made every case in
+ * this file fail on a missing function — including "no session at all is 401",
+ * which has nothing to do with the change.
+ */
+vi.mock("@/lib/org/context", () => ({
+  requireOrgActor: (...a: unknown[]) => requireOrgActor(...a),
+  getUserIdFromRequest: async () => (await verifyAccessToken("token"))?.sub ?? null,
+}));
 vi.mock("@/lib/site/context", () => ({ getAllowedSiteIds: (...a: unknown[]) => getAllowedSiteIds(...a) }));
 vi.mock("@/lib/auth/rate-limiter", () => ({ checkRateLimit: (...a: unknown[]) => checkRateLimit(...a) }));
 vi.mock("@/lib/org/rbac", () => ({ can: (...a: unknown[]) => can(...a) }));
@@ -42,11 +54,38 @@ const request = (withCookie = true) =>
     headers: withCookie ? { cookie: `${ACCESS_COOKIE}=token-value` } : {},
   });
 
+/*
+ * PHASE 110-A1.0b — the fixtures below say `role: "ADMIN"`, not `"admin"`.
+ *
+ * They said `"admin"` before, which is the PLATFORM role vocabulary, not the
+ * organization one — `OrgRole` in `prisma/schema.prisma` is uppercase. The old
+ * resolver did `String(member.role) as OrgRole` and never noticed; the adopted
+ * one validates the row against the closed fifteen-value list and refuses what
+ * it does not recognise, which is how the wrong case surfaced at all. Correcting
+ * the fixture is the fix; making the resolver accept lowercase would be teaching
+ * it to repair rows it does not understand.
+ */
+
 /** A signed-in user whose membership lookup is under the test's control. */
 function signedIn(member: Record<string, unknown> | null) {
   getAuthRole.mockResolvedValue("admin");
   verifyAccessToken.mockResolvedValue({ sub: "user-1" });
-  getPrisma.mockResolvedValue({ organizationMember: { findFirst: async () => member } });
+  /*
+   * PHASE 110-A1.0b — `findMany` plus the organization row, because that is
+   * what the adopted resolver reads. `findFirst` is kept alongside it so any
+   * helper in this chain that has NOT been adopted still sees a consistent
+   * answer rather than an empty delegate.
+   */
+  const rows = member ? [{ status: "ACTIVE", ...member }] : [];
+  getPrisma.mockResolvedValue({
+    organizationMember: {
+      findMany: async () => rows,
+      findFirst: async () => (rows.length > 0 ? rows[0] : null),
+    },
+    organization: {
+      findUnique: async (a: { where: { id: string } }) => ({ id: a.where.id, slug: `slug-${a.where.id}` }),
+    },
+  });
 }
 function signedOut() {
   getAuthRole.mockResolvedValue(null);
@@ -62,7 +101,7 @@ const handler = vi.fn(async () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  requireOrgActor.mockResolvedValue({ ctx: { orgId: "org-1", role: "admin", userId: "user-1" } });
+  requireOrgActor.mockResolvedValue({ ctx: { orgId: "org-1", role: "ADMIN", userId: "user-1" } });
   getAllowedSiteIds.mockResolvedValue(["site-1"]);
   checkRateLimit.mockResolvedValue(true);
   can.mockReturnValue(true);
@@ -103,7 +142,7 @@ describe("the two refusals a 401 used to hide", () => {
   });
 
   it("4. a valid admin WITH an organization reaches the handler", async () => {
-    signedIn({ organizationId: "org-1", role: "admin" });
+    signedIn({ organizationId: "org-1", role: "ADMIN" });
     await run();
     expect(handler).toHaveBeenCalledTimes(1);
   });
@@ -111,7 +150,7 @@ describe("the two refusals a 401 used to hide", () => {
 
 describe("the authorization chain is still closed", () => {
   it("5. a member who is not active in the org is refused", async () => {
-    signedIn({ organizationId: "org-1", role: "admin" });
+    signedIn({ organizationId: "org-1", role: "ADMIN" });
     requireOrgActor.mockResolvedValue({ error: "not a member", status: 403 });
     const { status, body } = await run();
     expect(status).toBe(403);
@@ -122,7 +161,7 @@ describe("the authorization chain is still closed", () => {
   it("6. an unknown organization leaks nothing — same answer as having none", async () => {
     signedIn(null);
     const missing = await run();
-    signedIn({ organizationId: "org-does-not-exist", role: "admin" });
+    signedIn({ organizationId: "org-does-not-exist", role: "ADMIN" });
     requireOrgActor.mockResolvedValue({ error: "no such org", status: 403 });
     const unknown = await run();
     // A prober must not be able to tell "this org does not exist" from
@@ -133,7 +172,7 @@ describe("the authorization chain is still closed", () => {
   });
 
   it("7. lacking the permission is 403, never 409", async () => {
-    signedIn({ organizationId: "org-1", role: "viewer" });
+    signedIn({ organizationId: "org-1", role: "VIEWER" });
     can.mockReturnValue(false);
     const { status, body } = await run();
     expect(status).toBe(403);
@@ -141,7 +180,7 @@ describe("the authorization chain is still closed", () => {
   });
 
   it("8. the organization is never taken from the request", async () => {
-    signedIn({ organizationId: "org-server-resolved", role: "admin" });
+    signedIn({ organizationId: "org-server-resolved", role: "ADMIN" });
     const res = await withOtRoute(
       new NextRequest("http://localhost/api/ot/gateways?organizationId=org-attacker", {
         headers: { cookie: `${ACCESS_COOKIE}=token-value` },
@@ -184,7 +223,7 @@ describe("the shared helper", () => {
     signedIn(null);
     expect(await resolveOrgContext(request())).toEqual({ ok: false, reason: "ORGANIZATION_CONTEXT_REQUIRED" });
 
-    signedIn({ organizationId: "org-1", role: "admin" });
+    signedIn({ organizationId: "org-1", role: "ADMIN" });
     const ok = await resolveOrgContext(request());
     expect(ok.ok).toBe(true);
   });

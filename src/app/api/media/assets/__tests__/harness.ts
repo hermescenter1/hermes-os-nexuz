@@ -63,6 +63,19 @@ export function freshState(): HarnessState {
     raceHooks: {},
     tables: {
       organizationMember: [],
+      /*
+       * PHASE 110-A1.0b R5 — the tenant resolver LOADS the organization row.
+       *
+       * `requirePlatformAuth` used to read `organizationMember` alone, so this
+       * double never needed an `organization` table. It now goes through the
+       * Phase 110-A1.0 resolver, which proves the organization exists and can
+       * be loaded before granting a context — deliberately, so a membership
+       * pointing at a row that cannot be read is a refusal rather than a
+       * tenant. Without this table every media test answered 503.
+       *
+       * `seedMember` seeds it automatically, so no test needed changing.
+       */
+      organization: [],
       mediaAsset: [],
       mediaAssetTranslation: [],
       mediaEditorialEvent: [],
@@ -190,6 +203,9 @@ function buildModel(state: HarnessState, name: string) {
       const found = rows().filter((r) => matches(r, (args?.where as Row) ?? {}));
       return sortRows(found, args?.orderBy)[0] ?? null;
     },
+    // PHASE 110-A1.0b R5 — the tenant resolver's organization lookup.
+    findUnique: async (args?: Row) =>
+      rows().find((r) => matches(r, (args?.where as Row) ?? {})) ?? null,
     findMany: async (args?: Row) => {
       let out = rows().filter((r) => matches(r, (args?.where as Row) ?? {}));
       out = sortRows(out, args?.orderBy);
@@ -311,6 +327,19 @@ export interface SeedMemberInput {
 }
 
 export function seedMember(state: HarnessState, input: SeedMemberInput): void {
+  /*
+   * PHASE 110-A1.0b R5 — a membership implies an organization that LOADS.
+   *
+   * Seeded here rather than at every call site: a membership row pointing at an
+   * organization the resolver cannot read is refused, which is correct
+   * behaviour and would otherwise have meant editing dozens of tests to say
+   * something they already assume.
+   */
+  const orgs = (state.tables.organization ??= []);
+  if (!orgs.some((o) => o.id === input.organizationId)) {
+    orgs.push({ id: input.organizationId, slug: `slug-${input.organizationId}` });
+  }
+
   state.tables.organizationMember.push({
     id: `member-${state.tables.organizationMember.length + 1}`,
     userId: input.userId,
@@ -402,18 +431,30 @@ export function getRequest(query = ""): NextRequest {
  *   does on a legitimate write. `null` sends NO `Origin` header, which is what a
  *   cross-site form post and a non-browser client both look like.
  */
+/**
+ * PHASE 110-A1.0b R6 — the organization these fixtures act in.
+ *
+ * A browser WRITE must now state the organization the page was rendered for, so
+ * the write builder below sends it by default, exactly as the migrated clients
+ * do. Exported so the tests and the request builder cannot drift apart.
+ */
+export const DEFAULT_ORG = "org-A";
+
 export function jsonRequest(
   method: "POST" | "PATCH",
   body: unknown,
   path = "",
   contentType = "application/json",
   origin: string | null = ALLOWED_ORIGIN,
+  /** `null` sends NO precondition — for cases about the requirement itself. */
+  precondition: string | null = DEFAULT_ORG,
 ): NextRequest {
   const headers: Record<string, string> = {
     cookie: `${ACCESS_TOKEN_COOKIE}=fake-token`,
     "content-type": contentType,
   };
   if (origin !== null) headers.origin = origin;
+  if (precondition !== null) headers["x-hermes-organization"] = precondition;
   return new NextRequest(`${BASE}${path}`, {
     method,
     headers,

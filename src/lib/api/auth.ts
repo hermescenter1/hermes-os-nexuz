@@ -6,9 +6,20 @@
  *   2. JWT session — "Authorization: Bearer <jwt>" (cookie or header)
  *
  * For API-key auth: orgId comes from the key record; scopes come from the key.
- * For JWT auth:    orgId resolved from the user's first org membership (same as
- *                  billing context); scopes treated as ["admin"] (full access —
- *                  org-level RBAC gates permissions separately).
+ * For JWT auth:    orgId is the organization the reader SELECTED, resolved by
+ *                  the Phase 110-A1.0 tenant resolver (same as billing context);
+ *                  scopes treated as ["admin"] (full access — org-level RBAC
+ *                  gates permissions separately).
+ *
+ *                  PHASE 110-A1.0b R5 — this line used to read "the user's
+ *                  first org membership", which was accurate and was the defect:
+ *                  an arbitrary pick presented as a decision. Several
+ *                  memberships with no selection are now refused rather than
+ *                  guessed at.
+ *
+ *                  PHASE 110-A1.0b R6 — a state-changing request on this path
+ *                  must also STATE the organization it was made for; one that
+ *                  states nothing is refused with 428.
  *
  * Metering (writing UsageRecord) happens ONLY for API-key-authenticated calls.
  * JWT session calls to platform routes are not metered.
@@ -72,15 +83,17 @@ import { verifyAccessToken }   from "@/lib/auth/jwt";
 import { refuse, type ContextRefusal, type RefusedRequest } from "@/lib/auth/context-result";
 import { getStorageMode }      from "@/lib/storage/storage-mode";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
-import { getPrisma }           from "@/lib/db/prisma";
+import {
+  checkTenantPrecondition,
+  resolveTenantDecision,
+} from "@/lib/tenant-selection/selection";
+import type { TenantRefusalCode } from "@/lib/tenant-selection/contract";
 import { isPayloadSessionActive } from "@/lib/auth/session-store";
 import { resolveRequestId }    from "@/lib/logger/correlation";
-import { logAuthFailure, logAuthzDenial, logInfraFailure } from "@/lib/logger/security-events";
+import { logAuthFailure, logAuthzDenial } from "@/lib/logger/security-events";
 import { verifyApiKey, touchLastUsed } from "./keys";
 import { API_KEY_PREFIX }      from "./types";
 import type { PlatformActorContext } from "./types";
-
-type MemberModel = { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
 
 /** Logical operation name carried by every security event from this module. */
 const AUTH_OPERATION = "platform.auth";
@@ -103,6 +116,54 @@ export type PlatformAuthFailureReason =
   | "inactive_or_revoked_session"
   | "organization_resolution_failed"
   | "no_active_organization_membership"
+  /*
+   * PHASE 110-A1.0b R5 — the caller belongs to SEVERAL organizations and has
+   * chosen none. Until R5 this platform path answered it by silently taking
+   * the earliest membership; it is now a refusal, because "which of your
+   * organizations is this request for?" is a question only the caller can
+   * answer.
+   */
+  | "organization_selection_required"
+  /*
+   * PHASE 110-A1.0b R5 — the tenant question could not be ASKED. Distinct from
+   * `organization_resolution_failed`, which keeps its 500 and its existing
+   * meaning for every caller already built against it.
+   */
+  | "organization_context_unavailable"
+  /*
+   * PHASE 110-A1.0b R5 — a guard, not an expected outcome. The tenant decision
+   * came back describing a DIFFERENT user than the one this request
+   * authenticated. Two identities in one request is the failure mode this
+   * repair was most at risk of introducing, so it is refused explicitly rather
+   * than trusted to be impossible.
+   */
+  | "organization_identity_mismatch"
+  /*
+   * PHASE 110-A1.0b R5 — the request named an organization and it is not the
+   * one in effect, because another tab switched. 409, and the remedy is to
+   * reload; retrying the identical request only reaches the identical conflict.
+   */
+  | "organization_context_conflict"
+  /*
+   * PHASE 110-A1.0b R6 — a state-changing request on the session path that
+   * stated no organization at all. Kept apart from the conflict above so an
+   * operator can tell an un-migrated client from a genuinely stale one.
+   */
+  | "organization_precondition_required"
+  /*
+   * PHASE 110-A1.0b R6.1 — the credential authenticated, and then stopped.
+   *
+   * Identity is established TWICE in `resolveJwtContext`, and the two checks are
+   * not simultaneous: a session revoked, expired or signed out between them
+   * makes the first succeed and the resolver's own port answer UNAUTHENTICATED.
+   * That is an AUTHENTICATION outcome — 401, sign in — and R6 translated it into
+   * `organization_selection_required`, so a caller whose session had just died
+   * was answered 409 and told to choose a tenant they cannot choose.
+   *
+   * Kept apart from `inactive_or_revoked_session` so the log stream still says
+   * WHICH check refused, while the response stays the uniform 401.
+   */
+  | "identity_no_longer_authenticated"
   | "invalid_api_key";
 
 /**
@@ -115,6 +176,16 @@ export type PlatformAuthFailureReason =
 const DENIAL_REASONS: ReadonlySet<PlatformAuthFailureReason> = new Set<PlatformAuthFailureReason>([
   "inactive_or_revoked_session",
   "no_active_organization_membership",
+  // PHASE 110-A1.0b R5 — the identity was established in all three; what failed
+  // is the tenant decision, so they are denials rather than auth failures.
+  "organization_selection_required",
+  "organization_context_unavailable",
+  "organization_identity_mismatch",
+  "organization_context_conflict",
+  "organization_precondition_required",
+  // R6.1 — `payload.sub` is known here; what ended is the session, exactly as
+  // for `inactive_or_revoked_session` above.
+  "identity_no_longer_authenticated",
 ]);
 
 /**
@@ -147,13 +218,57 @@ class SanitizedDatabaseError extends Error {
  * can appear are a constructor name matching `SAFE_CLASS_RE` and a code
  * matching `SAFE_CODE_RE`. `error.message` is never read.
  */
+/*
+ * PHASE 110-A1.0b R5 — this export has NO production caller in this repository
+ * any more.
+ *
+ * Its only one was `resolveFirstOrgId`, removed above; the tenant resolver that
+ * replaced it sanitizes through the core's own `recordInfraFailure`. Stated
+ * plainly rather than dressed up as an extension point.
+ *
+ * It is KEPT, and the reason is contractual rather than aspirational: it is a
+ * public export of this module with its own test suite in
+ * `__tests__/platform-auth-classification.test.ts` asserting that a driver
+ * message, a host, a table name or a statement fragment can never reach a log
+ * line. Deleting a tested security control as collateral of a tenant repair
+ * would be scope this round was not given. It is reported in the R5 report as a
+ * follow-up for whoever owns the logging contract — not left silent.
+ */
+/*
+ * PHASE 110-A2.0 — EVERY READ HERE IS GUARDED, and that is not decoration.
+ *
+ * This function runs on the FAILURE path. The value it receives came out of a
+ * `catch`, so it can be anything: a string, an object whose `code` getter
+ * throws, a `Proxy` whose traps throw on every access. The previous version
+ * read `err.constructor?.name` and `(err as {code?}).code` directly, and both
+ * are property accesses — on such a value they raise a SECOND exception, inside
+ * the handler whose whole job is to stop the first one escaping. The refusal
+ * path then becomes an unhandled crash, which is worse than the leak this
+ * function exists to prevent.
+ *
+ * Found by the A2.0 error-boundary suite, which drives a throwing getter and a
+ * throwing Proxy through it; both made this throw before this change.
+ */
+function readSafely(value: unknown, key: string): unknown {
+  if (value === null || (typeof value !== "object" && typeof value !== "function")) return undefined;
+  try {
+    return (value as Record<string, unknown>)[key];
+  } catch {
+    return undefined;
+  }
+}
+
 export function sanitizeDatabaseError(err: unknown): SanitizedDatabaseError {
-  const rawClass =
-    err instanceof Error ? err.constructor?.name : typeof err;
+  let rawClass: unknown;
+  try {
+    rawClass = err instanceof Error ? err.constructor?.name : typeof err;
+  } catch {
+    rawClass = undefined;
+  }
   const cls =
     typeof rawClass === "string" && SAFE_CLASS_RE.test(rawClass) ? rawClass : "UnknownError";
 
-  const rawCode = (err as { code?: unknown } | null | undefined)?.code;
+  const rawCode = readSafely(err, "code");
   const code = typeof rawCode === "string" && SAFE_CODE_RE.test(rawCode) ? rawCode : null;
 
   return new SanitizedDatabaseError(code ? `${cls}(${code})` : cls);
@@ -188,55 +303,82 @@ function extractApiKeyHeader(req: NextRequest): string | null {
   return req.headers.get("X-API-Key")?.trim() ?? null;
 }
 
-/**
- * Outcome of resolving the caller's tenant. A discriminated result rather than
- * `string | null`, so "the database says this user has no ACTIVE membership"
- * and "the database could not be reached, or the query threw" stay distinct all
- * the way to the log line.
+/*
+ * PHASE 110-A1.0b R5 — `resolveFirstOrgId`, `OrgResolution` and
+ * `OrgResolutionFailure` were REMOVED.
+ *
+ * The function was
+ *
+ *     findFirst({ where: { userId, status: "ACTIVE" },
+ *                 orderBy: { createdAt: "asc" } })
+ *
+ * — the arbitrary earliest membership. It answered "which of your
+ * organizations is this request for?" by picking one and saying nothing, on 69
+ * routes and 45 mutating handlers, and it never read the reader's selection.
+ * Phase 110-A1.0 removed exactly this pattern from the billing path; R5 removes
+ * the last copy.
+ *
+ * Verified before deletion: no caller anywhere in `src/` outside this module,
+ * and the only one inside it was `resolveJwtContext`, which now asks
+ * `resolveTenantDecision`. The `MemberModel` type it needed went with it.
+ *
+ * `r4-adoption-gap.test.ts` keeps a `findFirst` in its Prisma double ON
+ * PURPOSE: if this lookup ever returns, that double answers with the earliest
+ * membership again and the assertions fail loudly instead of quietly agreeing.
  */
-type OrgResolutionFailure = Extract<
-  PlatformAuthFailureReason,
-  "organization_resolution_failed" | "no_active_organization_membership"
->;
-
-type OrgResolution =
-  | { ok: true;  orgId: string }
-  | { ok: false; reason: OrgResolutionFailure };
-
-/**
- * Resolve the user's first ACTIVE org membership — same pattern as billing
- * context. Unresolvable for ANY reason still denies (fail closed); the reason
- * is now reported to the caller so it can be logged.
- */
-async function resolveFirstOrgId(userId: string, reqId: string): Promise<OrgResolution> {
-  const db = await getPrisma();
-  // No client: session mode, or a database-mode client that failed to
-  // initialise (already recorded by getPrisma's own logInfraFailure). Either
-  // way the tenant question could not be ANSWERED — that is not an answer of
-  // "this user has no organization".
-  if (!db) return { ok: false, reason: "organization_resolution_failed" };
-  try {
-    const m = (db as Record<string, unknown>).organizationMember as MemberModel;
-    const row = await m.findFirst({
-      where:   { userId, status: "ACTIVE" },
-      orderBy: { createdAt: "asc" },
-    });
-    if (!row) return { ok: false, reason: "no_active_organization_membership" };
-    return { ok: true, orgId: String(row.organizationId) };
-  } catch (err) {
-    // An infrastructure fault previously vanished into `catch { return null; }`
-    // and surfaced as "Authentication required". It is now recorded — but as a
-    // SANITIZED descriptor, never the driver's own message. `logInfraFailure`
-    // would otherwise emit `error.message.slice(0, 300)` verbatim.
-    logInfraFailure("database", `${AUTH_OPERATION}.resolve_organization`, sanitizeDatabaseError(err), reqId);
-    return { ok: false, reason: "organization_resolution_failed" };
-  }
-}
 
 /** Resolved platform context, or the classified reason it could not be built. */
 type PlatformResolution =
   | { ok: true;  ctx: PlatformActorContext }
   | { ok: false; reason: PlatformAuthFailureReason; userId?: string };
+
+/**
+ * PHASE 110-A1.0b R6 — resolve the tenant for a caller who authenticated by
+ * BEARER TOKEN rather than by cookie.
+ *
+ * WHY THIS EXISTS. This module's own header states the contract: "JWT session —
+ * 'Authorization: Bearer <jwt>' (cookie or header)". R5 routed that path through
+ * `resolveTenantDecision`, whose identity port is cookie-only, so a bearer
+ * caller resolved as UNAUTHENTICATED and R5 refused them with "select an
+ * organization" — translating a perfectly valid identity into an absence of
+ * choice. That was a contract break I introduced. No in-repository client uses
+ * the path, and that proves nothing about external consumers.
+ *
+ * WHY IT LIVES HERE AND NOT IN THE SELECTION LAYER. A first attempt put it
+ * there and the client-boundary test refused it, correctly: that layer is
+ * asserted to take identity from the resolver and never to read a token or a
+ * cookie itself. Credentials are this module's job. The selection layer stayed
+ * clean and this function moved to where the bearer token was already being
+ * extracted and verified.
+ *
+ * NO CLIENT-SUPPLIED IDENTITY. No user id is passed anywhere. What is passed is
+ * the CREDENTIAL, and the resolver's own identity port derives the id from it
+ * with the same `verifyAccessToken` and the same `isPayloadSessionActive`
+ * revocation check the cookie path uses. A caller cannot state who they are.
+ *
+ * The selection cookie is passed through untouched. A bearer client normally has
+ * none, which is the right outcome rather than a gap: with no stored selection a
+ * single membership resolves and several are refused.
+ */
+async function resolveTenantForCredential(req: NextRequest) {
+  if (req.cookies.get(ACCESS_TOKEN_COOKIE)?.value) return resolveTenantDecision(req);
+
+  const bearer = extractBearerToken(req);
+  // An API key is a different credential with its own tenant; it never gets here.
+  if (!bearer || bearer.startsWith(API_KEY_PREFIX)) return resolveTenantDecision(req);
+
+  const bearerAsSession = {
+    ...req,
+    headers: req.headers,
+    method: req.method,
+    cookies: {
+      get: (name: string) =>
+        name === ACCESS_TOKEN_COOKIE ? { value: bearer } : req.cookies.get(name),
+    },
+  } as unknown as NextRequest;
+
+  return resolveTenantDecision(bearerAsSession);
+}
 
 async function resolveJwtContext(req: NextRequest): Promise<PlatformResolution> {
   // Try cookie first, then Authorization header
@@ -256,19 +398,148 @@ async function resolveJwtContext(req: NextRequest): Promise<PlatformResolution> 
     return { ok: false, reason: "inactive_or_revoked_session", userId: payload.sub };
   }
 
-  const org = await resolveFirstOrgId(payload.sub, resolveRequestId(req));
-  if (!org.ok) return { ok: false, reason: org.reason, userId: payload.sub };
+  /*
+   * PHASE 110-A1.0b R5 — THE TENANT FOLLOWS THE READER'S OWN SELECTION.
+   *
+   * What was here until R5:
+   *
+   *     findFirst({ where: { userId, status: "ACTIVE" },
+   *                 orderBy: { createdAt: "asc" } })
+   *
+   * — the earliest membership, on 69 routes, 45 of them mutating, and it never
+   * read the selection at all. A reader who belongs to two organizations could
+   * choose B in the switcher and have `POST /api/industrial/assets` create the
+   * asset in A. That is the arbitrary pick Phase 110-A1.0 exists to remove; it
+   * had been removed from the billing path and left everywhere else.
+   *
+   * IDENTITY IS DERIVED TWICE AND COMPARED — it is not mixed, and R6 states that
+   * more precisely than R5 did.
+   *
+   * `payload.sub` above is the identity THIS request authenticated. The resolver
+   * independently derives its own from the same credential, with the same
+   * signature verification and the same `isPayloadSessionActive` revocation
+   * check this function already applied. The two are then required to name the
+   * SAME person before any tenant is accepted, and a decision about somebody
+   * else is refused rather than adopted.
+   *
+   * R5's wording here was "identity is NOT re-derived", which was wrong on its
+   * face: it is re-derived, deliberately, and the comparison is the guarantee.
+   * No user id is ever passed between the two — only the credential is — so a
+   * caller can never state who they are.
+   *
+   * WHY THE COOKIE PATH IS NOT A WEAKENING: `getUserIdFromRequest` reads the
+   * same `ACCESS_TOKEN_COOKIE`, verifies the same token and runs the same
+   * revocation check. It is strictly the same identity, established twice and
+   * compared, rather than a second, weaker one.
+   *
+   * BEARER-JWT CALLERS — CORRECTED IN R6, and this paragraph with it.
+   *
+   * R5 left the bearer path resolving through a cookie-only identity port, so a
+   * bearer caller authenticated here and then came back UNAUTHENTICATED from the
+   * resolver: a valid identity translated into an absence of choice. R6 fixed
+   * that where it belonged, in `resolveTenantForCredential`, which hands the
+   * resolver the CREDENTIAL this request authenticated — never a user id — so
+   * the same token establishes the same person on both sides.
+   *
+   * A machine caller that needs a FIXED tenant should still use an API key,
+   * whose organization comes from the key row and which no cookie can move.
+   *
+   * WHAT AN UNAUTHENTICATED DECISION MEANS NOW (R6.1). With the bearer route
+   * repaired, the only way the resolver can fail to identify a caller who just
+   * authenticated is that the credential stopped being valid between the two
+   * checks — revoked, expired or signed out. That is an authentication outcome
+   * and is answered as one: 401, via `identity_no_longer_authenticated`. It is
+   * NOT "choose an organization", which is reserved for a valid identity whose
+   * memberships leave the question open.
+   */
+  const decision = await resolveTenantForCredential(req);
+
+  if (!decision.granted) {
+    return { ok: false, reason: REASON_FOR_REFUSED_TENANT[decision.code], userId: payload.sub };
+  }
+
+  if (decision.userId !== payload.sub) {
+    // Never expected. Refused explicitly rather than assumed impossible.
+    return { ok: false, reason: "organization_identity_mismatch", userId: payload.sub };
+  }
+
+  /*
+   * PHASE 110-A1.0b R5 — THE TENANT-INTENT PRECONDITION, now that the tenant is
+   * the one the reader chose.
+   *
+   * The order of these two repairs is not interchangeable, and doing them the
+   * other way round would have been actively harmful. While this path still
+   * resolved the EARLIEST membership, a page rendered for B would have asserted
+   * B, the server would have resolved A, and every request from a
+   * correctly-behaving client would have failed — turning a silent wrong-tenant
+   * write into a total outage. The resolver had to be right first; only then
+   * does asking "is this still the organization you were shown?" mean anything.
+   *
+   * SESSION PATH ONLY, and that is decided by the AUTHENTICATION PATH rather
+   * than by anything the caller can choose. An API key resolves earlier in
+   * `resolvePlatformContext`, carries its own organization from the key row and
+   * never reaches this line, so no cookie and no header can move a machine
+   * credential's tenant. Nothing here reads a User-Agent or any other
+   * self-declared value.
+   *
+   * One implementation, shared with the billing path — see
+   * `checkTenantPrecondition`. (R6 renamed it when "missing" became a third
+   * outcome; this reference still said `tenantPreconditionConflicts`, which has
+   * not existed since.)
+   */
+  const precondition = checkTenantPrecondition(req, decision.organizationId);
+  if (precondition === "conflict") {
+    return { ok: false, reason: "organization_context_conflict", userId: payload.sub };
+  }
+  if (precondition === "missing") {
+    // PHASE 110-A1.0b R6 — a state-changing request that asserted nothing.
+    return { ok: false, reason: "organization_precondition_required", userId: payload.sub };
+  }
 
   return {
     ok: true,
     ctx: {
       userId:     payload.sub,
-      orgId:      org.orgId,
+      orgId:      decision.organizationId,
       authMethod: "jwt",
       scopes:     ["admin"], // JWT session = full access; org-level RBAC enforces role perms
     },
   };
 }
+
+/**
+ * PHASE 110-A1.0b R5 — the tenant refusal, in this module's vocabulary.
+ *
+ * Total over `TenantRefusalCode`, so a code added to the selection contract
+ * later fails to compile here instead of falling through to whichever reason
+ * happened to be last.
+ */
+const REASON_FOR_REFUSED_TENANT: Record<TenantRefusalCode, PlatformAuthFailureReason> = {
+  /*
+   * PHASE 110-A1.0b R6.1 — an AUTHENTICATION outcome, answered as one.
+   *
+   * R5 wrote `organization_selection_required` here because a bearer-only
+   * caller then reached a cookie-only identity port and came back
+   * UNAUTHENTICATED. R6 removed that route at its source
+   * (`resolveTenantForCredential`) and left this line, and its comment,
+   * describing a path that no longer exists.
+   *
+   * What actually reaches it now is a credential that authenticated at the
+   * first check and no longer does at the second — a session revoked, expired
+   * or signed out in between. The remedy is to sign in, and 409 "select an
+   * organization" neither says that nor offers anything the caller can act on.
+   * It also DIVERGED: `resolveOrgContext` forwards the same resolver code
+   * untouched, so the identical condition answered 401 on the billing routes
+   * and 409 on the 69 platform routes.
+   *
+   * "There is no organization selected" is now reserved for what it describes:
+   * a VALID identity whose memberships leave the question open.
+   */
+  AUTHENTICATION_REQUIRED: "identity_no_longer_authenticated",
+  ORGANIZATION_CONTEXT_REQUIRED: "no_active_organization_membership",
+  ORGANIZATION_SELECTION_REQUIRED: "organization_selection_required",
+  ORGANIZATION_CONTEXT_UNAVAILABLE: "organization_context_unavailable",
+};
 
 async function resolveApiKeyContext(
   rawKey: string,
@@ -358,7 +629,25 @@ export async function requirePlatformAuth(
  * that was not happening.
  */
 function refusalFor(reason: PlatformAuthFailureReason): ContextRefusal {
-  if (reason === "organization_resolution_failed" && getStorageMode() !== "database") {
+  /*
+   * PHASE 110-A1.0b R5 — the session-mode carve-out is PRESERVED, and extended
+   * to the reason that now carries the same situation.
+   *
+   * Before R5 an absent organization store surfaced here as
+   * `organization_resolution_failed`. The selection-aware resolver classifies
+   * the same condition as MEMBERSHIP_UNAVAILABLE, which arrives as
+   * `organization_context_unavailable`. Without the second name below, a
+   * session-mode deployment would have flipped from 409 to 503 on 69 routes as
+   * a side effect of this repair — a behaviour change nobody asked for, in a
+   * mode where nothing is actually broken and retrying cannot help.
+   *
+   * The billing path answers 503 here. That divergence is older than this
+   * change, is NOT closed by it, and stays reported rather than silently
+   * unified in whichever direction this edit happened to touch.
+   */
+  const storeAbsentInSessionMode =
+    reason === "organization_resolution_failed" || reason === "organization_context_unavailable";
+  if (storeAbsentInSessionMode && getStorageMode() !== "database") {
     return "ORGANIZATION_CONTEXT_REQUIRED";
   }
   return REASON_TO_REFUSAL[reason];
@@ -389,8 +678,33 @@ const REASON_TO_REFUSAL: Record<PlatformAuthFailureReason, ContextRefusal> = {
   invalid_access_token: "AUTHENTICATION_REQUIRED",
   invalid_api_key: "AUTHENTICATION_REQUIRED",
   inactive_or_revoked_session: "AUTHENTICATION_REQUIRED",
+  /*
+   * PHASE 110-A1.0b R6.1 — 401, and deliberately indistinguishable from the
+   * line above in the RESPONSE. The caller learns "authentication required";
+   * which of the two checks refused is an operator-facing fact and stays in the
+   * log stream, where the anti-enumeration property is not at stake.
+   */
+  identity_no_longer_authenticated: "AUTHENTICATION_REQUIRED",
   // Post-authentication: the session is good, the context is not.
   no_active_organization_membership: "ORGANIZATION_CONTEXT_REQUIRED",
   // Not the caller's problem at all.
   organization_resolution_failed: "INTERNAL_ERROR",
+  /*
+   * PHASE 110-A1.0b R5 — 409, the same status and the same code the billing
+   * path already returns for this state, so the two helpers no longer answer
+   * one question two ways.
+   */
+  organization_selection_required: "ORGANIZATION_SELECTION_REQUIRED",
+  // 503: a dependency is not answering. Reporting it as "you have no
+  // organization" would invent a fact about the account out of an outage.
+  organization_context_unavailable: "ORGANIZATION_CONTEXT_UNAVAILABLE",
+  /*
+   * 403. Not 401 — the caller authenticated perfectly well; what is refused is
+   * a tenant decision that describes somebody else. There is nothing to
+   * re-authenticate and nothing for the caller to select.
+   */
+  organization_identity_mismatch: "FORBIDDEN",
+  // 409, and the same code the billing path already returns for this state.
+  organization_context_conflict: "ORGANIZATION_CONTEXT_CONFLICT",
+  organization_precondition_required: "ORGANIZATION_PRECONDITION_REQUIRED",
 };

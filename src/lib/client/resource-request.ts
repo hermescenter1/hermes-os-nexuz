@@ -40,7 +40,15 @@
  *     the server decided.
  *   - It never surfaces a server-provided message to the user. Those strings are
  *     fixed English; the UI maps `code` to its own localized wording.
- *   - It sends no organization, site, user or role, and reads no storage.
+ *   - It sends no site, user or role, and reads no storage.
+ *
+ * PHASE 110-A1.0b R3 (R3-2) — one thing it now DOES send: the organization the
+ * page was RENDERED for, as a precondition header. That amends the bullet above,
+ * which used to say "no organization" too, and the amendment is deliberate.
+ * Without it a second tab still displaying organization A submits a mutation
+ * the server performs in B — the selection cookie is shared by every tab and
+ * nothing in the request said which tenant the reader meant. The value grants
+ * nothing; see `tenantPrecondition` below.
  */
 
 /**
@@ -53,6 +61,10 @@
  * a retry button, and `UNAVAILABLE` (503) from both because it is transient.
  */
 import { MACHINE_REFUSAL_CODE_SET } from "@/lib/auth/refusal-vocabulary";
+import {
+  TENANT_PRECONDITION_HEADER,
+  TENANT_RENDERED_ORGANIZATION_ATTRIBUTE,
+} from "@/lib/tenant-selection/contract";
 
 export type ResourceFailureCode =
   | "UNAUTHENTICATED"
@@ -60,6 +72,28 @@ export type ResourceFailureCode =
   // selection. Kept apart from UNAUTHENTICATED because offering them a sign-in
   // link sends them in a circle.
   | "ORGANIZATION_CONTEXT_REQUIRED"
+  // PHASE 110-A1.0b — signed in, a member of SEVERAL organizations, none
+  // chosen. Separate from the line above because the remedy is a choice the
+  // reader can make right now, not a request to an administrator.
+  | "ORGANIZATION_SELECTION_REQUIRED"
+  // PHASE 110-A1.0b R3 (R3-2) — this page asked for an organization that is no
+  // longer the one in effect, because another tab switched. Its own code
+  // because its remedy is unique: reload and look again. It is NOT retryable —
+  // repeating the identical request would send the identical stale
+  // precondition and reach the identical conflict.
+  | "ORGANIZATION_CONTEXT_CONFLICT"
+  /*
+   * PHASE 110-A1.0b R6.1 — 428. This request stated NO organization at all, and
+   * since R6 a write that states none is refused before any side effect.
+   *
+   * It had no code here, so it fell through `classifyFailure` to `FAILED` — a
+   * generic failure, which `isRetryable` says to RETRY. The retry sends the
+   * identical request with the identical missing header and reaches the
+   * identical 428. It is kept apart from the CONFLICT above for the same reason
+   * the server keeps 428 apart from 409: one page showed a stale organization,
+   * the other showed none at all, and only the first is a stale-tab story.
+   */
+  | "ORGANIZATION_PRECONDITION_REQUIRED"
   | "SITE_CONTEXT_REQUIRED"
   | "FORBIDDEN"
   | "NOT_FOUND"
@@ -148,6 +182,38 @@ export function classifyFailure(status: number, code?: unknown): ResourceFailure
     // The voice surface's name for the same state, from its own closed union.
     case "ORGANIZATION_SCOPE_REQUIRED":
       return "ORGANIZATION_CONTEXT_REQUIRED";
+    /*
+     * PHASE 110-A1.0b — a DIFFERENT state, deliberately not folded into the
+     * line above. Both are 409 and both mean "no organization is in effect",
+     * but the reader's next move is opposite: one asks an administrator for
+     * access, the other picks from a list they already have. Rendering the
+     * second as the first shows a multi-organization owner a message telling
+     * them to request membership they already hold.
+     */
+    case "ORGANIZATION_SELECTION_REQUIRED":
+      return "ORGANIZATION_SELECTION_REQUIRED";
+    /*
+     * PHASE 110-A1.0b R3 (R3-2) — a stale tenant precondition. Also 409, and
+     * deliberately not folded into either line above: nothing is missing, and
+     * the reader is authorized. What changed is which organization is in
+     * effect, and only a reload can reconcile the page with it.
+     */
+    case "ORGANIZATION_CONTEXT_CONFLICT":
+      return "ORGANIZATION_CONTEXT_CONFLICT";
+    /*
+     * PHASE 110-A1.0b R6.1 — the write asserted nothing. Its own code, and NOT
+     * retryable: the same request would carry the same absent header.
+     */
+    case "ORGANIZATION_PRECONDITION_REQUIRED":
+      return "ORGANIZATION_PRECONDITION_REQUIRED";
+    /*
+     * The membership store could not answer. This is the transient class, so it
+     * reaches the retry-capable UNAVAILABLE rather than the account-shaped
+     * organization refusals — a reader must not be told they have no
+     * organization because a database was briefly unreachable.
+     */
+    case "ORGANIZATION_CONTEXT_UNAVAILABLE":
+      return "UNAVAILABLE";
     case "SITE_CONTEXT_REQUIRED":
       return "SITE_CONTEXT_REQUIRED";
     case "NOT_FOUND":
@@ -169,9 +235,71 @@ export function classifyFailure(status: number, code?: unknown): ResourceFailure
   // A bare 409 is NOT assumed to be a context refusal: /api/billing/subscription
   // answers 409 for a genuine edit conflict. Only an explicit code above means
   // "select an organization"; without one this stays a generic failure.
+  /*
+   * PHASE 110-A1.0b R6.1 — 428 has exactly one meaning in this application, and
+   * unlike a bare 409 it is not shared with any domain conflict: RFC 6585
+   * defines it for an origin server requiring the request to be conditional,
+   * and the tenant precondition is the only condition this application
+   * requires. Safe to classify from the status alone.
+   */
+  if (status === 428) return "ORGANIZATION_PRECONDITION_REQUIRED";
   if (status === 429) return "RATE_LIMITED";
   if (status === 503) return "UNAVAILABLE";
   return "FAILED";
+}
+
+/**
+ * PHASE 110-A1.0b R3 (R3-2) — the organization this PAGE is showing.
+ *
+ * Read from the markup the server rendered, not from client state. The question
+ * is "which tenant is the reader looking at?", and only the render can answer
+ * it; a value kept in a store could be refreshed while the visible page still
+ * shows the previous organization, which is the failure this closes rather than
+ * one to reproduce.
+ *
+ * `null` when the page has no shell, when the reader has no resolved
+ * organization, or outside a browser.
+ *
+ * PHASE 110-A1.0b R6.1 — WHAT `null` COSTS NOW. This paragraph used to end "and
+ * behaves exactly as it did before", which was true in R3 and stopped being
+ * true in R6: a WRITE that asserts nothing is refused with 428. So a mutation
+ * on a page that renders no stamp is not an unprotected request — it is a
+ * BROKEN one, and `MUTATION-CHAINS.txt` in the R6.1 pack traces every mutating
+ * call site to the layout that stamps its page rather than assuming one does.
+ * Reads are unaffected and still assert nothing.
+ *
+ * Exported for one reason, stated so it is not mistaken for future-proofing:
+ * the browser-half test asserts the DOM read on its own, separately from the
+ * header it produces. Folding the two together would leave "an empty stamp
+ * asserts nothing" provable only through a fetch.
+ */
+export function tenantPrecondition(): string | null {
+  if (typeof document === "undefined") return null;
+  const el = document.querySelector(`[${TENANT_RENDERED_ORGANIZATION_ATTRIBUTE}]`);
+  const value = el?.getAttribute(TENANT_RENDERED_ORGANIZATION_ATTRIBUTE);
+  return value && value.length > 0 ? value : null;
+}
+
+/**
+ * Attach the precondition to a request, if this page has one to assert.
+ *
+ * Exported because not every call goes through `requestJson`: a mutation that
+ * needs the raw `Response` — to read a refusal code the UI branches on — still
+ * has to carry the same header, and re-deriving it at each call site is how the
+ * two would drift.
+ *
+ * A caller's own explicit header WINS. Nothing here overwrites an intent the
+ * caller stated deliberately.
+ */
+export function withTenantPrecondition(init?: RequestInit): RequestInit {
+  const organizationId = tenantPrecondition();
+  if (!organizationId) return init ?? {};
+
+  const headers = new Headers(init?.headers);
+  if (!headers.has(TENANT_PRECONDITION_HEADER)) {
+    headers.set(TENANT_PRECONDITION_HEADER, organizationId);
+  }
+  return { credentials: "same-origin", ...init, headers };
 }
 
 /**
@@ -210,7 +338,7 @@ export async function requestJson<T>(
 ): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(url, { credentials: "same-origin", ...init });
+    response = await fetch(url, withTenantPrecondition({ credentials: "same-origin", ...init }));
   } catch (error) {
     // An aborted request is the caller's own doing; let it propagate so the
     // hook can ignore it rather than paint an error over a screen the user has

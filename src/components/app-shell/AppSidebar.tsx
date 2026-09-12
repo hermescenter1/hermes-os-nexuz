@@ -27,6 +27,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { cn, IconButton } from "@/components/ds";
 import { activeAppNavHref, type AppNavGroup } from "@/lib/navigation/app-nav";
 import { SideTooltip } from "./SideTooltip";
+import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { OrganizationSelector, SiteSelector } from "./OrganizationSelector";
 
 const COLLAPSE_KEY = "hermes.appshell.sidebar.collapsed";
@@ -37,11 +38,15 @@ export interface AppSidebarProps {
   organizationName?: string | null;
   /** True when the context could not be RESOLVED, as opposed to being absent. */
   organizationUnavailable?: boolean;
+  /** PHASE 110-A1.0b - several memberships, none chosen. */
+  organizationSelectionRequired?: boolean;
+  /** PHASE 110-A1.0b - a context is resolved AND alternatives exist. */
+  organizationSelectable?: boolean;
   siteName?: string | null;
   className?: string;
 }
 
-export function AppSidebar({ groups, organizationName, organizationUnavailable, siteName, className }: AppSidebarProps) {
+export function AppSidebar({ groups, organizationName, organizationUnavailable, organizationSelectionRequired, organizationSelectable, siteName, className }: AppSidebarProps) {
   const t = useTranslations("appShell");
   const locale = useLocale();
   const pathname = usePathname();
@@ -99,7 +104,10 @@ export function AppSidebar({ groups, organizationName, organizationUnavailable, 
       {/* ── Workspace context (org / site) + search ── */}
       {!collapsed && (
         <div className="flex shrink-0 flex-col gap-2 px-4 pb-3">
-          <OrganizationSelector name={organizationName} unavailable={organizationUnavailable} />
+          <OrganizationSelector name={organizationName} unavailable={organizationUnavailable} selectionRequired={organizationSelectionRequired} />
+          {organizationSelectionRequired || organizationSelectable ? (
+            <OrganizationSwitcher required={organizationSelectionRequired} />
+          ) : null}
           <SiteSelector name={siteName} />
           <button
             type="button"
