@@ -52,7 +52,12 @@ const LOCALES = ["fa", "en", "de"];
  * profile-gated exclusion — so a new service picking up `.env.production`
  * cannot silently escape the override.
  */
-export const ENV_FILE_SERVICES = Object.freeze(["hermes-web", "postgres"]);
+// PHASE 109-C-UI.2-R8 adds `hermes-metering-worker`, which declares env_file
+// for its bearer token. Without it in this list a candidate run would leave
+// that service reading the REPOSITORY's .env.production — the exact leak this
+// override exists to prevent. The companion test derives the expected set
+// from the compose file, so a future service cannot be forgotten silently.
+export const ENV_FILE_SERVICES = Object.freeze(["hermes-metering-worker", "hermes-web", "postgres"]);
 
 /**
  * Build the Compose invocation for a candidate run so that the REPOSITORY's

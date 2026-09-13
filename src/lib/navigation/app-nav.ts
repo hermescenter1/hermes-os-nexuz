@@ -71,6 +71,11 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
       { labelKey: "assets", href: "/assets", pageCapability: "authoring" },
       { labelKey: "sites", href: "/dashboard/industrial/sites" },
       { labelKey: "operationsCenter", href: "/dashboard/operations" },
+      // PHASE 109-C-UI.2. No `pageCapability`: the destination carries no
+      // RequireCapability layout guard - it proves `view_industrial` against a
+      // resolved tenant context inside the page, which this presentation field
+      // cannot express and must not approximate.
+      { labelKey: "liveOperations", href: "/live-operations" },
       { labelKey: "automation", href: "/automation", pageCapability: "authoring" },
       { labelKey: "multiSite", href: "/dashboard/multi-site" },
       { labelKey: "maintenance", href: "/cmms", pageCapability: "authoring" },

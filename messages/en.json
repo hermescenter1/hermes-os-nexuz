@@ -6597,6 +6597,7 @@
         "assets": "Assets",
         "sites": "Sites",
         "operationsCenter": "Operations Center",
+        "liveOperations": "Live Operations",
         "automation": "Automation",
         "multiSite": "Multi-Site",
         "maintenance": "Maintenance (CMMS)",
@@ -9457,6 +9458,126 @@
     "statusOnTrack": "On Track",
     "totalPlans": "Total Plans",
     "unavailable": "Success plan data unavailable"
+  },
+  "liveOperations": {
+    "metaTitle": "Live Operations",
+    "eyebrow": "Operations",
+    "title": "Live Operations",
+    "subtitle": "Operational records for",
+    "boundary": {
+      "advisory": "Advisory view",
+      "noControl": "This surface cannot command equipment",
+      "humanValidation": "Every action requires human validation and a permit"
+    },
+    "state": {
+      "OK": "Measured",
+      "NO_DATA": "No data",
+      "NOT_CONNECTED": "Not connected",
+      "STALE": "Stale",
+      "UNKNOWN": "Unknown",
+      "SIMULATED": "Simulated"
+    },
+    "freshness": {
+      "FRESH": "Fresh",
+      "AGEING": "Ageing",
+      "STALE": "Stale",
+      "UNKNOWN": "Freshness unknown"
+    },
+    "degraded": {
+      "notConnectedHeading": "No source was reached",
+      "partialHeading": "This picture is incomplete",
+      "notAnAllClear": "An empty screen here is not an all-clear. One or more sources could not be read, so this page cannot tell you whether the plant is quiet."
+    },
+    "summary": {
+      "heading": "Operational summary",
+      "activeSignals": "Active signals",
+      "unresolvedIssues": "Unresolved issues",
+      "staleSources": "Stale sources",
+      "pendingValidations": "Pending human validations",
+      "recentEvents": "Recent events"
+    },
+    "filters": {
+      "label": "Filters",
+      "allSeverities": "All severities",
+      "allAcknowledgements": "All acknowledgement states",
+      "allSites": "All sites"
+    },
+    "severity": {
+      "CRITICAL": "Critical",
+      "HIGH": "High",
+      "MEDIUM": "Medium",
+      "LOW": "Low"
+    },
+    "range": {
+      "1h": "Last hour",
+      "24h": "Last 24 hours",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days"
+    },
+    "acknowledgement": {
+      "UNACKNOWLEDGED": "Unacknowledged",
+      "ACKNOWLEDGED": "Acknowledged",
+      "RESOLVED": "Resolved"
+    },
+    "origin": {
+      "PLANT_RECORD": "Plant record",
+      "DERIVED": "Derived",
+      "CATALOGUE": "Reference catalogue"
+    },
+    "events": {
+      "heading": "Events"
+    },
+    "event": {
+      "observedAt": "Observed by the server",
+      "site": "Site",
+      "owner": "Owner",
+      "noOwner": "Unassigned",
+      "unattributed": "Not attributed to a site",
+      "evidence": "Evidence"
+    },
+    "empty": {
+      "notConnected": {
+        "heading": "No source was reached",
+        "body": "This page could not read any operational source, so it cannot say whether there are events. This is not the same as there being none."
+      },
+      "noSiteAccess": {
+        "heading": "No site is in your scope",
+        "body": "Your membership grants access to no site in this organisation, so no operational record can be shown. An administrator can grant site access."
+      },
+      "noMatches": {
+        "heading": "No events match this filter",
+        "body": "The sources answered and nothing in the selected range, severity or site matched. Widen the time range to see more."
+      }
+    },
+    "capabilities": {
+      "heading": "What this surface cannot do",
+      "liveStream": "It reads recorded events. It does not subscribe to a live gateway, historian or PLC feed.",
+      "acknowledgeFromThisSurface": "Acknowledgement is shown as recorded elsewhere. It cannot be changed from here.",
+      "safeActionExecution": "No control action can be issued from Hermes. Safe actions are carried out on the plant, under permit."
+    },
+    "refusal": {
+      "unauthenticated": {
+        "heading": "Sign in required",
+        "body": "This is an authenticated operations surface. Sign in to continue."
+      },
+      "noOrganization": {
+        "heading": "No active organisation",
+        "body": "Your account has no active organisation membership, so there is no plant to show. An administrator can invite you to one."
+      },
+      "multipleOrganizations": {
+        "heading": "Select an organisation",
+        "body": "Your account has active membership in more than one organisation. Operational data is never merged across organisations, so one must be selected before anything is shown."
+      },
+      "membershipUnavailable": {
+        "heading": "Membership could not be read",
+        "body": "The membership store could not be reached, so this page cannot establish which organisation you are acting in.",
+        "notAnAllClear": "Nothing is shown because nothing could be read. This is not an all-clear."
+      },
+      "forbidden": {
+        "heading": "Not permitted",
+        "body": "Your role in this organisation does not include permission to view industrial data."
+      }
+    }
   },
   "automationStudio": {
     "title": "Automation Engineering Studio",

@@ -617,6 +617,10 @@ model Organization {
   apiKeys              ApiKey[]
   industrialSites      IndustrialSite[]
   industrialGateways   IndustrialGateway[]
+  // Phase 109-C-UI.2-R3: intelligence automation execution records.
+  automationRuns       IndustrialAutomationRun[]
+  // Phase 109-C-UI.2-R7: durable metering events awaiting delivery.
+  meteringOutbox       IndustrialMeteringOutbox[]
   // Phase 94: OT Edge & automation engineering
   engineeringProjects  EngineeringProject[]
   engineeringImports   EngineeringImport[]
@@ -1101,6 +1105,8 @@ model IndustrialSite {
   twinLayouts    DigitalTwinLayout[]
   // Phase 43: Site Isolation
   userSites      UserSite[]
+  // Phase 109-C-UI.2-R3: automation runs scoped to this site.
+  automationRuns IndustrialAutomationRun[]
   // Phase 94: OT Edge & automation engineering
   engineeringProjects EngineeringProject[]
   engineeringImports  EngineeringImport[]
@@ -1176,6 +1182,17 @@ model IndustrialAsset {
   otTags         AutomationTag[]
   otAlarms       AlarmDefinition[]
   otNetworkNodes IndustrialNetworkNode[]
+
+  // PHASE 109-C-UI.2-R7 — the five analysis outputs now REFERENCE the asset
+  // they describe. Every one is `onDelete: Restrict`: these rows are the
+  // historical record of what the plant was doing, so an asset that still has
+  // them cannot be deleted out from under them, and no delete may cascade
+  // through and erase them.
+  analysisAlerts        AssetAlert[]
+  analysisRiskScores    AssetRiskScore[]
+  analysisSnapshots     AssetIntelligenceSnapshot[]
+  analysisHealthHistory AssetHealthHistory[]
+  analysisRecommendations MaintenanceRecommendation[]
 
   @@index([organizationId])
   @@index([siteId])
@@ -1433,6 +1450,7 @@ model AssetHealthHistory {
   healthStatus   String       // "healthy" | "degraded" | "critical" | "unknown"
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset          IndustrialAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, assetId, createdAt])
 }
@@ -1591,6 +1609,7 @@ model AssetRiskScore {
   createdAt           DateTime             @default(now())
   metadata            Json                 @default("{}") // evidenceIds, formulaVersion, weightSetVersion
   organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset               IndustrialAsset      @relation(fields: [assetId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, assetId, createdAt])
 }
@@ -1665,6 +1684,7 @@ model MaintenanceRecommendation {
   updatedAt          DateTime             @updatedAt
   metadata           Json                 @default("{}") // formulaVersion, weightSetVersion
   organization       Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset              IndustrialAsset      @relation(fields: [assetId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, assetId, createdAt])
 }
@@ -2268,10 +2288,92 @@ model AssetAlert {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset          IndustrialAsset    @relation(fields: [assetId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, assetId, createdAt])
   @@index([organizationId, alertType, createdAt])
   @@index([organizationId, dismissed, createdAt])
+}
+
+/// PHASE 109-C-UI.2-R3 — the execution record for an intelligence automation run.
+///
+/// WHY A TABLE AND NOT A FLAG.
+/// The run is a durable, org-scoped write operation. It needs three things no
+/// in-process structure can provide:
+///
+///   * idempotency that survives a retry on a DIFFERENT replica
+///     -> @@unique([organizationId, idempotencyKey])
+///   * a concurrency guard that survives a crash and more than one replica
+///     -> the partial unique index created in the migration, over
+///        (organizationId, siteScopeKey) WHERE status IN ('ACCEPTED','RUNNING')
+///   * an auditable record of what a run actually did
+///     -> the scope, the actor, the reason, the counts, the failure code
+///
+/// The knowledge-graph rebuild guards concurrency with an in-process Set, which
+/// is per-replica; this deliberately does not copy that.
+///
+/// `siteScopeKey` exists because a partial unique index cannot treat NULL as a
+/// value: two ORGANISATION-mode runs would both pass a UNIQUE(organizationId,
+/// siteId) check while siteId is NULL. It holds the siteId in SITE mode and the
+/// literal "*" in ORGANISATION mode, so both modes are guarded by one index.
+model IndustrialAutomationRun {
+  id             String                        @id @default(cuid())
+  organizationId String
+  /// Set in SITE mode; NULL in ORGANISATION mode. Never a fallback — a run
+  /// without a resolved scope is refused before a row is written.
+  siteId         String?
+  /// Non-null mirror of the scope used by the concurrency index. See above.
+  siteScopeKey   String                        @db.VarChar(191)
+  scopeMode      IndustrialAutomationScopeMode @default(SITE)
+  status         IndustrialAutomationRunStatus @default(ACCEPTED)
+
+  /// Supplied by the caller. Scoped to the organisation, so one tenant can
+  /// never observe or collide with another tenant's key.
+  idempotencyKey String                        @db.VarChar(128)
+  /// Server-generated, returned to the caller, and carried into every audit row.
+  requestId      String                        @db.VarChar(64)
+
+  actorId        String?
+  actorRole      String                        @db.VarChar(32)
+  authMethod     String                        @db.VarChar(16)
+  /// Mandatory for ORGANISATION mode: an org-wide run has to be justified in
+  /// the record, not only authorised.
+  reason         String?                       @db.VarChar(500)
+
+  /// Sites the run covered / consciously left out. Stored as ids only.
+  sitesIncluded  Json                          @default("[]")
+  sitesExcluded  Json                          @default("[]")
+
+  /// Counts, kept apart on purpose — see F-06. `assetsDiscovered` is what the
+  /// query found; `assetsProcessed` is what actually succeeded. They are not
+  /// interchangeable and neither is derived from an input array's length.
+  assetsDiscovered     Int                     @default(0)
+  assetsAttempted      Int                     @default(0)
+  assetsProcessed      Int                     @default(0)
+  assetsFailed         Int                     @default(0)
+  snapshotsCreated     Int                     @default(0)
+  riskScoresCreated    Int                     @default(0)
+  alertsCreated        Int                     @default(0)
+  recommendationsCreated Int                   @default(0)
+
+  failureCode    String?                       @db.VarChar(64)
+  /// Per-asset failures, truncated. Ids and codes only — never a stack trace.
+  failures       Json                          @default("[]")
+
+  startedAt      DateTime                      @default(now())
+  heartbeatAt    DateTime?
+  completedAt    DateTime?
+  /// A run still ACCEPTED/RUNNING past this instant is reclaimable, so a crashed
+  /// replica cannot hold a scope locked forever.
+  expiresAt      DateTime
+
+  organization   Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site           IndustrialSite?               @relation(fields: [siteId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, status, startedAt])
+  @@index([organizationId, siteId, status])
+  @@index([organizationId, requestId])
 }
 
 model AssetIntelligenceSnapshot {
@@ -2290,6 +2392,7 @@ model AssetIntelligenceSnapshot {
   metadata       Json         @default("{}")
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset          IndustrialAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, assetId, createdAt])
 }
@@ -6836,6 +6939,129 @@ model SalesLead {
 
 
 // ════════════════════════════════════════════════════════════════════════════
+/*
+  PLACEMENT IS DELIBERATE — this model must stay ABOVE the OT Edge section.
+
+  `prisma/__tests__/phase94-migration-safety.test.ts` scans from that section's
+  header comment to the END OF THE FILE and forbids a plain quantity field
+  there, because that is how an OT model would express a control action.
+  Appending this model to the tail of the schema put a billing quantity inside
+  that region and turned the gate red — correctly, since the gate cannot know a
+  count of runs from a setpoint.
+
+  The header text is deliberately NOT quoted anywhere in this note: the gate
+  locates its region with a plain string search, so repeating the phrase would
+  move the region up to here and re-break the gate. It did exactly that once.
+*/
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 109-C-UI.2-R8 — the worker lease.
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// R8 needed a distributed lock so several web replicas do not all sweep the
+// metering outbox at once. This project has no scheduler and no lock service to
+// borrow, so rather than introduce one, the lease reuses the mechanism R3
+// already built and R5 proved against two OS processes: a row with an owner and
+// an expiry, taken by a CONDITIONAL update.
+//
+// Why a row and not a PostgreSQL advisory lock: a session-level advisory lock
+// belongs to a connection, and Prisma hands out pooled connections, so the
+// unlock can land on a different session than the lock. A transaction-scoped
+// advisory lock would release at commit — and the delivery pass deliberately
+// commits once PER EVENT, so a poisonous row cannot roll back its neighbours.
+// A lease row is independent of both, and it is also VISIBLE: an operator can
+// see who holds it and until when.
+//
+// The lease is a COORDINATION guarantee, not the correctness one. Exactly-once
+// delivery is already enforced by the conditional status transition on each
+// outbox row; the lease only stops replicas doing redundant work. Both are
+// tested, and the mutation matrix breaks them separately.
+model WorkerLease {
+  /// The job name, e.g. "industrial.metering.outbox". One row per job.
+  name        String   @id @db.VarChar(64)
+  /// Which replica holds it. Opaque, and never a hostname that identifies a tenant.
+  holder      String   @db.VarChar(128)
+  acquiredAt  DateTime @default(now())
+  heartbeatAt DateTime @default(now())
+  /// A crashed holder loses the lease when this passes. No manual recovery.
+  expiresAt   DateTime
+  /// Monotonic. Increments on every acquisition, so a stale holder that wakes up
+  /// can tell it was superseded rather than assuming it still owns the job.
+  fencingToken BigInt  @default(0)
+
+  @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 109-C-UI.2-R7 — durable metering for industrial execution.
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// R6 measured the defect: `meterIndustrialEvent` starts a promise, is never
+// awaited, and ends in `.catch(() => undefined)`. A usage row can therefore be
+// lost with no trace at all, and the response is sent before anyone knows.
+//
+// The owner ruled out fire-and-forget. Of the two sanctioned replacements this
+// is the outbox, chosen because a billing write must NOT be able to roll back an
+// industrial analysis run — see the R7 report for the full argument. The outbox
+// row is written INSIDE the run's transaction, so it commits exactly when the
+// run does and never when the run does not. Delivery to `UsageRecord` is a
+// separate, retrying, idempotent step.
+//
+// `UsageRecord` itself cannot carry this: it has no unique key to make delivery
+// idempotent and no columns for scope, site, actor or operation. Rather than
+// reshape a table that billing and eight other subsystems read, the outbox
+// carries the full context and points at the row it produced.
+enum IndustrialMeteringOutboxStatus {
+  PENDING
+  RETRYING
+  DELIVERED
+  FAILED
+  DEAD_LETTER
+}
+
+model IndustrialMeteringOutbox {
+  id             String                         @id @default(cuid())
+  organizationId String
+  /// Null for an organisation-wide run. Never a stand-in for "every site".
+  siteId         String?
+  scopeMode      IndustrialAutomationScopeMode
+  /// Who caused it. Null for an organisation credential, which has no user.
+  actorId        String?
+  actorRole      String                         @db.VarChar(64)
+  authMethod     String                         @db.VarChar(16)
+  /// What was done, e.g. "industrial.automation.run".
+  operation      String                         @db.VarChar(64)
+  metric         String                         @db.VarChar(64)
+  value          Decimal                        @db.Decimal(20, 4)
+
+  /// The run this event belongs to, and the two ids that make it replayable.
+  runId          String                         @db.VarChar(64)
+  requestId      String                         @db.VarChar(64)
+  idempotencyKey String                         @db.VarChar(128)
+
+  status         IndustrialMeteringOutboxStatus @default(PENDING)
+  attempts       Int                            @default(0)
+  /// A stable failure CODE, never a driver message — those leak table and
+  /// column names into a row the operator reads.
+  lastErrorCode  String?                        @db.VarChar(64)
+  nextAttemptAt  DateTime                       @default(now())
+  claimedAt      DateTime?
+  deliveredAt    DateTime?
+  /// The UsageRecord this event became. Present exactly when DELIVERED.
+  usageRecordId  String?
+  createdAt      DateTime                       @default(now())
+  updatedAt      DateTime                       @updatedAt
+
+  organization   Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  /// Exactly-once at the SOURCE. One run, one metering event, however many
+  /// times the request is replayed.
+  @@unique([organizationId, idempotencyKey, metric])
+  /// The worker's claim query.
+  @@index([status, nextAttemptAt])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, runId])
+}
+
 // Phase 94 — OT Edge & Automation Asset Intelligence Foundation
 // ════════════════════════════════════════════════════════════════════════════
 //
@@ -6933,6 +7159,27 @@ enum EngineeringSourceType {
   SCADA_EXPORT
   GENERIC
   SIMULATOR
+}
+
+/// PHASE 109-C-UI.2-R3. SITE is the default everywhere it appears; ORGANISATION
+/// is never inferred and never a fallback — it must be asked for explicitly and
+/// carries its own capability, confirmation and audit reason.
+enum IndustrialAutomationScopeMode {
+  SITE
+  ORGANISATION
+}
+
+/// ACCEPTED  the scope lock is held, work has not started
+/// RUNNING   assets are being processed
+/// COMPLETED finished; the counts on the row are final and replay-safe
+/// FAILED    finished badly; failureCode says why, counts are still truthful
+/// EXPIRED   reclaimed after `expiresAt` — the replica running it is presumed gone
+enum IndustrialAutomationRunStatus {
+  ACCEPTED
+  RUNNING
+  COMPLETED
+  FAILED
+  EXPIRED
 }
 
 enum EngineeringImportStatus {

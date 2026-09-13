@@ -83,13 +83,13 @@ describe("every protected pattern is covered by a declared prefix", () => {
     expect(orphans, "these prefixes protect nothing").toEqual([]);
   });
 
-  it("the counts are consistent — 23 patterns, 30 prefixes", () => {
+  it("the counts are consistent — 24 patterns, 31 prefixes", () => {
     // The prefix list is LONGER on purpose: two patterns are regex alternations
     // covering six and six route families respectively, and three
     // `dashboard/*` patterns exist only to express a stricter ROLE requirement,
     // not a wider path, so they collapse into `dashboard`.
-    expect(PROTECTED_PATHS.length).toBe(23);
-    expect(PROTECTED_ROUTE_PREFIXES.length).toBe(30);
+    expect(PROTECTED_PATHS.length).toBe(24);
+    expect(PROTECTED_ROUTE_PREFIXES.length).toBe(31);
   });
 });
 

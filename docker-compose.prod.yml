@@ -82,6 +82,60 @@ services:
         max-size: "20m"
         max-file: "5"
 
+  # ── PHASE 109-C-UI.2-R8 — the metering outbox worker ────────────────────────
+  #
+  # R7 made industrial metering durable: the run writes an outbox row inside its
+  # own transaction instead of a fire-and-forget call that could vanish. Nothing
+  # delivered those rows, so they accumulated as PENDING and no UsageRecord was
+  # ever written. This service is what runs the delivery.
+  #
+  # It is a THIN TRIGGER, not the worker. The delivery logic lives in the app —
+  # the same TypeScript the test suites exercise against real PostgreSQL — and
+  # this process polls POST /api/industrial/metering/deliver on a bounded
+  # interval. It therefore needs no database credentials, no Prisma, and no
+  # volume: it holds no state and can be killed at any moment without losing an
+  # event.
+  #
+  # WHY ITS OWN IMAGE. Reusing the web image with a different command looked
+  # simpler and was wrong: phase106a-journal-import-path.test.ts asserts the
+  # runner stage copies NO scripts, a contract written after Phase 106 shipped an
+  # importer that could reach production content. The `metering-worker` stage is
+  # therefore tiny and separate — no node_modules, no Prisma, no application
+  # code, and no database credential. A compromised worker container can trigger
+  # delivery through the authenticated endpoint and nothing else.
+  #
+  # SCALING. Safe to run with `--scale hermes-metering-worker=N`. Two guarantees
+  # stack: a database lease means only one replica sweeps at a time, and the
+  # conditional status transition on each outbox row means that even with the
+  # lease gone no event is delivered twice.
+  #
+  # REQUIRED CONFIGURATION. `METERING_WORKER_TOKEN` (or the existing
+  # `METRICS_TOKEN`) must be set in .env.production. The worker entrypoint never
+  # falls open, so without a token this container exits 2 at startup with a
+  # message that says why, rather than logging a 401 every interval forever.
+  hermes-metering-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: metering-worker
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      HERMES_WORKER_BASE_URL: http://hermes-web:3000
+    # Stated explicitly rather than relying on the stage CMD, so the thing this
+    # service runs is visible in the compose file an operator reads.
+    command: ["node", "scripts/industrial/metering-outbox-worker.mjs"]
+    depends_on:
+      hermes-web:
+        condition: service_healthy
+    networks:
+      - hermes_internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
   # Phase 99.7 — explicit, profile-gated migration runner. NEVER started by
   # `up -d` (the "migrate" profile is off by default), holds no ports, and is
   # only ever invoked as `--profile migrate run --rm hermes-migrate` by the

@@ -35,6 +35,16 @@ export type OrgPermission =
   // Phase 35: Industrial
   | "manage_industrial"   // create/update sites, gateways, assets, connectors
   | "view_industrial"     // read industrial resources and telemetry
+  // PHASE 109-C-UI.2-R3 — organisation-wide execution of the intelligence
+  // automation engine. Deliberately SEPARATE from `manage_industrial`.
+  //
+  // `manage_industrial` means "administer the industrial registry" and is held
+  // by MANAGER, who holds no implicit access to every site (only OWNER and ADMIN
+  // do). Treating it as authority to WRITE analysis records across every site is
+  // the defect Phase 99 closed on POST /api/industrial/assets. A run that
+  // touches the whole estate is a different, rarer act, so it gets its own
+  // permission, its own confirmation and its own audit reason.
+  | "run_industrial_automation_org_wide"
   // Phase 36: Digital Twin
   | "manage_digital_twin" // create/update twin nodes, relations, layouts, asset tags
   | "view_digital_twin"   // read twin graph, health scores, topology
@@ -160,6 +170,9 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_api_usage:       ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "BILLING_ADMIN"],
   // Phase 35 — Industrial Edge Gateway
   manage_industrial:    ["OWNER", "ADMIN", "MANAGER"],
+  // OWNER and ADMIN only — the same two roles that hold implicit access to every
+  // site. MANAGER, ENGINEER and VIEWER are excluded by design, not by omission.
+  run_industrial_automation_org_wide: ["OWNER", "ADMIN"],
   view_industrial:      ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   // Phase 36 — Digital Twin
   manage_digital_twin:  ["OWNER", "ADMIN", "MANAGER"],
