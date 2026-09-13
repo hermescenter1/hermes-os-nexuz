@@ -1,14 +1,21 @@
 "use client";
 
-// PHASE 87C — Organization / Site context affordances (display-only).
+// PHASE 87C — Organization / Site context affordances.
 //
-// TRUTHFUL BY DESIGN: no client-facing endpoint exists today that lists a
-// user's organizations or switches sites (audit: org identity is server-derived
-// per request; POST-only /api/organizations). These selectors therefore render
-// the CURRENT context when the server provides it and an honest empty state
-// when it does not — they never fabricate organizations or fire new API calls.
-// The full prop contract (loading / empty / disabled / current) is in place so
-// a later phase can light them up without UI changes.
+// TRUTHFUL BY DESIGN: these rows render the CURRENT context when the server
+// provides it and an honest empty state when it does not. They never fabricate
+// an organization or a site.
+//
+// PHASE 110-A1.0b — the ORGANIZATION half is no longer display-only, and this
+// comment used to say the opposite: "no client-facing endpoint exists today
+// that lists a user's organizations or switches sites". One does now —
+// `/api/tenant/context` — and `OrganizationSwitcher` beside this file consumes
+// it. This row still only DISPLAYS; switching lives in that component, so the
+// non-interactive element below stays non-interactive and is not announced as
+// something it cannot do.
+//
+// The SITE half is unchanged and still genuinely unbuilt: no per-request site
+// selection exists, so the site chip keeps its honest empty state.
 
 import { useTranslations } from "next-intl";
 import { cn, Skeleton, TechnicalValue } from "@/components/ds";
@@ -23,6 +30,14 @@ interface ContextSelectorProps {
    * was never established.
    */
   unavailable?: boolean;
+  /**
+   * PHASE 110-A1.0b - the reader belongs to SEVERAL organizations and has
+   * chosen none. Distinct from `unavailable` (the question could not be asked)
+   * and from an empty name (the account has no membership): this one is a
+   * choice waiting to be made, and saying "No organization" to somebody who
+   * holds three of them is simply false.
+   */
+  selectionRequired?: boolean;
   /** Optional technical code (site codes stay LTR inside RTL). */
   code?: string | null;
   loading?: boolean;
@@ -34,14 +49,18 @@ function ContextRow({
   empty,
   name,
   unavailable,
+  selectionRequired,
   code,
   loading,
   className,
 }: ContextSelectorProps & { label: string; empty: string }) {
   const t = useTranslations("appShell.shell");
-  /* Three distinct states, never collapsed: a name, an honest empty, or an
-     explicit "could not be determined". */
-  const value = name ?? (unavailable ? t("contextUnresolved") : empty);
+  /* Four distinct states, never collapsed: a name, a pending choice, an honest
+     empty, or an explicit "could not be determined". The order matters - a
+     reader with several memberships must not fall through to the empty state,
+     which is the one sentence that is definitely wrong for them. */
+  const value =
+    name ?? (selectionRequired ? t("contextSelectionRequired") : unavailable ? t("contextUnresolved") : empty);
   return (
     <div
       // A non-interactive context display — deliberately NOT a button, so it is

@@ -118,6 +118,34 @@ export const GUARD_TOKENS = [
   // — that the routes really delegate to it, and that it really performs the
   // checks this entry vouches for.
   { token: "requireVoiceCopilotActor", scope: "tenant" },
+  // PHASE 110-A1.0b — the tenant-context resolvers.
+  //
+  // `resolveTenantDecision` and `selectTenantContext` resolve the acting
+  // organization ON THE SERVER, from a session whose revocation is checked, and
+  // enforce the ACTIVE-membership predicate through the reviewed Phase 110-A1.0
+  // core. They are tenant-scope for the same reason `requireOrgContext` above is:
+  // an organization id exists on exactly one shape of their result, and no path
+  // reaches it without a proven membership behind it.
+  //
+  // A client-supplied candidate is a SELECTOR, never an authority — it can only
+  // narrow the set the server already proved. Registering the two names is what
+  // keeps this classifier honest about `/api/tenant/context`, whose posture
+  // would otherwise read UNKNOWN;
+  // `src/lib/tenant-selection/__tests__/tenant-selection.test.ts` locks the
+  // other half — that these functions really perform the checks this entry
+  // vouches for.
+  { token: "resolveTenantDecision", scope: "tenant" },
+  { token: "selectTenantContext", scope: "tenant" },
+  /*
+   * R2 split the write path so the caller is authenticated BEFORE the request
+   * body is read (finding F4): `resolveTenantBase` performs the identity and
+   * membership resolution, and `selectFromResolved` narrows that proven result.
+   * Both names must be recognised or `PUT /api/tenant/context` reads UNKNOWN
+   * again — which is exactly what the completeness gate caught after the
+   * refactor, and why it is registered rather than silenced.
+   */
+  { token: "resolveTenantBase", scope: "tenant" },
+  { token: "selectFromResolved", scope: "tenant" },
   // Machine identity: the OT gateway authenticates with an HMAC over the
   // envelope using a server-held signing key, and the tenant is read from the
   // gateway record rather than the request.

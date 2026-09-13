@@ -3484,7 +3484,11 @@
     },
     "settings": {
       "title": "Organisationseinstellungen"
-    }
+    },
+    "stateUnauthenticated": "Ihre Sitzung ist beendet. Melden Sie sich erneut an, um diese Organisation zu verwalten.",
+    "stateSelectionRequired": "Dieses Konto gehört zu mehr als einer Organisation. Wählen Sie die Organisation, die Sie verwalten möchten.",
+    "stateUnavailable": "Die Organisation für diese Seite konnte derzeit nicht ermittelt werden. Das ist ein Dienstproblem, kein Problem Ihres Kontos — bitte erneut versuchen.",
+    "stateForbidden": "Sie sind angemeldet, aber Ihr Konto hat keine Berechtigung, eine Organisation zu verwalten. Bitten Sie eine Administratorin oder einen Administrator um Zugriff."
   },
   "apiPlatform": {
     "eyebrow": "API-Plattform",
@@ -6654,7 +6658,8 @@
       "exitEngineering": "Engineering-Modus verlassen",
       "engineeringModeLabel": "Engineering-Modus",
       "notificationsLabel": "Benachrichtigungen",
-      "loading": "Wird geladen…"
+      "loading": "Wird geladen…",
+      "contextSelectionRequired": "Organisation auswählen"
     },
     "notifications": {
       "title": "Benachrichtigungen",
@@ -6677,6 +6682,14 @@
       "typeSecurity": "Sicherheit",
       "connectionUnavailable": "Verbindung nicht verfügbar",
       "retry": "Erneut versuchen"
+    },
+    "organizationSwitcher": {
+      "heading": "Ihre Organisationen",
+      "switch": "Organisation wechseln",
+      "loading": "Ihre Organisationen werden geladen…",
+      "saving": "Wird gewechselt…",
+      "cancel": "Abbrechen",
+      "none": "Es gibt keine weitere Organisation zur Auswahl."
     }
   },
   "publicSite": {
@@ -7930,7 +7943,10 @@
       "noInvitations": "Es wurden noch keine Einladungen versendet.",
       "noSubscription": "Für diese Organisation existiert kein Abonnementeintrag.",
       "noUsage": "Für den aktuellen Zeitraum wurde keine Nutzung erfasst.",
-      "billingUnavailable": "Abrechnungsinformationen sind für diese Organisation nicht verfügbar."
+      "billingUnavailable": "Abrechnungsinformationen sind für diese Organisation nicht verfügbar.",
+      "sectionUnavailable": "Dieser Bereich konnte nicht geladen werden. Er ist nicht verfügbar, nicht leer.",
+      "sectionForbidden": "Ihre Rolle in dieser Organisation umfasst keinen Zugriff auf diese Informationen.",
+      "summaryIncomplete": "Einige Bereiche konnten nicht geladen werden, daher ist diese Übersicht unvollständig."
     },
     "distinction": {
       "platformBilling": "Abrechnung des Plattformabonnements — getrennt von ERP-Projektbudgets und der internen Unternehmensfinanzierung.",
@@ -7973,7 +7989,13 @@
       "failedTitle": "Diese Daten konnten nicht geladen werden",
       "failedHint": "Der Server hat unerwartet geantwortet. Es wird nichts angezeigt, statt ungeprüfte Daten darzustellen.",
       "retry": "Erneut versuchen",
-      "signIn": "Erneut anmelden"
+      "signIn": "Erneut anmelden",
+      "orgSelectionTitle": "Organisation auswählen",
+      "orgSelectionHint": "Dieses Konto gehört zu mehr als einer Organisation. Wählen Sie die Organisation, in der Sie arbeiten möchten — die Daten auf dieser Seite hängen von dieser Auswahl ab.",
+      "orgConflictTitle": "Die Organisation hat sich geändert",
+      "orgConflictHint": "Diese Seite zeigte eine andere Organisation als die jetzt ausgewählte — ein anderer Tab oder ein anderes Fenster hat sie gewechselt. Es wurde nichts ausgeführt. Laden Sie die Seite neu, um die aktuelle Organisation zu sehen.",
+      "orgPreconditionTitle": "Diese Anfrage nannte keine Organisation",
+      "orgPreconditionHint": "Diese Seite gab nicht an, für welche Organisation die Anfrage bestimmt war, daher wurde nichts ausgeführt. Laden Sie die Seite neu und wählen Sie die Organisation, wenn Sie mehreren angehören."
     }
   },
   "otEdge": {
@@ -8368,6 +8390,105 @@
         "unavailableTitle": "Ausstellung von Anmeldedaten nicht verfügbar",
         "unavailableBody": "Diese Bereitstellung kann noch keine Maschinen-Anmeldedaten ausstellen. Ein Operator muss zunächst das Secret-Backend aktivieren."
       }
+    },
+    "controlRoom": {
+      "metaTitle": "SCADA-Leitwarte",
+      "eyebrow": "OT-Anbindung",
+      "title": "SCADA-Leitwarte",
+      "subtitle": "Standortanbindung, Erreichbarkeit der Gateways und die zugehörigen Engineering-Datensätze.",
+      "generatedAt": "Ansicht erzeugt am",
+      "sitesHeading": "Standorte und Gateways",
+      "noSites": "Ihnen ist kein Standort zugänglich.",
+      "noSitesBody": "Diese Ansicht zeigt nur Standorte, die Ihrem Konto zugewiesen sind. Fragen Sie eine Administratorin, falls ein Standort fehlt.",
+      "noGateways": "An diesem Standort ist kein Gateway hinterlegt.",
+      "gatewayIdLabel": "Hardwarekennung",
+      "versionLabel": "Gemeldete Fassung",
+      "versionUnknown": "Nicht gemeldet",
+      "lastSeenLabel": "Letztes Lebenszeichen",
+      "neverSeen": "Nie eingegangen",
+      "storedStatusLabel": "Hinterlegter Zustand",
+      "rollupLabel": "Standortanbindung",
+      "state": {
+        "CONNECTED": "Verbunden",
+        "DEGRADED": "Beeinträchtigt",
+        "NOT_CONNECTED": "Nicht verbunden",
+        "UNKNOWN": "Unbekannt"
+      },
+      "reason": {
+        "HEARTBEAT_FRESH": "Ein Lebenszeichen traf innerhalb des Frischefensters ein.",
+        "HEARTBEAT_STALE": "Das letzte Lebenszeichen ist älter als das Frischefenster.",
+        "HEARTBEAT_EXPIRED": "Länger als das Verfallsfenster kein Lebenszeichen.",
+        "NEVER_REPORTED": "Dieses Gateway hat nie ein Lebenszeichen gesendet.",
+        "REVOKED": "Der Zugang wurde bewusst entzogen. Das ist keine Störung.",
+        "REPORTED_DEGRADED": "Das Gateway meldete einen beeinträchtigten Zustand.",
+        "DATA_UNAVAILABLE": "Der Datensatz war nicht lesbar, daher wird nichts über die Anlage behauptet."
+      },
+      "provenance": {
+        "heading": "Herkunft dieser Angabe",
+        "SERVER_OBSERVED": "Vom Server beobachtet",
+        "GATEWAY_REPORTED": "Vom Gateway gemeldet",
+        "ENGINEERING_IMPORT": "Aus einem Engineering-Export gelesen",
+        "DERIVED": "Aus beobachteten Feldern berechnet",
+        "UNAVAILABLE": "Kein Wert hinterlegt"
+      },
+      "uncertainty": {
+        "heading": "Verlässlichkeit",
+        "MEASURED": "Gemessen",
+        "DERIVED": "Berechnet",
+        "REPORTED": "Von der Anlage gemeldet",
+        "DECLARED": "Zur Entwurfszeit festgelegt",
+        "UNKNOWN": "Unbekannt"
+      },
+      "protocolsHeading": "Festgelegte Protokollbezüge",
+      "protocolsNote": "Gezählt aus Engineering-Datensätzen der gesamten Organisation. Eine Festlegung ist keine offene Verbindung.",
+      "protocolsEmpty": "Kein Engineering-Projekt hat einen Netzknoten festgelegt.",
+      "nodeCount": "Festgelegte Knoten",
+      "alarmsHeading": "Hinterlegte Alarmdefinitionen",
+      "alarmsNote": "Aus einem Engineering-Projekt übernommen. Diese Plattform wertet Alarmbedingungen nicht aus, daher gilt keine davon als ausgelöst.",
+      "alarmsEmpty": "Es wurde keine Alarmdefinition übernommen.",
+      "severityLabel": "Schweregrad",
+      "requiresAck": "Quittierung erforderlich",
+      "safetyClassLabel": "Sicherheitsklasse",
+      "codeLabel": "Alarmcode",
+      "yes": "Ja",
+      "no": "Nein",
+      "alarmsTruncated": "Es werden nur die ersten fünfzig Definitionen angezeigt, die schwersten zuerst. Im Engineering-Projekt sind weitere hinterlegt.",
+      "protocolsTruncated": "Gezählt über die ersten fünfhundert festgelegten Knoten. Es gibt weitere Knoten, daher sind diese Summen eine Untergrenze.",
+      "engineeringNotPermitted": "Ihre Rolle enthält keine Berechtigung zum Lesen von Engineering-Datensätzen; dieser Bereich wird zurückgehalten.",
+      "severity": {
+        "INFO": "Informativ",
+        "LOW": "Niedrig",
+        "MEDIUM": "Mittel",
+        "HIGH": "Hoch",
+        "CRITICAL": "Kritisch"
+      },
+      "safetyClass": {
+        "NON_SAFETY": "Nicht sicherheitsrelevant",
+        "SAFETY_RELATED": "Sicherheitsrelevant",
+        "SAFETY_CRITICAL": "Sicherheitskritisch",
+        "UNKNOWN": "Nicht klassifiziert"
+      },
+      "storedStatus": {
+        "ONLINE": "Gemeldet: online",
+        "OFFLINE": "Gemeldet: offline",
+        "DEGRADED": "Gemeldet: beeinträchtigt",
+        "REVOKED": "Zugriff widerrufen"
+      },
+      "unavailableHeading": "Auf dieser Plattform nicht verfügbar",
+      "unavailable": {
+        "PRODUCTION_LINES": "Fertigungslinien sind nicht abgebildet. Hinterlegt sind Standorte und Anlagen, eine Linienhierarchie wäre also erfunden statt gelesen.",
+        "LIVE_ALARM_EVENTS": "Ausgelöste Alarme werden nirgends gespeichert. Es bestehen nur Definitionen aus der Entwurfszeit, eine Liste aktiver Alarme ist daher unmöglich.",
+        "LIVE_PLC_DIAGNOSTICS": "Laufende SPS-Diagnose ist nicht erreichbar. Gerätedatensätze halten Engineering-Angaben, und festgelegte Adressen werden nie zum Verbindungsaufbau genutzt."
+      },
+      "refusal": {
+        "heading": "Diese Ansicht lässt sich nicht zeigen",
+        "AUTHENTICATION_REQUIRED": "Melden Sie sich an, um fortzufahren.",
+        "ORGANIZATION_SCOPE_REQUIRED": "Ihr Konto gehört zu keiner einzelnen aktiven Organisation.",
+        "PERMISSION_REQUIRED": "Ihre Rolle umfasst kein Leserecht für industrielle Datensätze.",
+        "NO_ACCESSIBLE_SITE": "Ihrem Konto wurde kein Standort zugewiesen.",
+        "BACKEND_UNAVAILABLE": "Die Datensätze waren nicht lesbar. Statt einer beruhigend wirkenden Oberfläche wird nichts gezeigt."
+      },
+      "readOnlyNotice": "Nur lesend. Diese Oberfläche öffnet keine Verbindung und sendet keinen Befehl an ein Gerät."
     }
   },
   "pricing": {
@@ -9119,7 +9240,8 @@
       "domains": "Fachdomänen",
       "backToSite": "Zurück zur Hauptseite",
       "openMenu": "Navigationsmenü öffnen",
-      "closeMenu": "Navigationsmenü schließen"
+      "closeMenu": "Navigationsmenü schließen",
+      "controlRoom": "Leitwarte"
     },
     "dashboard": {
       "lastUpdated": "Zuletzt aktualisiert {timestamp}",

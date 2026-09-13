@@ -1,82 +1,93 @@
 /**
- * PHASE 104 R1 (V-M7) — the application shell's organization context.
+ * The application shell's organization context.
  *
- * `AppShell` used to hardcode `organizationName = null`, so the sidebar told an
- * ACTIVE OWNER of an organization that they had "No organization context". The
- * chip was truthful about its own wiring (there was no server source) but not
- * about the account, and the two are indistinguishable to the person reading it.
+ * PHASE 104 R1 (V-M7) built this because `AppShell` hardcoded
+ * `organizationName = null`, so the sidebar told an ACTIVE OWNER of an
+ * organization that they had "No organization context". PHASE 110-A1.0b keeps
+ * that fix and removes the second defect underneath it: the shell answered the
+ * question with its own `findFirst` + `orderBy: { createdAt: "asc" }`, in
+ * parallel with the API path doing the same thing separately.
  *
- * This is the missing server source. It answers the same question, with the
- * same predicate, as the billing/API path in `lib/billing/context.ts`: the
- * caller's EARLIEST ACTIVE membership. It is display-only and widens nothing —
- * it reads the organization the user is already an ACTIVE member of, and the
- * caller's identity is established by the shell before this is called.
+ * Two independent lookups meant two places that could disagree, and for a
+ * reader with more than one membership they DID disagree invisibly: the sidebar
+ * named whichever organization sorted first, the API scoped to whichever
+ * organization sorted first, and the fact that either was an arbitrary pick was
+ * unobservable on both sides. There is now one resolver, one selection and one
+ * answer.
  *
- * Three outcomes, deliberately distinct, because collapsing them is exactly the
- * defect being fixed:
+ * The states keep their names and meanings, with one addition:
  *
- *   resolved     — there is an organization, and this is its name;
+ *   resolved     — there is an organization, and this is it;
+ *   selection    — PHASE 110-A1.0b: there are SEVERAL and none is chosen. The
+ *                  shell must say so rather than name one of them;
  *   none         — the account genuinely has no ACTIVE membership;
- *   unavailable  — the question could not be asked (no store in database mode,
- *                  or the query threw). Reporting this as "no organization"
- *                  would invent a fact about the account out of an outage, the
- *                  same mistake `resolveOrgContext` documents at length.
+ *   unavailable  — the question could not be asked. Reporting this as "no
+ *                  organization" would invent a fact about the account out of
+ *                  an outage.
+ *
+ * DISPLAY ONLY. This widens nothing: it reads the context the server resolves
+ * for this request, and every route keeps its own permission check.
  */
-import { getPrisma } from "@/lib/db/prisma";
-import { getStorageMode } from "@/lib/storage/storage-mode";
+
+import { resolveTenantDecisionFromSession } from "@/lib/tenant-selection/selection";
 
 export type ShellOrgContext =
-  | { state: "resolved"; organizationId: string; organizationName: string }
+  | {
+      state: "resolved";
+      organizationId: string;
+      organizationName: string;
+      /** True when the reader has several memberships and may switch. */
+      selectable: boolean;
+    }
+  | { state: "selection" }
   | { state: "none" }
   | { state: "unavailable" };
 
-/** Minimal shape of the Prisma delegate this module uses. */
-type MemberModel = {
-  findFirst: (args: unknown) => Promise<Record<string, unknown> | null>;
-};
+/**
+ * Resolve the shell's organization context.
+ *
+ * The cookie jar is passed in rather than read here, so this module never
+ * imports `next/headers` — which is what lets one selection implementation
+ * serve both a server component and a route handler instead of two.
+ *
+ * The old `userId` parameter is gone. Taking identity from a caller is exactly
+ * the pattern this phase removes: the resolver establishes identity itself,
+ * from a session it verifies and whose revocation it checks. A caller cannot
+ * hand it somebody else's id, because it no longer accepts one.
+ */
+export async function getShellOrgContext(jar: {
+  get: (name: string) => { value: string } | undefined;
+}): Promise<ShellOrgContext> {
+  const decision = await resolveTenantDecisionFromSession(jar);
 
-export async function getShellOrgContext(
-  userId: string | null | undefined,
-): Promise<ShellOrgContext> {
-  // No identity is not an outage and not an empty organization list: the shell
-  // renders signed-out and has nothing to resolve.
-  if (!userId) return { state: "none" };
-
-  const db = await getPrisma();
-  if (!db) {
-    // In session mode there is no organization store at all, by design.
-    return { state: getStorageMode() === "database" ? "unavailable" : "none" };
-  }
-
-  try {
-    const memberModel = (db as unknown as Record<string, unknown>)
-      .organizationMember as MemberModel;
-    const member = await memberModel.findFirst({
-      // Only an ACTIVE membership carries context — the same predicate the
-      // API path uses, so the shell can never show an organization the API
-      // would refuse.
-      where: { userId, status: "ACTIVE" },
-      orderBy: { createdAt: "asc" }, // earliest membership, i.e. the owner's
-      select: {
-        organizationId: true,
-        organization: { select: { name: true } },
-      },
-    });
-
-    if (!member) return { state: "none" };
-
-    const organization = member.organization as { name?: unknown } | null;
-    const name = typeof organization?.name === "string" ? organization.name.trim() : "";
-    // A membership row whose organization has no readable name is not a
-    // resolved context; saying "none" would be wrong, so it is unavailable.
-    if (!name) return { state: "unavailable" };
-
+  if (decision.granted) {
     return {
       state: "resolved",
-      organizationId: String(member.organizationId),
-      organizationName: name,
+      organizationId: decision.organizationId,
+      /*
+       * The slug, not the display name.
+       *
+       * A context exists only if the organization row loaded, and the resolver
+       * proves a slug as part of that. Asking for `name` here would mean a
+       * second query for a string the chip can live without — and the previous
+       * version reported a membership whose organization had no readable name
+       * as an OUTAGE, which was never true.
+       */
+      organizationName: decision.organizationSlug,
+      selectable: decision.selectable,
     };
-  } catch {
-    return { state: "unavailable" };
+  }
+
+  switch (decision.code) {
+    // Signed out. The shell renders its signed-out chrome and has nothing to
+    // resolve — not an outage, and not an empty organization list.
+    case "AUTHENTICATION_REQUIRED":
+      return { state: "none" };
+    case "ORGANIZATION_CONTEXT_REQUIRED":
+      return { state: "none" };
+    case "ORGANIZATION_SELECTION_REQUIRED":
+      return { state: "selection" };
+    case "ORGANIZATION_CONTEXT_UNAVAILABLE":
+      return { state: "unavailable" };
   }
 }

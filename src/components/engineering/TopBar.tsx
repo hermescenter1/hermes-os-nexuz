@@ -18,6 +18,9 @@ const TITLE_KEYS: Record<string, string> = {
   "/engineering/knowledge-graph": "knowledgeGraph",
   "/engineering/domains":         "domainExpertise",
   "/engineering/studio":          "studio",
+  // 109-C-UI.3: the shell title for the Control Room reuses the sidebar leaf,
+  // so the header no longer says "Engineering Hub" on this page.
+  "/engineering/scada-control-room": "nav.controlRoom",
 };
 
 interface TopBarProps {

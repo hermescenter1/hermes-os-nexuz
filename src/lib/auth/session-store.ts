@@ -23,6 +23,7 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { logger } from "@/lib/logger";
+import { describeErrorSafely } from "@/lib/logger/safe-error";
 
 export interface SessionSummary {
   /** Opaque session id (RefreshToken.id == the access token's `sid`). Not a secret. */
@@ -76,6 +77,25 @@ function touchLastUsed(rt: RefreshModel, sid: string, currentLastUsed: unknown):
   void rt.update({ where: { id: sid }, data: { lastUsedAt: new Date() } }).catch(() => { /* best-effort */ });
 }
 
+/*
+ * PHASE 110-A2.1 — WHY THESE CATCHES NO LONGER CALL `String(err)`.
+ *
+ * Each catch here exists to fail closed: it must answer `false`, `null` or `0`
+ * so a session that cannot be confirmed is denied. `String(err)` broke that
+ * promise for a whole class of values — a thrown object whose `toString` raises
+ * makes the LOG CALL throw, the catch stops containing anything, and the caller
+ * receives an exception instead of the deliberate denial. Measured with the real
+ * logger: nothing was written and the error propagated.
+ *
+ * It also wrote the driver's message verbatim. The logger scrubs URL
+ * credentials, `key=value` secrets and JWTs from free text, so no credential
+ * escaped, but the database host, the port and the model and method of the
+ * internal query did — recorded in `dev-server-run3.log`.
+ *
+ * `describeErrorSafely` reads every property through a guarded reader and emits
+ * a constructed descriptor such as `PrismaClientKnownRequestError(P1001)`: the
+ * class and the stable code, and nothing else.
+ */
 /**
  * Is the session referenced by `sid` still active?
  * Active = the row exists AND is not revoked AND is not past its expiry.
@@ -103,7 +123,7 @@ export async function isSessionActive(sid: string): Promise<boolean> {
     touchLastUsed(rt, sid, row.lastUsedAt);
     return true;
   } catch (err) {
-    logger.error("[session-store] isSessionActive error", { error: String(err) });
+    logger.error("[session-store] isSessionActive error", { error: describeErrorSafely(err) });
     return false; // fail closed
   }
 }
@@ -152,7 +172,7 @@ export async function listUserSessions(
       lastUsedAt: r.lastUsedAt ? new Date(r.lastUsedAt as string).toISOString() : null,
     }));
   } catch (err) {
-    logger.error("[session-store] listUserSessions error", { error: String(err) });
+    logger.error("[session-store] listUserSessions error", { error: describeErrorSafely(err) });
     return null; // treat a store error as unavailable, not as "no sessions"
   }
 }
@@ -174,7 +194,7 @@ export async function revokeSession(userId: string, sid: string): Promise<boolea
     });
     return Boolean(res) && res.count > 0;
   } catch (err) {
-    logger.error("[session-store] revokeSession error", { error: String(err) });
+    logger.error("[session-store] revokeSession error", { error: describeErrorSafely(err) });
     return false;
   }
 }
@@ -190,7 +210,7 @@ export async function revokeOtherSessions(userId: string, keepSid: string | null
     const res = await rt.updateMany({ where, data: { revokedAt: new Date() } });
     return res?.count ?? 0;
   } catch (err) {
-    logger.error("[session-store] revokeOtherSessions error", { error: String(err) });
+    logger.error("[session-store] revokeOtherSessions error", { error: describeErrorSafely(err) });
     return 0;
   }
 }
@@ -211,7 +231,7 @@ export async function revokeAllSessions(userId: string): Promise<number> {
     await userModel(db).update({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
   } catch (err) {
     // If we cannot bump the generation we must not report success — fail closed.
-    logger.error("[session-store] revokeAllSessions bump error", { error: String(err) });
+    logger.error("[session-store] revokeAllSessions bump error", { error: describeErrorSafely(err) });
     return 0;
   }
   try {
@@ -223,7 +243,7 @@ export async function revokeAllSessions(userId: string): Promise<number> {
   } catch (err) {
     // The generation bump already invalidated every existing session, so this is
     // best-effort cleanup of the revokedAt flags.
-    logger.error("[session-store] revokeAllSessions revoke error", { error: String(err) });
+    logger.error("[session-store] revokeAllSessions revoke error", { error: describeErrorSafely(err) });
     return 0;
   }
 }
@@ -313,7 +333,7 @@ export async function revokeAllOtherSessionsAtomically(
     });
   } catch (err) {
     if (err instanceof KeptInvalidError) return { ok: false, error: "kept_invalid" };
-    logger.error("[session-store] revokeAllOtherSessionsAtomically error", { error: String(err) });
+    logger.error("[session-store] revokeAllOtherSessionsAtomically error", { error: describeErrorSafely(err) });
     return { ok: false, error: "unavailable" };
   }
 }

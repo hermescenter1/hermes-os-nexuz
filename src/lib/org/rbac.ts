@@ -3,6 +3,8 @@
  * Defines what each OrgRole can do within an organization.
  */
 
+import type { OrganizationRole } from "@/lib/tenant/contract";
+
 import type { OrgRole } from "./types";
 
 export type OrgPermission =
@@ -253,12 +255,41 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   review_media:                   ["OWNER", "ADMIN", "MANAGER"],
 };
 
-export function can(role: OrgRole, permission: OrgPermission): boolean {
-  return (PERMISSIONS[permission] as OrgRole[]).includes(role);
+/*
+ * PHASE 110-A1.0b — these two accept EVERY role the schema declares.
+ *
+ * NO POLICY CHANGED. Not one entry was added to, removed from or reordered in
+ * `PERMISSIONS` above; the matrix below this comment is byte-identical to what
+ * it was. Only the parameter type widened, from the seven-role `OrgRole` in
+ * `./types` to the fifteen-role `OrganizationRole` the database actually
+ * stores.
+ *
+ * WHY IT HAD TO
+ * `prisma/schema.prisma` declares fifteen `OrgRole` values. Eight of them —
+ * HR_MANAGER, RECRUITER, HIRING_MANAGER, INTERVIEWER, ACADEMY_ADMIN,
+ * CUSTOMER_SUCCESS_MANAGER, STUDENT, COMPLIANCE_MANAGER — are written by the
+ * ATS and Academy surfaces today and could never be spelled in this signature.
+ * They reached it anyway, through `String(member.role) as OrgRole` in the
+ * billing resolver: a cast that told the compiler something the data did not
+ * support. Removing the cast is what made the gap visible.
+ *
+ * WHY IT GRANTS NOTHING
+ * `can` asks whether the role is IN the permission's list. A role that appears
+ * in no list is in no list after this change either, so every one of the eight
+ * is denied every permission — exactly what happened at runtime before, when
+ * the cast smuggled the same strings through a narrower type. The behaviour is
+ * unchanged and now type-checks honestly instead of relying on a lie.
+ *
+ * `phase110-a10b-role-authority.test.ts` asserts that: all eight roles, all
+ * permissions, zero grants. Adding a permission for one of them is a policy
+ * decision for whoever owns that surface, and is deliberately not made here.
+ */
+export function can(role: OrganizationRole, permission: OrgPermission): boolean {
+  return (PERMISSIONS[permission] as readonly string[]).includes(role);
 }
 
 export function requirePermission(
-  role: OrgRole,
+  role: OrganizationRole,
   permission: OrgPermission,
 ): { ok: true } | { ok: false; error: string; status: number } {
   if (!can(role, permission)) {

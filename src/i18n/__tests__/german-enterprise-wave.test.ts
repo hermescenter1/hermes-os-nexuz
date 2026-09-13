@@ -25,13 +25,26 @@ const TARGETS = [
 ] as const;
 type Target = (typeof TARGETS)[number];
 
-/** Exact leaf counts pinned at the start of this wave (§2). */
+/**
+ * Exact leaf counts pinned at the start of this wave (§2).
+ *
+ * PHASE 110-A1.0b: `org` 45 -> 49 (48 in R1, +1 in R2 for org.stateForbidden). Three leaves were added — org.state-
+ * Unauthenticated, org.stateSelectionRequired and org.stateUnavailable — because
+ * the five organization administration pages used to answer all four context
+ * refusals with the single sentence `org.noOrg`. A reader whose session had
+ * ended, a reader who belongs to three organizations and a reader hitting a
+ * database outage were all told they had no organization; exactly one of the
+ * three was true. All three new leaves are genuinely German, so they count as
+ * translated and the wave arithmetic below moves 527 -> 530 and 483 -> 486.
+ * Nothing in this file was weakened: the same equalities are asserted against
+ * measured values.
+ */
 const LEAF_COUNTS: Record<Target, number> = {
   crm: 187,
   billing: 68,
   apiPlatform: 51,
   adminDocuments: 50,
-  org: 45,
+  org: 49,
   admin: 40,
   erp: 33,
   siteSecurity: 31,
@@ -101,10 +114,10 @@ describe("87L.6E — exact namespace inventory", () => {
     expect(nsLeaves(en, ns).length).toBe(LEAF_COUNTS[ns]);
   });
 
-  it("the ten target namespaces total exactly 527 leaves", () => {
+  it("the ten target namespaces total exactly 531 leaves", () => {
     const total = Object.values(LEAF_COUNTS).reduce((a, b) => a + b, 0);
-    expect(total).toBe(527);
-    expect(allTargetLeaves.length).toBe(527);
+    expect(total).toBe(531);
+    expect(allTargetLeaves.length).toBe(531);
   });
 
   it("total = translated + intentional identical + technical token, per namespace", () => {
@@ -121,7 +134,7 @@ describe("87L.6E — exact namespace inventory", () => {
     }
   });
 
-  it("the wave's global arithmetic is 527 = 483 + 36 + 8", () => {
+  it("the wave's global arithmetic is 531 = 487 + 36 + 8", () => {
     let translated = 0, identical = 0, token = 0;
     for (const [path, deVal] of allTargetLeaves) {
       if (deVal !== enByPath.get(path)) translated++;
@@ -129,9 +142,9 @@ describe("87L.6E — exact namespace inventory", () => {
       else identical++;
     }
     expect({ translated, identical, token }).toEqual({
-      translated: 483, identical: 36, token: 8,
+      translated: 487, identical: 36, token: 8,
     });
-    expect(translated + identical + token).toBe(527);
+    expect(translated + identical + token).toBe(531);
   });
 
   it("has zero unapproved English sentence carryover", () => {
@@ -560,6 +573,14 @@ describe("87L.6E — regression", () => {
     // SUPERSEDED BY PHASE 87L.6F: this wave took the catalog to 255, then
     // 87L.6F translated the final 255. The 527 this wave contributed is still
     // proven, against the new total.
+    //
+    // PHASE 110-A1.0b — 527, deliberately NOT 530. This identity is a record of
+    // what HAPPENED: 782 leaves carried English before the wave, this wave
+    // closed 527 of them and 87L.6F closed the remaining 255. The three leaves
+    // added to `org` in Phase 110-A1.0b are new keys that never carried English
+    // and were never part of the 782, so counting them here would make the
+    // arithmetic close by rewriting history rather than by measuring it. The
+    // namespace inventory above is where today's 530 is asserted.
     expect(carry).toBe(0);
     expect(782 - 527 - 255).toBe(carry);
   });

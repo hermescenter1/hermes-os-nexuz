@@ -9,7 +9,36 @@ export type SubscriptionStatus = "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELED"
 export type InvoiceStatus      = "DRAFT" | "ISSUED" | "PAID" | "VOID" | "OVERDUE";
 export type PaymentStatus      = "PENDING" | "SUCCEEDED" | "FAILED" | "REFUNDED";
 export type Currency           = "IRR" | "GBP" | "USD" | "EUR";
-export type OrgRole            = "OWNER" | "ADMIN" | "MANAGER" | "ENGINEER" | "VIEWER" | "BILLING_ADMIN" | "MEMBER";
+
+/*
+ * PHASE 110-A1.0b — `OrgRole` is the tenant contract's `OrganizationRole`.
+ *
+ * This was a hand-written list of SEVEN roles while `prisma/schema.prisma`
+ * declares FIFTEEN. The eight it omitted are not hypothetical — HR_MANAGER,
+ * RECRUITER, ACADEMY_ADMIN and the rest are values the ATS and Academy
+ * surfaces write today. Every one of them reached this type through
+ * `String(member.role) as OrgRole` in the billing resolver: a cast that told
+ * the compiler a lie, so a member whose real role was `RECRUITER` was typed as
+ * one of seven roles that did not include it, and any `switch` over `OrgRole`
+ * looked exhaustive while silently having no branch for them.
+ *
+ * The fix is an alias, not a longer list. `ORGANIZATION_ROLES` in
+ * `src/lib/tenant/contract.ts` is already held to the schema in BOTH directions
+ * by `tenant-context-static.test.ts`, so a role added to the schema tomorrow
+ * fails a test instead of quietly bypassing a type. Keeping a second copy here
+ * would be re-creating the drift this replaces.
+ *
+ * It stays a type-only import: `contract.ts` is a pure module, and importing a
+ * value from it would put it in this module's runtime graph for a type fact.
+ *
+ * This WIDENS a type. Nothing authorizes on `OrgRole` by its width — the RBAC
+ * layer in `src/lib/org/rbac.ts` matches specific roles and denies the rest —
+ * so a role that now type-checks still gets exactly the permissions its own
+ * policy grants it.
+ */
+import type { OrganizationRole } from "@/lib/tenant/contract";
+
+export type OrgRole = OrganizationRole;
 
 /** Terminal subscription states — no second active sub can be created while one is in these */
 export const TERMINAL_STATUSES: SubscriptionStatus[] = ["CANCELED", "EXPIRED"];

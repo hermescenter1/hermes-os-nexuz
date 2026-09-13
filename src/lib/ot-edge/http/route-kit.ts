@@ -12,7 +12,7 @@
 // from a request body or query string.
 
 import { NextRequest, NextResponse } from "next/server";
-import { resolveOrgContext } from "@/lib/billing/context";
+import { resolveOrgContext, type OrgContextRefusal } from "@/lib/billing/context";
 import { requireOrgActor } from "@/lib/org/context";
 import { getAllowedSiteIds } from "@/lib/site/context";
 import { checkRateLimit, type RateLimitAction } from "@/lib/auth/rate-limiter";
@@ -45,6 +45,15 @@ export const HTTP_STATUS: Record<ServiceErrorCode, number> = {
   // a selection only they can make. Deliberately not 401 (nothing to re-
   // authenticate) and not 403 (nothing has been refused).
   ORGANIZATION_CONTEXT_REQUIRED: 409,
+  // PHASE 110-A1.0b — same 409, different question: several organizations, none
+  // chosen. The status matches because the shape of the problem matches; the
+  // code differs because the remedy does.
+  ORGANIZATION_SELECTION_REQUIRED: 409,
+  // PHASE 110-A1.0b R3 — the caller named an organization and it is not the one
+  // in effect. Also 409: the request conflicts with server state.
+  ORGANIZATION_CONTEXT_CONFLICT: 409,
+  // PHASE 110-A1.0b R6 — RFC 6585 428: the request must be conditional.
+  ORGANIZATION_PRECONDITION_REQUIRED: 428,
   SITE_CONTEXT_REQUIRED: 409,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
@@ -68,6 +77,12 @@ export const HTTP_STATUS: Record<ServiceErrorCode, number> = {
 const MESSAGE: Record<ServiceErrorCode, string> = {
   UNAUTHENTICATED: "Authentication required.",
   ORGANIZATION_CONTEXT_REQUIRED: "An organization must be selected for this request.",
+  ORGANIZATION_SELECTION_REQUIRED:
+    "This account belongs to more than one organization. Select the organization for this request.",
+  ORGANIZATION_CONTEXT_CONFLICT:
+    "This request was made for a different organization than the one currently selected. Reload and try again.",
+  ORGANIZATION_PRECONDITION_REQUIRED:
+    "This request must state the organization it was made for. Reload the page and try again.",
   SITE_CONTEXT_REQUIRED: "A site must be selected for this request.",
   FORBIDDEN: "You do not have permission to perform this operation.",
   NOT_FOUND: "The requested resource was not found.",
@@ -147,16 +162,36 @@ export async function withOtRoute(
   const org = await resolveOrgContext(req);
   if (!org.ok) {
     /*
-     * Three causes, three answers. A ternary with an "everything else" branch
+     * Every cause, its own answer. A ternary with an "everything else" branch
      * would have folded a database outage into 401 the moment `INTERNAL_ERROR`
      * was added to the union — sending an operator to a login form during an
      * incident, which is the same class of mistake this whole stage is closing.
+     *
+     * PHASE 110-A1.0b — the map is TOTAL over `OrgContextRefusal`, and typed to
+     * say so. When the resolver gained two reasons, an incomplete map here
+     * would have produced `code === undefined`, then `MESSAGE[undefined]` and
+     * `HTTP_STATUS[undefined]`, and the OT estate would have answered
+     * `{"code": null}` with HTTP `undefined`. The annotation makes that a
+     * compile error rather than a runtime shape nobody rendered.
      */
-    const code = ({
+    const REFUSAL_CODE: Record<OrgContextRefusal, ServiceErrorCode> = {
       AUTHENTICATION_REQUIRED: "UNAUTHENTICATED",
       ORGANIZATION_CONTEXT_REQUIRED: "ORGANIZATION_CONTEXT_REQUIRED",
+      // The caller has several organizations and picked none. `TRANSIENT_FAILURE`
+      // would be wrong (nothing is failing) and `FORBIDDEN` would be wrong
+      // (nothing is refused), so it carries its own code and its own 409.
+      ORGANIZATION_SELECTION_REQUIRED: "ORGANIZATION_SELECTION_REQUIRED",
+      // PHASE 110-A1.0b R3 — a stale tenant precondition. Carried through as
+      // itself: an OT client that sends the header and gets this back must not
+      // read it as "retry", which is what TRANSIENT_FAILURE would have said.
+      ORGANIZATION_CONTEXT_CONFLICT: "ORGANIZATION_CONTEXT_CONFLICT",
+      ORGANIZATION_PRECONDITION_REQUIRED: "ORGANIZATION_PRECONDITION_REQUIRED",
+      // 503 through the existing transient code: an operator should retry, not
+      // sign in again and not conclude their account has no organization.
+      ORGANIZATION_CONTEXT_UNAVAILABLE: "TRANSIENT_FAILURE",
       INTERNAL_ERROR: "INTERNAL_FAILURE",
-    } as const)[org.reason];
+    };
+    const code = REFUSAL_CODE[org.reason];
 
     // Every caller in the same position gets the same answer, so none of these
     // reveals whether a particular organization exists.

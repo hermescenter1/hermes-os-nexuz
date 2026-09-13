@@ -6,6 +6,10 @@
  * POST trigger button re-runs computation for the org.
  */
 
+// PHASE 110-A1.0b R6 — a browser WRITE must state the organization the page
+// was rendered for. The server refuses one that states nothing (428), so a
+// stale tab can no longer act in a tenant it is not showing.
+import { withTenantPrecondition } from "@/lib/client/resource-request";
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations, useLocale }                   from "next-intl";
 import { GlassCard }                         from "@/components/ui/GlassCard";
@@ -80,7 +84,10 @@ export default function BenchmarksPage() {
     setRunning(true);
     setTrigErr(null);
     try {
-      const r = await fetch("/api/multi-site/benchmarks", { method: "POST" });
+      const r = await fetch(
+        "/api/multi-site/benchmarks",
+        withTenantPrecondition({ method: "POST" }),
+      );
       const body = await r.json() as { error?: string };
       if (!r.ok) {
         setTrigErr(body.error ?? t("benchmarkFailed"));

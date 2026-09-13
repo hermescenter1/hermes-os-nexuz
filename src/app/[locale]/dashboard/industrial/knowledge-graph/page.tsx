@@ -6,6 +6,10 @@
  * Lightweight cards/lists only — no heavy visualization library.
  */
 
+// PHASE 110-A1.0b R6 — a browser WRITE must state the organization the page
+// was rendered for. The server refuses one that states nothing (428), so a
+// stale tab can no longer act in a tenant it is not showing.
+import { withTenantPrecondition } from "@/lib/client/resource-request";
 import { useState, useEffect } from "react";
 import { useTranslations, useLocale }     from "next-intl";
 import { GlassCard }           from "@/components/ui/GlassCard";
@@ -247,7 +251,10 @@ function RebuildButton({ label, rebuildingLabel, doneLabel }: { label: string; r
   async function handleRebuild() {
     setState("rebuilding");
     try {
-      const res = await fetch("/api/industrial-graph/rebuild", { method: "POST" });
+      const res = await fetch(
+        "/api/industrial-graph/rebuild",
+        withTenantPrecondition({ method: "POST" }),
+      );
       setState(res.ok ? "done" : "error");
       if (res.ok) setTimeout(() => setState("idle"), 3000);
     } catch {

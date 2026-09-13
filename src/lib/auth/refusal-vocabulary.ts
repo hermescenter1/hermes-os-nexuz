@@ -32,6 +32,11 @@ export const MACHINE_REFUSAL_CODES = [
   // Authenticated, but missing a scope selection. Signing in again cannot help.
   "ORGANIZATION_CONTEXT_REQUIRED",
   "ORGANIZATION_SCOPE_REQUIRED",
+  // PHASE 110-A1.0b — several organizations, none chosen. A DIFFERENT remedy
+  // from the line above: pick one, rather than ask to be added to one.
+  "ORGANIZATION_SELECTION_REQUIRED",
+  "ORGANIZATION_CONTEXT_CONFLICT",
+  "ORGANIZATION_PRECONDITION_REQUIRED",
   "SITE_CONTEXT_REQUIRED",
 
   // The platform's fault, not the caller's.
@@ -39,6 +44,10 @@ export const MACHINE_REFUSAL_CODES = [
   "INTERNAL_FAILURE",
   "TRANSIENT_FAILURE",
   "COPILOT_UNAVAILABLE",
+  // PHASE 110-A1.0b — the membership store could not answer. Belongs in this
+  // group, not the one above: nothing about the caller's account is being
+  // reported, and a retry is meaningful.
+  "ORGANIZATION_CONTEXT_UNAVAILABLE",
 
   // The request itself.
   "NOT_FOUND",
