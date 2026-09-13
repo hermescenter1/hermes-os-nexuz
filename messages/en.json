@@ -8389,6 +8389,105 @@
         "unavailableTitle": "Credential provisioning unavailable",
         "unavailableBody": "This deployment cannot issue machine credentials yet. An operator must enable the secret backend before enrollment is possible."
       }
+    },
+    "controlRoom": {
+      "metaTitle": "SCADA Control Room",
+      "eyebrow": "OT connectivity",
+      "title": "SCADA Control Room",
+      "subtitle": "Site connectivity, gateway liveness and the engineering records behind them.",
+      "generatedAt": "View generated at",
+      "sitesHeading": "Sites and gateways",
+      "noSites": "No site is available to you.",
+      "noSitesBody": "This view is limited to the sites your account is granted. Ask an administrator if a site is missing.",
+      "noGateways": "No gateway is registered at this site.",
+      "gatewayIdLabel": "Hardware identifier",
+      "versionLabel": "Reported version",
+      "versionUnknown": "Not reported",
+      "lastSeenLabel": "Last heartbeat",
+      "neverSeen": "Never received",
+      "storedStatusLabel": "Stored status",
+      "rollupLabel": "Site connectivity",
+      "state": {
+        "CONNECTED": "Connected",
+        "DEGRADED": "Degraded",
+        "NOT_CONNECTED": "Not connected",
+        "UNKNOWN": "Unknown"
+      },
+      "reason": {
+        "HEARTBEAT_FRESH": "A heartbeat arrived within the freshness window.",
+        "HEARTBEAT_STALE": "The last heartbeat is older than the freshness window.",
+        "HEARTBEAT_EXPIRED": "No heartbeat for longer than the stale window.",
+        "NEVER_REPORTED": "This gateway has never sent a heartbeat.",
+        "REVOKED": "Access was revoked deliberately. This is not a fault.",
+        "REPORTED_DEGRADED": "The gateway reported a degraded state.",
+        "DATA_UNAVAILABLE": "The record could not be read, so nothing is claimed about the equipment."
+      },
+      "provenance": {
+        "heading": "Where this came from",
+        "SERVER_OBSERVED": "Observed by the server",
+        "GATEWAY_REPORTED": "Reported by the gateway",
+        "ENGINEERING_IMPORT": "Parsed from an engineering export",
+        "DERIVED": "Calculated from observed fields",
+        "UNAVAILABLE": "No value recorded"
+      },
+      "uncertainty": {
+        "heading": "Certainty",
+        "MEASURED": "Measured",
+        "DERIVED": "Calculated",
+        "REPORTED": "Reported by equipment",
+        "DECLARED": "Declared at design time",
+        "UNKNOWN": "Unknown"
+      },
+      "protocolsHeading": "Declared protocol references",
+      "protocolsNote": "Counted from engineering records across the organisation. A declaration is not an open session.",
+      "protocolsEmpty": "No engineering project has declared a network node.",
+      "nodeCount": "Declared nodes",
+      "alarmsHeading": "Configured alarm definitions",
+      "alarmsNote": "Imported from an engineering project. This platform does not evaluate alarm conditions, so none of these is shown as active.",
+      "alarmsEmpty": "No alarm definition has been imported.",
+      "severityLabel": "Severity",
+      "requiresAck": "Requires acknowledgement",
+      "safetyClassLabel": "Safety class",
+      "codeLabel": "Alarm code",
+      "yes": "Yes",
+      "no": "No",
+      "alarmsTruncated": "Only the first fifty definitions are shown, most severe first. More exist in the engineering project.",
+      "protocolsTruncated": "Counted over the first five hundred declared nodes. More nodes exist, so these totals are a lower bound.",
+      "engineeringNotPermitted": "Your role does not include permission to read engineering records, so this panel is withheld.",
+      "severity": {
+        "INFO": "Informational",
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High",
+        "CRITICAL": "Critical"
+      },
+      "safetyClass": {
+        "NON_SAFETY": "Non-safety",
+        "SAFETY_RELATED": "Safety-related",
+        "SAFETY_CRITICAL": "Safety-critical",
+        "UNKNOWN": "Not classified"
+      },
+      "storedStatus": {
+        "ONLINE": "Reported online",
+        "OFFLINE": "Reported offline",
+        "DEGRADED": "Reported degraded",
+        "REVOKED": "Access revoked"
+      },
+      "unavailableHeading": "Not available on this platform",
+      "unavailable": {
+        "PRODUCTION_LINES": "Production lines are not modelled. The platform stores sites and assets, so a line hierarchy would be invented rather than read.",
+        "LIVE_ALARM_EVENTS": "Firing alarms are not stored anywhere. Only design-time alarm definitions exist, so no active alarm list can be shown.",
+        "LIVE_PLC_DIAGNOSTICS": "Live PLC diagnostics are not reachable. Device records hold engineering metadata, and declared addresses are never used to open a connection."
+      },
+      "refusal": {
+        "heading": "This view cannot be shown",
+        "AUTHENTICATION_REQUIRED": "Sign in to continue.",
+        "ORGANIZATION_SCOPE_REQUIRED": "Your account is not attached to a single active organisation.",
+        "PERMISSION_REQUIRED": "Your role does not include permission to read industrial records.",
+        "NO_ACCESSIBLE_SITE": "No site has been granted to your account.",
+        "BACKEND_UNAVAILABLE": "The records could not be read. Nothing is shown rather than showing a screen that looks calm."
+      },
+      "readOnlyNotice": "Read only. This screen opens no connection and sends no command to any device."
     }
   },
   "pricing": {
@@ -9140,7 +9239,8 @@
       "domains": "Domains",
       "backToSite": "Back to main site",
       "openMenu": "Open navigation menu",
-      "closeMenu": "Close navigation menu"
+      "closeMenu": "Close navigation menu",
+      "controlRoom": "Control room"
     },
     "dashboard": {
       "lastUpdated": "Last updated {timestamp}",
