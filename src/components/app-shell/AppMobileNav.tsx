@@ -26,16 +26,21 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn, Drawer, IconButton } from "@/components/ds";
 import { activeAppNavHref, type AppNavGroup } from "@/lib/navigation/app-nav";
+import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { OrganizationSelector, SiteSelector } from "./OrganizationSelector";
 
 export interface AppMobileNavProps {
   groups: AppNavGroup[];
   organizationName?: string | null;
   organizationUnavailable?: boolean;
+  /** PHASE 110-A1.0b - several memberships, none chosen. */
+  organizationSelectionRequired?: boolean;
+  /** PHASE 110-A1.0b - a context is resolved AND alternatives exist. */
+  organizationSelectable?: boolean;
   siteName?: string | null;
 }
 
-export function AppMobileNav({ groups, organizationName, organizationUnavailable, siteName }: AppMobileNavProps) {
+export function AppMobileNav({ groups, organizationName, organizationUnavailable, organizationSelectionRequired, organizationSelectable, siteName }: AppMobileNavProps) {
   const t = useTranslations("appShell");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -68,7 +73,10 @@ export function AppMobileNav({ groups, organizationName, organizationUnavailable
         id={panelId}
       >
         <div className="-m-1 flex flex-col gap-2 pb-2">
-          <OrganizationSelector name={organizationName} unavailable={organizationUnavailable} />
+          <OrganizationSelector name={organizationName} unavailable={organizationUnavailable} selectionRequired={organizationSelectionRequired} />
+          {organizationSelectionRequired || organizationSelectable ? (
+            <OrganizationSwitcher required={organizationSelectionRequired} />
+          ) : null}
           <SiteSelector name={siteName} />
         </div>
         <nav aria-label={t("shell.primaryNavLabel")}>

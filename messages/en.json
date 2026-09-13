@@ -3484,7 +3484,11 @@
     },
     "settings": {
       "title": "Organization Settings"
-    }
+    },
+    "stateUnauthenticated": "Your session has ended. Sign in again to manage this organization.",
+    "stateSelectionRequired": "This account belongs to more than one organization. Select the one you want to administer.",
+    "stateUnavailable": "The organization for this page could not be determined right now. This is a service problem, not a problem with your account — please retry.",
+    "stateForbidden": "You are signed in, but your account does not have permission to administer an organization. Ask an administrator for access."
   },
   "apiPlatform": {
     "eyebrow": "API Platform",
@@ -6653,7 +6657,8 @@
       "exitEngineering": "Exit engineering mode",
       "engineeringModeLabel": "Engineering mode",
       "notificationsLabel": "Notifications",
-      "loading": "Loading…"
+      "loading": "Loading…",
+      "contextSelectionRequired": "Select an organization"
     },
     "notifications": {
       "title": "Notifications",
@@ -6676,6 +6681,14 @@
       "typeSecurity": "Security",
       "connectionUnavailable": "Connection unavailable",
       "retry": "Retry"
+    },
+    "organizationSwitcher": {
+      "heading": "Your organizations",
+      "switch": "Switch organization",
+      "loading": "Loading your organizations…",
+      "saving": "Switching…",
+      "cancel": "Cancel",
+      "none": "There is nothing else to switch to."
     }
   },
   "publicSite": {
@@ -7929,7 +7942,10 @@
       "noInvitations": "No invitations have been sent.",
       "noSubscription": "No subscription record exists for this organization.",
       "noUsage": "No usage has been recorded for the current period.",
-      "billingUnavailable": "Billing information is not available for this organization."
+      "billingUnavailable": "Billing information is not available for this organization.",
+      "sectionUnavailable": "This section could not be loaded. It is unavailable, not empty.",
+      "sectionForbidden": "Your role in this organization does not include access to this information.",
+      "summaryIncomplete": "Some sections could not be loaded, so this summary is incomplete."
     },
     "distinction": {
       "platformBilling": "Platform subscription billing — separate from ERP project budgets and internal company finance.",
@@ -7972,7 +7988,13 @@
       "failedTitle": "This data could not be loaded",
       "failedHint": "The server replied unexpectedly, so nothing is shown rather than presenting unverified data.",
       "retry": "Try again",
-      "signIn": "Sign in again"
+      "signIn": "Sign in again",
+      "orgSelectionTitle": "Select an organization",
+      "orgSelectionHint": "This account belongs to more than one organization. Choose the one you want to work in — the data on this page depends on that choice.",
+      "orgConflictTitle": "The organization changed",
+      "orgConflictHint": "This page was showing a different organization from the one now selected — another tab or window changed it. Nothing was done. Reload to see the organization you are in now.",
+      "orgPreconditionTitle": "This request did not name an organization",
+      "orgPreconditionHint": "This page did not state which organization the request was for, so nothing was done. Reload the page, and choose the organization if you belong to more than one."
     }
   },
   "otEdge": {

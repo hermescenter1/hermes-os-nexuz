@@ -1,15 +1,56 @@
-// Phase 72 — Enterprise Asset Registry data access layer (Prisma + deterministic mock fallback)
+/**
+ * Asset Registry data access.
+ *
+ * PHASE 110-A2.0 — THIS LAYER NEVER REACHED POSTGRESQL, IN ANY ENVIRONMENT.
+ *
+ * What was here until this round:
+ *
+ *     let prisma = null;
+ *     async function getDb() {
+ *       if (!process.env.DATABASE_URL) return null;
+ *       if (!prisma) {
+ *         try { prisma = new PrismaClient(); } catch { return null; }
+ *       }
+ *       return prisma;
+ *     }
+ *
+ * Under Prisma 7 with `driverAdapters`, `new PrismaClient()` with no arguments
+ * throws `PrismaClientInitializationError` BEFORE it attempts a connection — it
+ * requires an adapter. So `getDb()` always returned null, every caller fell
+ * through its `catch { /* fall through *\/ }` to a `MOCK_*` array, and the asset
+ * registry served fabricated rows on a production deployment with a valid
+ * `DATABASE_URL`. That was measured, not inferred: see the A2.0 pack's
+ * `probe-bare-client.log`.
+ *
+ * Three things changed together, because fixing any one alone leaves a lie:
+ *
+ *   1. THE CLIENT. `getPrisma()` — the repository's single accessor, already
+ *      used by 184 modules — constructs with the `@prisma/adapter-pg` adapter.
+ *      No private constructor here any more, and no third one invented.
+ *
+ *   2. THE TENANT. Every query is filtered by the organization the SERVER
+ *      resolved for this request. No function takes an organization id, so no
+ *      URL, body or header can supply one. A platform or holding-level role
+ *      does not widen it.
+ *
+ *   3. THE FAILURES. No mock, no `[]` on error, no silent catch. An outage, a
+ *      missing selection and a genuinely empty registry are three different
+ *      answers and the caller can tell them apart.
+ *
+ * ON THE NULLABLE PARENTS. `RegistryAsset` carries `organizationId` directly, so
+ * assets, their locations and everything hanging off an asset are reachable
+ * without a join through a nullable column. `AssetLocation` also carries it
+ * directly. Nothing in this layer depends on an optional relation to find its
+ * tenant, which is why nothing here disappears under fail-closed.
+ */
 
 import type {
   RegistryAssetRecord, AssetLocation, AssetCriticalityAssessment,
   AssetHealthSnapshot, AssetLifecycleEvent, AssetMaintenanceLink,
   AssetDocumentLink, AssetTelemetryLink, AssetTag, AssetDashboard,
 } from "./types";
-import {
-  MOCK_ASSETS, MOCK_LOCATIONS, MOCK_CRITICALITY_ASSESSMENTS,
-  MOCK_HEALTH_SNAPSHOTS, MOCK_LIFECYCLE_EVENTS, MOCK_MAINTENANCE_LINKS,
-  MOCK_DOCUMENT_LINKS, MOCK_TELEMETRY_LINKS, MOCK_ASSET_TAGS,
-} from "./mock-data";
+import { requireDatabase, requireTenantScope, runScoped } from "@/lib/data-access/tenant-scope";
+import { logInfraFailure } from "@/lib/logger/security-events";
 
 function ts(rows: unknown[]): unknown[] {
   return rows.map(r => {
@@ -23,17 +64,103 @@ function ts(rows: unknown[]): unknown[] {
   });
 }
 
-let prisma: typeof import("@prisma/client").PrismaClient.prototype | null = null;
-async function getDb() {
-  if (!process.env.DATABASE_URL) return null;
-  if (!prisma) {
-    try {
-      const { PrismaClient } = await import("@prisma/client");
-      prisma = new PrismaClient();
-    } catch { return null; }
-  }
-  return prisma;
+/** The model surface this layer uses, named rather than cast at each call. */
+interface Model {
+  findMany: (args: unknown) => Promise<unknown[]>;
+  findFirst: (args: unknown) => Promise<unknown | null>;
 }
+const model = (db: Record<string, unknown>, name: string): Model => db[name] as unknown as Model;
+
+/**
+ * Drop an INCLUDED location that does not belong to this organization.
+ *
+ * MEASURED, not anticipated. `relation-reads.log` records the leak: an Alpha
+ * asset whose `locationId` pointed at Beta's plant returned
+ * `location.name = "Beta Plant"` on a 200 to an Alpha user. The top-level
+ * predicate was correct the whole time — the row WAS Alpha's — and the foreign
+ * bytes travelled inside it.
+ *
+ * WHY IT IS DONE HERE AND NOT IN THE QUERY. Prisma cannot filter a to-one
+ * `include`: `include: { location: { where: … } }` is not accepted for a
+ * non-list relation. The alternatives are to select `locationId` and fetch
+ * locations separately with their own predicate — a second round trip on every
+ * asset screen — or to refuse to hand back what the predicate cannot vouch for.
+ * This does the second.
+ *
+ * NULL-OWNER IS ALSO DROPPED. A location with no organization belongs to nobody
+ * and is therefore not this tenant's, the same fail-closed rule the rest of the
+ * slice follows.
+ *
+ * The FK itself is left alone. Nothing here writes, adopts or repairs a row: the
+ * durable fix is the composite foreign key named in `relation-ownership.ts`, and
+ * an operator must see the inconsistency rather than have it quietly corrected.
+ * The count of dropped relations is logged with no id, name or value in it.
+ */
+function dropForeignLocations(rows: unknown[], organizationId: string, operation: string): unknown[] {
+  let dropped = 0;
+
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const v of value) walk(v);
+      return;
+    }
+    if (value === null || typeof value !== "object") return;
+    const row = value as Record<string, unknown>;
+
+    const loc = row.location;
+    if (loc !== null && typeof loc === "object") {
+      const owner = (loc as Record<string, unknown>).organizationId;
+      if (owner !== organizationId) {
+        row.location = null;
+        dropped += 1;
+      }
+    }
+    // The hierarchy nests assets, and every level carries its own location.
+    if (Array.isArray(row.children)) walk(row.children);
+  };
+
+  walk(rows);
+
+  if (dropped > 0) {
+    logInfraFailure("database", `${operation} foreign-location-dropped`, new Error(`count=${dropped}`));
+  }
+  return rows;
+}
+
+/**
+ * The counts every asset row carries, with the one that needs a tenant
+ * predicate carrying it.
+ *
+ * READ FROM THE SCHEMA, RELATION BY RELATION — the distinction is the whole
+ * point, so it is written down rather than assumed:
+ *
+ *   children          `RegistryAsset` again, and it carries its OWN nullable
+ *                     `organizationId`. A row belonging to Beta, or to nobody,
+ *                     can point at an Alpha parent through `parentAssetId`.
+ *                     An unfiltered count therefore reports another tenant's
+ *                     rows as a number on an Alpha screen. FILTERED.
+ *   maintenanceLinks  `AssetMaintenanceLink.assetId` is REQUIRED and there is no
+ *   documentLinks     organization column on any of these four. Each row can
+ *   telemetryLinks    only exist under one asset, and that asset is already this
+ *   healthSnapshots   organization's because the outer predicate said so. There
+ *                     is nothing for a filter to exclude, and inventing one
+ *                     would suggest a boundary that does not exist here.
+ *
+ * A leaked count is still a leak. It is only harder to notice than a leaked row,
+ * because the row that produced it is never shown.
+ */
+const assetCounts = (organizationId: string) =>
+  ({
+    _count: {
+      select: {
+        children: { where: { organizationId } },
+        maintenanceLinks: true,
+        documentLinks: true,
+        telemetryLinks: true,
+        healthSnapshots: true,
+      },
+    },
+  }) as const;
 
 // ── Assets ────────────────────────────────────────────────────────────────────
 
@@ -46,52 +173,58 @@ export interface AssetFilters {
 }
 
 export async function getAssets(filters: AssetFilters = {}): Promise<RegistryAssetRecord[]> {
-  const db = await getDb();
-  if (db) {
-    try {
-      const where: Record<string, unknown> = {};
-      if (filters.type)        where.assetType   = filters.type;
-      if (filters.status)      where.status      = filters.status;
-      if (filters.criticality) where.criticality = filters.criticality;
-      if (filters.locationId)  where.locationId  = filters.locationId;
-      if (filters.search) {
-        where.OR = [
-          { name:        { contains: filters.search, mode: "insensitive" } },
-          { assetNumber: { contains: filters.search, mode: "insensitive" } },
-          { description: { contains: filters.search, mode: "insensitive" } },
-        ];
-      }
-      const rows = await (db as never as { registryAsset: { findMany: (args: unknown) => Promise<unknown[]> } }).registryAsset.findMany({
-        where,
-        include: {
-          location: true,
-          _count: { select: { children: true, maintenanceLinks: true, documentLinks: true, telemetryLinks: true, healthSnapshots: true } },
-        },
-        orderBy: [{ criticality: "desc" }, { name: "asc" }],
-      });
-      return ts(rows) as RegistryAssetRecord[];
-    } catch { /* fall through */ }
-  }
-  // Mock fallback
-  let data = [...MOCK_ASSETS];
-  if (filters.type)        data = data.filter(a => a.assetType   === filters.type);
-  if (filters.status)      data = data.filter(a => a.status      === filters.status);
-  if (filters.criticality) data = data.filter(a => a.criticality === filters.criticality);
-  if (filters.locationId)  data = data.filter(a => a.locationId  === filters.locationId);
+  const { organizationId } = await requireTenantScope();
+  const db = await requireDatabase("assets.getAssets");
+
+  /*
+   * The tenant predicate is written FIRST and the caller's filters are spread
+   * after it, but `organizationId` is re-stated last so no filter key can
+   * overwrite it. `AssetFilters` has no such key today; the ordering is what
+   * makes that still true if one is ever added.
+   */
+  const where: Record<string, unknown> = { organizationId };
+  if (filters.type)        where.assetType   = filters.type;
+  if (filters.status)      where.status      = filters.status;
+  if (filters.criticality) where.criticality = filters.criticality;
+  if (filters.locationId)  where.locationId  = filters.locationId;
   if (filters.search) {
-    const q = filters.search.toLowerCase();
-    data = data.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      a.assetNumber.toLowerCase().includes(q) ||
-      (a.description ?? "").toLowerCase().includes(q)
-    );
+    where.OR = [
+      { name:        { contains: filters.search, mode: "insensitive" } },
+      { assetNumber: { contains: filters.search, mode: "insensitive" } },
+      { description: { contains: filters.search, mode: "insensitive" } },
+    ];
   }
-  return data.map(a => ({
-    ...a,
-    location: a.locationId ? MOCK_LOCATIONS.find(l => l.id === a.locationId) ?? null : null,
-  }));
+  where.organizationId = organizationId;
+
+  const rows = await runScoped("assets.getAssets", () =>
+    model(db, "registryAsset").findMany({
+      where,
+      include: { location: true, ...assetCounts(organizationId) },
+      orderBy: [{ criticality: "desc" }, { name: "asc" }],
+    }),
+  );
+  return ts(dropForeignLocations(rows, organizationId, "assets.getAssets")) as RegistryAssetRecord[];
 }
 
+/**
+ * One asset, with everything hanging off it.
+ *
+ * `findFirst` with the tenant in the predicate.
+ *
+ * A CORRECTION TO WHAT THIS COMMENT FIRST SAID. It claimed `findUnique` "cannot
+ * carry a second predicate". That is false on the installed client: Prisma
+ * 7.8.0 generates `WhereUniqueInput` as `Prisma.AtLeast<{ id?, organizationId?,
+ * … }>`, so `findUnique({ where: { id, organizationId } })` is valid and was
+ * verified against a real database (`probe-prisma-where.log` in the A2.0 pack).
+ * The choice of `findFirst` is therefore a STYLE decision, not a workaround for
+ * a library limit, and the code is left as it is rather than churned to prove a
+ * point.
+ *
+ * What matters is the property, which either API delivers: the organization is
+ * IN the predicate, so an id belonging to another organization matches nothing
+ * and the answer is indistinguishable from an id that does not exist. It is not
+ * an existence oracle.
+ */
 export async function getAssetById(id: string): Promise<(RegistryAssetRecord & {
   criticalities:   AssetCriticalityAssessment[];
   healthSnapshots: AssetHealthSnapshot[];
@@ -101,118 +234,216 @@ export async function getAssetById(id: string): Promise<(RegistryAssetRecord & {
   telemetryLinks:  AssetTelemetryLink[];
   assetTags:       AssetTag[];
 }) | null> {
-  const db = await getDb();
-  if (db) {
-    try {
-      const row = await (db as never as { registryAsset: { findUnique: (args: unknown) => Promise<unknown> } }).registryAsset.findUnique({
-        where: { id },
-        include: {
-          location:        true,
-          criticalities:   { where: { isActive: true }, orderBy: { assessedAt: "desc" } },
-          healthSnapshots: { orderBy: { takenAt: "desc" }, take: 10 },
-          lifecycleEvents: { orderBy: { occurredAt: "desc" } },
-          maintenanceLinks:{ orderBy: { linkedAt: "desc" } },
-          documentLinks:   { orderBy: { linkedAt: "asc"  } },
-          telemetryLinks:  { where: { isActive: true } },
-          assetTags:       true,
-          _count: { select: { children: true, maintenanceLinks: true, documentLinks: true, telemetryLinks: true, healthSnapshots: true } },
-        },
-      });
-      return row ? (ts([row])[0] as never) : null;
-    } catch { /* fall through */ }
-  }
-  const asset = MOCK_ASSETS.find(a => a.id === id);
-  if (!asset) return null;
-  return {
-    ...asset,
-    location:        asset.locationId ? MOCK_LOCATIONS.find(l => l.id === asset.locationId) ?? null : null,
-    criticalities:   MOCK_CRITICALITY_ASSESSMENTS.filter(c => c.assetId === id),
-    healthSnapshots: MOCK_HEALTH_SNAPSHOTS.filter(s => s.assetId === id).sort((a, b) => b.takenAt.localeCompare(a.takenAt)),
-    lifecycleEvents: MOCK_LIFECYCLE_EVENTS.filter(e => e.assetId === id).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)),
-    maintenanceLinks:MOCK_MAINTENANCE_LINKS.filter(m => m.assetId === id),
-    documentLinks:   MOCK_DOCUMENT_LINKS.filter(d => d.assetId === id),
-    telemetryLinks:  MOCK_TELEMETRY_LINKS.filter(t => t.assetId === id),
-    assetTags:       MOCK_ASSET_TAGS.filter(t => t.assetId === id),
-  };
+  const { organizationId } = await requireTenantScope();
+  const db = await requireDatabase("assets.getAssetById");
+
+  const row = await runScoped("assets.getAssetById", () =>
+    model(db, "registryAsset").findFirst({
+      where: { id, organizationId },
+      include: {
+        location:        true,
+        criticalities:   { where: { isActive: true }, orderBy: { assessedAt: "desc" } },
+        healthSnapshots: { orderBy: { takenAt: "desc" }, take: 10 },
+        lifecycleEvents: { orderBy: { occurredAt: "desc" } },
+        maintenanceLinks:{ orderBy: { linkedAt: "desc" } },
+        documentLinks:   { orderBy: { linkedAt: "asc"  } },
+        telemetryLinks:  { where: { isActive: true } },
+        /*
+         * PHASE 110-A2.1 — THE FIELD IS `registryTags`, NOT `assetTags`.
+         *
+         * `RegistryAsset` has no `assetTags` relation; the tag model attached to
+         * it is `RegistryAssetTag`, exposed as `registryTags`. `AssetTag` is a
+         * different model that hangs off `IndustrialAsset` entirely. Asking
+         * Prisma for `assetTags` here raised a validation error at RUNTIME on
+         * every call — and the typechecker could not see it, because the model
+         * surface this layer uses takes its arguments as `unknown`.
+         *
+         * Nothing caught it earlier because nothing exercised this function:
+         * `/api/assets/[id]` and the asset detail page are its only callers and
+         * neither was in the previous rehearsal. It is measured now — see
+         * `loop4-asset-detail.json` — and the coverage matrix says so.
+         *
+         * The client component reads `asset.assetTags`, and the two models have
+         * the same shape, so the relation is fetched under its real name and
+         * presented under the name the contract already uses.
+         */
+        registryTags:    true,
+        ...assetCounts(organizationId),
+      },
+    }),
+  );
+  if (!row) return null;
+
+  const scrubbed = ts(dropForeignLocations([row], organizationId, "assets.getAssetById"))[0] as
+    Record<string, unknown>;
+  const { registryTags, ...rest } = scrubbed;
+  return { ...rest, assetTags: registryTags ?? [] } as never;
 }
 
 export async function getAssetLocations(): Promise<AssetLocation[]> {
-  const db = await getDb();
-  if (db) {
-    try {
-      const rows = await (db as never as { assetLocation: { findMany: (args: unknown) => Promise<unknown[]> } }).assetLocation.findMany({
-        where: { isActive: true },
-        orderBy: { name: "asc" },
-      });
-      return ts(rows) as AssetLocation[];
-    } catch { /* fall through */ }
-  }
-  return MOCK_LOCATIONS.filter(l => l.isActive);
+  const { organizationId } = await requireTenantScope();
+  const db = await requireDatabase("assets.getAssetLocations");
+
+  const rows = await runScoped("assets.getAssetLocations", () =>
+    model(db, "assetLocation").findMany({
+      where: { isActive: true, organizationId },
+      orderBy: { name: "asc" },
+    }),
+  );
+  return ts(rows) as AssetLocation[];
 }
 
+/**
+ * The asset tree.
+ *
+ * Every level carries the tenant predicate, not just the root. A nested
+ * `include` without one would walk `children` across organizations from a root
+ * that legitimately belongs to this one — the classic place a tenant filter is
+ * applied to the query and forgotten on the relation.
+ */
 export async function getAssetHierarchy(): Promise<RegistryAssetRecord[]> {
-  const db = await getDb();
-  if (db) {
-    try {
-      const topLevel = await (db as never as { registryAsset: { findMany: (args: unknown) => Promise<unknown[]> } }).registryAsset.findMany({
-        where: { parentAssetId: null },
-        include: {
-          location: true,
-          children: {
-            include: {
-              location: true,
-              children: { include: { location: true } },
-            },
+  const { organizationId } = await requireTenantScope();
+  const db = await requireDatabase("assets.getAssetHierarchy");
+
+  const childScope = { where: { organizationId } };
+  const rows = await runScoped("assets.getAssetHierarchy", () =>
+    model(db, "registryAsset").findMany({
+      where: { parentAssetId: null, organizationId },
+      include: {
+        location: true,
+        children: {
+          ...childScope,
+          include: {
+            location: true,
+            children: { ...childScope, include: { location: true } },
           },
-          _count: { select: { children: true, maintenanceLinks: true, documentLinks: true, telemetryLinks: true, healthSnapshots: true } },
         },
-        orderBy: [{ criticality: "desc" }, { name: "asc" }],
-      });
-      return ts(topLevel) as RegistryAssetRecord[];
-    } catch { /* fall through */ }
-  }
-  // Build hierarchy from mock
-  function buildChildren(parentId: string): RegistryAssetRecord[] {
-    return MOCK_ASSETS
-      .filter(a => a.parentAssetId === parentId)
-      .map(a => ({
-        ...a,
-        location: a.locationId ? MOCK_LOCATIONS.find(l => l.id === a.locationId) ?? null : null,
-        children: buildChildren(a.id),
-      }));
-  }
-  return MOCK_ASSETS
-    .filter(a => !a.parentAssetId)
-    .map(a => ({
-      ...a,
-      location: a.locationId ? MOCK_LOCATIONS.find(l => l.id === a.locationId) ?? null : null,
-      children: buildChildren(a.id),
-    }));
+        ...assetCounts(organizationId),
+      },
+      orderBy: [{ criticality: "desc" }, { name: "asc" }],
+    }),
+  );
+  return ts(dropForeignLocations(rows, organizationId, "assets.getAssetHierarchy")) as RegistryAssetRecord[];
 }
 
+/**
+ * The dashboard aggregate.
+ *
+ * All three reads are scoped. An aggregate is the easiest place for a leak to
+ * hide, because a wrong total looks like a number rather than like somebody
+ * else's data — the row that produced it is never shown.
+ */
 export async function getAssetDashboard(): Promise<AssetDashboard> {
-  const db = await getDb();
-  if (db) {
-    try {
-      const [assets, recentEvents, maintenanceLinks] = await Promise.all([
-        (db as never as { registryAsset: { findMany: (args: unknown) => Promise<unknown[]> } }).registryAsset.findMany({
+  const { organizationId } = await requireTenantScope();
+  const db = await requireDatabase("assets.getAssetDashboard");
+
+  const [assets, recentEvents, maintenanceLinks] = await runScoped(
+    "assets.getAssetDashboard",
+    () =>
+      Promise.all([
+        model(db, "registryAsset").findMany({
+          where: { organizationId },
           include: { _count: { select: { maintenanceLinks: true, documentLinks: true } } },
         }),
-        (db as never as { assetLifecycleEvent: { findMany: (args: unknown) => Promise<unknown[]> } }).assetLifecycleEvent.findMany({
+        model(db, "assetLifecycleEvent").findMany({
+          where: { asset: { organizationId } },
           orderBy: { occurredAt: "desc" },
           take: 8,
         }),
-        (db as never as { assetMaintenanceLink: { findMany: (args: unknown) => Promise<unknown[]> } }).assetMaintenanceLink.findMany({
+        model(db, "assetMaintenanceLink").findMany({
+          where: { asset: { organizationId } },
           select: { assetId: true, linkType: true },
         }),
-      ]);
-      const tsAssets = ts(assets) as RegistryAssetRecord[];
-      const tsEvents = ts(recentEvents) as AssetLifecycleEvent[];
-      const tsLinks  = ts(maintenanceLinks) as AssetMaintenanceLink[];
-      return buildDashboard(tsAssets, tsEvents, tsLinks);
-    } catch { /* fall through */ }
-  }
-  return buildDashboard(MOCK_ASSETS, MOCK_LIFECYCLE_EVENTS, MOCK_MAINTENANCE_LINKS);
+      ]),
+  );
+
+  return buildDashboard(
+    ts(assets) as RegistryAssetRecord[],
+    ts(recentEvents) as AssetLifecycleEvent[],
+    ts(maintenanceLinks) as AssetMaintenanceLink[],
+  );
+}
+
+/* ── Collections the asset SECTION pages render ──────────────────────────────
+ *
+ * PHASE 110-A2.0 — these five exports are new, and they exist because five
+ * product pages were importing `MOCK_*` arrays directly and filtering them by
+ * asset id. Those pages rendered real assets beside fabricated criticality
+ * assessments, health snapshots, lifecycle events, maintenance links and
+ * document links, in one view, with nothing marking which was which.
+ *
+ * The tables all exist. Nothing needed inventing — only asking.
+ */
+
+interface AssetCollections {
+  criticalities:    AssetCriticalityAssessment[];
+  healthSnapshots:  AssetHealthSnapshot[];
+  lifecycleEvents:  AssetLifecycleEvent[];
+  maintenanceLinks: AssetMaintenanceLink[];
+  documentLinks:    AssetDocumentLink[];
+}
+
+/** One asset with one of its collections attached, for a section page. */
+export type AssetWith<K extends keyof AssetCollections> =
+  RegistryAssetRecord & Pick<AssetCollections, K>;
+
+async function assetsWith<K extends keyof AssetCollections>(
+  operation: string,
+  include: Record<string, unknown>,
+): Promise<AssetWith<K>[]> {
+  const { organizationId } = await requireTenantScope();
+  const db = await requireDatabase(operation);
+
+  const rows = await runScoped(operation, () =>
+    model(db, "registryAsset").findMany({
+      where: { organizationId },
+      include: { location: true, ...assetCounts(organizationId), ...include },
+      orderBy: [{ criticality: "desc" }, { name: "asc" }],
+    }),
+  );
+  return ts(dropForeignLocations(rows, organizationId, operation)) as AssetWith<K>[];
+}
+
+export const getAssetsWithCriticality = () =>
+  assetsWith<"criticalities">("assets.withCriticality", {
+    criticalities: { where: { isActive: true }, orderBy: { assessedAt: "desc" } },
+  });
+
+export const getAssetsWithHealth = () =>
+  assetsWith<"healthSnapshots">("assets.withHealth", {
+    healthSnapshots: { orderBy: { takenAt: "desc" } },
+  });
+
+export const getAssetsWithMaintenance = () =>
+  assetsWith<"maintenanceLinks">("assets.withMaintenance", {
+    maintenanceLinks: { orderBy: { linkedAt: "desc" } },
+  });
+
+export const getAssetsWithDocuments = () =>
+  assetsWith<"documentLinks">("assets.withDocuments", {
+    documentLinks: { orderBy: { linkedAt: "asc" } },
+  });
+
+/**
+ * Lifecycle events for this organization's assets.
+ *
+ * Reached through `asset: { organizationId }` because `AssetLifecycleEvent` has
+ * no organization column of its own. That relation is REQUIRED in the schema —
+ * an event cannot exist without an asset — so nothing becomes unreachable here
+ * under fail-closed. Where a relation is nullable this layer would have to make
+ * a different decision; it has none.
+ */
+export async function getAssetLifecycleEvents(): Promise<AssetLifecycleEvent[]> {
+  const { organizationId } = await requireTenantScope();
+  const db = await requireDatabase("assets.getLifecycleEvents");
+
+  const rows = await runScoped("assets.getLifecycleEvents", () =>
+    model(db, "assetLifecycleEvent").findMany({
+      where: { asset: { organizationId } },
+      orderBy: { occurredAt: "desc" },
+    }),
+  );
+  return ts(rows) as AssetLifecycleEvent[];
 }
 
 function buildDashboard(assets: RegistryAssetRecord[], lifecycleEvents: AssetLifecycleEvent[], maintenanceLinks: AssetMaintenanceLink[]): AssetDashboard {

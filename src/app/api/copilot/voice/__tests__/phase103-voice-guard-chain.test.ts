@@ -244,16 +244,34 @@ describe("organisation membership is required and is server-derived", () => {
 describe("the view_copilot permission is enforced", () => {
   for (const route of ROUTES) {
     it(`${route}: a role without view_copilot → 403 INSUFFICIENT_PERMISSION`, async () => {
-      // CUSTOMER is a real role in the RBAC table and is NOT in the
-      // `view_copilot` grant list, so the REAL `requirePermission` refuses it.
-      seedMember(state, { userId: USER_ID, organizationId: ORG_ID, role: "CUSTOMER" });
+      /*
+       * PHASE 110-A1.0b R5 — the fixture role was WRONG and now matters.
+       *
+       * It said "CUSTOMER is a real role in the RBAC table". That conflates the
+       * two unrelated RBAC axes: `CUSTOMER` is a PLATFORM role
+       * (`src/lib/auth/roles.ts`) and is not a member of the `OrgRole` enum in
+       * `prisma/schema.prisma`, so no `OrganizationMember` row could ever carry
+       * it. The old lookup never validated the role, so the invalid fixture
+       * reached `requirePermission` and produced the expected 403 by accident.
+       *
+       * The tenant resolver validates `organizationRole` against the contract's
+       * fifteen and refuses a row carrying anything else — deliberately, since
+       * "a future consumer may authorize on that field" — so the invalid
+       * fixture now refuses with 409 before RBAC is reached.
+       *
+       * STUDENT is a REAL `OrgRole` and is genuinely absent from the
+       * `view_copilot` grant list (OWNER, ADMIN, MANAGER, ENGINEER, VIEWER,
+       * BILLING_ADMIN), so this case now tests what it always claimed to.
+       */
+      seedMember(state, { userId: USER_ID, organizationId: ORG_ID, role: "STUDENT" });
       const response = await call(route);
       expect(response.status).toBe(403);
       expect(await response.json()).toMatchObject({ code: "INSUFFICIENT_PERMISSION" });
     });
 
     it(`${route}: RBAC is decided BEFORE the commercial gate`, async () => {
-      seedMember(state, { userId: USER_ID, organizationId: ORG_ID, role: "CUSTOMER" });
+      // Same correction as above: a REAL OrgRole without `view_copilot`.
+      seedMember(state, { userId: USER_ID, organizationId: ORG_ID, role: "STUDENT" });
       await call(route);
       // A user who may not use the Copilot is told exactly that, and is never
       // told to buy something they could not use anyway.
@@ -341,7 +359,15 @@ describe("every refusal is cacheable by nobody and reveals nothing", () => {
     });
 
     it(`${route}: a refusal body carries only a stable code and message`, async () => {
-      seedMember(state, { userId: USER_ID, organizationId: ORG_ID, role: "CUSTOMER" });
+      /*
+       * PHASE 110-A1.0b R5 — this one still PASSES with the invalid fixture,
+       * because any refusal satisfies it, and that is exactly why it is
+       * corrected too: a case that is green for the wrong reason is a case that
+       * will not notice when the reason changes. STUDENT is a real `OrgRole`
+       * without `view_copilot`, so the body under test is the RBAC refusal this
+       * case means to describe rather than a tenant refusal standing in for it.
+       */
+      seedMember(state, { userId: USER_ID, organizationId: ORG_ID, role: "STUDENT" });
       const body = (await (await call(route)).json()) as Record<string, unknown>;
       expect(Object.keys(body).sort()).toEqual(["code", "error"]);
       // No stack, no organisation name, no role, no plan, no provider detail.

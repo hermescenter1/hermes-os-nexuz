@@ -3484,7 +3484,11 @@
     },
     "settings": {
       "title": "Organisationseinstellungen"
-    }
+    },
+    "stateUnauthenticated": "Ihre Sitzung ist beendet. Melden Sie sich erneut an, um diese Organisation zu verwalten.",
+    "stateSelectionRequired": "Dieses Konto gehört zu mehr als einer Organisation. Wählen Sie die Organisation, die Sie verwalten möchten.",
+    "stateUnavailable": "Die Organisation für diese Seite konnte derzeit nicht ermittelt werden. Das ist ein Dienstproblem, kein Problem Ihres Kontos — bitte erneut versuchen.",
+    "stateForbidden": "Sie sind angemeldet, aber Ihr Konto hat keine Berechtigung, eine Organisation zu verwalten. Bitten Sie eine Administratorin oder einen Administrator um Zugriff."
   },
   "apiPlatform": {
     "eyebrow": "API-Plattform",
@@ -6653,7 +6657,8 @@
       "exitEngineering": "Engineering-Modus verlassen",
       "engineeringModeLabel": "Engineering-Modus",
       "notificationsLabel": "Benachrichtigungen",
-      "loading": "Wird geladen…"
+      "loading": "Wird geladen…",
+      "contextSelectionRequired": "Organisation auswählen"
     },
     "notifications": {
       "title": "Benachrichtigungen",
@@ -6676,6 +6681,14 @@
       "typeSecurity": "Sicherheit",
       "connectionUnavailable": "Verbindung nicht verfügbar",
       "retry": "Erneut versuchen"
+    },
+    "organizationSwitcher": {
+      "heading": "Ihre Organisationen",
+      "switch": "Organisation wechseln",
+      "loading": "Ihre Organisationen werden geladen…",
+      "saving": "Wird gewechselt…",
+      "cancel": "Abbrechen",
+      "none": "Es gibt keine weitere Organisation zur Auswahl."
     }
   },
   "publicSite": {
@@ -7929,7 +7942,10 @@
       "noInvitations": "Es wurden noch keine Einladungen versendet.",
       "noSubscription": "Für diese Organisation existiert kein Abonnementeintrag.",
       "noUsage": "Für den aktuellen Zeitraum wurde keine Nutzung erfasst.",
-      "billingUnavailable": "Abrechnungsinformationen sind für diese Organisation nicht verfügbar."
+      "billingUnavailable": "Abrechnungsinformationen sind für diese Organisation nicht verfügbar.",
+      "sectionUnavailable": "Dieser Bereich konnte nicht geladen werden. Er ist nicht verfügbar, nicht leer.",
+      "sectionForbidden": "Ihre Rolle in dieser Organisation umfasst keinen Zugriff auf diese Informationen.",
+      "summaryIncomplete": "Einige Bereiche konnten nicht geladen werden, daher ist diese Übersicht unvollständig."
     },
     "distinction": {
       "platformBilling": "Abrechnung des Plattformabonnements — getrennt von ERP-Projektbudgets und der internen Unternehmensfinanzierung.",
@@ -7972,7 +7988,13 @@
       "failedTitle": "Diese Daten konnten nicht geladen werden",
       "failedHint": "Der Server hat unerwartet geantwortet. Es wird nichts angezeigt, statt ungeprüfte Daten darzustellen.",
       "retry": "Erneut versuchen",
-      "signIn": "Erneut anmelden"
+      "signIn": "Erneut anmelden",
+      "orgSelectionTitle": "Organisation auswählen",
+      "orgSelectionHint": "Dieses Konto gehört zu mehr als einer Organisation. Wählen Sie die Organisation, in der Sie arbeiten möchten — die Daten auf dieser Seite hängen von dieser Auswahl ab.",
+      "orgConflictTitle": "Die Organisation hat sich geändert",
+      "orgConflictHint": "Diese Seite zeigte eine andere Organisation als die jetzt ausgewählte — ein anderer Tab oder ein anderes Fenster hat sie gewechselt. Es wurde nichts ausgeführt. Laden Sie die Seite neu, um die aktuelle Organisation zu sehen.",
+      "orgPreconditionTitle": "Diese Anfrage nannte keine Organisation",
+      "orgPreconditionHint": "Diese Seite gab nicht an, für welche Organisation die Anfrage bestimmt war, daher wurde nichts ausgeführt. Laden Sie die Seite neu und wählen Sie die Organisation, wenn Sie mehreren angehören."
     }
   },
   "otEdge": {

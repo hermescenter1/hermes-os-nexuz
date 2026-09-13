@@ -1,33 +1,56 @@
 /**
- * Billing request context (Phase 31).
+ * Billing request context (Phase 31 · adopted by Phase 110-A1.0b).
  *
- * Resolves the authenticated user's organization from the DB.
- * The JWT contains userId/role but NOT organizationId, so we look up
- * OrganizationMember on each request. Result is not cached — billing routes
- * must re-derive context per request for correct authorization.
+ * WHAT CHANGED, AND WHY IT HAD TO
+ * This module used to answer the organization question itself, with
+ * `organizationMember.findFirst({ where: { userId, status: "ACTIVE" },
+ * orderBy: { createdAt: "asc" } })` and the comment "prefer earliest membership
+ * (owner)". That is an arbitrary pick presented as a decision. For a reader who
+ * belongs to one organization it is right by luck; for a reader who belongs to
+ * two it silently chooses one of them, forever, with no way to say otherwise
+ * and no sign that a choice was ever made. Every billing figure, every invoice
+ * and every OT page they saw was scoped to whichever membership row happened to
+ * be created first.
+ *
+ * It also established identity with a bare `verifyAccessToken`, which verifies
+ * the signature and nothing else. A revoked session kept working here until the
+ * token expired, while the rest of the platform had already stopped honouring
+ * it.
+ *
+ * Both are gone. The lookup lives in `src/lib/tenant/context.ts` — the reviewed
+ * Phase 110-A1.0 resolver, which uses `findMany`, cannot narrow several
+ * memberships to one by accident, and takes identity from
+ * `getUserIdFromRequest`, which checks session revocation. The selection layer
+ * in `src/lib/tenant-selection/` turns that result into a request-scoped
+ * decision.
+ *
+ * WHAT DELIBERATELY DID NOT CHANGE
+ * The exported shapes. `getOrgContext` still returns `OrgContext | null`,
+ * `requireOrgContext` still returns `{ ctx }` or `{ error, status, code }`, and
+ * `resolveOrgContext` still returns a tagged result. All ten callers keep
+ * compiling and keep forwarding `status` exactly as they did. What they receive
+ * is a tenant the caller actually selected, and two refusals they did not have
+ * before.
  */
 
-import type { NextRequest }    from "next/server";
-import { getAuthRole }         from "@/lib/auth/rbac-server";
-import { verifyAccessToken }   from "@/lib/auth/jwt";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/config";
-import { getPrisma }           from "@/lib/db/prisma";
-import { getStorageMode }  from "@/lib/storage/storage-mode";
-import { refuse, type RefusedRequest } from "@/lib/auth/context-result";
-import type { OrgContext, OrgRole } from "./types";
+import type { NextRequest } from "next/server";
 
-type MemberModel = {
-  findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
-};
+import { refuse, type RefusedRequest } from "@/lib/auth/context-result";
+import {
+  checkTenantPrecondition,
+  resolveTenantDecision,
+} from "@/lib/tenant-selection/selection";
+
+import type { OrgContext } from "./types";
 
 /**
  * Returns the billing context for the request, or null if it cannot be
  * established for ANY reason.
  *
- * PHASE 107 STAGE 6-A.1 — this is now a thin compatibility wrapper. It exists
- * because callers outside this module still expect the nullable shape; it
- * delegates to `resolveOrgContext` rather than repeating the lookup, so the two
- * can never drift apart and the reason is decided in exactly one place.
+ * PHASE 107 STAGE 6-A.1 — a thin compatibility wrapper. It exists because
+ * callers outside this module still expect the nullable shape; it delegates to
+ * `resolveOrgContext` rather than repeating the lookup, so the two can never
+ * drift apart and the reason is decided in exactly one place.
  */
 export async function getOrgContext(req: NextRequest): Promise<OrgContext | null> {
   const result = await resolveOrgContext(req);
@@ -35,29 +58,53 @@ export async function getOrgContext(req: NextRequest): Promise<OrgContext | null
 }
 
 /**
- * PHASE 107 STAGE 6-A — why the same failure has two different answers.
+ * PHASE 107 STAGE 6-A — why the same failure has different answers.
  *
- * `getOrgContext` returns `null` for two situations a reader must act on
+ * `getOrgContext` returns `null` for situations a reader must act on
  * differently:
  *
  *   - there is no valid session — signing in fixes it;
  *   - there IS a valid session, but the account has no ACTIVE organization
- *     membership — signing in again changes nothing at all.
+ *     membership — signing in again changes nothing at all;
+ *   - PHASE 110-A1.0b: there is a valid session and SEVERAL organizations, and
+ *     nobody has said which one this request is for;
+ *   - the question could not be asked at all.
  *
- * Collapsing both into 401 is what put "your session has ended" in front of a
+ * Collapsing the first two is what put "your session has ended" in front of a
  * signed-in administrator on every OT page, with a sign-in link that could not
- * help them. The distinction is drawn here, once, so no caller has to re-derive
- * it and no caller can get it subtly wrong.
+ * help them. Collapsing the third into the second is how an arbitrary
+ * membership got chosen without anyone noticing. The distinctions are drawn
+ * here, once, so no caller re-derives them and no caller gets one subtly wrong.
  *
- * Nothing about WHO may see WHAT changes: the same session verification, the
- * same ACTIVE-membership requirement, the same tenant derived from the server
- * side only. This says why access was refused, never widens it.
+ * Nothing about WHO may see WHAT is widened. Same session verification — now
+ * strictly stronger, because revocation is checked — same ACTIVE-membership
+ * requirement, same tenant derived on the server only.
  */
 export type OrgContextRefusal =
   | "AUTHENTICATION_REQUIRED"
   | "ORGANIZATION_CONTEXT_REQUIRED"
-  // The question could not be asked. Distinct from "you have no organization",
-  // because one is an answer about the caller and the other is an outage.
+  /** Several proven memberships, no selection. 409, and the remedy is a choice. */
+  | "ORGANIZATION_SELECTION_REQUIRED"
+  /** The membership store could not answer. 503, and a retry is meaningful. */
+  | "ORGANIZATION_CONTEXT_UNAVAILABLE"
+  /**
+   * PHASE 110-A1.0b R3 (R3-2) — the request NAMED an organization, and it is
+   * not the one in effect. 409, and the remedy is to reload and decide; a retry
+   * of the identical request would only reach the same conflict.
+   */
+  | "ORGANIZATION_CONTEXT_CONFLICT"
+  /**
+   * PHASE 110-A1.0b R6 — a state-changing request that stated no organization
+   * at all. 428, and the remedy is for the client to send one.
+   */
+  | "ORGANIZATION_PRECONDITION_REQUIRED"
+  /**
+   * Retained so the union stays a superset of what callers already handle.
+   * Nothing in this module produces it any more — an outage is now
+   * `ORGANIZATION_CONTEXT_UNAVAILABLE`, which is 503 rather than 500 — but
+   * removing it would break exhaustive maps consumers already built against it,
+   * for no gain.
+   */
   | "INTERNAL_ERROR";
 
 export type OrgContextResult =
@@ -65,74 +112,82 @@ export type OrgContextResult =
   | { ok: false; reason: OrgContextRefusal };
 
 /**
- * Resolve the organization context, distinguishing "not signed in" from
- * "signed in without an organization".
+ * Resolve the organization context for this request.
  *
- * The session is verified FIRST and independently of the membership lookup, so
- * the two answers cannot be confused. A caller that does not care may keep using
- * `requireOrgContext`.
+ * One pass. Identity, memberships and the selection are decided by the tenant
+ * resolver and its selection adapter; this function's whole job is to express
+ * that decision in the shape billing's callers already speak.
+ *
+ * There is no second lookup here and nothing to reconstruct — the defect that
+ * made a thrown membership query come back as "this account has no
+ * organization" is structurally absent, because this module no longer performs
+ * a query at all.
  */
 export async function resolveOrgContext(req: NextRequest): Promise<OrgContextResult> {
+  const decision = await resolveTenantDecision(req);
+
+  if (!decision.granted) {
+    return { ok: false, reason: decision.code };
+  }
+
   /*
-   * ONE pass, in order, each outcome decided where it is discovered.
+   * PHASE 110-A1.0b R3 (R3-2) — THE TENANT-INTENT PRECONDITION.
    *
-   * The previous version asked `getOrgContext` first, which collapsed every
-   * cause to `null`, and then tried to reconstruct the reason by re-querying.
-   * That reconstruction was wrong in a way that mattered: a membership query
-   * that THREW was caught and turned into `null`, and the second pass — finding
-   * a perfectly healthy client — concluded "this account has no organization"
-   * and answered 409. A database fault was reported to the user as a fact about
-   * their account, and the incident stayed invisible.
+   * The tenant has already been resolved and proven above; this adds nothing to
+   * that and takes nothing away. It asks a different question: is the
+   * organization now in effect the one the CALLER was written for?
    *
-   * There is now no second lookup and nothing to reconstruct.
+   * The cookie is shared by every tab. A second tab still displaying A submits
+   * `DELETE /api/billing/subscription` — no body, no organization — after the
+   * first tab switched to B, and B's subscription is cancelled while the reader
+   * was looking at A's. Every authorization check passes, because the reader is
+   * genuinely authorized in B. What is wrong is the INTENT.
+   *
+   * Order matters and is not interchangeable: the comparison happens AFTER the
+   * server has resolved and proven the tenant, and it compares against that
+   * proven value. The header therefore cannot select, widen or influence
+   * anything — it can only cause a refusal. A header naming an organization the
+   * caller is not a member of does not reach a membership; it simply mismatches
+   * the resolved one and is refused, exactly like any other mismatch.
+   *
+   * ABSENT MEANS "I ASSERT NOTHING", NOT "ANY TENANT WILL DO". Existing clients,
+   * OT integrations and server-to-server callers send nothing and are unchanged.
+   * That is the deliberate compatibility boundary and equally the limit of the
+   * protection: a caller that does not send it is not protected by it. Which
+   * clients do send it is enumerated in the R3 report, not assumed.
    */
-
-  // 1. Identity. Absent, malformed or unverifiable are one answer, deliberately.
-  const role = await getAuthRole(req);
-  if (!role) return { ok: false, reason: "AUTHENTICATION_REQUIRED" };
-
-  const token = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) return { ok: false, reason: "AUTHENTICATION_REQUIRED" };
-  const payload = await verifyAccessToken(token);
-  if (!payload?.sub) return { ok: false, reason: "AUTHENTICATION_REQUIRED" };
-  const userId = payload.sub;
-
-  // 2. The store. A missing client is an outage in DATABASE mode; in SESSION
-  //    mode there is no organization store at all, by design.
-  const db = await getPrisma();
-  if (!db) {
-    return {
-      ok: false,
-      reason: getStorageMode() === "database" ? "INTERNAL_ERROR" : "ORGANIZATION_CONTEXT_REQUIRED",
-    };
+  const precondition = checkTenantPrecondition(req, decision.organizationId);
+  if (precondition === "conflict") {
+    return { ok: false, reason: "ORGANIZATION_CONTEXT_CONFLICT" };
   }
-
-  // 3. The membership. A THROWN query is an outage; an empty result is an answer.
-  let member: Record<string, unknown> | null;
-  try {
-    const memberModel = (db as Record<string, unknown>).organizationMember as MemberModel;
-    member = await memberModel.findFirst({
-      // PHASE 90: only an ACTIVE membership grants organization context.
-      // Previously any row matched, so a SUSPENDED member kept full billing
-      // and org-scoped access until their row was deleted.
-      where:   { userId, status: "ACTIVE" },
-      orderBy: { createdAt: "asc" }, // prefer earliest membership (owner)
-      select:  { organizationId: true, role: true },
-    });
-  } catch {
-    // The question could not be answered. Saying "you have no organization"
-    // here would be inventing a fact about the caller out of an outage.
-    return { ok: false, reason: "INTERNAL_ERROR" };
+  if (precondition === "missing") {
+    /*
+     * PHASE 110-A1.0b R6 — a WRITE that asserts nothing is refused.
+     *
+     * R3 and R5 let this through as a compatibility boundary and each asserted
+     * the gap: a header-less request still cancelled organization B's
+     * subscription. That is no longer an acceptable property of a browser
+     * write. Reads are untouched, and the organization-selection endpoint does
+     * not pass through here, so choosing an organization can never require
+     * having already chosen one.
+     */
+    return { ok: false, reason: "ORGANIZATION_PRECONDITION_REQUIRED" };
   }
-
-  if (!member) return { ok: false, reason: "ORGANIZATION_CONTEXT_REQUIRED" };
 
   return {
     ok: true,
     ctx: {
-      userId,
-      orgId: String(member.organizationId),
-      role:  String(member.role) as OrgRole,
+      userId: decision.userId,
+      orgId: decision.organizationId,
+      /*
+       * No cast. `OrgRole` is now the tenant contract's `OrganizationRole`, so
+       * this is the same closed set of fifteen the resolver validated the row
+       * against. The old `String(member.role) as OrgRole` asserted a fact the
+       * compiler had no reason to believe and the data did not guarantee: a row
+       * carrying `HR_MANAGER` — a real value in this schema — was typed as one
+       * of seven roles that did not include it.
+       */
+      role: decision.organizationRole,
     },
   };
 }
@@ -140,16 +195,11 @@ export async function resolveOrgContext(req: NextRequest): Promise<OrgContextRes
 /**
  * Ensure the request has a billing context, or return the refusal to send back.
  *
- * PHASE 107 STAGE 6-A — this used to answer 401 for every cause, including a
- * signed-in customer with no organization looking at their own billing page.
- * They were told their session had ended and shown a sign-in link; signing in
- * again produced the same page. It now returns the classified refusal, so the
- * nine billing routes and `billing-track.ts` answer 401, 409 or 500 according to
- * what actually happened.
- *
- * The shape is unchanged — `{ ctx }` or `{ error, status }` — so every caller
- * keeps compiling and keeps forwarding `status` as it always did. `code` is
- * additive.
+ * The shape is unchanged — `{ ctx }` or `{ error, status, code }` — so every
+ * caller keeps compiling and keeps forwarding `status` as it always did. What
+ * changed is that `status` can now be 503 for an outage, and that a
+ * multi-organization caller receives a selection refusal instead of an
+ * arbitrary tenant.
  */
 export async function requireOrgContext(
   req: NextRequest,

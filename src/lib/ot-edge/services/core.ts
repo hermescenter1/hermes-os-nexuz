@@ -21,6 +21,14 @@ export type ServiceErrorCode =
   // well-formed and the caller is known; what is missing is context they can
   // supply. Neither code reveals whether any organization or site exists.
   | "ORGANIZATION_CONTEXT_REQUIRED"
+  // PHASE 110-A1.0b — the caller belongs to SEVERAL organizations and has not
+  // chosen one. Also 409, and also context the caller can supply, but a
+  // different sentence and a different remedy: pick one, rather than ask to be
+  // added to one. Folding it into the line above would show a member of three
+  // organizations a message telling them they belong to none.
+  | "ORGANIZATION_SELECTION_REQUIRED"
+  | "ORGANIZATION_CONTEXT_CONFLICT"
+  | "ORGANIZATION_PRECONDITION_REQUIRED"
   | "SITE_CONTEXT_REQUIRED"
   | "FORBIDDEN"
   | "NOT_FOUND"

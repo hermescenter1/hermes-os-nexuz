@@ -29,6 +29,19 @@ import { isRetryable, type ResourceFailureCode } from "@/lib/client/resource-req
 const COPY: Record<ResourceFailureCode, { title: string; hint: string }> = {
   UNAUTHENTICATED: { title: "unauthenticatedTitle", hint: "unauthenticatedHint" },
   ORGANIZATION_CONTEXT_REQUIRED: { title: "orgContextTitle",  hint: "orgContextHint" },
+  // PHASE 110-A1.0b — its own copy, because the existing organization message
+  // tells the reader to ask an administrator to add them, which is precisely
+  // wrong for somebody who is already a member of several organizations.
+  ORGANIZATION_SELECTION_REQUIRED: { title: "orgSelectionTitle", hint: "orgSelectionHint" },
+  // PHASE 110-A1.0b R3 — again its own copy. Telling this reader to "select an
+  // organization" would be wrong: they already have one, it simply is not the
+  // one this page was built from. The hint asks them to reload.
+  ORGANIZATION_CONTEXT_CONFLICT: { title: "orgConflictTitle", hint: "orgConflictHint" },
+  // PHASE 110-A1.0b R6.1 — 428, and its own copy again. The conflict sentence
+  // above says "this page was showing a DIFFERENT organization", which is not
+  // what happened: this page named none. Borrowing that wording would describe
+  // a switch the reader never made.
+  ORGANIZATION_PRECONDITION_REQUIRED: { title: "orgPreconditionTitle", hint: "orgPreconditionHint" },
   SITE_CONTEXT_REQUIRED:         { title: "siteContextTitle", hint: "siteContextHint" },
   FORBIDDEN:       { title: "forbiddenTitle",       hint: "forbiddenHint" },
   NOT_FOUND:       { title: "notFoundTitle",        hint: "notFoundHint" },
@@ -54,6 +67,13 @@ const COPY: Record<ResourceFailureCode, { title: string; hint: string }> = {
 export const ASYNC_STATE: Record<ResourceFailureCode, string> = {
   UNAUTHENTICATED: "auth-required",
   ORGANIZATION_CONTEXT_REQUIRED: "org-context-required",
+  // A distinct machine value, so an auditor can tell the two 409s apart without
+  // reading the rendered sentence in whichever of three languages it appeared.
+  ORGANIZATION_SELECTION_REQUIRED: "org-selection-required",
+  ORGANIZATION_CONTEXT_CONFLICT: "org-context-conflict",
+  // Distinct again: an auditor must be able to tell "showed the wrong tenant"
+  // from "named no tenant", which are different defects on the page.
+  ORGANIZATION_PRECONDITION_REQUIRED: "org-precondition-required",
   SITE_CONTEXT_REQUIRED:         "site-context-required",
   FORBIDDEN:       "forbidden",
   NOT_FOUND:       "not-found",
