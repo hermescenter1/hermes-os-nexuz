@@ -29,12 +29,23 @@ export async function POST(
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+  // PAGE 08 — a template is its conditions and ordered actions, not just its
+  // name and trigger. Those are copied into the new workflow; the template
+  // itself is only read.
   const wf = await createWorkflow({
     name:        parsed.data.name ?? `${template.name} (copy)`,
     description: parsed.data.description ?? template.description,
     triggerType: template.triggerType,
     templateId:  id,
     createdBy:   user.id,
+    conditions:  template.definition.conditions.map(c => ({
+      type:  c.type,
+      field: c.field ?? null,
+      value: c.value ?? null,
+    })),
+    actions: [...template.definition.actions]
+      .sort((a, b) => a.order - b.order)
+      .map(a => ({ type: a.type, config: a.config })),
   });
   if (!wf) return NextResponse.json({ error: "Could not persist — mock mode" }, { status: 202 });
   return NextResponse.json(wf, { status: 201 });

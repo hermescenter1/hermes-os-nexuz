@@ -3,17 +3,28 @@ import { z }            from "zod";
 import { getCurrentUser } from "@/lib/auth/session";
 import { can }           from "@/lib/auth/roles";
 import { getWorkflows, createWorkflow } from "@/lib/automation/db";
+import { TRIGGER_TYPES, ConditionsArraySchema, ActionsArraySchema } from "@/lib/automation/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * PAGE 08 — the schema is strict and carries both child collections.
+ *
+ * Strict matters as much as the new fields: zod's default is to STRIP unknown
+ * keys, which is how `conditions` and `actions` used to vanish from a
+ * well-formed request while the caller still received 201 Created. Anything
+ * this route cannot persist is now rejected instead of dropped.
+ */
 const CreateSchema = z.object({
   name:           z.string().min(1).max(120),
   description:    z.string().max(500).optional().nullable(),
-  triggerType:    z.string().min(1),
+  triggerType:    z.enum(TRIGGER_TYPES),
   organizationId: z.string().optional().nullable(),
   templateId:     z.string().optional().nullable(),
-});
+  conditions:     ConditionsArraySchema.optional(),
+  actions:        ActionsArraySchema.optional(),
+}).strict();
 
 export async function GET(req: Request): Promise<NextResponse> {
   const user = await getCurrentUser();

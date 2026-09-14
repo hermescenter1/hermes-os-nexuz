@@ -13,15 +13,13 @@ export default async function NewWorkflowPage({
   const { templateId } = await searchParams;
   const template = templateId ? await getTemplateById(templateId) : null;
 
+  // The builder owns the composed page header, so the identity string is
+  // resolved here and handed down rather than rendered twice.
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-2">{t("pages.newWorkflowTitle")}</h1>
-      {template && (
-        <p className="text-sm text-muted-foreground mb-6">
-          {t("pages.newWorkflowBasedOn")} <span className="font-medium">{template.name}</span>
-        </p>
-      )}
-      <WorkflowBuilderClient initial={null} />
-    </div>
+    <WorkflowBuilderClient
+      initial={null}
+      template={template}
+      title={t("pages.newWorkflowTitle")}
+    />
   );
 }

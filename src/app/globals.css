@@ -3530,3 +3530,116 @@ main [id$="-title"] {
   margin-block-start: 0.2rem;
   overflow-wrap: anywhere;
 }
+
+
+/* ===========================================================================
+   PAGE 07 - HERMES DASHBOARD DNA, NAVY CANVAS
+   ---------------------------------------------------------------------------
+   WHAT THIS FIXES
+   The automation shell paints no canvas of its own, so the estate's <html>
+   colour showed through: #06080D, a NEUTRAL near-black (R6 G8 B13). The real
+   dashboard never shows that - AppShell paints `bg-background-base` (#071018)
+   and covers it almost entirely with panels. PAGE 07 has a large empty region
+   below its content, so the neutral void was the dominant impression.
+
+   WHAT IT DOES
+   Restores the shipped dark identity and gives the page the layered navy the
+   dashboard reads as, using the surface ladder from the brief:
+       canvas #121D26  <  nested tile #14232C  <  panel #182731
+   Text, brand cyan, status green and borders are NOT overridden - the estate's
+   own tokens carry them, which is what keeps PAGE 07 in the dashboard family.
+
+   MECHANISM
+   phase104-signature-contract and phase104-token-contract require the glass
+   family, the five surface/background tokens and the two --edge-* tokens to be
+   declared EXACTLY ONCE with their shipped value. This scope therefore declares
+   no custom property at all: it re-paints the .ds-glass-* and utility RULES
+   inside one class. No !important; the scope alone carries specificity.
+   =========================================================================== */
+.hermes-ops-navy {
+  background-color: #121D26;
+
+  /* The ONLY token this scope re-binds, and it is not one the Phase 104
+     contracts pin. --color-text-muted is documented as metadata-only and is
+     AA-tuned against the SHIPPED surfaces; this page's panels sit one step
+     lighter, which drops it to 4.16:1. The value here is the estate's own
+     --color-text-metadata, the token it documents as "readable tertiary text,
+     WCAG AA on every surface" - so the role keeps its meaning and regains AA
+     (5.02:1 on the panel, 5.28:1 on a nested tile). */
+  --color-text-muted: #8496A6;
+}
+
+/* Surface ladder. The shipped rules paint through background-image gradients,
+   so each tier is replaced whole rather than tinted. */
+.hermes-ops-navy .ds-glass-card,
+.hermes-ops-navy .ds-glass-interactive {
+  background: #182731;
+  border: 1px solid rgba(120, 150, 170, 0.12);
+  box-shadow: none;
+}
+/* Nested tiles sit BELOW their parent panel so they read as recessed wells,
+   which is how the dashboard separates a metric from its container. */
+.hermes-ops-navy .ds-glass-soft {
+  background: #14232C;
+  border: 1px solid rgba(120, 150, 170, 0.10);
+  box-shadow: none;
+}
+/* The page header keeps a restrained vertical lift, deeper at the bottom edge
+   so the module reads as raised without a glow. */
+.hermes-ops-navy .ds-glass-elevated,
+.hermes-ops-navy .ds-glass-hero {
+  background: linear-gradient(180deg, #1B2C38 0%, #17242F 100%);
+  border: 1px solid rgba(120, 150, 170, 0.14);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+/* Depth here comes from luminance separation, not from motion. */
+.hermes-ops-navy .ds-glass-card:hover {
+  transform: none;
+  border-color: rgba(120, 150, 170, 0.18);
+}
+
+/* Interactive surfaces: the table header band, row hover and the action index
+   badge all step one level above their parent instead of going darker. */
+.hermes-ops-navy .bg-surface-interactive,
+.hermes-ops-navy .hover\:bg-surface-interactive:hover { background-color: #1C2D3A; }
+.hermes-ops-navy .bg-surface-primary   { background-color: #16242E; }
+.hermes-ops-navy .bg-surface-elevated  { background-color: #1B2C38; }
+.hermes-ops-navy .bg-background-deep   { background-color: #101A22; }
+
+/* The shell the navy page renders inside.
+   Every selector is gated on :has(.hermes-ops-navy), so it matches only while
+   the automation shell renders the one route that opted in. On the locked
+   PAGE 08 builder - and every other automation page - the gate is false and
+   not a single declaration applies. */
+.hermes-automation-shell:has(.hermes-ops-navy) {
+  background-color: #121D26;
+}
+
+/* Slightly darker than the content canvas, as a navigation rail should be, and
+   still unmistakably navy rather than black. */
+.hermes-automation-shell:has(.hermes-ops-navy) .hermes-automation-rail {
+  background-color: #0F1A23;
+  /* Logical property: Persian mirrors the divider without a second rule. */
+  border-inline-end: 1px solid rgba(120, 150, 170, 0.12);
+  border-right: 0;
+}
+
+/* The active item is a restrained surface shift with a cyan edge - the same
+   treatment AppSidebar uses on the dashboard, never a luminous block. */
+.hermes-automation-shell:has(.hermes-ops-navy) .hermes-automation-rail nav a.bg-primary\/10 {
+  background-color: #1C2D3A;
+  box-shadow: inset 2px 0 0 var(--color-brand-primary);
+}
+
+/* The estate paints its canvas on <html>, behind every shell. The navy shell
+   covers it, but an occluded neutral near-black is still what surfaces on
+   overscroll and in any gap a future layout leaves. Gating on the opted-in
+   scope keeps the correction to the route that asked for it. */
+html:has(.hermes-ops-navy) {
+  background: #121D26;
+}
+
+html:has(.hermes-ops-navy) body {
+  background-color: #121D26;
+}

@@ -10,8 +10,12 @@ export default async function AutomationLayout({ children }: { children: ReactNo
   const t = await getTranslations("automationOperations");
   return (
     <RequireCapability capability="authoring">
-      <div className="flex min-h-screen">
-        <aside className="w-52 shrink-0 border-r bg-card/50 p-4 hidden md:block">
+      {/* The two marker classes carry NO styling of their own. They exist so a
+          route that opts into a theme can reach the shell it renders inside;
+          every rule keyed to them is additionally gated on that opt-in, so a
+          page that does not ask for one is untouched. */}
+      <div className="hermes-automation-shell flex min-h-screen">
+        <aside className="hermes-automation-rail w-52 shrink-0 border-r bg-card/50 p-4 hidden md:block">
           <div className="mb-6">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">{t("nav.title")}</h2>
           </div>

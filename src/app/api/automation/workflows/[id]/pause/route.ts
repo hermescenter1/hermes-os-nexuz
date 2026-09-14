@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { can }           from "@/lib/auth/roles";
 import { updateWorkflow } from "@/lib/automation/db";
+import { workflowWriteErrorResponse } from "@/lib/automation/write-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +17,10 @@ export async function POST(
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const { id } = await params;
-  const updated = await updateWorkflow(id, { status: "PAUSED" });
-  if (!updated) return NextResponse.json({ error: "not found or no db" }, { status: 404 });
-  return NextResponse.json(updated);
+  const result = await updateWorkflow(id, { status: "PAUSED" });
+  if (!result.ok) {
+    const { body, status } = workflowWriteErrorResponse(result.reason);
+    return NextResponse.json(body, { status });
+  }
+  return NextResponse.json(result.workflow);
 }

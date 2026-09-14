@@ -15,11 +15,12 @@ export default async function WorkflowBuilderPage({
   const workflow = await getWorkflowById(id);
   if (!workflow) notFound();
 
+  // Editing shows the workflow's own name as the page identity; the builder
+  // title falls back to the generic label only when the name is empty.
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-2">{t("pages.builderTitle")}</h1>
-      <p className="text-sm text-muted-foreground mb-6">{workflow.name}</p>
-      <WorkflowBuilderClient initial={workflow} />
-    </div>
+    <WorkflowBuilderClient
+      initial={workflow}
+      title={workflow.name || t("pages.builderTitle")}
+    />
   );
 }
