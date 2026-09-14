@@ -30,7 +30,7 @@ const SENSITIVE_KEYS = new Set([
  * relying on display-time redaction to keep it out of sight.
  */
 export function isSensitiveKey(key: string): boolean {
-  const normalized = key.toLowerCase().replace(/_/g, "");
+  const normalized = key.toLowerCase().split("_").join("");
   return SENSITIVE_KEYS.has(normalized);
 }
 
