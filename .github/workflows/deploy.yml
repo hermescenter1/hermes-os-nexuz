@@ -409,9 +409,9 @@ jobs:
           #    (computed on the runner from git), and no row may be unfinished
           #    or rolled back.
           APPLIED_COUNT="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production exec -T postgres \
-            sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL"' | tr -d '[:space:]')"
+            sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL"' </dev/null | tr -d '[:space:]')"
           FAILED_COUNT="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production exec -T postgres \
-            sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NULL OR rolled_back_at IS NOT NULL"' | tr -d '[:space:]')"
+            sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NULL OR rolled_back_at IS NOT NULL"' </dev/null | tr -d '[:space:]')"
           if [ "${APPLIED_COUNT}" != "${TARGET_MIGRATION_COUNT}" ]; then
             echo "Refusing to replace hermes-web: applied migration count ${APPLIED_COUNT} != expected ${TARGET_MIGRATION_COUNT}." >&2
             exit 1
