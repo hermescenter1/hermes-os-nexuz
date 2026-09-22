@@ -399,12 +399,12 @@ jobs:
           # checkout, whose Prisma CLI version comes from this checkout's own
           # lockfile. Profile-gated: `up -d` never starts it.
           docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate build hermes-migrate
-          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate run --rm -T hermes-migrate
+          docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate run --rm -T hermes-migrate </dev/null
 
           # ── Verify the migration outcome (fail closed) ───────────────────────
           # 1. `migrate status` exits non-zero while ANY migration is pending.
           docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production --profile migrate run --rm -T hermes-migrate \
-            node node_modules/prisma/build/index.js migrate status
+            node node_modules/prisma/build/index.js migrate status </dev/null
           # 2. The applied count must equal the target commit's migration count
           #    (computed on the runner from git), and no row may be unfinished
           #    or rolled back.
