@@ -8,6 +8,7 @@ import {
   type GoogleConsentPrefs,
 } from "@/lib/analytics/gtag";
 import { GoogleTagManager } from "./GoogleTagManager";
+import { MicrosoftClarity } from "./MicrosoftClarity";
 
 interface ConsentPrefs extends GoogleConsentPrefs {
   necessary: boolean;
@@ -74,10 +75,8 @@ function applyGoogleConsent(
       return;
     }
 
-    // Always forward the complete choice, including denials.
     updateConsent(prefs);
 
-    // GA4 configuration and page_view only run after analytics consent.
     if (
       prefs.analytics &&
       configuredMeasurementId !== gaId
@@ -94,30 +93,23 @@ function applyGoogleConsent(
 
 export function AnalyticsProvider({ gaId }: Props) {
   const [gtmAllowed, setGtmAllowed] = useState(false);
+  const [clarityAllowed, setClarityAllowed] = useState(false);
 
   useEffect(() => {
-    if (!gaId) {
-      console.log(
-        "[GA] AnalyticsProvider: no gaId — analytics disabled",
-      );
-      return;
-    }
-
     function apply(prefs: ConsentPrefs): void {
       setGtmAllowed(prefs.analytics || prefs.marketing);
-      applyGoogleConsent(gaId, prefs);
+      setClarityAllowed(prefs.analytics);
+
+      if (gaId) {
+        applyGoogleConsent(gaId, prefs);
+      }
     }
 
     async function checkConsent(): Promise<void> {
-      /*
-       * The local browser choice is authoritative when present.
-       * This is important for explicit rejection: a stale DB value
-       * must never override a newer local denial.
-       */
       const local = readLocalConsent();
 
       if (local) {
-        console.log("[GA] Applying consent from localStorage");
+        console.log("[Analytics] Applying consent from localStorage");
         apply(local);
         return;
       }
@@ -142,15 +134,14 @@ export function AnalyticsProvider({ gaId }: Props) {
         };
 
         if (data.consent) {
-          console.log("[GA] Applying consent from database");
+          console.log("[Analytics] Applying consent from database");
           apply(normalizeConsent(data.consent));
           return;
         }
 
-        // Explicitly preserve denied defaults when no choice exists.
         updateConsent(DEFAULT_PREFS);
       } catch (error) {
-        console.log("[GA] Consent API failed:", error);
+        console.log("[Analytics] Consent API failed:", error);
         updateConsent(DEFAULT_PREFS);
       }
     }
@@ -161,7 +152,7 @@ export function AnalyticsProvider({ gaId }: Props) {
 
       const prefs = normalizeConsent(customEvent.detail);
 
-      console.log("[GA] Applying updated consent", {
+      console.log("[Analytics] Applying updated consent", {
         analytics: prefs.analytics,
         marketing: prefs.marketing,
         preferences: prefs.preferences,
@@ -185,7 +176,10 @@ export function AnalyticsProvider({ gaId }: Props) {
     };
   }, [gaId]);
 
-  if (!gtmAllowed) return null;
-
-  return <GoogleTagManager />;
+  return (
+    <>
+      {gtmAllowed ? <GoogleTagManager /> : null}
+      {clarityAllowed ? <MicrosoftClarity /> : null}
+    </>
+  );
 }
