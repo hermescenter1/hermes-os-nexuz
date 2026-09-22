@@ -29,6 +29,11 @@ const GA_ID  = process.env.GA_MEASUREMENT_ID  ?? process.env.NEXT_PUBLIC_GA_MEAS
 const GTM_ID = process.env.GTM_ID             ?? process.env.NEXT_PUBLIC_GTM_ID;
 const HAS_ANALYTICS = Boolean(GA_ID || GTM_ID);
 
+// Microsoft Clarity is a fixed, consent-gated analytics integration.
+const CLARITY_SCRIPT_DOMAINS = " https://www.clarity.ms";
+const CLARITY_CONNECT_DOMAINS = " https://www.clarity.ms https://*.clarity.ms https://c.bing.com";
+const CLARITY_IMG_DOMAINS = " https://www.clarity.ms https://*.clarity.ms https://c.bing.com";
+
 const GA_SCRIPT_DOMAINS  = HAS_ANALYTICS ? " https://www.googletagmanager.com https://www.google-analytics.com" : "";
 const GA_CONNECT_DOMAINS = HAS_ANALYTICS ? " https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com" : "";
 const GA_IMG_DOMAINS     = HAS_ANALYTICS ? " https://www.google-analytics.com https://www.googletagmanager.com" : "";
@@ -86,14 +91,14 @@ function buildCSP(nonce: string): string {
   const dev = process.env.NODE_ENV !== "production";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'${GA_SCRIPT_DOMAINS}${PROVENEXPERT_SCRIPT_DOMAIN}${dev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}'${GA_SCRIPT_DOMAINS}${CLARITY_SCRIPT_DOMAINS}${PROVENEXPERT_SCRIPT_DOMAIN}${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data:${GA_IMG_DOMAINS}${ENAMAD_IMG_DOMAIN}${SAASHUB_IMG_DOMAIN}${PROVENEXPERT_IMG_DOMAINS}`,
+    `img-src 'self' data:${GA_IMG_DOMAINS}${CLARITY_IMG_DOMAINS}${ENAMAD_IMG_DOMAIN}${SAASHUB_IMG_DOMAIN}${PROVENEXPERT_IMG_DOMAINS}`,
     // data: is required because the official ProvenExpert widget embeds its
     // WOFF2 fonts as data: URLs inside its stylesheet.
     "font-src 'self' data:",
     // ws: is needed for webpack HMR WebSocket in development
-    `connect-src 'self'${GA_CONNECT_DOMAINS}${PROVENEXPERT_CONNECT_DOMAINS}${VOICE_CONNECT_DOMAINS}${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
+    `connect-src 'self'${GA_CONNECT_DOMAINS}${CLARITY_CONNECT_DOMAINS}${PROVENEXPERT_CONNECT_DOMAINS}${VOICE_CONNECT_DOMAINS}${dev ? " ws://localhost:3000 ws://localhost:*" : ""}`,
     `frame-src 'self'${PROVENEXPERT_FRAME_DOMAINS}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
