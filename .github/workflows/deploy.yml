@@ -407,20 +407,22 @@ jobs:
             node node_modules/prisma/build/index.js migrate status </dev/null
           # 2. The applied count must equal the target commit's migration count
           #    (computed on the runner from git), and no row may be unfinished
-          #    or rolled back.
+          #    and no unresolved migration attempt may remain. Historical attempts
+          #    explicitly resolved as rolled back are retained by Prisma for audit history
+          #    and must not be treated as an active failure.
           APPLIED_COUNT="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production exec -T postgres \
             sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL"' </dev/null | tr -d '[:space:]')"
           FAILED_COUNT="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production exec -T postgres \
-            sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NULL OR rolled_back_at IS NOT NULL"' </dev/null | tr -d '[:space:]')"
+            sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -tAc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL"' </dev/null | tr -d '[:space:]')"
           if [ "${APPLIED_COUNT}" != "${TARGET_MIGRATION_COUNT}" ]; then
             echo "Refusing to replace hermes-web: applied migration count ${APPLIED_COUNT} != expected ${TARGET_MIGRATION_COUNT}." >&2
             exit 1
           fi
           if [ "${FAILED_COUNT}" != "0" ]; then
-            echo "Refusing to replace hermes-web: ${FAILED_COUNT} migration row(s) are unfinished or rolled back." >&2
+            echo "Refusing to replace hermes-web: ${FAILED_COUNT} unresolved migration row(s) are unfinished." >&2
             exit 1
           fi
-          echo "Migrations verified: ${APPLIED_COUNT}/${TARGET_MIGRATION_COUNT} applied, 0 failed."
+          echo "Migrations verified: ${APPLIED_COUNT}/${TARGET_MIGRATION_COUNT} applied, 0 unresolved."
           # NOTE: a migration failure above stops the deploy with the previous
           # release still serving traffic. It is NEVER answered by an automatic
           # database restore — recovery is a separate human-decided operation.
