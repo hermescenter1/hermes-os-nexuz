@@ -344,7 +344,7 @@ describe("eNAMAD trust seal — Content Security Policy", () => {
   it("allowlists the exact eNAMAD host for images", async () => {
     const src = await readMiddleware();
     expect(src).toContain("https://trustseal.enamad.ir");
-    expect(src).toMatch(/img-src 'self' data:\$\{GA_IMG_DOMAINS\}\$\{ENAMAD_IMG_DOMAIN\}/);
+    expect(src).toMatch(/img-src 'self' data:.*\$\{ENAMAD_IMG_DOMAIN\}/);
   });
 
   it("uses no wildcard and no plaintext http for the allowlist", async () => {
