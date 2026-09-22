@@ -169,7 +169,8 @@ describe("PHASE997_DEPLOY_WORKFLOW", () => {
     expect(deploy).toContain("TARGET_MIGRATION_COUNT: ${{ steps.migration.outputs.target_migration_count }}");
     expect(deploy).toContain('case "$TARGET_MIGRATION_COUNT" in');
     expect(deploy).toContain("applied migration count");
-    expect(deploy).toContain("unfinished or rolled back");
+    expect(deploy).toContain("unresolved migration row(s) are unfinished");
+    expect(deploy).toContain("finished_at IS NULL AND rolled_back_at IS NULL");
   });
 
   it("recreates ONLY hermes-web — postgres, redis and nginx are never touched", () => {
