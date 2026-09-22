@@ -30,7 +30,7 @@ const GTM_ID = process.env.GTM_ID             ?? process.env.NEXT_PUBLIC_GTM_ID;
 const HAS_ANALYTICS = Boolean(GA_ID || GTM_ID);
 
 // Microsoft Clarity is a fixed, consent-gated analytics integration.
-const CLARITY_SCRIPT_DOMAINS = " https://www.clarity.ms";
+const CLARITY_SCRIPT_DOMAINS = " https://www.clarity.ms https://*.clarity.ms";
 const CLARITY_CONNECT_DOMAINS = " https://www.clarity.ms https://*.clarity.ms https://c.bing.com";
 const CLARITY_IMG_DOMAINS = " https://www.clarity.ms https://*.clarity.ms https://c.bing.com";
 
