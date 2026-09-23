@@ -67,7 +67,13 @@ export function PipelineBoardClient() {
 
   useEffect(() => {
     fetch("/api/ats/pipeline")
-      .then(r => r.json())
+      .then(r => {
+        // Authorization refusals are JSON too — and this board renders whole
+        // candidate records, so it is the response most worth refusing. Keep
+        // {error, code} out of `data` and let "pipelineUnavailable" render.
+        if (!r.ok) throw new Error(`ats/pipeline ${r.status}`);
+        return r.json();
+      })
       .then((d: PipelineResponse) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);

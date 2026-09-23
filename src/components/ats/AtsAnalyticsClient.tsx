@@ -11,7 +11,13 @@ export function AtsAnalyticsClient() {
 
   useEffect(() => {
     fetch("/api/ats/analytics")
-      .then(r => r.json())
+      .then(r => {
+        // Authorization refusals are JSON too. Rendering {error, code} as
+        // analytics would read every metric as undefined; fall through to the
+        // existing "analyticsUnavailable" state instead.
+        if (!r.ok) throw new Error(`ats/analytics ${r.status}`);
+        return r.json();
+      })
       .then((d: AtsAnalytics) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);

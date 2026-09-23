@@ -15,31 +15,31 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 381,
-    "handlers": 532,
+    "routeFiles": 385,
+    "handlers": 537,
     "byClassification": {
-      "PUBLIC_READ": 41,
+      "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
-      "AUTHENTICATED_USER": 215,
-      "TENANT_MEMBER": 127,
+      "AUTHENTICATED_USER": 220,
+      "TENANT_MEMBER": 131,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
-      "PLATFORM_ADMIN": 131,
+      "PLATFORM_ADMIN": 132,
       "WEBHOOK": 2,
       "INTERNAL_HEALTH": 2,
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 127,
+    "tenantBoundHandlers": 131,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 258,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 258,
-    "TENANT_IDENTITY_SERVER_DERIVED": 258,
+    "TENANT_BOUND_HANDLERS_TOTAL": 263,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 263,
+    "TENANT_IDENTITY_SERVER_DERIVED": 263,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 258,
+    "OBJECT_SCOPED_HANDLERS": 263,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -833,10 +833,38 @@
       "apiPath": "/api/ats/analytics",
       "method": "GET",
       "file": "src/app/api/ats/analytics/route.ts",
-      "classification": "PUBLIC_READ",
-      "authEvidence": [],
-      "declaredSurface": true,
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireRecruitmentReader"
+      ],
+      "declaredSurface": false,
       "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/applications/[id]/decision",
+      "method": "POST",
+      "file": "src/app/api/ats/applications/[id]/decision/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/applications/[id]/review",
+      "method": "GET",
+      "file": "src/app/api/ats/applications/[id]/review/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -846,9 +874,7 @@
       "file": "src/app/api/ats/applications/[id]/status/route.ts",
       "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getAuthRole",
-        "requireOrgActor",
-        "verifyAccessToken"
+        "requireAtsActor"
       ],
       "declaredSurface": false,
       "tenantScoped": true,
@@ -859,9 +885,11 @@
       "apiPath": "/api/ats/candidates",
       "method": "GET",
       "file": "src/app/api/ats/candidates/route.ts",
-      "classification": "PUBLIC_READ",
-      "authEvidence": [],
-      "declaredSurface": true,
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireRecruitmentReader"
+      ],
+      "declaredSurface": false,
       "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": null
@@ -911,11 +939,11 @@
       "apiPath": "/api/ats/jobs",
       "method": "GET",
       "file": "src/app/api/ats/jobs/route.ts",
-      "classification": "PUBLIC_READ",
+      "classification": "AUTHENTICATED_USER",
       "authEvidence": [
         "getAuthRole"
       ],
-      "declaredSurface": true,
+      "declaredSurface": false,
       "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": null
@@ -934,12 +962,40 @@
       "senderAuthenticated": null
     },
     {
+      "apiPath": "/api/ats/jobs/[id]/criteria",
+      "method": "GET",
+      "file": "src/app/api/ats/jobs/[id]/criteria/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs/[id]/criteria",
+      "method": "POST",
+      "file": "src/app/api/ats/jobs/[id]/criteria/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
       "apiPath": "/api/ats/overview",
       "method": "GET",
       "file": "src/app/api/ats/overview/route.ts",
-      "classification": "PUBLIC_READ",
-      "authEvidence": [],
-      "declaredSurface": true,
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireRecruitmentReader"
+      ],
+      "declaredSurface": false,
       "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": null
@@ -948,9 +1004,24 @@
       "apiPath": "/api/ats/pipeline",
       "method": "GET",
       "file": "src/app/api/ats/pipeline/route.ts",
-      "classification": "PUBLIC_READ",
-      "authEvidence": [],
-      "declaredSurface": true,
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "requireRecruitmentReader"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/review/deliver",
+      "method": "POST",
+      "file": "src/app/api/ats/review/deliver/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizeReviewWorker"
+      ],
+      "declaredSurface": false,
       "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": null

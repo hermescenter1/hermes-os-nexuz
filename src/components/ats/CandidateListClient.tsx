@@ -40,15 +40,28 @@ export function CandidateListClient() {
   const [stageFilter,setStageFilter]= useState<PipelineStage | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search,     setSearch]     = useState("");
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     const url = stageFilter === "all"
       ? "/api/ats/candidates"
       : `/api/ats/candidates?stage=${stageFilter}`;
+    // Clear the previous failure before retrying. Without this, a stale
+    // `unavailable` keeps the error block mounted while the new request is in
+    // flight — and that block replaces the stage filters, so the reader would
+    // have no control left to trigger another attempt.
+    setUnavailable(false);
     fetch(url)
-      .then(r => r.json())
-      .then((d: CandidatesResponse) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(r => {
+        // This listing is authorization-gated. A refusal body ({error, code})
+        // has no `candidates` array, so casting it would render "no candidates
+        // match" — telling a reader that the search found nothing when in fact
+        // they were not allowed to search. Those are different answers.
+        if (!r.ok) throw new Error(`ats/candidates ${r.status}`);
+        return r.json();
+      })
+      .then((d: CandidatesResponse) => { setData(d); setUnavailable(false); setLoading(false); })
+      .catch(() => { setData(null); setUnavailable(true); setLoading(false); });
   }, [stageFilter]);
 
   const visible = useMemo(() => {
@@ -66,6 +79,15 @@ export function CandidateListClient() {
     data?.candidates.find(c => c.id === selectedId) ?? null,
     [data, selectedId]
   );
+
+  // Distinct from the empty result below: the listing could not be read at all.
+  if (unavailable) {
+    return (
+      <div className="rounded-xl border border-danger/30 bg-surface px-5 py-4">
+        <p className="font-mono text-sm text-danger">{t("unavailable")}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">

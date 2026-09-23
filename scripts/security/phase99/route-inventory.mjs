@@ -150,6 +150,17 @@ export const GUARD_TOKENS = [
   // envelope using a server-held signing key, and the tenant is read from the
   // gateway record rather than the request.
   { token: "authenticateGateway", scope: "tenant" },
+  // ATS-S1 — the recruitment capability guard (`src/lib/ats/rbac.ts`).
+  //
+  // Registered for the same reason as `requireVoiceCopilotActor`: it COMPOSES a
+  // tenant-scope check already vouched for here — `resolveOrgContext`, the
+  // Phase 110 resolver behind `requireOrgContext` (session revocation, ACTIVE
+  // membership, organization selection, the write precondition header) — with
+  // an ATS capability predicate against the proven organization role. Every
+  // handler that calls it receives the organization from the server, never from
+  // the request. src/lib/ats/__tests__/ats-guard-registration.test.ts locks both
+  // halves: the routes really delegate to it, and it really performs the checks.
+  { token: "requireAtsActor", scope: "tenant" },
   // Platform / API-key authority
   { token: "requirePlatformAuth", scope: "platform" },
   { token: "requirePlatformSuperadmin", scope: "platform" },
@@ -171,6 +182,13 @@ export const GUARD_TOKENS = [
   // halves — that the routes really delegate to it, and that it really performs
   // the checks claimed here.
   { token: "authorizeWorkerRequest", scope: "platform" },
+  // ATS-S1 — the AI-review worker guard (`src/lib/ats/review/worker-auth.ts`).
+  // The same two-key shape as `authorizeWorkerRequest` above and vouched for on
+  // the same terms: a constant-time comparison against ATS_REVIEW_WORKER_TOKEN,
+  // which exists only in the environment, or `getCurrentUser` plus
+  // `can(role, "admin")`; with neither, 401. Locked on both halves by
+  // src/lib/ats/__tests__/ats-guard-registration.test.ts.
+  { token: "authorizeReviewWorker", scope: "platform" },
   // Authenticated identity
   { token: "getCurrentUser", scope: "user" },
   { token: "getAuthRole", scope: "user" },
@@ -183,6 +201,13 @@ export const GUARD_TOKENS = [
   { token: "verifySession", scope: "user" },
   { token: "getSessionUser", scope: "user" },
   { token: "getTokenUser", scope: "user" },
+  // ATS-S0 — `requireRecruitmentReader` (`src/lib/ats/management-guard.ts`) is
+  // `getAuthRole` plus `can(role, "authoring")`: an authenticated identity and a
+  // platform capability, and NOTHING about a tenant. It is registered at USER
+  // scope precisely so the inventory does not overstate it — the four routes
+  // that call it still serve fixtures and are not tenant-scoped, which their own
+  // headers say. Locked by src/lib/ats/__tests__/ats-guard-registration.test.ts.
+  { token: "requireRecruitmentReader", scope: "user" },
   // Refresh rotation authenticates by claiming a hashed refresh token atomically;
   // possession of the token IS the credential this endpoint checks.
   { token: "rotateRefreshToken", scope: "user" },

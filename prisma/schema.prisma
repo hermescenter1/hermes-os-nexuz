@@ -683,6 +683,11 @@ model Organization {
   atsInterviews        AtsInterview[]
   atsPipelineEvents    AtsPipelineEvent[]
   atsCandidateScores   AtsCandidateScore[]
+  // ATS-B2/S1: intake orchestration + AI review + human decision gate
+  atsJobCriteria       AtsJobCriterion[]
+  atsAiReviews         AtsAiReview[]
+  atsReviewDecisions   AtsReviewDecision[]
+  atsReviewOutbox      AtsReviewOutbox[]
   // Phase 60: Academy
   academyCourses       AcademyCourse[]
   academyEnrollments   AcademyEnrollment[]
@@ -2451,6 +2456,14 @@ enum AtsApplicationStatus {
   OFFER
   HIRED
   REJECTED
+  // ATS-B2/S1 — the mandatory stage gate. An application received through the
+  // public intake goes APPLIED → AI_REVIEW_PENDING in the SAME transaction, and
+  // ONLY the review worker may move it to PENDING_HUMAN_APPROVAL. Nothing but a
+  // recorded human decision (AtsReviewDecision, reason required) leaves that
+  // state. Appended at the END of the type: PostgreSQL ADD VALUE is append-only
+  // without a position clause, and the order carries no meaning here.
+  AI_REVIEW_PENDING
+  PENDING_HUMAN_APPROVAL
 }
 
 enum AtsInterviewType {
@@ -2525,6 +2538,9 @@ model AtsJob {
   // by prisma/__tests__/phase104b12-schema-sql-parity.test.ts.
   hiringManager    OrganizationMember? @relation("AtsJobHiringManager", fields: [organizationId, hiringManagerId], references: [organizationId, id], onDelete: NoAction, onUpdate: Cascade, map: "AtsJob_hiringManager_tenant_fkey")
   idempotencyClaims RecruitmentIdempotencyKey[]
+  // ATS-S1 — the job's scorecard: must-have / nice-to-have / disqualifier
+  // criteria with their evidence rules. Tenant-bound by composite FK.
+  criteria          AtsJobCriterion[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, requisitionKey])
@@ -2686,9 +2702,35 @@ model AtsApplication {
   pipelineEvents AtsPipelineEvent[]
   score          AtsCandidateScore?
 
+  // ── ATS-B2 — public intake orchestration (all additive, all nullable) ──
+  // publicReference: the ONLY identifier an applicant ever receives. Opaque,
+  // random, unique; never the row id, never derived from the e-mail.
+  publicReference      String?
+  // consentVersion: the policy text version the applicant acknowledged.
+  consentVersion       String?
+  // Retention is derived from the organization's APPROVED RetentionPolicy for
+  // RECRUITMENT_CANDIDATE at intake time — never from an invented duration.
+  retentionPolicyId    String?
+  retentionExpiresAt   DateTime?
+  withdrawnAt          DateTime?
+  anonymizedAt         DateTime?
+  intakeCorrelationId  String?
+  // ATS-S1 — how many AI review cycles this application has been through.
+  // Increments when a human RETURNS it for review; keys the outbox row.
+  aiReviewCycle        Int                  @default(0)
+  jobCriteriaSnapshot  Json?
+  aiReviews            AtsAiReview[]
+  reviewDecisions      AtsReviewDecision[]
+  reviewOutbox         AtsReviewOutbox[]
+
   @@unique([jobId, candidateId])
+  // ATS-B2 — composite tenant target, so every S1 child row carries the tenant
+  // in its FK (phase102 release-blocker-6 / B1.2 precedent).
+  @@unique([organizationId, id])
+  @@unique([publicReference])
   @@index([organizationId, status])
   @@index([organizationId, jobId])
+  @@index([organizationId, retentionExpiresAt])
   @@index([candidateId])
 }
 
@@ -2774,6 +2816,165 @@ model AtsCandidateScore {
   application        AtsApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, overallScore])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ATS-B2 / ATS-S1 — intake orchestration, AI review, human approval gate
+// ════════════════════════════════════════════════════════════════════════════
+//
+// THE RULE these four tables exist to enforce: no candidate moves between
+// stages automatically. The public intake ends at AI_REVIEW_PENDING; the
+// review worker ends at PENDING_HUMAN_APPROVAL; only a recorded human decision
+// with a reason moves anything further. The AI produces evidence and a
+// recommendation, never a transition.
+//
+// TENANCY: every child carries (organizationId, applicationId) → the composite
+// AtsApplication(organizationId, id), so a row for another organization's
+// application is unwritable at the database, not merely unqueried.
+
+enum AtsCriterionKind {
+  MUST_HAVE
+  NICE_TO_HAVE
+  DISQUALIFIER
+}
+
+enum AtsAiRecommendation {
+  ADVANCE
+  REVIEW_REQUIRED
+  HOLD
+  REJECT_RECOMMENDED
+}
+
+enum AtsReviewDecisionKind {
+  ADVANCE
+  HOLD
+  RETURN_FOR_REVIEW
+  REJECT
+}
+
+enum AtsReviewOutboxStatus {
+  PENDING
+  CLAIMED
+  RETRYING
+  DELIVERED
+  DEAD_LETTER
+}
+
+// One scorecard criterion of a job. `keywords` is the evidence vocabulary the
+// deterministic extractor searches for; `minYears` applies to experience
+// criteria only. Protected attributes (age, gender, ethnicity, religion,
+// photo, marital status, family name) are NEVER criteria — gated by
+// src/lib/ats/review/__tests__.
+model AtsJobCriterion {
+  id             String           @id @default(cuid())
+  organizationId String
+  jobId          String
+  kind           AtsCriterionKind
+  code           String
+  label          String
+  dimension      String           // skill | experience | education | certification | project | role_relevance | location | authorization
+  weight         Int              @default(0)
+  keywords       Json             @default("[]")
+  minYears       Int?
+  hardGate       Boolean          @default(false)
+  sortOrder      Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  job            AtsJob           @relation(fields: [organizationId, jobId], references: [organizationId, id], onDelete: Cascade, onUpdate: Cascade, map: "AtsJobCriterion_job_tenant_fkey")
+
+  @@unique([organizationId, jobId, code])
+  @@index([organizationId, jobId, sortOrder])
+}
+
+// One AI review run. `report` is the full typed evidence report (schema in
+// src/lib/ats/review/report-schema.ts); the scalar columns beside it are
+// projections for listing and never the source of truth. Every version label
+// is stored so a report can be reproduced and audited.
+model AtsAiReview {
+  id               String              @id @default(cuid())
+  organizationId   String
+  applicationId    String
+  jobId            String
+  cycle            Int                 @default(0)
+  provider         String              // deterministic | router:<provider>
+  extractorVersion String
+  rubricVersion    String
+  promptVersion    String
+  policyVersion    String
+  modelVersion     String?
+  recommendation   AtsAiRecommendation
+  overallScore     Int?
+  confidence       Int?
+  hardGatesPassed  Int                 @default(0)
+  hardGatesFailed  Int                 @default(0)
+  hardGatesUnknown Int                 @default(0)
+  riskFlagCount    Int                 @default(0)
+  report           Json
+  correlationId    String?
+  createdAt        DateTime            @default(now())
+  organization     Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  application      AtsApplication      @relation(fields: [organizationId, applicationId], references: [organizationId, id], onDelete: Cascade, onUpdate: Cascade, map: "AtsAiReview_application_tenant_fkey")
+  decisions        AtsReviewDecision[]
+
+  @@unique([organizationId, applicationId, cycle])
+  @@index([organizationId, applicationId, createdAt])
+  @@index([organizationId, recommendation])
+}
+
+// The human decision record. Append-only; there is no update path. Every
+// field the stage-gate contract lists is a column, not a JSON key, so a
+// decision without a reason or without an actor is unwritable.
+model AtsReviewDecision {
+  id             String                @id @default(cuid())
+  organizationId String
+  applicationId  String
+  actorUserId    String
+  actorMemberId  String?
+  actorRole      String
+  fromStatus     AtsApplicationStatus
+  toStatus       AtsApplicationStatus
+  decision       AtsReviewDecisionKind
+  reason         String
+  aiReviewId     String?
+  correlationId  String
+  auditLogId     String?
+  createdAt      DateTime              @default(now())
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  application    AtsApplication        @relation(fields: [organizationId, applicationId], references: [organizationId, id], onDelete: Cascade, onUpdate: Cascade, map: "AtsReviewDecision_application_tenant_fkey")
+  aiReview       AtsAiReview?          @relation(fields: [aiReviewId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, applicationId, createdAt])
+  @@index([organizationId, actorUserId, createdAt])
+}
+
+// Transactional outbox for "start an AI review". Written INSIDE the intake
+// transaction, so it commits exactly when the application does. Exactly-once
+// at the source by the unique key; exactly-once at delivery by the worker's
+// conditional status claim. A failed review leaves the application in
+// AI_REVIEW_PENDING — a stable, visible state, never a silent drop.
+model AtsReviewOutbox {
+  id             String                @id @default(cuid())
+  organizationId String
+  applicationId  String
+  kind           String                @default("AI_REVIEW")
+  cycle          Int                   @default(0)
+  status         AtsReviewOutboxStatus @default(PENDING)
+  attempts       Int                   @default(0)
+  lastErrorCode  String?
+  nextAttemptAt  DateTime              @default(now())
+  claimedAt      DateTime?
+  deliveredAt    DateTime?
+  aiReviewId     String?
+  correlationId  String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  application    AtsApplication        @relation(fields: [organizationId, applicationId], references: [organizationId, id], onDelete: Cascade, onUpdate: Cascade, map: "AtsReviewOutbox_application_tenant_fkey")
+
+  @@unique([organizationId, applicationId, kind, cycle])
+  @@index([status, nextAttemptAt])
+  @@index([organizationId, status, createdAt])
 }
 
 // ════════════════════════════════════════════════════════════════════════════
