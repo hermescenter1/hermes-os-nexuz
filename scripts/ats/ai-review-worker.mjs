@@ -83,12 +83,21 @@ async function main() {
       if (r.status === 200) {
         failures = 0;
         const b = r.body;
-        console.log(
-          `[ats-review-worker] claimed=${b.claimed} delivered=${b.delivered} retrying=${b.retrying} deadLettered=${b.deadLettered} skipped=${b.skipped}`,
-        );
+        // COUNTS ONLY. The endpoint returns no candidate field, and this line
+        // names none — a log shipped off the host carries nothing personal.
+        if (b && b.acquired === false) {
+          console.log("[ats-review-worker] another replica holds the lease");
+        } else {
+          console.log(
+            `[ats-review-worker] claimed=${b.claimed} delivered=${b.delivered} retrying=${b.retrying} deadLettered=${b.deadLettered} skipped=${b.skipped}`,
+          );
+        }
       } else {
         failures++;
-        console.error(`[ats-review-worker] HTTP ${r.status}: ${typeof r.body === "string" ? r.body : JSON.stringify(r.body)}`);
+        // Bounded, like the metering runner: whatever answers an error (an
+        // upstream proxy page included) cannot be copied into the log whole.
+        const detail = typeof r.body === "string" ? r.body : JSON.stringify(r.body);
+        console.error(`[ats-review-worker] HTTP ${r.status}: ${String(detail).slice(0, 200)}`);
       }
     } catch (err) {
       inFlight = null;
