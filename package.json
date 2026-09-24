@@ -52,6 +52,7 @@
     "media:processing": "node scripts/media/phase102-media-processing.mjs",
     "test:phase106:postgres": "vitest run --config vitest.phase106-postgres.config.ts",
     "test:phase109cui2r3:postgres": "vitest run --config vitest.phase109cui2r3-postgres.config.ts",
+    "test:phase112:postgres": "vitest run --config vitest.phase112-postgres.config.ts",
     "metering:worker": "node scripts/industrial/metering-outbox-worker.mjs",
     "metering:worker:once": "node scripts/industrial/metering-outbox-worker.mjs --once",
     "journal:validate": "node scripts/journal/validate-content.mjs",

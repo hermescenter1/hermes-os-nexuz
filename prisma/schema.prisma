@@ -721,6 +721,10 @@ model Organization {
   mediaWatchProgress      MediaWatchProgress[]
   mediaViewEvents         MediaViewEvent[]
   mediaEditorialEvents    MediaEditorialEvent[]
+  // Phase 112: immutable reasoning-run ledger + replay attempts
+  reasoningRuns           ReasoningRun[]
+  reasoningRunArtifacts   ReasoningRunArtifact[]
+  reasoningReplayAttempts ReasoningReplayAttempt[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -1118,6 +1122,9 @@ model IndustrialSite {
   // Phase 102: optional site scoping for media assets (SetNull — removing a site
   // must not delete the training material recorded under it).
   mediaAssets         MediaAsset[]
+  // Phase 112: reasoning runs recorded against this site (Restrict — a site with
+  // historical reasoning runs cannot be deleted out from under them).
+  reasoningRuns       ReasoningRun[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -1198,6 +1205,9 @@ model IndustrialAsset {
   analysisSnapshots     AssetIntelligenceSnapshot[]
   analysisHealthHistory AssetHealthHistory[]
   analysisRecommendations MaintenanceRecommendation[]
+  // Phase 112: reasoning runs recorded against this asset (Restrict — same
+  // historical-record protection as the Phase 109 analysis outputs above).
+  reasoningRuns         ReasoningRun[]
 
   @@index([organizationId])
   @@index([siteId])
@@ -8187,4 +8197,211 @@ model MediaEditorialEvent {
 
   @@index([organizationId, mediaAssetId, createdAt])
   @@index([organizationId, toStatus, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 112 — IMMUTABLE REASONING RUN + EXACT REPLAY
+//
+// An append-only, tenant-scoped, cryptographically verifiable record of every
+// PERSISTED industrial reasoning execution. The public /api/industrial-brain/
+// analyze endpoint stays stateless; these tables only ever hold runs created
+// through the authenticated, server-resolved-tenant Reasoning Run service.
+//
+// Immutability is enforced at TWO layers: (1) the application repository exposes
+// create/read only — never update/upsert of run/artifact/replay content; and
+// (2) DB BEFORE UPDATE triggers reject every content edit (see the Phase 112
+// migration). "Immutable" means append-only and non-editable WHILE RETAINED —
+// rows remain deletable so a governed retention/privacy path can erase them;
+// the ordinary application layer never issues those deletes.
+//
+// Legacy AnalysisRecord rows are NOT reasoning runs and are never backfilled.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// How a persisted reasoning run was initiated. REPLAY is reserved for a run
+/// that was created as the child of an earlier run (lineage via parentRunId).
+enum ReasoningRunSourceChannel {
+  INTERACTIVE
+  TELEMETRY
+  ALARM
+  EVIDENCE_UPDATE
+  REPLAY
+}
+
+/// Run lifecycle. Runs are persisted already in a TERMINAL state (COMPLETED or
+/// FAILED) inside the create transaction; PENDING/RUNNING exist for forward
+/// compatibility and are never written by the current synchronous service.
+enum ReasoningRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+/// Typed, immutable artifact kinds. At most one artifact of each kind per run
+/// (enforced by @@unique([organizationId, runId, kind])).
+enum ReasoningRunArtifactKind {
+  RAW_INPUT
+  NORMALIZED_INPUT
+  EVIDENCE
+  ENGINE_MANIFEST
+  ANALYSIS_OUTPUT
+  REASONING_MAP
+  UNCERTAINTY
+  SAFE_ACTION
+  HUMAN_DECISION
+}
+
+/// Which replay was requested. ARCHIVAL = retrieve immutable snapshots + verify
+/// hashes. EXECUTION = re-run the exact registered engine version and compare
+/// the canonical semantic-output digest with the original.
+enum ReasoningReplayMode {
+  ARCHIVAL
+  EXECUTION
+}
+
+/// Whether the historical engine version was resolvable for an EXECUTION replay.
+enum ReasoningReplayEngineAvailability {
+  AVAILABLE
+  ENGINE_VERSION_UNAVAILABLE
+  NOT_APPLICABLE
+}
+
+/// Terminal outcome of a replay attempt. INTEGRITY_FAILURE is decided BEFORE any
+/// engine execution; ENGINE_VERSION_UNAVAILABLE means executable replay was
+/// refused because the historical engine is not registered.
+enum ReasoningReplayOutcome {
+  MATCH
+  MISMATCH
+  ARCHIVAL_VERIFIED
+  ENGINE_VERSION_UNAVAILABLE
+  INTEGRITY_FAILURE
+}
+
+/// Append-only metadata record for one persisted reasoning execution.
+model ReasoningRun {
+  id                String                    @id @default(cuid())
+  organizationId    String
+  /// Server-resolved site/asset scope; NULL when the run is not site/asset bound.
+  siteId            String?
+  assetId           String?
+  /// Initiating user. LOOSE reference (no FK) so a governed user erasure never
+  /// has to UPDATE this immutable row (which the DB trigger would reject) and
+  /// never deletes the tenant's run. Validated server-side at creation.
+  initiatedByUserId String?
+  sourceChannel     ReasoningRunSourceChannel
+  status            ReasoningRunStatus
+
+  // ── Engine manifest identity (frozen before execution) ──────────────────────
+  engineId               String  @db.VarChar(120)
+  engineVersion          String  @db.VarChar(64)
+  rulePackVersion        String  @db.VarChar(64)
+  /// Case corpus version + checksum when a case corpus was consulted.
+  caseCorpusVersion      String? @db.VarChar(64)
+  caseCorpusChecksum     String? @db.VarChar(64)
+  /// Knowledge-graph revision + checksum when a graph was consulted.
+  graphRevision          Int?
+  graphChecksum          String? @db.VarChar(64)
+  /// Document/RAG corpus checksum when a document corpus was consulted.
+  documentCorpusChecksum String? @db.VarChar(64)
+  /// Model/provider/config version fields — NULL means not-applicable (the
+  /// current deterministic engine uses no model/provider).
+  modelProvider          String? @db.VarChar(120)
+  modelVersion           String? @db.VarChar(120)
+  modelConfigVersion     String? @db.VarChar(120)
+  schemaVersion          String  @db.VarChar(16)
+
+  // ── Idempotency + lineage ───────────────────────────────────────────────────
+  idempotencyKey     String  @db.VarChar(128)
+  /// SHA-256 over the canonical (normalized input + declared manifest). Reusing a
+  /// key with a different fingerprint is rejected (KEY_FINGERPRINT_MISMATCH).
+  requestFingerprint String  @db.VarChar(64)
+  /// Optional parent for a REPLAY-channel run. Never mutates the parent.
+  parentRunId        String?
+
+  // ── Timing + digests ────────────────────────────────────────────────────────
+  startedAt   DateTime
+  completedAt DateTime?
+  /// SHA-256 of the canonical normalized-input snapshot.
+  inputDigest    String  @db.VarChar(64)
+  /// SHA-256 of the canonical SEMANTIC output (non-semantic runtime metadata such
+  /// as processingMs is excluded under the documented canonical contract).
+  outputDigest   String  @db.VarChar(64)
+  /// SHA-256 binding every artifact digest + all declared engine/version fields.
+  manifestDigest String  @db.VarChar(64)
+  /// Error CLASS only — never a raw stack trace or secret-bearing message.
+  errorClass     String? @db.VarChar(120)
+  createdAt      DateTime @default(now())
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Restrict: a run is a historical record of what a site/asset was doing, and
+  // the run row is immutable (SetNull would UPDATE it and the trigger would
+  // reject the cascade), so the parent site/asset cannot be deleted while runs
+  // reference it — matching the Phase 109 analysis-output precedent.
+  site         IndustrialSite?  @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  asset        IndustrialAsset? @relation(fields: [assetId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  // Tenant-carrying self relation: (organizationId, parentRunId) references
+  // (organizationId, id). NoAction — a parent is never auto-deleted/updated.
+  parentRun    ReasoningRun?    @relation("ReasoningRunReplayLineage", fields: [organizationId, parentRunId], references: [organizationId, id], onDelete: NoAction, onUpdate: NoAction, map: "ReasoningRun_parent_tenant_fkey")
+  childRuns    ReasoningRun[]   @relation("ReasoningRunReplayLineage")
+  artifacts      ReasoningRunArtifact[]
+  replayAttempts ReasoningReplayAttempt[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, siteId])
+  @@index([organizationId, assetId])
+  @@index([organizationId, engineId, engineVersion])
+  @@index([organizationId, parentRunId])
+}
+
+/// Immutable, typed artifact attached to a reasoning run. Canonical JSON payload
+/// + its SHA-256 digest + bounded byte size. UPDATE is rejected by a DB trigger.
+model ReasoningRunArtifact {
+  id             String                   @id @default(cuid())
+  organizationId String
+  runId          String
+  kind           ReasoningRunArtifactKind
+  schemaVersion  String                   @db.VarChar(16)
+  /// Canonical JSON payload (redacted/allowlisted at the snapshot boundary).
+  payload        Json
+  /// SHA-256 (lowercase hex) over the canonical bytes of `payload`.
+  digest         String                   @db.VarChar(64)
+  /// Byte length of the canonical payload. CHECK (> 0) in the migration.
+  byteSize       Int
+  createdAt      DateTime                 @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  run          ReasoningRun @relation(fields: [organizationId, runId], references: [organizationId, id], onDelete: Cascade, onUpdate: Cascade, map: "ReasoningRunArtifact_run_tenant_fkey")
+
+  @@unique([organizationId, runId, kind])
+  @@index([organizationId, runId])
+}
+
+/// A replay attempt, stored SEPARATELY from the original run. Never mutates the
+/// original run or its artifacts. Append-only (UPDATE rejected by a DB trigger).
+model ReasoningReplayAttempt {
+  id                     String                            @id @default(cuid())
+  organizationId         String
+  runId                  String
+  /// Requesting user. LOOSE reference (no FK) — see ReasoningRun.initiatedByUserId.
+  requestedByUserId      String?
+  mode                   ReasoningReplayMode
+  /// The historical engine version the caller asked to re-execute (EXECUTION).
+  requestedEngineVersion String?                           @db.VarChar(64)
+  engineAvailability     ReasoningReplayEngineAvailability
+  outcome                ReasoningReplayOutcome
+  /// The original run's output digest, copied for comparison (never edited there).
+  originalOutputDigest   String                            @db.VarChar(64)
+  /// The re-executed canonical semantic-output digest (EXECUTION + engine available).
+  replayedOutputDigest   String?                           @db.VarChar(64)
+  /// Bounded, non-sensitive mismatch summary — never echoes raw plant evidence.
+  mismatchSummary        String?                           @db.VarChar(2000)
+  correlationId          String?                           @db.VarChar(120)
+  createdAt              DateTime                          @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  run          ReasoningRun @relation(fields: [organizationId, runId], references: [organizationId, id], onDelete: Cascade, onUpdate: Cascade, map: "ReasoningReplayAttempt_run_tenant_fkey")
+
+  @@index([organizationId, runId, createdAt])
 }

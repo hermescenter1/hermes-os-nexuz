@@ -15,13 +15,13 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 385,
-    "handlers": 537,
+    "routeFiles": 388,
+    "handlers": 540,
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
       "AUTHENTICATED_USER": 219,
-      "TENANT_MEMBER": 132,
+      "TENANT_MEMBER": 135,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 132,
@@ -30,16 +30,16 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 132,
+    "tenantBoundHandlers": 135,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 264,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 264,
-    "TENANT_IDENTITY_SERVER_DERIVED": 264,
+    "TENANT_BOUND_HANDLERS_TOTAL": 267,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 267,
+    "TENANT_IDENTITY_SERVER_DERIVED": 267,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 264,
+    "OBJECT_SCOPED_HANDLERS": 267,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -4819,6 +4819,46 @@
       "authEvidence": [],
       "declaredSurface": true,
       "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-brain/runs",
+      "method": "POST",
+      "file": "src/app/api/industrial-brain/runs/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "resolveReasoningRunActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-brain/runs/[id]",
+      "method": "GET",
+      "file": "src/app/api/industrial-brain/runs/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "resolveReasoningRunActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/industrial-brain/runs/[id]/replay",
+      "method": "POST",
+      "file": "src/app/api/industrial-brain/runs/[id]/replay/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission",
+        "resolveReasoningRunActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },

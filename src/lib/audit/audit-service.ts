@@ -129,6 +129,20 @@ export const INDUSTRIAL_AUDIT = {
 } as const;
 
 /**
+ * PHASE 112 — immutable reasoning-run ledger audit actions.
+ *
+ * VOLUME / REDACTION RULES: metadata carries IDENTIFIERS, VERSIONS, DIGESTS and
+ * closed-enum OUTCOMES only — never the raw reasoning input, evidence, analysis
+ * text, plant conditions or any free text. Archival and execution replay are two
+ * distinct actions so each is findable on its own in an audit search.
+ */
+export const REASONING_AUDIT = {
+  RUN_CREATED:            "reasoning.run.created",
+  RUN_REPLAY_ARCHIVAL:    "reasoning.run.replay.archival",
+  RUN_REPLAY_EXECUTION:   "reasoning.run.replay.execution",
+} as const;
+
+/**
  * Site Isolation audit action identifiers (Phase 43).
  *
  * VOLUME RULES:
