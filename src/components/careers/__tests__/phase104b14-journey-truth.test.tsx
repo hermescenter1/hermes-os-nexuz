@@ -112,9 +112,20 @@ const settle = async (n = 3) => { for (let k = 0; k < n; k++) await new Promise(
 afterEach(() => vi.unstubAllGlobals());
 
 describe("B1.4 §1.4 — the gate is BOTH facts, not the owner flag alone", () => {
-  it("APPLY_JOURNEY_OPEN is the conjunction, and it is false while B2 is unimplemented", () => {
+  it("APPLY_JOURNEY_OPEN is the conjunction, and it is false while the owner has not authorized acceptance", () => {
+    /*
+     * ATS-B2 (2026-09-23) implemented the orchestration, so
+     * APPLICATION_ORCHESTRATION_IMPLEMENTED is now TRUE — an owner-ordered
+     * change of fact, not a relaxation. This assertion was `false` when it
+     * described B1.4. What §1.4 protects is unchanged and still asserted in
+     * full: the gate is the CONJUNCTION, and the journey is closed.
+     *
+     * Stronger than before: it now pins WHICH fact keeps the journey closed.
+     * With orchestration true, the owner flag is the only thing holding the
+     * gate shut — so if both flags ever read true, this fails and says so.
+     */
+    expect(APPLICATION_ORCHESTRATION_IMPLEMENTED).toBe(true);
     expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(false);
-    expect(APPLICATION_ORCHESTRATION_IMPLEMENTED).toBe(false);
     expect(APPLY_JOURNEY_OPEN).toBe(APPLICATION_ACCEPTANCE_AUTHORIZED && APPLICATION_ORCHESTRATION_IMPLEMENTED);
     expect(APPLY_JOURNEY_OPEN).toBe(false);
   });

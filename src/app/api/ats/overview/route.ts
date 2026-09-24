@@ -1,8 +1,25 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { JOBS, CANDIDATES, RECENT_ACTIVITY, HIRING_VELOCITY_DAYS, STAGE_COUNTS } from "@/lib/ats/mock-data";
 import type { AtsOverview } from "@/lib/ats/types";
+import { requireRecruitmentReader, RECRUITMENT_NO_STORE } from "@/lib/ats/management-guard";
 
-export async function GET() {
+/**
+ * ATS overview — a MANAGEMENT surface.
+ *
+ * It previously answered every anonymous caller, because `/api/**` is outside
+ * the middleware matcher and this handler had no check of its own.
+ *
+ * STILL FIXTURE-BACKED. The numbers below come from `@/lib/ats/mock-data`, are
+ * the same for every organization, and are NOT a report on any tenant's real
+ * hiring. Authentication landed first, on purpose, so that wiring this handler
+ * to PostgreSQL cannot be the change that exposes candidate PII. Org scoping
+ * and the real queries arrive together — see `docs/ats/ATS_BASELINE_AUDIT.md`.
+ */
+export async function GET(req: NextRequest) {
+  const reader = await requireRecruitmentReader(req);
+  if (!reader.ok) return reader.response;
+
   const openJobs      = JOBS.filter(j => j.status === "open").length;
   const totalCandidates = CANDIDATES.length;
   const averageScore  = totalCandidates > 0
@@ -25,5 +42,5 @@ export async function GET() {
     hiringVelocityDays: HIRING_VELOCITY_DAYS,
   };
 
-  return NextResponse.json(overview);
+  return NextResponse.json(overview, { headers: RECRUITMENT_NO_STORE });
 }

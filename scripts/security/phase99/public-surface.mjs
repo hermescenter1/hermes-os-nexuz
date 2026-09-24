@@ -144,15 +144,16 @@ export const PUBLIC_SURFACE = [
   },
 
   // ── Static product fixtures (no tenant data reaches these) ───────────────
-  {
-    path: "/api/ats/analytics",
-    methods: ["GET"],
-    justification: "Reads only the static ATS demo fixtures in src/lib/ats/mock-data. No database access, no tenant data.",
-  },
-  { path: "/api/ats/candidates", methods: ["GET"], justification: "Static ATS demo fixtures only (example.com placeholders). No database access, no real personal data." },
-  { path: "/api/ats/jobs", methods: ["GET"], justification: "Static ATS demo fixtures only. The write path on the same route is authorization-gated." },
-  { path: "/api/ats/overview", methods: ["GET"], justification: "Aggregates computed from the static ATS demo fixtures. No database access." },
-  { path: "/api/ats/pipeline", methods: ["GET"], justification: "Aggregates computed from the static ATS demo fixtures. No database access." },
+  //
+  // ATS-S0 — the five /api/ats/* GET entries that stood here were REMOVED, not
+  // edited. `analytics`, `candidates`, `overview` and `pipeline` now require
+  // authentication (`requireRecruitmentReader`), and `jobs` GET has read the
+  // caller's own organization's jobs from the database since Phase 104-B1 — so
+  // "static demo fixtures, anonymous" had stopped being true of every one. A
+  // declaration short-circuits classification before any evidence is read, so
+  // leaving them would have kept the committed inventory calling authenticated
+  // routes PUBLIC_READ. With them gone, each is classified from its own source.
+  // scripts/__tests__ ats-guard-registration.test.ts asserts they stay gone.
   { path: "/api/customers/accounts", methods: ["GET"], justification: "Static customer-success demo fixtures in src/lib/customers/mock-data. No database access, no real customer data." },
   { path: "/api/customers/health", methods: ["GET"], justification: "Derived from the static customer-success demo fixtures. No database access." },
   { path: "/api/customers/overview", methods: ["GET"], justification: "Derived from the static customer-success demo fixtures. No database access." },
@@ -251,7 +252,7 @@ export const PUBLIC_SURFACE = [
   {
     path: "/api/careers/apply",
     methods: ["POST"],
-    justification: "Public job application. Rate limited, media-type checked and body-bounded; the organization is taken from the job record, never from the request.",
+    justification: "Public job application. Rate limited, media-type checked, body-bounded, Origin-checked when present, strict schema, payload-bound atomic idempotency; the organization is taken from the job record, never from the request. Writes only when the owner acceptance gate AND an approved retention policy both hold (ATS-B2), and the application stops at AI_REVIEW_PENDING.",
   },
   {
     path: "/api/vendors/apply",

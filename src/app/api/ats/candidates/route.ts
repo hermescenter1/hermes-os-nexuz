@@ -5,8 +5,26 @@ import { can }                from "@/lib/auth/roles";
 import { CANDIDATES, JOBS }  from "@/lib/ats/mock-data";
 import { scoreCandidate }    from "@/lib/ats/scoring";
 import type { Candidate, PipelineStage } from "@/lib/ats/types";
+import { requireRecruitmentReader, RECRUITMENT_NO_STORE } from "@/lib/ats/management-guard";
 
-export async function GET(req: Request) {
+/**
+ * Internal candidate listing — a MANAGEMENT surface.
+ *
+ * The POST below has been authorized since Phase 86C4B2B1D-SECURITY-8, but the
+ * GET beside it answered any anonymous caller and returned whole candidate
+ * records. That asymmetry is now closed: both verbs gate on the same
+ * capability.
+ *
+ * STILL FIXTURE-BACKED, and NOT tenant-scoped. Note that `AtsCandidate` has no
+ * `organizationId` column at all — a real listing must reach candidates THROUGH
+ * `AtsApplication`, which is where the tenant lives. A future change that
+ * queries `atsCandidate.findMany()` directly would have no organization
+ * predicate available to it and would cross tenants by construction.
+ */
+export async function GET(req: NextRequest) {
+  const reader = await requireRecruitmentReader(req);
+  if (!reader.ok) return reader.response;
+
   const { searchParams } = new URL(req.url);
   const jobId    = searchParams.get("jobId");
   const stage    = searchParams.get("stage") as PipelineStage | null;
@@ -19,7 +37,10 @@ export async function GET(req: Request) {
 
   candidates.sort((a, b) => b.atsScore.total - a.atsScore.total);
 
-  return NextResponse.json({ candidates, total: candidates.length });
+  return NextResponse.json(
+    { candidates, total: candidates.length },
+    { headers: RECRUITMENT_NO_STORE },
+  );
 }
 
 export async function POST(req: NextRequest) {
