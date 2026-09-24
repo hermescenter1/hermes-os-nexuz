@@ -3,6 +3,7 @@ import { embedDocumentChunks } from "../embedding";
 import { documentTextChunkRepository } from "../chunk-repository";
 import { getChunkVectorStore } from "../chunk-vector-store";
 import { mockEmbeddingProvider } from "@/lib/rag/embedding-provider";
+import { ORG_A, SCOPE_A, resetSessionDocuments, seedSessionDocument } from "./tenant-fixtures";
 
 const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL", "DOCUMENT_EMBEDDINGS_PROVIDER"] as const;
 let saved: Record<string, string | undefined>;
@@ -15,6 +16,7 @@ beforeEach(() => {
   }
   process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
   (globalThis as unknown as { __hermesDocumentTextChunks?: unknown[] }).__hermesDocumentTextChunks = [];
+  resetSessionDocuments();
 });
 
 afterEach(() => {
@@ -70,10 +72,11 @@ describe("embedDocumentChunks — successful embedding", () => {
 
   it("makes embedded chunks findable via the vector store", async () => {
     const targetText = "chunk 0 for document doc-3 — industrial control system manual";
+    seedSessionDocument("doc-3", ORG_A); // F-1: search is tenant-scoped via the parent document
     await makeChunks("doc-3", 2);
     await embedDocumentChunks("doc-3");
     const qEmb = await mockEmbeddingProvider.embed({ chunkId: "__q__", text: targetText });
-    const results = await getChunkVectorStore().search(qEmb.vector, 5);
+    const results = await getChunkVectorStore().search(qEmb.vector, 5, SCOPE_A);
     expect(results.length).toBeGreaterThan(0);
     expect(results[0].chunk.documentId).toBe("doc-3");
   });

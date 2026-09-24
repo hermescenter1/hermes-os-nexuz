@@ -20,8 +20,8 @@
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
-      "AUTHENTICATED_USER": 220,
-      "TENANT_MEMBER": 131,
+      "AUTHENTICATED_USER": 219,
+      "TENANT_MEMBER": 132,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 132,
@@ -30,16 +30,16 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 131,
+    "tenantBoundHandlers": 132,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 263,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 263,
-    "TENANT_IDENTITY_SERVER_DERIVED": 263,
+    "TENANT_BOUND_HANDLERS_TOTAL": 264,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 264,
+    "TENANT_IDENTITY_SERVER_DERIVED": 264,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 263,
+    "OBJECT_SCOPED_HANDLERS": 264,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -3892,12 +3892,13 @@
       "apiPath": "/api/documents/search",
       "method": "POST",
       "file": "src/app/api/documents/search/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "resolveBrainOwner"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },

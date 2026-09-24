@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { searchDocuments } from "@/lib/documents/search";
+import { searchDocuments, resolveDocumentSearchScope } from "@/lib/documents/search";
+import { resolveBrainOwner } from "@/lib/storage/brain-owner";
 import { getCurrentUser } from "@/lib/auth/session";
 import { isAuthConfigured } from "@/lib/auth/config";
 import { can } from "@/lib/auth/roles";
@@ -8,10 +9,8 @@ import { can } from "@/lib/auth/roles";
  * POST /api/documents/search (Phase 16D).
  *
  * Standalone semantic search over `DocumentTextChunk` embeddings — admin
- * test page only. NOT wired into Hermes Brain, does not inject citations
- * anywhere; `searchDocuments()` (src/lib/documents/search.ts) is a fully
- * separate retrieval service. Admin-gated server-side, same as every
- * other `/api/documents*` route.
+ * test page. Admin-gated server-side, same as every other `/api/documents*`
+ * route, and (F-1) tenant-scoped to the caller's organization.
  *
  * Never returns a 5xx for a query that simply finds nothing or fails
  * internally — `searchDocuments()` never throws, so the only error
@@ -37,6 +36,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "query_required" }, { status: 400 });
   }
 
-  const result = await searchDocuments(query);
+  // F-1: confine the search to the caller's server-resolved tenant. A platform
+  // admin with no (or an ambiguous) organization scope gets no matches — never
+  // the global index. The body cannot supply or widen the scope.
+  const scope = resolveDocumentSearchScope(await resolveBrainOwner());
+  const result = await searchDocuments(query, scope);
   return NextResponse.json({ matches: result.matches });
 }
