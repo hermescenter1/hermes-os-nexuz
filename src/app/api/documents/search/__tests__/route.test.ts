@@ -1,4 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import type { BrainOwner } from "@/lib/storage/types";
+import {
+  ORG_A,
+  ORG_B,
+  resetSessionDocuments,
+  seedSessionDocument,
+} from "@/lib/documents/__tests__/tenant-fixtures";
 
 /**
  * Phase 17B — POST /api/documents/search route tests.
@@ -30,6 +37,7 @@ beforeEach(() => {
   }
   process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
   (globalThis as unknown as { __hermesDocumentTextChunks?: unknown[] }).__hermesDocumentTextChunks = [];
+  resetSessionDocuments();
   vi.resetModules();
 });
 
@@ -39,6 +47,7 @@ afterEach(() => {
     else process.env[k] = saved[k];
   }
   vi.doUnmock("@/lib/auth/session");
+  vi.doUnmock("@/lib/storage/brain-owner");
 });
 
 function mockUser(role: "admin" | "engineer" | "viewer" | null) {
@@ -46,6 +55,29 @@ function mockUser(role: "admin" | "engineer" | "viewer" | null) {
     getCurrentUser: async () =>
       role ? { id: "u1", email: "u@test.com", name: "Test User", role } : null,
   }));
+}
+
+/**
+ * F-1: the search is scoped to the caller's server-resolved tenant. Session
+ * mode has no membership table (every caller resolves to a personal, org-less
+ * scope), so suites that expect matches pin the resolved owner here — exactly
+ * what `resolveBrainOwner()` returns for a single-org member in database mode.
+ */
+function mockOwner(owner: BrainOwner | null) {
+  vi.doUnmock("@/lib/storage/brain-owner");
+  vi.doMock("@/lib/storage/brain-owner", () => ({
+    resolveBrainOwner: async () => owner,
+  }));
+}
+
+async function indexChunk(documentId: string, tenantId: string | null, text: string) {
+  seedSessionDocument(documentId, tenantId);
+  const { documentTextChunkRepository } = await import("@/lib/documents/chunk-repository");
+  const { embedDocumentChunks } = await import("@/lib/documents/embedding");
+  await documentTextChunkRepository().createMany([
+    { documentId, position: 0, text, charCount: text.length, metadata: {} },
+  ]);
+  await embedDocumentChunks(documentId);
 }
 
 function searchRequest(body: unknown): Request {
@@ -154,6 +186,7 @@ describe("/api/documents/search — happy path", () => {
     process.env.ADMIN_EMAIL = "a@test.com";
     process.env.ADMIN_PASSWORD = "x";
     mockUser("admin");
+    mockOwner({ userId: "u1", orgId: ORG_A });
   });
 
   it("returns 200 with an empty matches array when no chunks are embedded", async () => {
@@ -169,6 +202,7 @@ describe("/api/documents/search — happy path", () => {
     const { documentTextChunkRepository } = await import("@/lib/documents/chunk-repository");
     const { embedDocumentChunks } = await import("@/lib/documents/embedding");
     const queryText = "siemens s7-1200 cpu fault watchdog timeout";
+    seedSessionDocument("doc-search-1", ORG_A);
     await documentTextChunkRepository().createMany([
       { documentId: "doc-search-1", position: 0, text: queryText, charCount: queryText.length, metadata: {} },
     ]);
@@ -191,6 +225,7 @@ describe("/api/documents/search — happy path", () => {
     const { documentTextChunkRepository } = await import("@/lib/documents/chunk-repository");
     const { embedDocumentChunks } = await import("@/lib/documents/embedding");
     const chunkText = "abb acs580 drive overcurrent trip fault investigation procedure";
+    seedSessionDocument("doc-search-2", ORG_A);
     await documentTextChunkRepository().createMany([
       { documentId: "doc-search-2", position: 0, text: chunkText, charCount: chunkText.length, metadata: {} },
     ]);
@@ -223,5 +258,66 @@ describe("/api/documents/search — safe failure contract", () => {
     const res = await POST(searchRequest({ query: "motor fault" }));
     const text = JSON.stringify(await res.json());
     expect(text).not.toMatch(/stack|ENOENT|at Object\.|at searchDocuments/i);
+  });
+});
+
+// ─── F-1: tenant isolation (R9) ─────────────────────────────────────────────
+
+describe("/api/documents/search — F-1 tenant isolation", () => {
+  const CANARY_B = "tenant b confidential relay settings canary 51c0";
+
+  beforeEach(() => {
+    process.env.ADMIN_EMAIL = "a@test.com";
+    process.env.ADMIN_PASSWORD = "x";
+    mockUser("admin");
+  });
+
+  it("an admin whose organization is A never receives tenant B chunks", async () => {
+    await indexChunk("doc-b", ORG_B, CANARY_B);
+    await indexChunk("doc-a", ORG_A, "tenant a relay settings");
+    mockOwner({ userId: "u1", orgId: ORG_A });
+    const { POST } = await import("../route");
+    const res = await POST(searchRequest({ query: CANARY_B }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.matches.length).toBeGreaterThan(0);
+    expect(body.matches.every((m: { documentId: string }) => m.documentId === "doc-a")).toBe(true);
+    expect(JSON.stringify(body)).not.toContain("51c0");
+  });
+
+  it("an admin with no organization (personal scope) gets no matches — never the global index", async () => {
+    await indexChunk("doc-b", ORG_B, CANARY_B);
+    mockOwner({ userId: "u1", orgId: null });
+    const { POST } = await import("../route");
+    const body = await (await POST(searchRequest({ query: CANARY_B }))).json();
+    expect(body.matches).toEqual([]);
+  });
+
+  it("an ambiguous multi-org admin gets no matches", async () => {
+    await indexChunk("doc-b", ORG_B, CANARY_B);
+    mockOwner({ userId: "u1", orgId: null, ambiguous: true });
+    const { POST } = await import("../route");
+    const body = await (await POST(searchRequest({ query: CANARY_B }))).json();
+    expect(body.matches).toEqual([]);
+  });
+
+  it("an unresolvable owner (null) gets no matches", async () => {
+    await indexChunk("doc-b", ORG_B, CANARY_B);
+    mockOwner(null);
+    const { POST } = await import("../route");
+    const body = await (await POST(searchRequest({ query: CANARY_B }))).json();
+    expect(body.matches).toEqual([]);
+  });
+
+  it("a client-supplied organizationId / tenantId in the body is ignored", async () => {
+    await indexChunk("doc-b", ORG_B, CANARY_B);
+    mockOwner({ userId: "u1", orgId: ORG_A });
+    const { POST } = await import("../route");
+    const res = await POST(
+      searchRequest({ query: CANARY_B, organizationId: ORG_B, tenantId: ORG_B, orgId: ORG_B })
+    );
+    const body = await res.json();
+    expect(body.matches).toEqual([]);
+    expect(JSON.stringify(body)).not.toContain("51c0");
   });
 });

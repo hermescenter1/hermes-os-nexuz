@@ -191,12 +191,9 @@ export function rawSqlInventory(repoRoot, allowlist = RAW_SQL_ALLOWLIST) {
  * the review and fails the gate.
  */
 export const RAW_SQL_ALLOWLIST = [
-  {
-    file: "src/lib/documents/chunk-vector-store.ts",
-    interpolations: ["where", "params.length"],
-    justification:
-      "`where` is assembled in this function from two string literals only; the sole conditional branch appends a fixed clause ending in the positional placeholder $N, and the documentId VALUE is pushed onto params and bound by the driver. `params.length` is a number. No caller value reaches the SQL text.",
-  },
+  // F-1 (2026-09-23): the src/lib/documents/chunk-vector-store.ts entry was
+  // removed — its search is now two fully literal, tenant-scoped statements
+  // with no interpolation, so it no longer needs a reviewed exception.
   {
     file: "src/lib/rag/vector-store-pgvector.ts",
     interpolations: ["TABLE", "where", "params.length"],

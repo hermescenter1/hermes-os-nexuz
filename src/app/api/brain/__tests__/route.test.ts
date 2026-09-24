@@ -406,6 +406,18 @@ describe("/api/brain POST — Document RAG disabled (default)", () => {
 });
 
 describe("/api/brain POST — Document RAG enabled (session mode — empty index)", () => {
+  // F-1: document search is tenant-scoped. Session mode has no membership
+  // table, so pin a single-org owner — otherwise the layer fails closed with
+  // `document_rag_scope_unavailable` (covered by the F-1 suite below).
+  beforeEach(() => {
+    vi.doMock("@/lib/storage/brain-owner", () => ({
+      resolveBrainOwner: async () => ({ userId: "u-test", orgId: "org-a" }),
+    }));
+  });
+  afterEach(() => {
+    vi.doUnmock("@/lib/storage/brain-owner");
+  });
+
   it("attaches documentRagEvidence without altering any other field", async () => {
     process.env.HERMES_DOCUMENT_RAG_ENABLED = "true";
     process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
@@ -446,21 +458,30 @@ describe("/api/brain POST — Document RAG searchDocuments throws (simulated fai
   });
   afterEach(() => {
     vi.doUnmock("@/lib/documents/search");
+    vi.doUnmock("@/lib/storage/brain-owner");
   });
 
   it("returns the deterministic response unaffected and never leaks the error", async () => {
     process.env.HERMES_DOCUMENT_RAG_ENABLED = "true";
     process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
-    vi.doMock("@/lib/documents/search", () => ({
-      searchDocuments: vi.fn().mockRejectedValue(
-        new Error("simulated document search failure: pg connection refused")
-      ),
+    // F-1: a single-org owner, so the (scoped) search is actually reached and
+    // the simulated failure — not the fail-closed scope check — is exercised.
+    vi.doMock("@/lib/storage/brain-owner", () => ({
+      resolveBrainOwner: async () => ({ userId: "u-test", orgId: "org-a" }),
+    }));
+    const searchDocuments = vi.fn().mockRejectedValue(
+      new Error("simulated document search failure: pg connection refused")
+    );
+    vi.doMock("@/lib/documents/search", async (importOriginal) => ({
+      ...(await importOriginal<typeof import("@/lib/documents/search")>()),
+      searchDocuments,
     }));
 
     const { POST } = await import("../route");
     const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
     expect(res.status).toBe(200);
     const body = await res.json();
+    expect(searchDocuments).toHaveBeenCalledWith(KNOWN_QUESTION, { orgId: "org-a" }, 5);
 
     // raw error text must never appear anywhere in the response
     expect(JSON.stringify(body)).not.toContain("simulated document search failure");
@@ -1487,4 +1508,263 @@ describe("Brain project context: Phase 19C project reasoning context", () => {
     expect("projectContext" in body).toBe(false);
     expect("projectId" in body).toBe(false);
   });
+});
+
+// -----------------------------------------------------------------------
+// F-1 (security): document RAG tenant isolation — R5, R6, R7, model context
+// -----------------------------------------------------------------------
+
+describe("/api/brain POST — F-1 document RAG tenant isolation", () => {
+  const CANARY_B = "CANARY-B-e41c tenant b confidential drive parameter set";
+  const TENANT_A_TEXT = "tenant a drive parameter set for acs580 acceleration fault";
+
+  type Owner = { userId: string; orgId: string | null; ambiguous?: boolean } | null;
+
+  function mockOwner(owner: Owner) {
+    vi.doUnmock("@/lib/storage/brain-owner");
+    vi.doMock("@/lib/storage/brain-owner", () => ({
+      resolveBrainOwner: async () => owner,
+    }));
+  }
+
+  async function seedTenantChunks() {
+    const { seedSessionDocument } = await import("@/lib/documents/__tests__/tenant-fixtures");
+    const { documentTextChunkRepository } = await import("@/lib/documents/chunk-repository");
+    const { embedDocumentChunks } = await import("@/lib/documents/embedding");
+    seedSessionDocument("doc-tenant-a", "org-a");
+    seedSessionDocument("doc-tenant-b", "org-b");
+    seedSessionDocument("doc-legacy", null);
+    for (const [documentId, text] of [
+      ["doc-tenant-a", TENANT_A_TEXT],
+      ["doc-tenant-b", CANARY_B],
+      ["doc-legacy", `${CANARY_B} legacy copy`],
+    ] as const) {
+      await documentTextChunkRepository().createMany([
+        { documentId, position: 0, text, charCount: text.length, metadata: {} },
+      ]);
+      await embedDocumentChunks(documentId);
+    }
+  }
+
+  // Governance env the model-context test sets; restored exactly afterwards.
+  const SUITE_ENV = ["HERMES_AI_GOVERNANCE_ENFORCED", "HERMES_DEPLOY_ENV", "HERMES_EXTERNAL_AI_ENABLED"] as const;
+  let suiteEnv: Record<string, string | undefined> = {};
+
+  beforeEach(async () => {
+    suiteEnv = {};
+    for (const k of SUITE_ENV) suiteEnv[k] = process.env[k];
+    (globalThis as Record<string, unknown>).__hermesDocumentTextChunks = [];
+    (globalThis as Record<string, unknown>).__hermesDocumentDrafts = [];
+    process.env.HERMES_DOCUMENT_RAG_ENABLED = "true";
+    process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
+    await seedTenantChunks();
+  });
+
+  afterEach(() => {
+    vi.doUnmock("@/lib/storage/brain-owner");
+    vi.doUnmock("@/lib/documents/embedding-provider");
+    vi.doUnmock("@/lib/llm/gateway");
+    vi.doUnmock("@/lib/ai/router");
+    vi.doUnmock("@/lib/ai-governance/runtime/policy-store");
+    vi.doUnmock("@/lib/ai-governance/runtime/trace-store");
+    for (const k of SUITE_ENV) {
+      if (suiteEnv[k] === undefined) delete process.env[k];
+      else process.env[k] = suiteEnv[k];
+    }
+    (globalThis as Record<string, unknown>).__hermesDocumentTextChunks = [];
+    (globalThis as Record<string, unknown>).__hermesDocumentDrafts = [];
+  });
+
+  it("R5: a tenant-A caller receives only tenant-A chunks; tenant-B and NULL-tenant text never appear anywhere in the body", async () => {
+    mockOwner({ userId: "u-test", orgId: "org-a" });
+    const { POST } = await import("../route");
+    const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const matches = body.documentRagEvidence.matches as { documentId: string; text: string }[];
+    // positive control: the layer really ran and found the caller's own chunk
+    expect(matches.length).toBeGreaterThan(0);
+    expect(matches.map((m) => m.documentId)).toEqual(["doc-tenant-a"]);
+    expect(matches[0].text).toBe(TENANT_A_TEXT);
+    expect(JSON.stringify(body)).not.toContain("CANARY-B-e41c");
+    for (const key of DETERMINISTIC_KEYS) expect(body).toHaveProperty(key);
+  });
+
+  it("R5 (reverse): a tenant-B caller receives only tenant-B chunks", async () => {
+    mockOwner({ userId: "u-test", orgId: "org-b" });
+    const { POST } = await import("../route");
+    const body = await (await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }))).json();
+    const ids = (body.documentRagEvidence.matches as { documentId: string }[]).map((m) => m.documentId);
+    expect(ids).toEqual(["doc-tenant-b"]);
+    expect(JSON.stringify(body)).not.toContain(TENANT_A_TEXT);
+  });
+
+  const failClosedOwners: [string, Owner][] = [
+    ["unresolvable (null) owner", null],
+    ["personal (org-less) owner", { userId: "u-test", orgId: null }],
+    ["ambiguous multi-org owner", { userId: "u-test", orgId: null, ambiguous: true }],
+    ["ambiguous owner that still carries an orgId", { userId: "u-test", orgId: "org-a", ambiguous: true }],
+  ];
+  for (const [label, owner] of failClosedOwners) {
+    it(`R6: ${label} fails closed — no matches, no embedding call, deterministic response intact`, async () => {
+      mockOwner(owner);
+      const embed = vi.fn();
+      vi.doMock("@/lib/documents/embedding-provider", () => ({
+        resolveDocumentEmbeddingProvider: () => ({ id: "spy", embed }),
+      }));
+      const { POST } = await import("../route");
+      const res = await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.documentRagEvidence).toEqual({
+        enabled: true,
+        matches: [],
+        fallbackUsed: true,
+        error: "document_rag_scope_unavailable",
+      });
+      expect(embed).not.toHaveBeenCalled();
+      expect(JSON.stringify(body)).not.toContain("CANARY-B-e41c");
+      expect(JSON.stringify(body)).not.toContain(TENANT_A_TEXT);
+      for (const key of DETERMINISTIC_KEYS) expect(body).toHaveProperty(key);
+      expect(body.mode).toBe("library");
+    });
+  }
+
+  it("R7: organizationId / tenantId / orgId in the request body are ignored", async () => {
+    mockOwner({ userId: "u-test", orgId: "org-a" });
+    const { POST } = await import("../route");
+    const body = await (
+      await POST(
+        postRequest({
+          question: KNOWN_QUESTION,
+          locale: "en",
+          organizationId: "org-b",
+          tenantId: "org-b",
+          orgId: "org-b",
+        })
+      )
+    ).json();
+    const ids = (body.documentRagEvidence.matches as { documentId: string }[]).map((m) => m.documentId);
+    expect(ids).toEqual(["doc-tenant-a"]);
+    expect(JSON.stringify(body)).not.toContain("CANARY-B-e41c");
+  });
+
+  // Model-context boundary. Every model path must run BEFORE any document text
+  // exists in the process, and no model input may ever contain chunk text:
+  //   - the default LLM gateway path (governance=0),
+  //   - the Phase 95 GOVERNED gateway path (governance=1, with an approved policy),
+  //   - the AI router enhancement.
+  // A shared event log proves the order: owner scope resolved → every LLM call →
+  // the single embedding call (the ONLY document-path provider call; chunk text
+  // exists only after it returns). Positive controls prove every spied path
+  // really executed, so the "never contains" assertions cannot pass vacuously.
+  for (const governance of ["0", "1"] as const) {
+    it(`model context: every LLM path runs before the scoped document search and never sees chunk text (governance=${governance})`, async () => {
+      const events: string[] = [];
+      vi.doUnmock("@/lib/storage/brain-owner");
+      vi.doMock("@/lib/storage/brain-owner", () => ({
+        resolveBrainOwner: async () => {
+          events.push("owner:resolved");
+          return { userId: "u-test", orgId: "org-a" };
+        },
+      }));
+      process.env.HERMES_AI_GOVERNANCE_ENFORCED = governance;
+      process.env.HERMES_AI_ROUTER_ENABLED = "true";
+      if (governance === "1") {
+        // Make the governed path genuinely reach the gateway: external AI on, an
+        // eligible environment, and a provider policy approved for org-a ONLY.
+        process.env.HERMES_DEPLOY_ENV = "production";
+        process.env.HERMES_EXTERNAL_AI_ENABLED = "1";
+        vi.doMock("@/lib/ai-governance/runtime/policy-store", () => ({
+          prismaProviderPolicyStore: () => ({
+            find: async (orgId: string, providerRegistryId: string) =>
+              orgId === "org-a"
+                ? {
+                    organisationId: "org-a",
+                    providerRegistryId,
+                    enabled: true,
+                    allowedDataClasses: ["tenant_operational"],
+                    allowedWorkflows: ["brain.analysis"],
+                    approvedBy: "owner",
+                    approvedAt: new Date("2026-07-01"),
+                    policyVersion: "f1-model-context",
+                    expiresAt: null,
+                    createdAt: new Date("2026-07-01"),
+                    updatedAt: new Date("2026-07-01"),
+                  }
+                : null,
+          }),
+        }));
+        vi.doMock("@/lib/ai-governance/runtime/trace-store", () => ({
+          persistExecutionTrace: vi.fn(async () => undefined),
+        }));
+      }
+
+      const completeTask = vi.fn(async () => {
+        events.push("llm:gateway");
+        return { ok: false as const, error: { code: "spy", message: "spy" } };
+      });
+      vi.doMock("@/lib/llm/gateway", async (importOriginal) => ({
+        ...(await importOriginal<typeof import("@/lib/llm/gateway")>()),
+        gatewayAvailable: () => true,
+        completeTask,
+      }));
+      const ask = vi.fn(async () => {
+        events.push("llm:router");
+        return {
+          provider: "hybrid",
+          content: "spy",
+          metadata: { resolvedProvider: "local", taskKind: "engineeringReasoning", mock: true },
+        };
+      });
+      vi.doMock("@/lib/ai/router", async (importOriginal) => {
+        const original = await importOriginal<typeof import("@/lib/ai/router")>();
+        return { ...original, aiRouter: { ...original.aiRouter, ask } };
+      });
+      const embedInputs: { chunkId: string; text: string }[] = [];
+      vi.doMock("@/lib/documents/embedding-provider", async (importOriginal) => {
+        const original = await importOriginal<typeof import("@/lib/documents/embedding-provider")>();
+        return {
+          ...original,
+          resolveDocumentEmbeddingProvider: () => {
+            const real = original.resolveDocumentEmbeddingProvider();
+            return {
+              ...real,
+              embed: async (input: { chunkId: string; text: string }) => {
+                events.push("provider:embed");
+                embedInputs.push(input);
+                return real.embed(input);
+              },
+            };
+          },
+        };
+      });
+
+      const { POST } = await import("../route");
+      const body = await (await POST(postRequest({ question: KNOWN_QUESTION, locale: "en" }))).json();
+
+      // positive controls — every spied path executed exactly as intended
+      expect(completeTask).toHaveBeenCalled(); // default path (0) / GOVERNED path (1)
+      expect(ask).toHaveBeenCalled();
+      expect(events.filter((e) => e === "provider:embed")).toHaveLength(1);
+      expect(body.documentRagEvidence.matches.map((m: { documentId: string }) => m.documentId)).toEqual([
+        "doc-tenant-a",
+      ]);
+
+      // order: scope first, then every LLM call, then the one embedding call
+      expect(events[0]).toBe("owner:resolved");
+      const firstEmbed = events.indexOf("provider:embed");
+      const lastLlm = Math.max(events.lastIndexOf("llm:gateway"), events.lastIndexOf("llm:router"));
+      expect(lastLlm).toBeGreaterThanOrEqual(0);
+      expect(lastLlm).toBeLessThan(firstEmbed);
+
+      // content: the embedding provider receives ONLY the question; no model or
+      // provider input ever carries document text (own tenant or foreign)
+      expect(embedInputs).toEqual([{ chunkId: "__query__", text: KNOWN_QUESTION }]);
+      const outbound = JSON.stringify([completeTask.mock.calls, ask.mock.calls, embedInputs]);
+      for (const docText of ["CANARY-B-e41c", TENANT_A_TEXT]) {
+        expect(outbound).not.toContain(docText);
+      }
+    });
+  }
 });
