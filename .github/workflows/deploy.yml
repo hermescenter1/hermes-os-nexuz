@@ -37,8 +37,10 @@
 #     migration;
 #   - when migrations DO ship, the deploy refuses unless the operator supplies
 #     the second confirmation phrase AND the production host itself proves, with
-#     POSIX tools only, that the newest encrypted backup is complete, verified
-#     and hash-intact, and that the documents_data adoption evidence exists;
+#     standard shell tools only (no jq) and read-only `sudo -n` access to the
+#     root-owned backup directory, that the newest encrypted backup is complete,
+#     verified and hash-intact, and that the documents_data adoption evidence
+#     exists;
 #   - the server worktree must be CLEAN before checkout, and after checkout the
 #     build context is proven to be exactly TARGET_SHA (HEAD match + clean);
 #   - a missing previous-good image is a HARD failure, and the preserved
@@ -298,59 +300,109 @@ jobs:
             exit 1
           fi
 
-          # ── PHASE 99.7 pre-migration evidence gate (POSIX tools only) ────────
+          # ── PHASE 99.7 pre-migration evidence gate ──────────────────────────
           # Runs on the host that owns the data, BEFORE anything is rebuilt.
           # Read-only: it inspects the backup directory and never writes,
           # rotates, prunes or decrypts anything, and never prints key material.
+          #
+          # PRIVILEGED READS. scripts/backup-postgres.sh runs with `umask 077`,
+          # `chmod 700` on the backup directory and `chmod 600` on every file,
+          # so the official .hbk and its .meta.json are root-owned and unreadable
+          # by this (deliberately non-root) deploy user. The first cut of this
+          # gate read them without privilege: grep hit "Permission denied" and
+          # the gate refused a genuinely verified backup as "not marked
+          # verified". Closed, but unpassable. Every read of the backup
+          # directory now goes through `sudo -n`, and ONLY reads do:
+          #   find (list, select newest, check type), cat (the two small JSON
+          #   records), sha256sum (the .hbk). Nothing is chmod'ed, copied, or
+          #   printed, and the verification rules are unchanged.
+          # `-n` because this runs over `ssh -o BatchMode=yes` with no TTY: a
+          # missing sudoers rule fails immediately instead of hanging on a
+          # password prompt. The deploy user therefore needs NOPASSWD for exactly
+          # those four read-only binaries (see the Phase 99.7 cutover contract).
+          #
+          # FAIL CLOSED. Every privileged call is checked for its OWN exit
+          # status, so "sudo was denied" can never read as "no .partial file" or
+          # as a matching hash. JSON is matched with here-strings, not
+          # `printf | grep -q`: under pipefail an early-exiting grep can SIGPIPE
+          # the writer and turn a match into a refusal (Phase 93.2).
+          #
+          # POSIX shell and coreutils/findutils only: `jq` is NOT used, because
+          # nothing on this host is known to provide it and a gate that depends
+          # on an absent tool would refuse every migration-bearing deploy.
+          # >>> backup-evidence-gate
           if [ "${BACKUP_REQUIRED}" = "true" ]; then
             BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
             ADOPTION_EVIDENCE="${BACKUP_DIR}/documents-adoption.json"
 
-            NEWEST_BACKUP="$(ls -1t "${BACKUP_DIR}"/*.hbk 2>/dev/null | head -n 1 || true)"
+            backup_refuse() { echo "Refusing: $*" >&2; exit 1; }
+            backup_priv() { sudo -n -- "$@"; }
+
+            # Newest regular .hbk by modification time. `-type f` excludes
+            # symlinks, so the file hashed below is the file that was listed.
+            # This is also the first privileged call, so a denied or missing
+            # sudoers rule stops the gate HERE (no separate `sudo -n true`
+            # probe: a least-privilege rule that grants only the reads below
+            # would refuse `true` and block every deploy).
+            LISTING="$(backup_priv find "${BACKUP_DIR}" -maxdepth 1 -type f -name '*.hbk' -printf '%T@ %p\n')" \
+              || backup_refuse "cannot list ${BACKUP_DIR} through 'sudo -n' (missing directory, or no NOPASSWD rule for the read-only checks; no TTY is available)."
+            NEWEST_BACKUP="$(sort -n <<<"${LISTING}" | tail -n 1 | cut -d' ' -f2-)"
             if [ -z "${NEWEST_BACKUP}" ]; then
-              echo "Refusing: no encrypted backup (.hbk) found in ${BACKUP_DIR}." >&2
-              exit 1
+              backup_refuse "no encrypted backup (.hbk) found in ${BACKUP_DIR}."
             fi
-            if [ -e "${NEWEST_BACKUP}.partial" ]; then
-              echo "Refusing: ${NEWEST_BACKUP} has a .partial sibling — the atomic publish never completed." >&2
-              exit 1
+            NEWEST_NAME="$(basename "${NEWEST_BACKUP}")"
+
+            # A .partial sibling means the atomic publish never completed. Asked
+            # as a LISTING, so a denied sudo fails here instead of reading as
+            # "absent".
+            PARTIAL="$(backup_priv find "${BACKUP_DIR}" -maxdepth 1 -name "${NEWEST_NAME}.partial" -print)" \
+              || backup_refuse "cannot check ${BACKUP_DIR} for a .partial sibling through sudo -n."
+            if [ -n "${PARTIAL}" ]; then
+              backup_refuse "${NEWEST_BACKUP} has a .partial sibling — the atomic publish never completed."
             fi
 
             META="${NEWEST_BACKUP}.meta.json"
-            if [ ! -f "${META}" ]; then
-              echo "Refusing: no verification record beside ${NEWEST_BACKUP}." >&2
-              exit 1
+            META_FOUND="$(backup_priv find "${META}" -maxdepth 0 -type f -print 2>/dev/null)" || META_FOUND=""
+            if [ "${META_FOUND}" != "${META}" ]; then
+              backup_refuse "no verification record beside ${NEWEST_BACKUP}."
             fi
+            META_JSON="$(backup_priv cat -- "${META}")" \
+              || backup_refuse "the verification record ${META} is unreadable through sudo -n."
+
             # The record is a single-line JSON document written by
             # scripts/backup-postgres.sh; match the exact literal fields.
-            grep -q '"verified":true'  "${META}" || { echo "Refusing: newest backup is not marked verified." >&2; exit 1; }
-            grep -q '"partial":false'  "${META}" || { echo "Refusing: newest backup is not marked complete." >&2; exit 1; }
-            grep -q '"encrypted":true' "${META}" || { echo "Refusing: newest backup is not marked encrypted." >&2; exit 1; }
+            grep -qF "\"file\":\"${NEWEST_NAME}\"" <<<"${META_JSON}" \
+              || backup_refuse "the verification record does not name ${NEWEST_NAME}."
+            grep -q '"verified":true'  <<<"${META_JSON}" || backup_refuse "newest backup is not marked verified."
+            grep -q '"partial":false'  <<<"${META_JSON}" || backup_refuse "newest backup is not marked complete."
+            grep -q '"encrypted":true' <<<"${META_JSON}" || backup_refuse "newest backup is not marked encrypted."
 
-            RECORDED_SHA="$(sed -n 's/.*"transportSha256":"\([0-9a-f]\{64\}\)".*/\1/p' "${META}")"
+            RECORDED_SHA="$(sed -n 's/.*"transportSha256":"\([0-9a-f]\{64\}\)".*/\1/p' <<<"${META_JSON}")"
             if [ -z "${RECORDED_SHA}" ]; then
-              echo "Refusing: verification record carries no transport SHA-256." >&2
-              exit 1
+              backup_refuse "verification record carries no transport SHA-256."
             fi
-            ACTUAL_SHA="$(sha256sum "${NEWEST_BACKUP}" | cut -d' ' -f1)"
-            if [ "${ACTUAL_SHA}" != "${RECORDED_SHA}" ]; then
-              echo "Refusing: backup integrity check failed for ${NEWEST_BACKUP}." >&2
-              exit 1
+            HASH_LINE="$(backup_priv sha256sum -- "${NEWEST_BACKUP}")" \
+              || backup_refuse "cannot hash ${NEWEST_BACKUP} through sudo -n."
+            ACTUAL_SHA="${HASH_LINE%% *}"
+            if ! [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{64}$ ]] || [ "${ACTUAL_SHA}" != "${RECORDED_SHA}" ]; then
+              backup_refuse "backup integrity check failed for ${NEWEST_BACKUP}."
             fi
 
             # documents_data adoption evidence (written by
-            # scripts/dr/adopt-documents.mjs --manifest-out).
-            if [ ! -f "${ADOPTION_EVIDENCE}" ]; then
-              echo "Refusing: no documents_data adoption evidence at ${ADOPTION_EVIDENCE}." >&2
-              exit 1
+            # scripts/dr/adopt-documents.mjs --manifest-out). Same directory,
+            # same ownership, so the same privileged read.
+            ADOPTION_FOUND="$(backup_priv find "${ADOPTION_EVIDENCE}" -maxdepth 0 -type f -print 2>/dev/null)" || ADOPTION_FOUND=""
+            if [ "${ADOPTION_FOUND}" != "${ADOPTION_EVIDENCE}" ]; then
+              backup_refuse "no documents_data adoption evidence at ${ADOPTION_EVIDENCE}."
             fi
-            grep -q '"integrityVerified": *true' "${ADOPTION_EVIDENCE}" || {
-              echo "Refusing: documents_data adoption evidence does not prove integrity." >&2
-              exit 1
-            }
+            ADOPTION_JSON="$(backup_priv cat -- "${ADOPTION_EVIDENCE}")" \
+              || backup_refuse "the adoption evidence ${ADOPTION_EVIDENCE} is unreadable through sudo -n."
+            grep -q '"integrityVerified": *true' <<<"${ADOPTION_JSON}" \
+              || backup_refuse "documents_data adoption evidence does not prove integrity."
 
-            echo "Pre-migration evidence verified: $(basename "${NEWEST_BACKUP}") complete, verified and hash-intact."
+            echo "Pre-migration evidence verified: ${NEWEST_NAME} complete, verified and hash-intact."
           fi
+          # <<< backup-evidence-gate
 
           # ── Preserve the previous-good image BEFORE rebuilding (HARD gate) ───
           # A rollback target must exist before the thing being rolled back from
