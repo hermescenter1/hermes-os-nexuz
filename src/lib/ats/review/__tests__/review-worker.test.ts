@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const h = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db/prisma", () => ({ getPrisma: async () => h.db }));
 
-import { runAiReviewPass, MAX_REVIEW_ATTEMPTS } from "../worker";
+import { runAiReviewPass, MAX_REVIEW_ATTEMPTS, ATS_REVIEW_LEASE_NAME } from "../worker";
 import { ROLE_PROFILES, qualifiedCriterionCode } from "../catalog";
 
 const NOW = new Date("2026-09-23T13:00:00.000Z");
@@ -35,7 +35,39 @@ const criteria = ROLE_PROFILES.backend_engineer.criteria.map((c) => ({
   hardGate: c.hardGate,
 }));
 
-function makeDb(outbox: Outbox[], apps: App[], opts?: { noCriteria?: boolean; claimRace?: boolean; staleApp?: boolean }) {
+interface Lease { name: string; holder: string; expiresAt: Date; fencingToken: number; acquiredAt?: Date; heartbeatAt?: Date }
+
+/**
+ * A faithful `WorkerLease` fake: primary key on `name` (P2002 on a duplicate
+ * create) and `updateMany` that honours every predicate the real lease code
+ * sends — name, holder, fencingToken and the read-back expiresAt.
+ */
+function makeLeaseStore(seed: Lease[] = []) {
+  const leases = seed.map((l) => ({ ...l }));
+  const model = {
+    findFirst: async (a: { where: { name: string } }) => leases.find((l) => l.name === a.where.name) ?? null,
+    create: async (a: { data: Lease }) => {
+      if (leases.some((l) => l.name === a.data.name)) throw Object.assign(new Error("dup"), { code: "P2002" });
+      leases.push({ ...a.data });
+      return { ...a.data };
+    },
+    updateMany: async (a: { where: Partial<Lease>; data: Partial<Lease> }) => {
+      const hit = leases.filter(
+        (l) =>
+          l.name === a.where.name &&
+          (a.where.holder === undefined || l.holder === a.where.holder) &&
+          (a.where.fencingToken === undefined || Number(l.fencingToken) === Number(a.where.fencingToken)) &&
+          (a.where.expiresAt === undefined || l.expiresAt.getTime() === new Date(a.where.expiresAt).getTime()),
+      );
+      hit.forEach((l) => Object.assign(l, a.data));
+      return { count: hit.length };
+    },
+  };
+  return { model, leases };
+}
+
+function makeDb(outbox: Outbox[], apps: App[], opts?: { noCriteria?: boolean; claimRace?: boolean; staleApp?: boolean; leases?: Lease[] }) {
+  const lease = makeLeaseStore(opts?.leases);
   const rows = outbox.map((o) => ({ ...o }));
   const appRows = apps.map((a) => ({ ...a }));
   const writes: Write[] = [];
@@ -81,6 +113,7 @@ function makeDb(outbox: Outbox[], apps: App[], opts?: { noCriteria?: boolean; cl
   };
   const client = {
     ...tx,
+    workerLease: lease.model,
     $transaction: async <T,>(fn: (t: typeof tx) => Promise<T>): Promise<T> => {
       const mark = writes.length;
       const snapApps = appRows.map((r) => ({ ...r }));
@@ -97,7 +130,7 @@ function makeDb(outbox: Outbox[], apps: App[], opts?: { noCriteria?: boolean; cl
       }
     },
   };
-  return { client, rows, appRows, writes, committed };
+  return { client, rows, appRows, writes, committed, leases: lease.leases };
 }
 
 const OUT: Outbox = { id: "ob-1", organizationId: "org-A", applicationId: "app-1", kind: "AI_REVIEW", cycle: 0, status: "PENDING", attempts: 0, nextAttemptAt: NOW, lastErrorCode: null, aiReviewId: null, correlationId: "corr-1" };
@@ -112,7 +145,11 @@ describe("delivery", () => {
     const store = makeDb([OUT], [APP]);
     h.db = store.client;
     const report = await runAiReviewPass({ now: NOW });
-    expect(report).toEqual({ claimed: 1, delivered: 1, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: false });
+    expect(report).toEqual({ acquired: true, claimed: 1, delivered: 1, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: false });
+    // the lease was taken under the ATS job name and released at the end of the pass
+    expect(store.leases).toHaveLength(1);
+    expect(store.leases[0].name).toBe(ATS_REVIEW_LEASE_NAME);
+    expect(store.leases[0].expiresAt.getTime()).toBe(NOW.getTime());
 
     expect(store.appRows[0].status).toBe("PENDING_HUMAN_APPROVAL");
     expect(store.rows[0]).toMatchObject({ status: "DELIVERED", attempts: 1, aiReviewId: "rev-1", lastErrorCode: null });
@@ -148,6 +185,54 @@ describe("delivery", () => {
   it("store unavailable is reported, not swallowed", async () => {
     h.db = null;
     expect((await runAiReviewPass({ now: NOW })).storeUnavailable).toBe(true);
+  });
+});
+
+describe("the lease — one replica sweeps at a time (reused WorkerLease, own job name)", () => {
+  it("another replica holding a LIVE lease → this pass touches nothing", async () => {
+    const store = makeDb([OUT], [APP], {
+      leases: [{ name: ATS_REVIEW_LEASE_NAME, holder: "other-replica", fencingToken: 3, expiresAt: new Date(NOW.getTime() + 30_000) }],
+    });
+    h.db = store.client;
+    const report = await runAiReviewPass({ now: NOW, holder: "me" });
+    expect(report).toEqual({ acquired: false, claimed: 0, delivered: 0, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: false });
+    expect(store.writes).toHaveLength(0);
+    expect(store.rows[0].status).toBe("PENDING");
+    expect(store.appRows[0].status).toBe("AI_REVIEW_PENDING");
+    // and it did not steal or shorten the other replica's lease
+    expect(store.leases[0]).toMatchObject({ holder: "other-replica", fencingToken: 3 });
+  });
+
+  it("an EXPIRED lease is taken over with the next fencing token, then released", async () => {
+    const store = makeDb([OUT], [APP], {
+      leases: [{ name: ATS_REVIEW_LEASE_NAME, holder: "crashed", fencingToken: 7, expiresAt: new Date(NOW.getTime() - 1) }],
+    });
+    h.db = store.client;
+    const report = await runAiReviewPass({ now: NOW, holder: "me" });
+    expect(report).toMatchObject({ acquired: true, delivered: 1 });
+    expect(store.leases[0]).toMatchObject({ holder: "me", fencingToken: 8 });
+    expect(store.leases[0].expiresAt.getTime()).toBe(NOW.getTime());
+  });
+
+  it("the ATS lease is independent of the metering lease — a held metering lease does not block reviews", async () => {
+    const store = makeDb([OUT], [APP], {
+      leases: [{ name: "industrial.metering.outbox", holder: "metering", fencingToken: 1, expiresAt: new Date(NOW.getTime() + 60_000) }],
+    });
+    h.db = store.client;
+    const report = await runAiReviewPass({ now: NOW, holder: "me" });
+    expect(report).toMatchObject({ acquired: true, delivered: 1 });
+    expect(store.leases.find((l) => l.name === "industrial.metering.outbox")).toMatchObject({ holder: "metering" });
+  });
+
+  it("the lease is released even when the pass throws", async () => {
+    const store = makeDb([OUT], [APP]);
+    (store.client.atsReviewOutbox as { findMany: unknown }).findMany = async () => {
+      throw new Error("db blip");
+    };
+    h.db = store.client;
+    await expect(runAiReviewPass({ now: NOW, holder: "me" })).rejects.toThrow("db blip");
+    expect(store.leases[0]).toMatchObject({ name: ATS_REVIEW_LEASE_NAME, holder: "me" });
+    expect(store.leases[0].expiresAt.getTime()).toBe(NOW.getTime());
   });
 });
 

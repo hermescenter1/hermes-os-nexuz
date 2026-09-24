@@ -29,7 +29,7 @@ SELECT to_regclass('"AtsReviewOutbox"'), to_regclass('"AtsAiReview"'), to_regcla
 1. Create and **approve** a `RetentionPolicy` for the organization: `dataClass = RECRUITMENT_CANDIDATE`, `retentionDays = <owner value>`, `retentionTrigger = CREATION` or `LAST_ACTIVITY`, `action = ANONYMISE`, `enabled = true`, `approvalState = APPROVED` — via `POST/PATCH /api/compliance/retention-policies` (permission `manage_retention`). Without this row the intake refuses.
 2. Set `RECRUITMENT_IDEMPOTENCY_SECRET` (≥ 16 chars) on `hermes-web`.
 3. Apply a role profile to each open job: `POST /api/ats/jobs/{jobId}/criteria { "roleCode": "…" }` (capability `ATS_MANAGE`). A job without criteria is received but its review dead-letters after 5 attempts with `NO_CRITERIA`.
-4. Set `ATS_REVIEW_WORKER_TOKEN` and start the runner: `npm run ats:review:worker` (or schedule `npm run ats:review:worker:once`).
+4. Set `ATS_REVIEW_WORKER_TOKEN` in `.env.production` (the SAME value `hermes-web` reads), then start the worker service: `docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d hermes-ats-review-worker`. It builds the dedicated `ats-review-worker` image stage (one `.mjs`, no `node_modules`, no database credential) and exits 2 at startup if the token is missing. `deploy.yml` rebuilds and recreates `hermes-web` only, so this service — like `hermes-metering-worker` — is started or rebuilt explicitly. **Do not** use `npm run ats:review:worker` on the server: that script is for local development; `scripts/` is not in the web image.
 5. **Owner decision:** set `APPLICATION_ACCEPTANCE_AUTHORIZED = true` in `src/lib/ats/acceptance-flag.ts` in a dedicated, reviewed commit. `APPLY_JOURNEY_OPEN` then becomes true and the careers UI shows the apply state — note the Stage-1 **form** is not yet built (roadmap S3); until it is, intake is API-only.
 
 ## 4. Smoke after deploy
@@ -46,6 +46,13 @@ SELECT to_regclass('"AtsReviewOutbox"'), to_regclass('"AtsAiReview"'), to_regcla
 | `GET /api/ats/overview` anonymous | `401` |
 
 ## 5. Operating the review outbox
+
+The worker takes the platform `WorkerLease` under the job name `ats.review.outbox`
+(the same generic table the metering worker uses under its own name), so scaling
+the service does not multiply reviews. `SELECT * FROM "WorkerLease" WHERE name = 'ats.review.outbox';`
+shows who holds it; a crashed holder loses it at `expiresAt` with no manual step.
+A pass that finds the lease held answers `{ "acquired": false }` and the worker
+logs `another replica holds the lease` — normal, not an error.
 
 ```sql
 SELECT status, count(*) FROM "AtsReviewOutbox" GROUP BY 1;

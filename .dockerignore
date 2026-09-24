@@ -59,6 +59,15 @@ scripts/
 # adds no reachable surface to the running server.
 !scripts/industrial
 
+# ATS-S1 — a third narrow re-include, for the ATS AI-review worker.
+#
+# Narrower than the two above: ONE FILE, not a directory, so nothing else that
+# ever lands in scripts/ats/ reaches the build context by accident. Same
+# ordering constraints — after `scripts/`, and before the `**/__tests__/` and
+# `**/*.test.ts` rules. Only the dedicated `ats-review-worker` Dockerfile stage
+# COPYies it; the runner and migrator stages copy no scripts at all.
+!scripts/ats/ai-review-worker.mjs
+
 # Test files
 **/__tests__/
 **/*.test.ts

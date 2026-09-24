@@ -57,7 +57,17 @@ const LOCALES = ["fa", "en", "de"];
 // that service reading the REPOSITORY's .env.production — the exact leak this
 // override exists to prevent. The companion test derives the expected set
 // from the compose file, so a future service cannot be forgotten silently.
-export const ENV_FILE_SERVICES = Object.freeze(["hermes-metering-worker", "hermes-web", "postgres"]);
+//
+// ATS-S1 adds `hermes-ats-review-worker` for the same reason: it declares
+// env_file for ATS_REVIEW_WORKER_TOKEN, and without it here a candidate run
+// would let that container read the repository's real .env.production. The
+// companion test caught it on the first CI run of the packaging change.
+export const ENV_FILE_SERVICES = Object.freeze([
+  "hermes-ats-review-worker",
+  "hermes-metering-worker",
+  "hermes-web",
+  "postgres",
+]);
 
 /**
  * Build the Compose invocation for a candidate run so that the REPOSITORY's

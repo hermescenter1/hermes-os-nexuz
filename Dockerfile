@@ -144,6 +144,32 @@ USER importer
 # type the flag. There is deliberately no --force in the importer.
 CMD ["node", "scripts/journal/import-articles.mjs"]
 
+# ── ATS-S1: ATS AI-review worker ─────────────────────────────────────────────
+# Same shape as the metering worker stage below, for the same reasons: its own
+# stage so the runner and migrator keep copying NO scripts, and deliberately
+# tiny — no dependency tree, no ORM, no application code, no database
+# credential. (Placed BEFORE the metering stage on purpose: the R8 packaging
+# test reads that stage as the text up to `AS runner`, and a stage in between
+# would be read as part of it.)
+#
+# It copies exactly ONE file. The runner is a dependency-free .mjs whose only
+# action is an authenticated `fetch` to POST /api/ats/review/deliver on
+# hermes-web. The review pass, the lease, and the one transition it may make
+# (AI_REVIEW_PENDING -> PENDING_HUMAN_APPROVAL) all live in the web tier, which
+# is where they are tested. A compromised worker container can trigger a pass
+# and nothing else; it cannot read or change a candidate record.
+FROM node:20-alpine AS ats-review-worker
+WORKDIR /app
+
+RUN addgroup -g 1001 -S nodejs && adduser -S worker -u 1001
+
+COPY scripts/ats/ai-review-worker.mjs ./scripts/ats/ai-review-worker.mjs
+
+USER worker
+
+# Polls forever by default. `--once` is available for a cron-style invocation.
+CMD ["node", "scripts/ats/ai-review-worker.mjs"]
+
 # ── PHASE 109-C-UI.2-R8: metering worker ─────────────────────────────────────
 # The scheduler that drives the industrial metering outbox.
 #
