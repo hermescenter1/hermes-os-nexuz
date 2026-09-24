@@ -21,6 +21,7 @@
  */
 
 import { getPrisma } from "@/lib/db/prisma";
+import { acquireLease, defaultHolder, releaseLease } from "@/lib/industrial/metering-worker";
 import { buildRecruitmentAuditCreate } from "../recruitment-audit";
 import { reviewApplication, type AdvisoryProvider, type StoredCriterion } from "./engine";
 import { AI_REVIEW_OUTBOX_KIND } from "../intake";
@@ -30,7 +31,22 @@ export const backoffMs = (attempt: number) => attempt * attempt * 1_000;
 export const DEFAULT_REVIEW_BATCH = 20;
 export const MAX_REVIEW_BATCH = 100;
 
+/**
+ * The job's row in the platform's generic `WorkerLease` table — the same lease
+ * the metering worker takes under its own name (Phase 109-C-UI.2-R8). Reused,
+ * not re-implemented: `acquireLease`/`releaseLease` already take a job name,
+ * and `WorkerLease` is keyed by it, so no schema change is needed.
+ *
+ * Two guarantees stack, exactly as for metering. The lease means one replica
+ * sweeps at a time, so `--scale hermes-ats-review-worker=N` does not multiply
+ * reviews. The conditional per-row claim below means that even if the lease is
+ * lost mid-pass, no outbox row is reviewed twice.
+ */
+export const ATS_REVIEW_LEASE_NAME = "ats.review.outbox";
+
 export interface ReviewPassReport {
+  /** False when another replica holds the lease; the pass then touches nothing. */
+  acquired: boolean;
   claimed: number;
   delivered: number;
   retrying: number;
@@ -83,14 +99,40 @@ export async function runAiReviewPass(opts?: {
   limit?: number;
   now?: Date;
   advisory?: AdvisoryProvider;
+  holder?: string;
 }): Promise<ReviewPassReport> {
-  const report: ReviewPassReport = { claimed: 0, delivered: 0, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: false };
+  const report: ReviewPassReport = { acquired: false, claimed: 0, delivered: 0, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: false };
   const now = opts?.now ?? new Date();
   const limit = Math.min(Math.max(opts?.limit ?? DEFAULT_REVIEW_BATCH, 1), MAX_REVIEW_BATCH);
 
   const prisma = (await getPrisma()) as unknown as Client | null;
   if (!prisma) return { ...report, storeUnavailable: true };
 
+  const handle = await acquireLease({
+    holder: opts?.holder ?? defaultHolder(),
+    client: prisma,
+    nowMs: now.getTime(),
+    name: ATS_REVIEW_LEASE_NAME,
+  });
+  // Another replica is sweeping. Not an error, and nothing is touched.
+  if (!handle) return report;
+
+  try {
+    return await deliverDueReviews(prisma, now, limit, opts?.advisory, { ...report, acquired: true });
+  } finally {
+    // Released on every path, including a throw, so a crashed pass does not
+    // park the job for the full lease TTL (same rule as the metering pass).
+    await releaseLease({ handle, client: prisma, nowMs: now.getTime(), name: ATS_REVIEW_LEASE_NAME }).catch(() => false);
+  }
+}
+
+async function deliverDueReviews(
+  prisma: Client,
+  now: Date,
+  limit: number,
+  advisory: AdvisoryProvider | undefined,
+  report: ReviewPassReport,
+): Promise<ReviewPassReport> {
   const due = await prisma.atsReviewOutbox.findMany({
     where: { kind: AI_REVIEW_OUTBOX_KIND, status: { in: ["PENDING", "RETRYING"] }, nextAttemptAt: { lte: now } },
     orderBy: { nextAttemptAt: "asc" },
@@ -202,7 +244,7 @@ export async function runAiReviewPass(opts?: {
         criteria: app.job?.criteria ?? [],
         roleTitle: app.job?.title ?? "",
       },
-      { now, advisory: opts?.advisory },
+      { now, advisory },
     );
     if (!outcome.ok) {
       await fail(outcome.code);

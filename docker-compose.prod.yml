@@ -82,6 +82,58 @@ services:
         max-size: "20m"
         max-file: "5"
 
+  # ── ATS-S1 — the ATS AI-review worker ───────────────────────────────────────
+  #
+  # The public intake writes an application at AI_REVIEW_PENDING together with a
+  # review-outbox row, in one transaction. This service is what makes those rows
+  # move. Without it every application stays AI_REVIEW_PENDING forever — safe
+  # (nothing advances), visible, and useless.
+  #
+  # SAME PATTERN AS hermes-metering-worker BELOW, deliberately. It is a THIN
+  # TRIGGER: it polls POST /api/ats/review/deliver on hermes-web, where the
+  # review pass, the lease and the stage gate live and are tested. Its own image
+  # stage (`ats-review-worker`) holds ONE .mjs file — no node_modules, no Prisma,
+  # no database credential, no volume, no ports.
+  #
+  # WHAT IT CAN CAUSE. Exactly one transition, AI_REVIEW_PENDING ->
+  # PENDING_HUMAN_APPROVAL, and only through that endpoint. It cannot advance,
+  # reject or hire anyone: only a recorded human decision leaves the gate.
+  # Logs are pass COUNTS only; no candidate field is ever in its output.
+  #
+  # SCALING. Safe with `--scale hermes-ats-review-worker=N`: the pass takes the
+  # platform's WorkerLease under its own job name ("ats.review.outbox"), and the
+  # conditional per-row outbox claim means no application is reviewed twice even
+  # if the lease is lost.
+  #
+  # REQUIRED CONFIGURATION. `ATS_REVIEW_WORKER_TOKEN` in .env.production — the
+  # same value hermes-web reads to authorise the endpoint. Without it this
+  # container exits 2 at startup with a message that says why, instead of logging
+  # a 401 every interval forever. No health check, exactly as for the metering
+  # worker — it serves nothing to probe, and `restart: unless-stopped` covers a
+  # crash.
+  hermes-ats-review-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ats-review-worker
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      HERMES_WORKER_BASE_URL: http://hermes-web:3000
+    # Stated explicitly rather than relying on the stage CMD, so the thing this
+    # service runs is visible in the compose file an operator reads.
+    command: ["node", "scripts/ats/ai-review-worker.mjs"]
+    depends_on:
+      hermes-web:
+        condition: service_healthy
+    networks:
+      - hermes_internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
   # ── PHASE 109-C-UI.2-R8 — the metering outbox worker ────────────────────────
   #
   # R7 made industrial metering durable: the run writes an outbox row inside its

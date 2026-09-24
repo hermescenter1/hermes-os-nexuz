@@ -232,12 +232,17 @@ describe("POST /api/ats/review/deliver", () => {
   it("validates the limit and returns counts only; a store outage is 503", async () => {
     expect((await deliver(json("http://localhost/api/ats/review/deliver?limit=abc", "POST"))).status).toBe(400);
     expect((await deliver(json("http://localhost/api/ats/review/deliver?limit=0", "POST"))).status).toBe(400);
-    runAiReviewPass.mockResolvedValueOnce({ claimed: 2, delivered: 2, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: false });
+    runAiReviewPass.mockResolvedValueOnce({ acquired: true, claimed: 2, delivered: 2, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: false });
     const res = await deliver(json("http://localhost/api/ats/review/deliver?limit=5", "POST"));
     expect(res.status).toBe(200);
     expect(runAiReviewPass).toHaveBeenCalledWith({ limit: 5 });
-    expect(Object.keys(await res.json()).sort()).toEqual(["claimed", "deadLettered", "delivered", "retrying", "skipped", "storeUnavailable"]);
-    runAiReviewPass.mockResolvedValueOnce({ claimed: 0, delivered: 0, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: true });
+    expect(Object.keys(await res.json()).sort()).toEqual(["acquired", "claimed", "deadLettered", "delivered", "retrying", "skipped", "storeUnavailable"]);
+    // Another replica holding the lease is a normal 200, not an error.
+    runAiReviewPass.mockResolvedValueOnce({ acquired: false, claimed: 0, delivered: 0, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: false });
+    const notLeader = await deliver(json("http://localhost/api/ats/review/deliver", "POST"));
+    expect(notLeader.status).toBe(200);
+    expect((await notLeader.json()).acquired).toBe(false);
+    runAiReviewPass.mockResolvedValueOnce({ acquired: false, claimed: 0, delivered: 0, retrying: 0, deadLettered: 0, skipped: 0, storeUnavailable: true });
     expect((await deliver(json("http://localhost/api/ats/review/deliver", "POST"))).status).toBe(503);
   });
 });

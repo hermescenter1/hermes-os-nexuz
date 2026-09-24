@@ -75,9 +75,29 @@ on the host itself before anything is rebuilt:
 - the key file is configured, readable and owner-only (`chmod 600`);
 - the key identifier is configured;
 - a `.hbk` artifact exists with no `.partial` sibling;
+- its verification record names that exact artifact (`"file":"<name>.hbk"`);
 - its verification record says `"verified":true`, `"partial":false`,
   `"encrypted":true`;
 - `sha256sum` of the artifact equals the recorded `transportSha256`.
+
+**Privileged reads (host prerequisite).** `backup-postgres.sh` writes with
+`umask 077`, `chmod 700` on the backup directory and `chmod 600` on every file,
+so the artifact, its `.meta.json` and `documents-adoption.json` are root-owned
+and unreadable by the non-root deploy user. The deploy gate therefore reads them
+through `sudo -n` — non-interactive, because the SSH session has no TTY — and
+only reads: `find` (list, pick the newest, check file type), `cat` (the two
+small JSON records) and `sha256sum` (the artifact). No permission is changed and
+nothing is copied or printed. Any denied, missing or unreadable read refuses the
+deploy; it can never read as "absent" or as a matching hash.
+
+> **`OWNER_CONFIGURATION_BLOCKED` — sudoers scope.** The deploy user needs a
+> `NOPASSWD` rule for exactly these reads. Do **not** grant unrestricted
+> `find` or `cat`: `sudo find` can run `-exec` and `sudo cat` reads any file,
+> so either is root. Pin every rule to the backup directory and to the exact
+> argument shapes the gate uses, or — safer — install one root-owned, read-only
+> verifier and grant only that. This repository cannot configure or observe the
+> host's sudoers; until the rule exists, every migration-bearing deploy refuses
+> at the first privileged read, which is the intended fail-closed state.
 
 > **`OWNER_CONFIGURATION_BLOCKED` — off-host copy.** Whether the verified
 > artifact has been replicated off the production host is an operator fact this
