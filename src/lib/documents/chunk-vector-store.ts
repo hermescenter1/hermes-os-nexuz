@@ -1,7 +1,7 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { getStorageMode } from "@/lib/storage/storage-mode";
 import { getActiveDocumentEmbeddingDimensions } from "./config";
-import type { DocumentTextChunk } from "./types";
+import type { Document, DocumentTextChunk } from "./types";
 
 /**
  * Document chunk embedding storage + semantic search (Phase 16D).
@@ -28,15 +28,45 @@ export interface ChunkSearchMatch {
   score: number;
 }
 
+/**
+ * F-1 (security) — the tenant a chunk search is confined to.
+ *
+ * `orgId` MUST come from the server-resolved owner (see
+ * `resolveDocumentSearchScope` in ./search.ts), never from a request body,
+ * query string or header. A chunk is visible only when its parent `Document`
+ * row exists AND carries exactly this `tenantId`; a NULL-tenant document or an
+ * orphan chunk (no parent row) is never returned for any scope.
+ *
+ * The parameter is REQUIRED on `ChunkVectorStore.search`, so an unscoped
+ * search does not type-check.
+ */
+export interface ChunkSearchScope {
+  readonly orgId: string;
+}
+
+/** Runtime guard for callers that bypass the type system: anything other
+ *  than a non-empty string orgId is treated as "no scope" (fail closed). */
+export function isUsableChunkSearchScope(scope: unknown): scope is ChunkSearchScope {
+  if (typeof scope !== "object" || scope === null) return false;
+  const orgId = (scope as { orgId?: unknown }).orgId;
+  return typeof orgId === "string" && orgId.trim().length > 0;
+}
+
 export interface ChunkVectorStore {
   /** Returns false (a safe no-op, never throws) when `vector`'s length
    *  doesn't match `DOCUMENT_CHUNK_EMBEDDING_DIMENSIONS`, or when the
    *  chunk id doesn't exist. */
   setEmbedding(chunkId: string, vector: number[], model: string): Promise<boolean>;
-  /** Cosine-similarity search over every chunk that has an embedding,
-   *  optionally restricted to one document. Never throws — degrades to
-   *  an empty array on any failure (no database, query error, etc.). */
-  search(queryVector: number[], topK: number, documentId?: string): Promise<ChunkSearchMatch[]>;
+  /** Cosine-similarity search over the embedded chunks of documents owned by
+   *  `scope.orgId`, optionally restricted to one document. Returns [] for an
+   *  unusable scope. Never throws — degrades to an empty array on any failure
+   *  (no database, query error, etc.). */
+  search(
+    queryVector: number[],
+    topK: number,
+    scope: ChunkSearchScope,
+    documentId?: string
+  ): Promise<ChunkSearchMatch[]>;
 }
 
 function isValidDimension(vector: number[]): boolean {
@@ -63,6 +93,12 @@ function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 /* ---------------- session implementation ---------------- */
+/** The session document store's own buffer (document-repository.ts). */
+function sessionDocuments(): Pick<Document, "id" | "tenantId">[] {
+  const g = globalThis as unknown as { __hermesDocumentDrafts?: Document[] };
+  return g.__hermesDocumentDrafts ?? [];
+}
+
 function createSessionChunkVectorStore(): ChunkVectorStore {
   function buffer(): DocumentTextChunk[] {
     const g = globalThis as unknown as { __hermesDocumentTextChunks?: DocumentTextChunk[] };
@@ -83,9 +119,20 @@ function createSessionChunkVectorStore(): ChunkVectorStore {
       return true;
     },
 
-    async search(queryVector, topK, documentId) {
+    async search(queryVector, topK, scope, documentId) {
+      if (!isUsableChunkSearchScope(scope)) return [];
+      // Same predicate as the SQL join below: the parent document must exist
+      // in the session document store and carry exactly this tenant.
+      const ownedDocumentIds = new Set(
+        sessionDocuments()
+          .filter((d) => d.tenantId === scope.orgId)
+          .map((d) => d.id)
+      );
       const candidates = buffer().filter(
-        (c) => Array.isArray(c.embedding) && (!documentId || c.documentId === documentId)
+        (c) =>
+          Array.isArray(c.embedding) &&
+          ownedDocumentIds.has(c.documentId) &&
+          (!documentId || c.documentId === documentId)
       );
       return candidates
         .map((c) => ({
@@ -135,28 +182,47 @@ function createDatabaseChunkVectorStore(): ChunkVectorStore {
       }
     },
 
-    async search(queryVector, topK, documentId) {
+    async search(queryVector, topK, scope, documentId) {
+      if (!isUsableChunkSearchScope(scope)) return [];
       if (!isValidDimension(queryVector)) return [];
       const db = await rawClient();
       if (!db?.$queryRawUnsafe) return [];
       try {
-        const params: unknown[] = [toVectorLiteral(queryVector)];
-        let where = `WHERE embedding IS NOT NULL`;
-        if (documentId) {
-          params.push(documentId);
-          where += ` AND "documentId" = $${params.length}`;
-        }
-        params.push(Math.max(0, topK));
-
-        const rows = (await db.$queryRawUnsafe(
-          `SELECT id, "documentId", position, text, metadata,
-                  1 - (embedding <=> $1::vector) AS score
-           FROM "DocumentTextChunk"
-           ${where}
-           ORDER BY embedding <=> $1::vector
-           LIMIT $${params.length}`,
-          ...params
-        )) as Array<Record<string, unknown>>;
+        // F-1: the tenant predicate lives in SQL. The INNER JOIN drops orphan
+        // chunks, and `d."tenantId" = $2` (a non-empty string) never matches
+        // a NULL-tenant document. Both statements are fully literal — every
+        // value, including the tenant, is a bound parameter.
+        const vector = toVectorLiteral(queryVector);
+        const limit = Math.max(0, topK);
+        const rows = (documentId
+          ? await db.$queryRawUnsafe(
+              `SELECT c.id, c."documentId", c.position, c.text, c.metadata,
+                      1 - (c.embedding <=> $1::vector) AS score
+               FROM "DocumentTextChunk" c
+               INNER JOIN "Document" d ON d.id = c."documentId"
+               WHERE c.embedding IS NOT NULL
+                 AND d."tenantId" = $2
+                 AND c."documentId" = $3
+               ORDER BY c.embedding <=> $1::vector
+               LIMIT $4`,
+              vector,
+              scope.orgId,
+              documentId,
+              limit
+            )
+          : await db.$queryRawUnsafe(
+              `SELECT c.id, c."documentId", c.position, c.text, c.metadata,
+                      1 - (c.embedding <=> $1::vector) AS score
+               FROM "DocumentTextChunk" c
+               INNER JOIN "Document" d ON d.id = c."documentId"
+               WHERE c.embedding IS NOT NULL
+                 AND d."tenantId" = $2
+               ORDER BY c.embedding <=> $1::vector
+               LIMIT $3`,
+              vector,
+              scope.orgId,
+              limit
+            )) as Array<Record<string, unknown>>;
 
         return rows.map((r) => ({
           chunk: {

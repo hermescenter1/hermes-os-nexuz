@@ -33,7 +33,7 @@ import { isAIRouterEnabled, getAIProviderMode } from "@/lib/ai/config";
 import { withTimeout } from "@/lib/ai/providers/shared";
 import { runRagPipeline } from "@/lib/rag/rag-pipeline";
 import { isRagBrainEnabled, getRagMode, isDocumentRagEnabled, isMemoryBrainEnabled, isAutoMemoryEnabled, getAutoMemoryMinConfidence, isProjectIntelligenceEnabled } from "@/lib/rag/config";
-import { searchDocuments } from "@/lib/documents/search";
+import { searchDocuments, resolveDocumentSearchScope } from "@/lib/documents/search";
 import { getSimilarMemories, createEngineeringMemory, listEngineeringMemories } from "@/lib/memory/memory-service";
 import { getProject } from "@/lib/memory/project-service";
 import type {
@@ -53,7 +53,7 @@ import type { CaseMatch } from "@/lib/industrial/cases";
 import type { RetrievalResult, ScoredKnowledge } from "@/lib/retrieval/retrieval-types";
 import type { RagDocument } from "@/lib/rag/types";
 import type { Citation } from "@/lib/services/rag-types";
-import type { StoredAnalysis } from "@/lib/storage/types";
+import type { BrainOwner, StoredAnalysis } from "@/lib/storage/types";
 import en from "../../../../messages/en.json";
 
 export const dynamic = "force-dynamic";
@@ -417,10 +417,22 @@ async function buildProjectContext(projectId: string): Promise<ProjectContext | 
  *   - on any failure the deterministic Brain response is returned exactly
  *     as if the flag were off, with `documentRagEvidence` reporting a safe
  *     fallback rather than a raw error.
+ *
+ * F-1 (security): the search is confined to the caller's tenant, derived
+ * ONLY from the server-resolved `owner` (never from the request body). An
+ * anonymous, ambiguous or org-less owner fails closed — no search runs and
+ * the question is not sent to the embedding provider.
  */
-async function buildDocumentRagEvidence(question: string): Promise<DocumentRagEvidence> {
+async function buildDocumentRagEvidence(
+  question: string,
+  owner: BrainOwner | null
+): Promise<DocumentRagEvidence> {
   try {
-    const result = await searchDocuments(question, 5);
+    const scope = resolveDocumentSearchScope(owner);
+    if (!scope) {
+      return { enabled: true, matches: [], fallbackUsed: true, error: "document_rag_scope_unavailable" };
+    }
+    const result = await searchDocuments(question, scope, 5);
     return {
       enabled: true,
       matches: result.matches,
@@ -842,7 +854,7 @@ export async function POST(req: Request) {
   // above — purely additive, never replaces any field already on `analysis`.
   if (isDocumentRagEnabled() && !guardrail) {
     try {
-      const documentRagEvidence = await buildDocumentRagEvidence(question);
+      const documentRagEvidence = await buildDocumentRagEvidence(question, owner);
       analysis = { ...analysis, documentRagEvidence };
     } catch {
       /* never let document search affect the deterministic response */
