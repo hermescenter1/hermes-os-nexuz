@@ -29,7 +29,16 @@ export function AtsOverviewClient() {
 
   useEffect(() => {
     fetch("/api/ats/overview")
-      .then(r => r.json())
+      .then(r => {
+        // The endpoint is authorization-gated, so a refusal body ({error, code})
+        // is a normal outcome for a signed-in reader without the recruitment
+        // capability. It is NOT an AtsOverview: casting it leaves `byStage`
+        // undefined and the Math.max(...Object.values(...)) below throws.
+        // Treat any non-2xx as "no data" and let the existing unavailable
+        // state render.
+        if (!r.ok) throw new Error(`ats/overview ${r.status}`);
+        return r.json();
+      })
       .then((d: AtsOverview) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);

@@ -163,55 +163,96 @@ describe("POST /api/ats/interviews — tenant isolation", () => {
 // ── ATS application status — cross-tenant IDOR ────────────────────────────────
 
 describe("PATCH /api/ats/applications/[id]/status — tenant isolation", () => {
+  /*
+   * ATS-S1 rewired this route: the coarse platform-role gate became the
+   * ATS_MANAGE organization capability (`@/lib/ats/rbac`), and the
+   * non-transactional `updateApplicationStatus` became the transactional
+   * `transitionApplication` service, which scopes the application by the
+   * ACTOR'S organization and answers NOT_FOUND for a foreign one. The three
+   * SECURITY-8 intents are unchanged: a role without the capability is 403,
+   * another organization's application is 404, a member of the right
+   * organization succeeds — plus the new contract's mandatory reason.
+   */
   const ROUTE = "../../../app/api/ats/applications/[id]/status/route";
-  const APP = { id: "app-1", organizationId: "org-A", status: "APPLIED" };
 
-  function patchReq(status: string): NextRequest {
+  function patchReq(body: Record<string, unknown>): NextRequest {
     return new NextRequest("http://localhost/api/ats/applications/app-1/status", {
       method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ status }),
+      headers: { "content-type": "application/json", "x-hermes-organization": "org-A" },
+      body: JSON.stringify(body),
     });
   }
-  function setup(role: string | null, member: boolean, updateSpy = vi.fn(async () => ({ ...APP, status: "SCREENING" }))) {
-    mockAuthRole(role);
-    vi.doMock("@/lib/ats/db", () => ({
-      getApplicationById: async () => APP,
-      updateApplicationStatus: updateSpy,
+  type TransitionResult =
+    | { ok: true; decisionId: string; fromStatus: string; toStatus: string; cycle: number }
+    | { ok: false; code: string };
+  function setup(
+    actor: { ok: true; ctx: { userId: string; orgId: string; role: string } } | { ok: false; status: number },
+    transition: ReturnType<typeof vi.fn<() => Promise<TransitionResult>>> = vi.fn<() => Promise<TransitionResult>>(async () => ({
+      ok: true,
+      decisionId: "d-1",
+      fromStatus: "APPLIED",
+      toStatus: "SCREENING",
+      cycle: 0,
+    })),
+  ) {
+    vi.doUnmock("@/lib/ats/rbac");
+    vi.doMock("@/lib/ats/rbac", () => ({
+      requireAtsActor: async () =>
+        actor.ok ? actor : { ok: false, response: new Response(JSON.stringify({ error: "refused" }), { status: actor.status }) },
     }));
-    vi.doMock("@/lib/auth/jwt", () => ({ verifyAccessToken: async () => ({ name: "T" }) }));
-    vi.doUnmock("@/lib/org/context");
-    vi.doMock("@/lib/org/context", () => ({
-      requireOrgActor: async (_req: unknown, orgId: string) =>
-        member && orgId === "org-A"
-          ? { ctx: { userId: "u1", orgId, role: "ADMIN", status: "ACTIVE" } }
-          : { error: "Not a member", status: 403 },
+    vi.doUnmock("@/lib/ats/decision");
+    vi.doMock("@/lib/ats/decision", async () => ({
+      ...(await vi.importActual<typeof import("@/lib/ats/decision")>("@/lib/ats/decision")),
+      transitionApplication: transition,
     }));
-    return updateSpy;
+    return transition;
   }
+  afterEach(() => {
+    vi.doUnmock("@/lib/ats/rbac");
+    vi.doUnmock("@/lib/ats/decision");
+  });
 
-  it("customer role → 403 (removed from allowlist), no update", async () => {
-    const spy = setup("customer", true);
+  it("a member WITHOUT ATS_MANAGE → 403, the service is never reached", async () => {
+    const spy = setup({ ok: false, status: 403 });
     const { PATCH } = await import(ROUTE);
-    const res = await PATCH(patchReq("SCREENING"), { params: Promise.resolve({ id: "app-1" }) });
+    const res = await PATCH(patchReq({ status: "SCREENING", reason: "Screening call done." }), { params: Promise.resolve({ id: "app-1" }) });
     expect(res.status).toBe(403);
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it("admin of ANOTHER org → 404, no update (IDOR closed)", async () => {
-    const spy = setup("admin", false);
+  it("an application of ANOTHER org → 404 (IDOR closed): the service scopes by the ACTOR's org, never a client value", async () => {
+    const spy = setup(
+      { ok: true, ctx: { userId: "u1", orgId: "org-A", role: "ADMIN" } },
+      vi.fn<() => Promise<TransitionResult>>(async () => ({ ok: false, code: "NOT_FOUND" })),
+    );
     const { PATCH } = await import(ROUTE);
-    const res = await PATCH(patchReq("SCREENING"), { params: Promise.resolve({ id: "app-1" }) });
-    expect(res.status).toBe(404);
+    const res = await PATCH(patchReq({ status: "SCREENING", reason: "Screening call done.", organizationId: "org-B" }), { params: Promise.resolve({ id: "app-1" }) });
+    // `organizationId` in the body is an unknown key → the strict schema refuses it outright.
+    expect(res.status).toBe(400);
     expect(spy).not.toHaveBeenCalled();
+
+    const res2 = await PATCH(patchReq({ status: "SCREENING", reason: "Screening call done." }), { params: Promise.resolve({ id: "app-1" }) });
+    expect(res2.status).toBe(404);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect((spy.mock.calls[0] as unknown[])[0]).toMatchObject({ organizationId: "org-A", applicationId: "app-1" });
   });
 
-  it("admin of the application's org → update succeeds", async () => {
-    const spy = setup("admin", true);
+  it("an ATS_MANAGE member of the application's org → 200 with the decision id", async () => {
+    const spy = setup({ ok: true, ctx: { userId: "u1", orgId: "org-A", role: "RECRUITER" } });
     const { PATCH } = await import(ROUTE);
-    const res = await PATCH(patchReq("SCREENING"), { params: Promise.resolve({ id: "app-1" }) });
+    const res = await PATCH(patchReq({ status: "SCREENING", reason: "Screening call done." }), { params: Promise.resolve({ id: "app-1" }) });
     expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ decisionId: "d-1", fromStatus: "APPLIED", toStatus: "SCREENING" });
     expect(spy).toHaveBeenCalledTimes(1);
+    expect((spy.mock.calls[0] as unknown[])[0]).toMatchObject({ reason: "Screening call done.", actor: { userId: "u1", role: "RECRUITER" } });
+  });
+
+  it("a transition without a reason is 400 and never reaches the service", async () => {
+    const spy = setup({ ok: true, ctx: { userId: "u1", orgId: "org-A", role: "ADMIN" } });
+    const { PATCH } = await import(ROUTE);
+    const res = await PATCH(patchReq({ status: "SCREENING" }), { params: Promise.resolve({ id: "app-1" }) });
+    expect(res.status).toBe(400);
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 

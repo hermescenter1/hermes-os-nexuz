@@ -1,9 +1,22 @@
 import { NextResponse }              from "next/server";
+import type { NextRequest }          from "next/server";
 import { JOBS, CANDIDATES, HIRING_VELOCITY_DAYS } from "@/lib/ats/mock-data";
 import { STAGE_ORDER, STAGE_LABELS }  from "@/lib/ats/types";
 import type { AtsAnalytics, ApplicationSource } from "@/lib/ats/types";
+import { requireRecruitmentReader, RECRUITMENT_NO_STORE } from "@/lib/ats/management-guard";
 
-export async function GET() {
+/**
+ * Recruitment analytics — a MANAGEMENT surface, now authenticated.
+ *
+ * STILL FIXTURE-BACKED. Every figure below is derived from
+ * `@/lib/ats/mock-data` and is identical for every organization. In
+ * particular `hiringVelocityDays` is a constant, not a measurement — no
+ * tenant's real time-to-hire has been computed anywhere in this file.
+ */
+export async function GET(req: NextRequest) {
+  const reader = await requireRecruitmentReader(req);
+  if (!reader.ok) return reader.response;
+
   const openJobs       = JOBS.filter(j => j.status === "open").length;
   const closedJobs     = JOBS.filter(j => j.status === "closed" || j.status === "paused").length;
   const totalCandidates  = CANDIDATES.length;
@@ -91,5 +104,5 @@ export async function GET() {
     rejectionReasons, hiringVelocityDays: HIRING_VELOCITY_DAYS, scoreDistribution,
   };
 
-  return NextResponse.json(analytics);
+  return NextResponse.json(analytics, { headers: RECRUITMENT_NO_STORE });
 }

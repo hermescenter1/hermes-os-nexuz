@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "ats:review:worker": "node scripts/ats/ai-review-worker.mjs",
+    "ats:review:worker:once": "node scripts/ats/ai-review-worker.mjs --once",
     "test:phase91:postgres": "vitest run --config vitest.phase91-postgres.config.ts",
     "test:phase92:postgres": "vitest run --config vitest.phase92-postgres.config.ts",
     "audit:retention": "node scripts/audit-retention.mjs",

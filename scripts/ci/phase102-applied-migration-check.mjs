@@ -89,6 +89,10 @@ export const POST_PHASE102_MIGRATIONS = [
   // Phase 104-B1 — recruitment foundation (additive; declared, not silently
   // absorbed, so the completed-count equality stays an equality).
   "20260824000000_phase104_b1_recruitment_foundation",
+  // ATS B2/S1 — recruitment orchestration and human-review stage gate. Additive:
+  // Declared here so the legacy Phase 102 era-count gate subtracts this known
+  // later migration while continuing to fail closed on undeclared migrations.
+  "20260923000000_ats_b2_s1_orchestration_and_review",
   // Phase 109-C-UI.2-R3 — the industrial automation execution record. Additive:
   // two types and one table, no existing object touched. Declared here for the
   // same reason as the line above — an undeclared row would fail the era-count

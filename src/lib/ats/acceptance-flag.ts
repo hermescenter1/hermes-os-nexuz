@@ -32,8 +32,13 @@ export const APPLICATION_ACCEPTANCE_AUTHORIZED = false;
  * opposite belief, and would start advertising an apply journey the moment the
  * owner flips one constant, while the route still refuses every submission.
  * Stating B2 as its own fact means the UI cannot make that mistake.
+ *
+ * ATS-B2 (2026-09-23): IMPLEMENTED — `src/lib/ats/intake.ts`, wired into
+ * POST /api/careers/apply behind the owner gate above. This flag now states a
+ * true fact about the server. It does NOT open intake: `APPLY_JOURNEY_OPEN`
+ * still requires the owner's authorization, which remains `false`.
  */
-export const APPLICATION_ORCHESTRATION_IMPLEMENTED = false;
+export const APPLICATION_ORCHESTRATION_IMPLEMENTED = true;
 
 /**
  * The ONE condition under which any apply affordance — link, button, form or

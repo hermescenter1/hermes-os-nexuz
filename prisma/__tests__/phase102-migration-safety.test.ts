@@ -423,6 +423,9 @@ describe("102 — migration ordering", () => {
     "20260825000000_phase109_cui2_r3_automation_run_scope",
     "20260826000000_phase109_cui2_r7_asset_fk_and_metering_outbox",
     "20260827000000_phase109_cui2_r8_worker_lease",
+    // ATS-B2/S1 — intake orchestration, AI review, human approval gate.
+    // Additive only; touches no Phase 102 table (asserted below).
+    "20260923000000_ats_b2_s1_orchestration_and_review",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {
