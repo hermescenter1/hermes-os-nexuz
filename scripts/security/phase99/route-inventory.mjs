@@ -161,6 +161,19 @@ export const GUARD_TOKENS = [
   // the request. src/lib/ats/__tests__/ats-guard-registration.test.ts locks both
   // halves: the routes really delegate to it, and it really performs the checks.
   { token: "requireAtsActor", scope: "tenant" },
+  // PHASE 112 — the reasoning-run tenant guard (`src/lib/reasoning-runs/tenant-adapter.ts`).
+  //
+  // Registered for the same reason as `requireVoiceCopilotActor` and
+  // `requireAtsActor` above: it COMPOSES tenant-scope checks already vouched for
+  // here — `requirePlatformAuth` (server-resolved organization), `requireOrgActor`
+  // (session revocation + ACTIVE membership) and `requirePermission` (the org
+  // permission the route names) — into one ordered, fail-closed chain shared by
+  // the three reasoning-run routes. Every handler that calls it receives the
+  // organization from the server, never from the request.
+  // scripts/__tests__/phase112-guard-recognition.test.ts locks both halves: the
+  // routes really delegate to it, and it really performs the checks this entry
+  // vouches for.
+  { token: "resolveReasoningRunActor", scope: "tenant" },
   // Platform / API-key authority
   { token: "requirePlatformAuth", scope: "platform" },
   { token: "requirePlatformSuperadmin", scope: "platform" },

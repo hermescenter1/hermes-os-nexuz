@@ -426,6 +426,10 @@ describe("102 — migration ordering", () => {
     // ATS-B2/S1 — intake orchestration, AI review, human approval gate.
     // Additive only; touches no Phase 102 table (asserted below).
     "20260923000000_ats_b2_s1_orchestration_and_review",
+    // PHASE 112 — immutable reasoning-run ledger. Additive only; creates the
+    // ReasoningRun/ReasoningRunArtifact/ReasoningReplayAttempt tables and touches
+    // no Phase 102 table (asserted below).
+    "20260924000000_phase112_immutable_reasoning_run",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

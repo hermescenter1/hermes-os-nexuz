@@ -33,9 +33,17 @@ function model(name: string): string {
 }
 
 describe("B2/S1 — the migration is additive and non-destructive", () => {
-  it("sorts strictly after every existing migration", () => {
+  it("was appended after every migration that pre-existed it", () => {
+    // The ATS migration must sort strictly after every migration that existed
+    // when it was added — i.e. it was appended, never inserted before an
+    // existing one. It need NOT be the globally-last migration: the repository's
+    // migrations are append-only (see scripts/ci/phase997-migration-integrity.mjs
+    // FUTURE_MIGRATIONS_APPEND_ONLY), so later phases (e.g. Phase 112) legitimately
+    // sort after it. What must hold is that nothing sorts BEFORE it that is newer.
     const dirs = readdirSync(join(REPO, "prisma/migrations")).filter((d) => /^\d{14}_/.test(d)).sort();
-    expect(dirs[dirs.length - 1]).toBe(MIGRATION);
+    const idx = dirs.indexOf(MIGRATION);
+    expect(idx).toBeGreaterThan(0);
+    expect(dirs.slice(0, idx).every((d) => d < MIGRATION)).toBe(true);
   });
 
   it("contains no destructive statement and no data rewrite", () => {
