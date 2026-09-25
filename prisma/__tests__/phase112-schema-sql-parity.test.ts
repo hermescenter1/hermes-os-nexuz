@@ -105,6 +105,10 @@ describe("the migration is ADDITIVE and APPEND-ONLY", () => {
     // Every earlier-sorted migration has a strictly smaller timestamp prefix.
     const ts = MIGRATION_DIR.slice(0, 14);
     expect(dirs[idx - 1].slice(0, 14) < ts).toBe(true);
-    expect(dirs.at(-1)).toBe(MIGRATION_DIR); // it is the new latest
+    // Append-only, as main states for the S1 migration: it need not stay the
+    // globally-last migration forever (ATS-M1, 20260925000000, follows it), but
+    // everything that sorts after it must carry a strictly LATER timestamp, so
+    // nothing is ever inserted before or beside it.
+    for (const later of dirs.slice(idx + 1)) expect(later.slice(0, 14) > ts, later).toBe(true);
   });
 });

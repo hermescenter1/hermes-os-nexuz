@@ -66,20 +66,29 @@ const ATS_MOCK_ROUTES = [
   { name: "/api/ats/score", path: "../../../app/api/ats/score/route", body: { jobId: "job-1" } },
 ];
 
+/** B1/M1 routes resolve an organization session: give the request the (empty) cookie jar a NextRequest has. */
+function sessionless(route: { b1?: boolean }, req: Request): Request {
+  if (route.b1) Object.defineProperty(req, "cookies", { value: { get: () => undefined } });
+  return req;
+}
+
 describe("ATS internal creation requires the authoring capability", () => {
   for (const route of ATS_MOCK_ROUTES) {
     it(`${route.name}: anonymous → 401`, async () => {
       mockAuthRole(null);
       const { POST } = await import(route.path);
-      const res = await POST(jsonReq(route.name, route.body));
+      const res = await POST(sessionless(route, jsonReq(route.name, route.body)));
       expect(res.status).toBe(401);
     });
 
-    it(`${route.name}: non-authoring role (customer) → 403`, async () => {
+    it(`${route.name}: non-authoring role (customer) → ${(route as { b1?: boolean }).b1 ? "401 (ATS guard: no organization session)" : "403"}`, async () => {
       mockAuthRole("customer");
       const { POST } = await import(route.path);
-      const res = await POST(jsonReq(route.name, route.body));
-      expect(res.status).toBe(403);
+      const res = await POST(sessionless(route, jsonReq(route.name, route.body)));
+      // ATS-M1 — /api/ats/jobs is guarded by requireAtsActor(req, "ATS_MANAGE"),
+      // which never consults the platform role: a caller without an organization
+      // session is refused before any capability is even considered.
+      expect(res.status).toBe((route as { b1?: boolean }).b1 ? 401 : 403);
     });
 
     it(`${route.name}: authoring role (engineer) → ${(route as { b1?: boolean }).b1 ? "org refusal (B1)" : "success"}`, async () => {

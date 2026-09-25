@@ -1,5 +1,6 @@
 // Mirrors Prisma enum values for compile-time safety without a static import.
-export type AtsJobStatus         = "DRAFT" | "OPEN" | "CLOSED" | "ON_HOLD";
+// ATS-M1 — PAUSED and ARCHIVED appended; ON_HOLD is the legacy pause, read as PAUSED.
+export type AtsJobStatus         = "DRAFT" | "OPEN" | "CLOSED" | "ON_HOLD" | "PAUSED" | "ARCHIVED";
 // ATS-B2/S1 — AI_REVIEW_PENDING and PENDING_HUMAN_APPROVAL are the stage gate.
 export type AtsApplicationStatus =
   | "APPLIED"

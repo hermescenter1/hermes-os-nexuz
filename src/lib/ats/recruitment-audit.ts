@@ -34,6 +34,19 @@ export const RECRUITMENT_AUDIT_ACTIONS = [
   "recruitment.decision.recorded",
   "recruitment.application.status_transition",
   "recruitment.application.anonymized",
+  // ATS-M1 — position management and organization settings. All HUMAN
+  // actions: every one needs the acting user.
+  "recruitment.position.created",
+  "recruitment.position.updated",
+  "recruitment.position.published",
+  "recruitment.position.paused",
+  "recruitment.position.resumed",
+  "recruitment.position.closed",
+  "recruitment.position.reopened",
+  "recruitment.position.archived",
+  "recruitment.position.soft_deleted",
+  "recruitment.settings.updated",
+  "recruitment.retention_policy.updated",
 ] as const;
 
 export type RecruitmentAuditAction = (typeof RECRUITMENT_AUDIT_ACTIONS)[number];
@@ -55,9 +68,14 @@ export const recruitmentAuditMetadataSchema = z
     reason: z.string().trim().min(1, "an audit entry must say WHY"),
     before: jsonValue.nullable(),
     after: jsonValue,
-    stage: z.enum(["B1", "B2", "S1"]),
+    stage: z.enum(["B1", "B2", "S1", "M1"]),
     /** Present for system actions; names the component, never a person. */
     actor: z.enum(["SYSTEM_PUBLIC_INTAKE", "SYSTEM_REVIEW_WORKER", "SYSTEM_RETENTION"]).optional(),
+    /**
+     * ATS-M1 — what a destructive or lifecycle action touched or left linked
+     * (applications, interviews, reviews, audit records). Counts only.
+     */
+    affectedCounts: z.record(z.string(), z.number().int().min(0)).optional(),
   })
   .strict();
 
@@ -65,7 +83,7 @@ export type RecruitmentAuditMetadata = z.infer<typeof recruitmentAuditMetadataSc
 
 export interface RecruitmentAuditEntry {
   action: RecruitmentAuditAction;
-  entityType: "AtsJob" | "AtsApplication" | "AtsAiReview" | "AtsReviewDecision";
+  entityType: "AtsJob" | "AtsApplication" | "AtsAiReview" | "AtsReviewDecision" | "AtsOrganizationSettings" | "RetentionPolicy";
   entityId: string;
   /** null ONLY for a SYSTEM action, and then `metadata.actor` is required. */
   userId: string | null;

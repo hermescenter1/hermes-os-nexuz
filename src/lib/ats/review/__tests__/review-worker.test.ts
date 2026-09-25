@@ -17,6 +17,8 @@ vi.mock("@/lib/db/prisma", () => ({ getPrisma: async () => h.db }));
 
 import { runAiReviewPass, MAX_REVIEW_ATTEMPTS, ATS_REVIEW_LEASE_NAME } from "../worker";
 import { ROLE_PROFILES, qualifiedCriterionCode } from "../catalog";
+import type { SettingsRow } from "../../settings/defaults";
+import { settingsRow } from "../../__tests__/settings-fixture";
 
 const NOW = new Date("2026-09-23T13:00:00.000Z");
 
@@ -66,7 +68,11 @@ function makeLeaseStore(seed: Lease[] = []) {
   return { model, leases };
 }
 
-function makeDb(outbox: Outbox[], apps: App[], opts?: { noCriteria?: boolean; claimRace?: boolean; staleApp?: boolean; leases?: Lease[] }) {
+function makeDb(
+  outbox: Outbox[],
+  apps: App[],
+  opts?: { noCriteria?: boolean; claimRace?: boolean; staleApp?: boolean; leases?: Lease[]; settings?: SettingsRow | null; throwOnSettings?: boolean },
+) {
   const lease = makeLeaseStore(opts?.leases);
   const rows = outbox.map((o) => ({ ...o }));
   const appRows = apps.map((a) => ({ ...a }));
@@ -111,9 +117,18 @@ function makeDb(outbox: Outbox[], apps: App[], opts?: { noCriteria?: boolean; cl
     },
     auditLog: { create: async (a: { data: Record<string, unknown> }) => { writes.push({ model: "auditLog", data: a.data }); return { id: "audit-1" }; } },
   };
+  const settingsReads: unknown[] = [];
   const client = {
     ...tx,
     workerLease: lease.model,
+    // ATS-M1 — the application's organization policy, read per outbox row.
+    atsOrganizationSettings: {
+      findUnique: async (a: unknown) => {
+        settingsReads.push(a);
+        if (opts?.throwOnSettings) throw new Error("db down");
+        return opts?.settings ?? null;
+      },
+    },
     $transaction: async <T,>(fn: (t: typeof tx) => Promise<T>): Promise<T> => {
       const mark = writes.length;
       const snapApps = appRows.map((r) => ({ ...r }));
@@ -130,7 +145,7 @@ function makeDb(outbox: Outbox[], apps: App[], opts?: { noCriteria?: boolean; cl
       }
     },
   };
-  return { client, rows, appRows, writes, committed, leases: lease.leases };
+  return { client, rows, appRows, writes, committed, leases: lease.leases, settingsReads };
 }
 
 const OUT: Outbox = { id: "ob-1", organizationId: "org-A", applicationId: "app-1", kind: "AI_REVIEW", cycle: 0, status: "PENDING", attempts: 0, nextAttemptAt: NOW, lastErrorCode: null, aiReviewId: null, correlationId: "corr-1" };
@@ -292,5 +307,37 @@ describe("failure leaves the application exactly where it was", () => {
     expect(report).toMatchObject({ retrying: 1 });
     expect(store.rows[0].lastErrorCode).toBe("APPLICATION_NOT_FOUND");
     expect(store.appRows[0].status).toBe("AI_REVIEW_PENDING");
+  });
+});
+
+describe("ATS-M1 — the organization policy reaches the review, never the state machine", () => {
+  it("reads the settings of the ROW's organization (tenant-scoped) before reviewing", async () => {
+    const store = makeDb([OUT], [APP]);
+    h.db = store.client;
+    await runAiReviewPass({ now: NOW });
+    expect(store.settingsReads[0]).toMatchObject({ where: { organizationId: OUT.organizationId } });
+  });
+
+  it("a settings read failure retries the row later; the application is untouched and no review is written", async () => {
+    const store = makeDb([OUT], [APP], { throwOnSettings: true });
+    h.db = store.client;
+    const report = await runAiReviewPass({ now: NOW });
+    expect(report).toMatchObject({ claimed: 1, retrying: 1, delivered: 0 });
+    expect(store.rows[0]).toMatchObject({ status: "RETRYING", lastErrorCode: "SETTINGS_UNAVAILABLE" });
+    expect(store.appRows[0].status).toBe("AI_REVIEW_PENDING");
+    expect(store.writes.some((w) => w.model === "atsAiReview")).toBe(false);
+  });
+
+  it("a minimum-confidence policy adds a flag to the report; the only status written is still PENDING_HUMAN_APPROVAL", async () => {
+    const store = makeDb([OUT], [APP], { settings: settingsRow({ minimumConfidence: 100 }) });
+    h.db = store.client;
+    await runAiReviewPass({ now: NOW });
+    const review = store.committed.find((w) => w.model === "atsAiReview");
+    expect(review).toBeDefined();
+    const report = review!.data.report as { confidence: number; riskFlags: { code: string }[] };
+    expect(report.confidence).toBeLessThan(100);
+    expect(report.riskFlags.map((f) => f.code)).toContain("CONFIDENCE_BELOW_POLICY");
+    const statuses = store.writes.filter((w) => w.model === "atsApplication.updateMany").map((w) => w.data.status);
+    expect(statuses).toEqual(["PENDING_HUMAN_APPROVAL"]);
   });
 });

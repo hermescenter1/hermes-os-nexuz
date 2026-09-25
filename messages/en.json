@@ -9525,7 +9525,488 @@
     "visaSponsorship": "Visa Sponsorship",
     "workAuth": "Work Auth",
     "yearsExpShort": "{years}y exp",
-    "yearsExperience": "{years}y experience"
+    "yearsExperience": "{years}y experience",
+    "navSettings": "Settings",
+    "mgmt": {
+      "status": {
+        "DRAFT": "Draft",
+        "OPEN": "Open",
+        "PAUSED": "Paused",
+        "CLOSED": "Closed",
+        "ARCHIVED": "Archived"
+      },
+      "visibility": {
+        "public": "Public",
+        "private": "Private"
+      },
+      "filters": {
+        "label": "Filter positions by status",
+        "all": "All"
+      },
+      "list": {
+        "applications": "applications"
+      },
+      "states": {
+        "loading": "Loading positions…",
+        "errorTitle": "Something went wrong",
+        "retry": "Try again"
+      },
+      "empty": {
+        "title": "No positions yet",
+        "filteredTitle": "No positions in this state",
+        "message": "Create a position as a private draft. Nothing is published until you open it.",
+        "readOnly": "Positions created by your recruitment team will appear here.",
+        "createFirst": "Create your first position"
+      },
+      "permission": {
+        "title": "Permission required",
+        "signIn": "Sign in with an account that belongs to this organization to see recruitment positions.",
+        "viewRequired": "Your role in this organization does not include access to recruitment positions. Ask an ATS administrator for access.",
+        "manageRequired": "Managing positions and settings requires the ATS manage permission.",
+        "adminRequired": "This action requires the ATS administrator permission."
+      },
+      "actions": {
+        "CREATE": "Create position",
+        "SETTINGS": "Settings",
+        "VIEW": "View",
+        "EDIT": "Edit",
+        "AUDIT": "Audit history",
+        "BACK": "Back to positions",
+        "PUBLISH": "Publish",
+        "PAUSE": "Pause",
+        "RESUME": "Resume",
+        "CLOSE": "Close",
+        "REOPEN": "Reopen",
+        "ARCHIVE": "Archive",
+        "DELETE": "Delete / archive"
+      },
+      "confirm": {
+        "PUBLISH": {
+          "title": "Publish this position?",
+          "message": "“{title}” will open. If it is public and its opening date has arrived, it appears on the careers site in every complete language."
+        },
+        "PAUSE": {
+          "title": "Pause this position?",
+          "message": "“{title}” leaves the careers site at once. Existing applications are not changed."
+        },
+        "RESUME": {
+          "title": "Resume this position?",
+          "message": "“{title}” opens again after the publish checks pass."
+        },
+        "CLOSE": {
+          "title": "Close this position?",
+          "message": "“{title}” stops accepting applications and leaves the careers site."
+        },
+        "REOPEN": {
+          "title": "Reopen this position?",
+          "message": "“{title}” opens again. Reopening needs an ATS administrator and a written reason."
+        },
+        "ARCHIVE": {
+          "title": "Archive this position?",
+          "message": "“{title}” becomes read-only. Archiving cannot be undone from the dashboard."
+        },
+        "DELETE": {
+          "title": "Delete this position safely?",
+          "message": "“{title}” will be removed from every list and archived. It is never permanently erased.",
+          "linked": "Linked applications: {count}",
+          "safety": "Candidates, applications, reviews, interviews and the audit trail are kept unchanged. No candidate is rejected or deleted."
+        },
+        "applicationsUntouched": "{count} linked applications stay exactly where they are — no candidate is rejected or advanced by this action."
+      },
+      "done": {
+        "PUBLISH": "“{title}” was published.",
+        "PAUSE": "“{title}” was paused.",
+        "RESUME": "“{title}” was resumed.",
+        "CLOSE": "“{title}” was closed.",
+        "REOPEN": "“{title}” was reopened.",
+        "ARCHIVE": "“{title}” was archived.",
+        "DELETE": "“{title}” was removed and archived. Nothing was permanently deleted."
+      },
+      "initial": {
+        "button": "Create the five initial drafts",
+        "title": "Create the initial positions as drafts?",
+        "message": "Senior Accountant, Senior Electrical and Industrial Automation Engineer, Backend Developer, Artificial Intelligence Specialist and Senior B2B Marketing Specialist are created as private drafts with their criteria, rubric and interview kit. None is published. Positions that already exist are skipped.",
+        "confirm": "Create drafts",
+        "done": "{created} drafts created, {skipped} already existed."
+      },
+      "readiness": {
+        "PUBLIC_TITLE_MISSING": "Public title is missing",
+        "TITLE_EN_MISSING": "English title is missing",
+        "TITLE_FA_MISSING": "Persian title is missing",
+        "DESCRIPTION_EN_MISSING": "English description is missing",
+        "DESCRIPTION_FA_MISSING": "Persian description is missing",
+        "SUMMARY_EN_MISSING": "English summary is missing",
+        "SUMMARY_FA_MISSING": "Persian summary is missing",
+        "DEFAULT_LOCALE_INCOMPLETE": "The default careers language is incomplete",
+        "MUST_HAVE_MISSING": "At least one must-have criterion is required",
+        "DISQUALIFIER_MISSING": "At least one disqualifier is required",
+        "RUBRIC_MISSING": "A scoring rubric totalling 100 is required",
+        "INTERVIEW_KIT_MISSING": "An interview kit is required",
+        "HIRING_OWNER_MISSING": "An active hiring owner is required",
+        "APPROVAL_OWNER_MISSING": "An approval owner is required",
+        "SLA_MISSING": "A decision SLA is required",
+        "PROTECTED_TERM": "Criteria refer to a protected characteristic",
+        "CLOSING_DATE_PASSED": "The closing date has passed",
+        "LOCATION_MISSING": "Location is missing"
+      },
+      "feedback": {
+        "dismiss": "Dismiss",
+        "correlationId": "Correlation ID",
+        "cancel": "Cancel",
+        "reasonRequired": "Reason (required)",
+        "reasonOptional": "Reason (optional)",
+        "reasonHint": "At least 5 characters. The reason is stored in the audit trail."
+      },
+      "errors": {
+        "INVALID_INPUT": "Some fields are invalid. Check the highlighted items.",
+        "IDEMPOTENCY_KEY_REUSED": "This request conflicts with an earlier one. Reload and try again.",
+        "IDEMPOTENCY_IN_PROGRESS": "The same request is still being processed.",
+        "NOT_FOUND": "Position not found",
+        "STALE": "Someone else changed this record. It was reloaded — review it and try again.",
+        "INVALID_TRANSITION": "This action is not allowed in the current state.",
+        "NOT_READY": "The position is not complete enough to open:",
+        "PROTECTED_TERM": "Criteria must not refer to protected characteristics.",
+        "REASON_REQUIRED": "A written reason is required for this action.",
+        "FORBIDDEN": "You do not have permission for this action.",
+        "CONFLICT": "A position with this requisition key already exists.",
+        "LINKED_COUNT_CHANGED": "The number of linked applications changed. Review the new count and confirm again.",
+        "HIRING_OWNER_INVALID": "The hiring owner must be an active member of this organization.",
+        "STORE_UNAVAILABLE": "The service is temporarily unavailable. Try again shortly.",
+        "OFFLINE": "The server could not be reached. Check the connection and try again.",
+        "AUTHENTICATION_REQUIRED": "Your session has ended. Sign in again.",
+        "ORGANIZATION_CONTEXT_REQUIRED": "Your account is not an active member of an organization.",
+        "ORGANIZATION_SELECTION_REQUIRED": "Choose an organization first.",
+        "ORGANIZATION_CONTEXT_UNAVAILABLE": "The organization could not be verified right now. Try again shortly.",
+        "ORGANIZATION_CONTEXT_CONFLICT": "Another tab switched organization. Reload this page before continuing.",
+        "ORGANIZATION_PRECONDITION_REQUIRED": "This page did not state an organization. Reload it and try again.",
+        "ORIGIN_NOT_ALLOWED": "The request came from an untrusted origin and was refused.",
+        "GENERIC": "The request could not be completed."
+      },
+      "detail": {
+        "notSet": "Not set",
+        "readiness": "Publish readiness",
+        "ready": "Ready to open: every publish requirement is met.",
+        "notReady": "This position cannot be opened until these items are completed:",
+        "fields": "Position details",
+        "assigned": "Assigned",
+        "days": "{count} days",
+        "openingDate": "Opening date",
+        "linked": "Linked records",
+        "linkedApplications": "Applications",
+        "linkedInterviews": "Interviews",
+        "linkedReviews": "AI reviews",
+        "linkedAudit": "Audit records",
+        "criteriaKind": {
+          "MUST_HAVE": "Must-have",
+          "NICE_TO_HAVE": "Nice-to-have",
+          "DISQUALIFIER": "Disqualifiers"
+        }
+      },
+      "audit": {
+        "title": "Audit history",
+        "immutable": "Audit records are read-only. Nothing on this page can change or remove them.",
+        "unavailable": "The audit history could not be loaded.",
+        "empty": "No audit records yet.",
+        "actor": "By",
+        "reason": "Reason",
+        "details": "Before / after",
+        "actions": {
+          "recruitment": {
+            "job": {
+              "draft_created": "Draft created (legacy)",
+              "criteria_applied": "Criteria applied"
+            },
+            "position": {
+              "created": "Created",
+              "updated": "Edited",
+              "published": "Published",
+              "paused": "Paused",
+              "resumed": "Resumed",
+              "closed": "Closed",
+              "reopened": "Reopened",
+              "archived": "Archived",
+              "soft_deleted": "Deleted (soft) and archived"
+            }
+          }
+        }
+      },
+      "form": {
+        "createTitle": "Create position",
+        "editTitle": "Edit position",
+        "saveDraft": "Save as draft",
+        "save": "Save changes",
+        "created": "Draft created.",
+        "saved": "Changes saved.",
+        "draftNotice": "Saving creates a private draft. Nothing is published until the position passes the publish checks and you open it.",
+        "editNotice": "Saving keeps the current status. An open position can only be saved if it still passes every publish check.",
+        "issuesTitle": "Please fix these fields",
+        "protectedTerms": "Remove these protected characteristics from the criteria: {terms}",
+        "notSet": "Not set",
+        "onePerLine": "One item per line",
+        "remove": "Remove",
+        "template": {
+          "title": "Role template",
+          "description": "Prefill criteria, rubric, interview kit, assessment, approval owner and SLA from the reviewed role catalogue. Everything stays editable.",
+          "select": "Template",
+          "placeholder": "Choose a template…",
+          "applied": "Prefilled from: {role}",
+          "roles": {
+            "finance_accountant": "Accountant / finance specialist",
+            "automation_plc_scada_engineer": "Electrical and automation engineer (PLC, SCADA)",
+            "backend_engineer": "Backend engineer",
+            "ai_ml_engineer": "AI / machine-learning engineer",
+            "b2b_technical_marketing": "B2B / technical marketing specialist"
+          }
+        },
+        "sections": {
+          "identity": "Identity and location",
+          "copy": "Public copy",
+          "compensation": "Compensation and mobility",
+          "internal": "Internal hiring brief",
+          "criteria": "Criteria",
+          "rubric": "Scoring rubric",
+          "interviewKit": "Interview kit and stages",
+          "assessment": "Assessment",
+          "ownership": "Owners, SLA and dates"
+        },
+        "internalTitle": "Internal title",
+        "internalTitleHint": "Never shown publicly.",
+        "publicTitle": "Public title",
+        "requisitionKey": "Requisition key",
+        "requisitionKeyHint": "Optional; generated when empty. It cannot be changed later.",
+        "department": "Department",
+        "employmentType": "Employment type",
+        "employment": {
+          "FULL_TIME": "Full-time",
+          "PART_TIME": "Part-time",
+          "CONTRACT": "Contract",
+          "INTERNSHIP": "Internship",
+          "TEMPORARY": "Temporary"
+        },
+        "workMode": "Work mode",
+        "workModes": {
+          "onsite": "On-site",
+          "remote": "Remote",
+          "hybrid": "Hybrid"
+        },
+        "location": "Location",
+        "addressCountry": "Country code",
+        "addressCountryHint": "Two letters, for example IR or DE.",
+        "copyDescription": "Persian and English are required to open a position; German is optional. A language appears on the careers site only when it is complete.",
+        "copy": {
+          "locale": {
+            "fa": "Persian",
+            "en": "English",
+            "de": "German"
+          },
+          "title": "Title",
+          "summary": "Short summary",
+          "description": "Public description",
+          "responsibilities": "Responsibilities",
+          "requirements": "Requirements",
+          "preferredExperience": "Preferred experience"
+        },
+        "salary": "Salary",
+        "salaryConfidential": "Salary is confidential",
+        "salaryCurrency": "Currency",
+        "salaryCurrencyHint": "Three letters, for example IRR or EUR.",
+        "salaryMin": "Minimum",
+        "salaryMax": "Maximum",
+        "sponsorshipPolicy": "Visa sponsorship",
+        "relocationPolicy": "Relocation support",
+        "mobility": {
+          "NOT_OFFERED": "Not offered",
+          "CASE_BY_CASE": "Case by case",
+          "OFFERED": "Offered"
+        },
+        "internalDescription": "Visible only to the hiring team; never published.",
+        "internalBrief": "Hiring brief",
+        "evidenceRequirements": "Evidence requirements",
+        "criteriaDescription": "Criteria are scored only from evidence the applicant provides. Protected characteristics — such as age, gender, religion, ethnicity, nationality, marital status, pregnancy, disability or photographs — are refused.",
+        "criteria": {
+          "mustHave": "Must-have requirements",
+          "niceToHave": "Nice-to-have requirements",
+          "disqualifiers": "Disqualifiers",
+          "label": "Criterion",
+          "keywords": "Evidence keywords, comma separated",
+          "minYears": "Min. years",
+          "weight": "Weight",
+          "add": "Add criterion"
+        },
+        "rubricDescription": "Weights per dimension; they must total exactly 100.",
+        "rubricEnabled": "Use a scoring rubric",
+        "rubricTotal": "Total: {total}",
+        "dimension": {
+          "skill": "Skill",
+          "experience": "Experience",
+          "education": "Education",
+          "certification": "Certification",
+          "project": "Project",
+          "role_relevance": "Role relevance"
+        },
+        "interviewKitDescription": "The order of the stages is the interview sequence.",
+        "stage": {
+          "label": "Stage",
+          "kind": "Type",
+          "owner": "Owner role",
+          "slaDays": "SLA (days)",
+          "duration": "Duration (min)",
+          "questions": "Questions",
+          "rubricItems": "{count} rubric items",
+          "add": "Add stage"
+        },
+        "stageKinds": {
+          "RECRUITER_SCREEN": "Recruiter screen",
+          "TECHNICAL_FUNCTIONAL": "Technical / functional interview",
+          "BEHAVIORAL_COMMUNICATION": "Behavioural and communication",
+          "FINAL_REVIEW": "Final review",
+          "REFERENCE_OFFER_READINESS": "References and offer readiness"
+        },
+        "assessmentEnabled": "Include a technical assessment",
+        "assessment": {
+          "title": "Assessment title",
+          "format": "Format",
+          "duration": "Duration (min)",
+          "evaluates": "What it evaluates",
+          "submission": "Submission instructions"
+        },
+        "assessmentFormats": {
+          "TAKE_HOME": "Take-home task",
+          "LIVE_EXERCISE": "Live exercise",
+          "CASE_STUDY": "Case study",
+          "PORTFOLIO_REVIEW": "Portfolio review"
+        },
+        "ownershipDescription": "A position opens only with an active hiring owner, an approval owner and a decision SLA.",
+        "hiringOwner": "Hiring owner",
+        "hiringOwnerUnavailable": "The member list is not available for your role.",
+        "approvalOwner": "Approval owner (role)",
+        "decisionSla": "Decision SLA (days)",
+        "decisionSlaHint": "Days from the AI review to a recorded human decision (1–90).",
+        "closingDate": "Closing date",
+        "roles": {
+          "OWNER": "Owner",
+          "ADMIN": "Admin",
+          "MANAGER": "Manager",
+          "ENGINEER": "Engineer",
+          "VIEWER": "Viewer",
+          "BILLING_ADMIN": "Billing admin",
+          "MEMBER": "Member",
+          "HR_MANAGER": "HR manager",
+          "RECRUITER": "Recruiter",
+          "HIRING_MANAGER": "Hiring manager",
+          "INTERVIEWER": "Interviewer",
+          "ACADEMY_ADMIN": "Academy admin",
+          "CUSTOMER_SUCCESS_MANAGER": "Customer success manager",
+          "STUDENT": "Student",
+          "COMPLIANCE_MANAGER": "Compliance manager"
+        }
+      },
+      "settings": {
+        "saved": "Settings saved.",
+        "save": "Save",
+        "confirmSave": "Save with reason",
+        "defaultsNotice": "This organization has not saved ATS settings yet. The values shown are the fail-closed defaults: external AI off, public intake closed.",
+        "locked": {
+          "required": "Always required",
+          "adminOnly": "ATS administrators only"
+        },
+        "confirmHumanApproval": "Changing who owns the human decision is recorded with your reason.",
+        "confirmAi": "Changing how applications are reviewed is recorded with your reason. External processing also requires the deployment to allow it.",
+        "confirmRetention": "Changing how long candidate data is kept is recorded with your reason.",
+        "confirmCareers": "Changing public listing or application intake is recorded with your reason.",
+        "workflow": {
+          "title": "Recruitment workflow",
+          "description": "The stage order is enforced by the platform. Defaults below prefill new positions.",
+          "pipeline": "Pipeline stages",
+          "pipelineLocked": "Every application passes the AI review and then waits for a recorded human decision. This order cannot be changed.",
+          "humanApproval": "Human approval of every gate decision",
+          "slaDefault": "Default decision SLA (days)",
+          "interviewStages": "Default interview stages",
+          "keepStages": "Keep the current {count} stages",
+          "approvalOwner": "Default approval owner (role)"
+        },
+        "pipeline": {
+          "APPLIED": "Applied",
+          "AI_REVIEW_PENDING": "AI review pending",
+          "PENDING_HUMAN_APPROVAL": "Awaiting human approval",
+          "SCREENING": "Screening",
+          "TECHNICAL_REVIEW": "Technical review",
+          "INTERVIEW": "Interview",
+          "OFFER": "Offer",
+          "HIRED": "Hired"
+        },
+        "ai": {
+          "title": "AI review",
+          "description": "The review is advisory. It never accepts or rejects a candidate; a person decides, with a reason.",
+          "provider": "Review provider",
+          "deterministic": "Deterministic (default)",
+          "router": "Model router (advisory commentary)",
+          "minimumConfidence": "Minimum confidence (0–100)",
+          "minimumConfidenceHint": "Below it, the report is flagged for a full evidence review. No status changes.",
+          "external": "External AI processing",
+          "externalHint": "Off by default. Candidate text reaches an external model only when this is on AND the deployment allows it.",
+          "evidence": "Evidence for every AI claim (source, location, quote, confidence)",
+          "effective": "In effect for this organization",
+          "effectiveExternal": "External advisory enabled",
+          "effectiveDeterministic": "Deterministic only",
+          "versions": "Versions — extractor {extractor}, rubric {rubric}, prompt {prompt}, policy {policy}"
+        },
+        "retention": {
+          "title": "Retention",
+          "description": "How long candidate data is kept before it is anonymised.",
+          "policy": "Retention policy",
+          "createNew": "Create a new ATS retention policy",
+          "days": "Retention days (30–3650)",
+          "trigger": "Counted from",
+          "triggers": {
+            "CREATION": "Application received",
+            "LAST_ACTIVITY": "Last activity"
+          },
+          "approval": "Approval state",
+          "states": {
+            "PENDING_REVIEW": "Pending review",
+            "APPROVED": "Approved",
+            "REJECTED": "Rejected"
+          },
+          "effectiveFrom": "Effective date",
+          "enabled": "Policy enabled",
+          "action": "Action at expiry",
+          "anonymiseOnly": "Anonymise only",
+          "approverOnly": "Only an organization owner or administrator (compliance permission) can approve or enable a retention policy. You can save it as a proposal for review.",
+          "executionNote": "Public intake stays closed until an approved, enabled and effective policy is selected. Anonymisation runs dry until cleared in the compliance registry, and legal holds always take precedence."
+        },
+        "notifications": {
+          "title": "Notifications",
+          "description": "Preferences for this organization.",
+          "review": "Review alerts",
+          "interview": "Interview reminders",
+          "sla": "SLA breach notifications",
+          "deliveryNote": "These preferences are recorded. No delivery channel is connected to them in this release, so no message is sent yet."
+        },
+        "careers": {
+          "title": "Public careers",
+          "description": "Controls for the public careers site of this organization.",
+          "listing": "Public listing",
+          "listingHint": "When off, none of this organization's positions appear publicly, whatever their status.",
+          "intake": "Application intake",
+          "intakeHint": "Off by default. Even when on, applications are accepted only after the platform-wide acceptance gate is authorised.",
+          "locale": "Default careers language"
+        },
+        "security": {
+          "title": "Security",
+          "description": "Secrets are managed in the deployment environment only. This page shows whether each one is configured — never its value — and nothing here can edit them.",
+          "states": {
+            "CONFIGURED": "Configured",
+            "MISSING": "Missing",
+            "ENABLED": "Enabled",
+            "DISABLED": "Disabled"
+          },
+          "acceptance": "Platform-wide application acceptance",
+          "never": "A missing value keeps the dependent feature closed (fail-closed).",
+          "restricted": "The security status is visible to ATS administrators only."
+        }
+      }
+    }
   },
   "customerSuccess": {
     "created": "Created",

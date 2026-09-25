@@ -58,7 +58,9 @@ const params = (id = "app-1") => ({ params: Promise.resolve({ id }) });
 const json = (url: string, method: string, body?: unknown) =>
   new NextRequest(url, {
     method,
-    headers: { "content-type": "application/json", "x-hermes-organization": "org-A" },
+    // ATS-M1 — an allowed same-origin Origin, as a browser sends it; the
+    // criteria POST now enforces it (see the foreign-Origin case below).
+    headers: { "content-type": "application/json", "x-hermes-organization": "org-A", origin: "http://localhost:3000" },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
 
@@ -187,6 +189,25 @@ describe("GET /api/ats/applications/[id]/review", () => {
 });
 
 describe("/api/ats/jobs/[id]/criteria", () => {
+  it("ATS-M1: POST refuses a foreign or missing Origin (CSRF) before the service runs", async () => {
+    h.actor = member();
+    for (const origin of ["https://attacker.example", null]) {
+      const r = json("http://localhost/api/ats/jobs/job-1/criteria", "POST", { roleCode: "backend_engineer" });
+      if (origin) r.headers.set("origin", origin);
+      else r.headers.delete("origin");
+      const res = await applyProfile(r, params("job-1"));
+      expect(res.status).toBe(403);
+    }
+    expect(applyRoleProfileToJob).not.toHaveBeenCalled();
+  });
+
+  it("ATS-M1: an ARCHIVED position is 409, not rewritten", async () => {
+    h.actor = member();
+    applyRoleProfileToJob.mockResolvedValue({ ok: false, code: "INVALID_STATE" });
+    const res = await applyProfile(json("http://localhost/api/ats/jobs/job-1/criteria", "POST", { roleCode: "backend_engineer" }), params("job-1"));
+    expect(res.status).toBe(409);
+  });
+
   it("GET asks for ATS_VIEW and lists the caller's job criteria", async () => {
     h.actor = member("INTERVIEWER");
     listJobCriteria.mockResolvedValue([{ id: "c1", code: "backend_engineer.sql" }]);

@@ -109,6 +109,10 @@ export const POST_PHASE102_MIGRATIONS = [
   // lines above — an undeclared row would fail the era-count equality, and
   // silently widening that check to `>=` would retire the gate.
   "20260924000000_phase112_immutable_reasoning_run",
+  // ATS-M1 — position management + organization ATS settings. Additive: two
+  // enum values, nullable AtsJob columns, one nullable RetentionPolicy column
+  // and two new organization-owned tables. Declared for the same reason.
+  "20260925000000_ats_m1_position_management",
 ];
 
 /**

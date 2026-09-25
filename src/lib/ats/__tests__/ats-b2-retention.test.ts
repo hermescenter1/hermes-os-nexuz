@@ -9,6 +9,8 @@ const h = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db/prisma", () => ({ getPrisma: async () => h.db }));
 
 import { evaluateApplicationRetention, sweepExpiredApplications, type ApplicationRetentionRow, type RetentionPolicyRow } from "../retention";
+import type { SettingsRow } from "../settings/defaults";
+import { settingsRow } from "./settings-fixture";
 
 const NOW = new Date("2026-09-23T00:00:00.000Z");
 const DAY = 86_400_000;
@@ -65,11 +67,30 @@ describe("evaluation is pure and policy-driven", () => {
 });
 
 interface Write { model: string; data: Record<string, unknown> }
-function makeDb(opts: { policy: RetentionPolicyRow | null; apps: ApplicationRetentionRow[]; holds?: Record<string, unknown>[] }) {
+function makeDb(opts: {
+  policy: RetentionPolicyRow | null;
+  apps: ApplicationRetentionRow[];
+  holds?: Record<string, unknown>[];
+  /** ATS-M1 — the organization's settings row (absent by default). */
+  settings?: SettingsRow | null;
+  throwOnSettings?: boolean;
+}) {
   const writes: Write[] = [];
   const candidateTouched = vi.fn();
+  const policyWheres: Record<string, unknown>[] = [];
   const tx = {
-    retentionPolicy: { findFirst: async () => opts.policy },
+    atsOrganizationSettings: {
+      findUnique: async () => {
+        if (opts.throwOnSettings) throw new Error("db down");
+        return opts.settings ?? null;
+      },
+    },
+    retentionPolicy: {
+      findFirst: async (a: { where: Record<string, unknown> }) => {
+        policyWheres.push(a.where);
+        return opts.policy;
+      },
+    },
     legalHold: { findMany: async () => opts.holds ?? [] },
     atsApplication: {
       findMany: async () => opts.apps,
@@ -82,7 +103,7 @@ function makeDb(opts: { policy: RetentionPolicyRow | null; apps: ApplicationRete
     auditLog: { create: async (a: { data: Record<string, unknown> }) => { writes.push({ model: "auditLog", data: a.data }); return {}; } },
   };
   const client = { ...tx, $transaction: async <T,>(fn: (t: typeof tx) => Promise<T>) => fn(tx) };
-  return { client, writes, candidateTouched };
+  return { client, writes, candidateTouched, policyWheres };
 }
 
 beforeEach(() => {
@@ -151,6 +172,39 @@ describe("the sweep", () => {
     h.db = store.client;
     const r = await sweepExpiredApplications({ organizationId: "org-A", now: NOW, execute: true });
     expect(r).toMatchObject({ expired: 1, anonymized: 0 });
+    expect(store.writes).toHaveLength(0);
+  });
+});
+
+describe("ATS-M1 — the sweep honours the organization's selection and the effective date", () => {
+  it("asks only for an EFFECTIVE policy, and for the SELECTED one when the organization chose one", async () => {
+    const store = makeDb({ policy: policy({ dryRunOnly: false }), apps: [app()], settings: settingsRow({ retentionPolicyId: "rp-7" }) });
+    h.db = store.client;
+    await sweepExpiredApplications({ organizationId: "org-A", now: NOW });
+    expect(store.policyWheres[0]).toMatchObject({ organizationId: "org-A", approvalState: "APPROVED", enabled: true, id: "rp-7" });
+    expect(store.policyWheres[0].OR).toEqual([{ effectiveFrom: null }, { effectiveFrom: { lte: NOW } }]);
+  });
+
+  it("no selection → any approved, effective policy of the organization (unchanged behaviour)", async () => {
+    const store = makeDb({ policy: policy({ dryRunOnly: false }), apps: [app()] });
+    h.db = store.client;
+    await sweepExpiredApplications({ organizationId: "org-A", now: NOW });
+    expect(store.policyWheres[0]).not.toHaveProperty("id");
+  });
+
+  it("a SELECTED policy that is no longer approved stops the sweep VISIBLY — no other policy is guessed in", async () => {
+    const store = makeDb({ policy: null, apps: [app()], settings: settingsRow({ retentionPolicyId: "rp-revoked" }) });
+    h.db = store.client;
+    const r = await sweepExpiredApplications({ organizationId: "org-A", now: NOW, execute: true });
+    expect(r).toMatchObject({ selectedPolicyUnavailable: true, policyId: null, anonymized: 0 });
+    expect(store.writes).toHaveLength(0);
+  });
+
+  it("a settings read failure anonymises NOTHING and says so", async () => {
+    const store = makeDb({ policy: policy({ dryRunOnly: false }), apps: [app()], throwOnSettings: true });
+    h.db = store.client;
+    const r = await sweepExpiredApplications({ organizationId: "org-A", now: NOW, execute: true });
+    expect(r).toMatchObject({ storeUnavailable: true, anonymized: 0 });
     expect(store.writes).toHaveLength(0);
   });
 });

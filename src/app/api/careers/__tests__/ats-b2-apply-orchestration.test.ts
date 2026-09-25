@@ -11,6 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { settingsRow } from "../../../../lib/ats/__tests__/settings-fixture";
 
 const h = vi.hoisted(() => ({ db: null as unknown, rateLimited: false }));
 vi.mock("@/lib/db/prisma", () => ({ getPrisma: async () => h.db }));
@@ -30,6 +31,8 @@ function makeDb(opts?: { retentionApproved?: boolean; eligible?: boolean; existi
   const writes: string[] = [];
   const idem: Record<string, { id: string; payloadHash: string; status: string; resultId: string | null; expiresAt: Date }> = {};
   const tx = {
+    // ATS-M1 — the organization has switched its own intake ON (the global gate is separate).
+    atsOrganizationSettings: { findUnique: async () => settingsRow({ applicationIntakeEnabled: true }) },
     atsJob: { findFirst: async () => (opts?.eligible === false ? null : { id: "job-1", organizationId: "org-1" }) },
     retentionPolicy: { findFirst: async () => (opts?.retentionApproved === false ? null : { id: "rp-1", retentionDays: 90, retentionTrigger: "CREATION" }) },
     // A duplicate APPLICATION presupposes an existing CANDIDATE — the fixture says so.

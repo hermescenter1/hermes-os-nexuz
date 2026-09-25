@@ -60,6 +60,60 @@ describe("requireAtsActor — registered at TENANT scope", () => {
     guardsFirst("src/app/api/ats/jobs/[id]/criteria/route.ts", "POST", "requireAtsActor(req", WORK);
   });
 
+  it("half one — every M1 position / settings route calls it FIRST, with the capability the owner's rule names", () => {
+    const WORK = /readJsonBody\(|req\.json\(|mutationPreconditions\(|getPrisma\(|Position|Positions\(|createInitialDrafts\(|listOwnerCandidates\(|getSettingsView\(|updateSettings\(|updateRetention\(|INITIAL_POSITIONS|searchParams/;
+    const M1: [string, string, string][] = [
+      ["src/app/api/ats/jobs/route.ts", "GET", "ATS_VIEW"],
+      ["src/app/api/ats/jobs/route.ts", "POST", "ATS_MANAGE"],
+      ["src/app/api/ats/jobs/[id]/route.ts", "GET", "ATS_VIEW"],
+      ["src/app/api/ats/jobs/[id]/route.ts", "PATCH", "ATS_MANAGE"],
+      ["src/app/api/ats/jobs/[id]/transition/route.ts", "POST", "ATS_MANAGE"],
+      ["src/app/api/ats/jobs/[id]/delete/route.ts", "POST", "ATS_ADMIN"],
+      ["src/app/api/ats/jobs/[id]/audit/route.ts", "GET", "ATS_VIEW"],
+      ["src/app/api/ats/jobs/initial-drafts/route.ts", "GET", "ATS_ADMIN"],
+      ["src/app/api/ats/jobs/initial-drafts/route.ts", "POST", "ATS_ADMIN"],
+      ["src/app/api/ats/jobs/owners/route.ts", "GET", "ATS_MANAGE"],
+      ["src/app/api/ats/settings/route.ts", "GET", "ATS_MANAGE"],
+      ["src/app/api/ats/settings/route.ts", "PATCH", "ATS_MANAGE"],
+      ["src/app/api/ats/settings/retention/route.ts", "PUT", "ATS_ADMIN"],
+    ];
+    for (const [file, method, capability] of M1) guardsFirst(file, method, `requireAtsActor(req, "${capability}")`, WORK);
+  });
+
+  it("half one — every M1 WRITE checks Origin and the Idempotency-Key before reading the body", () => {
+    for (const [file, method] of [
+      ["src/app/api/ats/jobs/route.ts", "POST"],
+      ["src/app/api/ats/jobs/[id]/route.ts", "PATCH"],
+      ["src/app/api/ats/jobs/[id]/transition/route.ts", "POST"],
+      ["src/app/api/ats/jobs/[id]/delete/route.ts", "POST"],
+      ["src/app/api/ats/jobs/initial-drafts/route.ts", "POST"],
+      ["src/app/api/ats/settings/route.ts", "PATCH"],
+      ["src/app/api/ats/settings/retention/route.ts", "PUT"],
+    ] as const) {
+      guardsFirst(file, method, "mutationPreconditions(req)", /readJsonBody\(/);
+    }
+    const http = code("src/lib/ats/positions/http.ts");
+    expect(http).toContain('requireTrustedOrigin(req, "jwt")');
+    expect(http).toContain("readIdempotencyKey(req)");
+  });
+
+  it("half one — the M1 routes hand services the ACTOR's organization only", () => {
+    for (const f of [
+      "src/app/api/ats/jobs/route.ts",
+      "src/app/api/ats/jobs/[id]/route.ts",
+      "src/app/api/ats/jobs/[id]/transition/route.ts",
+      "src/app/api/ats/jobs/[id]/delete/route.ts",
+      "src/app/api/ats/jobs/initial-drafts/route.ts",
+      "src/app/api/ats/settings/route.ts",
+      "src/app/api/ats/settings/retention/route.ts",
+    ]) {
+      const src = code(f);
+      expect(src, f).toMatch(/organizationId:\s*actor\.ctx\.orgId/);
+      expect(src, f).not.toMatch(/organizationId:\s*(parsed|body|raw)\./);
+      expect(src, f).not.toMatch(/getAuthRole|can\(role, "authoring"\)/);
+    }
+  });
+
   it("half one — the organization every service receives is the ACTOR's, never a request value", () => {
     for (const f of [
       "src/app/api/ats/applications/[id]/decision/route.ts",

@@ -430,6 +430,9 @@ describe("102 — migration ordering", () => {
     // ReasoningRun/ReasoningRunArtifact/ReasoningReplayAttempt tables and touches
     // no Phase 102 table (asserted below).
     "20260924000000_phase112_immutable_reasoning_run",
+    // ATS-M1 — position management + organization ATS settings. Additive
+    // only; touches no Phase 102 table (asserted below).
+    "20260925000000_ats_m1_position_management",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

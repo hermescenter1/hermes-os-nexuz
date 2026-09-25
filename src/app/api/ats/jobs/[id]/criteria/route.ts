@@ -5,6 +5,7 @@ import { requireAtsActor } from "@/lib/ats/rbac";
 import { applyRoleProfileToJob, listJobCriteria } from "@/lib/ats/criteria";
 import { ROLE_CODES } from "@/lib/ats/review/catalog";
 import { resolveRequestId } from "@/lib/logger/correlation";
+import { requireTrustedOrigin } from "@/lib/security/request-guards";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
@@ -33,6 +34,12 @@ const bodySchema = z.object({ roleCode: z.enum(ROLE_CODES as unknown as [string,
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const actor = await requireAtsActor(req, "ATS_MANAGE");
   if (!actor.ok) return actor.response;
+  // ATS-M1 — the same CSRF rule as every other cookie-session write on this
+  // resource. (Applying a profile is idempotent by construction: an upsert of
+  // the same criteria set, so no Idempotency-Key is needed.)
+  if (!requireTrustedOrigin(req, "jwt").ok) {
+    return NextResponse.json({ error: "Cross-origin request refused.", code: "ORIGIN_NOT_ALLOWED" }, { status: 403, headers: NO_STORE });
+  }
   const { id } = await params;
 
   let raw: unknown;
@@ -52,8 +59,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     correlationId: resolveRequestId(req),
   });
   if (!result.ok) {
-    const status = result.code === "NOT_FOUND" ? 404 : result.code === "INVALID_INPUT" ? 400 : result.code === "STORE_UNAVAILABLE" ? 503 : 500;
-    const error = result.code === "NOT_FOUND" ? "Job not found" : result.code === "INVALID_INPUT" ? "invalid role profile" : "The request could not be completed.";
+    const status =
+      result.code === "NOT_FOUND" ? 404 : result.code === "INVALID_INPUT" ? 400 : result.code === "INVALID_STATE" ? 409 : result.code === "STORE_UNAVAILABLE" ? 503 : 500;
+    const error =
+      result.code === "NOT_FOUND"
+        ? "Job not found"
+        : result.code === "INVALID_INPUT"
+          ? "invalid role profile"
+          : result.code === "INVALID_STATE"
+            ? "This position is archived and can no longer be edited."
+            : "The request could not be completed.";
     return NextResponse.json({ error }, { status, headers: NO_STORE });
   }
   return NextResponse.json(result, { status: 200, headers: NO_STORE });

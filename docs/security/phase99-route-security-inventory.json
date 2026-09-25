@@ -15,13 +15,13 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 388,
-    "handlers": 540,
+    "routeFiles": 396,
+    "handlers": 551,
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
-      "AUTHENTICATED_USER": 219,
-      "TENANT_MEMBER": 135,
+      "AUTHENTICATED_USER": 217,
+      "TENANT_MEMBER": 148,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 132,
@@ -30,16 +30,16 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 135,
+    "tenantBoundHandlers": 148,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 267,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 267,
-    "TENANT_IDENTITY_SERVER_DERIVED": 267,
+    "TENANT_BOUND_HANDLERS_TOTAL": 280,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 280,
+    "TENANT_IDENTITY_SERVER_DERIVED": 280,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 267,
+    "OBJECT_SCOPED_HANDLERS": 280,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -939,12 +939,12 @@
       "apiPath": "/api/ats/jobs",
       "method": "GET",
       "file": "src/app/api/ats/jobs/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getAuthRole"
+        "requireAtsActor"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -952,12 +952,51 @@
       "apiPath": "/api/ats/jobs",
       "method": "POST",
       "file": "src/app/api/ats/jobs/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getAuthRole"
+        "requireAtsActor"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs/[id]",
+      "method": "GET",
+      "file": "src/app/api/ats/jobs/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/ats/jobs/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs/[id]/audit",
+      "method": "GET",
+      "file": "src/app/api/ats/jobs/[id]/audit/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -978,6 +1017,71 @@
       "apiPath": "/api/ats/jobs/[id]/criteria",
       "method": "POST",
       "file": "src/app/api/ats/jobs/[id]/criteria/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs/[id]/delete",
+      "method": "POST",
+      "file": "src/app/api/ats/jobs/[id]/delete/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs/[id]/transition",
+      "method": "POST",
+      "file": "src/app/api/ats/jobs/[id]/transition/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs/initial-drafts",
+      "method": "GET",
+      "file": "src/app/api/ats/jobs/initial-drafts/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs/initial-drafts",
+      "method": "POST",
+      "file": "src/app/api/ats/jobs/initial-drafts/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/jobs/owners",
+      "method": "GET",
+      "file": "src/app/api/ats/jobs/owners/route.ts",
       "classification": "TENANT_MEMBER",
       "authEvidence": [
         "requireAtsActor"
@@ -1036,6 +1140,45 @@
       ],
       "declaredSurface": false,
       "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/settings",
+      "method": "GET",
+      "file": "src/app/api/ats/settings/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/settings",
+      "method": "PATCH",
+      "file": "src/app/api/ats/settings/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/settings/retention",
+      "method": "PUT",
+      "file": "src/app/api/ats/settings/retention/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },

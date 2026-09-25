@@ -277,6 +277,8 @@ export interface PublicJobCard {
 
 type PublicRow = DbAtsJob & {
   publishedAt: Date | null;
+  /** ATS-M1 — the position editor's "salary is confidential" switch. */
+  salaryConfidential?: boolean | null;
   deletedAt: Date | null;
   addressLocality: string | null;
   addressRegion: string | null;
@@ -415,6 +417,17 @@ type DetailRow = PublicRow & {
   })[];
 };
 
+/**
+ * ATS-M1 — whether a row's salary may appear on a public surface (the detail
+ * page and the JobPosting structured data). Only an explicit `false` from the
+ * position editor's "salary is confidential" switch publishes it; a row that
+ * predates the column reads false (the column's structural default), which is
+ * the pre-M1 behaviour.
+ */
+export function salaryIsPublic(row: { salaryConfidential?: boolean | null }): boolean {
+  return row.salaryConfidential !== true;
+}
+
 export async function getPublicJobDetail(jobId: string, locale: string): Promise<PublicJobDetail | null | "UNAVAILABLE"> {
   if (typeof jobId !== "string" || jobId.length === 0) return null;
   try {
@@ -446,9 +459,10 @@ export async function getPublicJobDetail(jobId: string, locale: string): Promise
       skillCodes: jobSkills(row),
       location: row.location,
       locationType: row.locationType ?? null,
-      salaryCurrency: row.salaryCurrency ?? null,
-      salaryMin: row.salaryMin,
-      salaryMax: row.salaryMax,
+      // ATS-M1 — a confidential salary is never published, in any field.
+      salaryCurrency: salaryIsPublic(row) ? (row.salaryCurrency ?? null) : null,
+      salaryMin: salaryIsPublic(row) ? row.salaryMin : null,
+      salaryMax: salaryIsPublic(row) ? row.salaryMax : null,
       publishedAt,
       closingDate: isoOrUndefined(row.closingDate),
     };
@@ -517,6 +531,7 @@ export async function getPublicJobPosting(jobId: string, locale: string): Promis
     if (!datePosted) return null;
     if (!row.requisitionKey || !row.addressLocality || !row.addressRegion || !row.addressCountry) return null;
     const salaryComplete =
+      salaryIsPublic(row) &&
       typeof row.salaryCurrency === "string" && row.salaryCurrency.length > 0 &&
       typeof row.salaryMin === "number" && typeof row.salaryMax === "number";
     const localizedSkills =

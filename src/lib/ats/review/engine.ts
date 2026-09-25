@@ -49,6 +49,14 @@ export interface ReviewOptions {
   now: Date;
   /** Injected for tests; production resolves the router lazily. */
   advisory?: AdvisoryProvider;
+  /**
+   * ATS-M1 — the reviewed application's ORGANIZATION policy (its ATS settings).
+   * `externalAiAllowed` must be literally true, IN ADDITION to both deployment
+   * flags, before candidate text may reach a model; absent means no.
+   * `minimumConfidence` never changes a state or a score: below it the report
+   * carries a CONFIDENCE_BELOW_POLICY risk flag for the human reviewer.
+   */
+  policy?: { externalAiAllowed?: boolean; minimumConfidence?: number | null };
 }
 
 export type ReviewOutcome =
@@ -138,6 +146,14 @@ export async function reviewApplication(input: ReviewInput, opts: ReviewOptions)
     riskFlags.push({ code: "DISQUALIFIER_EVIDENCE", note: "an explicit disqualifying statement was found; verify with the candidate", evidence: [] });
   }
   if (s.confidence < 40) riskFlags.push({ code: "LOW_EVIDENCE_COVERAGE", note: "little of the rubric had evidence; treat every score as provisional", evidence: [] });
+  const minimumConfidence = opts.policy?.minimumConfidence;
+  if (typeof minimumConfidence === "number" && s.confidence < minimumConfidence) {
+    riskFlags.push({
+      code: "CONFIDENCE_BELOW_POLICY",
+      note: `confidence ${s.confidence} is below this organization's minimum of ${minimumConfidence}; review every cited evidence item before deciding`,
+      evidence: [],
+    });
+  }
 
   const partial: Omit<AiReviewReport, "explanation" | "humanReview"> = {
     schemaVersion: "ats-review-report-1",
@@ -180,7 +196,7 @@ export async function reviewApplication(input: ReviewInput, opts: ReviewOptions)
   let provider = "deterministic";
   let modelVersion: string | null = null;
 
-  if (getAiReviewProviderMode() === "router" && isExternalAiProcessingAllowed()) {
+  if (getAiReviewProviderMode() === "router" && isExternalAiProcessingAllowed() && opts.policy?.externalAiAllowed === true) {
     const advisory = opts.advisory ?? (await defaultAdvisory());
     if (advisory && input.resumeText) {
       const prompt = buildAdvisoryPrompt({
