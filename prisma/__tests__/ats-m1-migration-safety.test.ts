@@ -10,7 +10,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const REPO = process.cwd();
-const MIGRATION = "20260924000000_ats_m1_position_management";
+const MIGRATION = "20260925000000_ats_m1_position_management";
 
 const sql = readFileSync(join(REPO, "prisma/migrations", MIGRATION, "migration.sql"), "utf8").replace(/\r\n/g, "\n");
 const schema = readFileSync(resolve(REPO, "prisma/schema.prisma"), "utf8").replace(/\r\n/g, "\n");

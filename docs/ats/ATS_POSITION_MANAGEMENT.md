@@ -152,12 +152,14 @@ each one until a person completes it.
 
 ## 6. Migration
 
-`prisma/migrations/20260924000000_ats_m1_position_management/migration.sql` — additive only: two
+`prisma/migrations/20260925000000_ats_m1_position_management/migration.sql` — additive only: two
 `ADD VALUE IF NOT EXISTS` on `AtsJobStatus`, 16 nullable / structurally-defaulted `AtsJob` columns,
 one nullable `RetentionPolicy.effectiveFrom`, two new organization-owned tables. The rollback script
 is in the file header (the two enum values cannot be dropped from a PostgreSQL type; move any
 `PAUSED`/`ARCHIVED` row to a pre-M1 status with a reviewed statement before rolling back code).
 
+It is dated 2026-09-25 so it sorts strictly after Phase 112's `20260924000000_phase112_immutable_reasoning_run`
+(two migrations sharing one timestamp would make the apply order depend on folder names).
 Registered in `prisma/__tests__/phase102-migration-safety.test.ts` and
 `scripts/ci/phase102-applied-migration-check.mjs`; machine-checked by
 `prisma/__tests__/ats-m1-migration-safety.test.ts`.

@@ -62,6 +62,14 @@ const SITE_AUTHORIZATION_TOKENS = [
   "siteIds.includes",
   "accessibleSiteIds",
   "resolveSiteScope",
+  // PHASE 112 — the reasoning-run scope authorizer
+  // (`src/lib/reasoning-runs/tenant-adapter.ts`). It resolves an asset to its
+  // owning site server-side and authorizes the site with requireSiteActor +
+  // requireSitePermission("view_assets"), returning a uniform 404 for a
+  // foreign/missing site or asset. A run's client-supplied siteId/assetId is
+  // therefore proven against the caller's real grants, never trusted. Its
+  // predicate is locked by scripts/__tests__/phase112-guard-recognition.test.ts.
+  "authorizeRunScope",
   // Proves an optional foreign key (industrial site, category, instructor)
   // belongs to the ACTOR's organization before any write:
   // findFirst({ where: { id, organizationId } }) with the server-derived

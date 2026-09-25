@@ -136,6 +136,20 @@ const LIMITS = {
   // script from cycling a reaction thousands of times a minute.
   "journal-comment-create":     { max: 15,  windowMs: 10 * 60 * 1000 },
   "journal-reaction-set":       { max: 120, windowMs: 60 * 1000 },
+  // PHASE 112 — immutable reasoning-run ledger, keyed by `${organizationId}:${userId}`.
+  //
+  // `reasoning-run-read` is an interactive tenant read of a stored run + its
+  // verified snapshots, so it matches the neighbouring read budgets.
+  //
+  // `reasoning-run-create` runs the deterministic engine once and writes a run
+  // plus its artifacts in one transaction, so it is matched to the analyze
+  // budget rather than a cheap read.
+  //
+  // `reasoning-run-replay` can RE-EXECUTE the engine and is the most expensive
+  // operation here, so it is the tightest — appropriate to expensive replay.
+  "reasoning-run-read":         { max: 120, windowMs: 60 * 1000 },
+  "reasoning-run-create":       { max: 12,  windowMs: 60 * 1000 },
+  "reasoning-run-replay":       { max: 10,  windowMs: 60 * 1000 },
 } as const satisfies Record<string, { max: number; windowMs: number }>;
 
 /**
