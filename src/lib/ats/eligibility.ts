@@ -33,7 +33,15 @@ export function localeToJobLanguage(locale: string): AtsJobLanguageCode {
     : "EN";
 }
 
-/** The Prisma `where` for a publicly eligible job, evaluated at `now`. */
+/**
+ * The Prisma `where` for a publicly eligible job, evaluated at `now`.
+ *
+ * ATS-M1 adds ONE narrowing clause: the owning organization must not have
+ * switched its public listing off (AtsOrganizationSettings.publicListingEnabled).
+ * An organization with no settings row is not switched off. The clause can only
+ * REMOVE jobs from the public set — every clause above still has to hold, so a
+ * DRAFT, PAUSED, CLOSED or ARCHIVED position is never public whatever it says.
+ */
 export function publicJobWhere(now: Date) {
   return {
     status: "OPEN",
@@ -41,6 +49,9 @@ export function publicJobWhere(now: Date) {
     deletedAt: null,
     publishedAt: { not: null, lte: now },
     OR: [{ closingDate: null }, { closingDate: { gte: now } }],
+    organization: {
+      OR: [{ atsSettings: { is: null } }, { atsSettings: { is: { publicListingEnabled: true } } }],
+    },
   } as const;
 }
 
@@ -51,10 +62,13 @@ export interface PublicEligibilityRow {
   publishedAt?: Date | null;
   closingDate?: Date | null;
   deletedAt?: Date | null;
+  /** ATS-M1 — the organization's listing switch; only an explicit false hides the job. */
+  organizationListingEnabled?: boolean | null;
 }
 
 /** The same contract as `publicJobWhere`, for a row already in memory. */
 export function isJobPubliclyEligible(job: PublicEligibilityRow, now: Date = new Date()): boolean {
+  if (job.organizationListingEnabled === false) return false;
   if (job.status !== "OPEN") return false;
   if (job.isPublic !== true) return false;
   if (job.deletedAt != null) return false;

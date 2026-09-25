@@ -426,6 +426,9 @@ describe("102 — migration ordering", () => {
     // ATS-B2/S1 — intake orchestration, AI review, human approval gate.
     // Additive only; touches no Phase 102 table (asserted below).
     "20260923000000_ats_b2_s1_orchestration_and_review",
+    // ATS-M1 — position management + organization ATS settings. Additive
+    // only; touches no Phase 102 table (asserted below).
+    "20260924000000_ats_m1_position_management",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

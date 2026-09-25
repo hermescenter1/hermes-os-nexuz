@@ -24,6 +24,7 @@ import { getPrisma } from "@/lib/db/prisma";
 import { acquireLease, defaultHolder, releaseLease } from "@/lib/industrial/metering-worker";
 import { buildRecruitmentAuditCreate } from "../recruitment-audit";
 import { reviewApplication, type AdvisoryProvider, type StoredCriterion } from "./engine";
+import { readSettingsOrDefaults, type SettingsReader } from "../settings/defaults";
 import { AI_REVIEW_OUTBOX_KIND } from "../intake";
 
 export const MAX_REVIEW_ATTEMPTS = 5;
@@ -83,7 +84,7 @@ type Tx = {
   atsReviewOutbox: { updateMany: (a: unknown) => Promise<{ count: number }> };
   auditLog: { create: (a: unknown) => Promise<unknown> };
 };
-type Client = Tx & {
+type Client = Tx & SettingsReader & {
   atsReviewOutbox: Tx["atsReviewOutbox"] & { findMany: (a: unknown) => Promise<OutboxRow[]> };
   atsApplication: Tx["atsApplication"] & { findFirst: (a: unknown) => Promise<LoadedApplication | null> };
   $transaction: <T>(fn: (tx: Tx) => Promise<T>) => Promise<T>;
@@ -230,6 +231,21 @@ async function deliverDueReviews(
       continue;
     }
 
+    // ATS-M1 — the application's ORGANIZATION policy, read per row (a pass can
+    // span organizations). A failed read retries the row later rather than
+    // reviewing without the policy: the review never runs on a guessed policy.
+    let orgPolicy: { externalAiAllowed: boolean; minimumConfidence: number | null };
+    try {
+      const settings = await readSettingsOrDefaults(prisma, row.organizationId);
+      orgPolicy = {
+        externalAiAllowed: settings.aiProviderMode === "router" && settings.externalAiProcessingEnabled,
+        minimumConfidence: settings.minimumConfidence,
+      };
+    } catch {
+      await fail("SETTINGS_UNAVAILABLE");
+      continue;
+    }
+
     const skills = Array.isArray(app.candidate?.skills)
       ? (app.candidate!.skills as unknown[]).filter((s): s is string => typeof s === "string")
       : [];
@@ -244,7 +260,7 @@ async function deliverDueReviews(
         criteria: app.job?.criteria ?? [],
         roleTitle: app.job?.title ?? "",
       },
-      { now, advisory },
+      { now, advisory, policy: orgPolicy },
     );
     if (!outcome.ok) {
       await fail(outcome.code);

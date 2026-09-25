@@ -9525,7 +9525,488 @@
     "visaSponsorship": "Visum-Unterstützung",
     "workAuth": "Arbeitserlaubnis",
     "yearsExpShort": "{years} J. Erf.",
-    "yearsExperience": "{years} Jahre Erfahrung"
+    "yearsExperience": "{years} Jahre Erfahrung",
+    "navSettings": "Einstellungen",
+    "mgmt": {
+      "status": {
+        "DRAFT": "Entwurf",
+        "OPEN": "Offen",
+        "PAUSED": "Pausiert",
+        "CLOSED": "Geschlossen",
+        "ARCHIVED": "Archiviert"
+      },
+      "visibility": {
+        "public": "Öffentlich",
+        "private": "Nicht öffentlich"
+      },
+      "filters": {
+        "label": "Stellen nach Status filtern",
+        "all": "Alle"
+      },
+      "list": {
+        "applications": "Bewerbungen"
+      },
+      "states": {
+        "loading": "Stellen werden geladen …",
+        "errorTitle": "Etwas ist schiefgelaufen",
+        "retry": "Erneut versuchen"
+      },
+      "empty": {
+        "title": "Noch keine Stellen",
+        "filteredTitle": "Keine Stellen in diesem Status",
+        "message": "Legen Sie eine Stelle als nicht öffentlichen Entwurf an. Veröffentlicht wird erst, wenn Sie sie eröffnen.",
+        "readOnly": "Stellen, die Ihr Recruiting-Team anlegt, erscheinen hier.",
+        "createFirst": "Erste Stelle anlegen"
+      },
+      "permission": {
+        "title": "Berechtigung erforderlich",
+        "signIn": "Melden Sie sich mit einem Konto dieser Organisation an, um Stellen zu sehen.",
+        "viewRequired": "Ihre Rolle in dieser Organisation umfasst keinen Zugriff auf Stellen. Bitten Sie eine ATS-Administration um Zugriff.",
+        "manageRequired": "Für die Verwaltung von Stellen und Einstellungen ist die ATS-Verwaltungsberechtigung nötig.",
+        "adminRequired": "Diese Aktion erfordert die ATS-Administrationsberechtigung."
+      },
+      "actions": {
+        "CREATE": "Stelle anlegen",
+        "SETTINGS": "Einstellungen",
+        "VIEW": "Ansehen",
+        "EDIT": "Bearbeiten",
+        "AUDIT": "Prüfprotokoll",
+        "BACK": "Zurück zu den Stellen",
+        "PUBLISH": "Veröffentlichen",
+        "PAUSE": "Pausieren",
+        "RESUME": "Fortsetzen",
+        "CLOSE": "Schließen",
+        "REOPEN": "Wieder eröffnen",
+        "ARCHIVE": "Archivieren",
+        "DELETE": "Löschen / archivieren"
+      },
+      "confirm": {
+        "PUBLISH": {
+          "title": "Diese Stelle veröffentlichen?",
+          "message": "„{title}“ wird eröffnet. Ist sie öffentlich und das Startdatum erreicht, erscheint sie auf der Karriereseite in jeder vollständigen Sprache."
+        },
+        "PAUSE": {
+          "title": "Diese Stelle pausieren?",
+          "message": "„{title}“ verschwindet sofort von der Karriereseite. Bestehende Bewerbungen bleiben unverändert."
+        },
+        "RESUME": {
+          "title": "Diese Stelle fortsetzen?",
+          "message": "„{title}“ wird nach bestandener Veröffentlichungsprüfung wieder eröffnet."
+        },
+        "CLOSE": {
+          "title": "Diese Stelle schließen?",
+          "message": "„{title}“ nimmt keine Bewerbungen mehr an und verschwindet von der Karriereseite."
+        },
+        "REOPEN": {
+          "title": "Diese Stelle wieder eröffnen?",
+          "message": "„{title}“ wird wieder eröffnet. Dafür sind eine ATS-Administration und eine schriftliche Begründung nötig."
+        },
+        "ARCHIVE": {
+          "title": "Diese Stelle archivieren?",
+          "message": "„{title}“ wird schreibgeschützt. Die Archivierung lässt sich im Dashboard nicht rückgängig machen."
+        },
+        "DELETE": {
+          "title": "Diese Stelle sicher löschen?",
+          "message": "„{title}“ wird aus allen Listen entfernt und archiviert. Sie wird nie endgültig gelöscht.",
+          "linked": "Verknüpfte Bewerbungen: {count}",
+          "safety": "Kandidaten, Bewerbungen, Bewertungen, Gespräche und das Prüfprotokoll bleiben unverändert erhalten. Niemand wird abgelehnt oder gelöscht."
+        },
+        "applicationsUntouched": "{count} verknüpfte Bewerbungen bleiben genau, wo sie sind – durch diese Aktion wird niemand abgelehnt oder weitergeleitet."
+      },
+      "done": {
+        "PUBLISH": "„{title}“ wurde veröffentlicht.",
+        "PAUSE": "„{title}“ wurde pausiert.",
+        "RESUME": "„{title}“ wurde fortgesetzt.",
+        "CLOSE": "„{title}“ wurde geschlossen.",
+        "REOPEN": "„{title}“ wurde wieder eröffnet.",
+        "ARCHIVE": "„{title}“ wurde archiviert.",
+        "DELETE": "„{title}“ wurde entfernt und archiviert. Nichts wurde endgültig gelöscht."
+      },
+      "initial": {
+        "button": "Die fünf Startentwürfe anlegen",
+        "title": "Die Startstellen als Entwürfe anlegen?",
+        "message": "Senior-Buchhalter/in, Senior-Ingenieur/in Elektrotechnik und Industrieautomatisierung, Backend-Entwickler/in, Spezialist/in für Künstliche Intelligenz und Senior B2B-Marketing-Spezialist/in werden als nicht öffentliche Entwürfe mit Kriterien, Bewertungsraster und Gesprächsleitfaden angelegt. Keine wird veröffentlicht. Bereits vorhandene Stellen werden übersprungen.",
+        "confirm": "Entwürfe anlegen",
+        "done": "{created} Entwürfe angelegt, {skipped} waren bereits vorhanden."
+      },
+      "readiness": {
+        "PUBLIC_TITLE_MISSING": "Öffentlicher Titel fehlt",
+        "TITLE_EN_MISSING": "Englischer Titel fehlt",
+        "TITLE_FA_MISSING": "Persischer Titel fehlt",
+        "DESCRIPTION_EN_MISSING": "Englische Beschreibung fehlt",
+        "DESCRIPTION_FA_MISSING": "Persische Beschreibung fehlt",
+        "SUMMARY_EN_MISSING": "Englische Kurzfassung fehlt",
+        "SUMMARY_FA_MISSING": "Persische Kurzfassung fehlt",
+        "DEFAULT_LOCALE_INCOMPLETE": "Die Standardsprache der Karriereseite ist unvollständig",
+        "MUST_HAVE_MISSING": "Mindestens ein Pflichtkriterium ist nötig",
+        "DISQUALIFIER_MISSING": "Mindestens ein Ausschlusskriterium ist nötig",
+        "RUBRIC_MISSING": "Ein Bewertungsraster mit der Summe 100 ist nötig",
+        "INTERVIEW_KIT_MISSING": "Ein Gesprächsleitfaden ist nötig",
+        "HIRING_OWNER_MISSING": "Eine aktive einstellende Person ist nötig",
+        "APPROVAL_OWNER_MISSING": "Eine freigebende Stelle ist nötig",
+        "SLA_MISSING": "Eine Entscheidungsfrist ist nötig",
+        "PROTECTED_TERM": "Kriterien verweisen auf ein geschütztes Merkmal",
+        "CLOSING_DATE_PASSED": "Das Enddatum ist überschritten",
+        "LOCATION_MISSING": "Arbeitsort fehlt"
+      },
+      "feedback": {
+        "dismiss": "Schließen",
+        "correlationId": "Korrelationskennung",
+        "cancel": "Abbrechen",
+        "reasonRequired": "Begründung (erforderlich)",
+        "reasonOptional": "Begründung (optional)",
+        "reasonHint": "Mindestens 5 Zeichen. Die Begründung wird im Prüfprotokoll gespeichert."
+      },
+      "errors": {
+        "INVALID_INPUT": "Einige Felder sind ungültig. Prüfen Sie die markierten Angaben.",
+        "IDEMPOTENCY_KEY_REUSED": "Diese Anfrage kollidiert mit einer früheren. Laden Sie neu und versuchen Sie es erneut.",
+        "IDEMPOTENCY_IN_PROGRESS": "Dieselbe Anfrage wird noch verarbeitet.",
+        "NOT_FOUND": "Stelle nicht gefunden",
+        "STALE": "Jemand anderes hat diesen Datensatz geändert. Er wurde neu geladen – prüfen Sie ihn und versuchen Sie es erneut.",
+        "INVALID_TRANSITION": "Diese Aktion ist im aktuellen Status nicht erlaubt.",
+        "NOT_READY": "Die Stelle ist für die Eröffnung noch nicht vollständig:",
+        "PROTECTED_TERM": "Kriterien dürfen nicht auf geschützte Merkmale verweisen.",
+        "REASON_REQUIRED": "Für diese Aktion ist eine schriftliche Begründung nötig.",
+        "FORBIDDEN": "Für diese Aktion fehlt Ihnen die Berechtigung.",
+        "CONFLICT": "Eine Stelle mit diesem Anforderungsschlüssel existiert bereits.",
+        "LINKED_COUNT_CHANGED": "Die Zahl der verknüpften Bewerbungen hat sich geändert. Prüfen Sie die neue Zahl und bestätigen Sie erneut.",
+        "HIRING_OWNER_INVALID": "Die einstellende Person muss aktives Mitglied dieser Organisation sein.",
+        "STORE_UNAVAILABLE": "Der Dienst ist vorübergehend nicht verfügbar. Versuchen Sie es in Kürze erneut.",
+        "OFFLINE": "Der Server war nicht erreichbar. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
+        "AUTHENTICATION_REQUIRED": "Ihre Sitzung ist abgelaufen. Melden Sie sich erneut an.",
+        "ORGANIZATION_CONTEXT_REQUIRED": "Ihr Konto ist kein aktives Mitglied einer Organisation.",
+        "ORGANIZATION_SELECTION_REQUIRED": "Wählen Sie zuerst eine Organisation.",
+        "ORGANIZATION_CONTEXT_UNAVAILABLE": "Die Organisation kann gerade nicht geprüft werden. Versuchen Sie es in Kürze erneut.",
+        "ORGANIZATION_CONTEXT_CONFLICT": "In einem anderen Tab wurde die Organisation gewechselt. Laden Sie diese Seite neu, bevor Sie fortfahren.",
+        "ORGANIZATION_PRECONDITION_REQUIRED": "Diese Seite hat keine Organisation angegeben. Laden Sie sie neu und versuchen Sie es erneut.",
+        "ORIGIN_NOT_ALLOWED": "Die Anfrage kam von einer nicht vertrauenswürdigen Herkunft und wurde abgelehnt.",
+        "GENERIC": "Die Anfrage konnte nicht abgeschlossen werden."
+      },
+      "detail": {
+        "notSet": "Nicht festgelegt",
+        "readiness": "Veröffentlichungsreife",
+        "ready": "Bereit zur Eröffnung: Alle Veröffentlichungsvoraussetzungen sind erfüllt.",
+        "notReady": "Diese Stelle kann erst eröffnet werden, wenn Folgendes ergänzt ist:",
+        "fields": "Angaben zur Stelle",
+        "assigned": "Zugewiesen",
+        "days": "{count} Tage",
+        "openingDate": "Startdatum",
+        "linked": "Verknüpfte Datensätze",
+        "linkedApplications": "Bewerbungen",
+        "linkedInterviews": "Gespräche",
+        "linkedReviews": "KI-Bewertungen",
+        "linkedAudit": "Protokolleinträge",
+        "criteriaKind": {
+          "MUST_HAVE": "Pflicht",
+          "NICE_TO_HAVE": "Wünschenswert",
+          "DISQUALIFIER": "Ausschlusskriterien"
+        }
+      },
+      "audit": {
+        "title": "Prüfprotokoll",
+        "immutable": "Protokolleinträge sind schreibgeschützt. Nichts auf dieser Seite kann sie ändern oder entfernen.",
+        "unavailable": "Das Prüfprotokoll konnte nicht geladen werden.",
+        "empty": "Noch keine Protokolleinträge.",
+        "actor": "Durch",
+        "reason": "Begründung",
+        "details": "Vorher / nachher",
+        "actions": {
+          "recruitment": {
+            "job": {
+              "draft_created": "Entwurf angelegt (alt)",
+              "criteria_applied": "Kriterien übernommen"
+            },
+            "position": {
+              "created": "Angelegt",
+              "updated": "Bearbeitet",
+              "published": "Veröffentlicht",
+              "paused": "Pausiert",
+              "resumed": "Fortgesetzt",
+              "closed": "Geschlossen",
+              "reopened": "Wieder eröffnet",
+              "archived": "Archiviert",
+              "soft_deleted": "Weich gelöscht und archiviert"
+            }
+          }
+        }
+      },
+      "form": {
+        "createTitle": "Stelle anlegen",
+        "editTitle": "Stelle bearbeiten",
+        "saveDraft": "Als Entwurf speichern",
+        "save": "Änderungen speichern",
+        "created": "Entwurf angelegt.",
+        "saved": "Änderungen gespeichert.",
+        "draftNotice": "Beim Speichern entsteht ein nicht öffentlicher Entwurf. Veröffentlicht wird erst, wenn die Stelle die Veröffentlichungsprüfung besteht und Sie sie eröffnen.",
+        "editNotice": "Beim Speichern bleibt der aktuelle Status erhalten. Eine offene Stelle kann nur gespeichert werden, wenn sie weiterhin jede Veröffentlichungsprüfung besteht.",
+        "issuesTitle": "Bitte korrigieren Sie diese Felder",
+        "protectedTerms": "Entfernen Sie diese geschützten Merkmale aus den Kriterien: {terms}",
+        "notSet": "Nicht festgelegt",
+        "onePerLine": "Ein Eintrag pro Zeile",
+        "remove": "Entfernen",
+        "template": {
+          "title": "Rollenvorlage",
+          "description": "Kriterien, Bewertungsraster, Gesprächsleitfaden, Prüfung, freigebende Stelle und Frist aus dem geprüften Rollenkatalog vorbelegen. Alles bleibt bearbeitbar.",
+          "select": "Vorlage",
+          "placeholder": "Vorlage wählen …",
+          "applied": "Vorbelegt aus: {role}",
+          "roles": {
+            "finance_accountant": "Buchhaltung / Finanzen",
+            "automation_plc_scada_engineer": "Elektro- und Automatisierungstechnik (SPS, SCADA)",
+            "backend_engineer": "Backend-Entwicklung",
+            "ai_ml_engineer": "KI- und ML-Entwicklung",
+            "b2b_technical_marketing": "B2B- und technisches Marketing"
+          }
+        },
+        "sections": {
+          "identity": "Kennung und Arbeitsort",
+          "copy": "Öffentliche Texte",
+          "compensation": "Vergütung und Mobilität",
+          "internal": "Interne Einstellungsnotiz",
+          "criteria": "Kriterien",
+          "rubric": "Bewertungsraster",
+          "interviewKit": "Gesprächsleitfaden und Stufen",
+          "assessment": "Prüfung",
+          "ownership": "Verantwortliche, Frist und Termine"
+        },
+        "internalTitle": "Interner Titel",
+        "internalTitleHint": "Wird nie öffentlich angezeigt.",
+        "publicTitle": "Öffentlicher Titel",
+        "requisitionKey": "Anforderungsschlüssel",
+        "requisitionKeyHint": "Optional; wird bei leerem Feld erzeugt. Später nicht änderbar.",
+        "department": "Abteilung",
+        "employmentType": "Beschäftigungsart",
+        "employment": {
+          "FULL_TIME": "Vollzeit",
+          "PART_TIME": "Teilzeit",
+          "CONTRACT": "Befristeter Vertrag",
+          "INTERNSHIP": "Praktikum",
+          "TEMPORARY": "Aushilfe"
+        },
+        "workMode": "Arbeitsmodell",
+        "workModes": {
+          "onsite": "Vor Ort",
+          "remote": "Fernarbeit",
+          "hybrid": "Hybrides Arbeiten"
+        },
+        "location": "Arbeitsort",
+        "addressCountry": "Ländercode",
+        "addressCountryHint": "Zwei Buchstaben, zum Beispiel IR oder DE.",
+        "copyDescription": "Persisch und Englisch sind für die Eröffnung nötig, Deutsch ist optional. Eine Sprache erscheint auf der Karriereseite nur, wenn sie vollständig ist.",
+        "copy": {
+          "locale": {
+            "fa": "Persisch",
+            "en": "Englisch",
+            "de": "Deutsch"
+          },
+          "title": "Titel",
+          "summary": "Kurzfassung",
+          "description": "Öffentliche Beschreibung",
+          "responsibilities": "Aufgaben",
+          "requirements": "Anforderungen",
+          "preferredExperience": "Wünschenswerte Erfahrung"
+        },
+        "salary": "Gehalt",
+        "salaryConfidential": "Gehalt ist vertraulich",
+        "salaryCurrency": "Währung",
+        "salaryCurrencyHint": "Drei Buchstaben, zum Beispiel IRR oder EUR.",
+        "salaryMin": "Untergrenze",
+        "salaryMax": "Obergrenze",
+        "sponsorshipPolicy": "Visaunterstützung",
+        "relocationPolicy": "Umzugsunterstützung",
+        "mobility": {
+          "NOT_OFFERED": "Nicht angeboten",
+          "CASE_BY_CASE": "Im Einzelfall",
+          "OFFERED": "Angeboten"
+        },
+        "internalDescription": "Nur für das Einstellungsteam sichtbar; wird nie veröffentlicht.",
+        "internalBrief": "Einstellungsnotiz",
+        "evidenceRequirements": "Nachweisanforderungen",
+        "criteriaDescription": "Kriterien werden nur anhand der Nachweise bewertet, die Bewerbende einreichen. Geschützte Merkmale – etwa Alter, Geschlecht, Religion, Herkunft, Staatsangehörigkeit, Familienstand, Schwangerschaft, Behinderung oder Fotos – werden abgelehnt.",
+        "criteria": {
+          "mustHave": "Pflichtanforderungen",
+          "niceToHave": "Wünschenswerte Anforderungen",
+          "disqualifiers": "Ausschlusskriterien",
+          "label": "Kriterium",
+          "keywords": "Nachweis-Schlagwörter, durch Komma getrennt",
+          "minYears": "Mind. Jahre",
+          "weight": "Gewichtung",
+          "add": "Kriterium hinzufügen"
+        },
+        "rubricDescription": "Gewichtung je Dimension; die Summe muss genau 100 ergeben.",
+        "rubricEnabled": "Bewertungsraster verwenden",
+        "rubricTotal": "Summe: {total}",
+        "dimension": {
+          "skill": "Fähigkeit",
+          "experience": "Erfahrung",
+          "education": "Ausbildung",
+          "certification": "Zertifizierung",
+          "project": "Projekterfahrung",
+          "role_relevance": "Rollenbezug"
+        },
+        "interviewKitDescription": "Die Reihenfolge der Stufen ist der Gesprächsablauf.",
+        "stage": {
+          "label": "Stufe",
+          "kind": "Art",
+          "owner": "Verantwortliche Rolle",
+          "slaDays": "Frist (Tage)",
+          "duration": "Dauer (Min.)",
+          "questions": "Fragen",
+          "rubricItems": "{count} Rasterpunkte",
+          "add": "Stufe hinzufügen"
+        },
+        "stageKinds": {
+          "RECRUITER_SCREEN": "Vorauswahlgespräch",
+          "TECHNICAL_FUNCTIONAL": "Fachlich-technisches Gespräch",
+          "BEHAVIORAL_COMMUNICATION": "Verhalten und Kommunikation",
+          "FINAL_REVIEW": "Abschlussbewertung",
+          "REFERENCE_OFFER_READINESS": "Referenzen und Angebotsreife"
+        },
+        "assessmentEnabled": "Fachliche Prüfung aufnehmen",
+        "assessment": {
+          "title": "Titel der Prüfung",
+          "format": "Form",
+          "duration": "Dauer (Min.)",
+          "evaluates": "Was geprüft wird",
+          "submission": "Hinweise zur Abgabe"
+        },
+        "assessmentFormats": {
+          "TAKE_HOME": "Hausaufgabe",
+          "LIVE_EXERCISE": "Live-Übung",
+          "CASE_STUDY": "Fallstudie",
+          "PORTFOLIO_REVIEW": "Portfolioprüfung"
+        },
+        "ownershipDescription": "Eine Stelle wird nur mit aktiver einstellender Person, freigebender Stelle und Entscheidungsfrist eröffnet.",
+        "hiringOwner": "Einstellende Person",
+        "hiringOwnerUnavailable": "Die Mitgliederliste ist für Ihre Rolle nicht verfügbar.",
+        "approvalOwner": "Freigebende Stelle (Rolle)",
+        "decisionSla": "Entscheidungsfrist (Tage)",
+        "decisionSlaHint": "Tage von der KI-Bewertung bis zur protokollierten menschlichen Entscheidung (1–90).",
+        "closingDate": "Enddatum",
+        "roles": {
+          "OWNER": "Inhaber",
+          "ADMIN": "Administration",
+          "MANAGER": "Führungskraft",
+          "ENGINEER": "Ingenieurwesen",
+          "VIEWER": "Betrachter",
+          "BILLING_ADMIN": "Abrechnungsverwaltung",
+          "MEMBER": "Mitglied",
+          "HR_MANAGER": "Personalleitung",
+          "RECRUITER": "Personalbeschaffung",
+          "HIRING_MANAGER": "Einstellende Führungskraft",
+          "INTERVIEWER": "Gesprächsführung",
+          "ACADEMY_ADMIN": "Akademieverwaltung",
+          "CUSTOMER_SUCCESS_MANAGER": "Kundenerfolgsmanagement",
+          "STUDENT": "Studierende",
+          "COMPLIANCE_MANAGER": "Compliance-Verantwortung"
+        }
+      },
+      "settings": {
+        "saved": "Einstellungen gespeichert.",
+        "save": "Speichern",
+        "confirmSave": "Mit Begründung speichern",
+        "defaultsNotice": "Diese Organisation hat noch keine ATS-Einstellungen gespeichert. Angezeigt werden die sicheren Standardwerte: externe KI aus, öffentliche Bewerbungsannahme geschlossen.",
+        "locked": {
+          "required": "Immer erforderlich",
+          "adminOnly": "Nur ATS-Administration"
+        },
+        "confirmHumanApproval": "Die Änderung der Verantwortung für die menschliche Entscheidung wird mit Ihrer Begründung protokolliert.",
+        "confirmAi": "Die Änderung der Bewertungsart wird mit Ihrer Begründung protokolliert. Externe Verarbeitung muss zusätzlich die Bereitstellung erlauben.",
+        "confirmRetention": "Die Änderung der Aufbewahrungsdauer von Bewerberdaten wird mit Ihrer Begründung protokolliert.",
+        "confirmCareers": "Die Änderung der öffentlichen Auflistung oder Bewerbungsannahme wird mit Ihrer Begründung protokolliert.",
+        "workflow": {
+          "title": "Einstellungsablauf",
+          "description": "Die Reihenfolge der Stufen erzwingt die Plattform. Die Vorgaben unten belegen neue Stellen vor.",
+          "pipeline": "Prozessstufen",
+          "pipelineLocked": "Jede Bewerbung durchläuft die KI-Bewertung und wartet dann auf eine protokollierte menschliche Entscheidung. Diese Reihenfolge ist nicht änderbar.",
+          "humanApproval": "Menschliche Freigabe jeder Stufenentscheidung",
+          "slaDefault": "Standard-Entscheidungsfrist (Tage)",
+          "interviewStages": "Standard-Gesprächsstufen",
+          "keepStages": "Aktuelle {count} Stufen beibehalten",
+          "approvalOwner": "Standardmäßig freigebende Stelle (Rolle)"
+        },
+        "pipeline": {
+          "APPLIED": "Beworben",
+          "AI_REVIEW_PENDING": "KI-Bewertung ausstehend",
+          "PENDING_HUMAN_APPROVAL": "Wartet auf menschliche Freigabe",
+          "SCREENING": "Vorauswahl",
+          "TECHNICAL_REVIEW": "Fachprüfung",
+          "INTERVIEW": "Vorstellungsgespräch",
+          "OFFER": "Angebot",
+          "HIRED": "Eingestellt"
+        },
+        "ai": {
+          "title": "KI-Bewertung",
+          "description": "Die Bewertung ist beratend. Sie nimmt niemanden an und lehnt niemanden ab; ein Mensch entscheidet mit Begründung.",
+          "provider": "Bewertungsverfahren",
+          "deterministic": "Deterministisch (Standard)",
+          "router": "Modell-Router (beratender Kommentar)",
+          "minimumConfidence": "Mindestkonfidenz (0–100)",
+          "minimumConfidenceHint": "Darunter wird der Bericht für eine vollständige Nachweisprüfung markiert. Kein Status ändert sich.",
+          "external": "Externe KI-Verarbeitung",
+          "externalHint": "Standardmäßig aus. Bewerbertexte erreichen ein externes Modell nur, wenn dies aktiviert ist UND die Bereitstellung es erlaubt.",
+          "evidence": "Nachweis für jede KI-Aussage (Quelle, Fundstelle, Zitat, Konfidenz)",
+          "effective": "Für diese Organisation wirksam",
+          "effectiveExternal": "Externer beratender Kommentar aktiv",
+          "effectiveDeterministic": "Nur deterministisch",
+          "versions": "Fassungen – Extraktor {extractor}, Raster {rubric}, Prompt {prompt}, Richtlinie {policy}"
+        },
+        "retention": {
+          "title": "Aufbewahrung",
+          "description": "Wie lange Bewerberdaten vor der Anonymisierung aufbewahrt werden.",
+          "policy": "Aufbewahrungsrichtlinie",
+          "createNew": "Neue ATS-Aufbewahrungsrichtlinie anlegen",
+          "days": "Aufbewahrungstage (30–3650)",
+          "trigger": "Gezählt ab",
+          "triggers": {
+            "CREATION": "Eingang der Bewerbung",
+            "LAST_ACTIVITY": "Letzter Aktivität"
+          },
+          "approval": "Freigabestatus",
+          "states": {
+            "PENDING_REVIEW": "Prüfung ausstehend",
+            "APPROVED": "Freigegeben",
+            "REJECTED": "Abgelehnt"
+          },
+          "effectiveFrom": "Gültig ab",
+          "enabled": "Richtlinie aktiv",
+          "action": "Maßnahme bei Fristablauf",
+          "anonymiseOnly": "Nur anonymisieren",
+          "approverOnly": "Nur Inhaber oder Administration der Organisation (Compliance-Berechtigung) können eine Aufbewahrungsrichtlinie freigeben oder aktivieren. Sie können sie als Vorschlag zur Prüfung speichern.",
+          "executionNote": "Die öffentliche Bewerbungsannahme bleibt geschlossen, bis eine freigegebene, aktive und gültige Richtlinie ausgewählt ist. Die Anonymisierung läuft als Probelauf, bis das Compliance-Register sie freigibt; rechtliche Sperren haben stets Vorrang."
+        },
+        "notifications": {
+          "title": "Benachrichtigungen",
+          "description": "Vorgaben für diese Organisation.",
+          "review": "Bewertungshinweise",
+          "interview": "Gesprächserinnerungen",
+          "sla": "Hinweise bei Fristüberschreitung",
+          "deliveryNote": "Diese Vorgaben werden gespeichert. In dieser Version ist ihnen noch kein Zustellkanal zugeordnet, daher wird noch keine Nachricht versendet."
+        },
+        "careers": {
+          "title": "Öffentliche Karriereseite",
+          "description": "Steuerung der öffentlichen Karriereseite dieser Organisation.",
+          "listing": "Öffentliche Auflistung",
+          "listingHint": "Ausgeschaltet erscheint keine Stelle dieser Organisation öffentlich, gleich in welchem Status.",
+          "intake": "Bewerbungsannahme",
+          "intakeHint": "Standardmäßig aus. Auch eingeschaltet werden Bewerbungen erst angenommen, wenn die plattformweite Annahmefreigabe erteilt ist.",
+          "locale": "Standardsprache der Karriereseite"
+        },
+        "security": {
+          "title": "Sicherheit",
+          "description": "Geheimnisse werden ausschließlich in der Bereitstellungsumgebung verwaltet. Diese Seite zeigt nur, ob sie eingerichtet sind – nie ihren Wert – und nichts hier kann sie bearbeiten.",
+          "states": {
+            "CONFIGURED": "Eingerichtet",
+            "MISSING": "Fehlt",
+            "ENABLED": "Aktiviert",
+            "DISABLED": "Deaktiviert"
+          },
+          "acceptance": "Plattformweite Annahme von Bewerbungen",
+          "never": "Ein fehlender Wert hält die abhängige Funktion geschlossen (Fail-closed).",
+          "restricted": "Der Sicherheitsstatus ist nur für die ATS-Administration sichtbar."
+        }
+      }
+    }
   },
   "customerSuccess": {
     "created": "Erstellt",

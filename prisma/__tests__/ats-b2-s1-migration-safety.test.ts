@@ -33,9 +33,13 @@ function model(name: string): string {
 }
 
 describe("B2/S1 — the migration is additive and non-destructive", () => {
-  it("sorts strictly after every existing migration", () => {
+  it("sorts strictly after every migration that precedes it (history stays append-only)", () => {
     const dirs = readdirSync(join(REPO, "prisma/migrations")).filter((d) => /^\d{14}_/.test(d)).sort();
-    expect(dirs[dirs.length - 1]).toBe(MIGRATION);
+    const at = dirs.indexOf(MIGRATION);
+    expect(at).toBeGreaterThan(0);
+    for (const d of dirs.slice(0, at)) expect(d.slice(0, 14) < MIGRATION.slice(0, 14), d).toBe(true);
+    // ATS-M1 is the only migration after it, and it sorts strictly later.
+    expect(dirs.slice(at + 1)).toEqual(["20260924000000_ats_m1_position_management"]);
   });
 
   it("contains no destructive statement and no data rewrite", () => {

@@ -35,6 +35,7 @@
 import { randomBytes } from "node:crypto";
 import { getPrisma } from "@/lib/db/prisma";
 import { publicJobWhere } from "./eligibility";
+import { readSettingsOrDefaults, type SettingsReader } from "./settings/defaults";
 import { RECRUITMENT_DATA_CLASS, durableApplicationFields, type Stage1Application } from "./application";
 import {
   canonicalizePayload,
@@ -77,7 +78,7 @@ interface RetentionPolicyRow {
   retentionTrigger: string;
 }
 
-type IntakeTx = {
+type IntakeTx = SettingsReader & {
   atsJob: { findFirst: (a: unknown) => Promise<{ id: string; organizationId: string } | null> };
   retentionPolicy: { findFirst: (a: unknown) => Promise<RetentionPolicyRow | null> };
   atsCandidate: {
@@ -112,13 +113,20 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-function approvedPolicyWhere(organizationId: string) {
+/**
+ * ATS-M1 — the policy must also be EFFECTIVE (effectiveFrom unset or reached),
+ * and when the organization selected one in its ATS settings, it must be THAT
+ * policy — never whichever approved row a query happens to return first.
+ */
+function approvedPolicyWhere(organizationId: string, now: Date, selectedPolicyId: string | null) {
   return {
     organizationId,
     dataClass: RECRUITMENT_DATA_CLASS,
     approvalState: "APPROVED",
     enabled: true,
     retentionDays: { not: null },
+    OR: [{ effectiveFrom: null }, { effectiveFrom: { lte: now } }],
+    ...(selectedPolicyId ? { id: selectedPolicyId } : {}),
   } as const;
 }
 
@@ -160,10 +168,23 @@ export async function submitApplication(args: IntakeArgs): Promise<IntakeOutcome
   if (!job) return { ok: false, code: "NOT_ACCEPTING" };
   const organizationId = job.organizationId;
 
+  // ATS-M1 — the organization's own intake switch. Fail-closed: no settings
+  // row means intake is closed for that organization. It is ANDed with the
+  // global APPLICATION_ACCEPTANCE_AUTHORIZED gate the route already applied;
+  // it can narrow intake, never open it.
+  let selectedPolicyId: string | null;
+  try {
+    const settings = await readSettingsOrDefaults(prisma, organizationId);
+    if (!settings.applicationIntakeEnabled) return { ok: false, code: "NOT_ACCEPTING" };
+    selectedPolicyId = settings.retentionPolicyId;
+  } catch {
+    return { ok: false, code: "STORE_UNAVAILABLE" };
+  }
+
   let policy: RetentionPolicyRow | null;
   try {
     policy = await prisma.retentionPolicy.findFirst({
-      where: approvedPolicyWhere(organizationId),
+      where: approvedPolicyWhere(organizationId, now, selectedPolicyId),
       select: { id: true, retentionDays: true, retentionTrigger: true },
     });
   } catch {
@@ -211,8 +232,14 @@ export async function submitApplication(args: IntakeArgs): Promise<IntakeOutcome
         select: { id: true, organizationId: true },
       });
       if (!jobNow) throw new IntakeRefusal("NOT_ACCEPTING");
+      const settingsNow = await readSettingsOrDefaults(tx, organizationId);
+      if (!settingsNow.applicationIntakeEnabled) throw new IntakeRefusal("NOT_ACCEPTING");
+      // The selection changed between the pre-check and now: refuse, never stamp the old policy.
+      if (settingsNow.retentionPolicyId && settingsNow.retentionPolicyId !== policyId) {
+        throw new IntakeRefusal("RETENTION_NOT_APPROVED");
+      }
       const policyNow = await tx.retentionPolicy.findFirst({
-        where: { ...approvedPolicyWhere(organizationId), id: policyId },
+        where: { ...approvedPolicyWhere(organizationId, now, settingsNow.retentionPolicyId), id: policyId },
         select: { id: true, retentionDays: true, retentionTrigger: true },
       });
       if (!policyNow || !retentionExpiryFrom(policyNow, now)) throw new IntakeRefusal("RETENTION_NOT_APPROVED");

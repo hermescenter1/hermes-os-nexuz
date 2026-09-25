@@ -15,6 +15,7 @@ const TABS = [
   { href: "/dashboard/ats/pipeline",    key: "navPipeline"   },
   { href: "/dashboard/ats/interviews",  key: "navInterviews" },
   { href: "/dashboard/ats/analytics",   key: "navAnalytics"  },
+  { href: "/dashboard/ats/settings",    key: "navSettings"   },
 ] as const;
 
 export function AtsSubNav() {

@@ -27,10 +27,13 @@ export interface CriterionRow {
 
 export type ApplyProfileResult =
   | { ok: true; roleCode: string; written: number; untouched: number }
-  | { ok: false; code: "INVALID_INPUT" | "STORE_UNAVAILABLE" | "NOT_FOUND" | "WRITE_FAILED" };
+  | { ok: false; code: "INVALID_INPUT" | "STORE_UNAVAILABLE" | "NOT_FOUND" | "INVALID_STATE" | "WRITE_FAILED" };
 
 type Tx = {
-  atsJob: { findFirst: (a: unknown) => Promise<{ id: string } | null> };
+  atsJob: {
+    findFirst: (a: unknown) => Promise<{ id: string; status?: string } | null>;
+    updateMany: (a: unknown) => Promise<{ count: number }>;
+  };
   atsJobCriterion: {
     upsert: (a: unknown) => Promise<unknown>;
     count: (a: unknown) => Promise<number>;
@@ -58,9 +61,11 @@ export async function applyRoleProfileToJob(args: {
     return await prisma.$transaction(async (tx) => {
       const job = await tx.atsJob.findFirst({
         where: { id: args.jobId, organizationId: args.organizationId, deletedAt: null },
-        select: { id: true },
+        select: { id: true, status: true },
       });
       if (!job) return { ok: false as const, code: "NOT_FOUND" as const };
+      // ATS-M1 — an ARCHIVED position is frozen for every writer, not only the editor.
+      if (job.status === "ARCHIVED") return { ok: false as const, code: "INVALID_STATE" as const };
 
       let written = 0;
       for (const [i, c] of profile.criteria.entries()) {
@@ -83,6 +88,12 @@ export async function applyRoleProfileToJob(args: {
         written++;
       }
       const total = await tx.atsJobCriterion.count({ where: { organizationId: args.organizationId, jobId: job.id } });
+      // ATS-M1 — the criteria are part of the position the editor versions: a
+      // change here invalidates any form loaded before it (a later save is STALE).
+      await tx.atsJob.updateMany({
+        where: { id: job.id, organizationId: args.organizationId },
+        data: { version: { increment: 1 } },
+      });
 
       await tx.auditLog.create(
         buildRecruitmentAuditCreate({

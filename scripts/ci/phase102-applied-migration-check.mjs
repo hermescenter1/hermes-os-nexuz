@@ -104,6 +104,10 @@ export const POST_PHASE102_MIGRATIONS = [
   "20260826000000_phase109_cui2_r7_asset_fk_and_metering_outbox",
   // Phase 109-C-UI.2-R8 — the worker lease. One additive table.
   "20260827000000_phase109_cui2_r8_worker_lease",
+  // ATS-M1 — position management + organization ATS settings. Additive: two
+  // enum values, nullable AtsJob columns, one nullable RetentionPolicy column
+  // and two new organization-owned tables. Declared for the same reason.
+  "20260924000000_ats_m1_position_management",
 ];
 
 /**

@@ -688,6 +688,9 @@ model Organization {
   atsAiReviews         AtsAiReview[]
   atsReviewDecisions   AtsReviewDecision[]
   atsReviewOutbox      AtsReviewOutbox[]
+  // ATS-M1: organization-scoped ATS settings + management idempotency claims
+  atsSettings          AtsOrganizationSettings?
+  atsManagementIdempotencyKeys AtsManagementIdempotencyKey[]
   // Phase 60: Academy
   academyCourses       AcademyCourse[]
   academyEnrollments   AcademyEnrollment[]
@@ -2445,7 +2448,14 @@ enum AtsJobStatus {
   DRAFT
   OPEN
   CLOSED
+  // Legacy pause state (pre-M1). Read as PAUSED by the position state
+  // machine; never written by new code.
   ON_HOLD
+  // ATS-M1 — position management. Appended at the END: PostgreSQL ADD VALUE
+  // is append-only without a position clause. DRAFT → OPEN → PAUSED → OPEN →
+  // CLOSED → ARCHIVED; only OPEN can ever be public (publicJobWhere).
+  PAUSED
+  ARCHIVED
 }
 
 enum AtsApplicationStatus {
@@ -2523,6 +2533,29 @@ model AtsJob {
   workingHoursSchedule String?    // owner-gated
   educationRequirement String?    // owner-gated
   minimumExperience    String?    // owner-gated
+
+  // ── ATS-M1 — position management (all additive: nullable, or a structural
+  //    default that asserts nothing about the business). The publish gate in
+  //    src/lib/ats/positions/readiness.ts decides whether a position may go
+  //    OPEN; nothing here is ever defaulted to a publishable value. ──
+  internalTitle        String?    // never rendered publicly
+  internalBrief        String?    // hiring brief for the panel; never rendered publicly
+  sponsorshipPolicy    String?    // NOT_OFFERED | CASE_BY_CASE | OFFERED
+  relocationPolicy     String?    // NOT_OFFERED | CASE_BY_CASE | OFFERED
+  salaryConfidential   Boolean    @default(false)
+  evidenceRequirements Json       @default("[]") // string[] — what an applicant must evidence
+  scoringRubric        Json?      // { weights: Record<Dimension, number> } — sums to 100
+  interviewKit         Json?      // ordered InterviewStage[] — the order IS the interview stages
+  assessmentConfig     Json?      // TechnicalAssessment | null
+  roleProfileCode      String?    // catalogue template the position was seeded from, if any
+  approvalOwnerRole    String?    // OrganizationRole holding ATS_REVIEW that owns the gate decision
+  decisionSlaDays      Int?       // days from PENDING_HUMAN_APPROVAL to a decision
+  pausedAt             DateTime?
+  closedAt             DateTime?
+  archivedAt           DateTime?
+  // Optimistic concurrency: every management write is conditional on the
+  // version the editor loaded and increments it.
+  version              Int        @default(0)
   deletedAt        DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -2975,6 +3008,78 @@ model AtsReviewOutbox {
   @@unique([organizationId, applicationId, kind, cycle])
   @@index([status, nextAttemptAt])
   @@index([organizationId, status, createdAt])
+}
+
+// ── ATS-M1 — organization-scoped ATS settings ─────────────────────────────────
+//
+// One row per organization, created on the first settings write; an absent
+// row reads as the fail-closed defaults below. A dedicated table rather than
+// Organization.settings: that Json bag is replaced wholesale by
+// PATCH /api/organizations/[orgId], which would let an organization edit
+// overwrite recruitment policy with no ATS audit entry.
+//
+// What is deliberately NOT a column:
+//   * the human-approval requirement and the evidence requirement — both are
+//     platform invariants of the stage gate, displayed as locked, never
+//     switchable per organization;
+//   * any secret — the security section reports configured / missing only;
+//   * retention durations — they live on RetentionPolicy (the one retention
+//     model); this row only points at the policy the organization selected.
+//
+// Every write is conditional on `version` and audited in the same transaction.
+model AtsOrganizationSettings {
+  id                          String    @id @default(cuid())
+  organizationId              String    @unique
+  // Recruitment workflow — defaults a NEW position is prefilled with.
+  defaultDecisionSlaDays      Int?
+  defaultInterviewStages      Json      @default("[]") // ordered InterviewStage[]
+  defaultApprovalOwnerRole    String?
+  // AI review. External processing needs BOTH this flag and the deployment's
+  // ATS_AI_EXTERNAL_PROCESSING_ALLOWED; either one false keeps it off.
+  aiProviderMode              String    @default("deterministic") // deterministic | router
+  externalAiProcessingEnabled Boolean   @default(false)
+  minimumConfidence           Int?      // 0-100; below it the report carries a risk flag, never a state change
+  // Notification preferences (recorded; see docs/ats/ATS_POSITION_MANAGEMENT.md for delivery status).
+  reviewAlertsEnabled         Boolean   @default(false)
+  interviewRemindersEnabled   Boolean   @default(false)
+  slaBreachAlertsEnabled      Boolean   @default(false)
+  // Public careers. Listing is a kill switch (absent row = not switched off);
+  // intake is fail-closed (absent row = closed) and is ANDed with the global
+  // APPLICATION_ACCEPTANCE_AUTHORIZED gate, which it can never open.
+  publicListingEnabled        Boolean   @default(true)
+  applicationIntakeEnabled    Boolean   @default(false)
+  defaultPublicLocale         String    @default("fa") // en | de | fa
+  // Retention — the organization's selected RECRUITMENT_CANDIDATE policy.
+  retentionPolicyId           String?
+  version                     Int       @default(0)
+  updatedById                 String?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+  organization                Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ── ATS-M1 — idempotency claims for management mutations ──────────────────────
+//
+// A claim is INSERTED inside the same transaction as the write it guards, so a
+// failed write leaves no claim and a committed write always has one. The unique
+// (organizationId, operation, keyHash) serialises concurrent duplicates: the
+// second transaction waits on the index, then sees the committed claim and
+// replays the stored result. Never the raw key: keyHash = SHA-256(key),
+// payloadHash = SHA-256 of the canonical validated request. The stored result
+// is the small response body (identifiers and states — no personal data).
+model AtsManagementIdempotencyKey {
+  id             String       @id @default(cuid())
+  organizationId String
+  operation      String
+  keyHash        String
+  payloadHash    String
+  resultJson     Json
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, operation, keyHash])
+  @@index([expiresAt])
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -3728,6 +3833,10 @@ model RetentionPolicy {
   legalHoldAware   Boolean   @default(true)
   dryRunOnly       Boolean   @default(true)
   enabled          Boolean   @default(false)
+  // ATS-M1 — the policy applies from this instant; null = from approval.
+  // Intake and the retention sweep both refuse a policy whose effectiveFrom
+  // is still in the future.
+  effectiveFrom    DateTime?
   createdBy        String?
   updatedBy        String?
   createdAt        DateTime  @default(now())

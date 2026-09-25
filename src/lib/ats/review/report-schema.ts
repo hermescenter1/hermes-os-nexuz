@@ -101,6 +101,8 @@ export const RISK_FLAG_CODES = [
   "SALARY_NOT_COLLECTED",
   "DISQUALIFIER_EVIDENCE",
   "LOW_EVIDENCE_COVERAGE",
+  // ATS-M1 — the organization's minimum-confidence policy. A flag, never a transition.
+  "CONFIDENCE_BELOW_POLICY",
 ] as const;
 
 export const riskFlagSchema = z

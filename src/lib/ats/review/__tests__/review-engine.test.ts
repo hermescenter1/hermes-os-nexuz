@@ -319,15 +319,27 @@ describe("external provider policy gate", () => {
     expect(advisory).not.toHaveBeenCalled();
   });
 
-  it("with BOTH set, the model's prose is advisory only: appended to the explanation, scores untouched", async () => {
+  it("ATS-M1: BOTH deployment flags set but the ORGANIZATION has not opted in → no model call", async () => {
     process.env[ENV.AI_REVIEW_PROVIDER] = "router";
     process.env[ENV.AI_EXTERNAL_PROCESSING_ALLOWED] = "true";
-    const off = await reviewApplication(base(), { now: NOW, advisory: async () => null });
+    const advisory = vi.fn(async () => ({ text: "should not be used", model: "m" }));
+    for (const policy of [undefined, {}, { externalAiAllowed: false }]) {
+      const r = await reviewApplication(base(), { now: NOW, advisory, ...(policy ? { policy } : {}) });
+      expect(r.ok && r.provider).toBe("deterministic");
+    }
+    expect(advisory).not.toHaveBeenCalled();
+  });
+
+  it("with BOTH deployment flags AND the organization's opt-in, the model's prose is advisory only: appended to the explanation, scores untouched", async () => {
+    process.env[ENV.AI_REVIEW_PROVIDER] = "router";
+    process.env[ENV.AI_EXTERNAL_PROCESSING_ALLOWED] = "true";
+    const policy = { externalAiAllowed: true };
+    const off = await reviewApplication(base(), { now: NOW, advisory: async () => null, policy });
     const advisory = vi.fn(async (prompt: string) => {
       expect(prompt).toContain(PROMPT_FENCE_OPEN);
       return { text: "The résumé cites S7-1500 and WinCC explicitly.", model: "test-model-1" };
     });
-    const on = await reviewApplication(base(), { now: NOW, advisory });
+    const on = await reviewApplication(base(), { now: NOW, advisory, policy });
     expect(advisory).toHaveBeenCalledTimes(1);
     expect(off.ok && on.ok).toBe(true);
     if (!off.ok || !on.ok) return;
@@ -337,5 +349,37 @@ describe("external provider policy gate", () => {
     expect(on.report.explanation).toContain("Model commentary (advisory, test-model-1)");
     expect(on.provider).toBe("router:test-model-1");
     expect(on.modelVersion).toBe("test-model-1");
+  });
+});
+
+describe("ATS-M1 — the organization's minimum-confidence policy is a FLAG, never a decision", () => {
+  it("below the minimum, the report carries CONFIDENCE_BELOW_POLICY; score, recommendation and the human gate are unchanged", async () => {
+    const weak = base({ resumeText: "Worked in an office.", keySkills: [], yearsExperience: null });
+    const plain = await reviewApplication(weak, { now: NOW });
+    const strict = await reviewApplication(weak, { now: NOW, policy: { minimumConfidence: 100 } });
+    expect(plain.ok && strict.ok).toBe(true);
+    if (!plain.ok || !strict.ok) return;
+    // Anti-vacuity: the precondition the flag depends on actually holds.
+    expect(strict.report.confidence).toBeLessThan(100);
+    expect(plain.report.riskFlags.map((f) => f.code)).not.toContain("CONFIDENCE_BELOW_POLICY");
+    expect(strict.report.riskFlags.map((f) => f.code)).toContain("CONFIDENCE_BELOW_POLICY");
+    expect(strict.report.overallScore).toBe(plain.report.overallScore);
+    expect(strict.report.recommendation).toBe(plain.report.recommendation);
+    expect(strict.report.hardGates).toEqual(plain.report.hardGates);
+    expect(strict.report.humanReview.status).toBe("PENDING_HUMAN_APPROVAL");
+    expect(aiReviewReportSchema.safeParse(strict.report).success).toBe(true);
+  });
+
+  it("at or above the minimum there is no flag", async () => {
+    const r = await reviewApplication(base(), { now: NOW, policy: { minimumConfidence: 0 } });
+    expect(r.ok && r.report.riskFlags.some((f) => f.code === "CONFIDENCE_BELOW_POLICY")).toBe(false);
+  });
+
+  it("UNKNOWN stays UNKNOWN under any policy — nothing absent is inferred", async () => {
+    const r = await reviewApplication(base({ currentLocation: null }), { now: NOW, policy: { minimumConfidence: 90 } });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.report.workAuthorization.status).toBe("UNKNOWN");
+    expect(r.report.locationAvailability.status).toBe("UNKNOWN");
   });
 });

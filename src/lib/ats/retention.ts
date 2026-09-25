@@ -29,6 +29,7 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { isUnderLegalHold, type HoldLike } from "@/lib/compliance/retention-engine";
 import { RECRUITMENT_DATA_CLASS } from "./application";
+import { readSettingsOrDefaults, type SettingsReader } from "./settings/defaults";
 import { buildRecruitmentAuditCreate } from "./recruitment-audit";
 
 export interface RetentionPolicyRow {
@@ -106,9 +107,16 @@ export interface RetentionSweepReport {
   anonymized: number;
   storeUnavailable: boolean;
   action: string | null;
+  /**
+   * ATS-M1 — the organization SELECTED a policy in its ATS settings, but that
+   * policy is not (or no longer) approved, enabled and effective. Nothing is
+   * anonymised and no other policy is guessed in its place; the flag makes
+   * the stop visible instead of silent.
+   */
+  selectedPolicyUnavailable: boolean;
 }
 
-type Client = {
+type Client = SettingsReader & {
   retentionPolicy: { findFirst: (a: unknown) => Promise<RetentionPolicyRow | null> };
   legalHold: { findMany: (a: unknown) => Promise<HoldLike[]> };
   atsApplication: {
@@ -140,10 +148,20 @@ export async function sweepExpiredApplications(args: {
     anonymized: 0,
     storeUnavailable: false,
     action: null,
+    selectedPolicyUnavailable: false,
   };
   const prisma = (await getPrisma()) as unknown as Client | null;
   if (!prisma) return { ...base, storeUnavailable: true };
 
+  // ATS-M1 — the policy the organization SELECTED (when it selected one), and
+  // only once it is effective. A settings read failure is reported, never
+  // guessed around: no policy, nothing anonymised.
+  let selectedPolicyId: string | null;
+  try {
+    selectedPolicyId = (await readSettingsOrDefaults(prisma, args.organizationId)).retentionPolicyId;
+  } catch {
+    return { ...base, storeUnavailable: true };
+  }
   const policy = await prisma.retentionPolicy.findFirst({
     where: {
       organizationId: args.organizationId,
@@ -151,10 +169,12 @@ export async function sweepExpiredApplications(args: {
       approvalState: "APPROVED",
       enabled: true,
       retentionDays: { not: null },
+      OR: [{ effectiveFrom: null }, { effectiveFrom: { lte: now } }],
+      ...(selectedPolicyId ? { id: selectedPolicyId } : {}),
     },
     select: { id: true, retentionDays: true, retentionTrigger: true, action: true, dryRunOnly: true, legalHoldAware: true },
   });
-  if (!policy) return base;
+  if (!policy) return selectedPolicyId ? { ...base, selectedPolicyUnavailable: true } : base;
 
   const execute = args.execute === true && policy.dryRunOnly === false;
   const automated = policy.action === "ANONYMISE" || policy.action === "DELETE";

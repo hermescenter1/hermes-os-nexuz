@@ -25,6 +25,8 @@ vi.mock("@/lib/db/prisma", () => ({ getPrisma: async () => h.db }));
 
 import { submitApplication, retentionExpiryFrom, normalizeEmail } from "../intake";
 import type { Stage1Application } from "../application";
+import type { SettingsRow } from "../settings/defaults";
+import { settingsRow } from "./settings-fixture";
 
 const NOW = new Date("2026-09-23T10:00:00.000Z");
 const KEY = "9f2c1d3e4b5a6978a0b1c2d3e4f50617";
@@ -42,6 +44,11 @@ function makeDb(opts?: {
   existingApplication?: { id: string; publicReference: string | null } | null;
   failOn?: "consent" | "outbox" | "audit";
   throwOnJob?: boolean;
+  /** ATS-M1 — the organization's settings row; default: intake ENABLED, no selected policy. */
+  settings?: SettingsRow | null;
+  throwOnSettings?: boolean;
+  /** Settings rows returned by successive reads (then the last one repeats). */
+  settingsSequence?: (SettingsRow | null)[];
 }) {
   const writes: Write[] = [];
   const committed: Write[] = [];
@@ -49,7 +56,19 @@ function makeDb(opts?: {
   let jobReads = 0;
   const policy = opts?.policy === undefined ? { retentionDays: 180, trigger: "CREATION" } : opts.policy;
 
+  const policyWheres: Record<string, unknown>[] = [];
+  let settingsReads = 0;
+  let transactions = 0;
+  const settings = opts?.settings === undefined ? settingsRow({ applicationIntakeEnabled: true }) : opts.settings;
   const tx = {
+    atsOrganizationSettings: {
+      findUnique: async () => {
+        if (opts?.throwOnSettings) throw new Error("db down");
+        settingsReads++;
+        if (opts?.settingsSequence) return opts.settingsSequence[Math.min(settingsReads, opts.settingsSequence.length) - 1];
+        return settings;
+      },
+    },
     atsJob: {
       findFirst: async () => {
         if (opts?.throwOnJob) throw new Error("db down");
@@ -59,8 +78,10 @@ function makeDb(opts?: {
       },
     },
     retentionPolicy: {
-      findFirst: async () =>
-        policy ? { id: "rp-1", retentionDays: policy.retentionDays, retentionTrigger: policy.trigger ?? "CREATION" } : null,
+      findFirst: async (a: { where: Record<string, unknown> }) => {
+        policyWheres.push(a.where);
+        return policy ? { id: "rp-1", retentionDays: policy.retentionDays, retentionTrigger: policy.trigger ?? "CREATION" } : null;
+      },
     },
     atsCandidate: {
       // Mirrors Postgres: `email` is unique across live AND soft-deleted rows.
@@ -142,6 +163,7 @@ function makeDb(opts?: {
     ...tx,
     recruitmentIdempotencyKey,
     $transaction: async <T,>(fn: (t: typeof tx) => Promise<T>): Promise<T> => {
+      transactions++;
       const mark = writes.length;
       try {
         const out = await fn(tx);
@@ -153,7 +175,7 @@ function makeDb(opts?: {
       }
     },
   };
-  return { client, writes, committed, idem, jobReads: () => jobReads };
+  return { client, writes, committed, idem, jobReads: () => jobReads, policyWheres, transactions: () => transactions };
 }
 
 const app = (over: Partial<Stage1Application> = {}): Stage1Application => ({
@@ -407,4 +429,59 @@ describe("rollback and claim release", () => {
       expect(store.idem).toHaveLength(0);
     });
   }
+});
+
+describe("ATS-M1 — the organization's own intake switch and retention selection", () => {
+  it("no settings row → intake CLOSED for that organization (fail-closed), nothing claimed or written", async () => {
+    const store = makeDb({ settings: null });
+    h.db = store.client;
+    expect(await submit(app())).toEqual({ ok: false, code: "NOT_ACCEPTING" });
+    expect(store.idem).toHaveLength(0);
+    expect(store.writes).toHaveLength(0);
+  });
+
+  it("intake switched off → NOT_ACCEPTING, the same answer as an unavailable job — refused BEFORE any transaction or claim", async () => {
+    const store = makeDb({ settings: settingsRow({ applicationIntakeEnabled: false }) });
+    h.db = store.client;
+    expect(await submit(app())).toEqual({ ok: false, code: "NOT_ACCEPTING" });
+    expect(store.writes).toHaveLength(0);
+    expect(store.idem).toHaveLength(0);
+    expect(store.transactions()).toBe(0);
+  });
+
+  it("intake switched off BETWEEN the pre-check and the write is caught inside the transaction and rolled back", async () => {
+    const on = settingsRow({ applicationIntakeEnabled: true });
+    const off = settingsRow({ applicationIntakeEnabled: false });
+    const store = makeDb({ settingsSequence: [on, off] });
+    h.db = store.client;
+    expect(await submit(app())).toEqual({ ok: false, code: "NOT_ACCEPTING" });
+    expect(store.transactions()).toBeGreaterThan(0);
+    expect(store.committed).toHaveLength(0);
+  });
+
+  it("a settings store failure is STORE_UNAVAILABLE, never an open door", async () => {
+    const store = makeDb({ throwOnSettings: true });
+    h.db = store.client;
+    expect(await submit(app())).toEqual({ ok: false, code: "STORE_UNAVAILABLE" });
+    expect(store.writes).toHaveLength(0);
+  });
+
+  it("the policy must be EFFECTIVE, and when one is selected it must be THAT policy", async () => {
+    const store = makeDb({ settings: settingsRow({ applicationIntakeEnabled: true, retentionPolicyId: "rp-1" }) });
+    h.db = store.client;
+    const r = await submit(app());
+    expect(r.ok).toBe(true);
+    expect(store.policyWheres.length).toBeGreaterThanOrEqual(2);
+    for (const w of store.policyWheres) {
+      expect(w).toMatchObject({ approvalState: "APPROVED", enabled: true, id: "rp-1" });
+      expect(w.OR).toEqual([{ effectiveFrom: null }, { effectiveFrom: { lte: NOW } }]);
+    }
+  });
+
+  it("a selection that changed between the pre-check and the write is refused and rolled back", async () => {
+    const store = makeDb({ settings: settingsRow({ applicationIntakeEnabled: true, retentionPolicyId: "rp-OTHER" }) });
+    h.db = store.client;
+    expect(await submit(app())).toEqual({ ok: false, code: "RETENTION_NOT_APPROVED" });
+    expect(store.committed).toHaveLength(0);
+  });
 });

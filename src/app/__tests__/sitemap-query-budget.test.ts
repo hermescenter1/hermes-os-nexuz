@@ -210,7 +210,13 @@ describe("ATS jobs use the sitemap reader, not the shared API reader", () => {
     const or = where.OR as Array<Record<string, unknown>>;
     expect(or[0]).toEqual({ closingDate: null });
     expect((or[1].closingDate as { gte: unknown }).gte).toBeInstanceOf(Date);
-    expect(Object.keys(where).sort()).toEqual(["OR", "deletedAt", "isPublic", "publishedAt", "status"]);
+    // ATS-M1 — the one added clause only NARROWS the set: an organization that
+    // switched its public listing off advertises nothing; one without settings
+    // is not switched off.
+    expect(where.organization).toEqual({
+      OR: [{ atsSettings: { is: null } }, { atsSettings: { is: { publicListingEnabled: true } } }],
+    });
+    expect(Object.keys(where).sort()).toEqual(["OR", "deletedAt", "isPublic", "organization", "publishedAt", "status"]);
   });
 });
 
