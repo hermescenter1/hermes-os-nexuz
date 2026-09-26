@@ -301,7 +301,7 @@ export function Stage1ApplicationForm({ jobId, jobTitle, locale }: { jobId: stri
                     {f === "privacyNoticeAcknowledged"
                       ? t.rich("form.privacyNotice", {
                           link: (chunks) => (
-                            <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-signal underline">
+                            <Link href="/careers/privacy" target="_blank" rel="noopener noreferrer" className="text-signal underline">
                               {chunks}
                             </Link>
                           ),

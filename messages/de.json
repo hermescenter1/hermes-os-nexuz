@@ -9186,6 +9186,88 @@
         "referenceLabel": "Ihre Bewerbungsreferenz",
         "referenceHint": "Bewahren Sie diese Referenz auf, falls Sie uns zu Ihrer Bewerbung kontaktieren möchten."
       }
+    },
+    "privacy": {
+      "metaTitle": "Datenschutzhinweise für Bewerbende (Entwurf)",
+      "metaDescription": "Wie Bewerbungen über die Karriereseiten verarbeitet werden: automatisierte Vorprüfung, menschliche Entscheidungen, Aufbewahrung und Ihre Rechte.",
+      "eyebrow": "Karriere · Datenschutz",
+      "title": "Datenschutzhinweise für Bewerbende",
+      "draftBadge": "Rechtlicher Entwurf",
+      "draftNotice": "Diese Hinweise sind ein Entwurf, der noch rechtlich geprüft wird. Sie beschreiben, wie das Bewerbungssystem dieser Website für die Verarbeitung personenbezogener Daten ausgelegt ist. Sie sind keine Erklärung oder Garantie der Übereinstimmung mit einem bestimmten Gesetz, und ihr Wortlaut kann sich bis zur endgültigen Fassung ändern.",
+      "versionLine": "Entwurfsfassung {version} · erstellt am {date}",
+      "intro": "Diese Hinweise erklären, wie Ihre personenbezogenen Daten verarbeitet werden, wenn Sie sich über die Karriereseiten dieser Website auf eine Stelle bewerben. Sie ergänzen die <general>allgemeine Datenschutzerklärung</general>, die weiterhin gilt.",
+      "s1": {
+        "title": "1. Daten der Bewerbenden",
+        "lead": "Wir verarbeiten nur die Daten, die zur Prüfung Ihrer Bewerbung nötig sind:",
+        "provided": "Ihre Angaben im Bewerbungsformular: vollständiger Name und E-Mail-Adresse sowie — nur wenn Sie sie angeben — Telefonnummer, aktueller Wohnort, Jahre Berufserfahrung, Kernkompetenzen, Lebenslauftext, Anschreiben und die Adresse Ihres LinkedIn-Profils.",
+        "confirmations": "Ihre Bestätigungen: dass Sie diese Hinweise gelesen haben und Ihre Angaben richtig sind, sowie — nur wenn Sie sie erteilen — Ihre Einwilligung, zu künftigen Stellen kontaktiert zu werden. Jede Bestätigung wird mit Zeitpunkt, Fassung der Hinweise und Sprache gespeichert.",
+        "process": "Unterlagen zum Auswahlverfahren: der Status Ihrer Bewerbung, die in Abschnitt 2 beschriebene Vorbewertung, die Entscheidungen des Einstellungsteams mit ihrer Begründung und, falls Sie eingeladen werden, Unterlagen zu Gesprächen.",
+        "technical": "Technische Daten: Ihre Netzwerkadresse wird kurzzeitig genutzt, um wiederholte Einsendungen zu begrenzen und den Dienst zu schützen, und ein einmaliger Übermittlungsschlüssel verhindert, dass dieselbe Bewerbung doppelt erfasst wird. Beides wird nicht als Teil Ihrer Bewerbung gespeichert.",
+        "notRequested": "Wir fragen weder nach einem Foto noch nach Geburtsdatum, Geschlecht, Staatsangehörigkeit, Religion, Familienstand, Gesundheitsangaben oder anderen sensiblen Merkmalen. Bitte nehmen Sie solche Angaben nicht in Lebenslauf oder Anschreiben auf."
+      },
+      "s2": {
+        "title": "2. Vorprüfung mit künstlicher Intelligenz",
+        "p1": "Nach dem Absenden vergleicht ein automatisierter Assistent den fachlichen Inhalt Ihrer Bewerbung — Lebenslauftext, Anschreiben, Kompetenzen, Berufsjahre, Wohnort und LinkedIn-Adresse — mit den für die Stelle veröffentlichten Kriterien. Das Ergebnis ist eine Vorbewertung, die die zugrunde gelegten Belege nennt.",
+        "p2": "Der Assistent verwendet weder Ihren Namen noch Ihre E-Mail-Adresse oder Telefonnummer und ist so ausgelegt, dass er geschützte Merkmale wie Alter, Geschlecht, Religion oder Herkunft niemals verwendet.",
+        "p3": "Standardmäßig läuft die Bewertung deterministisch in unseren eigenen Systemen. Ein externes KI-Modell wird nur eingesetzt, wenn die einstellende Organisation dies ausdrücklich aktiviert hat. In diesem Fall wird eine bereinigte Kopie des fachlichen Inhalts Ihrer Bewerbung an den Modellanbieter übermittelt, und das Modell darf nur erläuternden Text ergänzen: Es ändert niemals eine Punktzahl oder eine Empfehlung.",
+        "p4": "Der Assistent kann niemanden annehmen, ablehnen, in die engere Wahl nehmen oder einstellen. Seine Bewertung ist ein Hinweis für die Menschen, die Ihre Bewerbung prüfen."
+      },
+      "s3": {
+        "title": "3. Menschliche Prüfung und endgültige Entscheidung",
+        "p1": "Jede Entscheidung über Ihre Bewerbung trifft ein berechtigtes Mitglied des Einstellungsteams. Diese Person prüft die Vorbewertung zusammen mit den zugrunde liegenden Belegen und dokumentiert die Entscheidung und ihre Begründung.",
+        "p2": "Keine Entscheidung mit rechtlicher oder ähnlich erheblicher Wirkung für Sie beruht ausschließlich auf automatisierter Verarbeitung. Sie können eine Erläuterung des Ergebnisses Ihrer Bewerbung verlangen und dem Einstellungsteam Ihren Standpunkt darlegen."
+      },
+      "s4": {
+        "title": "4. Zweck und Rechtsgrundlage der Verarbeitung",
+        "purpose": "Zweck: Ihre Bewerbung für die ausgewählte Stelle zu prüfen, mit Ihnen darüber zu kommunizieren sowie das Auswahlverfahren durchzuführen und zu dokumentieren.",
+        "basisLead": "Wir stützen uns auf folgende Grundlagen:",
+        "steps": "Maßnahmen auf Ihre Anfrage vor einem möglichen Arbeitsvertrag — die Prüfung und Beantwortung Ihrer Bewerbung.",
+        "interest": "Unser berechtigtes Interesse an einem fairen, effizienten und dokumentierten Auswahlverfahren, einschließlich der in Abschnitt 2 beschriebenen Vorbewertung.",
+        "legal": "Rechtliche Pflichten, zum Beispiel Aufbewahrungspflichten und die Beantwortung behördlicher Anfragen.",
+        "consent": "Ihre Einwilligung — nur für die Aufbewahrung Ihrer Bewerbung, um Sie zu künftigen Stellen zu kontaktieren. Sie können sie jederzeit widerrufen.",
+        "noSecondaryUse": "Ihre Bewerbung wird weder für Werbung noch zum Training von KI-Modellen verwendet."
+      },
+      "s5": {
+        "title": "5. Aufbewahrungsdauer und Aufbewahrungsrichtlinie",
+        "p1": "Wie lange Bewerbungsdaten aufbewahrt werden, legt die genehmigte Aufbewahrungsrichtlinie der einstellenden Organisation für Bewerbungsdaten fest. Bewerbungen werden nur angenommen, solange eine solche Richtlinie gilt.",
+        "p2": "Nach Ablauf der Aufbewahrungsdauer — gerechnet ab der Einsendung oder ab der letzten Aktivität zur Bewerbung, je nach Richtlinie — wird der Inhalt Ihrer Bewerbung (Lebenslauftext, Anschreiben und interne Notizen) anonymisiert. Daten, die einer rechtlichen Sperre unterliegen, werden bis zu deren Ende aufbewahrt.",
+        "p3": "Ihr Kontaktdatensatz (Name, E-Mail-Adresse und Telefonnummer) wird gelöscht, wenn Sie die Löschung verlangen, sofern er nicht noch für eine andere offene Bewerbung oder zur Erfüllung einer rechtlichen Pflicht benötigt wird.",
+        "p4": "Nachweise Ihrer Bestätigungen und Einwilligungen sowie die Prüfprotokolle des Auswahlverfahrens werden so lange aufbewahrt, wie es zum Nachweis einer rechtmäßigen Verarbeitung erforderlich ist, im Einklang mit der allgemeinen Datenschutzerklärung."
+      },
+      "s6": {
+        "title": "6. Ihre Rechte",
+        "lead": "Nach Maßgabe des anwendbaren Rechts haben Sie das Recht auf:",
+        "access": "Auskunft — eine Kopie der personenbezogenen Daten zu Ihrer Bewerbung zu erhalten.",
+        "correction": "Berichtigung — unrichtige oder unvollständige Daten berichtigen zu lassen.",
+        "deletion": "Löschung — Ihre Daten löschen zu lassen, wenn kein vorrangiger Grund für ihre Aufbewahrung besteht.",
+        "objection": "Widerspruch — einer auf unser berechtigtes Interesse gestützten Verarbeitung zu widersprechen, einschließlich der Vorbewertung.",
+        "withdraw": "Widerruf der Einwilligung — Ihre Einwilligung zur Kontaktaufnahme zu künftigen Stellen jederzeit zu widerrufen; die bis dahin erfolgte Verarbeitung bleibt davon unberührt.",
+        "other": "Gegebenenfalls können Sie außerdem die Einschränkung der Verarbeitung oder eine übertragbare Kopie Ihrer Daten verlangen.",
+        "how": "Um ein Recht auszuüben, nutzen Sie das <link>Datenanfrage-Center</link> und wählen die passende Anfrageart. Bitte geben Sie Ihre Bewerbungsreferenz an, damit wir Ihre Bewerbung finden. Möglicherweise müssen wir vor der Bearbeitung Ihre Identität prüfen.",
+        "complaint": "Wenn Sie meinen, dass Ihre Daten rechtswidrig verarbeitet wurden, können Sie sich außerdem bei der zuständigen Datenschutzaufsichtsbehörde beschweren."
+      },
+      "s7": {
+        "title": "7. Weitergabe und Sicherheit",
+        "p1": "Ihre Bewerbung ist nur für berechtigte Mitglieder des Recruiting-Teams der einstellenden Organisation sichtbar, entsprechend ihrer Rolle und Berechtigungen. Wesentliche Vorgänge zu Ihrer Bewerbung werden in einem Prüfprotokoll erfasst.",
+        "p2": "Wir verkaufen Ihre Daten nicht. Wir geben sie nur an Dienstleister weiter, die für den Betrieb des Dienstes erforderlich sind — etwa Hosting und, nur wenn die einstellende Organisation dies aktiviert hat, ein externer Anbieter von KI-Modellen — und nur im jeweils erforderlichen Umfang. Eine Liste dieser Dienstleister erhalten Sie auf Anfrage.",
+        "p3": "Ihre Daten sind durch technische und organisatorische Maßnahmen geschützt, darunter verschlüsselte Übertragung, rollenbasierte Zugriffskontrolle, Trennung der Daten jeder Organisation und Protokollierung. Kein System ist vollkommen sicher; bei einem Vorfall handeln wir im Einklang mit dem anwendbaren Recht."
+      },
+      "s8": {
+        "title": "8. Verantwortliche Stelle und Kontakt",
+        "controller": "Verantwortlich für die Verarbeitung der Bewerbungen auf eine Stelle ist die Organisation, die sie veröffentlicht. Für Stellen von {org} ist {org} verantwortlich.",
+        "contact": "Kontakt für Datenschutzfragen zu Bewerbungen: <mail>{email}</mail>. Bitte schreiben Sie „Datenschutz Bewerbung“ in den Betreff und geben Sie Ihre Bewerbungsreferenz an.",
+        "otherOrgs": "Wurde eine Stelle von einer anderen Organisation veröffentlicht, die diese Plattform nutzt, ist diese Organisation für Ihre Bewerbung verantwortlich; wir leiten Ihre Anfrage an sie weiter."
+      },
+      "s9": {
+        "title": "9. Haftungsgrenzen und Weg zur Anfrage",
+        "limits": "Diese Hinweise dienen der Information. Sie schränken keine Rechte ein, die Ihnen nach anwendbarem Recht zustehen, und schließen keine Haftung aus oder beschränken sie, soweit dies gesetzlich nicht zulässig ist. Weichen diese Hinweise von zwingendem Recht ab, gilt das Gesetz.",
+        "stepsLead": "So wird eine Anfrage bearbeitet:",
+        "one": "Stellen Sie Ihre Anfrage über das <link>Datenanfrage-Center</link> oder per E-Mail an den Kontakt in Abschnitt 8.",
+        "two": "Wir bestätigen den Eingang und bitten Sie gegebenenfalls, Ihre Identität nachzuweisen.",
+        "three": "Wir antworten unverzüglich und innerhalb der gesetzlich vorgeschriebenen Frist und erläutern das Ergebnis.",
+        "four": "Sind Sie mit der Antwort nicht zufrieden, können Sie sich an die zuständige Aufsichtsbehörde wenden."
+      },
+      "backToCareers": "Zurück zu den Karriereseiten"
     }
   },
   "vendors": {
