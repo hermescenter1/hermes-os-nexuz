@@ -9139,7 +9139,53 @@
       "successBodyFor": "Your application for {title} has been recorded. We will contact you at the email address you provided.",
       "successBody": "Your application has been recorded. We will contact you at the email address you provided.",
       "successAllJobs": "See open positions",
-      "successMyApplications": "My applications"
+      "successMyApplications": "My applications",
+      "form": {
+        "optional": "optional",
+        "processingNote": "Your application is screened with deterministic, evidence-based assistance and then reviewed by a person. Nothing is decided automatically: every decision about your application is made by a member of our team.",
+        "profileHint": "Share what is relevant to this position. Every field in this section is optional.",
+        "yearsHint": "Whole years of relevant professional experience (0–60).",
+        "keySkillsPlaceholder": "For example: financial reporting, IFRS, tax compliance",
+        "coverLetterHint": "What draws you to this role and how your experience fits it.",
+        "linkedin": "LinkedIn profile",
+        "consentSection": "Confirmations",
+        "privacyNotice": "I have read the <link>privacy notice</link> and understand how my application data is processed and retained.",
+        "accuracy": "I confirm that the information in this application is accurate and complete to the best of my knowledge.",
+        "futureOpenings": "You may keep my application to contact me about future openings. (Optional — you can withdraw this at any time.)",
+        "errorSummaryTitle": "Please correct {count, plural, one {# field} other {# fields}} before submitting.",
+        "fieldNames": {
+          "fullName": "Full name",
+          "email": "Email address",
+          "phone": "Phone",
+          "currentLocation": "Current location",
+          "yearsExperience": "Years of experience",
+          "keySkills": "Key skills",
+          "resumeText": "Résumé",
+          "fitStatement": "Cover letter",
+          "linkedinUrl": "LinkedIn profile",
+          "privacyNoticeAcknowledged": "Privacy notice",
+          "accuracyConfirmed": "Accuracy confirmation"
+        },
+        "errors": {
+          "required": "This field is required.",
+          "invalid": "This value is not valid.",
+          "tooShort": "This value is too short.",
+          "tooLong": "This value is too long.",
+          "notConfirmed": "Please confirm this to submit your application.",
+          "email": "Enter a valid email address, for example name@example.com.",
+          "linkedin": "Enter a full web address beginning with https://.",
+          "years": "Enter a whole number of years between 0 and 60.",
+          "phone": "Enter at least 3 characters, or leave the phone number empty."
+        },
+        "notAcceptingNow": "This position is not accepting applications right now. Please try again later.",
+        "invalidBody": "Some details could not be accepted as sent. Please review the form and try again.",
+        "rateLimited": "Too many attempts from this network. Please try again in about {minutes, plural, one {# minute} other {# minutes}}.",
+        "rateLimitedUnknown": "Too many attempts from this network. Please try again later.",
+        "unconfirmed": "We could not confirm that your application arrived. Submitting again is safe — the same application will not be recorded twice.",
+        "successBody": "Your application for {title} has been received. It will be reviewed by our team.",
+        "referenceLabel": "Your application reference",
+        "referenceHint": "Keep this reference if you need to contact us about your application."
+      }
     }
   },
   "vendors": {
