@@ -1,15 +1,25 @@
 // @vitest-environment jsdom
 /**
- * PHASE 104-B1.3 §1.9 — the application surface is closed HONESTLY.
+ * PHASE 104-B1.3 §1.9 → ATS-STAGE1-FORM — the application surface is honest.
  *
- *   - acceptance OFF ⇒ no active form, no submit control, and ZERO requests
- *     to /api/careers/apply;
+ * B1.3 closed this surface while the server refused every application. The
+ * owner has since authorized acceptance (ATS-STAGE1-FORM, 2026-09-25) and the
+ * Stage-1 form exists, so this suite now pins the OPEN state:
+ *
+ *   - the flag is `true`, in ONE import-free module the server and the client
+ *     share (identity, not agreement);
+ *   - a VERIFIED posting renders the Stage-1 form, and nothing is posted to
+ *     /api/careers/apply until the applicant submits;
  *   - no Work Authorization control and no "citizen" default anywhere;
  *   - the posting is verified WITH the active locale (DE and FA carry theirs);
+ *   - an unverified, unknown or malformed posting never gets a form;
  *   - the retired payload vocabulary cannot return (source gate);
- *   - enabling the UI alone cannot bypass the B2 server blocker;
- *   - the future Stage-1 contract matches the server schema exactly and mints
- *     a valid per-submission idempotency key.
+ *   - the UI cannot bypass the server: the route still applies both gates;
+ *   - the Stage-1 contract matches the server schema exactly and mints a valid
+ *     per-submission idempotency key.
+ *
+ * The closed state (flag back to `false`) is pinned behaviourally in
+ * `ats-stage1-gate-closed.test.tsx`.
  */
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
@@ -84,9 +94,9 @@ const settle = async (n = 3) => { for (let k = 0; k < n; k++) await new Promise(
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe("B1.3 — acceptance is OFF, so nothing is collected", () => {
-  it("the server gate really is off, and the client reads THAT value — not a copy", () => {
-    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(false);
+describe("ATS-STAGE1-FORM — acceptance is authorized, and only a verified posting collects anything", () => {
+  it("the server gate is ON, and the client reads THAT value — not a copy", () => {
+    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(true);
 
     // B1.3: the constant moved into a dependency-free module so a "use client"
     // component can read it without pulling Prisma/pg into the browser bundle.
@@ -114,31 +124,30 @@ describe("B1.3 — acceptance is OFF, so nothing is collected", () => {
     const flag = readCode("src/lib/ats/acceptance-flag.ts");
     expect(flag).not.toMatch(/^\s*import\s/m);
     expect(flag).not.toMatch(/\brequire\s*\(/);
-    expect(flag).toContain("export const APPLICATION_ACCEPTANCE_AUTHORIZED = false;");
+    expect(flag).toContain("export const APPLICATION_ACCEPTANCE_AUTHORIZED = true;");
   });
 
-  it("renders the honest not-accepting state for a REAL published posting — no form, no inputs, no submit", async () => {
+  it("renders the Stage-1 form for a REAL published posting — and posts NOTHING until the applicant submits", async () => {
     const urls = stubFetch({ job: detail(), source: "db" });
     const { container, unmount } = await mount(ui());
     await settle();
     const text = container.textContent ?? "";
-    expect(text).toContain(DA.notAcceptingTitle);
-    expect(text).toContain(DA.notAcceptingBody);
-    // the posting is named, so the page is about a real vacancy…
     expect(text).toContain("SCADA-Architekt");
-    // …but nothing is collectable
-    expect(container.querySelector("form")).toBeNull();
-    expect(container.querySelectorAll("input").length).toBe(0);
-    expect(container.querySelectorAll("textarea").length).toBe(0);
-    expect(container.querySelectorAll("select").length).toBe(0);
-    expect(container.querySelector('button[type="submit"]')).toBeNull();
-    // and NOTHING was posted anywhere
+    expect(text).not.toContain(DA.notAcceptingTitle);
+    expect(container.querySelectorAll("form")).toHaveLength(1);
+    expect(container.querySelector('button[type="submit"]')).not.toBeNull();
+    // exactly the approved Stage-1 set: 7 text fields + 2 textareas + 3 boxes, no select
+    expect(container.querySelectorAll("textarea")).toHaveLength(2);
+    expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(3);
+    expect(container.querySelectorAll("input:not([type=checkbox])")).toHaveLength(7);
+    expect(container.querySelectorAll("select")).toHaveLength(0);
+    // the only request is the verification
     expect(urls.some((u) => u.includes("/api/careers/apply"))).toBe(false);
     expect(urls).toHaveLength(1);
     await unmount();
   });
 
-  it("makes NO claim of success, receipt or later contact", async () => {
+  it("makes NO claim of success, receipt or later contact before a submission", async () => {
     stubFetch({ job: detail(), source: "db" });
     const { container, unmount } = await mount(ui());
     await settle();
@@ -175,42 +184,44 @@ describe("B1.3 — acceptance is OFF, so nothing is collected", () => {
     const b = await mount(ui("fa"));
     await settle();
     expect(faUrls[0]).toContain("locale=fa");
-    expect(b.container.textContent).toContain(FAA.notAcceptingTitle);
+    expect(b.container.textContent).toContain(FAA.fullName);
     await b.unmount();
   });
 
-  it("a 404 posting is the enumeration-safe unavailable state, not the not-accepting state", async () => {
+  it("a 404 posting is the enumeration-safe unavailable state — no form", async () => {
     stubFetch({ error: "Job not found" }, false, 404);
     const { container, unmount } = await mount(ui());
     await settle();
     expect(container.textContent).toContain(DA.unavailableTitle);
     expect(container.textContent).not.toContain(DA.notAcceptingTitle);
+    expect(container.querySelector("form")).toBeNull();
     await unmount();
   });
 
-  it("a 503 is an outage surface, never a statement about applications", async () => {
+  it("a 503 is an outage surface, never a statement about applications — no form", async () => {
     stubFetch({ error: "down" }, false, 503);
     const { container, unmount } = await mount(ui());
     await settle();
     expect(container.querySelector('[role="alert"]')).not.toBeNull();
     expect(container.textContent).not.toContain(DA.notAcceptingTitle);
+    expect(container.querySelector("form")).toBeNull();
     await unmount();
   });
 
-  it("a malformed 2xx posting never reaches the not-accepting state either", async () => {
+  it("a malformed 2xx posting never reaches a form either", async () => {
     stubFetch({ job: { ...detail(), location: 42 }, source: "db" });
     const { container, unmount } = await mount(ui());
     await settle();
     expect(container.querySelector('[role="alert"]')).not.toBeNull();
-    expect(container.textContent).not.toContain(DA.notAcceptingTitle);
+    expect(container.querySelector("form")).toBeNull();
     await unmount();
   });
 });
 
-describe("B1.3 — the retired vocabulary cannot return, and the UI cannot bypass B2", () => {
+describe("B1.3 — the retired vocabulary cannot return, and the UI cannot bypass the server", () => {
   const RETIRED = ["coverLetter", "totalYearsExp", "workAuthorization"];
 
-  it("no retired payload key appears in the apply surface or the future contract", () => {
+  it("no retired payload key appears in the apply surface or the contract", () => {
     for (const rel of [
       "src/components/careers/ApplyFormClient.tsx",
       "src/components/careers/stage1-contract.ts",
@@ -218,26 +229,39 @@ describe("B1.3 — the retired vocabulary cannot return, and the UI cannot bypas
       const src = readCode(rel);
       for (const key of RETIRED) expect(src, `${rel} :: ${key}`).not.toContain(key);
     }
+    // The form reads i18n leaves named `coverLetter…` (labels only); it must
+    // never carry a retired key as a PAYLOAD key or a state key.
+    const form = readCode("src/components/careers/Stage1ApplicationForm.tsx");
+    for (const key of RETIRED) {
+      expect(form, key).not.toMatch(new RegExp(`["'\`]${key}["'\`]|\\b${key}\\s*:`));
+    }
+    expect(form).not.toMatch(/"citizen"|workAuth/);
   });
 
-  it("the apply surface issues no request to /api/careers/apply at all", () => {
-    const src = readCode("src/components/careers/ApplyFormClient.tsx");
-    expect(src).not.toContain("/api/careers/apply");
+  it("only the Stage-1 form posts to /api/careers/apply — the verification shell never does", () => {
+    expect(readCode("src/components/careers/ApplyFormClient.tsx")).not.toContain("/api/careers/apply");
+    const form = readCode("src/components/careers/Stage1ApplicationForm.tsx");
+    expect(form.match(/\/api\/careers\/apply/g) ?? []).toHaveLength(1);
+    expect(form).toContain("STAGE1_IDEMPOTENCY_HEADER");
+    expect(form).toContain('credentials: "same-origin"');
+    // nothing about the applicant is persisted or logged in the browser
+    expect(form).not.toMatch(/console\.(log|error|warn|info|debug)/);
+    expect(form).not.toMatch(/localStorage|sessionStorage|document\.cookie|indexedDB/);
   });
 
-  it("enabling the UI alone cannot bypass the server blocker — the route refuses before any write", async () => {
-    // the route's own source pins BOTH gates ahead of every write path
+  it("the UI cannot bypass the server — the route still applies BOTH gates before any write", async () => {
+    // the route's own source pins BOTH gates ahead of every write path; the
+    // organization's intake switch and the secret are proven behaviourally in
+    // ats-b2-apply-orchestration.test.ts, the kill switch in
+    // ats-stage1-gate-closed.test.tsx and the orchestration suite.
     const route = readCode("src/app/api/careers/apply/route.ts");
     expect(route).toContain("if (!APPLICATION_ACCEPTANCE_AUTHORIZED)");
     expect(route).toContain("await isRetentionPolicyApproved(organizationId)");
-    // and the module the UI would import still declares acceptance OFF
-    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(false);
-    // proven behaviourally by the public-surface suite: a fully valid payload
-    // for an eligible job is refused with WRITE_COUNT=0.
+    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(true);
   });
 });
 
-describe("B1.3 — the FUTURE Stage-1 contract is exact and testable", () => {
+describe("B1.3 — the Stage-1 contract is exact and testable", () => {
   const filled = (over: Partial<Stage1FormState> = {}): Stage1FormState => ({
     ...STAGE1_INITIAL_FORM,
     fullName: " Jane Doe ",

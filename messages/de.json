@@ -9139,7 +9139,53 @@
       "successBodyFor": "Ihre Bewerbung für {title} wurde erfasst. Wir melden uns unter der von Ihnen angegebenen E-Mail-Adresse.",
       "successBody": "Ihre Bewerbung wurde erfasst. Wir melden uns unter der von Ihnen angegebenen E-Mail-Adresse.",
       "successAllJobs": "Offene Stellen ansehen",
-      "successMyApplications": "Meine Bewerbungen"
+      "successMyApplications": "Meine Bewerbungen",
+      "form": {
+        "optional": "freiwillig",
+        "processingNote": "Ihre Bewerbung wird mit deterministischer, evidenzbasierter Unterstützung vorgeprüft und anschließend von einem Menschen gesichtet. Nichts wird automatisch entschieden: Jede Entscheidung über Ihre Bewerbung trifft ein Mitglied unseres Teams.",
+        "profileHint": "Geben Sie an, was für diese Stelle relevant ist. Alle Felder in diesem Abschnitt sind freiwillig.",
+        "yearsHint": "Volle Jahre einschlägiger Berufserfahrung (0–60).",
+        "keySkillsPlaceholder": "Zum Beispiel: Finanzberichterstattung, IFRS, Steuer-Compliance",
+        "coverLetterHint": "Was Sie an dieser Stelle reizt und wie Ihre Erfahrung dazu passt.",
+        "linkedin": "LinkedIn-Profil",
+        "consentSection": "Bestätigungen",
+        "privacyNotice": "Ich habe die <link>Datenschutzhinweise</link> gelesen und verstehe, wie meine Bewerbungsdaten verarbeitet und aufbewahrt werden.",
+        "accuracy": "Ich bestätige, dass die Angaben in dieser Bewerbung nach bestem Wissen richtig und vollständig sind.",
+        "futureOpenings": "Sie dürfen meine Bewerbung aufbewahren, um mich zu künftigen Stellen zu kontaktieren. (Freiwillig — Sie können diese Einwilligung jederzeit widerrufen.)",
+        "errorSummaryTitle": "Bitte korrigieren Sie {count, plural, one {# Feld} other {# Felder}}, bevor Sie absenden.",
+        "fieldNames": {
+          "fullName": "Vollständiger Name",
+          "email": "E-Mail-Adresse",
+          "phone": "Telefon",
+          "currentLocation": "Aktueller Wohnort",
+          "yearsExperience": "Jahre Berufserfahrung",
+          "keySkills": "Kernkompetenzen",
+          "resumeText": "Lebenslauf",
+          "fitStatement": "Anschreiben",
+          "linkedinUrl": "LinkedIn-Profil",
+          "privacyNoticeAcknowledged": "Datenschutzhinweise",
+          "accuracyConfirmed": "Richtigkeitsbestätigung"
+        },
+        "errors": {
+          "required": "Dieses Feld ist erforderlich.",
+          "invalid": "Dieser Wert ist ungültig.",
+          "tooShort": "Dieser Wert ist zu kurz.",
+          "tooLong": "Dieser Wert ist zu lang.",
+          "notConfirmed": "Bitte bestätigen Sie dies, um Ihre Bewerbung abzusenden.",
+          "email": "Geben Sie eine gültige E-Mail-Adresse ein, zum Beispiel name@beispiel.de.",
+          "linkedin": "Geben Sie eine vollständige Webadresse ein, die mit https:// beginnt.",
+          "years": "Geben Sie eine ganze Zahl von Jahren zwischen 0 und 60 ein.",
+          "phone": "Geben Sie mindestens 3 Zeichen ein oder lassen Sie die Telefonnummer leer."
+        },
+        "notAcceptingNow": "Für diese Stelle werden derzeit keine Bewerbungen angenommen. Bitte versuchen Sie es später erneut.",
+        "invalidBody": "Einige Angaben konnten in dieser Form nicht angenommen werden. Bitte prüfen Sie das Formular und versuchen Sie es erneut.",
+        "rateLimited": "Zu viele Versuche aus diesem Netzwerk. Bitte versuchen Sie es in etwa {minutes, plural, one {# Minute} other {# Minuten}} erneut.",
+        "rateLimitedUnknown": "Zu viele Versuche aus diesem Netzwerk. Bitte versuchen Sie es später erneut.",
+        "unconfirmed": "Wir konnten nicht bestätigen, dass Ihre Bewerbung angekommen ist. Erneutes Absenden ist sicher — dieselbe Bewerbung wird nicht doppelt erfasst.",
+        "successBody": "Ihre Bewerbung für {title} ist eingegangen. Unser Team wird sie prüfen.",
+        "referenceLabel": "Ihre Bewerbungsreferenz",
+        "referenceHint": "Bewahren Sie diese Referenz auf, falls Sie uns zu Ihrer Bewerbung kontaktieren möchten."
+      }
     }
   },
   "vendors": {

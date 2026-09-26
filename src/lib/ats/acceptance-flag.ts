@@ -15,12 +15,22 @@
  * There is still exactly one definition — flipping it is still a single,
  * reviewable edit — and the client bundle stays free of server-only code.
  *
- * Flipping this to `true` does NOT enable applications. The route also
- * requires an APPROVED retention policy, and B2 still owns the orchestration
- * (atomic idempotency claim → in-transaction eligibility re-check → persist →
- * claim completion). Acceptance is never a one-flag change.
+ * `true` does NOT by itself accept an application. Behind this gate the route
+ * still requires, for the posting's own organization: an APPROVED, enabled and
+ * SELECTED retention policy that is in effect; the organization's intake
+ * switch (`applicationIntakeEnabled`, fail-closed when no settings row exists);
+ * the recruitment idempotency secret; and B2's orchestration (atomic
+ * idempotency claim → in-transaction eligibility re-check → persist at
+ * AI_REVIEW_PENDING → audit + review outbox). Every accepted application then
+ * waits for AI review and a recorded human decision. Acceptance is never a
+ * one-flag change.
+ *
+ * ATS-STAGE1-FORM (2026-09-25): set to `true` on the owner's explicit
+ * authorization, together with the Stage-1 public form it opens
+ * (`src/components/careers/Stage1ApplicationForm.tsx`). Setting it back to
+ * `false` closes every apply surface and the route again, in one edit.
  */
-export const APPLICATION_ACCEPTANCE_AUTHORIZED = false;
+export const APPLICATION_ACCEPTANCE_AUTHORIZED = true;
 
 /**
  * B2 orchestration: the atomic idempotency claim, the in-transaction
@@ -36,7 +46,7 @@ export const APPLICATION_ACCEPTANCE_AUTHORIZED = false;
  * ATS-B2 (2026-09-23): IMPLEMENTED — `src/lib/ats/intake.ts`, wired into
  * POST /api/careers/apply behind the owner gate above. This flag now states a
  * true fact about the server. It does NOT open intake: `APPLY_JOURNEY_OPEN`
- * still requires the owner's authorization, which remains `false`.
+ * also requires the owner's authorization above.
  */
 export const APPLICATION_ORCHESTRATION_IMPLEMENTED = true;
 
