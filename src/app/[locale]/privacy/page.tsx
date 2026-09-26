@@ -28,7 +28,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
             <li><strong>Account Data:</strong> Name, email address, password hash, role, organization membership.</li>
             <li><strong>Usage Data:</strong> Pages visited, feature interactions, session duration, IP address, browser type.</li>
             <li><strong>Industrial Data:</strong> Telemetry records, asset health data, copilot conversations (organization-owned).</li>
-            <li><strong>Candidate Data:</strong> CV information, work history, application status, interview records.</li>
+            <li><strong>Candidate Data:</strong> CV information, work history, application status, interview records. See the <Link href="/careers/privacy" className="text-signal hover:underline">Candidate Privacy Notice</Link> for how applications are screened, decided and retained.</li>
             <li><strong>Academy Data:</strong> Course progress, quiz attempts, certification records.</li>
             <li><strong>Consent Records:</strong> Timestamped log of all consent grants and withdrawals.</li>
           </ul>

@@ -9186,6 +9186,88 @@
         "referenceLabel": "Your application reference",
         "referenceHint": "Keep this reference if you need to contact us about your application."
       }
+    },
+    "privacy": {
+      "metaTitle": "Candidate Privacy Notice (draft)",
+      "metaDescription": "How applications submitted through the careers pages are processed: preliminary automated screening, human decisions, retention and your rights.",
+      "eyebrow": "Careers · Privacy",
+      "title": "Candidate Privacy Notice",
+      "draftBadge": "Legal draft",
+      "draftNotice": "This notice is a draft pending legal review. It describes how the recruitment system of this website is designed to process personal data. It is not a statement or guarantee of compliance with any particular law, and its wording may change before it is final.",
+      "versionLine": "Draft version {version} · prepared {date}",
+      "intro": "This notice explains how your personal data is processed when you apply for a position through the careers pages of this website. It supplements the <general>general Privacy Policy</general>, which continues to apply.",
+      "s1": {
+        "title": "1. Applicant data",
+        "lead": "We process only the data needed to consider your application:",
+        "provided": "What you enter in the application form: your full name and e-mail address, and — only if you provide them — your phone number, current location, years of experience, key skills, résumé text, cover letter and LinkedIn profile address.",
+        "confirmations": "Your confirmations: that you have read this notice and that your information is accurate, and — only if you give it — your consent to be contacted about future openings. Each is recorded with the time, the notice version and the language.",
+        "process": "Records of the selection process: the status of your application, the preliminary assessment described in section 2, the decisions made by the hiring team with their reasons, and interview records if you are invited.",
+        "technical": "Technical data: your network address is used briefly to limit repeated submissions and protect the service, and a one-time submission key prevents the same application from being recorded twice. Neither is stored as part of your application.",
+        "notRequested": "We do not ask for a photo, date of birth, gender, nationality, religion, marital status, health information or any other sensitive characteristic. Please do not include such information in your résumé or cover letter."
+      },
+      "s2": {
+        "title": "2. Preliminary screening with artificial intelligence",
+        "p1": "After you submit your application, an automated assistant compares its professional content — résumé text, cover letter, skills, years of experience, location and LinkedIn address — with the criteria published for the position. It produces a preliminary assessment that cites the evidence it relied on.",
+        "p2": "The assistant does not use your name, e-mail address or phone number, and it is designed never to use protected characteristics such as age, gender, religion or origin.",
+        "p3": "By default the assessment runs deterministically within our own systems. An external artificial-intelligence model is used only if the hiring organisation has explicitly enabled it. In that case a sanitised copy of the professional content of your application is sent to the model provider, and the model may only add explanatory text: it never changes a score or a recommendation.",
+        "p4": "The assistant cannot accept, reject, shortlist or hire anyone. Its assessment is advice for the people who review your application."
+      },
+      "s3": {
+        "title": "3. Human review and the final decision",
+        "p1": "Every decision about your application is made by an authorised member of the hiring team. That person reviews the preliminary assessment together with the evidence behind it and records the decision and its reason.",
+        "p2": "No decision that has legal or similarly significant effects for you is made solely by automated means. You may ask for an explanation of the outcome of your application and express your point of view to the hiring team."
+      },
+      "s4": {
+        "title": "4. Purpose and legal basis of processing",
+        "purpose": "Purpose: to assess your application for the position you applied for, to communicate with you about it, and to carry out and document the selection process.",
+        "basisLead": "We rely on the following bases:",
+        "steps": "Steps taken at your request before a possible employment contract — assessing and answering your application.",
+        "interest": "Our legitimate interest in a fair, efficient and documented selection process, including the preliminary assessment described in section 2.",
+        "legal": "Legal obligations, for example record keeping and responding to requests from authorities.",
+        "consent": "Your consent — only for keeping your application to contact you about future openings. You can withdraw it at any time.",
+        "noSecondaryUse": "Your application is not used for marketing and is not used to train artificial-intelligence models."
+      },
+      "s5": {
+        "title": "5. Retention period and policy",
+        "p1": "How long application data is kept is set by the hiring organisation's approved retention policy for recruitment data. Applications are accepted only while such a policy is in effect.",
+        "p2": "When the retention period ends — counted from submission or from the last activity on the application, as the policy states — the content of your application (résumé text, cover letter and internal notes) is anonymised. Data subject to a legal hold is kept until the hold ends.",
+        "p3": "Your contact record (name, e-mail address and phone number) is deleted when you request erasure, unless it is still needed for another open application or to meet a legal obligation.",
+        "p4": "Records of your confirmations and consents, and the audit records of the selection process, are kept for as long as needed to demonstrate lawful processing, in line with the general Privacy Policy."
+      },
+      "s6": {
+        "title": "6. Your rights",
+        "lead": "Subject to applicable law, you have the right to:",
+        "access": "Access — obtain a copy of the personal data we hold about your application.",
+        "correction": "Correction — have inaccurate or incomplete data corrected.",
+        "deletion": "Deletion — have your data erased where there is no overriding reason to keep it.",
+        "objection": "Objection — object to processing based on our legitimate interests, including the preliminary assessment.",
+        "withdraw": "Withdrawal of consent — withdraw your consent to be contacted about future openings at any time; this does not affect processing carried out before the withdrawal.",
+        "other": "Where applicable, you may also request restriction of processing or a portable copy of your data.",
+        "how": "To exercise a right, use the <link>Data Request Center</link> and choose the matching request type. Please include your application reference so that we can find your application. We may need to verify your identity before acting on a request.",
+        "complaint": "If you believe your data has been processed unlawfully, you may also lodge a complaint with the competent data protection supervisory authority."
+      },
+      "s7": {
+        "title": "7. Sharing and security",
+        "p1": "Your application can be seen only by authorised members of the hiring organisation's recruitment team, according to their role and permissions. Relevant actions on your application are recorded in an audit log.",
+        "p2": "We do not sell your data. We share it only with service providers that are needed to operate the service — such as hosting and, only if the hiring organisation has enabled it, an external artificial-intelligence model provider — and only to the extent they need it. A list of these providers is available on request.",
+        "p3": "Your data is protected by technical and organisational measures, including encrypted transmission, role-based access control, separation of each organisation's data and audit logging. No system is completely secure, and we will act on any incident in line with applicable law."
+      },
+      "s8": {
+        "title": "8. Controller and contact",
+        "controller": "The organisation that publishes a position is responsible for processing the applications for it. For positions of {org}, the controller is {org}.",
+        "contact": "Contact for recruitment privacy questions: <mail>{email}</mail>. Please write “Candidate privacy” in the subject and include your application reference.",
+        "otherOrgs": "If a position was published by another organisation that uses this platform, that organisation is the controller for your application; we will forward your request to it."
+      },
+      "s9": {
+        "title": "9. Limitations and how to make a request",
+        "limits": "This notice is for information. It does not limit any right you have under applicable law, and it does not exclude or limit any liability that cannot be excluded or limited by law. Where this notice and mandatory law differ, the law prevails.",
+        "stepsLead": "How a request is handled:",
+        "one": "Submit your request through the <link>Data Request Center</link>, or by e-mail to the contact in section 8.",
+        "two": "We confirm receipt and may ask you to verify your identity.",
+        "three": "We answer without undue delay and within the period required by applicable law, and explain the outcome.",
+        "four": "If you are not satisfied with the answer, you may contact the competent supervisory authority."
+      },
+      "backToCareers": "Back to careers"
     }
   },
   "vendors": {

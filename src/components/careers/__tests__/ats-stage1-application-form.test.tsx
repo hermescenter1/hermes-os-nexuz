@@ -117,7 +117,7 @@ describe.each(["en", "de", "fa"] as const)("renders the approved Stage-1 set (%s
     const cb = boxes(m.container);
     expect(cb).toHaveLength(3);
     expect(cb.every((b) => !b.checked)).toBe(true);
-    const privacy = [...m.container.querySelectorAll("a")].find((x) => x.getAttribute("href") === "/privacy");
+    const privacy = [...m.container.querySelectorAll("a")].find((x) => x.getAttribute("href") === "/careers/privacy");
     expect(privacy).toBeDefined();
     // Latin-script values stay LTR inside a Persian page
     for (const label of [a.emailAddress, a.phone, a.form.linkedin]) expect(byLabel(m.container, label).getAttribute("dir")).toBe("ltr");
